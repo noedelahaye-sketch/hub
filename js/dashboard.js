@@ -224,8 +224,9 @@ export function construireTaches(taches, annulation = null) {
   return `${ligneAnnulation}<ul class="liste-taches">${lignes}</ul>`;
 }
 
-// Fusionne événements et échéances de tâches en une seule liste ordonnée.
-export function assemblerSemaine(evenements, taches, maintenant = new Date()) {
+// Fusionne événements, échéances de tâches et publications programmées en une
+// seule liste ordonnée — la semaine se lit d'un bloc, tous projets confondus.
+export function assemblerSemaine(evenements, taches, publications = [], maintenant = new Date()) {
   const elements = [
     ...evenements.map((evenement) => {
       const date = new Date(evenement.date_debut);
@@ -243,6 +244,15 @@ export function assemblerSemaine(evenements, taches, maintenant = new Date()) {
         projet: tache.projet,
         titre: tache.titre,
         quand: `à rendre ${echeanceLisible(date, maintenant)}`,
+      };
+    }),
+    ...publications.map((pub) => {
+      const date = depuisDateISO(pub.date_prevue);
+      return {
+        date,
+        projet: 'photo',
+        titre: pub.titre,
+        quand: `à publier ${echeanceLisible(date, maintenant)}`,
       };
     }),
   ];
@@ -317,7 +327,7 @@ export default {
     }
 
     try {
-      const [humeur, victoires, objectifs, evenements, echeances, taches] =
+      const [humeur, victoires, objectifs, evenements, echeances, taches, publications] =
         await Promise.all([
           api.humeurDuJour(aujourdhui),
           api.dernieresVictoires(MAX_VICTOIRES),
@@ -325,6 +335,7 @@ export default {
           api.evenementsEntre(new Date().toISOString(), finSemaine.toISOString()),
           api.tachesEcheanceJusqua(versDateISO(finSemaine)),
           api.tachesActives(),
+          api.publicationsEntre(aujourdhui, versDateISO(finSemaine)),
         ]);
 
       etat.humeur = humeur;
@@ -342,7 +353,7 @@ export default {
       );
 
       cible('bloc-semaine').innerHTML = construireSemaine(
-        assemblerSemaine(evenements, echeances),
+        assemblerSemaine(evenements, echeances, publications),
       );
     } catch (erreur) {
       console.error('Chargement du tableau de bord impossible', erreur);

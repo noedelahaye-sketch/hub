@@ -260,8 +260,44 @@ export function construireVictoires(victoires) {
 
 // Un formulaire replié par défaut : la page sert d'abord à lire ce qui avance,
 // pas à saisir. `valeur` pré-remplit un champ — c'est ce qui fait qu'un même
-// gabarit sert à l'ajout comme à la modification.
+// gabarit sert à l'ajout comme à la modification. Un champ peut être un
+// `select` (avec `options: { valeur: libellé }`) ou porter des `suggestions`
+// (saisie libre + liste d'appui, via datalist).
 export function construireFormulaire({ id, libelle, action, champs, extra = '', bouton = 'Ajouter' }) {
+  const rendreChamp = (champ) => {
+    const idChamp = `${id}-${champ.nom}`;
+    const requis = champ.requis ? 'required' : '';
+
+    if (champ.type === 'textarea') {
+      return `<textarea id="${idChamp}" name="${champ.nom}" rows="2" ${requis}>${echapper(
+        champ.valeur ?? '',
+      )}</textarea>`;
+    }
+
+    if (champ.type === 'select') {
+      return `<select id="${idChamp}" name="${champ.nom}" ${requis}>${Object.entries(
+        champ.options,
+      )
+        .map(
+          ([valeur, libelleOption]) =>
+            `<option value="${echapper(valeur)}" ${
+              valeur === champ.valeur ? 'selected' : ''
+            }>${echapper(libelleOption)}</option>`,
+        )
+        .join('')}</select>`;
+    }
+
+    const datalist = champ.suggestions
+      ? `<datalist id="${idChamp}-liste">${champ.suggestions
+          .map((suggestion) => `<option value="${echapper(suggestion)}"></option>`)
+          .join('')}</datalist>`
+      : '';
+
+    return `<input id="${idChamp}" name="${champ.nom}" type="${champ.type}" ${requis}
+      ${champ.suggestions ? `list="${idChamp}-liste"` : ''}
+      value="${echapper(champ.valeur ?? '')}">${datalist}`;
+  };
+
   return `
     <details class="ajout" data-ajout="${id}">
       <summary>${libelle}</summary>
@@ -271,15 +307,7 @@ export function construireFormulaire({ id, libelle, action, champs, extra = '', 
           .map(
             (champ) => `
           <label for="${id}-${champ.nom}">${champ.libelle}</label>
-          ${
-            champ.type === 'textarea'
-              ? `<textarea id="${id}-${champ.nom}" name="${champ.nom}" rows="2" ${
-                  champ.requis ? 'required' : ''
-                }>${echapper(champ.valeur ?? '')}</textarea>`
-              : `<input id="${id}-${champ.nom}" name="${champ.nom}" type="${champ.type}" ${
-                  champ.requis ? 'required' : ''
-                } value="${echapper(champ.valeur ?? '')}">`
-          }`,
+          ${rendreChamp(champ)}`,
           )
           .join('')}
         <button type="submit" class="bouton-secondaire">${echapper(bouton)}</button>

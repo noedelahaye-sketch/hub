@@ -1,0 +1,174 @@
+/* Yuno — la feuille de style de l'espace (docs/yuno-spec.md).
+   Tout est cadré par body[data-espace="photo"] : l'identité Yuno ne déborde
+   jamais sur le reste du hub. */
+
+/* --- Polices de la marque ---------------------------------------------------
+   Canela Deck pour les titres, Gilroy pour le texte. Fichiers de Noé, servis
+   tels quels (OTF/TTF). La Belhanda vit dans le logo, en image. */
+
+@font-face {
+  font-family: "Canela Deck";
+  src: url("../fonts/CanelaDeck-Regular.otf") format("opentype");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Canela Deck";
+  src: url("../fonts/CanelaDeck-Bold.otf") format("opentype");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Gilroy";
+  src: url("../fonts/Gilroy-Regular.ttf") format("truetype");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Gilroy";
+  src: url("../fonts/Gilroy-Medium.ttf") format("truetype");
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Gilroy";
+  src: url("../fonts/Gilroy-SemiBold.ttf") format("truetype");
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+
+/* --- L'identité dans l'espace ---------------------------------------------- */
+
+body[data-espace="photo"] #vue,
+body[data-espace="photo"] #vue button,
+body[data-espace="photo"] #vue input,
+body[data-espace="photo"] #vue select,
+body[data-espace="photo"] #vue textarea {
+  font-family: "Gilroy", var(--police-texte);
+}
+
+body[data-espace="photo"] #vue h1,
+body[data-espace="photo"] #vue h2 {
+  font-family: "Canela Deck", georgia, serif;
+  letter-spacing: 0;
+}
+
+body[data-espace="photo"] #vue h1 {
+  font-weight: 700;
+  font-size: 2rem;
+}
+
+/* Les libellés de section gardent leur rôle discret, mais en Gilroy. */
+body[data-espace="photo"] #vue .bloc h2 {
+  font-family: "Gilroy", var(--police-texte);
+}
+
+/* --- La navigation de l'espace ---------------------------------------------- */
+
+.yuno-nav {
+  display: flex;
+  gap: var(--espace-4);
+  margin: 0 0 var(--espace-24);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.yuno-nav::-webkit-scrollbar { display: none; }
+
+.yuno-nav a {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0 var(--espace-12);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  color: var(--texte-discret);
+  border-radius: var(--rayon-pastille);
+}
+
+.yuno-nav a:hover {
+  color: var(--texte);
+  background: color-mix(in srgb, var(--texte) 8%, transparent);
+}
+
+.yuno-nav a.actif {
+  color: var(--fond-carte);
+  background: var(--accent);
+}
+
+/* --- Le calendrier éditorial ------------------------------------------------ */
+
+/* Réseau et format, en petites étiquettes factuelles. */
+.etiquette {
+  display: inline-block;
+  padding: 1px var(--espace-8);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--texte-discret);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+}
+
+.etiquette-reseau { color: var(--accent); border-color: var(--accent); }
+
+/* La rubrique se tronque plutôt que de pousser la date hors de la tuile :
+   c'est un repère, pas une phrase à lire en entier. */
+.pub-rubrique {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.pub-titre {
+  display: block;
+  width: 100%;
+  font-weight: 600;
+  font-size: 1.0625rem;
+}
+
+.pub-notes {
+  display: block;
+  width: 100%;
+  font-size: 0.875rem;
+  white-space: pre-wrap;
+}
+
+/* La ligne d'actions d'une publication : avancer, programmer, retirer. */
+.pub-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--espace-8);
+  width: 100%;
+  margin-top: var(--espace-4);
+}
+
+.pub-actions .bouton-retirer { margin-left: auto; }
+
+/* Programmer une idée : le champ date est l'action, sans détour. */
+.pub-programmer {
+  width: auto;
+  margin: 0;
+  padding: var(--espace-4) var(--espace-8);
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+}
+
+/* Le statut, toujours écrit — jamais porté par la seule couleur. */
+.pub-statut {
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+}
+
+.pub-statut strong { color: var(--accent); font-weight: 600; }
+
+/* Le trou de la semaine se voit : les publications passées non publiées
+   restent sobres, pas d'alerte (philosophie du hub). */

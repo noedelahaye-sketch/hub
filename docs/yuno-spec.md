@@ -71,19 +71,15 @@ utilisé comme image, en tête de l'espace.
 > **À faire** : déposer le fichier du logo dans `img/` (SVG ou PNG). Il servira
 > d'affichage et de source exacte pour les codes couleur.
 
-**Typographie** — l'identité Yuno utilise Canela Deck (titres), Gilroy
-(texte) et Belhanda (script, le « style »). Deux réalités à concilier :
+**Typographie** — l'identité Yuno : **Canela Deck** pour les titres, **Gilroy**
+pour le texte, la Belhanda restant dans le logo, en image.
 
-- Canela et Gilroy sont des polices commerciales. **Le repo du hub est
-  public** : y déposer les fichiers reviendrait à les redistribuer à quiconque
-  — à ne pas faire, même licence en poche.
-- La Belhanda n'a pas besoin d'être une police du site : elle vit dans le
-  logo, en image. C'est là qu'elle fait son effet.
-
-Proposition (à trancher, §7) : des équivalentes libres proches, auto-hébergées
-comme les polices du hub — **Cormorant** ou **Fraunces** pour le rôle Canela
-(serif élégant, éditorial), **Figtree** pour le rôle Gilroy (sans géométrique
-sobre). L'espace Yuno serait le seul du hub à charger ces deux familles.
+Décision de Noé (7 août 2026) : utiliser les polices commerciales malgré le
+repo public, risques compris et acceptés. Fichiers repris de sa machine :
+Canela Deck Regular/Bold (versions d'essai « Trial » — noté), Gilroy
+Regular/Medium/SemiBold. Servis en OTF/TTF faute de convertisseur woff2
+(75–80 Ko pièce, acceptable). Ces familles ne chargent que dans l'espace Yuno ;
+le reste du hub garde les siennes.
 
 **Ton** : carnet d'atelier. Dense, factuel, et le doré réservé à ce qui compte
 — si tout est doré, plus rien ne l'est.
@@ -109,26 +105,34 @@ Le calendrier éditorial et la banque d'idées, une seule matière à deux état
 **une idée est une publication sans date**. Noter une idée prend cinq
 secondes ; la programmer, c'est juste lui donner une date.
 
-- Une publication porte : un titre/l'idée, le réseau, le format (post,
+- Une publication porte : un titre/l'idée, le réseau (**Instagram d'abord,
+  TikTok et LinkedIn aussi** — décision du 7 août), le format (post,
   carrousel, réel, story), une date prévue (ou rien), un statut
   (`idée → brouillon → prêt → publié`), des notes (légende, plan, références).
 - **Vue « À venir »** : les publications datées, dans l'ordre. Le trou de la
   semaine prochaine se voit — c'est le but d'un calendrier éditorial.
 - **Vue « Banque d'idées »** : les sans-date, les plus récentes d'abord.
   C'est le backlog créatif ; il ne se vide jamais et ne culpabilise pas.
-- **Aide à la création** : des rubriques récurrentes (séries — ex. « coulisses
-  de match », « avant/après retouche ») que l'on définit une fois ; proposer
-  une idée dans une rubrique est plus facile que partir de zéro.
+- **Aide à la création** : des rubriques récurrentes, pré-remplies avec celles
+  de Noé — *Raw to edit*, *Raw vs edit*, *No accreditation, no problem*
+  (photos depuis les tribunes), *Un mois en tant que photographe sportif* —
+  et libres pour la suite : proposer une idée dans une rubrique est plus
+  facile que partir de zéro. L'analyse du marché (ce qui marche déjà sur les
+  réseaux) viendra nourrir cette liste plus tard, par Noé.
 - Publier = passer en `publié`, avec le lien. Chaque publication publiée est
   une victoire ? — non : ce serait du bruit à raison de plusieurs par semaine.
   Les victoires restent manuelles ou liées aux jalons.
 
 ### `#photo/reseau` — le carnet réseau
 
-Un CRM sans le mot : des fiches (club, média, marque, photographe, autre)
-avec les liens (Instagram, mail, téléphone), des notes libres, et la date du
-dernier échange. Pas de relances automatiques, pas d'étapes de vente — un
-carnet d'adresses qui se souvient de ce qu'on s'est dit.
+Un CRM sans le mot. Qui y entre (réponse du 7 août) : **les joueurs, les gens
+des médias, les gens des clubs**, principalement. Ce qu'une fiche doit rendre
+en trois secondes : **le contact** (Instagram, mail, téléphone) et **le
+rattachement** — à qui/quoi la personne est reliée (FC Lorient, OM,
+La Provence…). D'où le champ `structure`, affiché en évidence sur chaque
+fiche. Notes libres et date du dernier échange complètent. Pas de relances
+automatiques, pas d'étapes de vente — un carnet d'adresses qui se souvient
+de ce qu'on s'est dit.
 
 ### `#photo/commandes` — le suivi des commandes
 
@@ -160,7 +164,8 @@ dans ce repo (gardien unique du schéma Supabase) :
 ### contacts
 - `id` uuid PK
 - `nom` text NOT NULL
-- `type` text CHECK (type IN ('club','media','marque','photographe','autre'))
+- `type` text CHECK (type IN ('joueur','club','media','marque','autre'))
+- `structure` text — le rattachement (FC Lorient, OM, La Provence…)
 - `instagram` text · `email` text · `telephone` text
 - `notes` text
 - `dernier_echange` date
@@ -206,13 +211,9 @@ Le rappel quotidien vit sur le dashboard, pas ici :
 
 ## 8. Questions restantes
 
-1. **Polices** : équivalentes libres (Cormorant ou Fraunces + Figtree) — ou
-   autre chose ? Les originales ne peuvent pas entrer dans un repo public.
-2. **Le logo en fichier** : à déposer dans `img/` (les codes hex exacts en
-   sortiront aussi).
-3. **Calendrier** : Instagram seul pour commencer, ou d'autres réseaux dès
-   maintenant ? Les formats proposés (post, carrousel, réel, story) suffisent ?
-4. **Rubriques récurrentes** : lesquelles existent déjà dans ta tête ?
-   (Elles seront pré-remplies à la création de l'outil.)
-5. **Réseau** : qui doit y entrer en premier — et qu'as-tu besoin de
-   retrouver en trois secondes sur une fiche ?
+Toutes les questions de la v2 ont été tranchées le 7 août 2026 (polices
+commerciales assumées, réseaux Instagram + TikTok + LinkedIn, rubriques
+pré-remplies, carnet réseau : contact + rattachement). Reste :
+
+1. **Le logo en fichier** : à déposer dans `img/` (les codes hex exacts en
+   sortiront aussi ; en attendant, valeurs relevées à l'œil).
