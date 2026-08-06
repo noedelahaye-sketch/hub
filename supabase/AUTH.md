@@ -41,8 +41,18 @@ Authentication → Users → Add user, en cochant « Auto Confirm User » ; puis
 Authentication → Sign In / Providers → Email → désactiver « Allow new users to
 sign up ». Dans cet ordre : inscriptions fermées, la création échoue.
 
-## Côté site (à venir)
+## Côté site
 
-Le site affiche un écran de connexion simple si la session est absente. La session
-persiste entre les visites (comportement par défaut de `supabase-js`, qui la stocke
-dans le `localStorage` et rafraîchit le token).
+En place depuis le 6 août 2026 :
+
+- `js/api.js` crée le client Supabase et porte les seules fonctions
+  d'authentification du site : `sessionCourante`, `connexion`, `deconnexion`,
+  `surChangementSession`.
+- L'écran de connexion e-mail / mot de passe ne s'affiche que si la session est
+  absente. Le temps de relire celle qui existe déjà, un court écran d'attente
+  évite de le faire clignoter.
+- La session persiste entre les visites : `persistSession` et
+  `autoRefreshToken` la gardent dans le `localStorage` et rafraîchissent le
+  token. Fermer l'onglet ne déconnecte pas.
+- `surChangementSession` réagit aussi à une déconnexion faite dans un autre
+  onglet : le site repasse alors à l'écran de connexion tout seul.

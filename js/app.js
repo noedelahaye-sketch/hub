@@ -56,8 +56,14 @@ function afficherEspace() {
   document.body.dataset.espace = nom;
 
   if (!espacesMontes.has(nom)) {
-    espaces[nom].monter(document.getElementById(nom));
     espacesMontes.add(nom);
+    // Un espace peut charger ses données de façon asynchrone. S'il échoue sans
+    // le rattraper lui-même, on le démonte pour qu'un retour sur l'onglet
+    // rejoue la tentative.
+    Promise.resolve(espaces[nom].monter(document.getElementById(nom))).catch((erreur) => {
+      console.error(`Montage de l'espace ${nom} impossible`, erreur);
+      espacesMontes.delete(nom);
+    });
   }
 
   document.getElementById('vue').scrollTo?.(0, 0);
@@ -108,6 +114,12 @@ function appliquerSession(session) {
     afficherEcran('app');
     afficherEspace();
   } else {
+    // À la déconnexion, on vide les espaces : ni données affichées derrière
+    // l'écran de connexion, ni contenu périmé à la reconnexion suivante.
+    for (const section of document.querySelectorAll('.espace')) {
+      section.innerHTML = '';
+    }
+    espacesMontes.clear();
     formConnexion.reset();
     afficherEcran('connexion');
   }
