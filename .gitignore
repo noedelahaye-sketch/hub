@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+
+# Secrets — ne doivent jamais entrer dans le repo, ni en clair ni dans l'historique.
+# Seules l'URL du projet et la clé publique (anon) peuvent figurer dans le code.
+.env
+.env.*
+*.pem
+
+# Supabase CLI
+supabase/.temp/
+supabase/.branches/
+
+# Éditeurs
+.vscode/
+.idea/
+
+# Claude Code — réglages locaux à cette machine
+.claude/settings.local.json
