@@ -113,7 +113,7 @@ function construireObjectif(objectif) {
          aria-label="${atteints} jalon${atteints > 1 ? 's' : ''} sur ${jalons.length}">
          <span style="width: ${pourcentage}%"></span>
        </div>
-       <p class="discret progression-legende">${atteints}/${jalons.length} jalons · ${pourcentage} %</p>`
+       <p class="discret progression-legende"><span class="chiffre">${atteints}/${jalons.length}</span> jalons · <span class="chiffre">${pourcentage}</span>&nbsp;%</p>`
     : `<p class="discret progression-legende">Pas encore de jalons.</p>`;
 
   const echeance = objectif.echeance
@@ -361,18 +361,36 @@ export default {
       }
     });
 
+    // La note s'enregistre 400 ms après la dernière frappe, comme sur Bac-3 :
+    // on écrit une fois la phrase finie, pas une fois par lettre.
+    let minuteurNote = null;
+    async function enregistrerNote(valeur) {
+      if (!etat.humeur) return;
+      try {
+        etat.humeur = await api.enregistrerHumeur(
+          aujourdhui,
+          etat.humeur.niveau,
+          valeur.trim() || null,
+        );
+      } catch (erreur) {
+        console.error('Enregistrement de la note impossible', erreur);
+      }
+    }
+
+    section.addEventListener('input', (evenement) => {
+      const note = evenement.target.closest('#note-humeur');
+      if (!note) return;
+      clearTimeout(minuteurNote);
+      const valeur = note.value;
+      minuteurNote = setTimeout(() => enregistrerNote(valeur), 400);
+    });
+
     section.addEventListener('change', async (evenement) => {
       const note = evenement.target.closest('#note-humeur');
-      if (note && etat.humeur) {
-        try {
-          etat.humeur = await api.enregistrerHumeur(
-            aujourdhui,
-            etat.humeur.niveau,
-            note.value.trim() || null,
-          );
-        } catch (erreur) {
-          console.error("Enregistrement de la note impossible", erreur);
-        }
+      if (note) {
+        // Sortie du champ : on n'attend pas le minuteur.
+        clearTimeout(minuteurNote);
+        await enregistrerNote(note.value);
         return;
       }
 

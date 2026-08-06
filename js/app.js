@@ -10,6 +10,15 @@ import perso from './perso.js';
 const espaces = { dashboard, formation, photo, fch, perso };
 const ESPACE_PAR_DEFAUT = 'dashboard';
 
+const TITRES = {
+  dashboard: 'Accueil',
+  formation: 'Formation',
+  photo: 'Photo',
+  fch: 'FC Hermitage',
+  perso: 'Perso',
+};
+const TITRE_BASE = document.title;
+
 const ecranChargement = document.getElementById('ecran-chargement');
 const ecranConnexion = document.getElementById('ecran-connexion');
 const app = document.getElementById('app');
@@ -30,17 +39,60 @@ function afficherEcran(nom) {
 }
 
 // --- Navigation -------------------------------------------------------------
+//
+// Une adresse par écran, pour que le bouton retour du navigateur fonctionne et
+// qu'un écran puisse être mis en favori. Deux niveaux prévus dès maintenant :
+//
+//   #formation                     l'espace
+//   #formation/objectif/<id>       un écran à l'intérieur
+//
+// Le second niveau n'est pas encore utilisé, mais le routeur le comprend : les
+// espaces pourront l'exploiter sans qu'on ait à le réécrire.
 
-function espaceDemande() {
-  const nom = location.hash.replace('#', '');
-  return nom in espaces ? nom : ESPACE_PAR_DEFAUT;
+function analyserAdresse(adresse) {
+  const morceaux = (adresse || '')
+    .replace(/^#\/?/, '')
+    .split('/')
+    .filter(Boolean)
+    .map((morceau) => {
+      try {
+        return decodeURIComponent(morceau);
+      } catch {
+        return morceau;
+      }
+    });
+
+  const espace = morceaux[0] in espaces ? morceaux[0] : ESPACE_PAR_DEFAUT;
+  return { espace, vue: morceaux[1] ?? null, id: morceaux[2] ?? null };
 }
 
+function adressePour({ espace, vue = null, id = null }) {
+  return (
+    `#${espace}` +
+    (vue ? `/${encodeURIComponent(vue)}` : '') +
+    (vue && id ? `/${encodeURIComponent(id)}` : '')
+  );
+}
+
+// Position de défilement retenue par adresse : revenir sur un espace le
+// retrouve là où on l'avait laissé, plutôt qu'en haut.
+const defilements = new Map();
+let routeCourante = null;
+
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
 function afficherEspace() {
-  const nom = espaceDemande();
+  const route = analyserAdresse(location.hash);
+  const nom = route.espace;
+
+  if (routeCourante) defilements.set(adressePour(routeCourante), window.scrollY);
+  const memeEspace = routeCourante?.espace === nom;
+  routeCourante = route;
+
+  document.title = `${TITRES[nom]} — ${TITRE_BASE}`;
 
   for (const section of document.querySelectorAll('.espace')) {
-    section.hidden = section.id !== nom;
+    section.hidden = section.dataset.espace !== nom;
   }
   for (const lien of document.querySelectorAll('[data-nav]')) {
     const actif = lien.dataset.nav === nom;
@@ -60,14 +112,20 @@ function afficherEspace() {
     // Un espace peut charger ses données de façon asynchrone. S'il échoue sans
     // le rattraper lui-même, on le démonte pour qu'un retour sur l'onglet
     // rejoue la tentative.
-    Promise.resolve(espaces[nom].monter(document.getElementById(nom))).catch((erreur) => {
-      console.error(`Montage de l'espace ${nom} impossible`, erreur);
-      espacesMontes.delete(nom);
-    });
+    const section = document.getElementById(`espace-${nom}`);
+    Promise.resolve(espaces[nom].monter(section, route)).catch(
+      (erreur) => {
+        console.error(`Montage de l'espace ${nom} impossible`, erreur);
+        espacesMontes.delete(nom);
+      },
+    );
+  } else if (memeEspace) {
+    // Déjà monté et on reste dedans : l'espace n'a qu'à changer d'écran.
+    espaces[nom].naviguer?.(route);
   }
 
-  document.getElementById('vue').scrollTo?.(0, 0);
-  window.scrollTo(0, 0);
+  // On revient à la position quittée, ou en haut pour une adresse nouvelle.
+  window.scrollTo(0, defilements.get(adressePour(route)) ?? 0);
 }
 
 // --- Connexion --------------------------------------------------------------
@@ -120,6 +178,9 @@ function appliquerSession(session) {
       section.innerHTML = '';
     }
     espacesMontes.clear();
+    defilements.clear();
+    routeCourante = null;
+    document.title = TITRE_BASE;
     formConnexion.reset();
     afficherEcran('connexion');
   }

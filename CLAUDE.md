@@ -156,10 +156,75 @@ Une seule entrée par jour (contrainte UNIQUE sur date). Si le jour est déjà r
 
 Check-in matinal : le dashboard doit se lire en moins de 5 minutes, sans scroll excessif sur mobile.
 
+## Vocabulaire d'interface
+
+Les mots font partie de la forme. Ils restent identiques d'un bout à l'autre du
+site. (Principe repris du site Bac-3, où la table équivalente est respectée.)
+
+| On dit | Jamais |
+|---|---|
+| Victoires | Accomplissements, Réalisations |
+| Objectifs · Jalons | Goals, Milestones, OKR |
+| Intentions (perso) | Objectifs perso, Habitudes |
+| Ta semaine | Agenda, Planning |
+| Aujourd'hui | À faire, Todo, Tâches du jour |
+| Backlog | Plus tard, Icebox |
+
+Un bouton dit ce qui va se passer. Phrases à l'infinitif ou à l'impératif.
+
+**Écrans vides.** Un espace vide ouvre une porte, il ne s'excuse pas.
+« Tes premières victoires s'afficheront ici. » Jamais « Aucune donnée ».
+
+**Jamais dans l'interface** : « en retard », « retard », un compteur de jours
+perdus, une couleur d'alerte sur une échéance. Voir la philosophie du produit.
+
+## Forme : ce qui vient de Bac-3, et ce qui n'en vient pas
+
+Le site de révision Bac-3 (`~/Documents/Bachelor Com et Market/Assistant Exam/`)
+a son propre cahier des charges — `design-spec.md` et `brief-navigation.md`. Il
+est plus mûr que le hub sur la forme, et sert de référence, **avec une réserve
+importante**.
+
+Repris : les trois polices auto-hébergées, l'échelle d'espacement en multiples
+de 4 (`--espace-*`), un rayon par rôle (`--rayon-carte` / `--rayon-controle` /
+`--rayon-pastille`), le retour tactile sur les boutons, la cible tactile de
+44 px minimum, le focus clavier jamais supprimé, `prefers-reduced-motion`
+respecté, le routeur à niveaux avec mémoire de défilement et titre de page, le
+manifeste PWA, `tools/static-server.js`.
+
+**Les trois polices, trois rôles** (`fonts/`, 88 Ko, aucune requête externe) :
+
+| Famille | Variable | Emploi |
+|---|---|---|
+| Clash Display | `--police-titre` | Titres (`h1`, `h2`), « Hub » dans l'en-tête. Graisses 600 et 700 **seulement** — il n'y a pas d'autre fichier. |
+| Instrument Sans | `--police-texte` | Tout le corps de texte, les libellés de section, les boutons. |
+| Geist Mono | `--police-chiffre` | Compteurs et pourcentages, via la classe `.chiffre`. Pas les dates en toutes lettres (« dans 4 jours » est une phrase, pas un code). |
+
+**Non repris, volontairement : le ton.** Bac-3 est un outil de pression, et
+c'est justifié — 44 livrables, une date de dépôt. Il a une couleur `--flag`
+dédiée au retard, un « verdict » en tête d'accueil, et affiche « 3 livrables de
+retard ». Le hub dit l'inverse : il montre ce qui est accompli. Reprendre sa
+palette telle quelle importerait `--flag` et l'envie de s'en servir. Le hub n'a
+pas de couleur d'alerte et n'en aura pas.
+
+Ne pas ajouter de dépendance externe : les polices sont dans `fonts/`, jamais
+appelées à un CDN.
+
 ## Conventions de développement
 
 - Code simple et lisible : HTML/CSS/JS vanilla, un fichier js/api.js pour tous les appels Supabase, un fichier par espace.
 - Mobile-first : l'usage matinal se fera souvent sur téléphone.
 - Migrations : toute évolution du schéma passe par un fichier SQL dans supabase/migrations/, versionné dans git.
-- Déploiement : branche main → GitHub Pages. Vérifier que le site fonctionne en local (ouvrir index.html) avant de pousser.
+- Déploiement : branche main → GitHub Pages. Vérifier que le site fonctionne en local avant de pousser : `node tools/static-server.js`, puis http://localhost:4173 (ouvrir `index.html` en `file://` ne marche pas, les modules ES sont bloqués).
 - Langue : toute l'interface en français.
+
+## Méthode de travail
+
+- **Un échantillon d'abord.** Un chantier se construit par un exemple minimal —
+  un fichier, un format, un chemin de code — vérifié visuellement dans le
+  navigateur, validé par Noé, puis généralisé au reste. Jamais tout d'un coup.
+- Chaque règle de forme s'accompagne de sa raison. Si une règle gêne à l'usage,
+  on la change en connaissance de cause.
+- Ton direct, pas de jargon inutile.
+- Les fonctions qui fabriquent du HTML ne font que ça, à partir de données déjà
+  chargées : elles restent vérifiables seules, sans session ni réseau.

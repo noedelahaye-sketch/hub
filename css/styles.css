@@ -1,6 +1,32 @@
 /* Hub — feuille de style unique. Mobile d'abord : tout ce qui suit vise le
    téléphone, les media queries n'ajoutent que le confort du grand écran. */
 
+/* --- Polices ---------------------------------------------------------------
+   Les trois familles du site Bac-3, auto-hébergées : aucune requête externe,
+   et les deux sites de Noé se ressemblent. Trois rôles, trois familles.
+   Clash Display n'existe qu'en 600 et 700 : ne pas demander d'autre graisse. */
+
+@font-face {
+  font-family: "Clash Display";
+  src: url("../fonts/ClashDisplay-600.woff2") format("woff2");
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Clash Display";
+  src: url("../fonts/ClashDisplay-700.woff2") format("woff2");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("../fonts/InstrumentSans-Variable.woff2") format("woff2");
+  font-weight: 400 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Geist Mono";
+  src: url("../fonts/GeistMono-Variable.woff2") format("woff2");
+  font-weight: 400 500; font-style: normal; font-display: swap;
+}
+
 /* --- Jetons ---------------------------------------------------------------- */
 
 :root {
@@ -16,12 +42,28 @@
   --accent: #6b7f8c;
   --accent-doux: #eef1f3;
 
-  --rayon: 12px;
-  --colonne-max: 44rem;
-  --pas: 1rem;
+  /* Échelle d'espacement en multiples de 4, reprise du site Bac-3. Rien
+     d'intermédiaire : on choisit dans cette liste, on n'invente pas de valeur. */
+  --espace-4: 4px;
+  --espace-8: 8px;
+  --espace-12: 12px;
+  --espace-16: 16px;
+  --espace-24: 24px;
+  --espace-32: 32px;
+  --espace-48: 48px;
 
-  --police: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", sans-serif;
+  /* Un rayon par rôle, et un seul, partout. */
+  --rayon-carte: 16px;
+  --rayon-controle: 10px;
+  --rayon-pastille: 999px;
+
+  --colonne-max: 44rem;
+
+  /* Trois rôles, trois familles. Aucune n'est là pour faire joli. */
+  --police-titre: "Clash Display", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --police-texte: "Instrument Sans", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, sans-serif;
+  --police-chiffre: "Geist Mono", ui-monospace, Menlo, monospace;
 }
 
 /* Thèmes des espaces. */
@@ -56,20 +98,30 @@ body[data-espace="perso"]     { --accent: #8878b4; --accent-doux: #efebf7; }
 
 body {
   margin: 0;
-  font-family: var(--police);
+  font-family: var(--police-texte);
   font-size: 16px;
   line-height: 1.5;
   color: var(--texte);
   background: var(--fond);
   -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2 {
+  font-family: var(--police-titre);
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 h1 {
   margin: 0 0 0.5rem;
   font-size: 1.5rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  line-height: 1.1;
 }
+
+/* Chiffres et compteurs : la chasse fixe dit qu'ils ne sont pas du texte, et
+   les rend repérables sans avoir à les colorer. */
+.chiffre { font-family: var(--police-chiffre); font-weight: 500; }
 
 .discret {
   color: var(--texte-discret);
@@ -85,20 +137,20 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: calc(var(--pas) * 1.5);
+  padding: var(--espace-24);
 }
 
 .carte {
   background: var(--fond-carte);
   border: 1px solid var(--bordure);
-  border-radius: var(--rayon);
+  border-radius: var(--rayon-carte);
   box-shadow: var(--ombre);
 }
 
 .carte-connexion {
   width: 100%;
   max-width: 22rem;
-  padding: calc(var(--pas) * 1.5);
+  padding: var(--espace-24);
 }
 
 .carte-connexion h1 { margin-bottom: 0.25rem; }
@@ -121,7 +173,7 @@ input {
   padding: 0.625rem 0.75rem;
   margin-bottom: 1rem;
   border: 1px solid var(--bordure);
-  border-radius: 8px;
+  border-radius: var(--rayon-controle);
 }
 
 input:focus-visible,
@@ -134,8 +186,15 @@ a:focus-visible {
 button {
   font-family: inherit;
   font-size: 1rem;
+  color: inherit;
   cursor: pointer;
+  /* Retour tactile immédiat, et pas de surbrillance grise sur iOS. */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: transform 100ms ease-out;
 }
+
+button:active { transform: scale(0.97); }
 
 #bouton-connexion {
   width: 100%;
@@ -144,7 +203,7 @@ button {
   color: #fff;
   background: var(--accent);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--rayon-controle);
 }
 
 #bouton-connexion:disabled { opacity: 0.6; cursor: default; }
@@ -161,15 +220,16 @@ button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--pas);
+  gap: var(--espace-16);
   max-width: var(--colonne-max);
   margin: 0 auto;
-  padding: var(--pas) var(--pas) 0;
+  padding: var(--espace-16) var(--espace-16) 0;
 }
 
 .entete-titre {
+  font-family: var(--police-titre);
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.01em;
   color: var(--accent);
 }
 
@@ -187,7 +247,7 @@ button {
   max-width: var(--colonne-max);
   margin: 0 auto;
   /* Place laissée sous le contenu pour la barre de navigation fixe. */
-  padding: var(--pas) var(--pas)
+  padding: var(--espace-16) var(--espace-16)
            calc(4.5rem + env(safe-area-inset-bottom));
 }
 
@@ -229,7 +289,7 @@ button {
     max-width: var(--colonne-max);
     margin: 0 auto;
     gap: 0.25rem;
-    padding: 0 var(--pas);
+    padding: 0 var(--espace-16);
     background: none;
     backdrop-filter: none;
     border-top: none;
@@ -247,7 +307,7 @@ button {
 
   .navigation a.actif { border-bottom-color: var(--accent); }
 
-  #vue { padding-bottom: calc(var(--pas) * 3); }
+  #vue { padding-bottom: var(--espace-48); }
 }
 
 /* --- Blocs de contenu ------------------------------------------------------ */
@@ -259,11 +319,14 @@ button {
 
 .bloc { margin-bottom: 2rem; }
 
+/* Un libellé de section n'est pas un titre : il reste en police de texte, en
+   petit corps espacé. Le display est réservé à ce qui porte du sens. */
 .bloc h2 {
   margin: 0 0 0.75rem;
-  font-size: 0.8125rem;
+  font-family: var(--police-texte);
+  font-size: 0.6875rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--texte-discret);
 }
@@ -307,7 +370,7 @@ button {
   color: var(--texte);
   background: var(--accent-doux);
   border: 1px solid var(--bordure);
-  border-radius: 8px;
+  border-radius: var(--rayon-controle);
 }
 
 /* Pastilles de projet : couleurs fixes, indépendantes de l'espace affiché. */
@@ -315,7 +378,7 @@ button {
   flex: none;
   width: 0.5rem;
   height: 0.5rem;
-  border-radius: 50%;
+  border-radius: var(--rayon-pastille);
   align-self: center;
   background: var(--texte-discret);
 }
@@ -354,7 +417,7 @@ button {
   line-height: 1;
   background: var(--accent-doux);
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: var(--rayon-controle);
 }
 
 .bouton-humeur:hover { border-color: var(--accent); }

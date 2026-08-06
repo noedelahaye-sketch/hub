@@ -5,6 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
   <title>Hub — Noé</title>
+
+  <!-- Ajouté à l'écran d'accueil du téléphone, le hub s'ouvre en plein écran :
+       c'est là qu'a lieu le check-in du matin. -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Hub">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+  <link rel="icon" href="img/apple-touch-icon.png" type="image/png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#fbfaf8" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#17161a" media="(prefers-color-scheme: dark)">
+
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -50,12 +62,15 @@
       <a href="#perso" data-nav="perso">Perso</a>
     </nav>
 
+    <!-- Les id sont préfixés : sans ça, `#photo` dans la barre d'adresse ferait
+         défiler le navigateur jusqu'à l'élément `id="photo"`, ce qui écraserait
+         la position restaurée par le routeur. -->
     <main id="vue">
-      <section class="espace" id="dashboard" data-espace="dashboard" hidden></section>
-      <section class="espace" id="formation" data-espace="formation" hidden></section>
-      <section class="espace" id="photo" data-espace="photo" hidden></section>
-      <section class="espace" id="fch" data-espace="fch" hidden></section>
-      <section class="espace" id="perso" data-espace="perso" hidden></section>
+      <section class="espace" id="espace-dashboard" data-espace="dashboard" hidden></section>
+      <section class="espace" id="espace-formation" data-espace="formation" hidden></section>
+      <section class="espace" id="espace-photo" data-espace="photo" hidden></section>
+      <section class="espace" id="espace-fch" data-espace="fch" hidden></section>
+      <section class="espace" id="espace-perso" data-espace="perso" hidden></section>
     </main>
 
   </div>
