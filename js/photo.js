@@ -48,8 +48,13 @@ function enTete(vueActive) {
   ];
 
   return `
-    <h1>Yuno</h1>
-    <p class="discret sous-titre">Photographe sportif · yuno_rph</p>
+    <div class="yuno-tete">
+      <span class="yuno-logo" aria-hidden="true"><img src="img/yuno-logo.jpg" alt=""></span>
+      <div>
+        <h1>Yuno</h1>
+        <p class="discret sous-titre">Photographe sportif · yuno_rph</p>
+      </div>
+    </div>
     <nav class="yuno-nav" aria-label="Outils Yuno">
       ${liens
         .map(

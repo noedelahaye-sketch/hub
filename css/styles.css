@@ -69,9 +69,10 @@
 /* Thèmes des espaces. */
 body[data-espace="dashboard"] { --accent: #6b7f8c; --accent-doux: #eceff1; }
 body[data-espace="formation"] { --accent: #17786f; --accent-doux: #e3f1ef; }
-/* Yuno : le doré du logo. En clair il s'assombrit en ocre — un doré clair sur
-   fond blanc ne se lit pas (docs/yuno-spec.md, §3). */
-body[data-espace="photo"]     { --accent: #9a7514; --accent-doux: #f6eed3; }
+/* Yuno : le doré du logo (#e8b000, relevé sur le fichier). En clair il
+   s'assombrit en ocre — un doré clair sur fond blanc ne se lit pas
+   (docs/yuno-spec.md, §3). */
+body[data-espace="photo"]     { --accent: #8f6c00; --accent-doux: #f7efcf; }
 /* FCH : le club joue en bleu et rouge. Le bleu porte l'accent (barres, liens,
    états actifs) parce qu'il reste lisible en aplat ; le rouge est la seconde
    couleur d'identité, réservée à la pastille du projet. Il ne signale jamais
@@ -98,7 +99,7 @@ body[data-espace="perso"]     { --accent: #8878b4; --accent-doux: #efebf7; }
 
   body[data-espace="dashboard"] { --accent: #9db3c0; --accent-doux: #262a2e; }
   body[data-espace="formation"] { --accent: #56b8ad; --accent-doux: #1b2e2c; }
-  body[data-espace="photo"]     { --accent: #e6a71c; --accent-doux: #2e2712; }
+  body[data-espace="photo"]     { --accent: #e8b000; --accent-doux: #2f2708; }
   body[data-espace="fch"]       { --accent: #7ba5dc; --accent-doux: #1d2733; }
   body[data-espace="perso"]     { --accent: #b3a3d9; --accent-doux: #272335; }
 
@@ -483,7 +484,7 @@ button:active { transform: scale(0.97); }
    par projet — l'une peut être un dégradé (le FCH porte ses deux couleurs) et ne
    sert donc qu'en fond, l'autre est une couleur pleine pour le texte. */
 [data-projet="formation"] { --couleur-projet: #17786f; --couleur-projet-texte: #17786f; }
-[data-projet="photo"]     { --couleur-projet: #9a7514; --couleur-projet-texte: #9a7514; }
+[data-projet="photo"]     { --couleur-projet: #8f6c00; --couleur-projet-texte: #8f6c00; }
 [data-projet="perso"]     { --couleur-projet: #8878b4; --couleur-projet-texte: #8878b4; }
 [data-projet="fch"] {
   --couleur-projet: linear-gradient(180deg,
@@ -493,7 +494,7 @@ button:active { transform: scale(0.97); }
 
 @media (prefers-color-scheme: dark) {
   [data-projet="formation"] { --couleur-projet: #56b8ad; --couleur-projet-texte: #56b8ad; }
-  [data-projet="photo"]     { --couleur-projet: #e6a71c; --couleur-projet-texte: #e6a71c; }
+  [data-projet="photo"]     { --couleur-projet: #e8b000; --couleur-projet-texte: #e8b000; }
   [data-projet="perso"]     { --couleur-projet: #b3a3d9; --couleur-projet-texte: #b3a3d9; }
 }
 

@@ -58,6 +58,38 @@ body[data-espace="photo"] #vue .bloc h2 {
   font-family: "Gilroy", var(--police-texte);
 }
 
+/* --- L'en-tête de l'espace --------------------------------------------------
+   Le logo porte la Belhanda et le fond sombre de la marque : rond, il tient
+   dans les deux thèmes sans découpage. */
+
+.yuno-tete {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-16);
+  margin-bottom: var(--espace-16);
+}
+
+.yuno-logo {
+  flex: none;
+  display: block;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--rayon-pastille);
+  overflow: hidden;
+}
+
+/* Le mot occupe le centre du carré source : on zoome pour qu'il reste lisible
+   en 56 px. */
+.yuno-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.8);
+}
+
+.yuno-tete h1 { margin-bottom: 0; }
+.yuno-tete .sous-titre { margin: 0; }
+
 /* --- La navigation de l'espace ---------------------------------------------- */
 
 .yuno-nav {

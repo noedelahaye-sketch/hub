@@ -55,21 +55,20 @@ pas structurants.
 
 ## 3. Identité
 
-**Couleurs** — celles du logo : gris très foncé, doré, blanc.
+**Couleurs** — celles du logo (`img/yuno-logo.jpg`, déposé le 7 août 2026 ;
+valeurs mesurées sur le fichier) :
 
 | Rôle | Valeur | Note |
 |---|---|---|
-| Fond (mode sombre) | `#1a1a1a` env. | Relevé sur le logo — à ajuster sur le fichier source. |
-| Accent | `#e6a71c` env. | Le doré du Y. Relevé approximatif, idem. |
+| Fond (mode sombre) | `#181818` | Le fond du logo. |
+| Accent (sombre) | `#e8b000` | Le doré du Y, dominant. |
+| Accent (clair) | `#8f6c00` | Le même doré assombri en ocre. |
 | Texte fort | `#ffffff` | Le blanc du logotype. |
 
-Règle de contraste : le doré pur vit sur fond sombre. En mode clair, il
-s'assombrit en ocre (`#8a6a10` env.) pour rester lisible — un doré clair sur
-fond blanc ne se lit pas. Le logo lui-même (avec la Belhanda manuscrite) est
-utilisé comme image, en tête de l'espace.
-
-> **À faire** : déposer le fichier du logo dans `img/` (SVG ou PNG). Il servira
-> d'affichage et de source exacte pour les codes couleur.
+Règle de contraste : le doré pur vit sur fond sombre ; en mode clair il
+s'assombrit en ocre — un doré clair sur fond blanc ne se lit pas. Le logo
+(avec la Belhanda manuscrite) s'affiche en tête de l'espace, rond, zoomé sur
+le mot.
 
 **Typographie** — l'identité Yuno : **Canela Deck** pour les titres, **Gilroy**
 pour le texte, la Belhanda restant dans le logo, en image.
@@ -211,9 +210,9 @@ Le rappel quotidien vit sur le dashboard, pas ici :
 
 ## 8. Questions restantes
 
-Toutes les questions de la v2 ont été tranchées le 7 août 2026 (polices
+Aucune. Toutes les questions ont été tranchées le 7 août 2026 : polices
 commerciales assumées, réseaux Instagram + TikTok + LinkedIn, rubriques
-pré-remplies, carnet réseau : contact + rattachement). Reste :
-
-1. **Le logo en fichier** : à déposer dans `img/` (les codes hex exacts en
-   sortiront aussi ; en attendant, valeurs relevées à l'œil).
+pré-remplies, carnet réseau contact + rattachement, logo déposé et couleurs
+mesurées. Prochaine étape : validation de l'échantillon (accueil +
+calendrier) par Noé à l'usage, puis construction du réseau et des commandes
+sur le même modèle.
