@@ -20,6 +20,7 @@ const TYPES = {
   publication: 'Publication',
   objectif: 'Objectif',
   jalon: 'Jalon',
+  commande: 'Commande',
 };
 
 export const FILTRES = [
@@ -28,11 +29,18 @@ export const FILTRES = [
   ['tache', 'Tâches'],
   ['evenement', 'Événements'],
   ['objectif', 'Objectifs'],
+  ['commande', 'Commandes'],
 ];
 
 // --- Assemblage --------------------------------------------------------------
 
-export function assemblerCalendrier({ evenements = [], taches = [], objectifs = [], publications = [] }) {
+export function assemblerCalendrier({
+  evenements = [],
+  taches = [],
+  objectifs = [],
+  publications = [],
+  commandes = [],
+}) {
   const elements = [];
 
   for (const evenement of evenements) {
@@ -89,10 +97,29 @@ export function assemblerCalendrier({ evenements = [], taches = [], objectifs = 
     });
   }
 
+  for (const commande of commandes) {
+    elements.push({
+      type: 'commande',
+      date: depuisDateISO(commande.echeance),
+      projet: 'photo',
+      titre: commande.titre,
+      detail: commande.client ? `à livrer à ${commande.client}` : 'à livrer',
+    });
+  }
+
   return elements.sort((a, b) => a.date - b.date);
 }
 
 // --- Rendu -------------------------------------------------------------------
+
+// Une barre horizontale qui déborde cache ce qui dépasse : si l'élément actif
+// est hors champ, on le ramène au centre. Sans toucher au défilement de la
+// page — d'où le calcul manuel plutôt que scrollIntoView.
+export function centrerActif(conteneur, selecteur = '.actif') {
+  const actif = conteneur?.querySelector(selecteur);
+  if (!actif || conteneur.scrollWidth <= conteneur.clientWidth) return;
+  conteneur.scrollLeft = actif.offsetLeft - (conteneur.clientWidth - actif.offsetWidth) / 2;
+}
 
 export function construireFiltres(actif = 'tout') {
   return `<div class="filtres" role="group" aria-label="Filtrer le calendrier">

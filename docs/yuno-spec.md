@@ -147,7 +147,7 @@ secondes ; la programmer, c'est juste lui donner une date.
   une victoire ? — non : ce serait du bruit à raison de plusieurs par semaine.
   Les victoires restent manuelles ou liées aux jalons.
 
-### `#yuno/reseau` — le carnet réseau
+### `#yuno/reseau` — le carnet réseau *(construit)*
 
 Un CRM sans le mot. Qui y entre (réponse du 7 août) : **les joueurs, les gens
 des médias, les gens des clubs**, principalement. Ce qu'une fiche doit rendre
@@ -158,12 +158,20 @@ fiche. Notes libres et date du dernier échange complètent. Pas de relances
 automatiques, pas d'étapes de vente — un carnet d'adresses qui se souvient
 de ce qu'on s'est dit.
 
-### `#yuno/commandes` — le suivi des commandes
+Construit le 7 août 2026 : recherche à la frappe sur le nom et la structure,
+filtres par type, contacts cliquables (Instagram, `mailto:`, `tel:`), et la
+date du dernier échange modifiable d'un geste depuis la fiche. L'identifiant
+Instagram est accepté avec ou sans arobase, ou collé en URL entière.
+
+### `#yuno/commandes` — le suivi des commandes *(construit)*
 
 Volontairement simple, et en dernier : titre, client, statut
 (`en cours → livrée`), échéance éventuelle, lien du livrable, notes. Livrer
 une commande crée une victoire. On l'étoffera si l'activité le réclame —
 pas avant.
+
+Construit le 7 août 2026 : les livrées se replient en bas, comme le backlog.
+Une commande à échéance apparaît dans le calendrier (Yuno et hub).
 
 ---
 
@@ -235,9 +243,8 @@ Le rappel quotidien vit sur le dashboard, pas ici :
 
 ## 8. Questions restantes
 
-Aucune. Toutes les questions ont été tranchées le 7 août 2026 : polices
-commerciales assumées, réseaux Instagram + TikTok + LinkedIn, rubriques
-pré-remplies, carnet réseau contact + rattachement, logo déposé et couleurs
-mesurées. Prochaine étape : validation de l'échantillon (accueil +
-calendrier) par Noé à l'usage, puis construction du réseau et des commandes
-sur le même modèle.
+Aucune. Toutes les questions ont été tranchées le 7 août 2026, et les cinq
+écrans du site sont construits : Accueil, Créer, Calendrier, Réseau,
+Commandes. Prochaine étape : l'usage réel par Noé, qui dira ce qui manque —
+et les outils d'aide à la création qui viendront enrichir « Créer », une fois
+son analyse du marché faite.

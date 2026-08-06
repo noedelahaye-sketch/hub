@@ -25,6 +25,7 @@ import {
   assemblerCalendrier,
   construireCalendrier,
   construireFiltres,
+  centrerActif,
 } from './calendrier-commun.js';
 
 // L'ordre du cycle. Chaque statut connaît son suivant ; « publié » n'en a pas.
@@ -296,6 +297,9 @@ function vueCalendrier(etat) {
     publications: etat.publications.filter(
       (pub) => pub.date_prevue && pub.statut !== 'publie',
     ),
+    commandes: etat.commandes.filter(
+      (commande) => commande.echeance && commande.statut === 'en_cours',
+    ),
   });
 
   return `
@@ -307,11 +311,205 @@ function vueCalendrier(etat) {
     ${pied()}`;
 }
 
-function vueAConstruire(nom, description) {
+// --- Le carnet réseau --------------------------------------------------------
+// Ce qu'une fiche doit rendre en trois secondes : le contact, et à qui la
+// personne est rattachée (docs/yuno-spec.md, §4).
+
+const TYPES_CONTACT = {
+  joueur: 'Joueur',
+  club: 'Club',
+  media: 'Média',
+  marque: 'Marque',
+  autre: 'Autre',
+};
+
+// L'identifiant peut être saisi avec ou sans arobase, ou collé en URL entière.
+function pseudoInstagram(valeur) {
+  return valeur
+    .trim()
+    .replace(/^https?:\/\/(www\.)?instagram\.com\//i, '')
+    .replace(/^@/, '')
+    .replace(/\/.*$/, '');
+}
+
+export function construireContacts(contacts, recherche = '', type = 'tout') {
+  const terme = recherche.trim().toLowerCase();
+  const retenus = contacts.filter((contact) => {
+    if (type !== 'tout' && contact.type !== type) return false;
+    if (!terme) return true;
+    return `${contact.nom} ${contact.structure ?? ''}`.toLowerCase().includes(terme);
+  });
+
+  if (!retenus.length) {
+    return contacts.length
+      ? `<p class="vide">Personne ne correspond à cette recherche.</p>`
+      : `<p class="vide">Ton carnet démarre ici — joueurs, médias, clubs.</p>`;
+  }
+
+  return `<ul class="liste-contacts">${retenus
+    .map((contact) => {
+      const pseudo = contact.instagram ? pseudoInstagram(contact.instagram) : null;
+      const liens = [
+        pseudo
+          ? `<a href="https://instagram.com/${encodeURIComponent(pseudo)}"
+               target="_blank" rel="noopener">@${echapper(pseudo)}</a>`
+          : null,
+        contact.email
+          ? `<a href="mailto:${encodeURIComponent(contact.email)}">${echapper(contact.email)}</a>`
+          : null,
+        contact.telephone
+          ? `<a href="tel:${echapper(contact.telephone.replace(/\s/g, ''))}">${echapper(contact.telephone)}</a>`
+          : null,
+      ].filter(Boolean);
+
+      return `
+        <li>
+          <span class="tuile-entete">
+            <span class="etiquette">${TYPES_CONTACT[contact.type] ?? contact.type}</span>
+            ${
+              contact.structure
+                ? `<span class="contact-structure">${echapper(contact.structure)}</span>`
+                : ''
+            }
+            <button type="button" class="lien-discret bouton-mini bouton-retirer"
+              data-supprimer-contact="${echapper(contact.id)}"
+              title="Retirer du carnet"
+              aria-label="Retirer ${echapper(contact.nom)}">×</button>
+          </span>
+          <span class="contact-nom">${echapper(contact.nom)}</span>
+          ${liens.length ? `<span class="contact-liens">${liens.join('<span class="discret"> · </span>')}</span>` : ''}
+          ${contact.notes ? `<span class="discret contact-notes">${echapper(contact.notes)}</span>` : ''}
+          <span class="contact-echange">
+            <label class="discret">Dernier échange
+              <input type="date" class="pub-programmer" data-echange="${echapper(contact.id)}"
+                value="${echapper(contact.dernier_echange ?? '')}">
+            </label>
+          </span>
+        </li>`;
+    })
+    .join('')}</ul>`;
+}
+
+function vueReseau(etat) {
+  const filtres = [['tout', 'Tout'], ...Object.entries(TYPES_CONTACT)];
+
   return `
-    ${enTete(nom)}
+    ${enTete('reseau')}
+
     <section class="bloc">
-      <p class="vide">${description}</p>
+      <input type="search" id="recherche-contact" class="recherche"
+        placeholder="Chercher un nom, un club, un média…"
+        value="${echapper(etat.rechercheContact)}">
+      <div class="filtres" role="group" aria-label="Filtrer le carnet">
+        ${filtres
+          .map(
+            ([valeur, libelle]) => `
+          <button type="button" data-type-contact="${valeur}"
+            aria-pressed="${valeur === etat.typeContact}"
+            class="${valeur === etat.typeContact ? 'actif' : ''}">${libelle}</button>`,
+          )
+          .join('')}
+      </div>
+      <div data-bloc="contacts">
+        ${construireContacts(etat.contacts, etat.rechercheContact, etat.typeContact)}
+      </div>
+      ${construireFormulaire({
+        id: 'contact',
+        libelle: 'Ajouter au carnet',
+        action: 'creer-contact',
+        champs: [
+          { nom: 'nom', libelle: 'Nom', type: 'text', requis: true },
+          { nom: 'type', libelle: 'Type', type: 'select', options: TYPES_CONTACT, valeur: 'joueur' },
+          { nom: 'structure', libelle: 'Rattaché à (FC Lorient, OM, La Provence…)', type: 'text' },
+          { nom: 'instagram', libelle: 'Instagram', type: 'text' },
+          { nom: 'email', libelle: 'E-mail', type: 'text' },
+          { nom: 'telephone', libelle: 'Téléphone', type: 'text' },
+          { nom: 'notes', libelle: 'Notes', type: 'textarea' },
+        ],
+      })}
+    </section>
+    ${pied()}`;
+}
+
+// --- Les commandes -----------------------------------------------------------
+
+export function construireCommandes(commandes) {
+  const enCours = commandes.filter((commande) => commande.statut === 'en_cours');
+  const livrees = commandes.filter((commande) => commande.statut === 'livree');
+
+  const tuile = (commande) => `
+    <li>
+      <span class="tuile-entete">
+        ${
+          commande.client
+            ? `<span class="contact-structure">${echapper(commande.client)}</span>`
+            : '<span class="discret">sans client</span>'
+        }
+        ${
+          commande.echeance
+            ? `<span class="discret quand">${echapper(
+                echeanceLisible(depuisDateISO(commande.echeance)),
+              )}</span>`
+            : ''
+        }
+        <button type="button" class="lien-discret bouton-mini bouton-retirer"
+          data-supprimer-commande="${echapper(commande.id)}"
+          title="Supprimer"
+          aria-label="Supprimer « ${echapper(commande.titre)} »">×</button>
+      </span>
+      <span class="pub-titre">${echapper(commande.titre)}</span>
+      ${commande.notes ? `<span class="discret pub-notes">${echapper(commande.notes)}</span>` : ''}
+      <span class="pub-actions">
+        ${
+          commande.statut === 'en_cours'
+            ? `<button type="button" class="bouton-secondaire bouton-mini"
+                 data-livrer="${echapper(commande.id)}">Marquer livrée</button>`
+            : '<span class="pub-statut">statut : <strong>livrée</strong></span>'
+        }
+        ${
+          commande.lien_livrable
+            ? `<a class="discret" href="${echapper(commande.lien_livrable)}"
+                 target="_blank" rel="noopener">voir la galerie ↗</a>`
+            : ''
+        }
+      </span>
+    </li>`;
+
+  return `
+    ${
+      enCours.length
+        ? `<ul>${enCours.map(tuile).join('')}</ul>`
+        : `<p class="vide">Aucune commande en cours.</p>`
+    }
+    ${
+      livrees.length
+        ? `<details class="backlog">
+             <summary>Livrées <span class="chiffre">${livrees.length}</span></summary>
+             <ul>${livrees.map(tuile).join('')}</ul>
+           </details>`
+        : ''
+    }`;
+}
+
+function vueCommandes(etat) {
+  return `
+    ${enTete('commandes')}
+
+    <section class="bloc">
+      <h2>Commandes</h2>
+      <div data-bloc="commandes">${construireCommandes(etat.commandes)}</div>
+      ${construireFormulaire({
+        id: 'commande',
+        libelle: 'Ajouter une commande',
+        action: 'creer-commande',
+        champs: [
+          { nom: 'titre', libelle: 'Commande', type: 'text', requis: true },
+          { nom: 'client', libelle: 'Client', type: 'text' },
+          { nom: 'echeance', libelle: 'À livrer pour (facultatif)', type: 'date' },
+          { nom: 'lien_livrable', libelle: 'Lien du livrable (facultatif)', type: 'text' },
+          { nom: 'notes', libelle: 'Notes', type: 'textarea' },
+        ],
+      })}
     </section>
     ${pied()}`;
 }
@@ -326,24 +524,41 @@ export default {
       publications: [],
       taches: [],
       evenements: [],
+      contacts: [],
+      commandes: [],
       vue: 'accueil',
       filtre: 'tout',
+      rechercheContact: '',
+      typeContact: 'tout',
     };
 
     const rendre = () => {
       if (etat.vue === 'creer') section.innerHTML = vueCreer(etat);
       else if (etat.vue === 'calendrier') section.innerHTML = vueCalendrier(etat);
-      else if (etat.vue === 'reseau') {
-        section.innerHTML = vueAConstruire(
-          'reseau',
-          'Le carnet réseau arrive : joueurs, médias, clubs — le contact et le rattachement en trois secondes.',
+      else if (etat.vue === 'reseau') section.innerHTML = vueReseau(etat);
+      else if (etat.vue === 'commandes') section.innerHTML = vueCommandes(etat);
+      else section.innerHTML = vueAccueil(etat);
+
+      centrerActif(section.querySelector('.yuno-nav'));
+      centrerActif(section.querySelector('.filtres'));
+    };
+
+    // Ne redessine que la liste des contacts : réécrire la vue entière ferait
+    // perdre le curseur du champ de recherche à chaque lettre.
+    const rendreContacts = () => {
+      const cible = section.querySelector('[data-bloc="contacts"]');
+      if (cible) {
+        cible.innerHTML = construireContacts(
+          etat.contacts,
+          etat.rechercheContact,
+          etat.typeContact,
         );
-      } else if (etat.vue === 'commandes') {
-        section.innerHTML = vueAConstruire(
-          'commandes',
-          'Le suivi des commandes arrive.',
-        );
-      } else section.innerHTML = vueAccueil(etat);
+      }
+    };
+
+    const rendreCommandes = () => {
+      const cible = section.querySelector('[data-bloc="commandes"]');
+      if (cible) cible.innerHTML = construireCommandes(etat.commandes);
     };
 
     // Le routeur rappelle `naviguer` à chaque changement de hash dans l'espace.
@@ -353,14 +568,25 @@ export default {
     };
 
     try {
-      const [objectifs, victoires, publications, taches, evenements] = await Promise.all([
-        api.objectifsActifs({ projet: 'photo' }),
-        api.victoiresDuProjet('photo'),
-        api.publicationsToutes(),
-        api.tachesDatees({ projet: 'photo' }),
-        api.evenementsDepuis(new Date().toISOString(), { projet: 'photo' }),
-      ]);
-      Object.assign(etat, { objectifs, victoires, publications, taches, evenements });
+      const [objectifs, victoires, publications, taches, evenements, contacts, commandes] =
+        await Promise.all([
+          api.objectifsActifs({ projet: 'photo' }),
+          api.victoiresDuProjet('photo'),
+          api.publicationsToutes(),
+          api.tachesDatees({ projet: 'photo' }),
+          api.evenementsDepuis(new Date().toISOString(), { projet: 'photo' }),
+          api.contactsTous(),
+          api.commandesToutes(),
+        ]);
+      Object.assign(etat, {
+        objectifs,
+        victoires,
+        publications,
+        taches,
+        evenements,
+        contacts,
+        commandes,
+      });
     } catch (erreur) {
       console.error("Chargement de l'espace Yuno impossible", erreur);
       section.innerHTML = `
@@ -420,6 +646,34 @@ export default {
         return;
       }
 
+      if (action === 'creer-contact') {
+        const contact = await api.creerContact({
+          nom: champs.nom.trim(),
+          type: champs.type,
+          structure: champs.structure?.trim() || null,
+          instagram: champs.instagram?.trim() || null,
+          email: champs.email?.trim() || null,
+          telephone: champs.telephone?.trim() || null,
+          notes: champs.notes?.trim() || null,
+        });
+        etat.contacts = [...etat.contacts, contact].sort((a, b) => a.nom.localeCompare(b.nom));
+        rendreContacts();
+        return;
+      }
+
+      if (action === 'creer-commande') {
+        const commande = await api.creerCommande({
+          titre: champs.titre.trim(),
+          client: champs.client?.trim() || null,
+          echeance: champs.echeance || null,
+          lien_livrable: champs.lien_livrable?.trim() || null,
+          notes: champs.notes?.trim() || null,
+        });
+        etat.commandes = [commande, ...etat.commandes];
+        rendreCommandes();
+        return;
+      }
+
       if (action === 'creer-objectif') {
         const objectif = await api.creerObjectif({
           projet: 'photo',
@@ -468,6 +722,63 @@ export default {
       if (filtre) {
         etat.filtre = filtre.dataset.filtre;
         rendre();
+        return;
+      }
+
+      const typeContact = evenement.target.closest('[data-type-contact]');
+      if (typeContact) {
+        etat.typeContact = typeContact.dataset.typeContact;
+        rendre();
+        return;
+      }
+
+      const supprimerContact = evenement.target.closest('[data-supprimer-contact]');
+      if (supprimerContact) {
+        supprimerContact.disabled = true;
+        try {
+          await api.supprimerContact(supprimerContact.dataset.supprimerContact);
+          etat.contacts = etat.contacts.filter(
+            (contact) => contact.id !== supprimerContact.dataset.supprimerContact,
+          );
+          rendreContacts();
+        } catch (souci) {
+          console.error('Suppression du contact impossible', souci);
+          supprimerContact.disabled = false;
+        }
+        return;
+      }
+
+      const livrer = evenement.target.closest('[data-livrer]');
+      if (livrer) {
+        const commande = etat.commandes.find((c) => c.id === livrer.dataset.livrer);
+        if (!commande) return;
+        livrer.disabled = true;
+        try {
+          // Livrer crée une victoire : c'en est une.
+          const { commande: livree, victoire } = await api.livrerCommande(commande);
+          Object.assign(commande, livree);
+          etat.victoires = [victoire, ...etat.victoires];
+          rendreCommandes();
+        } catch (souci) {
+          console.error('Impossible de marquer la commande livrée', souci);
+          livrer.disabled = false;
+        }
+        return;
+      }
+
+      const supprimerCommande = evenement.target.closest('[data-supprimer-commande]');
+      if (supprimerCommande) {
+        supprimerCommande.disabled = true;
+        try {
+          await api.supprimerCommande(supprimerCommande.dataset.supprimerCommande);
+          etat.commandes = etat.commandes.filter(
+            (commande) => commande.id !== supprimerCommande.dataset.supprimerCommande,
+          );
+          rendreCommandes();
+        } catch (souci) {
+          console.error('Suppression de la commande impossible', souci);
+          supprimerCommande.disabled = false;
+        }
         return;
       }
 
@@ -589,19 +900,46 @@ export default {
       }
     });
 
-    // Programmer une idée : choisir une date suffit, pas de bouton de plus.
-    section.addEventListener('change', async (evenement) => {
-      const programmer = evenement.target.closest('[data-programmer]');
-      if (!programmer || !programmer.value) return;
+    // La recherche du carnet filtre à la frappe, sans bouton.
+    section.addEventListener('input', (evenement) => {
+      const recherche = evenement.target.closest('#recherche-contact');
+      if (!recherche) return;
+      etat.rechercheContact = recherche.value;
+      rendreContacts();
+    });
 
-      const pub = trouverPub(programmer.dataset.programmer);
-      programmer.disabled = true;
-      try {
-        Object.assign(pub, await api.modifierPublication(pub.id, { date_prevue: programmer.value }));
-        rendre();
-      } catch (souci) {
-        console.error('Programmation impossible', souci);
-        programmer.disabled = false;
+    section.addEventListener('change', async (evenement) => {
+      // Programmer une idée : choisir une date suffit, pas de bouton de plus.
+      const programmer = evenement.target.closest('[data-programmer]');
+      if (programmer && programmer.value) {
+        const pub = trouverPub(programmer.dataset.programmer);
+        programmer.disabled = true;
+        try {
+          Object.assign(
+            pub,
+            await api.modifierPublication(pub.id, { date_prevue: programmer.value }),
+          );
+          rendre();
+        } catch (souci) {
+          console.error('Programmation impossible', souci);
+          programmer.disabled = false;
+        }
+        return;
+      }
+
+      // Dater le dernier échange d'un contact, au même geste.
+      const echange = evenement.target.closest('[data-echange]');
+      if (echange) {
+        const contact = etat.contacts.find((c) => c.id === echange.dataset.echange);
+        if (!contact) return;
+        try {
+          Object.assign(
+            contact,
+            await api.modifierContact(contact.id, { dernier_echange: echange.value || null }),
+          );
+        } catch (souci) {
+          console.error("Enregistrement du dernier échange impossible", souci);
+        }
       }
     });
   },

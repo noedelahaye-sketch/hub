@@ -101,9 +101,9 @@ body[data-espace="yuno"] #vue .bloc h2 {
    les marges négatives les résorbent sans toucher à l'image. */
 .yuno-signature {
   display: block;
-  width: 240px;
-  max-width: 70vw;
-  margin: -40px 0 -32px;
+  width: 170px;
+  max-width: 50vw;
+  margin: -28px 0 -22px;
 }
 
 /* Centrage par marges automatiques : contrairement à justify-content:center,
@@ -234,3 +234,72 @@ body[data-espace="yuno"] #vue .bloc h2 {
 
 /* Le trou de la semaine se voit : les publications passées non publiées
    restent sobres, pas d'alerte (philosophie du hub). */
+
+/* --- Le carnet réseau ------------------------------------------------------- */
+
+.recherche {
+  width: 100%;
+  margin-bottom: var(--espace-12);
+  padding: var(--espace-8) var(--espace-12);
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--texte);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+}
+
+.recherche:focus { border-color: var(--accent); outline: none; }
+
+/* Le rattachement est ce qu'on cherche en premier sur une fiche : il vit en
+   haut, dans la couleur de la marque. */
+.contact-structure {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.contact-nom {
+  display: block;
+  width: 100%;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.contact-liens {
+  display: block;
+  width: 100%;
+  font-size: 0.875rem;
+}
+
+.contact-liens a { color: var(--texte-discret); }
+.contact-liens a:hover { color: var(--accent); }
+
+.contact-notes {
+  display: block;
+  width: 100%;
+  font-size: 0.875rem;
+  white-space: pre-wrap;
+}
+
+.contact-echange {
+  display: block;
+  width: 100%;
+  margin-top: var(--espace-4);
+}
+
+.contact-echange label {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+.contact-echange input { margin: 0; }

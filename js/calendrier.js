@@ -12,6 +12,7 @@ import {
   assemblerCalendrier,
   construireCalendrier,
   construireFiltres,
+  centrerActif,
 } from './calendrier-commun.js';
 
 export default {
@@ -26,6 +27,8 @@ export default {
         <div data-bloc="liste">
           ${construireCalendrier(etat.elements, etat.filtre, { montrerProjet: true })}
         </div>`;
+
+      centrerActif(section.querySelector('.filtres'));
     }
 
     try {

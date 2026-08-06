@@ -350,6 +350,66 @@ export async function supprimerPublication(id) {
   if (error) throw error;
 }
 
+// --- Carnet réseau (Yuno) ----------------------------------------------------
+
+export async function contactsTous() {
+  return verifier(await client.from('contacts').select('*').order('nom'));
+}
+
+export async function creerContact(champs) {
+  return verifier(await client.from('contacts').insert(champs).select().single());
+}
+
+export async function modifierContact(id, champs) {
+  return verifier(
+    await client.from('contacts').update(champs).eq('id', id).select().single(),
+  );
+}
+
+export async function supprimerContact(id) {
+  const { error } = await client.from('contacts').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// --- Commandes (Yuno) --------------------------------------------------------
+
+export async function commandesToutes() {
+  return verifier(
+    await client
+      .from('commandes')
+      .select('*')
+      .order('echeance', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: false }),
+  );
+}
+
+export async function creerCommande(champs) {
+  return verifier(await client.from('commandes').insert(champs).select().single());
+}
+
+export async function modifierCommande(id, champs) {
+  return verifier(
+    await client.from('commandes').update(champs).eq('id', id).select().single(),
+  );
+}
+
+export async function supprimerCommande(id) {
+  const { error } = await client.from('commandes').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// Livrer une commande crée sa victoire, comme une tâche terminée ou un jalon
+// atteint (docs/yuno-spec.md, §4).
+export async function livrerCommande(commande) {
+  const livree = await modifierCommande(commande.id, { statut: 'livree' });
+  const victoire = await ajouterVictoire({
+    projet: 'photo',
+    titre: `Commande livrée — ${livree.titre}`,
+    source: 'manuel',
+  });
+  return { commande: livree, victoire };
+}
+
 // --- Le calendrier : tout ce qui porte une date ------------------------------
 // Règle commune : on montre ce qui reste à vivre ou à faire. Un événement passé
 // est passé ; une tâche ou une publication en retard de date reste affichée
