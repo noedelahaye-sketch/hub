@@ -227,6 +227,9 @@ button:active { transform: scale(0.97); }
 
 /* --- Application ----------------------------------------------------------- */
 
+/* En mode plein écran sur iPhone, le contenu passe sous la barre d'état. */
+.haut { padding-top: env(safe-area-inset-top); }
+
 .entete {
   display: flex;
   align-items: center;
@@ -234,7 +237,7 @@ button:active { transform: scale(0.97); }
   gap: var(--espace-16);
   max-width: var(--colonne-max);
   margin: 0 auto;
-  padding: var(--espace-16) var(--espace-16) 0;
+  padding: var(--espace-16) var(--espace-16) var(--espace-8);
 }
 
 .entete-titre {
@@ -257,68 +260,60 @@ button:active { transform: scale(0.97); }
 #vue {
   max-width: var(--colonne-max);
   margin: 0 auto;
-  /* Place laissée sous le contenu pour la barre de navigation fixe. */
-  padding: var(--espace-16) var(--espace-16)
-           calc(4.5rem + env(safe-area-inset-bottom));
+  padding: var(--espace-8) var(--espace-16)
+           calc(var(--espace-48) + env(safe-area-inset-bottom));
 }
 
 /* --- Navigation ------------------------------------------------------------ */
 
-/* Téléphone : barre fixe en bas, à portée du pouce. */
+/* En haut, et collée : les onglets restent atteignables sans remonter la page.
+   L'en-tête, lui, défile — il ne sert qu'une fois. */
 .navigation {
-  position: fixed;
-  inset: auto 0 0;
+  position: sticky;
+  top: 0;
+  z-index: 20;
   display: flex;
-  background: color-mix(in srgb, var(--fond) 92%, transparent);
-  backdrop-filter: blur(8px);
-  border-top: 1px solid var(--bordure);
-  padding-bottom: env(safe-area-inset-bottom);
+  gap: var(--espace-4);
+  max-width: var(--colonne-max);
+  margin: 0 auto;
+  /* Alignées sur les marges du contenu. */
+  padding: var(--espace-8) var(--espace-16) var(--espace-12);
+  background: var(--fond);
+  /* Cinq onglets ne tiennent pas toujours sur 375 px : on laisse glisser
+     plutôt que de rétrécir le texte. */
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
+.navigation::-webkit-scrollbar { display: none; }
+
+/* Un onglet est une tuile, comme le reste du site. */
 .navigation a {
-  flex: 1;
-  padding: 0.625rem 0.25rem 0.75rem;
-  font-size: 0.75rem;
-  text-align: center;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  /* Serré : à ce prix les cinq onglets tiennent sur 375 px sans faire glisser
+     la barre, et sans rétrécir le texte. */
+  padding: 0 var(--espace-8);
+  font-size: 0.875rem;
+  /* Même graisse pour tous : si l'onglet actif grossissait, la barre changerait
+     de largeur à chaque changement d'espace et déborderait. */
+  font-weight: 500;
   text-decoration: none;
+  white-space: nowrap;
   color: var(--texte-discret);
-  border-top: 2px solid transparent;
-  /* Marge de sécurité : chaque cible reste confortable au doigt. */
-  min-height: 3rem;
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
 }
+
+.navigation a:hover { color: var(--texte); }
 
 .navigation a.actif {
   color: var(--accent);
-  border-top-color: var(--accent);
-  font-weight: 500;
-}
-
-/* Grand écran : la navigation remonte en haut, sous l'en-tête. */
-@media (min-width: 48rem) {
-  .navigation {
-    position: static;
-    max-width: var(--colonne-max);
-    margin: 0 auto;
-    gap: 0.25rem;
-    padding: 0 var(--espace-16);
-    background: none;
-    backdrop-filter: none;
-    border-top: none;
-    border-bottom: 1px solid var(--bordure);
-  }
-
-  .navigation a {
-    flex: 0 0 auto;
-    min-height: 0;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.9375rem;
-    border-top: none;
-    border-bottom: 2px solid transparent;
-  }
-
-  .navigation a.actif { border-bottom-color: var(--accent); }
-
-  #vue { padding-bottom: var(--espace-48); }
+  background: var(--accent-doux);
+  border-color: var(--accent);
 }
 
 /* --- Blocs de contenu ------------------------------------------------------ */
@@ -352,21 +347,67 @@ button:active { transform: scale(0.97); }
   color: var(--texte-discret);
 }
 
+/* --- Les tuiles ------------------------------------------------------------
+   L'unité de base du site : un rectangle arrondi, posé sur le fond. Les listes
+   sont des piles de tuiles, pas des lignes séparées par des filets. */
+
 .bloc ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-8);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .bloc li {
+  position: relative;
   display: flex;
   align-items: baseline;
-  gap: 0.5rem;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--bordure);
+  /* Le nom du projet occupe toute la largeur : il pousse le reste à la ligne. */
+  flex-wrap: wrap;
+  gap: var(--espace-8);
+  padding: var(--espace-12) var(--espace-16);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
 }
 
-.bloc li:last-child { border-bottom: none; }
+/* Une tuile de projet porte sa couleur en barre, à gauche. Plus lisible qu'une
+   pastille, et ça laisse la place d'écrire le nom du projet au-dessus. */
+.bloc li[data-projet] { padding-left: calc(var(--espace-16) + 3px); }
+
+.bloc li[data-projet]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -1px;
+  bottom: -1px;
+  width: 3px;
+  background: var(--couleur-projet);
+  border-radius: var(--rayon-carte) 0 0 var(--rayon-carte);
+}
+
+/* L'en-tête d'une tuile : le projet à gauche, la date à droite. */
+.tuile-entete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espace-8);
+  width: 100%;
+  margin-bottom: var(--espace-4);
+}
+
+/* Le projet n'est pas dit que par la couleur : son nom est écrit. */
+.tuile-projet {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--couleur-projet-texte);
+}
+
+.tuile-entete .quand { margin-left: 0; }
 
 .quand {
   margin-left: auto;
@@ -424,33 +465,32 @@ button:active { transform: scale(0.97); }
 
 .bouton-secondaire:disabled:active { transform: none; }
 
-/* Pastilles de projet : couleurs fixes, indépendantes de l'espace affiché. */
+/* Couleurs de projet : fixes, indépendantes de l'espace affiché. Deux variables
+   par projet — l'une peut être un dégradé (le FCH porte ses deux couleurs) et ne
+   sert donc qu'en fond, l'autre est une couleur pleine pour le texte. */
+[data-projet="formation"] { --couleur-projet: #17786f; --couleur-projet-texte: #17786f; }
+[data-projet="photo"]     { --couleur-projet: #c25b41; --couleur-projet-texte: #c25b41; }
+[data-projet="perso"]     { --couleur-projet: #8878b4; --couleur-projet-texte: #8878b4; }
+[data-projet="fch"] {
+  --couleur-projet: linear-gradient(180deg,
+    var(--club-fch-bleu) 50%, var(--club-fch-rouge) 50%);
+  --couleur-projet-texte: var(--club-fch-bleu);
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-projet="formation"] { --couleur-projet: #56b8ad; --couleur-projet-texte: #56b8ad; }
+  [data-projet="photo"]     { --couleur-projet: #f0917a; --couleur-projet-texte: #f0917a; }
+  [data-projet="perso"]     { --couleur-projet: #b3a3d9; --couleur-projet-texte: #b3a3d9; }
+}
+
+/* Pastille — encore utilisée là où une tuile serait trop lourde. */
 .pastille {
   flex: none;
   width: 0.5rem;
   height: 0.5rem;
   border-radius: var(--rayon-pastille);
   align-self: center;
-  background: var(--texte-discret);
-}
-
-.pastille[data-projet="formation"] { background: #17786f; }
-.pastille[data-projet="photo"]     { background: #d9694f; }
-.pastille[data-projet="perso"]     { background: #8878b4; }
-
-/* Le FCH porte ses deux couleurs : moitié bleue, moitié rouge. */
-.pastille[data-projet="fch"] {
-  background: linear-gradient(
-    90deg,
-    var(--club-fch-bleu) 50%,
-    var(--club-fch-rouge) 50%
-  );
-}
-
-@media (prefers-color-scheme: dark) {
-  .pastille[data-projet="formation"] { background: #56b8ad; }
-  .pastille[data-projet="photo"]     { background: #f0917a; }
-  .pastille[data-projet="perso"]     { background: #b3a3d9; }
+  background: var(--couleur-projet, var(--texte-discret));
 }
 
 /* --- Humeur ---------------------------------------------------------------- */
@@ -504,12 +544,28 @@ button:active { transform: scale(0.97); }
 
 /* --- Objectifs ------------------------------------------------------------- */
 
+/* Un objectif est une tuile, comme le reste. */
 .objectif {
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--bordure);
+  position: relative;
+  margin-bottom: var(--espace-8);
+  padding: var(--espace-12) var(--espace-16);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
 }
 
-.objectif:last-of-type { border-bottom: none; }
+.objectif[data-projet] { padding-left: calc(var(--espace-16) + 3px); }
+
+.objectif[data-projet]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -1px;
+  bottom: -1px;
+  width: 3px;
+  background: var(--couleur-projet);
+  border-radius: var(--rayon-carte) 0 0 var(--rayon-carte);
+}
 
 .objectif summary {
   cursor: pointer;
@@ -567,7 +623,18 @@ button:active { transform: scale(0.97); }
 
 .cible { margin: 0 0 0.5rem; }
 
-.liste-jalons li { border-bottom: none; padding: 0.25rem 0; }
+/* Les jalons vivent DANS la tuile de l'objectif : les empiler en tuiles à leur
+   tour ferait des boîtes dans des boîtes. Ils restent des lignes. */
+.liste-jalons { gap: 0 !important; }
+
+.liste-jalons li {
+  padding: var(--espace-4) 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  flex-wrap: nowrap;
+}
+
 .marque-jalon { color: var(--accent); }
 .jalon-atteint { color: var(--texte-discret); }
 .jalon-atteint span:not(.marque-jalon) { text-decoration: line-through; }
@@ -603,18 +670,22 @@ button:active { transform: scale(0.97); }
 
 #bloc-revisions { margin-top: var(--espace-16); }
 
-/* Chiffres qui disent ce qui a été fait, pas ce qui manque. */
+/* Chiffres qui disent ce qui a été fait, pas ce qui manque. Une tuile chacun,
+   en grille : quatre nombres alignés se lisent d'un coup d'œil. */
 .chiffres-cles {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--espace-24);
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--espace-8);
   margin: var(--espace-16) 0 0;
+}
+
+@media (min-width: 30rem) {
+  .chiffres-cles { grid-template-columns: repeat(4, 1fr); }
 }
 
 .chiffres-cles li {
   display: block;
-  padding: 0;
-  border-bottom: none;
+  text-align: center;
 }
 
 .chiffre-cle {

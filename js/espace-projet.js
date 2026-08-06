@@ -187,12 +187,15 @@ export function construireEvenements(evenements) {
     .map(
       (evenement) => `
       <li>
-        <span class="semaine-titre">${echapper(evenement.titre)}${
-          // Espace insécable après le point médian : le lieu ne doit pas se
-          // détacher du séparateur en fin de ligne.
-          evenement.lieu ? ` <span class="discret">·&nbsp;${echapper(evenement.lieu)}</span>` : ''
-        }</span>
-        <span class="discret quand">${echapper(momentLisible(new Date(evenement.date_debut)))}</span>
+        <span class="tuile-entete">
+          <span class="discret">${
+            evenement.lieu ? echapper(evenement.lieu) : ''
+          }</span>
+          <span class="discret quand">${echapper(
+            momentLisible(new Date(evenement.date_debut)),
+          )}</span>
+        </span>
+        <span class="semaine-titre">${echapper(evenement.titre)}</span>
       </li>`,
     )
     .join('')}</ul>`;
@@ -207,14 +210,16 @@ export function construireVictoires(victoires) {
     .map(
       (victoire) => `
       <li>
+        <span class="tuile-entete">
+          <span class="discret quand">${echapper(
+            echeanceLisible(depuisDateISO(victoire.date)),
+          )}</span>
+          <button type="button" class="lien-discret bouton-mini bouton-retirer"
+            data-victoire="${echapper(victoire.id)}"
+            title="Retirer cette victoire"
+            aria-label="Retirer « ${echapper(victoire.titre)} »">×</button>
+        </span>
         <span class="victoire-titre">${echapper(victoire.titre)}</span>
-        <span class="discret quand">${echapper(
-          echeanceLisible(depuisDateISO(victoire.date)),
-        )}</span>
-        <button type="button" class="lien-discret bouton-mini bouton-retirer"
-          data-victoire="${echapper(victoire.id)}"
-          title="Retirer cette victoire"
-          aria-label="Retirer « ${echapper(victoire.titre)} »">×</button>
       </li>`,
     )
     .join('')}</ul>`;

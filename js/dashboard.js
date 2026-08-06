@@ -38,9 +38,16 @@ const NIVEAUX_HUMEUR = [
 
 // --- Fabrication du HTML ----------------------------------------------------
 
-function pastille(projet) {
-  return `<span class="pastille" data-projet="${echapper(projet)}"
-    title="${echapper(NOMS_PROJETS[projet] ?? projet)}"></span>`;
+// Sur le tableau de bord les projets se mélangent : chaque tuile porte la
+// couleur du sien en barre, et son nom écrit — jamais la couleur seule.
+// L'en-tête d'une tuile : le projet à gauche, la date à droite. Les mettre sur
+// la même ligne garde les tuiles régulières, quelle que soit la longueur du
+// titre en dessous.
+function enTeteTuile(projet, quand) {
+  return `<span class="tuile-entete">
+    <span class="tuile-projet">${echapper(NOMS_PROJETS[projet] ?? projet)}</span>
+    <span class="discret quand">${echapper(quand)}</span>
+  </span>`;
 }
 
 export function construireEnTete(maintenant = new Date()) {
@@ -86,12 +93,9 @@ export function construireVictoires(victoires) {
   const lignes = victoires
     .map(
       (victoire) => `
-      <li>
-        ${pastille(victoire.projet)}
+      <li data-projet="${echapper(victoire.projet)}">
+        ${enTeteTuile(victoire.projet, echeanceLisible(depuisDateISO(victoire.date)))}
         <span class="victoire-titre">${echapper(victoire.titre)}</span>
-        <span class="discret quand">${echapper(
-          echeanceLisible(depuisDateISO(victoire.date)),
-        )}</span>
       </li>`,
     )
     .join('');
@@ -120,12 +124,6 @@ function construireObjectif(objectif) {
        <p class="discret progression-legende"><span class="chiffre">${atteints}/${jalons.length}</span> jalons · <span class="chiffre">${pourcentage}</span>&nbsp;%</p>`
     : `<p class="discret progression-legende">Pas encore de jalons.</p>`;
 
-  const echeance = objectif.echeance
-    ? `<span class="discret echeance">${echapper(
-        echeanceLisible(depuisDateISO(objectif.echeance)),
-      )}</span>`
-    : '';
-
   const listeJalons = jalons.length
     ? `<ul class="liste-jalons">${jalons
         .map(
@@ -146,12 +144,14 @@ function construireObjectif(objectif) {
     : '';
 
   return `
-    <details class="objectif">
+    <details class="objectif" data-projet="${echapper(objectif.projet)}">
       <summary>
+        ${enTeteTuile(
+          objectif.projet,
+          objectif.echeance ? echeanceLisible(depuisDateISO(objectif.echeance)) : '',
+        )}
         <span class="objectif-tete">
-          ${pastille(objectif.projet)}
           <span class="objectif-titre">${echapper(objectif.titre)}</span>
-          ${echeance}
         </span>
         ${barre}
       </summary>
@@ -172,10 +172,9 @@ export function construireSemaine(elements) {
   const lignes = elements
     .map(
       (element) => `
-      <li>
-        ${pastille(element.projet)}
+      <li data-projet="${echapper(element.projet)}">
+        ${enTeteTuile(element.projet, element.quand)}
         <span class="semaine-titre">${echapper(element.titre)}</span>
-        <span class="discret quand">${echapper(element.quand)}</span>
       </li>`,
     )
     .join('');
@@ -201,18 +200,14 @@ export function construireTaches(taches, annulation = null) {
     .slice(0, MAX_TACHES)
     .map(
       (tache) => `
-      <li>
+      <li data-projet="${echapper(tache.projet)}">
+        ${enTeteTuile(
+          tache.projet,
+          tache.echeance ? echeanceLisible(depuisDateISO(tache.echeance)) : '',
+        )}
         <label>
           <input type="checkbox" data-tache="${echapper(tache.id)}">
-          ${pastille(tache.projet)}
           <span class="tache-titre">${echapper(tache.titre)}</span>
-          ${
-            tache.echeance
-              ? `<span class="discret quand">${echapper(
-                  echeanceLisible(depuisDateISO(tache.echeance)),
-                )}</span>`
-              : ''
-          }
         </label>
       </li>`,
     )
