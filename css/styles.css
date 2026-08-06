@@ -826,6 +826,30 @@ button:active { transform: scale(0.97); }
   .bouton-retirer { opacity: 0.5; }
 }
 
+/* --- Espace perso ----------------------------------------------------------
+   Doux et apaisé : rien ici ne se coche, ne se mesure, ni ne presse. */
+
+.liste-intentions li {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espace-4);
+}
+
+.intention-titre { font-weight: 600; }
+.intention-pourquoi { font-size: 0.875rem; }
+
+.courbe-humeur {
+  display: block;
+  width: 100%;
+  height: auto;
+  color: var(--accent);
+}
+
+.note-courbe {
+  margin: var(--espace-8) 0 0;
+  font-size: 0.8125rem;
+}
+
 /* --- Formulaires d'ajout ---------------------------------------------------- */
 
 .ajout form {
