@@ -111,6 +111,9 @@ body {
   margin: 0;
   font-family: var(--police-texte);
   font-size: 16px;
+  /* Corps en 500, pas en 400 : le texte porte mieux, à l'écran comme au soleil.
+     Instrument Sans est variable de 400 à 600, la graisse est bien là. */
+  font-weight: 500;
   line-height: 1.5;
   color: var(--texte);
   background: var(--fond);
@@ -120,13 +123,14 @@ body {
 
 h1, h2 {
   font-family: var(--police-titre);
-  font-weight: 600;
   letter-spacing: -0.02em;
 }
 
+/* Clash Display en 700 : c'est la graisse la plus affirmée dont on dispose. */
 h1 {
   margin: 0 0 0.5rem;
   font-size: 1.5rem;
+  font-weight: 700;
   line-height: 1.1;
 }
 
@@ -242,7 +246,7 @@ button:active { transform: scale(0.97); }
 
 .entete-titre {
   font-family: var(--police-titre);
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--accent);
 }
@@ -276,9 +280,12 @@ button:active { transform: scale(0.97); }
   gap: var(--espace-4);
   max-width: var(--colonne-max);
   margin: 0 auto;
-  /* Alignées sur les marges du contenu. */
-  padding: var(--espace-8) var(--espace-16) var(--espace-12);
+  /* Marges plus serrées que le contenu : les pastilles ont déjà leur propre
+     rembourrage, et à ce prix les cinq onglets tiennent sur 375 px. */
+  padding: var(--espace-8) var(--espace-8);
   background: var(--fond);
+  /* Un filet sépare les onglets du contenu, comme sur Bac-3. */
+  border-bottom: 1px solid var(--bordure);
   /* Cinq onglets ne tiennent pas toujours sur 375 px : on laisse glisser
      plutôt que de rétrécir le texte. */
   overflow-x: auto;
@@ -287,7 +294,9 @@ button:active { transform: scale(0.97); }
 
 .navigation::-webkit-scrollbar { display: none; }
 
-/* Un onglet est une tuile, comme le reste du site. */
+/* Onglets repris du site Bac-3 : pas de contour, un fond seulement, et des
+   angles très arrondis. L'onglet actif est plein et inversé — le contraste
+   fait le travail, sans avoir à souligner ni à grossir le texte. */
 .navigation a {
   flex: 0 0 auto;
   display: flex;
@@ -295,25 +304,27 @@ button:active { transform: scale(0.97); }
   min-height: 2.75rem;
   /* Serré : à ce prix les cinq onglets tiennent sur 375 px sans faire glisser
      la barre, et sans rétrécir le texte. */
-  padding: 0 var(--espace-8);
+  padding: 0 var(--espace-12);
   font-size: 0.875rem;
   /* Même graisse pour tous : si l'onglet actif grossissait, la barre changerait
      de largeur à chaque changement d'espace et déborderait. */
-  font-weight: 500;
+  font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
   color: var(--texte-discret);
-  background: var(--fond-carte);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-controle);
+  background: none;
+  border: 0;
+  border-radius: var(--rayon-pastille);
 }
 
-.navigation a:hover { color: var(--texte); }
+.navigation a:hover {
+  color: var(--texte);
+  background: color-mix(in srgb, var(--texte) 8%, transparent);
+}
 
 .navigation a.actif {
-  color: var(--accent);
-  background: var(--accent-doux);
-  border-color: var(--accent);
+  color: var(--fond-carte);
+  background: var(--accent);
 }
 
 /* --- Blocs de contenu ------------------------------------------------------ */
@@ -440,7 +451,7 @@ button:active { transform: scale(0.97); }
   min-width: 0;
 }
 
-.lien-externe-titre { font-weight: 500; }
+.lien-externe-titre { font-weight: 600; }
 
 .lien-externe-fleche {
   margin-left: auto;
@@ -581,7 +592,7 @@ button:active { transform: scale(0.97); }
   margin-bottom: 0.5rem;
 }
 
-.objectif-titre { font-weight: 500; }
+.objectif-titre { font-weight: 600; }
 
 .echeance {
   margin-left: auto;
