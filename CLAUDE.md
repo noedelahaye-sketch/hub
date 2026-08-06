@@ -52,7 +52,8 @@ Le hub existe pour servir Noé, pas l'inverse. Pour éviter que le professionnel
 4 espaces accessibles par navigation :
 - `/` ou `#dashboard` — tableau de bord global (tous projets)
 - `#formation` — espace formation (thème : teal)
-- `#photo` — espace Yuno, la photo (thème : corail)
+- `#photo` — la page Yuno du hub (thème : doré) — tableau de bord réduit et porte vers le site
+- `#yuno` — le SITE Yuno : l'habillage du hub disparaît entièrement, chrome et identité propres (voir docs/yuno-spec.md)
 - `#fch` — espace FC Hermitage (thème : couleurs du club)
 - `#perso` — espace perso (thème : doux, apaisé, distinct des espaces projet)
 

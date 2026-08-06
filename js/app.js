@@ -4,16 +4,20 @@ import { sessionCourante, connexion, deconnexion, surChangementSession } from '.
 import dashboard from './dashboard.js';
 import formation from './formation.js';
 import photo from './photo.js';
+import yuno from './yuno.js';
 import fch from './fch.js';
 import perso from './perso.js';
 
-const espaces = { dashboard, formation, photo, fch, perso };
+// `photo` est la page Yuno du hub ; `yuno` est le site Yuno, qui masque tout
+// l'habillage du hub. Deux adresses, deux sensations, une seule application.
+const espaces = { dashboard, formation, photo, yuno, fch, perso };
 const ESPACE_PAR_DEFAUT = 'dashboard';
 
 const TITRES = {
   dashboard: 'Accueil',
   formation: 'Formation',
   photo: 'Yuno',
+  yuno: 'Yuno',
   fch: 'FC Hermitage',
   perso: 'Perso',
 };
@@ -89,7 +93,8 @@ function afficherEspace() {
   const memeEspace = routeCourante?.espace === nom;
   routeCourante = route;
 
-  document.title = `${TITRES[nom]} — ${TITRE_BASE}`;
+  // Sur le site Yuno, le titre ne mentionne pas le hub : on en est sorti.
+  document.title = nom === 'yuno' ? 'Yuno · yuno_rph' : `${TITRES[nom]} — ${TITRE_BASE}`;
 
   for (const section of document.querySelectorAll('.espace')) {
     section.hidden = section.dataset.espace !== nom;

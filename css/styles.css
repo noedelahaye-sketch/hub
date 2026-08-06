@@ -73,6 +73,8 @@ body[data-espace="formation"] { --accent: #17786f; --accent-doux: #e3f1ef; }
    s'assombrit en ocre — un doré clair sur fond blanc ne se lit pas
    (docs/yuno-spec.md, §3). */
 body[data-espace="photo"]     { --accent: #8f6c00; --accent-doux: #f7efcf; }
+/* Le site Yuno partage les couleurs de la page Yuno du hub… */
+body[data-espace="yuno"]      { --accent: #8f6c00; --accent-doux: #f7efcf; }
 /* FCH : le club joue en bleu et rouge. Le bleu porte l'accent (barres, liens,
    états actifs) parce qu'il reste lisible en aplat ; le rouge est la seconde
    couleur d'identité, réservée à la pastille du projet. Il ne signale jamais
@@ -100,6 +102,10 @@ body[data-espace="perso"]     { --accent: #8878b4; --accent-doux: #efebf7; }
   body[data-espace="dashboard"] { --accent: #9db3c0; --accent-doux: #262a2e; }
   body[data-espace="formation"] { --accent: #56b8ad; --accent-doux: #1b2e2c; }
   body[data-espace="photo"]     { --accent: #e8b000; --accent-doux: #2f2708; }
+  /* …et le soir, son fond est celui du logo. */
+  body[data-espace="yuno"]      { --accent: #e8b000; --accent-doux: #2f2708;
+                                  --fond: #181818; --fond-carte: #222222;
+                                  --bordure: #363636; }
   body[data-espace="fch"]       { --accent: #7ba5dc; --accent-doux: #1d2733; }
   body[data-espace="perso"]     { --accent: #b3a3d9; --accent-doux: #272335; }
 
@@ -236,6 +242,11 @@ button:active { transform: scale(0.97); }
 
 /* En mode plein écran sur iPhone, le contenu passe sous la barre d'état. */
 .haut { padding-top: env(safe-area-inset-top); }
+
+/* Sur le site Yuno, tout l'habillage du hub disparaît : ni « Hub », ni
+   onglets, ni autres projets. On est ailleurs. */
+body[data-espace="yuno"] .haut { display: none; }
+body[data-espace="yuno"] #vue { padding-top: calc(env(safe-area-inset-top) + var(--espace-16)); }
 
 .entete {
   display: flex;

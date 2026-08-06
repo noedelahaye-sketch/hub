@@ -87,7 +87,21 @@ le reste du hub garde les siennes.
 
 ## 4. Les écrans
 
-### `#photo` — l'accueil : le cap
+**Deux surfaces, décision de Noé (7 août 2026).** Il faut avoir l'impression
+de *sortir du hub* en entrant chez Yuno :
+
+- **`#photo` — la page Yuno du hub.** Un tableau de bord réduit : le cap en
+  lecture, l'aperçu création, une capture d'idée au vol, les victoires, et la
+  porte « Entrer sur le site Yuno ». Habillage du hub conservé. Rien ne s'y
+  gère.
+- **`#yuno` — le site Yuno.** Tout l'habillage du hub disparaît : ni logo Hub,
+  ni onglets, ni autres projets. Chrome propre (logo centré, navigation
+  Accueil · Calendrier · Réseau · Commandes), fond `#181818` le soir, titre
+  d'onglet « Yuno · yuno_rph ». Une seule sortie, discrète, en pied de page :
+  « Quitter le site » — nécessaire en plein écran sur téléphone, où il n'y a
+  pas de barre d'adresse.
+
+### `#yuno` — l'accueil du site : le cap
 
 1. **Objectifs** — ceux du projet photo, avec pourquoi et jalons. En premier :
    c'est la réponse à « où je veux aller ».
@@ -98,7 +112,7 @@ le reste du hub garde les siennes.
 
 Pas d'écran CAN 2027 : c'est un objectif parmi les gros, pas un lieu.
 
-### `#photo/calendrier` — l'outil phare
+### `#yuno/calendrier` — l'outil phare
 
 Le calendrier éditorial et la banque d'idées, une seule matière à deux états :
 **une idée est une publication sans date**. Noter une idée prend cinq
@@ -122,7 +136,7 @@ secondes ; la programmer, c'est juste lui donner une date.
   une victoire ? — non : ce serait du bruit à raison de plusieurs par semaine.
   Les victoires restent manuelles ou liées aux jalons.
 
-### `#photo/reseau` — le carnet réseau
+### `#yuno/reseau` — le carnet réseau
 
 Un CRM sans le mot. Qui y entre (réponse du 7 août) : **les joueurs, les gens
 des médias, les gens des clubs**, principalement. Ce qu'une fiche doit rendre
@@ -133,7 +147,7 @@ fiche. Notes libres et date du dernier échange complètent. Pas de relances
 automatiques, pas d'étapes de vente — un carnet d'adresses qui se souvient
 de ce qu'on s'est dit.
 
-### `#photo/commandes` — le suivi des commandes
+### `#yuno/commandes` — le suivi des commandes
 
 Volontairement simple, et en dernier : titre, client, statut
 (`en cours → livrée`), échéance éventuelle, lien du livrable, notes. Livrer

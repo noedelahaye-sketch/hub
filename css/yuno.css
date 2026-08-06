@@ -1,5 +1,5 @@
 /* Yuno — la feuille de style de l'espace (docs/yuno-spec.md).
-   Tout est cadré par body[data-espace="photo"] : l'identité Yuno ne déborde
+   Tout est cadré par body[data-espace="yuno"] : l'identité Yuno ne déborde
    jamais sur le reste du hub. */
 
 /* --- Polices de la marque ---------------------------------------------------
@@ -34,27 +34,27 @@
 
 /* --- L'identité dans l'espace ---------------------------------------------- */
 
-body[data-espace="photo"] #vue,
-body[data-espace="photo"] #vue button,
-body[data-espace="photo"] #vue input,
-body[data-espace="photo"] #vue select,
-body[data-espace="photo"] #vue textarea {
+body[data-espace="yuno"] #vue,
+body[data-espace="yuno"] #vue button,
+body[data-espace="yuno"] #vue input,
+body[data-espace="yuno"] #vue select,
+body[data-espace="yuno"] #vue textarea {
   font-family: "Gilroy", var(--police-texte);
 }
 
-body[data-espace="photo"] #vue h1,
-body[data-espace="photo"] #vue h2 {
+body[data-espace="yuno"] #vue h1,
+body[data-espace="yuno"] #vue h2 {
   font-family: "Canela Deck", georgia, serif;
   letter-spacing: 0;
 }
 
-body[data-espace="photo"] #vue h1 {
+body[data-espace="yuno"] #vue h1 {
   font-weight: 700;
   font-size: 2rem;
 }
 
 /* Les libellés de section gardent leur rôle discret, mais en Gilroy. */
-body[data-espace="photo"] #vue .bloc h2 {
+body[data-espace="yuno"] #vue .bloc h2 {
   font-family: "Gilroy", var(--police-texte);
 }
 
@@ -89,6 +89,31 @@ body[data-espace="photo"] #vue .bloc h2 {
 
 .yuno-tete h1 { margin-bottom: 0; }
 .yuno-tete .sous-titre { margin: 0; }
+
+/* L'en-tête du SITE : centré, le logo en grand — on est chez Yuno. */
+.yuno-site-tete {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espace-8);
+  margin: var(--espace-16) 0 var(--espace-24);
+  text-align: center;
+}
+
+.yuno-site-tete .yuno-logo { width: 72px; height: 72px; }
+.yuno-site-tete h1 { margin: 0; }
+.yuno-site-tete .sous-titre { margin: 0; }
+
+.yuno-site-tete + .yuno-nav { justify-content: center; }
+
+/* La seule sortie du site, tout en bas et discrète : en plein écran sur
+   téléphone il n'y a pas de barre d'adresse, il faut bien une porte. */
+.yuno-pied {
+  margin-top: var(--espace-48);
+  padding-top: var(--espace-16);
+  border-top: 1px solid var(--bordure);
+  text-align: center;
+}
 
 /* --- La navigation de l'espace ---------------------------------------------- */
 
