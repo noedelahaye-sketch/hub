@@ -12,30 +12,34 @@ Le hub a un seul utilisateur : Noé. Aucune inscription publique.
 Vérifié le 6 août 2026 : une requête REST avec la clé publique et sans session
 renvoie `401 permission denied` en lecture comme en écriture, sur toutes les tables.
 
-## Ce qui reste à faire dans le dashboard Supabase
+## Configuration Auth du projet
 
-Ces deux réglages relèvent de la configuration Auth du projet, pas du schéma SQL :
-ils ne peuvent pas être écrits dans une migration.
+Ces réglages relèvent de la configuration Auth et non du schéma SQL : ils ne
+peuvent pas être écrits dans une migration. Faits à la main dans le dashboard le
+6 août 2026, puis vérifiés :
 
-1. **Créer le compte de Noé**
-   Authentication → Users → Add user → Create new user.
-   Renseigner l'e-mail et un mot de passe, cocher « Auto Confirm User » pour éviter
-   l'étape de confirmation par e-mail.
+- **Un seul compte**, `noedelahaye@gmail.com`, confirmé.
+- **Inscriptions publiques fermées** : `disable_signup` vaut `true`.
+- **Seul le provider e-mail est actif** ; aucun provider externe, et les sessions
+  anonymes sont désactivées.
 
-2. **Fermer les inscriptions**
-   Authentication → Sign In / Providers → Email.
-   Désactiver « Allow new users to sign up ».
-   À faire **après** la création du compte, sinon la création échoue.
+Vérification reproductible — la tentative doit renvoyer `422 signup_disabled`, et
+le nombre de comptes rester à 1 :
 
-3. **Vérifier**
-   Une tentative de `POST /auth/v1/signup` avec la clé publique doit renvoyer une
-   erreur `signup_disabled` :
+```
+curl -X POST "https://dpkyealzuabwchccdqcv.supabase.co/auth/v1/signup" \
+  -H "apikey: <clé publique>" -H "Content-Type: application/json" \
+  -d '{"email":"verif-signup@example.com","password":"..."}'
+```
 
-   ```
-   curl -X POST "https://dpkyealzuabwchccdqcv.supabase.co/auth/v1/signup" \
-     -H "apikey: <clé publique>" -H "Content-Type: application/json" \
-     -d '{"email":"test@exemple.fr","password":"..."}'
-   ```
+L'état courant se lit aussi sans effet de bord sur
+`GET /auth/v1/settings` avec la clé publique.
+
+### Si le compte doit être recréé un jour
+
+Authentication → Users → Add user, en cochant « Auto Confirm User » ; puis
+Authentication → Sign In / Providers → Email → désactiver « Allow new users to
+sign up ». Dans cet ordre : inscriptions fermées, la création échoue.
 
 ## Côté site (à venir)
 
