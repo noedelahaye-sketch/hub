@@ -6,7 +6,7 @@ Application web personnelle centralisant l'organisation de 3 projets professionn
 
 Les 3 projets + l'espace perso :
 - **formation** : validation d'un Bac+3 marketing/communication (Studi) en parallèle d'une alternance. 4 dossiers + 1 vidéo à rendre pour début décembre.
-- **photo** : activité de photographe sportif (marque yuno_rph). Objectifs long terme : CAN 2027, source de revenus début 2027.
+- **photo** : activité de photographe sportif, affichée « Yuno » dans l'interface (marque yuno_rph). La clé reste `photo` en base : c'est la valeur de la contrainte CHECK. Objectifs long terme : CAN 2027, source de revenus début 2027.
 - **fch** : alternance au FC Hermitage (communication, partenariats) jusqu'à fin décembre. 4 objectifs de fin d'alternance.
 - **perso** : la vie hors projets — sport, sorties, temps pour soi. Ce n'est PAS un projet : aucune mécanique de productivité ne s'y applique (voir philosophie).
 
@@ -52,7 +52,7 @@ Le hub existe pour servir Noé, pas l'inverse. Pour éviter que le professionnel
 4 espaces accessibles par navigation :
 - `/` ou `#dashboard` — tableau de bord global (tous projets)
 - `#formation` — espace formation (thème : teal)
-- `#photo` — espace photo (thème : corail)
+- `#photo` — espace Yuno, la photo (thème : corail)
 - `#fch` — espace FC Hermitage (thème : couleurs du club)
 - `#perso` — espace perso (thème : doux, apaisé, distinct des espaces projet)
 

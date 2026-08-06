@@ -1,12 +1,9 @@
-// Espace FC Hermitage — alternance.
-// À venir : objectifs et progression, jalons, tâches (3 actives + backlog),
-// événements à venir, victoires.
+// Espace FC Hermitage — l'alternance.
 
-export default {
-  monter(section) {
-    section.innerHTML = `
-      <h1>FC Hermitage</h1>
-      <p class="discret">Cet espace arrive bientôt.</p>
-    `;
-  },
-};
+import { creerEspaceProjet } from './espace-projet.js';
+
+export default creerEspaceProjet({
+  projet: 'fch',
+  titre: 'FC Hermitage',
+  sousTitre: 'Alternance communication et partenariats',
+});

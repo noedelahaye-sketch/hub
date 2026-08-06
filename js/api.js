@@ -112,6 +112,11 @@ export async function victoiresDuProjet(projet, limite = 10) {
   );
 }
 
+export async function supprimerVictoire(id) {
+  const { error } = await client.from('victoires').delete().eq('id', id);
+  if (error) throw error;
+}
+
 export async function ajouterVictoire({ projet, titre, source = 'manuel', source_id = null }) {
   return verifier(
     await client
@@ -216,6 +221,20 @@ export async function terminerTache(tache) {
   });
 
   return { tache: faite, victoire };
+}
+
+// Défaire une tâche terminée : elle redevient active et perd sa date. La règle
+// des 3 actives n'est pas revérifiée ici, volontairement — la tâche était active
+// il y a quelques secondes, on la remet exactement où elle était.
+export async function rouvrirTache(tache) {
+  return verifier(
+    await client
+      .from('taches')
+      .update({ statut: 'actif', date_fait: null })
+      .eq('id', tache.id)
+      .select()
+      .single(),
+  );
 }
 
 // Passer une tâche en 'actif' ou la renvoyer au backlog. La règle des 3 actives

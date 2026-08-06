@@ -13,7 +13,7 @@ const ESPACE_PAR_DEFAUT = 'dashboard';
 const TITRES = {
   dashboard: 'Accueil',
   formation: 'Formation',
-  photo: 'Photo',
+  photo: 'Yuno',
   fch: 'FC Hermitage',
   perso: 'Perso',
 };

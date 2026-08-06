@@ -24,6 +24,10 @@ const MAX_VICTOIRES = 5;
 const MAX_TACHES = 9; // 3 projets x 3 tâches actives
 const JOURS_SEMAINE = 7;
 
+// Fenêtre pendant laquelle une tâche cochée par erreur peut être décochée.
+// Même durée que dans les espaces projet.
+const DUREE_ANNULATION = 6000;
+
 const NIVEAUX_HUMEUR = [
   { niveau: 1, frimousse: '😔', mot: 'difficile' },
   { niveau: 2, frimousse: '😕', mot: 'bof' },
@@ -179,9 +183,18 @@ export function construireSemaine(elements) {
   return `<ul class="liste-semaine">${lignes}</ul>`;
 }
 
-export function construireTaches(taches) {
+export function construireTaches(taches, annulation = null) {
+  // Une tâche vient d'être cochée : on laisse une porte de sortie quelques
+  // secondes, sans rien demander à qui ne s'est pas trompé.
+  const ligneAnnulation = annulation
+    ? `<p class="annulation">
+         <span>Fait ✓ · <span class="discret">${echapper(annulation.tache.titre)}</span></span>
+         <button type="button" class="lien-discret" data-annuler>Annuler</button>
+       </p>`
+    : '';
+
   if (!taches.length) {
-    return `<p class="vide">Rien d'actif en ce moment.</p>`;
+    return `${ligneAnnulation}<p class="vide">Rien d'actif en ce moment.</p>`;
   }
 
   const lignes = taches
@@ -205,7 +218,7 @@ export function construireTaches(taches) {
     )
     .join('');
 
-  return `<ul class="liste-taches">${lignes}</ul>`;
+  return `${ligneAnnulation}<ul class="liste-taches">${lignes}</ul>`;
 }
 
 // Fusionne événements et échéances de tâches en une seule liste ordonnée.
@@ -271,7 +284,14 @@ export default {
 
     // L'état gardé entre deux rendus : ce que l'utilisateur peut modifier sans
     // recharger la page.
-    const etat = { humeur: null, victoires: [], taches: [], humeurOuverte: false };
+    const etat = {
+      humeur: null,
+      victoires: [],
+      taches: [],
+      humeurOuverte: false,
+      annulation: null,
+    };
+    let minuteurAnnulation = null;
     const aujourdhui = versDateISO();
     const finSemaine = ajouterJours(new Date(), JOURS_SEMAINE);
 
@@ -290,7 +310,7 @@ export default {
     }
 
     function rendreTaches() {
-      cible('bloc-taches').innerHTML = construireTaches(etat.taches);
+      cible('bloc-taches').innerHTML = construireTaches(etat.taches, etat.annulation);
     }
 
     try {
@@ -358,7 +378,10 @@ export default {
       if (evenement.target.closest('[data-action="rouvrir-humeur"]')) {
         etat.humeurOuverte = true;
         rendreHumeur();
+        return;
       }
+
+      if (evenement.target.closest('[data-annuler]')) await annulerDerniereTache();
     });
 
     // La note s'enregistre 400 ms après la dernière frappe, comme sur Bac-3 :
@@ -404,9 +427,10 @@ export default {
       try {
         // Terminer une tâche crée sa victoire : elle quitte le bas de la page
         // pour rejoindre le haut.
-        const { victoire } = await api.terminerTache(tache);
+        const { tache: faite, victoire } = await api.terminerTache(tache);
         etat.taches = etat.taches.filter((candidate) => candidate.id !== tache.id);
         etat.victoires = [victoire, ...etat.victoires];
+        ouvrirAnnulation({ tache: faite, victoire });
         rendreVictoires();
         rendreTaches();
       } catch (erreur) {
@@ -415,5 +439,34 @@ export default {
         case_.disabled = false;
       }
     });
+
+    function ouvrirAnnulation(annulation) {
+      clearTimeout(minuteurAnnulation);
+      etat.annulation = annulation;
+      minuteurAnnulation = setTimeout(() => {
+        etat.annulation = null;
+        rendreTaches();
+      }, DUREE_ANNULATION);
+    }
+
+    async function annulerDerniereTache() {
+      const annulation = etat.annulation;
+      if (!annulation) return;
+
+      clearTimeout(minuteurAnnulation);
+      etat.annulation = null;
+      try {
+        // La victoire part d'abord : si la suite échoue, il vaut mieux une
+        // tâche encore cochée qu'une victoire qui n'a pas eu lieu.
+        await api.supprimerVictoire(annulation.victoire.id);
+        const tache = await api.rouvrirTache(annulation.tache);
+        etat.victoires = etat.victoires.filter((v) => v.id !== annulation.victoire.id);
+        etat.taches = [...etat.taches, tache];
+      } catch (erreur) {
+        console.error('Annulation impossible', erreur);
+      }
+      rendreTaches();
+      rendreVictoires();
+    }
   },
 };

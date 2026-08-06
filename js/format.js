@@ -86,7 +86,7 @@ export function echapper(texte) {
 
 export const NOMS_PROJETS = {
   formation: 'Formation',
-  photo: 'Photo',
+  photo: 'Yuno',
   fch: 'FC Hermitage',
   perso: 'Perso',
 };
