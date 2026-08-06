@@ -95,11 +95,22 @@ de *sortir du hub* en entrant chez Yuno :
   porte « Entrer sur le site Yuno ». Habillage du hub conservé. Rien ne s'y
   gère.
 - **`#yuno` — le site Yuno.** Tout l'habillage du hub disparaît : ni logo Hub,
-  ni onglets, ni autres projets. Chrome propre (logo centré, navigation
-  Accueil · Calendrier · Réseau · Commandes), fond `#181818` le soir, titre
-  d'onglet « Yuno · yuno_rph ». Une seule sortie, discrète, en pied de page :
-  « Quitter le site » — nécessaire en plein écran sur téléphone, où il n'y a
-  pas de barre d'adresse.
+  ni onglets, ni autres projets. En-tête : la signature seule
+  (`img/yuno-signature.png`, PNG transparent déposé par Noé le 7 août) — ni
+  « Yuno » en texte, ni sous-titre. Navigation :
+  Accueil · Créer · Calendrier · Réseau · Commandes. **Le site est toujours
+  sombre**, quel que soit le réglage du téléphone : la signature blanche et or
+  ne vit que sur fond sombre, et ça dit « on a quitté le hub ». Fond `#181818`,
+  celui du logo. Une seule sortie, discrète, en pied de page : « Quitter le
+  site » — nécessaire en plein écran sur téléphone, où il n'y a pas de barre
+  d'adresse.
+
+**« Créer » et « Calendrier » sont deux choses (décision du 7 août).**
+« Créer » regroupe le calendrier éditorial et les futurs outils d'aide à la
+création. « Calendrier » recense tout ce qui porte une date chez Yuno —
+publications, tâches, événements, objectifs et jalons — avec des filtres par
+nature. Le hub a le même espace Calendrier, tous projets confondus
+(`#calendrier`).
 
 ### `#yuno` — l'accueil du site : le cap
 
@@ -112,7 +123,7 @@ de *sortir du hub* en entrant chez Yuno :
 
 Pas d'écran CAN 2027 : c'est un objectif parmi les gros, pas un lieu.
 
-### `#yuno/calendrier` — l'outil phare
+### `#yuno/creer` — l'outil phare
 
 Le calendrier éditorial et la banque d'idées, une seule matière à deux états :
 **une idée est une publication sans date**. Noter une idée prend cinq

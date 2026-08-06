@@ -2,6 +2,7 @@
 
 import { sessionCourante, connexion, deconnexion, surChangementSession } from './api.js';
 import dashboard from './dashboard.js';
+import calendrier from './calendrier.js';
 import formation from './formation.js';
 import photo from './photo.js';
 import yuno from './yuno.js';
@@ -10,11 +11,12 @@ import perso from './perso.js';
 
 // `photo` est la page Yuno du hub ; `yuno` est le site Yuno, qui masque tout
 // l'habillage du hub. Deux adresses, deux sensations, une seule application.
-const espaces = { dashboard, formation, photo, yuno, fch, perso };
+const espaces = { dashboard, calendrier, formation, photo, yuno, fch, perso };
 const ESPACE_PAR_DEFAUT = 'dashboard';
 
 const TITRES = {
   dashboard: 'Accueil',
+  calendrier: 'Calendrier',
   formation: 'Formation',
   photo: 'Yuno',
   yuno: 'Yuno',

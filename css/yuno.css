@@ -90,21 +90,26 @@ body[data-espace="yuno"] #vue .bloc h2 {
 .yuno-tete h1 { margin-bottom: 0; }
 .yuno-tete .sous-titre { margin: 0; }
 
-/* L'en-tête du SITE : centré, le logo en grand — on est chez Yuno. */
+/* L'en-tête du SITE : la signature, entière, centrée — rien d'autre. */
 .yuno-site-tete {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--espace-8);
-  margin: var(--espace-16) 0 var(--espace-24);
-  text-align: center;
+  justify-content: center;
+  margin: 0;
 }
 
-.yuno-site-tete .yuno-logo { width: 72px; height: 72px; }
-.yuno-site-tete h1 { margin: 0; }
-.yuno-site-tete .sous-titre { margin: 0; }
+/* Le fichier source garde ~20 % de marges transparentes autour du dessin :
+   les marges négatives les résorbent sans toucher à l'image. */
+.yuno-signature {
+  display: block;
+  width: 240px;
+  max-width: 70vw;
+  margin: -40px 0 -32px;
+}
 
-.yuno-site-tete + .yuno-nav { justify-content: center; }
+/* Centrage par marges automatiques : contrairement à justify-content:center,
+   il n'ampute pas le début de la barre quand elle déborde et défile. */
+.yuno-site-tete + .yuno-nav > a:first-child { margin-left: auto; }
+.yuno-site-tete + .yuno-nav > a:last-child { margin-right: auto; }
 
 /* La seule sortie du site, tout en bas et discrète : en plein écran sur
    téléphone il n'y a pas de barre d'adresse, il faut bien une porte. */

@@ -68,13 +68,27 @@
 
 /* Thèmes des espaces. */
 body[data-espace="dashboard"] { --accent: #6b7f8c; --accent-doux: #eceff1; }
+/* Le calendrier est transverse : il garde le gris neutre de l'accueil. */
+body[data-espace="calendrier"] { --accent: #6b7f8c; --accent-doux: #eceff1; }
 body[data-espace="formation"] { --accent: #17786f; --accent-doux: #e3f1ef; }
 /* Yuno : le doré du logo (#e8b000, relevé sur le fichier). En clair il
    s'assombrit en ocre — un doré clair sur fond blanc ne se lit pas
    (docs/yuno-spec.md, §3). */
 body[data-espace="photo"]     { --accent: #8f6c00; --accent-doux: #f7efcf; }
-/* Le site Yuno partage les couleurs de la page Yuno du hub… */
-body[data-espace="yuno"]      { --accent: #8f6c00; --accent-doux: #f7efcf; }
+/* Le SITE Yuno est toujours sombre, quel que soit le réglage du téléphone :
+   c'est l'identité de la marque (la signature blanche et or ne vit que sur
+   fond sombre), et ça dit « on a quitté le hub ». Le fond est celui du logo. */
+body[data-espace="yuno"] {
+  --fond: #181818;
+  --fond-carte: #222222;
+  --texte: #eceeea;
+  --texte-discret: #8b928b;
+  --bordure: #363636;
+  --ombre: none;
+  --erreur: #e0857a;
+  --accent: #e8b000;
+  --accent-doux: #2f2708;
+}
 /* FCH : le club joue en bleu et rouge. Le bleu porte l'accent (barres, liens,
    états actifs) parce qu'il reste lisible en aplat ; le rouge est la seconde
    couleur d'identité, réservée à la pastille du projet. Il ne signale jamais
@@ -100,12 +114,9 @@ body[data-espace="perso"]     { --accent: #8878b4; --accent-doux: #efebf7; }
   }
 
   body[data-espace="dashboard"] { --accent: #9db3c0; --accent-doux: #262a2e; }
+  body[data-espace="calendrier"] { --accent: #9db3c0; --accent-doux: #262a2e; }
   body[data-espace="formation"] { --accent: #56b8ad; --accent-doux: #1b2e2c; }
   body[data-espace="photo"]     { --accent: #e8b000; --accent-doux: #2f2708; }
-  /* …et le soir, son fond est celui du logo. */
-  body[data-espace="yuno"]      { --accent: #e8b000; --accent-doux: #2f2708;
-                                  --fond: #181818; --fond-carte: #222222;
-                                  --bordure: #363636; }
   body[data-espace="fch"]       { --accent: #7ba5dc; --accent-doux: #1d2733; }
   body[data-espace="perso"]     { --accent: #b3a3d9; --accent-doux: #272335; }
 
@@ -425,8 +436,14 @@ body[data-espace="yuno"] #vue { padding-top: calc(env(safe-area-inset-top) + var
 
 .tuile-entete .quand { margin-left: auto; }
 
-/* Le projet n'est pas dit que par la couleur : son nom est écrit. */
+/* Le projet n'est pas dit que par la couleur : son nom est écrit. Il se
+   tronque plutôt que de se replier sur deux lignes. */
 .tuile-projet {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.12em;
@@ -848,6 +865,50 @@ body[data-espace="yuno"] #vue { padding-top: calc(env(safe-area-inset-top) + var
 /* Au doigt il n'y a pas de survol : la croix reste visible sur écran tactile. */
 @media (hover: none) {
   .bouton-retirer { opacity: 0.5; }
+}
+
+/* --- Le calendrier ---------------------------------------------------------- */
+
+/* Les filtres : des pastilles, une seule active à la fois. */
+.filtres {
+  display: flex;
+  gap: var(--espace-4);
+  margin: 0 0 var(--espace-16);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.filtres::-webkit-scrollbar { display: none; }
+
+.filtres button {
+  flex: 0 0 auto;
+  min-height: 2.25rem;
+  padding: 0 var(--espace-12);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--texte-discret);
+  background: none;
+  border: 0;
+  border-radius: var(--rayon-pastille);
+}
+
+.filtres button:hover {
+  color: var(--texte);
+  background: color-mix(in srgb, var(--texte) 8%, transparent);
+}
+
+.filtres button.actif {
+  color: var(--fond-carte);
+  background: var(--accent);
+}
+
+.bloc-mois h2::first-letter { text-transform: uppercase; }
+
+.calendrier-detail {
+  display: block;
+  width: 100%;
+  font-size: 0.8125rem;
 }
 
 /* --- Espace perso ----------------------------------------------------------

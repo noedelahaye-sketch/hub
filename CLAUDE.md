@@ -51,6 +51,7 @@ Le hub existe pour servir Noé, pas l'inverse. Pour éviter que le professionnel
 
 4 espaces accessibles par navigation :
 - `/` ou `#dashboard` — tableau de bord global (tous projets)
+- `#calendrier` — tout ce qui porte une date, tous projets confondus, filtres par nature (tâches, événements, publications, objectifs)
 - `#formation` — espace formation (thème : teal)
 - `#photo` — la page Yuno du hub (thème : doré) — tableau de bord réduit et porte vers le site
 - `#yuno` — le SITE Yuno : l'habillage du hub disparaît entièrement, chrome et identité propres (voir docs/yuno-spec.md)

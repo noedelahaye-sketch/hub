@@ -350,6 +350,45 @@ export async function supprimerPublication(id) {
   if (error) throw error;
 }
 
+// --- Le calendrier : tout ce qui porte une date ------------------------------
+// Règle commune : on montre ce qui reste à vivre ou à faire. Un événement passé
+// est passé ; une tâche ou une publication en retard de date reste affichée
+// (sobrement — jamais en alerte) tant qu'elle n'est pas faite.
+
+export async function evenementsDepuis(debutISO, { projet = null } = {}) {
+  let requete = client
+    .from('evenements')
+    .select('*')
+    .gte('date_debut', debutISO)
+    .order('date_debut');
+
+  if (projet) requete = requete.eq('projet', projet);
+  return verifier(await requete);
+}
+
+export async function tachesDatees({ projet = null } = {}) {
+  let requete = client
+    .from('taches')
+    .select('*')
+    .neq('statut', 'fait')
+    .not('echeance', 'is', null)
+    .order('echeance');
+
+  if (projet) requete = requete.eq('projet', projet);
+  return verifier(await requete);
+}
+
+export async function publicationsDatees() {
+  return verifier(
+    await client
+      .from('publications')
+      .select('*')
+      .not('date_prevue', 'is', null)
+      .neq('statut', 'publie')
+      .order('date_prevue'),
+  );
+}
+
 // --- Modification et suppression --------------------------------------------
 // Les objectifs sont les seuls à se modifier vraiment : leur « pourquoi », leur
 // cible et leur échéance évoluent avec le temps. Une tâche ou un événement mal

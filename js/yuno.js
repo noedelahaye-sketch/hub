@@ -5,7 +5,8 @@
 // lui. La page Yuno DU hub, elle, vit dans js/photo.js (#photo).
 //
 //   #yuno              l'accueil : objectifs, aperçu création, victoires
-//   #yuno/calendrier   l'outil phare : calendrier éditorial + banque d'idées
+//   #yuno/creer        l'outil phare : calendrier éditorial + banque d'idées
+//   #yuno/calendrier   tout ce qui a une date chez Yuno, avec filtres
 //   #yuno/reseau       le carnet réseau (à construire)
 //   #yuno/commandes    le suivi des commandes (à construire)
 //
@@ -18,9 +19,13 @@ import {
   construireVictoires,
 } from './espace-projet.js';
 import { depuisDateISO, echeanceLisible, echapper } from './format.js';
-
-const RESEAUX = { instagram: 'Instagram', tiktok: 'TikTok', linkedin: 'LinkedIn' };
-const FORMATS = { post: 'Post', carrousel: 'Carrousel', reel: 'Réel', story: 'Story' };
+import {
+  RESEAUX,
+  FORMATS,
+  assemblerCalendrier,
+  construireCalendrier,
+  construireFiltres,
+} from './calendrier-commun.js';
 
 // L'ordre du cycle. Chaque statut connaît son suivant ; « publié » n'en a pas.
 const STATUTS = ['idee', 'brouillon', 'pret', 'publie'];
@@ -35,13 +40,14 @@ export const RUBRIQUES_DEPART = [
   'Un mois en tant que photographe sportif',
 ];
 
-const VUES = ['accueil', 'calendrier', 'reseau', 'commandes'];
+const VUES = ['accueil', 'creer', 'calendrier', 'reseau', 'commandes'];
 
 // --- Fabrication du HTML ----------------------------------------------------
 
 function enTete(vueActive) {
   const liens = [
     ['accueil', 'Accueil', '#yuno'],
+    ['creer', 'Créer', '#yuno/creer'],
     ['calendrier', 'Calendrier', '#yuno/calendrier'],
     ['reseau', 'Réseau', '#yuno/reseau'],
     ['commandes', 'Commandes', '#yuno/commandes'],
@@ -49,9 +55,9 @@ function enTete(vueActive) {
 
   return `
     <header class="yuno-site-tete">
-      <span class="yuno-logo" aria-hidden="true"><img src="img/yuno-logo.jpg" alt=""></span>
-      <h1>Yuno</h1>
-      <p class="discret sous-titre">Photographe sportif · yuno_rph</p>
+      <!-- La signature EST le titre : ni « Yuno » en texte, ni sous-titre
+           (décision de Noé, 7 août 2026). L'alt porte le nom pour l'accessibilité. -->
+      <img class="yuno-signature" src="img/yuno-signature.png" alt="Yuno">
     </header>
     <nav class="yuno-nav" aria-label="Le site Yuno">
       ${liens
@@ -244,10 +250,10 @@ function vueAccueil(etat) {
     <section class="bloc">
       <h2>En création</h2>
       <div data-bloc="apercu">${construireApercuCreation(etat.publications)}</div>
-      <a class="lien-externe" href="#photo/calendrier">
+      <a class="lien-externe" href="#yuno/creer">
         <span class="lien-externe-texte">
-          <span class="lien-externe-titre">Ouvrir le calendrier éditorial</span>
-          <span class="discret">Programmer, piocher dans la banque d'idées</span>
+          <span class="lien-externe-titre">Ouvrir l'atelier Créer</span>
+          <span class="discret">Calendrier éditorial, banque d'idées</span>
         </span>
         <span class="lien-externe-fleche" aria-hidden="true">→</span>
       </a>
@@ -260,9 +266,9 @@ function vueAccueil(etat) {
     ${pied()}`;
 }
 
-function vueCalendrier(etat) {
+function vueCreer(etat) {
   return `
-    ${enTete('calendrier')}
+    ${enTete('creer')}
 
     <section class="bloc">
       <h2>Calendrier éditorial</h2>
@@ -282,6 +288,25 @@ function vueCalendrier(etat) {
     ${pied()}`;
 }
 
+function vueCalendrier(etat) {
+  const elements = assemblerCalendrier({
+    evenements: etat.evenements,
+    taches: etat.taches,
+    objectifs: etat.objectifs,
+    publications: etat.publications.filter(
+      (pub) => pub.date_prevue && pub.statut !== 'publie',
+    ),
+  });
+
+  return `
+    ${enTete('calendrier')}
+    ${construireFiltres(etat.filtre)}
+    <div data-bloc="calendrier">
+      ${construireCalendrier(elements, etat.filtre)}
+    </div>
+    ${pied()}`;
+}
+
 function vueAConstruire(nom, description) {
   return `
     ${enTete(nom)}
@@ -295,10 +320,19 @@ function vueAConstruire(nom, description) {
 
 export default {
   async monter(section, route) {
-    const etat = { objectifs: [], victoires: [], publications: [], vue: 'accueil' };
+    const etat = {
+      objectifs: [],
+      victoires: [],
+      publications: [],
+      taches: [],
+      evenements: [],
+      vue: 'accueil',
+      filtre: 'tout',
+    };
 
     const rendre = () => {
-      if (etat.vue === 'calendrier') section.innerHTML = vueCalendrier(etat);
+      if (etat.vue === 'creer') section.innerHTML = vueCreer(etat);
+      else if (etat.vue === 'calendrier') section.innerHTML = vueCalendrier(etat);
       else if (etat.vue === 'reseau') {
         section.innerHTML = vueAConstruire(
           'reseau',
@@ -319,12 +353,14 @@ export default {
     };
 
     try {
-      const [objectifs, victoires, publications] = await Promise.all([
+      const [objectifs, victoires, publications, taches, evenements] = await Promise.all([
         api.objectifsActifs({ projet: 'photo' }),
         api.victoiresDuProjet('photo'),
         api.publicationsToutes(),
+        api.tachesDatees({ projet: 'photo' }),
+        api.evenementsDepuis(new Date().toISOString(), { projet: 'photo' }),
       ]);
-      Object.assign(etat, { objectifs, victoires, publications });
+      Object.assign(etat, { objectifs, victoires, publications, taches, evenements });
     } catch (erreur) {
       console.error("Chargement de l'espace Yuno impossible", erreur);
       section.innerHTML = `
@@ -428,6 +464,13 @@ export default {
     // --- Clics ---
 
     section.addEventListener('click', async (evenement) => {
+      const filtre = evenement.target.closest('[data-filtre]');
+      if (filtre) {
+        etat.filtre = filtre.dataset.filtre;
+        rendre();
+        return;
+      }
+
       const avancer = evenement.target.closest('[data-avancer]');
       if (avancer) {
         const pub = trouverPub(avancer.dataset.avancer);
