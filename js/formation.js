@@ -17,17 +17,35 @@ const SITE_REVISION = 'https://noedelahaye-sketch.github.io/Bac-3/';
 
 // --- Fabrication du HTML ----------------------------------------------------
 
+const pluriel = (nombre, singulier, plurielMot) => (nombre > 1 ? plurielMot : singulier);
+
 export function construireRevisions(revisions) {
   if (revisions === null) {
     return `<p class="vide">La progression des révisions n'a pas pu être lue.</p>`;
   }
 
   const pourcentage = Math.round((revisions.livrables / revisions.totalLivrables) * 100);
+
+  // Pas de dénominateur pour les cartes ni les résumés : leur total vit dans le
+  // contenu généré de Bac-3, pas dans le gist. Inventer une base donnerait un
+  // chiffre différent de celui affiché là-bas.
   const chiffres = [
-    [revisions.cartesVues, 'cartes vues'],
-    [revisions.resumesLus, revisions.resumesLus > 1 ? 'résumés lus' : 'résumé lu'],
-    [revisions.serie, revisions.serie > 1 ? "jours d'affilée" : "jour d'affilée"],
+    [revisions.cartesVues, pluriel(revisions.cartesVues, 'carte vue', 'cartes vues')],
+    [revisions.cartesMaitrisees, pluriel(revisions.cartesMaitrisees, 'maîtrisée', 'maîtrisées')],
+    [revisions.resumesLus, pluriel(revisions.resumesLus, 'résumé lu', 'résumés lus')],
+    [revisions.serie, pluriel(revisions.serie, "jour d'affilée", "jours d'affilée")],
   ];
+
+  const enPlus = [
+    revisions.resumesEnCours
+      ? `${revisions.resumesEnCours} ${pluriel(
+          revisions.resumesEnCours,
+          'résumé en cours',
+          'résumés en cours',
+        )}`
+      : null,
+    revisions.scoreQuiz !== null ? `score quiz moyen ${revisions.scoreQuiz}&nbsp;%` : null,
+  ].filter(Boolean);
 
   return `
     <div class="barre" role="img"
@@ -44,6 +62,8 @@ export function construireRevisions(revisions) {
         )
         .join('')}
     </ul>
+
+    ${enPlus.length ? `<p class="discret note-regle">${enPlus.join(' · ')}</p>` : ''}
   `;
 }
 
