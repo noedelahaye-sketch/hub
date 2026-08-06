@@ -364,6 +364,38 @@ button:active { transform: scale(0.97); }
   white-space: nowrap;
 }
 
+/* Lien vers un site extérieur au hub : présenté comme une porte, pas comme une
+   ligne de liste. La flèche dit qu'on quitte le hub. */
+.lien-externe {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-12);
+  padding: var(--espace-12) var(--espace-16);
+  text-decoration: none;
+  color: var(--texte);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--rayon-carte);
+}
+
+.lien-externe:hover { border-color: var(--accent); }
+
+.lien-externe-texte {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.lien-externe-titre { font-weight: 500; }
+
+.lien-externe-fleche {
+  margin-left: auto;
+  color: var(--accent);
+  font-size: 1.125rem;
+}
+
 .bouton-secondaire {
   margin-top: 1rem;
   padding: 0.5rem 1rem;
