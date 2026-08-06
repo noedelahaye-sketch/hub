@@ -301,6 +301,57 @@ export async function creerEvenement({ projet, titre, date_debut, date_fin = nul
   );
 }
 
+// --- Modification et suppression --------------------------------------------
+// Les objectifs sont les seuls à se modifier vraiment : leur « pourquoi », leur
+// cible et leur échéance évoluent avec le temps. Une tâche ou un événement mal
+// écrit se supprime et se recrée en cinq secondes — pas besoin d'un écran de
+// plus pour ça.
+
+export async function modifierObjectif(id, champs) {
+  return verifier(
+    await client.from('objectifs').update(champs).eq('id', id).select().single(),
+  );
+}
+
+export async function supprimerObjectif(id) {
+  // Les jalons partent avec lui (ON DELETE CASCADE) ; les tâches liées sont
+  // conservées, simplement détachées (ON DELETE SET NULL).
+  const { error } = await client.from('objectifs').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function supprimerTache(id) {
+  const { error } = await client.from('taches').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function supprimerEvenement(id) {
+  const { error } = await client.from('evenements').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// Atteindre un objectif crée sa victoire — le troisième et dernier automatisme
+// du CLAUDE.md, après la tâche terminée et le jalon atteint.
+export async function atteindreObjectif(objectif) {
+  const atteint = verifier(
+    await client
+      .from('objectifs')
+      .update({ statut: 'atteint', date_atteint: new Date().toISOString().slice(0, 10) })
+      .eq('id', objectif.id)
+      .select()
+      .single(),
+  );
+
+  const victoire = await ajouterVictoire({
+    projet: atteint.projet,
+    titre: atteint.titre,
+    source: 'objectif',
+    source_id: atteint.id,
+  });
+
+  return { objectif: atteint, victoire };
+}
+
 // Atteindre un jalon crée sa victoire, comme pour une tâche terminée.
 export async function atteindreJalon(jalon, projet) {
   const atteint = verifier(

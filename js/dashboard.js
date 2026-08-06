@@ -43,10 +43,11 @@ const NIVEAUX_HUMEUR = [
 // L'en-tête d'une tuile : le projet à gauche, la date à droite. Les mettre sur
 // la même ligne garde les tuiles régulières, quelle que soit la longueur du
 // titre en dessous.
-function enTeteTuile(projet, quand) {
+function enTeteTuile(projet, quand, bouton = '') {
   return `<span class="tuile-entete">
     <span class="tuile-projet">${echapper(NOMS_PROJETS[projet] ?? projet)}</span>
     <span class="discret quand">${echapper(quand)}</span>
+    ${bouton}
   </span>`;
 }
 
@@ -94,7 +95,14 @@ export function construireVictoires(victoires) {
     .map(
       (victoire) => `
       <li data-projet="${echapper(victoire.projet)}">
-        ${enTeteTuile(victoire.projet, echeanceLisible(depuisDateISO(victoire.date)))}
+        ${enTeteTuile(
+          victoire.projet,
+          echeanceLisible(depuisDateISO(victoire.date)),
+          `<button type="button" class="lien-discret bouton-mini bouton-retirer"
+             data-victoire="${echapper(victoire.id)}"
+             title="Retirer cette victoire"
+             aria-label="Retirer « ${echapper(victoire.titre)} »">×</button>`,
+        )}
         <span class="victoire-titre">${echapper(victoire.titre)}</span>
       </li>`,
     )
@@ -376,7 +384,20 @@ export default {
         return;
       }
 
-      if (evenement.target.closest('[data-annuler]')) await annulerDerniereTache();
+      if (evenement.target.closest('[data-annuler]')) return annulerDerniereTache();
+
+      const retirer = evenement.target.closest('[data-victoire]');
+      if (retirer) {
+        retirer.disabled = true;
+        try {
+          await api.supprimerVictoire(retirer.dataset.victoire);
+          etat.victoires = etat.victoires.filter((v) => v.id !== retirer.dataset.victoire);
+          rendreVictoires();
+        } catch (erreur) {
+          console.error('Suppression de la victoire impossible', erreur);
+          retirer.disabled = false;
+        }
+      }
     });
 
     // La note s'enregistre 400 ms après la dernière frappe, comme sur Bac-3 :

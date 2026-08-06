@@ -399,15 +399,17 @@ button:active { transform: scale(0.97); }
   border-radius: var(--rayon-carte) 0 0 var(--rayon-carte);
 }
 
-/* L'en-tête d'une tuile : le projet à gauche, la date à droite. */
+/* L'en-tête d'une tuile : le projet à gauche, la date poussée à droite, et un
+   éventuel bouton discret tout au bout. */
 .tuile-entete {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
   gap: var(--espace-8);
   width: 100%;
   margin-bottom: var(--espace-4);
 }
+
+.tuile-entete .quand { margin-left: auto; }
 
 /* Le projet n'est pas dit que par la couleur : son nom est écrit. */
 .tuile-projet {
@@ -418,7 +420,6 @@ button:active { transform: scale(0.97); }
   color: var(--couleur-projet-texte);
 }
 
-.tuile-entete .quand { margin-left: 0; }
 
 .quand {
   margin-left: auto;
@@ -781,6 +782,15 @@ button:active { transform: scale(0.97); }
   font-size: 0.8125rem;
 }
 
+/* Les actions rares d'un objectif, en pied de sa tuile dépliée. */
+.objectif-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-12);
+  margin-top: var(--espace-12);
+  flex-wrap: wrap;
+}
+
 /* La porte de sortie après une tâche cochée. Discrète : elle ne s'adresse qu'à
    qui s'est trompé, et disparaît d'elle-même. */
 .annulation {
@@ -818,7 +828,7 @@ button:active { transform: scale(0.97); }
   padding: 0 var(--espace-4);
 }
 
-.liste-victoires li:hover .bouton-retirer,
+.bloc li:hover .bouton-retirer,
 .bouton-retirer:focus-visible { opacity: 1; }
 
 /* Au doigt il n'y a pas de survol : la croix reste visible sur écran tactile. */
@@ -837,6 +847,12 @@ button:active { transform: scale(0.97); }
 
 .intention-titre { font-weight: 600; }
 .intention-pourquoi { font-size: 0.875rem; }
+
+.liste-intentions .bouton-retirer {
+  position: absolute;
+  top: var(--espace-8);
+  right: var(--espace-8);
+}
 
 .courbe-humeur {
   display: block;

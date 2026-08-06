@@ -42,6 +42,10 @@ export function construireIntentions(intentions) {
             ? `<span class="discret intention-pourquoi">${echapper(intention.pourquoi)}</span>`
             : ''
         }
+        <button type="button" class="lien-discret bouton-mini bouton-retirer"
+          data-intention="${echapper(intention.id)}"
+          title="Retirer cette intention"
+          aria-label="Retirer « ${echapper(intention.titre)} »">×</button>
       </li>`,
     )
     .join('')}</ul>`;
@@ -272,17 +276,49 @@ export default {
     }
 
     section.addEventListener('click', async (evenement) => {
-      const bouton = evenement.target.closest('[data-victoire]');
-      if (!bouton) return;
+      const victoire = evenement.target.closest('[data-victoire]');
+      if (victoire) {
+        victoire.disabled = true;
+        try {
+          await api.supprimerVictoire(victoire.dataset.victoire);
+          etat.victoires = etat.victoires.filter((v) => v.id !== victoire.dataset.victoire);
+          rendreVictoires();
+        } catch (souci) {
+          console.error('Suppression de la victoire impossible', souci);
+          victoire.disabled = false;
+        }
+        return;
+      }
 
-      bouton.disabled = true;
-      try {
-        await api.supprimerVictoire(bouton.dataset.victoire);
-        etat.victoires = etat.victoires.filter((v) => v.id !== bouton.dataset.victoire);
-        rendreVictoires();
-      } catch (souci) {
-        console.error('Suppression de la victoire impossible', souci);
-        bouton.disabled = false;
+      // Retirer une intention, c'est juste effacer une phrase : pas de
+      // confirmation, pas de cérémonie.
+      const intention = evenement.target.closest('[data-intention]');
+      if (intention) {
+        intention.disabled = true;
+        try {
+          await api.supprimerObjectif(intention.dataset.intention);
+          etat.intentions = etat.intentions.filter((i) => i.id !== intention.dataset.intention);
+          rendreIntentions();
+        } catch (souci) {
+          console.error("Retrait de l'intention impossible", souci);
+          intention.disabled = false;
+        }
+        return;
+      }
+
+      const rdv = evenement.target.closest('[data-supprimer-evenement]');
+      if (rdv) {
+        rdv.disabled = true;
+        try {
+          await api.supprimerEvenement(rdv.dataset.supprimerEvenement);
+          etat.evenements = etat.evenements.filter(
+            (e) => e.id !== rdv.dataset.supprimerEvenement,
+          );
+          rendreEvenements();
+        } catch (souci) {
+          console.error('Suppression du rendez-vous impossible', souci);
+          rdv.disabled = false;
+        }
       }
     });
   },

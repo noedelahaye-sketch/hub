@@ -73,6 +73,27 @@ function construireObjectif(objectif) {
           ],
           extra: `<input type="hidden" name="objectif_id" value="${echapper(objectif.id)}">`,
         })}
+
+        ${construireFormulaire({
+          id: `modif-${objectif.id}`,
+          libelle: "Modifier l'objectif",
+          action: 'modifier-objectif',
+          bouton: 'Enregistrer',
+          champs: [
+            { nom: 'titre', libelle: 'Objectif', type: 'text', requis: true, valeur: objectif.titre },
+            { nom: 'pourquoi', libelle: 'Pourquoi ?', type: 'textarea', valeur: objectif.pourquoi },
+            { nom: 'cible', libelle: "À quoi tu sauras que c'est réussi", type: 'text', valeur: objectif.cible },
+            { nom: 'echeance', libelle: 'Échéance (facultative)', type: 'date', valeur: objectif.echeance },
+          ],
+          extra: `<input type="hidden" name="objectif_id" value="${echapper(objectif.id)}">`,
+        })}
+
+        <div class="objectif-actions">
+          <button type="button" class="bouton-secondaire bouton-mini"
+            data-atteindre="${echapper(objectif.id)}">Marquer l'objectif atteint</button>
+          <button type="button" class="lien-discret bouton-mini"
+            data-supprimer-objectif="${echapper(objectif.id)}">Supprimer</button>
+        </div>
       </div>
     </details>`;
 }
@@ -144,6 +165,10 @@ export function construireTaches(taches, annulation = null) {
                     ? `Déjà ${api.MAX_TACHES_ACTIVES} tâches actives`
                     : 'Rendre cette tâche active'
                 }">Activer</button>
+              <button type="button" class="lien-discret bouton-mini bouton-retirer"
+                data-supprimer-tache="${echapper(tache.id)}"
+                title="Supprimer cette tâche"
+                aria-label="Supprimer « ${echapper(tache.titre)} »">×</button>
             </li>`,
             )
             .join('')}
@@ -177,6 +202,10 @@ function construireTacheActive(tache) {
       <button type="button" class="lien-discret bouton-mini"
         data-backlog="${echapper(tache.id)}"
         title="Renvoyer cette tâche au backlog">↓</button>
+      <button type="button" class="lien-discret bouton-mini bouton-retirer"
+        data-supprimer-tache="${echapper(tache.id)}"
+        title="Supprimer cette tâche"
+        aria-label="Supprimer « ${echapper(tache.titre)} »">×</button>
     </li>`;
 }
 
@@ -194,6 +223,10 @@ export function construireEvenements(evenements) {
           <span class="discret quand">${echapper(
             momentLisible(new Date(evenement.date_debut)),
           )}</span>
+          <button type="button" class="lien-discret bouton-mini bouton-retirer"
+            data-supprimer-evenement="${echapper(evenement.id)}"
+            title="Supprimer cet événement"
+            aria-label="Supprimer « ${echapper(evenement.titre)} »">×</button>
         </span>
         <span class="semaine-titre">${echapper(evenement.titre)}</span>
       </li>`,
@@ -225,9 +258,10 @@ export function construireVictoires(victoires) {
     .join('')}</ul>`;
 }
 
-// Un formulaire d'ajout, replié par défaut : la page sert d'abord à lire ce qui
-// avance, pas à saisir.
-export function construireFormulaire({ id, libelle, action, champs, extra = '' }) {
+// Un formulaire replié par défaut : la page sert d'abord à lire ce qui avance,
+// pas à saisir. `valeur` pré-remplit un champ — c'est ce qui fait qu'un même
+// gabarit sert à l'ajout comme à la modification.
+export function construireFormulaire({ id, libelle, action, champs, extra = '', bouton = 'Ajouter' }) {
   return `
     <details class="ajout" data-ajout="${id}">
       <summary>${libelle}</summary>
@@ -241,14 +275,14 @@ export function construireFormulaire({ id, libelle, action, champs, extra = '' }
             champ.type === 'textarea'
               ? `<textarea id="${id}-${champ.nom}" name="${champ.nom}" rows="2" ${
                   champ.requis ? 'required' : ''
-                }></textarea>`
+                }>${echapper(champ.valeur ?? '')}</textarea>`
               : `<input id="${id}-${champ.nom}" name="${champ.nom}" type="${champ.type}" ${
                   champ.requis ? 'required' : ''
-                }>`
+                } value="${echapper(champ.valeur ?? '')}">`
           }`,
           )
           .join('')}
-        <button type="submit" class="bouton-secondaire">Ajouter</button>
+        <button type="submit" class="bouton-secondaire">${echapper(bouton)}</button>
         <p class="message-erreur" data-erreur hidden></p>
       </form>
     </details>`;
@@ -410,6 +444,22 @@ export function creerEspaceProjet({ projet, titre, sousTitre, blocEnTete = null 
       });
 
       async function appliquerAjout(action, champs) {
+        if (action === 'modifier-objectif') {
+          const objectif = etat.objectifs.find((o) => o.id === champs.objectif_id);
+          const misAJour = await api.modifierObjectif(champs.objectif_id, {
+            titre: champs.titre.trim(),
+            pourquoi: champs.pourquoi?.trim() || null,
+            cible: champs.cible?.trim() || null,
+            echeance: champs.echeance || null,
+          });
+          // La mise à jour ne renvoie que les colonnes : les jalons déjà
+          // chargés restent en place.
+          Object.assign(objectif, misAJour);
+          rendreObjectifs();
+          ouvrirObjectif(objectif.id);
+          return;
+        }
+
         if (action === 'creer-objectif') {
           const objectif = await api.creerObjectif({
             projet,
@@ -476,6 +526,18 @@ export function creerEspaceProjet({ projet, titre, sousTitre, blocEnTete = null 
         const victoire = evenement.target.closest('[data-victoire]');
         if (victoire) return retirerVictoire(victoire);
 
+        const atteindre = evenement.target.closest('[data-atteindre]');
+        if (atteindre) return atteindreObjectif(atteindre);
+
+        const supprObjectif = evenement.target.closest('[data-supprimer-objectif]');
+        if (supprObjectif) return supprimerObjectif(supprObjectif);
+
+        const supprTache = evenement.target.closest('[data-supprimer-tache]');
+        if (supprTache) return supprimerTache(supprTache);
+
+        const supprEvenement = evenement.target.closest('[data-supprimer-evenement]');
+        if (supprEvenement) return supprimerEvenement(supprEvenement);
+
         const activer = evenement.target.closest('[data-activer]');
         const versBacklog = evenement.target.closest('[data-backlog]');
         const bouton = activer ?? versBacklog;
@@ -512,6 +574,71 @@ export function creerEspaceProjet({ projet, titre, sousTitre, blocEnTete = null 
           ouvrirObjectif(objectif.id);
         } catch (souci) {
           console.error('Impossible de marquer le jalon', souci);
+          bouton.disabled = false;
+        }
+      }
+
+      // Atteindre un objectif est rare et engageant : on demande une fois.
+      // Cocher une tâche, geste quotidien, n'a pas cette friction — lui a
+      // l'annulation de six secondes à la place.
+      async function atteindreObjectif(bouton) {
+        const objectif = etat.objectifs.find((o) => o.id === bouton.dataset.atteindre);
+        if (!objectif) return;
+        if (!confirm(`Marquer « ${objectif.titre} » comme atteint ?`)) return;
+
+        bouton.disabled = true;
+        try {
+          const { victoire } = await api.atteindreObjectif(objectif);
+          etat.objectifs = etat.objectifs.filter((o) => o.id !== objectif.id);
+          etat.victoires = [victoire, ...etat.victoires];
+          rendreObjectifs();
+          rendreVictoires();
+        } catch (souci) {
+          console.error("Impossible de marquer l'objectif atteint", souci);
+          bouton.disabled = false;
+        }
+      }
+
+      async function supprimerObjectif(bouton) {
+        const objectif = etat.objectifs.find((o) => o.id === bouton.dataset.supprimerObjectif);
+        if (!objectif) return;
+        if (!confirm(`Supprimer « ${objectif.titre} » et ses jalons ? Les tâches liées sont conservées.`)) {
+          return;
+        }
+
+        bouton.disabled = true;
+        try {
+          await api.supprimerObjectif(objectif.id);
+          etat.objectifs = etat.objectifs.filter((o) => o.id !== objectif.id);
+          rendreObjectifs();
+        } catch (souci) {
+          console.error("Suppression de l'objectif impossible", souci);
+          bouton.disabled = false;
+        }
+      }
+
+      async function supprimerTache(bouton) {
+        const id = bouton.dataset.supprimerTache;
+        bouton.disabled = true;
+        try {
+          await api.supprimerTache(id);
+          etat.taches = etat.taches.filter((tache) => tache.id !== id);
+          rendreTaches();
+        } catch (souci) {
+          console.error('Suppression de la tâche impossible', souci);
+          bouton.disabled = false;
+        }
+      }
+
+      async function supprimerEvenement(bouton) {
+        const id = bouton.dataset.supprimerEvenement;
+        bouton.disabled = true;
+        try {
+          await api.supprimerEvenement(id);
+          etat.evenements = etat.evenements.filter((e) => e.id !== id);
+          rendreEvenements();
+        } catch (souci) {
+          console.error("Suppression de l'événement impossible", souci);
           bouton.disabled = false;
         }
       }
