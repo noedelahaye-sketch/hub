@@ -70,19 +70,28 @@
 body[data-espace="dashboard"] { --accent: #6b7f8c; --accent-doux: #eceff1; }
 body[data-espace="formation"] { --accent: #17786f; --accent-doux: #e3f1ef; }
 body[data-espace="photo"]     { --accent: #d9694f; --accent-doux: #fbe9e4; }
-/* FCH : couleurs provisoires, à remplacer par celles du club. */
-body[data-espace="fch"]       { --accent: #1f4e8c; --accent-doux: #e6edf7; }
+/* FCH : le club joue en bleu et rouge. Le bleu porte l'accent (barres, liens,
+   états actifs) parce qu'il reste lisible en aplat ; le rouge est la seconde
+   couleur d'identité, réservée à la pastille du projet. Il ne signale jamais
+   une alerte ni un retard — voir la philosophie du produit. */
+body[data-espace="fch"]       { --accent: #1e4b8f; --accent-doux: #e6edf7; }
 body[data-espace="perso"]     { --accent: #8878b4; --accent-doux: #efebf7; }
 
+:root { --club-fch-bleu: #1e4b8f; --club-fch-rouge: #c4362f; }
+
 @media (prefers-color-scheme: dark) {
+  /* Gris neutres repris du site Bac-3, pour que les deux sites de Noé aient le
+     même fond le soir. */
   :root {
-    --fond: #17161a;
-    --fond-carte: #201f24;
-    --texte: #ece9e5;
-    --texte-discret: #a09b95;
-    --bordure: #322f37;
+    --fond: #17191a;
+    --fond-carte: #212426;
+    --texte: #eceeea;
+    --texte-discret: #8b928b;
+    --bordure: #34383a;
     --ombre: none;
     --erreur: #e0857a;
+
+    --club-fch-rouge: #ec8079;
   }
 
   body[data-espace="dashboard"] { --accent: #9db3c0; --accent-doux: #262a2e; }
@@ -90,6 +99,8 @@ body[data-espace="perso"]     { --accent: #8878b4; --accent-doux: #efebf7; }
   body[data-espace="photo"]     { --accent: #f0917a; --accent-doux: #33241f; }
   body[data-espace="fch"]       { --accent: #7ba5dc; --accent-doux: #1d2733; }
   body[data-espace="perso"]     { --accent: #b3a3d9; --accent-doux: #272335; }
+
+  :root { --club-fch-bleu: #7ba5dc; }
 }
 
 /* --- Base ------------------------------------------------------------------ */
@@ -405,6 +416,14 @@ button:active { transform: scale(0.97); }
   border-radius: var(--rayon-controle);
 }
 
+.bouton-secondaire:disabled {
+  opacity: 0.45;
+  cursor: default;
+  background: none;
+}
+
+.bouton-secondaire:disabled:active { transform: none; }
+
 /* Pastilles de projet : couleurs fixes, indépendantes de l'espace affiché. */
 .pastille {
   flex: none;
@@ -417,13 +436,20 @@ button:active { transform: scale(0.97); }
 
 .pastille[data-projet="formation"] { background: #17786f; }
 .pastille[data-projet="photo"]     { background: #d9694f; }
-.pastille[data-projet="fch"]       { background: #1f4e8c; }
 .pastille[data-projet="perso"]     { background: #8878b4; }
+
+/* Le FCH porte ses deux couleurs : moitié bleue, moitié rouge. */
+.pastille[data-projet="fch"] {
+  background: linear-gradient(
+    90deg,
+    var(--club-fch-bleu) 50%,
+    var(--club-fch-rouge) 50%
+  );
+}
 
 @media (prefers-color-scheme: dark) {
   .pastille[data-projet="formation"] { background: #56b8ad; }
   .pastille[data-projet="photo"]     { background: #f0917a; }
-  .pastille[data-projet="fch"]       { background: #7ba5dc; }
   .pastille[data-projet="perso"]     { background: #b3a3d9; }
 }
 
@@ -570,6 +596,139 @@ button:active { transform: scale(0.97); }
 }
 
 .liste-taches .tache-titre { flex: 1; }
+
+/* --- Espace projet --------------------------------------------------------- */
+
+.sous-titre { margin: 0 0 var(--espace-24); }
+
+#bloc-revisions { margin-top: var(--espace-16); }
+
+/* Chiffres qui disent ce qui a été fait, pas ce qui manque. */
+.chiffres-cles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-24);
+  margin: var(--espace-16) 0 0;
+}
+
+.chiffres-cles li {
+  display: block;
+  padding: 0;
+  border-bottom: none;
+}
+
+.chiffre-cle {
+  display: block;
+  font-family: var(--police-titre);
+  font-weight: 700;
+  font-size: 1.75rem;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.chiffres-cles .discret { font-size: 0.8125rem; }
+
+/* Le jalon non atteint est un bouton : un clic le marque fait. */
+.bouton-jalon {
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+  background: none;
+  border: none;
+  color: var(--accent);
+}
+
+.bouton-jalon:hover { color: var(--texte); }
+.bouton-jalon:disabled { opacity: 0.4; }
+
+/* --- Tâches et backlog ------------------------------------------------------ */
+
+.liste-taches li { gap: var(--espace-8); }
+.liste-taches label { flex: 1; }
+
+.bouton-mini {
+  flex: none;
+  padding: var(--espace-4) var(--espace-8);
+  font-size: 0.8125rem;
+  min-height: 2rem;
+}
+
+.backlog { margin-top: var(--espace-12); }
+
+.backlog > summary,
+.ajout > summary {
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: var(--texte-discret);
+  padding: var(--espace-8) 0;
+  list-style: none;
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+}
+
+.backlog > summary::-webkit-details-marker,
+.ajout > summary::-webkit-details-marker { display: none; }
+
+.backlog > summary::before,
+.ajout > summary::before {
+  content: "+";
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+  font-size: 0.875rem;
+  line-height: 1;
+}
+
+.backlog[open] > summary::before,
+.ajout[open] > summary::before { content: "−"; }
+
+.backlog > summary:hover,
+.ajout > summary:hover { color: var(--texte); }
+
+.liste-backlog li { gap: var(--espace-8); }
+.liste-backlog .tache-titre { flex: 1; }
+
+.note-regle {
+  margin: var(--espace-8) 0 0;
+  font-size: 0.8125rem;
+}
+
+/* --- Formulaires d'ajout ---------------------------------------------------- */
+
+.ajout form {
+  padding: var(--espace-12) 0 var(--espace-8);
+}
+
+.ajout label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--texte-discret);
+}
+
+.ajout input,
+.ajout textarea {
+  width: 100%;
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--texte);
+  background: var(--fond-carte);
+  padding: var(--espace-8) var(--espace-12);
+  margin-bottom: var(--espace-12);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  resize: vertical;
+}
+
+.ajout input:focus,
+.ajout textarea:focus { border-color: var(--accent); }
+
+.ajout .message-erreur { margin-top: var(--espace-8); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

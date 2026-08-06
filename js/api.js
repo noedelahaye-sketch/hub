@@ -100,6 +100,18 @@ export async function dernieresVictoires(limite = 5) {
   );
 }
 
+export async function victoiresDuProjet(projet, limite = 10) {
+  return verifier(
+    await client
+      .from('victoires')
+      .select('*')
+      .eq('projet', projet)
+      .order('date', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(limite),
+  );
+}
+
 export async function ajouterVictoire({ projet, titre, source = 'manuel', source_id = null }) {
   return verifier(
     await client
@@ -167,6 +179,23 @@ export async function tachesEcheanceJusqua(finISO, { projet = null } = {}) {
   return verifier(await requete);
 }
 
+// Toutes les tâches en cours d'un projet, actives et backlog confondus. L'ordre
+// met les actives d'abord, puis les plus anciennes du backlog.
+export async function tachesEnCours(projet) {
+  return verifier(
+    await client
+      .from('taches')
+      .select('*')
+      .eq('projet', projet)
+      .neq('statut', 'fait')
+      .order('statut')
+      .order('echeance', { nullsFirst: false })
+      .order('created_at'),
+  );
+}
+
+export const MAX_TACHES_ACTIVES = 3;
+
 // Terminer une tâche crée sa victoire. Si l'insertion de la victoire échoue, la
 // tâche reste faite : on ne la rouvre pas, mais l'erreur remonte pour être vue.
 export async function terminerTache(tache) {
@@ -187,4 +216,89 @@ export async function terminerTache(tache) {
   });
 
   return { tache: faite, victoire };
+}
+
+// Passer une tâche en 'actif' ou la renvoyer au backlog. La règle des 3 actives
+// est vérifiée ici, en plus de l'être dans l'interface : on ne s'appuie pas sur
+// le seul écran pour tenir une règle métier.
+export async function changerStatutTache(tache, statut) {
+  if (statut === 'actif') {
+    const actives = await tachesActives({ projet: tache.projet });
+    const dejaActive = actives.some((candidate) => candidate.id === tache.id);
+    if (!dejaActive && actives.length >= MAX_TACHES_ACTIVES) {
+      throw new Error(
+        `Déjà ${MAX_TACHES_ACTIVES} tâches actives sur ce projet. ` +
+          'Termines-en une, ou renvoie-la au backlog.',
+      );
+    }
+  }
+
+  return verifier(
+    await client.from('taches').update({ statut }).eq('id', tache.id).select().single(),
+  );
+}
+
+// --- Création ---------------------------------------------------------------
+// 'perso' n'apparaît volontairement pas dans les tâches ni les jalons : l'espace
+// perso n'en a pas, et l'interface ne doit pas permettre d'en créer.
+
+export async function creerObjectif({ projet, titre, pourquoi = null, cible = null, echeance = null }) {
+  return verifier(
+    await client
+      .from('objectifs')
+      .insert({ projet, titre, pourquoi, cible, echeance })
+      .select('*, jalons(id, titre, echeance, atteint, date_atteint, ordre)')
+      .single(),
+  );
+}
+
+export async function creerJalon({ objectif_id, titre, echeance = null, ordre = null }) {
+  return verifier(
+    await client
+      .from('jalons')
+      .insert({ objectif_id, titre, echeance, ordre })
+      .select()
+      .single(),
+  );
+}
+
+export async function creerTache({ projet, titre, statut = 'backlog', echeance = null, objectif_id = null }) {
+  return verifier(
+    await client
+      .from('taches')
+      .insert({ projet, titre, statut, echeance, objectif_id })
+      .select()
+      .single(),
+  );
+}
+
+export async function creerEvenement({ projet, titre, date_debut, date_fin = null, lieu = null, notes = null }) {
+  return verifier(
+    await client
+      .from('evenements')
+      .insert({ projet, titre, date_debut, date_fin, lieu, notes })
+      .select()
+      .single(),
+  );
+}
+
+// Atteindre un jalon crée sa victoire, comme pour une tâche terminée.
+export async function atteindreJalon(jalon, projet) {
+  const atteint = verifier(
+    await client
+      .from('jalons')
+      .update({ atteint: true, date_atteint: new Date().toISOString().slice(0, 10) })
+      .eq('id', jalon.id)
+      .select()
+      .single(),
+  );
+
+  const victoire = await ajouterVictoire({
+    projet,
+    titre: atteint.titre,
+    source: 'jalon',
+    source_id: atteint.id,
+  });
+
+  return { jalon: atteint, victoire };
 }
