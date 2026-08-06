@@ -17,3 +17,4 @@ supabase/.branches/
 
 # Claude Code — réglages locaux à cette machine
 .claude/settings.local.json
+.claude/launch.json

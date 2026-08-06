@@ -1,0 +1,258 @@
+/* Hub — feuille de style unique. Mobile d'abord : tout ce qui suit vise le
+   téléphone, les media queries n'ajoutent que le confort du grand écran. */
+
+/* --- Jetons ---------------------------------------------------------------- */
+
+:root {
+  --fond: #fbfaf8;
+  --fond-carte: #ffffff;
+  --texte: #23201d;
+  --texte-discret: #6d6862;
+  --bordure: #e7e3dd;
+  --ombre: 0 1px 2px rgb(35 32 29 / 6%), 0 4px 12px rgb(35 32 29 / 4%);
+  --erreur: #a4453a;
+
+  /* Accent par espace. La valeur courante est posée par [data-espace]. */
+  --accent: #6b7f8c;
+  --accent-doux: #eef1f3;
+
+  --rayon: 12px;
+  --colonne-max: 44rem;
+  --pas: 1rem;
+
+  --police: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", sans-serif;
+}
+
+/* Thèmes des espaces. */
+body[data-espace="dashboard"] { --accent: #6b7f8c; --accent-doux: #eceff1; }
+body[data-espace="formation"] { --accent: #17786f; --accent-doux: #e3f1ef; }
+body[data-espace="photo"]     { --accent: #d9694f; --accent-doux: #fbe9e4; }
+/* FCH : couleurs provisoires, à remplacer par celles du club. */
+body[data-espace="fch"]       { --accent: #1f4e8c; --accent-doux: #e6edf7; }
+body[data-espace="perso"]     { --accent: #8878b4; --accent-doux: #efebf7; }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fond: #17161a;
+    --fond-carte: #201f24;
+    --texte: #ece9e5;
+    --texte-discret: #a09b95;
+    --bordure: #322f37;
+    --ombre: none;
+    --erreur: #e0857a;
+  }
+
+  body[data-espace="dashboard"] { --accent: #9db3c0; --accent-doux: #262a2e; }
+  body[data-espace="formation"] { --accent: #56b8ad; --accent-doux: #1b2e2c; }
+  body[data-espace="photo"]     { --accent: #f0917a; --accent-doux: #33241f; }
+  body[data-espace="fch"]       { --accent: #7ba5dc; --accent-doux: #1d2733; }
+  body[data-espace="perso"]     { --accent: #b3a3d9; --accent-doux: #272335; }
+}
+
+/* --- Base ------------------------------------------------------------------ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--police);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--texte);
+  background: var(--fond);
+  -webkit-text-size-adjust: 100%;
+}
+
+h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.discret {
+  color: var(--texte-discret);
+  font-size: 0.9375rem;
+}
+
+[hidden] { display: none !important; }
+
+/* --- Écrans pleins (chargement, connexion) --------------------------------- */
+
+.ecran-plein {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--pas) * 1.5);
+}
+
+.carte {
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  box-shadow: var(--ombre);
+}
+
+.carte-connexion {
+  width: 100%;
+  max-width: 22rem;
+  padding: calc(var(--pas) * 1.5);
+}
+
+.carte-connexion h1 { margin-bottom: 0.25rem; }
+.carte-connexion .discret { margin: 0 0 1.5rem; }
+
+label {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+input {
+  width: 100%;
+  /* 16px minimum : en dessous, Safari iOS zoome au focus. */
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--texte);
+  background: var(--fond);
+  padding: 0.625rem 0.75rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+}
+
+input:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+button {
+  font-family: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+#bouton-connexion {
+  width: 100%;
+  padding: 0.75rem;
+  font-weight: 500;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+}
+
+#bouton-connexion:disabled { opacity: 0.6; cursor: default; }
+
+.message-erreur {
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
+  color: var(--erreur);
+}
+
+/* --- Application ----------------------------------------------------------- */
+
+.entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pas);
+  max-width: var(--colonne-max);
+  margin: 0 auto;
+  padding: var(--pas) var(--pas) 0;
+}
+
+.entete-titre {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+}
+
+.lien-discret {
+  padding: 0;
+  font-size: 0.875rem;
+  color: var(--texte-discret);
+  background: none;
+  border: none;
+}
+
+.lien-discret:hover { color: var(--texte); }
+
+#vue {
+  max-width: var(--colonne-max);
+  margin: 0 auto;
+  /* Place laissée sous le contenu pour la barre de navigation fixe. */
+  padding: var(--pas) var(--pas)
+           calc(4.5rem + env(safe-area-inset-bottom));
+}
+
+/* --- Navigation ------------------------------------------------------------ */
+
+/* Téléphone : barre fixe en bas, à portée du pouce. */
+.navigation {
+  position: fixed;
+  inset: auto 0 0;
+  display: flex;
+  background: color-mix(in srgb, var(--fond) 92%, transparent);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--bordure);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.navigation a {
+  flex: 1;
+  padding: 0.625rem 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  text-align: center;
+  text-decoration: none;
+  color: var(--texte-discret);
+  border-top: 2px solid transparent;
+  /* Marge de sécurité : chaque cible reste confortable au doigt. */
+  min-height: 3rem;
+}
+
+.navigation a.actif {
+  color: var(--accent);
+  border-top-color: var(--accent);
+  font-weight: 500;
+}
+
+/* Grand écran : la navigation remonte en haut, sous l'en-tête. */
+@media (min-width: 48rem) {
+  .navigation {
+    position: static;
+    max-width: var(--colonne-max);
+    margin: 0 auto;
+    gap: 0.25rem;
+    padding: 0 var(--pas);
+    background: none;
+    backdrop-filter: none;
+    border-top: none;
+    border-bottom: 1px solid var(--bordure);
+  }
+
+  .navigation a {
+    flex: 0 0 auto;
+    min-height: 0;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9375rem;
+    border-top: none;
+    border-bottom: 2px solid transparent;
+  }
+
+  .navigation a.actif { border-bottom-color: var(--accent); }
+
+  #vue { padding-bottom: calc(var(--pas) * 3); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
