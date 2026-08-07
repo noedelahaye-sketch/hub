@@ -7,7 +7,9 @@
   <title>Hub — Noé</title>
 
   <!-- Ajouté à l'écran d'accueil du téléphone, le hub s'ouvre en plein écran :
-       c'est là qu'a lieu le check-in du matin. -->
+       c'est là qu'a lieu le check-in du matin. Les sites Yuno et FC Hermitage
+       ont leurs propres pages d'entrée (yuno.html, hermitage.html), donc leurs
+       propres icônes et leurs propres applications. -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Hub">
@@ -18,74 +20,16 @@
   <meta name="theme-color" content="#17191a" media="(prefers-color-scheme: dark)">
 
   <link rel="stylesheet" href="css/styles.css">
-  <!-- L'identité de l'espace Yuno : cadrée par [data-espace="photo"], elle ne
-       touche pas le reste du hub. -->
   <link rel="stylesheet" href="css/yuno.css">
   <link rel="stylesheet" href="css/fch.css">
 </head>
-<body>
+<body data-entree="hub">
 
   <!-- Affiché tant qu'on ne sait pas s'il y a une session. Évite le flash de
-       l'écran de connexion quand la session est déjà en localStorage. -->
+       l'écran de connexion quand la session est déjà en localStorage. Le reste
+       de la coquille est bâti par js/app.js, commun aux trois entrées. -->
   <div id="ecran-chargement" class="ecran-plein">
     <p class="discret">Un instant…</p>
-  </div>
-
-  <!-- Écran de connexion : visible uniquement sans session. -->
-  <div id="ecran-connexion" class="ecran-plein" hidden>
-    <form id="form-connexion" class="carte carte-connexion">
-      <h1>Hub</h1>
-      <p class="discret">Connecte-toi pour retrouver tes projets.</p>
-
-      <label for="email">E-mail</label>
-      <input type="email" id="email" name="email" autocomplete="username" required>
-
-      <label for="motdepasse">Mot de passe</label>
-      <input type="password" id="motdepasse" name="motdepasse" autocomplete="current-password" required>
-
-      <button type="submit" id="bouton-connexion">Se connecter</button>
-      <p id="erreur-connexion" class="message-erreur" role="alert" hidden></p>
-    </form>
-  </div>
-
-  <!-- Application : visible uniquement avec une session. -->
-  <div id="app" hidden>
-
-    <div class="haut">
-      <header class="entete">
-        <span class="entete-titre">Hub</span>
-        <button type="button" id="bouton-deconnexion" class="lien-discret">Se déconnecter</button>
-      </header>
-
-      <!-- Perso en deuxième position, juste après l'accueil : le hub existe
-           pour servir Noé, la vie hors projets ne passe pas après eux. -->
-      <nav class="navigation" aria-label="Espaces">
-        <a href="#dashboard" data-nav="dashboard">Accueil</a>
-        <a href="#calendrier" data-nav="calendrier">Calendrier</a>
-        <a href="#perso" data-nav="perso">Perso</a>
-        <a href="#fch" data-nav="fch">FCH</a>
-        <a href="#formation" data-nav="formation">Formation</a>
-        <a href="#photo" data-nav="photo">Yuno</a>
-      </nav>
-    </div>
-
-    <!-- Les id sont préfixés : sans ça, `#photo` dans la barre d'adresse ferait
-         défiler le navigateur jusqu'à l'élément `id="photo"`, ce qui écraserait
-         la position restaurée par le routeur. -->
-    <main id="vue">
-      <section class="espace" id="espace-dashboard" data-espace="dashboard" hidden></section>
-      <section class="espace" id="espace-calendrier" data-espace="calendrier" hidden></section>
-      <section class="espace" id="espace-formation" data-espace="formation" hidden></section>
-      <section class="espace" id="espace-photo" data-espace="photo" hidden></section>
-      <!-- Le « site » Yuno : même application, mais son thème masque tout
-           l'habillage du hub — on a quitté le hub. -->
-      <section class="espace" id="espace-yuno" data-espace="yuno" hidden></section>
-      <!-- Le « site » FC Hermitage, même principe que celui de Yuno. -->
-      <section class="espace" id="espace-hermitage" data-espace="hermitage" hidden></section>
-      <section class="espace" id="espace-fch" data-espace="fch" hidden></section>
-      <section class="espace" id="espace-perso" data-espace="perso" hidden></section>
-    </main>
-
   </div>
 
   <script type="module" src="js/app.js"></script>

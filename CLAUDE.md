@@ -47,6 +47,29 @@ Le hub existe pour servir Noé, pas l'inverse. Pour éviter que le professionnel
   - L'identifiant n'est écrit nulle part dans le code source de Bac-3 : `js/app.js` appelle `GET /gists` avec un token personnel et retient le premier gist contenant `studi-suivi-sync.json` (`findOrCreateGist`), puis garde l'id dans le `localStorage` du navigateur sous la clé `studi-sync-gist-id`. Conséquence : sur un appareil où Noé révise pour la première fois depuis la bascule, il n'y a rien à faire ; sur un appareil qui gardait l'ancien id en cache, il faut faire `localStorage.removeItem("studi-sync-gist-id")` pour que le site retrouve le bon gist.
   - Structure du JSON (23 clés) : `status` (état par question, ex. `"b1-Q1": "todo"`), `checks` (cases cochées par question), `box` / `due` / `fail` / `cardState` (répétition espacée des flashcards), `quiz` / `quizSeen`, `coursLu` et dérivés, `streak`, `deadline`, `notes` / `fiche` / `journal` (texte libre, vides à ce jour), et `_ts` (horodatage servant à arbitrer entre local et distant).
 
+## Trois applications, un seul code
+
+Trois pages d'entrée, donc trois applications installables sur l'écran
+d'accueil du téléphone, chacune avec son icône, son nom et son ouverture
+directe :
+
+| Entrée | Application | Ouvre sur |
+|---|---|---|
+| `index.html` | Hub | le tableau de bord |
+| `yuno.html` | Yuno | le site Yuno |
+| `hermitage.html` | FCH | le site FC Hermitage |
+
+C'est le manifeste et l'`apple-touch-icon` **de la page ajoutée** qui décident
+de l'icône et du nom : d'où trois pages et trois manifestes, et non un seul.
+Chaque page ne porte que ce qui la distingue (icône, manifeste, titre) plus
+l'écran d'attente ; la coquille commune est bâtie par `js/app.js`, pour que
+trois copies du même balisage ne finissent pas par diverger. L'attribut
+`data-entree` du `<body>` dit à `app.js` quel espace ouvrir quand l'adresse
+ne dit rien, et masque la porte « Quitter le site » — depuis sa propre
+application, un site n'a pas de hub à quitter.
+
+Les icônes se régénèrent depuis les logos : `python3 tools/generer-icones.py`.
+
 ## Structure du site
 
 4 espaces accessibles par navigation :

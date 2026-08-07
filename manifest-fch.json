@@ -1,0 +1,13 @@
+{
+  "name": "FC Hermitage",
+  "short_name": "FCH",
+  "start_url": "hermitage.html",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#113693",
+  "theme_color": "#113693",
+  "icons": [
+    { "src": "img/icone-fch-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "img/icone-fch-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

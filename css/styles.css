@@ -296,6 +296,12 @@ body[data-espace="hermitage"] #vue {
   padding-top: calc(env(safe-area-inset-top) + var(--espace-16));
 }
 
+/* Lancé depuis sa propre application (yuno.html, hermitage.html), un site n'a
+   pas de hub à quitter : le hub a la sienne. La porte de sortie ne s'affiche
+   que quand on est entré par le hub. */
+body[data-entree="yuno"] .yuno-pied,
+body[data-entree="hermitage"] .fch-pied { display: none; }
+
 .entete {
   display: flex;
   align-items: center;

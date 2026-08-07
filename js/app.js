@@ -13,7 +13,72 @@ import perso from './perso.js';
 // `photo` est la page Yuno du hub ; `yuno` est le site Yuno, qui masque tout
 // l'habillage du hub. Deux adresses, deux sensations, une seule application.
 const espaces = { dashboard, calendrier, formation, photo, yuno, fch, hermitage, perso };
-const ESPACE_PAR_DEFAUT = 'dashboard';
+
+// Trois pages d'entrée pour trois applications sur l'écran d'accueil :
+// index.html (le hub), yuno.html, hermitage.html. Chacune a son manifeste, son
+// icône et son nom ; toutes chargent le même js/app.js. L'entrée décide
+// seulement de l'espace ouvert quand l'adresse ne dit rien.
+const ENTREE = document.body.dataset.entree ?? 'hub';
+const ESPACE_PAR_DEFAUT = ENTREE === 'hub' ? 'dashboard' : ENTREE;
+
+// --- La coquille -------------------------------------------------------------
+// Écrite ici et non dans les trois pages d'entrée : trois copies du même
+// balisage finiraient par diverger. Les pages ne portent que ce qui les
+// distingue — icône, manifeste, titre — et l'écran d'attente.
+
+document.body.insertAdjacentHTML(
+  'beforeend',
+  `
+  <!-- Écran de connexion : visible uniquement sans session. -->
+  <div id="ecran-connexion" class="ecran-plein" hidden>
+    <form id="form-connexion" class="carte carte-connexion">
+      <h1>Hub</h1>
+      <p class="discret">Connecte-toi pour retrouver tes projets.</p>
+
+      <label for="email">E-mail</label>
+      <input type="email" id="email" name="email" autocomplete="username" required>
+
+      <label for="motdepasse">Mot de passe</label>
+      <input type="password" id="motdepasse" name="motdepasse" autocomplete="current-password" required>
+
+      <button type="submit" id="bouton-connexion">Se connecter</button>
+      <p id="erreur-connexion" class="message-erreur" role="alert" hidden></p>
+    </form>
+  </div>
+
+  <!-- Application : visible uniquement avec une session. -->
+  <div id="app" hidden>
+    <div class="haut">
+      <header class="entete">
+        <span class="entete-titre">Hub</span>
+        <button type="button" id="bouton-deconnexion" class="lien-discret">Se déconnecter</button>
+      </header>
+
+      <!-- Perso en deuxième position, juste après l'accueil : le hub existe
+           pour servir Noé, la vie hors projets ne passe pas après eux. -->
+      <nav class="navigation" aria-label="Espaces">
+        <a href="#dashboard" data-nav="dashboard">Accueil</a>
+        <a href="#calendrier" data-nav="calendrier">Calendrier</a>
+        <a href="#perso" data-nav="perso">Perso</a>
+        <a href="#fch" data-nav="fch">FCH</a>
+        <a href="#formation" data-nav="formation">Formation</a>
+        <a href="#photo" data-nav="photo">Yuno</a>
+      </nav>
+    </div>
+
+    <!-- Les id sont préfixés : sans ça, \`#photo\` dans la barre d'adresse ferait
+         défiler le navigateur jusqu'à l'élément \`id="photo"\`, ce qui écraserait
+         la position restaurée par le routeur. -->
+    <main id="vue">
+      ${Object.keys(espaces)
+        .map(
+          (nom) =>
+            `<section class="espace" id="espace-${nom}" data-espace="${nom}" hidden></section>`,
+        )
+        .join('\n      ')}
+    </main>
+  </div>`,
+);
 
 const TITRES = {
   dashboard: 'Accueil',
