@@ -77,9 +77,7 @@ function enTete(vueActive) {
 
   return `
     <header class="fch-tete">
-      <span class="fch-plaque">
-        <img class="fch-logo" src="img/fch-logo.png" alt="FC Hermitage">
-      </span>
+      <img class="fch-logo" src="img/fch-logo.png" alt="FC Hermitage">
     </header>
     <nav class="fch-nav" aria-label="Le site FC Hermitage">
       ${liens

@@ -63,11 +63,13 @@ site Yuno est toujours sombre. Deux conséquences assumées :
 - **L'accent est jaune, pas bleu.** Un accent bleu sur fond bleu ne
   signalerait rien. Le jaune porte les barres de progression, l'onglet actif,
   les étiquettes — et ne signale jamais une alerte, la règle du hub tient.
-- **Le logo se pose sur une plaque blanche.** Il mêle traits noirs et bleu du
-  club : sur le fond bleu, la moitié du dessin disparaîtrait.
+- **Le logo reste en PNG transparent**, à même le fond bleu, sans plaque
+  (choix de Noé du 7 août : la plaque blanche a été essayée puis retirée).
+  Ses traits noirs et bleus se lisent moins qu'ils ne le feraient sur clair —
+  c'est assumé.
 
-Le liseré sous la navigation reprend blanc, jaune, rouge : sur fond bleu,
-c'est le blanc qui prend la place du bleu.
+Le liseré sous la navigation est rouge, plein et fin (2 px), sur toute la
+largeur de la barre.
 
 `color-scheme: dark` est déclaré sur le site — sans lui, les contrôles natifs
 (sélecteur de date, listes déroulantes) se dessineraient en clair, icône noire

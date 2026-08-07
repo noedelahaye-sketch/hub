@@ -7,31 +7,22 @@
    page et au logo. */
 
 /* --- L'en-tête du site ------------------------------------------------------
-   Le logo entier, centré, posé sur une plaque blanche : il mêle traits noirs
-   et bleu du club, il disparaîtrait à moitié sur le fond bleu du site. */
+   Le logo entier, centré, en PNG transparent à même le fond bleu (choix de
+   Noé, 7 août 2026). */
 
 .fch-tete {
   display: flex;
   justify-content: center;
-  margin: 0 0 var(--espace-16);
-}
-
-.fch-plaque {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--espace-8) var(--espace-16);
-  background: #fff;
-  border-radius: var(--rayon-carte);
+  margin: 0 0 var(--espace-8);
 }
 
 /* Le fichier garde ~9 % de marges transparentes en haut et en bas : les marges
    négatives les résorbent sans toucher à l'image. */
 .fch-logo {
   display: block;
-  width: 130px;
-  max-width: 40vw;
-  margin: -10px 0 -6px;
+  width: 150px;
+  max-width: 45vw;
+  margin: -12px 0 -8px;
 }
 
 .fch-tete + .fch-nav > a:first-child { margin-left: auto; }
@@ -78,18 +69,10 @@
   background: var(--accent);
 }
 
-/* Le liseré du club sous la barre. Sur fond bleu, le bleu du club ne se verrait
-   pas : c'est le blanc qui prend sa place, avec le jaune en ponctuation et le
-   rouge. Une seule touche décorative sur tout le site — elle dit
-   « FC Hermitage » sans qu'on ait à l'écrire. */
+/* Le liseré du club sous la barre : rouge, plein, et fin. Une seule touche
+   décorative sur tout le site. */
 .fch-nav {
-  border-bottom: 3px solid transparent;
-  border-image: linear-gradient(
-    90deg,
-    #ffffff 0 35%,
-    var(--club-jaune) 35% 45%,
-    var(--club-rouge) 45% 100%
-  ) 1;
+  border-bottom: 2px solid var(--club-rouge);
   padding-bottom: var(--espace-12);
 }
 
