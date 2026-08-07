@@ -1,5 +1,14 @@
 # Hub — Tableau de bord multi-projets de Noé
 
+> **À lire en premier : [docs/etat-des-lieux.md](docs/etat-des-lieux.md).**
+> Ce fichier-ci dit ce que le hub *doit être* ; l'état des lieux dit où il en
+> est, ce qui a été vérifié, ce qui ne l'a pas été, et ce qui attend une
+> réponse de Noé. Le mettre à jour en fin de session.
+>
+> Les sites ont leur propre cahier des charges :
+> [docs/yuno-spec.md](docs/yuno-spec.md) et [docs/fch-spec.md](docs/fch-spec.md).
+> L'authentification est décrite dans [supabase/AUTH.md](supabase/AUTH.md).
+
 ## Contexte
 
 Application web personnelle centralisant l'organisation de 3 projets professionnels et une dimension personnelle, avec un tableau de bord global recentré sur Noé (pas sur les projets). Utilisateur unique : Noé. Usage quotidien (check-in de 5 min le matin), sur ordinateur et mobile.
@@ -72,17 +81,19 @@ Les icônes se régénèrent depuis les logos : `python3 tools/generer-icones.py
 
 ## Structure du site
 
-4 espaces accessibles par navigation :
+Huit espaces, servis par un routeur à deux niveaux (`#espace/vue/id`) :
 - `/` ou `#dashboard` — tableau de bord global (tous projets)
 - `#calendrier` — tout ce qui porte une date, tous projets confondus, filtres par nature (tâches, événements, publications, objectifs)
 - `#formation` — espace formation (thème : teal)
 - `#photo` — la page Yuno du hub (thème : doré) — tableau de bord réduit et porte vers le site
 - `#yuno` — le SITE Yuno : l'habillage du hub disparaît entièrement, chrome et identité propres (voir docs/yuno-spec.md)
 - `#fch` — la page FC Hermitage du hub (thème : bleu du club) — tableau de bord réduit et porte vers le site
-- `#hermitage` — le SITE FC Hermitage : l'habillage du hub disparaît, chrome et identité propres, toujours en clair (voir docs/fch-spec.md)
+- `#hermitage` — le SITE FC Hermitage : l'habillage du hub disparaît, chrome et identité propres, fond bleu du club (voir docs/fch-spec.md)
 - `#perso` — espace perso (thème : doux, apaisé, distinct des espaces projet)
 
-Chaque espace projet affiche : ses objectifs avec progression, ses jalons, ses tâches (3 actives max + backlog repliable), ses événements à venir, ses victoires.
+**Deux formes de projet cohabitent, et c'est voulu :**
+- **formation** est un espace projet complet, dans le hub : objectifs avec progression, jalons, tâches (3 actives max + backlog repliable), événements à venir, victoires. C'est `js/espace-projet.js`, une fabrique.
+- **photo (Yuno)** et **fch** ont chacun une *page du hub* réduite (le cap en lecture, un aperçu, une capture rapide, les victoires, et la porte) plus un *site* à part entière où toute la gestion vit. Les sites ne réutilisent pas la fabrique : leur structure leur est propre.
 
 L'espace perso affiche uniquement : ses intentions, ses prochains rendez-vous avec soi-même, ses victoires, et la courbe d'humeur des 30 derniers jours.
 
@@ -95,7 +106,7 @@ Ces deux valeurs peuvent figurer dans le code public. Le token d'accès personne
 
 ## Schéma de base de données
 
-6 tables. Les tables concernées portent une colonne `projet` de type text avec contrainte CHECK (projet IN ('formation', 'photo', 'fch', 'perso')), sauf `jalons` qui hérite du projet via son objectif.
+**9 tables.** Les six premières sont celles du hub ; les trois dernières sont nées avec les sites (voir plus bas). Les tables concernées portent une colonne `projet` de type text avec contrainte CHECK (projet IN ('formation', 'photo', 'fch', 'perso')), sauf `jalons` qui hérite du projet via son objectif, et `contacts` / `commandes` qui n'en ont pas.
 
 Usage de la valeur 'perso' : autorisée dans `objectifs` (= intentions : champs cible et echeance laissés vides, aucune progression affichée), `evenements` et `victoires`. Jamais dans `taches` ni `jalons` — l'interface ne doit pas permettre de créer une tâche ou un jalon perso.
 
@@ -165,9 +176,47 @@ Alimentation automatique : passer une tâche en 'fait', un jalon en atteint ou u
 
 Une seule entrée par jour (contrainte UNIQUE sur date). Si le jour est déjà renseigné, le clic met à jour la valeur.
 
+### publications
+
+Le calendrier éditorial. **Une idée est une publication sans date** (`date_prevue` NULL) : même table, deux vues.
+
+- `id` uuid PK
+- `projet` text NOT NULL default 'photo' CHECK (projet IN ('formation', 'photo', 'fch')) — pas de 'perso' : l'espace perso ne publie pas
+- `titre` text NOT NULL — l'idée, en une phrase
+- `reseau` text default 'instagram' CHECK (instagram, tiktok, linkedin, facebook, youtube)
+- `format` text default 'post' CHECK (post, carrousel, reel, story)
+- `statut` text default 'idee' CHECK (idee, brouillon, pret, publie)
+- `date_prevue` date (nullable — NULL = banque d'idées)
+- `rubrique` text — la série récurrente, libre
+- `notes` text · `lien_publie` text
+- `created_at` timestamptz default now()
+
+### contacts
+
+Carnet unique : le réseau de Yuno **et** les partenaires du FCH. Pas de colonne `projet` — le `type` et la `structure` disent l'usage.
+
+- `id` uuid PK
+- `nom` text NOT NULL
+- `type` text default 'autre' CHECK (joueur, club, media, agence, marque, autre)
+- `structure` text — le rattachement (FC Lorient, OM, La Provence…)
+- `instagram` text · `email` text · `telephone` text — plusieurs valeurs possibles, séparées par une barre oblique
+- `statut` text default 'pas_de_contact' CHECK (pas_de_contact, message_envoye, contact_etabli, bon_contact) — la progression de la relation, dans cet ordre
+- `notes` text · `dernier_echange` date
+- `created_at` timestamptz default now()
+
+### commandes
+
+- `id` uuid PK
+- `titre` text NOT NULL · `client` text
+- `statut` text default 'en_cours' CHECK (en_cours, livree)
+- `echeance` date · `lien_livrable` text · `notes` text
+- `created_at` timestamptz default now()
+
+Livrer une commande insère une victoire, comme une tâche terminée.
+
 ## Sécurité (à faire dès la création des tables)
 
-1. Activer Row Level Security sur les 6 tables.
+1. Activer Row Level Security sur **toutes** les tables — les 9 actuelles et celles à venir.
 2. Mettre en place Supabase Auth par email/mot de passe, un seul compte (celui de Noé). Pas d'inscription publique : désactiver les signups après création du compte.
 3. Politiques RLS : toutes les opérations (select/insert/update/delete) réservées au rôle `authenticated`.
 4. Le site affiche un écran de connexion simple si la session est absente ; la session persiste entre les visites.
