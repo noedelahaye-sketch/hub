@@ -1,6 +1,7 @@
 // Point d'entrée : garde la session, montre le bon écran, route vers les espaces.
 
 import { sessionCourante, connexion, deconnexion, surChangementSession } from './api.js';
+import { centrerActif } from './calendrier-commun.js';
 import dashboard from './dashboard.js';
 import calendrier from './calendrier.js';
 import formation from './formation.js';
@@ -181,6 +182,10 @@ function afficherEspace() {
 
   // Le thème de l'espace courant colore l'ensemble de la page.
   document.body.dataset.espace = nom;
+
+  // Six onglets ne tiennent pas sur 375 px : la barre défile, et on ramène
+  // l'onglet actif dans le champ pour qu'il ne reste jamais hors écran.
+  centrerActif(document.querySelector('.navigation'));
 
   if (!espacesMontes.has(nom)) {
     espacesMontes.add(nom);

@@ -57,7 +57,11 @@
   --rayon-controle: 10px;
   --rayon-pastille: 999px;
 
-  --colonne-max: 44rem;
+  /* Largeur et marges reprises de Bac-3. La règle qui compte : la mise en page
+     occupe toute la largeur disponible, le texte jamais — d'où les tuiles en
+     colonnes plutôt qu'étirées sur 1240 px (voir « Les tuiles »). */
+  --colonne-max: 1240px;
+  --marge-cote: var(--espace-16);
 
   /* Trois rôles, trois familles. Aucune n'est là pour faire joli. */
   --police-titre: "Clash Display", ui-sans-serif, system-ui, -apple-system, sans-serif;
@@ -154,6 +158,10 @@ body[data-espace="hermitage"] {
 
   :root { --club-fch-bleu: #7ba5dc; }
 }
+
+/* Points de rupture de Bac-3 : 720 px et 1080 px. */
+@media (min-width: 45rem) { :root { --marge-cote: var(--espace-24); } }
+@media (min-width: 67.5rem) { :root { --marge-cote: var(--espace-32); } }
 
 /* --- Base ------------------------------------------------------------------ */
 
@@ -309,7 +317,7 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
   gap: var(--espace-16);
   max-width: var(--colonne-max);
   margin: 0 auto;
-  padding: var(--espace-16) var(--espace-16) var(--espace-8);
+  padding: var(--espace-16) var(--marge-cote) var(--espace-8);
 }
 
 .entete-titre {
@@ -332,7 +340,7 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
 #vue {
   max-width: var(--colonne-max);
   margin: 0 auto;
-  padding: var(--espace-8) var(--espace-16)
+  padding: var(--espace-8) var(--marge-cote)
            calc(var(--espace-48) + env(safe-area-inset-bottom));
 }
 
@@ -348,12 +356,23 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
   gap: var(--espace-4);
   max-width: var(--colonne-max);
   margin: 0 auto;
-  /* Marges plus serrées que le contenu : les pastilles ont déjà leur propre
-     rembourrage, et à ce prix les cinq onglets tiennent sur 375 px. */
+  /* Marges plus serrées que le contenu sur téléphone : les pastilles ont déjà
+     leur rembourrage, et à ce prix les six onglets tiennent sur 375 px. Dès
+     qu'il y a de la place, elles rejoignent l'alignement du contenu. */
   padding: var(--espace-8) var(--espace-8);
   background: var(--fond);
   /* Un filet sépare les onglets du contenu, comme sur Bac-3. */
   border-bottom: 1px solid var(--bordure);
+}
+
+/* Dès qu'il y a de la place, la barre rejoint l'alignement du contenu. */
+@media (min-width: 45rem) {
+  .navigation {
+    padding-left: var(--marge-cote);
+    padding-right: var(--marge-cote);
+    gap: var(--espace-8);
+  }
+  .navigation a { padding: 0 var(--espace-16); font-size: 0.9375rem; }
   /* Cinq onglets ne tiennent pas toujours sur 375 px : on laisse glisser
      plutôt que de rétrécir le texte. */
   overflow-x: auto;
@@ -479,6 +498,22 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
 
 .tuile-entete .quand { margin-left: auto; }
 
+/* Sur grand écran, les listes se répartissent en colonnes. C'est la règle de
+   Bac-3 : la mise en page prend toute la largeur, le texte jamais. Une tuile
+   étirée sur 1240 px donnerait des lignes illisibles.
+   Les jalons sont exclus : ils vivent DANS la tuile de leur objectif. */
+@media (min-width: 60rem) {
+  .bloc ul:not(.liste-jalons) {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(21rem, 1fr));
+    align-items: start;
+  }
+
+  /* Les objectifs gardent toute la largeur : ce sont eux le cap, et leur
+     détail déplié a besoin de place. */
+  .objectif { grid-column: 1 / -1; }
+}
+
 /* Le projet n'est pas dit que par la couleur : son nom est écrit. Il se
    tronque plutôt que de se replier sur deux lignes. */
 .tuile-projet {
@@ -591,7 +626,13 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
 .echelle-humeur {
   display: flex;
   gap: 0.5rem;
+  /* Cinq boutons étirés sur 1240 px seraient absurdes : une échelle se répond
+     d'un geste, elle n'a pas besoin de toute la page. */
+  max-width: 32rem;
 }
+
+/* Même raison pour la note qui suit, et pour le champ de recherche. */
+.note-humeur, .recherche { max-width: 32rem; }
 
 .bouton-humeur {
   flex: 1;
@@ -947,6 +988,120 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
 }
 
 .bloc-mois h2::first-letter { text-transform: uppercase; }
+
+/* --- Une base et ses affichages ---------------------------------------------
+   Le carnet réseau de Yuno : une liste de fiches, et plusieurs façons de la
+   regarder. Ces styles servent le tableau ; les fiches réutilisent les tuiles. */
+
+.barre-base {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-8);
+  margin-bottom: var(--espace-12);
+}
+
+.barre-base .recherche { flex: 1 1 16rem; margin-bottom: 0; }
+
+.affichages {
+  display: flex;
+  gap: var(--espace-4);
+  padding: 3px;
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+}
+
+.affichages button {
+  min-height: 2rem;
+  padding: 0 var(--espace-12);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--texte-discret);
+  background: none;
+  border: 0;
+  border-radius: var(--rayon-pastille);
+}
+
+.affichages button.actif {
+  color: var(--fond-carte);
+  background: var(--accent);
+}
+
+.compte-base {
+  margin: 0 0 var(--espace-8);
+  font-size: 0.8125rem;
+}
+
+/* Le tableau déborde plutôt que d'écraser ses colonnes : sur téléphone, on le
+   fait glisser. */
+.tableau-cadre {
+  overflow-x: auto;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+  background: var(--fond-carte);
+}
+
+.tableau {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.tableau th, .tableau td {
+  padding: var(--espace-8) var(--espace-12);
+  text-align: left;
+  border-bottom: 1px solid var(--bordure);
+}
+
+.tableau tbody tr:last-child td { border-bottom: none; }
+.tableau tbody tr:hover { background: var(--accent-doux); }
+
+/* Sans ça, les liens de contact gardent le bleu par défaut du navigateur. */
+.tableau a { color: var(--texte-discret); }
+.tableau a:hover { color: var(--accent); }
+
+.tableau thead th {
+  position: sticky;
+  top: 0;
+  background: var(--fond-carte);
+  padding: 0;
+}
+
+.tableau thead button {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-4);
+  width: 100%;
+  padding: var(--espace-8) var(--espace-12);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texte-discret);
+  background: none;
+  border: 0;
+}
+
+.tableau thead button:hover { color: var(--texte); }
+.tableau th[aria-sort]:not([aria-sort="none"]) button { color: var(--accent); }
+.tri-marque { font-size: 0.75rem; }
+
+.tableau .bouton-retirer { opacity: 0.5; }
+.tableau tr:hover .bouton-retirer { opacity: 1; }
+.tableau .pub-programmer { font-size: 0.8125rem; }
+
+/* Une étiquette lue par les lecteurs d'écran, invisible à l'œil. */
+.hors-ecran {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 
 .calendrier-detail {
   display: block;

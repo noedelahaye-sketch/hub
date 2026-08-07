@@ -158,10 +158,27 @@ fiche. Notes libres et date du dernier échange complètent. Pas de relances
 automatiques, pas d'étapes de vente — un carnet d'adresses qui se souvient
 de ce qu'on s'est dit.
 
-Construit le 7 août 2026 : recherche à la frappe sur le nom et la structure,
-filtres par type, contacts cliquables (Instagram, `mailto:`, `tel:`), et la
-date du dernier échange modifiable d'un geste depuis la fiche. L'identifiant
-Instagram est accepté avec ou sans arobase, ou collé en URL entière.
+**C'est une base de données, pas une liste** (demande de Noé, 7 août 2026 —
+« comme Notion : une base de données est la base, après on varie comment on
+l'affiche »). Trois couches séparées :
+
+1. **La base** — `baseContacts()` filtre, cherche et trie. Elle ne sait rien
+   de son affichage.
+2. **Les colonnes** — chacune sait se comparer (`valeur`) et se dessiner
+   (`cellule`). En ajouter une ne demande rien d'autre.
+3. **Les affichages** — `Tableau` (colonnes triables au clic, un second clic
+   inverse le sens) et `Fiches` (les tuiles). Ajouter une vue plus tard —
+   groupée par structure, par exemple — ne demandera que d'ajouter un dessin.
+
+La recherche porte sur **toutes** les colonnes : taper « lorient » trouve
+aussi bien un nom qu'une structure, et « laprovence » trouve par l'e-mail.
+Les cases vides finissent toujours en bas, quel que soit le sens du tri — une
+fiche sans date n'est pas « la plus ancienne ». Le compte « 4 sur 12 » dit ce
+que le filtre a retenu.
+
+Contacts cliquables partout (Instagram, `mailto:`, `tel:`), date du dernier
+échange modifiable d'un geste. L'identifiant Instagram est accepté avec ou
+sans arobase, ou collé en URL entière.
 
 ### `#yuno/commandes` — le suivi des commandes *(construit)*
 

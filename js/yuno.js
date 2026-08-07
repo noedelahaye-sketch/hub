@@ -196,35 +196,168 @@ function pseudoInstagram(valeur) {
     .replace(/\/.*$/, '');
 }
 
-export function construireContacts(contacts, recherche = '', type = 'tout') {
-  const terme = recherche.trim().toLowerCase();
-  const retenus = contacts.filter((contact) => {
-    if (type !== 'tout' && contact.type !== type) return false;
-    if (!terme) return true;
-    return `${contact.nom} ${contact.structure ?? ''}`.toLowerCase().includes(terme);
-  });
+// Le carnet est une BASE : une liste de fiches, et plusieurs façons de la
+// regarder. Le tri, la recherche et le filtre agissent sur la base ; l'affichage
+// (tableau ou fiches) ne fait que la dessiner. Ajouter une vue plus tard —
+// groupée par structure, par exemple — ne demandera que d'ajouter un dessin.
 
-  if (!retenus.length) {
-    return contacts.length
-      ? `<p class="vide">Personne ne correspond à cette recherche.</p>`
-      : `<p class="vide">Ton carnet démarre ici — joueurs, médias, clubs.</p>`;
-  }
+// Les colonnes de la base. `valeur` sert au tri et à la recherche, `cellule`
+// au dessin : une colonne sait se comparer et s'afficher, rien d'autre.
+const COLONNES = [
+  {
+    cle: 'nom',
+    titre: 'Nom',
+    valeur: (contact) => contact.nom ?? '',
+    cellule: (contact) => `<strong>${echapper(contact.nom)}</strong>`,
+  },
+  {
+    cle: 'type',
+    titre: 'Type',
+    valeur: (contact) => TYPES_CONTACT[contact.type] ?? contact.type ?? '',
+    cellule: (contact) =>
+      `<span class="etiquette">${TYPES_CONTACT[contact.type] ?? contact.type}</span>`,
+  },
+  {
+    cle: 'structure',
+    titre: 'Rattaché à',
+    valeur: (contact) => contact.structure ?? '',
+    cellule: (contact) =>
+      contact.structure
+        ? `<span class="contact-structure">${echapper(contact.structure)}</span>`
+        : '<span class="discret">—</span>',
+  },
+  {
+    cle: 'instagram',
+    titre: 'Instagram',
+    valeur: (contact) => contact.instagram ?? '',
+    cellule: (contact) => lienInstagram(contact) ?? '<span class="discret">—</span>',
+  },
+  {
+    cle: 'email',
+    titre: 'E-mail',
+    valeur: (contact) => contact.email ?? '',
+    cellule: (contact) => lienEmail(contact) ?? '<span class="discret">—</span>',
+  },
+  {
+    cle: 'telephone',
+    titre: 'Téléphone',
+    valeur: (contact) => contact.telephone ?? '',
+    cellule: (contact) => lienTelephone(contact) ?? '<span class="discret">—</span>',
+  },
+  {
+    cle: 'dernier_echange',
+    titre: 'Dernier échange',
+    valeur: (contact) => contact.dernier_echange ?? '',
+    cellule: (contact) =>
+      `<input type="date" class="pub-programmer" data-echange="${echapper(contact.id)}"
+         value="${echapper(contact.dernier_echange ?? '')}"
+         aria-label="Dernier échange avec ${echapper(contact.nom)}">`,
+  },
+];
+
+export const AFFICHAGES = { tableau: 'Tableau', fiches: 'Fiches' };
+
+function lienInstagram(contact) {
+  if (!contact.instagram) return null;
+  const pseudo = pseudoInstagram(contact.instagram);
+  return `<a href="https://instagram.com/${encodeURIComponent(pseudo)}"
+    target="_blank" rel="noopener">@${echapper(pseudo)}</a>`;
+}
+
+function lienEmail(contact) {
+  if (!contact.email) return null;
+  return `<a href="mailto:${encodeURIComponent(contact.email)}">${echapper(contact.email)}</a>`;
+}
+
+function lienTelephone(contact) {
+  if (!contact.telephone) return null;
+  return `<a href="tel:${echapper(contact.telephone.replace(/\s/g, ''))}">${echapper(contact.telephone)}</a>`;
+}
+
+function boutonRetirer(contact) {
+  return `<button type="button" class="lien-discret bouton-mini bouton-retirer"
+    data-supprimer-contact="${echapper(contact.id)}"
+    title="Retirer du carnet"
+    aria-label="Retirer ${echapper(contact.nom)}">×</button>`;
+}
+
+// La base : filtrée, cherchée, triée. Sans aucune idée de son affichage.
+export function baseContacts(contacts, { recherche = '', type = 'tout', tri = 'nom', sens = 1 } = {}) {
+  const terme = recherche.trim().toLowerCase();
+  const colonne = COLONNES.find((c) => c.cle === tri) ?? COLONNES[0];
+
+  return contacts
+    .filter((contact) => {
+      if (type !== 'tout' && contact.type !== type) return false;
+      if (!terme) return true;
+      // La recherche porte sur toutes les colonnes : chercher « lorient » doit
+      // trouver aussi bien un nom qu'une structure.
+      return COLONNES.some((c) => c.valeur(contact).toLowerCase().includes(terme));
+    })
+    .sort((a, b) => {
+      // Les cases vides finissent en bas quel que soit le sens : une fiche sans
+      // date n'est pas « la plus ancienne ».
+      const va = colonne.valeur(a);
+      const vb = colonne.valeur(b);
+      if (!va && !vb) return 0;
+      if (!va) return 1;
+      if (!vb) return -1;
+      return va.localeCompare(vb, 'fr', { numeric: true }) * sens;
+    });
+}
+
+function messageVide(contacts) {
+  return contacts.length
+    ? `<p class="vide">Personne ne correspond à cette recherche.</p>`
+    : `<p class="vide">Ton carnet démarre ici — joueurs, médias, clubs.</p>`;
+}
+
+export function construireTableauContacts(retenus, contacts, { tri = 'nom', sens = 1 } = {}) {
+  if (!retenus.length) return messageVide(contacts);
+
+  return `
+    <div class="tableau-cadre">
+      <table class="tableau">
+        <thead>
+          <tr>
+            ${COLONNES.map(
+              (colonne) => `
+              <th scope="col" aria-sort="${
+                colonne.cle === tri ? (sens === 1 ? 'ascending' : 'descending') : 'none'
+              }">
+                <button type="button" data-trier="${colonne.cle}">
+                  ${colonne.titre}
+                  <span class="tri-marque" aria-hidden="true">${
+                    colonne.cle === tri ? (sens === 1 ? '↑' : '↓') : ''
+                  }</span>
+                </button>
+              </th>`,
+            ).join('')}
+            <th scope="col"><span class="hors-ecran">Retirer</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${retenus
+            .map(
+              (contact) => `
+            <tr>
+              ${COLONNES.map((colonne) => `<td>${colonne.cellule(contact)}</td>`).join('')}
+              <td>${boutonRetirer(contact)}</td>
+            </tr>`,
+            )
+            .join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+export function construireFichesContacts(retenus, contacts) {
+  if (!retenus.length) return messageVide(contacts);
 
   return `<ul class="liste-contacts">${retenus
     .map((contact) => {
-      const pseudo = contact.instagram ? pseudoInstagram(contact.instagram) : null;
-      const liens = [
-        pseudo
-          ? `<a href="https://instagram.com/${encodeURIComponent(pseudo)}"
-               target="_blank" rel="noopener">@${echapper(pseudo)}</a>`
-          : null,
-        contact.email
-          ? `<a href="mailto:${encodeURIComponent(contact.email)}">${echapper(contact.email)}</a>`
-          : null,
-        contact.telephone
-          ? `<a href="tel:${echapper(contact.telephone.replace(/\s/g, ''))}">${echapper(contact.telephone)}</a>`
-          : null,
-      ].filter(Boolean);
+      const liens = [lienInstagram(contact), lienEmail(contact), lienTelephone(contact)]
+        .filter(Boolean);
 
       return `
         <li>
@@ -235,10 +368,7 @@ export function construireContacts(contacts, recherche = '', type = 'tout') {
                 ? `<span class="contact-structure">${echapper(contact.structure)}</span>`
                 : ''
             }
-            <button type="button" class="lien-discret bouton-mini bouton-retirer"
-              data-supprimer-contact="${echapper(contact.id)}"
-              title="Retirer du carnet"
-              aria-label="Retirer ${echapper(contact.nom)}">×</button>
+            ${boutonRetirer(contact)}
           </span>
           <span class="contact-nom">${echapper(contact.nom)}</span>
           ${liens.length ? `<span class="contact-liens">${liens.join('<span class="discret"> · </span>')}</span>` : ''}
@@ -254,6 +384,19 @@ export function construireContacts(contacts, recherche = '', type = 'tout') {
     .join('')}</ul>`;
 }
 
+// Le point d'entrée : on lit la base, puis on la dessine selon l'affichage.
+export function construireContacts(contacts, options = {}) {
+  const retenus = baseContacts(contacts, options);
+  const compte = `<p class="discret compte-base"><span class="chiffre">${retenus.length}</span> sur <span class="chiffre">${contacts.length}</span></p>`;
+
+  const dessin =
+    options.affichage === 'fiches'
+      ? construireFichesContacts(retenus, contacts)
+      : construireTableauContacts(retenus, contacts, options);
+
+  return compte + dessin;
+}
+
 function vueReseau(etat) {
   const filtres = [['tout', 'Tout'], ...Object.entries(TYPES_CONTACT)];
 
@@ -261,9 +404,22 @@ function vueReseau(etat) {
     ${enTete('reseau')}
 
     <section class="bloc">
-      <input type="search" id="recherche-contact" class="recherche"
-        placeholder="Chercher un nom, un club, un média…"
-        value="${echapper(etat.rechercheContact)}">
+      <div class="barre-base">
+        <input type="search" id="recherche-contact" class="recherche"
+          placeholder="Chercher partout dans le carnet…"
+          value="${echapper(etat.rechercheContact)}">
+        <div class="affichages" role="group" aria-label="Affichage du carnet">
+          ${Object.entries(AFFICHAGES)
+            .map(
+              ([valeur, libelle]) => `
+            <button type="button" data-affichage="${valeur}"
+              aria-pressed="${valeur === etat.affichageContact}"
+              class="${valeur === etat.affichageContact ? 'actif' : ''}">${libelle}</button>`,
+            )
+            .join('')}
+        </div>
+      </div>
+
       <div class="filtres" role="group" aria-label="Filtrer le carnet">
         ${filtres
           .map(
@@ -274,9 +430,9 @@ function vueReseau(etat) {
           )
           .join('')}
       </div>
-      <div data-bloc="contacts">
-        ${construireContacts(etat.contacts, etat.rechercheContact, etat.typeContact)}
-      </div>
+
+      <div data-bloc="contacts">${construireContacts(etat.contacts, optionsBase(etat))}</div>
+
       ${construireFormulaire({
         id: 'contact',
         libelle: 'Ajouter au carnet',
@@ -293,6 +449,18 @@ function vueReseau(etat) {
       })}
     </section>
     ${pied()}`;
+}
+
+// Ce que l'état dit à la base : ce qu'on cherche, ce qu'on garde, comment on
+// trie, et comment on dessine.
+function optionsBase(etat) {
+  return {
+    recherche: etat.rechercheContact,
+    type: etat.typeContact,
+    tri: etat.triContact,
+    sens: etat.sensContact,
+    affichage: etat.affichageContact,
+  };
 }
 
 // --- Les commandes -----------------------------------------------------------
@@ -394,6 +562,9 @@ export default {
       filtre: 'tout',
       rechercheContact: '',
       typeContact: 'tout',
+      triContact: 'nom',
+      sensContact: 1,
+      affichageContact: 'tableau',
     };
 
     const rendre = () => {
@@ -412,11 +583,7 @@ export default {
     const rendreContacts = () => {
       const cible = section.querySelector('[data-bloc="contacts"]');
       if (cible) {
-        cible.innerHTML = construireContacts(
-          etat.contacts,
-          etat.rechercheContact,
-          etat.typeContact,
-        );
+        cible.innerHTML = construireContacts(etat.contacts, optionsBase(etat));
       }
     };
 
@@ -594,6 +761,23 @@ export default {
       if (typeContact) {
         etat.typeContact = typeContact.dataset.typeContact;
         rendre();
+        return;
+      }
+
+      const affichage = evenement.target.closest('[data-affichage]');
+      if (affichage) {
+        etat.affichageContact = affichage.dataset.affichage;
+        rendre();
+        return;
+      }
+
+      // Cliquer une colonne trie dessus ; la recliquer inverse le sens.
+      const trier = evenement.target.closest('[data-trier]');
+      if (trier) {
+        const cle = trier.dataset.trier;
+        etat.sensContact = etat.triContact === cle ? -etat.sensContact : 1;
+        etat.triContact = cle;
+        rendreContacts();
         return;
       }
 

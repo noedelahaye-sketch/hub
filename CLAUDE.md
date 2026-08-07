@@ -240,6 +240,7 @@ appelées à un CDN.
 
 - Code simple et lisible : HTML/CSS/JS vanilla, un fichier js/api.js pour tous les appels Supabase, un fichier par espace.
 - Mobile-first : l'usage matinal se fera souvent sur téléphone.
+- Largeur, marges et points de rupture repris de Bac-3 : contenu à 1240 px, marges de 16/24/32 px, ruptures à 720 et 1080 px. **La mise en page prend toute la largeur, le texte jamais** — sur grand écran les listes passent en colonnes plutôt que de s'étirer.
 - Migrations : toute évolution du schéma passe par un fichier SQL dans supabase/migrations/, versionné dans git.
 - Déploiement : branche main → GitHub Pages. Vérifier que le site fonctionne en local avant de pousser : `node tools/static-server.js`, puis http://localhost:4173 (ouvrir `index.html` en `file://` ne marche pas, les modules ES sont bloqués).
 - Langue : toute l'interface en français.
