@@ -309,6 +309,12 @@ const COLONNES = [
     },
   },
   {
+    cle: 'telephone',
+    titre: 'Téléphone',
+    valeur: (contact) => contact.telephone ?? '',
+    cellule: (contact) => lienTelephone(contact) ?? '<span class="discret">—</span>',
+  },
+  {
     cle: 'instagram',
     titre: 'Instagram',
     valeur: (contact) => contact.instagram ?? '',
@@ -319,12 +325,6 @@ const COLONNES = [
     titre: 'E-mail',
     valeur: (contact) => contact.email ?? '',
     cellule: (contact) => lienEmail(contact) ?? '<span class="discret">—</span>',
-  },
-  {
-    cle: 'telephone',
-    titre: 'Téléphone',
-    valeur: (contact) => contact.telephone ?? '',
-    cellule: (contact) => lienTelephone(contact) ?? '<span class="discret">—</span>',
   },
 ];
 
