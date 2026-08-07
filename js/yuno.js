@@ -231,10 +231,16 @@ function pseudoInstagram(valeur) {
 // (tableau ou fiches) ne fait que la dessiner. Ajouter une vue plus tard —
 // groupée par structure, par exemple — ne demandera que d'ajouter un dessin.
 
-// Les colonnes de la base. `valeur` sert au tri, `texte` à la recherche quand
-// il diffère (le statut se trie sur son rang mais se cherche sur son libellé),
-// `cellule` au dessin. Une colonne sait se comparer, se chercher et s'afficher
-// — rien d'autre.
+// Les colonnes de la base. Une colonne sait quatre choses, et rien d'autre :
+//   `valeur`  — se comparer, pour le tri
+//   `texte`   — se chercher, quand ça diffère du tri (le statut se trie sur son
+//               rang mais se cherche sur son libellé)
+//   `cellule` — se dessiner
+//   `filtre`  — se filtrer, pour les colonnes à valeurs limitées. Les choix
+//               proposés se déduisent des données présentes, comme dans Notion :
+//               un club qui n'est dans le carnet de personne n'a pas à figurer
+//               dans la liste.
+// Ajouter une colonne filtrable ne demande donc rien d'autre que de la décrire.
 const COLONNES = [
   {
     cle: 'nom',
@@ -248,6 +254,10 @@ const COLONNES = [
     valeur: (contact) => TYPES_CONTACT[contact.type] ?? contact.type ?? '',
     cellule: (contact) =>
       pastilleTexte(TYPES_CONTACT[contact.type] ?? contact.type),
+    filtre: {
+      cle: (contact) => contact.type ?? '',
+      libelle: (contact) => TYPES_CONTACT[contact.type] ?? contact.type ?? '',
+    },
   },
   {
     cle: 'statut',
@@ -278,6 +288,12 @@ const COLONNES = [
           .join('')}
       </select>`;
     },
+    filtre: {
+      cle: (contact) => contact.statut ?? '',
+      libelle: (contact) => (STATUTS_CONTACT[contact.statut] ?? {}).nom ?? contact.statut ?? '',
+      // Les statuts se rangent dans leur progression, pas par ordre alphabétique.
+      ordre: (contact) => Object.keys(STATUTS_CONTACT).indexOf(contact.statut),
+    },
   },
   {
     cle: 'structure',
@@ -287,6 +303,10 @@ const COLONNES = [
       contact.structure
         ? pastilleTexte(contact.structure)
         : '<span class="discret">—</span>',
+    filtre: {
+      cle: (contact) => contact.structure ?? '',
+      libelle: (contact) => contact.structure || 'Sans rattachement',
+    },
   },
   {
     cle: 'instagram',
@@ -361,14 +381,51 @@ function boutonRetirer(contact) {
     aria-label="Retirer ${echapper(contact.nom)}">×</button>`;
 }
 
+// Les colonnes qui savent se filtrer.
+export const COLONNES_FILTRABLES = COLONNES.filter((colonne) => colonne.filtre);
+
+// Les choix d'un filtre, déduits des données présentes et comptés — un filtre
+// qui propose « Rennes (9) » dit déjà quelque chose du carnet.
+export function choixDuFiltre(contacts, colonne) {
+  const vus = new Map();
+  for (const contact of contacts) {
+    const cle = colonne.filtre.cle(contact);
+    if (!vus.has(cle)) {
+      vus.set(cle, {
+        cle,
+        libelle: colonne.filtre.libelle(contact),
+        ordre: colonne.filtre.ordre ? colonne.filtre.ordre(contact) : null,
+        compte: 0,
+      });
+    }
+    vus.get(cle).compte += 1;
+  }
+
+  return [...vus.values()].sort((a, b) => {
+    if (a.ordre !== null && b.ordre !== null) return a.ordre - b.ordre;
+    // Les sans-valeur en dernier : « Sans rattachement » n'est pas un club.
+    if (!a.cle) return 1;
+    if (!b.cle) return -1;
+    return a.libelle.localeCompare(b.libelle, 'fr');
+  });
+}
+
 // La base : filtrée, cherchée, triée. Sans aucune idée de son affichage.
-export function baseContacts(contacts, { recherche = '', type = 'tout', tri = 'nom', sens = 1 } = {}) {
+// `filtres` est un objet { cleDeColonne: valeur }, où 'tout' ne filtre rien.
+export function baseContacts(contacts, { recherche = '', filtres = {}, tri = 'nom', sens = 1 } = {}) {
   const terme = recherche.trim().toLowerCase();
   const colonne = COLONNES.find((c) => c.cle === tri) ?? COLONNES[0];
 
   return contacts
     .filter((contact) => {
-      if (type !== 'tout' && contact.type !== type) return false;
+      // Les filtres se cumulent : un ET, pas un OU. Choisir « Joueur » puis
+      // « Rennes » donne les joueurs de Rennes.
+      for (const filtrable of COLONNES_FILTRABLES) {
+        const choisi = filtres[filtrable.cle];
+        if (choisi === undefined || choisi === 'tout') continue;
+        if (filtrable.filtre.cle(contact) !== choisi) return false;
+      }
+
       if (!terme) return true;
       // La recherche porte sur toutes les colonnes : chercher « lorient » doit
       // trouver aussi bien un nom qu'une structure, et « établi » un statut.
@@ -386,6 +443,42 @@ export function baseContacts(contacts, { recherche = '', type = 'tout', tri = 'n
       if (!vb) return -1;
       return va.localeCompare(vb, 'fr', { numeric: true }) * sens;
     });
+}
+
+// Un filtre par colonne filtrable, plus le bouton qui les efface tous.
+export function construireFiltresColonnes(contacts, filtres = {}) {
+  const actifs = COLONNES_FILTRABLES.filter(
+    (colonne) => filtres[colonne.cle] && filtres[colonne.cle] !== 'tout',
+  ).length;
+
+  return `
+    <div class="filtres-colonnes">
+      ${COLONNES_FILTRABLES.map((colonne) => {
+        const choisi = filtres[colonne.cle] ?? 'tout';
+        const choix = choixDuFiltre(contacts, colonne);
+        return `
+          <label class="filtre-colonne ${choisi === 'tout' ? '' : 'actif'}">
+            <span class="discret">${echapper(colonne.titre)}</span>
+            <select data-filtre-colonne="${colonne.cle}">
+              <option value="tout">Tous</option>
+              ${choix
+                .map(
+                  ({ cle, libelle, compte }) =>
+                    `<option value="${echapper(cle)}" ${cle === choisi ? 'selected' : ''}>${echapper(
+                      libelle,
+                    )} (${compte})</option>`,
+                )
+                .join('')}
+            </select>
+          </label>`;
+      }).join('')}
+      ${
+        actifs
+          ? `<button type="button" class="lien-discret" data-vider-filtres>
+               Tout afficher</button>`
+          : ''
+      }
+    </div>`;
 }
 
 function messageVide(contacts) {
@@ -474,8 +567,6 @@ export function construireContacts(contacts, options = {}) {
 }
 
 function vueReseau(etat) {
-  const filtres = [['tout', 'Tout'], ...Object.entries(TYPES_CONTACT)];
-
   return `
     ${enTete('reseau')}
 
@@ -496,16 +587,7 @@ function vueReseau(etat) {
         </div>
       </div>
 
-      <div class="filtres" role="group" aria-label="Filtrer le carnet">
-        ${filtres
-          .map(
-            ([valeur, libelle]) => `
-          <button type="button" data-type-contact="${valeur}"
-            aria-pressed="${valeur === etat.typeContact}"
-            class="${valeur === etat.typeContact ? 'actif' : ''}">${libelle}</button>`,
-          )
-          .join('')}
-      </div>
+      ${construireFiltresColonnes(etat.contacts, etat.filtresContact)}
 
       <div data-bloc="contacts">${construireContacts(etat.contacts, optionsBase(etat))}</div>
 
@@ -537,7 +619,7 @@ function vueReseau(etat) {
 function optionsBase(etat) {
   return {
     recherche: etat.rechercheContact,
-    type: etat.typeContact,
+    filtres: etat.filtresContact,
     tri: etat.triContact,
     sens: etat.sensContact,
     affichage: etat.affichageContact,
@@ -647,7 +729,7 @@ export default {
       vue: 'accueil',
       filtre: 'tout',
       rechercheContact: '',
-      typeContact: 'tout',
+      filtresContact: {},
       triContact: 'nom',
       sensContact: 1,
       affichageContact: 'tableau',
@@ -843,9 +925,8 @@ export default {
         return;
       }
 
-      const typeContact = evenement.target.closest('[data-type-contact]');
-      if (typeContact) {
-        etat.typeContact = typeContact.dataset.typeContact;
+      if (evenement.target.closest('[data-vider-filtres]')) {
+        etat.filtresContact = {};
         rendre();
         return;
       }
@@ -1063,6 +1144,16 @@ export default {
       }
 
       // Dater le dernier échange d'un contact, au même geste.
+      const filtreColonne = evenement.target.closest('[data-filtre-colonne]');
+      if (filtreColonne) {
+        etat.filtresContact = {
+          ...etat.filtresContact,
+          [filtreColonne.dataset.filtreColonne]: filtreColonne.value,
+        };
+        rendre();
+        return;
+      }
+
       // Le statut se change dans la cellule : c'est le geste le plus fréquent
       // d'un CRM, il ne mérite pas un formulaire.
       const statut = evenement.target.closest('[data-statut]');

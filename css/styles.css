@@ -1034,6 +1034,51 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
   font-size: 0.8125rem;
 }
 
+/* Un filtre par colonne, comme dans Notion : le nom de la colonne, et les
+   valeurs qu'elle porte réellement. */
+.filtres-colonnes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-8);
+  margin-bottom: var(--espace-12);
+}
+
+.filtre-colonne {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  margin: 0;
+  padding: 0 var(--espace-8) 0 var(--espace-12);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+}
+
+/* Un filtre posé se voit : sans ça, on cherche pourquoi la liste est courte. */
+.filtre-colonne.actif {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.filtre-colonne.actif .discret { color: var(--accent); }
+
+.filtre-colonne select {
+  width: auto;
+  margin: 0;
+  padding: var(--espace-8) 0;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: inherit;
+  background: none;
+  border: 0;
+  /* Cible confortable au doigt, sans grossir la pastille. */
+  min-height: 2.25rem;
+}
+
 /* Le tableau déborde plutôt que d'écraser ses colonnes : sur téléphone, on le
    fait glisser. */
 .tableau-cadre {

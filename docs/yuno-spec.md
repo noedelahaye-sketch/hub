@@ -164,12 +164,20 @@ l'affiche »). Trois couches séparées :
 
 1. **La base** — `baseContacts()` filtre, cherche et trie. Elle ne sait rien
    de son affichage.
-2. **Les colonnes** — chacune sait se comparer (`valeur`), se chercher
-   (`texte`, quand il diffère du tri) et se dessiner (`cellule`). En ajouter
-   une ne demande rien d'autre.
+2. **Les colonnes** — chacune sait quatre choses, et rien d'autre : se
+   comparer (`valeur`), se chercher (`texte`, quand il diffère du tri), se
+   dessiner (`cellule`) et se filtrer (`filtre`, pour celles à valeurs
+   limitées). Ajouter une colonne filtrable ne demande donc que de la décrire.
 3. **Les affichages** — `Tableau` (colonnes triables au clic, un second clic
    inverse le sens) et `Fiches` (les tuiles). Ajouter une vue plus tard —
    groupée par structure, par exemple — ne demandera que d'ajouter un dessin.
+
+**Un filtre par colonne à valeurs limitées** — Type, Relation, Rattaché à —
+dont les choix se déduisent des données présentes et sont comptés (« Lorient
+(9) ») : un club que personne ne porte n'a pas à figurer dans la liste. Les
+filtres se cumulent (un ET, pas un OU) et se combinent à la recherche ; un
+filtre posé se voit, et « Tout afficher » les efface tous. Sans ça, on cherche
+pourquoi la liste est courte.
 
 La recherche porte sur **toutes** les colonnes : taper « lorient » trouve
 aussi bien un nom qu'une structure, et « laprovence » trouve par l'e-mail.
