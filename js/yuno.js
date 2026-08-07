@@ -183,6 +183,7 @@ const TYPES_CONTACT = {
   joueur: 'Joueur',
   club: 'Club',
   media: 'Média',
+  agence: 'Agence',
   marque: 'Marque',
   autre: 'Autre',
 };
@@ -193,8 +194,9 @@ const TYPES_CONTACT = {
 const STATUTS_CONTACT = {
   pas_de_contact: { nom: 'Pas de contact', teinte: null },
   message_envoye: { nom: 'Message envoyé', teinte: 215 },
-  contact_etabli: { nom: 'Contact établi', teinte: 152 },
-  bon_contact: { nom: 'Bon contact', teinte: 42 },
+  // Doré pour « établi », vert pour « bon » — l'ordre du tableau Notion de Noé.
+  contact_etabli: { nom: 'Contact établi', teinte: 42 },
+  bon_contact: { nom: 'Bon contact', teinte: 152 },
 };
 
 // Une teinte stable par valeur : « Rennes » garde la même couleur d'une visite
@@ -308,21 +310,48 @@ const COLONNES = [
 
 export const AFFICHAGES = { tableau: 'Tableau', fiches: 'Fiches' };
 
+// Un contact peut avoir deux comptes ou deux adresses — le carnet de Noé en
+// contient, séparés par une barre oblique. Chacun devient son propre lien.
+function separer(valeur) {
+  return String(valeur)
+    .split(/\s*[/,]\s*/)
+    .map((morceau) => morceau.trim())
+    .filter(Boolean);
+}
+
+function joindre(liens) {
+  return liens.join('<span class="discret"> · </span>');
+}
+
 function lienInstagram(contact) {
   if (!contact.instagram) return null;
-  const pseudo = pseudoInstagram(contact.instagram);
-  return `<a href="https://instagram.com/${encodeURIComponent(pseudo)}"
-    target="_blank" rel="noopener">@${echapper(pseudo)}</a>`;
+  return joindre(
+    separer(contact.instagram).map((brut) => {
+      const pseudo = pseudoInstagram(brut);
+      return `<a href="https://instagram.com/${encodeURIComponent(pseudo)}"
+        target="_blank" rel="noopener">@${echapper(pseudo)}</a>`;
+    }),
+  );
 }
 
 function lienEmail(contact) {
   if (!contact.email) return null;
-  return `<a href="mailto:${encodeURIComponent(contact.email)}">${echapper(contact.email)}</a>`;
+  return joindre(
+    separer(contact.email).map(
+      (adresse) =>
+        `<a href="mailto:${encodeURIComponent(adresse)}">${echapper(adresse)}</a>`,
+    ),
+  );
 }
 
 function lienTelephone(contact) {
   if (!contact.telephone) return null;
-  return `<a href="tel:${echapper(contact.telephone.replace(/\s/g, ''))}">${echapper(contact.telephone)}</a>`;
+  return joindre(
+    separer(contact.telephone).map(
+      (numero) =>
+        `<a href="tel:${echapper(numero.replace(/\s/g, ''))}">${echapper(numero)}</a>`,
+    ),
+  );
 }
 
 function boutonRetirer(contact) {

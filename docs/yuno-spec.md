@@ -182,7 +182,8 @@ de carnet avant le hub : Nom, Type, Relation, Rattaché à, Instagram, E-mail,
 Téléphone. Le « dernier échange » a été retiré à sa demande.
 
 La colonne qui fait le CRM est **Relation**, avec sa progression :
-`Pas de contact → Message envoyé → Contact établi → Bon contact`. Elle se
+`Pas de contact → Message envoyé → Contact établi → Bon contact` — gris, bleu,
+doré, vert (l'ordre de couleurs de Noé, corrigé le 7 août). Elle se
 change dans la cellule même — c'est le geste le plus fréquent d'un CRM, il ne
 mérite pas un formulaire — et se **trie sur la progression, pas sur
 l'alphabet** : « Bon contact » est un aboutissement, pas un début. Aucun de
@@ -194,7 +195,13 @@ d'une visite à l'autre. Douze teintes bien réparties — il ne s'agit que de
 distinguer.
 
 Contacts cliquables partout (Instagram, `mailto:`, `tel:`). L'identifiant
-Instagram est accepté avec ou sans arobase, ou collé en URL entière.
+Instagram est accepté avec ou sans arobase, ou collé en URL entière. **Un
+contact peut porter plusieurs comptes ou adresses**, séparés par une barre
+oblique — le carnet de Noé en contient — et chacun devient son propre lien.
+
+Types : joueur, club, média, **agence**, marque, autre. Les agences sont
+arrivées avec la seconde moitié du carnet : ce ne sont ni des médias ni des
+marques, ce sont des intermédiaires.
 
 **Les contacts eux-mêmes ne sont pas dans ce dépôt.** Ce sont des données
 personnelles réelles (numéros, comptes) et le dépôt est public : elles vivent
