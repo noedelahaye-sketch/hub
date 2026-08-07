@@ -7,11 +7,12 @@ import formation from './formation.js';
 import photo from './photo.js';
 import yuno from './yuno.js';
 import fch from './fch.js';
+import hermitage from './hermitage.js';
 import perso from './perso.js';
 
 // `photo` est la page Yuno du hub ; `yuno` est le site Yuno, qui masque tout
 // l'habillage du hub. Deux adresses, deux sensations, une seule application.
-const espaces = { dashboard, calendrier, formation, photo, yuno, fch, perso };
+const espaces = { dashboard, calendrier, formation, photo, yuno, fch, hermitage, perso };
 const ESPACE_PAR_DEFAUT = 'dashboard';
 
 const TITRES = {
@@ -21,6 +22,7 @@ const TITRES = {
   photo: 'Yuno',
   yuno: 'Yuno',
   fch: 'FC Hermitage',
+  hermitage: 'FC Hermitage',
   perso: 'Perso',
 };
 const TITRE_BASE = document.title;
@@ -95,8 +97,9 @@ function afficherEspace() {
   const memeEspace = routeCourante?.espace === nom;
   routeCourante = route;
 
-  // Sur le site Yuno, le titre ne mentionne pas le hub : on en est sorti.
-  document.title = nom === 'yuno' ? 'Yuno · yuno_rph' : `${TITRES[nom]} — ${TITRE_BASE}`;
+  // Sur les sites Yuno et FCH, le titre ne mentionne pas le hub : on en est sorti.
+  const TITRES_SITES = { yuno: 'Yuno · yuno_rph', hermitage: 'FC Hermitage' };
+  document.title = TITRES_SITES[nom] ?? `${TITRES[nom]} — ${TITRE_BASE}`;
 
   for (const section of document.querySelectorAll('.espace')) {
     section.hidden = section.dataset.espace !== nom;

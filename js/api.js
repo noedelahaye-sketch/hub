@@ -304,36 +304,38 @@ export async function creerEvenement({ projet, titre, date_debut, date_fin = nul
 // --- Publications (calendrier éditorial Yuno) --------------------------------
 // Une idée est une publication sans date : même table, deux vues.
 
-export async function publicationsToutes() {
-  return verifier(
-    await client
-      .from('publications')
-      .select('*')
-      .order('date_prevue', { ascending: true, nullsFirst: false })
-      .order('created_at', { ascending: false }),
-  );
+export async function publicationsToutes(projet) {
+  let requete = client
+    .from('publications')
+    .select('*')
+    .order('date_prevue', { ascending: true, nullsFirst: false })
+    .order('created_at', { ascending: false });
+
+  if (projet) requete = requete.eq('projet', projet);
+  return verifier(await requete);
 }
 
 // Les publications planifiées d'une période, pour « Ta semaine » du dashboard.
 // Les publiées n'y figurent plus : c'est fait, le dashboard montre l'à-venir.
-export async function publicationsEntre(debutISO, finISO) {
-  return verifier(
-    await client
-      .from('publications')
-      .select('*')
-      .not('date_prevue', 'is', null)
-      .gte('date_prevue', debutISO)
-      .lte('date_prevue', finISO)
-      .neq('statut', 'publie')
-      .order('date_prevue'),
-  );
+export async function publicationsEntre(debutISO, finISO, { projet = null } = {}) {
+  let requete = client
+    .from('publications')
+    .select('*')
+    .not('date_prevue', 'is', null)
+    .gte('date_prevue', debutISO)
+    .lte('date_prevue', finISO)
+    .neq('statut', 'publie')
+    .order('date_prevue');
+
+  if (projet) requete = requete.eq('projet', projet);
+  return verifier(await requete);
 }
 
-export async function creerPublication({ titre, reseau = 'instagram', format = 'post', rubrique = null, notes = null, date_prevue = null }) {
+export async function creerPublication({ projet, titre, reseau = 'instagram', format = 'post', rubrique = null, notes = null, date_prevue = null }) {
   return verifier(
     await client
       .from('publications')
-      .insert({ titre, reseau, format, rubrique, notes, date_prevue })
+      .insert({ projet, titre, reseau, format, rubrique, notes, date_prevue })
       .select()
       .single(),
   );
@@ -438,15 +440,16 @@ export async function tachesDatees({ projet = null } = {}) {
   return verifier(await requete);
 }
 
-export async function publicationsDatees() {
-  return verifier(
-    await client
-      .from('publications')
-      .select('*')
-      .not('date_prevue', 'is', null)
-      .neq('statut', 'publie')
-      .order('date_prevue'),
-  );
+export async function publicationsDatees({ projet = null } = {}) {
+  let requete = client
+    .from('publications')
+    .select('*')
+    .not('date_prevue', 'is', null)
+    .neq('statut', 'publie')
+    .order('date_prevue');
+
+  if (projet) requete = requete.eq('projet', projet);
+  return verifier(await requete);
 }
 
 // --- Modification et suppression --------------------------------------------

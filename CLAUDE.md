@@ -55,7 +55,8 @@ Le hub existe pour servir Noé, pas l'inverse. Pour éviter que le professionnel
 - `#formation` — espace formation (thème : teal)
 - `#photo` — la page Yuno du hub (thème : doré) — tableau de bord réduit et porte vers le site
 - `#yuno` — le SITE Yuno : l'habillage du hub disparaît entièrement, chrome et identité propres (voir docs/yuno-spec.md)
-- `#fch` — espace FC Hermitage (thème : couleurs du club)
+- `#fch` — la page FC Hermitage du hub (thème : bleu du club) — tableau de bord réduit et porte vers le site
+- `#hermitage` — le SITE FC Hermitage : l'habillage du hub disparaît, chrome et identité propres, toujours en clair (voir docs/fch-spec.md)
 - `#perso` — espace perso (thème : doux, apaisé, distinct des espaces projet)
 
 Chaque espace projet affiche : ses objectifs avec progression, ses jalons, ses tâches (3 actives max + backlog repliable), ses événements à venir, ses victoires.

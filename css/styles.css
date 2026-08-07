@@ -98,6 +98,26 @@ body[data-espace="perso"]     { --accent: #8878b4; --accent-doux: #efebf7; }
 
 :root { --club-fch-bleu: #1e4b8f; --club-fch-rouge: #c4362f; }
 
+/* Couleurs exactes du logo du club (img/fch-logo.png), plus le jaune ajouté à
+   la demande de Noé. Elles ne servent que sur le site FCH — la pastille de
+   projet du hub garde ses valeurs adoucies, plus lisibles en petit. */
+:root { --club-bleu: #003799; --club-rouge: #df0000; --club-jaune: #f2b705; }
+
+/* Le SITE FC Hermitage est toujours clair, quel que soit le réglage du
+   téléphone : son logo mêle traits noirs et aplats blancs, il ne survit pas
+   sur fond sombre. En miroir du site Yuno, toujours sombre. */
+body[data-espace="hermitage"] {
+  --fond: #fbfaf8;
+  --fond-carte: #ffffff;
+  --texte: #1a1c20;
+  --texte-discret: #62666d;
+  --bordure: #e2e4e8;
+  --ombre: 0 1px 2px rgb(0 0 0 / 6%), 0 4px 12px rgb(0 0 0 / 4%);
+  --erreur: #a4453a;
+  --accent: #003799;
+  --accent-doux: #e6ecf7;
+}
+
 @media (prefers-color-scheme: dark) {
   /* Gris neutres repris du site Bac-3, pour que les deux sites de Noé aient le
      même fond le soir. */
@@ -254,10 +274,15 @@ button:active { transform: scale(0.97); }
 /* En mode plein écran sur iPhone, le contenu passe sous la barre d'état. */
 .haut { padding-top: env(safe-area-inset-top); }
 
-/* Sur le site Yuno, tout l'habillage du hub disparaît : ni « Hub », ni
-   onglets, ni autres projets. On est ailleurs. */
-body[data-espace="yuno"] .haut { display: none; }
-body[data-espace="yuno"] #vue { padding-top: calc(env(safe-area-inset-top) + var(--espace-16)); }
+/* Sur les sites Yuno et FC Hermitage, tout l'habillage du hub disparaît : ni
+   « Hub », ni onglets, ni autres projets. On est ailleurs. */
+body[data-espace="yuno"] .haut,
+body[data-espace="hermitage"] .haut { display: none; }
+
+body[data-espace="yuno"] #vue,
+body[data-espace="hermitage"] #vue {
+  padding-top: calc(env(safe-area-inset-top) + var(--espace-16));
+}
 
 .entete {
   display: flex;

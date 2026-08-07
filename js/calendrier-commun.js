@@ -9,7 +9,13 @@
 
 import { depuisDateISO, momentLisible, echapper, NOMS_PROJETS } from './format.js';
 
-export const RESEAUX = { instagram: 'Instagram', tiktok: 'TikTok', linkedin: 'LinkedIn' };
+export const RESEAUX = {
+  instagram: 'Instagram',
+  tiktok: 'TikTok',
+  linkedin: 'LinkedIn',
+  facebook: 'Facebook',
+  youtube: 'YouTube',
+};
 export const FORMATS = { post: 'Post', carrousel: 'Carrousel', reel: 'Réel', story: 'Story' };
 
 // Les types d'éléments datés. Le filtre « objectif » couvre aussi les jalons :

@@ -1,0 +1,148 @@
+/* FC Hermitage — la feuille de style du site (docs/fch-spec.md).
+   Tout est cadré par body[data-espace="hermitage"] : l'identité du club ne
+   déborde jamais sur le reste du hub.
+
+   Pas de @font-face ici : le site reprend les polices du hub (celles de
+   Bac-3), à la demande de Noé. Sa différence tient à la couleur, à la mise en
+   page et au logo. */
+
+/* --- L'en-tête du site ------------------------------------------------------
+   Le logo entier, centré. Le fichier garde ~9 % de marges transparentes en
+   haut et en bas : les marges négatives les résorbent sans toucher à l'image. */
+
+.fch-tete {
+  display: flex;
+  justify-content: center;
+  margin: 0;
+}
+
+.fch-logo {
+  display: block;
+  width: 150px;
+  max-width: 45vw;
+  margin: -12px 0 -8px;
+}
+
+.fch-tete + .fch-nav > a:first-child { margin-left: auto; }
+.fch-tete + .fch-nav > a:last-child { margin-right: auto; }
+
+/* --- La navigation du site --------------------------------------------------
+   Même forme que celle de Yuno et du hub : des pastilles, l'active pleine. */
+
+.fch-nav {
+  display: flex;
+  gap: var(--espace-4);
+  margin: 0 0 var(--espace-24);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.fch-nav::-webkit-scrollbar { display: none; }
+
+.fch-nav a {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  min-height: 2.5rem;
+  /* Serré : « Partenaires » est long, et les cinq onglets doivent tenir sur
+     375 px sans faire glisser la barre. */
+  padding: 0 var(--espace-8);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  color: var(--texte-discret);
+  border-radius: var(--rayon-pastille);
+}
+
+.fch-nav a:hover {
+  color: var(--texte);
+  background: color-mix(in srgb, var(--texte) 8%, transparent);
+}
+
+.fch-nav a.actif {
+  color: #fff;
+  background: var(--accent);
+}
+
+/* Le liseré du club sous la barre : bleu, blanc, rouge, et le jaune en
+   ponctuation. Une seule touche décorative sur tout le site — elle dit
+   « FC Hermitage » sans qu'on ait à l'écrire. */
+.fch-nav {
+  border-bottom: 3px solid transparent;
+  border-image: linear-gradient(
+    90deg,
+    var(--club-bleu) 0 35%,
+    var(--club-jaune) 35% 45%,
+    var(--club-rouge) 45% 100%
+  ) 1;
+  padding-bottom: var(--espace-12);
+}
+
+/* La seule sortie du site, tout en bas. */
+.fch-pied {
+  margin-top: var(--espace-48);
+  padding-top: var(--espace-16);
+  border-top: 1px solid var(--bordure);
+  text-align: center;
+}
+
+/* Le logo en petit, sur la page FCH du hub : le fichier a de larges marges
+   transparentes, un fond blanc discret le pose sans le rogner. */
+.fch-pastille {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background: #fff;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  overflow: hidden;
+}
+
+.fch-pastille img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scale(1.15);
+}
+
+/* --- Partenaires ------------------------------------------------------------ */
+
+.partenaire-nom {
+  display: block;
+  width: 100%;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.partenaire-liens {
+  display: block;
+  width: 100%;
+  font-size: 0.875rem;
+}
+
+.partenaire-liens a { color: var(--texte-discret); }
+.partenaire-liens a:hover { color: var(--accent); }
+
+.partenaire-notes {
+  display: block;
+  width: 100%;
+  font-size: 0.875rem;
+  white-space: pre-wrap;
+}
+
+/* --- L'écran qui attend son contenu ----------------------------------------- */
+
+.a-venir-bloc {
+  padding: var(--espace-24);
+  text-align: center;
+  background: var(--fond-carte);
+  border: 1px dashed var(--bordure);
+  border-radius: var(--rayon-carte);
+}
+
+.a-venir-bloc p { margin: 0 0 var(--espace-8); }
+.a-venir-bloc p:last-child { margin-bottom: 0; }

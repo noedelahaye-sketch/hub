@@ -7,7 +7,8 @@
 
 import * as api from './api.js';
 import { construireFormulaire, construireVictoires } from './espace-projet.js';
-import { construireApercuCreation, RUBRIQUES_DEPART } from './yuno.js';
+import { construireApercuCreation, rubriquesProposees } from './publications.js';
+import { RUBRIQUES_DEPART } from './yuno.js';
 import { depuisDateISO, echeanceLisible, echapper } from './format.js';
 
 const MAX_VICTOIRES = 3;
@@ -94,12 +95,7 @@ function squelette(etat) {
             nom: 'rubrique',
             libelle: 'Rubrique (facultative)',
             type: 'text',
-            suggestions: [
-              ...new Set([
-                ...RUBRIQUES_DEPART,
-                ...etat.publications.map((pub) => pub.rubrique).filter(Boolean),
-              ]),
-            ],
+            suggestions: rubriquesProposees(etat.publications, RUBRIQUES_DEPART),
           },
         ],
       })}
@@ -121,7 +117,7 @@ export default {
       const [objectifs, victoires, publications] = await Promise.all([
         api.objectifsActifs({ projet: 'photo' }),
         api.victoiresDuProjet('photo', MAX_VICTOIRES),
-        api.publicationsToutes(),
+        api.publicationsToutes('photo'),
       ]);
       Object.assign(etat, { objectifs, victoires, publications });
     } catch (erreur) {
@@ -154,6 +150,7 @@ export default {
 
       try {
         const publication = await api.creerPublication({
+          projet: 'photo',
           titre: champs.titre.trim(),
           rubrique: champs.rubrique?.trim() || null,
         });
