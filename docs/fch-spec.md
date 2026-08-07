@@ -51,15 +51,27 @@ inventé à la place de Noé.
 
 | Rôle | Valeur | Note |
 |---|---|---|
-| Bleu du club | `#003799` | Dominante du logo, porte l'accent. |
-| Rouge du club | `#df0000` | Seconde couleur d'identité. |
-| Jaune | `#f2b705` | Ajouté à la demande de Noé — la troisième voix. |
-| Fond | blanc cassé | Le logo a des traits noirs : il lui faut du clair. |
+| Fond du site | `#113693` | Le bleu du club porte tout le site (choix de Noé). |
+| Tuiles | `#1e47a8` | Assez au-dessus du fond pour se détacher sans cerne appuyé. |
+| Accent | `#f2b705` | Le jaune. Seule couleur du club qui ressorte sur ce bleu. |
+| Rouge du club | `#df0000` | Seconde couleur d'identité, dans le liseré. |
+| Texte | blanc | |
 
-**Le site FCH est toujours clair**, quel que soit le réglage du téléphone —
-en miroir du site Yuno, toujours sombre. Ce n'est pas une coquetterie : le
-logo mêle traits noirs et aplats blancs, il ne survit pas sur fond sombre. Et
-deux sites qui ne se ressemblent pas, c'est le but de l'exercice.
+**Le site FCH est bleu**, quel que soit le réglage du téléphone — comme le
+site Yuno est toujours sombre. Deux conséquences assumées :
+
+- **L'accent est jaune, pas bleu.** Un accent bleu sur fond bleu ne
+  signalerait rien. Le jaune porte les barres de progression, l'onglet actif,
+  les étiquettes — et ne signale jamais une alerte, la règle du hub tient.
+- **Le logo se pose sur une plaque blanche.** Il mêle traits noirs et bleu du
+  club : sur le fond bleu, la moitié du dessin disparaîtrait.
+
+Le liseré sous la navigation reprend blanc, jaune, rouge : sur fond bleu,
+c'est le blanc qui prend la place du bleu.
+
+`color-scheme: dark` est déclaré sur le site — sans lui, les contrôles natifs
+(sélecteur de date, listes déroulantes) se dessineraient en clair, icône noire
+sur fond bleu.
 
 Le rouge et le jaune ne signalent jamais une alerte ni un retard — ce sont des
 couleurs d'identité. La règle du hub tient ici comme ailleurs.

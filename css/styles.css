@@ -79,6 +79,8 @@ body[data-espace="photo"]     { --accent: #8f6c00; --accent-doux: #f7efcf; }
    c'est l'identité de la marque (la signature blanche et or ne vit que sur
    fond sombre), et ça dit « on a quitté le hub ». Le fond est celui du logo. */
 body[data-espace="yuno"] {
+  color-scheme: dark;
+
   --fond: #181818;
   --fond-carte: #222222;
   --texte: #eceeea;
@@ -103,19 +105,29 @@ body[data-espace="perso"]     { --accent: #8878b4; --accent-doux: #efebf7; }
    projet du hub garde ses valeurs adoucies, plus lisibles en petit. */
 :root { --club-bleu: #003799; --club-rouge: #df0000; --club-jaune: #f2b705; }
 
-/* Le SITE FC Hermitage est toujours clair, quel que soit le réglage du
-   téléphone : son logo mêle traits noirs et aplats blancs, il ne survit pas
-   sur fond sombre. En miroir du site Yuno, toujours sombre. */
+/* Le SITE FC Hermitage est bleu, quel que soit le réglage du téléphone :
+   le bleu du club porte tout le site (choix de Noé, 7 août 2026).
+   Deux conséquences assumées :
+   — l'accent passe au JAUNE, seule couleur du club qui ressorte sur ce bleu ;
+     un accent bleu sur fond bleu ne signalerait rien ;
+   — le logo, qui mêle traits noirs et bleu, se pose sur une plaque blanche
+     (voir css/fch.css) : sans elle, la moitié du dessin disparaîtrait. */
 body[data-espace="hermitage"] {
-  --fond: #fbfaf8;
-  --fond-carte: #ffffff;
-  --texte: #1a1c20;
-  --texte-discret: #62666d;
-  --bordure: #e2e4e8;
-  --ombre: 0 1px 2px rgb(0 0 0 / 6%), 0 4px 12px rgb(0 0 0 / 4%);
-  --erreur: #a4453a;
-  --accent: #003799;
-  --accent-doux: #e6ecf7;
+  /* Les deux sites imposent leur fond sombre quel que soit le réglage du
+     téléphone : sans ça, les contrôles natifs (sélecteur de date, listes
+     déroulantes) se dessineraient en clair — icône noire sur fond bleu. */
+  color-scheme: dark;
+
+  --fond: #113693;
+  /* Assez au-dessus du fond pour que la tuile se détache sans cerne appuyé. */
+  --fond-carte: #1e47a8;
+  --texte: #ffffff;
+  --texte-discret: #b6c5e6;
+  --bordure: #3a5cba;
+  --ombre: none;
+  --erreur: #ffb0a8;
+  --accent: #f2b705;
+  --accent-doux: #23499f;
 }
 
 @media (prefers-color-scheme: dark) {
