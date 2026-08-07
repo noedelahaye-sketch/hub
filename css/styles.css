@@ -1093,6 +1093,75 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
 .tableau tr:hover .bouton-retirer { opacity: 1; }
 .tableau .pub-programmer { font-size: 0.8125rem; }
 
+/* Les étiquettes colorées, comme dans Notion : chaque valeur garde sa teinte
+   d'une visite à l'autre. La teinte arrive en variable `--h` ; la clarté et la
+   saturation sont fixées ici, pour que le contraste tienne sur les deux fonds. */
+.tag {
+  display: inline-block;
+  padding: 1px var(--espace-8);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border-radius: var(--rayon-controle);
+  color: hsl(var(--h) 55% 32%);
+  background: hsl(var(--h) 55% 45% / 14%);
+}
+
+.tag-neutre {
+  color: var(--texte-discret);
+  background: color-mix(in srgb, var(--texte-discret) 14%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  .tag { color: hsl(var(--h) 60% 72%); background: hsl(var(--h) 60% 65% / 16%); }
+}
+
+/* Les deux sites sont sombres quel que soit le réglage du téléphone : ils ne
+   peuvent pas s'en remettre à la media query. */
+body[data-espace="yuno"] .tag,
+body[data-espace="hermitage"] .tag {
+  color: hsl(var(--h) 60% 72%);
+  background: hsl(var(--h) 60% 65% / 16%);
+}
+
+/* Le statut se change dans la cellule : une liste déroulante déguisée en
+   étiquette. C'est le geste le plus fréquent d'un CRM. */
+.choix-statut {
+  width: auto;
+  margin: 0;
+  padding: 2px var(--espace-8);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 0;
+  border-radius: var(--rayon-controle);
+  color: hsl(var(--h) 55% 32%);
+  background: hsl(var(--h) 55% 45% / 14%);
+}
+
+@media (prefers-color-scheme: dark) {
+  .choix-statut { color: hsl(var(--h) 60% 72%); background: hsl(var(--h) 60% 65% / 16%); }
+}
+
+body[data-espace="yuno"] .choix-statut,
+body[data-espace="hermitage"] .choix-statut {
+  color: hsl(var(--h) 60% 72%);
+  background: hsl(var(--h) 60% 65% / 16%);
+}
+
+/* Sans teinte : le gris, pour le statut de départ et les valeurs sans couleur.
+   Ces règles viennent en dernier et portent la même spécificité que celles des
+   sites — sinon le fond coloré des sites l'emporterait. */
+.tag-neutre,
+.choix-statut-neutre,
+body[data-espace="yuno"] .tag-neutre,
+body[data-espace="yuno"] .choix-statut-neutre,
+body[data-espace="hermitage"] .tag-neutre,
+body[data-espace="hermitage"] .choix-statut-neutre {
+  color: var(--texte-discret);
+  background: color-mix(in srgb, var(--texte-discret) 16%, transparent);
+}
+
 /* Une étiquette lue par les lecteurs d'écran, invisible à l'œil. */
 .hors-ecran {
   position: absolute;

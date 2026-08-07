@@ -187,6 +187,34 @@ const TYPES_CONTACT = {
   autre: 'Autre',
 };
 
+// Où en est la relation. Repris du tableau Notion de Noé, dans son ordre de
+// progression : c'est lui qui fait du carnet un CRM plutôt qu'un annuaire.
+// Chaque statut a sa teinte fixe — aucune ne signale une alerte.
+const STATUTS_CONTACT = {
+  pas_de_contact: { nom: 'Pas de contact', teinte: null },
+  message_envoye: { nom: 'Message envoyé', teinte: 215 },
+  contact_etabli: { nom: 'Contact établi', teinte: 152 },
+  bon_contact: { nom: 'Bon contact', teinte: 42 },
+};
+
+// Une teinte stable par valeur : « Rennes » garde la même couleur d'une visite
+// à l'autre, comme les étiquettes de Notion. Douze teintes bien réparties, et
+// une somme des caractères pour choisir — il ne s'agit que de distinguer.
+const TEINTES = [8, 30, 45, 90, 150, 175, 195, 215, 255, 280, 310, 335];
+
+function teinte(texte) {
+  let somme = 0;
+  for (const caractere of String(texte)) somme += caractere.codePointAt(0);
+  return TEINTES[somme % TEINTES.length];
+}
+
+function pastilleTexte(valeur, teinteChoisie) {
+  if (teinteChoisie === null) {
+    return `<span class="tag tag-neutre">${echapper(valeur)}</span>`;
+  }
+  return `<span class="tag" style="--h: ${teinteChoisie ?? teinte(valeur)}">${echapper(valeur)}</span>`;
+}
+
 // L'identifiant peut être saisi avec ou sans arobase, ou collé en URL entière.
 function pseudoInstagram(valeur) {
   return valeur
@@ -201,8 +229,10 @@ function pseudoInstagram(valeur) {
 // (tableau ou fiches) ne fait que la dessiner. Ajouter une vue plus tard —
 // groupée par structure, par exemple — ne demandera que d'ajouter un dessin.
 
-// Les colonnes de la base. `valeur` sert au tri et à la recherche, `cellule`
-// au dessin : une colonne sait se comparer et s'afficher, rien d'autre.
+// Les colonnes de la base. `valeur` sert au tri, `texte` à la recherche quand
+// il diffère (le statut se trie sur son rang mais se cherche sur son libellé),
+// `cellule` au dessin. Une colonne sait se comparer, se chercher et s'afficher
+// — rien d'autre.
 const COLONNES = [
   {
     cle: 'nom',
@@ -215,7 +245,37 @@ const COLONNES = [
     titre: 'Type',
     valeur: (contact) => TYPES_CONTACT[contact.type] ?? contact.type ?? '',
     cellule: (contact) =>
-      `<span class="etiquette">${TYPES_CONTACT[contact.type] ?? contact.type}</span>`,
+      pastilleTexte(TYPES_CONTACT[contact.type] ?? contact.type),
+  },
+  {
+    cle: 'statut',
+    titre: 'Relation',
+    valeur: (contact) => {
+      // Le tri suit la progression, pas l'alphabet : « Bon contact » est un
+      // aboutissement, pas un début.
+      const ordre = Object.keys(STATUTS_CONTACT).indexOf(contact.statut);
+      return ordre < 0 ? '' : String(ordre);
+    },
+    texte: (contact) => (STATUTS_CONTACT[contact.statut] ?? {}).nom ?? '',
+    cellule: (contact) => {
+      const statut = STATUTS_CONTACT[contact.statut] ?? { nom: contact.statut, teinte: null };
+      // Sans teinte, une classe plutôt qu'une variable : une règle de classe se
+      // laisse porter à la bonne spécificité sur les sites, pas une variable.
+      const habillage =
+        statut.teinte === null
+          ? 'class="choix-statut choix-statut-neutre"'
+          : `class="choix-statut" style="--h: ${statut.teinte}"`;
+
+      return `<select ${habillage} data-statut="${echapper(contact.id)}"
+        aria-label="Relation avec ${echapper(contact.nom)}">
+        ${Object.entries(STATUTS_CONTACT)
+          .map(
+            ([valeur, { nom }]) =>
+              `<option value="${valeur}" ${valeur === contact.statut ? 'selected' : ''}>${nom}</option>`,
+          )
+          .join('')}
+      </select>`;
+    },
   },
   {
     cle: 'structure',
@@ -223,7 +283,7 @@ const COLONNES = [
     valeur: (contact) => contact.structure ?? '',
     cellule: (contact) =>
       contact.structure
-        ? `<span class="contact-structure">${echapper(contact.structure)}</span>`
+        ? pastilleTexte(contact.structure)
         : '<span class="discret">—</span>',
   },
   {
@@ -243,15 +303,6 @@ const COLONNES = [
     titre: 'Téléphone',
     valeur: (contact) => contact.telephone ?? '',
     cellule: (contact) => lienTelephone(contact) ?? '<span class="discret">—</span>',
-  },
-  {
-    cle: 'dernier_echange',
-    titre: 'Dernier échange',
-    valeur: (contact) => contact.dernier_echange ?? '',
-    cellule: (contact) =>
-      `<input type="date" class="pub-programmer" data-echange="${echapper(contact.id)}"
-         value="${echapper(contact.dernier_echange ?? '')}"
-         aria-label="Dernier échange avec ${echapper(contact.nom)}">`,
   },
 ];
 
@@ -291,8 +342,10 @@ export function baseContacts(contacts, { recherche = '', type = 'tout', tri = 'n
       if (type !== 'tout' && contact.type !== type) return false;
       if (!terme) return true;
       // La recherche porte sur toutes les colonnes : chercher « lorient » doit
-      // trouver aussi bien un nom qu'une structure.
-      return COLONNES.some((c) => c.valeur(contact).toLowerCase().includes(terme));
+      // trouver aussi bien un nom qu'une structure, et « établi » un statut.
+      return COLONNES.some((c) =>
+        (c.texte ?? c.valeur)(contact).toLowerCase().includes(terme),
+      );
     })
     .sort((a, b) => {
       // Les cases vides finissent en bas quel que soit le sens : une fiche sans
@@ -362,23 +415,17 @@ export function construireFichesContacts(retenus, contacts) {
       return `
         <li>
           <span class="tuile-entete">
-            <span class="etiquette">${TYPES_CONTACT[contact.type] ?? contact.type}</span>
-            ${
-              contact.structure
-                ? `<span class="contact-structure">${echapper(contact.structure)}</span>`
-                : ''
-            }
+            ${pastilleTexte(TYPES_CONTACT[contact.type] ?? contact.type)}
+            ${contact.structure ? pastilleTexte(contact.structure) : ''}
+            ${pastilleTexte(
+              (STATUTS_CONTACT[contact.statut] ?? {}).nom ?? contact.statut,
+              (STATUTS_CONTACT[contact.statut] ?? {}).teinte,
+            )}
             ${boutonRetirer(contact)}
           </span>
           <span class="contact-nom">${echapper(contact.nom)}</span>
           ${liens.length ? `<span class="contact-liens">${liens.join('<span class="discret"> · </span>')}</span>` : ''}
           ${contact.notes ? `<span class="discret contact-notes">${echapper(contact.notes)}</span>` : ''}
-          <span class="contact-echange">
-            <label class="discret">Dernier échange
-              <input type="date" class="pub-programmer" data-echange="${echapper(contact.id)}"
-                value="${echapper(contact.dernier_echange ?? '')}">
-            </label>
-          </span>
         </li>`;
     })
     .join('')}</ul>`;
@@ -444,6 +491,11 @@ function vueReseau(etat) {
           { nom: 'instagram', libelle: 'Instagram', type: 'text' },
           { nom: 'email', libelle: 'E-mail', type: 'text' },
           { nom: 'telephone', libelle: 'Téléphone', type: 'text' },
+          { nom: 'statut', libelle: 'Relation', type: 'select',
+            options: Object.fromEntries(
+              Object.entries(STATUTS_CONTACT).map(([v, { nom }]) => [v, nom]),
+            ),
+            valeur: 'pas_de_contact' },
           { nom: 'notes', libelle: 'Notes', type: 'textarea' },
         ],
       })}
@@ -539,6 +591,11 @@ function vueCommandes(etat) {
           { nom: 'client', libelle: 'Client', type: 'text' },
           { nom: 'echeance', libelle: 'À livrer pour (facultatif)', type: 'date' },
           { nom: 'lien_livrable', libelle: 'Lien du livrable (facultatif)', type: 'text' },
+          { nom: 'statut', libelle: 'Relation', type: 'select',
+            options: Object.fromEntries(
+              Object.entries(STATUTS_CONTACT).map(([v, { nom }]) => [v, nom]),
+            ),
+            valeur: 'pas_de_contact' },
           { nom: 'notes', libelle: 'Notes', type: 'textarea' },
         ],
       })}
@@ -977,17 +1034,22 @@ export default {
       }
 
       // Dater le dernier échange d'un contact, au même geste.
-      const echange = evenement.target.closest('[data-echange]');
-      if (echange) {
-        const contact = etat.contacts.find((c) => c.id === echange.dataset.echange);
+      // Le statut se change dans la cellule : c'est le geste le plus fréquent
+      // d'un CRM, il ne mérite pas un formulaire.
+      const statut = evenement.target.closest('[data-statut]');
+      if (statut) {
+        const contact = etat.contacts.find((c) => c.id === statut.dataset.statut);
         if (!contact) return;
+        statut.disabled = true;
         try {
           Object.assign(
             contact,
-            await api.modifierContact(contact.id, { dernier_echange: echange.value || null }),
+            await api.modifierContact(contact.id, { statut: statut.value }),
           );
+          rendreContacts();
         } catch (souci) {
-          console.error("Enregistrement du dernier échange impossible", souci);
+          console.error('Enregistrement du statut impossible', souci);
+          statut.disabled = false;
         }
       }
     });

@@ -164,8 +164,9 @@ l'affiche »). Trois couches séparées :
 
 1. **La base** — `baseContacts()` filtre, cherche et trie. Elle ne sait rien
    de son affichage.
-2. **Les colonnes** — chacune sait se comparer (`valeur`) et se dessiner
-   (`cellule`). En ajouter une ne demande rien d'autre.
+2. **Les colonnes** — chacune sait se comparer (`valeur`), se chercher
+   (`texte`, quand il diffère du tri) et se dessiner (`cellule`). En ajouter
+   une ne demande rien d'autre.
 3. **Les affichages** — `Tableau` (colonnes triables au clic, un second clic
    inverse le sens) et `Fiches` (les tuiles). Ajouter une vue plus tard —
    groupée par structure, par exemple — ne demandera que d'ajouter un dessin.
@@ -176,9 +177,28 @@ Les cases vides finissent toujours en bas, quel que soit le sens du tri — une
 fiche sans date n'est pas « la plus ancienne ». Le compte « 4 sur 12 » dit ce
 que le filtre a retenu.
 
-Contacts cliquables partout (Instagram, `mailto:`, `tel:`), date du dernier
-échange modifiable d'un geste. L'identifiant Instagram est accepté avec ou
-sans arobase, ou collé en URL entière.
+**Les colonnes viennent du tableau Notion de Noé** (7 août 2026), qui servait
+de carnet avant le hub : Nom, Type, Relation, Rattaché à, Instagram, E-mail,
+Téléphone. Le « dernier échange » a été retiré à sa demande.
+
+La colonne qui fait le CRM est **Relation**, avec sa progression :
+`Pas de contact → Message envoyé → Contact établi → Bon contact`. Elle se
+change dans la cellule même — c'est le geste le plus fréquent d'un CRM, il ne
+mérite pas un formulaire — et se **trie sur la progression, pas sur
+l'alphabet** : « Bon contact » est un aboutissement, pas un début. Aucun de
+ces statuts ne signale une alerte.
+
+Les valeurs portent des **étiquettes colorées** comme dans Notion : une teinte
+stable par valeur, calculée sur le texte, pour que « Rennes » garde sa couleur
+d'une visite à l'autre. Douze teintes bien réparties — il ne s'agit que de
+distinguer.
+
+Contacts cliquables partout (Instagram, `mailto:`, `tel:`). L'identifiant
+Instagram est accepté avec ou sans arobase, ou collé en URL entière.
+
+**Les contacts eux-mêmes ne sont pas dans ce dépôt.** Ce sont des données
+personnelles réelles (numéros, comptes) et le dépôt est public : elles vivent
+uniquement dans Supabase, derrière la connexion. Seul le schéma est versionné.
 
 ### `#yuno/commandes` — le suivi des commandes *(construit)*
 
