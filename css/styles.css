@@ -1239,6 +1239,74 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
 }
 
 .tableau thead button:hover { color: var(--texte); }
+
+/* L'en-tête se laisse tirer pour déplacer sa colonne. La poignée n'apparaît
+   qu'au survol : sur téléphone on ne tire pas, c'est le panneau qui sert. */
+.tableau thead th { cursor: grab; }
+.tableau thead th.en-deplacement { opacity: 0.4; }
+
+/* Un trait à gauche montre où la colonne va se poser. */
+.tableau thead th.cible-depot {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.poignee {
+  opacity: 0;
+  font-size: 0.75rem;
+  letter-spacing: -0.1em;
+}
+
+.tableau thead th:hover .poignee { opacity: 0.5; }
+
+@media (hover: none) {
+  .tableau thead th { cursor: default; }
+  .poignee { display: none; }
+}
+
+/* Le panneau des colonnes : le même ordre, aux flèches. */
+.panneau-colonnes {
+  margin-bottom: var(--espace-12);
+  padding: var(--espace-12);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+}
+
+.panneau-colonnes > p {
+  margin: 0 0 var(--espace-8);
+  font-size: 0.8125rem;
+}
+
+.panneau-colonnes ol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-width: 22rem;
+}
+
+.panneau-colonnes li {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  padding: var(--espace-4) var(--espace-8);
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: var(--espace-8);
+}
+
+.panneau-colonnes li:hover { background: var(--accent-doux); }
+.panneau-colonnes li span { flex: 1; }
+
+.panneau-colonnes li button {
+  min-width: 2rem;
+  min-height: 2rem;
+  font-size: 1rem;
+}
+
+.panneau-colonnes li button:disabled { opacity: 0.25; cursor: default; }
 .tableau th[aria-sort]:not([aria-sort="none"]) button { color: var(--accent); }
 .tri-marque { font-size: 0.75rem; }
 

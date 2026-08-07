@@ -384,6 +384,57 @@ function boutonRetirer(contact) {
 // Les colonnes qui savent se filtrer.
 export const COLONNES_FILTRABLES = COLONNES.filter((colonne) => colonne.filtre);
 
+// --- L'ordre des colonnes ----------------------------------------------------
+// C'est une préférence d'affichage, pas une donnée : elle vit dans le
+// navigateur, pas en base. Un ordre qui se perdrait au rechargement ne servirait
+// à rien, d'où la persistance ; mais il n'a rien à faire dans Supabase.
+
+const CLE_ORDRE = 'yuno-ordre-colonnes';
+
+export function ordreEnregistre() {
+  try {
+    const brut = localStorage.getItem(CLE_ORDRE);
+    return brut ? JSON.parse(brut) : null;
+  } catch {
+    return null;
+  }
+}
+
+function retenirOrdre(ordre) {
+  try {
+    localStorage.setItem(CLE_ORDRE, JSON.stringify(ordre));
+  } catch {
+    // Navigation privée, quota plein : l'ordre tient pour la visite, tant pis.
+  }
+}
+
+// Les colonnes dans l'ordre demandé. Toute colonne absente de l'ordre est
+// ajoutée à la fin : ajouter une colonne au code ne doit pas la faire
+// disparaître chez qui a déjà un ordre enregistré.
+export function colonnesOrdonnees(ordre) {
+  if (!Array.isArray(ordre) || !ordre.length) return COLONNES;
+
+  const connues = ordre
+    .map((cle) => COLONNES.find((colonne) => colonne.cle === cle))
+    .filter(Boolean);
+  const nouvelles = COLONNES.filter((colonne) => !ordre.includes(colonne.cle));
+  return [...connues, ...nouvelles];
+}
+
+// Déplacer une colonne d'un cran, ou la poser à une place précise.
+export function deplacerColonne(ordre, cle, versIndex) {
+  const actuel = colonnesOrdonnees(ordre).map((colonne) => colonne.cle);
+  const depuis = actuel.indexOf(cle);
+  if (depuis < 0) return actuel;
+
+  const cible = Math.max(0, Math.min(actuel.length - 1, versIndex));
+  const suite = [...actuel];
+  suite.splice(depuis, 1);
+  suite.splice(cible, 0, cle);
+  retenirOrdre(suite);
+  return suite;
+}
+
 // Les choix d'un filtre, déduits des données présentes et comptés — un filtre
 // qui propose « Rennes (9) » dit déjà quelque chose du carnet.
 export function choixDuFiltre(contacts, colonne) {
@@ -466,6 +517,11 @@ const ICONE_FILTRE = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidde
   fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
   <path d="M2 4h12M4 8h8M6.5 12h3"/></svg>`;
 
+const ICONE_COLONNES = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"
+  fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">
+  <rect x="2" y="3" width="4" height="10" rx="1"/>
+  <rect x="10" y="3" width="4" height="10" rx="1"/></svg>`;
+
 export function construireBarreFiltres(contacts, etat) {
   const filtres = etat.filtresContact ?? {};
   const ajoutes = etat.filtresAjoutes ?? [];
@@ -480,7 +536,17 @@ export function construireBarreFiltres(contacts, etat) {
       }
     </button>`;
 
-  if (!etat.filtresOuverts) return `<div class="barre-outils">${bouton}</div>`;
+  const boutonColonnes = `
+    <button type="button" class="outil ${etat.colonnesOuvertes ? 'actif' : ''}"
+      data-basculer-colonnes aria-expanded="${Boolean(etat.colonnesOuvertes)}">
+      ${ICONE_COLONNES} Colonnes
+    </button>`;
+
+  const panneau = etat.colonnesOuvertes ? construirePanneauColonnes(etat.ordreColonnes) : '';
+
+  if (!etat.filtresOuverts) {
+    return `<div class="barre-outils">${bouton}${boutonColonnes}</div>${panneau}`;
+  }
 
   const puces = ajoutes
     .map((cle) => COLONNES_FILTRABLES.find((colonne) => colonne.cle === cle))
@@ -530,7 +596,8 @@ export function construireBarreFiltres(contacts, etat) {
     : '';
 
   return `
-    <div class="barre-outils">${bouton}</div>
+    <div class="barre-outils">${bouton}${boutonColonnes}</div>
+    ${panneau}
     <div class="barre-filtres">
       ${puces}
       ${ajout}
@@ -548,27 +615,34 @@ function messageVide(contacts) {
     : `<p class="vide">Ton carnet démarre ici — joueurs, médias, clubs.</p>`;
 }
 
-export function construireTableauContacts(retenus, contacts, { tri = 'nom', sens = 1 } = {}) {
+export function construireTableauContacts(retenus, contacts, { tri = 'nom', sens = 1, ordre = null } = {}) {
   if (!retenus.length) return messageVide(contacts);
+
+  const colonnes = colonnesOrdonnees(ordre);
 
   return `
     <div class="tableau-cadre">
       <table class="tableau">
         <thead>
           <tr>
-            ${COLONNES.map(
-              (colonne) => `
+            ${colonnes
+              .map(
+                (colonne, index) => `
               <th scope="col" aria-sort="${
                 colonne.cle === tri ? (sens === 1 ? 'ascending' : 'descending') : 'none'
-              }">
+              }"
+                draggable="true"
+                data-colonne="${colonne.cle}" data-index="${index}">
                 <button type="button" data-trier="${colonne.cle}">
+                  <span class="poignee" aria-hidden="true">⠿</span>
                   ${colonne.titre}
                   <span class="tri-marque" aria-hidden="true">${
                     colonne.cle === tri ? (sens === 1 ? '↑' : '↓') : ''
                   }</span>
                 </button>
               </th>`,
-            ).join('')}
+              )
+              .join('')}
             <th scope="col"><span class="hors-ecran">Retirer</span></th>
           </tr>
         </thead>
@@ -577,13 +651,40 @@ export function construireTableauContacts(retenus, contacts, { tri = 'nom', sens
             .map(
               (contact) => `
             <tr>
-              ${COLONNES.map((colonne) => `<td>${colonne.cellule(contact)}</td>`).join('')}
+              ${colonnes.map((colonne) => `<td>${colonne.cellule(contact)}</td>`).join('')}
               <td>${boutonRetirer(contact)}</td>
             </tr>`,
             )
             .join('')}
         </tbody>
       </table>
+    </div>`;
+}
+
+// Le panneau des colonnes : le même ordre, aux flèches. C'est lui qui sert sur
+// téléphone, où l'on ne tire pas un en-tête de tableau.
+export function construirePanneauColonnes(ordre) {
+  const colonnes = colonnesOrdonnees(ordre);
+
+  return `
+    <div class="panneau-colonnes">
+      <p class="discret">Glisse un en-tête du tableau, ou déplace-les ici.</p>
+      <ol>
+        ${colonnes
+          .map(
+            (colonne, index) => `
+          <li>
+            <span>${echapper(colonne.titre)}</span>
+            <button type="button" class="lien-discret" data-monter-colonne="${colonne.cle}"
+              ${index === 0 ? 'disabled' : ''}
+              aria-label="Monter ${echapper(colonne.titre)}">↑</button>
+            <button type="button" class="lien-discret" data-descendre-colonne="${colonne.cle}"
+              ${index === colonnes.length - 1 ? 'disabled' : ''}
+              aria-label="Descendre ${echapper(colonne.titre)}">↓</button>
+          </li>`,
+          )
+          .join('')}
+      </ol>
     </div>`;
 }
 
@@ -684,6 +785,7 @@ function optionsBase(etat) {
     tri: etat.triContact,
     sens: etat.sensContact,
     affichage: etat.affichageContact,
+    ordre: etat.ordreColonnes,
   };
 }
 
@@ -793,6 +895,8 @@ export default {
       filtresOuverts: false,
       filtresAjoutes: [],
       filtresContact: {},
+      colonnesOuvertes: false,
+      ordreColonnes: ordreEnregistre(),
       triContact: 'nom',
       sensContact: 1,
       affichageContact: 'tableau',
@@ -984,6 +1088,27 @@ export default {
       const filtre = evenement.target.closest('[data-filtre]');
       if (filtre) {
         etat.filtre = filtre.dataset.filtre;
+        rendre();
+        return;
+      }
+
+      if (evenement.target.closest('[data-basculer-colonnes]')) {
+        etat.colonnesOuvertes = !etat.colonnesOuvertes;
+        rendre();
+        return;
+      }
+
+      const monter = evenement.target.closest('[data-monter-colonne]');
+      const descendre = evenement.target.closest('[data-descendre-colonne]');
+      if (monter || descendre) {
+        const cle = (monter ?? descendre).dataset[monter ? 'monterColonne' : 'descendreColonne'];
+        const actuel = colonnesOrdonnees(etat.ordreColonnes).map((c) => c.cle);
+        const index = actuel.indexOf(cle);
+        etat.ordreColonnes = deplacerColonne(
+          etat.ordreColonnes,
+          cle,
+          index + (monter ? -1 : 1),
+        );
         rendre();
         return;
       }
@@ -1210,6 +1335,53 @@ export default {
           victoire.disabled = false;
         }
       }
+    });
+
+    // Tirer un en-tête de colonne pour la déplacer — le geste de Notion. Sur
+    // téléphone on ne tire pas un tableau : c'est le panneau « Colonnes » qui
+    // sert, avec ses flèches. Les deux écrivent le même ordre.
+    let colonneTiree = null;
+
+    section.addEventListener('dragstart', (evenement) => {
+      const entete = evenement.target.closest('th[data-colonne]');
+      if (!entete) return;
+      colonneTiree = entete.dataset.colonne;
+      evenement.dataTransfer.effectAllowed = 'move';
+      // Firefox n'amorce pas le glissement sans données transférées.
+      evenement.dataTransfer.setData('text/plain', colonneTiree);
+      entete.classList.add('en-deplacement');
+    });
+
+    section.addEventListener('dragover', (evenement) => {
+      const entete = evenement.target.closest('th[data-colonne]');
+      if (!entete || !colonneTiree || entete.dataset.colonne === colonneTiree) return;
+      // Sans preventDefault, le navigateur refuse le dépôt.
+      evenement.preventDefault();
+      entete.classList.add('cible-depot');
+    });
+
+    section.addEventListener('dragleave', (evenement) => {
+      evenement.target.closest('th[data-colonne]')?.classList.remove('cible-depot');
+    });
+
+    section.addEventListener('drop', (evenement) => {
+      const entete = evenement.target.closest('th[data-colonne]');
+      if (!entete || !colonneTiree) return;
+      evenement.preventDefault();
+      etat.ordreColonnes = deplacerColonne(
+        etat.ordreColonnes,
+        colonneTiree,
+        Number(entete.dataset.index),
+      );
+      colonneTiree = null;
+      rendre();
+    });
+
+    section.addEventListener('dragend', () => {
+      colonneTiree = null;
+      section.querySelectorAll('.en-deplacement, .cible-depot').forEach((element) => {
+        element.classList.remove('en-deplacement', 'cible-depot');
+      });
     });
 
     // La recherche du carnet filtre à la frappe, sans bouton.

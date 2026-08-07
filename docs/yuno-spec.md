@@ -172,6 +172,17 @@ l'affiche »). Trois couches séparées :
    inverse le sens) et `Fiches` (les tuiles). Ajouter une vue plus tard —
    groupée par structure, par exemple — ne demandera que d'ajouter un dessin.
 
+**L'ordre des colonnes se change depuis le site** (demande de Noé, 7 août) :
+en tirant un en-tête du tableau — le geste de Notion — ou par le panneau
+« Colonnes » et ses flèches, qui sert sur téléphone où l'on ne tire pas un
+tableau. Les deux écrivent le même ordre.
+
+C'est une **préférence d'affichage, pas une donnée** : elle est retenue dans le
+navigateur (`localStorage`), pas en base. Un ordre qui se perdrait au
+rechargement ne servirait à rien, mais il n'a rien à faire dans Supabase.
+Toute colonne absente d'un ordre enregistré est ajoutée à la fin : ajouter une
+colonne au code ne doit pas la faire disparaître chez qui a déjà réordonné.
+
 **Les filtres, sur le modèle de Notion** (demande de Noé, 7 août) : discrets
 tant qu'on ne s'en sert pas, dépliables, et composés à la demande. Trois états
 distincts :
