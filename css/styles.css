@@ -1034,9 +1034,49 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
   font-size: 0.8125rem;
 }
 
-/* Un filtre par colonne, comme dans Notion : le nom de la colonne, et les
-   valeurs qu'elle porte réellement. */
-.filtres-colonnes {
+/* --- La barre de filtres ----------------------------------------------------
+   Sur le modèle de Notion : discrète tant qu'on ne s'en sert pas, dépliable,
+   et composée à la demande. */
+
+.barre-outils {
+  display: flex;
+  gap: var(--espace-8);
+  margin-bottom: var(--espace-8);
+}
+
+.outil {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  min-height: 2.25rem;
+  padding: 0 var(--espace-12);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--texte-discret);
+  background: none;
+  border: 0;
+  border-radius: var(--rayon-pastille);
+}
+
+.outil:hover {
+  color: var(--texte);
+  background: color-mix(in srgb, var(--texte) 8%, transparent);
+}
+
+.outil.actif { color: var(--accent); }
+
+/* Le nombre de filtres posés, lisible même barre repliée. */
+.compte-actifs {
+  min-width: 1.125rem;
+  padding: 0 var(--espace-4);
+  font-size: 0.6875rem;
+  text-align: center;
+  color: var(--fond-carte);
+  background: var(--accent);
+  border-radius: var(--rayon-pastille);
+}
+
+.barre-filtres {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1044,12 +1084,11 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
   margin-bottom: var(--espace-12);
 }
 
-.filtre-colonne {
+/* Une puce = un filtre posé. Sans contour tant qu'elle ne filtre rien. */
+.puce-filtre {
   display: flex;
   align-items: center;
-  gap: var(--espace-8);
-  margin: 0;
-  padding: 0 var(--espace-8) 0 var(--espace-12);
+  padding: 0 var(--espace-4) 0 var(--espace-12);
   font-size: 0.8125rem;
   font-weight: 600;
   background: var(--fond-carte);
@@ -1057,27 +1096,96 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
   border-radius: var(--rayon-pastille);
 }
 
-/* Un filtre posé se voit : sans ça, on cherche pourquoi la liste est courte. */
-.filtre-colonne.actif {
-  border-color: var(--accent);
+.puce-filtre.actif {
   color: var(--accent);
+  border-color: var(--accent);
 }
 
-.filtre-colonne.actif .discret { color: var(--accent); }
+.puce-filtre.actif .discret { color: var(--accent); }
 
-.filtre-colonne select {
+.puce-filtre label {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.puce-filtre select {
   width: auto;
   margin: 0;
   padding: var(--espace-8) 0;
+  min-height: 2.25rem;
   font-family: inherit;
   font-size: 0.8125rem;
   font-weight: 600;
   color: inherit;
   background: none;
   border: 0;
-  /* Cible confortable au doigt, sans grossir la pastille. */
-  min-height: 2.25rem;
 }
+
+.retirer-filtre {
+  padding: 0 var(--espace-4);
+  font-size: 1rem;
+  line-height: 1;
+  opacity: 0.5;
+}
+
+.puce-filtre:hover .retirer-filtre,
+.retirer-filtre:focus-visible { opacity: 1; }
+
+/* « + Filtrer » et son menu : un details plutôt qu'un popover à écrire. */
+.ajout-filtre { position: relative; }
+
+.ajout-filtre > summary {
+  display: flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0 var(--espace-12);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--texte-discret);
+  border-radius: var(--rayon-pastille);
+  cursor: pointer;
+  list-style: none;
+}
+
+.ajout-filtre > summary::-webkit-details-marker { display: none; }
+
+.ajout-filtre > summary:hover {
+  color: var(--texte);
+  background: color-mix(in srgb, var(--texte) 8%, transparent);
+}
+
+.menu-filtre {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + var(--espace-4));
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 10rem;
+  padding: var(--espace-4);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+}
+
+.menu-filtre button {
+  padding: var(--espace-8) var(--espace-12);
+  min-height: 2.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: left;
+  color: var(--texte);
+  background: none;
+  border: 0;
+  border-radius: var(--espace-8);
+}
+
+.menu-filtre button:hover { background: var(--accent-doux); }
 
 /* Le tableau déborde plutôt que d'écraser ses colonnes : sur téléphone, on le
    fait glisser. */

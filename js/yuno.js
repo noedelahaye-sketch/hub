@@ -445,19 +445,53 @@ export function baseContacts(contacts, { recherche = '', filtres = {}, tri = 'no
     });
 }
 
-// Un filtre par colonne filtrable, plus le bouton qui les efface tous.
-export function construireFiltresColonnes(contacts, filtres = {}) {
-  const actifs = COLONNES_FILTRABLES.filter(
+// La barre de filtres, sur le modèle de Notion : discrète tant qu'on ne s'en
+// sert pas, dépliable, et composée à la demande — on ajoute les filtres dont on
+// a besoin, on retire les autres. Trois choses distinctes :
+//
+//   `filtresOuverts`  la barre est-elle dépliée
+//   `filtresAjoutes`  quelles colonnes ont leur filtre posé dans la barre
+//   `filtres`         la valeur choisie pour chacune ('tout' = ne filtre rien)
+//
+// Replier la barre n'annule rien : les filtres restent appliqués, et le compte
+// sur le bouton le dit. Sans ça, on cacherait la raison d'une liste courte.
+
+function compterFiltresActifs(filtres = {}) {
+  return COLONNES_FILTRABLES.filter(
     (colonne) => filtres[colonne.cle] && filtres[colonne.cle] !== 'tout',
   ).length;
+}
 
-  return `
-    <div class="filtres-colonnes">
-      ${COLONNES_FILTRABLES.map((colonne) => {
-        const choisi = filtres[colonne.cle] ?? 'tout';
-        const choix = choixDuFiltre(contacts, colonne);
-        return `
-          <label class="filtre-colonne ${choisi === 'tout' ? '' : 'actif'}">
+const ICONE_FILTRE = `<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"
+  fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+  <path d="M2 4h12M4 8h8M6.5 12h3"/></svg>`;
+
+export function construireBarreFiltres(contacts, etat) {
+  const filtres = etat.filtresContact ?? {};
+  const ajoutes = etat.filtresAjoutes ?? [];
+  const actifs = compterFiltresActifs(filtres);
+  const disponibles = COLONNES_FILTRABLES.filter((colonne) => !ajoutes.includes(colonne.cle));
+
+  const bouton = `
+    <button type="button" class="outil ${etat.filtresOuverts || actifs ? 'actif' : ''}"
+      data-basculer-filtres aria-expanded="${Boolean(etat.filtresOuverts)}">
+      ${ICONE_FILTRE} Filtrer${
+        actifs ? ` <span class="compte-actifs chiffre">${actifs}</span>` : ''
+      }
+    </button>`;
+
+  if (!etat.filtresOuverts) return `<div class="barre-outils">${bouton}</div>`;
+
+  const puces = ajoutes
+    .map((cle) => COLONNES_FILTRABLES.find((colonne) => colonne.cle === cle))
+    .filter(Boolean)
+    .map((colonne) => {
+      const choisi = filtres[colonne.cle] ?? 'tout';
+      const choix = choixDuFiltre(contacts, colonne);
+
+      return `
+        <span class="puce-filtre ${choisi === 'tout' ? '' : 'actif'}">
+          <label>
             <span class="discret">${echapper(colonne.titre)}</span>
             <select data-filtre-colonne="${colonne.cle}">
               <option value="tout">Tous</option>
@@ -470,12 +504,39 @@ export function construireFiltresColonnes(contacts, filtres = {}) {
                 )
                 .join('')}
             </select>
-          </label>`;
-      }).join('')}
+          </label>
+          <button type="button" class="lien-discret retirer-filtre"
+            data-retirer-filtre="${colonne.cle}"
+            title="Retirer ce filtre"
+            aria-label="Retirer le filtre ${echapper(colonne.titre)}">×</button>
+        </span>`;
+    })
+    .join('');
+
+  const ajout = disponibles.length
+    ? `<details class="ajout-filtre">
+         <summary>+ Filtrer</summary>
+         <div class="menu-filtre">
+           ${disponibles
+             .map(
+               (colonne) =>
+                 `<button type="button" data-ajouter-filtre="${colonne.cle}">${echapper(
+                   colonne.titre,
+                 )}</button>`,
+             )
+             .join('')}
+         </div>
+       </details>`
+    : '';
+
+  return `
+    <div class="barre-outils">${bouton}</div>
+    <div class="barre-filtres">
+      ${puces}
+      ${ajout}
       ${
         actifs
-          ? `<button type="button" class="lien-discret" data-vider-filtres>
-               Tout afficher</button>`
+          ? `<button type="button" class="lien-discret" data-vider-filtres>Tout afficher</button>`
           : ''
       }
     </div>`;
@@ -587,7 +648,7 @@ function vueReseau(etat) {
         </div>
       </div>
 
-      ${construireFiltresColonnes(etat.contacts, etat.filtresContact)}
+      ${construireBarreFiltres(etat.contacts, etat)}
 
       <div data-bloc="contacts">${construireContacts(etat.contacts, optionsBase(etat))}</div>
 
@@ -729,6 +790,8 @@ export default {
       vue: 'accueil',
       filtre: 'tout',
       rechercheContact: '',
+      filtresOuverts: false,
+      filtresAjoutes: [],
       filtresContact: {},
       triContact: 'nom',
       sensContact: 1,
@@ -921,6 +984,39 @@ export default {
       const filtre = evenement.target.closest('[data-filtre]');
       if (filtre) {
         etat.filtre = filtre.dataset.filtre;
+        rendre();
+        return;
+      }
+
+      if (evenement.target.closest('[data-basculer-filtres]')) {
+        etat.filtresOuverts = !etat.filtresOuverts;
+        // Première ouverture : on pose un filtre pour ne pas montrer une barre
+        // vide. Le premier de la liste est le plus courant.
+        if (etat.filtresOuverts && !etat.filtresAjoutes.length) {
+          etat.filtresAjoutes = [COLONNES_FILTRABLES[0].cle];
+        }
+        rendre();
+        return;
+      }
+
+      const ajouterFiltre = evenement.target.closest('[data-ajouter-filtre]');
+      if (ajouterFiltre) {
+        const cle = ajouterFiltre.dataset.ajouterFiltre;
+        if (!etat.filtresAjoutes.includes(cle)) {
+          etat.filtresAjoutes = [...etat.filtresAjoutes, cle];
+        }
+        rendre();
+        return;
+      }
+
+      const retirerFiltre = evenement.target.closest('[data-retirer-filtre]');
+      if (retirerFiltre) {
+        const cle = retirerFiltre.dataset.retirerFiltre;
+        etat.filtresAjoutes = etat.filtresAjoutes.filter((c) => c !== cle);
+        // Retirer la puce retire aussi sa valeur : laisser un filtre invisible
+        // agir serait le meilleur moyen de ne plus rien comprendre à la liste.
+        const { [cle]: _, ...reste } = etat.filtresContact;
+        etat.filtresContact = reste;
         rendre();
         return;
       }

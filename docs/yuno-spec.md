@@ -172,12 +172,24 @@ l'affiche »). Trois couches séparées :
    inverse le sens) et `Fiches` (les tuiles). Ajouter une vue plus tard —
    groupée par structure, par exemple — ne demandera que d'ajouter un dessin.
 
-**Un filtre par colonne à valeurs limitées** — Type, Relation, Rattaché à —
-dont les choix se déduisent des données présentes et sont comptés (« Lorient
-(9) ») : un club que personne ne porte n'a pas à figurer dans la liste. Les
-filtres se cumulent (un ET, pas un OU) et se combinent à la recherche ; un
-filtre posé se voit, et « Tout afficher » les efface tous. Sans ça, on cherche
-pourquoi la liste est courte.
+**Les filtres, sur le modèle de Notion** (demande de Noé, 7 août) : discrets
+tant qu'on ne s'en sert pas, dépliables, et composés à la demande. Trois états
+distincts :
+
+- `filtresOuverts` — la barre est-elle dépliée ;
+- `filtresAjoutes` — quelles colonnes ont leur puce posée dans la barre ;
+- `filtres` — la valeur choisie pour chacune (`tout` ne filtre rien).
+
+Un bouton « Filtrer » déplie la barre et porte le nombre de filtres posés.
+**Replier n'annule rien** : les filtres restent appliqués et le compte le dit —
+sans quoi on cacherait la raison d'une liste courte. « + Filtrer » propose les
+colonnes pas encore posées ; retirer une puce **efface aussi sa valeur**, car
+laisser agir un filtre invisible serait le meilleur moyen de ne plus rien
+comprendre à la liste.
+
+Les choix se déduisent des données présentes et sont comptés (« Lorient (9) ») :
+un club que personne ne porte n'a pas à figurer dans la liste. Les filtres se
+cumulent (un ET, pas un OU) et se combinent à la recherche.
 
 La recherche porte sur **toutes** les colonnes : taper « lorient » trouve
 aussi bien un nom qu'une structure, et « laprovence » trouve par l'e-mail.
