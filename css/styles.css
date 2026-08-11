@@ -1484,6 +1484,144 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
 .ajout .message-erreur { margin-top: var(--espace-8); }
 
+/* --- Le calendrier en grille ------------------------------------------------
+   Trois façons de regarder la même liste. La grille existe pour une raison que
+   l'agenda ne rendait pas : un trou dans un planning se voit sur un mois, pas
+   dans une liste. */
+
+.cal-barre {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--espace-12);
+  margin-bottom: var(--espace-12);
+}
+
+.cal-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-4);
+  margin-left: auto;
+}
+
+.cal-titre {
+  min-width: 8rem;
+  text-align: center;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.cal-fleche {
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--texte-discret);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  cursor: pointer;
+}
+
+.cal-fleche:hover { color: var(--texte); border-color: var(--accent); }
+
+.cal-grille {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 2px;
+}
+
+.cal-grille th {
+  padding: var(--espace-4);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--texte-discret);
+}
+
+/* Une case est une cible de glissement : pas de sélection de texte, sinon le
+   navigateur surligne tout ce qu'on traverse. */
+.cal-jour {
+  height: 5.5rem;
+  padding: var(--espace-4);
+  vertical-align: top;
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.cal-semaine .cal-jour { height: 13rem; }
+
+/* Les jours du mois voisin restent lisibles mais s'effacent : ils bornent la
+   grille, ils ne la peuplent pas. */
+.cal-hors-mois { opacity: 0.4; }
+
+.cal-aujourdhui { border-color: var(--accent); }
+
+.cal-numero {
+  display: block;
+  margin-bottom: var(--espace-4);
+  font-family: var(--police-chiffre);
+  font-size: 0.75rem;
+  color: var(--texte-discret);
+}
+
+.cal-aujourdhui .cal-numero { color: var(--accent); font-weight: 600; }
+
+.cal-pile { display: flex; flex-direction: column; gap: 2px; }
+
+/* Une puce dit son projet par une barre de couleur, jamais par la seule
+   teinte du texte — et se tronque plutôt que de déformer la case. */
+.cal-puce {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 1px var(--espace-4);
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  border-left: 3px solid var(--couleur-projet, var(--accent));
+  border-radius: 0 3px 3px 0;
+  background: color-mix(in srgb, var(--texte) 7%, transparent);
+}
+
+.cal-reste { font-size: 0.6875rem; padding-left: var(--espace-4); }
+
+/* La sélection en cours : la couleur d'accent, jamais une alerte. */
+.cal-choisi { background: var(--accent-doux); border-color: var(--accent); }
+
+.cal-aide { margin: var(--espace-8) 0 0; font-size: 0.8125rem; }
+
+.cal-creation {
+  margin-top: var(--espace-16);
+  padding: var(--espace-16);
+  background: var(--fond-carte);
+  border: 1px solid var(--accent);
+  border-radius: var(--rayon-carte);
+}
+
+.cal-creation-quand { margin: 0; font-size: 0.9375rem; }
+.cal-creation-quand strong { color: var(--accent); font-weight: 600; }
+
+/* Sur téléphone la grille tient encore, en plus serré : le numéro du jour et
+   une ou deux puces. Sept colonnes restent lisibles à 375 px. */
+@media (max-width: 40rem) {
+  .cal-jour { height: 4.25rem; padding: 2px; }
+  .cal-semaine .cal-jour { height: 9rem; }
+  .cal-grille { border-spacing: 1px; }
+  .cal-grille th { padding: 2px; font-size: 0.625rem; letter-spacing: 0; }
+  .cal-numero { margin-bottom: 2px; font-size: 0.6875rem; }
+  .cal-puce { font-size: 0.5625rem; padding: 0 2px; border-left-width: 2px; }
+  .cal-nav { margin-left: 0; width: 100%; }
+  .cal-titre { flex: 1; min-width: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

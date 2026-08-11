@@ -34,6 +34,11 @@ import {
   assemblerCalendrier,
   construireCalendrier,
   construireFiltres,
+  construireBarrePeriode,
+  construireGrille,
+  formulaireEvenement,
+  brancherSelection,
+  deplacerAncre,
   centrerActif,
 } from './calendrier-commun.js';
 
@@ -785,10 +790,18 @@ function vueCalendrier(etat) {
 
   return `
     ${enTete('calendrier')}
+    ${construireBarrePeriode(etat.vueCal, etat.ancreCal)}
     ${construireFiltres(etat.filtre)}
     <div data-bloc="calendrier">
-      ${construireCalendrier(elements, etat.filtre)}
+      ${
+        etat.vueCal === 'agenda'
+          ? construireCalendrier(elements, etat.filtre)
+          : construireGrille(elements, etat.filtre, etat.vueCal, etat.ancreCal, {
+              selection: etat.creationCal,
+            })
+      }
     </div>
+    ${etat.creationCal ? formulaireEvenement(etat.creationCal) : ''}
     ${pied()}`;
 }
 
@@ -1826,6 +1839,9 @@ export default {
       objectifDoux: objectifDouxEnregistre(),
       vue: 'accueil',
       filtre: 'tout',
+      vueCal: 'mois',
+      ancreCal: new Date(),
+      creationCal: null,
       pilier: 'tout',
       statutIdee: 'tout',
       tirage: null,
@@ -1867,6 +1883,21 @@ export default {
     };
 
     // Le routeur rappelle `naviguer` à chaque changement de hash dans l'espace.
+    // Recharger les deux fenêtres d'événements : l'à-venir que montre le
+    // calendrier, et la semaine écoulée dont vient l'invite du Carnet.
+    const chargerEvenements = async () => {
+      const maintenant = new Date();
+      const [evenements, evenementsPasses] = await Promise.all([
+        api.evenementsDepuis(maintenant.toISOString(), { projet: 'photo' }),
+        api.evenementsEntre(
+          ajouterJours(maintenant, -7).toISOString(),
+          maintenant.toISOString(),
+          { projet: 'photo' },
+        ),
+      ]);
+      Object.assign(etat, { evenements, evenementsPasses });
+    };
+
     this.naviguer = (nouvelleRoute) => {
       etat.vue = VUES.includes(nouvelleRoute?.vue) ? nouvelleRoute.vue : 'accueil';
       // Le mot de clôture ne vaut que pour l'instant où l'on vient de poster :
@@ -1982,6 +2013,27 @@ export default {
         // réussit quand on le quitte, pas quand il retient.
         const capture = section.querySelector('[data-ajout="moment"]');
         if (capture) capture.open = false;
+        return;
+      }
+
+      if (action === 'creer-evenement-cal') {
+        // Sans heure, l'événement tient le jour entier : minuit local, et
+        // `momentLisible` s'abstient alors d'afficher 00:00.
+        const debut = new Date(`${champs.debut}T${champs.heure || '00:00'}`);
+        const fin = champs.fin === champs.debut ? null : new Date(`${champs.fin}T23:59`);
+
+        await api.creerEvenement({
+          projet: 'photo',
+          titre: champs.titre.trim(),
+          date_debut: debut.toISOString(),
+          date_fin: fin ? fin.toISOString() : null,
+          lieu: champs.lieu?.trim() || null,
+          notes: champs.notes?.trim() || null,
+        });
+
+        etat.creationCal = null;
+        await chargerEvenements();
+        rendre();
         return;
       }
 
@@ -2115,6 +2167,28 @@ export default {
       const filtre = evenement.target.closest('[data-filtre]');
       if (filtre) {
         etat.filtre = filtre.dataset.filtre;
+        rendre();
+        return;
+      }
+
+      const vueCal = evenement.target.closest('[data-vue-cal]');
+      if (vueCal) {
+        etat.vueCal = vueCal.dataset.vueCal;
+        rendre();
+        return;
+      }
+
+      const periode = evenement.target.closest('[data-periode]');
+      if (periode) {
+        const sens = Number(periode.dataset.periode);
+        // 0 = « Aujourd'hui » : on ne se perd jamais longtemps dans un calendrier.
+        etat.ancreCal = sens === 0 ? new Date() : deplacerAncre(etat.ancreCal, etat.vueCal, sens);
+        rendre();
+        return;
+      }
+
+      if (evenement.target.closest('[data-annuler-creation]')) {
+        etat.creationCal = null;
         rendre();
         return;
       }
@@ -2493,6 +2567,14 @@ export default {
           victoire.disabled = false;
         }
       }
+    });
+
+    // Glisser sur les jours du calendrier ouvre le formulaire, rempli de la
+    // plage choisie.
+    brancherSelection(section, ({ debut, fin }) => {
+      etat.creationCal = { debut, fin };
+      rendre();
+      section.querySelector('#evenement-cal-titre')?.focus();
     });
 
     // Tirer un en-tête de colonne pour la déplacer — le geste de Notion. Sur
