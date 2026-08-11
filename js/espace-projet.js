@@ -263,7 +263,15 @@ export function construireVictoires(victoires) {
 // gabarit sert à l'ajout comme à la modification. Un champ peut être un
 // `select` (avec `options: { valeur: libellé }`), une `checkbox`, ou porter des
 // `suggestions` (saisie libre + liste d'appui, via datalist).
-export function construireFormulaire({ id, libelle, action, champs, extra = '', bouton = 'Ajouter' }) {
+export function construireFormulaire({
+  id,
+  libelle,
+  action,
+  champs,
+  extra = '',
+  bouton = 'Ajouter',
+  ouvert = false,
+}) {
   const rendreChamp = (champ) => {
     const idChamp = `${id}-${champ.nom}`;
     const requis = champ.requis ? 'required' : '';
@@ -311,7 +319,7 @@ export function construireFormulaire({ id, libelle, action, champs, extra = '', 
          ${rendreChamp(champ)}`;
 
   return `
-    <details class="ajout" data-ajout="${id}">
+    <details class="ajout" data-ajout="${id}" ${ouvert ? 'open' : ''}>
       <summary>${libelle}</summary>
       <form data-action="${action}">
         ${extra}

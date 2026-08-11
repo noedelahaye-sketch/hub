@@ -23,7 +23,13 @@ import {
   construireApercuCreation,
   formulaireIdee,
 } from './publications.js';
-import { depuisDateISO, echeanceLisible, versDateISO, echapper } from './format.js';
+import {
+  depuisDateISO,
+  echeanceLisible,
+  versDateISO,
+  ajouterJours,
+  echapper,
+} from './format.js';
 import {
   assemblerCalendrier,
   construireCalendrier,
@@ -287,16 +293,19 @@ export function construireCarnet(moments, victoires) {
 
 // La capture : deux champs suffisent, le reste attend qu'on ait envie. Ce qui
 // compte est qu'elle se remplisse debout, en sortant du stade.
-function formulaireMoment(contacts) {
+// `prefill` arrive quand l'invite du calendrier a été acceptée : la date et le
+// lieu de l'événement sont déjà là, il ne reste qu'à raconter.
+function formulaireMoment(contacts, prefill = null) {
   return construireFormulaire({
     id: 'moment',
     libelle: 'Loguer un moment',
     action: 'loguer-moment',
     bouton: 'Inscrire au carnet',
+    ouvert: Boolean(prefill),
     champs: [
-      { nom: 'date', libelle: 'Quand', type: 'date', valeur: versDateISO() },
+      { nom: 'date', libelle: 'Quand', type: 'date', valeur: prefill?.date ?? versDateISO() },
       { nom: 'type', libelle: 'Quoi', type: 'select', options: TYPES_MOMENT, valeur: 'match' },
-      { nom: 'lieu', libelle: 'Événement ou lieu', type: 'text' },
+      { nom: 'lieu', libelle: 'Événement ou lieu', type: 'text', valeur: prefill?.lieu ?? '' },
       {
         nom: 'rencontres',
         libelle: "Qui j'ai rencontré (sépare par une barre oblique)",
@@ -310,6 +319,220 @@ function formulaireMoment(contacts) {
   });
 }
 
+// --- Le rendez-vous stats ----------------------------------------------------
+// On ne supprime pas un réflexe, on le remplace par un rituel. Les chiffres des
+// réseaux n'existent nulle part ailleurs dans le site : ici, un jour par
+// semaine, et le reste du temps un compte à rebours et rien d'autre.
+
+const JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+
+const CLE_JOUR_RDV = 'yuno-jour-rendez-vous';
+
+export function jourRendezVousEnregistre() {
+  try {
+    const brut = localStorage.getItem(CLE_JOUR_RDV);
+    const jour = Number(brut);
+    return brut !== null && jour >= 0 && jour <= 6 ? jour : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function retenirJourRendezVous(jour) {
+  try {
+    localStorage.setItem(CLE_JOUR_RDV, String(jour));
+  } catch {
+    // Navigation privée : le réglage tient pour la visite.
+  }
+}
+
+export function estJourDeRendezVous(jour, reference = new Date()) {
+  return reference.getDay() === jour;
+}
+
+// 0 le jour même, 7 jamais : le rendez-vous suivant est toujours dans la semaine.
+export function joursAvantRendezVous(jour, reference = new Date()) {
+  return (jour - reference.getDay() + 7) % 7;
+}
+
+// Une courbe par mesure, jamais deux échelles sur un même axe : des abonnés et
+// une portée hebdomadaire ne se comparent pas. Une seule série, donc pas de
+// légende — le titre la nomme. Deux points minimum, sinon il n'y a pas de
+// courbe, juste un chiffre.
+export function construireCourbe(stats, cle, titre) {
+  const points = stats.filter((ligne) => ligne[cle] !== null && ligne[cle] !== undefined);
+
+  if (points.length < 2) {
+    return `<p class="vide">${echapper(titre)} — la courbe se dessine à partir du deuxième rendez-vous.</p>`;
+  }
+
+  const largeur = 320;
+  const hauteur = 72;
+  const marge = 10;
+  const valeurs = points.map((ligne) => Number(ligne[cle]));
+  const bas = Math.min(...valeurs);
+  const haut = Math.max(...valeurs);
+  const etendue = haut - bas || 1;
+
+  const abscisse = (index) => marge + (index * (largeur - 2 * marge)) / (points.length - 1);
+  const ordonnee = (valeur) =>
+    hauteur - marge - ((valeur - bas) / etendue) * (hauteur - 2 * marge);
+
+  const chemin = points
+    .map((ligne, index) => `${index ? 'L' : 'M'}${abscisse(index).toFixed(1)} ${ordonnee(Number(ligne[cle])).toFixed(1)}`)
+    .join(' ');
+
+  const pastilles = points
+    .map(
+      (ligne, index) => `
+      <circle cx="${abscisse(index).toFixed(1)}" cy="${ordonnee(Number(ligne[cle])).toFixed(1)}" r="4"
+        class="courbe-point"><title>${echapper(
+          `${ligne.date} — ${ligne[cle]}`,
+        )}</title></circle>`,
+    )
+    .join('');
+
+  const premier = valeurs[0];
+  const dernier = valeurs[valeurs.length - 1];
+
+  return `
+    <figure class="courbe">
+      <figcaption>${echapper(titre)}</figcaption>
+      <svg viewBox="0 0 ${largeur} ${hauteur}" class="courbe-dessin" role="img"
+        aria-label="${echapper(`${titre} : de ${premier} à ${dernier} sur ${points.length} rendez-vous.`)}">
+        <path d="${chemin}" class="courbe-trait" fill="none"/>
+        ${pastilles}
+      </svg>
+      <span class="discret courbe-bornes">
+        <span class="chiffre">${premier}</span> au premier rendez-vous ·
+        <span class="chiffre">${dernier}</span> au dernier
+      </span>
+    </figure>`;
+}
+
+function formulaireStats() {
+  return construireFormulaire({
+    id: 'stats',
+    libelle: 'Remplir le rendez-vous',
+    action: 'noter-stats',
+    bouton: 'Enregistrer et refermer',
+    ouvert: true,
+    champs: [
+      { nom: 'abonnes', libelle: 'Abonnés', type: 'number' },
+      { nom: 'reach', libelle: 'Portée de la semaine', type: 'number' },
+      { nom: 'top_post', libelle: 'Le post qui a le mieux marché', type: 'text' },
+      {
+        nom: 'reponse_rituelle',
+        libelle: "Est-ce que ça change quelque chose à mes actions cette semaine ? (« non » est une réponse)",
+        type: 'textarea',
+        requis: true,
+      },
+    ],
+  });
+}
+
+export function construireRendezVous(etat, reference = new Date()) {
+  const jour = etat.jourRdv;
+
+  const reglage = `
+    <label class="rdv-reglage">
+      <span class="discret">Jour du rendez-vous</span>
+      <select data-jour-rdv>
+        ${JOURS.map(
+          (nom, index) =>
+            `<option value="${index}" ${index === jour ? 'selected' : ''}>${nom}</option>`,
+        ).join('')}
+      </select>
+    </label>`;
+
+  if (!estJourDeRendezVous(jour, reference)) {
+    const reste = joursAvantRendezVous(jour, reference);
+    // Rien d'autre ici : pas un chiffre, pas une courbe, pas un aperçu.
+    return `
+      <div class="rdv-ferme">
+        <p class="rdv-attente">Rendez-vous <strong>${JOURS[jour]}</strong> —
+          ${reste === 1 ? 'demain' : `dans <strong>${reste} jours</strong>`}.</p>
+        <p class="discret">Les chiffres attendent là. D'ici là, la suite se passe dehors.</p>
+        ${reglage}
+      </div>`;
+  }
+
+  const dejaFait = etat.stats.some((ligne) => ligne.date === versDateISO(reference));
+
+  return `
+    <div class="rdv-ouvert">
+      ${
+        dejaFait
+          ? `<p class="rdv-attente">C'est fait pour cette semaine. À ${JOURS[jour]} prochain.</p>`
+          : formulaireStats()
+      }
+      <div class="rdv-historique">
+        ${construireCourbe(etat.stats, 'abonnes', 'Abonnés')}
+        ${construireCourbe(etat.stats, 'reach', 'Portée hebdomadaire')}
+      </div>
+      ${reglage}
+    </div>`;
+}
+
+// --- L'invite du calendrier --------------------------------------------------
+// Un événement passé propose de devenir un moment : le pont entre l'agenda et
+// le Carnet, pour que le vécu se capture sans discipline en plus. Écartée, elle
+// ne revient pas — le système ne relance jamais.
+
+const CLE_EVENEMENTS_ECARTES = 'yuno-evenements-ecartes';
+
+export function evenementsEcartes() {
+  try {
+    const brut = localStorage.getItem(CLE_EVENEMENTS_ECARTES);
+    return brut ? JSON.parse(brut) : [];
+  } catch {
+    return [];
+  }
+}
+
+function ecarterEvenement(id) {
+  const suite = [...new Set([...evenementsEcartes(), id])];
+  try {
+    localStorage.setItem(CLE_EVENEMENTS_ECARTES, JSON.stringify(suite));
+  } catch {
+    // Tant pis : l'invite reviendra à la prochaine visite.
+  }
+  return suite;
+}
+
+// Les sept derniers jours seulement : passé ce délai, l'invite n'est plus une
+// aide, c'est un reproche. Un jour déjà logué ne redemande rien.
+export function evenementsARattraper(evenements, moments, ecartes = [], reference = new Date()) {
+  const debut = versDateISO(ajouterJours(reference, -7));
+  const jaLogue = new Set(moments.map((moment) => moment.date));
+
+  return evenements
+    .filter((evenement) => {
+      const quand = new Date(evenement.date_debut);
+      const jour = versDateISO(quand);
+      return quand <= reference && jour >= debut && !jaLogue.has(jour) && !ecartes.includes(evenement.id);
+    })
+    .sort((a, b) => String(b.date_debut).localeCompare(String(a.date_debut)));
+}
+
+function construireInvite(etat) {
+  // Une seule à la fois : trois invites empilées, c'est une liste de reproches.
+  const [evenement] = evenementsARattraper(etat.evenementsPasses, etat.moments, etat.ecartes);
+  if (!evenement) return '';
+
+  return `
+    <div class="invite-moment">
+      <p>Tu as couvert <strong>${echapper(evenement.titre)}</strong> —
+        tu le notes au carnet ?</p>
+      <span class="invite-choix">
+        <button type="button" class="bouton-secondaire bouton-mini"
+          data-loguer-evenement="${echapper(evenement.id)}">Oui, le noter</button>
+        <button type="button" class="lien-discret bouton-mini"
+          data-ecarter-evenement="${echapper(evenement.id)}">Plus tard</button>
+      </span>
+    </div>`;
+}
+
 // --- Les vues ----------------------------------------------------------------
 
 function vueAccueil(etat) {
@@ -318,7 +541,8 @@ function vueAccueil(etat) {
 
     <section class="bloc">
       ${construireCompteurs(etat.moments)}
-      ${formulaireMoment(etat.contacts)}
+      ${construireInvite(etat)}
+      ${formulaireMoment(etat.contacts, etat.prefillMoment)}
     </section>
 
     <section class="bloc">
@@ -371,7 +595,8 @@ function vueJournal(etat) {
 
     <section class="bloc">
       ${construireCompteurs(etat.moments)}
-      ${formulaireMoment(etat.contacts)}
+      ${construireInvite(etat)}
+      ${formulaireMoment(etat.contacts, etat.prefillMoment)}
     </section>
 
     <section class="bloc">
@@ -535,6 +760,11 @@ function vueCreer(etat) {
       )}</div>
       <div data-bloc="publiees">${construirePubliees(etat.publications, options)}</div>
     </section>
+
+    <section class="bloc bloc-discret">
+      <h2>Rendez-vous stats</h2>
+      <div data-bloc="rendez-vous">${construireRendezVous(etat)}</div>
+    </section>
     ${pied()}`;
 }
 
@@ -550,6 +780,7 @@ function vueCalendrier(etat) {
     commandes: etat.commandes.filter(
       (commande) => commande.echeance && ['devis', 'en_cours'].includes(commande.statut),
     ),
+    relances: etat.contacts.filter((contact) => contact.prochaine_action_date),
   });
 
   return `
@@ -1587,6 +1818,11 @@ export default {
       commandes: [],
       envois: [],
       modeles: [],
+      stats: [],
+      evenementsPasses: [],
+      ecartes: evenementsEcartes(),
+      prefillMoment: null,
+      jourRdv: jourRendezVousEnregistre(),
       objectifDoux: objectifDouxEnregistre(),
       vue: 'accueil',
       filtre: 'tout',
@@ -1634,24 +1870,35 @@ export default {
     this.naviguer = (nouvelleRoute) => {
       etat.vue = VUES.includes(nouvelleRoute?.vue) ? nouvelleRoute.vue : 'accueil';
       // Le mot de clôture ne vaut que pour l'instant où l'on vient de poster :
-      // changer de page l'efface, il n'a pas à traîner.
+      // changer de page l'efface, il n'a pas à traîner. La capture pré-remplie
+      // non plus — on la reprend depuis l'invite si besoin.
       etat.cloture = false;
+      etat.prefillMoment = null;
       rendre();
     };
 
     try {
-      const [objectifs, victoires, moments, publications, taches, evenements, contacts, commandes, envois, modeles] =
+      const maintenant = new Date();
+      const [objectifs, victoires, moments, publications, taches, evenements, evenementsPasses, contacts, commandes, envois, modeles, stats] =
         await Promise.all([
           api.objectifsActifs({ projet: 'photo' }),
           api.victoiresDuProjet('photo', 10, { sauf: 'moment' }),
           api.momentsTous(),
           api.publicationsToutes('photo'),
           api.tachesDatees({ projet: 'photo' }),
-          api.evenementsDepuis(new Date().toISOString(), { projet: 'photo' }),
+          api.evenementsDepuis(maintenant.toISOString(), { projet: 'photo' }),
+          // La semaine écoulée seulement : de quoi proposer de loguer ce qui
+          // vient d'être vécu, sans remonter un arriéré.
+          api.evenementsEntre(
+            ajouterJours(maintenant, -7).toISOString(),
+            maintenant.toISOString(),
+            { projet: 'photo' },
+          ),
           api.contactsTous(),
           api.commandesToutes(),
           api.envoisTous(),
           api.modelesTous(),
+          api.statsHebdoTous(),
         ]);
       Object.assign(etat, {
         objectifs,
@@ -1660,10 +1907,12 @@ export default {
         publications,
         taches,
         evenements,
+        evenementsPasses,
         contacts,
         commandes,
         envois,
         modeles,
+        stats,
       });
     } catch (erreur) {
       console.error("Chargement de l'espace Yuno impossible", erreur);
@@ -1727,11 +1976,27 @@ export default {
         });
 
         etat.moments = [logue, ...etat.moments];
+        etat.prefillMoment = null;
         rendre();
         // C'est fait : la capture se referme, le moment est au carnet. Le site
         // réussit quand on le quitte, pas quand il retient.
         const capture = section.querySelector('[data-ajout="moment"]');
         if (capture) capture.open = false;
+        return;
+      }
+
+      if (action === 'noter-stats') {
+        const ligne = await api.enregistrerStats({
+          date: versDateISO(),
+          abonnes: champs.abonnes ? Number(champs.abonnes) : null,
+          reach: champs.reach ? Number(champs.reach) : null,
+          top_post: champs.top_post?.trim() || null,
+          reponse_rituelle: champs.reponse_rituelle.trim(),
+        });
+        etat.stats = [...etat.stats.filter((s) => s.date !== ligne.date), ligne].sort((a, b) =>
+          a.date.localeCompare(b.date),
+        );
+        rendre();
         return;
       }
 
@@ -2035,6 +2300,29 @@ export default {
           console.error('Suppression de la commande impossible', souci);
           supprimerCommande.disabled = false;
         }
+        return;
+      }
+
+      // L'invite acceptée : la capture s'ouvre, date et lieu déjà remplis.
+      const loguerEvenement = evenement.target.closest('[data-loguer-evenement]');
+      if (loguerEvenement) {
+        const passe = etat.evenementsPasses.find(
+          (candidat) => candidat.id === loguerEvenement.dataset.loguerEvenement,
+        );
+        if (!passe) return;
+        etat.prefillMoment = {
+          date: versDateISO(new Date(passe.date_debut)),
+          lieu: passe.titre,
+        };
+        etat.ecartes = ecarterEvenement(passe.id);
+        rendre();
+        return;
+      }
+
+      const ecarterInvite = evenement.target.closest('[data-ecarter-evenement]');
+      if (ecarterInvite) {
+        etat.ecartes = ecarterEvenement(ecarterInvite.dataset.ecarterEvenement);
+        rendre();
         return;
       }
 
@@ -2361,6 +2649,14 @@ export default {
         } catch (souci) {
           console.error('Enregistrement du modèle impossible', souci);
         }
+        return;
+      }
+
+      const jourRdv = evenement.target.closest('[data-jour-rdv]');
+      if (jourRdv) {
+        etat.jourRdv = Number(jourRdv.value);
+        retenirJourRendezVous(etat.jourRdv);
+        rendre();
         return;
       }
 

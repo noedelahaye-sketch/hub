@@ -32,11 +32,13 @@ export default {
     }
 
     try {
-      const [evenements, taches, objectifs, publications] = await Promise.all([
+      const [evenements, taches, objectifs, publications, commandes, contacts] = await Promise.all([
         api.evenementsDepuis(new Date().toISOString()),
         api.tachesDatees(),
         api.objectifsActifs(),
         api.publicationsDatees(),
+        api.commandesToutes(),
+        api.contactsTous(),
       ]);
 
       etat.elements = assemblerCalendrier({
@@ -46,6 +48,10 @@ export default {
         // une ceinture de plus au cas où l'une en recevrait une un jour.
         objectifs: objectifs.filter((objectif) => objectif.projet !== 'perso'),
         publications,
+        commandes: commandes.filter(
+          (commande) => commande.echeance && ['devis', 'en_cours'].includes(commande.statut),
+        ),
+        relances: contacts.filter((contact) => contact.prochaine_action_date),
       });
       rendre();
     } catch (erreur) {

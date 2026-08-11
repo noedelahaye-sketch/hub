@@ -503,6 +503,25 @@ export async function enregistrerEnvoi({ contact, statut }) {
   return { envoi, contact: misAJour };
 }
 
+// --- Le rendez-vous stats (Yuno) ---------------------------------------------
+// Les chiffres des réseaux ne vivent QUE là. Ils ne se lisent pas ailleurs dans
+// le site, et rien d'autre n'appelle ces deux fonctions : la surveillance
+// devient un rituel hebdomadaire au lieu d'un réflexe.
+
+export async function statsHebdoTous() {
+  return verifier(await client.from('stats_hebdo').select('*').order('date'));
+}
+
+export async function enregistrerStats({ date, abonnes, reach, top_post, reponse_rituelle }) {
+  return verifier(
+    await client
+      .from('stats_hebdo')
+      .upsert({ date, abonnes, reach, top_post, reponse_rituelle }, { onConflict: 'date' })
+      .select()
+      .single(),
+  );
+}
+
 // --- Les modèles de messages (Yuno) ------------------------------------------
 // La friction du premier message est le principal mur de l'aller-vers : un
 // modèle à personnaliser abaisse le coût d'entrée de chaque envoi.

@@ -27,15 +27,19 @@ const TYPES = {
   objectif: 'Objectif',
   jalon: 'Jalon',
   commande: 'Commande',
+  relance: 'Relance',
 };
 
+// Un seul filtre pour ce que le carnet réseau met à l'agenda : une relance
+// promise et une commande à livrer sont deux façons de tenir un engagement
+// envers quelqu'un.
 export const FILTRES = [
   ['tout', 'Tout'],
   ['publication', 'Publications'],
   ['tache', 'Tâches'],
   ['evenement', 'Événements'],
   ['objectif', 'Objectifs'],
-  ['commande', 'Commandes'],
+  ['relance', 'Relances/Commandes'],
 ];
 
 // --- Assemblage --------------------------------------------------------------
@@ -46,6 +50,7 @@ export function assemblerCalendrier({
   objectifs = [],
   publications = [],
   commandes = [],
+  relances = [],
 }) {
   const elements = [];
 
@@ -113,6 +118,18 @@ export function assemblerCalendrier({
     });
   }
 
+  // Les prochaines actions datées du carnet réseau. Elles disent ce qu'on a
+  // promis à quelqu'un, pas ce qu'on attend de lui.
+  for (const contact of relances) {
+    elements.push({
+      type: 'relance',
+      date: depuisDateISO(contact.prochaine_action_date),
+      projet: 'photo',
+      titre: contact.prochaine_action || `Reprendre contact avec ${contact.nom}`,
+      detail: contact.nom,
+    });
+  }
+
   return elements.sort((a, b) => a.date - b.date);
 }
 
@@ -141,6 +158,8 @@ export function construireFiltres(actif = 'tout') {
 function retenu(element, filtre) {
   if (filtre === 'tout') return true;
   if (filtre === 'objectif') return element.type === 'objectif' || element.type === 'jalon';
+  // Un filtre pour deux natures : ce que le carnet réseau met à l'agenda.
+  if (filtre === 'relance') return element.type === 'relance' || element.type === 'commande';
   return element.type === filtre;
 }
 
