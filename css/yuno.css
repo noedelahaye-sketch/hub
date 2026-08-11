@@ -392,3 +392,136 @@ body[data-espace="yuno"] #vue .bloc h2 {
 }
 
 .contact-echange input { margin: 0; }
+
+/* --- La Passerelle ----------------------------------------------------------
+   La file d'action de la semaine. Une seule métrique : ce que Noé envoie. Rien
+   ici ne compte une réponse, et rien n'est rouge. */
+
+.passerelle-metrique {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--espace-24);
+  margin-bottom: var(--espace-12);
+  padding: var(--espace-16);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+}
+
+.metrique {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metrique .chiffre { font-size: 1.5rem; line-height: 1.1; color: var(--accent); }
+.metrique .discret { font-size: 0.75rem; }
+
+/* Le réglage se pose à droite : c'est un curseur qu'on touche deux fois par an,
+   pas une jauge à surveiller. */
+.metrique-objectif {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-left: auto;
+  font-size: 0.75rem;
+}
+
+.metrique-objectif select {
+  margin: 0;
+  padding: var(--espace-4) var(--espace-8);
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: var(--texte);
+  background: var(--fond);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+}
+
+/* Sur téléphone le réglage passe à la ligne : poussé à droite tout seul, il
+   avait l'air d'un chiffre de plus. */
+@media (max-width: 30rem) {
+  .passerelle-metrique { gap: var(--espace-16); }
+  .metrique-objectif { width: 100%; margin-left: 0; }
+}
+
+/* Atteint, on le dit une fois. En dessous, on ne dit rien : un plancher
+   rassurant n'est pas une dette. */
+.note-atteint {
+  margin: 0 0 var(--espace-16);
+  font-size: 0.875rem;
+  color: var(--accent);
+}
+
+.note-file { margin: var(--espace-16) 0 0; font-size: 0.8125rem; }
+
+.file-niveau { margin-bottom: var(--espace-24); }
+
+.file-niveau h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  margin: 0 0 2px;
+  font-family: "Gilroy", var(--police-texte);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+/* Le rang porte la gradation : 1 est le pas le plus court. */
+.file-rang {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: 0.8125rem;
+  color: var(--fond-carte);
+  background: var(--accent);
+  border-radius: var(--rayon-pastille);
+}
+
+.file-compte { font-size: 0.8125rem; }
+.file-aide { margin: 0 0 var(--espace-8); font-size: 0.8125rem; }
+
+/* Un champ qui se lit comme du texte et s'édite au clic : le geste du carnet,
+   appliqué au « pourquoi » et à la prochaine action. */
+.champ-vif {
+  width: 100%;
+  margin: var(--espace-4) 0 0;
+  padding: var(--espace-4) var(--espace-8);
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: var(--texte);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--rayon-controle);
+}
+
+.champ-vif::placeholder { color: var(--texte-discret); }
+.champ-vif:hover { border-color: var(--bordure); }
+.champ-vif:focus { border-color: var(--accent); background: var(--fond); outline: none; }
+
+.file-suite {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-8);
+  width: 100%;
+}
+
+.file-suite .champ-vif { flex: 1 1 12rem; }
+.file-suite .champ-date { flex: 0 1 10rem; }
+
+/* Le seul bouton de la file, et il ne parle que d'effort. */
+.bouton-envoye { margin-left: auto; }
+
+/* --- Les modèles de messages ------------------------------------------------ */
+
+.bloc-modeles { margin-top: var(--espace-24); }
+
+.liste-modeles .modele-titre { font-weight: 600; flex: 1 1 auto; margin: 0; }
+.liste-modeles .modele-corps { resize: vertical; white-space: pre-wrap; }
+
+/* --- Les commandes ---------------------------------------------------------- */
+
+.commande-montant { font-size: 0.875rem; color: var(--accent); }

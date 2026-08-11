@@ -2,6 +2,7 @@
 // Rien d'autre dans le site ne doit importer supabase-js directement.
 
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+import { versDateISO } from './format.js';
 
 // URL du projet et clé publique (anon) : ces deux valeurs sont publiques par
 // conception. Sans session, elles ne donnent accès à rien — les politiques RLS
@@ -425,7 +426,7 @@ export async function ouvrirFichePourRencontre(rencontre) {
     // Ils se sont vus en vrai : le contact est établi, ce n'est pas un envoi
     // à froid. Le reste de la fiche se complète dans Réseau.
     statut: 'contact_etabli',
-    dernier_echange: new Date().toISOString().slice(0, 10),
+    dernier_echange: versDateISO(),
   });
 
   const liee = verifier(
@@ -461,6 +462,66 @@ export async function supprimerContact(id) {
   if (error) throw error;
 }
 
+// --- La Passerelle (Yuno) ----------------------------------------------------
+// L'aller-vers se muscle par micro-doses. On mesure ce que Noé contrôle — ce
+// qu'il envoie — et jamais ce qu'il subit : cette table n'a pas de colonne
+// « répondu », et aucune fonction d'ici ne compte un silence.
+
+export async function envoisTous() {
+  return verifier(
+    await client.from('journal_envois').select('*').order('date', { ascending: false }),
+  );
+}
+
+// Un envoi de plus : une ligne au journal, et la fiche qui se met à jour. Le
+// statut est décidé par l'appelant — la progression d'une relation est une
+// règle d'écran, pas de base.
+export async function enregistrerEnvoi({ contact, statut }) {
+  const date = versDateISO();
+
+  const envoi = verifier(
+    await client
+      .from('journal_envois')
+      .insert({ contact_id: contact.id, date })
+      .select()
+      .single(),
+  );
+
+  const misAJour = await modifierContact(contact.id, { statut, date_dernier_envoi: date });
+  return { envoi, contact: misAJour };
+}
+
+// --- Les modèles de messages (Yuno) ------------------------------------------
+// La friction du premier message est le principal mur de l'aller-vers : un
+// modèle à personnaliser abaisse le coût d'entrée de chaque envoi.
+
+export async function modelesTous() {
+  return verifier(
+    await client
+      .from('modeles_messages')
+      .select('*')
+      .order('ordre', { nullsFirst: false })
+      .order('created_at'),
+  );
+}
+
+export async function creerModele(champs) {
+  return verifier(
+    await client.from('modeles_messages').insert(champs).select().single(),
+  );
+}
+
+export async function modifierModele(id, champs) {
+  return verifier(
+    await client.from('modeles_messages').update(champs).eq('id', id).select().single(),
+  );
+}
+
+export async function supprimerModele(id) {
+  const { error } = await client.from('modeles_messages').delete().eq('id', id);
+  if (error) throw error;
+}
+
 // --- Commandes (Yuno) --------------------------------------------------------
 
 export async function commandesToutes() {
@@ -488,16 +549,23 @@ export async function supprimerCommande(id) {
   if (error) throw error;
 }
 
-// Livrer une commande crée sa victoire, comme une tâche terminée ou un jalon
-// atteint (docs/yuno-spec.md, §4).
-export async function livrerCommande(commande) {
-  const livree = await modifierCommande(commande.id, { statut: 'livree' });
-  const victoire = await ajouterVictoire({
-    projet: 'photo',
-    titre: `Commande livrée — ${livree.titre}`,
-    source: 'manuel',
-  });
-  return { commande: livree, victoire };
+// Faire avancer une commande d'un cran. Le cycle appartient à l'écran ; ce
+// qu'on sait ici, c'est que livrer crée une victoire, comme une tâche terminée
+// ou un jalon atteint (docs/yuno-spec.md, §4). Encaisser n'en crée pas une
+// seconde : c'est le même travail, et l'argent est une conséquence, pas un juge.
+export async function avancerCommande(commande, suivant) {
+  const misAJour = await modifierCommande(commande.id, { statut: suivant });
+
+  const victoire =
+    suivant === 'livree'
+      ? await ajouterVictoire({
+          projet: 'photo',
+          titre: `Commande livrée — ${misAJour.titre}`,
+          source: 'manuel',
+        })
+      : null;
+
+  return { commande: misAJour, victoire };
 }
 
 // --- Le calendrier : tout ce qui porte une date ------------------------------

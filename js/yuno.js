@@ -43,7 +43,7 @@ export const RUBRIQUES_DEPART = [
 // n'ont pas à encombrer ce formulaire-ci.
 const RESEAUX_YUNO = { instagram: 'Instagram', tiktok: 'TikTok', linkedin: 'LinkedIn' };
 
-const VUES = ['accueil', 'journal', 'creer', 'calendrier', 'reseau', 'commandes'];
+const VUES = ['accueil', 'journal', 'creer', 'calendrier', 'reseau'];
 
 // --- Fabrication du HTML ----------------------------------------------------
 
@@ -54,7 +54,6 @@ function enTete(vueActive) {
     ['creer', 'Créer', '#yuno/creer'],
     ['calendrier', 'Calendrier', '#yuno/calendrier'],
     ['reseau', 'Réseau', '#yuno/reseau'],
-    ['commandes', 'Commandes', '#yuno/commandes'],
   ];
 
   return `
@@ -383,8 +382,9 @@ function vueCalendrier(etat) {
     publications: etat.publications.filter(
       (pub) => pub.date_prevue && pub.statut !== 'publie',
     ),
+    // Une commande livrée n'a plus d'échéance à tenir ; un devis, si.
     commandes: etat.commandes.filter(
-      (commande) => commande.echeance && commande.statut === 'en_cours',
+      (commande) => commande.echeance && ['devis', 'en_cours'].includes(commande.statut),
     ),
   });
 
@@ -416,10 +416,29 @@ const TYPES_CONTACT = {
 const STATUTS_CONTACT = {
   pas_de_contact: { nom: 'Pas de contact', teinte: null },
   message_envoye: { nom: 'Message envoyé', teinte: 215 },
+  relance: { nom: 'Relancé', teinte: 255 },
+  repondu: { nom: 'Répondu', teinte: 195 },
   // Doré pour « établi », vert pour « bon » — l'ordre du tableau Notion de Noé.
   contact_etabli: { nom: 'Contact établi', teinte: 42 },
   bon_contact: { nom: 'Bon contact', teinte: 152 },
+  opportunite: { nom: 'Opportunité', teinte: 310 },
 };
+
+// Les trois micro-doses de l'aller-vers, de la plus sûre à la plus grande. La
+// peur du rejet ne se contourne pas, elle s'entraîne : d'où la gradation.
+const NIVEAUX = {
+  1: { nom: 'Répondre', aide: 'Des messages reçus qui attendent.' },
+  2: { nom: 'Relancer', aide: 'Des relations vivantes, à entretenir.' },
+  3: { nom: 'Ouvrir', aide: 'Des portes à pousser. Le plus grand pas.' },
+};
+
+// Où va la relation après un envoi de plus. Une relation vivante ne redescend
+// jamais : écrire à quelqu'un qui a répondu ne le ramène pas à « relancé ».
+export function statutApresEnvoi(statut) {
+  if (!statut || statut === 'pas_de_contact') return 'message_envoye';
+  if (statut === 'message_envoye' || statut === 'relance') return 'relance';
+  return statut;
+}
 
 // Une teinte stable par valeur : « Rennes » garde la même couleur d'une visite
 // à l'autre, comme les étiquettes de Notion. Douze teintes bien réparties, et
@@ -518,6 +537,41 @@ const COLONNES = [
     },
   },
   {
+    cle: 'niveau',
+    titre: 'Niveau',
+    // Le niveau se trie sur la gradation : 1 est plus proche que 3.
+    valeur: (contact) => (contact.niveau ? String(contact.niveau) : ''),
+    texte: (contact) => (NIVEAUX[contact.niveau] ?? {}).nom ?? '',
+    cellule: (contact) => `<select class="choix-niveau" data-niveau="${echapper(contact.id)}"
+      aria-label="Niveau d'aller-vers pour ${echapper(contact.nom)}">
+      <option value="">—</option>
+      ${Object.entries(NIVEAUX)
+        .map(
+          ([valeur, { nom }]) =>
+            `<option value="${valeur}" ${
+              String(contact.niveau) === valeur ? 'selected' : ''
+            }>${valeur} ${nom}</option>`,
+        )
+        .join('')}
+    </select>`,
+    filtre: {
+      cle: (contact) => (contact.niveau ? String(contact.niveau) : ''),
+      libelle: (contact) =>
+        contact.niveau ? `${contact.niveau} ${NIVEAUX[contact.niveau].nom}` : 'Hors file',
+      // Les sans-niveau en dernier : ils ne sont pas un quatrième niveau.
+      ordre: (contact) => contact.niveau ?? 9,
+    },
+  },
+  {
+    cle: 'objectif',
+    titre: 'Objectif',
+    valeur: (contact) => contact.objectif ?? '',
+    cellule: (contact) =>
+      contact.objectif
+        ? echapper(contact.objectif)
+        : '<span class="discret">—</span>',
+  },
+  {
     cle: 'structure',
     titre: 'Rattaché à',
     valeur: (contact) => contact.structure ?? '',
@@ -550,7 +604,7 @@ const COLONNES = [
   },
 ];
 
-export const AFFICHAGES = { tableau: 'Tableau', fiches: 'Fiches' };
+export const AFFICHAGES = { tableau: 'Tableau', fiches: 'Fiches', passerelle: 'Passerelle' };
 
 // Un contact peut avoir deux comptes ou deux adresses — le carnet de Noé en
 // contient, séparés par une barre oblique. Chacun devient son propre lien.
@@ -612,6 +666,27 @@ export const COLONNES_FILTRABLES = COLONNES.filter((colonne) => colonne.filtre);
 // à rien, d'où la persistance ; mais il n'a rien à faire dans Supabase.
 
 const CLE_ORDRE = 'yuno-ordre-colonnes';
+
+// L'objectif doux suit la même règle que l'ordre des colonnes : c'est un
+// réglage personnel, pas une donnée. Il vit dans le navigateur.
+const CLE_OBJECTIF_DOUX = 'yuno-objectif-doux';
+
+export function objectifDouxEnregistre() {
+  try {
+    const brut = Number(localStorage.getItem(CLE_OBJECTIF_DOUX));
+    return brut > 0 ? brut : 1;
+  } catch {
+    return 1;
+  }
+}
+
+function retenirObjectifDoux(valeur) {
+  try {
+    localStorage.setItem(CLE_OBJECTIF_DOUX, String(valeur));
+  } catch {
+    // Navigation privée, quota plein : le réglage tient pour la visite.
+  }
+}
 
 export function ordreEnregistre() {
   try {
@@ -937,9 +1012,197 @@ export function construireFichesContacts(retenus, contacts) {
     .join('')}</ul>`;
 }
 
+// --- La Passerelle -----------------------------------------------------------
+// Un troisième dessin de la même base, pas un module à part : la file d'action
+// de la semaine, groupée par micro-dose. La métrique est le nombre de messages
+// ENVOYÉS — ce que Noé contrôle. Ni taux de réponse, ni compte de silences :
+// si le compteur dépendait des réponses, chaque silence deviendrait un rejet
+// mesuré.
+
+// La semaine commence le lundi.
+export function debutDeSemaine(reference = new Date()) {
+  const date = new Date(reference);
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() - ((date.getDay() + 6) % 7));
+  return date;
+}
+
+export function envoisDeLaSemaine(envois, reference = new Date()) {
+  const debut = versDateISO(debutDeSemaine(reference));
+  return envois.filter((envoi) => envoi.date >= debut).length;
+}
+
+// Dans la file, une case vide passe DEVANT — au rebours du tableau. « Jamais
+// écrit » est ce qui attend le plus, pas ce qui est le plus ancien.
+function ordreDeLaFile(a, b) {
+  const da = a.date_dernier_envoi ?? '';
+  const db = b.date_dernier_envoi ?? '';
+  if (da === db) return a.nom.localeCompare(b.nom, 'fr');
+  if (!da) return -1;
+  if (!db) return 1;
+  return da.localeCompare(db);
+}
+
+function carteFile(contact) {
+  const liens = [lienInstagram(contact), lienEmail(contact), lienTelephone(contact)].filter(
+    Boolean,
+  );
+  const statut = STATUTS_CONTACT[contact.statut] ?? { nom: contact.statut, teinte: null };
+
+  return `
+    <li>
+      <span class="tuile-entete">
+        ${
+          contact.structure
+            ? `<span class="contact-structure">${echapper(contact.structure)}</span>`
+            : ''
+        }
+        ${pastilleTexte(statut.nom, statut.teinte)}
+        ${
+          contact.date_dernier_envoi
+            ? `<span class="discret quand">écrit ${echapper(
+                echeanceLisible(depuisDateISO(contact.date_dernier_envoi)),
+              )}</span>`
+            : ''
+        }
+      </span>
+      <span class="contact-nom">${echapper(contact.nom)}</span>
+      <input class="champ-vif" type="text" data-objectif-contact="${echapper(contact.id)}"
+        value="${echapper(contact.objectif ?? '')}" placeholder="Pourquoi ce contact ?"
+        aria-label="Objectif pour ${echapper(contact.nom)}">
+      <span class="file-suite">
+        <input class="champ-vif" type="text" data-prochaine-action="${echapper(contact.id)}"
+          value="${echapper(contact.prochaine_action ?? '')}" placeholder="Prochaine action"
+          aria-label="Prochaine action pour ${echapper(contact.nom)}">
+        <input class="champ-vif champ-date" type="date" data-prochaine-date="${echapper(contact.id)}"
+          value="${echapper(contact.prochaine_action_date ?? '')}"
+          aria-label="Quand, pour ${echapper(contact.nom)}">
+      </span>
+      <span class="pub-actions">
+        ${liens.length ? `<span class="contact-liens">${joindre(liens)}</span>` : ''}
+        <button type="button" class="bouton-secondaire bouton-mini bouton-envoye"
+          data-envoye="${echapper(contact.id)}">Envoyé ✓</button>
+      </span>
+    </li>`;
+}
+
+export function construireMetrique(envois, objectifDoux, reference = new Date()) {
+  const semaine = envoisDeLaSemaine(envois, reference);
+
+  return `
+    <div class="passerelle-metrique">
+      <span class="metrique">
+        <span class="chiffre">${envois.length}</span>
+        <span class="discret">messages envoyés</span>
+      </span>
+      <span class="metrique">
+        <span class="chiffre">${semaine}</span>
+        <span class="discret">cette semaine</span>
+      </span>
+      <label class="metrique-objectif">
+        <span class="discret">Objectif doux</span>
+        <select data-objectif-doux>
+          ${[1, 2, 3, 5]
+            .map(
+              (valeur) =>
+                `<option value="${valeur}" ${valeur === objectifDoux ? 'selected' : ''}>${valeur} / semaine</option>`,
+            )
+            .join('')}
+        </select>
+      </label>
+    </div>
+    ${
+      // Un plancher rassurant, jamais une dette : atteint, on le dit ; en
+      // dessous, on ne dit rien du tout.
+      semaine >= objectifDoux
+        ? `<p class="discret note-atteint">C'est fait pour cette semaine. La suite se passe dehors.</p>`
+        : ''
+    }`;
+}
+
+export function construireModeles(modeles = []) {
+  const corps = modeles.length
+    ? `<ul class="liste-modeles">${modeles
+        .map(
+          (modele) => `
+        <li>
+          <span class="tuile-entete">
+            <input class="champ-vif modele-titre" type="text" data-modele-titre="${echapper(modele.id)}"
+              value="${echapper(modele.titre)}" aria-label="Titre du modèle">
+            <button type="button" class="lien-discret bouton-mini" data-copier-modele="${echapper(
+              modele.id,
+            )}">Copier</button>
+            <button type="button" class="lien-discret bouton-mini bouton-retirer"
+              data-supprimer-modele="${echapper(modele.id)}"
+              title="Retirer ce modèle" aria-label="Retirer « ${echapper(modele.titre)} »">×</button>
+          </span>
+          <textarea class="champ-vif modele-corps" rows="3" data-modele-corps="${echapper(modele.id)}"
+            aria-label="Texte du modèle">${echapper(modele.corps)}</textarea>
+        </li>`,
+        )
+        .join('')}</ul>`
+    : `<p class="vide">Un premier message coûte moins cher quand la phrase existe déjà.</p>`;
+
+  return `
+    <details class="backlog bloc-modeles">
+      <summary>Modèles de messages ${
+        modeles.length ? `<span class="chiffre">${modeles.length}</span>` : ''
+      }</summary>
+      ${corps}
+      ${construireFormulaire({
+        id: 'modele',
+        libelle: 'Écrire un modèle',
+        action: 'creer-modele',
+        bouton: 'Garder ce modèle',
+        champs: [
+          { nom: 'titre', libelle: 'Pour quoi ? (accréditation concert, premier contact club…)', type: 'text', requis: true },
+          { nom: 'corps', libelle: 'Le message, à personnaliser à chaque envoi', type: 'textarea', requis: true },
+        ],
+      })}
+    </details>`;
+}
+
+export function construirePasserelle(contacts, { envois = [], objectifDoux = 1, modeles = [] } = {}) {
+  const groupes = Object.entries(NIVEAUX)
+    .map(([niveau, { nom, aide }]) => ({
+      niveau,
+      nom,
+      aide,
+      dedans: contacts.filter((contact) => String(contact.niveau) === niveau).sort(ordreDeLaFile),
+    }))
+    .map(
+      ({ niveau, nom, aide, dedans }) => `
+      <section class="file-niveau">
+        <h3><span class="file-rang chiffre">${niveau}</span> ${echapper(nom)}
+          ${dedans.length ? `<span class="discret file-compte chiffre">${dedans.length}</span>` : ''}
+        </h3>
+        <p class="discret file-aide">${echapper(aide)}</p>
+        ${
+          dedans.length
+            ? `<ul>${dedans.map(carteFile).join('')}</ul>`
+            : `<p class="vide">Personne ici pour l'instant.</p>`
+        }
+      </section>`,
+    )
+    .join('');
+
+  return `
+    ${construireMetrique(envois, objectifDoux)}
+    <div class="passerelle-file">${groupes}</div>
+    <p class="discret note-file">Un contact entre dans la file quand tu lui donnes un niveau —
+      depuis la colonne « Niveau » du tableau.</p>
+    ${construireModeles(modeles)}`;
+}
+
 // Le point d'entrée : on lit la base, puis on la dessine selon l'affichage.
 export function construireContacts(contacts, options = {}) {
   const retenus = baseContacts(contacts, options);
+
+  // La Passerelle est un dessin de la base comme les autres — la recherche et
+  // les filtres agissent dessus aussi. Elle n'affiche pas « 4 sur 12 » : une
+  // file d'action n'est pas un inventaire.
+  if (options.affichage === 'passerelle') return construirePasserelle(retenus, options);
+
   const compte = `<p class="discret compte-base"><span class="chiffre">${retenus.length}</span> sur <span class="chiffre">${contacts.length}</span></p>`;
 
   const dessin =
@@ -991,10 +1254,21 @@ function vueReseau(etat) {
               Object.entries(STATUTS_CONTACT).map(([v, { nom }]) => [v, nom]),
             ),
             valeur: 'pas_de_contact' },
+          { nom: 'objectif', libelle: 'Pourquoi ce contact ? (facultatif)', type: 'text' },
+          { nom: 'niveau', libelle: "Dans la file d'aller-vers ?", type: 'select',
+            options: {
+              '': 'Pas dans la file',
+              ...Object.fromEntries(
+                Object.entries(NIVEAUX).map(([v, { nom }]) => [v, `${v} ${nom}`]),
+              ),
+            },
+            valeur: '' },
           { nom: 'notes', libelle: 'Notes', type: 'textarea' },
         ],
       })}
     </section>
+
+    ${blocCommandes(etat)}
     ${pied()}`;
 }
 
@@ -1008,22 +1282,51 @@ function optionsBase(etat) {
     sens: etat.sensContact,
     affichage: etat.affichageContact,
     ordre: etat.ordreColonnes,
+    envois: etat.envois,
+    objectifDoux: etat.objectifDoux,
+    modeles: etat.modeles,
   };
 }
 
 // --- Les commandes -----------------------------------------------------------
+// Elles vivent dans Réseau : une commande naît d'une relation, elle n'a pas
+// besoin d'un onglet à elle.
+
+export const CYCLE_COMMANDE = ['devis', 'en_cours', 'livree', 'payee'];
+
+const STATUTS_COMMANDE = {
+  devis: 'Devis',
+  en_cours: 'En cours',
+  livree: 'Livrée',
+  payee: 'Payée',
+};
+
+// Un bouton dit ce qui va se passer.
+const AVANCER_COMMANDE = {
+  en_cours: 'Démarrer',
+  livree: 'Marquer livrée',
+  payee: 'Marquer payée',
+};
 
 export function construireCommandes(commandes) {
-  const enCours = commandes.filter((commande) => commande.statut === 'en_cours');
-  const livrees = commandes.filter((commande) => commande.statut === 'livree');
+  const ouvertes = commandes.filter((commande) => ['devis', 'en_cours'].includes(commande.statut));
+  const closes = commandes.filter((commande) => ['livree', 'payee'].includes(commande.statut));
 
-  const tuile = (commande) => `
+  const tuile = (commande) => {
+    const suivant = CYCLE_COMMANDE[CYCLE_COMMANDE.indexOf(commande.statut) + 1];
+
+    return `
     <li>
       <span class="tuile-entete">
         ${
           commande.client
             ? `<span class="contact-structure">${echapper(commande.client)}</span>`
             : '<span class="discret">sans client</span>'
+        }
+        ${
+          commande.montant
+            ? `<span class="chiffre commande-montant">${echapper(commande.montant)} €</span>`
+            : ''
         }
         ${
           commande.echeance
@@ -1040,11 +1343,14 @@ export function construireCommandes(commandes) {
       <span class="pub-titre">${echapper(commande.titre)}</span>
       ${commande.notes ? `<span class="discret pub-notes">${echapper(commande.notes)}</span>` : ''}
       <span class="pub-actions">
+        <span class="pub-statut">statut : <strong>${echapper(
+          (STATUTS_COMMANDE[commande.statut] ?? commande.statut).toLowerCase(),
+        )}</strong></span>
         ${
-          commande.statut === 'en_cours'
+          suivant
             ? `<button type="button" class="bouton-secondaire bouton-mini"
-                 data-livrer="${echapper(commande.id)}">Marquer livrée</button>`
-            : '<span class="pub-statut">statut : <strong>livrée</strong></span>'
+                 data-avancer-commande="${echapper(commande.id)}">${AVANCER_COMMANDE[suivant]}</button>`
+            : ''
         }
         ${
           commande.lien_livrable
@@ -1054,27 +1360,26 @@ export function construireCommandes(commandes) {
         }
       </span>
     </li>`;
+  };
 
   return `
     ${
-      enCours.length
-        ? `<ul>${enCours.map(tuile).join('')}</ul>`
-        : `<p class="vide">Aucune commande en cours.</p>`
+      ouvertes.length
+        ? `<ul>${ouvertes.map(tuile).join('')}</ul>`
+        : `<p class="vide">Tes commandes se suivront ici, du devis au paiement.</p>`
     }
     ${
-      livrees.length
+      closes.length
         ? `<details class="backlog">
-             <summary>Livrées <span class="chiffre">${livrees.length}</span></summary>
-             <ul>${livrees.map(tuile).join('')}</ul>
+             <summary>Livrées et payées <span class="chiffre">${closes.length}</span></summary>
+             <ul>${closes.map(tuile).join('')}</ul>
            </details>`
         : ''
     }`;
 }
 
-function vueCommandes(etat) {
+function blocCommandes(etat) {
   return `
-    ${enTete('commandes')}
-
     <section class="bloc">
       <h2>Commandes</h2>
       <div data-bloc="commandes">${construireCommandes(etat.commandes)}</div>
@@ -1084,19 +1389,23 @@ function vueCommandes(etat) {
         action: 'creer-commande',
         champs: [
           { nom: 'titre', libelle: 'Commande', type: 'text', requis: true },
-          { nom: 'client', libelle: 'Client', type: 'text' },
+          // Le client se relie au carnet quand le nom y figure — même geste que
+          // les rencontres du Journal, et le carnet reste la source des noms.
+          {
+            nom: 'client',
+            libelle: 'Client',
+            type: 'text',
+            suggestions: etat.contacts.map((contact) => contact.nom),
+          },
+          { nom: 'statut', libelle: 'Où en est-elle', type: 'select',
+            options: STATUTS_COMMANDE, valeur: 'devis' },
           { nom: 'echeance', libelle: 'À livrer pour (facultatif)', type: 'date' },
+          { nom: 'montant', libelle: 'Montant en euros (facultatif)', type: 'number' },
           { nom: 'lien_livrable', libelle: 'Lien du livrable (facultatif)', type: 'text' },
-          { nom: 'statut', libelle: 'Relation', type: 'select',
-            options: Object.fromEntries(
-              Object.entries(STATUTS_CONTACT).map(([v, { nom }]) => [v, nom]),
-            ),
-            valeur: 'pas_de_contact' },
           { nom: 'notes', libelle: 'Notes', type: 'textarea' },
         ],
       })}
-    </section>
-    ${pied()}`;
+    </section>`;
 }
 
 // --- Montage ----------------------------------------------------------------
@@ -1112,6 +1421,9 @@ export default {
       evenements: [],
       contacts: [],
       commandes: [],
+      envois: [],
+      modeles: [],
+      objectifDoux: objectifDouxEnregistre(),
       vue: 'accueil',
       filtre: 'tout',
       rechercheContact: '',
@@ -1130,7 +1442,6 @@ export default {
       else if (etat.vue === 'creer') section.innerHTML = vueCreer(etat);
       else if (etat.vue === 'calendrier') section.innerHTML = vueCalendrier(etat);
       else if (etat.vue === 'reseau') section.innerHTML = vueReseau(etat);
-      else if (etat.vue === 'commandes') section.innerHTML = vueCommandes(etat);
       else section.innerHTML = vueAccueil(etat);
 
       centrerActif(section.querySelector('.yuno-nav'));
@@ -1158,7 +1469,7 @@ export default {
     };
 
     try {
-      const [objectifs, victoires, moments, publications, taches, evenements, contacts, commandes] =
+      const [objectifs, victoires, moments, publications, taches, evenements, contacts, commandes, envois, modeles] =
         await Promise.all([
           api.objectifsActifs({ projet: 'photo' }),
           api.victoiresDuProjet('photo', 10, { sauf: 'moment' }),
@@ -1168,6 +1479,8 @@ export default {
           api.evenementsDepuis(new Date().toISOString(), { projet: 'photo' }),
           api.contactsTous(),
           api.commandesToutes(),
+          api.envoisTous(),
+          api.modelesTous(),
         ]);
       Object.assign(etat, {
         objectifs,
@@ -1178,6 +1491,8 @@ export default {
         evenements,
         contacts,
         commandes,
+        envois,
+        modeles,
       });
     } catch (erreur) {
       console.error("Chargement de l'espace Yuno impossible", erreur);
@@ -1272,6 +1587,9 @@ export default {
           instagram: champs.instagram?.trim() || null,
           email: champs.email?.trim() || null,
           telephone: champs.telephone?.trim() || null,
+          statut: champs.statut,
+          objectif: champs.objectif?.trim() || null,
+          niveau: champs.niveau ? Number(champs.niveau) : null,
           notes: champs.notes?.trim() || null,
         });
         etat.contacts = [...etat.contacts, contact].sort((a, b) => a.nom.localeCompare(b.nom));
@@ -1280,15 +1598,34 @@ export default {
       }
 
       if (action === 'creer-commande') {
+        const nomClient = champs.client?.trim() || null;
+        const connu = nomClient
+          ? etat.contacts.find((contact) => contact.nom.toLowerCase() === nomClient.toLowerCase())
+          : null;
+
         const commande = await api.creerCommande({
           titre: champs.titre.trim(),
-          client: champs.client?.trim() || null,
+          client: connu?.nom ?? nomClient,
+          client_id: connu?.id ?? null,
+          statut: champs.statut,
           echeance: champs.echeance || null,
+          montant: champs.montant ? Number(champs.montant) : null,
           lien_livrable: champs.lien_livrable?.trim() || null,
           notes: champs.notes?.trim() || null,
         });
         etat.commandes = [commande, ...etat.commandes];
         rendreCommandes();
+        return;
+      }
+
+      if (action === 'creer-modele') {
+        const modele = await api.creerModele({
+          titre: champs.titre.trim(),
+          corps: champs.corps.trim(),
+          ordre: etat.modeles.length + 1,
+        });
+        etat.modeles = [...etat.modeles, modele];
+        rendreContacts();
         return;
       }
 
@@ -1436,20 +1773,77 @@ export default {
         return;
       }
 
-      const livrer = evenement.target.closest('[data-livrer]');
-      if (livrer) {
-        const commande = etat.commandes.find((c) => c.id === livrer.dataset.livrer);
-        if (!commande) return;
-        livrer.disabled = true;
+      const avancerCommande = evenement.target.closest('[data-avancer-commande]');
+      if (avancerCommande) {
+        const commande = etat.commandes.find(
+          (c) => c.id === avancerCommande.dataset.avancerCommande,
+        );
+        const suivant = CYCLE_COMMANDE[CYCLE_COMMANDE.indexOf(commande?.statut) + 1];
+        if (!commande || !suivant) return;
+        avancerCommande.disabled = true;
         try {
-          // Livrer crée une victoire : c'en est une.
-          const { commande: livree, victoire } = await api.livrerCommande(commande);
-          Object.assign(commande, livree);
-          etat.victoires = [victoire, ...etat.victoires];
+          // Livrer crée une victoire : c'en est une. Être payé, non.
+          const { commande: misAJour, victoire } = await api.avancerCommande(commande, suivant);
+          Object.assign(commande, misAJour);
+          if (victoire) etat.victoires = [victoire, ...etat.victoires];
           rendreCommandes();
         } catch (souci) {
-          console.error('Impossible de marquer la commande livrée', souci);
-          livrer.disabled = false;
+          console.error("Impossible de faire avancer la commande", souci);
+          avancerCommande.disabled = false;
+        }
+        return;
+      }
+
+      // « Envoyé ✓ » — le seul compteur de la Passerelle. Il monte parce que
+      // Noé a écrit, pas parce qu'on lui a répondu.
+      const envoye = evenement.target.closest('[data-envoye]');
+      if (envoye) {
+        const contact = etat.contacts.find((c) => c.id === envoye.dataset.envoye);
+        if (!contact) return;
+        envoye.disabled = true;
+        try {
+          const { envoi, contact: misAJour } = await api.enregistrerEnvoi({
+            contact,
+            statut: statutApresEnvoi(contact.statut),
+          });
+          Object.assign(contact, misAJour);
+          etat.envois = [envoi, ...etat.envois];
+          rendreContacts();
+        } catch (souci) {
+          console.error("Impossible d'enregistrer l'envoi", souci);
+          envoye.disabled = false;
+        }
+        return;
+      }
+
+      const copierModele = evenement.target.closest('[data-copier-modele]');
+      if (copierModele) {
+        const modele = etat.modeles.find((m) => m.id === copierModele.dataset.copierModele);
+        if (!modele) return;
+        try {
+          await navigator.clipboard.writeText(modele.corps);
+          copierModele.textContent = 'Copié';
+          setTimeout(() => {
+            copierModele.textContent = 'Copier';
+          }, 1500);
+        } catch (souci) {
+          console.error('Copie impossible', souci);
+        }
+        return;
+      }
+
+      const supprimerModele = evenement.target.closest('[data-supprimer-modele]');
+      if (supprimerModele) {
+        supprimerModele.disabled = true;
+        try {
+          await api.supprimerModele(supprimerModele.dataset.supprimerModele);
+          etat.modeles = etat.modeles.filter(
+            (m) => m.id !== supprimerModele.dataset.supprimerModele,
+          );
+          rendreContacts();
+        } catch (souci) {
+          console.error('Suppression du modèle impossible', souci);
+          supprimerModele.disabled = false;
         }
         return;
       }
@@ -1710,6 +2104,86 @@ export default {
           [filtreColonne.dataset.filtreColonne]: filtreColonne.value,
         };
         rendre();
+        return;
+      }
+
+      // Le niveau se change au même geste que le statut : c'est lui qui fait
+      // entrer un contact dans la file, ou l'en sort.
+      const niveau = evenement.target.closest('[data-niveau]');
+      if (niveau) {
+        const contact = etat.contacts.find((c) => c.id === niveau.dataset.niveau);
+        if (!contact) return;
+        niveau.disabled = true;
+        try {
+          Object.assign(
+            contact,
+            await api.modifierContact(contact.id, {
+              niveau: niveau.value ? Number(niveau.value) : null,
+            }),
+          );
+          rendreContacts();
+        } catch (souci) {
+          console.error('Enregistrement du niveau impossible', souci);
+          niveau.disabled = false;
+        }
+        return;
+      }
+
+      // Les champs vifs de la Passerelle s'enregistrent en quittant le champ,
+      // sans rien redessiner : la valeur est déjà sous les yeux, et un
+      // redessin ferait sauter la page sous le doigt.
+      const champVif =
+        evenement.target.closest('[data-objectif-contact]') ??
+        evenement.target.closest('[data-prochaine-action]') ??
+        evenement.target.closest('[data-prochaine-date]');
+
+      if (champVif) {
+        const { objectifContact, prochaineAction, prochaineDate } = champVif.dataset;
+        const contact = etat.contacts.find(
+          (c) => c.id === (objectifContact ?? prochaineAction ?? prochaineDate),
+        );
+        if (!contact) return;
+
+        const valeur = champVif.value.trim() || null;
+        const colonne = objectifContact
+          ? 'objectif'
+          : prochaineAction
+            ? 'prochaine_action'
+            : 'prochaine_action_date';
+
+        try {
+          Object.assign(contact, await api.modifierContact(contact.id, { [colonne]: valeur }));
+        } catch (souci) {
+          console.error("Enregistrement du champ impossible", souci);
+        }
+        return;
+      }
+
+      const modeleTitre = evenement.target.closest('[data-modele-titre]');
+      const modeleCorps = evenement.target.closest('[data-modele-corps]');
+      if (modeleTitre || modeleCorps) {
+        const champ = modeleTitre ?? modeleCorps;
+        const id = champ.dataset.modeleTitre ?? champ.dataset.modeleCorps;
+        const modele = etat.modeles.find((m) => m.id === id);
+        if (!modele) return;
+        try {
+          Object.assign(
+            modele,
+            await api.modifierModele(id, {
+              [modeleTitre ? 'titre' : 'corps']: champ.value.trim(),
+            }),
+          );
+        } catch (souci) {
+          console.error('Enregistrement du modèle impossible', souci);
+        }
+        return;
+      }
+
+      const objectifDoux = evenement.target.closest('[data-objectif-doux]');
+      if (objectifDoux) {
+        etat.objectifDoux = Number(objectifDoux.value);
+        retenirObjectifDoux(etat.objectifDoux);
+        rendreContacts();
         return;
       }
 
