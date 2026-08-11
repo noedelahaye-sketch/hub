@@ -1459,6 +1459,29 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 .ajout input:focus,
 .ajout textarea:focus { border-color: var(--accent); }
 
+/* Une case à cocher : le libellé est à côté, et toute la ligne est la cible —
+   44 px de haut, comme partout ailleurs. */
+.ajout .champ-case {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-12);
+  min-height: 2.75rem;
+  margin-bottom: var(--espace-8);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  color: var(--texte);
+  cursor: pointer;
+}
+
+.ajout .champ-case input {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--accent);
+}
+
 .ajout .message-erreur { margin-top: var(--espace-8); }
 
 @media (prefers-reduced-motion: reduce) {

@@ -13,11 +13,7 @@
 // Une idée est une publication sans date : même table, deux vues.
 
 import * as api from './api.js';
-import {
-  construireFormulaire,
-  construireObjectifs,
-  construireVictoires,
-} from './espace-projet.js';
+import { construireFormulaire, construireObjectifs } from './espace-projet.js';
 import {
   STATUTS,
   construireAVenir,
@@ -26,7 +22,7 @@ import {
   construireApercuCreation,
   formulaireIdee,
 } from './publications.js';
-import { echapper } from './format.js';
+import { depuisDateISO, echeanceLisible, versDateISO, echapper } from './format.js';
 import {
   assemblerCalendrier,
   construireCalendrier,
@@ -53,7 +49,7 @@ const VUES = ['accueil', 'creer', 'calendrier', 'reseau', 'commandes'];
 
 function enTete(vueActive) {
   const liens = [
-    ['accueil', 'Accueil', '#yuno'],
+    ['accueil', 'Carnet', '#yuno'],
     ['creer', 'Créer', '#yuno/creer'],
     ['calendrier', 'Calendrier', '#yuno/calendrier'],
     ['reseau', 'Réseau', '#yuno/reseau'],
@@ -86,11 +82,191 @@ function pied() {
     </footer>`;
 }
 
+// --- Le Carnet de terrain ----------------------------------------------------
+// L'accueil du site affiche le vécu, jamais le social : matchs couverts,
+// rencontres, œuvres finies. Aucune métrique de réseau n'entre ici — la
+// première chose vue en ouvrant le site dit ce qui compte.
+
+const TYPES_MOMENT = {
+  match: 'Match',
+  concert: 'Concert',
+  sortie: 'Sortie',
+  autre: 'Autre',
+};
+
+// Ce qu'un moment devient au dashboard du hub, où il arrive sans son carnet
+// autour : « Match · OM-Lyon », ou « Match » tout court si le lieu manque. Le
+// point médian plutôt qu'un tiret : les lieux en contiennent souvent un.
+export function titreDuMoment({ type, lieu }) {
+  const quoi = TYPES_MOMENT[type] ?? TYPES_MOMENT.autre;
+  return lieu?.trim() ? `${quoi} · ${lieu.trim()}` : quoi;
+}
+
+// Les trois compteurs de l'accueil. Ils se calculent, ils ne se stockent pas :
+// ce sont des faits accumulés, ils ne peuvent que monter. Les rencontres se
+// comptent une par une, pas par personne — revoir quelqu'un au bord du terrain
+// est un moment vécu de plus, pas un doublon.
+export function compteursCarnet(moments) {
+  return {
+    moments: moments.length,
+    rencontres: moments.reduce((somme, moment) => somme + (moment.rencontres?.length ?? 0), 0),
+    oeuvres: moments.filter((moment) => moment.oeuvre_finie).length,
+  };
+}
+
+export function construireCompteurs(moments) {
+  const { moments: vecus, rencontres, oeuvres } = compteursCarnet(moments);
+  const compteur = (nombre, libelle) => `
+    <li>
+      <span class="chiffre">${nombre}</span>
+      <span class="discret">${libelle}</span>
+    </li>`;
+
+  return `
+    <ul class="compteurs">
+      ${compteur(vecus, 'Moments vécus')}
+      ${compteur(rencontres, 'Rencontres')}
+      ${compteur(oeuvres, 'Œuvres finies')}
+    </ul>`;
+}
+
+// Les noms saisis au vol retrouvent leur fiche quand elle existe — même geste
+// que le carnet : une barre oblique sépare deux personnes.
+export function relierRencontres(saisie, contacts) {
+  return separer(saisie ?? '').map((nom) => {
+    const connu = contacts.find(
+      (contact) => contact.nom.toLowerCase() === nom.toLowerCase(),
+    );
+    return connu ? { nom: connu.nom, contact_id: connu.id } : { nom, contact_id: null };
+  });
+}
+
+function ligneRencontres(moment) {
+  if (!moment.rencontres?.length) return '';
+
+  const noms = moment.rencontres
+    .map((rencontre) =>
+      rencontre.contact_id
+        ? `<span class="tag" style="--h: ${teinte(rencontre.nom)}">${echapper(rencontre.nom)}</span>`
+        : `<span class="tag tag-neutre">${echapper(rencontre.nom)}<button type="button"
+             class="lien-discret ouvrir-fiche" data-ouvrir-fiche="${echapper(rencontre.id)}"
+             title="Ajouter au carnet réseau"
+             aria-label="Ajouter ${echapper(rencontre.nom)} au carnet réseau">+</button></span>`,
+    )
+    .join('');
+
+  return `<span class="moment-rencontres"><span class="discret">Rencontré</span>${noms}</span>`;
+}
+
+function carteMoment(moment) {
+  return `
+    <li class="moment">
+      <span class="tuile-entete">
+        <span class="etiquette">${echapper(TYPES_MOMENT[moment.type] ?? moment.type)}</span>
+        ${moment.oeuvre_finie ? '<span class="etiquette etiquette-oeuvre">Œuvre finie</span>' : ''}
+        <span class="discret quand">${echapper(echeanceLisible(depuisDateISO(moment.date)))}</span>
+        <button type="button" class="lien-discret bouton-mini bouton-retirer"
+          data-supprimer-moment="${echapper(moment.id)}"
+          title="Retirer ce moment"
+          aria-label="Retirer « ${echapper(titreDuMoment(moment))} »">×</button>
+      </span>
+      ${moment.lieu ? `<span class="moment-lieu">${echapper(moment.lieu)}</span>` : ''}
+      ${ligneRencontres(moment)}
+      ${
+        moment.photo_fiere
+          ? `<span class="moment-photo"><span class="discret">La photo dont je suis fier</span><span>${echapper(
+              moment.photo_fiere,
+            )}</span></span>`
+          : ''
+      }
+      ${moment.note ? `<span class="discret moment-note">${echapper(moment.note)}</span>` : ''}
+    </li>`;
+}
+
+function carteVictoire(victoire) {
+  return `
+    <li>
+      <span class="tuile-entete">
+        <span class="discret quand">${echapper(echeanceLisible(depuisDateISO(victoire.date)))}</span>
+        <button type="button" class="lien-discret bouton-mini bouton-retirer"
+          data-victoire="${echapper(victoire.id)}"
+          title="Retirer cette victoire"
+          aria-label="Retirer « ${echapper(victoire.titre)} »">×</button>
+      </span>
+      <span class="victoire-titre">${echapper(victoire.titre)}</span>
+    </li>`;
+}
+
+// La timeline EST le mur des victoires : les moments et les victoires d'avant
+// le carnet, dans le même fil. Les victoires nées d'un moment sont écartées —
+// le moment est déjà là, et plus riche que son reflet.
+export function construireCarnet(moments, victoires) {
+  const entrees = [
+    ...moments.map((moment) => ({
+      date: moment.date,
+      created_at: moment.created_at,
+      html: carteMoment(moment),
+    })),
+    ...victoires
+      .filter((victoire) => victoire.source !== 'moment')
+      .map((victoire) => ({
+        date: victoire.date,
+        created_at: victoire.created_at,
+        html: carteVictoire(victoire),
+      })),
+  ].sort(
+    (a, b) =>
+      String(b.date).localeCompare(String(a.date)) ||
+      String(b.created_at).localeCompare(String(a.created_at)),
+  );
+
+  if (!entrees.length) {
+    return `<p class="vide">Ton premier moment s'inscrit ici — un match, un concert, une sortie.</p>`;
+  }
+
+  return `<ul class="liste-carnet">${entrees.map((entree) => entree.html).join('')}</ul>`;
+}
+
+// La capture : deux champs suffisent, le reste attend qu'on ait envie. Ce qui
+// compte est qu'elle se remplisse debout, en sortant du stade.
+function formulaireMoment(contacts) {
+  return construireFormulaire({
+    id: 'moment',
+    libelle: 'Loguer un moment',
+    action: 'loguer-moment',
+    bouton: 'Inscrire au carnet',
+    champs: [
+      { nom: 'date', libelle: 'Quand', type: 'date', valeur: versDateISO() },
+      { nom: 'type', libelle: 'Quoi', type: 'select', options: TYPES_MOMENT, valeur: 'match' },
+      { nom: 'lieu', libelle: 'Événement ou lieu', type: 'text' },
+      {
+        nom: 'rencontres',
+        libelle: "Qui j'ai rencontré (sépare par une barre oblique)",
+        type: 'text',
+        suggestions: contacts.map((contact) => contact.nom),
+      },
+      { nom: 'photo_fiere', libelle: 'La photo dont je suis fier', type: 'text' },
+      { nom: 'note', libelle: 'Note libre', type: 'textarea' },
+      { nom: 'oeuvre_finie', libelle: 'Une œuvre finie', type: 'checkbox' },
+    ],
+  });
+}
+
 // --- Les vues ----------------------------------------------------------------
 
 function vueAccueil(etat) {
   return `
     ${enTete('accueil')}
+
+    <section class="bloc">
+      ${construireCompteurs(etat.moments)}
+      ${formulaireMoment(etat.contacts)}
+    </section>
+
+    <section class="bloc">
+      <h2>Le carnet de terrain</h2>
+      <div data-bloc="carnet">${construireCarnet(etat.moments, etat.victoires)}</div>
+    </section>
 
     <section class="bloc">
       <h2>Objectifs</h2>
@@ -118,11 +294,6 @@ function vueAccueil(etat) {
         </span>
         <span class="lien-externe-fleche" aria-hidden="true">→</span>
       </a>
-    </section>
-
-    <section class="bloc">
-      <h2>Victoires</h2>
-      <div data-bloc="victoires">${construireVictoires(etat.victoires)}</div>
     </section>
     ${pied()}`;
 }
@@ -884,6 +1055,7 @@ export default {
     const etat = {
       objectifs: [],
       victoires: [],
+      moments: [],
       publications: [],
       taches: [],
       evenements: [],
@@ -934,10 +1106,11 @@ export default {
     };
 
     try {
-      const [objectifs, victoires, publications, taches, evenements, contacts, commandes] =
+      const [objectifs, victoires, moments, publications, taches, evenements, contacts, commandes] =
         await Promise.all([
           api.objectifsActifs({ projet: 'photo' }),
-          api.victoiresDuProjet('photo'),
+          api.victoiresDuProjet('photo', 10, { sauf: 'moment' }),
+          api.momentsTous(),
           api.publicationsToutes('photo'),
           api.tachesDatees({ projet: 'photo' }),
           api.evenementsDepuis(new Date().toISOString(), { projet: 'photo' }),
@@ -947,6 +1120,7 @@ export default {
       Object.assign(etat, {
         objectifs,
         victoires,
+        moments,
         publications,
         taches,
         evenements,
@@ -998,6 +1172,31 @@ export default {
     });
 
     async function appliquer(action, champs) {
+      if (action === 'loguer-moment') {
+        const moment = {
+          date: champs.date || versDateISO(),
+          type: champs.type,
+          lieu: champs.lieu?.trim() || null,
+          photo_fiere: champs.photo_fiere?.trim() || null,
+          note: champs.note?.trim() || null,
+          oeuvre_finie: champs.oeuvre_finie === 'oui',
+        };
+
+        const { moment: logue } = await api.creerMoment({
+          moment,
+          rencontres: relierRencontres(champs.rencontres, etat.contacts),
+          titre: titreDuMoment(moment),
+        });
+
+        etat.moments = [logue, ...etat.moments];
+        rendre();
+        // C'est fait : la capture se referme, le moment est au carnet. Le site
+        // réussit quand on le quitte, pas quand il retient.
+        const capture = section.querySelector('[data-ajout="moment"]');
+        if (capture) capture.open = false;
+        return;
+      }
+
       if (action === 'noter-idee') {
         const publication = await api.creerPublication({
           projet: 'photo',
@@ -1319,6 +1518,46 @@ export default {
         } catch (souci) {
           console.error("Suppression de l'objectif impossible", souci);
           supprimerObjectif.disabled = false;
+        }
+        return;
+      }
+
+      const supprimerMoment = evenement.target.closest('[data-supprimer-moment]');
+      if (supprimerMoment) {
+        const id = supprimerMoment.dataset.supprimerMoment;
+        const moment = etat.moments.find((candidat) => candidat.id === id);
+        if (!moment || !confirm(`Retirer « ${titreDuMoment(moment)} » du carnet ?`)) return;
+        supprimerMoment.disabled = true;
+        try {
+          await api.supprimerMoment(id);
+          etat.moments = etat.moments.filter((candidat) => candidat.id !== id);
+          rendre();
+        } catch (souci) {
+          console.error('Suppression du moment impossible', souci);
+          supprimerMoment.disabled = false;
+        }
+        return;
+      }
+
+      // Une rencontre notée au vol devient une fiche : le carnet réseau se
+      // remplit du terrain, sans qu'il ait fallu y penser sur le moment.
+      const ouvrirFiche = evenement.target.closest('[data-ouvrir-fiche]');
+      if (ouvrirFiche) {
+        const id = ouvrirFiche.dataset.ouvrirFiche;
+        const moment = etat.moments.find((candidat) =>
+          candidat.rencontres?.some((rencontre) => rencontre.id === id),
+        );
+        const rencontre = moment?.rencontres.find((candidat) => candidat.id === id);
+        if (!rencontre) return;
+        ouvrirFiche.disabled = true;
+        try {
+          const { contact, rencontre: liee } = await api.ouvrirFichePourRencontre(rencontre);
+          Object.assign(rencontre, liee);
+          etat.contacts = [...etat.contacts, contact].sort((a, b) => a.nom.localeCompare(b.nom));
+          rendre();
+        } catch (souci) {
+          console.error("Ouverture de la fiche impossible", souci);
+          ouvrirFiche.disabled = false;
         }
         return;
       }

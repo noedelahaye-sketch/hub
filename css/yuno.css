@@ -156,6 +156,95 @@ body[data-espace="yuno"] #vue .bloc h2 {
   background: var(--accent);
 }
 
+/* --- Le Carnet de terrain ---------------------------------------------------
+   La première chose vue en entrant sur le site, et elle ne parle que de vécu :
+   des moments, des rencontres, des œuvres. Aucune métrique de réseau ici. */
+
+/* Trois de front, toujours — ce sont trois faces d'une même chose, pas une
+   liste qui s'allonge. Les chiffres ne peuvent que monter. */
+.bloc ul.compteurs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--espace-8);
+  margin-bottom: var(--espace-16);
+}
+
+.bloc ul.compteurs li {
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--espace-16) var(--espace-8);
+  text-align: center;
+}
+
+.compteurs .chiffre {
+  font-size: 1.75rem;
+  line-height: 1.1;
+  color: var(--accent);
+}
+
+.compteurs .discret { font-size: 0.75rem; line-height: 1.2; }
+
+/* Loguer un moment est L'action de la page : le bouton se voit. Le reste des
+   formulaires du site garde son pli discret. */
+[data-ajout="moment"] > summary {
+  justify-content: center;
+  min-height: 3rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--fond-carte);
+  background: var(--accent);
+  border-radius: var(--rayon-controle);
+}
+
+[data-ajout="moment"] > summary::before { border-color: currentColor; }
+[data-ajout="moment"] > summary:hover { color: var(--fond-carte); }
+
+/* Une œuvre finie se signale dans la couleur de la marque : c'est ce qu'on
+   vient chercher. Le type du moment reste en étiquette neutre. */
+.etiquette-oeuvre { color: var(--accent); border-color: var(--accent); }
+
+.moment-lieu {
+  display: block;
+  width: 100%;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.moment-rencontres {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--espace-4);
+  width: 100%;
+  margin-top: var(--espace-4);
+  font-size: 0.8125rem;
+}
+
+.moment-photo,
+.moment-note {
+  width: 100%;
+  margin-top: var(--espace-4);
+  font-size: 0.875rem;
+}
+
+/* La note garde ses retours à la ligne ; le champ photo n'est qu'une ligne, et
+   le pre-wrap y ferait remonter l'indentation du gabarit. */
+.moment-note { display: block; white-space: pre-wrap; }
+
+.moment-photo { display: flex; flex-direction: column; }
+.moment-photo .discret { font-size: 0.75rem; }
+
+/* Le « + » d'une rencontre sans fiche : à la mesure des autres boutons discrets
+   du site, posé dans l'étiquette. */
+.ouvrir-fiche {
+  margin-left: var(--espace-4);
+  padding: 0 var(--espace-4);
+  min-height: 2rem;
+  font-weight: 700;
+  color: inherit;
+}
+
 /* --- Le calendrier éditorial ------------------------------------------------ */
 
 /* Réseau et format, en petites étiquettes factuelles. */

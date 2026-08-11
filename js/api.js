@@ -100,12 +100,15 @@ export async function dernieresVictoires(limite = 5) {
   );
 }
 
-export async function victoiresDuProjet(projet, limite = 10) {
+// `sauf` écarte une source. Le Carnet de terrain s'en sert : ses moments sont
+// déjà dans la liste, leurs victoires n'ont pas à occuper la limite et à
+// repousser hors du fil les victoires d'avant le carnet.
+export async function victoiresDuProjet(projet, limite = 10, { sauf = null } = {}) {
+  let requete = client.from('victoires').select('*').eq('projet', projet);
+  if (sauf) requete = requete.neq('source', sauf);
+
   return verifier(
-    await client
-      .from('victoires')
-      .select('*')
-      .eq('projet', projet)
+    await requete
       .order('date', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(limite),
@@ -350,6 +353,91 @@ export async function modifierPublication(id, champs) {
 export async function supprimerPublication(id) {
   const { error } = await client.from('publications').delete().eq('id', id);
   if (error) throw error;
+}
+
+// --- Le Carnet de terrain (Yuno) ---------------------------------------------
+// Les moments vécus : matchs couverts, concerts, sorties. Les compteurs de
+// l'accueil s'en déduisent — rien n'est stocké, des faits accumulés ne peuvent
+// que monter.
+
+export async function momentsTous() {
+  return verifier(
+    await client
+      .from('moments')
+      .select('*, rencontres(id, nom, contact_id)')
+      .order('date', { ascending: false })
+      .order('created_at', { ascending: false }),
+  );
+}
+
+// Loguer un moment crée sa victoire : dans ce système, une victoire EST un
+// moment vécu. Elle remonte au dashboard du hub, au même rang que les autres.
+// Le titre est fabriqué par l'appelant : le vocabulaire appartient à l'écran.
+export async function creerMoment({ moment, rencontres = [], titre }) {
+  const cree = verifier(
+    await client.from('moments').insert(moment).select().single(),
+  );
+
+  const lignes = rencontres.length
+    ? verifier(
+        await client
+          .from('rencontres')
+          .insert(
+            rencontres.map(({ nom, contact_id = null }) => ({
+              moment_id: cree.id,
+              nom,
+              contact_id,
+            })),
+          )
+          .select(),
+      )
+    : [];
+
+  const victoire = await ajouterVictoire({
+    projet: 'photo',
+    titre,
+    source: 'moment',
+    source_id: cree.id,
+  });
+
+  return { moment: { ...cree, rencontres: lignes }, victoire };
+}
+
+export async function supprimerMoment(id) {
+  // La victoire d'un moment n'est que son reflet au dashboard : elle part avec
+  // lui. Les rencontres suivent d'elles-mêmes (ON DELETE CASCADE).
+  const { error: erreurVictoire } = await client
+    .from('victoires')
+    .delete()
+    .eq('source', 'moment')
+    .eq('source_id', id);
+  if (erreurVictoire) throw erreurVictoire;
+
+  const { error } = await client.from('moments').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// Une rencontre notée au vol devient une fiche du carnet : la photo est un pont
+// vers les gens, encore faut-il que le pont mène quelque part.
+export async function ouvrirFichePourRencontre(rencontre) {
+  const contact = await creerContact({
+    nom: rencontre.nom,
+    // Ils se sont vus en vrai : le contact est établi, ce n'est pas un envoi
+    // à froid. Le reste de la fiche se complète dans Réseau.
+    statut: 'contact_etabli',
+    dernier_echange: new Date().toISOString().slice(0, 10),
+  });
+
+  const liee = verifier(
+    await client
+      .from('rencontres')
+      .update({ contact_id: contact.id })
+      .eq('id', rencontre.id)
+      .select()
+      .single(),
+  );
+
+  return { contact, rencontre: liee };
 }
 
 // --- Carnet réseau (Yuno) ----------------------------------------------------

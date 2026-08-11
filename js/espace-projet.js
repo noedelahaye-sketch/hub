@@ -261,8 +261,8 @@ export function construireVictoires(victoires) {
 // Un formulaire replié par défaut : la page sert d'abord à lire ce qui avance,
 // pas à saisir. `valeur` pré-remplit un champ — c'est ce qui fait qu'un même
 // gabarit sert à l'ajout comme à la modification. Un champ peut être un
-// `select` (avec `options: { valeur: libellé }`) ou porter des `suggestions`
-// (saisie libre + liste d'appui, via datalist).
+// `select` (avec `options: { valeur: libellé }`), une `checkbox`, ou porter des
+// `suggestions` (saisie libre + liste d'appui, via datalist).
 export function construireFormulaire({ id, libelle, action, champs, extra = '', bouton = 'Ajouter' }) {
   const rendreChamp = (champ) => {
     const idChamp = `${id}-${champ.nom}`;
@@ -298,18 +298,24 @@ export function construireFormulaire({ id, libelle, action, champs, extra = '', 
       value="${echapper(champ.valeur ?? '')}">${datalist}`;
   };
 
+  // Une case à cocher porte son libellé à côté d'elle, pas au-dessus : c'est
+  // toute la ligne qui devient la cible tactile, une case seule fait 16 px.
+  const rendreLigne = (champ) =>
+    champ.type === 'checkbox'
+      ? `<label class="champ-case" for="${id}-${champ.nom}">
+           <input id="${id}-${champ.nom}" name="${champ.nom}" type="checkbox" value="oui"
+             ${champ.valeur ? 'checked' : ''}>
+           <span>${champ.libelle}</span>
+         </label>`
+      : `<label for="${id}-${champ.nom}">${champ.libelle}</label>
+         ${rendreChamp(champ)}`;
+
   return `
     <details class="ajout" data-ajout="${id}">
       <summary>${libelle}</summary>
       <form data-action="${action}">
         ${extra}
-        ${champs
-          .map(
-            (champ) => `
-          <label for="${id}-${champ.nom}">${champ.libelle}</label>
-          ${rendreChamp(champ)}`,
-          )
-          .join('')}
+        ${champs.map(rendreLigne).join('')}
         <button type="submit" class="bouton-secondaire">${echapper(bouton)}</button>
         <p class="message-erreur" data-erreur hidden></p>
       </form>
