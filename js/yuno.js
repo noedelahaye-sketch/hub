@@ -43,13 +43,14 @@ export const RUBRIQUES_DEPART = [
 // n'ont pas à encombrer ce formulaire-ci.
 const RESEAUX_YUNO = { instagram: 'Instagram', tiktok: 'TikTok', linkedin: 'LinkedIn' };
 
-const VUES = ['accueil', 'creer', 'calendrier', 'reseau', 'commandes'];
+const VUES = ['accueil', 'journal', 'creer', 'calendrier', 'reseau', 'commandes'];
 
 // --- Fabrication du HTML ----------------------------------------------------
 
 function enTete(vueActive) {
   const liens = [
-    ['accueil', 'Carnet', '#yuno'],
+    ['accueil', 'Accueil', '#yuno'],
+    ['journal', 'Journal', '#yuno/journal'],
     ['creer', 'Créer', '#yuno/creer'],
     ['calendrier', 'Calendrier', '#yuno/calendrier'],
     ['reseau', 'Réseau', '#yuno/reseau'],
@@ -158,17 +159,24 @@ function ligneRencontres(moment) {
   return `<span class="moment-rencontres"><span class="discret">Rencontré</span>${noms}</span>`;
 }
 
-function carteMoment(moment) {
+// Le retrait appartient au Journal, où l'on gère. L'aperçu de l'accueil garde
+// en revanche le « + » d'une rencontre : ouvrir une fiche pousse vers les gens,
+// et ça vaut partout où un nom s'affiche.
+function carteMoment(moment, retirable = true) {
   return `
     <li class="moment">
       <span class="tuile-entete">
         <span class="etiquette">${echapper(TYPES_MOMENT[moment.type] ?? moment.type)}</span>
         ${moment.oeuvre_finie ? '<span class="etiquette etiquette-oeuvre">Œuvre finie</span>' : ''}
         <span class="discret quand">${echapper(echeanceLisible(depuisDateISO(moment.date)))}</span>
-        <button type="button" class="lien-discret bouton-mini bouton-retirer"
-          data-supprimer-moment="${echapper(moment.id)}"
-          title="Retirer ce moment"
-          aria-label="Retirer « ${echapper(titreDuMoment(moment))} »">×</button>
+        ${
+          retirable
+            ? `<button type="button" class="lien-discret bouton-mini bouton-retirer"
+                 data-supprimer-moment="${echapper(moment.id)}"
+                 title="Retirer ce moment"
+                 aria-label="Retirer « ${echapper(titreDuMoment(moment))} »">×</button>`
+            : ''
+        }
       </span>
       ${moment.lieu ? `<span class="moment-lieu">${echapper(moment.lieu)}</span>` : ''}
       ${ligneRencontres(moment)}
@@ -197,9 +205,27 @@ function carteVictoire(victoire) {
     </li>`;
 }
 
-// La timeline EST le mur des victoires : les moments et les victoires d'avant
-// le carnet, dans le même fil. Les victoires nées d'un moment sont écartées —
-// le moment est déjà là, et plus riche que son reflet.
+// L'aperçu de l'accueil : les derniers moments, et rien de plus. C'est le
+// principal de la page, mais c'est une vitrine — on gère au Journal.
+export function construireApercuMoments(moments, limite = 3) {
+  if (!moments.length) {
+    return `<p class="vide">Ton premier moment s'inscrit ici — un match, un concert, une sortie.</p>`;
+  }
+
+  return `<ul class="liste-carnet">${[...moments]
+    .sort(
+      (a, b) =>
+        String(b.date).localeCompare(String(a.date)) ||
+        String(b.created_at).localeCompare(String(a.created_at)),
+    )
+    .slice(0, limite)
+    .map((moment) => carteMoment(moment, false))
+    .join('')}</ul>`;
+}
+
+// Le Journal : le fil complet, et le mur des victoires. Les moments et les
+// victoires d'avant le carnet s'y mêlent. Les victoires nées d'un moment sont
+// écartées — le moment est déjà là, et plus riche que son reflet.
 export function construireCarnet(moments, victoires) {
   const entrees = [
     ...moments.map((moment) => ({
@@ -264,8 +290,15 @@ function vueAccueil(etat) {
     </section>
 
     <section class="bloc">
-      <h2>Le carnet de terrain</h2>
-      <div data-bloc="carnet">${construireCarnet(etat.moments, etat.victoires)}</div>
+      <h2>Derniers moments</h2>
+      <div data-bloc="apercu-moments">${construireApercuMoments(etat.moments)}</div>
+      <a class="lien-externe" href="#yuno/journal">
+        <span class="lien-externe-texte">
+          <span class="lien-externe-titre">Ouvrir le journal</span>
+          <span class="discret">Tous tes moments, tes rencontres, tes œuvres</span>
+        </span>
+        <span class="lien-externe-fleche" aria-hidden="true">→</span>
+      </a>
     </section>
 
     <section class="bloc">
@@ -294,6 +327,24 @@ function vueAccueil(etat) {
         </span>
         <span class="lien-externe-fleche" aria-hidden="true">→</span>
       </a>
+    </section>
+    ${pied()}`;
+}
+
+// Le Journal — la page source du carnet de terrain : tous les moments, la
+// capture, et le retrait. L'accueil n'en montre que les derniers.
+function vueJournal(etat) {
+  return `
+    ${enTete('journal')}
+
+    <section class="bloc">
+      ${construireCompteurs(etat.moments)}
+      ${formulaireMoment(etat.contacts)}
+    </section>
+
+    <section class="bloc">
+      <h2>Le carnet de terrain</h2>
+      <div data-bloc="carnet">${construireCarnet(etat.moments, etat.victoires)}</div>
     </section>
     ${pied()}`;
 }
@@ -1075,7 +1126,8 @@ export default {
     };
 
     const rendre = () => {
-      if (etat.vue === 'creer') section.innerHTML = vueCreer(etat);
+      if (etat.vue === 'journal') section.innerHTML = vueJournal(etat);
+      else if (etat.vue === 'creer') section.innerHTML = vueCreer(etat);
       else if (etat.vue === 'calendrier') section.innerHTML = vueCalendrier(etat);
       else if (etat.vue === 'reseau') section.innerHTML = vueReseau(etat);
       else if (etat.vue === 'commandes') section.innerHTML = vueCommandes(etat);
