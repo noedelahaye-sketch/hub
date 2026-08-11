@@ -11,6 +11,12 @@
 supabase/.temp/
 supabase/.branches/
 
+# Les documents de travail de Yuno (brief « Terrain » et son pourquoi).
+# Ils portent la stratégie éditoriale de Noé, ses cibles et son analyse
+# personnelle ; le dépôt est public. Même règle que les contacts : ces
+# données restent sur sa machine, seul ce qu'elles produisent est versionné.
+Yuno/
+
 # Éditeurs
 .vscode/
 .idea/
