@@ -1,4 +1,4 @@
-# État des lieux — 7 août 2026
+# État des lieux — 12 août 2026
 
 Point de reprise. `CLAUDE.md` dit **ce que le hub doit être** ; ce document dit
 **où il en est**, ce qui a été vérifié, ce qui ne l'a pas été, et ce qui attend
@@ -19,7 +19,7 @@ https://noedelahaye-sketch.github.io/hub/
 | Calendrier global | `#calendrier` | complet |
 | Formation | `#formation` | complet, avec la progression lue dans le gist Bac-3 |
 | Page Yuno du hub | `#photo` | complète |
-| **Site Yuno** | `#yuno` | Accueil · Créer · Calendrier · Réseau · Commandes — les cinq écrans |
+| **Site Yuno** | `#yuno` | Accueil · Journal · Créer · Calendrier · Réseau — le système « Terrain » v1.1 |
 | Page FCH du hub | `#fch` | complète |
 | **Site FC Hermitage** | `#hermitage` | Accueil · Créer · Calendrier · Partenaires — « Club » attend son contenu |
 | Perso | `#perso` | complet |
@@ -27,26 +27,45 @@ https://noedelahaye-sketch.github.io/hub/
 Trois applications installables (`index.html`, `yuno.html`, `hermitage.html`),
 chacune avec son icône et son ouverture directe.
 
-**Seule donnée réelle en base : les 42 contacts du carnet réseau.** Tout le
-reste est vide — Noé n'a pas encore rempli le hub.
+**Le site Yuno a été refondu les 11 et 12 août** selon le système « Terrain »
+(voir `docs/yuno-spec.md`, réécrit) : l'accueil montre le vécu et non le
+social, le Journal a remplacé le mur des victoires, la Passerelle muscle
+l'aller-vers, les commandes ont rejoint Réseau, et les stats des réseaux
+n'existent plus qu'un jour par semaine.
+
+**Données réelles en base** : les 43 contacts du carnet (dont trois portent
+désormais un niveau de Passerelle), les 15 idées de départ avec leur pilier, et
+les 4 modèles de messages. Le reste est vide — Noé n'a pas encore rempli le hub.
 
 ---
 
-## 2. Ce qui n'a jamais été vérifié, et pourquoi
+## 2. Ce qui a été vérifié, et comment
 
-**Aucune écriture n'a été exercée en conditions réelles.** Claude ne saisit pas
-les identifiants de Noé : sans session, RLS bloque tout (401 sur les 9 tables,
-ce qui est le comportement voulu et a été vérifié).
+**Les chemins d'écriture de Yuno l'ont été, en conditions réelles** (12 août) :
+une session était ouverte dans le navigateur de travail. Ont été exercés puis
+défaits, avec vérification en SQL que la base revenait à son état exact :
+loguer et retirer un moment (avec ses rencontres et sa victoire), donner un
+niveau à un contact, « Envoyé ✓ », les champs vifs de la Passerelle, le cycle
+complet d'une commande, la création et l'édition d'un modèle, une idée menée
+jusqu'à publiée, un rendez-vous stats, et l'invite du calendrier jusqu'au
+moment inscrit.
 
-Conséquence sur la méthode de vérification, à reprendre telle quelle :
+La méthode reste la même pour l'affichage, et elle vaut d'être reprise :
 
 - Les fonctions `construire*` ne fabriquent que du HTML à partir de données
   déjà chargées. Elles s'importent et s'appellent seules dans le navigateur,
-  avec des données factices — c'est ainsi que tout l'affichage a été vérifié.
-- La logique pure (tri, filtres, recherche, ordre des colonnes, calculs du
-  gist) se teste de la même façon, et elle l'a été.
-- **Ce qui reste non vérifié** : chaque chemin qui écrit dans Supabase, et le
-  glisser-déposer des colonnes. Le premier vrai test viendra de Noé.
+  avec des données factices.
+- La logique pure se teste de la même façon : tri, filtres, recherche, ordre
+  des colonnes, calculs du gist, et depuis « Terrain » — le tirage de la
+  semaine, le décompte des jours avant le rendez-vous, la fenêtre de l'invite,
+  la progression d'une relation après un envoi, l'ordre de la file.
+- **Ce qui reste non vérifié** : le glisser-déposer des colonnes, et les
+  chemins d'écriture des autres espaces (formation, FCH, perso).
+
+**Un piège de vérification, rencontré deux fois.** Les outils de navigation ne
+rechargent pas le document quand seul le fragment (`#…`) change : le module JS
+et l'état en mémoire restent ceux d'avant l'édition. Deux fausses alertes en
+sont venues. Forcer un vrai `location.reload()` avant de conclure.
 
 Pour vérifier localement : `node tools/static-server.js` puis
 http://localhost:4173 (`file://` ne marche pas, les modules ES sont bloqués).
@@ -68,6 +87,18 @@ http://localhost:4173 (`file://` ne marche pas, les modules ES sont bloqués).
 6. « Nouhou Tolo » était coupé en bas de capture : lu `@salvadorebanouh`,
    club « Sounders ».
 
+**Yuno / « Terrain »** (`docs/yuno-spec.md`, §9) :
+7. Le cycle éditorial dit « publié » ; le brief disait « posté ». Gardé
+   « publié » pour la cohérence du hub — à trancher à l'usage.
+8. **Deux cartes de Passerelle manquent, faute de noms réels** : la ou les
+   salles de concert visées (objectif : une première accréditation), et les
+   clubs à cibler à froid. Les quatre clubs déjà au carnet sont des contacts
+   établis, donc du niveau 2, pas du 3 : ils n'ont pas été mis dans la file
+   sans son avis.
+9. L'onglet « Carnet » de l'accueil a été renommé « Accueil » quand le Journal
+   est né. Le mot « carnet » désigne donc deux choses — le Carnet de terrain et
+   le carnet réseau. À surveiller à l'usage.
+
 **Sur le fond bleu du FCH** : le logo y perd en lisibilité (traits noirs et
 bleus). Noé a demandé de retirer la plaque blanche qui corrigeait cela ; c'est
 assumé, mais à rouvrir s'il le trouve gênant à l'usage.
@@ -82,12 +113,17 @@ Rien d'ouvert dans les cahiers des charges. Restent des conforts :
   encore ce que contiendront marketing et organisation club. Ne rien inventer
   à sa place — chaque écran est une sous-adresse indépendante, on en ajoute un
   quand le besoin est constaté.
-- **Les outils d'aide à la création** dans « Créer » (Yuno et FCH) : ils
-  attendent l'analyse du marché que Noé fera lui-même.
-- **La base et ses affichages** n'existent que pour le carnet réseau. Le même
-  mécanisme (colonnes qui savent se comparer, se chercher, se dessiner, se
-  filtrer) s'appliquerait aux commandes, aux publications et aux partenaires :
-  c'est du branchement, pas de la construction.
+- **Les outils d'aide à la création du FCH** attendent, comme ceux de Yuno
+  attendaient : ceux de Yuno existent maintenant (piliers, tirage, checklist),
+  et pourraient servir de modèle si le club en veut l'équivalent.
+- **La base et ses affichages** n'existent que pour le carnet réseau — qui a
+  gagné une troisième vue, la Passerelle, sans rien changer aux deux autres :
+  la preuve que le mécanisme tient. Le même s'appliquerait aux commandes, aux
+  publications et aux partenaires : c'est du branchement, pas de la
+  construction.
+- **L'assistant IA de « Créer »** (hooks, bases de légende) est la v2 annoncée
+  du système Terrain. Règle posée d'avance : il propose, Noé choisit et
+  retravaille — jamais générer à sa place.
 - **Suivi automatique des abonnés Instagram** : possible mais coûteux en
   tuyauterie (app Meta, jeton à renouveler tous les 60 jours, fonction
   serveur). Différé.
@@ -101,9 +137,28 @@ Rien d'ouvert dans les cahiers des charges. Restent des conforts :
 Celles qui ne sont pas déjà dans `CLAUDE.md` ou les cahiers des charges :
 
 **Les données personnelles n'entrent pas dans le dépôt.** Le dépôt est public.
-Les 42 contacts (numéros, comptes Instagram) sont allés directement dans
+Les 43 contacts (numéros, comptes Instagram) sont allés directement dans
 Supabase via SQL, jamais dans un fichier versionné. Seul le schéma l'est. Toute
 reprise d'un tableau Notion suit cette règle.
+
+**La règle s'est élargie le 12 août : la stratégie non plus n'entre pas.** Les
+deux documents fondateurs de « Terrain » vivent dans `Yuno/`, qui est dans le
+`.gitignore` — le brief porte les cibles et la ligne éditoriale, le « pourquoi »
+une analyse personnelle. Les 15 idées et les 4 modèles de messages ont suivi le
+même chemin que les contacts : chargés en SQL, absents du dépôt.
+
+**Les compteurs ne sont stockés nulle part**, et c'est un choix de fond, pas
+une optimisation : les trois du Carnet et les deux de la Passerelle se déduisent
+de faits accumulés, donc ils ne peuvent que monter. Les stocker ouvrirait la
+porte à un compteur qui redescend.
+
+**`journal_envois` n'a pas de colonne « répondu ».** Ne pas en ajouter une.
+Toute la Passerelle tient sur ce point : on mesure ce que Noé envoie, jamais ce
+qu'on lui répond. Un taux de réponse ferait de chaque silence un rejet mesuré.
+
+**Les chiffres des réseaux ne s'affichent qu'au rendez-vous stats.** Nulle part
+ailleurs, à aucune condition — c'est la règle la plus facile à franchir par
+inadvertance en ajoutant « juste un petit indicateur » sur l'accueil.
 
 **Les polices commerciales sont dans le dépôt public**, en connaissance de
 cause : Canela Deck et Gilroy (versions d'essai), décision explicite de Noé du
@@ -147,9 +202,9 @@ restaurée par le routeur. Ne pas « simplifier » ces id.
 | `js/app.js` | Routeur, session, coquille commune des trois entrées |
 | `js/api.js` | **Tous** les appels Supabase, une fonction par usage |
 | `js/espace-projet.js` | La fabrique d'espace projet (formation) + gabarits partagés |
-| `js/publications.js` | Le calendrier éditorial, partagé Yuno/FCH |
+| `js/publications.js` | Le calendrier éditorial, partagé Yuno/FCH — ce qui diffère passe en paramètre (cycle, checklist, piliers) |
 | `js/calendrier-commun.js` | L'assemblage de tout ce qui porte une date |
-| `js/yuno.js` | Le site Yuno, dont la base du carnet réseau |
+| `js/yuno.js` | Le site Yuno : le Carnet, la base du carnet réseau, la Passerelle, le rendez-vous stats |
 | `js/hermitage.js` | Le site FC Hermitage |
 | `js/revisions.js` | Lecture du gist Bac-3 — chaque calcul cite sa source |
 | `tools/generer-icones.py` | Les icônes des trois applications |

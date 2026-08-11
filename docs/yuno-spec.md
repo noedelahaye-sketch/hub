@@ -1,10 +1,45 @@
 # Yuno — cahier des charges de l'espace
 
-**BROUILLON, 2e version** — réécrit après les réponses de Noé du 6 août 2026.
-La première version organisait tout autour d'un pipeline de reportage ; c'était
-à côté : l'espace sert d'abord **le cap et la création**, les commandes viennent
-après. Les points encore ouverts sont en §7. Chaque règle s'accompagne de sa
-raison ; si une règle gêne à l'usage, on la change en connaissance de cause.
+**3e version — le système « Terrain », 12 août 2026.** La 1re organisait tout
+autour d'un pipeline de reportage ; la 2e a mis le cap et la création au
+centre. Celle-ci va plus loin : **l'accueil du site montre le vécu, pas le
+social.** Chaque règle s'accompagne de sa raison ; si une règle gêne à l'usage,
+on la change en connaissance de cause.
+
+> **Les deux documents fondateurs de « Terrain » ne sont pas dans ce dépôt.**
+> `Yuno/brief-v1-1-terrain-yuno.md` (le quoi) et `Yuno/pourquoi-terrain-yuno.md`
+> (le pourquoi, qui fait autorité sur l'intention) vivent sur la machine de Noé
+> et sont dans le `.gitignore` : ils portent sa stratégie éditoriale, ses cibles
+> et une analyse personnelle, et ce dépôt est public. **En cas de doute sur une
+> décision, les relire avant de revenir à ce fichier-ci.**
+
+---
+
+## 0. Les cinq principes de « Terrain »
+
+Ils gouvernent toute décision d'interface dans cet espace, et ils priment sur le
+confort :
+
+1. **Le succès se mesure en moments vécus** — matchs couverts, rencontres,
+   œuvres finies. Les vues sont une donnée, jamais un verdict.
+2. **Les réseaux sont une vitrine, pas une résidence** — on dépose l'œuvre, on
+   repart. Les stats ont un rendez-vous hebdomadaire, jamais un fil continu.
+3. **L'argent est une conséquence, pas un juge.**
+4. **L'aller-vers se muscle par micro-doses graduées** — on mesure l'effort
+   (les messages envoyés), jamais le résultat (les réponses reçues).
+5. **La photo est un pont vers les gens** — les rencontres comptent autant que
+   les images.
+
+**Six questions d'arbitrage**, à poser avant d'ajouter quoi que ce soit ici :
+est-ce que ça augmente le temps dehors ou le temps dedans ? est-ce que ça
+mesure un effort contrôlable ou un résultat subi ? est-ce que ça indexe sa
+valeur sur des chiffres ? est-ce que ça pousse vers les gens ou permet de les
+éviter ? est-ce que ça ferme un débat mental ou en ouvre un ? est-ce que Noé
+reste l'auteur ?
+
+**Conséquences dures, à ne pas défaire :** aucune métrique sociale (vues,
+abonnés, portée) hors du rendez-vous stats ; aucun taux de réponse ni compte de
+silences nulle part ; pas de streak, pas de rouge, pas de « raté ».
 
 ---
 
@@ -98,7 +133,7 @@ de *sortir du hub* en entrant chez Yuno :
   ni onglets, ni autres projets. En-tête : la signature seule
   (`img/yuno-signature.png`, PNG transparent déposé par Noé le 7 août) — ni
   « Yuno » en texte, ni sous-titre. Navigation :
-  Accueil · Créer · Calendrier · Réseau · Commandes. **Le site est toujours
+  Accueil · Journal · Créer · Calendrier · Réseau. **Le site est toujours
   sombre**, quel que soit le réglage du téléphone : la signature blanche et or
   ne vit que sur fond sombre, et ça dit « on a quitté le hub ». Fond `#181818`,
   celui du logo. Une seule sortie, discrète, en pied de page : « Quitter le
@@ -112,16 +147,48 @@ publications, tâches, événements, objectifs et jalons — avec des filtres pa
 nature. Le hub a le même espace Calendrier, tous projets confondus
 (`#calendrier`).
 
-### `#yuno` — l'accueil du site : le cap
+### `#yuno` — l'accueil du site
 
-1. **Objectifs** — ceux du projet photo, avec pourquoi et jalons. En premier :
-   c'est la réponse à « où je veux aller ».
-2. **En création** — les 3 prochaines publications prévues et les dernières
-   idées notées, avec la porte vers le calendrier. Un aperçu, pas l'outil.
-3. **Victoires** — livraisons, jalons de la marque, accréditations.
-4. Les portes vers les outils : Calendrier · Réseau · Commandes.
+**Elle montre et elle ouvre des portes ; elle ne gère rien** (décision de Noé,
+12 août). Dans l'ordre :
+
+1. **Les trois compteurs** — moments vécus · rencontres · œuvres finies. Ils se
+   calculent depuis les moments, ne sont stockés nulle part, et **ne peuvent que
+   monter** : c'est une réserve de valeur stable, l'anti-portée.
+2. **Loguer un moment** — le bouton de capture, en évidence. C'est l'action de
+   la page.
+3. **Derniers moments** — les trois plus récents, sans croix de suppression, et
+   la porte « Ouvrir le journal ».
+4. **Objectifs** — ceux du projet photo, avec pourquoi et jalons.
+5. **En création** — aperçu, plus la porte vers Créer.
 
 Pas d'écran CAN 2027 : c'est un objectif parmi les gros, pas un lieu.
+
+**L'invite du calendrier** s'affiche ici (et au Journal) quand un événement
+photo est passé : « Tu as couvert [événement] — tu le notes au carnet ? ». Un
+clic ouvre la capture, date et lieu déjà remplis. Trois garde-fous pour qu'elle
+ne devienne jamais un reproche : sept jours de fenêtre, rien si un moment est
+déjà logué ce jour-là, et **elle ne revient pas une fois écartée** (les écartés
+vivent dans le `localStorage`). Une seule à la fois.
+
+### `#yuno/journal` — le Carnet de terrain
+
+La page source des moments : tout s'y retrouve, s'y ajoute et s'y retire.
+L'accueil n'en montre que les derniers.
+
+- **La capture** : date, type (match · concert · sortie · autre), et en
+  facultatif l'événement ou le lieu, les rencontres, la photo dont il est fier,
+  une note, et la case « œuvre finie ». Deux champs suffisent — elle doit se
+  remplir debout, en sortant du stade, en moins de 30 secondes.
+- **Le fil**, antéchronologique, **EST le mur des victoires** : les moments et
+  les victoires d'avant le carnet s'y mêlent. Les victoires nées d'un moment en
+  sont écartées — le moment est déjà là, et plus riche que son reflet.
+- **Loguer un moment crée une victoire** (`source = 'moment'`), qui remonte au
+  dashboard du hub. Dans ce système, une victoire EST un moment vécu.
+- **Les rencontres comptent autant que les images.** Un nom déjà au carnet se
+  relie tout seul à sa fiche ; un inconnu garde un « + » pour lui en ouvrir une
+  (statut `contact_etabli` : ils se sont vus en vrai). La capture ne s'arrête
+  jamais pour ça.
 
 ### `#yuno/creer` — l'outil phare
 
@@ -141,11 +208,64 @@ secondes ; la programmer, c'est juste lui donner une date.
   de Noé — *Raw to edit*, *Raw vs edit*, *No accreditation, no problem*
   (photos depuis les tribunes), *Un mois en tant que photographe sportif* —
   et libres pour la suite : proposer une idée dans une rubrique est plus
-  facile que partir de zéro. L'analyse du marché (ce qui marche déjà sur les
-  réseaux) viendra nourrir cette liste plus tard, par Noé.
+  facile que partir de zéro.
 - Publier = passer en `publié`, avec le lien. Chaque publication publiée est
   une victoire ? — non : ce serait du bruit à raison de plusieurs par semaine.
-  Les victoires restent manuelles ou liées aux jalons.
+  Les victoires restent manuelles ou liées aux jalons et aux moments.
+
+**Les quatre piliers** ouvrent l'écran, en encart : 1. Les Léopards & le foot
+africain (la portée) · 2. Bord terrain (le portfolio) · 3. Dans l'œil du
+photographe (la conversion) · 4. Carte blanche (la différence). Avec le test —
+« ça rentre dans un pilier ? oui → je crée » — le plancher de 2 publications
+par semaine, et le rappel que les stories restent une zone franche.
+
+**Ils sont là pour FERMER un débat, pas pour ajouter une contrainte.** Le vrai
+frein à la régularité n'était pas le manque d'idées : c'était de re-décider la
+stratégie avant chaque publication. Les piliers rendent la question binaire.
+
+Une idée porte donc aussi son **pilier**, sa **preuve** (ce qui montre que le
+format marche déjà) et son **« pourquoi chez moi »**. La banque se filtre sur
+le pilier et sur le statut. Le titre suffit toujours : noter une idée reste une
+affaire de cinq secondes.
+
+**Le tirage de la semaine** répond les jours de panne : « Je ne sais pas quoi
+poster » pose une seule question — y a-t-il un match cette semaine ? — puis
+propose une idée. Avec match, le terrain est là, on le montre (piliers 1 et 2) ;
+sans match, l'éducatif ne dépend d'aucun calendrier et passe devant (pilier 3).
+Une idée sans pilier reste tirable : proposer vaut mieux que renvoyer à un
+classement pas fait.
+
+**La checklist carrousel** s'affiche repliée sur les publications au format
+carrousel — hook de 5 à 8 mots, slides 1 ET 2 fortes, tension → développement →
+appel à l'action, légende courte. Sans IA : un aide-mémoire, pas un outil qui
+écrit à la place de Noé.
+
+**Le cycle des statuts est un paramètre du module partagé** (`publications.js`) :
+Yuno pose une étape `à développer` entre l'idée et le brouillon, le FC Hermitage
+garde son cycle à quatre. Même chose pour la checklist et les piliers — ils ne
+débordent pas sur le club.
+
+### `#yuno/creer` — le rendez-vous stats (en bas de l'écran)
+
+**On ne supprime pas un réflexe, on le remplace par un rituel.** Les chiffres
+des réseaux n'existent nulle part ailleurs dans le site.
+
+- **Six jours sur sept, la section ne montre AUCUN chiffre** : ni courbe, ni
+  aperçu, ni total. Un compte à rebours (« Rendez-vous dimanche — dans 4 jours »)
+  et le réglage du jour, rien d'autre. Le verrou est côté client, et c'est
+  assumé : le système n'empêche pas la triche, il assèche le réflexe.
+- **Le jour J** : un formulaire de cinq minutes — abonnés, portée de la semaine,
+  top post — qui **ne s'enregistre pas sans la question rituelle** : « est-ce que
+  ça change quelque chose à mes actions cette semaine ? ». « Non » est une
+  réponse acceptée ; l'absence de réponse, non. C'est elle qui transforme la
+  surveillance en pilotage.
+- **L'historique n'est visible que pendant le rendez-vous.** Une courbe par
+  mesure — **jamais deux échelles sur un même axe**, des abonnés et une portée
+  hebdomadaire ne se comparent pas. Trait fin, points discrets, pas de
+  quadrillage, et les chiffres écrits en encre plutôt qu'en couleur de série.
+  La courbe se dessine à partir du deuxième rendez-vous.
+- Le jour du rendez-vous vit dans le `localStorage` (défaut : dimanche), comme
+  l'ordre des colonnes. C'est un réglage personnel, pas une donnée.
 
 ### `#yuno/reseau` — le carnet réseau *(construit)*
 
@@ -234,59 +354,99 @@ Types : joueur, club, média, **agence**, marque, autre. Les agences sont
 arrivées avec la seconde moitié du carnet : ce ne sont ni des médias ni des
 marques, ce sont des intermédiaires.
 
+**L'échelle de relation s'est allongée** (12 août) sans rien perdre :
+`pas de contact → message envoyé → relancé → répondu → contact établi →
+bon contact → opportunité`. « Bon contact » est conservé — on ne remplace pas
+ce qui marche.
+
+### `#yuno/reseau` — la Passerelle *(troisième affichage)*
+
+**C'est une vue du carnet, pas un module à part** : la recherche et les filtres
+agissent dessus comme sur le Tableau et les Fiches. Noé avait déjà construit son
+pipeline relationnel sans le nommer ; on ajoute la couche qui pousse à l'action.
+
+- **La file d'action de la semaine**, groupée par micro-dose : **1 Répondre**
+  (des messages reçus qui attendent), **2 Relancer** (des relations vivantes à
+  entretenir), **3 Ouvrir** (des portes à pousser). La peur du rejet ne se
+  contourne pas, elle s'entraîne — d'où la gradation. Un contact entre dans la
+  file quand on lui donne un niveau, depuis la colonne « Niveau » du tableau.
+- **Dans la file, une case vide passe DEVANT**, au rebours du tableau :
+  « jamais écrit » est ce qui attend le plus, pas ce qui est le plus ancien.
+- **La seule métrique : les messages envoyés** — cumul et « cette semaine »,
+  déduits d'un journal (une ligne = un envoi). **La table `journal_envois` n'a
+  pas de colonne « répondu », et c'est délibéré** : si le compteur dépendait des
+  réponses, chaque silence deviendrait un rejet mesuré. Ne jamais afficher de
+  taux de réponse ni de compte de non-réponses.
+- **« Envoyé ✓ »** enregistre l'envoi, date la fiche et fait avancer la
+  relation. **Une relation vivante ne redescend jamais** : écrire à quelqu'un
+  qui a répondu ne le ramène pas à « relancé ».
+- **L'objectif doux** (défaut 1 envoi/semaine, réglable, dans le
+  `localStorage`) se dit une fois atteint — « C'est fait pour cette semaine » —
+  et se tait en dessous. Un plancher rassurant, jamais une dette.
+- **La bibliothèque de modèles** : la friction du premier message est le
+  principal mur de l'aller-vers. Titres et corps s'éditent en place, un bouton
+  copie le texte pour le coller ailleurs. Quatre modèles de départ, chargés en
+  base : accréditation concert, premier contact club, proposition à un média,
+  relance courtoise.
+
+Champs ajoutés à une fiche, tous facultatifs : `objectif` (pourquoi ce contact),
+`niveau` (1–3), `date_dernier_envoi` — **distinct de `dernier_echange`** : un
+envoi est un effort à soi, un échange est bidirectionnel — `prochaine_action` et
+`prochaine_action_date`, qui portent la relance au calendrier.
+
 **Les contacts eux-mêmes ne sont pas dans ce dépôt.** Ce sont des données
 personnelles réelles (numéros, comptes) et le dépôt est public : elles vivent
 uniquement dans Supabase, derrière la connexion. Seul le schéma est versionné.
 
-### `#yuno/commandes` — le suivi des commandes *(construit)*
+### `#yuno/reseau` — les commandes *(section, plus un onglet)*
 
-Volontairement simple, et en dernier : titre, client, statut
-(`en cours → livrée`), échéance éventuelle, lien du livrable, notes. Livrer
-une commande crée une victoire. On l'étoffera si l'activité le réclame —
-pas avant.
+**Une commande naît d'une relation** : elle n'a pas besoin d'un onglet à elle,
+et le sien a disparu le 12 août. Titre, client (relié à une fiche du carnet
+quand le nom y figure), statut, échéance, montant facultatif, lien du livrable,
+notes.
 
-Construit le 7 août 2026 : les livrées se replient en bas, comme le backlog.
-Une commande à échéance apparaît dans le calendrier (Yuno et hub).
+Le cycle va du devis au paiement : `devis → en cours → livrée → payée`.
+**Livrer crée une victoire ; encaisser n'en crée pas une seconde** — c'est le
+même travail, et l'argent est une conséquence, pas un juge. Les livrées et
+payées se replient en bas, comme le backlog. Une commande à échéance apparaît
+au calendrier (Yuno et hub).
 
 ---
 
 ## 5. Les données
 
 Les tables du hub servent déjà : `objectifs`, `taches`, `evenements`,
-`victoires` (projet `photo`). S'ajoutent trois tables, par migration versionnée
-dans ce repo (gardien unique du schéma Supabase) :
+`victoires` (projet `photo`). Le schéma complet, colonne par colonne, vit dans
+`supabase/migrations/` — **ce dépôt est le gardien unique du schéma Supabase**,
+et ce paragraphe ne fait que dire à quoi sert chaque table.
 
-### publications
-- `id` uuid PK
-- `titre` text NOT NULL — l'idée, en une phrase
-- `reseau` text default 'instagram'
-- `format` text CHECK (format IN ('post','carrousel','reel','story'))
-- `statut` text default 'idee' CHECK (statut IN ('idee','brouillon','pret','publie'))
-- `date_prevue` date — NULL = banque d'idées
-- `rubrique` text — la série récurrente, libre
-- `notes` text — légende, plan, références
-- `lien_publie` text
-- `created_at` timestamptz default now()
+| Table | Ce qu'elle porte |
+|---|---|
+| `publications` | le calendrier éditorial. `date_prevue` NULL = banque d'idées. Colonnes Yuno : `pilier`, `preuve`, `pourquoi_moi` (NULL pour le FCH) |
+| `contacts` | le carnet réseau, et la couche Passerelle (`objectif`, `niveau`, `date_dernier_envoi`, `prochaine_action`, `prochaine_action_date`) |
+| `commandes` | le suivi, du devis au paiement. `client_id` relie au carnet |
+| `moments` | le Carnet de terrain — un moment vécu = une ligne |
+| `rencontres` | qui a été rencontré, à quel moment. `contact_id` facultatif |
+| `journal_envois` | un envoi = une ligne. **Aucune colonne « répondu »** |
+| `stats_hebdo` | un rendez-vous = une ligne. `reponse_rituelle` est NOT NULL |
+| `modeles_messages` | la bibliothèque de messages à personnaliser |
 
-### contacts
-- `id` uuid PK
-- `nom` text NOT NULL
-- `type` text CHECK (type IN ('joueur','club','media','marque','autre'))
-- `structure` text — le rattachement (FC Lorient, OM, La Provence…)
-- `instagram` text · `email` text · `telephone` text
-- `notes` text
-- `dernier_echange` date
-- `created_at` timestamptz default now()
+Trois choix de schéma portent l'intention, et ne se défont pas sans la défaire :
 
-### commandes
-- `id` uuid PK
-- `titre` text NOT NULL · `client` text
-- `statut` text default 'en_cours' CHECK (statut IN ('en_cours','livree'))
-- `echeance` date · `lien_livrable` text · `notes` text
-- `created_at` timestamptz default now()
+- **Les compteurs ne sont stockés nulle part.** Les trois du Carnet et les deux
+  de la Passerelle se déduisent de faits accumulés — qui ne peuvent que monter.
+- **`journal_envois` n'a pas de colonne « répondu ».** On mesure l'effort,
+  jamais le silence.
+- **`stats_hebdo.reponse_rituelle` est NOT NULL.** Un relevé de chiffres sans la
+  question qui les remet à leur place n'a pas de valeur.
 
-RLS et politiques identiques aux six tables existantes : tout réservé au rôle
+RLS et politiques identiques aux autres tables : tout réservé au rôle
 `authenticated`.
+
+**Les données de Yuno ne sont pas dans ce dépôt** — ni les contacts (données
+personnelles réelles), ni les 15 idées de départ, ni les modèles de messages
+(la stratégie éditoriale et les cibles). Elles ont été chargées directement
+dans Supabase en SQL. Seul le schéma est versionné.
 
 ---
 
@@ -303,23 +463,63 @@ Le rappel quotidien vit sur le dashboard, pas ici :
 
 ## 7. Ce qu'on ne construit pas (encore)
 
+Hors périmètre de « Terrain » v1.1, explicitement :
+
+- **La partie perso** — le chantier contrôle et prise de risque. Il aura son
+  espace séparé. Le système actuel n'a pas à jouer ce rôle : il doit juste ne
+  rien aggraver.
+- **L'assistant IA (API Claude)** pour proposer des hooks et des bases de
+  légende — v2 de la Vitrine. Il proposera, Noé choisira et retravaillera.
+  **Jamais générer le contenu à sa place** : une IA qui écrirait tout
+  nourrirait son doute (« est-ce vraiment moi ? ») au lieu de le réduire.
+- **L'API Instagram** et toute automatisation de publication.
+- **Les notifications push.**
+- **L'export/import JSON global** : le brief le demandait en supposant un
+  `localStorage`. Tout vit dans Supabase, qui est déjà la sauvegarde — différé
+  faute d'utilité.
+
+Et, de la version précédente, toujours valable :
+
 - **Compta** : le jour où les revenus arrivent, ce sera une vraie question.
 - **Suivi automatique des abonnés Instagram** : techniquement possible
   (compte créateur relié à une Page Facebook, app Meta, jeton longue durée à
   renouveler ~60 jours, Edge Function Supabase pour garder le jeton hors du
-  site public). De la tuyauterie réelle pour un chiffre : différé tant que le
-  besoin n'est pas net.
+  site public). De la tuyauterie réelle pour un chiffre — et le rendez-vous
+  hebdomadaire vaut justement par le geste de saisie. Différé.
 - **Gestion de fichiers photo** : les photos vivent dans Lightroom et sur les
   disques ; ici, des liens et des états.
-- **Le pipeline détaillé de reportage** (v1 de ce document) : les commandes
-  simples suffisent pour commencer.
 
 ---
 
-## 8. Questions restantes
+## 8. La direction longue (pour éclairer les choix futurs)
 
-Aucune. Toutes les questions ont été tranchées le 7 août 2026, et les cinq
-écrans du site sont construits : Accueil, Créer, Calendrier, Réseau,
-Commandes. Prochaine étape : l'usage réel par Noé, qui dira ce qui manque —
-et les outils d'aide à la création qui viendront enrichir « Créer », une fois
-son analyse du marché faite.
+Elle vient du document « pourquoi » et ne se lit nulle part dans le code :
+
+- **Une pratique qui ralentit.** Moins d'œuvres, plus profondes : séries
+  documentaires, expositions, tirages, un livre. Le modèle « créateur qui poste
+  à vie » est un véhicule vers des objectifs précis, pas la destination.
+- **La vidéo viendra par la porte douce.** Le Reel-diaporama est la passerelle
+  choisie : techniquement de la vidéo, 100 % de la photo. **Ne jamais pousser
+  une fonctionnalité qui présuppose du tournage ou du face-caméra.**
+- **Les jalons concrets** : la CAN 2027 (le compte CAF Media Channel existe ;
+  une lettre de mission d'un média congolais est la voie d'accréditation d'un
+  freelance), l'OM au Vélodrome, une première accréditation concert, un premier
+  produit presets quand les contenus « How I edited » généreront des demandes.
+
+---
+
+## 9. Questions restantes
+
+**Deux, ouvertes au 12 août 2026 :**
+
+1. **Le vocabulaire du cycle éditorial.** Le brief dit « posté », le hub dit
+   « publié » partout ailleurs. « Publié » a été gardé pour la cohérence, et le
+   mot de clôture dit bien « C'est posté ». À trancher à l'usage.
+2. **Les cartes de la Passerelle qui manquent encore.** Léopards Leader et
+   BoomSportRDC sont en niveau 2, l'OM en niveau 3. Restent à créer, faute de
+   noms réels : la ou les salles de concert visées (objectif : une première
+   accréditation), et les clubs que Noé veut cibler à froid — les quatre déjà
+   au carnet sont des contacts établis, donc du niveau 2, pas du 3.
+
+Le reste a été tranché. Les cinq écrans du site sont construits : Accueil,
+Journal, Créer, Calendrier, Réseau. Prochaine étape : l'usage réel.
