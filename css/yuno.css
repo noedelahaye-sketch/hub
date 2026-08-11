@@ -324,6 +324,184 @@ body[data-espace="yuno"] #vue .bloc h2 {
 /* Le trou de la semaine se voit : les publications passées non publiées
    restent sobres, pas d'alerte (philosophie du hub). */
 
+/* --- Les quatre piliers -----------------------------------------------------
+   La boussole, posée en tête de Créer. Elle est là pour fermer un débat : on la
+   lit d'un coup d'œil, on ne s'y arrête pas. */
+
+.piliers {
+  padding: var(--espace-16);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+}
+
+.bloc ul.liste-piliers {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--espace-8);
+}
+
+@media (min-width: 45rem) {
+  .bloc ul.liste-piliers { grid-template-columns: repeat(2, 1fr); }
+}
+
+.bloc ul.liste-piliers li {
+  align-items: baseline;
+  gap: var(--espace-8);
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+}
+
+.pilier-rang {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: 0.8125rem;
+  color: var(--fond-carte);
+  background: var(--accent);
+  border-radius: var(--rayon-pastille);
+}
+
+.pilier-nom { font-weight: 600; font-size: 0.9375rem; }
+.pilier-role { font-size: 0.8125rem; }
+
+/* Le test tient en une ligne : c'est tout l'intérêt. */
+.piliers-test {
+  margin: var(--espace-16) 0 0;
+  padding-top: var(--espace-12);
+  font-size: 0.8125rem;
+  border-top: 1px solid var(--bordure);
+}
+
+.etiquette-pilier { color: var(--accent); border-color: var(--accent); }
+
+/* --- Le tirage de la semaine ------------------------------------------------ */
+
+.tirage { margin-top: var(--espace-12); }
+
+/* Ce bouton doit se trouver un jour de panne : il se voit, sans crier. */
+.tirage > summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 var(--espace-16);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--accent);
+  list-style: none;
+  cursor: pointer;
+  border: 1px solid var(--accent);
+  border-radius: var(--rayon-controle);
+}
+
+.tirage > summary::-webkit-details-marker { display: none; }
+.tirage[open] > summary { margin-bottom: var(--espace-12); }
+.tirage > p { margin: 0 0 var(--espace-8); font-size: 0.875rem; }
+
+.tirage-choix {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-8);
+  margin-bottom: var(--espace-12);
+}
+
+.tirage-idee {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-4);
+  padding: var(--espace-12) var(--espace-16);
+  background: var(--fond-carte);
+  border: 1px solid var(--accent);
+  border-radius: var(--rayon-carte);
+}
+
+/* --- La banque d'idées ------------------------------------------------------ */
+
+.barre-banque {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-12);
+  margin-bottom: var(--espace-12);
+}
+
+.barre-banque label {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  margin: 0;
+  font-size: 0.75rem;
+}
+
+.barre-banque select {
+  margin: 0;
+  padding: var(--espace-4) var(--espace-8);
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: var(--texte);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+}
+
+.pub-preuve {
+  display: block;
+  width: 100%;
+  font-size: 0.8125rem;
+}
+
+.pub-preuve strong { color: var(--accent); font-weight: 600; }
+
+/* La checklist d'un carrousel : un aide-mémoire dans la tuile, replié. */
+.checklist-carrousel { width: 100%; margin-top: var(--espace-4); }
+
+.checklist-carrousel > summary {
+  display: flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: var(--espace-4) 0;
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+  list-style: none;
+  cursor: pointer;
+}
+
+.checklist-carrousel > summary::-webkit-details-marker { display: none; }
+.checklist-carrousel > summary::before { content: "☐ "; margin-right: var(--espace-4); }
+.checklist-carrousel[open] > summary::before { content: "☑ "; }
+.checklist-carrousel > summary:hover { color: var(--texte); }
+
+.bloc ul.liste-checklist {
+  gap: var(--espace-4);
+  margin: 0 0 var(--espace-8);
+  padding-left: var(--espace-16);
+  list-style: disc;
+}
+
+.bloc ul.liste-checklist li {
+  display: list-item;
+  padding: 0;
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+  background: none;
+  border: none;
+  border-radius: 0;
+}
+
+/* Poster, c'est déposer et repartir. Le site le dit une fois. */
+.note-cloture {
+  margin: 0 0 var(--espace-16);
+  padding: var(--espace-12) var(--espace-16);
+  font-size: 0.9375rem;
+  color: var(--accent);
+  background: var(--accent-doux);
+  border-radius: var(--rayon-carte);
+}
+
 /* --- Le carnet réseau ------------------------------------------------------- */
 
 .recherche {

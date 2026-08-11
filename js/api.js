@@ -335,11 +335,23 @@ export async function publicationsEntre(debutISO, finISO, { projet = null } = {}
   return verifier(await requete);
 }
 
-export async function creerPublication({ projet, titre, reseau = 'instagram', format = 'post', rubrique = null, notes = null, date_prevue = null }) {
+// pilier, preuve et pourquoi_moi sont propres à Yuno : le FCH les laisse vides.
+export async function creerPublication({
+  projet,
+  titre,
+  reseau = 'instagram',
+  format = 'post',
+  rubrique = null,
+  notes = null,
+  date_prevue = null,
+  pilier = null,
+  preuve = null,
+  pourquoi_moi = null,
+}) {
   return verifier(
     await client
       .from('publications')
-      .insert({ projet, titre, reseau, format, rubrique, notes, date_prevue })
+      .insert({ projet, titre, reseau, format, rubrique, notes, date_prevue, pilier, preuve, pourquoi_moi })
       .select()
       .single(),
   );

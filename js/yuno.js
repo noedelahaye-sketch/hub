@@ -15,7 +15,8 @@
 import * as api from './api.js';
 import { construireFormulaire, construireObjectifs } from './espace-projet.js';
 import {
-  STATUTS,
+  STATUTS_YUNO,
+  NOMS_STATUTS,
   construireAVenir,
   construireBanque,
   construirePubliees,
@@ -42,6 +43,38 @@ export const RUBRIQUES_DEPART = [
 // Les réseaux de Yuno. Facebook et YouTube existent en base pour le FCH, mais
 // n'ont pas à encombrer ce formulaire-ci.
 const RESEAUX_YUNO = { instagram: 'Instagram', tiktok: 'TikTok', linkedin: 'LinkedIn' };
+
+// --- Les quatre piliers ------------------------------------------------------
+// La boussole éditoriale. Ils existent pour FERMER un débat, pas pour ajouter
+// une contrainte : la question du matin devient binaire — « ça rentre dans un
+// pilier ? oui → je crée » — au lieu de rouvrir la stratégie à chaque idée.
+
+export const PILIERS = {
+  1: { nom: 'Les Léopards & le foot africain', role: 'la portée' },
+  2: { nom: 'Bord terrain', role: 'le portfolio' },
+  3: { nom: "Dans l'œil du photographe", role: 'la conversion' },
+  4: { nom: 'Carte blanche', role: 'la différence' },
+};
+
+function construirePiliers() {
+  return `
+    <div class="piliers">
+      <ul class="liste-piliers">
+        ${Object.entries(PILIERS)
+          .map(
+            ([rang, { nom, role }]) => `
+          <li>
+            <span class="pilier-rang chiffre">${rang}</span>
+            <span class="pilier-nom">${echapper(nom)}</span>
+            <span class="discret pilier-role">${echapper(role)}</span>
+          </li>`,
+          )
+          .join('')}
+      </ul>
+      <p class="discret piliers-test">Ça rentre dans un pilier ? Oui → je crée.
+        Plancher : 2 publications par semaine. Les stories restent une zone franche.</p>
+    </div>`;
+}
 
 const VUES = ['accueil', 'journal', 'creer', 'calendrier', 'reseau'];
 
@@ -348,9 +381,93 @@ function vueJournal(etat) {
     ${pied()}`;
 }
 
+// Le tirage de la semaine. Avec match, le terrain est là : on le montre
+// (piliers 1 et 2). Sans match, l'éducatif ne dépend d'aucun calendrier, il
+// passe devant (pilier 3). `hasard` est un paramètre pour que le tirage se
+// vérifie sans dépendre de la chance.
+export function tirerIdee(publications, { avecMatch = true } = {}, hasard = Math.random) {
+  const banque = publications.filter((pub) => !pub.date_prevue && pub.statut !== 'publie');
+  if (!banque.length) return null;
+
+  const prefere = avecMatch ? [1, 2] : [3];
+  const prefereesDabord = [
+    banque.filter((pub) => prefere.includes(pub.pilier)),
+    // À défaut, n'importe quel autre pilier — sans ordre entre eux.
+    banque.filter((pub) => pub.pilier && !prefere.includes(pub.pilier)),
+  ];
+
+  for (const lot of prefereesDabord) {
+    if (lot.length) return lot[Math.floor(hasard() * lot.length)];
+  }
+
+  // Aucune idée n'a encore de pilier : on tire quand même. Proposer quelque
+  // chose vaut mieux que renvoyer à un classement pas fait.
+  return banque[Math.floor(hasard() * banque.length)];
+}
+
+export function filtrerBanque(publications, { pilier = 'tout', statutIdee = 'tout' } = {}) {
+  return publications.filter((pub) => {
+    if (pilier !== 'tout' && String(pub.pilier ?? '') !== pilier) return false;
+    if (statutIdee !== 'tout' && pub.statut !== statutIdee) return false;
+    return true;
+  });
+}
+
+function etiquettePilier(rang) {
+  return `<span class="etiquette etiquette-pilier">${echapper(
+    `${rang}. ${PILIERS[rang]?.nom ?? ''}`,
+  )}</span>`;
+}
+
+export function construireTirage(tirage) {
+  if (!tirage) return '';
+  if (!tirage.idee) {
+    return `<p class="vide">La banque est vide pour l'instant. Note une idée, même bancale.</p>`;
+  }
+
+  const { idee } = tirage;
+  return `
+    <div class="tirage-idee">
+      <span class="tuile-entete">
+        ${idee.pilier ? etiquettePilier(idee.pilier) : ''}
+        <span class="discret quand">${tirage.avecMatch ? 'semaine avec match' : 'semaine sans match'}</span>
+      </span>
+      <span class="pub-titre">${echapper(idee.titre)}</span>
+      ${idee.preuve ? `<span class="discret pub-preuve">${echapper(idee.preuve)}</span>` : ''}
+    </div>`;
+}
+
+function blocTirage(etat) {
+  return `
+    <details class="tirage" ${etat.tirage ? 'open' : ''}>
+      <summary>Je ne sais pas quoi poster</summary>
+      <p class="discret">Cette semaine, il y a un match ?</p>
+      <div class="tirage-choix">
+        <button type="button" class="bouton-secondaire bouton-mini" data-tirer="avec">
+          Oui, il y a un match</button>
+        <button type="button" class="bouton-secondaire bouton-mini" data-tirer="sans">
+          Non, pas de match</button>
+      </div>
+      <div data-bloc="tirage">${construireTirage(etat.tirage)}</div>
+    </details>`;
+}
+
 function vueCreer(etat) {
+  // Ce qui distingue Créer chez Yuno : son cycle, sa checklist, ses piliers.
+  const options = { cycle: STATUTS_YUNO, checklist: true, piliers: PILIERS };
+
   return `
     ${enTete('creer')}
+    ${
+      etat.cloture
+        ? `<p class="note-cloture">C'est posté. Ferme l'app, la suite se passe dehors.</p>`
+        : ''
+    }
+
+    <section class="bloc">
+      <h2>Les quatre piliers</h2>
+      ${construirePiliers()}
+    </section>
 
     <section class="bloc">
       <h2>Calendrier éditorial</h2>
@@ -358,18 +475,65 @@ function vueCreer(etat) {
         publications: etat.publications,
         rubriquesDepart: RUBRIQUES_DEPART,
         reseaux: RESEAUX_YUNO,
+        champsEnPlus: [
+          {
+            nom: 'pilier',
+            libelle: 'Pilier',
+            type: 'select',
+            options: {
+              '': 'Sans pilier',
+              ...Object.fromEntries(
+                Object.entries(PILIERS).map(([rang, { nom }]) => [rang, `${rang}. ${nom}`]),
+              ),
+            },
+            valeur: '',
+          },
+          { nom: 'preuve', libelle: 'Preuve — pourquoi ce format marche déjà (facultatif)', type: 'text' },
+          { nom: 'pourquoi_moi', libelle: 'Pourquoi chez moi (facultatif)', type: 'text' },
+        ],
       })}
+      ${blocTirage(etat)}
     </section>
 
     <section class="bloc">
       <h2>À venir</h2>
-      <div data-bloc="a-venir">${construireAVenir(etat.publications)}</div>
+      <div data-bloc="a-venir">${construireAVenir(etat.publications, options)}</div>
     </section>
 
     <section class="bloc">
       <h2>Banque d'idées</h2>
-      <div data-bloc="banque">${construireBanque(etat.publications)}</div>
-      <div data-bloc="publiees">${construirePubliees(etat.publications)}</div>
+      <div class="barre-banque">
+        <label>
+          <span class="discret">Pilier</span>
+          <select data-filtre-pilier>
+            <option value="tout" ${etat.pilier === 'tout' ? 'selected' : ''}>Tous</option>
+            ${Object.entries(PILIERS)
+              .map(
+                ([rang, { nom }]) =>
+                  `<option value="${rang}" ${etat.pilier === rang ? 'selected' : ''}>${rang}. ${echapper(nom)}</option>`,
+              )
+              .join('')}
+            <option value="" ${etat.pilier === '' ? 'selected' : ''}>Sans pilier</option>
+          </select>
+        </label>
+        <label>
+          <span class="discret">Statut</span>
+          <select data-filtre-statut-idee>
+            <option value="tout" ${etat.statutIdee === 'tout' ? 'selected' : ''}>Tous</option>
+            ${STATUTS_YUNO.filter((statut) => statut !== 'publie')
+              .map(
+                (statut) =>
+                  `<option value="${statut}" ${etat.statutIdee === statut ? 'selected' : ''}>${NOMS_STATUTS[statut]}</option>`,
+              )
+              .join('')}
+          </select>
+        </label>
+      </div>
+      <div data-bloc="banque">${construireBanque(
+        filtrerBanque(etat.publications, etat),
+        options,
+      )}</div>
+      <div data-bloc="publiees">${construirePubliees(etat.publications, options)}</div>
     </section>
     ${pied()}`;
 }
@@ -1426,6 +1590,10 @@ export default {
       objectifDoux: objectifDouxEnregistre(),
       vue: 'accueil',
       filtre: 'tout',
+      pilier: 'tout',
+      statutIdee: 'tout',
+      tirage: null,
+      cloture: false,
       rechercheContact: '',
       filtresOuverts: false,
       filtresAjoutes: [],
@@ -1465,6 +1633,9 @@ export default {
     // Le routeur rappelle `naviguer` à chaque changement de hash dans l'espace.
     this.naviguer = (nouvelleRoute) => {
       etat.vue = VUES.includes(nouvelleRoute?.vue) ? nouvelleRoute.vue : 'accueil';
+      // Le mot de clôture ne vaut que pour l'instant où l'on vient de poster :
+      // changer de page l'efface, il n'a pas à traîner.
+      etat.cloture = false;
       rendre();
     };
 
@@ -1573,6 +1744,9 @@ export default {
           rubrique: champs.rubrique?.trim() || null,
           notes: champs.notes?.trim() || null,
           date_prevue: champs.date_prevue || null,
+          pilier: champs.pilier ? Number(champs.pilier) : null,
+          preuve: champs.preuve?.trim() || null,
+          pourquoi_moi: champs.pourquoi_moi?.trim() || null,
         });
         etat.publications = [publication, ...etat.publications];
         rendre();
@@ -1864,14 +2038,25 @@ export default {
         return;
       }
 
+      const tirer = evenement.target.closest('[data-tirer]');
+      if (tirer) {
+        const avecMatch = tirer.dataset.tirer === 'avec';
+        etat.tirage = { avecMatch, idee: tirerIdee(etat.publications, { avecMatch }) };
+        rendre();
+        return;
+      }
+
       const avancer = evenement.target.closest('[data-avancer]');
       if (avancer) {
         const pub = trouverPub(avancer.dataset.avancer);
-        const suivant = STATUTS[STATUTS.indexOf(pub.statut) + 1];
+        const suivant = STATUTS_YUNO[STATUTS_YUNO.indexOf(pub.statut) + 1];
         if (!suivant) return;
         avancer.disabled = true;
         try {
           Object.assign(pub, await api.modifierPublication(pub.id, { statut: suivant }));
+          // Poster, c'est déposer l'œuvre et repartir : le site le dit, puis
+          // se tait.
+          etat.cloture = suivant === 'publie';
           rendre();
         } catch (souci) {
           console.error('Changement de statut impossible', souci);
@@ -2176,6 +2361,20 @@ export default {
         } catch (souci) {
           console.error('Enregistrement du modèle impossible', souci);
         }
+        return;
+      }
+
+      const filtrePilier = evenement.target.closest('[data-filtre-pilier]');
+      if (filtrePilier) {
+        etat.pilier = filtrePilier.value;
+        rendre();
+        return;
+      }
+
+      const filtreStatutIdee = evenement.target.closest('[data-filtre-statut-idee]');
+      if (filtreStatutIdee) {
+        etat.statutIdee = filtreStatutIdee.value;
+        rendre();
         return;
       }
 

@@ -13,13 +13,38 @@ import { depuisDateISO, echeanceLisible, echapper } from './format.js';
 import { RESEAUX, FORMATS } from './calendrier-commun.js';
 
 // L'ordre du cycle. Chaque statut connaît son suivant ; « publié » n'en a pas.
+// Le cycle est un paramètre, parce qu'il n'est pas le même partout : Yuno pose
+// une étape « à développer » entre l'idée et le brouillon (une idée qui mérite
+// du travail avant d'être écrite), le FC Hermitage n'en a pas demandé.
 export const STATUTS = ['idee', 'brouillon', 'pret', 'publie'];
+export const STATUTS_YUNO = ['idee', 'a_developper', 'brouillon', 'pret', 'publie'];
+
 export const NOMS_STATUTS = {
   idee: 'idée',
+  a_developper: 'à développer',
   brouillon: 'brouillon',
   pret: 'prêt',
   publie: 'publié',
 };
+
+// Le rappel de ce qui fait tenir un carrousel. Sans IA : c'est un aide-mémoire
+// qui ferme un débat mental, pas un outil qui écrit à la place de Noé.
+const CHECKLIST_CARROUSEL = [
+  'Un hook de 5 à 8 mots sur la slide 1.',
+  'Les slides 1 ET 2 fortes — la 2 retient autant que la 1.',
+  'Tension, puis développement, puis appel à l’action.',
+  'Légende courte.',
+];
+
+function checklistCarrousel() {
+  return `
+    <details class="checklist-carrousel">
+      <summary>Checklist carrousel</summary>
+      <ul class="liste-checklist">
+        ${CHECKLIST_CARROUSEL.map((point) => `<li>${point}</li>`).join('')}
+      </ul>
+    </details>`;
+}
 
 export function etiquettes(pub) {
   return `
@@ -27,14 +52,24 @@ export function etiquettes(pub) {
     <span class="etiquette">${echapper(FORMATS[pub.format] ?? pub.format)}</span>`;
 }
 
-export function construirePublication(pub) {
-  const suivant = STATUTS[STATUTS.indexOf(pub.statut) + 1];
+// `options` porte ce qui change d'un projet à l'autre : le cycle des statuts,
+// et l'aide à la création (les piliers et la checklist sont à Yuno).
+export function construirePublication(pub, options = {}) {
+  const { cycle = STATUTS, checklist = false, piliers = null } = options;
+  const suivant = cycle[cycle.indexOf(pub.statut) + 1];
   const datee = Boolean(pub.date_prevue);
 
   return `
     <li>
       <span class="tuile-entete">
         ${etiquettes(pub)}
+        ${
+          piliers && pub.pilier
+            ? `<span class="etiquette etiquette-pilier">${echapper(
+                `${pub.pilier}. ${piliers[pub.pilier]?.nom ?? ''}`,
+              )}</span>`
+            : ''
+        }
         ${pub.rubrique ? `<span class="pub-rubrique">${echapper(pub.rubrique)}</span>` : ''}
         ${
           datee
@@ -45,7 +80,23 @@ export function construirePublication(pub) {
         }
       </span>
       <span class="pub-titre">${echapper(pub.titre)}</span>
+      ${
+        // La preuve dit pourquoi le format marche déjà ; le « pourquoi moi »,
+        // pourquoi il est à sa place chez Noé. Les deux ferment le débat qui
+        // revenait à chaque publication.
+        pub.preuve
+          ? `<span class="discret pub-preuve"><strong>Preuve</strong> ${echapper(pub.preuve)}</span>`
+          : ''
+      }
+      ${
+        pub.pourquoi_moi
+          ? `<span class="discret pub-preuve"><strong>Pourquoi chez moi</strong> ${echapper(
+              pub.pourquoi_moi,
+            )}</span>`
+          : ''
+      }
       ${pub.notes ? `<span class="discret pub-notes">${echapper(pub.notes)}</span>` : ''}
+      ${checklist && pub.format === 'carrousel' ? checklistCarrousel() : ''}
       <span class="pub-actions">
         <span class="pub-statut">statut : <strong>${NOMS_STATUTS[pub.statut]}</strong></span>
         ${
@@ -74,7 +125,7 @@ export function construirePublication(pub) {
     </li>`;
 }
 
-export function construireAVenir(publications) {
+export function construireAVenir(publications, options = {}) {
   const datees = publications
     .filter((pub) => pub.date_prevue && pub.statut !== 'publie')
     .sort((a, b) => a.date_prevue.localeCompare(b.date_prevue));
@@ -82,21 +133,23 @@ export function construireAVenir(publications) {
   if (!datees.length) {
     return `<p class="vide">Rien de programmé. Une idée de la banque n'attend qu'une date.</p>`;
   }
-  return `<ul>${datees.map(construirePublication).join('')}</ul>`;
+  return `<ul>${datees.map((pub) => construirePublication(pub, options)).join('')}</ul>`;
 }
 
-export function construireBanque(publications) {
+export function construireBanque(publications, options = {}) {
   const idees = publications
-    .filter((pub) => !pub.date_prevue)
+    // Une publiée sans date n'est plus une idée : elle vit dans « Publiées »,
+    // et la banque ne doit pas la garder en double.
+    .filter((pub) => !pub.date_prevue && pub.statut !== 'publie')
     .sort((a, b) => b.created_at.localeCompare(a.created_at));
 
   if (!idees.length) {
     return `<p class="vide">Ta banque d'idées démarre ici. Note tout, trie ensuite.</p>`;
   }
-  return `<ul>${idees.map(construirePublication).join('')}</ul>`;
+  return `<ul>${idees.map((pub) => construirePublication(pub, options)).join('')}</ul>`;
 }
 
-export function construirePubliees(publications) {
+export function construirePubliees(publications, options = {}) {
   const publiees = publications
     .filter((pub) => pub.statut === 'publie')
     .sort((a, b) => (b.date_prevue ?? '').localeCompare(a.date_prevue ?? ''));
@@ -105,7 +158,7 @@ export function construirePubliees(publications) {
   return `
     <details class="backlog">
       <summary>Publiées <span class="chiffre">${publiees.length}</span></summary>
-      <ul>${publiees.map(construirePublication).join('')}</ul>
+      <ul>${publiees.map((pub) => construirePublication(pub, options)).join('')}</ul>
     </details>`;
 }
 
@@ -155,7 +208,16 @@ export function rubriquesProposees(publications, rubriquesDepart) {
   ];
 }
 
-export function formulaireIdee({ id = 'pub', publications, rubriquesDepart, reseaux = RESEAUX }) {
+// `champsEnPlus` laisse un projet ajouter ce qui lui est propre — chez Yuno le
+// pilier, la preuve et le « pourquoi chez moi ». Le titre suffit toujours :
+// noter une idée doit rester une affaire de cinq secondes.
+export function formulaireIdee({
+  id = 'pub',
+  publications,
+  rubriquesDepart,
+  reseaux = RESEAUX,
+  champsEnPlus = [],
+}) {
   return construireFormulaire({
     id,
     libelle: 'Noter une idée',
@@ -164,6 +226,7 @@ export function formulaireIdee({ id = 'pub', publications, rubriquesDepart, rese
       { nom: 'titre', libelle: "L'idée, en une phrase", type: 'text', requis: true },
       { nom: 'reseau', libelle: 'Réseau', type: 'select', options: reseaux },
       { nom: 'format', libelle: 'Format', type: 'select', options: FORMATS },
+      ...champsEnPlus,
       {
         nom: 'rubrique',
         libelle: 'Rubrique (libre)',
