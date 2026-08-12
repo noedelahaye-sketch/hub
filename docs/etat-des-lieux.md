@@ -61,8 +61,8 @@ complet et ce qui reste ouvert.
 
 **Données réelles en base** : les 44 contacts du carnet (dont trois portent un
 niveau de Passerelle), les 15 idées de départ avec leur pilier, et les 4 modèles
-de messages. Restent deux événements d'essai de Noé (« hubf », « b ff »), à
-retirer d'un clic depuis le calendrier. Le reste est vide.
+de messages. Tout le reste est vide — aucun moment, aucun événement, aucune
+tâche. Noé n'a pas encore commencé à s'en servir pour de bon.
 
 ---
 
