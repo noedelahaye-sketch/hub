@@ -406,6 +406,16 @@ function formulaireModifierMoment(moment) {
       { nom: 'type', libelle: 'Quoi', type: 'select', options: TYPES_MOMENT, valeur: moment.type },
       { nom: 'lieu', libelle: 'Événement ou lieu', type: 'text', valeur: moment.lieu ?? '' },
       { nom: 'note', libelle: 'Note', type: 'textarea', valeur: moment.note ?? '' },
+      {
+        nom: 'photo',
+        // Un champ fichier ne peut pas afficher son contenu actuel : le libellé
+        // dit donc s'il y a déjà une photo, et ce qu'un nouveau fichier fera.
+        libelle: moment.photo_chemin
+          ? 'Remplacer la photo (laisser vide pour garder celle-ci)'
+          : 'Ajouter une photo',
+        type: 'file',
+        accepte: 'image/*',
+      },
       { nom: 'oeuvre_finie', libelle: 'Œuvre finie', type: 'checkbox', valeur: moment.oeuvre_finie },
     ],
   });
@@ -2636,12 +2646,22 @@ export default {
       }
 
       if (action === 'modifier-moment') {
+        const ancien = etat.moments.find((candidat) => candidat.id === champs.id);
+        const fichier = champs.photo;
+        // La nouvelle photo part AVANT l'écriture : si l'envoi échoue, rien
+        // n'est modifié et le formulaire reste ouvert, rempli.
+        const nouveauChemin =
+          fichier instanceof File && fichier.size
+            ? await api.televerserPhotoMoment(fichier)
+            : null;
+
         const modifs = {
           date: champs.date,
           type: champs.type,
           lieu: champs.lieu?.trim() || null,
           note: champs.note?.trim() || null,
           oeuvre_finie: champs.oeuvre_finie === 'oui',
+          ...(nouveauChemin ? { photo_chemin: nouveauChemin } : {}),
         };
 
         const modifie = await api.modifierMoment(champs.id, modifs, titreDuMoment(modifs));
@@ -2653,6 +2673,13 @@ export default {
             ? { ...candidat, ...modifie, rencontres: candidat.rencontres }
             : candidat,
         );
+        if (nouveauChemin) {
+          Object.assign(etat.photos, await api.urlsDesPhotos([nouveauChemin]));
+          // L'ancienne n'est plus référencée nulle part : elle part du stockage.
+          // Après l'écriture, jamais avant — une suppression ne se rattrape pas.
+          if (ancien?.photo_chemin) await api.supprimerPhotoMoment(ancien.photo_chemin);
+        }
+
         // On revient à la fiche, dans la même fenêtre : la correction se voit.
         etat.editionMoment = false;
         rendre();

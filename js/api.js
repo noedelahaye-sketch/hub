@@ -441,13 +441,70 @@ export async function creerMoment({ moment, rencontres = [], titre }) {
 // accède que par une URL signée, fabriquée à la lecture pour une session
 // connectée — jamais par un lien qu'on pourrait recopier ailleurs.
 
+// Le côté long visé, et la qualité JPEG. Mesuré sur les photos de Noé
+// (2160 × 2880, 5,3 Mo) : à 2400/85 le fichier tombe à ~820 Ko, sept fois plus
+// léger, et rien ne se voit. La marge est large — la photo n'est jamais
+// affichée à plus de 1158 × 900, même sur un écran qui dessine trois pixels par
+// point. Le décider ici et nulle part ailleurs.
+export const COTE_LONG_PHOTO = 2400;
+export const QUALITE_PHOTO = 0.85;
+
+// Redimensionne avant l'envoi. Une photo de 5 Mo n'a aucune raison d'entrer
+// dans le bucket : c'est le poste le plus lourd du site, très loin devant tout
+// le reste. L'original n'est pas conservé (choix de Noé, 12 août 2026) — le hub
+// n'est pas son archive, ses fichiers de boîtier restent chez lui.
+//
+// Trois précautions :
+//   — `imageOrientation: 'from-image'` applique la rotation EXIF. Sans elle,
+//     une photo prise en portrait au téléphone repartirait couchée ;
+//   — une image déjà sous la barre n'est pas ré-encodée : la recompresser lui
+//     ferait perdre de la qualité pour rien ;
+//   — si le décodage échoue (un HEIC que le navigateur ne sait pas lire), on
+//     renvoie le fichier d'origine. Mieux vaut une photo lourde que pas de
+//     photo.
+export async function reduirePourLeCarnet(fichier) {
+  if (!fichier.type.startsWith('image/')) return fichier;
+
+  let bitmap;
+  try {
+    bitmap = await createImageBitmap(fichier, { imageOrientation: 'from-image' });
+  } catch {
+    return fichier;
+  }
+
+  const cote = Math.max(bitmap.width, bitmap.height);
+  if (cote <= COTE_LONG_PHOTO) {
+    bitmap.close?.();
+    return fichier;
+  }
+
+  const echelle = COTE_LONG_PHOTO / cote;
+  const toile = document.createElement('canvas');
+  toile.width = Math.round(bitmap.width * echelle);
+  toile.height = Math.round(bitmap.height * echelle);
+  toile.getContext('2d').drawImage(bitmap, 0, 0, toile.width, toile.height);
+  bitmap.close?.();
+
+  const reduite = await new Promise((donner) =>
+    toile.toBlob(donner, 'image/jpeg', QUALITE_PHOTO),
+  );
+  // Un encodage qui échoue, ou qui rend plus lourd que l'original : on garde
+  // l'original. La réduction est une optimisation, pas une obligation.
+  if (!reduite || reduite.size >= fichier.size) return fichier;
+
+  return new File([reduite], fichier.name.replace(/\.[^.]+$/, '') + '.jpg', {
+    type: 'image/jpeg',
+  });
+}
+
 export async function televerserPhotoMoment(fichier) {
-  const extension = fichier.name.split('.').pop()?.toLowerCase() || 'jpg';
+  const photo = await reduirePourLeCarnet(fichier);
+  const extension = photo.name.split('.').pop()?.toLowerCase() || 'jpg';
   const chemin = `${crypto.randomUUID()}.${extension}`;
 
   const { error } = await client.storage
     .from('moments')
-    .upload(chemin, fichier, { contentType: fichier.type || undefined });
+    .upload(chemin, photo, { contentType: photo.type || undefined });
   if (error) throw error;
 
   return chemin;
@@ -483,6 +540,13 @@ export async function modifierMoment(id, champs, titre) {
   if (error) console.error('Victoire du moment non mise à jour', error);
 
   return modifie;
+}
+
+// Effacer un seul fichier du stockage, sans toucher au moment. Sert quand une
+// photo en remplace une autre : l'ancienne n'est plus référencée par personne.
+export async function supprimerPhotoMoment(chemin) {
+  const { error } = await client.storage.from('moments').remove([chemin]);
+  if (error) console.error('Ancienne photo non supprimée du stockage', error);
 }
 
 export async function supprimerMoment(id, chemin = null) {

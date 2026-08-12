@@ -233,13 +233,23 @@ l'original. Poids mesuré avec et sans : identique, 5 452 Ko. Ne pas conclure
 d'un appel qui réussit que la transformation a eu lieu ; vérifier la forme de
 l'URL, ou peser la réponse.
 
-**Deux sorties**, aucune faite à ce jour :
-1. **Redimensionner avant l'envoi**, dans le navigateur (canvas), au moment de
-   la capture d'un moment. Gratuit, entièrement sous notre contrôle, et
-   c'est la bonne place : une photo de 5 Mo n'a aucune raison d'entrer dans le
-   bucket. Ne règle rien pour les photos déjà envoyées.
-2. **Activer les transformations Supabase** (plan payant) et demander des
-   miniatures à la lecture. Règle aussi l'existant.
+**C'est réglé pour les photos à venir** (choix de Noé, 12 août 2026) :
+`reduirePourLeCarnet` ramène toute photo à **2400 px de côté long, qualité 85**
+avant l'envoi. Mesuré sur la sienne : 5 452 Ko → **819 Ko, ÷7**, en 1800 × 2400.
+Invisible à l'usage — la photo n'est jamais affichée à plus de 1158 × 900, même
+sur un écran à trois pixels par point ; la comparaison à l'écran, y compris
+agrandie 3×, ne montre rien. **L'original n'est pas conservé** : le hub n'est pas
+l'archive de Noé.
+
+Trois précautions dans la fonction, chacune vérifiée : la rotation EXIF est
+appliquée (`imageOrientation: 'from-image'`, sans quoi un portrait de téléphone
+repartirait couché) ; une image déjà sous la barre ressort **intacte**, sans
+ré-encodage ; un décodage impossible (un HEIC que le navigateur ne lit pas)
+renvoie le fichier d'origine plutôt que de perdre la photo.
+
+**Les trois photos déjà envoyées restent lourdes.** Pour elles, il faudrait soit
+les renvoyer à la main, soit **activer les transformations Supabase** (plan
+payant).
 
 En attendant, les vignettes portent `loading="lazy"` et `decoding="async"`, et
 l'`aspect-ratio: 3/4` du CSS empêche déjà tout saut de mise en page. **Ne pas
