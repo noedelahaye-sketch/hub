@@ -63,9 +63,9 @@ function entetePublication(pub, piliers) {
       ${etiquettes(pub)}
       ${
         piliers && pub.pilier
-          ? `<span class="etiquette etiquette-pilier">${echapper(
-              `${pub.pilier}. ${piliers[pub.pilier]?.nom ?? ''}`,
-            )}</span>`
+          ? `<span class="etiquette etiquette-pilier" data-pilier="${echapper(
+              String(pub.pilier),
+            )}">${echapper(`${pub.pilier}. ${piliers[pub.pilier]?.nom ?? ''}`)}</span>`
           : ''
       }
       ${pub.rubrique ? `<span class="pub-rubrique">${echapper(pub.rubrique)}</span>` : ''}
@@ -291,6 +291,11 @@ export function formulaireIdee({
         nom: 'date_prevue',
         libelle: 'Date prévue (facultative — sans date, ça reste une idée)',
         type: 'date',
+      },
+      {
+        nom: 'heure',
+        libelle: 'À quelle heure (vide = dans la journée)',
+        type: 'time',
       },
       {
         nom: 'notes',

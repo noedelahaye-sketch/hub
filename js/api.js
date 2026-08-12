@@ -285,11 +285,18 @@ export async function creerJalon({ objectif_id, titre, echeance = null, ordre = 
   );
 }
 
-export async function creerTache({ projet, titre, statut = 'backlog', echeance = null, objectif_id = null }) {
+export async function creerTache({
+  projet,
+  titre,
+  statut = 'backlog',
+  echeance = null,
+  heure = null,
+  objectif_id = null,
+}) {
   return verifier(
     await client
       .from('taches')
-      .insert({ projet, titre, statut, echeance, objectif_id })
+      .insert({ projet, titre, statut, echeance, heure, objectif_id })
       .select()
       .single(),
   );
@@ -353,6 +360,7 @@ export async function creerPublication({
   rubrique = null,
   notes = null,
   date_prevue = null,
+  heure = null,
   pilier = null,
   preuve = null,
   pourquoi_moi = null,
@@ -360,7 +368,10 @@ export async function creerPublication({
   return verifier(
     await client
       .from('publications')
-      .insert({ projet, titre, reseau, format, rubrique, notes, date_prevue, pilier, preuve, pourquoi_moi })
+      .insert({
+        projet, titre, reseau, format, rubrique, notes,
+        date_prevue, heure, pilier, preuve, pourquoi_moi,
+      })
       .select()
       .single(),
   );
@@ -693,11 +704,13 @@ export async function evenementsDepuis(debutISO, { projet = null } = {}) {
   return verifier(await requete);
 }
 
+// Les tâches faites RESTENT au calendrier, barrées : ce site ne fait jamais
+// disparaître ce qui a été accompli. C'est aussi ce qui permet de décocher une
+// tâche cochée par erreur.
 export async function tachesDatees({ projet = null } = {}) {
   let requete = client
     .from('taches')
     .select('*')
-    .neq('statut', 'fait')
     .not('echeance', 'is', null)
     .order('echeance');
 

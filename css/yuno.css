@@ -3,17 +3,19 @@
    jamais sur le reste du hub. */
 
 /* --- Polices de la marque ---------------------------------------------------
-   Canela Deck pour les titres, Gilroy pour le texte. Fichiers de Noé, servis
-   tels quels (OTF/TTF). La Belhanda vit dans le logo, en image. */
+   Canela Deck pour les titres, Gilroy pour le texte. Fichiers de Noé. La
+   Belhanda vit dans le logo, en image.
+   Gilroy est servi en WOFF2 ; Canela reste en OTF faute d'avoir été reconverti
+   (quatre fichiers, 300 Ko — le même gain de 70 % l'attend). */
 
 @font-face {
   font-family: "Canela Deck";
-  src: url("../fonts/CanelaDeck-Regular.otf") format("opentype");
+  src: local("Canela-Regular"), url("../fonts/CanelaDeck-Regular.otf") format("opentype");
   font-weight: 400; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: "Canela Deck";
-  src: url("../fonts/CanelaDeck-Bold.otf") format("opentype");
+  src: local("Canela-Bold"), url("../fonts/CanelaDeck-Bold.otf") format("opentype");
   font-weight: 700; font-style: normal; font-display: swap;
 }
 /* Les deux italiques (12 août 2026). Sans eux le navigateur fabriquait une
@@ -23,28 +25,117 @@
    penché — c'est un autre dessin de lettres. */
 @font-face {
   font-family: "Canela Deck";
-  src: url("../fonts/CanelaDeck-RegularItalic.otf") format("opentype");
+  src: local("Canela-RegularItalic"), url("../fonts/CanelaDeck-RegularItalic.otf") format("opentype");
   font-weight: 400; font-style: italic; font-display: swap;
 }
 @font-face {
   font-family: "Canela Deck";
-  src: url("../fonts/CanelaDeck-BoldItalic.otf") format("opentype");
+  src: local("Canela-BoldItalic"), url("../fonts/CanelaDeck-BoldItalic.otf") format("opentype");
   font-weight: 700; font-style: italic; font-display: swap;
 }
+/* Gilroy en WOFF2 : 236 Ko de TTF devenus 74 Ko, soit −70 %, à dessin
+   identique. Les .ttf restent dans fonts/ comme sources — ils ne sont plus
+   servis. On régénère avec `python3 tools/convertir-polices.py`. */
 @font-face {
   font-family: "Gilroy";
-  src: url("../fonts/Gilroy-Regular.ttf") format("truetype");
+  src: url("../fonts/Gilroy-Regular.woff2") format("woff2");
   font-weight: 400; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: "Gilroy";
-  src: url("../fonts/Gilroy-Medium.ttf") format("truetype");
+  src: url("../fonts/Gilroy-Medium.woff2") format("woff2");
   font-weight: 500; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: "Gilroy";
-  src: url("../fonts/Gilroy-SemiBold.ttf") format("truetype");
+  src: url("../fonts/Gilroy-SemiBold.woff2") format("woff2");
   font-weight: 600; font-style: normal; font-display: swap;
+}
+
+/* --- Les polices de secours, ajustées ----------------------------------------
+   `font-display: swap` affiche le texte tout de suite dans une police système,
+   puis bascule. Sans réglage, la bascule fait sauter la page : la police
+   système n'a ni la même largeur ni la même hauteur de ligne, et tout se
+   décale sous les yeux au moment où on commence à lire.
+   Ces deux familles ne portent aucun fichier : elles habillent une police déjà
+   présente sur la machine aux mesures de la vraie. Le texte est alors à sa
+   place définitive dès la première image.
+
+   Les chiffres ne sont pas devinés, et surtout pas mesurés sur un pangramme :
+   `size-adjust` = largeur de la vraie police ÷ largeur du secours, sur une
+   dizaine de phrases réellement affichées par le site. Un pangramme donne un
+   ratio faux — il n'a pas la fréquence de lettres du français, et ses chiffres
+   pèsent lourd dans un texte qui n'en contient presque pas. Premier essai fait
+   ainsi : il AGGRAVAIT le saut pour Gilroy.
+
+   Une valeur par graisse et par posture, car le rapport n'est pas le même :
+   Gilroy est plus large que l'Helvetica en 400, plus étroit en 600. Un seul
+   réglage pour les deux se tromperait sur les deux.
+   Les hauteurs viennent des métriques du fichier (`hhea` : Gilroy 920/−240
+   pour 1000, Canela 779/−221), divisées par ce même facteur.
+   Tout est à remesurer si l'on change de police. */
+
+@font-face {
+  font-family: "Gilroy secours";
+  src: local("Helvetica Neue"), local("Helvetica"), local("Arial");
+  font-weight: 400 500;
+  size-adjust: 101.52%;
+  ascent-override: 90.62%;
+  descent-override: 23.64%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Gilroy secours";
+  src: local("Helvetica Neue"), local("Helvetica"), local("Arial");
+  font-weight: 600;
+  size-adjust: 102.72%;
+  ascent-override: 89.56%;
+  descent-override: 23.36%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Canela secours";
+  src: local("Georgia"), local("Times New Roman"), local("Times");
+  font-weight: 400;
+  font-style: normal;
+  size-adjust: 97.26%;
+  ascent-override: 80.09%;
+  descent-override: 22.72%;
+  line-gap-override: 0%;
+}
+
+@font-face {
+  font-family: "Canela secours";
+  src: local("Georgia"), local("Times New Roman"), local("Times");
+  font-weight: 700;
+  font-style: italic;
+  size-adjust: 94.72%;
+  ascent-override: 82.24%;
+  descent-override: 23.33%;
+  line-gap-override: 0%;
+}
+
+/* --- L'entrée d'une vue -----------------------------------------------------
+   Les vues se remplacent par `innerHTML` : sans rien, changer d'onglet est une
+   coupure sèche. Un fondu et quatre pixels de montée suffisent à dire qu'on a
+   changé de lieu — c'est ce que fait une application, et c'est tout ce qu'on
+   lui demande. 150 ms : assez pour se sentir, trop court pour se remarquer.
+   Le mouvement ne joue qu'au changement de vue, jamais aux gestes ordinaires
+   (voir `vueDessinee` dans js/yuno.js) : une page qui respire à chaque case
+   cochée serait pire que pas d'animation. */
+
+@keyframes yuno-entree {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Sur la classe et non sur `#vue` : le conteneur que `monter()` reçoit est
+   `#espace-yuno`, à l'intérieur de `#vue`. Viser l'identifiant ne marchait pas,
+   et ne le disait pas. */
+body[data-espace="yuno"] .vue-entre {
+  animation: yuno-entree 150ms ease-out both;
 }
 
 /* --- L'identité dans l'espace ---------------------------------------------- */
@@ -54,7 +145,7 @@ body[data-espace="yuno"] #vue button,
 body[data-espace="yuno"] #vue input,
 body[data-espace="yuno"] #vue select,
 body[data-espace="yuno"] #vue textarea {
-  font-family: "Gilroy", var(--police-texte);
+  font-family: "Gilroy", "Gilroy secours", var(--police-texte);
 }
 
 /* --- Les rôles typographiques ------------------------------------------------
@@ -90,7 +181,7 @@ body[data-espace="yuno"] #vue textarea {
 
 body[data-espace="yuno"] #vue h1,
 body[data-espace="yuno"] #vue h2 {
-  font-family: "Canela Deck", georgia, serif;
+  font-family: "Canela Deck", "Canela secours", georgia, serif;
   font-style: italic;
   letter-spacing: 0;
 }
@@ -114,7 +205,7 @@ body[data-espace="yuno"] #vue .bloc h2 {
 /* Les sous-titres sont des libellés fonctionnels : Gilroy, et de la graisse
    plutôt que de la taille pour les détacher. */
 body[data-espace="yuno"] #vue h3 {
-  font-family: "Gilroy", var(--police-texte);
+  font-family: "Gilroy", "Gilroy secours", var(--police-texte);
   font-style: normal;
   font-weight: 600;
 }
@@ -131,7 +222,7 @@ body[data-espace="yuno"] .pub-titre,
 body[data-espace="yuno"] .contact-nom,
 body[data-espace="yuno"] .victoire-titre,
 body[data-espace="yuno"] .modele-titre {
-  font-family: "Canela Deck", georgia, serif;
+  font-family: "Canela Deck", "Canela secours", georgia, serif;
   font-style: normal;
   font-weight: 400;
 }
@@ -145,7 +236,7 @@ body[data-espace="yuno"] .contact-nom {
 /* Une porte nomme un lieu du site, exactement comme un onglet : même
    traitement, et le 700 parce qu'une porte n'a pas d'état éteint. */
 body[data-espace="yuno"] .lien-externe-titre {
-  font-family: "Canela Deck", georgia, serif;
+  font-family: "Canela Deck", "Canela secours", georgia, serif;
   font-style: italic;
   font-weight: 700;
 }
@@ -233,7 +324,7 @@ body[data-espace="yuno"] .lien-externe-titre {
   align-items: center;
   min-height: 2.5rem;
   padding: 0 var(--espace-12);
-  font-family: "Canela Deck", georgia, serif;
+  font-family: "Canela Deck", "Canela secours", georgia, serif;
   font-style: italic;
   font-size: 1rem;
   font-weight: 400;
@@ -284,6 +375,11 @@ body[data-espace="yuno"] .lien-externe {
 body[data-espace="yuno"] .lien-externe-texte { gap: var(--espace-4); }
 
 body[data-espace="yuno"] .lien-externe-titre { font-size: 1rem; }
+
+/* Un survol n'est pas un état : il dit « tu peux cliquer ici », rien de plus.
+   L'or est réservé à ce qui est vrai — l'onglet où l'on se trouve, le focus
+   clavier, les chiffres. Ailleurs, le gris chaud suffit à répondre au doigt. */
+body[data-espace="yuno"] .lien-externe:hover { border-color: var(--gris-chaud-trait); }
 body[data-espace="yuno"] .lien-externe .discret { font-size: 0.8125rem; }
 
 /* Les portes du réseau se rangent côte à côte, à leur largeur, plutôt qu'en
@@ -435,7 +531,22 @@ body[data-espace="yuno"] .portes {
   width: 100%;
   aspect-ratio: 3 / 4;
   object-fit: cover;
+  /* Un coin adouci, pas une tuile : `--rayon-controle` (10 px) et non le rayon
+     de carte (16 px). Des angles vifs au milieu d'un site entièrement arrondi
+     se remarquaient plus que la photo. */
+  border-radius: var(--rayon-controle);
+  /* Chaque photo apparaît quand elle est prête, au lieu que dix surgissent
+     ensemble. La classe est posée au chargement de l'image (js/yuno.js) —
+     jamais par une animation lancée à l'avance, qui ferait apparaître un cadre
+     vide avant l'image. */
+  opacity: 0;
+  transition: opacity 300ms ease-out;
 }
+
+.mur-photos img.chargee { opacity: 1; }
+
+/* Sans script, aucune classe ne sera posée : la photo doit rester visible. */
+.mur-photos:not(:has(img.chargee)) img { opacity: 1; }
 
 /* Ajouter un moment est L'action de la page : le bouton se voit. Il ouvre une
    fenêtre, comme au calendrier — le geste est le même partout. */
@@ -556,7 +667,11 @@ body[data-espace="yuno"] .etiquette {
   letter-spacing: 0.06em;
 }
 
-.etiquette-reseau { color: var(--accent); border-color: var(--accent); }
+/* Réseau et pilier sont des mentions de classement, pas des événements : elles
+   sont sur chaque tuile, trois par trois, et c'était le plus gros volume d'or de
+   la page. « Œuvre finie », elle, reste dorée — c'est rare, et c'est justement
+   ce que le site célèbre. */
+.etiquette-reseau { color: var(--gris-chaud); border-color: var(--gris-chaud-trait); }
 
 /* La rubrique se tronque plutôt que de pousser la date hors de la tuile :
    c'est un repère, pas une phrase à lire en entier. */
@@ -666,7 +781,7 @@ body[data-espace="yuno"] .etiquette {
   user-select: none;
 }
 
-.idee-a-poser:hover { border-color: var(--accent); }
+.idee-a-poser:hover { border-color: var(--gris-chaud-trait); }
 .idee-a-poser .pub-titre { font-size: 0.875rem; }
 .idee-a-poser .tuile-entete { margin-bottom: 2px; }
 
@@ -700,16 +815,16 @@ body[data-espace="yuno"] .etiquette {
   border-radius: var(--rayon-carte);
 }
 
-.grande-porte:hover { border-color: var(--accent); }
+.grande-porte:hover { border-color: var(--gris-chaud-trait); }
 
 .grande-porte-icone {
   flex: none;
   display: inline-flex;
-  color: var(--accent);
+  color: var(--gris-chaud);
 }
 
 .grande-porte-titre {
-  font-family: "Canela Deck", georgia, serif;
+  font-family: "Canela Deck", "Canela secours", georgia, serif;
   font-style: italic;
   font-weight: 700;
   font-size: 1.125rem;
@@ -756,6 +871,8 @@ body[data-espace="yuno"] .etiquette {
   border-radius: 0;
 }
 
+/* Les quatre rangs ne sont plus quatre pastilles dorées identiques : chacune
+   porte la couleur de son pilier, et la boussole se lit d'un regard. */
 .pilier-rang {
   flex: none;
   display: inline-flex;
@@ -764,10 +881,16 @@ body[data-espace="yuno"] .etiquette {
   width: 1.5rem;
   height: 1.5rem;
   font-size: 0.8125rem;
-  color: var(--fond-carte);
-  background: var(--accent);
+  color: var(--pilier-encre, var(--fond-carte));
+  background: var(--pilier, var(--accent));
   border-radius: var(--rayon-pastille);
 }
+
+/* Le nom du pilier reprend sa couleur quand elle se lit en lettres — le jaune
+   et l'orange seulement. Le bleu et le violet resteraient sous le seuil, et
+   c'est leur pastille qui les dit. */
+[data-pilier="1"] .pilier-nom { color: var(--pilier-1); }
+[data-pilier="2"] .pilier-nom { color: var(--pilier-2); }
 
 .pilier-nom { font-weight: 600; font-size: 0.9375rem; }
 .pilier-role { font-size: 0.8125rem; }
@@ -780,7 +903,16 @@ body[data-espace="yuno"] .etiquette {
   border-top: 1px solid var(--bordure);
 }
 
-.etiquette-pilier { color: var(--accent); border-color: var(--accent); }
+/* Le pilier porte sa couleur, en aplat. C'est le classement qui structure tout
+   le site : le voir sans le lire, c'est lire l'équilibre de la banque d'un coup
+   d'œil. En aplat et non en texte parce que deux des quatre couleurs (le bleu,
+   le violet) sont illisibles en lettres sur un fond sombre — et qu'une même
+   chose ne peut pas avoir deux formes selon sa couleur. */
+.etiquette-pilier {
+  color: var(--pilier-encre, var(--gris-chaud));
+  background: var(--pilier, transparent);
+  border-color: var(--pilier, var(--gris-chaud-trait));
+}
 
 /* --- Les deux façons d'attaquer ----------------------------------------------
    « Noter une idée » quand on en a une, « Je ne sais pas quoi poster » quand on
@@ -905,10 +1037,8 @@ body[data-espace="yuno"] :is([data-bloc="banque"], [data-bloc="publiees"])
    chose dessous. */
 body[data-espace="yuno"] .tuile-apercu { cursor: pointer; }
 
-body[data-espace="yuno"] .tuile-apercu:hover,
-body[data-espace="yuno"] .tuile-apercu:focus-visible {
-  border-color: var(--accent);
-}
+body[data-espace="yuno"] .tuile-apercu:hover { border-color: var(--gris-chaud-trait); }
+body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accent); }
 
 /* La fenêtre d'une idée : la même matière que la tuile, en entier. Les listes
    qu'elle contient ne sont pas des grilles de tuiles — elles se rangent. */
@@ -1008,7 +1138,7 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible {
   cursor: pointer;
 }
 
-.bouton-icone:hover { color: var(--accent); border-color: var(--accent); }
+.bouton-icone:hover { color: var(--gris-chaud); border-color: var(--gris-chaud-trait); }
 
 /* Deux portes côte à côte quand il y a la place, l'une sous l'autre sinon. */
 .portes { display: grid; gap: var(--espace-8); }
@@ -1182,7 +1312,7 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible {
   padding: var(--espace-12) var(--espace-16);
   background: var(--fond-carte);
   border: 1px solid var(--bordure);
-  border-left: 3px solid var(--accent);
+  border-left: 3px solid var(--gris-chaud-trait);
   border-radius: var(--rayon-carte);
 }
 
@@ -1238,7 +1368,7 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible {
 }
 
 .contact-liens a { color: var(--texte-discret); }
-.contact-liens a:hover { color: var(--accent); }
+.contact-liens a:hover { color: var(--gris-chaud); }
 
 .contact-notes {
   display: block;
@@ -1334,7 +1464,7 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible {
   align-items: center;
   gap: var(--espace-8);
   margin: 0 0 2px;
-  font-family: "Gilroy", var(--police-texte);
+  font-family: "Gilroy", "Gilroy secours", var(--police-texte);
   font-size: 0.9375rem;
   font-weight: 600;
 }

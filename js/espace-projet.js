@@ -420,7 +420,11 @@ export function creerEspaceProjet({ projet, titre, sousTitre, blocEnTete = null 
           action: 'creer-tache',
           champs: [
             { nom: 'titre', libelle: 'Tâche (commence par un verbe)', type: 'text', requis: true },
-            { nom: 'echeance', libelle: 'Échéance (facultative)', type: 'date' },
+            // « Quand » et non « Échéance » : une échéance est une date qu'on
+            // subit — c'est le mot des objectifs et des commandes. Une tâche,
+            // on choisit le moment où on la fait.
+            { nom: 'echeance', libelle: 'Quand (facultatif)', type: 'date' },
+            { nom: 'heure', libelle: 'À quelle heure (vide = dans la journée)', type: 'time' },
           ],
         })}
       </section>`;
@@ -563,6 +567,8 @@ export function creerEspaceProjet({ projet, titre, sousTitre, blocEnTete = null 
             projet,
             titre: champs.titre.trim(),
             echeance: champs.echeance || null,
+            // Une heure sans jour ne veut rien dire : elle est ignorée.
+            heure: (champs.echeance && champs.heure) || null,
           });
           etat.taches = [...etat.taches, tache];
           rendreTaches();

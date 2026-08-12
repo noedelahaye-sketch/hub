@@ -91,7 +91,7 @@ function construirePiliers() {
         ${Object.entries(PILIERS)
           .map(
             ([rang, { nom, role }]) => `
-          <li>
+          <li data-pilier="${rang}">
             <span class="pilier-rang chiffre">${rang}</span>
             <span class="pilier-nom">${echapper(nom)}</span>
             <span class="discret pilier-role">${echapper(role)}</span>
@@ -118,6 +118,77 @@ const ONGLET_DE_LA_VUE = {
   passerelle: 'reseau',
   carnet: 'reseau',
 };
+
+// --- Les trois mouvements du site --------------------------------------------
+// Trois, et pas un de plus. Chacun sert à quelque chose : dire qu'on a changé
+// de lieu, éviter que dix photos surgissent d'un coup, et faire d'un compteur
+// un petit moment plutôt qu'une donnée.
+// Tous passent par des transitions et des animations CSS, donc la règle
+// `prefers-reduced-motion` de styles.css les neutralise déjà — sauf le comptage,
+// qui est du JS et vérifie donc lui-même.
+
+const MOUVEMENT_REFUSE = () =>
+  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+
+// Le fondu d'entrée d'une vue. `#vue` n'est pas recréé — seul son contenu
+// change — donc l'animation ne repartirait pas toute seule : on retire la
+// classe, on force un recalcul, on la remet.
+function animerLEntreeDeLaVue(section) {
+  if (MOUVEMENT_REFUSE()) return;
+  section.classList.remove('vue-entre');
+  void section.offsetWidth;
+  section.classList.add('vue-entre');
+}
+
+// Les photos arrivent une à une, chacune quand elle est prête, au lieu de
+// clignoter toutes ensemble. Celles que le navigateur a déjà en cache sont
+// marquées tout de suite : sans ça, elles resteraient invisibles.
+function reveletLesPhotos(section) {
+  for (const image of section.querySelectorAll('.mur-photos img')) {
+    if (image.complete) {
+      image.classList.add('chargee');
+      continue;
+    }
+    image.addEventListener('load', () => image.classList.add('chargee'), { once: true });
+    // Une photo qui échoue ne doit pas rester à zéro : on la montre quand même,
+    // le navigateur affichera son icône de fichier cassé.
+    image.addEventListener('error', () => image.classList.add('chargee'), { once: true });
+  }
+}
+
+// Le comptage. Ces chiffres ne peuvent que monter, c'est tout leur sens : les
+// voir monter est la traduction visuelle de ce qu'ils disent.
+// Une seule fois par visite — un compteur qui repart de zéro à chaque case
+// cochée deviendrait un tic.
+let comptageFait = false;
+
+// Exportée pour être vérifiable seule : on lui donne un bout de DOM fabriqué,
+// et on regarde le chiffre monter. `remise` remet le garde-fou à zéro.
+export function animerLesCompteurs(section, { remise = false } = {}) {
+  if (remise) comptageFait = false;
+  const chiffres = [...section.querySelectorAll('.compteurs .chiffre[data-vers]')];
+  if (!chiffres.length || comptageFait) return;
+  comptageFait = true;
+  if (MOUVEMENT_REFUSE()) return;
+
+  const DUREE = 400;
+  for (const chiffre of chiffres) {
+    const cible = Number(chiffre.dataset.vers);
+    if (!Number.isFinite(cible) || cible === 0) continue;
+
+    const depart = performance.now();
+    chiffre.textContent = '0';
+
+    const avancer = (maintenant) => {
+      const part = Math.min((maintenant - depart) / DUREE, 1);
+      // Décélération : le chiffre s'installe au lieu de s'arrêter net.
+      const adouci = 1 - (1 - part) ** 3;
+      chiffre.textContent = String(Math.round(cible * adouci));
+      if (part < 1) requestAnimationFrame(avancer);
+    };
+    requestAnimationFrame(avancer);
+  }
+}
 
 // --- Fabrication du HTML ----------------------------------------------------
 
@@ -215,9 +286,12 @@ export function compteursCarnet(moments) {
 
 export function construireCompteurs(moments) {
   const { moments: vecus, rencontres, oeuvres } = compteursCarnet(moments);
+  // `data-vers` porte la valeur d'arrivée : le compteur part de 0 et y monte
+  // au premier rendu. Le texte est écrit d'emblée à sa valeur finale — si le
+  // script ne tourne pas, ou si l'on refuse le mouvement, le chiffre est juste.
   const compteur = (nombre, libelle) => `
     <li>
-      <span class="chiffre">${nombre}</span>
+      <span class="chiffre" data-vers="${nombre}">${nombre}</span>
       <span class="discret">${libelle}</span>
     </li>`;
 
@@ -2362,6 +2436,11 @@ export default {
     // Déclaré ici parce que `rendre` s'en sert : la fonction est posée plus
     // bas, quand les écouteurs se branchent.
     let poserLEntreeClavier = null;
+    // La vue précédemment dessinée. Le fondu ne joue qu'au CHANGEMENT DE LIEU :
+    // `rendre()` est appelé à chaque geste — cocher une case, ouvrir une
+    // fenêtre — et faire respirer la page entière à chaque fois serait pire
+    // que pas d'animation du tout.
+    let vueDessinee = null;
 
     const rendre = () => {
       if (etat.vue === 'journal') section.innerHTML = vueJournal(etat);
@@ -2378,6 +2457,13 @@ export default {
       centrerActif(section.querySelector('.filtres'));
       cadrerLesHeures(section);
       poserLEntreeClavier?.();
+
+      if (etat.vue !== vueDessinee) {
+        vueDessinee = etat.vue;
+        animerLEntreeDeLaVue(section);
+      }
+      reveletLesPhotos(section);
+      animerLesCompteurs(section);
     };
 
     // Ne redessine que la liste des contacts : réécrire la vue entière ferait
@@ -2668,7 +2754,12 @@ export default {
         const titre = champs.titre.trim();
 
         if (champs.nature === 'tache') {
-          await api.creerTache({ projet: 'photo', titre, echeance: champs.debut });
+          await api.creerTache({
+            projet: 'photo',
+            titre,
+            echeance: champs.debut,
+            heure: champs.heure || null,
+          });
         } else if (champs.nature === 'publication') {
           await api.creerPublication({
             projet: 'photo',
@@ -2676,6 +2767,7 @@ export default {
             reseau: champs.reseau,
             format: champs.format,
             date_prevue: champs.debut,
+            heure: champs.heure || null,
           });
         } else if (champs.nature === 'objectif') {
           await api.creerObjectif({
@@ -2733,6 +2825,8 @@ export default {
           rubrique: champs.rubrique?.trim() || null,
           notes: champs.notes?.trim() || null,
           date_prevue: champs.date_prevue || null,
+          // Une heure sans date ne veut rien dire : une idée n'a pas d'horaire.
+          heure: (champs.date_prevue && champs.heure) || null,
           pilier: champs.pilier ? Number(champs.pilier) : null,
           preuve: champs.preuve?.trim() || null,
           pourquoi_moi: champs.pourquoi_moi?.trim() || null,

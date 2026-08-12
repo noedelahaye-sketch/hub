@@ -86,15 +86,62 @@ body[data-espace="yuno"] {
   color-scheme: dark;
 
   --fond: #181818;
-  --fond-carte: #222222;
+  /* Deux crans au-dessus du fond, et non un : à #222222 les tuiles flottaient à
+     peine, surtout sans ombre pour les décoller. La bordure monte avec elles,
+     sinon elle disparaîtrait sous la carte qu'elle est censée cerner. */
+  --fond-carte: #242426;
   --texte: #eceeea;
   --texte-discret: #8b928b;
-  --bordure: #363636;
+  --bordure: #3e3e41;
   --ombre: none;
   --erreur: #e0857a;
   --accent: #e8b000;
   --accent-doux: #2f2708;
+
+  /* Le second registre, celui qui ne crie pas. L'or ne dit plus qu'une chose —
+     l'état actif et les chiffres — et tout ce qui le portait sans rien signaler
+     (icônes secondaires, bordures survolées, barres décoratives) passe ici. Un
+     gris chaud, pas neutre : sur un fond aussi sombre, un gris froid tire au
+     bleu et jure avec le doré du logo. */
+  --gris-chaud: #a2988a;
+  --gris-chaud-trait: #55504a;
+
+  /* --- Les quatre piliers, en couleur (palette de Noé, 12 août 2026) --------
+     Les piliers sont LE classement du site : chaque idée en porte un, et c'est
+     lui qui ferme le débat avant de créer. Quatre catégories, quatre couleurs —
+     on lit l'équilibre de la banque d'un coup d'œil, ce qu'une liste de chiffres
+     dorés identiques ne permettait pas.
+
+     La palette impose la forme, et non l'inverse. Sur le fond sombre du site :
+       jaune  8,0:1  orange 5,5:1  → lisibles en texte
+       bleu   1,9:1  violet 1,9:1  → illisibles en texte, mais 8,3:1 et 8,2:1
+                                      en APLAT avec de l'encre blanche.
+     D'où le choix d'une seule forme pour les quatre : la pastille pleine, avec
+     l'encre qui va avec. Deux couleurs en texte et deux en aplat auraient donné
+     deux objets différents pour une même chose.
+
+     L'or (#e8b000) reste à part : il ne dit ni une catégorie ni un thème, il dit
+     l'état actif et les chiffres. Le jaune du pilier 1 (#ebb201) lui ressemble,
+     et c'est voulu — ce pilier EST le cœur doré du projet. */
+  --pilier-1: #ebb201; --pilier-1-encre: #241a00;
+  --pilier-2: #eb7d00; --pilier-2-encre: #241200;
+  --pilier-3: #002aeb; --pilier-3-encre: #ffffff;
+  --pilier-4: #5400eb; --pilier-4-encre: #ffffff;
+
+  /* Les déclinaisons sombres de la même palette : elles servent de fond aux
+     zones qui doivent porter la couleur sans crier. */
+  --pilier-1-fond: #4d3900;
+  --pilier-2-fond: #4d2900;
+  --pilier-3-fond: #000e4d;
+  --pilier-4-fond: #1b004d;
 }
+
+/* Chaque élément qui connaît son pilier pose sa couleur, et tout ce qui vit
+   dedans s'y réfère. Un seul point d'attache par rang. */
+body[data-espace="yuno"] [data-pilier="1"] { --pilier: var(--pilier-1); --pilier-encre: var(--pilier-1-encre); --pilier-fond: var(--pilier-1-fond); }
+body[data-espace="yuno"] [data-pilier="2"] { --pilier: var(--pilier-2); --pilier-encre: var(--pilier-2-encre); --pilier-fond: var(--pilier-2-fond); }
+body[data-espace="yuno"] [data-pilier="3"] { --pilier: var(--pilier-3); --pilier-encre: var(--pilier-3-encre); --pilier-fond: var(--pilier-3-fond); }
+body[data-espace="yuno"] [data-pilier="4"] { --pilier: var(--pilier-4); --pilier-encre: var(--pilier-4-encre); --pilier-fond: var(--pilier-4-fond); }
 /* FCH : le club joue en bleu et rouge. Le bleu porte l'accent (barres, liens,
    états actifs) parce qu'il reste lisible en aplat ; le rouge est la seconde
    couleur d'identité, réservée à la pastille du projet. Il ne signale jamais
@@ -1755,6 +1802,17 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   white-space: nowrap;
   font-weight: 600;
 }
+
+/* Une tâche faite reste au calendrier, barrée et en retrait : c'est le geste de
+   Google Agenda, et il dit la bonne chose — le travail a eu lieu, il ne s'efface
+   pas. Le titre seul est barré ; le cercle coché, lui, doit rester lisible. */
+.cal-barre-element.cal-faite {
+  color: var(--texte-discret);
+  text-decoration: line-through;
+  text-decoration-color: var(--trait-cal, var(--bordure));
+}
+
+.cal-barre-element.cal-faite .cal-signe { text-decoration: none; }
 
 /* Le cercle d'une tâche se coche : il devient une cible, avec de quoi la viser.
    Le padding négatif l'élargit sans écarter le titre qui suit — au doigt, un

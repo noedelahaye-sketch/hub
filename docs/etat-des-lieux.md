@@ -66,6 +66,19 @@ le `calc(var(--cal-gouttiere) - 1px)`.
 **Les cases ont été allongées** : une heure passe de 3 à 3,75 rem (45 → 56 px),
 une case de mois de 5,5 à 7 rem (83 → 105 px).
 
+**Les tâches et les publications portent une heure** (12 août, migrations
+`taches_heure` et `publications_heure`). Colonne `heure time` nullable dans les
+deux tables : avec heure, l'élément descend dans la grille horaire ; sans, il
+reste dans le bandeau du jour entier. Le champ est offert dans le formulaire de
+tâche, dans celui d'idée, et dans la fenêtre « Poser au calendrier ».
+**« Quand » remplace « Échéance »** pour une tâche — une échéance est une date
+qu'on subit, c'est le mot des objectifs et des commandes.
+
+**Une tâche faite reste au calendrier**, barrée et en retrait, avec son cercle
+coché (`◉`). `tachesDatees` ne filtre plus les faites : ce site ne fait pas
+disparaître ce qui a été accompli, et c'est aussi ce qui permet de revenir sur
+une case cochée par erreur.
+
 **Le cercle d'une tâche se coche depuis le calendrier**, sans ouvrir son détail.
 Impossible d'y mettre un vrai `<button>` — la barre en est déjà un, et deux
 boutons ne s'imbriquent pas : c'est le gestionnaire de clics qui reconnaît la

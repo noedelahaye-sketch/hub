@@ -145,7 +145,13 @@ export function assemblerCalendrier({
       id: tache.id,
       type: 'tache',
       source: tache,
-      date: depuisDateISO(tache.echeance),
+      // Avec une heure, la tâche descend dans la grille horaire ; sans, elle
+      // reste dans le bandeau du jour entier. C'est `estHoraire` qui tranche,
+      // et il ne regarde que ça : minuit = pas d'heure.
+      date: tache.heure
+        ? new Date(`${tache.echeance}T${tache.heure}`)
+        : depuisDateISO(tache.echeance),
+      faite: tache.statut === 'fait',
       projet: tache.projet,
       titre: tache.titre,
       detail: tache.statut === 'backlog' ? 'backlog' : null,
@@ -184,7 +190,11 @@ export function assemblerCalendrier({
       id: pub.id,
       type: 'publication',
       source: pub,
-      date: depuisDateISO(pub.date_prevue),
+      // Comme une tâche : avec une heure, elle descend dans la grille horaire.
+      // L'heure de parution est une décision éditoriale, pas un détail.
+      date: pub.heure
+        ? new Date(`${pub.date_prevue}T${pub.heure}`)
+        : depuisDateISO(pub.date_prevue),
       projet: pub.projet ?? 'photo',
       titre: pub.titre,
       detail: `${RESEAUX[pub.reseau] ?? pub.reseau} · ${FORMATS[pub.format] ?? pub.format}`,
@@ -397,10 +407,14 @@ const SIGNES = {
 function barre(segment, montrerProjet) {
   const { element, deborde } = segment;
   const projet = montrerProjet ? ` data-projet="${echapper(element.projet)}"` : '';
-  const signe = SIGNES[element.type];
+  // Une tâche faite garde sa place et le dit : cercle coché, titre barré. La
+  // faire disparaître effacerait ce qu'on a accompli, ce que ce site ne fait
+  // jamais.
+  const signe = element.faite ? '◉' : SIGNES[element.type];
   const classes = [
     'cal-barre-element',
     `cal-type-${element.type}`,
+    element.faite ? 'cal-faite' : '',
     deborde.avant ? 'deborde-avant' : '',
     deborde.apres ? 'deborde-apres' : '',
   ]
@@ -424,7 +438,7 @@ function barre(segment, montrerProjet) {
       signe
         ? `<span class="cal-signe${element.type === 'tache' ? ' cal-signe-cochable' : ''}"
              ${element.type === 'tache' ? `data-cocher-tache="${echapper(element.id)}"` : ''}
-             ${element.type === 'tache' ? 'title="Marquer comme faite"' : ''}
+             ${element.type === 'tache' ? `title="${element.faite ? 'Faite' : 'Marquer comme faite'}"` : ''}
              aria-hidden="true">${signe}</span>`
         : ''
     }${echapper(element.titre)}</button>`;
@@ -520,7 +534,9 @@ const HAUTEUR_HEURE = 3; // en rem, cf. --cal-heure dans la feuille de style
 // vit dans le bandeau du haut : ça n'a pas de place dans le temps, seulement
 // un jour.
 function estHoraire(element) {
-  if (element.type !== 'evenement') return false;
+  // Un événement occupe une tranche ; une tâche arrive à un moment. Les deux
+  // ont leur place dans la grille horaire, les autres natures n'en ont pas.
+  if (!['evenement', 'tache', 'publication'].includes(element.type)) return false;
   const debut = element.date;
   if (debut.getHours() === 0 && debut.getMinutes() === 0) return false;
   return !element.jusqua || element.jusqua === versDateISO(debut);
@@ -1030,10 +1046,17 @@ const CHAMPS_PAR_NATURE = {
     { nom: 'lieu', libelle: 'Où (facultatif)', type: 'text' },
     { nom: 'notes', libelle: 'Notes (facultatif)', type: 'textarea' },
   ],
-  tache: [],
+  // Une tâche et une publication portent une heure comme un événement : avec,
+  // elles descendent dans la grille horaire ; sans, elles tiennent la journée.
+  // Pas de durée en revanche — elles arrivent à un moment, elles n'occupent pas
+  // une tranche.
+  tache: [
+    { nom: 'heure', libelle: 'À quelle heure (vide = dans la journée)', type: 'time' },
+  ],
   publication: [
     { nom: 'reseau', libelle: 'Réseau', type: 'select', options: RESEAUX, valeur: 'instagram' },
     { nom: 'format', libelle: 'Format', type: 'select', options: FORMATS, valeur: 'post' },
+    { nom: 'heure', libelle: 'À quelle heure (vide = dans la journée)', type: 'time' },
   ],
   objectif: [
     { nom: 'pourquoi', libelle: 'Pourquoi ? (relu les jours sans motivation)', type: 'textarea' },

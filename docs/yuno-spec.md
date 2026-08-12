@@ -115,6 +115,30 @@ Canela Deck Regular/Bold **et leurs deux italiques** (versions d'essai
 convertisseur woff2 (75–80 Ko pièce, acceptable). Ces familles ne chargent que
 dans l'espace Yuno ; le reste du hub garde les siennes.
 
+**Ne jamais supposer qu'une police couvre le français.** Une fonte peut être
+installée, valide, et n'avoir aucun accent : le navigateur ne prévient pas, il
+va chercher la lettre manquante ailleurs et le mot se retrouve en deux fontes
+sans que rien ne le signale. Se le vérifier avec `fontTools`, en lisant la
+`cmap`, plutôt qu'à l'œil.
+
+**Gilroy est servi en WOFF2** depuis le 12 août 2026 : 236 Ko de TTF devenus
+74 Ko, soit −70 %, à dessin identique. Les `.ttf` restent dans `fonts/` comme
+sources, ils ne sont plus servis. `python3 tools/convertir-polices.py` régénère
+(demande `pip install fonttools brotli`). **Canela reste en OTF** : quatre
+fichiers, 222 Ko téléchargés à chaque première visite — le même gain de 70 %
+l'attend, c'est la plus grosse économie qui reste.
+
+**Deux familles de secours ajustées** accompagnent `font-display: swap`, pour
+que la bascule ne fasse pas sauter la page. Elles ne portent aucun fichier :
+elles habillent une police déjà présente sur la machine aux mesures de la vraie.
+Les valeurs sont **mesurées, pas devinées** — sur une dizaine de phrases
+réellement affichées par le site, et non sur un pangramme : un pangramme n'a pas
+la fréquence de lettres du français et ses chiffres pèsent trop lourd. Premier
+essai fait ainsi, il aggravait le saut. Une valeur **par graisse et par
+posture** : Gilroy est plus large que l'Helvetica en 400, plus étroit en 600.
+Écart de largeur après réglage : **0 % sur les quatre**, contre 1,5 à 24,5 %
+sans. Tout est à remesurer si l'on change de police.
+
 Les deux italiques ont été ajoutés le 12 août 2026. Sans eux, le navigateur
 fabriquait une inclinaison synthétique qui décalait l'espacement après chaque
 lettre accentuée — « Banque d'idé es », « Lé opards » — soit, sur un site
@@ -149,8 +173,104 @@ Les titres de section ont perdu la casse haute et l'interlettrage qu'ils
 portaient en Gilroy : c'était l'habillage d'une étiquette, illisible sur un
 italique de 11 px. Un titre de section est un titre, pas un libellé.
 
-**Ton** : carnet d'atelier. Dense, factuel, et le doré réservé à ce qui compte
-— si tout est doré, plus rien ne l'est.
+**L'or ne dit qu'une chose** (décision de Noé, 12 août 2026). Il faisait tout —
+onglet actif, compteurs, icônes, bordures survolées, barres décoratives,
+étiquettes de classement — et quand tout est doré, plus rien ne l'est.
+
+| L'or (`--accent`) | Le gris chaud (`--gris-chaud`, `--gris-chaud-trait`) |
+|---|---|
+| L'onglet où l'on se trouve | Les icônes de portes |
+| Le focus clavier | Les bordures survolées |
+| Les chiffres (compteurs, métriques) | Les barres décoratives |
+| Le statut d'une publication | Les étiquettes de réseau et de pilier |
+| « Œuvre finie » — rare, et c'est ce que le site célèbre | Les liens survolés |
+
+Un gris **chaud** et non neutre : sur un fond aussi sombre, un gris froid tire
+au bleu et jure avec le doré du logo. Contrastes mesurés sur la carte : gris
+chaud 5,46:1, or 7,85:1 — les deux au-dessus du seuil.
+
+### Les quatre piliers, en couleur
+
+Palette donnée par Noé le 12 août 2026, cinq couleurs mères construites sur le
+même axe (une composante à 235) avec leurs déclinaisons. Quatre servent aux
+piliers — le classement qui structure tout le site.
+
+| Pilier | Couleur | Encre | Contraste mesuré |
+|---|---|---|---|
+| 1 · Les Léopards & le foot africain | `#ebb201` | `#241a00` | 8,92:1 |
+| 2 · Bord terrain | `#eb7d00` | `#241200` | 6,43:1 |
+| 3 · Dans l'œil du photographe | `#002aeb` | blanc | 8,30:1 |
+| 4 · Carte blanche | `#5400eb` | blanc | 8,15:1 |
+
+**Pourquoi la couleur ici, et pas ailleurs.** Un pilier est une catégorie, et
+une catégorie est exactement ce qu'une couleur sait dire. Quatre pastilles
+dorées identiques ne disaient rien ; quatre couleurs font lire l'équilibre de la
+banque d'un coup d'œil, sans lire un mot.
+
+**Pourquoi l'aplat, et pas le texte.** La palette impose la forme : sur le fond
+sombre, le jaune (8,0:1) et l'orange (5,5:1) se lisent en lettres, mais le bleu
+(1,9:1) et le violet (1,9:1) sont sous le seuil. En aplat avec de l'encre
+blanche, les deux remontent à 8,3 et 8,2. Une même chose ne pouvant pas avoir
+deux formes selon sa couleur, les quatre sont des pastilles pleines. Seul le
+*nom* du pilier, dans la boussole, reprend sa couleur en lettres — et seulement
+pour le jaune et l'orange, qui le supportent.
+
+**L'or reste à part.** Il ne dit ni une catégorie ni un thème : l'état actif et
+les chiffres. Le jaune du pilier 1 (`#ebb201`) lui ressemble beaucoup, et c'est
+voulu — ce pilier *est* le cœur doré du projet.
+
+**Non utilisé pour l'instant** : le bronze `#967D32` et ses déclinaisons
+(`#EDC54E`, `#C4A341`, `#736026`, `#4A3E18`). C'est le neutre chaud de la
+palette ; il pourrait remplacer le `--gris-chaud` actuel, mais il tire vers le
+doré — ce que la décision précédente cherchait justement à raréfier. Les
+déclinaisons sombres des quatre piliers (`--pilier-N-fond`) sont déclarées et
+disponibles pour des fonds de zone, mais aucune n'est employée aujourd'hui.
+
+**Trois niveaux de fond**, et non deux : `#181818` (page) → `#242426` (carte),
+la bordure montant à `#3e3e41`. À `#222222` les tuiles flottaient à peine,
+faute d'ombre pour les décoller. Un quatrième niveau pour les zones de
+regroupement (`#1d1d1e` en fond de section) reste possible si le besoin revient.
+
+**Ton** : carnet d'atelier. Dense, factuel, et le doré réservé à ce qui compte.
+
+### Canela : les fichiers d'essai, et la vraie
+
+**Les 52 fichiers d'essai ne couvrent que 74 caractères.** Vérifié un par un —
+les quatre familles (Canela, Text, Deck, Condensed) et les douze graisses ont
+exactement le même jeu : `! " ' , - .`, les chiffres, `?`, A-Z, a-z, et quatre
+guillemets courbes. **Aucune lettre accentuée**, pas de `«` `»`, pas de tiret
+cadratin. Commercial Type ampute volontairement ses fichiers d'essai. Il n'y a
+donc pas de famille à trouver dans la collection : il n'y en a pas.
+
+**Mais macOS installe la vraie Canela**, en police système :
+`/System/Library/AssetsV2/…/Canela.ttc`, quatre coupes (Regular, Bold, et leurs
+italiques), 378 à 386 caractères, tous les accents. C'est elle que Noé voyait
+dans son Livre des polices.
+
+D'où la règle : **chaque `@font-face` de Canela commence par un `local()`**
+avant son `url()`.
+
+```css
+src: local("Canela-Regular"), url("../fonts/CanelaDeck-Regular.otf") …
+```
+
+Conséquences, mesurées :
+
+- sur une machine où Canela est installée (le Mac de Noé), le navigateur prend
+  la police système : **accents corrects**, et **aucun fichier Canela
+  téléchargé** — 222 Ko économisés ;
+- ailleurs (le téléphone, sauf si iOS la fournit aussi), il retombe sur le
+  fichier d'essai, et les accents viennent de la police de secours. Le mélange
+  reste, mais la secours étant ajustée aux mesures de Canela, il se voit
+  beaucoup moins qu'avec un `georgia` brut.
+
+Le `local()` cible la coupe **Canela** et non **Canela Deck** : Deck est le
+dessin optimisé pour les tailles moyennes, Canela le dessin d'affiche. La
+différence est mince à ces tailles, et elle vaut mieux qu'un mot à deux fontes.
+
+**Pour vérifier sur un appareil** : ouvrir Créer et regarder « À venir ». Si le
+`À` est incliné comme le reste du mot, la vraie Canela est là ; s'il est droit,
+c'est la police de secours.
 
 ---
 
