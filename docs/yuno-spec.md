@@ -140,6 +140,14 @@ de *sortir du hub* en entrant chez Yuno :
   site » — nécessaire en plein écran sur téléphone, où il n'y a pas de barre
   d'adresse.
 
+**Cinq entrées dans la barre, et des sous-pages qui n'en ajoutent pas.** La
+banque d'idées (`#yuno/banque`), la Passerelle (`#yuno/passerelle`) et le
+carnet (`#yuno/carnet`) sont des pages à part entière, atteintes par une tuile
+depuis leur palier, et qui gardent allumé l'onglet dont elles dépendent —
+Créer pour la première, Réseau pour les deux autres. Une barre de navigation ne
+doit pas grandir à chaque écran qu'on ajoute. `ONGLET_DE_LA_VUE`, dans
+`js/yuno.js`, dit quel onglet allumer pour quelle vue.
+
 **« Créer » et « Calendrier » sont deux choses (décision du 7 août).**
 « Créer » regroupe le calendrier éditorial et les futurs outils d'aide à la
 création. « Calendrier » recense tout ce qui porte une date chez Yuno —
@@ -176,10 +184,19 @@ vivent dans le `localStorage`). Une seule à la fois.
 La page source des moments : tout s'y retrouve, s'y ajoute et s'y retire.
 L'accueil n'en montre que les derniers.
 
-- **La capture** : date, type (match · concert · sortie · autre), et en
-  facultatif l'événement ou le lieu, les rencontres, la photo dont il est fier,
+- **La capture** s'ouvre en **fenêtre volante**, comme au calendrier — le geste
+  est le même partout dans le hub. Le bouton « Ajouter un moment » vit à gauche
+  des trois compteurs, sur l'accueil comme au Journal : l'action et son résultat
+  se répondent. Elle demande une date, un type (match · concert · sortie ·
+  autre), et en facultatif l'événement ou le lieu, les rencontres, une photo,
   une note, et la case « œuvre finie ». Deux champs suffisent — elle doit se
   remplir debout, en sortant du stade, en moins de 30 secondes.
+- **La photo se joint, elle ne se décrit pas.** Elle vit dans un bucket
+  Supabase **privé** (`moments`) : le site et le dépôt sont publics, un bucket
+  ouvert donnerait des liens recopiables par n'importe qui. On n'y accède que
+  par une URL signée d'une heure, refabriquée à chaque visite. Supprimer un
+  moment efface son fichier. L'ancienne colonne `photo_fiere` reste affichée si
+  elle porte une phrase écrite avant que la pièce jointe existe.
 - **Le fil**, antéchronologique, **EST le mur des victoires** : les moments et
   les victoires d'avant le carnet s'y mêlent. Les victoires nées d'un moment en
   sont écartées — le moment est déjà là, et plus riche que son reflet.
@@ -359,11 +376,17 @@ marques, ce sont des intermédiaires.
 bon contact → opportunité`. « Bon contact » est conservé — on ne remplace pas
 ce qui marche.
 
-### `#yuno/reseau` — la Passerelle *(troisième affichage)*
+### `#yuno/passerelle` — la Passerelle *(sa page)*
 
-**C'est une vue du carnet, pas un module à part** : la recherche et les filtres
-agissent dessus comme sur le Tableau et les Fiches. Noé avait déjà construit son
-pipeline relationnel sans le nommer ; on ajoute la couche qui pousse à l'action.
+**Elle a quitté le carnet le 12 août, à la demande de Noé.** `#yuno/reseau` est
+devenu un palier avec deux portes : le carnet est un **fonds où l'on cherche**,
+la Passerelle une **file où l'on agit**. Les mêler sur un écran obligeait à
+basculer entre les deux pour rien. Les deux pages gardent l'onglet Réseau
+allumé, et les commandes restent sur le palier.
+
+Elles partagent la même base — `baseContacts()` filtre, cherche et trie pour
+les deux. Noé avait déjà construit son pipeline relationnel sans le nommer ; on
+ajoute la couche qui pousse à l'action.
 
 - **La file d'action de la semaine**, groupée par micro-dose : **1 Répondre**
   (des messages reçus qui attendent), **2 Relancer** (des relations vivantes à
@@ -425,7 +448,7 @@ et ce paragraphe ne fait que dire à quoi sert chaque table.
 | `publications` | le calendrier éditorial. `date_prevue` NULL = banque d'idées. Colonnes Yuno : `pilier`, `preuve`, `pourquoi_moi` (NULL pour le FCH) |
 | `contacts` | le carnet réseau, et la couche Passerelle (`objectif`, `niveau`, `date_dernier_envoi`, `prochaine_action`, `prochaine_action_date`) |
 | `commandes` | le suivi, du devis au paiement. `client_id` relie au carnet |
-| `moments` | le Carnet de terrain — un moment vécu = une ligne |
+| `moments` | le Carnet de terrain — un moment vécu = une ligne. `photo_chemin` pointe le fichier dans le bucket privé `moments` |
 | `rencontres` | qui a été rencontré, à quel moment. `contact_id` facultatif |
 | `journal_envois` | un envoi = une ligne. **Aucune colonne « répondu »** |
 | `stats_hebdo` | un rendez-vous = une ligne. `reponse_rituelle` est NOT NULL |

@@ -16,7 +16,7 @@ https://noedelahaye-sketch.github.io/hub/
 | Surface | Adresse | État |
 |---|---|---|
 | Tableau de bord | `#dashboard` | complet |
-| Calendrier global | `#calendrier` | complet |
+| Calendrier global | `#calendrier` | grille mois/semaine + agenda ; on y pose, modifie et supprime |
 | Formation | `#formation` | complet, avec la progression lue dans le gist Bac-3 |
 | Page Yuno du hub | `#photo` | complète |
 | **Site Yuno** | `#yuno` | Accueil · Journal · Créer · Calendrier · Réseau — le système « Terrain » v1.1 |
@@ -33,9 +33,22 @@ social, le Journal a remplacé le mur des victoires, la Passerelle muscle
 l'aller-vers, les commandes ont rejoint Réseau, et les stats des réseaux
 n'existent plus qu'un jour par semaine.
 
-**Données réelles en base** : les 43 contacts du carnet (dont trois portent
-désormais un niveau de Passerelle), les 15 idées de départ avec leur pilier, et
-les 4 modèles de messages. Le reste est vide — Noé n'a pas encore rempli le hub.
+**Cinq entrées dans la barre, plus de sous-pages.** La navigation ne grandit
+pas à chaque écran ajouté : la banque d'idées (`#yuno/banque`) garde l'onglet
+Créer allumé, la Passerelle (`#yuno/passerelle`) et le carnet (`#yuno/carnet`)
+gardent celui de Réseau. `ONGLET_DE_LA_VUE`, dans `js/yuno.js`, dit quel onglet
+allumer pour quelle vue.
+
+**Le calendrier est devenu une grille** (12 août) : mois, semaine, agenda. Un
+événement de plusieurs jours est une barre continue, titrée une fois, placée en
+couloirs. Glisser sur des jours ouvre une fenêtre volante pour y poser un
+événement, une tâche, une publication ou un objectif ; cliquer une barre ouvre
+son détail, d'où elle se modifie et se supprime. Les filtres se cochent.
+
+**Données réelles en base** : les 44 contacts du carnet (dont trois portent un
+niveau de Passerelle), les 15 idées de départ avec leur pilier, et les 4 modèles
+de messages. Restent deux événements d'essai de Noé (« hubf », « b ff »), à
+retirer d'un clic depuis le calendrier. Le reste est vide.
 
 ---
 
@@ -159,6 +172,17 @@ qu'on lui répond. Un taux de réponse ferait de chaque silence un rejet mesuré
 **Les chiffres des réseaux ne s'affichent qu'au rendez-vous stats.** Nulle part
 ailleurs, à aucune condition — c'est la règle la plus facile à franchir par
 inadvertance en ajoutant « juste un petit indicateur » sur l'accueil.
+
+**Le bucket `moments` est privé, et doit le rester.** Ce sont les photos de
+Noé ; le site et le dépôt sont publics. Les images ne s'affichent que par des
+URL signées d'une heure, refabriquées à chaque visite. Rendre le bucket public
+« pour simplifier » donnerait des liens recopiables par n'importe qui.
+
+**La taille du texte se règle en un seul endroit** : `html { font-size }` dans
+`css/styles.css`. Tout le site est en rem et suit. Deux exceptions à ne pas
+« harmoniser » — l'espacement reste en px, et les champs de saisie sont tenus à
+16 px, faute de quoi Safari sur iPhone zoome à chaque fois qu'on entre dans un
+champ.
 
 **Les polices commerciales sont dans le dépôt public**, en connaissance de
 cause : Canela Deck et Gilroy (versions d'essai), décision explicite de Noé du
