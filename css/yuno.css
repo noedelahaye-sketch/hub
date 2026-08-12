@@ -16,6 +16,21 @@
   src: url("../fonts/CanelaDeck-Bold.otf") format("opentype");
   font-weight: 700; font-style: normal; font-display: swap;
 }
+/* Les deux italiques (12 août 2026). Sans eux le navigateur fabriquait une
+   inclinaison synthétique, qui décalait l'espacement après chaque lettre
+   accentuée : « Banque d'idé es », « Lé opards ». Sur un site français, c'était
+   visible partout. Un italique de Canela n'est de toute façon pas un romain
+   penché — c'est un autre dessin de lettres. */
+@font-face {
+  font-family: "Canela Deck";
+  src: url("../fonts/CanelaDeck-RegularItalic.otf") format("opentype");
+  font-weight: 400; font-style: italic; font-display: swap;
+}
+@font-face {
+  font-family: "Canela Deck";
+  src: url("../fonts/CanelaDeck-BoldItalic.otf") format("opentype");
+  font-weight: 700; font-style: italic; font-display: swap;
+}
 @font-face {
   font-family: "Gilroy";
   src: url("../fonts/Gilroy-Regular.ttf") format("truetype");
@@ -42,9 +57,41 @@ body[data-espace="yuno"] #vue textarea {
   font-family: "Gilroy", var(--police-texte);
 }
 
+/* --- Les rôles typographiques ------------------------------------------------
+   Trois leviers, et chacun ne dit qu'une chose. Employer les trois partout à la
+   fois ne hiérarchise rien : si tout penche, plus rien ne ressort.
+
+     LA POLICE dit la nature du texte.
+       Canela Deck = ce que le site EST — ses lieux, ses titres, son contenu.
+       Gilroy      = ce que le site FAIT — actions, états, dates, mesures,
+                     précisions. Tout l'utilitaire, sans exception.
+
+     LA POSTURE dit qui parle.
+       Italique = la voix du site — il annonce, il nomme un lieu.
+       Romain   = la voix de Noé — ce qu'il a vécu, écrit, photographié. Le
+                  contenu ne penche pas : il n'annonce rien, il est là.
+
+     LA GRAISSE dit l'importance ou l'état, jamais la décoration.
+       700 = un titre, ou l'onglet où l'on se trouve.
+       400 = tout le reste.
+
+   D'où le tableau :
+
+     Titre de section (h2)      Canela · italique · 700 · 1.375rem
+     Onglet actif, porte        Canela · italique · 700 · 1rem
+     Onglet inactif             Canela · italique · 400 · 1rem
+     Titre de tuile (contenu)   Canela · romain   · 400 · 1.125rem
+     Sous-titre, libellé fort   Gilroy · romain   · 600
+     Corps, date, statut        Gilroy · romain   · 400
+     Chiffre                    Geist Mono, via .chiffre
+
+   Les quatre fichiers Canela nécessaires sont dans fonts/ : Regular, Bold, et
+   leurs deux italiques. Aucune graisse n'est simulée par le navigateur. */
+
 body[data-espace="yuno"] #vue h1,
 body[data-espace="yuno"] #vue h2 {
   font-family: "Canela Deck", georgia, serif;
+  font-style: italic;
   letter-spacing: 0;
 }
 
@@ -53,9 +100,54 @@ body[data-espace="yuno"] #vue h1 {
   font-size: 2rem;
 }
 
-/* Les libellés de section gardent leur rôle discret, mais en Gilroy. */
+/* Les titres de section perdent la casse haute et l'interlettrage : c'était
+   l'habillage d'une étiquette en Gilroy, et il rendait un romain incliné de
+   11 px illisible. Un titre de section redevient un titre, pas un libellé. */
 body[data-espace="yuno"] #vue .bloc h2 {
+  font-size: 1.375rem;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--texte);
+}
+
+/* Les sous-titres sont des libellés fonctionnels : Gilroy, et de la graisse
+   plutôt que de la taille pour les détacher. */
+body[data-espace="yuno"] #vue h3 {
   font-family: "Gilroy", var(--police-texte);
+  font-style: normal;
+  font-weight: 600;
+}
+
+/* Le titre d'une tuile est du contenu, pas une annonce : le lieu d'un moment,
+   l'idée d'une publication, le nom d'un contact. Canela le range du côté du
+   site, le romain dit que c'est Noé qui parle, et le 400 le laisse au-dessous
+   du titre de section — sans quoi une page de vingt tuiles n'aurait que des
+   titres. Ce qui l'entoure (étiquettes, dates, statuts, notes) reste en Gilroy.
+   Un romain de labeur se lit plus petit qu'un sans-serif : un cran au-dessus
+   du Gilroy qu'il remplace. */
+body[data-espace="yuno"] .moment-lieu,
+body[data-espace="yuno"] .pub-titre,
+body[data-espace="yuno"] .contact-nom,
+body[data-espace="yuno"] .victoire-titre,
+body[data-espace="yuno"] .modele-titre {
+  font-family: "Canela Deck", georgia, serif;
+  font-style: normal;
+  font-weight: 400;
+}
+
+body[data-espace="yuno"] .moment-lieu,
+body[data-espace="yuno"] .pub-titre,
+body[data-espace="yuno"] .contact-nom {
+  font-size: 1.125rem;
+}
+
+/* Une porte nomme un lieu du site, exactement comme un onglet : même
+   traitement, et le 700 parce qu'une porte n'a pas d'état éteint. */
+body[data-espace="yuno"] .lien-externe-titre {
+  font-family: "Canela Deck", georgia, serif;
+  font-style: italic;
+  font-weight: 700;
 }
 
 /* --- L'en-tête de l'espace --------------------------------------------------
@@ -132,14 +224,19 @@ body[data-espace="yuno"] #vue .bloc h2 {
 
 .yuno-nav::-webkit-scrollbar { display: none; }
 
+/* Les onglets nomment les lieux du site : Canela italique, comme les titres.
+   En 400 au repos — cinq noms en gras côte à côte, ce serait cinq titres et
+   aucune hiérarchie. La graisse est réservée à celui où l'on se trouve. */
 .yuno-nav a {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   min-height: 2.5rem;
   padding: 0 var(--espace-12);
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-family: "Canela Deck", georgia, serif;
+  font-style: italic;
+  font-size: 1rem;
+  font-weight: 400;
   text-decoration: none;
   white-space: nowrap;
   color: var(--texte-discret);
@@ -151,9 +248,51 @@ body[data-espace="yuno"] #vue .bloc h2 {
   background: color-mix(in srgb, var(--texte) 8%, transparent);
 }
 
+/* L'onglet où l'on se trouve : la graisse porte l'état, en plus de la pastille.
+   Un seul signal suffirait rarement — la couleur seule ne dit rien à qui ne la
+   distingue pas. */
 .yuno-nav a.actif {
+  font-weight: 700;
   color: var(--fond-carte);
   background: var(--accent);
+}
+
+/* --- Les portes -------------------------------------------------------------
+   Un lien vers une autre page du site. Dans le hub, une porte porte une barre
+   d'accent à gauche et une flèche à droite : elle dit qu'on quitte le hub. À
+   l'intérieur du site, ni l'une ni l'autre n'apprend rien — on ne quitte rien,
+   et cinq flèches dorées sur cinq pages font du bruit pour du bruit.
+   Il reste un rectangle sobre, à la taille de son texte : une porte n'a aucune
+   raison de s'étirer sur 1240 px. */
+
+body[data-espace="yuno"] .lien-externe {
+  /* inline-flex : la porte cesse de prendre toute la ligne. La largeur est
+     fixée plutôt que laissée au texte — les portes d'une même page se tiennent
+     alors sur la même mesure, quelle que soit la longueur de leur libellé. */
+  display: inline-flex;
+  align-items: flex-start;
+  width: 15rem;
+  max-width: 100%;
+  margin-top: var(--espace-8);
+  padding: var(--espace-12) var(--espace-16);
+  border-left: 1px solid var(--bordure);
+}
+
+/* Le titre au-dessus, la précision dessous, et elle se replie sur deux lignes
+   dans cette largeur : la porte gagne en hauteur ce qu'elle a perdu en
+   largeur. C'est un objet qu'on vise du doigt, pas une ligne de liste. */
+body[data-espace="yuno"] .lien-externe-texte { gap: var(--espace-4); }
+
+body[data-espace="yuno"] .lien-externe-titre { font-size: 1rem; }
+body[data-espace="yuno"] .lien-externe .discret { font-size: 0.8125rem; }
+
+/* Les portes du réseau se rangent côte à côte, à leur largeur, plutôt qu'en
+   deux moitiés d'écran. Elles s'alignent en hauteur : c'est une paire, et
+   l'une n'a pas à être plus courte parce que son libellé tient sur une ligne. */
+body[data-espace="yuno"] .portes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
 }
 
 /* --- Le Carnet de terrain ---------------------------------------------------
@@ -206,6 +345,47 @@ body[data-espace="yuno"] #vue .bloc h2 {
 }
 
 .compteurs .discret { font-size: 0.75rem; line-height: 1.2; }
+
+/* --- Le mur de photos -------------------------------------------------------
+   Sous les compteurs, dix photos tirées au sort pour la journée. Pas de titre
+   au-dessus, pas de fiche autour : l'accueil montre ce qui a été vécu, il ne le
+   raconte pas. Le récit est au Journal.
+   Cinq par ligne — dix se divise en deux lignes pleines, là où un remplissage
+   automatique laisserait une dernière ligne bancale. Deux par ligne sur
+   téléphone, pour la même raison. */
+
+.bloc ul.mur-photos {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--espace-8);
+  margin-top: var(--espace-16);
+}
+
+@media (min-width: 45rem) {
+  .bloc ul.mur-photos { grid-template-columns: repeat(5, 1fr); }
+}
+
+/* La photo EST la tuile : ni cadre, ni fond, ni remplissage autour d'elle. */
+.bloc ul.mur-photos li {
+  display: block;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+}
+
+.mur-photos a { display: block; }
+
+/* Le 4:3 est tenu par le cadre et l'image recadrée dedans : jamais déformée.
+   Les photos de Noé sortent du boîtier en 3:2 — un peu de haut et de bas s'en
+   va, et toutes les vignettes s'alignent. */
+.mur-photos img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--rayon-controle);
+}
 
 /* Ajouter un moment est L'action de la page : le bouton se voit. Il ouvre une
    fenêtre, comme au calendrier — le geste est le même partout. */
@@ -304,7 +484,10 @@ body[data-espace="yuno"] #vue .bloc h2 {
 
 /* --- Le calendrier éditorial ------------------------------------------------ */
 
-/* Réseau et format, en petites étiquettes factuelles. */
+/* Réseau et format, en petites étiquettes factuelles. Très petites : ce sont
+   des mentions de classement, pas des titres. Elles doivent se lire quand on
+   les cherche et disparaître quand on lit le reste. Cadrées sur l'espace Yuno —
+   le site du FCH s'en sert aussi, et il n'a pas demandé ça. */
 .etiquette {
   display: inline-block;
   padding: 1px var(--espace-8);
@@ -315,6 +498,12 @@ body[data-espace="yuno"] #vue .bloc h2 {
   color: var(--texte-discret);
   border: 1px solid var(--bordure);
   border-radius: var(--rayon-pastille);
+}
+
+body[data-espace="yuno"] .etiquette {
+  padding: 0 var(--espace-4);
+  font-size: 0.5625rem;
+  letter-spacing: 0.06em;
 }
 
 .etiquette-reseau { color: var(--accent); border-color: var(--accent); }
@@ -480,6 +669,61 @@ body[data-espace="yuno"] #vue .bloc h2 {
 /* --- La banque d'idées ------------------------------------------------------ */
 
 .banque-intro { margin: -4px 0 var(--espace-16); font-size: 0.9375rem; }
+
+/* Les tuiles de la banque sont plus étroites que partout ailleurs, et leur
+   texte descend d'un cran. Une banque est un fonds où l'on fouille : ce qui
+   compte, c'est d'en voir beaucoup d'un coup. Elles ne perdent rien en
+   hauteur — un titre qui se replie sur trois lignes est le prix à payer, et
+   ici il ne coûte rien.
+   Pas de point de rupture : `auto-fill` en pose autant que la largeur en
+   permet — une seule sur téléphone, quatre sur 1240 px. La règle vaut aussi
+   pour « Publiées », juste dessous : deux mesures différentes sur une même
+   page se verraient. */
+
+/* `:not(.liste-checklist)` : la checklist d'un carrousel est une liste dans la
+   tuile. Sans l'exclure, elle recevrait la grille et la mesure des tuiles. */
+body[data-espace="yuno"]
+  :is([data-bloc="banque"], [data-bloc="publiees"]) ul:not(.liste-checklist) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  align-items: start;
+  gap: var(--espace-8);
+}
+
+body[data-espace="yuno"]
+  :is([data-bloc="banque"], [data-bloc="publiees"]) ul:not(.liste-checklist) > li {
+  padding: var(--espace-12);
+}
+
+body[data-espace="yuno"] :is([data-bloc="banque"], [data-bloc="publiees"]) .pub-titre {
+  font-size: 1rem;
+}
+
+body[data-espace="yuno"] :is([data-bloc="banque"], [data-bloc="publiees"])
+  :is(.pub-preuve, .pub-notes, .pub-statut, .pub-rubrique) {
+  font-size: 0.75rem;
+}
+
+/* La tuile d'aperçu est un bouton : elle s'ouvre au clic et au clavier. Le
+   curseur et le focus le disent — sans quoi rien n'annonce qu'il y a autre
+   chose dessous. */
+body[data-espace="yuno"] .tuile-apercu { cursor: pointer; }
+
+body[data-espace="yuno"] .tuile-apercu:hover,
+body[data-espace="yuno"] .tuile-apercu:focus-visible {
+  border-color: var(--accent);
+}
+
+/* La fenêtre d'une idée : la même matière que la tuile, en entier. Les listes
+   qu'elle contient ne sont pas des grilles de tuiles — elles se rangent. */
+.fenetre .idee-complete {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espace-8);
+}
+
+.fenetre .idee-complete .tuile-entete { margin-bottom: 0; }
 
 /* Deux portes côte à côte quand il y a la place, l'une sous l'autre sinon. */
 .portes { display: grid; gap: var(--espace-8); }

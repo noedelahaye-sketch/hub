@@ -59,10 +59,31 @@ faux tableau vaut moins qu'un groupe honnête. Voir
 [docs/calendriers-etude-ux.md](calendriers-etude-ux.md) pour le raisonnement
 complet et ce qui reste ouvert.
 
+**La forme du site Yuno a été reprise le 12 août**, sur quatre points :
+
+- **Les portes** (`.lien-externe`) perdent leur barre d'accent à gauche et leur
+  flèche à droite — dans le hub elles disaient « tu quittes le hub », à
+  l'intérieur du site elles ne disaient plus rien. Elles font 15 rem de large,
+  hautes et étroites, plus jamais toute la ligne.
+- **L'accueil montre un mur de photos** à la place des trois dernières fiches :
+  dix photos en 4:3, côte à côte sous les compteurs, tirées au sort une fois par
+  jour (la date sert de graine — stable dans la journée, change à minuit, rien
+  n'est stocké). Plus de titre « Derniers moments ». Un moment sans photo n'y
+  figure pas ; le détail reste au Journal.
+- **La typographie a un système de rôles** : la police dit la nature, la posture
+  dit qui parle, la graisse dit l'importance. Le tableau complet est dans
+  `yuno-spec.md` — c'est lui qui fait autorité.
+- **Les deux italiques de Canela Deck ont été installés.** Sans fichier
+  italique, le navigateur simulait la pente et cassait l'espacement après chaque
+  accent. Règle retenue : ne jamais demander une graisse ou une posture dont le
+  fichier n'existe pas.
+
 **Données réelles en base** : les 44 contacts du carnet (dont trois portent un
 niveau de Passerelle), les 15 idées de départ avec leur pilier, et les 4 modèles
 de messages. Tout le reste est vide — aucun moment, aucun événement, aucune
-tâche. Noé n'a pas encore commencé à s'en servir pour de bon.
+tâche. Noé n'a pas encore commencé à s'en servir pour de bon. **Conséquence
+directe : le mur de photos de l'accueil affiche son écran vide**, et ne montrera
+quelque chose qu'au premier moment logué avec une photo.
 
 ---
 
@@ -88,6 +109,13 @@ La méthode reste la même pour l'affichage, et elle vaut d'être reprise :
   la progression d'une relation après un envoi, l'ordre de la file.
 - **Ce qui reste non vérifié** : le glisser-déposer des colonnes, et les
   chemins d'écriture des autres espaces (formation, FCH, perso).
+
+**Le mur de photos a été vérifié ainsi** (12 août) : `construireMurPhotos`
+appelée dans le navigateur avec quatorze faux moments, dont deux sans photo, et
+des images SVG en 3:2. Résultat : dix vignettes, les deux sans photo écartées,
+tirage identique pour le 12 août et différent pour le 13, format 4:3 exact
+(228 × 171 px en 1280, 168 × 126 en 375), cinq par ligne sur grand écran, deux
+sur téléphone. Rien n'a été écrit en base.
 
 **Un piège de vérification, rencontré deux fois.** Les outils de navigation ne
 rechargent pas le document quand seul le fragment (`#…`) change : le module JS

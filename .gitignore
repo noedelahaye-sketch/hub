@@ -17,6 +17,13 @@ supabase/.branches/
 # données restent sur sa machine, seul ce qu'elles produisent est versionné.
 Yuno/
 
+# La collection Canela complète, déposée par Noé le 12 août 2026 : quatre
+# familles × huit graisses × deux postures, 3,7 Mo. Le site n'en sert que
+# quatre fichiers, copiés à plat dans fonts/ et versionnés. Le reste ne part
+# pas sur GitHub Pages — c'est du poids, et autant de fontes commerciales
+# publiées pour rien.
+fonts/Canela_Collection/
+
 # Éditeurs
 .vscode/
 .idea/

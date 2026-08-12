@@ -110,10 +110,44 @@ pour le texte, la Belhanda restant dans le logo, en image.
 
 Décision de Noé (7 août 2026) : utiliser les polices commerciales malgré le
 repo public, risques compris et acceptés. Fichiers repris de sa machine :
-Canela Deck Regular/Bold (versions d'essai « Trial » — noté), Gilroy
-Regular/Medium/SemiBold. Servis en OTF/TTF faute de convertisseur woff2
-(75–80 Ko pièce, acceptable). Ces familles ne chargent que dans l'espace Yuno ;
-le reste du hub garde les siennes.
+Canela Deck Regular/Bold **et leurs deux italiques** (versions d'essai
+« Trial » — noté), Gilroy Regular/Medium/SemiBold. Servis en OTF/TTF faute de
+convertisseur woff2 (75–80 Ko pièce, acceptable). Ces familles ne chargent que
+dans l'espace Yuno ; le reste du hub garde les siennes.
+
+Les deux italiques ont été ajoutés le 12 août 2026. Sans eux, le navigateur
+fabriquait une inclinaison synthétique qui décalait l'espacement après chaque
+lettre accentuée — « Banque d'idé es », « Lé opards » — soit, sur un site
+français, partout. **Ne jamais demander une graisse ou une posture dont le
+fichier n'existe pas** : le navigateur ne refuse pas, il simule, et il simule
+mal. La collection complète que Noé a déposée (`fonts/Canela_Collection/`,
+3,7 Mo, huit graisses × quatre familles) reste hors du dépôt : seuls les
+quatre fichiers réellement servis sont versionnés.
+
+**Les trois leviers typographiques.** Chacun ne dit qu'une chose ; les employer
+tous à la fois ne hiérarchise rien — si tout penche, plus rien ne ressort.
+
+- **La police dit la nature.** Canela = ce que le site *est* (ses lieux, ses
+  titres, son contenu). Gilroy = ce que le site *fait* (actions, états, dates,
+  mesures, précisions). Tout l'utilitaire, sans exception.
+- **La posture dit qui parle.** Italique = la voix du site, qui annonce et qui
+  nomme un lieu. Romain = la voix de Noé — ce qu'il a vécu, écrit,
+  photographié. Le contenu ne penche pas : il n'annonce rien, il est là.
+- **La graisse dit l'importance ou l'état**, jamais la décoration.
+
+| Rôle | Police | Posture | Graisse | Taille |
+|---|---|---|---|---|
+| Titre de section (`h2`) | Canela | italique | 700 | 1,375 rem |
+| Onglet actif, porte | Canela | italique | 700 | 1 rem |
+| Onglet inactif | Canela | italique | 400 | 1 rem |
+| Titre de tuile (contenu) | Canela | romain | 400 | 1,125 rem |
+| Sous-titre, libellé fort | Gilroy | romain | 600 | — |
+| Corps, date, statut | Gilroy | romain | 400 | — |
+| Chiffre | Geist Mono | — | — | via `.chiffre` |
+
+Les titres de section ont perdu la casse haute et l'interlettrage qu'ils
+portaient en Gilroy : c'était l'habillage d'une étiquette, illisible sur un
+italique de 11 px. Un titre de section est un titre, pas un libellé.
 
 **Ton** : carnet d'atelier. Dense, factuel, et le doré réservé à ce qui compte
 — si tout est doré, plus rien ne l'est.
@@ -165,8 +199,13 @@ nature. Le hub a le même espace Calendrier, tous projets confondus
    monter** : c'est une réserve de valeur stable, l'anti-portée.
 2. **Loguer un moment** — le bouton de capture, en évidence. C'est l'action de
    la page.
-3. **Derniers moments** — les trois plus récents, sans croix de suppression, et
-   la porte « Ouvrir le journal ».
+3. **Le mur de photos** — sous les compteurs, **dix photos en 4:3, côte à
+   côte**, tirées au sort une fois par jour parmi tous les moments qui en
+   portent une (décision de Noé, 12 août). Pas de titre au-dessus, pas de fiche
+   autour : l'accueil montre ce qui a été vécu, il ne le raconte pas. Un moment
+   sans photo n'y figure pas. Le tirage est stable dans la journée — la date
+   sert de graine, rien n'est stocké — et change à minuit. Puis la porte
+   « Ouvrir le journal », où vivent les fiches complètes.
 4. **Objectifs** — ceux du projet photo, avec pourquoi et jalons.
 5. **En création** — aperçu, plus la porte vers Créer.
 
@@ -244,6 +283,31 @@ Une idée porte donc aussi son **pilier**, sa **preuve** (ce qui montre que le
 format marche déjà) et son **« pourquoi chez moi »**. La banque se filtre sur
 le pilier et sur le statut. Le titre suffit toujours : noter une idée reste une
 affaire de cinq secondes.
+
+**La banque se parcourt en aperçus** (décision de Noé, 12 août 2026). Une tuile
+de la banque ne montre que l'essentiel — le réseau, le format, le pilier, le
+titre, le statut — dans une colonne étroite (16 rem, quatre de front sur
+1240 px, une sur téléphone). Le titre se replie sur autant de lignes qu'il veut.
+Une banque est un fonds où l'on fouille : quarante idées qui déballent chacune
+leur preuve et leur « pourquoi » ne se parcourent pas du regard.
+
+**Toute la fiche est dans une fenêtre volante**, ouverte au clic sur la tuile
+(ou à l'Entrée, la tuile est un bouton) : la preuve, le « pourquoi chez moi »,
+les notes, la checklist du carrousel, et **tous les gestes** — avancer le
+statut, programmer une date, supprimer. L'aperçu ne porte aucun bouton : la
+tuile entière est la cible, et rien ne se déclenche par erreur.
+
+Dans la fenêtre, la suppression **s'écrit** (« Supprimer l'idée ») au lieu de
+se dire par une croix : la croix de fermeture est au même bord, et deux « × »
+l'un au-dessus de l'autre, dont l'un est irréversible, est un piège.
+
+Les étiquettes (réseau, format, pilier) sont volontairement **très petites** :
+ce sont des mentions de classement, pas des titres. Elles doivent se lire quand
+on les cherche et disparaître quand on lit le reste.
+
+`construirePublication` (la tuile complète) sert toujours à « À venir » et au
+site du FCH : la banque et « Publiées » sont seules à passer par
+`construireApercuPublication`.
 
 **Le tirage de la semaine** répond les jours de panne : « Je ne sais pas quoi
 poster » pose une seule question — y a-t-il un match cette semaine ? — puis

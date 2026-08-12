@@ -25,6 +25,7 @@ import {
   construireBanque,
   construirePubliees,
   construireApercuCreation,
+  corpsPublication,
   formulaireIdee,
 } from './publications.js';
 import {
@@ -223,10 +224,10 @@ function ligneRencontres(moment) {
   return `<span class="moment-rencontres"><span class="discret">Rencontré</span>${noms}</span>`;
 }
 
-// Le retrait appartient au Journal, où l'on gère. L'aperçu de l'accueil garde
-// en revanche le « + » d'une rencontre : ouvrir une fiche pousse vers les gens,
-// et ça vaut partout où un nom s'affiche.
-function carteMoment(moment, retirable = true, photos = {}) {
+// La fiche complète d'un moment. Elle ne sert plus qu'au Journal — l'accueil
+// est passé au mur de photos — donc le retrait y est toujours offert : c'est là
+// qu'on gère.
+function carteMoment(moment, photos = {}) {
   const photo = moment.photo_chemin ? photos[moment.photo_chemin] : null;
 
   return `
@@ -235,14 +236,10 @@ function carteMoment(moment, retirable = true, photos = {}) {
         <span class="etiquette">${echapper(TYPES_MOMENT[moment.type] ?? moment.type)}</span>
         ${moment.oeuvre_finie ? '<span class="etiquette etiquette-oeuvre">Œuvre finie</span>' : ''}
         <span class="discret quand">${echapper(echeanceLisible(depuisDateISO(moment.date)))}</span>
-        ${
-          retirable
-            ? `<button type="button" class="lien-discret bouton-mini bouton-retirer"
-                 data-supprimer-moment="${echapper(moment.id)}"
-                 title="Retirer ce moment"
-                 aria-label="Retirer « ${echapper(titreDuMoment(moment))} »">×</button>`
-            : ''
-        }
+        <button type="button" class="lien-discret bouton-mini bouton-retirer"
+          data-supprimer-moment="${echapper(moment.id)}"
+          title="Retirer ce moment"
+          aria-label="Retirer « ${echapper(titreDuMoment(moment))} »">×</button>
       </span>
       ${moment.lieu ? `<span class="moment-lieu">${echapper(moment.lieu)}</span>` : ''}
       ${ligneRencontres(moment)}
@@ -279,21 +276,52 @@ function carteVictoire(victoire) {
     </li>`;
 }
 
-// L'aperçu de l'accueil : les derniers moments, et rien de plus. C'est le
-// principal de la page, mais c'est une vitrine — on gère au Journal.
-export function construireApercuMoments(moments, photos = {}, limite = 3) {
-  if (!moments.length) {
-    return `<p class="vide">Ton premier moment s'inscrit ici — un match, un concert, une sortie.</p>`;
+// Le tirage est au hasard, mais il tient la journée : sans ça le mur se
+// rebattrait à chaque retour sur l'accueil, et regarder ses photos deviendrait
+// un jeu de machine à sous. La date sert de graine — le mur change à minuit,
+// tout seul, sans rien à stocker.
+function tirageDuJour(liste, jour) {
+  let graine = [...jour].reduce((somme, lettre) => (somme * 31 + lettre.charCodeAt(0)) >>> 0, 7);
+  // Congruence linéaire : de quoi mélanger honnêtement dix photos, et rien de
+  // plus — ce n'est pas de la cryptographie.
+  const suivant = () => {
+    graine = (graine * 1664525 + 1013904223) >>> 0;
+    return graine / 4294967296;
+  };
+
+  const tirees = [...liste];
+  for (let i = tirees.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(suivant() * (i + 1));
+    [tirees[i], tirees[j]] = [tirees[j], tirees[i]];
+  }
+  return tirees;
+}
+
+// L'accueil ne montre plus des fiches de moments : il montre des photos. Dix,
+// au format 4:3, côte à côte sous les compteurs — la preuve de ce qui a été
+// vécu, pas son compte rendu. Un moment sans photo n'y figure pas, et le
+// détail (lieu, rencontres, note) reste au Journal.
+export function construireMurPhotos(moments, photos = {}, jour = versDateISO(), limite = 10) {
+  const avecPhoto = moments.filter(
+    (moment) => moment.photo_chemin && photos[moment.photo_chemin],
+  );
+
+  if (!avecPhoto.length) {
+    return `<p class="vide">Tes photos s'afficheront ici — joins-en une à ton prochain moment.</p>`;
   }
 
-  return `<ul class="liste-carnet">${[...moments]
-    .sort(
-      (a, b) =>
-        String(b.date).localeCompare(String(a.date)) ||
-        String(b.created_at).localeCompare(String(a.created_at)),
-    )
+  return `<ul class="mur-photos">${tirageDuJour(avecPhoto, jour)
     .slice(0, limite)
-    .map((moment) => carteMoment(moment, false, photos))
+    .map((moment) => {
+      const photo = photos[moment.photo_chemin];
+      return `
+        <li>
+          <a href="${echapper(photo)}" target="_blank" rel="noopener">
+            <img src="${echapper(photo)}" alt="${echapper(titreDuMoment(moment))}"
+              loading="lazy">
+          </a>
+        </li>`;
+    })
     .join('')}</ul>`;
 }
 
@@ -305,7 +333,7 @@ export function construireCarnet(moments, victoires, photos = {}) {
     ...moments.map((moment) => ({
       date: moment.date,
       created_at: moment.created_at,
-      html: carteMoment(moment, true, photos),
+      html: carteMoment(moment, photos),
     })),
     ...victoires
       .filter((victoire) => victoire.source !== 'moment')
@@ -599,17 +627,14 @@ function vueAccueil(etat) {
         ${boutonCapture()}
         ${construireCompteurs(etat.moments)}
       </div>
-    </section>
-
-    <section class="bloc">
-      <h2>Derniers moments</h2>
-      <div data-bloc="apercu-moments">${construireApercuMoments(etat.moments, etat.photos)}</div>
+      <!-- Le mur suit les compteurs sans titre au-dessus : dix photos n'ont
+           besoin de personne pour dire ce qu'elles sont. -->
+      <div data-bloc="mur-photos">${construireMurPhotos(etat.moments, etat.photos)}</div>
       <a class="lien-externe" href="#yuno/journal">
         <span class="lien-externe-texte">
           <span class="lien-externe-titre">Ouvrir le journal</span>
           <span class="discret">Tous tes moments, tes rencontres, tes œuvres</span>
         </span>
-        <span class="lien-externe-fleche" aria-hidden="true">→</span>
       </a>
     </section>
 
@@ -637,7 +662,6 @@ function vueAccueil(etat) {
           <span class="lien-externe-titre">Ouvrir l'atelier Créer</span>
           <span class="discret">Calendrier éditorial, banque d'idées</span>
         </span>
-        <span class="lien-externe-fleche" aria-hidden="true">→</span>
       </a>
     </section>
     ${etat.captureOuverte ? formulaireMoment(etat.contacts, etat.prefillMoment) : ''}
@@ -803,7 +827,6 @@ function vueCreer(etat) {
           <span class="lien-externe-titre">Ouvrir la banque d'idées</span>
           <span class="discret">${compterIdees(etat.publications)} · elle ne se vide jamais</span>
         </span>
-        <span class="lien-externe-fleche" aria-hidden="true">→</span>
       </a>
     </section>
 
@@ -862,7 +885,25 @@ function vueBanque(etat) {
       <div data-bloc="banque">${construireBanque(retenues, options)}</div>
       <div data-bloc="publiees">${construirePubliees(etat.publications, options)}</div>
     </section>
+    ${fenetreIdee(etat, options)}
     ${pied()}`;
+}
+
+// La fiche d'une idée, en fenêtre volante : tout ce que l'aperçu ne dit pas —
+// la preuve, le « pourquoi chez moi », les notes, la checklist — et tous les
+// gestes. On la retrouve par son identifiant à chaque rendu plutôt que de la
+// garder en copie : après « Passer en à développer », la fenêtre doit montrer
+// le nouveau statut, pas celui d'avant le clic.
+function fenetreIdee(etat, options) {
+  if (!etat.ideeOuverte) return '';
+
+  const pub = etat.publications.find((idee) => idee.id === etat.ideeOuverte);
+  if (!pub) return '';
+
+  return construireFenetre(
+    pub.titre,
+    `<div class="idee-complete">${corpsPublication(pub, { ...options, fenetre: true })}</div>`,
+  );
 }
 
 // La même liste sert à dessiner le calendrier et à retrouver un élément quand
@@ -1742,16 +1783,14 @@ function vueReseau(etat) {
                 : "La file d'aller-vers, à remplir depuis le carnet"
             }</span>
           </span>
-          <span class="lien-externe-fleche" aria-hidden="true">→</span>
         </a>
 
         <a class="lien-externe" href="#yuno/carnet">
           <span class="lien-externe-texte">
-            <span class="lien-externe-titre">Le carnet</span>
+            <span class="lien-externe-titre">CRM</span>
             <span class="discret"><span class="chiffre">${etat.contacts.length}</span> fiches ·
               tableau, fiches, filtres</span>
           </span>
-          <span class="lien-externe-fleche" aria-hidden="true">→</span>
         </a>
       </div>
     </section>
@@ -1992,6 +2031,8 @@ export default {
       ecartes: evenementsEcartes(),
       prefillMoment: null,
       captureOuverte: false,
+      // L'identifiant de l'idée dont la fiche est ouverte, jamais sa copie.
+      ideeOuverte: null,
       photos: {},
       jourRdv: jourRendezVousEnregistre(),
       objectifDoux: objectifDouxEnregistre(),
@@ -2463,7 +2504,19 @@ export default {
         etat.jourOuvertCal = null;
         etat.captureOuverte = false;
         etat.prefillMoment = null;
+        etat.ideeOuverte = null;
         rendre();
+        return;
+      }
+
+      // Ouvrir la fiche d'une idée depuis son aperçu. La tuile entière est le
+      // bouton : rien d'autre n'est cliquable dedans, l'aperçu ne porte plus
+      // aucun geste.
+      const apercuIdee = evenement.target.closest('[data-ouvrir-pub]');
+      if (apercuIdee) {
+        etat.ideeOuverte = apercuIdee.dataset.ouvrirPub;
+        rendre();
+        section.querySelector('.fenetre-fermer')?.focus();
         return;
       }
 
@@ -2840,6 +2893,10 @@ export default {
           etat.publications = etat.publications.filter(
             (pub) => pub.id !== supprimerPub.dataset.supprimerPub,
           );
+          // Supprimée depuis sa propre fiche : la fenêtre n'a plus de sujet.
+          if (etat.ideeOuverte === supprimerPub.dataset.supprimerPub) {
+            etat.ideeOuverte = null;
+          }
           rendre();
         } catch (souci) {
           console.error('Suppression impossible', souci);
@@ -2997,7 +3054,15 @@ export default {
     // Échap ferme la fenêtre — c'est le geste attendu partout ailleurs.
     document.addEventListener('keydown', (touche) => {
       if (touche.key !== 'Escape') return;
-      if (!(etat.creationCal || etat.detailCal || etat.captureOuverte || etat.jourOuvertCal)) {
+      if (
+        !(
+          etat.creationCal ||
+          etat.detailCal ||
+          etat.captureOuverte ||
+          etat.jourOuvertCal ||
+          etat.ideeOuverte
+        )
+      ) {
         return;
       }
       etat.creationCal = null;
@@ -3005,7 +3070,20 @@ export default {
       etat.jourOuvertCal = null;
       etat.captureOuverte = false;
       etat.prefillMoment = null;
+      etat.ideeOuverte = null;
       rendre();
+    });
+
+    // Une tuile d'aperçu est un bouton : elle doit s'ouvrir à l'Entrée et à
+    // l'Espace, comme un vrai. L'Espace fait défiler la page par défaut.
+    section.addEventListener('keydown', (touche) => {
+      if (touche.key !== 'Enter' && touche.key !== ' ') return;
+      const apercu = touche.target.closest('[data-ouvrir-pub]');
+      if (!apercu) return;
+      touche.preventDefault();
+      etat.ideeOuverte = apercu.dataset.ouvrirPub;
+      rendre();
+      section.querySelector('.fenetre-fermer')?.focus();
     });
 
     // Tirer un en-tête de colonne pour la déplacer — le geste de Notion. Sur

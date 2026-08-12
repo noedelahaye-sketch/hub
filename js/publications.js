@@ -54,31 +54,61 @@ export function etiquettes(pub) {
 
 // `options` porte ce qui change d'un projet à l'autre : le cycle des statuts,
 // et l'aide à la création (les piliers et la checklist sont à Yuno).
-export function construirePublication(pub, options = {}) {
-  const { cycle = STATUTS, checklist = false, piliers = null } = options;
+// L'en-tête d'une publication : ce qu'elle est, où elle se range, et quand.
+// Partagé par l'aperçu et la fiche complète — les deux montrent la même chose
+// en tête, seule la suite diffère.
+function entetePublication(pub, piliers) {
+  const datee = Boolean(pub.date_prevue);
+
+  return `
+    <span class="tuile-entete">
+      ${etiquettes(pub)}
+      ${
+        piliers && pub.pilier
+          ? `<span class="etiquette etiquette-pilier">${echapper(
+              `${pub.pilier}. ${piliers[pub.pilier]?.nom ?? ''}`,
+            )}</span>`
+          : ''
+      }
+      ${pub.rubrique ? `<span class="pub-rubrique">${echapper(pub.rubrique)}</span>` : ''}
+      ${
+        datee
+          ? `<span class="discret quand">${echapper(
+              echeanceLisible(depuisDateISO(pub.date_prevue)),
+            )}</span>`
+          : ''
+      }
+    </span>`;
+}
+
+// L'aperçu : ce qu'elle est, ce qu'elle dit, où elle en est. Rien d'autre. La
+// preuve, le « pourquoi chez moi », les notes, la checklist et les gestes
+// vivent dans la fenêtre — une banque se parcourt du regard, et quarante-trois
+// tuiles qui déballent tout ne se parcourent pas.
+// La tuile entière est le bouton : role et tabindex la rendent ouvrable au
+// clavier, comme les cases du calendrier.
+export function construireApercuPublication(pub, options = {}) {
+  const { piliers = null } = options;
+
+  return `
+    <li class="tuile-apercu" role="button" tabindex="0"
+      data-ouvrir-pub="${echapper(pub.id)}"
+      aria-label="Ouvrir « ${echapper(pub.titre)} »">
+      ${entetePublication(pub, piliers)}
+      <span class="pub-titre">${echapper(pub.titre)}</span>
+      <span class="pub-statut">statut : <strong>${NOMS_STATUTS[pub.statut]}</strong></span>
+    </li>`;
+}
+
+// Le contenu complet, sans son enveloppe : la tuile de « À venir » l'enferme
+// dans un <li>, la fenêtre d'une idée le pose tel quel.
+export function corpsPublication(pub, options = {}) {
+  const { cycle = STATUTS, checklist = false, piliers = null, fenetre = false } = options;
   const suivant = cycle[cycle.indexOf(pub.statut) + 1];
   const datee = Boolean(pub.date_prevue);
 
   return `
-    <li>
-      <span class="tuile-entete">
-        ${etiquettes(pub)}
-        ${
-          piliers && pub.pilier
-            ? `<span class="etiquette etiquette-pilier">${echapper(
-                `${pub.pilier}. ${piliers[pub.pilier]?.nom ?? ''}`,
-              )}</span>`
-            : ''
-        }
-        ${pub.rubrique ? `<span class="pub-rubrique">${echapper(pub.rubrique)}</span>` : ''}
-        ${
-          datee
-            ? `<span class="discret quand">${echapper(
-                echeanceLisible(depuisDateISO(pub.date_prevue)),
-              )}</span>`
-            : ''
-        }
-      </span>
+      ${entetePublication(pub, piliers)}
       <span class="pub-titre">${echapper(pub.titre)}</span>
       ${
         // La preuve dit pourquoi le format marche déjà ; le « pourquoi moi »,
@@ -117,12 +147,25 @@ export function construirePublication(pub, options = {}) {
             : `<input type="date" class="pub-programmer" data-programmer="${echapper(pub.id)}"
                  title="Programmer cette idée" aria-label="Programmer « ${echapper(pub.titre)} »">`
         }
-        <button type="button" class="lien-discret bouton-mini bouton-retirer"
-          data-supprimer-pub="${echapper(pub.id)}"
-          title="Supprimer"
-          aria-label="Supprimer « ${echapper(pub.titre)} »">×</button>
-      </span>
-    </li>`;
+        ${
+          // Dans une fenêtre, la croix de suppression tomberait sous celle qui
+          // ferme, au même bord : deux « × » l'un au-dessus de l'autre, dont
+          // l'un est irréversible. Ici le geste s'écrit.
+          fenetre
+            ? `<button type="button" class="lien-discret bouton-mini bouton-retirer"
+                 data-supprimer-pub="${echapper(pub.id)}"
+                 aria-label="Supprimer « ${echapper(pub.titre)} »">Supprimer l'idée</button>`
+            : `<button type="button" class="lien-discret bouton-mini bouton-retirer"
+                 data-supprimer-pub="${echapper(pub.id)}"
+                 title="Supprimer"
+                 aria-label="Supprimer « ${echapper(pub.titre)} »">×</button>`
+        }
+      </span>`;
+}
+
+// La tuile complète, telle qu'elle sert encore à « À venir » et au site du FCH.
+export function construirePublication(pub, options = {}) {
+  return `<li>${corpsPublication(pub, options)}</li>`;
 }
 
 export function construireAVenir(publications, options = {}) {
@@ -146,7 +189,7 @@ export function construireBanque(publications, options = {}) {
   if (!idees.length) {
     return `<p class="vide">Ta banque d'idées démarre ici. Note tout, trie ensuite.</p>`;
   }
-  return `<ul>${idees.map((pub) => construirePublication(pub, options)).join('')}</ul>`;
+  return `<ul>${idees.map((pub) => construireApercuPublication(pub, options)).join('')}</ul>`;
 }
 
 export function construirePubliees(publications, options = {}) {
@@ -158,7 +201,7 @@ export function construirePubliees(publications, options = {}) {
   return `
     <details class="backlog">
       <summary>Publiées <span class="chiffre">${publiees.length}</span></summary>
-      <ul>${publiees.map((pub) => construirePublication(pub, options)).join('')}</ul>
+      <ul>${publiees.map((pub) => construireApercuPublication(pub, options)).join('')}</ul>
     </details>`;
 }
 
