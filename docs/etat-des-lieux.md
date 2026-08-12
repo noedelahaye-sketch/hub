@@ -218,6 +218,37 @@ http://localhost:4173 (`file://` ne marche pas, les modules ES sont bloqués).
 
 ---
 
+## 2 bis. Le poids des photos — le vrai frein
+
+**Une photo de moment pèse 5,3 Mo.** Mesuré le 12 août sur la première du
+carnet (2160 × 2880). Le mur de l'accueil en monte dix : **environ 53 Mo par
+visite**, largement devant tout le reste — les 11 requêtes Supabase du démarrage
+ne pèsent rien à côté.
+
+**Les transformations d'image de Supabase ne sont pas disponibles** sur ce
+projet (fonction payante). Piège vérifié : `createSignedUrls(..., { transform:
+{ width: 400 } })` **ne renvoie aucune erreur** — le SDK accepte l'option, rend
+une URL `/object/sign/` ordinaire au lieu de `/render/image/sign/`, et sert
+l'original. Poids mesuré avec et sans : identique, 5 452 Ko. Ne pas conclure
+d'un appel qui réussit que la transformation a eu lieu ; vérifier la forme de
+l'URL, ou peser la réponse.
+
+**Deux sorties**, aucune faite à ce jour :
+1. **Redimensionner avant l'envoi**, dans le navigateur (canvas), au moment de
+   la capture d'un moment. Gratuit, entièrement sous notre contrôle, et
+   c'est la bonne place : une photo de 5 Mo n'a aucune raison d'entrer dans le
+   bucket. Ne règle rien pour les photos déjà envoyées.
+2. **Activer les transformations Supabase** (plan payant) et demander des
+   miniatures à la lecture. Règle aussi l'existant.
+
+En attendant, les vignettes portent `loading="lazy"` et `decoding="async"`, et
+l'`aspect-ratio: 3/4` du CSS empêche déjà tout saut de mise en page. **Ne pas
+ajouter d'attributs `width`/`height`** : essayé, ils cassent la mise en page —
+le `height` l'emporte sur l'`aspect-ratio` et la vignette part à 113 × 400 au
+lieu de 113 × 150.
+
+---
+
 ## 3. Ce qui attend une réponse de Noé
 
 **FC Hermitage** (`docs/fch-spec.md`, §7) :

@@ -474,7 +474,7 @@ function vignettes(moments, photos, classes = 'mur-photos') {
           <button type="button" data-ouvrir-moment="${echapper(moment.id)}"
             aria-label="Ouvrir « ${echapper(titreDuMoment(moment))} »">
             <img src="${echapper(photo)}" alt="${echapper(titreDuMoment(moment))}"
-              loading="lazy">
+              loading="lazy" decoding="async">
           </button>
         </li>`;
     })
