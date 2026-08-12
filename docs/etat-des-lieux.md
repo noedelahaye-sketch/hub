@@ -1,5 +1,8 @@
 # État des lieux — 12 août 2026
 
+> Reprise : voir **§ 4 bis, « Par où reprendre »**. Trois chantiers de démarrage
+> attendent, et ils sont décrits là.
+
 Point de reprise. `CLAUDE.md` dit **ce que le hub doit être** ; ce document dit
 **où il en est**, ce qui a été vérifié, ce qui ne l'a pas été, et ce qui attend
 une réponse de Noé. À relire au début d'une session, et à mettre à jour à la
@@ -114,10 +117,12 @@ complet et ce qui reste ouvert.
   Même fenêtre depuis les deux murs. La fiche du carnet ne répète plus la
   photo — la frise est juste au-dessus.
 - **Un moment se corrige** depuis sa fenêtre : un bouton crayon retourne la
-  fenêtre en formulaire (date, type, lieu, note, œuvre finie). Ni la photo ni
-  les rencontres — l'une vit dans le stockage, les autres dans leur table.
-  `api.modifierMoment` met à jour le titre de la victoire au passage, sinon le
-  dashboard du hub garderait l'ancien nom.
+  fenêtre en formulaire (date, type, lieu, note, œuvre finie, **et la photo,
+  qui se remplace**). Pas les rencontres — elles vivent dans leur propre table
+  et demanderont leur geste. `api.modifierMoment` met à jour le titre de la
+  victoire au passage, sinon le dashboard du hub garderait l'ancien nom. La
+  nouvelle photo part avant l'écriture, l'ancienne n'est effacée du stockage
+  qu'après : une suppression ne se rattrape pas.
 - **Nouvelle page `#yuno/editorial`** : la grille du calendrier réduite aux
   seules publications, la banque d'idées en colonne à droite, et **glisser une
   idée sur un jour la programme** (souris seulement). Une porte à icône, en bas
@@ -314,8 +319,44 @@ Rien d'ouvert dans les cahiers des charges. Restent des conforts :
 - **Suivi automatique des abonnés Instagram** : possible mais coûteux en
   tuyauterie (app Meta, jeton à renouveler tous les 60 jours, fonction
   serveur). Différé.
-- **Modifier une tâche, un événement, une publication** : seuls les objectifs
-  se modifient. Le reste se supprime et se recrée — jugé plus rapide.
+- **Modifier une tâche, un événement, une publication** : les objectifs, les
+  moments (avec leur photo) et les contacts se modifient désormais. Le reste se
+  supprime et se recrée — jugé plus rapide.
+
+---
+
+## 4 bis. Par où reprendre (fin de session du 12 août 2026)
+
+Dans cet ordre, du plus rentable au moins pressé.
+
+1. **Les trois chantiers du démarrage**, demandés par Noé et **non faits** —
+   volontairement laissés plutôt qu'entamés en fin de session : ils réécrivent
+   `monter()`, la partie qui décide si le site s'ouvre.
+   1. **Cache de session** : garder le dernier état en `sessionStorage` et
+      l'afficher pendant que les données fraîches arrivent. Le plus gros effet
+      ressenti pour le moins de risque — rouvrir l'app devient instantané.
+   2. **Charger par vue** : `stats`, `envois`, `modeles`, `commandes` ne servent
+      qu'au Réseau et à la Passerelle. L'accueil n'a besoin que des moments,
+      objectifs, publications et victoires. Aujourd'hui les 11 requêtes partent
+      ensemble.
+   3. **Chrome avant les données** : rendre l'en-tête, la nav et des blocs
+      squelettes, puis injecter. Aujourd'hui tout attend derrière
+      « Un instant… ».
+2. **Les trois photos déjà en base pèsent 5 Mo chacune.** Les nouvelles sont
+   réduites à l'envoi ; les anciennes non. Les rejoindre à la main via
+   « Remplacer la photo » suffit à les faire passer à la moulinette.
+3. **Vérifier Canela sur le téléphone.** Le `local("Canela-…")` marche sur le
+   Mac ; iOS ne fournit probablement pas la police. Le test tient en un
+   regard : ouvrir Créer, regarder « À venir » — si le `À` est droit au lieu
+   d'être incliné, c'est la police de secours.
+4. **Éprouver le cochage d'une tâche depuis le calendrier.** Le rendu et le
+   routage sont vérifiés, le clic réel jamais — il n'y avait aucune tâche
+   `photo` datée. Il y en a maintenant trois (faites), donc c'est testable :
+   décocher puis recocher.
+5. **Le bronze de la palette** (`#967D32`, `#EDC54E`, `#C4A341`…) n'est employé
+   nulle part. Il pourrait remplacer le `--gris-chaud` inventé (`#a2988a`),
+   mais il tire vers le doré — ce que la discipline de l'or cherchait à
+   raréfier. À trancher à l'œil.
 
 ---
 
