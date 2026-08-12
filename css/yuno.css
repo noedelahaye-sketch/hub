@@ -954,6 +954,43 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible {
    liste, et il restait donc invisible pour de bon : ici il se montre. */
 .fenetre .bouton-retirer { opacity: 1; }
 
+/* La fiche d'un contact, ouverte depuis le carnet : les mêmes règles que celle
+   d'un moment. Chaque renseignement porte son libellé devant lui — sur une
+   fiche, « @yuno_rph » seul ne dit pas de quoi il s'agit. */
+.fenetre .contact-complet {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espace-4);
+}
+
+.fenetre .contact-complet .tuile-entete {
+  margin-bottom: 0;
+  padding-right: var(--espace-32);
+}
+
+.contact-ligne {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--espace-8);
+  width: 100%;
+  font-size: 0.875rem;
+}
+
+.contact-ligne > .discret {
+  flex: none;
+  min-width: 8rem;
+  font-size: 0.75rem;
+}
+
+/* Une ligne de tableau qui s'ouvre : le curseur le dit. Les commandes qu'elle
+   porte — liens, listes de statut, croix — gardent le leur. */
+.tableau .ligne-ouvrable { cursor: pointer; }
+.tableau .ligne-ouvrable a,
+.tableau .ligne-ouvrable button,
+.tableau .ligne-ouvrable select { cursor: auto; }
+
 /* Un bouton qui ne porte qu'un dessin : la cible tactile garde les 44 px
    réglementaires même si l'icône fait 16 px. En px et non en rem — la racine
    du site est à 15 px, et 2,75 rem n'y feraient que 41. */

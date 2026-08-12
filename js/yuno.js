@@ -1710,7 +1710,7 @@ export function construireTableauContacts(retenus, contacts, { tri = 'nom', sens
           ${retenus
             .map(
               (contact) => `
-            <tr>
+            <tr class="ligne-ouvrable" data-ouvrir-contact="${echapper(contact.id)}">
               ${colonnes.map((colonne) => `<td>${colonne.cellule(contact)}</td>`).join('')}
               <td>${boutonRetirer(contact)}</td>
             </tr>`,
@@ -1756,8 +1756,12 @@ export function construireFichesContacts(retenus, contacts) {
       const liens = [lienInstagram(contact), lienEmail(contact), lienTelephone(contact)]
         .filter(Boolean);
 
+      // La fiche entière s'ouvre, sauf les liens : cliquer une adresse doit
+      // ouvrir Instagram ou le courrier, pas une fenêtre par-dessus.
       return `
-        <li>
+        <li class="tuile-apercu" role="button" tabindex="0"
+          data-ouvrir-contact="${echapper(contact.id)}"
+          aria-label="Ouvrir la fiche de ${echapper(contact.nom)}">
           <span class="tuile-entete">
             ${pastilleTexte(TYPES_CONTACT[contact.type] ?? contact.type)}
             ${contact.structure ? pastilleTexte(contact.structure) : ''}
@@ -1958,6 +1962,86 @@ export function construirePasserelle(contacts, { envois = [], objectifDoux = 1, 
 }
 
 // Le point d'entrée : on lit la base, puis on la dessine selon l'affichage.
+// La fiche d'un contact, en fenêtre volante : tout ce qu'on sait de lui, et le
+// crayon pour le corriger. Même geste que pour un moment ou une idée — le CRM
+// n'a pas de raison d'avoir le sien.
+function fenetreContact(etat) {
+  if (!etat.contactOuvert) return '';
+
+  const contact = etat.contacts.find((candidat) => candidat.id === etat.contactOuvert);
+  if (!contact) return '';
+
+  if (etat.editionContact) {
+    return construireFenetre(
+      contact.nom,
+      `<h3 class="fenetre-titre">Modifier la fiche</h3>
+       ${construireFormulaire({
+         id: 'contact-edition',
+         action: 'modifier-contact',
+         bouton: 'Enregistrer',
+         avecPli: false,
+         extra: `<input type="hidden" name="id" value="${echapper(contact.id)}">`,
+         champs: [
+           { nom: 'nom', libelle: 'Nom', type: 'text', valeur: contact.nom, requis: true },
+           { nom: 'type', libelle: 'Type', type: 'select', options: TYPES_CONTACT, valeur: contact.type },
+           { nom: 'structure', libelle: 'Structure', type: 'text', valeur: contact.structure ?? '' },
+           {
+             nom: 'statut',
+             libelle: 'Où en est la relation',
+             type: 'select',
+             options: Object.fromEntries(
+               Object.entries(STATUTS_CONTACT).map(([cle, { nom }]) => [cle, nom]),
+             ),
+             valeur: contact.statut,
+           },
+           { nom: 'instagram', libelle: 'Instagram', type: 'text', valeur: contact.instagram ?? '' },
+           { nom: 'email', libelle: 'E-mail', type: 'text', valeur: contact.email ?? '' },
+           { nom: 'telephone', libelle: 'Téléphone', type: 'text', valeur: contact.telephone ?? '' },
+           { nom: 'notes', libelle: 'Notes', type: 'textarea', valeur: contact.notes ?? '' },
+         ],
+       })}`,
+    );
+  }
+
+  const liens = [lienInstagram(contact), lienEmail(contact), lienTelephone(contact)].filter(Boolean);
+  const ligne = (libelle, valeur) =>
+    valeur ? `<span class="contact-ligne"><span class="discret">${libelle}</span>${valeur}</span>` : '';
+
+  return construireFenetre(
+    contact.nom,
+    `<div class="contact-complet">
+       <span class="tuile-entete">
+         ${pastilleTexte(TYPES_CONTACT[contact.type] ?? contact.type)}
+         ${pastilleTexte(
+           (STATUTS_CONTACT[contact.statut] ?? {}).nom ?? contact.statut,
+           (STATUTS_CONTACT[contact.statut] ?? {}).teinte,
+         )}
+       </span>
+       <span class="contact-nom">${echapper(contact.nom)}</span>
+       ${ligne('Structure', contact.structure ? echapper(contact.structure) : '')}
+       ${ligne('Contacts', liens.length ? liens.join('<span class="discret"> · </span>') : '')}
+       ${ligne(
+         'Dernier échange',
+         contact.dernier_echange
+           ? echapper(echeanceLisible(depuisDateISO(contact.dernier_echange)))
+           : '',
+       )}
+       ${ligne('Objectif', contact.objectif ? echapper(contact.objectif) : '')}
+       ${ligne(
+         'Prochaine action',
+         contact.prochaine_action ? echapper(contact.prochaine_action) : '',
+       )}
+       ${contact.notes ? `<span class="discret contact-notes">${echapper(contact.notes)}</span>` : ''}
+       <span class="moment-actions">
+         <button type="button" class="bouton-icone"
+           data-modifier-contact="${echapper(contact.id)}"
+           title="Modifier cette fiche"
+           aria-label="Modifier la fiche de ${echapper(contact.nom)}">${CRAYON}</button>
+       </span>
+     </div>`,
+  );
+}
+
 export function construireContacts(contacts, options = {}) {
   const retenus = baseContacts(contacts, options);
 
@@ -2053,6 +2137,7 @@ function vueCarnet(etat) {
       ${construireBarreFiltres(etat.contacts, etat)}
 
       <div data-bloc="contacts">${construireContacts(etat.contacts, optionsBase(etat))}</div>
+      ${fenetreContact(etat)}
 
       ${construireFormulaire({
         id: 'contact',
@@ -2246,6 +2331,8 @@ export default {
       momentOuvert: null,
       editionMoment: false,
       noteIdeeOuverte: false,
+      contactOuvert: null,
+      editionContact: false,
       photos: {},
       jourRdv: jourRendezVousEnregistre(),
       objectifDoux: objectifDouxEnregistre(),
@@ -2441,6 +2528,27 @@ export default {
     });
 
     async function appliquer(action, champs) {
+      if (action === 'modifier-contact') {
+        const modifie = await api.modifierContact(champs.id, {
+          nom: champs.nom.trim(),
+          type: champs.type,
+          structure: champs.structure?.trim() || null,
+          statut: champs.statut,
+          instagram: champs.instagram?.trim() || null,
+          email: champs.email?.trim() || null,
+          telephone: champs.telephone?.trim() || null,
+          notes: champs.notes?.trim() || null,
+        });
+
+        etat.contacts = etat.contacts.map((candidat) =>
+          candidat.id === champs.id ? { ...candidat, ...modifie } : candidat,
+        );
+        // On revient à la fiche : la correction se voit avant de refermer.
+        etat.editionContact = false;
+        rendre();
+        return;
+      }
+
       if (action === 'modifier-moment') {
         const modifs = {
           date: champs.date,
@@ -2755,6 +2863,8 @@ export default {
         etat.momentOuvert = null;
         etat.editionMoment = false;
         etat.noteIdeeOuverte = false;
+        etat.contactOuvert = null;
+        etat.editionContact = false;
         rendre();
         return;
       }
@@ -2765,6 +2875,25 @@ export default {
       const apercuIdee = evenement.target.closest('[data-ouvrir-pub]');
       if (apercuIdee) {
         etat.ideeOuverte = apercuIdee.dataset.ouvrirPub;
+        rendre();
+        section.querySelector('.fenetre-fermer')?.focus();
+        return;
+      }
+
+      if (evenement.target.closest('[data-modifier-contact]')) {
+        etat.editionContact = true;
+        rendre();
+        section.querySelector('#contact-edition-nom')?.focus();
+        return;
+      }
+
+      // Une fiche du carnet s'ouvre au clic, en tuile comme en ligne de
+      // tableau. Sauf par ses commandes : un lien mène dehors, une liste de
+      // statut se déroule, une croix retire. Chacun garde son geste.
+      const ficheContact = evenement.target.closest('[data-ouvrir-contact]');
+      if (ficheContact && !evenement.target.closest('a, button, input, select, textarea, label')) {
+        etat.contactOuvert = ficheContact.dataset.ouvrirContact;
+        etat.editionContact = false;
         rendre();
         section.querySelector('.fenetre-fermer')?.focus();
         return;
@@ -2840,6 +2969,28 @@ export default {
         };
         rendre();
         section.querySelector('#cal-titre')?.focus();
+        return;
+      }
+
+      // Le cercle d'une tâche se coche depuis le calendrier, sans ouvrir son
+      // détail : c'est le geste le plus fréquent, il ne mérite pas une fenêtre.
+      // Il passe AVANT l'ouverture du détail — le cercle est dans la barre, et
+      // sans cette priorité le clic ouvrirait la fenêtre par-dessus.
+      const cercle = evenement.target.closest('[data-cocher-tache]');
+      if (cercle) {
+        evenement.stopPropagation();
+        const tache = etat.taches.find((candidat) => candidat.id === cercle.dataset.cocherTache);
+        if (!tache || tache.statut === 'fait') return;
+        try {
+          const { tache: faite, victoire } = await api.terminerTache(tache);
+          etat.taches = etat.taches.map((candidat) =>
+            candidat.id === faite.id ? faite : candidat,
+          );
+          if (victoire) etat.victoires = [victoire, ...etat.victoires];
+          rendre();
+        } catch (souci) {
+          console.error('Tâche non terminée', souci);
+        }
         return;
       }
 
@@ -3395,7 +3546,8 @@ export default {
           etat.jourOuvertCal ||
           etat.ideeOuverte ||
           etat.momentOuvert ||
-          etat.noteIdeeOuverte
+          etat.noteIdeeOuverte ||
+          etat.contactOuvert
         )
       ) {
         return;
@@ -3409,6 +3561,8 @@ export default {
       etat.momentOuvert = null;
       etat.editionMoment = false;
       etat.noteIdeeOuverte = false;
+      etat.contactOuvert = null;
+      etat.editionContact = false;
       rendre();
     });
 

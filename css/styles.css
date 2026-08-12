@@ -1607,7 +1607,10 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   /* grid-template-rows arrive en style : il dépend du nombre de couloirs. */
-  min-height: 5.5rem;
+  /* La hauteur d'une case de mois. Assez haute pour porter ses trois couloirs
+     de barres sans que la ligne se serre, et pour que le mois respire plutôt
+     que de tenir en un bloc compact. */
+  min-height: 7rem;
 }
 
 /* En vue semaine, le bandeau du haut ne porte que ce qui n'a pas d'heure : il
@@ -1616,12 +1619,50 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 .cal-semaine .cal-ligne { min-height: 3.5rem; }
 .cal-semaine .cal-numero { display: none; }
 
+/* --- La semaine, d'un seul tenant -------------------------------------------
+   Les en-têtes, le bandeau du jour entier et la grille horaire ne font qu'un
+   cadre. Auparavant c'étaient trois boîtes bordées, séparées par une marge, et
+   surtout mal alignées : la grille horaire porte une gouttière d'heures à
+   gauche que les deux autres n'avaient pas, si bien que « mercredi » ne tombait
+   pas au-dessus de la colonne du mercredi.
+   La gouttière est maintenant portée par le cadre : les deux premiers blocs
+   s'écartent d'autant à gauche, la grille horaire garde sa colonne, et les sept
+   jours tombent en face du haut en bas. */
+
+.cal-semaine-cadre {
+  --cal-gouttiere: 3.25rem;
+  --trait-cal: color-mix(in srgb, var(--bordure) 45%, transparent);
+
+  overflow: hidden;
+  border: 1px solid var(--trait-cal);
+  border-radius: var(--rayon-carte);
+}
+
+/* Les deux blocs du haut se décalent de la gouttière. Le trait vertical qui la
+   ferme est porté par eux : il prolonge celui de la colonne des heures, et la
+   ligne court alors sans rupture du haut de l'en-tête au bas de la grille. */
+.cal-semaine-cadre .cal-grille.cal-semaine {
+  /* Moins le trait : la bordure des enfants EST le trait de la gouttière, elle
+     se pose dedans et non à côté. Sans ce pixel, les colonnes du haut
+     tombaient une fraction à droite de celles de la grille horaire. */
+  padding-left: calc(var(--cal-gouttiere) - 1px);
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.cal-semaine-cadre .cal-grille.cal-semaine > * {
+  border-left: 1px solid var(--trait-cal);
+}
+
 /* --- La grille horaire ------------------------------------------------------
    C'est elle qui rend la semaine honnête : un bloc occupe sa vraie durée, et
    deux blocs qui se chevauchent se partagent la largeur du jour. */
 
 .cal-heures {
-  --cal-heure: 3rem;
+  /* La hauteur d'une heure. Assez haute pour qu'un rendez-vous d'une heure
+     porte son titre sans se tronquer, et pour que le doigt vise juste. */
+  --cal-heure: 3.75rem;
 
   display: grid;
   grid-template-columns: 3.25rem 1fr;
@@ -1630,6 +1671,16 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   overflow-y: auto;
   border: 1px solid var(--trait-cal, var(--bordure));
   border-radius: var(--rayon-carte);
+}
+
+/* Dans le cadre commun elle n'a plus ni bordure ni marge : le trait qui la
+   sépare du bandeau suffit à dire qu'on change de registre. */
+.cal-semaine-cadre .cal-heures {
+  grid-template-columns: var(--cal-gouttiere) 1fr;
+  margin-top: 0;
+  border: none;
+  border-top: 1px solid var(--trait-cal);
+  border-radius: 0;
 }
 
 .cal-colonne-heures {
@@ -1705,8 +1756,22 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   font-weight: 600;
 }
 
+/* Le cercle d'une tâche se coche : il devient une cible, avec de quoi la viser.
+   Le padding négatif l'élargit sans écarter le titre qui suit — au doigt, un
+   glyphe de 11 px n'est pas une cible. */
+.cal-signe-cochable {
+  cursor: pointer;
+  padding: var(--espace-8);
+  margin: calc(var(--espace-8) * -1) 0 calc(var(--espace-8) * -1) calc(var(--espace-8) * -1);
+}
+
+.cal-signe-cochable:hover { color: var(--texte); }
+
 @media (max-width: 40rem) {
-  .cal-heures { --cal-heure: 2.5rem; grid-template-columns: 2.5rem 1fr; max-height: 24rem; }
+  /* La gouttière rétrécit avec le reste — et le retrait des deux blocs du haut
+     avec elle, sinon l'alignement se perdrait sur téléphone. */
+  .cal-semaine-cadre { --cal-gouttiere: 2.5rem; }
+  .cal-heures { --cal-heure: 3rem; grid-template-columns: 2.5rem 1fr; max-height: 24rem; }
   .cal-heure-libelle { font-size: 0.5625rem; }
   .cal-bloc { font-size: 0.5625rem; padding: 1px 2px; border-left-width: 2px; }
   .cal-bloc-heure { display: none; }
@@ -2002,7 +2067,7 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 /* Sur téléphone la grille tient encore, en plus serré : sept colonnes restent
    lisibles à 375 px, et les barres se réduisent sans disparaître. */
 @media (max-width: 40rem) {
-  .cal-ligne { min-height: 4.5rem; }
+  .cal-ligne { min-height: 5.5rem; }
   .cal-semaine .cal-ligne { min-height: 3rem; }
   .cal-entetes span { padding: 2px 3px; font-size: 0.625rem; letter-spacing: 0; }
   .cal-numero { min-width: 1.25rem; margin: 2px 0 1px; padding: 0 2px; font-size: 0.6875rem; }

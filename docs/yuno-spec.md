@@ -351,6 +351,12 @@ on les cherche et disparaître quand on lit le reste.
 site du FCH : la banque et « Publiées » sont seules à passer par
 `construireApercuPublication`.
 
+**Les deux façons d'attaquer, côte à côte** (12 août 2026) : « Noter une idée »
+quand on en a une, « Je ne sais pas quoi poster » quand on n'en a pas. Elles se
+valent, donc même taille et même allure. Noter passe par une **fenêtre
+volante** — le geste est celui de la capture d'un moment, il est le même partout
+dans le site.
+
 **Le tirage de la semaine** répond les jours de panne : « Je ne sais pas quoi
 poster » pose une seule question — y a-t-il un match cette semaine ? — puis
 propose une idée. Avec match, le terrain est là, on le montre (piliers 1 et 2) ;
@@ -422,6 +428,14 @@ La Provence…). D'où le champ `structure`, affiché en évidence sur chaque
 fiche. Notes libres et date du dernier échange complètent. Pas de relances
 automatiques, pas d'étapes de vente — un carnet d'adresses qui se souvient
 de ce qu'on s'est dit.
+
+**Une fiche s'ouvre au clic** (décision de Noé, 12 août 2026), en tuile comme en
+ligne de tableau : une **fenêtre volante** avec la structure, les moyens de
+contact, le dernier échange, l'objectif, la prochaine action et les notes, et un
+**bouton crayon** qui la retourne en formulaire. Le clic ouvre la fiche **sauf**
+sur un lien, un bouton, une liste ou un champ : dans le tableau, changer un
+statut ne doit pas ouvrir une fenêtre par-dessus, et un lien Instagram doit
+mener dehors. La porte du carnet, sur `#yuno/reseau`, s'appelle **CRM**.
 
 **C'est une base de données, pas une liste** (demande de Noé, 7 août 2026 —
 « comme Notion : une base de données est la base, après on varie comment on

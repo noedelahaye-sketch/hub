@@ -417,7 +417,16 @@ function barre(segment, montrerProjet) {
     title="${echapper(`${TYPES[element.type]} · ${element.titre}`)}">${
       // Le signe est décoratif : le titre de l'infobulle dit déjà la nature en
       // toutes lettres, pour qui n'y voit rien.
-      signe ? `<span class="cal-signe" aria-hidden="true">${signe}</span>` : ''
+      // Sauf pour une tâche : son cercle se coche. On ne peut pas y mettre un
+      // vrai <button> — la barre en est déjà un, et deux boutons ne s'imbriquent
+      // pas —, alors c'est le gestionnaire de clics qui reconnaît la cible.
+      // Au clavier, la barre s'ouvre et la fenêtre de détail porte le geste.
+      signe
+        ? `<span class="cal-signe${element.type === 'tache' ? ' cal-signe-cochable' : ''}"
+             ${element.type === 'tache' ? `data-cocher-tache="${echapper(element.id)}"` : ''}
+             ${element.type === 'tache' ? 'title="Marquer comme faite"' : ''}
+             aria-hidden="true">${signe}</span>`
+        : ''
     }${echapper(element.titre)}</button>`;
 }
 
@@ -643,20 +652,28 @@ export function construireGrille(
     // la grille horaire, où il occupe sa vraie durée.
     const sansHeure = retenus.filter((element) => !estHoraire(element));
 
+    // Un seul cadre pour toute la semaine : les en-têtes, le bandeau du jour
+    // entier et la grille horaire étaient trois boîtes bordées l'une sous
+    // l'autre, et leurs colonnes ne tombaient pas en face — la grille horaire
+    // porte une gouttière d'heures à gauche que les deux autres n'avaient pas.
+    // Ici la gouttière est prise en charge par le cadre, en retrait à gauche
+    // des deux premiers, et les sept jours s'alignent d'un bout à l'autre.
     return `
-      <div class="cal-grille cal-semaine" role="group"
-        aria-label="${echapper(`Calendrier, semaine du ${titreDePeriode(ancre, 'semaine')}`)}">
-        <div class="cal-entetes" aria-hidden="true">
-          ${jours
-            .map(
-              (jour) =>
-                `<span>${JOURS_COURTS[(jour.getDay() + 6) % 7]} ${jour.getDate()}</span>`,
-            )
-            .join('')}
+      <div class="cal-semaine-cadre">
+        <div class="cal-grille cal-semaine" role="group"
+          aria-label="${echapper(`Calendrier, semaine du ${titreDePeriode(ancre, 'semaine')}`)}">
+          <div class="cal-entetes" aria-hidden="true">
+            ${jours
+              .map(
+                (jour) =>
+                  `<span>${JOURS_COURTS[(jour.getDay() + 6) % 7]} ${jour.getDate()}</span>`,
+              )
+              .join('')}
+          </div>
+          ${ligneDeSemaine(jours, sansHeure, options)}
         </div>
-        ${ligneDeSemaine(jours, sansHeure, options)}
+        ${grilleHoraire(jours, retenus, options)}
       </div>
-      ${grilleHoraire(jours, retenus, options)}
       <p class="discret cal-aide">Le bandeau du haut porte ce qui n'a pas d'heure.
         Clique dans la grille pour poser un événement à cette heure-là.</p>`;
   }

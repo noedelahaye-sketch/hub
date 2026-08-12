@@ -52,6 +52,26 @@ chevauchent se partagent la largeur. **Les événements peuvent se répéter**
 (chaque semaine, quinzaine, mois) — les occurrences ne sont pas stockées, elles
 se déduisent à la lecture.
 
+**La semaine ne fait qu'un cadre** (12 août, à la demande de Noé, sur le modèle
+de Google Agenda). C'étaient trois boîtes bordées l'une sous l'autre — en-têtes,
+bandeau du jour entier, grille horaire — et surtout mal alignées : la grille
+horaire porte une gouttière d'heures à gauche que les deux autres n'avaient pas,
+si bien que « MER. 12 » ne tombait pas au-dessus de la colonne du mercredi. La
+gouttière (`--cal-gouttiere`) est maintenant portée par le cadre, les deux blocs
+du haut s'en écartent d'autant, et les sept colonnes tombent en face du haut en
+bas — vérifié à 0 px d'écart aux trois étages. Attention au pixel de
+compensation : la bordure des blocs du haut EST le trait de la gouttière, d'où
+le `calc(var(--cal-gouttiere) - 1px)`.
+
+**Les cases ont été allongées** : une heure passe de 3 à 3,75 rem (45 → 56 px),
+une case de mois de 5,5 à 7 rem (83 → 105 px).
+
+**Le cercle d'une tâche se coche depuis le calendrier**, sans ouvrir son détail.
+Impossible d'y mettre un vrai `<button>` — la barre en est déjà un, et deux
+boutons ne s'imbriquent pas : c'est le gestionnaire de clics qui reconnaît la
+cible, et il passe AVANT l'ouverture du détail. Au clavier, la fenêtre de détail
+reste le chemin.
+
 **Le calendrier se tient au clavier** : une tabulation pour y entrer, les
 flèches pour s'y déplacer, Entrée pour poser. La grille est un groupe nommé, pas
 un `role="grid"` — les barres sont des sœurs des cases, pas des cellules, et un
@@ -89,6 +109,16 @@ complet et ce qui reste ouvert.
   seules publications, la banque d'idées en colonne à droite, et **glisser une
   idée sur un jour la programme** (souris seulement). Une porte à icône, en bas
   de Créer, y mène.
+- **Créer perd deux titres de section et son formulaire déplié** : deux grandes
+  portes à icône côte à côte (calendrier éditorial, banque d'idées), et « Noter
+  une idée » devient un bouton à côté de « Je ne sais pas quoi poster », qui
+  ouvre une fenêtre volante.
+- **Le CRM ouvre ses fiches**, en tuile comme en ligne de tableau : une fenêtre
+  volante avec structure, moyens de contact, dernier échange, objectif,
+  prochaine action et notes, et un crayon qui la retourne en formulaire (nom,
+  type, structure, statut, Instagram, e-mail, téléphone, notes). Le clic ouvre
+  la fiche **sauf** sur un lien, un bouton, une liste ou un champ — sinon
+  changer un statut dans le tableau ouvrirait une fenêtre par-dessus.
 - **L'accueil ne porte plus aucune porte** : ni vers le Journal, ni vers Créer,
   et la banque d'idées n'y déborde plus. Ces lieux sont dans la barre.
 - **La typographie a un système de rôles** : la police dit la nature, la posture
@@ -128,8 +158,11 @@ La méthode reste la même pour l'affichage, et elle vaut d'être reprise :
   des colonnes, calculs du gist, et depuis « Terrain » — le tirage de la
   semaine, le décompte des jours avant le rendez-vous, la fenêtre de l'invite,
   la progression d'une relation après un envoi, l'ordre de la file.
-- **Ce qui reste non vérifié** : le glisser-déposer des colonnes, et les
-  chemins d'écriture des autres espaces (formation, FCH, perso).
+- **Ce qui reste non vérifié** : le glisser-déposer des colonnes, les chemins
+  d'écriture des autres espaces (formation, FCH, perso), et **le cochage d'une
+  tâche depuis le calendrier** — il n'y a aucune tâche `photo` datée en base, et
+  en créer une écrirait une tâche puis une victoire dans les vraies données. Le
+  rendu du cercle et le routage du clic sont vérifiés, pas le clic réel.
 
 **Les deux murs de photos ont été vérifiés ainsi** (12 août), avec de faux
 moments et des images SVG en 3:4 comme en 3:2, sans rien écrire en base :
@@ -149,6 +182,8 @@ avec relecture en base avant et après :
 - **Corriger un moment** : le formulaire renvoyé **sans rien changer**. La ligne
   est identique champ par champ après coup, rencontres comprises. Le chemin est
   donc éprouvé sans que la donnée bouge.
+- **Corriger un contact** : même méthode, sur la fiche d'Aaron Wan Bissaka.
+  Identique champ par champ après coup.
 - **Programmer une idée au glissement** : deux idées déposées sur des jours,
   `date_prevue` vérifiée en base, puis **remises à `null`**. État final relu :
   quinze idées, aucune datée — exactement l'état de départ.
