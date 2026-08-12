@@ -1610,7 +1610,107 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   min-height: 5.5rem;
 }
 
-.cal-semaine .cal-ligne { min-height: 13rem; }
+/* En vue semaine, le bandeau du haut ne porte que ce qui n'a pas d'heure : il
+   n'a donc pas besoin de la hauteur d'un mois. Et l'en-tête portant déjà la
+   date (« lun. 10 »), le numéro dans la case ferait doublon. */
+.cal-semaine .cal-ligne { min-height: 3.5rem; }
+.cal-semaine .cal-numero { display: none; }
+
+/* --- La grille horaire ------------------------------------------------------
+   C'est elle qui rend la semaine honnête : un bloc occupe sa vraie durée, et
+   deux blocs qui se chevauchent se partagent la largeur du jour. */
+
+.cal-heures {
+  --cal-heure: 3rem;
+
+  display: grid;
+  grid-template-columns: 3.25rem 1fr;
+  max-height: 30rem;
+  margin-top: var(--espace-8);
+  overflow-y: auto;
+  border: 1px solid var(--trait-cal, var(--bordure));
+  border-radius: var(--rayon-carte);
+}
+
+.cal-colonne-heures {
+  display: grid;
+  grid-auto-rows: var(--cal-heure);
+  border-right: 1px solid var(--trait-cal, var(--bordure));
+}
+
+.cal-heure-libelle {
+  padding: 0 var(--espace-4) 0 0;
+  font-family: var(--police-chiffre);
+  font-size: 0.625rem;
+  text-align: right;
+  color: var(--texte-discret);
+  /* Le libellé se pose SUR le trait de l'heure, pas au milieu de la case. */
+  transform: translateY(-0.4em);
+}
+
+.cal-heures-jours {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  /* Les traits d'heure sont peints, pas construits : 168 cases de plus pour
+     dessiner des lignes seraient du gâchis. */
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--trait-cal, var(--bordure)) 0 1px,
+    transparent 1px var(--cal-heure)
+  );
+}
+
+.cal-colonne-jour {
+  position: relative;
+  border-right: 1px solid var(--trait-cal, var(--bordure));
+  cursor: pointer;
+}
+
+.cal-colonne-jour:last-child { border-right: none; }
+
+.cal-bloc {
+  position: absolute;
+  z-index: 1;
+  overflow: hidden;
+  padding: 2px var(--espace-4);
+  font-family: inherit;
+  font-size: 0.6875rem;
+  line-height: 1.25;
+  text-align: left;
+  color: var(--texte);
+  background: color-mix(in srgb, var(--couleur-projet, var(--accent)) 26%, var(--fond-carte));
+  border: 1px solid var(--fond);
+  border-left: 3px solid var(--couleur-projet, var(--accent));
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.cal-bloc:hover {
+  background: color-mix(in srgb, var(--couleur-projet, var(--accent)) 38%, var(--fond-carte));
+}
+
+.cal-bloc-heure {
+  display: block;
+  font-family: var(--police-chiffre);
+  font-size: 0.5625rem;
+  color: var(--texte-discret);
+}
+
+.cal-bloc-titre {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+@media (max-width: 40rem) {
+  .cal-heures { --cal-heure: 2.5rem; grid-template-columns: 2.5rem 1fr; max-height: 24rem; }
+  .cal-heure-libelle { font-size: 0.5625rem; }
+  .cal-bloc { font-size: 0.5625rem; padding: 1px 2px; border-left-width: 2px; }
+  .cal-bloc-heure { display: none; }
+}
 
 /* Le fond d'un jour tient toute la hauteur de sa ligne, sous les barres. C'est
    lui la cible du glissement : pas de sélection de texte, sinon le navigateur
@@ -1903,7 +2003,7 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    lisibles à 375 px, et les barres se réduisent sans disparaître. */
 @media (max-width: 40rem) {
   .cal-ligne { min-height: 4.5rem; }
-  .cal-semaine .cal-ligne { min-height: 10rem; }
+  .cal-semaine .cal-ligne { min-height: 3rem; }
   .cal-entetes span { padding: 2px 3px; font-size: 0.625rem; letter-spacing: 0; }
   .cal-numero { min-width: 1.25rem; margin: 2px 0 1px; padding: 0 2px; font-size: 0.6875rem; }
   .cal-barre-element {

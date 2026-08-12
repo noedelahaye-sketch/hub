@@ -43,7 +43,21 @@ allumer pour quelle vue.
 événement de plusieurs jours est une barre continue, titrée une fois, placée en
 couloirs. Glisser sur des jours ouvre une fenêtre volante pour y poser un
 événement, une tâche, une publication ou un objectif ; cliquer une barre ouvre
-son détail, d'où elle se modifie et se supprime. Les filtres se cochent.
+son détail, d'où elle se modifie et se supprime ; la glisser la reporte. Les
+filtres se cochent, et le « +N » déplie la journée.
+
+**La vue semaine a ses heures** : un bandeau pour ce qui n'a pas d'heure, puis
+une grille de 24 h où un événement occupe sa vraie durée et où deux blocs qui se
+chevauchent se partagent la largeur. **Les événements peuvent se répéter**
+(chaque semaine, quinzaine, mois) — les occurrences ne sont pas stockées, elles
+se déduisent à la lecture.
+
+**Le calendrier se tient au clavier** : une tabulation pour y entrer, les
+flèches pour s'y déplacer, Entrée pour poser. La grille est un groupe nommé, pas
+un `role="grid"` — les barres sont des sœurs des cases, pas des cellules, et un
+faux tableau vaut moins qu'un groupe honnête. Voir
+[docs/calendriers-etude-ux.md](calendriers-etude-ux.md) pour le raisonnement
+complet et ce qui reste ouvert.
 
 **Données réelles en base** : les 44 contacts du carnet (dont trois portent un
 niveau de Passerelle), les 15 idées de départ avec leur pilier, et les 4 modèles
@@ -178,6 +192,12 @@ Noé ; le site et le dépôt sont publics. Les images ne s'affichent que par des
 URL signées d'une heure, refabriquées à chaque visite. Rendre le bucket public
 « pour simplifier » donnerait des liens recopiables par n'importe qui.
 
+**Les occurrences d'un événement récurrent ne sont pas stockées.** Une ligne en
+base, autant de dates que le calendrier en montre — c'est ce qui permet de
+changer l'heure d'un entraînement hebdomadaire d'un seul geste. Conséquence
+assumée : on ne peut pas décaler une seule occurrence. Le glissement est donc
+refusé sur une barre récurrente. Y toucher demandera une table d'exceptions.
+
 **La taille du texte se règle en un seul endroit** : `html { font-size }` dans
 `css/styles.css`. Tout le site est en rem et suit. Deux exceptions à ne pas
 « harmoniser » — l'espacement reste en px, et les champs de saisie sont tenus à
@@ -227,7 +247,7 @@ restaurée par le routeur. Ne pas « simplifier » ces id.
 | `js/api.js` | **Tous** les appels Supabase, une fonction par usage |
 | `js/espace-projet.js` | La fabrique d'espace projet (formation) + gabarits partagés |
 | `js/publications.js` | Le calendrier éditorial, partagé Yuno/FCH — ce qui diffère passe en paramètre (cycle, checklist, piliers) |
-| `js/calendrier-commun.js` | L'assemblage de tout ce qui porte une date |
+| `js/calendrier-commun.js` | L'assemblage de tout ce qui porte une date, les trois vues, les fenêtres, le glissement et le clavier |
 | `js/yuno.js` | Le site Yuno : le Carnet, la base du carnet réseau, la Passerelle, le rendez-vous stats |
 | `js/hermitage.js` | Le site FC Hermitage |
 | `js/revisions.js` | Lecture du gist Bac-3 — chaque calcul cite sa source |

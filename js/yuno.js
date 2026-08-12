@@ -44,7 +44,11 @@ import {
   fenetreDetail,
   fenetreJour,
   elementsDuJour,
+  finDeLEvenement,
+  heureSousLePoint,
+  cadrerLesHeures,
   brancherSelection,
+  brancherClavier,
   brancherDeplacement,
   champsApresDeplacement,
   deplacerAncre,
@@ -2014,6 +2018,10 @@ export default {
       affichageContact: 'tableau',
     };
 
+    // Déclaré ici parce que `rendre` s'en sert : la fonction est posée plus
+    // bas, quand les écouteurs se branchent.
+    let poserLEntreeClavier = null;
+
     const rendre = () => {
       if (etat.vue === 'journal') section.innerHTML = vueJournal(etat);
       else if (etat.vue === 'creer') section.innerHTML = vueCreer(etat);
@@ -2026,6 +2034,8 @@ export default {
 
       centrerActif(section.querySelector('.yuno-nav'));
       centrerActif(section.querySelector('.filtres'));
+      cadrerLesHeures(section);
+      poserLEntreeClavier?.();
     };
 
     // Ne redessine que la liste des contacts : réécrire la vue entière ferait
@@ -2219,12 +2229,13 @@ export default {
 
         if (type === 'evenement') {
           const debut = new Date(`${champs.debut}T${champs.heure || '00:00'}`);
-          const fin =
-            champs.fin && champs.fin !== champs.debut ? new Date(`${champs.fin}T23:59`) : null;
+          const fin = finDeLEvenement(debut, champs);
           await api.modifierEvenement(id, {
             titre,
             date_debut: debut.toISOString(),
             date_fin: fin ? fin.toISOString() : null,
+            recurrence: champs.recurrence || null,
+            recurrence_fin: champs.recurrence_fin || null,
             lieu: champs.lieu?.trim() || null,
             notes: champs.notes?.trim() || null,
           });
@@ -2291,16 +2302,15 @@ export default {
           // Sans heure, l'événement tient le jour entier : minuit local, et
           // `momentLisible` s'abstient alors d'afficher 00:00.
           const debut = new Date(`${champs.debut}T${champs.heure || '00:00'}`);
-          const fin =
-            champs.fin && champs.fin !== champs.debut
-              ? new Date(`${champs.fin}T23:59`)
-              : null;
+          const fin = finDeLEvenement(debut, champs);
 
           await api.creerEvenement({
             projet: 'photo',
             titre,
             date_debut: debut.toISOString(),
             date_fin: fin ? fin.toISOString() : null,
+            recurrence: champs.recurrence || null,
+            recurrence_fin: champs.recurrence_fin || null,
             lieu: champs.lieu?.trim() || null,
             notes: champs.notes?.trim() || null,
           });
@@ -2454,6 +2464,22 @@ export default {
         etat.captureOuverte = false;
         etat.prefillMoment = null;
         rendre();
+        return;
+      }
+
+      // Cliquer dans la grille horaire pose un événement à cette heure-là.
+      const creneau = evenement.target.closest('.cal-colonne-jour');
+      if (creneau && !evenement.target.closest('.cal-bloc')) {
+        const jour = creneau.dataset.jour;
+        etat.detailCal = null;
+        etat.creationCal = {
+          debut: jour,
+          fin: jour,
+          nature: 'evenement',
+          heure: heureSousLePoint(creneau, evenement.clientY),
+        };
+        rendre();
+        section.querySelector('#cal-titre')?.focus();
         return;
       }
 
@@ -2936,6 +2962,14 @@ export default {
 
     // Glisser sur les jours du calendrier ouvre le formulaire, rempli de la
     // plage choisie.
+    poserLEntreeClavier = brancherClavier(section, (jour) => {
+      etat.detailCal = null;
+      etat.creationCal = { debut: jour, fin: jour, nature: natureParDefaut(etat.natures) };
+      rendre();
+      section.querySelector('#cal-titre')?.focus();
+    });
+    poserLEntreeClavier();
+
     brancherSelection(section, ({ debut, fin }) => {
       etat.detailCal = null;
       etat.creationCal = { debut, fin, nature: natureParDefaut(etat.natures) };

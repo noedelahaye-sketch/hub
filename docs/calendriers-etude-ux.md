@@ -76,9 +76,17 @@ sur n'importe quel calendrier.
 vue jour — ce qui est défendable pour un usage personnel où les journées sont
 rarement chargées de dix créneaux.
 
-**Mais notre vue semaine n'a pas d'heures.** C'est une grille de sept colonnes
-de jours, pas une grille horaire. Elle ne montre donc pas la durée non plus, et
-perd l'essentiel de ce qui fait sa valeur. C'est le manque structurel n°1 (voir §8).
+✅ **La vue semaine a ses heures depuis le 12 août.** Elle se lit en deux
+zones : un bandeau du haut pour ce qui n'a pas d'heure — les tâches, les
+échéances, les événements de plusieurs jours — et en dessous une grille de
+vingt-quatre heures où un événement occupe sa vraie durée. Deux blocs qui se
+chevauchent se partagent la largeur du jour. La grille s'ouvre sur le premier
+événement de la semaine, pas sur minuit.
+
+Ça a demandé une donnée qui manquait : **une durée**. Un événement à 15 h
+n'avait aucune fin. Le formulaire demande maintenant « combien de temps »
+plutôt que deux sélecteurs d'heure — on pense « un match dure deux heures »,
+pas « de 15 h à 17 h ».
 
 ---
 
@@ -197,11 +205,13 @@ barres du calendrier font 1,25 rem de haut (environ 19 px) — en dessous, et
 c'est assumé pour tenir la densité, mais il faut le savoir : sur téléphone,
 viser une barre parmi trois demande de la précision.
 
-**Ce qui manque franchement**, et que je signale sans le déguiser : depuis que
-la grille est passée du `<table>` à des `<div>`, elle n'a **plus de sémantique**
-— pas de rôles, pas de noms accessibles sur les cases. Un lecteur d'écran n'y
-lit rien d'utile. Si ça ne te concerne pas aujourd'hui, ça reste une dette, et
-elle est peu coûteuse à rembourser (`role="grid"`, un `aria-label` par jour).
+✅ **La sémantique est posée depuis le 12 août**, mais pas celle qu'annonçait
+la première version de cette étude. La grille n'est **pas** déclarée
+`role="grid"` — les barres sont des sœurs des cases, pas des cellules d'une
+ligne, et annoncer un tableau dont on ne fournit la structure qu'à moitié est
+pire que ne rien annoncer. Elle est un groupe nommé (« Calendrier, août 2026 »),
+chaque case porte sa date en toutes lettres, et chaque barre sa nature, son
+titre et sa date.
 
 ---
 
@@ -230,23 +240,24 @@ publications et des relances, pas un cadre à trente réunions par semaine.
 **✅ 1 à 3 — faits le 12 août.** Le « +N » s'ouvre, les natures se
 reconnaissent à l'œil, et une barre se déplace au glissement. Reste ceci :
 
-**4. Les heures dans la vue semaine.** *Effet fort, coût élevé.* C'est ce qui
-rendrait la semaine « honnête » — voir la durée, les chevauchements, les trous.
-Mais c'est une refonte de la vue, et ça ne sert que si tu poses réellement des
-horaires. **À décider selon ton usage réel dans un mois**, pas maintenant.
-
-**5. La récurrence.** *Effet fort pour toi en particulier, coût élevé.* Une
-saison de football, ce sont des entraînements hebdomadaires et des matchs
-réguliers. Les saisir un par un est le genre de friction qui fait abandonner un
-outil. À poser sérieusement si tu commences à saisir la saison du FCH.
-
-**6. La navigation au clavier.** *Effet moyen, coût faible.*
-
-**7. La sémantique de la grille.** *Effet nul aujourd'hui, coût faible.* Une
-dette à solder quand on repasse dessus.
+**✅ 4 à 7 — faits le 12 août.** Les heures dans la vue semaine, la récurrence,
+la navigation au clavier et la sémantique de la grille.
 
 **8. La saisie en langage naturel.** *Effet moyen, coût élevé.* Ne vaut son prix
 qu'au-delà d'un certain volume de saisie. Pas maintenant.
+
+**Ce qui reste ouvert, et qui n'était pas dans le classement d'origine :**
+
+- **Décaler une seule occurrence d'une série.** Les occurrences ne sont pas
+  stockées — une ligne en base, autant de dates que le calendrier en montre.
+  C'est ce qui permet de changer l'heure d'un entraînement hebdomadaire d'un
+  seul geste, mais ça interdit l'exception. Le glissement est donc refusé sur
+  une barre récurrente, et le détail dit que modifier agit sur toute la série.
+  Le jour où ce besoin se présente, il faudra une table d'exceptions.
+- **Le projet reste porté par la seule couleur.** La nature se lit maintenant à
+  l'œil, le projet non.
+- **Déplacer un bloc dans la grille horaire.** Le glissement ne marche que sur
+  les barres du bandeau et de la vue mois.
 
 ---
 

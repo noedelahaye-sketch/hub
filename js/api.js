@@ -295,11 +295,20 @@ export async function creerTache({ projet, titre, statut = 'backlog', echeance =
   );
 }
 
-export async function creerEvenement({ projet, titre, date_debut, date_fin = null, lieu = null, notes = null }) {
+export async function creerEvenement({
+  projet,
+  titre,
+  date_debut,
+  date_fin = null,
+  lieu = null,
+  notes = null,
+  recurrence = null,
+  recurrence_fin = null,
+}) {
   return verifier(
     await client
       .from('evenements')
-      .insert({ projet, titre, date_debut, date_fin, lieu, notes })
+      .insert({ projet, titre, date_debut, date_fin, lieu, notes, recurrence, recurrence_fin })
       .select()
       .single(),
   );

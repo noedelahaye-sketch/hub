@@ -60,6 +60,48 @@ export function toutesLesNatures() {
   return new Set(Object.keys(NATURES));
 }
 
+// --- La récurrence -----------------------------------------------------------
+// Les occurrences ne sont pas stockées : une ligne en base, autant de dates que
+// le calendrier en montre. C'est ce qui permet de changer l'heure d'un
+// entraînement hebdomadaire d'un seul geste.
+
+export const RECURRENCES = {
+  '': 'Une seule fois',
+  hebdo: 'Chaque semaine',
+  quinzaine: 'Toutes les deux semaines',
+  mensuel: 'Chaque mois',
+};
+
+const PAS_EN_JOURS = { hebdo: 7, quinzaine: 14 };
+
+// La fenêtre d'expansion est large mais bornée : un an en arrière, trois ans
+// devant. Sans borne, un événement hebdomadaire sans fin déclarée produirait
+// une liste infinie.
+function occurrencesDe(evenement) {
+  const debut = new Date(evenement.date_debut);
+  if (!evenement.recurrence) return [debut];
+
+  const aujourdhui = new Date();
+  const plancher = ajouterJours(aujourdhui, -365);
+  const plafond = evenement.recurrence_fin
+    ? depuisDateISO(evenement.recurrence_fin)
+    : ajouterJours(aujourdhui, 365 * 3);
+
+  const pas = PAS_EN_JOURS[evenement.recurrence];
+  const dates = [];
+  const curseur = new Date(debut);
+
+  // La borne de tours est une ceinture : une date de fin aberrante ne doit pas
+  // faire tourner la boucle sans fin.
+  for (let tour = 0; tour < 400 && curseur <= plafond; tour += 1) {
+    if (curseur >= plancher) dates.push(new Date(curseur));
+    if (pas) curseur.setDate(curseur.getDate() + pas);
+    else curseur.setMonth(curseur.getMonth() + 1);
+  }
+
+  return dates;
+}
+
 // --- Assemblage --------------------------------------------------------------
 
 export function assemblerCalendrier({
@@ -73,22 +115,29 @@ export function assemblerCalendrier({
   const elements = [];
 
   for (const evenement of evenements) {
-    const date = new Date(evenement.date_debut);
-    elements.push({
-      id: evenement.id,
-      type: 'evenement',
-      source: evenement,
-      date,
-      // Le dernier jour occupé, s'il y en a plusieurs. L'agenda n'en fait rien
-      // — il dirait trois fois la même chose ; la grille s'en sert pour tirer
-      // une barre continue sur toute la durée.
-      jusqua: evenement.date_fin ? versDateISO(new Date(evenement.date_fin)) : null,
-      projet: evenement.projet,
-      titre: evenement.titre,
-      detail: evenement.lieu,
-      notes: evenement.notes,
-      quand: momentLisible(date),
-    });
+    const origine = new Date(evenement.date_debut);
+    // La durée est portée par la série, pas par chaque occurrence : on la
+    // mesure une fois et on la reporte.
+    const duree = evenement.date_fin ? new Date(evenement.date_fin) - origine : null;
+
+    for (const date of occurrencesDe(evenement)) {
+      elements.push({
+        id: evenement.id,
+        type: 'evenement',
+        source: evenement,
+        date,
+        recurrent: Boolean(evenement.recurrence),
+        // Le dernier jour occupé, s'il y en a plusieurs. L'agenda n'en fait
+        // rien — il dirait trois fois la même chose ; la grille s'en sert pour
+        // tirer une barre continue sur toute la durée.
+        jusqua: duree === null ? null : versDateISO(new Date(date.getTime() + duree)),
+        projet: evenement.projet,
+        titre: evenement.titre,
+        detail: evenement.lieu,
+        notes: evenement.notes,
+        quand: momentLisible(date),
+      });
+    }
   }
 
   for (const tache of taches) {
@@ -360,7 +409,11 @@ function barre(segment, montrerProjet) {
 
   return `<button type="button" class="${classes}"${projet}
     style="grid-column: ${segment.depuis + 1} / ${segment.jusqua + 2}; grid-row: ${segment.couloir + 2};"
+    ${element.recurrent ? 'data-recurrent' : ''}
     data-element="${echapper(element.type)}:${echapper(element.id)}"
+    aria-label="${echapper(
+      `${TYPES[element.type]} · ${element.titre} · ${element.quand ?? versDateISO(element.date)}`,
+    )}"
     title="${echapper(`${TYPES[element.type]} · ${element.titre}`)}">${
       // Le signe est décoratif : le titre de l'infobulle dit déjà la nature en
       // toutes lettres, pour qui n'y voit rien.
@@ -399,7 +452,10 @@ function ligneDeSemaine(jours, elements, options) {
         .filter(Boolean)
         .join(' ');
 
-      return `<div class="${classes}" data-jour="${cle}"
+      return `<div class="${classes}" data-jour="${cle}" role="button" tabindex="-1"
+        aria-label="${echapper(
+          jour.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }),
+        )}"
         style="grid-column: ${index + 1};"></div>`;
     })
     .join('');
@@ -443,6 +499,125 @@ function ligneDeSemaine(jours, elements, options) {
     </div>`;
 }
 
+// --- La vue semaine, avec ses heures -----------------------------------------
+// La vue mois écrase la durée : un appel de trente minutes et un match de deux
+// heures y occupent la même case. C'est la raison d'être de la semaine — elle
+// montre où les choses se tassent, et ce qui reste entre deux blocs.
+
+const HAUTEUR_HEURE = 3; // en rem, cf. --cal-heure dans la feuille de style
+
+// Un élément est horaire s'il porte une heure et tient dans sa journée. Tout le
+// reste — les sans-heure, les sur plusieurs jours, les tâches, les échéances —
+// vit dans le bandeau du haut : ça n'a pas de place dans le temps, seulement
+// un jour.
+function estHoraire(element) {
+  if (element.type !== 'evenement') return false;
+  const debut = element.date;
+  if (debut.getHours() === 0 && debut.getMinutes() === 0) return false;
+  return !element.jusqua || element.jusqua === versDateISO(debut);
+}
+
+// Deux blocs qui se chevauchent se partagent la largeur du jour. On regroupe
+// par grappes de chevauchement, puis on assigne une colonne dans chaque grappe.
+function placerDansLaJournee(elements) {
+  const blocs = elements
+    .map((element) => {
+      const debut = element.date;
+      const minutesDebut = debut.getHours() * 60 + debut.getMinutes();
+      const fin = element.source?.date_fin ? new Date(element.source.date_fin) : null;
+      // Sans fin déclarée, une heure de principe : mieux vaut un bloc lisible
+      // qu'un trait sans épaisseur.
+      const minutesFin = fin ? fin.getHours() * 60 + fin.getMinutes() : minutesDebut + 60;
+
+      return {
+        element,
+        depuis: minutesDebut,
+        jusqua: Math.max(minutesFin, minutesDebut + 20),
+      };
+    })
+    .sort((a, b) => a.depuis - b.depuis || b.jusqua - a.jusqua);
+
+  const grappes = [];
+  let grappe = [];
+  let borne = -1;
+
+  for (const bloc of blocs) {
+    if (bloc.depuis >= borne && grappe.length) {
+      grappes.push(grappe);
+      grappe = [];
+    }
+    grappe.push(bloc);
+    borne = Math.max(borne, bloc.jusqua);
+  }
+  if (grappe.length) grappes.push(grappe);
+
+  for (const membres of grappes) {
+    const colonnes = [];
+    for (const bloc of membres) {
+      let rang = colonnes.findIndex((colonne) => colonne <= bloc.depuis);
+      if (rang < 0) {
+        colonnes.push(bloc.jusqua);
+        rang = colonnes.length - 1;
+      } else {
+        colonnes[rang] = bloc.jusqua;
+      }
+      bloc.colonne = rang;
+    }
+    for (const bloc of membres) bloc.colonnes = colonnes.length;
+  }
+
+  return blocs;
+}
+
+function blocHoraire(bloc, montrerProjet) {
+  const { element, depuis, jusqua, colonne, colonnes } = bloc;
+  const haut = (depuis / 60) * HAUTEUR_HEURE;
+  const hauteur = Math.max(((jusqua - depuis) / 60) * HAUTEUR_HEURE, 1.1);
+  const largeur = 100 / colonnes;
+
+  return `<button type="button" class="cal-bloc"
+    ${montrerProjet ? `data-projet="${echapper(element.projet)}"` : ''}
+    style="top: ${haut}rem; height: ${hauteur}rem;
+      left: ${colonne * largeur}%; width: ${largeur}%;"
+    ${element.recurrent ? 'data-recurrent' : ''}
+    data-element="${echapper(element.type)}:${echapper(element.id)}"
+    title="${echapper(`${element.quand} · ${element.titre}`)}">
+    <span class="cal-bloc-heure">${echapper(
+      element.date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+    )}</span>
+    <span class="cal-bloc-titre">${echapper(element.titre)}</span>
+  </button>`;
+}
+
+function grilleHoraire(jours, elements, options) {
+  const horaires = elements.filter(estHoraire);
+
+  const colonnes = jours
+    .map((jour) => {
+      const cle = versDateISO(jour);
+      const blocs = placerDansLaJournee(
+        horaires.filter((element) => versDateISO(element.date) === cle),
+      );
+      return `<div class="cal-colonne-jour" data-jour="${cle}" role="button" tabindex="-1"
+        aria-label="${echapper(
+          jour.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }),
+        )} — poser à une heure">
+        ${blocs.map((bloc) => blocHoraire(bloc, options.montrerProjet)).join('')}
+      </div>`;
+    })
+    .join('');
+
+  const heures = Array.from({ length: 24 }, (_, heure) =>
+    `<span class="cal-heure-libelle">${String(heure).padStart(2, '0')}:00</span>`,
+  ).join('');
+
+  return `
+    <div class="cal-heures">
+      <div class="cal-colonne-heures">${heures}</div>
+      <div class="cal-heures-jours" style="height: ${24 * HAUTEUR_HEURE}rem;">${colonnes}</div>
+    </div>`;
+}
+
 export function construireGrille(
   elements,
   natures,
@@ -456,12 +631,35 @@ export function construireGrille(
   const options = {
     montrerProjet,
     // En vue mois une ligne ne peut pas tout montrer : trois couloirs, puis un
-    // reste. En semaine il y a la place, on montre tout.
+    // reste. Dans le bandeau de la semaine il y a la place, on montre tout.
     maximum: vue === 'semaine' ? 0 : 3,
     mois: vue === 'semaine' ? null : ancre.getMonth(),
     aujourdhui: versDateISO(new Date()),
     selection,
   };
+
+  if (vue === 'semaine') {
+    // Le bandeau ne porte que ce qui n'a pas d'heure : le reste descend dans
+    // la grille horaire, où il occupe sa vraie durée.
+    const sansHeure = retenus.filter((element) => !estHoraire(element));
+
+    return `
+      <div class="cal-grille cal-semaine" role="group"
+        aria-label="${echapper(`Calendrier, semaine du ${titreDePeriode(ancre, 'semaine')}`)}">
+        <div class="cal-entetes" aria-hidden="true">
+          ${jours
+            .map(
+              (jour) =>
+                `<span>${JOURS_COURTS[(jour.getDay() + 6) % 7]} ${jour.getDate()}</span>`,
+            )
+            .join('')}
+        </div>
+        ${ligneDeSemaine(jours, sansHeure, options)}
+      </div>
+      ${grilleHoraire(jours, retenus, options)}
+      <p class="discret cal-aide">Le bandeau du haut porte ce qui n'a pas d'heure.
+        Clique dans la grille pour poser un événement à cette heure-là.</p>`;
+  }
 
   const lignes = [];
   for (let debut = 0; debut < jours.length; debut += 7) {
@@ -469,7 +667,8 @@ export function construireGrille(
   }
 
   return `
-    <div class="cal-grille cal-${vue}">
+    <div class="cal-grille cal-mois" role="group"
+      aria-label="${echapper(`Calendrier, ${titreDePeriode(ancre, 'mois')}`)}">
       <div class="cal-entetes" aria-hidden="true">
         ${JOURS_COURTS.map((nom) => `<span>${nom}</span>`).join('')}
       </div>
@@ -477,6 +676,39 @@ export function construireGrille(
     </div>
     <p class="discret cal-aide">Touche un jour — ou glisse sur une série de jours —
       pour y poser quelque chose. Clique une barre pour la voir en détail.</p>`;
+}
+
+// Quand un événement finit, selon ce que le formulaire a reçu. Trois cas, et
+// c'est tout ce que la grille horaire a besoin de savoir :
+//   — une date de fin plus tardive : l'événement tient plusieurs jours, il vit
+//     dans le bandeau du haut et finit au soir du dernier ;
+//   — une heure et une durée : il occupe sa tranche, et la grille la dessine ;
+//   — ni l'un ni l'autre : il tient la journée, sans fin déclarée.
+export function finDeLEvenement(debut, champs) {
+  if (champs.fin && champs.fin !== champs.debut) return new Date(`${champs.fin}T23:59`);
+  if (!champs.heure) return null;
+
+  const minutes = Number(champs.duree) || 60;
+  return new Date(debut.getTime() + minutes * 60000);
+}
+
+// Poser dans la grille horaire : le Y du clic dit l'heure. On arrondit au
+// quart d'heure — personne ne cale un match à 15 h 07.
+export function heureSousLePoint(colonne, y) {
+  const cadre = colonne.getBoundingClientRect();
+  const proportion = Math.min(Math.max((y - cadre.top) / cadre.height, 0), 0.999);
+  const minutes = Math.round((proportion * 24 * 60) / 15) * 15;
+  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+}
+
+// La grille s'ouvre sur les heures qu'on vit, pas sur minuit.
+export function cadrerLesHeures(section) {
+  const cadre = section.querySelector('.cal-heures');
+  if (!cadre) return;
+
+  const premier = cadre.querySelector('.cal-bloc');
+  const cible = premier ? premier.offsetTop - 24 : 7 * HAUTEUR_HEURE * 16;
+  cadre.scrollTop = Math.max(cible, 0);
 }
 
 // --- L'agenda ----------------------------------------------------------------
@@ -583,6 +815,61 @@ export function brancherSelection(section, quandChoisi) {
   });
 }
 
+// --- Le clavier --------------------------------------------------------------
+// Une seule tabulation entre dans la grille, puis les flèches s'y déplacent :
+// c'est le motif d'un composant à plusieurs cases. Quarante-deux arrêts de
+// tabulation pour un mois, personne ne veut ça.
+//
+// La grille n'est PAS déclarée `role="grid"`, et c'est délibéré : les barres
+// sont des sœurs des cases, pas des cellules d'une ligne. Annoncer un tableau
+// puis n'en fournir la structure qu'à moitié est pire que ne rien annoncer.
+
+export function brancherClavier(section, quandJourChoisi) {
+  const cases = () => [...section.querySelectorAll('.cal-jour')];
+
+  // Une case porte la tabulation, une seule : aujourd'hui si elle est là,
+  // sinon la première du mois affiché.
+  const poserLEntree = () => {
+    const toutes = cases();
+    if (!toutes.length) return;
+    if (toutes.some((cellule) => cellule.tabIndex === 0)) return;
+
+    const entree =
+      toutes.find((cellule) => cellule.classList.contains('cal-aujourdhui')) ??
+      toutes.find((cellule) => !cellule.classList.contains('cal-hors-mois')) ??
+      toutes[0];
+    entree.tabIndex = 0;
+  };
+
+  const DEPLACEMENTS = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 };
+
+  section.addEventListener('keydown', (evenement) => {
+    const cellule = evenement.target.closest?.('.cal-jour');
+    if (!cellule) return;
+
+    if (evenement.key === 'Enter' || evenement.key === ' ') {
+      evenement.preventDefault();
+      quandJourChoisi(cellule.dataset.jour);
+      return;
+    }
+
+    const pas = DEPLACEMENTS[evenement.key];
+    if (!pas) return;
+
+    const toutes = cases();
+    const suivante = toutes[toutes.indexOf(cellule) + pas];
+    if (!suivante) return;
+
+    evenement.preventDefault();
+    cellule.tabIndex = -1;
+    suivante.tabIndex = 0;
+    suivante.focus();
+  });
+
+  // Après chaque redessin, la grille a perdu son point d'entrée.
+  return poserLEntree;
+}
+
 // --- Le déplacement d'une barre ----------------------------------------------
 // Reporter est l'action la plus fréquente après créer. Un glissement plutôt que
 // quatre gestes par le formulaire.
@@ -617,7 +904,9 @@ export function brancherDeplacement(section, quandDeplace) {
   section.addEventListener('pointerdown', (evenement) => {
     if (evenement.pointerType === 'touch') return;
     const barre = evenement.target.closest('.cal-barre-element');
-    if (!barre) return;
+    // Une série ne se déplace pas au glissement : décaler une occurrence
+    // décalerait toutes les autres, ce que personne n'attend d'un geste.
+    if (!barre || barre.hasAttribute('data-recurrent')) return;
 
     const jour = jourSousLePoint(evenement.clientX, evenement.clientY);
     if (!jour) return;
@@ -707,6 +996,18 @@ export function champsApresDeplacement(element, ecart) {
 // Ce qu'une nature sait recevoir depuis le calendrier. L'espace perso n'a ni
 // tâches, ni jalons, ni publications : il n'apparaît que pour un événement —
 // un rendez-vous avec soi-même a toute sa place au calendrier.
+// Une durée en minutes plutôt que deux sélecteurs d'heure : on pense « un match
+// dure deux heures », pas « de 15 h à 17 h ». Elle ne sert que si une heure est
+// donnée — sans heure, l'événement tient la journée.
+export const DUREES = {
+  30: '30 minutes',
+  60: '1 heure',
+  90: '1 h 30',
+  120: '2 heures',
+  180: '3 heures',
+  240: '4 heures',
+};
+
 const CHAMPS_PAR_NATURE = {
   evenement: [
     { nom: 'lieu', libelle: 'Où (facultatif)', type: 'text' },
@@ -740,7 +1041,7 @@ export function natureParDefaut(natures) {
   return seule in NATURES_CREABLES ? seule : 'evenement';
 }
 
-export function fenetreCreation({ debut, fin, nature = 'evenement', projets = null }) {
+export function fenetreCreation({ debut, fin, nature = 'evenement', heure = '', projets = null }) {
   const memeJour = debut === fin;
   const jourLisible = (cle) =>
     depuisDateISO(cle).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -807,12 +1108,36 @@ export function fenetreCreation({ debut, fin, nature = 'evenement', projets = nu
         ...(nature === 'evenement'
           ? [
               { nom: 'debut', libelle: 'Du', type: 'date', requis: true, valeur: debut },
-              { nom: 'heure', libelle: 'À quelle heure (vide = toute la journée)', type: 'time' },
+              {
+                nom: 'heure',
+                libelle: 'À quelle heure (vide = toute la journée)',
+                type: 'time',
+                valeur: heure,
+              },
+              {
+                nom: 'duree',
+                libelle: 'Combien de temps (si une heure est donnée)',
+                type: 'select',
+                options: DUREES,
+                valeur: '120',
+              },
               {
                 nom: 'fin',
                 libelle: "Jusqu'au (vide = un seul jour)",
                 type: 'date',
                 valeur: memeJour ? '' : fin,
+              },
+              {
+                nom: 'recurrence',
+                libelle: 'Se répète',
+                type: 'select',
+                options: RECURRENCES,
+                valeur: '',
+              },
+              {
+                nom: 'recurrence_fin',
+                libelle: 'Se répète jusqu\'au (facultatif)',
+                type: 'date',
               },
             ]
           : [{ nom: 'debut', libelle: 'Quand', type: 'date', requis: true, valeur: debut }]),
@@ -861,6 +1186,30 @@ function champsDeModification(element) {
         libelle: "Jusqu'au (vide = un seul jour)",
         type: 'date',
         valeur: ligne.date_fin ? versDateISO(new Date(ligne.date_fin)) : '',
+      },
+      {
+        nom: 'duree',
+        libelle: 'Combien de temps (si une heure est donnée)',
+        type: 'select',
+        options: DUREES,
+        valeur: String(
+          ligne.date_fin && versDateISO(new Date(ligne.date_fin)) === versDateISO(debut)
+            ? Math.round((new Date(ligne.date_fin) - debut) / 60000)
+            : 120,
+        ),
+      },
+      {
+        nom: 'recurrence',
+        libelle: 'Se répète',
+        type: 'select',
+        options: RECURRENCES,
+        valeur: ligne.recurrence ?? '',
+      },
+      {
+        nom: 'recurrence_fin',
+        libelle: 'Se répète jusqu\'au (facultatif)',
+        type: 'date',
+        valeur: ligne.recurrence_fin ?? '',
       },
       { nom: 'lieu', libelle: 'Où', type: 'text', valeur: ligne.lieu ?? '' },
       { nom: 'notes', libelle: 'Notes', type: 'textarea', valeur: ligne.notes ?? '' },
@@ -1000,6 +1349,13 @@ export function fenetreDetail(element, { montrerProjet = false, edition = false 
   const contenu = `
     ${enTete}
     <h3 class="cal-detail-titre">${echapper(element.titre)}</h3>
+    ${
+      element.recurrent
+        ? `<p class="discret cal-detail-serie">${echapper(
+            RECURRENCES[element.source?.recurrence] ?? 'Se répète',
+          )} — modifier ou supprimer agit sur toute la série.</p>`
+        : ''
+    }
     <p class="discret cal-fenetre-quand">${echapper(
       element.quand ??
         element.date.toLocaleDateString('fr-FR', {

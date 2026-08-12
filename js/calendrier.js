@@ -22,7 +22,11 @@ import {
   fenetreDetail,
   fenetreJour,
   elementsDuJour,
+  finDeLEvenement,
+  heureSousLePoint,
+  cadrerLesHeures,
   brancherSelection,
+  brancherClavier,
   brancherDeplacement,
   champsApresDeplacement,
   deplacerAncre,
@@ -50,6 +54,10 @@ export default {
       edition: false,
       jourOuvert: null,
     };
+
+    // Déclaré ici parce que `rendre` s'en sert : la fonction est posée plus
+    // bas, quand les écouteurs se branchent.
+    let poserLEntreeClavier = null;
 
     function rendre() {
       section.innerHTML = `
@@ -82,6 +90,8 @@ export default {
         }`;
 
       centrerActif(section.querySelector('.filtres'));
+      cadrerLesHeures(section);
+      poserLEntreeClavier?.();
     }
 
     async function charger() {
@@ -134,6 +144,16 @@ export default {
       rendre();
     };
 
+    // Entrée ou Espace sur une case posée au clavier ouvre la même fenêtre
+    // qu'un clic.
+    poserLEntreeClavier = brancherClavier(section, (jour) => {
+      etat.detail = null;
+      etat.creation = { debut: jour, fin: jour, nature: natureParDefaut(etat.natures) };
+      rendre();
+      section.querySelector('#cal-titre')?.focus();
+    });
+    poserLEntreeClavier();
+
     brancherSelection(section, ({ debut, fin }) => {
       etat.detail = null;
       etat.creation = { debut, fin, nature: natureParDefaut(etat.natures) };
@@ -181,6 +201,22 @@ export default {
           debut: section.querySelector('#cal-debut')?.value || etat.creation.debut,
           fin: section.querySelector('#cal-fin')?.value || etat.creation.fin,
           nature: nature.dataset.natureCreation,
+        };
+        rendre();
+        section.querySelector('#cal-titre')?.focus();
+        return;
+      }
+
+      // Cliquer dans la grille horaire pose un événement à cette heure-là.
+      const creneau = evenement.target.closest('.cal-colonne-jour');
+      if (creneau && !evenement.target.closest('.cal-bloc')) {
+        const jour = creneau.dataset.jour;
+        etat.detail = null;
+        etat.creation = {
+          debut: jour,
+          fin: jour,
+          nature: 'evenement',
+          heure: heureSousLePoint(creneau, evenement.clientY),
         };
         rendre();
         section.querySelector('#cal-titre')?.focus();
@@ -331,11 +367,13 @@ export default {
 
       if (type === 'evenement') {
         const debut = new Date(`${champs.debut}T${champs.heure || '00:00'}`);
-        const fin = champs.fin && champs.fin !== champs.debut ? new Date(`${champs.fin}T23:59`) : null;
+        const fin = finDeLEvenement(debut, champs);
         return appliquerA(type, id, {
           titre,
           date_debut: debut.toISOString(),
           date_fin: fin ? fin.toISOString() : null,
+          recurrence: champs.recurrence || null,
+          recurrence_fin: champs.recurrence_fin || null,
           lieu: champs.lieu?.trim() || null,
           notes: champs.notes?.trim() || null,
         });
@@ -408,16 +446,15 @@ export default {
       // Sans heure, l'événement tient le jour entier : minuit local, et
       // `momentLisible` s'abstient alors d'afficher 00:00.
       const debut = new Date(`${champs.debut}T${champs.heure || '00:00'}`);
-      const fin =
-            champs.fin && champs.fin !== champs.debut
-              ? new Date(`${champs.fin}T23:59`)
-              : null;
+      const fin = finDeLEvenement(debut, champs);
 
       return api.creerEvenement({
         projet,
         titre,
         date_debut: debut.toISOString(),
         date_fin: fin ? fin.toISOString() : null,
+        recurrence: champs.recurrence || null,
+        recurrence_fin: champs.recurrence_fin || null,
         lieu: champs.lieu?.trim() || null,
         notes: champs.notes?.trim() || null,
       });
