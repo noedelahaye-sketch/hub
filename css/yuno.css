@@ -207,22 +207,55 @@ body[data-espace="yuno"] #vue .bloc h2 {
 
 .compteurs .discret { font-size: 0.75rem; line-height: 1.2; }
 
-/* Ajouter un moment est L'action de la page : le bouton se voit. Le reste des
-   formulaires du site garde son pli discret. */
-[data-ajout="moment"] > summary {
+/* Ajouter un moment est L'action de la page : le bouton se voit. Il ouvre une
+   fenêtre, comme au calendrier — le geste est le même partout. */
+.bouton-capture {
+  display: flex;
+  align-items: center;
   justify-content: center;
+  gap: var(--espace-8);
+  width: 100%;
+  height: 100%;
   min-height: 3rem;
   padding: 0 var(--espace-16);
+  font-family: inherit;
   font-size: 0.9375rem;
   font-weight: 600;
   white-space: nowrap;
   color: var(--fond-carte);
   background: var(--accent);
+  border: none;
+  border-radius: var(--rayon-controle);
+  cursor: pointer;
+}
+
+.bouton-capture-signe {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1px solid currentColor;
+  border-radius: var(--rayon-pastille);
+  line-height: 1;
+}
+
+/* La photo jointe : elle occupe la largeur de la tuile, sans jamais la
+   déformer. Un clic l'ouvre en grand. */
+.moment-image {
+  display: block;
+  width: 100%;
+  margin-top: var(--espace-8);
+  overflow: hidden;
   border-radius: var(--rayon-controle);
 }
 
-[data-ajout="moment"] > summary::before { border-color: currentColor; }
-[data-ajout="moment"] > summary:hover { color: var(--fond-carte); }
+.moment-image img {
+  display: block;
+  width: 100%;
+  max-height: 20rem;
+  object-fit: cover;
+}
 
 /* Une œuvre finie se signale dans la couleur de la marque : c'est ce qu'on
    vient chercher. Le type du moment reste en étiquette neutre. */
@@ -447,6 +480,13 @@ body[data-espace="yuno"] #vue .bloc h2 {
 /* --- La banque d'idées ------------------------------------------------------ */
 
 .banque-intro { margin: -4px 0 var(--espace-16); font-size: 0.9375rem; }
+
+/* Deux portes côte à côte quand il y a la place, l'une sous l'autre sinon. */
+.portes { display: grid; gap: var(--espace-8); }
+
+@media (min-width: 45rem) {
+  .portes { grid-template-columns: repeat(2, 1fr); }
+}
 
 .barre-banque {
   display: flex;

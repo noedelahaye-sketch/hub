@@ -13,7 +13,11 @@
 // Une idée est une publication sans date : même table, deux vues.
 
 import * as api from './api.js';
-import { construireFormulaire, construireObjectifs } from './espace-projet.js';
+import {
+  construireFormulaire,
+  construireFenetre,
+  construireObjectifs,
+} from './espace-projet.js';
 import {
   STATUTS_YUNO,
   NOMS_STATUTS,
@@ -90,12 +94,12 @@ function construirePiliers() {
     </div>`;
 }
 
-const VUES = ['accueil', 'journal', 'creer', 'banque', 'calendrier', 'reseau'];
+const VUES = ['accueil', 'journal', 'creer', 'banque', 'calendrier', 'reseau', 'passerelle', 'carnet'];
 
 // La banque est une pièce de l'atelier : elle n'a pas son onglet, elle garde
 // celui de Créer allumé. Une barre de navigation ne doit pas grandir à chaque
 // écran qu'on ajoute.
-const ONGLET_DE_LA_VUE = { banque: 'creer' };
+const ONGLET_DE_LA_VUE = { banque: 'creer', passerelle: 'reseau', carnet: 'reseau' };
 
 // --- Fabrication du HTML ----------------------------------------------------
 
@@ -214,7 +218,9 @@ function ligneRencontres(moment) {
 // Le retrait appartient au Journal, où l'on gère. L'aperçu de l'accueil garde
 // en revanche le « + » d'une rencontre : ouvrir une fiche pousse vers les gens,
 // et ça vaut partout où un nom s'affiche.
-function carteMoment(moment, retirable = true) {
+function carteMoment(moment, retirable = true, photos = {}) {
+  const photo = moment.photo_chemin ? photos[moment.photo_chemin] : null;
+
   return `
     <li class="moment">
       <span class="tuile-entete">
@@ -233,7 +239,15 @@ function carteMoment(moment, retirable = true) {
       ${moment.lieu ? `<span class="moment-lieu">${echapper(moment.lieu)}</span>` : ''}
       ${ligneRencontres(moment)}
       ${
-        moment.photo_fiere
+        photo
+          ? `<a class="moment-image" href="${echapper(photo)}" target="_blank" rel="noopener">
+               <img src="${echapper(photo)}" alt="La photo dont je suis fier"
+                 loading="lazy"></a>`
+          : ''
+      }
+      ${
+        // Une phrase écrite avant que la photo puisse être jointe : elle reste.
+        !photo && moment.photo_fiere
           ? `<span class="moment-photo"><span class="discret">La photo dont je suis fier</span><span>${echapper(
               moment.photo_fiere,
             )}</span></span>`
@@ -259,7 +273,7 @@ function carteVictoire(victoire) {
 
 // L'aperçu de l'accueil : les derniers moments, et rien de plus. C'est le
 // principal de la page, mais c'est une vitrine — on gère au Journal.
-export function construireApercuMoments(moments, limite = 3) {
+export function construireApercuMoments(moments, photos = {}, limite = 3) {
   if (!moments.length) {
     return `<p class="vide">Ton premier moment s'inscrit ici — un match, un concert, une sortie.</p>`;
   }
@@ -271,19 +285,19 @@ export function construireApercuMoments(moments, limite = 3) {
         String(b.created_at).localeCompare(String(a.created_at)),
     )
     .slice(0, limite)
-    .map((moment) => carteMoment(moment, false))
+    .map((moment) => carteMoment(moment, false, photos))
     .join('')}</ul>`;
 }
 
 // Le Journal : le fil complet, et le mur des victoires. Les moments et les
 // victoires d'avant le carnet s'y mêlent. Les victoires nées d'un moment sont
 // écartées — le moment est déjà là, et plus riche que son reflet.
-export function construireCarnet(moments, victoires) {
+export function construireCarnet(moments, victoires, photos = {}) {
   const entrees = [
     ...moments.map((moment) => ({
       date: moment.date,
       created_at: moment.created_at,
-      html: carteMoment(moment),
+      html: carteMoment(moment, true, photos),
     })),
     ...victoires
       .filter((victoire) => victoire.source !== 'moment')
@@ -310,27 +324,45 @@ export function construireCarnet(moments, victoires) {
 // `prefill` arrive quand l'invite du calendrier a été acceptée : la date et le
 // lieu de l'événement sont déjà là, il ne reste qu'à raconter.
 function formulaireMoment(contacts, prefill = null) {
-  return construireFormulaire({
-    id: 'moment',
-    libelle: 'Ajouter un moment',
-    action: 'ajouter-moment',
-    bouton: 'Inscrire au carnet',
-    ouvert: Boolean(prefill),
-    champs: [
-      { nom: 'date', libelle: 'Quand', type: 'date', valeur: prefill?.date ?? versDateISO() },
-      { nom: 'type', libelle: 'Quoi', type: 'select', options: TYPES_MOMENT, valeur: 'match' },
-      { nom: 'lieu', libelle: 'Événement ou lieu', type: 'text', valeur: prefill?.lieu ?? '' },
-      {
-        nom: 'rencontres',
-        libelle: "Qui j'ai rencontré (sépare par une barre oblique)",
-        type: 'text',
-        suggestions: contacts.map((contact) => contact.nom),
-      },
-      { nom: 'photo_fiere', libelle: 'La photo dont je suis fier', type: 'text' },
-      { nom: 'note', libelle: 'Note libre', type: 'textarea' },
-      { nom: 'oeuvre_finie', libelle: 'Une œuvre finie', type: 'checkbox' },
-    ],
-  });
+  return construireFenetre(
+    'Ajouter un moment',
+    `<h3 class="fenetre-titre">Ajouter un moment</h3>
+     ${construireFormulaire({
+       id: 'moment',
+       action: 'ajouter-moment',
+       bouton: 'Inscrire au carnet',
+       // Dans une fenêtre, le titre est déjà dit : le formulaire se rend nu.
+       avecPli: false,
+       champs: [
+         { nom: 'date', libelle: 'Quand', type: 'date', valeur: prefill?.date ?? versDateISO() },
+         { nom: 'type', libelle: 'Quoi', type: 'select', options: TYPES_MOMENT, valeur: 'match' },
+         { nom: 'lieu', libelle: 'Événement ou lieu', type: 'text', valeur: prefill?.lieu ?? '' },
+         {
+           nom: 'rencontres',
+           libelle: "Qui j'ai rencontré (sépare par une barre oblique)",
+           type: 'text',
+           suggestions: contacts.map((contact) => contact.nom),
+         },
+         {
+           nom: 'photo',
+           libelle: 'La photo dont je suis fier',
+           type: 'file',
+           accepte: 'image/*',
+         },
+         { nom: 'note', libelle: 'Note libre', type: 'textarea' },
+         { nom: 'oeuvre_finie', libelle: 'Une œuvre finie', type: 'checkbox' },
+       ],
+     })}`,
+  );
+}
+
+// Le bouton qui ouvre la capture. Il reste à sa place, à gauche des compteurs ;
+// c'est la fenêtre qui vient par-dessus.
+function boutonCapture() {
+  return `
+    <button type="button" class="bouton-capture" data-ouvrir-capture>
+      <span class="bouton-capture-signe" aria-hidden="true">+</span> Ajouter un moment
+    </button>`;
 }
 
 // --- Le rendez-vous stats ----------------------------------------------------
@@ -556,14 +588,14 @@ function vueAccueil(etat) {
     <section class="bloc">
       ${construireInvite(etat)}
       <div class="carnet-entete">
-        ${formulaireMoment(etat.contacts, etat.prefillMoment)}
+        ${boutonCapture()}
         ${construireCompteurs(etat.moments)}
       </div>
     </section>
 
     <section class="bloc">
       <h2>Derniers moments</h2>
-      <div data-bloc="apercu-moments">${construireApercuMoments(etat.moments)}</div>
+      <div data-bloc="apercu-moments">${construireApercuMoments(etat.moments, etat.photos)}</div>
       <a class="lien-externe" href="#yuno/journal">
         <span class="lien-externe-texte">
           <span class="lien-externe-titre">Ouvrir le journal</span>
@@ -600,6 +632,7 @@ function vueAccueil(etat) {
         <span class="lien-externe-fleche" aria-hidden="true">→</span>
       </a>
     </section>
+    ${etat.captureOuverte ? formulaireMoment(etat.contacts, etat.prefillMoment) : ''}
     ${pied()}`;
 }
 
@@ -612,15 +645,16 @@ function vueJournal(etat) {
     <section class="bloc">
       ${construireInvite(etat)}
       <div class="carnet-entete">
-        ${formulaireMoment(etat.contacts, etat.prefillMoment)}
+        ${boutonCapture()}
         ${construireCompteurs(etat.moments)}
       </div>
     </section>
 
     <section class="bloc">
       <h2>Le carnet de terrain</h2>
-      <div data-bloc="carnet">${construireCarnet(etat.moments, etat.victoires)}</div>
+      <div data-bloc="carnet">${construireCarnet(etat.moments, etat.victoires, etat.photos)}</div>
     </section>
+    ${etat.captureOuverte ? formulaireMoment(etat.contacts, etat.prefillMoment) : ''}
     ${pied()}`;
 }
 
@@ -1069,7 +1103,7 @@ const COLONNES = [
   },
 ];
 
-export const AFFICHAGES = { tableau: 'Tableau', fiches: 'Fiches', passerelle: 'Passerelle' };
+export const AFFICHAGES = { tableau: 'Tableau', fiches: 'Fiches' };
 
 // Un contact peut avoir deux comptes ou deux adresses — le carnet de Noé en
 // contient, séparés par une barre oblique. Chacun devient son propre lien.
@@ -1663,11 +1697,6 @@ export function construirePasserelle(contacts, { envois = [], objectifDoux = 1, 
 export function construireContacts(contacts, options = {}) {
   const retenus = baseContacts(contacts, options);
 
-  // La Passerelle est un dessin de la base comme les autres — la recherche et
-  // les filtres agissent dessus aussi. Elle n'affiche pas « 4 sur 12 » : une
-  // file d'action n'est pas un inventaire.
-  if (options.affichage === 'passerelle') return construirePasserelle(retenus, options);
-
   const compte = `<p class="discret compte-base"><span class="chiffre">${retenus.length}</span> sur <span class="chiffre">${contacts.length}</span></p>`;
 
   const dessin =
@@ -1678,11 +1707,71 @@ export function construireContacts(contacts, options = {}) {
   return compte + dessin;
 }
 
+// Réseau est devenu un palier : deux outils qui partagent la même base mais
+// pas le même geste. Le carnet est un fonds où l'on cherche ; la Passerelle est
+// une file où l'on agit. Les mêler sur un écran obligeait à basculer entre les
+// deux pour rien.
 function vueReseau(etat) {
+  const dansLaFile = etat.contacts.filter((contact) => contact.niveau).length;
+
   return `
     ${enTete('reseau')}
 
     <section class="bloc">
+      <h2>Le réseau</h2>
+      <div class="portes">
+        <a class="lien-externe" href="#yuno/passerelle">
+          <span class="lien-externe-texte">
+            <span class="lien-externe-titre">La Passerelle</span>
+            <span class="discret">${
+              dansLaFile
+                ? `<span class="chiffre">${dansLaFile}</span> dans la file · <span class="chiffre">${etat.envois.length}</span> messages envoyés`
+                : "La file d'aller-vers, à remplir depuis le carnet"
+            }</span>
+          </span>
+          <span class="lien-externe-fleche" aria-hidden="true">→</span>
+        </a>
+
+        <a class="lien-externe" href="#yuno/carnet">
+          <span class="lien-externe-texte">
+            <span class="lien-externe-titre">Le carnet</span>
+            <span class="discret"><span class="chiffre">${etat.contacts.length}</span> fiches ·
+              tableau, fiches, filtres</span>
+          </span>
+          <span class="lien-externe-fleche" aria-hidden="true">→</span>
+        </a>
+      </div>
+    </section>
+
+    ${blocCommandes(etat)}
+    ${pied()}`;
+}
+
+// La Passerelle : la file d'action, et rien d'autre. Pas de panneau de
+// colonnes ici — on n'y range pas, on y écrit.
+function vuePasserelle(etat) {
+  return `
+    ${enTete('passerelle')}
+
+    <section class="bloc">
+      <h2>La Passerelle</h2>
+      <input type="search" id="recherche-contact" class="recherche"
+        placeholder="Chercher dans la file…"
+        value="${echapper(etat.rechercheContact)}">
+      <div data-bloc="contacts">${construirePasserelle(
+        baseContacts(etat.contacts, optionsBase(etat)),
+        optionsBase(etat),
+      )}</div>
+    </section>
+    ${pied()}`;
+}
+
+function vueCarnet(etat) {
+  return `
+    ${enTete('carnet')}
+
+    <section class="bloc">
+      <h2>Le carnet</h2>
       <div class="barre-base">
         <input type="search" id="recherche-contact" class="recherche"
           placeholder="Chercher partout dans le carnet…"
@@ -1732,8 +1821,6 @@ function vueReseau(etat) {
         ],
       })}
     </section>
-
-    ${blocCommandes(etat)}
     ${pied()}`;
 }
 
@@ -1891,6 +1978,8 @@ export default {
       stats: [],
       ecartes: evenementsEcartes(),
       prefillMoment: null,
+      captureOuverte: false,
+      photos: {},
       jourRdv: jourRendezVousEnregistre(),
       objectifDoux: objectifDouxEnregistre(),
       vue: 'accueil',
@@ -1921,6 +2010,8 @@ export default {
       else if (etat.vue === 'banque') section.innerHTML = vueBanque(etat);
       else if (etat.vue === 'calendrier') section.innerHTML = vueCalendrier(etat);
       else if (etat.vue === 'reseau') section.innerHTML = vueReseau(etat);
+      else if (etat.vue === 'passerelle') section.innerHTML = vuePasserelle(etat);
+      else if (etat.vue === 'carnet') section.innerHTML = vueCarnet(etat);
       else section.innerHTML = vueAccueil(etat);
 
       centrerActif(section.querySelector('.yuno-nav'));
@@ -1931,9 +2022,13 @@ export default {
     // perdre le curseur du champ de recherche à chaque lettre.
     const rendreContacts = () => {
       const cible = section.querySelector('[data-bloc="contacts"]');
-      if (cible) {
-        cible.innerHTML = construireContacts(etat.contacts, optionsBase(etat));
-      }
+      if (!cible) return;
+
+      // Les deux outils partagent la base et le bloc, pas le dessin.
+      cible.innerHTML =
+        etat.vue === 'passerelle'
+          ? construirePasserelle(baseContacts(etat.contacts, optionsBase(etat)), optionsBase(etat))
+          : construireContacts(etat.contacts, optionsBase(etat));
     };
 
     const rendreCommandes = () => {
@@ -2009,6 +2104,11 @@ export default {
         modeles,
         stats,
       });
+
+      // Les photos vivent dans un bucket privé : leurs adresses se signent à la
+      // lecture, toutes ensemble.
+      const chemins = moments.map((moment) => moment.photo_chemin).filter(Boolean);
+      if (chemins.length) etat.photos = await api.urlsDesPhotos(chemins);
     } catch (erreur) {
       console.error("Chargement de l'espace Yuno impossible", erreur);
       section.innerHTML = `
@@ -2055,11 +2155,17 @@ export default {
 
     async function appliquer(action, champs) {
       if (action === 'ajouter-moment') {
+        // La photo part avant le moment : si le téléversement échoue, rien
+        // n'est écrit et le formulaire reste rempli.
+        const fichier = champs.photo;
+        const chemin =
+          fichier instanceof File && fichier.size ? await api.televerserPhotoMoment(fichier) : null;
+
         const moment = {
           date: champs.date || versDateISO(),
           type: champs.type,
           lieu: champs.lieu?.trim() || null,
-          photo_fiere: champs.photo_fiere?.trim() || null,
+          photo_chemin: chemin,
           note: champs.note?.trim() || null,
           oeuvre_finie: champs.oeuvre_finie === 'oui',
         };
@@ -2070,8 +2176,11 @@ export default {
           titre: titreDuMoment(moment),
         });
 
+        if (chemin) Object.assign(etat.photos, await api.urlsDesPhotos([chemin]));
+
         etat.moments = [logue, ...etat.moments];
         etat.prefillMoment = null;
+        etat.captureOuverte = false;
         rendre();
         // C'est fait : la capture se referme, le moment est au carnet. Le site
         // réussit quand on le quitte, pas quand il retient.
@@ -2305,10 +2414,19 @@ export default {
     // --- Clics ---
 
     section.addEventListener('click', async (evenement) => {
+      if (evenement.target.closest('[data-ouvrir-capture]')) {
+        etat.captureOuverte = true;
+        rendre();
+        section.querySelector('#moment-lieu')?.focus();
+        return;
+      }
+
       if (evenement.target.closest('[data-fermer-fenetre]')) {
         etat.creationCal = null;
         etat.detailCal = null;
         etat.editionCal = false;
+        etat.captureOuverte = false;
+        etat.prefillMoment = null;
         rendre();
         return;
       }
@@ -2591,6 +2709,7 @@ export default {
           date: versDateISO(new Date(passe.date_debut)),
           lieu: passe.titre,
         };
+        etat.captureOuverte = true;
         etat.ecartes = ecarterEvenement(passe.id);
         rendre();
         return;
@@ -2725,7 +2844,7 @@ export default {
         if (!moment || !confirm(`Retirer « ${titreDuMoment(moment)} » du carnet ?`)) return;
         supprimerMoment.disabled = true;
         try {
-          await api.supprimerMoment(id);
+          await api.supprimerMoment(id, moment.photo_chemin);
           etat.moments = etat.moments.filter((candidat) => candidat.id !== id);
           rendre();
         } catch (souci) {
@@ -2783,9 +2902,12 @@ export default {
 
     // Échap ferme la fenêtre — c'est le geste attendu partout ailleurs.
     document.addEventListener('keydown', (touche) => {
-      if (touche.key !== 'Escape' || !(etat.creationCal || etat.detailCal)) return;
+      if (touche.key !== 'Escape') return;
+      if (!(etat.creationCal || etat.detailCal || etat.captureOuverte)) return;
       etat.creationCal = null;
       etat.detailCal = null;
+      etat.captureOuverte = false;
+      etat.prefillMoment = null;
       rendre();
     });
 

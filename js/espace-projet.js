@@ -263,6 +263,21 @@ export function construireVictoires(victoires) {
 // gabarit sert à l'ajout comme à la modification. Un champ peut être un
 // `select` (avec `options: { valeur: libellé }`), une `checkbox`, ou porter des
 // `suggestions` (saisie libre + liste d'appui, via datalist).
+// Une fenêtre par-dessus la page : on pose une chose sans quitter la vue
+// d'ensemble, et on la referme d'un geste. `data-fermer-fenetre` est le seul
+// crochet à brancher — le fond comme la croix le portent.
+export function construireFenetre(titre, contenu) {
+  return `
+    <div class="fenetre-fond" data-fermer-fenetre></div>
+    <div class="fenetre" role="dialog" aria-modal="true" aria-label="${echapper(titre)}">
+      <button type="button" class="fenetre-fermer" data-fermer-fenetre
+        aria-label="Fermer">×</button>
+      ${contenu}
+    </div>`;
+}
+
+// `avecPli` à false rend le formulaire nu, sans son dépliant : dans une
+// fenêtre, le titre est déjà dit par la fenêtre elle-même.
 export function construireFormulaire({
   id,
   libelle,
@@ -271,6 +286,7 @@ export function construireFormulaire({
   extra = '',
   bouton = 'Ajouter',
   ouvert = false,
+  avecPli = true,
 }) {
   const rendreChamp = (champ) => {
     const idChamp = `${id}-${champ.nom}`;
@@ -293,6 +309,13 @@ export function construireFormulaire({
             }>${echapper(libelleOption)}</option>`,
         )
         .join('')}</select>`;
+    }
+
+    // Un champ fichier n'a pas de valeur qu'on puisse écrire : le navigateur
+    // refuse qu'on la lui impose, et c'est heureux.
+    if (champ.type === 'file') {
+      return `<input id="${idChamp}" name="${champ.nom}" type="file" ${requis}
+        ${champ.accepte ? `accept="${champ.accepte}"` : ''} class="champ-fichier">`;
     }
 
     const datalist = champ.suggestions
@@ -318,15 +341,20 @@ export function construireFormulaire({
       : `<label for="${id}-${champ.nom}">${champ.libelle}</label>
          ${rendreChamp(champ)}`;
 
+  const corps = `
+    <form data-action="${action}">
+      ${extra}
+      ${champs.map(rendreLigne).join('')}
+      <button type="submit" class="bouton-secondaire">${echapper(bouton)}</button>
+      <p class="message-erreur" data-erreur hidden></p>
+    </form>`;
+
+  if (!avecPli) return `<div class="ajout" data-ajout="${id}">${corps}</div>`;
+
   return `
     <details class="ajout" data-ajout="${id}" ${ouvert ? 'open' : ''}>
       <summary>${libelle}</summary>
-      <form data-action="${action}">
-        ${extra}
-        ${champs.map(rendreLigne).join('')}
-        <button type="submit" class="bouton-secondaire">${echapper(bouton)}</button>
-        <p class="message-erreur" data-erreur hidden></p>
-      </form>
+      ${corps}
     </details>`;
 }
 

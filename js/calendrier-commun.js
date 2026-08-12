@@ -9,7 +9,7 @@
 // chargées, comme partout dans le hub. Seul `brancherSelection` touche au DOM,
 // et il ne fait que poser des écouteurs.
 
-import { construireFormulaire } from './espace-projet.js';
+import { construireFormulaire, construireFenetre } from './espace-projet.js';
 import {
   depuisDateISO,
   versDateISO,
@@ -564,16 +564,6 @@ export function brancherSelection(section, quandChoisi) {
 // Une fenêtre par-dessus la grille, comme dans un agenda : on pose une chose
 // sans quitter la vue d'ensemble, et on la referme d'un geste.
 
-function fenetre(titre, contenu) {
-  return `
-    <div class="cal-fond" data-fermer-fenetre></div>
-    <div class="cal-fenetre" role="dialog" aria-modal="true" aria-label="${echapper(titre)}">
-      <button type="button" class="cal-fermer" data-fermer-fenetre
-        aria-label="Fermer">×</button>
-      ${contenu}
-    </div>`;
-}
-
 // Ce qu'une nature sait recevoir depuis le calendrier. L'espace perso n'a ni
 // tâches, ni jalons, ni publications : il n'apparaît que pour un événement —
 // un rendez-vous avec soi-même a toute sa place au calendrier.
@@ -678,7 +668,7 @@ export function fenetreCreation({ debut, fin, nature = 'evenement', projets = nu
       ],
     })}`;
 
-  return fenetre('Poser au calendrier', contenu);
+  return construireFenetre('Poser au calendrier', contenu);
 }
 
 // Ce qu'un élément devient quand on le supprime, dit par son verbe. Une relance
@@ -799,7 +789,7 @@ export function fenetreDetail(element, { montrerProjet = false, edition = false 
       })}
       <button type="button" class="lien-discret bouton-mini" data-annuler-edition>Annuler</button>`;
 
-    return fenetre(`Modifier ${element.titre}`, contenu);
+    return construireFenetre(`Modifier ${element.titre}`, contenu);
   }
 
   const finit =
@@ -832,5 +822,5 @@ export function fenetreDetail(element, { montrerProjet = false, edition = false 
         }</button>
     </div>`;
 
-  return fenetre(element.titre, contenu);
+  return construireFenetre(element.titre, contenu);
 }

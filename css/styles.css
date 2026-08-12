@@ -1721,14 +1721,14 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
 /* --- Les fenêtres volantes -------------------------------------------------- */
 
-.cal-fond {
+.fenetre-fond {
   position: fixed;
   inset: 0;
   z-index: 40;
   background: rgb(0 0 0 / 45%);
 }
 
-.cal-fenetre {
+.fenetre {
   position: fixed;
   z-index: 41;
   top: 50%;
@@ -1744,7 +1744,7 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   box-shadow: 0 12px 48px rgb(0 0 0 / 35%);
 }
 
-.cal-fermer {
+.fenetre-fermer {
   position: absolute;
   top: var(--espace-8);
   right: var(--espace-8);
@@ -1760,7 +1760,33 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   cursor: pointer;
 }
 
-.cal-fermer:hover { color: var(--texte); background: color-mix(in srgb, var(--texte) 8%, transparent); }
+.fenetre-fermer:hover { color: var(--texte); background: color-mix(in srgb, var(--texte) 8%, transparent); }
+
+.fenetre-titre {
+  margin: 0 var(--espace-32) var(--espace-8) 0;
+  font-family: var(--police-titre);
+  font-size: 1.25rem;
+}
+
+/* Un champ fichier ne se dessine pas comme un champ de texte : on lui laisse
+   son bouton natif, en l'accordant au reste. */
+.champ-fichier {
+  padding: var(--espace-8);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.champ-fichier::file-selector-button {
+  margin-right: var(--espace-12);
+  padding: var(--espace-4) var(--espace-12);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  color: var(--texte);
+  background: var(--fond);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  cursor: pointer;
+}
 
 .cal-fenetre-quand {
   margin: 0 0 var(--espace-12);
@@ -1831,7 +1857,7 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   .cal-reste { padding-left: 3px; font-size: 0.5625rem; }
   .cal-nav { margin-left: 0; width: 100%; }
   .cal-titre { flex: 1; min-width: 0; }
-  .cal-fenetre { padding: var(--espace-16); }
+  .fenetre { padding: var(--espace-16); }
 }
 
 @media (prefers-reduced-motion: reduce) {

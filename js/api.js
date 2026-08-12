@@ -416,7 +416,46 @@ export async function creerMoment({ moment, rencontres = [], titre }) {
   return { moment: { ...cree, rencontres: lignes }, victoire };
 }
 
-export async function supprimerMoment(id) {
+// --- Les photos des moments --------------------------------------------------
+// Le bucket est PRIVÉ : ce sont ses photos, et le site est public. On n'y
+// accède que par une URL signée, fabriquée à la lecture pour une session
+// connectée — jamais par un lien qu'on pourrait recopier ailleurs.
+
+export async function televerserPhotoMoment(fichier) {
+  const extension = fichier.name.split('.').pop()?.toLowerCase() || 'jpg';
+  const chemin = `${crypto.randomUUID()}.${extension}`;
+
+  const { error } = await client.storage
+    .from('moments')
+    .upload(chemin, fichier, { contentType: fichier.type || undefined });
+  if (error) throw error;
+
+  return chemin;
+}
+
+// Une signature d'une heure : le temps d'une visite, pas davantage.
+export async function urlsDesPhotos(chemins) {
+  if (!chemins.length) return {};
+
+  const { data, error } = await client.storage.from('moments').createSignedUrls(chemins, 3600);
+  if (error) throw error;
+
+  return Object.fromEntries(
+    data.filter((entree) => entree.signedUrl).map((entree) => [entree.path, entree.signedUrl]),
+  );
+}
+
+export async function supprimerMoment(id, chemin = null) {
+  // La photo part avec son moment : personne d'autre ne s'en sert.
+  if (chemin) {
+    const { error } = await client.storage.from('moments').remove([chemin]);
+    if (error) console.error('Photo non supprimée du stockage', error);
+  }
+
+  return supprimerLigneMoment(id);
+}
+
+async function supprimerLigneMoment(id) {
   // La victoire d'un moment n'est que son reflet au dashboard : elle part avec
   // lui. Les rencontres suivent d'elles-mêmes (ON DELETE CASCADE).
   const { error: erreurVictoire } = await client
