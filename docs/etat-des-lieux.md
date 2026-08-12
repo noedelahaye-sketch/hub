@@ -66,10 +66,31 @@ complet et ce qui reste ouvert.
   l'intérieur du site elles ne disaient plus rien. Elles font 15 rem de large,
   hautes et étroites, plus jamais toute la ligne.
 - **L'accueil montre un mur de photos** à la place des trois dernières fiches :
-  dix photos en 4:3, côte à côte sous les compteurs, tirées au sort une fois par
-  jour (la date sert de graine — stable dans la journée, change à minuit, rien
-  n'est stocké). Plus de titre « Derniers moments ». Un moment sans photo n'y
-  figure pas ; le détail reste au Journal.
+  une frise sur **une seule ligne** sous les compteurs, tirée au sort une fois
+  par jour (la date sert de graine — stable dans la journée, change à minuit,
+  rien n'est stocké). Dix photos au-delà de 1080 px, cinq en dessous.
+  Emplacements en 3:4 (le format des photos de Noé), sans cadre ni coins
+  arrondis, et `cover` : une autre proportion est recadrée, jamais déformée ni
+  posée entre deux bandes. Plus de titre « Derniers moments ». Un moment sans
+  photo n'y figure pas.
+- **Le Journal porte le même mur, entier** : rien de tiré au sort, rien de
+  caché, toutes les photos du plus récent au plus ancien, sur autant de lignes
+  qu'il en faut. Les fiches complètes restent en dessous.
+- **Une vignette ouvre son moment en fenêtre volante** (type, date, lieu,
+  rencontres, note, photo en grand), et non plus l'image nue dans un onglet.
+  Même fenêtre depuis les deux murs. La fiche du carnet ne répète plus la
+  photo — la frise est juste au-dessus.
+- **Un moment se corrige** depuis sa fenêtre : un bouton crayon retourne la
+  fenêtre en formulaire (date, type, lieu, note, œuvre finie). Ni la photo ni
+  les rencontres — l'une vit dans le stockage, les autres dans leur table.
+  `api.modifierMoment` met à jour le titre de la victoire au passage, sinon le
+  dashboard du hub garderait l'ancien nom.
+- **Nouvelle page `#yuno/editorial`** : la grille du calendrier réduite aux
+  seules publications, la banque d'idées en colonne à droite, et **glisser une
+  idée sur un jour la programme** (souris seulement). Une porte à icône, en bas
+  de Créer, y mène.
+- **L'accueil ne porte plus aucune porte** : ni vers le Journal, ni vers Créer,
+  et la banque d'idées n'y déborde plus. Ces lieux sont dans la barre.
 - **La typographie a un système de rôles** : la police dit la nature, la posture
   dit qui parle, la graisse dit l'importance. Le tableau complet est dans
   `yuno-spec.md` — c'est lui qui fait autorité.
@@ -110,12 +131,34 @@ La méthode reste la même pour l'affichage, et elle vaut d'être reprise :
 - **Ce qui reste non vérifié** : le glisser-déposer des colonnes, et les
   chemins d'écriture des autres espaces (formation, FCH, perso).
 
-**Le mur de photos a été vérifié ainsi** (12 août) : `construireMurPhotos`
-appelée dans le navigateur avec quatorze faux moments, dont deux sans photo, et
-des images SVG en 3:2. Résultat : dix vignettes, les deux sans photo écartées,
-tirage identique pour le 12 août et différent pour le 13, format 4:3 exact
-(228 × 171 px en 1280, 168 × 126 en 375), cinq par ligne sur grand écran, deux
-sur téléphone. Rien n'a été écrit en base.
+**Les deux murs de photos ont été vérifiés ainsi** (12 août), avec de faux
+moments et des images SVG en 3:4 comme en 3:2, sans rien écrire en base :
+
+- **L'accueil** (`construireMurPhotos`) : dix vignettes montées, les moments
+  sans photo écartés, tirage identique pour le 12 août et différent pour le 13,
+  et **une seule ligne à toutes les largeurs** — cinq vues en 375 px (65 × 87),
+  dix en 1280 (114 × 152). La photo réelle du carnet (2160 × 2880, du 3:4 pile)
+  remplit son emplacement au pixel près ; une image en 3:2 s'y recadre.
+- **Le Journal** (`construireMurComplet`) : 24 faux moments, **24 visibles**,
+  aucun caché, ordre du plus récent au plus ancien vérifié un par un, cinq par
+  ligne en 375 px et dix en 1280. Pas de débordement horizontal.
+
+**Deux chemins d'écriture ont été exercés sur les vraies données** (12 août),
+avec relecture en base avant et après :
+
+- **Corriger un moment** : le formulaire renvoyé **sans rien changer**. La ligne
+  est identique champ par champ après coup, rencontres comprises. Le chemin est
+  donc éprouvé sans que la donnée bouge.
+- **Programmer une idée au glissement** : deux idées déposées sur des jours,
+  `date_prevue` vérifiée en base, puis **remises à `null`**. État final relu :
+  quinze idées, aucune datée — exactement l'état de départ.
+
+**Un piège de forme, trouvé là.** `.bouton-retirer` est en `opacity: 0` et ne se
+révèle qu'au survol d'un `.bloc li` (styles.css). Déplacé dans une fenêtre
+volante, cet ancêtre n'existe plus : le bouton y était **invisible pour de
+bon**, sans que rien ne le signale — ni erreur, ni boîte vide, il occupait sa
+place. Mesurer `getBoundingClientRect` ne suffit pas : il faut lire l'opacité
+calculée.
 
 **Un piège de vérification, rencontré deux fois.** Les outils de navigation ne
 rechargent pas le document quand seul le fragment (`#…`) change : le module JS

@@ -52,8 +52,6 @@ export function etiquettes(pub) {
     <span class="etiquette">${echapper(FORMATS[pub.format] ?? pub.format)}</span>`;
 }
 
-// `options` porte ce qui change d'un projet à l'autre : le cycle des statuts,
-// et l'aide à la création (les piliers et la checklist sont à Yuno).
 // L'en-tête d'une publication : ce qu'elle est, où elle se range, et quand.
 // Partagé par l'aperçu et la fiche complète — les deux montrent la même chose
 // en tête, seule la suite diffère.
@@ -102,6 +100,8 @@ export function construireApercuPublication(pub, options = {}) {
 
 // Le contenu complet, sans son enveloppe : la tuile de « À venir » l'enferme
 // dans un <li>, la fenêtre d'une idée le pose tel quel.
+// `options` porte ce qui change d'un projet à l'autre : le cycle des statuts,
+// et l'aide à la création (les piliers et la checklist sont à Yuno).
 export function corpsPublication(pub, options = {}) {
   const { cycle = STATUTS, checklist = false, piliers = null, fenetre = false } = options;
   const suivant = cycle[cycle.indexOf(pub.statut) + 1];
@@ -207,19 +207,26 @@ export function construirePubliees(publications, options = {}) {
 
 // L'aperçu d'accueil : de quoi savoir où en est la création sans ouvrir
 // l'outil — trois programmées, trois idées fraîches.
-export function construireApercuCreation(publications) {
+// `idees: false` retire la moitié « banque » de l'aperçu : il ne reste que ce
+// qui est programmé. L'accueil de Yuno s'en sert — la banque y a sa page, elle
+// n'a pas à déborder sur l'accueil. Les trois autres espaces gardent les deux.
+export function construireApercuCreation(publications, { idees: avecIdees = true } = {}) {
   const prochaines = publications
     .filter((pub) => pub.date_prevue && pub.statut !== 'publie')
     .sort((a, b) => a.date_prevue.localeCompare(b.date_prevue))
     .slice(0, 3);
-  const idees = publications
-    .filter((pub) => !pub.date_prevue)
-    .sort((a, b) => b.created_at.localeCompare(a.created_at))
-    .slice(0, 3);
+  const idees = avecIdees
+    ? publications
+        .filter((pub) => !pub.date_prevue)
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .slice(0, 3)
+    : [];
 
   const lignes = [...prochaines, ...idees];
   if (!lignes.length) {
-    return `<p class="vide">Tes prochaines publications et idées s'afficheront ici.</p>`;
+    return avecIdees
+      ? `<p class="vide">Tes prochaines publications et idées s'afficheront ici.</p>`
+      : `<p class="vide">Tes prochaines publications s'afficheront ici.</p>`;
   }
 
   return `<ul>${lignes
@@ -254,17 +261,21 @@ export function rubriquesProposees(publications, rubriquesDepart) {
 // `champsEnPlus` laisse un projet ajouter ce qui lui est propre — chez Yuno le
 // pilier, la preuve et le « pourquoi chez moi ». Le titre suffit toujours :
 // noter une idée doit rester une affaire de cinq secondes.
+// `avecPli: false` sort le formulaire de son dépliant : c'est ce qu'il faut
+// dans une fenêtre volante, où le titre est déjà dit par la fenêtre.
 export function formulaireIdee({
   id = 'pub',
   publications,
   rubriquesDepart,
   reseaux = RESEAUX,
   champsEnPlus = [],
+  avecPli = true,
 }) {
   return construireFormulaire({
     id,
     libelle: 'Noter une idée',
     action: 'noter-idee',
+    avecPli,
     champs: [
       { nom: 'titre', libelle: "L'idée, en une phrase", type: 'text', requis: true },
       { nom: 'reseau', libelle: 'Réseau', type: 'select', options: reseaux },

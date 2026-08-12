@@ -36,6 +36,7 @@ import {
   echapper,
 } from './format.js';
 import {
+  FORMATS,
   assemblerCalendrier,
   construireCalendrier,
   construireFiltres,
@@ -103,12 +104,20 @@ function construirePiliers() {
     </div>`;
 }
 
-const VUES = ['accueil', 'journal', 'creer', 'banque', 'calendrier', 'reseau', 'passerelle', 'carnet'];
+const VUES = [
+  'accueil', 'journal', 'creer', 'banque', 'editorial',
+  'calendrier', 'reseau', 'passerelle', 'carnet',
+];
 
 // La banque est une pièce de l'atelier : elle n'a pas son onglet, elle garde
 // celui de Créer allumé. Une barre de navigation ne doit pas grandir à chaque
 // écran qu'on ajoute.
-const ONGLET_DE_LA_VUE = { banque: 'creer', passerelle: 'reseau', carnet: 'reseau' };
+const ONGLET_DE_LA_VUE = {
+  banque: 'creer',
+  editorial: 'creer',
+  passerelle: 'reseau',
+  carnet: 'reseau',
+};
 
 // --- Fabrication du HTML ----------------------------------------------------
 
@@ -159,6 +168,30 @@ const TYPES_MOMENT = {
   sortie: 'Sortie',
   autre: 'Autre',
 };
+
+// Un crayon dessiné, pas un émoji : le site n'écrit qu'en × + ↗ ‹ ›, et un
+// émoji y arriverait avec sa couleur et sa police à lui. `currentColor` le
+// laisse suivre l'encre du bouton, y compris au survol.
+const CALENDRIER = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none"
+  stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+  stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+  <path d="M3 10h18M8 3v4M16 3v4"></path>
+</svg>`;
+
+const AMPOULE = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none"
+  stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+  stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <path d="M9 18h6M10 21h4"></path>
+  <path d="M12 3a6 6 0 0 0-3.6 10.8c.5.4.8 1 .9 1.6l.1.6h5.2l.1-.6c.1-.6.4-1.2.9-1.6A6 6 0 0 0 12 3Z"></path>
+</svg>`;
+
+const CRAYON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round"
+  stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <path d="M12 20h9"></path>
+  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+</svg>`;
 
 // Ce qu'un moment devient au dashboard du hub, où il arrive sans son carnet
 // autour : « Match · OM-Lyon », ou « Match » tout court si le lieu manque. Le
@@ -224,27 +257,35 @@ function ligneRencontres(moment) {
   return `<span class="moment-rencontres"><span class="discret">Rencontré</span>${noms}</span>`;
 }
 
-// La fiche complète d'un moment. Elle ne sert plus qu'au Journal — l'accueil
-// est passé au mur de photos — donc le retrait y est toujours offert : c'est là
-// qu'on gère.
-function carteMoment(moment, photos = {}) {
+// Le détail d'un moment, sans son enveloppe : le carnet l'enferme dans un
+// <li>, la fenêtre ouverte depuis une vignette le pose tel quel.
+// `fenetre` : dans une fenêtre volante, la croix de retrait tomberait juste
+// sous celle qui ferme, au même bord — deux « × » dont l'un est irréversible.
+// Le geste s'écrit alors, comme pour les idées de la banque.
+function corpsMoment(moment, photos = {}, { fenetre = false } = {}) {
   const photo = moment.photo_chemin ? photos[moment.photo_chemin] : null;
 
   return `
-    <li class="moment">
       <span class="tuile-entete">
         <span class="etiquette">${echapper(TYPES_MOMENT[moment.type] ?? moment.type)}</span>
         ${moment.oeuvre_finie ? '<span class="etiquette etiquette-oeuvre">Œuvre finie</span>' : ''}
         <span class="discret quand">${echapper(echeanceLisible(depuisDateISO(moment.date)))}</span>
-        <button type="button" class="lien-discret bouton-mini bouton-retirer"
-          data-supprimer-moment="${echapper(moment.id)}"
-          title="Retirer ce moment"
-          aria-label="Retirer « ${echapper(titreDuMoment(moment))} »">×</button>
+        ${
+          fenetre
+            ? ''
+            : `<button type="button" class="lien-discret bouton-mini bouton-retirer"
+                 data-supprimer-moment="${echapper(moment.id)}"
+                 title="Retirer ce moment"
+                 aria-label="Retirer « ${echapper(titreDuMoment(moment))} »">×</button>`
+        }
       </span>
       ${moment.lieu ? `<span class="moment-lieu">${echapper(moment.lieu)}</span>` : ''}
       ${ligneRencontres(moment)}
       ${
-        photo
+        // La photo n'est plus dans la fiche du carnet : elle est déjà dans la
+        // frise, juste au-dessus, et la fiche la répétait en grand. Elle reste
+        // dans la fenêtre, qui est justement l'endroit où on l'a demandée.
+        fenetre && photo
           ? `<a class="moment-image" href="${echapper(photo)}" target="_blank" rel="noopener">
                <img src="${echapper(photo)}" alt="La photo dont je suis fier"
                  loading="lazy"></a>`
@@ -259,7 +300,48 @@ function carteMoment(moment, photos = {}) {
           : ''
       }
       ${moment.note ? `<span class="discret moment-note">${echapper(moment.note)}</span>` : ''}
-    </li>`;
+      ${
+        fenetre
+          ? `<span class="moment-actions">
+               <button type="button" class="bouton-icone"
+                 data-modifier-moment="${echapper(moment.id)}"
+                 title="Modifier ce moment"
+                 aria-label="Modifier « ${echapper(titreDuMoment(moment))} »">${CRAYON}</button>
+               <button type="button" class="lien-discret bouton-mini bouton-retirer"
+                 data-supprimer-moment="${echapper(moment.id)}"
+                 aria-label="Retirer « ${echapper(titreDuMoment(moment))} »"
+                 >Retirer du carnet</button>
+             </span>`
+          : ''
+      }`;
+}
+
+// Le formulaire de correction, dans la même fenêtre que la fiche. Il ne touche
+// ni à la photo ni aux rencontres : l'une vit dans le stockage, les autres dans
+// leur table, et chacune demande son propre geste. Corriger une date ou un lieu
+// mal tapé est le besoin courant ; le reste attend d'être demandé.
+function formulaireModifierMoment(moment) {
+  return construireFormulaire({
+    id: 'moment-edition',
+    action: 'modifier-moment',
+    bouton: 'Enregistrer',
+    avecPli: false,
+    extra: `<input type="hidden" name="id" value="${echapper(moment.id)}">`,
+    champs: [
+      { nom: 'date', libelle: 'Quand', type: 'date', valeur: moment.date, requis: true },
+      { nom: 'type', libelle: 'Quoi', type: 'select', options: TYPES_MOMENT, valeur: moment.type },
+      { nom: 'lieu', libelle: 'Événement ou lieu', type: 'text', valeur: moment.lieu ?? '' },
+      { nom: 'note', libelle: 'Note', type: 'textarea', valeur: moment.note ?? '' },
+      { nom: 'oeuvre_finie', libelle: 'Œuvre finie', type: 'checkbox', valeur: moment.oeuvre_finie },
+    ],
+  });
+}
+
+// La fiche complète d'un moment. Elle ne sert plus qu'au Journal — l'accueil
+// est passé au mur de photos — donc le retrait y est toujours offert : c'est là
+// qu'on gère.
+function carteMoment(moment, photos = {}) {
+  return `<li class="moment">${corpsMoment(moment, photos)}</li>`;
 }
 
 function carteVictoire(victoire) {
@@ -297,32 +379,79 @@ function tirageDuJour(liste, jour) {
   return tirees;
 }
 
-// L'accueil ne montre plus des fiches de moments : il montre des photos. Dix,
-// au format 4:3, côte à côte sous les compteurs — la preuve de ce qui a été
-// vécu, pas son compte rendu. Un moment sans photo n'y figure pas, et le
-// détail (lieu, rencontres, note) reste au Journal.
-export function construireMurPhotos(moments, photos = {}, jour = versDateISO(), limite = 10) {
-  const avecPhoto = moments.filter(
-    (moment) => moment.photo_chemin && photos[moment.photo_chemin],
-  );
+// Les moments qui portent une photo dont l'adresse est déjà signée. Un moment
+// sans photo n'a rien à faire dans un mur de photos.
+function momentsIllustres(moments, photos) {
+  return moments.filter((moment) => moment.photo_chemin && photos[moment.photo_chemin]);
+}
 
-  if (!avecPhoto.length) {
-    return `<p class="vide">Tes photos s'afficheront ici — joins-en une à ton prochain moment.</p>`;
-  }
-
-  return `<ul class="mur-photos">${tirageDuJour(avecPhoto, jour)
-    .slice(0, limite)
+// Le dessin d'un mur, une fois l'ordre décidé. Les deux murs du site — le
+// tirage de l'accueil et la frise complète du Journal — n'en diffèrent que par
+// cet ordre et par ce que la feuille de style laisse voir.
+function vignettes(moments, photos, classes = 'mur-photos') {
+  return `<ul class="${classes}">${moments
     .map((moment) => {
       const photo = photos[moment.photo_chemin];
+      // Un bouton, pas un lien vers le fichier : le clic ouvre le moment —
+      // son lieu, sa date, ses rencontres, sa note — et pas une image nue
+      // dans un onglet vide.
       return `
         <li>
-          <a href="${echapper(photo)}" target="_blank" rel="noopener">
+          <button type="button" data-ouvrir-moment="${echapper(moment.id)}"
+            aria-label="Ouvrir « ${echapper(titreDuMoment(moment))} »">
             <img src="${echapper(photo)}" alt="${echapper(titreDuMoment(moment))}"
               loading="lazy">
-          </a>
+          </button>
         </li>`;
     })
     .join('')}</ul>`;
+}
+
+const MUR_VIDE = `<p class="vide">Tes photos s'afficheront ici — joins-en une à ton prochain moment.</p>`;
+
+// L'accueil ne montre plus des fiches de moments : il montre des photos. Une
+// frise sur une seule ligne sous les compteurs — la preuve de ce qui a été
+// vécu, pas son compte rendu. Le détail (lieu, rencontres, note) reste au
+// Journal. Dix sont montées ; la feuille de style en laisse voir cinq ou dix
+// selon la largeur.
+export function construireMurPhotos(moments, photos = {}, jour = versDateISO(), limite = 10) {
+  const avecPhoto = momentsIllustres(moments, photos);
+  if (!avecPhoto.length) return MUR_VIDE;
+
+  return vignettes(tirageDuJour(avecPhoto, jour).slice(0, limite), photos);
+}
+
+// Le mur du Journal : le même principe, mais rien n'est tiré au sort et rien
+// n'est caché. Toutes les photos, de la plus récente à la plus ancienne — le
+// Journal est l'archive, on y descend dans le temps. `mur-complet` dit à la
+// feuille de style de ne rien masquer et de laisser la frise passer à la ligne.
+// Le moment ouvert depuis une vignette. Comme pour les idées, on le retrouve
+// par son identifiant à chaque rendu : la fenêtre suit l'état, elle n'en garde
+// pas une copie figée.
+function fenetreMoment(etat) {
+  if (!etat.momentOuvert) return '';
+
+  const moment = etat.moments.find((candidat) => candidat.id === etat.momentOuvert);
+  if (!moment) return '';
+
+  const contenu = etat.editionMoment
+    ? `<h3 class="fenetre-titre">Modifier le moment</h3>${formulaireModifierMoment(moment)}`
+    : `<div class="moment moment-complet">${corpsMoment(moment, etat.photos, { fenetre: true })}</div>`;
+
+  return construireFenetre(titreDuMoment(moment), contenu);
+}
+
+export function construireMurComplet(moments, photos = {}) {
+  const avecPhoto = momentsIllustres(moments, photos);
+  if (!avecPhoto.length) return MUR_VIDE;
+
+  const duPlusRecent = [...avecPhoto].sort(
+    (a, b) =>
+      String(b.date).localeCompare(String(a.date)) ||
+      String(b.created_at).localeCompare(String(a.created_at)),
+  );
+
+  return vignettes(duPlusRecent, photos, 'mur-photos mur-complet');
 }
 
 // Le Journal : le fil complet, et le mur des victoires. Les moments et les
@@ -628,14 +757,9 @@ function vueAccueil(etat) {
         ${construireCompteurs(etat.moments)}
       </div>
       <!-- Le mur suit les compteurs sans titre au-dessus : dix photos n'ont
-           besoin de personne pour dire ce qu'elles sont. -->
+           besoin de personne pour dire ce qu'elles sont. Pas de porte vers le
+           Journal non plus — il est dans la barre, comme Créer. -->
       <div data-bloc="mur-photos">${construireMurPhotos(etat.moments, etat.photos)}</div>
-      <a class="lien-externe" href="#yuno/journal">
-        <span class="lien-externe-texte">
-          <span class="lien-externe-titre">Ouvrir le journal</span>
-          <span class="discret">Tous tes moments, tes rencontres, tes œuvres</span>
-        </span>
-      </a>
     </section>
 
     <section class="bloc">
@@ -654,16 +778,14 @@ function vueAccueil(etat) {
       })}
     </section>
 
+    <!-- Ni banque d'idées, ni porte vers Créer : la banque a sa page, et
+         l'onglet Créer est dans la barre. L'accueil ne montre que ce qui est
+         déjà programmé. -->
     <section class="bloc">
       <h2>En création</h2>
-      <div data-bloc="apercu">${construireApercuCreation(etat.publications)}</div>
-      <a class="lien-externe" href="#yuno/creer">
-        <span class="lien-externe-texte">
-          <span class="lien-externe-titre">Ouvrir l'atelier Créer</span>
-          <span class="discret">Calendrier éditorial, banque d'idées</span>
-        </span>
-      </a>
+      <div data-bloc="apercu">${construireApercuCreation(etat.publications, { idees: false })}</div>
     </section>
+    ${fenetreMoment(etat)}
     ${etat.captureOuverte ? formulaireMoment(etat.contacts, etat.prefillMoment) : ''}
     ${pied()}`;
 }
@@ -680,12 +802,17 @@ function vueJournal(etat) {
         ${boutonCapture()}
         ${construireCompteurs(etat.moments)}
       </div>
+      <!-- Le même mur qu'à l'accueil, mais entier et dans l'ordre du temps :
+           ici on cherche une photo qu'on a prise, on ne se laisse pas
+           surprendre par un tirage. -->
+      <div data-bloc="mur-complet">${construireMurComplet(etat.moments, etat.photos)}</div>
     </section>
 
     <section class="bloc">
       <h2>Le carnet de terrain</h2>
       <div data-bloc="carnet">${construireCarnet(etat.moments, etat.victoires, etat.photos)}</div>
     </section>
+    ${fenetreMoment(etat)}
     ${etat.captureOuverte ? formulaireMoment(etat.contacts, etat.prefillMoment) : ''}
     ${pied()}`;
 }
@@ -712,17 +839,6 @@ export function tirerIdee(publications, { avecMatch = true } = {}, hasard = Math
   // Aucune idée n'a encore de pilier : on tire quand même. Proposer quelque
   // chose vaut mieux que renvoyer à un classement pas fait.
   return banque[Math.floor(hasard() * banque.length)];
-}
-
-// Ce que la banque contient vraiment : les sans-date, non publiées. Le compte
-// se dit sur la porte — une réserve pleine donne envie d'y entrer.
-export function compterIdees(publications) {
-  const combien = publications.filter(
-    (pub) => !pub.date_prevue && pub.statut !== 'publie',
-  ).length;
-
-  if (!combien) return 'vide pour le moment';
-  return `<span class="chiffre">${combien}</span> idée${combien > 1 ? 's' : ''} en réserve`;
 }
 
 export function filtrerBanque(publications, { pilier = 'tout', statutIdee = 'tout' } = {}) {
@@ -772,6 +888,38 @@ function blocTirage(etat) {
     </details>`;
 }
 
+// Noter une idée s'ouvre en fenêtre volante, comme la capture d'un moment : le
+// geste est le même partout dans le site. Le formulaire sort de son dépliant —
+// dans une fenêtre, le titre est déjà dit.
+function fenetreNoterIdee(etat) {
+  return construireFenetre(
+    'Noter une idée',
+    `<h3 class="fenetre-titre">Noter une idée</h3>
+     ${formulaireIdee({
+       publications: etat.publications,
+       rubriquesDepart: RUBRIQUES_DEPART,
+       reseaux: RESEAUX_YUNO,
+       avecPli: false,
+       champsEnPlus: [
+         {
+           nom: 'pilier',
+           libelle: 'Pilier',
+           type: 'select',
+           options: {
+             '': 'Sans pilier',
+             ...Object.fromEntries(
+               Object.entries(PILIERS).map(([rang, { nom }]) => [rang, `${rang}. ${nom}`]),
+             ),
+           },
+           valeur: '',
+         },
+         { nom: 'preuve', libelle: 'Preuve — pourquoi ce format marche déjà (facultatif)', type: 'text' },
+         { nom: 'pourquoi_moi', libelle: 'Pourquoi chez moi (facultatif)', type: 'text' },
+       ],
+     })}`,
+  );
+}
+
 function vueCreer(etat) {
   // Ce qui distingue Créer chez Yuno : son cycle, sa checklist, ses piliers.
   const options = { cycle: STATUTS_YUNO, checklist: true, piliers: PILIERS };
@@ -790,44 +938,34 @@ function vueCreer(etat) {
     </section>
 
     <section class="bloc">
-      <h2>Calendrier éditorial</h2>
-      ${formulaireIdee({
-        publications: etat.publications,
-        rubriquesDepart: RUBRIQUES_DEPART,
-        reseaux: RESEAUX_YUNO,
-        champsEnPlus: [
-          {
-            nom: 'pilier',
-            libelle: 'Pilier',
-            type: 'select',
-            options: {
-              '': 'Sans pilier',
-              ...Object.fromEntries(
-                Object.entries(PILIERS).map(([rang, { nom }]) => [rang, `${rang}. ${nom}`]),
-              ),
-            },
-            valeur: '',
-          },
-          { nom: 'preuve', libelle: 'Preuve — pourquoi ce format marche déjà (facultatif)', type: 'text' },
-          { nom: 'pourquoi_moi', libelle: 'Pourquoi chez moi (facultatif)', type: 'text' },
-        ],
-      })}
-      ${blocTirage(etat)}
+      <!-- Les deux façons d'attaquer : j'ai une idée, ou je n'en ai pas. Elles
+           se valent, donc elles sont côte à côte et de la même taille. Noter
+           passe par une fenêtre volante, comme la capture d'un moment — le
+           geste est le même partout dans le site. -->
+      <div class="deux-gestes">
+        <button type="button" class="bouton-geste" data-ouvrir-note-idee>Noter une idée</button>
+        ${blocTirage(etat)}
+      </div>
+
+      <!-- Les deux lieux de l'atelier, côte à côte et sans titre au-dessus :
+           une icône et deux mots disent déjà où l'on va. Un libellé de section
+           qui répète le nom de la porte n'ajoute rien. -->
+      <div class="grandes-portes">
+        <a class="grande-porte" href="#yuno/editorial">
+          <span class="grande-porte-icone" aria-hidden="true">${CALENDRIER}</span>
+          <span class="grande-porte-titre">Calendrier<br>éditorial</span>
+        </a>
+        <a class="grande-porte" href="#yuno/banque">
+          <span class="grande-porte-icone" aria-hidden="true">${AMPOULE}</span>
+          <span class="grande-porte-titre">Banque<br>d'idées</span>
+        </a>
+      </div>
     </section>
+    ${etat.noteIdeeOuverte ? fenetreNoterIdee(etat) : ''}
 
     <section class="bloc">
       <h2>À venir</h2>
       <div data-bloc="a-venir">${construireAVenir(etat.publications, options)}</div>
-    </section>
-
-    <section class="bloc">
-      <h2>Banque d'idées</h2>
-      <a class="lien-externe" href="#yuno/banque">
-        <span class="lien-externe-texte">
-          <span class="lien-externe-titre">Ouvrir la banque d'idées</span>
-          <span class="discret">${compterIdees(etat.publications)} · elle ne se vide jamais</span>
-        </span>
-      </a>
     </section>
 
     <section class="bloc bloc-discret">
@@ -922,6 +1060,78 @@ function elementsDuCalendrier(etat) {
     ),
     relances: etat.contacts.filter((contact) => contact.prochaine_action_date),
   });
+}
+
+// Le calendrier éditorial : la même grille que `#yuno/calendrier`, mais elle ne
+// porte QUE des publications — ni tâche, ni objectif, ni relance. Poser un mois
+// de publications demande de voir les trous, et un trou ne se voit pas si trois
+// autres natures les bouchent. D'où aussi l'absence de filtres : il n'y a rien
+// à filtrer, la page est son propre filtre.
+// À droite, la banque : on ne programme pas en inventant, on programme en
+// piochant dans ce qui est déjà noté.
+function vueEditorial(etat) {
+  const programmees = assemblerCalendrier({
+    publications: etat.publications.filter((pub) => pub.date_prevue && pub.statut !== 'publie'),
+  });
+  // Un Set, pas un tableau : c'est ce qu'attend la grille (`natures.has`).
+  const natures = new Set(['publication']);
+  const idees = etat.publications
+    .filter((pub) => !pub.date_prevue && pub.statut !== 'publie')
+    .sort((a, b) => b.created_at.localeCompare(a.created_at));
+
+  return `
+    ${enTete('editorial')}
+    <h2 class="titre-page">Calendrier éditorial</h2>
+    ${construireBarrePeriode(etat.vueCal, etat.ancreCal)}
+
+    <div class="editorial">
+      <div class="editorial-grille" data-bloc="calendrier">
+        ${
+          etat.vueCal === 'agenda'
+            ? construireCalendrier(programmees, natures)
+            : construireGrille(programmees, natures, etat.vueCal, etat.ancreCal, {
+                selection: etat.creationCal,
+              })
+        }
+      </div>
+
+      <aside class="editorial-banque" aria-label="Banque d'idées">
+        <h3>Banque d'idées <span class="chiffre">${idees.length}</span></h3>
+        <p class="discret file-aide">Glisse une idée sur un jour pour la programmer.</p>
+        ${
+          idees.length
+            ? `<ul class="liste-idees-a-poser">${idees
+                .map(
+                  (pub) => `
+                <li class="idee-a-poser" data-poser-idee="${echapper(pub.id)}"
+                  title="Glisse-la sur un jour du calendrier">
+                  <span class="tuile-entete">
+                    ${
+                      pub.pilier
+                        ? `<span class="etiquette etiquette-pilier">${echapper(
+                            String(pub.pilier),
+                          )}</span>`
+                        : ''
+                    }
+                    <span class="etiquette">${echapper(FORMATS[pub.format] ?? pub.format)}</span>
+                  </span>
+                  <span class="pub-titre">${echapper(pub.titre)}</span>
+                </li>`,
+                )
+                .join('')}</ul>`
+            : `<p class="vide">Ta banque est vide. Note une idée depuis Créer.</p>`
+        }
+      </aside>
+    </div>
+
+    ${etat.creationCal ? fenetreCreation(etat.creationCal) : ''}
+    ${etat.detailCal ? fenetreDetail(etat.detailCal, { edition: etat.editionCal }) : ''}
+    ${
+      etat.jourOuvertCal
+        ? fenetreJour(etat.jourOuvertCal, elementsDuJour(programmees, etat.jourOuvertCal))
+        : ''
+    }
+    ${pied()}`;
 }
 
 function vueCalendrier(etat) {
@@ -2031,8 +2241,11 @@ export default {
       ecartes: evenementsEcartes(),
       prefillMoment: null,
       captureOuverte: false,
-      // L'identifiant de l'idée dont la fiche est ouverte, jamais sa copie.
+      // Les identifiants de ce qui est ouvert en fenêtre, jamais leur copie.
       ideeOuverte: null,
+      momentOuvert: null,
+      editionMoment: false,
+      noteIdeeOuverte: false,
       photos: {},
       jourRdv: jourRendezVousEnregistre(),
       objectifDoux: objectifDouxEnregistre(),
@@ -2067,6 +2280,7 @@ export default {
       if (etat.vue === 'journal') section.innerHTML = vueJournal(etat);
       else if (etat.vue === 'creer') section.innerHTML = vueCreer(etat);
       else if (etat.vue === 'banque') section.innerHTML = vueBanque(etat);
+      else if (etat.vue === 'editorial') section.innerHTML = vueEditorial(etat);
       else if (etat.vue === 'calendrier') section.innerHTML = vueCalendrier(etat);
       else if (etat.vue === 'reseau') section.innerHTML = vueReseau(etat);
       else if (etat.vue === 'passerelle') section.innerHTML = vuePasserelle(etat);
@@ -2227,6 +2441,30 @@ export default {
     });
 
     async function appliquer(action, champs) {
+      if (action === 'modifier-moment') {
+        const modifs = {
+          date: champs.date,
+          type: champs.type,
+          lieu: champs.lieu?.trim() || null,
+          note: champs.note?.trim() || null,
+          oeuvre_finie: champs.oeuvre_finie === 'oui',
+        };
+
+        const modifie = await api.modifierMoment(champs.id, modifs, titreDuMoment(modifs));
+
+        // Les rencontres ne sont pas renvoyées par la mise à jour : on garde
+        // celles qu'on avait, sans quoi la ligne « Rencontré » disparaîtrait.
+        etat.moments = etat.moments.map((candidat) =>
+          candidat.id === champs.id
+            ? { ...candidat, ...modifie, rencontres: candidat.rencontres }
+            : candidat,
+        );
+        // On revient à la fiche, dans la même fenêtre : la correction se voit.
+        etat.editionMoment = false;
+        rendre();
+        return;
+      }
+
       if (action === 'ajouter-moment') {
         // La photo part avant le moment : si le téléversement échoue, rien
         // n'est écrit et le formulaire reste rempli.
@@ -2392,6 +2630,8 @@ export default {
           pourquoi_moi: champs.pourquoi_moi?.trim() || null,
         });
         etat.publications = [publication, ...etat.publications];
+        // L'idée est notée : la fenêtre se referme. On note et on repart.
+        etat.noteIdeeOuverte = false;
         rendre();
         return;
       }
@@ -2490,6 +2730,13 @@ export default {
     // --- Clics ---
 
     section.addEventListener('click', async (evenement) => {
+      if (evenement.target.closest('[data-ouvrir-note-idee]')) {
+        etat.noteIdeeOuverte = true;
+        rendre();
+        section.querySelector('#pub-titre')?.focus();
+        return;
+      }
+
       if (evenement.target.closest('[data-ouvrir-capture]')) {
         etat.captureOuverte = true;
         rendre();
@@ -2505,6 +2752,9 @@ export default {
         etat.captureOuverte = false;
         etat.prefillMoment = null;
         etat.ideeOuverte = null;
+        etat.momentOuvert = null;
+        etat.editionMoment = false;
+        etat.noteIdeeOuverte = false;
         rendre();
         return;
       }
@@ -2515,6 +2765,26 @@ export default {
       const apercuIdee = evenement.target.closest('[data-ouvrir-pub]');
       if (apercuIdee) {
         etat.ideeOuverte = apercuIdee.dataset.ouvrirPub;
+        rendre();
+        section.querySelector('.fenetre-fermer')?.focus();
+        return;
+      }
+
+      // Le crayon retourne la fenêtre : la fiche laisse la place au formulaire,
+      // sans changer de fenêtre ni de contexte.
+      if (evenement.target.closest('[data-modifier-moment]')) {
+        etat.editionMoment = true;
+        rendre();
+        section.querySelector('#moment-edition-lieu')?.focus();
+        return;
+      }
+
+      // Une vignette du mur ouvre son moment : le lieu, la date, les
+      // rencontres, la note. La photo en grand est dedans.
+      const vignette = evenement.target.closest('[data-ouvrir-moment]');
+      if (vignette) {
+        etat.momentOuvert = vignette.dataset.ouvrirMoment;
+        etat.editionMoment = false;
         rendre();
         section.querySelector('.fenetre-fermer')?.focus();
         return;
@@ -2972,6 +3242,8 @@ export default {
         try {
           await api.supprimerMoment(id, moment.photo_chemin);
           etat.moments = etat.moments.filter((candidat) => candidat.id !== id);
+          // Retiré depuis sa propre fenêtre : elle n'a plus de sujet.
+          if (etat.momentOuvert === id) etat.momentOuvert = null;
           rendre();
         } catch (souci) {
           console.error('Suppression du moment impossible', souci);
@@ -3051,6 +3323,67 @@ export default {
       }
     });
 
+    // Glisser une idée de la colonne sur un jour la programme. Même mécanique
+    // que le déplacement d'une barre dans le calendrier : on regarde ce qu'il y
+    // a sous le pointeur plutôt que d'utiliser l'API drag-and-drop, qui ne se
+    // comporte pas pareil d'un navigateur à l'autre et ne dessine rien de
+    // convenable. À la souris seulement — au doigt, le geste entrerait en
+    // conflit avec le défilement de la page.
+    let ideePrise = null;
+
+    const viserLeJour = (cle) => {
+      for (const cellule of section.querySelectorAll('.cal-jour')) {
+        cellule.classList.toggle('cal-cible', Boolean(cle) && cellule.dataset.jour === cle);
+      }
+    };
+
+    const jourSousLePointeur = (x, y) =>
+      document.elementsFromPoint(x, y).find((e) => e.classList?.contains('cal-jour'))?.dataset
+        .jour;
+
+    const lacherLIdee = () => {
+      ideePrise?.tuile.classList.remove('en-deplacement');
+      viserLeJour(null);
+      ideePrise = null;
+    };
+
+    section.addEventListener('pointerdown', (evenement) => {
+      if (evenement.pointerType === 'touch') return;
+      const tuile = evenement.target.closest('[data-poser-idee]');
+      if (!tuile) return;
+      evenement.preventDefault();
+      ideePrise = { tuile, x: evenement.clientX, y: evenement.clientY, bouge: false };
+    });
+
+    section.addEventListener('pointermove', (evenement) => {
+      if (!ideePrise) return;
+      if (!ideePrise.bouge) {
+        if (Math.hypot(evenement.clientX - ideePrise.x, evenement.clientY - ideePrise.y) < 5) return;
+        ideePrise.bouge = true;
+        ideePrise.tuile.classList.add('en-deplacement');
+      }
+      viserLeJour(jourSousLePointeur(evenement.clientX, evenement.clientY));
+    });
+
+    section.addEventListener('pointerup', async (evenement) => {
+      if (!ideePrise) return;
+      const { tuile, bouge } = ideePrise;
+      const jour = jourSousLePointeur(evenement.clientX, evenement.clientY);
+      lacherLIdee();
+      if (!bouge || !jour) return;
+
+      const id = tuile.dataset.poserIdee;
+      try {
+        const modifiee = await api.modifierPublication(id, { date_prevue: jour });
+        etat.publications = etat.publications.map((pub) => (pub.id === id ? modifiee : pub));
+        rendre();
+      } catch (souci) {
+        console.error("Programmation de l'idée impossible", souci);
+      }
+    });
+
+    section.addEventListener('pointercancel', lacherLIdee);
+
     // Échap ferme la fenêtre — c'est le geste attendu partout ailleurs.
     document.addEventListener('keydown', (touche) => {
       if (touche.key !== 'Escape') return;
@@ -3060,7 +3393,9 @@ export default {
           etat.detailCal ||
           etat.captureOuverte ||
           etat.jourOuvertCal ||
-          etat.ideeOuverte
+          etat.ideeOuverte ||
+          etat.momentOuvert ||
+          etat.noteIdeeOuverte
         )
       ) {
         return;
@@ -3071,6 +3406,9 @@ export default {
       etat.captureOuverte = false;
       etat.prefillMoment = null;
       etat.ideeOuverte = null;
+      etat.momentOuvert = null;
+      etat.editionMoment = false;
+      etat.noteIdeeOuverte = false;
       rendre();
     });
 

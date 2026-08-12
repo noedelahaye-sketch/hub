@@ -347,25 +347,52 @@ body[data-espace="yuno"] .portes {
 .compteurs .discret { font-size: 0.75rem; line-height: 1.2; }
 
 /* --- Le mur de photos -------------------------------------------------------
-   Sous les compteurs, dix photos tirées au sort pour la journée. Pas de titre
+   Sous les compteurs, les photos tirées au sort pour la journée. Pas de titre
    au-dessus, pas de fiche autour : l'accueil montre ce qui a été vécu, il ne le
    raconte pas. Le récit est au Journal.
-   Cinq par ligne — dix se divise en deux lignes pleines, là où un remplissage
-   automatique laisserait une dernière ligne bancale. Deux par ligne sur
-   téléphone, pour la même raison. */
+
+   **Une seule ligne, à toutes les largeurs.** C'est la règle qui commande tout
+   le reste : un mur sur deux lignes n'est plus une frise, c'est une galerie, et
+   il pousse les objectifs hors de l'écran. Le nombre de colonnes et le nombre
+   de photos montées vont donc de pair — dix colonnes n'ont de sens que si on
+   montre dix photos.
+
+     ≥ 67,5 rem   dix de front, la frise entière
+     en dessous   cinq
+
+   Cinq sur téléphone plutôt que trois (choix de Noé, 12 août) : à cinq, la
+   frise ne fait plus que 87 px de haut au lieu de 149. Elle en montre plus et
+   prend moins de place — sur l'accueil, ce qui suit doit rester à portée de
+   regard sans faire défiler.
+
+   Le tirage en fabrique toujours dix : au-delà du compte de la largeur, elles
+   se cachent. Rien à recalculer en JS quand on tourne le téléphone. */
 
 .bloc ul.mur-photos {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--espace-8);
+  grid-template-columns: repeat(5, 1fr);
+  /* Serré : entre des vignettes de cette taille, 8 px de gouttière mangeraient
+     la moitié d'une photo. */
+  gap: var(--espace-4);
   margin-top: var(--espace-16);
 }
 
-@media (min-width: 45rem) {
-  .bloc ul.mur-photos { grid-template-columns: repeat(5, 1fr); }
+.bloc ul.mur-photos li:nth-child(n + 6) { display: none; }
+
+/* Le mur du Journal ne cache rien : c'est l'archive, elle passe à la ligne
+   autant qu'il le faut. Mêmes colonnes, mêmes emplacements — seule la règle du
+   « une seule ligne » saute, parce qu'elle appartenait à l'accueil, où ce qui
+   suit la frise doit rester sous les yeux. */
+.bloc ul.mur-photos.mur-complet li { display: block; }
+
+@media (min-width: 67.5rem) {
+  .bloc ul.mur-photos { grid-template-columns: repeat(10, 1fr); }
+  .bloc ul.mur-photos li:nth-child(n + 6) { display: block; }
 }
 
-/* La photo EST la tuile : ni cadre, ni fond, ni remplissage autour d'elle. */
+/* Ce ne sont pas des tuiles : ni cadre, ni fond, ni remplissage, ni coins
+   arrondis. Une photo n'est pas un élément d'interface — elle se donne telle
+   qu'elle a été prise. */
 .bloc ul.mur-photos li {
   display: block;
   padding: 0;
@@ -374,17 +401,40 @@ body[data-espace="yuno"] .portes {
   border-radius: 0;
 }
 
-.mur-photos a { display: block; }
+/* Une vignette est un bouton, mais il ne doit rien en montrer : ni fond, ni
+   bordure, ni marge. C'est la photo qu'on vise, pas un contrôle. */
+.mur-photos button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+}
 
-/* Le 4:3 est tenu par le cadre et l'image recadrée dedans : jamais déformée.
-   Les photos de Noé sortent du boîtier en 3:2 — un peu de haut et de bas s'en
-   va, et toutes les vignettes s'alignent. */
+/* Le focus clavier, lui, doit se voir : il est le seul repère de qui ne se
+   sert pas de la souris. */
+.mur-photos button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Le 4:3 dans la longueur, donc 3:4 : l'emplacement est debout, pas couché.
+   C'est le format des photos de Noé — la première du carnet sort en
+   2160 × 2880, soit exactement 3:4 — et celui des réseaux où elles finissent.
+   Un emplacement couché aurait laissé chaque portrait flotter au milieu de deux
+   bandes vides.
+
+   `cover` : une photo d'une autre proportion est RECADRÉE pour remplir son
+   emplacement, jamais déformée et jamais posée entre deux bandes. Le mur y
+   gagne sa régularité — c'est une frise, et une frise trouée n'en est plus une.
+   Sur les photos déjà en 3:4, c'est-à-dire presque toutes, il ne coupe rien. */
 .mur-photos img {
   display: block;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 3 / 4;
   object-fit: cover;
-  border-radius: var(--rayon-controle);
 }
 
 /* Ajouter un moment est L'action de la page : le bouton se voit. Il ouvre une
@@ -570,6 +620,112 @@ body[data-espace="yuno"] .etiquette {
 /* Le trou de la semaine se voit : les publications passées non publiées
    restent sobres, pas d'alerte (philosophie du hub). */
 
+/* --- Le calendrier éditorial ------------------------------------------------
+   La grille à gauche, la banque à droite : on programme en piochant dans ce qui
+   est déjà noté, pas en inventant. Les deux se voient donc en même temps.
+   Sur téléphone la banque passe dessous — glisser n'y marche pas de toute
+   façon, on y consulte. */
+
+.editorial { display: grid; gap: var(--espace-16); }
+
+@media (min-width: 60rem) {
+  .editorial { grid-template-columns: minmax(0, 1fr) 17rem; align-items: start; }
+  /* La colonne suit le défilement : on garde ses idées sous les yeux en
+     descendant dans le mois. */
+  .editorial-banque { position: sticky; top: var(--espace-16); }
+}
+
+.editorial-banque h3 {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espace-8);
+  margin: 0 0 2px;
+  font-size: 0.9375rem;
+}
+
+.liste-idees-a-poser {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-4);
+  margin: var(--espace-8) 0 0;
+  padding: 0;
+  list-style: none;
+  /* La banque ne pousse pas la page : au-delà, elle défile chez elle. */
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* Une idée à poser est une prise : le curseur le dit avant qu'on essaie. */
+.idee-a-poser {
+  padding: var(--espace-8) var(--espace-12);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+  cursor: grab;
+  /* Sans ça, le navigateur sélectionne le texte pendant le glissement. */
+  user-select: none;
+}
+
+.idee-a-poser:hover { border-color: var(--accent); }
+.idee-a-poser .pub-titre { font-size: 0.875rem; }
+.idee-a-poser .tuile-entete { margin-bottom: 2px; }
+
+/* Pendant le glissement, l'idée s'efface pour laisser voir le jour visé. */
+.idee-a-poser.en-deplacement { opacity: 0.4; cursor: grabbing; }
+
+/* --- Les grandes portes de l'atelier ----------------------------------------
+   Les deux lieux de Créer, côte à côte. Pas de titre de section au-dessus, pas
+   de sous-titre dedans : une icône et deux mots suffisent à dire où l'on va,
+   et un libellé qui répète le nom de la porte n'apprend rien.
+   Le titre tient sur deux lignes voulues (un <br> dans le balisage) plutôt que
+   sur un repli de hasard : les deux portes se répondent alors exactement, quelle
+   que soit la largeur. */
+
+.grandes-portes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--espace-8);
+  margin-top: var(--espace-16);
+}
+
+.grande-porte {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-12);
+  padding: var(--espace-16);
+  text-decoration: none;
+  color: var(--texte);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+}
+
+.grande-porte:hover { border-color: var(--accent); }
+
+.grande-porte-icone {
+  flex: none;
+  display: inline-flex;
+  color: var(--accent);
+}
+
+.grande-porte-titre {
+  font-family: "Canela Deck", georgia, serif;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 1.125rem;
+  line-height: 1.15;
+}
+
+/* Sur téléphone l'icône passe au-dessus : côte à côte, il ne resterait que
+   deux ou trois lettres par ligne au titre. */
+@media (max-width: 30rem) {
+  .grande-porte {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--espace-8);
+  }
+}
+
 /* --- Les quatre piliers -----------------------------------------------------
    La boussole, posée en tête de Créer. Elle est là pour fermer un débat : on la
    lit d'un coup d'œil, on ne s'y arrête pas. */
@@ -625,6 +781,46 @@ body[data-espace="yuno"] .etiquette {
 }
 
 .etiquette-pilier { color: var(--accent); border-color: var(--accent); }
+
+/* --- Les deux façons d'attaquer ----------------------------------------------
+   « Noter une idée » quand on en a une, « Je ne sais pas quoi poster » quand on
+   n'en a pas. Les deux se valent : même taille, même bordure, côte à côte. Une
+   seule occupe la ligne dès que la seconde se déplie — le tirage a besoin de
+   place pour poser sa question et sa réponse. */
+
+.deux-gestes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--espace-8);
+  align-items: start;
+}
+
+.deux-gestes .tirage { margin-top: 0; }
+.deux-gestes .tirage > summary { display: flex; justify-content: center; width: 100%; }
+.deux-gestes .tirage[open] { grid-column: 1 / -1; }
+
+@media (max-width: 30rem) {
+  .deux-gestes { grid-template-columns: 1fr; }
+}
+
+/* Le bouton se dessine comme le résumé du tirage : ce sont deux gestes de même
+   rang, ils ne peuvent pas avoir deux allures. */
+.bouton-geste {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0 var(--espace-16);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: 1px solid var(--accent);
+  border-radius: var(--rayon-controle);
+  cursor: pointer;
+}
 
 /* --- Le tirage de la semaine ------------------------------------------------ */
 
@@ -724,6 +920,58 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible {
 }
 
 .fenetre .idee-complete .tuile-entete { margin-bottom: 0; }
+
+/* La fiche d'un moment, ouverte depuis une vignette : même matière que la
+   carte du carnet, posée sans son <li>. */
+.fenetre .moment-complet {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espace-4);
+}
+
+/* La croix de fermeture occupe le coin haut-droit : l'en-tête lui laisse la
+   place plutôt que de glisser dessous. */
+.fenetre .moment-complet .tuile-entete {
+  margin-bottom: 0;
+  padding-right: var(--espace-32);
+}
+
+.fenetre .moment-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  width: 100%;
+  margin-top: var(--espace-8);
+}
+
+/* Le retrait se pousse au bout : entre le crayon et lui, la distance vaut
+   mieux qu'un avertissement. */
+.fenetre .moment-actions .bouton-retirer { margin-left: auto; }
+
+/* Un bouton de retrait ne se révèle au survol que dans une liste — la règle de
+   styles.css vise `.bloc li:hover`. Dans une fenêtre volante il n'y a pas de
+   liste, et il restait donc invisible pour de bon : ici il se montre. */
+.fenetre .bouton-retirer { opacity: 1; }
+
+/* Un bouton qui ne porte qu'un dessin : la cible tactile garde les 44 px
+   réglementaires même si l'icône fait 16 px. En px et non en rem — la racine
+   du site est à 15 px, et 2,75 rem n'y feraient que 41. */
+.bouton-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: var(--texte-discret);
+  background: none;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  cursor: pointer;
+}
+
+.bouton-icone:hover { color: var(--accent); border-color: var(--accent); }
 
 /* Deux portes côte à côte quand il y a la place, l'une sous l'autre sinon. */
 .portes { display: grid; gap: var(--espace-8); }

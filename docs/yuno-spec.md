@@ -199,15 +199,42 @@ nature. Le hub a le même espace Calendrier, tous projets confondus
    monter** : c'est une réserve de valeur stable, l'anti-portée.
 2. **Loguer un moment** — le bouton de capture, en évidence. C'est l'action de
    la page.
-3. **Le mur de photos** — sous les compteurs, **dix photos en 4:3, côte à
-   côte**, tirées au sort une fois par jour parmi tous les moments qui en
-   portent une (décision de Noé, 12 août). Pas de titre au-dessus, pas de fiche
+3. **Le mur de photos** — sous les compteurs, une **frise sur une seule
+   ligne**, tirée au sort une fois par jour parmi tous les moments qui portent
+   une photo (décision de Noé, 12 août). Pas de titre au-dessus, pas de fiche
    autour : l'accueil montre ce qui a été vécu, il ne le raconte pas. Un moment
    sans photo n'y figure pas. Le tirage est stable dans la journée — la date
-   sert de graine, rien n'est stocké — et change à minuit. Puis la porte
-   « Ouvrir le journal », où vivent les fiches complètes.
+   sert de graine, rien n'est stocké — et change à minuit.
+
+   **Une ligne, toujours.** C'est la règle qui commande le reste : sur deux
+   lignes ce n'est plus une frise mais une galerie, et elle pousse les objectifs
+   hors de l'écran. Le nombre de colonnes et le nombre de photos vues vont donc
+   de pair — **dix** au-delà de 1080 px, **cinq** entre 720 et 1080, **trois**
+   en dessous. Le tirage en fabrique toujours dix ; le surplus se cache en CSS,
+   rien à recalculer quand on tourne le téléphone.
+
+   **Ce ne sont pas des tuiles** : ni cadre, ni fond, ni coins arrondis. Une
+   photo n'est pas un élément d'interface. L'emplacement est en **3:4 — le 4:3
+   dans la longueur** : c'est le format des photos de Noé (la première du carnet
+   sort en 2160 × 2880) et celui des réseaux où elles finissent. Un emplacement
+   couché aurait laissé chaque portrait flotter entre deux bandes vides.
+   L'ajustement est `cover` : **une photo d'une autre proportion est recadrée**
+   pour remplir son emplacement, jamais déformée et jamais posée entre deux
+   bandes. Le mur y gagne sa régularité — une frise trouée n'en est plus une.
+   Sur les photos déjà en 3:4, c'est-à-dire presque toutes, rien n'est coupé.
+
+   **Une vignette est un bouton, pas un lien vers le fichier.** Le clic ouvre
+   une **fenêtre volante avec le détail du moment** — son type, sa date, son
+   lieu, ses rencontres, sa note, et la photo en grand. Ouvrir une image nue
+   dans un onglet vide ne disait rien de ce qu'on avait vécu ce jour-là. Le
+   retrait y est offert, écrit (« Retirer du carnet ») et non par une croix : la
+   croix de fermeture occupe déjà ce coin. Même fenêtre depuis l'accueil et
+   depuis le Journal.
 4. **Objectifs** — ceux du projet photo, avec pourquoi et jalons.
-5. **En création** — aperçu, plus la porte vers Créer.
+5. **En création** — seulement ce qui est programmé. Ni banque d'idées, ni
+   porte vers Créer, ni porte vers le Journal (décision de Noé, 12 août) : ces
+   deux lieux sont dans la barre, et la banque a sa page. L'accueil ne porte
+   plus aucune porte.
 
 Pas d'écran CAN 2027 : c'est un objectif parmi les gros, pas un lieu.
 
@@ -221,8 +248,16 @@ vivent dans le `localStorage`). Une seule à la fois.
 ### `#yuno/journal` — le Carnet de terrain
 
 La page source des moments : tout s'y retrouve, s'y ajoute et s'y retire.
-L'accueil n'en montre que les derniers.
+L'accueil n'en montre qu'un tirage.
 
+- **Le mur, entier** (décision de Noé, 12 août 2026). Sous les compteurs, le
+  même mur qu'à l'accueil — mêmes emplacements en 3:4, même recadrage, mêmes
+  colonnes — avec deux différences qui sont tout l'écart entre les deux pages :
+  **rien n'est tiré au sort** et **rien n'est caché**. Toutes les photos, de la
+  plus récente à la plus ancienne, sur autant de lignes qu'il en faut. On vient
+  au Journal chercher une photo qu'on a prise ; on ne s'y laisse pas surprendre.
+  La règle du « une seule ligne » appartenait à l'accueil, où ce qui suit la
+  frise doit rester sous les yeux.
 - **La capture** s'ouvre en **fenêtre volante**, comme au calendrier — le geste
   est le même partout dans le hub. Le bouton « Ajouter un moment » vit à gauche
   des trois compteurs, sur l'accueil comme au Journal : l'action et son résultat
@@ -256,6 +291,13 @@ secondes ; la programmer, c'est juste lui donner une date.
   TikTok et LinkedIn aussi** — décision du 7 août), le format (post,
   carrousel, réel, story), une date prévue (ou rien), un statut
   (`idée → brouillon → prêt → publié`), des notes (légende, plan, références).
+- **Les deux grandes portes**, côte à côte au milieu de Créer (décision de Noé,
+  12 août 2026) : « Calendrier éditorial » vers `#yuno/editorial`, « Banque
+  d'idées » vers `#yuno/banque`. Une icône de 32 px à gauche, le titre sur deux
+  lignes voulues (un `<br>` dans le balisage, pas un repli de hasard : les deux
+  portes se répondent alors exactement). **Ni titre de section au-dessus, ni
+  sous-titre dedans** — un libellé qui répète le nom de la porte n'apprend rien.
+  Sur téléphone étroit l'icône passe au-dessus du titre.
 - **Vue « À venir »** : les publications datées, dans l'ordre. Le trou de la
   semaine prochaine se voit — c'est le but d'un calendrier éditorial.
 - **Vue « Banque d'idées »** : les sans-date, les plus récentes d'abord.
@@ -325,6 +367,28 @@ appel à l'action, légende courte. Sans IA : un aide-mémoire, pas un outil qui
 Yuno pose une étape `à développer` entre l'idée et le brouillon, le FC Hermitage
 garde son cycle à quatre. Même chose pour la checklist et les piliers — ils ne
 débordent pas sur le club.
+
+### `#yuno/editorial` — poser le mois
+
+La page où l'on programme (décision de Noé, 12 août 2026). Elle garde l'onglet
+Créer allumé : c'est une pièce de l'atelier, pas un lieu de plus.
+
+**La grille ne porte QUE des publications.** Ni tâche, ni objectif, ni relance,
+et donc **pas de barre de filtres** : il n'y a rien à filtrer, la page est son
+propre filtre. Poser un mois demande de voir les trous, et un trou ne se voit
+pas si trois autres natures les bouchent. Mois, semaine et agenda restent
+disponibles, comme au calendrier général.
+
+**La banque est à droite**, en colonne collante — on programme en piochant dans
+ce qui est déjà noté, pas en inventant. Sur téléphone elle passe dessous.
+
+**Glisser une idée sur un jour la programme** : elle quitte la banque et
+apparaît en barre dans la grille. Le geste reprend celui du calendrier — on
+suit ce qu'il y a sous le pointeur (`elementsFromPoint`) plutôt que l'API
+drag-and-drop du navigateur, qui ne se comporte pas pareil partout et ne dessine
+rien de convenable. **À la souris seulement** : au doigt, capturer le glissement
+entrerait en conflit avec le défilement de la page ; sur téléphone on consulte,
+on programme au bureau.
 
 ### `#yuno/creer` — le rendez-vous stats (en bas de l'écran)
 

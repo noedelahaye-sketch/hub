@@ -454,6 +454,26 @@ export async function urlsDesPhotos(chemins) {
   );
 }
 
+// Corriger un moment déjà logué : la date, le type, le lieu, la note, la case
+// « œuvre finie ». Ni la photo ni les rencontres — l'une vit dans le stockage,
+// les autres dans leur propre table ; elles demandent chacune leur geste.
+// Le titre de la victoire est le reflet du moment : il suit, sinon le dashboard
+// du hub garderait l'ancien nom pour toujours.
+export async function modifierMoment(id, champs, titre) {
+  const modifie = verifier(
+    await client.from('moments').update(champs).eq('id', id).select().single(),
+  );
+
+  const { error } = await client
+    .from('victoires')
+    .update({ titre, date: champs.date })
+    .eq('source', 'moment')
+    .eq('source_id', id);
+  if (error) console.error('Victoire du moment non mise à jour', error);
+
+  return modifie;
+}
+
 export async function supprimerMoment(id, chemin = null) {
   // La photo part avec son moment : personne d'autre ne s'en sert.
   if (chemin) {
