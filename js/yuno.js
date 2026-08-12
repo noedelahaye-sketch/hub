@@ -312,8 +312,8 @@ export function construireCarnet(moments, victoires) {
 function formulaireMoment(contacts, prefill = null) {
   return construireFormulaire({
     id: 'moment',
-    libelle: 'Loguer un moment',
-    action: 'loguer-moment',
+    libelle: 'Ajouter un moment',
+    action: 'ajouter-moment',
     bouton: 'Inscrire au carnet',
     ouvert: Boolean(prefill),
     champs: [
@@ -554,9 +554,11 @@ function vueAccueil(etat) {
     ${enTete('accueil')}
 
     <section class="bloc">
-      ${construireCompteurs(etat.moments)}
       ${construireInvite(etat)}
-      ${formulaireMoment(etat.contacts, etat.prefillMoment)}
+      <div class="carnet-entete">
+        ${formulaireMoment(etat.contacts, etat.prefillMoment)}
+        ${construireCompteurs(etat.moments)}
+      </div>
     </section>
 
     <section class="bloc">
@@ -608,9 +610,11 @@ function vueJournal(etat) {
     ${enTete('journal')}
 
     <section class="bloc">
-      ${construireCompteurs(etat.moments)}
       ${construireInvite(etat)}
-      ${formulaireMoment(etat.contacts, etat.prefillMoment)}
+      <div class="carnet-entete">
+        ${formulaireMoment(etat.contacts, etat.prefillMoment)}
+        ${construireCompteurs(etat.moments)}
+      </div>
     </section>
 
     <section class="bloc">
@@ -2050,7 +2054,7 @@ export default {
     });
 
     async function appliquer(action, champs) {
-      if (action === 'loguer-moment') {
+      if (action === 'ajouter-moment') {
         const moment = {
           date: champs.date || versDateISO(),
           type: champs.type,
