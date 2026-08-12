@@ -13,6 +13,7 @@ import { construireFormulaire, construireFenetre } from './espace-projet.js';
 import {
   depuisDateISO,
   versDateISO,
+  ajouterJours,
   momentLisible,
   echapper,
   NOMS_PROJETS,
@@ -332,9 +333,22 @@ function segmentsDeLaSemaine(jours, elements) {
   return segments;
 }
 
+// La nature se lit à l'œil, pas seulement à la couleur — un projet et une
+// nature sont deux informations, et la couleur n'en porte qu'une. Un événement
+// n'a pas de signe : c'est le cas ordinaire, la barre pleine le dit déjà.
+const SIGNES = {
+  tache: '○',
+  publication: '◆',
+  objectif: '▲',
+  jalon: '△',
+  commande: '▸',
+  relance: '↗',
+};
+
 function barre(segment, montrerProjet) {
   const { element, deborde } = segment;
   const projet = montrerProjet ? ` data-projet="${echapper(element.projet)}"` : '';
+  const signe = SIGNES[element.type];
   const classes = [
     'cal-barre-element',
     `cal-type-${element.type}`,
@@ -347,7 +361,11 @@ function barre(segment, montrerProjet) {
   return `<button type="button" class="${classes}"${projet}
     style="grid-column: ${segment.depuis + 1} / ${segment.jusqua + 2}; grid-row: ${segment.couloir + 2};"
     data-element="${echapper(element.type)}:${echapper(element.id)}"
-    title="${echapper(`${TYPES[element.type]} · ${element.titre}`)}">${echapper(element.titre)}</button>`;
+    title="${echapper(`${TYPES[element.type]} · ${element.titre}`)}">${
+      // Le signe est décoratif : le titre de l'infobulle dit déjà la nature en
+      // toutes lettres, pour qui n'y voit rien.
+      signe ? `<span class="cal-signe" aria-hidden="true">${signe}</span>` : ''
+    }${echapper(element.titre)}</button>`;
 }
 
 function ligneDeSemaine(jours, elements, options) {
@@ -404,11 +422,15 @@ function ligneDeSemaine(jours, elements, options) {
     })
     .join('');
 
+  // Le « +N » s'ouvre. Un compte qui annonce une information et refuse de la
+  // donner est pire que pas de compte du tout.
   const restes = reste
     .map((nombre, index) =>
       nombre
-        ? `<span class="cal-reste discret"
-             style="grid-column: ${index + 1}; grid-row: ${couloirs + 2};">+${nombre}</span>`
+        ? `<button type="button" class="cal-reste"
+             style="grid-column: ${index + 1}; grid-row: ${couloirs + 2};"
+             data-jour-complet="${versDateISO(jours[index])}"
+             aria-label="Voir les ${nombre} autres">+${nombre}</button>`
         : '',
     )
     .join('');
@@ -530,8 +552,9 @@ export function brancherSelection(section, quandChoisi) {
   };
 
   section.addEventListener('pointerdown', (evenement) => {
-    // Une barre se clique pour son détail : elle n'ouvre pas une sélection.
-    if (evenement.target.closest('.cal-barre-element')) return;
+    // Une barre se clique pour son détail ou se glisse pour changer de jour ;
+    // un « +N » déplie sa journée. Ni l'un ni l'autre n'ouvre une sélection.
+    if (evenement.target.closest('.cal-barre-element, .cal-reste')) return;
     const cellule = evenement.target.closest('.cal-jour');
     if (!cellule) return;
     // Sans ça, le navigateur sélectionne le texte des cases traversées.
@@ -558,6 +581,123 @@ export function brancherSelection(section, quandChoisi) {
     depuis = null;
     peindre('', '');
   });
+}
+
+// --- Le déplacement d'une barre ----------------------------------------------
+// Reporter est l'action la plus fréquente après créer. Un glissement plutôt que
+// quatre gestes par le formulaire.
+//
+// À la souris seulement : au doigt, capturer le glissement obligerait à
+// neutraliser le défilement de la page sur chaque barre, et une grille en est
+// couverte. Sur téléphone, on passe par « Modifier ».
+
+// La barre est posée PAR-DESSUS les cases : `closest` ne trouverait rien. On
+// regarde donc ce qu'il y a sous le point, et on prend la première case.
+function jourSousLePoint(x, y) {
+  return document
+    .elementsFromPoint(x, y)
+    .find((element) => element.classList?.contains('cal-jour'))?.dataset.jour;
+}
+
+export function brancherDeplacement(section, quandDeplace) {
+  let prise = null;
+
+  const viser = (cle) => {
+    for (const cellule of section.querySelectorAll('.cal-jour')) {
+      cellule.classList.toggle('cal-cible', Boolean(cle) && cellule.dataset.jour === cle);
+    }
+  };
+
+  const lacher = () => {
+    prise?.barre.classList.remove('en-deplacement');
+    viser(null);
+    prise = null;
+  };
+
+  section.addEventListener('pointerdown', (evenement) => {
+    if (evenement.pointerType === 'touch') return;
+    const barre = evenement.target.closest('.cal-barre-element');
+    if (!barre) return;
+
+    const jour = jourSousLePoint(evenement.clientX, evenement.clientY);
+    if (!jour) return;
+
+    // Sans ça, le navigateur sélectionne le texte des barres traversées.
+    evenement.preventDefault();
+    prise = { barre, jour, x: evenement.clientX, y: evenement.clientY, bouge: false };
+  });
+
+  section.addEventListener('pointermove', (evenement) => {
+    if (!prise) return;
+
+    // Quelques pixels de tolérance : un clic tremblant reste un clic.
+    if (!prise.bouge) {
+      if (Math.hypot(evenement.clientX - prise.x, evenement.clientY - prise.y) < 5) return;
+      prise.bouge = true;
+      prise.barre.classList.add('en-deplacement');
+    }
+
+    viser(jourSousLePoint(evenement.clientX, evenement.clientY));
+  });
+
+  section.addEventListener('pointerup', (evenement) => {
+    if (!prise) return;
+
+    const { barre, jour, bouge } = prise;
+    const arrivee = jourSousLePoint(evenement.clientX, evenement.clientY);
+    lacher();
+
+    if (!bouge) return;
+
+    // Un vrai glissement ne doit pas ouvrir le détail derrière lui : on avale
+    // le clic qui suit, et lui seul. Le désarmement différé est une ceinture :
+    // si aucun clic ne vient — relâchement hors fenêtre, geste avorté — le
+    // piège ne doit pas rester tendu pour le clic d'après.
+    const avaler = (clic) => {
+      clic.stopPropagation();
+      clic.preventDefault();
+    };
+    section.addEventListener('click', avaler, { capture: true, once: true });
+    setTimeout(() => section.removeEventListener('click', avaler, { capture: true }), 400);
+
+    if (!arrivee || arrivee === jour) return;
+
+    const ecart = Math.round(
+      (depuisDateISO(arrivee) - depuisDateISO(jour)) / 86400000,
+    );
+    quandDeplace({ element: barre.dataset.element, ecart });
+  });
+
+  section.addEventListener('pointercancel', lacher);
+}
+
+// Ce qu'un déplacement change, par nature. Un événement garde sa durée et son
+// heure : on décale ses deux bornes du même nombre de jours.
+export function champsApresDeplacement(element, ecart) {
+  const ligne = element.source ?? {};
+  const decaler = (iso) => versDateISO(ajouterJours(depuisDateISO(iso), ecart));
+
+  if (element.type === 'evenement') {
+    const champs = {
+      date_debut: new Date(
+        new Date(ligne.date_debut).setDate(new Date(ligne.date_debut).getDate() + ecart),
+      ).toISOString(),
+    };
+    if (ligne.date_fin) {
+      champs.date_fin = new Date(
+        new Date(ligne.date_fin).setDate(new Date(ligne.date_fin).getDate() + ecart),
+      ).toISOString();
+    }
+    return champs;
+  }
+
+  if (element.type === 'publication') return { date_prevue: decaler(ligne.date_prevue) };
+  if (element.type === 'relance') {
+    return { prochaine_action_date: decaler(ligne.prochaine_action_date) };
+  }
+
+  // Tâche, jalon, objectif, commande : tous rangent leur date dans `echeance`.
+  return { echeance: decaler(ligne.echeance) };
 }
 
 // --- Les fenêtres volantes ---------------------------------------------------
@@ -759,6 +899,50 @@ function champsDeModification(element) {
     { nom: 'titre', libelle: 'Quoi', type: 'text', requis: true, valeur: ligne.titre },
     { nom: 'debut', libelle: 'Échéance', type: 'date', requis: true, valeur: ligne.echeance },
   ];
+}
+
+// Tout ce qui occupe un jour, y compris ce qui ne fait qu'y passer : un
+// événement de trois jours appartient à chacun des trois.
+export function elementsDuJour(elements, cle) {
+  return elements.filter((element) => {
+    const debut = versDateISO(element.date);
+    const fin = element.jusqua && element.jusqua > debut ? element.jusqua : debut;
+    return cle >= debut && cle <= fin;
+  });
+}
+
+// La journée dépliée, quand le « +N » est ouvert. Chaque ligne mène au détail
+// de son élément — c'est le chemin qu'on cherchait en cliquant.
+export function fenetreJour(cle, elements, { montrerProjet = false } = {}) {
+  const jour = depuisDateISO(cle);
+  const lisible = jour.toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
+
+  const lignes = elements.length
+    ? `<ul class="cal-journee">${elements
+        .map(
+          (element) => `
+        <li>
+          <button type="button" class="cal-journee-ligne"
+            data-element="${echapper(element.type)}:${echapper(element.id)}"
+            ${montrerProjet ? `data-projet="${echapper(element.projet)}"` : ''}>
+            <span class="etiquette">${TYPES[element.type]}</span>
+            <span class="cal-journee-titre">${echapper(element.titre)}</span>
+            ${
+              element.quand
+                ? `<span class="discret cal-journee-quand">${echapper(element.quand)}</span>`
+                : ''
+            }
+          </button>
+        </li>`,
+        )
+        .join('')}</ul>`
+    : `<p class="vide">Rien ce jour-là.</p>`;
+
+  return construireFenetre(lisible, `<h3 class="fenetre-titre">${echapper(lisible)}</h3>${lignes}`);
 }
 
 export function fenetreDetail(element, { montrerProjet = false, edition = false } = {}) {

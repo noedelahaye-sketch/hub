@@ -42,7 +42,11 @@ import {
   construireGrille,
   fenetreCreation,
   fenetreDetail,
+  fenetreJour,
+  elementsDuJour,
   brancherSelection,
+  brancherDeplacement,
+  champsApresDeplacement,
   deplacerAncre,
   toutesLesNatures,
   natureParDefaut,
@@ -893,6 +897,11 @@ function vueCalendrier(etat) {
     </div>
     ${etat.creationCal ? fenetreCreation(etat.creationCal) : ''}
     ${etat.detailCal ? fenetreDetail(etat.detailCal, { edition: etat.editionCal }) : ''}
+    ${
+      etat.jourOuvertCal
+        ? fenetreJour(etat.jourOuvertCal, elementsDuJour(elements, etat.jourOuvertCal))
+        : ''
+    }
     ${pied()}`;
 }
 
@@ -1989,6 +1998,7 @@ export default {
       creationCal: null,
       detailCal: null,
       editionCal: false,
+      jourOuvertCal: null,
       pilier: 'tout',
       statutIdee: 'tout',
       tirage: null,
@@ -2050,6 +2060,18 @@ export default {
       ]);
       Object.assign(etat, { evenements, taches, objectifs, publications, contacts, commandes });
     };
+
+    // Où écrire, par nature. Le formulaire de modification et le glissement
+    // passent tous deux par ici — seuls les champs changent.
+    async function appliquerAuCalendrier(type, id, champs) {
+      if (type === 'evenement') return api.modifierEvenement(id, champs);
+      if (type === 'publication') return api.modifierPublication(id, champs);
+      if (type === 'objectif') return api.modifierObjectif(id, champs);
+      if (type === 'commande') return api.modifierCommande(id, champs);
+      if (type === 'relance') return api.modifierContact(id, champs);
+      if (type === 'jalon') return api.modifierJalon(id, champs);
+      return api.modifierTache(id, champs);
+    }
 
     // Chaque nature se supprime là où elle vit. Une relance n'est pas une ligne
     // à effacer : c'est une date qu'on retire d'une fiche du carnet.
@@ -2425,8 +2447,18 @@ export default {
         etat.creationCal = null;
         etat.detailCal = null;
         etat.editionCal = false;
+        etat.jourOuvertCal = null;
         etat.captureOuverte = false;
         etat.prefillMoment = null;
+        rendre();
+        return;
+      }
+
+      const journeeComplete = evenement.target.closest('[data-jour-complet]');
+      if (journeeComplete) {
+        etat.creationCal = null;
+        etat.detailCal = null;
+        etat.jourOuvertCal = journeeComplete.dataset.jourComplet;
         rendre();
         return;
       }
@@ -2457,6 +2489,7 @@ export default {
         const [type, id] = ouvrirDetail.dataset.element.split(':');
         etat.creationCal = null;
         etat.editionCal = false;
+        etat.jourOuvertCal = null;
         etat.detailCal = elementsDuCalendrier(etat).find(
           (element) => element.type === type && String(element.id) === id,
         );
@@ -2900,12 +2933,32 @@ export default {
       section.querySelector('#cal-titre')?.focus();
     });
 
+    // Glisser une barre la reporte : l'action la plus fréquente après créer.
+    brancherDeplacement(section, async ({ element: cle, ecart }) => {
+      const [type, id] = cle.split(':');
+      const element = elementsDuCalendrier(etat).find(
+        (candidat) => candidat.type === type && String(candidat.id) === id,
+      );
+      if (!element) return;
+
+      try {
+        await appliquerAuCalendrier(type, id, champsApresDeplacement(element, ecart));
+        await rechargerCalendrier();
+        rendre();
+      } catch (souci) {
+        console.error('Déplacement impossible', souci);
+      }
+    });
+
     // Échap ferme la fenêtre — c'est le geste attendu partout ailleurs.
     document.addEventListener('keydown', (touche) => {
       if (touche.key !== 'Escape') return;
-      if (!(etat.creationCal || etat.detailCal || etat.captureOuverte)) return;
+      if (!(etat.creationCal || etat.detailCal || etat.captureOuverte || etat.jourOuvertCal)) {
+        return;
+      }
       etat.creationCal = null;
       etat.detailCal = null;
+      etat.jourOuvertCal = null;
       etat.captureOuverte = false;
       etat.prefillMoment = null;
       rendre();

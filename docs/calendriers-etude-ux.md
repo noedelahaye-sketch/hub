@@ -95,11 +95,11 @@ une case montre, et ce qui se passe au-delà. Le standard : deux ou trois
 éléments visibles, puis un indicateur « +N ».
 
 **b. Le « +N » doit s'ouvrir.** C'est le point que la plupart des
-implémentations ratent, la nôtre comprise. Un « +2 » qui ne fait rien est pire
-que rien : il annonce une information et refuse de la donner. Chez Google, un
-clic déplie un pop-over avec la journée complète. **Chez nous, le « +N » est une
-étiquette morte** — il faut basculer en vue semaine pour voir ce qui est caché.
-C'est un défaut réel, et pas cosmétique.
+implémentations ratent. Un « +2 » qui ne fait rien est pire que rien : il
+annonce une information et refuse de la donner. Chez Google, un clic déplie un
+pop-over avec la journée complète. ✅ **Corrigé le 12 août** : le nôtre est
+devenu un bouton, et déplie la journée entière — événements de passage compris —
+chaque ligne menant au détail de son élément.
 
 **c. Une barre continue pour ce qui dure.** Un événement de trois jours est
 *une* barre titrée une fois, pas la même étiquette répétée trois fois. C'est ce
@@ -123,12 +123,12 @@ doigt ne sélectionne qu'un jour. Le contournement (bloquer le défilement de la
 page pendant l'appui) casse plus qu'il ne répare ; notre parade — les deux dates
 dans le formulaire — est honnête.
 
-**Déplacer par glissement.** C'est le geste que nous n'avons **pas**, et c'est
-le deuxième manque en importance. Reporter un match d'un jour demande
-aujourd'hui : cliquer la barre, ouvrir « Modifier », changer deux dates,
-enregistrer. Dans tout calendrier mûr, c'est un glissement. Le rapport
-effort/fréquence est mauvais : déplacer est l'une des actions les plus
-courantes.
+**Déplacer par glissement.** ✅ **Fait le 12 août.** Reporter est l'une des
+actions les plus courantes ; elle demandait quatre gestes, elle en demande un.
+Un événement de plusieurs jours garde sa durée et son heure — on décale ses deux
+bornes du même nombre de jours. À la souris seulement : au doigt, capturer le
+glissement obligerait à neutraliser le défilement de la page sur chaque barre,
+et une grille en est couverte. Sur téléphone, on passe par « Modifier ».
 
 **Corriger sans détruire.** Une date mal posée se répare ; la supprimer pour la
 recréer fait perdre le reste de la fiche. Nous l'avons depuis le 12 août, et le
@@ -169,11 +169,15 @@ l'est.
 
 **La couleur ne doit jamais porter seule une information.** C'est la règle
 d'accessibilité la plus citée pour les calendriers, parce qu'ils codent
-massivement par couleur. Dans notre calendrier du hub, une barre porte la
-couleur de son projet — mais **rien n'écrit lequel**. Un daltonien ne
-distinguerait pas Yuno du FCH. Et surtout, plus gênant pour toi : **une tâche et
-un événement du même projet ont exactement la même apparence** dans la vue
-mois. La nature n'est lisible qu'en infobulle ou en ouvrant le détail.
+massivement par couleur. Une barre porte la couleur de son projet — mais rien
+n'écrit lequel, et un daltonien ne distinguerait pas Yuno du FCH.
+
+✅ **La nature, elle, se lit depuis le 12 août** : un signe précède le titre
+(○ tâche, ◆ publication, ▲ objectif, △ jalon, ▸ commande, ↗ relance), et une
+tâche a une barre creuse là où un événement a une barre pleine — une chose à
+faire n'est pas une chose qui arrive. L'événement n'a pas de signe : c'est le
+cas ordinaire, la barre pleine le dit déjà. **Reste le projet**, toujours porté
+par la seule couleur.
 
 ---
 
@@ -223,17 +227,8 @@ qui répond, pas le mois.
 Mon jugement, appliqué à *ton* usage — un photographe qui suit des matchs, des
 publications et des relances, pas un cadre à trente réunions par semaine.
 
-**1. Le « +N » qui s'ouvre.** *Effet fort, coût faible.* Aujourd'hui une
-information est annoncée puis refusée. Un clic doit déplier la journée. C'est le
-défaut le plus net du calendrier actuel.
-
-**2. Distinguer les natures à l'œil.** *Effet fort, coût faible.* Une tâche, une
-publication et un événement doivent se reconnaître sans infobulle — par une
-forme, un liseré, une pastille. Aujourd'hui seule la couleur du projet
-différencie, et elle ne dit pas la nature.
-
-**3. Déplacer par glissement.** *Effet fort, coût moyen.* Reporter est l'action
-la plus fréquente après créer. Quatre gestes aujourd'hui, un seul demain.
+**✅ 1 à 3 — faits le 12 août.** Le « +N » s'ouvre, les natures se
+reconnaissent à l'œil, et une barre se déplace au glissement. Reste ceci :
 
 **4. Les heures dans la vue semaine.** *Effet fort, coût élevé.* C'est ce qui
 rendrait la semaine « honnête » — voir la durée, les chevauchements, les trous.

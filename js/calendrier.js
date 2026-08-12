@@ -20,7 +20,11 @@ import {
   construireGrille,
   fenetreCreation,
   fenetreDetail,
+  fenetreJour,
+  elementsDuJour,
   brancherSelection,
+  brancherDeplacement,
+  champsApresDeplacement,
   deplacerAncre,
   toutesLesNatures,
   natureParDefaut,
@@ -44,6 +48,7 @@ export default {
       creation: null,
       detail: null,
       edition: false,
+      jourOuvert: null,
     };
 
     function rendre() {
@@ -66,6 +71,13 @@ export default {
         ${
           etat.detail
             ? fenetreDetail(etat.detail, { montrerProjet: true, edition: etat.edition })
+            : ''
+        }
+        ${
+          etat.jourOuvert
+            ? fenetreJour(etat.jourOuvert, elementsDuJour(etat.elements, etat.jourOuvert), {
+                montrerProjet: true,
+              })
             : ''
         }`;
 
@@ -118,6 +130,7 @@ export default {
       etat.creation = null;
       etat.detail = null;
       etat.edition = false;
+      etat.jourOuvert = null;
       rendre();
     };
 
@@ -128,9 +141,29 @@ export default {
       section.querySelector('#cal-titre')?.focus();
     });
 
+    // Glisser une barre la reporte : c'est l'action la plus fréquente après
+    // créer, elle ne mérite pas quatre gestes.
+    brancherDeplacement(section, async ({ element: cle, ecart }) => {
+      const [type, id] = cle.split(':');
+      const element = etat.elements.find(
+        (candidat) => candidat.type === type && String(candidat.id) === id,
+      );
+      if (!element) return;
+
+      try {
+        await appliquerA(type, id, champsApresDeplacement(element, ecart));
+        await charger();
+        rendre();
+      } catch (souci) {
+        console.error('Déplacement impossible', souci);
+      }
+    });
+
     // Échap ferme la fenêtre — c'est le geste attendu partout ailleurs.
     document.addEventListener('keydown', (evenement) => {
-      if (evenement.key === 'Escape' && (etat.creation || etat.detail)) fermerFenetres();
+      if (evenement.key === 'Escape' && (etat.creation || etat.detail || etat.jourOuvert)) {
+        fermerFenetres();
+      }
     });
 
     section.addEventListener('click', async (evenement) => {
@@ -147,11 +180,21 @@ export default {
         return;
       }
 
+      const journee = evenement.target.closest('[data-jour-complet]');
+      if (journee) {
+        etat.creation = null;
+        etat.detail = null;
+        etat.jourOuvert = journee.dataset.jourComplet;
+        rendre();
+        return;
+      }
+
       const ouvrir = evenement.target.closest('[data-element]');
       if (ouvrir) {
         const [type, id] = ouvrir.dataset.element.split(':');
         etat.creation = null;
         etat.edition = false;
+        etat.jourOuvert = null;
         etat.detail = etat.elements.find(
           (element) => element.type === type && String(element.id) === id,
         );
@@ -261,6 +304,18 @@ export default {
       }
     });
 
+    // Où écrire, par nature. Le formulaire de modification et le glissement
+    // passent tous deux par ici — seuls les champs changent.
+    async function appliquerA(type, id, champs) {
+      if (type === 'evenement') return api.modifierEvenement(id, champs);
+      if (type === 'publication') return api.modifierPublication(id, champs);
+      if (type === 'objectif') return api.modifierObjectif(id, champs);
+      if (type === 'commande') return api.modifierCommande(id, champs);
+      if (type === 'relance') return api.modifierContact(id, champs);
+      if (type === 'jalon') return api.modifierJalon(id, champs);
+      return api.modifierTache(id, champs);
+    }
+
     // Corriger sur place. Chaque nature range sa date dans sa propre colonne :
     // `debut` est le nom du champ à l'écran, pas celui de la base.
     async function corriger(champs) {
@@ -270,7 +325,7 @@ export default {
       if (type === 'evenement') {
         const debut = new Date(`${champs.debut}T${champs.heure || '00:00'}`);
         const fin = champs.fin && champs.fin !== champs.debut ? new Date(`${champs.fin}T23:59`) : null;
-        return api.modifierEvenement(id, {
+        return appliquerA(type, id, {
           titre,
           date_debut: debut.toISOString(),
           date_fin: fin ? fin.toISOString() : null,
@@ -280,7 +335,7 @@ export default {
       }
 
       if (type === 'publication') {
-        return api.modifierPublication(id, {
+        return appliquerA(type, id, {
           titre,
           date_prevue: champs.debut,
           reseau: champs.reseau,
@@ -289,7 +344,7 @@ export default {
       }
 
       if (type === 'objectif') {
-        return api.modifierObjectif(id, {
+        return appliquerA(type, id, {
           titre,
           echeance: champs.debut,
           pourquoi: champs.pourquoi?.trim() || null,
@@ -298,7 +353,7 @@ export default {
       }
 
       if (type === 'commande') {
-        return api.modifierCommande(id, {
+        return appliquerA(type, id, {
           titre,
           echeance: champs.debut,
           client: champs.client?.trim() || null,
@@ -306,14 +361,13 @@ export default {
       }
 
       if (type === 'relance') {
-        return api.modifierContact(id, {
+        return appliquerA(type, id, {
           prochaine_action: titre,
           prochaine_action_date: champs.debut,
         });
       }
 
-      if (type === 'jalon') return api.modifierJalon(id, { titre, echeance: champs.debut });
-      return api.modifierTache(id, { titre, echeance: champs.debut });
+      return appliquerA(type, id, { titre, echeance: champs.debut });
     }
 
     async function poser(champs) {
