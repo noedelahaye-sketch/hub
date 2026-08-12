@@ -23,6 +23,7 @@ import {
   brancherSelection,
   deplacerAncre,
   toutesLesNatures,
+  natureParDefaut,
   centrerActif,
 } from './calendrier-commun.js';
 
@@ -122,7 +123,7 @@ export default {
 
     brancherSelection(section, ({ debut, fin }) => {
       etat.detail = null;
-      etat.creation = { debut, fin, nature: 'evenement' };
+      etat.creation = { debut, fin, nature: natureParDefaut(etat.natures) };
       rendre();
       section.querySelector('#cal-titre')?.focus();
     });

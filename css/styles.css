@@ -1564,13 +1564,18 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    traits, comme sur un agenda de bureau : ce sont les barres qui doivent
    attirer l'œil, pas le quadrillage. */
 .cal-grille {
+  /* Un seul réglage pour tous les traits de la grille — cadre compris. Ils
+     sont plus pâles que les bordures du site : un quadrillage se devine, il
+     ne se lit pas. */
+  --trait-cal: color-mix(in srgb, var(--bordure) 45%, transparent);
+
   display: flex;
   flex-direction: column;
   /* Le cadre reste arrondi, comme le reste du hub ; ce sont les séparations
      intérieures qui s'allègent en simples traits. L'overflow taille les
      traits aux angles. */
   overflow: hidden;
-  border: 1px solid var(--bordure);
+  border: 1px solid var(--trait-cal);
   border-radius: var(--rayon-carte);
 }
 
@@ -1587,7 +1592,7 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   text-align: center;
   text-transform: uppercase;
   color: var(--texte-discret);
-  border-right: 1px solid var(--bordure);
+  border-right: 1px solid var(--trait-cal);
 }
 
 .cal-ligne {
@@ -1604,8 +1609,8 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    surligne tout ce qu'on traverse. Il ne porte que ses deux traits. */
 .cal-jour {
   grid-row: 1 / -1;
-  border-right: 1px solid var(--bordure);
-  border-bottom: 1px solid var(--bordure);
+  border-right: 1px solid var(--trait-cal);
+  border-bottom: 1px solid var(--trait-cal);
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
@@ -1626,6 +1631,9 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 .cal-numero {
   position: relative;
   justify-self: center;
+  /* Sans ça, la grille étire le numéro sur toute la hauteur de sa ligne — et
+     la pastille d'aujourd'hui devient une barre. */
+  align-self: start;
   min-width: 1.5rem;
   margin: var(--espace-4) 0 2px;
   padding: 1px var(--espace-4);

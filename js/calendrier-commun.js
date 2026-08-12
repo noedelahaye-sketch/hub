@@ -601,6 +601,16 @@ const NATURES_CREABLES = {
   objectif: 'Objectif',
 };
 
+// Quand une seule nature est cochée, c'est elle qu'on vient poser : le filtre
+// dit déjà ce qu'on est en train de faire, autant ne pas le redemander. Une
+// relance fait exception — elle ne se crée pas d'ici, c'est une date qu'on
+// pose sur une fiche du carnet — alors on retombe sur l'événement.
+export function natureParDefaut(natures) {
+  if (natures.size !== 1) return 'evenement';
+  const [seule] = natures;
+  return seule in NATURES_CREABLES ? seule : 'evenement';
+}
+
 export function fenetreCreation({ debut, fin, nature = 'evenement', projets = null }) {
   const memeJour = debut === fin;
   const jourLisible = (cle) =>
