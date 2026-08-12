@@ -422,12 +422,19 @@ body[data-espace="yuno"] #vue .bloc h2 {
 
 /* --- La banque d'idées ------------------------------------------------------ */
 
+.banque-intro { margin: -4px 0 var(--espace-16); font-size: 0.9375rem; }
+
 .barre-banque {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
   gap: var(--espace-12);
   margin-bottom: var(--espace-12);
 }
+
+/* Le compte se pousse au bout de la barre : c'est une conséquence des filtres,
+   pas un filtre de plus. */
+.barre-banque .compte-base { margin: 0 0 0 auto; }
 
 .barre-banque label {
   display: flex;

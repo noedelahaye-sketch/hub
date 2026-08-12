@@ -167,10 +167,18 @@ body[data-espace="hermitage"] {
 
 *, *::before, *::after { box-sizing: border-box; }
 
+/* Toute l'échelle de texte descend d'un cran depuis ici : les tailles du site
+   sont en rem, elles suivent. Deux choses ne bougent pas, volontairement —
+   l'espacement, qui reste en px, et les champs de saisie, tenus à 16 px pour
+   qu'iOS ne zoome pas à chaque fois qu'on entre dans un champ.
+   Les points de rupture non plus : en media query, le rem se mesure sur la
+   taille initiale du navigateur, pas sur celle-ci. */
+html { font-size: 15px; }
+
 body {
   margin: 0;
   font-family: var(--police-texte);
-  font-size: 16px;
+  font-size: 1rem;
   /* Corps en 500, pas en 400 : le texte porte mieux, à l'écran comme au soleil.
      Instrument Sans est variable de 400 à 600, la graisse est bien là. */
   font-weight: 500;

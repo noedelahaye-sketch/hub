@@ -90,11 +90,17 @@ function construirePiliers() {
     </div>`;
 }
 
-const VUES = ['accueil', 'journal', 'creer', 'calendrier', 'reseau'];
+const VUES = ['accueil', 'journal', 'creer', 'banque', 'calendrier', 'reseau'];
+
+// La banque est une pièce de l'atelier : elle n'a pas son onglet, elle garde
+// celui de Créer allumé. Une barre de navigation ne doit pas grandir à chaque
+// écran qu'on ajoute.
+const ONGLET_DE_LA_VUE = { banque: 'creer' };
 
 // --- Fabrication du HTML ----------------------------------------------------
 
-function enTete(vueActive) {
+function enTete(vue) {
+  const vueActive = ONGLET_DE_LA_VUE[vue] ?? vue;
   const liens = [
     ['accueil', 'Accueil', '#yuno'],
     ['journal', 'Journal', '#yuno/journal'],
@@ -638,6 +644,17 @@ export function tirerIdee(publications, { avecMatch = true } = {}, hasard = Math
   return banque[Math.floor(hasard() * banque.length)];
 }
 
+// Ce que la banque contient vraiment : les sans-date, non publiées. Le compte
+// se dit sur la porte — une réserve pleine donne envie d'y entrer.
+export function compterIdees(publications) {
+  const combien = publications.filter(
+    (pub) => !pub.date_prevue && pub.statut !== 'publie',
+  ).length;
+
+  if (!combien) return 'vide pour le moment';
+  return `<span class="chiffre">${combien}</span> idée${combien > 1 ? 's' : ''} en réserve`;
+}
+
 export function filtrerBanque(publications, { pilier = 'tout', statutIdee = 'tout' } = {}) {
   return publications.filter((pub) => {
     if (pilier !== 'tout' && String(pub.pilier ?? '') !== pilier) return false;
@@ -735,6 +752,37 @@ function vueCreer(etat) {
 
     <section class="bloc">
       <h2>Banque d'idées</h2>
+      <a class="lien-externe" href="#yuno/banque">
+        <span class="lien-externe-texte">
+          <span class="lien-externe-titre">Ouvrir la banque d'idées</span>
+          <span class="discret">${compterIdees(etat.publications)} · elle ne se vide jamais</span>
+        </span>
+        <span class="lien-externe-fleche" aria-hidden="true">→</span>
+      </a>
+    </section>
+
+    <section class="bloc bloc-discret">
+      <h2>Rendez-vous stats</h2>
+      <div data-bloc="rendez-vous">${construireRendezVous(etat)}</div>
+    </section>
+    ${pied()}`;
+}
+
+// La banque a sa page : c'est un fonds où l'on fouille, pas une liste qu'on
+// dépasse pour atteindre autre chose. Elle garde l'onglet Créer allumé —
+// c'est une pièce de l'atelier, pas un lieu de plus.
+function vueBanque(etat) {
+  const options = { cycle: STATUTS_YUNO, checklist: true, piliers: PILIERS };
+  const retenues = filtrerBanque(etat.publications, etat);
+
+  return `
+    ${enTete('banque')}
+
+    <section class="bloc">
+      <h2>Banque d'idées</h2>
+      <p class="discret banque-intro">Le backlog créatif. Il ne se vide jamais,
+        et il ne réclame rien.</p>
+
       <div class="barre-banque">
         <label>
           <span class="discret">Pilier</span>
@@ -761,17 +809,12 @@ function vueCreer(etat) {
               .join('')}
           </select>
         </label>
+        <span class="discret compte-base"><span class="chiffre">${retenues.length}</span> sur
+          <span class="chiffre">${etat.publications.length}</span></span>
       </div>
-      <div data-bloc="banque">${construireBanque(
-        filtrerBanque(etat.publications, etat),
-        options,
-      )}</div>
-      <div data-bloc="publiees">${construirePubliees(etat.publications, options)}</div>
-    </section>
 
-    <section class="bloc bloc-discret">
-      <h2>Rendez-vous stats</h2>
-      <div data-bloc="rendez-vous">${construireRendezVous(etat)}</div>
+      <div data-bloc="banque">${construireBanque(retenues, options)}</div>
+      <div data-bloc="publiees">${construirePubliees(etat.publications, options)}</div>
     </section>
     ${pied()}`;
 }
@@ -1871,6 +1914,7 @@ export default {
     const rendre = () => {
       if (etat.vue === 'journal') section.innerHTML = vueJournal(etat);
       else if (etat.vue === 'creer') section.innerHTML = vueCreer(etat);
+      else if (etat.vue === 'banque') section.innerHTML = vueBanque(etat);
       else if (etat.vue === 'calendrier') section.innerHTML = vueCalendrier(etat);
       else if (etat.vue === 'reseau') section.innerHTML = vueReseau(etat);
       else section.innerHTML = vueAccueil(etat);
