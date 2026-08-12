@@ -709,7 +709,6 @@ export function champsApresDeplacement(element, ecart) {
 // un rendez-vous avec soi-même a toute sa place au calendrier.
 const CHAMPS_PAR_NATURE = {
   evenement: [
-    { nom: 'heure', libelle: 'À quelle heure (facultatif)', type: 'time' },
     { nom: 'lieu', libelle: 'Où (facultatif)', type: 'text' },
     { nom: 'notes', libelle: 'Notes (facultatif)', type: 'textarea' },
   ],
@@ -788,9 +787,7 @@ export function fenetreCreation({ debut, fin, nature = 'evenement', projets = nu
       action: 'creer-depuis-calendrier',
       bouton: 'Poser au calendrier',
       ouvert: true,
-      extra: `<input type="hidden" name="debut" value="${echapper(debut)}">
-              <input type="hidden" name="fin" value="${echapper(fin)}">
-              <input type="hidden" name="nature" value="${echapper(nature)}">`,
+      extra: `<input type="hidden" name="nature" value="${echapper(nature)}">`,
       champs: [
         { nom: 'titre', libelle: 'Quoi', type: 'text', requis: true },
         ...(projetsOfferts
@@ -804,6 +801,21 @@ export function fenetreCreation({ debut, fin, nature = 'evenement', projets = nu
               },
             ]
           : []),
+        // Les dates se montrent et se corrigent. Le glissement les pré-remplit,
+        // il ne les impose pas : sans ça, un événement de plusieurs jours ne
+        // pouvait naître que d'un geste de souris — impossible au doigt.
+        ...(nature === 'evenement'
+          ? [
+              { nom: 'debut', libelle: 'Du', type: 'date', requis: true, valeur: debut },
+              { nom: 'heure', libelle: 'À quelle heure (vide = toute la journée)', type: 'time' },
+              {
+                nom: 'fin',
+                libelle: "Jusqu'au (vide = un seul jour)",
+                type: 'date',
+                valeur: memeJour ? '' : fin,
+              },
+            ]
+          : [{ nom: 'debut', libelle: 'Quand', type: 'date', requis: true, valeur: debut }]),
         ...CHAMPS_PAR_NATURE[nature],
       ],
     })}`;

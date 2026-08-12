@@ -174,7 +174,14 @@ export default {
 
       const nature = evenement.target.closest('[data-nature-creation]');
       if (nature) {
-        etat.creation = { ...etat.creation, nature: nature.dataset.natureCreation };
+        // Les dates sont éditables : on garde ce qui vient d'être saisi plutôt
+        // que de revenir à ce que le glissement avait posé.
+        etat.creation = {
+          ...etat.creation,
+          debut: section.querySelector('#cal-debut')?.value || etat.creation.debut,
+          fin: section.querySelector('#cal-fin')?.value || etat.creation.fin,
+          nature: nature.dataset.natureCreation,
+        };
         rendre();
         section.querySelector('#cal-titre')?.focus();
         return;
@@ -401,7 +408,10 @@ export default {
       // Sans heure, l'événement tient le jour entier : minuit local, et
       // `momentLisible` s'abstient alors d'afficher 00:00.
       const debut = new Date(`${champs.debut}T${champs.heure || '00:00'}`);
-      const fin = champs.fin === champs.debut ? null : new Date(`${champs.fin}T23:59`);
+      const fin =
+            champs.fin && champs.fin !== champs.debut
+              ? new Date(`${champs.fin}T23:59`)
+              : null;
 
       return api.creerEvenement({
         projet,
