@@ -604,6 +604,16 @@ export async function avancerCommande(commande, suivant) {
 // est passé ; une tâche ou une publication en retard de date reste affichée
 // (sobrement — jamais en alerte) tant qu'elle n'est pas faite.
 
+// Le calendrier en grille se promène dans le passé comme dans l'avenir : il lui
+// faut tout, pas seulement ce qui reste à vivre. C'est ce qui distingue une
+// grille d'une liste de rappels — et sans ça, un événement posé sur aujourd'hui
+// à minuit disparaissait au rechargement.
+export async function evenementsTous({ projet = null } = {}) {
+  let requete = client.from('evenements').select('*').order('date_debut');
+  if (projet) requete = requete.eq('projet', projet);
+  return verifier(await requete);
+}
+
 export async function evenementsDepuis(debutISO, { projet = null } = {}) {
   let requete = client
     .from('evenements')
@@ -665,6 +675,11 @@ export async function supprimerTache(id) {
 
 export async function supprimerEvenement(id) {
   const { error } = await client.from('evenements').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function supprimerJalon(id) {
+  const { error } = await client.from('jalons').delete().eq('id', id);
   if (error) throw error;
 }
 

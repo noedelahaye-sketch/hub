@@ -1,11 +1,13 @@
-// Le calendrier — tout ce qui porte une date, assemblé en une seule liste.
+// Le calendrier — tout ce qui porte une date, assemblé en une seule liste, puis
+// dessiné de trois façons : en mois, en semaine, ou en agenda.
 //
 // Deux consommateurs : l'espace Calendrier du hub (tous projets) et l'écran
 // Calendrier du site Yuno (projet photo seul). Même assemblage, même rendu,
 // mêmes filtres — seules les données passées changent.
 //
 // Les fonctions ne font que fabriquer du HTML à partir de données déjà
-// chargées, comme partout dans le hub.
+// chargées, comme partout dans le hub. Seul `brancherSelection` touche au DOM,
+// et il ne fait que poser des écouteurs.
 
 import { construireFormulaire } from './espace-projet.js';
 import {
@@ -25,8 +27,7 @@ export const RESEAUX = {
 };
 export const FORMATS = { post: 'Post', carrousel: 'Carrousel', reel: 'Réel', story: 'Story' };
 
-// Les types d'éléments datés. Le filtre « objectif » couvre aussi les jalons :
-// un jalon daté est une étape d'objectif, pas une espèce à part.
+// Les types d'éléments datés.
 const TYPES = {
   evenement: 'Événement',
   tache: 'Tâche',
@@ -37,17 +38,26 @@ const TYPES = {
   relance: 'Relance',
 };
 
-// Un seul filtre pour ce que le carnet réseau met à l'agenda : une relance
-// promise et une commande à livrer sont deux façons de tenir un engagement
-// envers quelqu'un.
-export const FILTRES = [
-  ['tout', 'Tout'],
-  ['publication', 'Publications'],
-  ['tache', 'Tâches'],
-  ['evenement', 'Événements'],
-  ['objectif', 'Objectifs'],
-  ['relance', 'Relances/Commandes'],
-];
+// Les natures, c'est-à-dire ce qui se coche dans les filtres. Un jalon daté est
+// une étape d'objectif, pas une espèce à part ; une commande à livrer et une
+// relance promise sont deux façons de tenir un engagement envers quelqu'un.
+export const NATURES = {
+  evenement: 'Événements',
+  tache: 'Tâches',
+  publication: 'Publications',
+  objectif: 'Objectifs',
+  relance: 'Relances/Commandes',
+};
+
+export function natureDe(element) {
+  if (element.type === 'jalon') return 'objectif';
+  if (element.type === 'commande') return 'relance';
+  return element.type;
+}
+
+export function toutesLesNatures() {
+  return new Set(Object.keys(NATURES));
+}
 
 // --- Assemblage --------------------------------------------------------------
 
@@ -64,21 +74,24 @@ export function assemblerCalendrier({
   for (const evenement of evenements) {
     const date = new Date(evenement.date_debut);
     elements.push({
+      id: evenement.id,
       type: 'evenement',
       date,
-      // Le dernier jour occupé, s'il y en a plusieurs. La liste n'en fait rien
-      // — elle dirait trois fois la même chose ; la grille s'en sert pour
-      // étaler l'événement sur toute sa durée.
+      // Le dernier jour occupé, s'il y en a plusieurs. L'agenda n'en fait rien
+      // — il dirait trois fois la même chose ; la grille s'en sert pour tirer
+      // une barre continue sur toute la durée.
       jusqua: evenement.date_fin ? versDateISO(new Date(evenement.date_fin)) : null,
       projet: evenement.projet,
       titre: evenement.titre,
       detail: evenement.lieu,
+      notes: evenement.notes,
       quand: momentLisible(date),
     });
   }
 
   for (const tache of taches) {
     elements.push({
+      id: tache.id,
       type: 'tache',
       date: depuisDateISO(tache.echeance),
       projet: tache.projet,
@@ -90,15 +103,18 @@ export function assemblerCalendrier({
   for (const objectif of objectifs) {
     if (objectif.echeance) {
       elements.push({
+        id: objectif.id,
         type: 'objectif',
         date: depuisDateISO(objectif.echeance),
         projet: objectif.projet,
         titre: objectif.titre,
+        detail: objectif.cible,
       });
     }
     for (const jalon of objectif.jalons ?? []) {
       if (jalon.echeance && !jalon.atteint) {
         elements.push({
+          id: jalon.id,
           type: 'jalon',
           date: depuisDateISO(jalon.echeance),
           projet: objectif.projet,
@@ -111,9 +127,10 @@ export function assemblerCalendrier({
 
   for (const pub of publications) {
     elements.push({
+      id: pub.id,
       type: 'publication',
       date: depuisDateISO(pub.date_prevue),
-      projet: 'photo',
+      projet: pub.projet ?? 'photo',
       titre: pub.titre,
       detail: `${RESEAUX[pub.reseau] ?? pub.reseau} · ${FORMATS[pub.format] ?? pub.format}`,
     });
@@ -121,6 +138,7 @@ export function assemblerCalendrier({
 
   for (const commande of commandes) {
     elements.push({
+      id: commande.id,
       type: 'commande',
       date: depuisDateISO(commande.echeance),
       projet: 'photo',
@@ -129,10 +147,9 @@ export function assemblerCalendrier({
     });
   }
 
-  // Les prochaines actions datées du carnet réseau. Elles disent ce qu'on a
-  // promis à quelqu'un, pas ce qu'on attend de lui.
   for (const contact of relances) {
     elements.push({
+      id: contact.id,
       type: 'relance',
       date: depuisDateISO(contact.prochaine_action_date),
       projet: 'photo',
@@ -145,9 +162,6 @@ export function assemblerCalendrier({
 }
 
 // --- Les périodes ------------------------------------------------------------
-// Trois façons de regarder la même liste. L'agenda était la seule ; le mois et
-// la semaine sont venus après, parce qu'un trou dans un planning se voit sur
-// une grille et pas dans une liste.
 
 export const VUES_CALENDRIER = { mois: 'Mois', semaine: 'Semaine', agenda: 'Agenda' };
 
@@ -185,7 +199,6 @@ export function grilleDeLaSemaine(ancre) {
   return suiteDeJours(debutDeLaSemaine(ancre), 7);
 }
 
-// Décaler l'ancre d'une période, dans le sens demandé.
 export function deplacerAncre(ancre, vue, sens) {
   const suite = new Date(ancre);
   if (vue === 'semaine') suite.setDate(suite.getDate() + 7 * sens);
@@ -203,46 +216,44 @@ export function titreDePeriode(ancre, vue) {
   const dernier = jours[6];
   const memeMois = premier.getMonth() === dernier.getMonth();
 
-  return `${premier.getDate()}${memeMois ? '' : ` ${premier.toLocaleDateString('fr-FR', { month: 'short' })}`} – ${dernier.toLocaleDateString(
-    'fr-FR',
-    { day: 'numeric', month: 'long', year: 'numeric' },
-  )}`;
+  return `${premier.getDate()}${
+    memeMois ? '' : ` ${premier.toLocaleDateString('fr-FR', { month: 'short' })}`
+  } – ${dernier.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`;
 }
 
-// --- Rendu -------------------------------------------------------------------
+// --- Rendu commun ------------------------------------------------------------
 
-// Une barre horizontale qui déborde cache ce qui dépasse : si l'élément actif
-// est hors champ, on le ramène au centre. Sans toucher au défilement de la
-// page — d'où le calcul manuel plutôt que scrollIntoView.
 export function centrerActif(conteneur, selecteur = '.actif') {
   const actif = conteneur?.querySelector(selecteur);
   if (!actif || conteneur.scrollWidth <= conteneur.clientWidth) return;
   conteneur.scrollLeft = actif.offsetLeft - (conteneur.clientWidth - actif.offsetWidth) / 2;
 }
 
-export function construireFiltres(actif = 'tout') {
-  return `<div class="filtres" role="group" aria-label="Filtrer le calendrier">
-    ${FILTRES.map(
-      ([valeur, libelle]) => `
-      <button type="button" data-filtre="${valeur}"
-        aria-pressed="${valeur === actif}"
-        class="${valeur === actif ? 'actif' : ''}">${libelle}</button>`,
-    ).join('')}
-  </div>`;
+// Les filtres se cochent, ils ne s'excluent plus : voir les publications ET les
+// tâches sans les objectifs était impossible avec des onglets.
+export function construireFiltres(natures) {
+  const toutes = Object.keys(NATURES);
+  const tout = toutes.every((nature) => natures.has(nature));
+
+  return `
+    <div class="cal-filtres" role="group" aria-label="Ce que le calendrier montre">
+      <label class="cal-coche ${tout ? 'actif' : ''}">
+        <input type="checkbox" data-filtre-tout ${tout ? 'checked' : ''}>
+        <span>Tout</span>
+      </label>
+      ${toutes
+        .map(
+          (nature) => `
+        <label class="cal-coche ${natures.has(nature) ? 'actif' : ''}">
+          <input type="checkbox" data-filtre-nature="${nature}"
+            ${natures.has(nature) ? 'checked' : ''}>
+          <span>${echapper(NATURES[nature])}</span>
+        </label>`,
+        )
+        .join('')}
+    </div>`;
 }
 
-function retenu(element, filtre) {
-  if (filtre === 'tout') return true;
-  if (filtre === 'objectif') return element.type === 'objectif' || element.type === 'jalon';
-  // Un filtre pour deux natures : ce que le carnet réseau met à l'agenda.
-  if (filtre === 'relance') return element.type === 'relance' || element.type === 'commande';
-  return element.type === filtre;
-}
-
-// `montrerProjet` : sur le hub les projets se mélangent, chaque tuile dit le
-// sien ; sur le site Yuno tout est photo, le répéter serait du bruit.
-// La barre de période : les trois vues, et de quoi se déplacer. « Aujourd'hui »
-// ramène toujours au présent — dans un calendrier on se perd vite.
 export function construireBarrePeriode(vue, ancre) {
   return `
     <div class="cal-barre">
@@ -272,208 +283,178 @@ export function construireBarrePeriode(vue, ancre) {
     </div>`;
 }
 
-function pastilleElement(element, montrerProjet) {
-  const projet = montrerProjet ? ` data-projet="${echapper(element.projet)}"` : '';
-  return `<span class="cal-puce"${projet} title="${echapper(
-    `${TYPES[element.type]} · ${element.titre}`,
-  )}">${echapper(element.titre)}</span>`;
+function retenu(element, natures) {
+  return natures.has(natureDe(element));
 }
 
-function elementsParJour(elements) {
-  const carte = new Map();
-  const poser = (cle, element) => {
-    if (!carte.has(cle)) carte.set(cle, []);
-    carte.get(cle).push(element);
-  };
+// --- La grille ---------------------------------------------------------------
+// Un événement de plusieurs jours est UNE barre continue, titrée une seule
+// fois — pas la même étiquette répétée dans chaque case. C'est ce qui distingue
+// un calendrier d'une liste par jour, et ça oblige à placer les barres en
+// couloirs pour qu'elles ne se chevauchent pas.
 
-  for (const element of elements) {
-    const debut = versDateISO(element.date);
-    poser(debut, element);
+function segmentsDeLaSemaine(jours, elements) {
+  const bordGauche = versDateISO(jours[0]);
+  const bordDroit = versDateISO(jours[6]);
+  const colonne = new Map(jours.map((jour, index) => [versDateISO(jour), index]));
 
-    if (!element.jusqua || element.jusqua <= debut) continue;
+  const segments = elements
+    .map((element) => {
+      const debut = versDateISO(element.date);
+      const fin = element.jusqua && element.jusqua > debut ? element.jusqua : debut;
+      if (fin < bordGauche || debut > bordDroit) return null;
 
-    // Un événement de plusieurs jours occupe chacun d'eux — c'est ce qu'une
-    // grille sait montrer et qu'une liste ne sait pas. La borne d'un an évite
-    // qu'une date de fin aberrante fasse tourner la boucle sans fin.
-    const jour = new Date(element.date);
-    jour.setHours(0, 0, 0, 0);
-    for (let compte = 0; compte < 366; compte += 1) {
-      jour.setDate(jour.getDate() + 1);
-      const cle = versDateISO(jour);
-      if (cle > element.jusqua) break;
-      poser(cle, element);
+      return {
+        element,
+        depuis: colonne.get(debut < bordGauche ? bordGauche : debut),
+        jusqua: colonne.get(fin > bordDroit ? bordDroit : fin),
+        deborde: { avant: debut < bordGauche, apres: fin > bordDroit },
+      };
+    })
+    .filter(Boolean)
+    // Les plus longues d'abord, à départ égal : une barre de trois jours mérite
+    // le couloir du haut, sinon elle se faufile sous des barres d'un jour.
+    .sort((a, b) => a.depuis - b.depuis || b.jusqua - b.depuis - (a.jusqua - a.depuis));
+
+  const couloirs = [];
+  for (const segment of segments) {
+    let rang = couloirs.findIndex((couloir) =>
+      couloir.every((autre) => segment.jusqua < autre.depuis || segment.depuis > autre.jusqua),
+    );
+    if (rang < 0) {
+      couloirs.push([]);
+      rang = couloirs.length - 1;
     }
+    couloirs[rang].push(segment);
+    segment.couloir = rang;
   }
 
-  return carte;
+  return segments;
 }
 
-// Une case de la grille. Elle porte sa date en clair : c'est elle que le
-// glissement de la souris lit pour savoir ce qu'on a sélectionné.
-function caseDuJour(jour, elements, { montrerProjet, mois, maximum, aujourdhui, selection }) {
-  const cle = versDateISO(jour);
-  const dedans = elements ?? [];
-  const montres = maximum ? dedans.slice(0, maximum) : dedans;
-  const reste = dedans.length - montres.length;
-
+function barre(segment, montrerProjet) {
+  const { element, deborde } = segment;
+  const projet = montrerProjet ? ` data-projet="${echapper(element.projet)}"` : '';
   const classes = [
-    'cal-jour',
-    mois !== null && jour.getMonth() !== mois ? 'cal-hors-mois' : '',
-    cle === aujourdhui ? 'cal-aujourdhui' : '',
-    // La plage choisie reste marquée tant que le formulaire est ouvert : on
-    // doit voir sur quoi on est en train de poser quelque chose.
-    selection && cle >= selection.debut && cle <= selection.fin ? 'cal-choisi' : '',
+    'cal-barre-element',
+    `cal-type-${element.type}`,
+    deborde.avant ? 'deborde-avant' : '',
+    deborde.apres ? 'deborde-apres' : '',
   ]
     .filter(Boolean)
     .join(' ');
 
-  return `
-    <td class="${classes}" data-jour="${cle}">
-      <span class="cal-numero">${jour.getDate()}</span>
-      <span class="cal-pile">
-        ${montres.map((element) => pastilleElement(element, montrerProjet)).join('')}
-        ${reste > 0 ? `<span class="cal-reste discret">+${reste}</span>` : ''}
-      </span>
-    </td>`;
+  return `<button type="button" class="${classes}"${projet}
+    style="grid-column: ${segment.depuis + 1} / ${segment.jusqua + 2}; grid-row: ${segment.couloir + 2};"
+    data-element="${echapper(element.type)}:${echapper(element.id)}"
+    title="${echapper(`${TYPES[element.type]} · ${element.titre}`)}">${echapper(element.titre)}</button>`;
 }
 
-// La grille elle-même. Un tableau, parce que c'en est un : sept colonnes de
-// jours, une ligne par semaine.
+function ligneDeSemaine(jours, elements, options) {
+  const { montrerProjet, maximum, mois, aujourdhui, selection } = options;
+  const segments = segmentsDeLaSemaine(jours, elements);
+  const visibles = maximum ? segments.filter((segment) => segment.couloir < maximum) : segments;
+  const caches = maximum ? segments.filter((segment) => segment.couloir >= maximum) : [];
+
+  // Ce qui ne tient pas se compte par jour : « +2 » sous la dernière barre.
+  const reste = new Array(7).fill(0);
+  for (const segment of caches) {
+    for (let index = segment.depuis; index <= segment.jusqua; index += 1) reste[index] += 1;
+  }
+
+  const couloirs = visibles.reduce((haut, segment) => Math.max(haut, segment.couloir + 1), 0);
+  const aDuReste = reste.some(Boolean);
+  // Les lignes de la grille sont déclarées : le numéro, un rang par couloir,
+  // l'éventuel « +N », puis un rang souple qui étire les cases jusqu'en bas.
+  // Sans lignes explicites, le fond d'un jour ne s'étirerait sur rien.
+  const rangs = couloirs + (aDuReste ? 1 : 0);
+
+  const fonds = jours
+    .map((jour, index) => {
+      const cle = versDateISO(jour);
+      const classes = [
+        'cal-jour',
+        mois !== null && jour.getMonth() !== mois ? 'cal-hors-mois' : '',
+        cle === aujourdhui ? 'cal-aujourdhui' : '',
+        selection && cle >= selection.debut && cle <= selection.fin ? 'cal-choisi' : '',
+      ]
+        .filter(Boolean)
+        .join(' ');
+
+      return `<div class="${classes}" data-jour="${cle}"
+        style="grid-column: ${index + 1};"></div>`;
+    })
+    .join('');
+
+  const numeros = jours
+    .map(
+      (jour, index) => `<span class="cal-numero" style="grid-column: ${index + 1}; grid-row: 1;"
+        aria-hidden="true">${jour.getDate()}</span>`,
+    )
+    .join('');
+
+  const restes = reste
+    .map((nombre, index) =>
+      nombre
+        ? `<span class="cal-reste discret"
+             style="grid-column: ${index + 1}; grid-row: ${couloirs + 2};">+${nombre}</span>`
+        : '',
+    )
+    .join('');
+
+  return `
+    <div class="cal-ligne" style="grid-template-rows: auto repeat(${rangs}, auto) 1fr;">
+      ${fonds}${numeros}
+      ${visibles.map((segment) => barre(segment, montrerProjet)).join('')}
+      ${restes}
+    </div>`;
+}
+
 export function construireGrille(
   elements,
-  filtre,
+  natures,
   vue,
   ancre,
   { montrerProjet = false, selection = null } = {},
 ) {
-  const retenus = elements.filter((element) => retenu(element, filtre));
-  const parJour = elementsParJour(retenus);
+  const retenus = elements.filter((element) => retenu(element, natures));
   const jours = vue === 'semaine' ? grilleDeLaSemaine(ancre) : grilleDuMois(ancre);
-  const aujourdhui = versDateISO(new Date());
 
   const options = {
     montrerProjet,
-    // En vue mois, une case ne peut pas tout montrer : trois puces et un
+    // En vue mois une ligne ne peut pas tout montrer : trois couloirs, puis un
     // reste. En semaine il y a la place, on montre tout.
     maximum: vue === 'semaine' ? 0 : 3,
     mois: vue === 'semaine' ? null : ancre.getMonth(),
-    aujourdhui,
+    aujourdhui: versDateISO(new Date()),
     selection,
   };
 
   const lignes = [];
   for (let debut = 0; debut < jours.length; debut += 7) {
-    const semaine = jours.slice(debut, debut + 7);
-    lignes.push(`<tr>${semaine
-      .map((jour) => caseDuJour(jour, parJour.get(versDateISO(jour)), options))
-      .join('')}</tr>`);
+    lignes.push(ligneDeSemaine(jours.slice(debut, debut + 7), retenus, options));
   }
 
   return `
-    <table class="cal-grille cal-${vue}">
-      <thead>
-        <tr>${JOURS_COURTS.map((nom) => `<th scope="col">${nom}</th>`).join('')}</tr>
-      </thead>
-      <tbody>${lignes.join('')}</tbody>
-    </table>
+    <div class="cal-grille cal-${vue}">
+      <div class="cal-entetes" aria-hidden="true">
+        ${JOURS_COURTS.map((nom) => `<span>${nom}</span>`).join('')}
+      </div>
+      ${lignes.join('')}
+    </div>
     <p class="discret cal-aide">Touche un jour — ou glisse sur une série de jours —
-      pour y poser un événement.</p>`;
+      pour y poser quelque chose. Clique une barre pour la voir en détail.</p>`;
 }
 
-// Le glissement de sélection, branché une fois sur le conteneur. Il peint les
-// cases au passage et rappelle `quandChoisi` au relâchement.
-//
-// Sur écran tactile, `pointerover` ne visite pas les cases voisines pendant un
-// glissement : un doigt choisit donc un seul jour. Ce n'est pas un manque —
-// le formulaire porte les deux dates, une plage reste atteignable partout.
-export function brancherSelection(section, quandChoisi) {
-  let depuis = null;
+// --- L'agenda ----------------------------------------------------------------
 
-  const peindre = (a, b) => {
-    const [min, max] = [a, b].sort();
-    for (const cellule of section.querySelectorAll('.cal-jour')) {
-      cellule.classList.toggle(
-        'cal-choisi',
-        Boolean(min) && cellule.dataset.jour >= min && cellule.dataset.jour <= max,
-      );
-    }
-  };
-
-  section.addEventListener('pointerdown', (evenement) => {
-    const cellule = evenement.target.closest('.cal-jour');
-    if (!cellule) return;
-    // Sans ça, le navigateur sélectionne le texte des cases traversées.
-    evenement.preventDefault();
-    depuis = cellule.dataset.jour;
-    peindre(depuis, depuis);
-  });
-
-  section.addEventListener('pointerover', (evenement) => {
-    if (!depuis) return;
-    const cellule = evenement.target.closest('.cal-jour');
-    if (cellule) peindre(depuis, cellule.dataset.jour);
-  });
-
-  section.addEventListener('pointerup', (evenement) => {
-    if (!depuis) return;
-    const jusqua = evenement.target.closest('.cal-jour')?.dataset.jour ?? depuis;
-    const [debut, fin] = [depuis, jusqua].sort();
-    depuis = null;
-    quandChoisi({ debut, fin });
-  });
-
-  // Relâcher hors de la fenêtre n'a rien choisi du tout.
-  section.addEventListener('pointercancel', () => {
-    depuis = null;
-    peindre('', '');
-  });
-}
-
-// Ce qu'une plage de jours veut dire : un événement. Une tâche ou une
-// publication porte une date unique ; s'étendre sur trois jours, c'est le
-// propre de ce qu'on vit. Le projet n'est demandé que sur le calendrier du
-// hub — chez Yuno, c'est photo.
-export function formulaireEvenement({ debut, fin, projets = null }) {
-  const memeJour = debut === fin;
-  const quand = memeJour
-    ? depuisDateISO(debut).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
-    : `du ${depuisDateISO(debut).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} au ${depuisDateISO(
-        fin,
-      ).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`;
-
-  return `
-    <div class="cal-creation">
-      <p class="cal-creation-quand">Poser quelque chose <strong>${echapper(quand)}</strong></p>
-      ${construireFormulaire({
-        id: 'evenement-cal',
-        libelle: 'Ajouter un événement',
-        action: 'creer-evenement-cal',
-        bouton: 'Poser au calendrier',
-        ouvert: true,
-        extra: `<input type="hidden" name="debut" value="${echapper(debut)}">
-                <input type="hidden" name="fin" value="${echapper(fin)}">`,
-        champs: [
-          { nom: 'titre', libelle: 'Quoi', type: 'text', requis: true },
-          ...(projets
-            ? [{ nom: 'projet', libelle: 'Pour quel projet', type: 'select', options: projets, valeur: 'photo' }]
-            : []),
-          { nom: 'heure', libelle: 'À quelle heure (facultatif)', type: 'time' },
-          { nom: 'lieu', libelle: 'Où (facultatif)', type: 'text' },
-          { nom: 'notes', libelle: 'Notes (facultatif)', type: 'textarea' },
-        ],
-      })}
-      <button type="button" class="lien-discret bouton-mini" data-annuler-creation>Annuler</button>
-    </div>`;
-}
-
-export function construireCalendrier(elements, filtre = 'tout', { montrerProjet = false } = {}) {
-  const retenus = elements.filter((element) => retenu(element, filtre));
+export function construireCalendrier(elements, natures, { montrerProjet = false } = {}) {
+  const retenus = elements.filter((element) => retenu(element, natures));
 
   if (!retenus.length) {
     return `<p class="vide">Rien de daté ici pour l'instant.</p>`;
   }
 
-  // Groupés par mois : le calendrier se parcourt, il ne s'épluche pas.
   const groupes = new Map();
   for (const element of retenus) {
     const cle = element.date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
@@ -505,7 +486,10 @@ export function construireCalendrier(elements, filtre = 'tout', { montrerProjet 
                     element.date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }),
                 )}</span>
               </span>
-              <span class="semaine-titre">${echapper(element.titre)}</span>
+              <button type="button" class="semaine-titre cal-lien-detail"
+                data-element="${echapper(element.type)}:${echapper(element.id)}">${echapper(
+                  element.titre,
+                )}</button>
               ${element.detail ? `<span class="discret calendrier-detail">${echapper(element.detail)}</span>` : ''}
             </li>`,
             )
@@ -514,4 +498,219 @@ export function construireCalendrier(elements, filtre = 'tout', { montrerProjet 
       </section>`,
     )
     .join('');
+}
+
+// --- Le glissement de sélection ----------------------------------------------
+// Sur écran tactile, `pointerover` ne visite pas les cases voisines pendant un
+// glissement : un doigt choisit donc un seul jour. Ce n'est pas un manque — la
+// fenêtre porte les deux dates, une plage reste atteignable partout.
+
+export function brancherSelection(section, quandChoisi) {
+  let depuis = null;
+
+  const peindre = (a, b) => {
+    const [min, max] = [a, b].sort();
+    for (const cellule of section.querySelectorAll('.cal-jour')) {
+      cellule.classList.toggle(
+        'cal-choisi',
+        Boolean(min) && cellule.dataset.jour >= min && cellule.dataset.jour <= max,
+      );
+    }
+  };
+
+  section.addEventListener('pointerdown', (evenement) => {
+    // Une barre se clique pour son détail : elle n'ouvre pas une sélection.
+    if (evenement.target.closest('.cal-barre-element')) return;
+    const cellule = evenement.target.closest('.cal-jour');
+    if (!cellule) return;
+    // Sans ça, le navigateur sélectionne le texte des cases traversées.
+    evenement.preventDefault();
+    depuis = cellule.dataset.jour;
+    peindre(depuis, depuis);
+  });
+
+  section.addEventListener('pointerover', (evenement) => {
+    if (!depuis) return;
+    const cellule = evenement.target.closest('.cal-jour');
+    if (cellule) peindre(depuis, cellule.dataset.jour);
+  });
+
+  section.addEventListener('pointerup', (evenement) => {
+    if (!depuis) return;
+    const jusqua = evenement.target.closest('.cal-jour')?.dataset.jour ?? depuis;
+    const [debut, fin] = [depuis, jusqua].sort();
+    depuis = null;
+    quandChoisi({ debut, fin });
+  });
+
+  section.addEventListener('pointercancel', () => {
+    depuis = null;
+    peindre('', '');
+  });
+}
+
+// --- Les fenêtres volantes ---------------------------------------------------
+// Une fenêtre par-dessus la grille, comme dans un agenda : on pose une chose
+// sans quitter la vue d'ensemble, et on la referme d'un geste.
+
+function fenetre(titre, contenu) {
+  return `
+    <div class="cal-fond" data-fermer-fenetre></div>
+    <div class="cal-fenetre" role="dialog" aria-modal="true" aria-label="${echapper(titre)}">
+      <button type="button" class="cal-fermer" data-fermer-fenetre
+        aria-label="Fermer">×</button>
+      ${contenu}
+    </div>`;
+}
+
+// Ce qu'une nature sait recevoir depuis le calendrier. L'espace perso n'a ni
+// tâches, ni jalons, ni publications : il n'apparaît que pour un événement —
+// un rendez-vous avec soi-même a toute sa place au calendrier.
+const CHAMPS_PAR_NATURE = {
+  evenement: [
+    { nom: 'heure', libelle: 'À quelle heure (facultatif)', type: 'time' },
+    { nom: 'lieu', libelle: 'Où (facultatif)', type: 'text' },
+    { nom: 'notes', libelle: 'Notes (facultatif)', type: 'textarea' },
+  ],
+  tache: [],
+  publication: [
+    { nom: 'reseau', libelle: 'Réseau', type: 'select', options: RESEAUX, valeur: 'instagram' },
+    { nom: 'format', libelle: 'Format', type: 'select', options: FORMATS, valeur: 'post' },
+  ],
+  objectif: [
+    { nom: 'pourquoi', libelle: 'Pourquoi ? (relu les jours sans motivation)', type: 'textarea' },
+    { nom: 'cible', libelle: "À quoi tu sauras que c'est réussi", type: 'text' },
+  ],
+};
+
+const NATURES_CREABLES = {
+  evenement: 'Événement',
+  tache: 'Tâche',
+  publication: 'Publication',
+  objectif: 'Objectif',
+};
+
+export function fenetreCreation({ debut, fin, nature = 'evenement', projets = null }) {
+  const memeJour = debut === fin;
+  const jourLisible = (cle) =>
+    depuisDateISO(cle).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  const quand = memeJour
+    ? jourLisible(debut)
+    : `du ${depuisDateISO(debut).toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'long',
+      })} au ${depuisDateISO(fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`;
+
+  // Seul un événement s'étend. Une tâche, une publication ou un objectif porte
+  // une date unique : on prend le premier jour, et on le dit.
+  const surLePremierJour = !memeJour && nature !== 'evenement';
+
+  const projetsOfferts =
+    projets &&
+    Object.fromEntries(
+      Object.entries(projets).filter(([cle]) => nature === 'evenement' || cle !== 'perso'),
+    );
+
+  const contenu = `
+    <p class="cal-fenetre-quand">${echapper(quand)}</p>
+    <div class="cal-natures" role="group" aria-label="Nature de ce qu'on pose">
+      ${Object.entries(NATURES_CREABLES)
+        .map(
+          ([valeur, libelle]) => `
+        <button type="button" data-nature-creation="${valeur}"
+          aria-pressed="${valeur === nature}"
+          class="${valeur === nature ? 'actif' : ''}">${libelle}</button>`,
+        )
+        .join('')}
+    </div>
+    ${
+      surLePremierJour
+        ? `<p class="discret cal-note-nature">Posé sur le ${echapper(
+            jourLisible(debut),
+          )} — seul un événement s'étend sur plusieurs jours.</p>`
+        : ''
+    }
+    ${construireFormulaire({
+      id: 'cal',
+      libelle: `Ajouter — ${NATURES_CREABLES[nature].toLowerCase()}`,
+      action: 'creer-depuis-calendrier',
+      bouton: 'Poser au calendrier',
+      ouvert: true,
+      extra: `<input type="hidden" name="debut" value="${echapper(debut)}">
+              <input type="hidden" name="fin" value="${echapper(fin)}">
+              <input type="hidden" name="nature" value="${echapper(nature)}">`,
+      champs: [
+        { nom: 'titre', libelle: 'Quoi', type: 'text', requis: true },
+        ...(projetsOfferts
+          ? [
+              {
+                nom: 'projet',
+                libelle: 'Pour quel projet',
+                type: 'select',
+                options: projetsOfferts,
+                valeur: 'photo',
+              },
+            ]
+          : []),
+        ...CHAMPS_PAR_NATURE[nature],
+      ],
+    })}`;
+
+  return fenetre('Poser au calendrier', contenu);
+}
+
+// Ce qu'un élément devient quand on le supprime, dit par son verbe. Une relance
+// n'est pas une ligne à effacer : c'est une date qu'on retire d'une fiche.
+const VERBE_SUPPRESSION = {
+  evenement: "Supprimer l'événement",
+  tache: 'Supprimer la tâche',
+  publication: 'Supprimer la publication',
+  objectif: "Supprimer l'objectif et ses jalons",
+  jalon: 'Supprimer le jalon',
+  commande: 'Supprimer la commande',
+  relance: 'Retirer du calendrier',
+};
+
+export function fenetreDetail(element, { montrerProjet = false } = {}) {
+  const finit =
+    element.jusqua && element.jusqua > versDateISO(element.date)
+      ? ` — jusqu'au ${depuisDateISO(element.jusqua).toLocaleDateString('fr-FR', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+        })}`
+      : '';
+
+  const contenu = `
+    <span class="tuile-entete">
+      <span class="etiquette">${TYPES[element.type]}</span>
+      ${
+        montrerProjet
+          ? `<span class="tuile-projet">${echapper(
+              NOMS_PROJETS[element.projet] ?? element.projet,
+            )}</span>`
+          : ''
+      }
+    </span>
+    <h3 class="cal-detail-titre">${echapper(element.titre)}</h3>
+    <p class="discret cal-fenetre-quand">${echapper(
+      element.quand ??
+        element.date.toLocaleDateString('fr-FR', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long',
+        }),
+    )}${echapper(finit)}</p>
+    ${element.detail ? `<p class="cal-detail-ligne">${echapper(element.detail)}</p>` : ''}
+    ${element.notes ? `<p class="discret cal-detail-ligne">${echapper(element.notes)}</p>` : ''}
+    <div class="cal-detail-actions">
+      <button type="button" class="bouton-secondaire bouton-mini"
+        data-supprimer-element="${echapper(element.type)}:${echapper(element.id)}">${
+          VERBE_SUPPRESSION[element.type] ?? 'Supprimer'
+        }</button>
+      <span class="discret cal-detail-note">Le reste se modifie là où il vit.</span>
+    </div>`;
+
+  return fenetre(element.titre, contenu);
 }

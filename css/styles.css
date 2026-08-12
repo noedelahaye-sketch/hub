@@ -1526,29 +1526,67 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
 .cal-fleche:hover { color: var(--texte); border-color: var(--accent); }
 
-.cal-grille {
-  width: 100%;
-  table-layout: fixed;
-  border-collapse: separate;
-  border-spacing: 2px;
+/* Les filtres se cochent : voir les publications ET les tâches sans les
+   objectifs était impossible avec des onglets qui s'excluent. */
+.cal-filtres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-8);
+  margin-bottom: var(--espace-12);
 }
 
-.cal-grille th {
-  padding: var(--espace-4);
+.cal-coche {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  min-height: 2.25rem;
+  margin: 0;
+  padding: 0 var(--espace-12) 0 var(--espace-8);
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+  cursor: pointer;
+}
+
+.cal-coche.actif { color: var(--texte); border-color: var(--accent); }
+.cal-coche input { width: 1rem; height: 1rem; margin: 0; accent-color: var(--accent); }
+
+/* La grille : une ligne par semaine, sept colonnes. Les cases sont le fond ;
+   les barres se posent par-dessus, en couloirs, et traversent les jours. */
+.cal-grille { display: flex; flex-direction: column; gap: 2px; }
+
+.cal-entetes {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  padding: 0 1px;
+}
+
+.cal-entetes span {
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  text-align: left;
   color: var(--texte-discret);
 }
 
-/* Une case est une cible de glissement : pas de sélection de texte, sinon le
-   navigateur surligne tout ce qu'on traverse. */
+.cal-ligne {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  /* grid-template-rows arrive en style : il dépend du nombre de couloirs. */
+  gap: 2px 2px;
+  min-height: 5.5rem;
+}
+
+.cal-semaine .cal-ligne { min-height: 13rem; }
+
+/* Le fond d'un jour tient toute la hauteur de sa ligne, sous les barres. C'est
+   lui la cible du glissement : pas de sélection de texte, sinon le navigateur
+   surligne tout ce qu'on traverse. */
 .cal-jour {
-  height: 5.5rem;
-  padding: var(--espace-4);
-  vertical-align: top;
+  grid-row: 1 / -1;
   background: var(--fond-carte);
   border: 1px solid var(--bordure);
   border-radius: var(--rayon-controle);
@@ -1557,69 +1595,193 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   -webkit-user-select: none;
 }
 
-.cal-semaine .cal-jour { height: 13rem; }
-
 /* Les jours du mois voisin restent lisibles mais s'effacent : ils bornent la
    grille, ils ne la peuplent pas. */
 .cal-hors-mois { opacity: 0.4; }
-
 .cal-aujourdhui { border-color: var(--accent); }
-
-.cal-numero {
-  display: block;
-  margin-bottom: var(--espace-4);
-  font-family: var(--police-chiffre);
-  font-size: 0.75rem;
-  color: var(--texte-discret);
-}
-
-.cal-aujourdhui .cal-numero { color: var(--accent); font-weight: 600; }
-
-.cal-pile { display: flex; flex-direction: column; gap: 2px; }
-
-/* Une puce dit son projet par une barre de couleur, jamais par la seule
-   teinte du texte — et se tronque plutôt que de déformer la case. */
-.cal-puce {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding: 1px var(--espace-4);
-  font-size: 0.6875rem;
-  line-height: 1.5;
-  border-left: 3px solid var(--couleur-projet, var(--accent));
-  border-radius: 0 3px 3px 0;
-  background: color-mix(in srgb, var(--texte) 7%, transparent);
-}
-
-.cal-reste { font-size: 0.6875rem; padding-left: var(--espace-4); }
 
 /* La sélection en cours : la couleur d'accent, jamais une alerte. */
 .cal-choisi { background: var(--accent-doux); border-color: var(--accent); }
 
-.cal-aide { margin: var(--espace-8) 0 0; font-size: 0.8125rem; }
-
-.cal-creation {
-  margin-top: var(--espace-16);
-  padding: var(--espace-16);
-  background: var(--fond-carte);
-  border: 1px solid var(--accent);
-  border-radius: var(--rayon-carte);
+.cal-numero {
+  position: relative;
+  padding: var(--espace-4) 0 2px var(--espace-8);
+  font-family: var(--police-chiffre);
+  font-size: 0.75rem;
+  color: var(--texte-discret);
+  pointer-events: none;
 }
 
-.cal-creation-quand { margin: 0; font-size: 0.9375rem; }
-.cal-creation-quand strong { color: var(--accent); font-weight: 600; }
+/* Une barre porte son titre UNE fois, quelle que soit sa durée. Ses bouts se
+   carrent quand elle déborde de la semaine : elle continue ailleurs. */
+.cal-barre-element {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  min-height: 1.25rem;
+  margin: 0 3px;
+  padding: 1px var(--espace-8);
+  font-family: inherit;
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--texte);
+  background: color-mix(in srgb, var(--couleur-projet, var(--accent)) 22%, var(--fond-carte));
+  border: none;
+  border-left: 3px solid var(--couleur-projet, var(--accent));
+  border-radius: 3px;
+  cursor: pointer;
+}
 
-/* Sur téléphone la grille tient encore, en plus serré : le numéro du jour et
-   une ou deux puces. Sept colonnes restent lisibles à 375 px. */
+.cal-barre-element:hover {
+  background: color-mix(in srgb, var(--couleur-projet, var(--accent)) 34%, var(--fond-carte));
+}
+
+.cal-barre-element.deborde-avant { border-left: none; border-radius: 0 3px 3px 0; margin-left: 0; }
+.cal-barre-element.deborde-apres { border-radius: 3px 0 0 3px; margin-right: 0; }
+.cal-barre-element.deborde-avant.deborde-apres { border-radius: 0; }
+
+.cal-reste {
+  position: relative;
+  z-index: 1;
+  padding-left: var(--espace-8);
+  font-size: 0.6875rem;
+  pointer-events: none;
+}
+
+.cal-aide { margin: var(--espace-8) 0 0; font-size: 0.8125rem; }
+
+/* Un titre de l'agenda devient cliquable : même détail que depuis la grille. */
+.cal-lien-detail {
+  display: block;
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.cal-lien-detail:hover { color: var(--accent); }
+
+/* --- Les fenêtres volantes -------------------------------------------------- */
+
+.cal-fond {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgb(0 0 0 / 45%);
+}
+
+.cal-fenetre {
+  position: fixed;
+  z-index: 41;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(28rem, calc(100vw - 2rem));
+  max-height: min(38rem, calc(100vh - 2rem));
+  overflow-y: auto;
+  padding: var(--espace-24);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+  box-shadow: 0 12px 48px rgb(0 0 0 / 35%);
+}
+
+.cal-fermer {
+  position: absolute;
+  top: var(--espace-8);
+  right: var(--espace-8);
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--texte-discret);
+  background: none;
+  border: none;
+  border-radius: var(--rayon-pastille);
+  cursor: pointer;
+}
+
+.cal-fermer:hover { color: var(--texte); background: color-mix(in srgb, var(--texte) 8%, transparent); }
+
+.cal-fenetre-quand {
+  margin: 0 0 var(--espace-12);
+  font-size: 0.9375rem;
+  color: var(--accent);
+}
+
+.cal-natures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-4);
+  margin-bottom: var(--espace-8);
+}
+
+.cal-natures button {
+  min-height: 2.25rem;
+  padding: 0 var(--espace-12);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  color: var(--texte-discret);
+  background: var(--fond);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+  cursor: pointer;
+}
+
+.cal-natures button.actif {
+  color: var(--fond-carte);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.cal-note-nature { margin: 0 0 var(--espace-8); font-size: 0.8125rem; }
+
+.cal-detail-titre {
+  margin: var(--espace-8) 0 var(--espace-4);
+  font-size: 1.25rem;
+}
+
+.cal-detail-ligne { margin: 0 0 var(--espace-8); font-size: 0.9375rem; white-space: pre-wrap; }
+
+.cal-detail-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--espace-12);
+  margin-top: var(--espace-16);
+  padding-top: var(--espace-12);
+  border-top: 1px solid var(--bordure);
+}
+
+.cal-detail-note { font-size: 0.75rem; }
+
+/* Sur téléphone la grille tient encore, en plus serré : sept colonnes restent
+   lisibles à 375 px, et les barres se réduisent sans disparaître. */
 @media (max-width: 40rem) {
-  .cal-jour { height: 4.25rem; padding: 2px; }
-  .cal-semaine .cal-jour { height: 9rem; }
-  .cal-grille { border-spacing: 1px; }
-  .cal-grille th { padding: 2px; font-size: 0.625rem; letter-spacing: 0; }
-  .cal-numero { margin-bottom: 2px; font-size: 0.6875rem; }
-  .cal-puce { font-size: 0.5625rem; padding: 0 2px; border-left-width: 2px; }
+  .cal-ligne { min-height: 4.5rem; gap: 1px; }
+  .cal-semaine .cal-ligne { min-height: 10rem; }
+  .cal-entetes { gap: 1px; font-size: 0.625rem; }
+  .cal-entetes span { letter-spacing: 0; }
+  .cal-numero { padding: 2px 0 1px 3px; font-size: 0.6875rem; }
+  .cal-barre-element {
+    margin: 0 1px;
+    padding: 0 3px;
+    font-size: 0.5625rem;
+    min-height: 1rem;
+    border-left-width: 2px;
+  }
+  .cal-reste { padding-left: 3px; font-size: 0.5625rem; }
   .cal-nav { margin-left: 0; width: 100%; }
   .cal-titre { flex: 1; min-width: 0; }
+  .cal-fenetre { padding: var(--espace-16); }
 }
 
 @media (prefers-reduced-motion: reduce) {

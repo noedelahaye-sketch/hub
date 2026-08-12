@@ -36,9 +36,11 @@ import {
   construireFiltres,
   construireBarrePeriode,
   construireGrille,
-  formulaireEvenement,
+  fenetreCreation,
+  fenetreDetail,
   brancherSelection,
   deplacerAncre,
+  toutesLesNatures,
   centrerActif,
 } from './calendrier-commun.js';
 
@@ -522,7 +524,7 @@ export function evenementsARattraper(evenements, moments, ecartes = [], referenc
 
 function construireInvite(etat) {
   // Une seule à la fois : trois invites empilées, c'est une liste de reproches.
-  const [evenement] = evenementsARattraper(etat.evenementsPasses, etat.moments, etat.ecartes);
+  const [evenement] = evenementsARattraper(etat.evenements, etat.moments, etat.ecartes);
   if (!evenement) return '';
 
   return `
@@ -773,8 +775,10 @@ function vueCreer(etat) {
     ${pied()}`;
 }
 
-function vueCalendrier(etat) {
-  const elements = assemblerCalendrier({
+// La même liste sert à dessiner le calendrier et à retrouver un élément quand
+// on clique sa barre : elle se fabrique donc une fois, ici.
+function elementsDuCalendrier(etat) {
+  return assemblerCalendrier({
     evenements: etat.evenements,
     taches: etat.taches,
     objectifs: etat.objectifs,
@@ -787,21 +791,26 @@ function vueCalendrier(etat) {
     ),
     relances: etat.contacts.filter((contact) => contact.prochaine_action_date),
   });
+}
+
+function vueCalendrier(etat) {
+  const elements = elementsDuCalendrier(etat);
 
   return `
     ${enTete('calendrier')}
     ${construireBarrePeriode(etat.vueCal, etat.ancreCal)}
-    ${construireFiltres(etat.filtre)}
+    ${construireFiltres(etat.natures)}
     <div data-bloc="calendrier">
       ${
         etat.vueCal === 'agenda'
-          ? construireCalendrier(elements, etat.filtre)
-          : construireGrille(elements, etat.filtre, etat.vueCal, etat.ancreCal, {
+          ? construireCalendrier(elements, etat.natures)
+          : construireGrille(elements, etat.natures, etat.vueCal, etat.ancreCal, {
               selection: etat.creationCal,
             })
       }
     </div>
-    ${etat.creationCal ? formulaireEvenement(etat.creationCal) : ''}
+    ${etat.creationCal ? fenetreCreation(etat.creationCal) : ''}
+    ${etat.detailCal ? fenetreDetail(etat.detailCal) : ''}
     ${pied()}`;
 }
 
@@ -1832,16 +1841,16 @@ export default {
       envois: [],
       modeles: [],
       stats: [],
-      evenementsPasses: [],
       ecartes: evenementsEcartes(),
       prefillMoment: null,
       jourRdv: jourRendezVousEnregistre(),
       objectifDoux: objectifDouxEnregistre(),
       vue: 'accueil',
-      filtre: 'tout',
+      natures: toutesLesNatures(),
       vueCal: 'mois',
       ancreCal: new Date(),
       creationCal: null,
+      detailCal: null,
       pilier: 'tout',
       statutIdee: 'tout',
       tirage: null,
@@ -1883,20 +1892,32 @@ export default {
     };
 
     // Le routeur rappelle `naviguer` à chaque changement de hash dans l'espace.
-    // Recharger les deux fenêtres d'événements : l'à-venir que montre le
-    // calendrier, et la semaine écoulée dont vient l'invite du Carnet.
-    const chargerEvenements = async () => {
-      const maintenant = new Date();
-      const [evenements, evenementsPasses] = await Promise.all([
-        api.evenementsDepuis(maintenant.toISOString(), { projet: 'photo' }),
-        api.evenementsEntre(
-          ajouterJours(maintenant, -7).toISOString(),
-          maintenant.toISOString(),
-          { projet: 'photo' },
-        ),
+    // Tout ce que le calendrier peut montrer se recharge d'un coup : la grille
+    // se promène dans le passé, et une suppression peut toucher n'importe quoi.
+    const rechargerCalendrier = async () => {
+      const [evenements, taches, objectifs, publications, contacts, commandes] = await Promise.all([
+        api.evenementsTous({ projet: 'photo' }),
+        api.tachesDatees({ projet: 'photo' }),
+        api.objectifsActifs({ projet: 'photo' }),
+        api.publicationsToutes('photo'),
+        api.contactsTous(),
+        api.commandesToutes(),
       ]);
-      Object.assign(etat, { evenements, evenementsPasses });
+      Object.assign(etat, { evenements, taches, objectifs, publications, contacts, commandes });
     };
+
+    // Chaque nature se supprime là où elle vit. Une relance n'est pas une ligne
+    // à effacer : c'est une date qu'on retire d'une fiche du carnet.
+    async function effacerDuCalendrier(type, id) {
+      if (type === 'evenement') return api.supprimerEvenement(id);
+      if (type === 'tache') return api.supprimerTache(id);
+      if (type === 'publication') return api.supprimerPublication(id);
+      if (type === 'objectif') return api.supprimerObjectif(id);
+      if (type === 'jalon') return api.supprimerJalon(id);
+      if (type === 'commande') return api.supprimerCommande(id);
+      if (type === 'relance') return api.modifierContact(id, { prochaine_action_date: null });
+      throw new Error(`Nature inconnue : ${type}`);
+    }
 
     this.naviguer = (nouvelleRoute) => {
       etat.vue = VUES.includes(nouvelleRoute?.vue) ? nouvelleRoute.vue : 'accueil';
@@ -1909,22 +1930,16 @@ export default {
     };
 
     try {
-      const maintenant = new Date();
-      const [objectifs, victoires, moments, publications, taches, evenements, evenementsPasses, contacts, commandes, envois, modeles, stats] =
+      const [objectifs, victoires, moments, publications, taches, evenements, contacts, commandes, envois, modeles, stats] =
         await Promise.all([
           api.objectifsActifs({ projet: 'photo' }),
           api.victoiresDuProjet('photo', 10, { sauf: 'moment' }),
           api.momentsTous(),
           api.publicationsToutes('photo'),
           api.tachesDatees({ projet: 'photo' }),
-          api.evenementsDepuis(maintenant.toISOString(), { projet: 'photo' }),
-          // La semaine écoulée seulement : de quoi proposer de loguer ce qui
-          // vient d'être vécu, sans remonter un arriéré.
-          api.evenementsEntre(
-            ajouterJours(maintenant, -7).toISOString(),
-            maintenant.toISOString(),
-            { projet: 'photo' },
-          ),
+          // Tous les événements : la grille se promène dans le passé, et
+          // l'invite du Carnet y puise la semaine écoulée.
+          api.evenementsTous({ projet: 'photo' }),
           api.contactsTous(),
           api.commandesToutes(),
           api.envoisTous(),
@@ -1938,7 +1953,6 @@ export default {
         publications,
         taches,
         evenements,
-        evenementsPasses,
         contacts,
         commandes,
         envois,
@@ -2016,23 +2030,45 @@ export default {
         return;
       }
 
-      if (action === 'creer-evenement-cal') {
-        // Sans heure, l'événement tient le jour entier : minuit local, et
-        // `momentLisible` s'abstient alors d'afficher 00:00.
-        const debut = new Date(`${champs.debut}T${champs.heure || '00:00'}`);
-        const fin = champs.fin === champs.debut ? null : new Date(`${champs.fin}T23:59`);
+      if (action === 'creer-depuis-calendrier') {
+        const titre = champs.titre.trim();
 
-        await api.creerEvenement({
-          projet: 'photo',
-          titre: champs.titre.trim(),
-          date_debut: debut.toISOString(),
-          date_fin: fin ? fin.toISOString() : null,
-          lieu: champs.lieu?.trim() || null,
-          notes: champs.notes?.trim() || null,
-        });
+        if (champs.nature === 'tache') {
+          await api.creerTache({ projet: 'photo', titre, echeance: champs.debut });
+        } else if (champs.nature === 'publication') {
+          await api.creerPublication({
+            projet: 'photo',
+            titre,
+            reseau: champs.reseau,
+            format: champs.format,
+            date_prevue: champs.debut,
+          });
+        } else if (champs.nature === 'objectif') {
+          await api.creerObjectif({
+            projet: 'photo',
+            titre,
+            pourquoi: champs.pourquoi?.trim() || null,
+            cible: champs.cible?.trim() || null,
+            echeance: champs.debut,
+          });
+        } else {
+          // Sans heure, l'événement tient le jour entier : minuit local, et
+          // `momentLisible` s'abstient alors d'afficher 00:00.
+          const debut = new Date(`${champs.debut}T${champs.heure || '00:00'}`);
+          const fin = champs.fin === champs.debut ? null : new Date(`${champs.fin}T23:59`);
+
+          await api.creerEvenement({
+            projet: 'photo',
+            titre,
+            date_debut: debut.toISOString(),
+            date_fin: fin ? fin.toISOString() : null,
+            lieu: champs.lieu?.trim() || null,
+            notes: champs.notes?.trim() || null,
+          });
+        }
 
         etat.creationCal = null;
-        await chargerEvenements();
+        await rechargerCalendrier();
         rendre();
         return;
       }
@@ -2164,9 +2200,63 @@ export default {
     // --- Clics ---
 
     section.addEventListener('click', async (evenement) => {
-      const filtre = evenement.target.closest('[data-filtre]');
-      if (filtre) {
-        etat.filtre = filtre.dataset.filtre;
+      if (evenement.target.closest('[data-fermer-fenetre]')) {
+        etat.creationCal = null;
+        etat.detailCal = null;
+        rendre();
+        return;
+      }
+
+      const natureCreation = evenement.target.closest('[data-nature-creation]');
+      if (natureCreation) {
+        etat.creationCal = { ...etat.creationCal, nature: natureCreation.dataset.natureCreation };
+        rendre();
+        section.querySelector('#cal-titre')?.focus();
+        return;
+      }
+
+      const ouvrirDetail = evenement.target.closest('[data-element]');
+      if (ouvrirDetail) {
+        const [type, id] = ouvrirDetail.dataset.element.split(':');
+        etat.creationCal = null;
+        etat.detailCal = elementsDuCalendrier(etat).find(
+          (element) => element.type === type && String(element.id) === id,
+        );
+        rendre();
+        return;
+      }
+
+      const supprimerElement = evenement.target.closest('[data-supprimer-element]');
+      if (supprimerElement) {
+        const [type, id] = supprimerElement.dataset.supprimerElement.split(':');
+        if (!confirm(`Supprimer « ${etat.detailCal?.titre} » ?`)) return;
+        supprimerElement.disabled = true;
+        try {
+          await effacerDuCalendrier(type, id);
+          etat.detailCal = null;
+          await rechargerCalendrier();
+          rendre();
+        } catch (souci) {
+          console.error('Suppression impossible', souci);
+          supprimerElement.disabled = false;
+        }
+        return;
+      }
+
+      if (evenement.target.closest('[data-filtre-tout]')) {
+        // Tout décocher ne montrerait rien : « Tout » ne fait que rallumer.
+        etat.natures = toutesLesNatures();
+        rendre();
+        return;
+      }
+
+      const filtreNature = evenement.target.closest('[data-filtre-nature]');
+      if (filtreNature) {
+        const cle = filtreNature.dataset.filtreNature;
+        const suite = new Set(etat.natures);
+        if (suite.has(cle)) suite.delete(cle);
+        else suite.add(cle);
+        etat.natures = suite;
         rendre();
         return;
       }
@@ -2380,7 +2470,7 @@ export default {
       // L'invite acceptée : la capture s'ouvre, date et lieu déjà remplis.
       const loguerEvenement = evenement.target.closest('[data-loguer-evenement]');
       if (loguerEvenement) {
-        const passe = etat.evenementsPasses.find(
+        const passe = etat.evenements.find(
           (candidat) => candidat.id === loguerEvenement.dataset.loguerEvenement,
         );
         if (!passe) return;
@@ -2572,9 +2662,18 @@ export default {
     // Glisser sur les jours du calendrier ouvre le formulaire, rempli de la
     // plage choisie.
     brancherSelection(section, ({ debut, fin }) => {
-      etat.creationCal = { debut, fin };
+      etat.detailCal = null;
+      etat.creationCal = { debut, fin, nature: 'evenement' };
       rendre();
-      section.querySelector('#evenement-cal-titre')?.focus();
+      section.querySelector('#cal-titre')?.focus();
+    });
+
+    // Échap ferme la fenêtre — c'est le geste attendu partout ailleurs.
+    document.addEventListener('keydown', (touche) => {
+      if (touche.key !== 'Escape' || !(etat.creationCal || etat.detailCal)) return;
+      etat.creationCal = null;
+      etat.detailCal = null;
+      rendre();
     });
 
     // Tirer un en-tête de colonne pour la déplacer — le geste de Notion. Sur
