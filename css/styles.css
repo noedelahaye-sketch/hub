@@ -1531,52 +1531,69 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 .cal-filtres {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--espace-8);
+  gap: var(--espace-4) var(--espace-16);
   margin-bottom: var(--espace-12);
 }
 
+/* Des cases, pas des tuiles : ce sont des interrupteurs discrets, pas des
+   boutons à peser. */
 .cal-coche {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: var(--espace-8);
-  min-height: 2.25rem;
+  min-height: 2rem;
   margin: 0;
-  padding: 0 var(--espace-12) 0 var(--espace-8);
+  padding: 0;
   font-size: 0.8125rem;
   color: var(--texte-discret);
-  background: var(--fond-carte);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-pastille);
+  background: none;
+  border: none;
   cursor: pointer;
 }
 
-.cal-coche.actif { color: var(--texte); border-color: var(--accent); }
-.cal-coche input { width: 1rem; height: 1rem; margin: 0; accent-color: var(--accent); }
+.cal-coche.actif { color: var(--texte); }
 
-/* La grille : une ligne par semaine, sept colonnes. Les cases sont le fond ;
-   les barres se posent par-dessus, en couloirs, et traversent les jours. */
-.cal-grille { display: flex; flex-direction: column; gap: 2px; }
+.cal-coche input {
+  width: 0.9375rem;
+  height: 0.9375rem;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+/* La grille : une ligne par semaine, sept colonnes. Pas de tuiles — de simples
+   traits, comme sur un agenda de bureau : ce sont les barres qui doivent
+   attirer l'œil, pas le quadrillage. */
+.cal-grille {
+  display: flex;
+  flex-direction: column;
+  /* Le cadre reste arrondi, comme le reste du hub ; ce sont les séparations
+     intérieures qui s'allègent en simples traits. L'overflow taille les
+     traits aux angles. */
+  overflow: hidden;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+}
 
 .cal-entetes {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
-  padding: 0 1px;
 }
 
 .cal-entetes span {
+  padding: var(--espace-4);
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.08em;
+  text-align: center;
   text-transform: uppercase;
   color: var(--texte-discret);
+  border-right: 1px solid var(--bordure);
 }
 
 .cal-ligne {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   /* grid-template-rows arrive en style : il dépend du nombre de couloirs. */
-  gap: 2px 2px;
   min-height: 5.5rem;
 }
 
@@ -1584,32 +1601,50 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
 /* Le fond d'un jour tient toute la hauteur de sa ligne, sous les barres. C'est
    lui la cible du glissement : pas de sélection de texte, sinon le navigateur
-   surligne tout ce qu'on traverse. */
+   surligne tout ce qu'on traverse. Il ne porte que ses deux traits. */
 .cal-jour {
   grid-row: 1 / -1;
-  background: var(--fond-carte);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-controle);
+  border-right: 1px solid var(--bordure);
+  border-bottom: 1px solid var(--bordure);
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
 }
 
-/* Les jours du mois voisin restent lisibles mais s'effacent : ils bornent la
-   grille, ils ne la peuplent pas. */
-.cal-hors-mois { opacity: 0.4; }
-.cal-aujourdhui { border-color: var(--accent); }
+/* Le cadre porte déjà les bords : pas de double trait au bout des lignes. */
+.cal-jour:nth-child(7) { border-right: none; }
+.cal-grille > .cal-ligne:last-child .cal-jour { border-bottom: none; }
+.cal-entetes span:last-child { border-right: none; }
+
+/* Les jours du mois voisin ne s'effacent pas : leur numéro le dit, la case
+   reste une case. */
+.cal-hors-mois { background: color-mix(in srgb, var(--texte) 3%, transparent); }
 
 /* La sélection en cours : la couleur d'accent, jamais une alerte. */
-.cal-choisi { background: var(--accent-doux); border-color: var(--accent); }
+.cal-choisi { background: var(--accent-doux); }
 
 .cal-numero {
   position: relative;
-  padding: var(--espace-4) 0 2px var(--espace-8);
+  justify-self: center;
+  min-width: 1.5rem;
+  margin: var(--espace-4) 0 2px;
+  padding: 1px var(--espace-4);
   font-family: var(--police-chiffre);
   font-size: 0.75rem;
+  text-align: center;
   color: var(--texte-discret);
   pointer-events: none;
+}
+
+.cal-numero-hors-mois { opacity: 0.5; }
+
+/* Aujourd'hui se marque sur son numéro, en pastille — pas de cadre autour
+   d'une case qui n'en a plus. */
+.cal-numero-aujourdhui {
+  font-weight: 600;
+  color: var(--fond-carte);
+  background: var(--accent);
+  border-radius: var(--rayon-pastille);
 }
 
 /* Une barre porte son titre UNE fois, quelle que soit sa durée. Ses bouts se
@@ -1619,7 +1654,7 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   z-index: 1;
   overflow: hidden;
   min-height: 1.25rem;
-  margin: 0 3px;
+  margin: 0 3px 2px;
   padding: 1px var(--espace-8);
   font-family: inherit;
   font-size: 0.6875rem;
@@ -1766,11 +1801,10 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 /* Sur téléphone la grille tient encore, en plus serré : sept colonnes restent
    lisibles à 375 px, et les barres se réduisent sans disparaître. */
 @media (max-width: 40rem) {
-  .cal-ligne { min-height: 4.5rem; gap: 1px; }
+  .cal-ligne { min-height: 4.5rem; }
   .cal-semaine .cal-ligne { min-height: 10rem; }
-  .cal-entetes { gap: 1px; font-size: 0.625rem; }
-  .cal-entetes span { letter-spacing: 0; }
-  .cal-numero { padding: 2px 0 1px 3px; font-size: 0.6875rem; }
+  .cal-entetes span { padding: 2px 3px; font-size: 0.625rem; letter-spacing: 0; }
+  .cal-numero { min-width: 1.25rem; margin: 2px 0 1px; padding: 0 2px; font-size: 0.6875rem; }
   .cal-barre-element {
     margin: 0 1px;
     padding: 0 3px;

@@ -76,6 +76,7 @@ export function assemblerCalendrier({
     elements.push({
       id: evenement.id,
       type: 'evenement',
+      source: evenement,
       date,
       // Le dernier jour occupé, s'il y en a plusieurs. L'agenda n'en fait rien
       // — il dirait trois fois la même chose ; la grille s'en sert pour tirer
@@ -93,6 +94,7 @@ export function assemblerCalendrier({
     elements.push({
       id: tache.id,
       type: 'tache',
+      source: tache,
       date: depuisDateISO(tache.echeance),
       projet: tache.projet,
       titre: tache.titre,
@@ -105,6 +107,7 @@ export function assemblerCalendrier({
       elements.push({
         id: objectif.id,
         type: 'objectif',
+        source: objectif,
         date: depuisDateISO(objectif.echeance),
         projet: objectif.projet,
         titre: objectif.titre,
@@ -116,6 +119,7 @@ export function assemblerCalendrier({
         elements.push({
           id: jalon.id,
           type: 'jalon',
+          source: jalon,
           date: depuisDateISO(jalon.echeance),
           projet: objectif.projet,
           titre: jalon.titre,
@@ -129,6 +133,7 @@ export function assemblerCalendrier({
     elements.push({
       id: pub.id,
       type: 'publication',
+      source: pub,
       date: depuisDateISO(pub.date_prevue),
       projet: pub.projet ?? 'photo',
       titre: pub.titre,
@@ -140,6 +145,7 @@ export function assemblerCalendrier({
     elements.push({
       id: commande.id,
       type: 'commande',
+      source: commande,
       date: depuisDateISO(commande.echeance),
       projet: 'photo',
       titre: commande.titre,
@@ -151,6 +157,7 @@ export function assemblerCalendrier({
     elements.push({
       id: contact.id,
       type: 'relance',
+      source: contact,
       date: depuisDateISO(contact.prochaine_action_date),
       projet: 'photo',
       titre: contact.prochaine_action || `Reprendre contact avec ${contact.nom}`,
@@ -232,16 +239,9 @@ export function centrerActif(conteneur, selecteur = '.actif') {
 // Les filtres se cochent, ils ne s'excluent plus : voir les publications ET les
 // tâches sans les objectifs était impossible avec des onglets.
 export function construireFiltres(natures) {
-  const toutes = Object.keys(NATURES);
-  const tout = toutes.every((nature) => natures.has(nature));
-
   return `
     <div class="cal-filtres" role="group" aria-label="Ce que le calendrier montre">
-      <label class="cal-coche ${tout ? 'actif' : ''}">
-        <input type="checkbox" data-filtre-tout ${tout ? 'checked' : ''}>
-        <span>Tout</span>
-      </label>
-      ${toutes
+      ${Object.keys(NATURES)
         .map(
           (nature) => `
         <label class="cal-coche ${natures.has(nature) ? 'actif' : ''}">
@@ -386,11 +386,22 @@ function ligneDeSemaine(jours, elements, options) {
     })
     .join('');
 
+  // Le jour se marque sur son numéro, pas sur toute la case : sans tuiles, un
+  // cadre autour d'une case n'aurait rien à border.
   const numeros = jours
-    .map(
-      (jour, index) => `<span class="cal-numero" style="grid-column: ${index + 1}; grid-row: 1;"
-        aria-hidden="true">${jour.getDate()}</span>`,
-    )
+    .map((jour, index) => {
+      const cle = versDateISO(jour);
+      const classes = [
+        'cal-numero',
+        cle === aujourdhui ? 'cal-numero-aujourdhui' : '',
+        mois !== null && jour.getMonth() !== mois ? 'cal-numero-hors-mois' : '',
+      ]
+        .filter(Boolean)
+        .join(' ');
+
+      return `<span class="${classes}" style="grid-column: ${index + 1}; grid-row: 1;"
+        aria-hidden="true">${jour.getDate()}</span>`;
+    })
     .join('');
 
   const restes = reste
@@ -672,7 +683,115 @@ const VERBE_SUPPRESSION = {
   relance: 'Retirer du calendrier',
 };
 
-export function fenetreDetail(element, { montrerProjet = false } = {}) {
+// Ce qui se corrige depuis le calendrier, par nature. Une date mal posée se
+// répare : la supprimer pour la recréer ferait perdre tout le reste de la
+// fiche. Les champs qui n'ont pas de sens ici — le statut d'une tâche, le
+// pourquoi d'un objectif — restent gérés dans leur espace.
+function champsDeModification(element) {
+  const ligne = element.source ?? {};
+
+  if (element.type === 'evenement') {
+    const debut = new Date(ligne.date_debut);
+    const sansHeure = debut.getHours() === 0 && debut.getMinutes() === 0;
+    return [
+      { nom: 'titre', libelle: 'Quoi', type: 'text', requis: true, valeur: ligne.titre },
+      { nom: 'debut', libelle: 'Du', type: 'date', requis: true, valeur: versDateISO(debut) },
+      {
+        nom: 'heure',
+        libelle: 'À quelle heure (vide = toute la journée)',
+        type: 'time',
+        valeur: sansHeure
+          ? ''
+          : `${String(debut.getHours()).padStart(2, '0')}:${String(debut.getMinutes()).padStart(2, '0')}`,
+      },
+      {
+        nom: 'fin',
+        libelle: "Jusqu'au (vide = un seul jour)",
+        type: 'date',
+        valeur: ligne.date_fin ? versDateISO(new Date(ligne.date_fin)) : '',
+      },
+      { nom: 'lieu', libelle: 'Où', type: 'text', valeur: ligne.lieu ?? '' },
+      { nom: 'notes', libelle: 'Notes', type: 'textarea', valeur: ligne.notes ?? '' },
+    ];
+  }
+
+  if (element.type === 'publication') {
+    return [
+      { nom: 'titre', libelle: "L'idée", type: 'text', requis: true, valeur: ligne.titre },
+      { nom: 'debut', libelle: 'Prévue le', type: 'date', requis: true, valeur: ligne.date_prevue },
+      { nom: 'reseau', libelle: 'Réseau', type: 'select', options: RESEAUX, valeur: ligne.reseau },
+      { nom: 'format', libelle: 'Format', type: 'select', options: FORMATS, valeur: ligne.format },
+    ];
+  }
+
+  if (element.type === 'objectif') {
+    return [
+      { nom: 'titre', libelle: 'Objectif', type: 'text', requis: true, valeur: ligne.titre },
+      { nom: 'debut', libelle: 'Échéance', type: 'date', requis: true, valeur: ligne.echeance },
+      { nom: 'pourquoi', libelle: 'Pourquoi ?', type: 'textarea', valeur: ligne.pourquoi ?? '' },
+      { nom: 'cible', libelle: "À quoi tu sauras que c'est réussi", type: 'text', valeur: ligne.cible ?? '' },
+    ];
+  }
+
+  if (element.type === 'commande') {
+    return [
+      { nom: 'titre', libelle: 'Commande', type: 'text', requis: true, valeur: ligne.titre },
+      { nom: 'debut', libelle: 'À livrer pour', type: 'date', requis: true, valeur: ligne.echeance },
+      { nom: 'client', libelle: 'Client', type: 'text', valeur: ligne.client ?? '' },
+    ];
+  }
+
+  if (element.type === 'relance') {
+    return [
+      {
+        nom: 'titre',
+        libelle: `Prochaine action avec ${ligne.nom ?? ''}`,
+        type: 'text',
+        requis: true,
+        valeur: ligne.prochaine_action ?? '',
+      },
+      { nom: 'debut', libelle: 'Quand', type: 'date', requis: true, valeur: ligne.prochaine_action_date },
+    ];
+  }
+
+  // Tâche et jalon : un titre et une échéance, rien de plus ici.
+  return [
+    { nom: 'titre', libelle: 'Quoi', type: 'text', requis: true, valeur: ligne.titre },
+    { nom: 'debut', libelle: 'Échéance', type: 'date', requis: true, valeur: ligne.echeance },
+  ];
+}
+
+export function fenetreDetail(element, { montrerProjet = false, edition = false } = {}) {
+  const enTete = `
+    <span class="tuile-entete">
+      <span class="etiquette">${TYPES[element.type]}</span>
+      ${
+        montrerProjet
+          ? `<span class="tuile-projet">${echapper(
+              NOMS_PROJETS[element.projet] ?? element.projet,
+            )}</span>`
+          : ''
+      }
+    </span>`;
+
+  if (edition) {
+    const contenu = `
+      ${enTete}
+      ${construireFormulaire({
+        id: 'cal-edition',
+        libelle: 'Modifier',
+        action: 'modifier-depuis-calendrier',
+        bouton: 'Enregistrer',
+        ouvert: true,
+        extra: `<input type="hidden" name="type" value="${echapper(element.type)}">
+                <input type="hidden" name="id" value="${echapper(element.id)}">`,
+        champs: champsDeModification(element),
+      })}
+      <button type="button" class="lien-discret bouton-mini" data-annuler-edition>Annuler</button>`;
+
+    return fenetre(`Modifier ${element.titre}`, contenu);
+  }
+
   const finit =
     element.jusqua && element.jusqua > versDateISO(element.date)
       ? ` — jusqu'au ${depuisDateISO(element.jusqua).toLocaleDateString('fr-FR', {
@@ -683,16 +802,7 @@ export function fenetreDetail(element, { montrerProjet = false } = {}) {
       : '';
 
   const contenu = `
-    <span class="tuile-entete">
-      <span class="etiquette">${TYPES[element.type]}</span>
-      ${
-        montrerProjet
-          ? `<span class="tuile-projet">${echapper(
-              NOMS_PROJETS[element.projet] ?? element.projet,
-            )}</span>`
-          : ''
-      }
-    </span>
+    ${enTete}
     <h3 class="cal-detail-titre">${echapper(element.titre)}</h3>
     <p class="discret cal-fenetre-quand">${echapper(
       element.quand ??
@@ -705,11 +815,11 @@ export function fenetreDetail(element, { montrerProjet = false } = {}) {
     ${element.detail ? `<p class="cal-detail-ligne">${echapper(element.detail)}</p>` : ''}
     ${element.notes ? `<p class="discret cal-detail-ligne">${echapper(element.notes)}</p>` : ''}
     <div class="cal-detail-actions">
-      <button type="button" class="bouton-secondaire bouton-mini"
+      <button type="button" class="bouton-secondaire bouton-mini" data-modifier-element>Modifier</button>
+      <button type="button" class="lien-discret bouton-mini"
         data-supprimer-element="${echapper(element.type)}:${echapper(element.id)}">${
           VERBE_SUPPRESSION[element.type] ?? 'Supprimer'
         }</button>
-      <span class="discret cal-detail-note">Le reste se modifie là où il vit.</span>
     </div>`;
 
   return fenetre(element.titre, contenu);

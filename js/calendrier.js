@@ -42,6 +42,7 @@ export default {
       ancre: new Date(),
       creation: null,
       detail: null,
+      edition: false,
     };
 
     function rendre() {
@@ -61,7 +62,11 @@ export default {
           }
         </div>
         ${etat.creation ? fenetreCreation({ ...etat.creation, projets: PROJETS }) : ''}
-        ${etat.detail ? fenetreDetail(etat.detail, { montrerProjet: true }) : ''}`;
+        ${
+          etat.detail
+            ? fenetreDetail(etat.detail, { montrerProjet: true, edition: etat.edition })
+            : ''
+        }`;
 
       centrerActif(section.querySelector('.filtres'));
     }
@@ -111,6 +116,7 @@ export default {
     const fermerFenetres = () => {
       etat.creation = null;
       etat.detail = null;
+      etat.edition = false;
       rendre();
     };
 
@@ -144,9 +150,23 @@ export default {
       if (ouvrir) {
         const [type, id] = ouvrir.dataset.element.split(':');
         etat.creation = null;
+        etat.edition = false;
         etat.detail = etat.elements.find(
           (element) => element.type === type && String(element.id) === id,
         );
+        rendre();
+        return;
+      }
+
+      if (evenement.target.closest('[data-modifier-element]')) {
+        etat.edition = true;
+        rendre();
+        section.querySelector('#cal-edition-titre')?.focus();
+        return;
+      }
+
+      if (evenement.target.closest('[data-annuler-edition]')) {
+        etat.edition = false;
         rendre();
         return;
       }
@@ -165,14 +185,6 @@ export default {
           console.error('Suppression impossible', souci);
           supprimer.disabled = false;
         }
-        return;
-      }
-
-      const filtreTout = evenement.target.closest('[data-filtre-tout]');
-      if (filtreTout) {
-        // Tout décocher ne montrerait rien : « Tout » ne fait que rallumer.
-        etat.natures = toutesLesNatures();
-        rendre();
         return;
       }
 
@@ -219,8 +231,10 @@ export default {
     }
 
     section.addEventListener('submit', async (evenement) => {
-      const formulaire = evenement.target.closest('form[data-action="creer-depuis-calendrier"]');
+      const formulaire = evenement.target.closest('form[data-action]');
       if (!formulaire) return;
+      const action = formulaire.dataset.action;
+      if (action !== 'creer-depuis-calendrier' && action !== 'modifier-depuis-calendrier') return;
       evenement.preventDefault();
 
       const champs = Object.fromEntries(new FormData(formulaire));
@@ -230,17 +244,76 @@ export default {
       bouton.disabled = true;
 
       try {
-        await poser(champs);
+        if (action === 'creer-depuis-calendrier') await poser(champs);
+        else await corriger(champs);
+
         etat.creation = null;
+        etat.detail = null;
+        etat.edition = false;
         await charger();
         rendre();
       } catch (souci) {
-        console.error('Création impossible', souci);
-        erreur.textContent = souci.message ?? "Ça n'a pas pu être posé.";
+        console.error('Enregistrement impossible', souci);
+        erreur.textContent = souci.message ?? "Ça n'a pas pu être enregistré.";
         erreur.hidden = false;
         bouton.disabled = false;
       }
     });
+
+    // Corriger sur place. Chaque nature range sa date dans sa propre colonne :
+    // `debut` est le nom du champ à l'écran, pas celui de la base.
+    async function corriger(champs) {
+      const { type, id } = champs;
+      const titre = champs.titre.trim();
+
+      if (type === 'evenement') {
+        const debut = new Date(`${champs.debut}T${champs.heure || '00:00'}`);
+        const fin = champs.fin && champs.fin !== champs.debut ? new Date(`${champs.fin}T23:59`) : null;
+        return api.modifierEvenement(id, {
+          titre,
+          date_debut: debut.toISOString(),
+          date_fin: fin ? fin.toISOString() : null,
+          lieu: champs.lieu?.trim() || null,
+          notes: champs.notes?.trim() || null,
+        });
+      }
+
+      if (type === 'publication') {
+        return api.modifierPublication(id, {
+          titre,
+          date_prevue: champs.debut,
+          reseau: champs.reseau,
+          format: champs.format,
+        });
+      }
+
+      if (type === 'objectif') {
+        return api.modifierObjectif(id, {
+          titre,
+          echeance: champs.debut,
+          pourquoi: champs.pourquoi?.trim() || null,
+          cible: champs.cible?.trim() || null,
+        });
+      }
+
+      if (type === 'commande') {
+        return api.modifierCommande(id, {
+          titre,
+          echeance: champs.debut,
+          client: champs.client?.trim() || null,
+        });
+      }
+
+      if (type === 'relance') {
+        return api.modifierContact(id, {
+          prochaine_action: titre,
+          prochaine_action_date: champs.debut,
+        });
+      }
+
+      if (type === 'jalon') return api.modifierJalon(id, { titre, echeance: champs.debut });
+      return api.modifierTache(id, { titre, echeance: champs.debut });
+    }
 
     async function poser(champs) {
       const titre = champs.titre.trim();

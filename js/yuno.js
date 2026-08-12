@@ -810,7 +810,7 @@ function vueCalendrier(etat) {
       }
     </div>
     ${etat.creationCal ? fenetreCreation(etat.creationCal) : ''}
-    ${etat.detailCal ? fenetreDetail(etat.detailCal) : ''}
+    ${etat.detailCal ? fenetreDetail(etat.detailCal, { edition: etat.editionCal }) : ''}
     ${pied()}`;
 }
 
@@ -1851,6 +1851,7 @@ export default {
       ancreCal: new Date(),
       creationCal: null,
       detailCal: null,
+      editionCal: false,
       pilier: 'tout',
       statutIdee: 'tout',
       tirage: null,
@@ -2030,6 +2031,61 @@ export default {
         return;
       }
 
+      // Corriger sur place ce qui a une date. `debut` est le nom du champ à
+      // l'écran ; chaque nature range sa date dans sa propre colonne.
+      if (action === 'modifier-depuis-calendrier') {
+        const { type, id } = champs;
+        const titre = champs.titre.trim();
+
+        if (type === 'evenement') {
+          const debut = new Date(`${champs.debut}T${champs.heure || '00:00'}`);
+          const fin =
+            champs.fin && champs.fin !== champs.debut ? new Date(`${champs.fin}T23:59`) : null;
+          await api.modifierEvenement(id, {
+            titre,
+            date_debut: debut.toISOString(),
+            date_fin: fin ? fin.toISOString() : null,
+            lieu: champs.lieu?.trim() || null,
+            notes: champs.notes?.trim() || null,
+          });
+        } else if (type === 'publication') {
+          await api.modifierPublication(id, {
+            titre,
+            date_prevue: champs.debut,
+            reseau: champs.reseau,
+            format: champs.format,
+          });
+        } else if (type === 'objectif') {
+          await api.modifierObjectif(id, {
+            titre,
+            echeance: champs.debut,
+            pourquoi: champs.pourquoi?.trim() || null,
+            cible: champs.cible?.trim() || null,
+          });
+        } else if (type === 'commande') {
+          await api.modifierCommande(id, {
+            titre,
+            echeance: champs.debut,
+            client: champs.client?.trim() || null,
+          });
+        } else if (type === 'relance') {
+          await api.modifierContact(id, {
+            prochaine_action: titre,
+            prochaine_action_date: champs.debut,
+          });
+        } else if (type === 'jalon') {
+          await api.modifierJalon(id, { titre, echeance: champs.debut });
+        } else {
+          await api.modifierTache(id, { titre, echeance: champs.debut });
+        }
+
+        etat.detailCal = null;
+        etat.editionCal = false;
+        await rechargerCalendrier();
+        rendre();
+        return;
+      }
+
       if (action === 'creer-depuis-calendrier') {
         const titre = champs.titre.trim();
 
@@ -2203,6 +2259,20 @@ export default {
       if (evenement.target.closest('[data-fermer-fenetre]')) {
         etat.creationCal = null;
         etat.detailCal = null;
+        etat.editionCal = false;
+        rendre();
+        return;
+      }
+
+      if (evenement.target.closest('[data-modifier-element]')) {
+        etat.editionCal = true;
+        rendre();
+        section.querySelector('#cal-edition-titre')?.focus();
+        return;
+      }
+
+      if (evenement.target.closest('[data-annuler-edition]')) {
+        etat.editionCal = false;
         rendre();
         return;
       }
@@ -2219,6 +2289,7 @@ export default {
       if (ouvrirDetail) {
         const [type, id] = ouvrirDetail.dataset.element.split(':');
         etat.creationCal = null;
+        etat.editionCal = false;
         etat.detailCal = elementsDuCalendrier(etat).find(
           (element) => element.type === type && String(element.id) === id,
         );
@@ -2240,13 +2311,6 @@ export default {
           console.error('Suppression impossible', souci);
           supprimerElement.disabled = false;
         }
-        return;
-      }
-
-      if (evenement.target.closest('[data-filtre-tout]')) {
-        // Tout décocher ne montrerait rien : « Tout » ne fait que rallumer.
-        etat.natures = toutesLesNatures();
-        rendre();
         return;
       }
 

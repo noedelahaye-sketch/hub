@@ -683,6 +683,23 @@ export async function supprimerJalon(id) {
   if (error) throw error;
 }
 
+// Depuis le calendrier, tout ce qui porte une date se corrige sur place : une
+// date mal posée se répare, elle ne se supprime pas pour se recréer.
+
+export async function modifierEvenement(id, champs) {
+  return verifier(
+    await client.from('evenements').update(champs).eq('id', id).select().single(),
+  );
+}
+
+export async function modifierTache(id, champs) {
+  return verifier(await client.from('taches').update(champs).eq('id', id).select().single());
+}
+
+export async function modifierJalon(id, champs) {
+  return verifier(await client.from('jalons').update(champs).eq('id', id).select().single());
+}
+
 // Atteindre un objectif crée sa victoire — le troisième et dernier automatisme
 // du CLAUDE.md, après la tâche terminée et le jalon atteint.
 export async function atteindreObjectif(objectif) {
