@@ -19,6 +19,7 @@
 import * as api from './api.js';
 import { depuisDateISO, echeanceLisible, versDateISO, ajouterJours, echapper, NOMS_PROJETS } from './format.js';
 import { marquerLesEntrantes } from './mouvements.js';
+import { ajouterAussitot, retirerAussitot } from './ecriture.js';
 
 const PROJETS = {
   formation: 'Formation',
@@ -784,20 +785,6 @@ export default {
         return;
       }
 
-      // La ligne existe à l'écran avant d'exister en base. Son identifiant est
-      // provisoire — le vrai arrive avec la réponse — et tout ce qui la vise
-      // (cocher, ouvrir, supprimer) le refuse tant qu'elle le porte : agir sur
-      // une tâche que le serveur ne connaît pas encore n'a pas de sens.
-      const provisoire = {
-        ...champs,
-        id: `provisoire-${Date.now()}`,
-        statut: STATUT_A_LA_CREATION,
-        created_at: new Date().toISOString(),
-        enVol: true,
-      };
-      etat.taches = [provisoire, ...etat.taches];
-      etat.message = null;
-
       // La capture reste ouverte, vidée, avec le projet et la priorité qu'on
       // vient de choisir. Elle se vide EN PLACE, sans redessin — sinon le champ
       // serait détruit et le clavier se refermerait entre deux notes, ce qui
@@ -815,20 +802,24 @@ export default {
       majPastilles();
       bouton.disabled = true;
       champ.focus();
-      rendreListe();
+      etat.message = null;
 
-      try {
-        const creee = await api.creerTache({ ...champs, statut: STATUT_A_LA_CREATION });
-        // On remplace en place plutôt que de réordonner : la ligne ne doit pas
-        // bouger sous les yeux au moment où le serveur répond.
-        const index = etat.taches.findIndex((t) => t.id === provisoire.id);
-        if (index !== -1) etat.taches[index] = creee;
-      } catch (souci) {
-        console.error('Tâche non créée', souci);
-        etat.taches = etat.taches.filter((t) => t.id !== provisoire.id);
-        etat.message = `« ${titre} » n'a pas pu être enregistrée.`;
-      }
-      rendreListe();
+      // La ligne existe à l'écran avant d'exister en base, avec un identifiant
+      // provisoire. Tout ce qui la vise (cocher, ouvrir, supprimer) le refuse
+      // tant qu'elle le porte — voir `trouver` : agir sur une tâche que le
+      // serveur ne connaît pas encore n'a pas de sens.
+      await ajouterAussitot(
+        etat.taches,
+        { ...champs, statut: STATUT_A_LA_CREATION, created_at: new Date().toISOString() },
+        () => api.creerTache({ ...champs, statut: STATUT_A_LA_CREATION }),
+        {
+          rendre: rendreListe,
+          echouer: () => {
+            etat.message = `« ${titre} » n'a pas pu être enregistrée.`;
+            rendreListe();
+          },
+        },
+      );
     });
 
     // --- Réglages de ligne ---
@@ -1055,25 +1046,15 @@ export default {
         if (!tache || !confirm(`Supprimer « ${tache.titre} » ?`)) return;
 
         // La ligne part tout de suite : la question a déjà été posée, attendre
-        // le serveur après un « oui » n'ajoute aucune sécurité.
-        const rang = etat.taches.indexOf(tache);
-        etat.taches = etat.taches.filter((candidate) => candidate.id !== tache.id);
-        rendreListe();
-
-        try {
-          await api.supprimerTache(tache.id);
-        } catch (souci) {
-          console.error('Suppression impossible', souci);
-          // Remise à SA place, pas en tête : une ligne qui reviendrait
-          // ailleurs ferait douter de ce qui a été supprimé.
-          etat.taches = [
-            ...etat.taches.slice(0, rang),
-            tache,
-            ...etat.taches.slice(rang),
-          ];
-          etat.message = `« ${tache.titre} » n'a pas pu être supprimée.`;
-          rendreListe();
-        }
+        // le serveur après un « oui » n'ajoute aucune sécurité. Elle revient à
+        // SA place si l'écriture échoue.
+        await retirerAussitot(etat.taches, tache, () => api.supprimerTache(tache.id), {
+          rendre: rendreListe,
+          echouer: () => {
+            etat.message = `« ${tache.titre} » n'a pas pu être supprimée.`;
+            rendreListe();
+          },
+        });
       }
     });
   },

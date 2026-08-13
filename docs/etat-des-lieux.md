@@ -1135,6 +1135,84 @@ un écran en échec ni un pixel de débordement à 375 px ; le cycle complet d'u
 tâche d'essai (créée, identifiant provisoire remplacé, supprimée) avec la base
 relue en SQL avant et après — **4 tâches, 3 victoires**, son état exact.
 
+### 4. Les écritures des deux sites
+
+Dernier morceau de l'analyse, et le plus étendu : Yuno et le FC Hermitage
+attendaient encore le réseau à chaque geste. **La mécanique est passée dans un
+module commun** — `js/ecriture.js` — plutôt que d'être recopiée une vingt-et-
+unième fois.
+
+**Trois fonctions, une par forme de geste**, et rien d'autre :
+
+| | Ce qu'elle fait | Le retour en arrière |
+|---|---|---|
+| `modifierAussitot` | change une ligne déjà en base | la photographie d'avant, clés supprimées comprises |
+| `retirerAussitot` | sort une ligne d'une liste | elle revient **à son rang**, jamais en tête |
+| `ajouterAussitot` | pose une ligne qui n'existe pas encore | elle disparaît, et rien n'a été écrit |
+
+**Les listes sont modifiées SUR PLACE** (`splice`, `unshift`) et jamais
+remplacées. C'est ce qui rend le retour en arrière sûr : l'état garde la même
+référence pendant tout l'aller-retour, et une autre écriture qui passerait
+entre-temps ne laisse pas un tableau orphelin derrière elle.
+
+**Converti — trente-cinq gestes**, tous ceux qui se font en un clic : cocher une
+tâche du calendrier Yuno, avancer une publication, la déprogrammer, la
+programmer (au sélecteur comme au glissement), la supprimer ; le statut et le
+niveau d'un contact, les champs vifs de la Passerelle, « Envoyé ✓ », faire
+avancer une commande, cocher un jalon, marquer un objectif atteint, retirer une
+victoire, supprimer un contact, un modèle, une commande, un objectif, un moment,
+un partenaire ; plus, côté hub, la création et la suppression d'une tâche,
+reprises sur le module commun.
+
+**Non converti, et c'est un choix : les formulaires.** Créer un contact, une
+commande, un modèle, une idée, loguer un moment — ces écritures-là passent par
+une fenêtre à plusieurs champs. Un formulaire a un endroit où dire « ça n'a pas
+marché », juste sous ce qu'on vient de taper, et il garde la saisie ; un geste
+optimiste effacerait le tout pour n'afficher qu'une ligne d'excuse. **Le geste
+d'un clic gagne à devancer le réseau, la saisie d'un formulaire non.**
+
+**Deux compteurs demandaient un soin particulier**, parce qu'ils ne peuvent que
+monter (§ 5) : « Envoyé ✓ » et les victoires d'un jalon. L'envoi et la victoire
+s'affichent tout de suite, avec un identifiant provisoire — et **partent si
+l'écriture échoue**. Sans ça, un réseau coupé laisserait un message envoyé qui
+ne l'a pas été, ou un accomplissement qui n'a pas eu lieu.
+
+**Un piège d'ordre, évité de justesse.** « Envoyé ✓ » fait avancer le statut du
+contact ; `modifierAussitot` ayant DÉJÀ changé la fiche quand la requête part,
+relire `contact.statut` à l'intérieur ferait avancer d'un cran de trop —
+« message envoyé » deviendrait « relance » sans qu'on ait relancé. Le statut
+suivant se calcule donc avant. Même précaution partout où l'API relit la ligne
+pour décider (`terminerTache`, `atteindreJalon`, `avancerCommande`) : c'est
+`avant` qu'on leur passe, pas la ligne que l'écran a devancée.
+
+**Chaque site dit ses échecs au même endroit** : une ligne sous la barre de
+navigation, comme l'échec de chargement, effacée au bout de six secondes. Elle
+vit dans l'état (`etat.souci`), donc les fonctions de vue n'ont rien à en
+savoir.
+
+**Vérifié en conditions réelles**, sur des lignes créées pour l'occasion (une
+idée Yuno, une idée FCH, un contact) puis supprimées :
+
+- réseau ralenti d'1,5 s — avancer une publication Yuno **65 ms**, le statut
+  d'un contact **82 ms**, « Envoyé ✓ » **64 ms** (compteur 7 → 8 dans l'instant),
+  avancer une publication FCH **68 ms** ;
+- base relue en SQL après chaque geste : le statut est bien passé à
+  `a_developper`, l'envoi bien inscrit, la date du dernier échange posée ;
+- réseau coupé — le statut revient à sa valeur d'avant et la ligne d'excuse
+  s'affiche ; le compteur d'envois remonte à 8 puis **redescend à 8** en
+  retirant l'envoi fantôme ; une publication supprimée revient à sa place ;
+- les 18 vues des deux sites et du hub parcourues sans un écran en échec, sans
+  débordement horizontal ;
+- base relue à la fin : **45 contacts, 7 envois, 15 publications, 4 tâches,
+  3 victoires, 4 modèles, 1 moment** — son état exact de départ.
+
+**Une trouvaille au passage, non corrigée** : sur le site du FCH, **une idée de
+la banque ne s'ouvre pas**. Les tuiles portent bien `data-ouvrir-pub` et se
+présentent comme des boutons, mais `hermitage.js` n'écoute jamais cet attribut —
+Yuno, si. Conséquence : sur le FCH, une idée sans date n'a aucun moyen d'être
+avancée ou supprimée. Ça ne vient pas de cette session, et ça touche la forme de
+l'écran « Créer » du FCH : à voir avec Noé plutôt qu'à trancher seul.
+
 ---
 
 ## 2 quater. L'espace Tâches et la tuile de capture — la session du 13 août
@@ -1218,6 +1296,14 @@ La méthode qui a tenu toute la journée — exercer, relire en SQL, défaire, r
    est né. Le mot « carnet » désigne donc deux choses — le Carnet de terrain et
    le carnet réseau. À surveiller à l'usage.
 
+**Sur le site du FCH, une idée de la banque ne s'ouvre pas** (trouvé le 13 août
+en exerçant les écritures, § 2 ter ter). Les tuiles se présentent comme des
+boutons et portent `data-ouvrir-pub`, mais `hermitage.js` n'écoute jamais cet
+attribut — Yuno, si. Une idée sans date n'a donc aucun moyen d'être avancée ni
+supprimée depuis le FCH. Deux sorties : ouvrir la même fenêtre que Yuno, ou
+assumer que l'écran « Créer » du FCH ne sert qu'à noter. C'est une question de
+forme, elle revient à Noé.
+
 **Sur le fond bleu du FCH** : le logo y perd en lisibilité (traits noirs et
 bleus). Noé a demandé de retirer la plaque blanche qui corrigeait cela ; c'est
 assumé, mais à rouvrir s'il le trouve gênant à l'usage.
@@ -1277,14 +1363,15 @@ Dans cet ordre, du plus rentable au moins pressé.
    ce que « Aujourd'hui » montre (les tâches datées du jour ou avant, jamais les
    sans-date), et le tri qui fait passer une tâche datée avant une tâche sans
    date à priorité égale.
-2. **Ce que l'analyse de fluidité laisse ouvert** (§ 2 ter ter est fait) : les
-   écritures des DEUX SITES et des espaces projet attendent encore le réseau —
-   loguer un moment, changer le statut d'un contact, cocher un jalon, livrer une
-   commande. Le motif est écrit trois fois maintenant, il se recopie. Et deux
-   choses qui n'ont pas été faites faute de mécanique simple : **animer le
-   DÉPART** d'une ligne (il faudrait tenir les nœuds un à un plutôt que
-   redessiner), et **l'écriture optimiste des gestes du calendrier**
-   (déplacement, suppression), qui relisent encore leurs six tables.
+2. **Ce que l'analyse de fluidité laisse ouvert.** Les deux sites sont faits
+   (§ 2 ter ter, 4). Restent : les **espaces projet** (`espace-projet.js` —
+   cocher une tâche, un jalon) qui n'ont pas été convertis, et les **gestes du
+   calendrier** (déplacer, supprimer) qui relisent encore leurs six tables après
+   coup. Plus une chose qu'aucune mécanique simple ne donne : **animer le
+   DÉPART** d'une ligne, qui demanderait de tenir les nœuds un à un plutôt que
+   de redessiner.
+   Le module `js/ecriture.js` est là : convertir un geste tient en dix lignes.
+   **Ne pas convertir les formulaires** — c'est un choix, pas un oubli (§ 4).
 3. **Porter le démarrage aux espaces qui restent.** Yuno, le dashboard et le
    calendrier l'ont (§ 2 ter, 2 ter bis, 2 ter ter) ; `perso.js`,
    `espace-projet.js`, `fch.js`, `photo.js` et `hermitage.js` ne l'ont pas.
@@ -1446,6 +1533,7 @@ restaurée par le routeur. Ne pas « simplifier » ces id.
 | `js/dashboard.js` | L'accueil : humeur, victoires, objectifs, les tâches du jour, la semaine du calendrier |
 | `js/cache-session.js` | Le dernier état d'un espace, gardé le temps de l'onglet (§ 2 ter) |
 | `js/mouvements.js` | Ce qui vient d'apparaître dans une liste, et rien d'autre (§ 2 ter ter) |
+| `js/ecriture.js` | L'écran d'abord, le réseau ensuite — les trois formes de geste, et leur retour en arrière |
 | `js/vendor/` | supabase-js figé, rapatrié par `tools/telecharger-supabase.py`. Aucun CDN |
 | `sw.js` | La coquille en cache — HTML, CSS, JS, polices. **Jamais les données** (§ 2 ter ter) |
 | `js/api.js` | **Tous** les appels Supabase, une fonction par usage |

@@ -15,6 +15,12 @@
 
 import * as api from './api.js';
 import {
+  modifierAussitot,
+  retirerAussitot,
+  identifiantProvisoire,
+  estProvisoire,
+} from './ecriture.js';
+import {
   construireFormulaire,
   construireObjectifs,
   construireVictoires,
@@ -27,7 +33,7 @@ import {
   construireApercuCreation,
   formulaireIdee,
 } from './publications.js';
-import { depuisDateISO, echeanceLisible, echapper } from './format.js';
+import { depuisDateISO, echeanceLisible, echapper, versDateISO } from './format.js';
 import {
   assemblerCalendrier,
   construireCalendrier,
@@ -293,6 +299,20 @@ export default {
       // levait `natures.has is not a function` sans que rien ne s'affiche.
       filtre: 'tout',
       natures: toutesLesNatures(),
+      // Le mot dit après une écriture qui a échoué. L'écran est déjà revenu en
+      // arrière tout seul ; un geste défait en silence ressemble à une panne.
+      souci: null,
+    };
+
+    let minuteurSouci = null;
+    const dire = (message) => {
+      etat.souci = message;
+      rendre();
+      clearTimeout(minuteurSouci);
+      minuteurSouci = setTimeout(() => {
+        etat.souci = null;
+        rendre();
+      }, 6000);
     };
 
     const rendre = () => {
@@ -302,8 +322,36 @@ export default {
       else if (etat.vue === 'club') section.innerHTML = vueClub();
       else section.innerHTML = vueAccueil(etat);
 
+      if (etat.souci) {
+        section
+          .querySelector('.fch-nav')
+          ?.insertAdjacentHTML('afterend', `<p class="vide">${echapper(etat.souci)}</p>`);
+      }
+
       centrerActif(section.querySelector('.fch-nav'));
       centrerActif(section.querySelector('.filtres'));
+    };
+
+    // Une victoire qui n'existe pas encore en base : elle s'affiche pendant
+    // l'aller-retour, puis cède la place à la vraie — ou disparaît si
+    // l'écriture a échoué. Le mur des victoires ne peut que monter, il ne doit
+    // donc jamais garder un accomplissement qui n'a pas eu lieu.
+    const victoireProvisoire = (titre) => ({
+      id: identifiantProvisoire(),
+      projet: PROJET,
+      titre,
+      date: versDateISO(),
+    });
+
+    const remplacerVictoire = (provisoire, vraie) => {
+      const rang = etat.victoires.indexOf(provisoire);
+      if (rang !== -1 && vraie) etat.victoires[rang] = vraie;
+    };
+
+    const retirerVictoire = (provisoire) => {
+      const rang = etat.victoires.indexOf(provisoire);
+      if (rang !== -1) etat.victoires.splice(rang, 1);
+      rendre();
     };
 
     const rendrePartenaires = () => {
@@ -490,16 +538,16 @@ export default {
 
       const supprimerPartenaire = evenement.target.closest('[data-supprimer-partenaire]');
       if (supprimerPartenaire) {
-        const id = supprimerPartenaire.dataset.supprimerPartenaire;
-        supprimerPartenaire.disabled = true;
-        try {
-          await api.supprimerContact(id);
-          etat.partenaires = etat.partenaires.filter((p) => p.id !== id);
-          rendrePartenaires();
-        } catch (souci) {
-          console.error('Suppression du partenaire impossible', souci);
-          supprimerPartenaire.disabled = false;
-        }
+        const partenaire = etat.partenaires.find(
+          (p) => p.id === supprimerPartenaire.dataset.supprimerPartenaire,
+        );
+        if (!partenaire || estProvisoire(partenaire.id)) return;
+        await retirerAussitot(
+          etat.partenaires,
+          partenaire,
+          () => api.supprimerContact(partenaire.id),
+          { rendre: rendrePartenaires, echouer: dire },
+        );
         return;
       }
 
@@ -507,81 +555,95 @@ export default {
       if (avancer) {
         const pub = trouverPub(avancer.dataset.avancer);
         const suivant = STATUTS[STATUTS.indexOf(pub.statut) + 1];
-        if (!suivant) return;
-        avancer.disabled = true;
-        try {
-          Object.assign(pub, await api.modifierPublication(pub.id, { statut: suivant }));
-          rendre();
-        } catch (souci) {
-          console.error('Changement de statut impossible', souci);
-          avancer.disabled = false;
-        }
+        if (!suivant || estProvisoire(pub.id)) return;
+        await modifierAussitot(
+          pub,
+          { statut: suivant },
+          () => api.modifierPublication(pub.id, { statut: suivant }),
+          { rendre, echouer: dire },
+        );
         return;
       }
 
       const deprogrammer = evenement.target.closest('[data-deprogrammer]');
       if (deprogrammer) {
         const pub = trouverPub(deprogrammer.dataset.deprogrammer);
-        deprogrammer.disabled = true;
-        try {
-          Object.assign(pub, await api.modifierPublication(pub.id, { date_prevue: null }));
-          rendre();
-        } catch (souci) {
-          console.error('Déprogrammation impossible', souci);
-          deprogrammer.disabled = false;
-        }
+        if (!pub || estProvisoire(pub.id)) return;
+        await modifierAussitot(
+          pub,
+          { date_prevue: null },
+          () => api.modifierPublication(pub.id, { date_prevue: null }),
+          { rendre, echouer: dire },
+        );
         return;
       }
 
       const supprimerPub = evenement.target.closest('[data-supprimer-pub]');
       if (supprimerPub) {
-        const id = supprimerPub.dataset.supprimerPub;
-        supprimerPub.disabled = true;
-        try {
-          await api.supprimerPublication(id);
-          etat.publications = etat.publications.filter((pub) => pub.id !== id);
-          rendre();
-        } catch (souci) {
-          console.error('Suppression impossible', souci);
-          supprimerPub.disabled = false;
-        }
+        const pub = trouverPub(supprimerPub.dataset.supprimerPub);
+        if (!pub || estProvisoire(pub.id)) return;
+        await retirerAussitot(etat.publications, pub, () => api.supprimerPublication(pub.id), {
+          rendre,
+          echouer: dire,
+        });
         return;
       }
 
+      // Cocher un jalon fait deux choses : la barre avance, et la victoire
+      // monte. Les deux se voient tout de suite ; la victoire provisoire part
+      // si l'écriture échoue, sinon le mur garderait un accomplissement qui
+      // n'a pas eu lieu.
       const jalon = evenement.target.closest('[data-jalon]');
       if (jalon) {
-        jalon.disabled = true;
-        try {
-          const objectif = etat.objectifs.find((candidat) =>
-            candidat.jalons?.some((j) => j.id === jalon.dataset.jalon),
-          );
-          const cible = objectif.jalons.find((j) => j.id === jalon.dataset.jalon);
-          const { jalon: atteint, victoire } = await api.atteindreJalon(cible, PROJET);
-          Object.assign(cible, atteint);
-          etat.victoires = [victoire, ...etat.victoires];
-          rendre();
-          ouvrirObjectif(objectif.id);
-        } catch (souci) {
-          console.error('Impossible de marquer le jalon', souci);
-          jalon.disabled = false;
-        }
+        const objectif = etat.objectifs.find((candidat) =>
+          candidat.jalons?.some((j) => j.id === jalon.dataset.jalon),
+        );
+        const cible = objectif?.jalons.find((j) => j.id === jalon.dataset.jalon);
+        if (!cible || estProvisoire(cible.id)) return;
+
+        const avantJalon = { ...cible };
+        const provisoire = victoireProvisoire(cible.titre);
+        etat.victoires.unshift(provisoire);
+
+        const atteint = await modifierAussitot(
+          cible,
+          { atteint: true, date_atteint: versDateISO() },
+          async () => {
+            const { jalon: fait, victoire } = await api.atteindreJalon(avantJalon, PROJET);
+            remplacerVictoire(provisoire, victoire);
+            return fait;
+          },
+          {
+            rendre: () => {
+              rendre();
+              ouvrirObjectif(objectif.id);
+            },
+            echouer: dire,
+          },
+        );
+        if (!atteint) retirerVictoire(provisoire);
         return;
       }
 
       const atteindre = evenement.target.closest('[data-atteindre]');
       if (atteindre) {
         const objectif = etat.objectifs.find((o) => o.id === atteindre.dataset.atteindre);
-        if (!objectif || !confirm(`Marquer « ${objectif.titre} » comme atteint ?`)) return;
-        atteindre.disabled = true;
-        try {
-          const { victoire } = await api.atteindreObjectif(objectif);
-          etat.objectifs = etat.objectifs.filter((o) => o.id !== objectif.id);
-          etat.victoires = [victoire, ...etat.victoires];
-          rendre();
-        } catch (souci) {
-          console.error("Impossible de marquer l'objectif atteint", souci);
-          atteindre.disabled = false;
-        }
+        if (!objectif || estProvisoire(objectif.id)) return;
+        if (!confirm(`Marquer « ${objectif.titre} » comme atteint ?`)) return;
+
+        const provisoire = victoireProvisoire(objectif.titre);
+        etat.victoires.unshift(provisoire);
+
+        const fait = await retirerAussitot(
+          etat.objectifs,
+          objectif,
+          async () => {
+            const { victoire } = await api.atteindreObjectif(objectif);
+            remplacerVictoire(provisoire, victoire);
+          },
+          { rendre, echouer: dire },
+        );
+        if (!fait) retirerVictoire(provisoire);
         return;
       }
 
@@ -594,29 +656,22 @@ export default {
         if (!confirm(`Supprimer « ${objectif.titre} » et ses jalons ? Les tâches liées sont conservées.`)) {
           return;
         }
-        supprimerObjectif.disabled = true;
-        try {
-          await api.supprimerObjectif(objectif.id);
-          etat.objectifs = etat.objectifs.filter((o) => o.id !== objectif.id);
-          rendre();
-        } catch (souci) {
-          console.error("Suppression de l'objectif impossible", souci);
-          supprimerObjectif.disabled = false;
-        }
+        if (estProvisoire(objectif.id)) return;
+        await retirerAussitot(etat.objectifs, objectif, () => api.supprimerObjectif(objectif.id), {
+          rendre,
+          echouer: dire,
+        });
         return;
       }
 
       const victoire = evenement.target.closest('[data-victoire]');
       if (victoire) {
-        victoire.disabled = true;
-        try {
-          await api.supprimerVictoire(victoire.dataset.victoire);
-          etat.victoires = etat.victoires.filter((v) => v.id !== victoire.dataset.victoire);
-          rendre();
-        } catch (souci) {
-          console.error('Suppression de la victoire impossible', souci);
-          victoire.disabled = false;
-        }
+        const ligne = etat.victoires.find((v) => v.id === victoire.dataset.victoire);
+        if (!ligne || estProvisoire(ligne.id)) return;
+        await retirerAussitot(etat.victoires, ligne, () => api.supprimerVictoire(ligne.id), {
+          rendre,
+          echouer: dire,
+        });
       }
     });
 
@@ -624,34 +679,30 @@ export default {
       const programmer = evenement.target.closest('[data-programmer]');
       if (programmer && programmer.value) {
         const pub = trouverPub(programmer.dataset.programmer);
-        programmer.disabled = true;
-        try {
-          Object.assign(
-            pub,
-            await api.modifierPublication(pub.id, { date_prevue: programmer.value }),
-          );
-          rendre();
-        } catch (souci) {
-          console.error('Programmation impossible', souci);
-          programmer.disabled = false;
-        }
+        if (!pub || estProvisoire(pub.id)) return;
+        const jour = programmer.value;
+        await modifierAussitot(
+          pub,
+          { date_prevue: jour },
+          () => api.modifierPublication(pub.id, { date_prevue: jour }),
+          { rendre, echouer: dire },
+        );
         return;
       }
 
       const echange = evenement.target.closest('[data-echange]');
       if (echange) {
         const partenaire = etat.partenaires.find((p) => p.id === echange.dataset.echange);
-        if (!partenaire) return;
-        try {
-          Object.assign(
-            partenaire,
-            await api.modifierContact(partenaire.id, {
-              dernier_echange: echange.value || null,
-            }),
-          );
-        } catch (souci) {
-          console.error("Enregistrement du dernier échange impossible", souci);
-        }
+        if (!partenaire || estProvisoire(partenaire.id)) return;
+        const jour = echange.value || null;
+        // Sans redessin : la date est déjà dans le champ, sous les yeux. Le
+        // retour en arrière, lui, doit se voir.
+        await modifierAussitot(
+          partenaire,
+          { dernier_echange: jour },
+          () => api.modifierContact(partenaire.id, { dernier_echange: jour }),
+          { echouer: (message) => { rendrePartenaires(); dire(message); } },
+        );
       }
     });
   },

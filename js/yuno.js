@@ -59,6 +59,13 @@ import {
   ongletCalendrier,
 } from './calendrier-commun.js';
 import { lireCache, ecrireCache } from './cache-session.js';
+import {
+  modifierAussitot,
+  retirerAussitot,
+  ajouterAussitot,
+  identifiantProvisoire,
+  estProvisoire,
+} from './ecriture.js';
 
 // Les rubriques de départ de Noé (7 août 2026). La liste reste libre : elle
 // s'enrichira de son analyse du marché, plus tard.
@@ -2461,6 +2468,9 @@ export default {
       modeles: [],
       stats: [],
       ecartes: evenementsEcartes(),
+      // Le mot dit après une écriture qui a échoué. Il vit dans l'état comme
+      // le reste : `rendre()` le pose sous la barre, quelle que soit la vue.
+      souci: null,
       prefillMoment: null,
       captureOuverte: false,
       // Les identifiants de ce qui est ouvert en fenêtre, jamais leur copie.
@@ -2508,6 +2518,19 @@ export default {
     const fraiches = new Set();
     const enVol = new Map();
     let echecChargement = false;
+
+    // Comment le site dit qu'une écriture a échoué. Le message s'efface seul :
+    // il parle du geste qui vient d'avoir lieu, pas de l'état du site.
+    let minuteurSouci = null;
+    const dire = (message) => {
+      etat.souci = message;
+      rendre();
+      clearTimeout(minuteurSouci);
+      minuteurSouci = setTimeout(() => {
+        etat.souci = null;
+        rendre();
+      }, 6000);
+    };
 
     // Le cache de session : le dernier état de l'onglet, affiché tout de suite.
     const restaure = lireCache(CLE_CACHE);
@@ -2601,6 +2624,17 @@ export default {
           `<p class="vide">Les données n'ont pas pu être chargées.
              <button type="button" class="lien-discret"
                data-action="reessayer">Réessayer</button></p>`,
+        );
+      }
+
+      // Une écriture qui a échoué : l'écran est revenu en arrière tout seul, et
+      // il faut le dire — un geste défait en silence ressemble à une panne. Au
+      // même endroit que l'échec de chargement, et effacé au bout de quelques
+      // secondes : le laisser traîner en ferait un reproche.
+      if (etat.souci) {
+        section.querySelector('.yuno-nav')?.insertAdjacentHTML(
+          'afterend',
+          `<p class="vide">${echapper(etat.souci)}</p>`,
         );
       }
 
@@ -3213,18 +3247,18 @@ export default {
         evenement.stopPropagation();
         const tache = etat.taches.find((candidat) => candidat.id === cercle.dataset.cocherTache);
         if (!tache || tache.statut === 'fait') return;
-        try {
-          // La victoire est bien créée en base — elle remonte au dashboard du
-          // hub. Elle n'est simplement plus tenue ici : le Journal ne montre
-          // que des moments.
-          const { tache: faite } = await api.terminerTache(tache);
-          etat.taches = etat.taches.map((candidat) =>
-            candidat.id === faite.id ? faite : candidat,
-          );
-          rendre();
-        } catch (souci) {
-          console.error('Tâche non terminée', souci);
-        }
+
+        // La victoire est bien créée en base — elle remonte au dashboard du
+        // hub. Elle n'est simplement plus tenue ici : le Journal ne montre que
+        // des moments. `avant` part à l'API, pas la tâche déjà cochée : elle
+        // relit le statut pour savoir quoi faire.
+        const avant = { ...tache };
+        await modifierAussitot(
+          tache,
+          { statut: 'fait', date_fait: new Date().toISOString() },
+          async () => (await api.terminerTache(avant)).tache,
+          { rendre, echouer: dire },
+        );
         return;
       }
 
@@ -3370,17 +3404,14 @@ export default {
 
       const supprimerContact = evenement.target.closest('[data-supprimer-contact]');
       if (supprimerContact) {
-        supprimerContact.disabled = true;
-        try {
-          await api.supprimerContact(supprimerContact.dataset.supprimerContact);
-          etat.contacts = etat.contacts.filter(
-            (contact) => contact.id !== supprimerContact.dataset.supprimerContact,
-          );
-          rendreContacts();
-        } catch (souci) {
-          console.error('Suppression du contact impossible', souci);
-          supprimerContact.disabled = false;
-        }
+        const contact = etat.contacts.find(
+          (c) => c.id === supprimerContact.dataset.supprimerContact,
+        );
+        if (!contact || estProvisoire(contact.id)) return;
+        await retirerAussitot(etat.contacts, contact, () => api.supprimerContact(contact.id), {
+          rendre: rendreContacts,
+          echouer: dire,
+        });
         return;
       }
 
@@ -3390,17 +3421,17 @@ export default {
           (c) => c.id === avancerCommande.dataset.avancerCommande,
         );
         const suivant = CYCLE_COMMANDE[CYCLE_COMMANDE.indexOf(commande?.statut) + 1];
-        if (!commande || !suivant) return;
-        avancerCommande.disabled = true;
-        try {
-          // Livrer crée une victoire : c'en est une. Être payé, non.
-          const { commande: misAJour } = await api.avancerCommande(commande, suivant);
-          Object.assign(commande, misAJour);
-          rendreCommandes();
-        } catch (souci) {
-          console.error("Impossible de faire avancer la commande", souci);
-          avancerCommande.disabled = false;
-        }
+        if (!commande || !suivant || estProvisoire(commande.id)) return;
+
+        // Livrer crée une victoire : c'en est une. Être payé, non. `avant` part
+        // à l'API — elle lit le statut pour savoir s'il faut la victoire.
+        const avant = { ...commande };
+        await modifierAussitot(
+          commande,
+          { statut: suivant },
+          async () => (await api.avancerCommande(avant, suivant)).commande,
+          { rendre: rendreCommandes, echouer: dire },
+        );
         return;
       }
 
@@ -3409,19 +3440,34 @@ export default {
       const envoye = evenement.target.closest('[data-envoye]');
       if (envoye) {
         const contact = etat.contacts.find((c) => c.id === envoye.dataset.envoye);
-        if (!contact) return;
-        envoye.disabled = true;
-        try {
-          const { envoi, contact: misAJour } = await api.enregistrerEnvoi({
-            contact,
-            statut: statutApresEnvoi(contact.statut),
-          });
-          Object.assign(contact, misAJour);
-          etat.envois = [envoi, ...etat.envois];
+        if (!contact || estProvisoire(contact.id)) return;
+
+        // Deux effets pour un geste : la fiche avance, et le compteur monte.
+        //
+        // Le statut suivant se calcule AVANT : `modifierAussitot` a déjà changé
+        // la fiche quand la requête part, et relire `contact.statut` là-dedans
+        // ferait avancer d'un cran de trop (« message envoyé » deviendrait
+        // « relance » sans qu'on ait relancé).
+        const date = versDateISO();
+        const suivant = statutApresEnvoi(contact.statut);
+
+        // L'envoi provisoire est retiré si l'écriture échoue — sans quoi le
+        // compteur, qui ne peut que monter, garderait un envoi qui n'a pas eu
+        // lieu.
+        const envoiProvisoire = { id: identifiantProvisoire(), contact_id: contact.id, date };
+        etat.envois = [envoiProvisoire, ...etat.envois];
+
+        const misAJour = await modifierAussitot(
+          contact,
+          { statut: suivant, date_dernier_envoi: date },
+          async () =>
+            (await api.enregistrerEnvoi({ contact: { id: contact.id }, statut: suivant })).contact,
+          { rendre: rendreContacts, echouer: dire },
+        );
+
+        if (!misAJour) {
+          etat.envois = etat.envois.filter((envoi) => envoi.id !== envoiProvisoire.id);
           rendreContacts();
-        } catch (souci) {
-          console.error("Impossible d'enregistrer l'envoi", souci);
-          envoye.disabled = false;
         }
         return;
       }
@@ -3444,33 +3490,25 @@ export default {
 
       const supprimerModele = evenement.target.closest('[data-supprimer-modele]');
       if (supprimerModele) {
-        supprimerModele.disabled = true;
-        try {
-          await api.supprimerModele(supprimerModele.dataset.supprimerModele);
-          etat.modeles = etat.modeles.filter(
-            (m) => m.id !== supprimerModele.dataset.supprimerModele,
-          );
-          rendreContacts();
-        } catch (souci) {
-          console.error('Suppression du modèle impossible', souci);
-          supprimerModele.disabled = false;
-        }
+        const modele = etat.modeles.find((m) => m.id === supprimerModele.dataset.supprimerModele);
+        if (!modele || estProvisoire(modele.id)) return;
+        await retirerAussitot(etat.modeles, modele, () => api.supprimerModele(modele.id), {
+          rendre: rendreContacts,
+          echouer: dire,
+        });
         return;
       }
 
       const supprimerCommande = evenement.target.closest('[data-supprimer-commande]');
       if (supprimerCommande) {
-        supprimerCommande.disabled = true;
-        try {
-          await api.supprimerCommande(supprimerCommande.dataset.supprimerCommande);
-          etat.commandes = etat.commandes.filter(
-            (commande) => commande.id !== supprimerCommande.dataset.supprimerCommande,
-          );
-          rendreCommandes();
-        } catch (souci) {
-          console.error('Suppression de la commande impossible', souci);
-          supprimerCommande.disabled = false;
-        }
+        const commande = etat.commandes.find(
+          (c) => c.id === supprimerCommande.dataset.supprimerCommande,
+        );
+        if (!commande || estProvisoire(commande.id)) return;
+        await retirerAussitot(etat.commandes, commande, () => api.supprimerCommande(commande.id), {
+          rendre: rendreCommandes,
+          echouer: dire,
+        });
         return;
       }
 
@@ -3510,87 +3548,83 @@ export default {
       if (avancer) {
         const pub = trouverPub(avancer.dataset.avancer);
         const suivant = STATUTS_YUNO[STATUTS_YUNO.indexOf(pub.statut) + 1];
-        if (!suivant) return;
-        avancer.disabled = true;
-        try {
-          Object.assign(pub, await api.modifierPublication(pub.id, { statut: suivant }));
-          // Poster, c'est déposer l'œuvre et repartir : le site le dit, puis
-          // se tait.
-          etat.cloture = suivant === 'publie';
-          rendre();
-        } catch (souci) {
-          console.error('Changement de statut impossible', souci);
-          avancer.disabled = false;
-        }
+        if (!suivant || estProvisoire(pub.id)) return;
+
+        // Poster, c'est déposer l'œuvre et repartir : le site le dit, puis se
+        // tait. Le mot de clôture part avec le geste, pas avec la réponse.
+        etat.cloture = suivant === 'publie';
+        await modifierAussitot(
+          pub,
+          { statut: suivant },
+          () => api.modifierPublication(pub.id, { statut: suivant }),
+          { rendre, echouer: dire },
+        );
         return;
       }
 
       const deprogrammer = evenement.target.closest('[data-deprogrammer]');
       if (deprogrammer) {
         const pub = trouverPub(deprogrammer.dataset.deprogrammer);
-        deprogrammer.disabled = true;
-        try {
-          Object.assign(pub, await api.modifierPublication(pub.id, { date_prevue: null }));
-          rendre();
-        } catch (souci) {
-          console.error('Déprogrammation impossible', souci);
-          deprogrammer.disabled = false;
-        }
+        if (estProvisoire(pub.id)) return;
+        await modifierAussitot(
+          pub,
+          { date_prevue: null },
+          () => api.modifierPublication(pub.id, { date_prevue: null }),
+          { rendre, echouer: dire },
+        );
         return;
       }
 
       const supprimerPub = evenement.target.closest('[data-supprimer-pub]');
       if (supprimerPub) {
-        supprimerPub.disabled = true;
-        try {
-          await api.supprimerPublication(supprimerPub.dataset.supprimerPub);
-          etat.publications = etat.publications.filter(
-            (pub) => pub.id !== supprimerPub.dataset.supprimerPub,
-          );
-          // Supprimée depuis sa propre fiche : la fenêtre n'a plus de sujet.
-          if (etat.ideeOuverte === supprimerPub.dataset.supprimerPub) {
-            etat.ideeOuverte = null;
-          }
-          rendre();
-        } catch (souci) {
-          console.error('Suppression impossible', souci);
-          supprimerPub.disabled = false;
-        }
+        const pub = trouverPub(supprimerPub.dataset.supprimerPub);
+        if (!pub || estProvisoire(pub.id)) return;
+        // Supprimée depuis sa propre fiche : la fenêtre n'a plus de sujet.
+        if (etat.ideeOuverte === pub.id) etat.ideeOuverte = null;
+        await retirerAussitot(etat.publications, pub, () => api.supprimerPublication(pub.id), {
+          rendre,
+          echouer: dire,
+        });
         return;
       }
 
       const jalon = evenement.target.closest('[data-jalon]');
       if (jalon) {
-        jalon.disabled = true;
-        try {
-          const objectif = etat.objectifs.find((candidat) =>
-            candidat.jalons?.some((j) => j.id === jalon.dataset.jalon),
-          );
-          const cible = objectif.jalons.find((j) => j.id === jalon.dataset.jalon);
-          const { jalon: atteint } = await api.atteindreJalon(cible, 'photo');
-          Object.assign(cible, atteint);
-          rendre();
-          ouvrirObjectif(objectif.id);
-        } catch (souci) {
-          console.error('Impossible de marquer le jalon', souci);
-          jalon.disabled = false;
-        }
+        const objectif = etat.objectifs.find((candidat) =>
+          candidat.jalons?.some((j) => j.id === jalon.dataset.jalon),
+        );
+        const cible = objectif?.jalons.find((j) => j.id === jalon.dataset.jalon);
+        if (!cible || estProvisoire(cible.id)) return;
+
+        // La barre de progression avance sous le doigt. `avant` part à l'API :
+        // elle relit le jalon pour savoir s'il y a une victoire à créer.
+        const avantJalon = { ...cible };
+        await modifierAussitot(
+          cible,
+          { atteint: true, date_atteint: versDateISO() },
+          async () => (await api.atteindreJalon(avantJalon, 'photo')).jalon,
+          {
+            rendre: () => {
+              rendre();
+              ouvrirObjectif(objectif.id);
+            },
+            echouer: dire,
+          },
+        );
         return;
       }
 
       const atteindre = evenement.target.closest('[data-atteindre]');
       if (atteindre) {
         const objectif = etat.objectifs.find((o) => o.id === atteindre.dataset.atteindre);
-        if (!objectif || !confirm(`Marquer « ${objectif.titre} » comme atteint ?`)) return;
-        atteindre.disabled = true;
-        try {
-          await api.atteindreObjectif(objectif);
-          etat.objectifs = etat.objectifs.filter((o) => o.id !== objectif.id);
-          rendre();
-        } catch (souci) {
-          console.error("Impossible de marquer l'objectif atteint", souci);
-          atteindre.disabled = false;
-        }
+        if (!objectif || estProvisoire(objectif.id)) return;
+        if (!confirm(`Marquer « ${objectif.titre} » comme atteint ?`)) return;
+
+        // Un objectif atteint quitte la liste des actifs : il a sa victoire.
+        await retirerAussitot(etat.objectifs, objectif, () => api.atteindreObjectif(objectif), {
+          rendre,
+          echouer: dire,
+        });
         return;
       }
 
@@ -3603,15 +3637,11 @@ export default {
         if (!confirm(`Supprimer « ${objectif.titre} » et ses jalons ? Les tâches liées sont conservées.`)) {
           return;
         }
-        supprimerObjectif.disabled = true;
-        try {
-          await api.supprimerObjectif(objectif.id);
-          etat.objectifs = etat.objectifs.filter((o) => o.id !== objectif.id);
-          rendre();
-        } catch (souci) {
-          console.error("Suppression de l'objectif impossible", souci);
-          supprimerObjectif.disabled = false;
-        }
+        if (estProvisoire(objectif.id)) return;
+        await retirerAussitot(etat.objectifs, objectif, () => api.supprimerObjectif(objectif.id), {
+          rendre,
+          echouer: dire,
+        });
         return;
       }
 
@@ -3620,17 +3650,15 @@ export default {
         const id = supprimerMoment.dataset.supprimerMoment;
         const moment = etat.moments.find((candidat) => candidat.id === id);
         if (!moment || !confirm(`Retirer « ${titreDuMoment(moment)} » du carnet ?`)) return;
-        supprimerMoment.disabled = true;
-        try {
-          await api.supprimerMoment(id, moment.photo_chemin);
-          etat.moments = etat.moments.filter((candidat) => candidat.id !== id);
-          // Retiré depuis sa propre fenêtre : elle n'a plus de sujet.
-          if (etat.momentOuvert === id) etat.momentOuvert = null;
-          rendre();
-        } catch (souci) {
-          console.error('Suppression du moment impossible', souci);
-          supprimerMoment.disabled = false;
-        }
+        if (estProvisoire(id)) return;
+        // Retiré depuis sa propre fenêtre : elle n'a plus de sujet.
+        if (etat.momentOuvert === id) etat.momentOuvert = null;
+        await retirerAussitot(
+          etat.moments,
+          moment,
+          () => api.supprimerMoment(id, moment.photo_chemin),
+          { rendre, echouer: dire },
+        );
         return;
       }
 
@@ -3753,14 +3781,17 @@ export default {
       lacherLIdee();
       if (!bouge || !jour) return;
 
-      const id = tuile.dataset.poserIdee;
-      try {
-        const modifiee = await api.modifierPublication(id, { date_prevue: jour });
-        etat.publications = etat.publications.map((pub) => (pub.id === id ? modifiee : pub));
-        rendre();
-      } catch (souci) {
-        console.error("Programmation de l'idée impossible", souci);
-      }
+      // L'idée se pose sur le jour où le doigt l'a lâchée, sans attendre : le
+      // glissement vient de se terminer, la voir sauter en arrière puis revenir
+      // serait le contraire du geste.
+      const pub = trouverPub(tuile.dataset.poserIdee);
+      if (!pub || estProvisoire(pub.id)) return;
+      await modifierAussitot(
+        pub,
+        { date_prevue: jour },
+        () => api.modifierPublication(pub.id, { date_prevue: jour }),
+        { rendre, echouer: dire },
+      );
     });
 
     section.addEventListener('pointercancel', lacherLIdee);
@@ -3868,17 +3899,14 @@ export default {
       const programmer = evenement.target.closest('[data-programmer]');
       if (programmer && programmer.value) {
         const pub = trouverPub(programmer.dataset.programmer);
-        programmer.disabled = true;
-        try {
-          Object.assign(
-            pub,
-            await api.modifierPublication(pub.id, { date_prevue: programmer.value }),
-          );
-          rendre();
-        } catch (souci) {
-          console.error('Programmation impossible', souci);
-          programmer.disabled = false;
-        }
+        if (!pub || estProvisoire(pub.id)) return;
+        const jour = programmer.value;
+        await modifierAussitot(
+          pub,
+          { date_prevue: jour },
+          () => api.modifierPublication(pub.id, { date_prevue: jour }),
+          { rendre, echouer: dire },
+        );
         return;
       }
 
@@ -3899,19 +3927,13 @@ export default {
       if (niveau) {
         const contact = etat.contacts.find((c) => c.id === niveau.dataset.niveau);
         if (!contact) return;
-        niveau.disabled = true;
-        try {
-          Object.assign(
-            contact,
-            await api.modifierContact(contact.id, {
-              niveau: niveau.value ? Number(niveau.value) : null,
-            }),
-          );
-          rendreContacts();
-        } catch (souci) {
-          console.error('Enregistrement du niveau impossible', souci);
-          niveau.disabled = false;
-        }
+        const valeurNiveau = niveau.value ? Number(niveau.value) : null;
+        await modifierAussitot(
+          contact,
+          { niveau: valeurNiveau },
+          () => api.modifierContact(contact.id, { niveau: valeurNiveau }),
+          { rendre: rendreContacts, echouer: dire },
+        );
         return;
       }
 
@@ -3937,11 +3959,14 @@ export default {
             ? 'prochaine_action'
             : 'prochaine_action_date';
 
-        try {
-          Object.assign(contact, await api.modifierContact(contact.id, { [colonne]: valeur }));
-        } catch (souci) {
-          console.error("Enregistrement du champ impossible", souci);
-        }
+        // Sans redessin : la valeur est déjà dans le champ, sous les yeux. Le
+        // retour en arrière, lui, doit se voir — d'où le rendu au seul échec.
+        await modifierAussitot(
+          contact,
+          { [colonne]: valeur },
+          () => api.modifierContact(contact.id, { [colonne]: valeur }),
+          { echouer: (message) => { rendreContacts(); dire(message); } },
+        );
         return;
       }
 
@@ -3951,17 +3976,12 @@ export default {
         const champ = modeleTitre ?? modeleCorps;
         const id = champ.dataset.modeleTitre ?? champ.dataset.modeleCorps;
         const modele = etat.modeles.find((m) => m.id === id);
-        if (!modele) return;
-        try {
-          Object.assign(
-            modele,
-            await api.modifierModele(id, {
-              [modeleTitre ? 'titre' : 'corps']: champ.value.trim(),
-            }),
-          );
-        } catch (souci) {
-          console.error('Enregistrement du modèle impossible', souci);
-        }
+        if (!modele || estProvisoire(modele.id)) return;
+
+        const champs = { [modeleTitre ? 'titre' : 'corps']: champ.value.trim() };
+        await modifierAussitot(modele, champs, () => api.modifierModele(id, champs), {
+          echouer: (message) => { rendre(); dire(message); },
+        });
         return;
       }
 
@@ -4000,18 +4020,13 @@ export default {
       const statut = evenement.target.closest('[data-statut]');
       if (statut) {
         const contact = etat.contacts.find((c) => c.id === statut.dataset.statut);
-        if (!contact) return;
-        statut.disabled = true;
-        try {
-          Object.assign(
-            contact,
-            await api.modifierContact(contact.id, { statut: statut.value }),
-          );
-          rendreContacts();
-        } catch (souci) {
-          console.error('Enregistrement du statut impossible', souci);
-          statut.disabled = false;
-        }
+        if (!contact || estProvisoire(contact.id)) return;
+        await modifierAussitot(
+          contact,
+          { statut: statut.value },
+          () => api.modifierContact(contact.id, { statut: statut.value }),
+          { rendre: rendreContacts, echouer: dire },
+        );
       }
     });
 
