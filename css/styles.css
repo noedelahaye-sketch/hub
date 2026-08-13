@@ -1107,6 +1107,14 @@ body[data-espace="dashboard"] #espace-dashboard { padding-bottom: 5.5rem; }
    spécificité c'est l'ordre qui tranche — elle l'emportait. */
 .fenetre-fond.capture-fond { background: rgb(0 0 0 / 65%); }
 
+/* Tant qu'une tuile est ouverte, la page derrière ne défile plus : c'est la
+   tuile qu'on manipule, pas ce qu'il y a dessous, et un fond qui glisse sous
+   une tuile fixe donne le tournis.
+   `:has()` plutôt qu'une classe posée en JS : la tuile s'ouvre depuis quatre
+   endroits (Tâches, accueil, calendrier, sites), et quatre endroits où penser à
+   poser ET retirer une classe, c'est trois oublis en puissance. */
+body:has(.capture) { overflow: hidden; }
+
 /* La tuile vole au-dessus de la page, sur ce fond assombri — comme Todoist.
    Elle n'a PAS de contour, à la demande de Noé : sur un fond obscurci, l'ombre
    suffit à la détacher, et un trait de plus ne dirait rien de nouveau.
@@ -1127,6 +1135,12 @@ body[data-espace="dashboard"] #espace-dashboard { padding-bottom: 5.5rem; }
      clavier, c'est le milieu tout court. */
   top: calc((100vh - var(--bas-clavier, 0px)) / 2);
   transform: translate(-50%, -50%);
+  /* La tuile MONTE quand le clavier arrive, elle ne saute pas (demande de Noé,
+     13 août 2026). C'est le seul déplacement qui reste : le clavier ne se
+     referme plus quand on touche une pastille, donc `--bas-clavier` ne change
+     qu'une fois, à l'ouverture. `prefers-reduced-motion` l'annule plus bas,
+     comme tout le reste. */
+  transition: top 220ms ease-out;
   width: min(34rem, calc(100vw - 2 * var(--espace-16)));
   /* Ni `overflow`, ni `max-height` : les menus se posent AU-DESSUS de la tuile,
      donc hors de sa boîte. Un conteneur de défilement les découperait. Elle n'en

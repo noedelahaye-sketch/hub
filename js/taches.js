@@ -280,15 +280,18 @@ const PASTILLE_PROJET = `<svg viewBox="0 0 24 24" width="14" height="14" fill="n
   <path d="M10 3 8 21M16 3l-2 18M3.5 8.5h17M3 15.5h17"></path>
 </svg>`;
 
+// `data-pastille` sur le bouton, `data-panneau` sur le panneau : les deux
+// portaient le même nom d'attribut, et un sélecteur ne savait plus lequel il
+// visait depuis que les panneaux vivent en permanence dans le DOM.
 function pastille(nom, icone, texte, { rempli = false, priorite = null } = {}) {
   return `<button type="button" class="pastille-capture${rempli ? ' remplie' : ''}"
-    data-panneau="${nom}" aria-expanded="false"
+    data-pastille="${nom}" aria-expanded="false"
     ${priorite ? `data-priorite="${priorite}"` : ''}>${icone}<span>${echapper(texte)}</span></button>`;
 }
 
 function panneauDate(capture) {
   return `
-    <div class="capture-popover" data-panneau-ouvert="date">
+    <div class="capture-popover" data-panneau="date" hidden>
       <ul class="raccourcis-date">
         ${RACCOURCIS_DATE()
           .map(
@@ -327,7 +330,7 @@ function panneauDate(capture) {
 // ligne survolée qui dit où l'on est.
 function panneauPriorite(valeurCourante) {
   return `
-    <div class="capture-popover capture-popover-etroit" data-panneau-ouvert="priorite">
+    <div class="capture-popover capture-popover-etroit" data-panneau="priorite" hidden>
       <ul class="choix-capture">
         ${[1, 2, 3, 4]
           .map(
@@ -346,7 +349,7 @@ function panneauPriorite(valeurCourante) {
 
 function panneauProjet(valeurCourante) {
   return `
-    <div class="capture-popover capture-popover-etroit" data-panneau-ouvert="projet">
+    <div class="capture-popover capture-popover-etroit" data-panneau="projet" hidden>
       <ul class="choix-capture">
         ${Object.entries(PROJETS)
           .map(
@@ -413,9 +416,14 @@ export function construireCapture(capture) {
           aria-label="Ajouter la tâche" title="Ajouter la tâche">${FLECHE}</button>
       </div>
 
-      ${capture.panneau === 'date' ? panneauDate(capture) : ''}
-      ${capture.panneau === 'projet' ? panneauProjet(capture.projet) : ''}
-      ${capture.panneau === 'priorite' ? panneauPriorite(capture.priorite) : ''}
+      <!-- Les trois panneaux sont TOUJOURS dans le DOM, masqués. C'est ce qui
+           permet d'ouvrir une pastille sans redessiner la tuile — et donc sans
+           détruire le champ du titre. Sur téléphone, détruire ce champ referme
+           le clavier : la tuile se replaçait alors au milieu d'un écran soudain
+           plus grand, et sautait à chaque pastille touchée. -->
+      ${panneauDate(capture)}
+      ${panneauProjet(capture.projet)}
+      ${panneauPriorite(capture.priorite)}
 
       ${
         capture.confirmationSortie
@@ -527,6 +535,74 @@ export default {
       // En phase de capture : un défilement ne remonte pas les bulles.
       true,
     );
+
+    // --- La tuile, sans jamais la redessiner ---
+    //
+    // Tout ce qui suit modifie le DOM en place. C'est la règle de cette tuile
+    // depuis le 13 août : sur téléphone, redessiner détruit le champ du titre,
+    // ce qui referme le clavier, ce qui agrandit la zone visible, ce qui
+    // replace la tuile — elle sautait à chaque pastille touchée.
+
+    const fermerLesPanneaux = () => {
+      for (const panneau of section.querySelectorAll('.capture-popover')) {
+        panneau.hidden = true;
+        section
+          .querySelector(`[data-pastille="${panneau.dataset.panneau}"]`)
+          ?.setAttribute('aria-expanded', 'false');
+      }
+    };
+
+    const basculerPanneau = (nom) => {
+      const panneau = section.querySelector(`.capture-popover[data-panneau="${nom}"]`);
+      if (!panneau) return;
+      const ouvert = !panneau.hidden;
+      fermerLesPanneaux();
+      panneau.hidden = ouvert;
+      section.querySelector(`[data-pastille="${nom}"]`)?.setAttribute('aria-expanded', String(!ouvert));
+    };
+
+    // La ligne choisie se marque dans sa liste, comme le ferait un redessin.
+    const marquerLeChoix = (attribut, valeur) => {
+      for (const bouton of section.querySelectorAll(`[data-${attribut}]`)) {
+        const actif = bouton.dataset[attribut.replace(/-(.)/g, (_, l) => l.toUpperCase())] === valeur;
+        bouton.classList.toggle('actif', actif);
+        bouton.setAttribute('aria-pressed', String(actif));
+      }
+    };
+
+    // Les libellés des trois pastilles, relus depuis l'état.
+    const majPastilles = () => {
+      const ecrire = (nom, texte, rempli) => {
+        const pastille = section.querySelector(`[data-pastille="${nom}"]`);
+        if (!pastille) return;
+        pastille.querySelector('span').textContent = texte;
+        pastille.classList.toggle('remplie', rempli);
+      };
+
+      ecrire('date', dateLisible(etat.capture), Boolean(etat.capture.echeance));
+      ecrire('projet', PROJETS[etat.capture.projet], true);
+      ecrire(
+        'priorite',
+        etat.capture.priorite === 4 ? 'Priorité' : `P${etat.capture.priorite}`,
+        etat.capture.priorite !== 4,
+      );
+      section
+        .querySelector('[data-pastille="priorite"]')
+        ?.setAttribute('data-priorite', String(etat.capture.priorite));
+      marquerLeDebordement();
+    };
+
+    // Toucher une pastille ne doit pas retirer le curseur du titre : c'est ce
+    // qui referme le clavier. `pointerdown` est le moment où le navigateur
+    // décide de déplacer le focus — l'annuler suffit, le clic suit son cours.
+    // Les champs de date et d'heure, eux, ont besoin du focus : ils ne sont pas
+    // dans la liste.
+    section.addEventListener('pointerdown', (evenement) => {
+      const garderLeClavier = evenement.target.closest(
+        '[data-pastille], [data-poser-date], [data-poser-projet], [data-poser-priorite], .capture-envoyer',
+      );
+      if (garderLeClavier) evenement.preventDefault();
+    });
 
     // La capture se redessine seule, et il faut y prendre soin : le titre vit
     // dans le champ, pas dans l'état, tant qu'on tape. On le récupère avant de
@@ -689,27 +765,34 @@ export default {
         etat.taches = [tache, ...etat.taches];
         etat.message = null;
         // La capture reste ouverte, vidée, avec le projet et la priorité qu'on
-        // vient de choisir : on en note rarement une seule.
-        // Le champ se vide AVANT le redessin, et pas seulement l'état :
-        // `rendreCapture` relit le champ pour ne pas perdre ce qu'on tape, donc
-        // un état vidé sans champ vidé serait aussitôt réécrit par l'ancien
-        // titre.
-        formulaire.querySelector('#capture-titre').value = '';
-        etat.capture = {
-          ...etat.capture,
-          titre: '',
-          echeance: null,
-          heure: null,
-          panneau: null,
-        };
-        rendreCapture({ focus: true });
+        // vient de choisir : on en note rarement une seule. Et elle se vide EN
+        // PLACE, sans redessin — sinon le champ serait détruit et le clavier se
+        // refermerait entre deux notes, ce qui est tout ce qu'on cherche à
+        // éviter.
+        const champ = formulaire.querySelector('#capture-titre');
+        champ.value = '';
+        etat.capture = { ...etat.capture, titre: '', echeance: null, heure: null };
+
+        const champDate = section.querySelector('[data-champ-date]');
+        if (champDate) champDate.value = '';
+        const champHeure = section.querySelector('[data-champ-heure]');
+        if (champHeure) champHeure.value = '';
+
+        fermerLesPanneaux();
+        majPastilles();
+        formulaire.querySelector('.capture-envoyer').disabled = true;
+        champ.focus();
         rendreListe();
       } catch (souci) {
         console.error('Tâche non créée', souci);
         erreur.textContent = souci.message ?? "La tâche n'a pas pu être créée.";
         erreur.hidden = false;
       } finally {
-        bouton.disabled = false;
+        // Rallumée seulement s'il reste de quoi envoyer : après une création
+        // réussie le champ est vide, la flèche doit rester éteinte comme à
+        // l'ouverture. (Un `disabled = false` sec la rallumait sur un champ
+        // vide, juste après l'avoir éteinte.)
+        bouton.disabled = !formulaire.querySelector('#capture-titre').value.trim();
       }
     });
 
@@ -744,11 +827,7 @@ export default {
           etat.capture.heure = champHeure.value || null;
         }
 
-        const pastilleDate = section.querySelector('[data-panneau="date"]');
-        if (pastilleDate) {
-          pastilleDate.querySelector('span').textContent = dateLisible(etat.capture);
-          pastilleDate.classList.toggle('remplie', Boolean(etat.capture.echeance));
-        }
+        majPastilles();
         return;
       }
 
@@ -818,11 +897,15 @@ export default {
 
       // Une pastille ouvre son panneau, et referme celui d'à côté : deux choix
       // ouverts en même temps, c'est un formulaire, pas une capture.
-      const pastilleOuverte = evenement.target.closest('[data-panneau]');
+      //
+      // Tout ce qui suit ne touche QUE le DOM. Rien ne redessine la tuile, donc
+      // le champ du titre n'est jamais détruit — et sur téléphone, le clavier
+      // ne se referme pas. C'est ce qui faisait sauter la tuile à chaque
+      // pastille touchée : elle se replaçait au milieu d'un écran redevenu
+      // grand, puis remontait quand le clavier revenait.
+      const pastilleOuverte = evenement.target.closest('[data-pastille]');
       if (pastilleOuverte) {
-        const nom = pastilleOuverte.dataset.panneau;
-        etat.capture.panneau = etat.capture.panneau === nom ? null : nom;
-        rendreCapture();
+        basculerPanneau(pastilleOuverte.dataset.pastille);
         return;
       }
 
@@ -831,35 +914,41 @@ export default {
         etat.capture.echeance = poserDate.dataset.poserDate || null;
         // Retirer la date retire l'heure avec elle : une heure sans jour ne
         // veut rien dire, et la colonne resterait seule en base.
-        if (!etat.capture.echeance) etat.capture.heure = null;
-        etat.capture.panneau = null;
-        rendreCapture({ focus: true });
+        if (!etat.capture.echeance) {
+          etat.capture.heure = null;
+          const champHeure = section.querySelector('[data-champ-heure]');
+          if (champHeure) champHeure.value = '';
+        }
+        const champDate = section.querySelector('[data-champ-date]');
+        if (champDate) champDate.value = etat.capture.echeance ?? '';
+        fermerLesPanneaux();
+        majPastilles();
         return;
       }
 
       const poserProjet = evenement.target.closest('[data-poser-projet]');
       if (poserProjet) {
         etat.capture.projet = poserProjet.dataset.poserProjet;
-        etat.capture.panneau = null;
-        rendreCapture({ focus: true });
+        marquerLeChoix('poser-projet', etat.capture.projet);
+        fermerLesPanneaux();
+        majPastilles();
         return;
       }
 
       const poserPriorite = evenement.target.closest('[data-poser-priorite]');
       if (poserPriorite) {
         etat.capture.priorite = Number(poserPriorite.dataset.poserPriorite);
-        etat.capture.panneau = null;
-        rendreCapture({ focus: true });
+        marquerLeChoix('poser-priorite', String(etat.capture.priorite));
+        fermerLesPanneaux();
+        majPastilles();
         return;
       }
 
       // Un clic ailleurs dans la tuile referme le panneau ouvert. Il arrive en
       // dernier, quand rien d'autre n'a répondu : les boutons du panneau se
       // sont déjà servis au-dessus.
-      if (etat.capture.panneau && !evenement.target.closest('.capture-popover')) {
-        etat.capture.panneau = null;
-        rendreCapture();
-        return;
+      if (evenement.target.closest('.capture') && !evenement.target.closest('.capture-popover')) {
+        fermerLesPanneaux();
       }
 
       const filtre = evenement.target.closest('[data-filtre-projet]');

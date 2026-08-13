@@ -1429,6 +1429,19 @@ export function brancherCapture(section) {
     );
   };
 
+  // Toucher une pastille ou un choix ne doit pas retirer le curseur du titre :
+  // c'est ce qui referme le clavier du téléphone, et la tuile se replace alors
+  // dans un écran redevenu grand — elle saute. `pointerdown` est le moment où
+  // le navigateur décide de déplacer le focus ; l'annuler suffit, le clic suit
+  // son cours. Les champs de date et d'heure ne sont pas dans la liste : eux
+  // ont besoin du focus.
+  section.addEventListener('pointerdown', (evenement) => {
+    const garderLeClavier = evenement.target.closest(
+      '.capture [data-pastille], .capture [data-choix], .capture [data-nature-creation], .capture-envoyer',
+    );
+    if (garderLeClavier) evenement.preventDefault();
+  });
+
   section.addEventListener('click', (evenement) => {
     // Un choix dans une liste : il écrit dans son champ caché, marque la ligne,
     // referme le panneau. Le formulaire n'a jamais su qu'il y avait autre chose

@@ -328,6 +328,44 @@ bon**, sans que rien ne le signale — ni erreur, ni boîte vide, il occupait sa
 place. Mesurer `getBoundingClientRect` ne suffit pas : il faut lire l'opacité
 calculée.
 
+**La tuile sautait à chaque pastille touchée, sur téléphone** (13 août, signalé
+par Noé : « ça donne mal au cœur »). Il avait le bon diagnostic — « il faut
+garder le texte constamment ouvert même quand je choisis les paramètres ».
+
+**La chaîne, du symptôme à la cause** : toucher une pastille redessinait la
+tuile → le champ du titre était détruit → **le clavier se refermait** → la
+fenêtre visuelle redevenait grande → `--bas-clavier` retombait à zéro → la tuile
+se replaçait au milieu d'un écran plus grand → elle sautait, puis re-sautait
+quand le clavier revenait. Un déplacement par pastille.
+
+**Trois corrections, dans cet ordre d'importance :**
+
+1. **Les panneaux ne redessinent plus rien.** Les trois vivent en permanence
+   dans le DOM, masqués ; ouvrir une pastille ne fait que basculer un `hidden`,
+   et choisir une valeur réécrit l'étiquette en place. Le champ du titre n'est
+   jamais détruit. (La tuile du calendrier fonctionnait déjà ainsi — c'est celle
+   des Tâches qui a été alignée dessus.) L'envoi aussi se vide en place : entre
+   deux notes enchaînées, le clavier ne cligne plus.
+2. **Une pastille ne prend jamais le focus.** `pointerdown` annulé sur les
+   pastilles, les choix et la flèche d'envoi : c'est le moment où le navigateur
+   décide de déplacer le curseur, l'annuler suffit et le clic suit son cours.
+   Les champs de date et d'heure ne sont pas dans la liste — eux en ont besoin.
+3. **La page derrière ne défile plus** (`body:has(.capture) { overflow: hidden }`).
+   Un fond qui glisse sous une tuile fixe donne le tournis. En `:has()` plutôt
+   qu'une classe posée en JS : la tuile s'ouvre depuis quatre endroits, et
+   quatre endroits où penser à poser ET retirer une classe, c'est trois oublis
+   en puissance.
+
+**Il reste UN déplacement, et il est voulu** : à l'ouverture, quand le clavier
+monte. Il est passé en transition (`transition: top 220ms`) — la tuile **monte**
+au lieu de sauter, ce que Noé demandait. `prefers-reduced-motion` l'annule avec
+le reste.
+
+**Mesuré, clavier simulé à 336 px** : cinq allers-retours dans les pastilles,
+**0 px de déplacement** ; le champ est le même objet du début à la fin, le focus
+ne le quitte jamais, le titre est conservé. Idem sur la tuile du calendrier
+ouverte depuis le « + » de l'accueil.
+
 **Un piège que `node --check` ne voit pas** (13 août, rencontré deux fois dans
 la même session). Un accent grave dans un commentaire HTML, à l'intérieur d'un
 gabarit JS, **ferme la chaîne** : `pas un \`<li>\` qui écoute` devient
