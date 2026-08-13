@@ -415,9 +415,12 @@ export default {
       // (Yuno, lui, les faisait suivre — c'est ce calendrier-ci qui les
       // perdait.)
       if (champs.nature === 'tache') {
+        // Active d'emblée, comme partout depuis le 13 août : le réglage
+        // backlog / active est masqué, une tâche notée est une tâche à faire.
         return api.creerTache({
           projet,
           titre,
+          statut: 'actif',
           echeance: champs.debut,
           heure: champs.heure || null,
           priorite: Number(champs.priorite) || 4,

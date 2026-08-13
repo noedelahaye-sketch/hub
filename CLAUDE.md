@@ -148,6 +148,8 @@ La progression d'un objectif = jalons atteints / jalons totaux (calculée côté
 
 Règle métier : maximum 3 tâches en statut 'actif' par projet. L'UI doit empêcher d'en activer une 4ème (proposer d'en terminer ou repasser une en backlog).
 
+> **En sommeil depuis le 13 août 2026.** Noé a demandé de masquer le réglage backlog/active « pour le moment » : toute tâche naît `actif`, et le plafond de 3 n'est donc plus exercé. La règle et son code (`MAX_TACHES_ACTIVES`, `changerStatutTache`) restent en place — réafficher la pastille de statut suffit à tout rallumer. Voir `docs/etat-des-lieux.md`.
+
 `statut` et `priorite` répondent à deux questions différentes et ne se remplacent pas : `statut` dit **où en est** la tâche, `priorite` dit **combien elle compte**. Une priorité 1 ne dispense pas de choisir ses 3 actives.
 
 ### evenements

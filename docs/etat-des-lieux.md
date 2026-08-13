@@ -510,9 +510,24 @@ disparu.
   `calc(50vh - 6rem)` sur ordinateur où la tuile est centrée. **Vérifié avec un
   clavier simulé à 336 px** : le panneau commence à 33 px du haut, « Aujourd'hui »
   est entier à l'écran, et rien n'a besoin de défiler.
-- **Une tâche capturée part au backlog**, toujours. Une tâche notée à la volée
-  n'est pas un des trois chantiers du moment ; la promouvoir se fait dans la
-  liste, en connaissance de la règle des 3 actives.
+- **Le réglage backlog / active est masqué, et toute tâche naît active**
+  (13 août 2026, décision de Noé — « pour le moment »). La pastille de statut a
+  disparu des lignes, et le « ↓ » qui renvoyait au backlog a disparu des espaces
+  projet. Les quatre endroits qui créent une tâche posent `statut: 'actif'` :
+  la capture des Tâches, les deux calendriers, l'espace projet.
+
+  **Ce que ça coûte, et c'est assumé** : le plafond de **3 actives par projet**
+  n'est plus jamais exercé — rien n'appelle `changerStatutTache`, et `creerTache`
+  ne l'a jamais vérifié. Le bloc « Aujourd'hui » du dashboard ne filtre donc
+  plus : il montre les 9 premières tâches, plus « les 3 chantiers de chaque
+  projet ». C'était le mécanisme central de la règle « réduire la charge
+  mentale » de `CLAUDE.md` ; il est en sommeil, pas supprimé.
+
+  **Rien n'a été jeté** : la colonne, `MAX_TACHES_ACTIVES`, `changerStatutTache`
+  et son message de refus sont tous en place. Réafficher la pastille suffit à
+  tout rallumer. Le backlog reste lisible dans les espaces projet s'il contient
+  encore quelque chose d'ancien — il se replie tout seul quand il est vide,
+  c'est-à-dire toujours désormais.
 - **La capture reste ouverte après l'envoi**, vidée, projet et priorité gardés :
   on en note rarement une seule.
 - **Trois pièges de redessin, tous rencontrés :**

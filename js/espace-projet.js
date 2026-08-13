@@ -140,7 +140,7 @@ export function construireTaches(taches, annulation = null) {
 
   const listeActives = actives.length
     ? `<ul class="liste-taches">${actives.map(construireTacheActive).join('')}</ul>`
-    : `<p class="vide">Rien d'actif. Choisis une tâche du backlog quand tu es prêt.</p>`;
+    : `<p class="vide">Rien à faire ici. Note ta prochaine tâche au-dessous.</p>`;
 
   const listeBacklog = backlog.length
     ? `<details class="backlog">
@@ -199,9 +199,10 @@ function construireTacheActive(tache) {
             : ''
         }
       </label>
-      <button type="button" class="lien-discret bouton-mini"
-        data-backlog="${echapper(tache.id)}"
-        title="Renvoyer cette tâche au backlog">↓</button>
+      <!-- Le « ↓ » qui renvoyait au backlog est retiré (13 août 2026) : c'est
+           LE réglage que Noé a demandé de masquer. Le backlog reste lisible
+           s'il contient encore quelque chose d'avant — il se replie tout seul
+           quand il est vide, c'est-à-dire toujours désormais. -->
       <button type="button" class="lien-discret bouton-mini bouton-retirer"
         data-supprimer-tache="${echapper(tache.id)}"
         title="Supprimer cette tâche"
@@ -563,9 +564,12 @@ export function creerEspaceProjet({ projet, titre, sousTitre, blocEnTete = null 
         }
 
         if (action === 'creer-tache') {
+          // Active d'emblée, comme partout depuis le 13 août : le réglage
+          // backlog / active est masqué, une tâche notée est une tâche à faire.
           const tache = await api.creerTache({
             projet,
             titre: champs.titre.trim(),
+            statut: 'actif',
             echeance: champs.echeance || null,
             // Une heure sans jour ne veut rien dire : elle est ignorée.
             heure: (champs.echeance && champs.heure) || null,

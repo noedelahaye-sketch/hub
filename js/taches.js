@@ -35,10 +35,24 @@ const PRIORITES = {
   4: 'P4 · sans presse',
 };
 
+// Le réglage backlog / active est MASQUÉ, et toute tâche naît active
+// (décision de Noé, 13 août 2026 — « pour le moment »).
+//
+// Ce que ça change : `statut` ne distingue plus que « à faire » et « fait ».
+// Le plafond de 3 actives par projet n'est donc plus jamais exercé — rien dans
+// l'interface n'appelle `changerStatutTache`, et `creerTache` n'a jamais
+// vérifié le plafond. Conséquence directe et assumée : le bloc « Aujourd'hui »
+// du dashboard ne filtre plus, il montre les 9 premières tâches de la liste.
+//
+// La colonne, l'API et le libellé restent : c'est un réglage rangé, pas
+// supprimé. Le jour où le plafond redevient utile, il n'y a qu'à réafficher la
+// pastille — la règle métier, elle, est toujours en place dans `api.js`.
 const STATUTS = {
   backlog: 'Backlog',
   actif: 'Active',
 };
+
+const STATUT_A_LA_CREATION = 'actif';
 
 const FILTRES = { tout: 'Tous les projets', ...PROJETS };
 
@@ -118,17 +132,6 @@ function ligneTache(tache) {
                        ([valeur, libelle]) =>
                          `<option value="${valeur}" ${
                            Number(valeur) === (tache.priorite ?? 4) ? 'selected' : ''
-                         }>${echapper(libelle)}</option>`,
-                     )
-                     .join('')}
-                 </select>
-                 <select class="tache-reglage" data-statut-de="${echapper(tache.id)}"
-                   aria-label="Statut de « ${echapper(tache.titre)} »">
-                   ${Object.entries(STATUTS)
-                     .map(
-                       ([valeur, libelle]) =>
-                         `<option value="${valeur}" ${
-                           valeur === tache.statut ? 'selected' : ''
                          }>${echapper(libelle)}</option>`,
                      )
                      .join('')}
@@ -623,13 +626,10 @@ export default {
       bouton.disabled = true;
 
       try {
-        // Toujours au backlog. Une tâche notée à la volée n'est pas un des trois
-        // chantiers du moment : la promouvoir se fait dans la liste, en
-        // connaissance de la règle des 3 actives.
         const tache = await api.creerTache({
           projet: etat.capture.projet,
           titre,
-          statut: 'backlog',
+          statut: STATUT_A_LA_CREATION,
           echeance: etat.capture.echeance,
           heure: etat.capture.heure,
           priorite: etat.capture.priorite,
@@ -715,27 +715,10 @@ export default {
         return;
       }
 
-      // Passer une tâche en active peut être refusé : la règle des 3 par projet
-      // se tient dans `api.changerStatutTache`, et son message est fait pour
-      // être lu tel quel.
-      const statut = evenement.target.closest('[data-statut-de]');
-      if (statut) {
-        const tache = trouver(statut.dataset.statutDe);
-        if (!tache) return;
-        statut.disabled = true;
-        try {
-          Object.assign(tache, await api.changerStatutTache(tache, statut.value));
-          etat.message = null;
-        } catch (souci) {
-          // Le refus des 3 actives n'est pas une panne : il est prévu, il a son
-          // message, et il n'a rien à faire dans le journal des erreurs. Ce qui
-          // s'y trouve doit toujours mériter d'être regardé.
-          etat.message = souci.message;
-        }
-        // Dans les deux cas on redessine : en cas de refus, le sélecteur doit
-        // revenir à ce que la base dit, pas rester sur ce qu'on a tenté.
-        rendreListe();
-      }
+      // Le réglage de statut est masqué (voir `STATUT_A_LA_CREATION`) : plus
+      // rien n'appelle `changerStatutTache` depuis cette page, et le message de
+      // refus des 3 actives ne peut donc plus se déclencher ici. Les deux
+      // restent en place pour le jour où la pastille revient.
     });
 
     // --- Clics ---

@@ -2887,11 +2887,15 @@ export default {
         const titre = champs.titre.trim();
 
         if (champs.nature === 'tache') {
+          // Active d'emblée, comme partout depuis le 13 août : le réglage
+          // backlog / active est masqué, une tâche notée est une tâche à faire.
           await api.creerTache({
             projet: 'photo',
             titre,
+            statut: 'actif',
             echeance: champs.debut,
             heure: champs.heure || null,
+            priorite: Number(champs.priorite) || 4,
           });
         } else if (champs.nature === 'publication') {
           await api.creerPublication({
