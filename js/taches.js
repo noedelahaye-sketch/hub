@@ -118,32 +118,25 @@ function ligneTache(tache) {
         aria-label="${faite ? 'Rouvrir' : 'Marquer comme faite'} « ${echapper(tache.titre)} »"
         title="${faite ? 'Rouvrir' : 'Marquer comme faite'}"></button>
 
-      <span class="tache-corps">
+      <!-- Toute la ligne rouvre la tuile pour corriger (demande de Noé,
+           13 août 2026). C'est un vrai bouton, pas une ligne qui écoute les
+           clics : au clavier comme au lecteur d'écran, une tâche s'ouvre.
+           La priorité n'est plus écrite ici — le cercle la dit par sa couleur,
+           et deux fois la même information encombre la ligne de service. Elle
+           se corrige dans la tuile, avec le reste. -->
+      <button type="button" class="tache-corps" data-ouvrir="${echapper(tache.id)}"
+        aria-label="Modifier « ${echapper(tache.titre)} »">
         <span class="tache-titre">${echapper(tache.titre)}</span>
         <span class="tache-service">
           ${quand ? `<span class="tache-quand">${DATE_ICONE}${echapper(quand)}</span>` : ''}
-          ${
-            faite
-              ? ''
-              : `<select class="tache-reglage" data-priorite-de="${echapper(tache.id)}"
-                   aria-label="Priorité de « ${echapper(tache.titre)} »">
-                   ${Object.entries(PRIORITES)
-                     .map(
-                       ([valeur, libelle]) =>
-                         `<option value="${valeur}" ${
-                           Number(valeur) === (tache.priorite ?? 4) ? 'selected' : ''
-                         }>${echapper(libelle)}</option>`,
-                     )
-                     .join('')}
-                 </select>`
-          }
           <span class="tache-projet">${echapper(NOMS_PROJETS[tache.projet] ?? tache.projet)}</span>
-          <button type="button" class="lien-discret bouton-mini bouton-retirer"
-            data-supprimer="${echapper(tache.id)}"
-            title="Supprimer cette tâche"
-            aria-label="Supprimer « ${echapper(tache.titre)} »">×</button>
         </span>
-      </span>
+      </button>
+
+      <button type="button" class="lien-discret bouton-mini bouton-retirer"
+        data-supprimer="${echapper(tache.id)}"
+        title="Supprimer cette tâche"
+        aria-label="Supprimer « ${echapper(tache.titre)} »">×</button>
     </li>`;
 }
 
@@ -253,6 +246,10 @@ const DRAPEAU = (rempli, taille = 18) => `<svg viewBox="0 0 24 24"
 
 const PASTILLE_PRIORITE = DRAPEAU(false, 14);
 
+const PLUS = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none"
+  stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+  aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"></path></svg>`;
+
 const FLECHE = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"
   stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
   aria-hidden="true" focusable="false">
@@ -360,8 +357,12 @@ export function construireCapture(capture) {
   // Le « + » reste en place quand la tuile s'ouvre : elle vole au-dessus de la
   // page, elle ne la remplace pas. Sans lui, la liste remonterait d'un cran à
   // chaque ouverture et redescendrait à la fermeture.
-  const bouton = `<button type="button" class="ouvrir-capture" data-ouvrir-capture>
-    <span class="ouvrir-capture-plus" aria-hidden="true">+</span>Ajouter une tâche</button>`;
+  // Le bouton flotte en bas à droite de l'écran, dans un rond plein (demande de
+  // Noé, 13 août 2026). Il ne porte plus son libellé en toutes lettres : à cette
+  // place et sous cette forme, un « + » est compris — le nom passe dans
+  // l'infobulle et dans l'étiquette lue à voix haute.
+  const bouton = `<button type="button" class="ouvrir-capture" data-ouvrir-capture
+    title="Ajouter une tâche" aria-label="Ajouter une tâche">${PLUS}</button>`;
 
   if (!capture.ouverte) return bouton;
 
@@ -430,6 +431,10 @@ export default {
   async monter(section) {
     const captureVierge = (projet) => ({
       ouverte: false,
+      // L'identifiant de la tâche qu'on corrige. `null` = on en crée une.
+      // La tuile est la même dans les deux cas : c'est le seul écran où une
+      // tâche se décrit, autant s'en servir aussi pour la reprendre.
+      id: null,
       titre: '',
       echeance: null,
       heure: null,
@@ -626,6 +631,26 @@ export default {
       bouton.disabled = true;
 
       try {
+        // Corriger une tâche existante : la tuile se referme, le travail est
+        // fini. On n'enchaîne pas des corrections comme on enchaîne des notes.
+        if (etat.capture.id) {
+          const tache = trouver(etat.capture.id);
+          const modifiee = await api.modifierTache(etat.capture.id, {
+            projet: etat.capture.projet,
+            titre,
+            echeance: etat.capture.echeance,
+            heure: etat.capture.heure,
+            priorite: etat.capture.priorite,
+          });
+          Object.assign(tache, modifiee);
+          etat.capture = captureVierge(etat.projet);
+          etat.message = null;
+          rendreCapture();
+          oublierLeClavier();
+          rendreListe();
+          return;
+        }
+
         const tache = await api.creerTache({
           projet: etat.capture.projet,
           titre,
@@ -700,25 +725,9 @@ export default {
         return;
       }
 
-      const priorite = evenement.target.closest('[data-priorite-de]');
-      if (priorite) {
-        const tache = trouver(priorite.dataset.prioriteDe);
-        if (!tache) return;
-        priorite.disabled = true;
-        try {
-          Object.assign(tache, await api.modifierTache(tache.id, { priorite: Number(priorite.value) }));
-          rendreListe();
-        } catch (souci) {
-          console.error('Priorité non enregistrée', souci);
-          priorite.disabled = false;
-        }
-        return;
-      }
-
-      // Le réglage de statut est masqué (voir `STATUT_A_LA_CREATION`) : plus
-      // rien n'appelle `changerStatutTache` depuis cette page, et le message de
-      // refus des 3 actives ne peut donc plus se déclencher ici. Les deux
-      // restent en place pour le jour où la pastille revient.
+      // Les lignes de la liste n'ont plus de réglage en propre : la priorité
+      // comme le reste se corrigent dans la tuile, qu'un appui sur la tâche
+      // rouvre. Le statut, lui, est masqué (voir `STATUT_A_LA_CREATION`).
     });
 
     // --- Clics ---
@@ -733,6 +742,28 @@ export default {
 
       if (evenement.target.closest('[data-ouvrir-capture]')) {
         etat.capture = { ...captureVierge(etat.projet), ouverte: true };
+        rendreCapture({ focus: true });
+        mesurerLeClavier();
+        return;
+      }
+
+      // Une ligne de la liste rouvre la tuile, remplie de ce qu'elle contient.
+      const ouvrirTache = evenement.target.closest('[data-ouvrir]');
+      if (ouvrirTache) {
+        const tache = trouver(ouvrirTache.dataset.ouvrir);
+        if (!tache) return;
+        etat.capture = {
+          ...captureVierge(tache.projet),
+          ouverte: true,
+          id: tache.id,
+          titre: tache.titre,
+          echeance: tache.echeance,
+          // La base rend « 18:00:00 » ; le champ n'en veut que les heures et
+          // les minutes, sans quoi il refuse la valeur et s'affiche vide.
+          heure: tache.heure ? tache.heure.slice(0, 5) : null,
+          projet: tache.projet,
+          priorite: tache.priorite ?? 4,
+        };
         rendreCapture({ focus: true });
         mesurerLeClavier();
         return;

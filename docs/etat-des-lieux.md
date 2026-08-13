@@ -328,6 +328,15 @@ bon**, sans que rien ne le signale — ni erreur, ni boîte vide, il occupait sa
 place. Mesurer `getBoundingClientRect` ne suffit pas : il faut lire l'opacité
 calculée.
 
+**Un piège que `node --check` ne voit pas** (13 août, rencontré deux fois dans
+la même session). Un accent grave dans un commentaire HTML, à l'intérieur d'un
+gabarit JS, **ferme la chaîne** : `pas un \`<li>\` qui écoute` devient
+`"…" < li > "…"`, une comparaison. C'est du JavaScript **valide** — la
+vérification syntaxique passe, et l'erreur ne tombe qu'à l'exécution
+(`li is not defined`), en cassant tout l'écran. Ne pas écrire de nom de balise
+entre accents graves dans un commentaire de gabarit ; et se rappeler que
+`node --check` ne remplace pas un chargement dans le navigateur.
+
 **Un piège de vérification, rencontré deux fois.** Les outils de navigation ne
 rechargent pas le document quand seul le fragment (`#…`) change : le module JS
 et l'état en mémoire restent ceux d'avant l'édition. Deux fausses alertes en
@@ -416,7 +425,23 @@ Todoist (capture à l'appui) : `#taches`, migration `taches_priorite`.
   de survol, et supprimer une tâche deviendrait impossible.
 - **Une liste, pas des tuiles.** `.bloc li` est annulé pour cette liste, barre de
   projet comprise : vingt tâches en vingt cartes feraient un mur, et la barre
-  ferait double emploi avec le nom du projet, déjà coloré à droite.
+  ferait double emploi avec le nom du projet.
+- **Une ligne s'ouvre pour se corriger** (13 août, demande de Noé) : appuyer sur
+  la tâche rouvre la tuile, remplie de ce qu'elle contient, et la flèche
+  enregistre au lieu de créer. C'est un vrai `<button>`, pas une ligne qui écoute
+  les clics — au clavier comme au lecteur d'écran, une tâche s'ouvre. Après une
+  correction la tuile se referme : on n'enchaîne pas des corrections comme on
+  enchaîne des notes.
+- **La ligne de service ne dit plus la priorité**, seulement la date **et le
+  projet, juste à côté d'elle** : le cercle dit déjà la priorité par sa couleur,
+  et les deux autres disent où et quand se situe la tâche — ils vont ensemble.
+  Les sélecteurs en ligne ont disparu avec elle : tout se corrige dans la tuile.
+- **Le bouton « nouvelle tâche » flotte en bas à droite**, dans un rond plein.
+  Il est là où le pouce arrive et ne bouge pas quand la liste défile. Pas de
+  `z-index` : le fond assombri de la tuile est à 40, il passe donc devant dès
+  qu'on ouvre — ce qui est juste, on n'ajoute pas une tâche pendant qu'on en
+  écrit une. L'espace gagne 5,5 rem de marge basse pour que la dernière ligne
+  reste lisible dessous.
 
 **La capture a été refaite le même jour**, sur un deuxième puis un troisième jeu
 de captures de Noé : un « + » ouvre une **tuile volante**, on écrit le nom
@@ -424,19 +449,18 @@ directement, et **une rangée de pastilles** — date, projet, priorité — ouv
 chacune son choix en menu flottant. Le formulaire à six champs empilés a
 disparu.
 
-- **La tuile flotte au-dessus de la page assombrie**, et pas au même endroit
-  selon l'écran (demande de Noé) : **au milieu sur ordinateur** — il n'y a pas
-  de clavier qui monte du bas, et une tuile posée en bas d'un grand écran laisse
-  un vide au-dessus d'elle — **collée en bas sur téléphone**, là où arrive le
-  pouce. Elle réutilise `.fenetre-fond`, le fond des autres fenêtres du hub.
-- **Sur téléphone elle se pose juste au-dessus du clavier.** `visualViewport`
-  est le seul moyen fiable de savoir la place qu'il prend : `innerHeight` ne
-  bouge pas quand le clavier monte, seule la fenêtre VISUELLE rétrécit, et la
-  différence entre les deux EST la hauteur du clavier. Le résultat sort en
-  variable CSS (`--bas-clavier`) plutôt qu'en style direct — c'est la feuille de
-  style qui décide quoi en faire, et sur grand écran elle n'en fait rien.
-  **Vérifié** en posant la variable à 300 px : la tuile monte de 300 px, au
-  pixel près.
+- **La tuile flotte au-dessus de la page assombrie, au milieu de l'écran** —
+  téléphone compris (13 août, demande de Noé ; elle a d'abord été collée en bas
+  sur mobile). Elle réutilise `.fenetre-fond`, le fond des autres fenêtres.
+- **« Au milieu » veut dire au milieu de ce qui reste VISIBLE**, clavier déduit,
+  sinon le milieu se retrouverait derrière lui.
+  `visualViewport` est le seul moyen fiable de connaître la place qu'il prend :
+  `innerHeight` ne bouge pas quand le clavier monte, seule la fenêtre visuelle
+  rétrécit, et la différence entre les deux EST la hauteur du clavier. Le
+  résultat sort en variable CSS (`--bas-clavier`) plutôt qu'en style direct —
+  c'est la feuille de style qui décide quoi en faire.
+  **Vérifié** avec un clavier simulé à 336 px : la tuile se centre à 238 px, le
+  milieu exact de la partie visible, contre 406 sans clavier.
 - **Ni `overflow`, ni `max-height` sur la tuile** : les menus se posent au-dessus
   d'elle, donc hors de sa boîte, et un conteneur de défilement les découperait.
   Piège rencontré en écrivant la règle.

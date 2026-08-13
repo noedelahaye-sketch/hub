@@ -980,13 +980,26 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
   text-decoration-color: var(--bordure);
 }
 
+/* Le corps de la ligne EST le bouton qui rouvre la tuile : toute la tâche est
+   la cible, pas seulement son titre. Il faut donc défaire ce qu'un `<button>`
+   apporte — le centrage, la police du système, le cadre. */
 .tache-corps {
   flex: 1;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 2px;
   min-width: 0;
+  padding: 0;
+  font-family: inherit;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
 }
+
+.tache-corps:hover .tache-titre { color: var(--accent); }
 
 .tache-titre {
   font-size: 1rem;
@@ -1013,12 +1026,12 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
 
 .tache-quand svg { flex: none; }
 
-/* Le projet est poussé à droite, comme dans la capture, et porte sa couleur —
-   celle des tuiles du dashboard, pas une nouvelle. Deux codes couleur sur une
-   même ligne, mais sur deux objets différents : le cercle dit la priorité, le
-   nom dit le projet. Ils ne se disputent rien. */
+/* Le projet se lit À CÔTÉ de la date (demande de Noé, 13 août 2026), et non
+   poussé au bout de la ligne : les deux disent où et quand se situe la tâche,
+   ils vont ensemble. Il porte sa couleur — celle des tuiles du dashboard, pas
+   une nouvelle. Deux codes couleur sur une même ligne, mais sur deux objets
+   différents : le cercle dit la priorité, le nom dit le projet. */
 .tache-projet {
-  margin-left: auto;
   font-weight: 600;
   color: var(--couleur-projet-texte, var(--texte-discret));
 }
@@ -1054,43 +1067,33 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
    reste se pose quand on en a envie, et se voit d'un coup d'œil parce qu'une
    pastille renseignée affiche sa valeur au lieu de son libellé. */
 
+/* Le bouton flotte en bas à droite de l'écran, dans un rond plein (demande de
+   Noé, 13 août 2026) : il est là où le pouce arrive, et il ne bouge pas quand
+   la liste défile. Pas de `z-index` : le fond assombri de la tuile est à 40, il
+   passe donc devant lui dès qu'on ouvre — ce qui est juste, on n'ajoute pas une
+   tâche pendant qu'on en écrit une. */
 .ouvrir-capture {
-  display: flex;
-  align-items: center;
-  gap: var(--espace-8);
-  width: 100%;
-  min-height: 2.75rem;
-  margin: 0 0 var(--espace-16);
+  position: fixed;
+  right: max(var(--marge-cote), env(safe-area-inset-right, 0px));
+  bottom: max(var(--espace-24), env(safe-area-inset-bottom, 0px));
+  display: grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
   padding: 0;
-  font-family: inherit;
-  font-size: 0.9375rem;
-  text-align: left;
-  color: var(--texte-discret);
-  background: none;
+  color: var(--fond-carte);
+  background: var(--accent);
   border: 0;
+  border-radius: var(--rayon-pastille);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 35%);
   cursor: pointer;
 }
 
-.ouvrir-capture:hover { color: var(--texte); }
+.ouvrir-capture:hover { background: color-mix(in srgb, var(--accent) 80%, var(--texte)); }
 
-.ouvrir-capture-plus {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 1.5rem;
-  height: 1.5rem;
-  font-size: 1.125rem;
-  line-height: 1;
-  color: var(--accent);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-pastille);
-}
-
-.ouvrir-capture:hover .ouvrir-capture-plus {
-  color: var(--fond-carte);
-  background: var(--accent);
-  border-color: var(--accent);
-}
+/* La dernière ligne de la liste doit pouvoir se lire et se toucher sans que le
+   bouton flottant lui passe dessus. */
+body[data-espace="taches"] #espace-taches { padding-bottom: 5.5rem; }
 
 /* Le fond des autres fenêtres du hub est à 45 % : assez pour une fiche qu'on
    consulte, pas pour celle-ci. Sur le thème sombre, l'onglet actif et le filtre
@@ -1116,8 +1119,12 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
   position: fixed;
   z-index: 41;
   left: 50%;
-  bottom: calc(var(--bas-clavier, 0px) + max(var(--espace-16), env(safe-area-inset-bottom, 0px)));
-  transform: translateX(-50%);
+  /* Au milieu de l'écran, téléphone compris (demande de Noé, 13 août 2026) —
+     mais au milieu de ce qui RESTE visible : `--bas-clavier` retranche la
+     hauteur du clavier, sinon « le milieu » se retrouverait derrière lui. Sans
+     clavier, c'est le milieu tout court. */
+  top: calc((100vh - var(--bas-clavier, 0px)) / 2);
+  transform: translate(-50%, -50%);
   width: min(34rem, calc(100vw - 2 * var(--espace-16)));
   /* Ni `overflow`, ni `max-height` : les menus se posent AU-DESSUS de la tuile,
      donc hors de sa boîte. Un conteneur de défilement les découperait. Elle n'en
@@ -1128,23 +1135,6 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
   border: 0;
   border-radius: var(--rayon-carte);
   box-shadow: 0 12px 48px rgb(0 0 0 / 45%);
-}
-
-/* Sur ordinateur, au milieu de l'écran (demande de Noé) : il n'y a pas de
-   clavier qui monte du bas, et une tuile posée en bas d'un grand écran laisse
-   un vide au-dessus d'elle. Le `--bas-clavier` ne sert plus à rien ici — un
-   clavier physique ne prend pas de place. */
-@media (min-width: 45rem) {
-  .capture {
-    top: 50%;
-    bottom: auto;
-    transform: translate(-50%, -50%);
-  }
-
-  /* Tuile centrée : la place au-dessus d'elle n'est plus toute la hauteur mais
-     la moitié, moins sa propre demi-hauteur. Sans cette borne, un panneau haut
-     sortirait par le haut sur un écran d'ordinateur peu profond. */
-  .capture-popover { max-height: calc(50vh - 6rem); }
 }
 
 /* Le champ du nom n'a ni cadre ni fond : dans une tuile qui n'existe que pour
@@ -1310,12 +1300,13 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
   left: 0;
   right: 0;
   bottom: calc(100% + var(--espace-8));
-  /* La place réellement disponible AU-DESSUS de la tuile, clavier déduit :
-     la hauteur visible, moins ce que la tuile occupe (une quinzaine de rem avec
-     ses marges). Sans cette borne, le panneau de date débordait par le haut
-     quand le clavier montait — « Aujourd'hui » sortait de l'écran, donc
-     devenait intouchable. Il défile plutôt que de disparaître. */
-  max-height: calc(100vh - var(--bas-clavier, 0px) - 13rem);
+  /* La place réellement disponible AU-DESSUS de la tuile, clavier déduit. La
+     tuile étant centrée dans ce qui reste visible, cette place vaut la MOITIÉ
+     de la hauteur visible, moins sa propre demi-hauteur.
+     Sans cette borne, le panneau de date débordait par le haut dès que le
+     clavier montait — « Aujourd'hui » sortait de l'écran, donc devenait
+     intouchable. Il défile plutôt que de disparaître. */
+  max-height: calc((100vh - var(--bas-clavier, 0px)) / 2 - 5rem);
   overflow-y: auto;
   padding: var(--espace-8);
   background: var(--fond-carte);
