@@ -582,6 +582,35 @@ tâches créées d'affilée. Tout a été défait à chaque fois : la base est r
 **0 tâche et 1 victoire**, son état exact de départ. Zéro erreur en console, pas
 de débordement horizontal à 375 px, cercles à 43 px de cible tactile.
 
+**Le dashboard a été refondu sur trois points** (13 août, demande de Noé) :
+
+- **« Ta semaine » est devenu un aperçu du calendrier hebdomadaire**, à la place
+  de sa liste : la vraie grille, tous projets ET toutes natures confondus —
+  événements, tâches, publications, objectifs, jalons, commandes, relances.
+  C'est `construireGrille` en vue semaine, la même fonction que l'espace
+  Calendrier : **une seule façon de dessiner une semaine dans tout le hub**.
+  `assemblerSemaine`, qui fusionnait trois sources à la main pour ce seul bloc,
+  a disparu — la grille assemble elle-même.
+- **« Aujourd'hui » a pris la forme exacte de l'espace Tâches** : cercle coloré
+  par priorité, titre, date et projet. `ligneTache` est devenue empruntable
+  (`construireLignesTaches`), avec deux réglages en moins ici — pas de tuile
+  pour corriger sur cette page, et supprimer une tâche n'a rien à faire dans un
+  check-in du matin. Le cercle est un bouton et non plus une case : le
+  gestionnaire du dashboard a suivi.
+  Ce qu'il montre : les tâches **à faire aujourd'hui ou qui l'étaient déjà**
+  (`tachesEcheanceJusqua(aujourd'hui)`, sans borne basse — le hub ne compte pas
+  les retards, il ne les efface pas non plus).
+- **Les deux blocs ont été inversés** : « Aujourd'hui » passe avant « Ta
+  semaine ». Ce qui se fait dans la journée vient avant ce qui se prépare, et
+  « Aujourd'hui » n'est plus le bloc discret du bas. `CLAUDE.md` a été mis à
+  jour — c'était son ordre 4/5.
+
+**Mesuré** : le dashboard fait 922 px sur un écran de 812, soit 1,1 écran — la
+règle des « 5 minutes sans scroll excessif » tient. **Vérifié** de bout en bout
+avec une tâche d'essai datée du jour : cochée depuis le dashboard, elle quitte
+« Aujourd'hui », arrive en tête des victoires, la ligne d'annulation s'affiche ;
+« Annuler » la fait revenir et retire la victoire. Puis supprimée.
+
 ---
 
 ## 2 bis bis. Deux bugs trouvés en passant, et réparés

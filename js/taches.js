@@ -106,7 +106,11 @@ function quandLisible(tache) {
   return tache.heure ? `${jour}, ${tache.heure.slice(0, 5)}` : jour;
 }
 
-function ligneTache(tache) {
+// `ouvrable` et `supprimable` sont à faux quand la ligne est empruntée par le
+// dashboard : là-bas il n'y a pas de tuile pour corriger, et supprimer une
+// tâche n'a rien à faire dans un check-in du matin. Le cercle, lui, se coche
+// partout — c'est le geste de la page.
+function ligneTache(tache, { ouvrable = true, supprimable = true } = {}) {
   const faite = tache.statut === 'fait';
   const quand = quandLisible(tache);
 
@@ -124,20 +128,34 @@ function ligneTache(tache) {
            La priorité n'est plus écrite ici — le cercle la dit par sa couleur,
            et deux fois la même information encombre la ligne de service. Elle
            se corrige dans la tuile, avec le reste. -->
-      <button type="button" class="tache-corps" data-ouvrir="${echapper(tache.id)}"
-        aria-label="Modifier « ${echapper(tache.titre)} »">
+      <${ouvrable ? 'button' : 'span'} class="tache-corps"
+        ${ouvrable ? `type="button" data-ouvrir="${echapper(tache.id)}"` : ''}
+        ${ouvrable ? `aria-label="Modifier « ${echapper(tache.titre)} »"` : ''}>
         <span class="tache-titre">${echapper(tache.titre)}</span>
         <span class="tache-service">
           ${quand ? `<span class="tache-quand">${DATE_ICONE}${echapper(quand)}</span>` : ''}
           <span class="tache-projet">${echapper(NOMS_PROJETS[tache.projet] ?? tache.projet)}</span>
         </span>
-      </button>
+      </${ouvrable ? 'button' : 'span'}>
 
-      <button type="button" class="lien-discret bouton-mini bouton-retirer"
-        data-supprimer="${echapper(tache.id)}"
-        title="Supprimer cette tâche"
-        aria-label="Supprimer « ${echapper(tache.titre)} »">×</button>
+      ${
+        supprimable
+          ? `<button type="button" class="lien-discret bouton-mini bouton-retirer"
+               data-supprimer="${echapper(tache.id)}"
+               title="Supprimer cette tâche"
+               aria-label="Supprimer « ${echapper(tache.titre)} »">×</button>`
+          : ''
+      }
     </li>`;
+}
+
+// La même liste, empruntable ailleurs. Le dashboard s'en sert pour son bloc
+// « Aujourd'hui » : une tâche se lit pareil partout, c'est ce qui fait qu'on la
+// reconnaît sans réfléchir.
+export function construireLignesTaches(taches, options = {}) {
+  return `<ul class="liste-taches-pleine">${taches
+    .map((tache) => ligneTache(tache, options))
+    .join('')}</ul>`;
 }
 
 // Exportée pour être vérifiable seule, avec des tâches factices.
@@ -153,7 +171,7 @@ export function construireListe(taches, message = null) {
   const aFaire = trierTaches(taches.filter((tache) => tache.statut !== 'fait'));
   const faites = trierFaites(taches.filter((tache) => tache.statut === 'fait'));
 
-  const bloc = (liste) => `<ul class="liste-taches-pleine">${liste.map(ligneTache).join('')}</ul>`;
+  const bloc = (liste) => construireLignesTaches(liste);
 
   return `
     ${construireMessage(message)}

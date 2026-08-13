@@ -232,8 +232,10 @@ Livrer une commande insère une victoire, comme une tâche terminée.
 1. **En-tête du jour** : « Bonjour Noé », date, et la question du matin (« Comment tu te sens ? », 5 boutons, réponse en un clic) — remplacée par un remerciement discret une fois répondue.
 2. **Victoires récentes** : les 5 dernières, tous projets perso inclus, avec pastille couleur du projet.
 3. **Progression des objectifs** : chaque objectif actif avec sa barre de progression et son échéance. Clic → le pourquoi + les jalons.
-4. **Semaine** : événements et échéances des 7 prochains jours, tous projets.
-5. **Aujourd'hui** (discret, en bas) : les tâches actives (max 9 = 3×3), cochables directement.
+4. **Aujourd'hui** : les tâches à faire aujourd'hui (ou qui l'étaient déjà — pas de borne basse, le hub ne compte pas les retards mais ne les efface pas), max 9, **dans la forme exacte de l'espace Tâches**. Cochables directement.
+5. **Ta semaine** : un **aperçu du calendrier hebdomadaire**, tous projets et toutes natures confondus — la même grille que `#calendrier` en vue semaine.
+
+Ordre 4 avant 5 depuis le 13 août 2026 (demande de Noé) : ce qui se fait dans la journée vient avant ce qui se prépare. « Aujourd'hui » n'est donc plus le bloc discret du bas.
 
 Check-in matinal : le dashboard doit se lire en moins de 5 minutes, sans scroll excessif sur mobile.
 

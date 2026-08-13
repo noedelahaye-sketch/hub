@@ -11,18 +11,17 @@ import * as api from './api.js';
 import {
   versDateISO,
   depuisDateISO,
-  ajouterJours,
   dateLongue,
   echeanceLisible,
-  momentLisible,
   echapper,
   NOMS_PROJETS,
 } from './format.js';
+import { assemblerCalendrier, construireGrille, toutesLesNatures } from './calendrier-commun.js';
+import { construireLignesTaches } from './taches.js';
 
 const PRENOM = 'Noé';
 const MAX_VICTOIRES = 5;
-const MAX_TACHES = 9; // 3 projets x 3 tâches actives
-const JOURS_SEMAINE = 7;
+const MAX_TACHES = 9; // ce qui tient sans que « Aujourd'hui » devienne une liste
 
 // Fenêtre pendant laquelle une tâche cochée par erreur peut être décochée.
 // Même durée que dans les espaces projet.
@@ -172,24 +171,24 @@ function construireObjectif(objectif) {
   `;
 }
 
-export function construireSemaine(elements) {
-  if (!elements.length) {
-    return `<p class="vide">Rien de prévu dans les sept prochains jours.</p>`;
-  }
-
-  const lignes = elements
-    .map(
-      (element) => `
-      <li data-projet="${echapper(element.projet)}">
-        ${enTeteTuile(element.projet, element.quand)}
-        <span class="semaine-titre">${echapper(element.titre)}</span>
-      </li>`,
-    )
-    .join('');
-
-  return `<ul class="liste-semaine">${lignes}</ul>`;
+// La semaine est un APERÇU DU CALENDRIER, plus une liste (demande de Noé,
+// 13 août 2026) : la vraie grille de la semaine, tous projets et toutes natures
+// confondus — événements, tâches, publications, objectifs, jalons, commandes,
+// relances. C'est la même fonction que l'espace Calendrier, avec la même vue
+// « semaine » : une seule façon de dessiner une semaine dans tout le hub.
+//
+// `montrerProjet` colore les barres par projet, puisque tout s'y mélange ici.
+export function construireSemaine(elements, ancre = new Date()) {
+  return construireGrille(elements, toutesLesNatures(), 'semaine', ancre, {
+    montrerProjet: true,
+  });
 }
 
+// Les tâches du jour, dans la forme EXACTE de l'espace Tâches (demande de Noé,
+// 13 août 2026) : cercle coloré par priorité, titre, puis la date et le projet.
+// Une tâche se lit pareil partout, c'est ce qui fait qu'on la reconnaît sans
+// réfléchir. Deux réglages en moins ici : pas de tuile pour corriger sur cette
+// page, et supprimer une tâche n'a rien à faire dans un check-in du matin.
 export function construireTaches(taches, annulation = null) {
   // Une tâche vient d'être cochée : on laisse une porte de sortie quelques
   // secondes, sans rien demander à qui ne s'est pas trompé.
@@ -201,63 +200,13 @@ export function construireTaches(taches, annulation = null) {
     : '';
 
   if (!taches.length) {
-    return `${ligneAnnulation}<p class="vide">Rien d'actif en ce moment.</p>`;
+    return `${ligneAnnulation}<p class="vide">Rien à faire aujourd'hui.</p>`;
   }
 
-  const lignes = taches
-    .slice(0, MAX_TACHES)
-    .map(
-      (tache) => `
-      <li data-projet="${echapper(tache.projet)}">
-        ${enTeteTuile(
-          tache.projet,
-          tache.echeance ? echeanceLisible(depuisDateISO(tache.echeance)) : '',
-        )}
-        <label>
-          <input type="checkbox" data-tache="${echapper(tache.id)}">
-          <span class="tache-titre">${echapper(tache.titre)}</span>
-        </label>
-      </li>`,
-    )
-    .join('');
-
-  return `${ligneAnnulation}<ul class="liste-taches">${lignes}</ul>`;
-}
-
-// Fusionne événements, échéances de tâches et publications programmées en une
-// seule liste ordonnée — la semaine se lit d'un bloc, tous projets confondus.
-export function assemblerSemaine(evenements, taches, publications = [], maintenant = new Date()) {
-  const elements = [
-    ...evenements.map((evenement) => {
-      const date = new Date(evenement.date_debut);
-      return {
-        date,
-        projet: evenement.projet,
-        titre: evenement.titre,
-        quand: momentLisible(date),
-      };
-    }),
-    ...taches.map((tache) => {
-      const date = depuisDateISO(tache.echeance);
-      return {
-        date,
-        projet: tache.projet,
-        titre: tache.titre,
-        quand: `à rendre ${echeanceLisible(date, maintenant)}`,
-      };
-    }),
-    ...publications.map((pub) => {
-      const date = depuisDateISO(pub.date_prevue);
-      return {
-        date,
-        projet: 'photo',
-        titre: pub.titre,
-        quand: `à publier ${echeanceLisible(date, maintenant)}`,
-      };
-    }),
-  ];
-
-  return elements.sort((a, b) => a.date - b.date);
+  return `${ligneAnnulation}${construireLignesTaches(taches.slice(0, MAX_TACHES), {
+    ouvrable: false,
+    supprimable: false,
+  })}`;
 }
 
 // --- Montage ----------------------------------------------------------------
@@ -278,14 +227,18 @@ function squelette() {
       <div id="bloc-objectifs"><p class="vide">…</p></div>
     </section>
 
+    <!-- « Aujourd'hui » passe AVANT « Ta semaine » (demande de Noé, 13 août
+         2026). Ce qui se fait dans la journée vient avant ce qui se prépare —
+         et il n'est plus « discret, en bas » : c'est devenu la liste des
+         tâches, pas un pense-bête. -->
+    <section class="bloc">
+      <h2>Aujourd'hui</h2>
+      <div id="bloc-taches"><p class="vide">…</p></div>
+    </section>
+
     <section class="bloc">
       <h2>Ta semaine</h2>
       <div id="bloc-semaine"><p class="vide">…</p></div>
-    </section>
-
-    <section class="bloc bloc-discret">
-      <h2>Aujourd'hui</h2>
-      <div id="bloc-taches"><p class="vide">…</p></div>
     </section>
   `;
 }
@@ -306,7 +259,6 @@ export default {
     };
     let minuteurAnnulation = null;
     const aujourdhui = versDateISO();
-    const finSemaine = ajouterJours(new Date(), JOURS_SEMAINE);
 
     const cible = (id) => section.querySelector(`#${id}`);
 
@@ -327,20 +279,39 @@ export default {
     }
 
     try {
-      const [humeur, victoires, objectifs, evenements, echeances, taches, publications] =
-        await Promise.all([
-          api.humeurDuJour(aujourdhui),
-          api.dernieresVictoires(MAX_VICTOIRES),
-          api.objectifsActifs(),
-          api.evenementsEntre(new Date().toISOString(), finSemaine.toISOString()),
-          api.tachesEcheanceJusqua(versDateISO(finSemaine)),
-          api.tachesActives(),
-          api.publicationsEntre(aujourdhui, versDateISO(finSemaine)),
-        ]);
+      // La semaine montre TOUT ce qui a une date, comme l'espace Calendrier :
+      // c'est la même grille, elle demande donc les mêmes sources. Les
+      // événements sans borne — une grille de semaine peut afficher un
+      // événement commencé avant elle.
+      const [
+        humeur,
+        victoires,
+        objectifs,
+        evenements,
+        tachesDatees,
+        duJour,
+        publications,
+        commandes,
+        contacts,
+      ] = await Promise.all([
+        api.humeurDuJour(aujourdhui),
+        api.dernieresVictoires(MAX_VICTOIRES),
+        api.objectifsActifs(),
+        api.evenementsTous(),
+        api.tachesDatees(),
+        // « Aujourd'hui » = ce qui est à faire aujourd'hui ou l'était déjà.
+        // Sans borne basse, volontairement : une échéance passée reste visible
+        // plutôt que de disparaître — le hub ne compte pas les retards, il ne
+        // les efface pas non plus.
+        api.tachesEcheanceJusqua(aujourdhui),
+        api.publicationsDatees(),
+        api.commandesToutes(),
+        api.contactsTous(),
+      ]);
 
       etat.humeur = humeur;
       etat.victoires = victoires;
-      etat.taches = taches;
+      etat.taches = duJour;
 
       rendreHumeur();
       rendreVictoires();
@@ -353,7 +324,16 @@ export default {
       );
 
       cible('bloc-semaine').innerHTML = construireSemaine(
-        assemblerSemaine(evenements, echeances, publications),
+        assemblerCalendrier({
+          evenements,
+          taches: tachesDatees,
+          objectifs: objectifs.filter((objectif) => objectif.projet !== 'perso'),
+          publications,
+          commandes: commandes.filter(
+            (commande) => commande.echeance && ['devis', 'en_cours'].includes(commande.statut),
+          ),
+          relances: contacts.filter((contact) => contact.prochaine_action_date),
+        }),
       );
     } catch (erreur) {
       console.error('Chargement du tableau de bord impossible', erreur);
@@ -396,6 +376,30 @@ export default {
       }
 
       if (evenement.target.closest('[data-annuler]')) return annulerDerniereTache();
+
+      // Le cercle de la tâche, comme dans l'espace Tâches : c'est un bouton et
+      // non une case à cocher depuis que les deux listes partagent leur forme.
+      const cercle = evenement.target.closest('[data-cocher]');
+      if (cercle) {
+        const tache = etat.taches.find((candidate) => candidate.id === cercle.dataset.cocher);
+        if (!tache) return;
+
+        cercle.disabled = true;
+        try {
+          // Terminer une tâche crée sa victoire : elle quitte le bas de la page
+          // pour rejoindre le haut.
+          const { tache: faite, victoire } = await api.terminerTache(tache);
+          etat.taches = etat.taches.filter((candidate) => candidate.id !== tache.id);
+          etat.victoires = [victoire, ...etat.victoires];
+          ouvrirAnnulation({ tache: faite, victoire });
+          rendreVictoires();
+          rendreTaches();
+        } catch (erreur) {
+          console.error('Impossible de terminer la tâche', erreur);
+          cercle.disabled = false;
+        }
+        return;
+      }
 
       const retirer = evenement.target.closest('[data-victoire]');
       if (retirer) {
@@ -444,27 +448,6 @@ export default {
         return;
       }
 
-      const case_ = evenement.target.closest('[data-tache]');
-      if (!case_ || !case_.checked) return;
-
-      const tache = etat.taches.find((candidate) => candidate.id === case_.dataset.tache);
-      if (!tache) return;
-
-      case_.disabled = true;
-      try {
-        // Terminer une tâche crée sa victoire : elle quitte le bas de la page
-        // pour rejoindre le haut.
-        const { tache: faite, victoire } = await api.terminerTache(tache);
-        etat.taches = etat.taches.filter((candidate) => candidate.id !== tache.id);
-        etat.victoires = [victoire, ...etat.victoires];
-        ouvrirAnnulation({ tache: faite, victoire });
-        rendreVictoires();
-        rendreTaches();
-      } catch (erreur) {
-        console.error('Impossible de terminer la tâche', erreur);
-        case_.checked = false;
-        case_.disabled = false;
-      }
     });
 
     function ouvrirAnnulation(annulation) {
