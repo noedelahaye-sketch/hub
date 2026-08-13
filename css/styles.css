@@ -2408,6 +2408,28 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
 .cal-semaine .cal-barre-heure { margin-right: 0; }
 
+/* La pile d'un jour, en vue semaine : ce qui n'appartient qu'à lui s'y empile,
+   hors des couloirs de la grille. C'est ce qui rend la hauteur d'une barre
+   indépendante des autres jours.
+
+   Elle ne reçoit AUCUN clic : le vide entre deux barres appartient au jour, et
+   c'est le fond du jour qu'on glisse pour poser quelque chose. Seules les
+   barres reprennent la main. */
+.cal-pile {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  pointer-events: none;
+}
+
+/* Dans une pile, une barre tient toute la largeur : `align-self: start` vaut
+   pour l'axe transversal, et en colonne cet axe est l'horizontale — sans cette
+   ligne, chaque barre se rétracterait à la largeur de son texte. */
+.cal-pile .cal-barre-element {
+  align-self: stretch;
+  pointer-events: auto;
+}
+
 /* Une tâche faite reste au calendrier, barrée et en retrait : c'est le geste de
    Google Agenda, et il dit la bonne chose — le travail a eu lieu, il ne s'efface
    pas. Le titre seul est barré ; le cercle coché, lui, doit rester lisible. */
@@ -2486,6 +2508,14 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 .cal-barre-element {
   position: relative;
   z-index: 1;
+  /* Chaque barre garde SA hauteur (demande de Noé, 13 août 2026). Les barres
+     sont posées dans une grille, et un élément de grille s'étire par défaut à
+     la hauteur de sa ligne : une tâche du lundi, placée dans le même couloir
+     qu'un match de deux heures du mardi, prenait donc la hauteur du match. Deux
+     choses sans aucun rapport, rendues jumelles par la mise en page.
+     `align-self: start` coupe ce lien : la durée d'un événement ne pousse plus
+     que lui. */
+  align-self: start;
   overflow: hidden;
   min-height: 1.25rem;
   margin: 0 3px 2px;
@@ -2527,6 +2557,20 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   opacity: 0.75;
 }
 
+/* Le rond d'une tâche est plus gros que le signe des autres natures (demande
+   de Noé, 13 août 2026) : c'est la seule chose de la barre sur laquelle on
+   appuie, et un rond de 9 px se vise mal au doigt. Il retrouve son aplomb au
+   passage — un cercle centré sur la ligne de base paraît toujours trop haut.
+
+   Cette règle est APRÈS `.cal-signe` volontairement : les deux ont la même
+   spécificité, et c'est l'ordre du fichier qui tranche. Écrite plus haut, elle
+   ne s'appliquait pas. */
+.cal-signe-cochable {
+  font-size: 1.3em;
+  opacity: 0.9;
+  vertical-align: -0.06em;
+}
+
 /* L'heure devant le titre — ce qui remplace la grille horaire. En Geist Mono,
    comme tous les chiffres du hub, et plus pâle que le titre : elle situe, elle
    n'est pas ce qu'on lit. Elle reste visible sur téléphone, où le calendrier
@@ -2541,12 +2585,16 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
 .cal-barre-element.cal-faite .cal-barre-heure { text-decoration: none; }
 
-/* Une tâche est une chose à faire, pas une chose qui arrive : sa barre est
-   creuse là où celle d'un événement est pleine. */
+/* Une tâche est une chose à faire, pas une chose qui arrive : là où
+   l'événement est un aplat, elle n'est qu'un trait de couleur à gauche
+   (demande de Noé, 13 août 2026). Le cadre complet en faisait une étiquette de
+   plus dans une grille déjà pleine de traits ; le trait seul suffit à dire le
+   projet, et la ligne respire. */
 .cal-type-tache {
   background: transparent;
-  border: 1px solid var(--couleur-projet, var(--accent));
-  border-left-width: 3px;
+  border: none;
+  border-left: 3px solid var(--couleur-projet, var(--accent));
+  border-radius: 0 3px 3px 0;
 }
 
 .cal-type-tache:hover {

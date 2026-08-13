@@ -1215,6 +1215,67 @@ l'écran « Créer » du FCH : à voir avec Noé plutôt qu'à trancher seul.
 
 ---
 
+## 2 octies. La barre d'une tâche au calendrier
+
+Trois réglages demandés par Noé le 13 août 2026, tous dans la même phrase.
+
+**Un trait à gauche, plus de cadre.** Une tâche portait un cadre complet et un
+bord gauche épais ; il ne reste que le trait de couleur. L'événement garde son
+aplat — c'est ce qui distingue une chose qui arrive d'une chose à faire, et le
+cadre en faisait une étiquette de plus dans une grille déjà pleine de traits.
+
+**Le rond est plus gros** : 1,3 em au lieu de 0,9. C'est la seule chose de la
+barre sur laquelle on appuie, et un rond de 9 px se vise mal au doigt. La cible
+passe à **29 × 33 px**.
+
+**Piège d'ordre, le quatrième de la journée** : la règle du rond, écrite AVANT
+`.cal-signe`, ne s'appliquait pas — même spécificité, c'est l'ordre du fichier
+qui tranche. Mesuré à 9,28 px alors qu'on demandait 13. Déplacée après, elle
+vaut. *Quand une règle « devrait » marcher et ne marche pas, regarder où elle
+est écrite avant de douter de ce qu'elle dit.*
+
+### La hauteur d'une barre ne dépend plus des autres jours
+
+C'est le vrai morceau. Noé : « ma 1ʳᵉ tâche fait la même taille que l'événement
+du lendemain alors qu'il n'y a aucun lien ». Il avait exactement raison, et la
+cause est une propriété par défaut de CSS : **les barres sont posées dans une
+grille, et un élément de grille s'étire à la hauteur de sa ligne**. Une tâche du
+jeudi placée dans le même couloir qu'un match de deux heures du vendredi prenait
+donc 150 px de haut. Deux choses sans aucun rapport, rendues jumelles par la
+mise en page.
+
+**Deux corrections, et il fallait les deux :**
+
+1. `align-self: start` sur les barres : la hauteur d'une barre est la sienne.
+   Seul, ce réglage laissait un TROU — la tâche gardait sa taille mais restait
+   posée sur une ligne haute de 150 px, et les tâches suivantes commençaient
+   sous le vide.
+2. **Chaque jour empile ce qui lui appartient.** Les barres d'un seul jour
+   sortent de la grille et vont dans une pile par jour (`.cal-pile`), l'une sous
+   l'autre. Restent en couloirs celles qui traversent plusieurs jours : elles
+   n'ont pas le choix, il leur faut des colonnes. Les couloirs sont recalculés
+   entre ces seules barres, sans quoi les piles démarreraient après des rangs
+   vides.
+
+**Deux détails qui se paient sinon :**
+
+- **La pile ne reçoit aucun clic** (`pointer-events: none`, rendus aux barres).
+  Le vide entre deux barres appartient au jour, et c'est le fond du jour qu'on
+  glisse pour poser quelque chose.
+- **Dans une pile, une barre reprend `align-self: stretch`.** En colonne, l'axe
+  transversal est l'horizontale : sans ça, chaque barre se rétractait à la
+  largeur de son texte.
+
+**Vérifié** : en semaine, la tâche du jeudi mesure 42 px et l'événement du
+vendredi 150, dans le même couloir de départ (avant : 150 pour les deux) ; les
+quatre tâches du jeudi s'enchaînent sans trou ; la vue mois est inchangée (aucune
+pile, cinq barres de 19 px) ; le détail d'une barre s'ouvre toujours au clic, le
+glissement sur un jour vide ouvre toujours la tuile, et le rond reste cochable
+dans sa pile. Même vérification sur la semaine de l'accueil et sur les
+calendriers des deux sites.
+
+---
+
 ## 2 septies. Le « + » de Yuno, et l'accueil réordonné
 
 Deux demandes de Noé, le 13 août 2026.

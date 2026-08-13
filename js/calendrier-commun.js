@@ -468,7 +468,7 @@ function hauteurSelonLaDuree(element) {
   return (minutes / 60) * HAUTEUR_PAR_HEURE;
 }
 
-function barre(segment, { montrerProjet = false, proportionnel = false } = {}) {
+function barre(segment, { montrerProjet = false, proportionnel = false, empile = false } = {}) {
   const { element, deborde } = segment;
   const projet = montrerProjet ? ` data-projet="${echapper(element.projet)}"` : '';
   const heure = heureDe(element);
@@ -491,9 +491,13 @@ function barre(segment, { montrerProjet = false, proportionnel = false } = {}) {
     .join(' ');
 
   return `<button type="button" class="${classes}"${projet}
-    style="grid-column: ${segment.depuis + 1} / ${segment.jusqua + 2}; grid-row: ${
-      segment.couloir + 2
-    };${hauteur ? ` min-height: ${hauteur.toFixed(2)}rem;` : ''}"
+    style="${
+      empile
+        ? ''
+        : `grid-column: ${segment.depuis + 1} / ${segment.jusqua + 2}; grid-row: ${
+            segment.couloir + 2
+          };`
+    }${hauteur ? ` min-height: ${hauteur.toFixed(2)}rem;` : ''}"
     ${element.recurrent ? 'data-recurrent' : ''}
     data-element="${echapper(element.type)}:${echapper(element.id)}"
     aria-label="${echapper(
@@ -541,12 +545,60 @@ function ligneDeSemaine(jours, elements, options) {
     for (let index = segment.depuis; index <= segment.jusqua; index += 1) reste[index] += 1;
   }
 
-  const couloirs = visibles.reduce((haut, segment) => Math.max(haut, segment.couloir + 1), 0);
+  // EN SEMAINE, chaque jour empile ce qui lui appartient (demande de Noé,
+  // 13 août 2026). Les couloirs sont des lignes de grille, donc partagées par
+  // les sept jours : un match de deux heures le vendredi rendait haute la ligne
+  // du jeudi, et la tâche du jeudi qui s'y trouvait était étirée à sa taille —
+  // deux choses sans aucun rapport, rendues jumelles par la mise en page.
+  //
+  // Les barres d'UN SEUL JOUR sortent donc de la grille et vont dans une pile
+  // par jour, l'une sous l'autre. Restent en couloirs celles qui traversent
+  // plusieurs jours : elles n'ont pas le choix, il leur faut des colonnes.
+  const empilable = proportionnel;
+  const longs = empilable
+    ? visibles.filter((segment) => segment.jusqua > segment.depuis)
+    : visibles;
+  const courts = empilable ? visibles.filter((segment) => segment.jusqua === segment.depuis) : [];
+
+  // Les couloirs sont recalculés entre les seules barres qui restent : sans ça,
+  // une pile démarrerait après des rangs vides laissés par les barres parties.
+  if (empilable) {
+    const rangees = [];
+    for (const segment of longs) {
+      let rang = rangees.findIndex((rangee) =>
+        rangee.every((autre) => segment.jusqua < autre.depuis || segment.depuis > autre.jusqua),
+      );
+      if (rang < 0) {
+        rangees.push([]);
+        rang = rangees.length - 1;
+      }
+      rangees[rang].push(segment);
+      segment.couloir = rang;
+    }
+  }
+
+  const couloirs = longs.reduce((haut, segment) => Math.max(haut, segment.couloir + 1), 0);
   const aDuReste = reste.some(Boolean);
   // Les lignes de la grille sont déclarées : le numéro, un rang par couloir,
   // l'éventuel « +N », puis un rang souple qui étire les cases jusqu'en bas.
   // Sans lignes explicites, le fond d'un jour ne s'étirerait sur rien.
-  const rangs = couloirs + (aDuReste ? 1 : 0);
+  const rangs = couloirs + (aDuReste ? 1 : 0) + (courts.length ? 1 : 0);
+
+  // Une pile par jour, posée sous les barres qui traversent. Elle ne reçoit
+  // aucun clic elle-même (`pointer-events` en CSS) : le vide entre deux barres
+  // appartient au jour, et c'est lui qu'on glisse pour poser quelque chose.
+  const piles = courts.length
+    ? jours
+        .map((jour, index) => {
+          const dedans = courts.filter((segment) => segment.depuis === index);
+          if (!dedans.length) return '';
+          return `<div class="cal-pile" aria-hidden="false"
+            style="grid-column: ${index + 1}; grid-row: ${couloirs + 2};">${dedans
+              .map((segment) => barre(segment, { montrerProjet, proportionnel, empile: true }))
+              .join('')}</div>`;
+        })
+        .join('')
+    : '';
 
   const fonds = jours
     .map((jour, index) => {
@@ -592,7 +644,9 @@ function ligneDeSemaine(jours, elements, options) {
     .map((nombre, index) =>
       nombre
         ? `<button type="button" class="cal-reste"
-             style="grid-column: ${index + 1}; grid-row: ${couloirs + 2};"
+             style="grid-column: ${index + 1}; grid-row: ${
+               couloirs + (courts.length ? 3 : 2)
+             };"
              data-jour-complet="${versDateISO(jours[index])}"
              aria-label="Voir les ${nombre} autres">+${nombre}</button>`
         : '',
@@ -602,7 +656,8 @@ function ligneDeSemaine(jours, elements, options) {
   return `
     <div class="cal-ligne" style="grid-template-rows: auto repeat(${rangs}, auto) 1fr;">
       ${fonds}${numeros}
-      ${visibles.map((segment) => barre(segment, { montrerProjet, proportionnel })).join('')}
+      ${longs.map((segment) => barre(segment, { montrerProjet, proportionnel })).join('')}
+      ${piles}
       ${restes}
     </div>`;
 }
