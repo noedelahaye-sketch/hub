@@ -1215,6 +1215,57 @@ l'écran « Créer » du FCH : à voir avec Noé plutôt qu'à trancher seul.
 
 ---
 
+## 2 sexies. Trois mouvements de plus, et le fond qui montre sa tête
+
+Demandés par Noé le 13 août 2026, après l'analyse de fluidité.
+
+**Un éclair sous le doigt, sur tous les boutons.** Le `scale(0.97)` disait déjà
+« c'est pressé » ; celui-ci dit « c'est parti », et se voit là où l'enfoncement
+passe inaperçu. Posé une seule fois, dans `app.js`, sur `pointerdown` en
+capture — tous les boutons du hub ET des deux sites vivent dans ce document.
+
+**Il passe par `background-image`, et c'est tout le truc** : une image se pose
+PAR-DESSUS la couleur du bouton au lieu de la remplacer. Un bouton plein garde
+son aplat, un transparent reste transparent, une ligne de liste s'éclaire sans
+changer de nature. Les deux autres voies ont été écartées pour de bonnes
+raisons : `box-shadow` aurait effacé l'ombre portée du « + » flottant pendant
+l'animation, et un pseudo-élément serait entré en collision avec ceux qui
+existent déjà — à commencer par le cercle d'une tâche, qui en a deux.
+
+Le cercle d'une tâche en est exclu : il a désormais mieux à montrer.
+
+**La coche se dessine.** Le disque se remplit (260 ms) pendant qu'un « v » se
+pose dedans (200 ms, à partir de 70 ms), avec un très court rebond à l'arrivée.
+Le « v » est **dessiné, pas écrit** : deux bords d'une boîte vide tournés d'un
+huitième de tour, qui gardent leur épaisseur quelle que soit la police. Disque
+et coche occupent la **même case de grille** — ils se superposent sans qu'on ait
+à positionner quoi que ce soit en absolu, et la cible tactile de 44 px reste
+intacte.
+
+**Et la ligne attend d'être vue avant de partir.** Une tâche cochée quitte sa
+liste dans l'instant : sans pause, l'animation ne serait jamais vue. La pause
+est de **600 ms**, mesurée et non choisie — le dessin prend 270 ms, restent
+330 ms où la coche est simplement là. À 300 ms (le premier réglage), la ligne
+partait à l'instant précis où le « v » finissait : on voyait la coche se FAIRE,
+jamais posée. **Relevé toutes les 100 ms** : coche à 0,56 puis 1,00, disque
+plein à 300 ms, ligne partie à 700 ms. L'écriture, elle, n'attend pas — elle
+part pendant que l'œil finit.
+
+`prefers-reduced-motion` supprime la pause entièrement : qui a demandé moins de
+mouvement ne doit pas attendre pour rien.
+
+**Le fond montre maintenant le haut de la page** (demande de Noé) : ouvrir la
+tuile fige la page **au sommet** et non plus là où l'on était. Derrière le
+voile, on continue de voir « Hub » et les onglets — c'est ce qui dit où l'on est
+en train d'écrire. La première version gardait la position pour que rien ne
+bouge d'un pixel ; mais l'en-tête n'est pas collant, et depuis le milieu d'une
+liste on ne voyait qu'un morceau de liste sombre : l'application semblait vidée
+de sa tête le temps qu'on écrive. Refermer rend sa place à Noé. **Vérifié**
+depuis un défilement de 400 px : en-tête à 0, onglets à 47, et retour à 400 en
+refermant.
+
+---
+
 ## 2 quinquies. La tâche perso — une entorse, bornée
 
 Demandé par Noé le 13 août 2026. Jusque-là, `taches.projet` n'acceptait que les

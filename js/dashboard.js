@@ -26,7 +26,7 @@ import {
 } from './calendrier-commun.js';
 import { construireLignesTaches, trierTaches } from './taches.js';
 import { lireCache, ecrireCache } from './cache-session.js';
-import { marquerLesEntrantes } from './mouvements.js';
+import { marquerLesEntrantes, animerLaCoche } from './mouvements.js';
 
 // Les projets offerts à la création. Les mêmes que dans l'espace Calendrier :
 // 'perso' n'accepte qu'un événement, `fenetreCreation` s'en charge.
@@ -686,6 +686,9 @@ export default {
       if (cercle) {
         const tache = tachesDuJour().find((candidate) => candidate.id === cercle.dataset.cocher);
         if (!tache || ecrituresEnVol.has(tache.id)) return;
+
+        // On voit la coche se poser, PUIS la tâche quitte « Aujourd'hui ».
+        await animerLaCoche(cercle);
 
         const avant = { ...tache };
         const faite = { ...tache, statut: 'fait', date_fait: new Date().toISOString() };

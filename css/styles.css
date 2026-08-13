@@ -36,6 +36,10 @@
   --texte-discret: #6d6862;
   --bordure: #e7e3dd;
   --ombre: 0 1px 2px rgb(35 32 29 / 6%), 0 4px 12px rgb(35 32 29 / 4%);
+  /* La surbrillance d'un bouton qu'on touche. Une encre par-dessus, jamais une
+     couleur à la place : c'est ce qui lui permet de passer sur un aplat
+     d'accent comme sur un bouton transparent. */
+  --surbrillance: rgb(35 32 29 / 13%);
   --erreur: #a4453a;
 
   /* Accent par espace. La valeur courante est posée par [data-espace]. */
@@ -103,6 +107,9 @@ body[data-espace="yuno"] {
   --texte-discret: #8b928b;
   --bordure: #3e3e41;
   --ombre: none;
+  /* Les deux sites sont sombres quel que soit le réglage du téléphone : leur
+     surbrillance est donc claire, même quand le hub est en thème clair. */
+  --surbrillance: rgb(255 255 255 / 15%);
   --erreur: #e0857a;
   --accent: #e8b000;
   --accent-doux: #2f2708;
@@ -185,6 +192,7 @@ body[data-espace="hermitage"] {
   --texte-discret: #b6c5e6;
   --bordure: #3a5cba;
   --ombre: none;
+  --surbrillance: rgb(255 255 255 / 15%);
   --erreur: #ffb0a8;
   --accent: #f2b705;
   --accent-doux: #23499f;
@@ -200,6 +208,7 @@ body[data-espace="hermitage"] {
     --texte-discret: #8b928b;
     --bordure: #34383a;
     --ombre: none;
+    --surbrillance: rgb(255 255 255 / 15%);
     --erreur: #e0857a;
 
     --club-fch-rouge: #ec8079;
@@ -954,14 +963,70 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
   cursor: pointer;
 }
 
+/* Le disque et la coche occupent la MÊME case de grille : ils se superposent
+   sans qu'on ait à positionner quoi que ce soit en absolu, et la cible tactile
+   de 44 px (le rembourrage) reste intacte. */
+.tache-cercle {
+  display: grid;
+  place-items: center;
+}
+
 .tache-cercle::before {
   content: "";
+  grid-area: 1 / 1;
   display: block;
   width: 1.25rem;
   height: 1.25rem;
   border: 2px solid var(--prio, var(--prio-4));
   border-radius: var(--rayon-pastille);
   background: color-mix(in srgb, var(--prio, var(--prio-4)) 14%, transparent);
+  transition: background-color 200ms ease-out;
+}
+
+/* La coche : deux bords d'une boîte vide, tournés d'un huitième de tour. Un
+   « v » dessiné, pas un caractère — il garde son épaisseur et son inclinaison
+   quelle que soit la police, et il prend la couleur du fond de carte pour
+   trancher sur le disque plein. */
+.tache-cercle::after {
+  content: "";
+  grid-area: 1 / 1;
+  width: 0.3rem;
+  height: 0.6rem;
+  margin-bottom: 0.15rem;
+  border: solid var(--fond-carte);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0.4);
+  opacity: 0;
+  transition: opacity 160ms ease-out, transform 160ms ease-out;
+}
+
+.tache-faite .tache-cercle::after {
+  transform: rotate(45deg) scale(1);
+  opacity: 1;
+}
+
+/* Ce qu'on vient de cocher, le temps de le voir. Les listes du hub se
+   redessinent en entier : sans cette classe posée sur le geste, la ligne
+   partirait avant que la coche n'ait eu le temps d'apparaître, et l'animation
+   ne se verrait jamais. Voir `animerLaCoche`, dans js/mouvements.js. */
+.tache-cercle.coche-vient::before {
+  animation: cercle-remplir 260ms ease-out both;
+}
+
+.tache-cercle.coche-vient::after {
+  animation: coche-tracer 200ms 70ms cubic-bezier(0.2, 1.4, 0.5, 1) both;
+}
+
+@keyframes cercle-remplir {
+  from { background-color: color-mix(in srgb, var(--prio, var(--prio-4)) 14%, transparent); }
+  to { background-color: var(--prio, var(--prio-4)); }
+}
+
+/* Un rebond très court à l'arrivée : c'est ce qui fait la différence entre une
+   coche qui apparaît et une coche qu'on pose. */
+@keyframes coche-tracer {
+  from { transform: rotate(45deg) scale(0.2); opacity: 0; }
+  to { transform: rotate(45deg) scale(1); opacity: 1; }
 }
 
 .tache-cercle:hover::before {
@@ -2675,6 +2740,26 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    là où il voyait un remplacement. Elles sont toutes courtes — au-delà de
    200 ms on attend l'animation au lieu de la sentir — et toutes annulées par
    `prefers-reduced-motion`, en bas de ce fichier. */
+
+/* La surbrillance d'un bouton qu'on vient de toucher (demande de Noé, 13 août
+   2026). Le `scale(0.97)` disait déjà « c'est pressé » ; celle-ci dit « c'est
+   parti », et se voit au doigt là où l'enfoncement passe inaperçu.
+
+   Elle passe par `background-image` et non par `background-color` : une image
+   se pose PAR-DESSUS la couleur du bouton au lieu de la remplacer. Un bouton
+   plein garde donc son aplat, un bouton transparent reste transparent, et une
+   ligne de liste s'éclaire sans changer de nature. Ni `box-shadow` (le « + »
+   flottant y perdrait son ombre portée pendant l'animation), ni pseudo-élément
+   (plusieurs boutons ont déjà le leur, à commencer par le cercle d'une tâche).
+
+   Le dégradé va d'une couleur à elle-même : c'est la façon de peindre un aplat
+   avec `background-image`, et deux dégradés de même forme s'interpolent. */
+@keyframes eclair-bouton {
+  from { background-image: linear-gradient(var(--surbrillance), var(--surbrillance)); }
+  to { background-image: linear-gradient(transparent, transparent); }
+}
+
+.eclair { animation: eclair-bouton 320ms ease-out; }
 
 /* L'arrivée sur un espace. Le pendant, dans le hub, du `vue-entre` de Yuno. */
 @keyframes espace-entree {

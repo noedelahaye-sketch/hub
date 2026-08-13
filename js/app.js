@@ -184,7 +184,15 @@ let defilementFige = 0;
 function figerLeFond() {
   if (document.body.classList.contains('fond-fige')) return;
   defilementFige = window.scrollY;
-  document.body.style.top = `-${defilementFige}px`;
+  // LE HAUT DE LA PAGE, et pas l'endroit où l'on était (demande de Noé,
+  // 13 août 2026). Derrière la tuile on doit continuer à voir « Hub » et les
+  // onglets : c'est ce qui dit où l'on est en train d'écrire.
+  //
+  // La première version gardait la position (`top: -Ypx`) pour que le fond ne
+  // bouge pas d'un pixel. Mais l'en-tête n'est pas collant : depuis le milieu
+  // d'une liste, geler sur place ne montrait qu'un morceau de liste sombre, et
+  // l'application semblait vidée de sa tête le temps qu'on écrive.
+  document.body.style.top = '0px';
   document.body.classList.add('fond-fige');
 }
 
@@ -192,6 +200,7 @@ function libererLeFond() {
   if (!document.body.classList.contains('fond-fige')) return;
   document.body.classList.remove('fond-fige');
   document.body.style.top = '';
+  // On rend sa place à Noé : refermer la tuile le ramène là où il lisait.
   window.scrollTo(0, defilementFige);
 }
 
@@ -212,6 +221,40 @@ new MutationObserver(() => {
   attributes: true,
   attributeFilter: ['hidden'],
 });
+
+// --- La surbrillance d'un bouton -----------------------------------------
+//
+// Un éclair très court sous le doigt (demande de Noé, 13 août 2026). Posé ici,
+// une fois, plutôt que dans chaque écran : tous les boutons du hub et des deux
+// sites vivent dans ce document, et un effet de cette nature n'a pas à être
+// rebranché à chaque espace.
+//
+// `pointerdown` et non `click` : c'est l'instant du toucher qui doit répondre,
+// pas celui du relâchement. Les pastilles de la tuile annulent leur
+// `pointerdown` pour ne pas voler le focus — `preventDefault` n'empêche pas cet
+// écouteur-ci de s'exécuter, elles s'éclairent donc comme les autres.
+document.addEventListener(
+  'pointerdown',
+  (evenement) => {
+    // Le cercle d'une tâche a sa propre animation, plus parlante : la coche qui
+    // se dessine. Deux effets sur le même geste se gêneraient.
+    // `nav a` en plus des boutons : les onglets du hub et ceux des deux sites
+    // sont des liens, mais ils se touchent comme des boutons. Les trois barres
+    // sont des `<nav>`, la règle vaut donc pour les trois d'un coup.
+    const bouton = evenement.target.closest('button, [role="button"], nav a');
+    if (!bouton || bouton.classList.contains('tache-cercle') || bouton.disabled) return;
+
+    bouton.classList.remove('eclair');
+    void bouton.offsetWidth; // relance l'animation sur deux appuis rapprochés
+    bouton.classList.add('eclair');
+    bouton.addEventListener('animationend', () => bouton.classList.remove('eclair'), {
+      once: true,
+    });
+  },
+  // En capture : un écouteur qui appelle `stopPropagation` plus bas dans
+  // l'arbre — le calendrier en a — priverait sinon son bouton de l'effet.
+  true,
+);
 
 function afficherEspace() {
   const route = analyserAdresse(location.hash);

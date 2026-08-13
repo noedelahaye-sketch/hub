@@ -18,7 +18,7 @@
 
 import * as api from './api.js';
 import { depuisDateISO, echeanceLisible, versDateISO, ajouterJours, echapper, NOMS_PROJETS } from './format.js';
-import { marquerLesEntrantes } from './mouvements.js';
+import { marquerLesEntrantes, animerLaCoche } from './mouvements.js';
 import { ajouterAussitot, retirerAussitot } from './ecriture.js';
 
 // Perso en fait partie depuis le 13 août 2026 (demande de Noé). C'est la seule
@@ -1014,6 +1014,11 @@ export default {
 
         const avant = { ...tache };
         const versFait = tache.statut !== 'fait';
+
+        // On voit la coche se poser, PUIS la ligne s'en va. L'écriture, elle,
+        // n'attend pas : elle part juste après, pendant que l'œil finit.
+        if (versFait) await animerLaCoche(cercle);
+
         Object.assign(
           tache,
           versFait
