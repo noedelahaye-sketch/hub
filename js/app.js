@@ -342,3 +342,17 @@ try {
 }
 
 surChangementSession(appliquerSession);
+
+// La coquille se met en cache pour les prochaines ouvertures : un service
+// worker sert HTML, CSS, JS et polices depuis l'appareil (voir sw.js — les
+// données Supabase, elles, ne passent jamais par lui). Enregistré après le
+// démarrage pour ne rien lui coûter ; s'il échoue (navigation privée, vieux
+// navigateur), le hub marche exactement comme avant.
+//
+// `import.meta.url` et pas un chemin nu : depuis un module, une adresse
+// relative se résout contre le module — `'sw.js'` chercherait `js/sw.js`.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker
+    .register(new URL('../sw.js', import.meta.url))
+    .catch((erreur) => console.error('Service worker non enregistré', erreur));
+}

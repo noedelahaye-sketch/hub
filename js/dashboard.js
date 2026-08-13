@@ -356,6 +356,11 @@ export default {
     let rafraichirLaCapture = null;
     const aujourdhui = versDateISO();
 
+    // Les tâches dont une écriture optimiste est en vol : l'écran a déjà
+    // changé, le serveur pas encore. L'identifiant y reste le temps de
+    // l'aller-retour, pour qu'un second appui n'envoie pas d'ordre contraire.
+    const ecrituresEnVol = new Set();
+
     const cible = (id) => section.querySelector(`#${id}`);
 
     // --- Le chargement, morceau par morceau ---
@@ -477,6 +482,17 @@ export default {
              <button type="button" class="lien-discret"
                data-action="reessayer">Réessayer</button></p>`
         : '';
+    }
+
+    // Une écriture optimiste a échoué : l'écran est revenu en arrière, et il
+    // faut le dire — un geste défait en silence ressemblerait à un bug. La
+    // ligne s'efface seule, puis `rendreEchec` reprend la main sur le bloc.
+    let minuteurSignal = null;
+    function signalerEcriture() {
+      cible('bloc-erreur').innerHTML =
+        `<p class="vide">Ça n'a pas pu être enregistré — vérifie ta connexion.</p>`;
+      clearTimeout(minuteurSignal);
+      minuteurSignal = setTimeout(rendreEchec, 6000);
     }
 
     // Ce que l'arrivée d'une source redessine — et rien d'autre. Redessiner
@@ -631,34 +647,88 @@ export default {
 
       // Le cercle de la tâche, comme dans l'espace Tâches : c'est un bouton et
       // non une case à cocher depuis que les deux listes partagent leur forme.
+      //
+      // L'ÉCRAN D'ABORD, LE RÉSEAU ENSUITE (optimiste) : la tâche quitte
+      // « Aujourd'hui », se barre dans la semaine, la victoire monte en tête et
+      // la ligne d'annulation s'affiche au moment où le doigt touche. Les deux
+      // requêtes partent en arrière-plan. Avant, le geste du matin attendait
+      // leur aller-retour — 300 à 800 ms de cercle grisé sur téléphone.
       const cercle = evenement.target.closest('[data-cocher]');
       if (cercle) {
         const tache = tachesDuJour().find((candidate) => candidate.id === cercle.dataset.cocher);
-        if (!tache) return;
+        if (!tache || ecrituresEnVol.has(tache.id)) return;
 
-        cercle.disabled = true;
-        try {
-          // Terminer une tâche crée sa victoire : elle quitte le bas de la page
-          // pour rejoindre le haut.
-          const { tache: faite, victoire } = await api.terminerTache(tache);
-          remplacerTache(faite);
-          etat.victoires = [victoire, ...etat.victoires];
-          ouvrirAnnulation({ tache: faite, victoire });
-          rendreVictoires();
-          rendreTaches();
-          // La tâche est datée : elle est aussi dans la semaine, où elle
-          // devient barrée. Sans ce rendu, la même tâche s'y afficherait encore
-          // à faire deux blocs plus bas.
-          rendreSemaine();
-        } catch (erreur) {
-          console.error('Impossible de terminer la tâche', erreur);
-          cercle.disabled = false;
-        }
+        const avant = { ...tache };
+        const faite = { ...tache, statut: 'fait', date_fait: new Date().toISOString() };
+        // La victoire n'a pas encore d'identifiant serveur : celui-ci est
+        // provisoire, remplacé par le vrai dès que l'écriture répond.
+        const provisoire = {
+          id: `provisoire-${tache.id}`,
+          projet: tache.projet,
+          titre: tache.titre,
+          date: aujourdhui,
+          source: 'tache',
+          source_id: tache.id,
+        };
+        const annulation = {
+          tache: faite,
+          victoire: provisoire,
+          ecriture: null,
+          confirmee: false,
+          annulee: false,
+        };
+
+        remplacerTache(faite);
+        etat.victoires = [provisoire, ...etat.victoires];
+        ouvrirAnnulation(annulation);
+        rendreVictoires();
+        rendreTaches();
+        // La tâche est datée : elle est aussi dans la semaine, où elle devient
+        // barrée. Sans ce rendu, la même tâche s'y afficherait encore à faire
+        // deux blocs plus bas.
+        rendreSemaine();
+
+        ecrituresEnVol.add(tache.id);
+        annulation.ecriture = (async () => {
+          try {
+            // `avant` et pas `faite` : l'API doit recevoir la tâche telle
+            // qu'elle était, pas l'état que l'écran a pris de l'avance.
+            const { tache: confirmee, victoire } = await api.terminerTache(avant);
+            remplacerTache(confirmee);
+            annulation.tache = confirmee;
+            annulation.victoire = victoire;
+            annulation.confirmee = true;
+            etat.victoires = etat.victoires.map((v) =>
+              v.id === provisoire.id ? victoire : v,
+            );
+            // La croix « retirer » porte maintenant le vrai identifiant.
+            rendreVictoires();
+          } catch (erreur) {
+            console.error('Impossible de terminer la tâche', erreur);
+            remplacerTache(avant);
+            etat.victoires = etat.victoires.filter((v) => v.id !== provisoire.id);
+            if (etat.annulation === annulation) {
+              clearTimeout(minuteurAnnulation);
+              etat.annulation = null;
+            }
+            rendreVictoires();
+            rendreTaches();
+            rendreSemaine();
+            // Sauf si Noé avait déjà annulé : l'écran montre alors exactement
+            // ce qu'il voulait — une tâche active — et il n'y a rien à signaler.
+            if (!annulation.annulee) signalerEcriture();
+          } finally {
+            ecrituresEnVol.delete(tache.id);
+          }
+        })();
         return;
       }
 
       const retirer = evenement.target.closest('[data-victoire]');
       if (retirer) {
+        // Une victoire encore provisoire n'a pas d'identifiant serveur : sa
+        // croix attend la confirmation — une seconde au plus.
+        if (retirer.dataset.victoire.startsWith('provisoire-')) return;
         retirer.disabled = true;
         try {
           await api.supprimerVictoire(retirer.dataset.victoire);
@@ -730,19 +800,38 @@ export default {
 
       clearTimeout(minuteurAnnulation);
       etat.annulation = null;
-      try {
-        // La victoire part d'abord : si la suite échoue, il vaut mieux une
-        // tâche encore cochée qu'une victoire qui n'a pas eu lieu.
-        await api.supprimerVictoire(annulation.victoire.id);
-        const tache = await api.rouvrirTache(annulation.tache);
-        etat.victoires = etat.victoires.filter((v) => v.id !== annulation.victoire.id);
-        remplacerTache(tache);
-      } catch (erreur) {
-        console.error('Annulation impossible', erreur);
-      }
+      annulation.annulee = true;
+
+      // L'écran revient tout de suite ; le serveur suit.
+      remplacerTache({ ...annulation.tache, statut: 'actif', date_fait: null });
+      etat.victoires = etat.victoires.filter((v) => v.id !== annulation.victoire.id);
       rendreTaches();
       rendreVictoires();
       rendreSemaine();
+
+      try {
+        // La coche doit avoir fini de s'écrire avant d'être défaite. Cette
+        // promesse ne rejette jamais — l'échec se lit dans `confirmee`, et
+        // s'il n'y a rien eu d'écrit, il n'y a rien à défaire.
+        await annulation.ecriture;
+        if (!annulation.confirmee) return;
+        // La victoire part d'abord : si la suite échoue, il vaut mieux une
+        // tâche encore cochée qu'une victoire qui n'a pas eu lieu.
+        await api.supprimerVictoire(annulation.victoire.id);
+        remplacerTache(await api.rouvrirTache(annulation.tache));
+      } catch (erreur) {
+        console.error('Annulation impossible', erreur);
+        // Le serveur dit « fait » : l'écran y revient plutôt que de mentir.
+        remplacerTache(annulation.tache);
+        etat.victoires = [
+          annulation.victoire,
+          ...etat.victoires.filter((v) => v.id !== annulation.victoire.id),
+        ];
+        rendreTaches();
+        rendreVictoires();
+        rendreSemaine();
+        signalerEcriture();
+      }
     }
 
     // Le cache est écrit à chaque chargement, mais l'état bouge aussi entre

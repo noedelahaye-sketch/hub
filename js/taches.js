@@ -500,6 +500,11 @@ export default {
 
     const etat = { taches: [], projet: 'tout', message: null, capture: captureVierge('tout') };
 
+    // Les tâches dont une écriture optimiste est en vol : l'écran a déjà
+    // changé, le serveur pas encore. Un identifiant y reste le temps de
+    // l'aller-retour, pour qu'un second appui n'envoie pas d'ordre contraire.
+    const ecrituresEnVol = new Set();
+
     section.innerHTML = squelette(etat);
 
     const rendreListe = () => {
@@ -967,23 +972,49 @@ export default {
 
       // Le cercle coche et décoche. Terminer crée une victoire ; rouvrir la
       // retire, sinon le dashboard garderait la trace d'un travail défait.
+      //
+      // L'ÉCRAN D'ABORD, LE RÉSEAU ENSUITE (optimiste). La tâche change et la
+      // liste se redessine au moment où le doigt touche ; l'écriture part en
+      // arrière-plan. Avant, le geste attendait deux requêtes en séquence —
+      // 300 à 800 ms de cercle grisé sur téléphone. Si l'écriture échoue
+      // (rare), la tâche revient et la règle le dit en ligne.
       const cercle = evenement.target.closest('[data-cocher]');
       if (cercle) {
         const tache = trouver(cercle.dataset.cocher);
-        if (!tache) return;
-        cercle.disabled = true;
+        // Une écriture à la fois par tâche : un second appui pendant qu'elle
+        // vole ferait se croiser deux ordres contraires sur la même ligne.
+        if (!tache || ecrituresEnVol.has(tache.id)) return;
+
+        const avant = { ...tache };
+        const versFait = tache.statut !== 'fait';
+        Object.assign(
+          tache,
+          versFait
+            ? { statut: 'fait', date_fait: new Date().toISOString() }
+            : { statut: 'actif', date_fait: null },
+        );
+        rendreListe();
+
+        ecrituresEnVol.add(tache.id);
         try {
-          if (tache.statut === 'fait') {
-            Object.assign(tache, await api.rouvrirTache(tache));
-            await api.supprimerVictoireDeLaTache(tache.id);
-          } else {
-            const { tache: faite } = await api.terminerTache(tache);
+          if (versFait) {
+            // `avant` et pas `tache` : l'API relit le statut pour savoir quoi
+            // faire, elle doit recevoir la tâche telle qu'elle était.
+            const { tache: faite } = await api.terminerTache(avant);
             Object.assign(tache, faite);
+          } else {
+            Object.assign(tache, await api.rouvrirTache(avant));
+            await api.supprimerVictoireDeLaTache(tache.id);
           }
-          rendreListe();
+          // Pas de nouveau rendu : l'écran a déjà raison, le serveur n'a fait
+          // que confirmer (à l'horodatage près).
         } catch (souci) {
           console.error('Tâche non mise à jour', souci);
-          cercle.disabled = false;
+          Object.assign(tache, avant);
+          etat.message = "Ça n'a pas pu être enregistré — la tâche est revenue.";
+          rendreListe();
+        } finally {
+          ecrituresEnVol.delete(tache.id);
         }
         return;
       }

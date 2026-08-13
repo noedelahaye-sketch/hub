@@ -947,6 +947,98 @@ suivante, avant que les modules ne tournent.
 
 ---
 
+## 2 ter ter. La fluidité — l'écran avant le réseau, la coquille avant tout
+
+Deux chantiers du 13 août, après une analyse demandée par Noé sur « la fluidité
+réelle et visuelle », surtout sur téléphone. Ce sont les deux qui changent la
+*nature* de la sensation ; le reste de l'analyse (fondu de navigation, squelette
+du calendrier, insertion locale après création) attend son tour — voir § 4 bis.
+
+### 1. Cocher une tâche ne passe plus par le réseau
+
+**Le geste du matin attendait deux requêtes en séquence** : l'update de la
+tâche, puis l'insertion de la victoire. Sur téléphone, 300 à 800 ms de cercle
+grisé avant que rien ne bouge. C'était le motif de TOUTES les écritures du hub —
+désactiver le bouton, attendre, redessiner.
+
+**L'écran change maintenant au moment du doigt** ; l'écriture part derrière. Sur
+l'accueil comme dans l'espace Tâches. Mesuré : **3 et 4 ms** entre le clic et la
+liste redessinée, réseau volontairement ralenti d'1,5 s — la tâche quitte
+« Aujourd'hui », se barre dans la semaine, la victoire monte en tête et la ligne
+d'annulation s'affiche, tout cela avant que la première requête ne réponde.
+
+**Ce qui rend la chose tenable, c'est le retour en arrière.** Si l'écriture
+échoue, l'état d'avant est remis et une ligne le dit — « Ça n'a pas pu être
+enregistré ». Sans ce filet, l'affichage optimiste est un mensonge.
+
+Cinq points de conception, chacun payé par un cas de figure :
+
+- **`avant` et pas l'objet mis à jour.** `api.terminerTache` relit le statut
+  pour décider quoi faire : lui passer l'état que l'écran a pris de l'avance,
+  c'est lui faire terminer une tâche déjà « faite ».
+- **Une écriture à la fois par tâche** (`ecrituresEnVol`). Deux appuis pendant
+  le vol enverraient deux ordres contraires sur la même ligne, et c'est le
+  dernier arrivé qui gagnerait — pas forcément le dernier voulu.
+- **La victoire a un identifiant provisoire** (`provisoire-<id>`), remplacé par
+  le vrai quand l'écriture répond. Sa croix « retirer » refuse de partir tant
+  qu'elle le porte : supprimer une victoire qui n'existe pas encore côté serveur
+  n'a pas de sens. L'attente est d'une seconde au plus.
+- **Annuler attend l'écriture, sans jamais faire attendre l'écran.**
+  `annulation.ecriture` est la promesse de la coche ; annuler la rejoue à
+  l'envers seulement si elle a abouti (`confirmee`). Annuler pendant le vol ne
+  fait donc rien de plus : il n'y a rien à défaire.
+- **Une coche annulée puis échouée ne dit rien.** Si l'écriture échoue APRÈS que
+  Noé a annulé, l'écran montre exactement ce qu'il voulait — une tâche active —
+  et un message d'erreur serait du bruit. `annulation.annulee` sert à ça.
+
+**Vérifié, réseau simulé lent puis coupé** : le cas nominal (l'identifiant
+provisoire devient réel), le double appui (ignoré), l'annulation en plein vol
+(rien ne se défait, la tâche reste active — relu en SQL), l'échec pur (tout
+revient : liste, semaine, victoires, et la ligne le dit), et le décochage depuis
+l'espace Tâches. Base relue en SQL à la fin : **4 tâches, 2 victoires**, son
+état de départ.
+
+**Ce qui n'est PAS encore optimiste**, et pourrait l'être si ça se ressent :
+poser une tâche depuis la tuile, l'humeur du matin, retirer une victoire,
+supprimer une tâche. La coche était le geste le plus fréquent — c'est
+l'échantillon, comme le veut la méthode.
+
+### 2. La coquille en cache — un service worker
+
+`sw.js`, à la racine, enregistré par `app.js` après le démarrage. HTML, CSS, JS,
+polices et icônes sont servis depuis l'appareil ; l'ouverture ne dépend plus du
+réseau, et les trois applications se lancent hors ligne.
+
+- **Les données ne passent jamais par lui.** Tout ce qui va vers Supabase
+  (tables, auth, photos signées) et vers l'API GitHub est laissé au réseau, par
+  un simple test d'origine. Un service worker qui garderait des données
+  deviendrait une seconde source de vérité — exactement ce que le cache de
+  session s'interdit déjà (§ 2 ter).
+- **La stratégie s'inverse en local.** En production : le cache d'abord, la
+  version fraîche en arrière-plan pour l'ouverture suivante. Sur `localhost` :
+  le réseau d'abord, le cache en secours. Sans cette inversion, chaque session
+  de travail verrait une fois ses modifications ignorées — le piège classique.
+- **Le prix, assumé** : après un déploiement, le téléphone peut montrer UNE FOIS
+  la version précédente. La fraîche se télécharge pendant ce temps et sera là à
+  l'ouverture d'après. C'est le même marché que le cache de session, à l'échelle
+  du code. En cas de doute sur un déploiement, fermer et rouvrir deux fois.
+- **Le cache porte un numéro** (`hub-coquille-v1`) : le changer jette l'ancien à
+  l'activation. À incrémenter si un jour le contenu de la coquille change de
+  nature.
+- **Le chemin est calculé, pas écrit** : `new URL('../sw.js', import.meta.url)`.
+  Depuis un module, `'sw.js'` chercherait `js/sw.js` — et sur GitHub Pages le
+  site vit sous `/hub/`, donc rien ne peut être écrit en absolu.
+
+**Vérifié en pilotant un vrai Chrome** (CDP par le WebSocket natif de Node, sans
+dépendance — les outils du navigateur intégré ne savent pas enregistrer un
+service worker) : profil neuf, `index.html` ouvert une fois → enregistré,
+**activé, 49 entrées en cache** dont le module Supabase. Puis réseau coupé :
+`index.html` s'ouvre entier — titre, écran de connexion, les 7 onglets, et
+Instrument Sans (donc les polices viennent bien du cache) —, `yuno.html` et
+`hermitage.html` aussi, chacune avec son titre et son `data-entree`.
+
+---
+
 ## 2 quater. L'espace Tâches et la tuile de capture — la session du 13 août
 
 Le morceau le plus lourd de la journée, et celui qui a le plus bougé : six
@@ -1087,22 +1179,33 @@ Dans cet ordre, du plus rentable au moins pressé.
    ce que « Aujourd'hui » montre (les tâches datées du jour ou avant, jamais les
    sans-date), et le tri qui fait passer une tâche datée avant une tâche sans
    date à priorité égale.
-2. **Porter le démarrage aux espaces qui restent.** Yuno et le dashboard l'ont
+2. **Le reste de l'analyse de fluidité** (§ 2 ter ter), dans cet ordre : rendre
+   optimistes les autres écritures — poser une tâche depuis la tuile, l'humeur,
+   retirer une victoire, supprimer ; **insérer localement** ce qu'on vient de
+   créer au lieu de relancer les huit requêtes du dashboard ; un **fondu de
+   navigation** dans le hub (~120 ms, le site Yuno en a un, le hub n'a rien) et
+   une transition sur l'apparition et le départ d'une ligne de tâche. Restent
+   deux détails : **auto-héberger supabase-js** (aujourd'hui appelé à jsdelivr,
+   entorse à la règle « aucune dépendance externe » qui vaut pour les polices)
+   et **précharger les deux polices** du premier écran.
+3. **Porter le démarrage aux espaces qui restent.** Yuno et le dashboard l'ont
    (§ 2 ter et § 2 ter bis) ; `perso.js`, `espace-projet.js`, `fch.js`,
    `photo.js`, `hermitage.js` et `calendrier.js` ne l'ont pas. Aucun n'est
    pressé — ce ne sont pas eux qu'on ouvre le matin. `calendrier.js` serait le
    suivant : c'est le deuxième écran le plus visité, et il n'a même pas de
    squelette.
-3. **Vérifier la tuile sur le vrai iPhone.** Tout a été mesuré avec un clavier
+4. **Vérifier la tuile sur le vrai iPhone.** Tout a été mesuré avec un clavier
    *simulé* (`--bas-clavier` posée à la main) : la montée de 336 px, les 0 px de
    déplacement entre pastilles, le fond figé. Le comportement réel de Safari
    avec un vrai clavier reste à confirmer — c'est le seul point de la session
-   dont la vérification est une imitation, pas la chose même.
-4. **Vérifier Canela sur le téléphone.** Le `local("Canela-…")` marche sur le
+   dont la vérification est une imitation, pas la chose même. Même occasion :
+   **le service worker sur iOS**, où une application ajoutée à l'écran d'accueil
+   se comporte différemment d'un onglet.
+5. **Vérifier Canela sur le téléphone.** Le `local("Canela-…")` marche sur le
    Mac ; iOS ne fournit probablement pas la police. Le test tient en un
    regard : ouvrir Créer, regarder « À venir » — si le `À` est droit au lieu
    d'être incliné, c'est la police de secours.
-5. **Un espace n'est monté qu'une fois, et se relit au retour.** C'est neuf
+6. **Un espace n'est monté qu'une fois, et se relit au retour.** C'est neuf
    (§ 2 quater). Si un écran affiche quelque chose de périmé, c'est que son
    `rafraichir()` manque ou oublie un bloc — chercher là avant d'accuser le
    cache de session, qui ne vit que dans Yuno et sur l'accueil.
@@ -1240,6 +1343,7 @@ restaurée par le routeur. Ne pas « simplifier » ces id.
 | `js/taches.js` | L'espace Tâches : la liste, la tuile de capture, la ligne de tâche empruntée par le dashboard |
 | `js/dashboard.js` | L'accueil : humeur, victoires, objectifs, les tâches du jour, la semaine du calendrier |
 | `js/cache-session.js` | Le dernier état d'un espace, gardé le temps de l'onglet (§ 2 ter) |
+| `sw.js` | La coquille en cache — HTML, CSS, JS, polices. **Jamais les données** (§ 2 ter ter) |
 | `js/api.js` | **Tous** les appels Supabase, une fonction par usage |
 | `js/espace-projet.js` | La fabrique d'espace projet (formation) + gabarits partagés |
 | `js/publications.js` | Le calendrier éditorial, partagé Yuno/FCH — ce qui diffère passe en paramètre (cycle, checklist, piliers) |
