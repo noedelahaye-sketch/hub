@@ -119,6 +119,12 @@ d'idée, et dans la fenêtre « Poser au calendrier ».
 **« Quand » remplace « Échéance »** pour une tâche — une échéance est une date
 qu'on subit, c'est le mot des objectifs et des commandes.
 
+**Tâches est le deuxième onglet du hub**, entre Accueil et Perso (13 août,
+demande de Noé) : c'est l'écran où l'on va le plus souvent après le check-in, il
+n'avait pas à se gagner au bout de la rangée. Il fermait la rangée avec le
+calendrier au titre des « vues transverses » — un raisonnement juste sur le
+papier, démenti par l'usage. Le calendrier, lui, n'a pas bougé.
+
 **L'onglet Calendrier est une icône, en dernière place** (13 août, demande de
 Noé), dans les trois barres — le hub, Yuno et le FCH. Il ne nomme pas un lieu,
 il ouvre la vue qui les traverse tous. **Dernier, mais DANS la rangée** : une
@@ -858,11 +864,79 @@ moindre `await`**, le comptage des requêtes au `fetch` intercepté, le parcours
 des neuf vues avec relevé des écrans vides et des repères (45 contacts, 15
 idées, 42 cases de calendrier, 5 lignes de carnet), et zéro erreur en console.
 
-**Ce qu'il reste à faire** : `dashboard.js`, `perso.js`, `espace-projet.js`,
-`fch.js`, `photo.js` font déjà le chrome d'abord, mais **aucun n'a le cache ni
-le chargement par vue**. `hermitage.js` et `calendrier.js` n'ont même pas le
-squelette. Le dashboard est le plus rentable des suivants : c'est la page du
-check-in matinal, et elle part sur sept requêtes.
+**Ce qu'il reste à faire** : `perso.js`, `espace-projet.js`, `fch.js`,
+`photo.js` font le chrome d'abord, mais **n'ont ni cache ni chargement par
+morceaux**. `hermitage.js` et `calendrier.js` n'ont même pas le squelette. Ce
+sont les moins pressés : ce ne sont pas eux qu'on ouvre le matin.
+
+---
+
+## 2 ter bis. Le même démarrage, porté au hub
+
+Fait le 13 août, à la demande de Noé, sur `dashboard.js` — l'ouverture du hub,
+la page du check-in. La mécanique de Yuno s'y transpose telle quelle ; ce qui
+change, c'est le découpage, parce qu'un tableau de bord n'a qu'une vue.
+
+**Le découpage se fait par BLOC, pas par vue.** `SOURCES` dit où chacun va
+chercher, `DONNEES` ce que chacun pose dans l'état, et **un bloc se dessine dès
+que les siennes arrivent** — l'humeur et les victoires sont là pendant que la
+semaine interroge encore ses quatre tables. Mesuré, réseau ralenti d'une seconde
+et demie et cache vidé : humeur à 1581 ms, tâches 1598, objectifs 1610, semaine
+1618, victoires 1625. Cinq apparitions distinctes, plus un seul bloc à la fin.
+
+**Le cache de session met la page entière à 20 ms.** Même mesure, cache chaud :
+les cinq blocs sont remplis **à 23 ms — six millisecondes avant que la première
+requête ne parte**, et le réseau peut prendre son temps. C'est du papier peint
+comme dans Yuno : les huit requêtes partent quand même, tout est réécrit dès la
+première réponse.
+
+**Le piège de ce cache-là, c'est l'humeur.** Elle est datée du jour : un cache
+écrit hier soir, relu ce matin (moins de six heures, donc valide) afficherait
+« Noté, merci » pour une question qui n'a pas encore été posée — et la question
+du matin serait perdue pour de bon. Le cache porte donc son `jour`, et l'humeur
+seule repart du serveur quand il a changé. **Vérifié** en datant le cache de la
+veille : les quatre autres blocs sortent du cache à 18 ms, l'humeur attend la
+réponse à 1612 ms. C'est l'équivalent exact des photos signées de Yuno — une
+donnée qui périme plus vite que le reste ne voyage pas avec lui.
+
+**Neuf requêtes sont devenues huit.** Le dashboard demandait à la fois toutes
+les tâches datées (pour la semaine) et les tâches d'échéance passée (pour
+« Aujourd'hui ») — la seconde étant un sous-ensemble de la première. Elle se
+déduit maintenant côté client. **Conséquence visible, et c'était le but
+secondaire** : cocher une tâche sur l'accueil la barre aussi dans la semaine,
+deux blocs plus bas, ce qui n'arrivait pas avant — les deux listes viennent de
+la même.
+
+**« Aujourd'hui » a gagné un tri.** Il affichait les tâches dans l'ordre de la
+base — indécis entre deux tâches du même jour, donc changeant d'un chargement à
+l'autre. Il reprend `trierTaches` de l'espace Tâches (priorité, date,
+ancienneté) : cette liste en avait déjà la forme, elle en a maintenant l'ordre.
+
+**L'échec de chargement est devenu une ligne** sous l'en-tête, avec
+« Réessayer », au lieu d'une page qui remplaçait tout — le contenu du cache
+reste donc affiché quand le réseau tombe. **Vérifié** réseau coupé, cache
+chaud : la page est entière et la ligne apparaît. Elle met **sept secondes** à
+venir, et ce n'est pas nous : supabase-js réessaie tout seul à 1 s, 2 s puis
+4 s. Ce délai existait avant, il était simplement invisible — la page restait
+blanche pendant ce temps.
+
+**Les écouteurs se branchent avant le premier rendu**, comme dans Yuno : ils
+étaient posés après le chargement, donc un clic pendant celui-ci tombait dans le
+vide. Avec un cache chaud, la page est complète en 20 ms : c'est devenu un vrai
+risque, pas une hypothèse.
+
+**Le chemin d'écriture a été exercé en entier**, sur une tâche créée pour
+l'occasion puis supprimée : posée depuis le « + » (elle apparaît dans les deux
+blocs), cochée (elle quitte « Aujourd'hui », se barre dans la semaine, la
+victoire monte en tête, la ligne d'annulation s'affiche), annulée (tout revient,
+la victoire part), puis supprimée depuis l'espace Tâches — et au retour sur
+l'accueil, elle a disparu des deux blocs. Base relue en SQL au départ et à
+l'arrivée : **4 tâches, 2 victoires**, son état exact.
+
+**Un piège de vérification, à retenir** : vider `sessionStorage` depuis la
+console PUIS recharger ne vide rien. En quittant la page, `pagehide` réécrit le
+cache avec l'état encore vivant. Il faut vider au chargement de la page
+suivante, avant que les modules ne tournent.
 
 ---
 
@@ -938,14 +1012,12 @@ La méthode qui a tenu toute la journée — exercer, relire en SQL, défaire, r
    club « Sounders ».
 
 **Yuno / « Terrain »** (`docs/yuno-spec.md`, §9) :
-7. Le cycle éditorial dit « publié » ; le brief disait « posté ». Gardé
-   « publié » pour la cohérence du hub — à trancher à l'usage.
-8. **Deux cartes de Passerelle manquent, faute de noms réels** : la ou les
+7. **Deux cartes de Passerelle manquent, faute de noms réels** : la ou les
    salles de concert visées (objectif : une première accréditation), et les
    clubs à cibler à froid. Les quatre clubs déjà au carnet sont des contacts
    établis, donc du niveau 2, pas du 3 : ils n'ont pas été mis dans la file
    sans son avis.
-9. L'onglet « Carnet » de l'accueil a été renommé « Accueil » quand le Journal
+8. L'onglet « Carnet » de l'accueil a été renommé « Accueil » quand le Journal
    est né. Le mot « carnet » désigne donc deux choses — le Carnet de terrain et
    le carnet réseau. À surveiller à l'usage.
 
@@ -956,20 +1028,17 @@ assumé, mais à rouvrir s'il le trouve gênant à l'usage.
 **Ouvertes par la session du 13 août** — aucune ne bloque, toutes attendent
 l'usage :
 
-10. **Le plafond de 3 tâches actives dort.** Noé a demandé de masquer le réglage
+9. **Le plafond de 3 tâches actives dort.** Noé a demandé de masquer le réglage
     backlog/active « pour le moment ». Conséquence assumée : « Aujourd'hui » ne
     filtre plus, il montre les 9 premières tâches. Le jour où ce bloc redevient
     une liste, c'est le signe qu'il faut rallumer la pastille — tout le code est
     en place.
-11. **« Aujourd'hui » ignore les tâches sans date.** Il montre ce qui est daté
+10. **« Aujourd'hui » ignore les tâches sans date.** Il montre ce qui est daté
     d'aujourd'hui ou d'avant. Une tâche notée sans échéance n'y apparaîtra
     jamais : à confirmer que c'est bien ce qu'il veut.
-12. **Le formulaire de MODIFICATION d'un élément du calendrier garde ses menus
+11. **Le formulaire de MODIFICATION d'un élément du calendrier garde ses menus
     déroulants natifs.** Seul l'ajout est passé en listes de choix. Noé n'a parlé
     que de l'ajout ; l'incohérence se verra peut-être à l'usage.
-13. **Le fondu au bord de la bande de pastilles** est une addition de ma part,
-    pas une demande : il signale qu'il reste à défiler. Trois lignes de CSS à
-    retirer s'il gêne.
 
 ---
 
@@ -1011,30 +1080,26 @@ Dans cet ordre, du plus rentable au moins pressé.
    ce que « Aujourd'hui » montre (les tâches datées du jour ou avant, jamais les
    sans-date), et le tri qui fait passer une tâche datée avant une tâche sans
    date à priorité égale.
-2. **Porter les trois chantiers du démarrage aux autres espaces.** Faits sur
-   Yuno seulement (§ 2 ter). Le dashboard est le plus rentable : c'est la page
-   du check-in matinal, elle part sur **neuf** requêtes depuis qu'elle assemble
-   la semaine du calendrier, et elle n'a ni cache ni chargement par vue.
+2. **Porter le démarrage aux espaces qui restent.** Yuno et le dashboard l'ont
+   (§ 2 ter et § 2 ter bis) ; `perso.js`, `espace-projet.js`, `fch.js`,
+   `photo.js`, `hermitage.js` et `calendrier.js` ne l'ont pas. Aucun n'est
+   pressé — ce ne sont pas eux qu'on ouvre le matin. `calendrier.js` serait le
+   suivant : c'est le deuxième écran le plus visité, et il n'a même pas de
+   squelette.
 3. **Vérifier la tuile sur le vrai iPhone.** Tout a été mesuré avec un clavier
    *simulé* (`--bas-clavier` posée à la main) : la montée de 336 px, les 0 px de
    déplacement entre pastilles, le fond figé. Le comportement réel de Safari
    avec un vrai clavier reste à confirmer — c'est le seul point de la session
    dont la vérification est une imitation, pas la chose même.
-4. **Les trois photos déjà en base pèsent 5 Mo chacune.** Les nouvelles sont
-   réduites à l'envoi ; les anciennes non. Les rejoindre à la main via
-   « Remplacer la photo » suffit à les faire passer à la moulinette.
-5. **Vérifier Canela sur le téléphone.** Le `local("Canela-…")` marche sur le
+4. **Vérifier Canela sur le téléphone.** Le `local("Canela-…")` marche sur le
    Mac ; iOS ne fournit probablement pas la police. Le test tient en un
    regard : ouvrir Créer, regarder « À venir » — si le `À` est droit au lieu
    d'être incliné, c'est la police de secours.
-6. **Un espace n'est monté qu'une fois, et se relit au retour.** C'est neuf
+5. **Un espace n'est monté qu'une fois, et se relit au retour.** C'est neuf
    (§ 2 quater). Si un écran affiche quelque chose de périmé, c'est que son
    `rafraichir()` manque ou oublie un bloc — chercher là avant d'accuser le
-   cache de session, qui ne vit que dans Yuno.
-7. **Le bronze de la palette** (`#967D32`, `#EDC54E`, `#C4A341`…) n'est employé
-   nulle part. Il pourrait remplacer le `--gris-chaud` inventé (`#a2988a`),
-   mais il tire vers le doré — ce que la discipline de l'or cherchait à
-   raréfier. À trancher à l'œil.
+   cache de session, qui ne vit que dans Yuno et sur l'accueil.
+
 
 **Deux chantiers sont clos et n'ont plus à figurer ici** : le cochage d'une
 tâche depuis le calendrier a été exercé pour de vrai (créée, cochée, décochée,

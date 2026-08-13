@@ -57,21 +57,20 @@ document.body.insertAdjacentHTML(
         <button type="button" id="bouton-deconnexion" class="lien-discret">Se déconnecter</button>
       </header>
 
-      <!-- Perso en deuxième position, juste après l'accueil : le hub existe
-           pour servir Noé, la vie hors projets ne passe pas après eux.
-           Le calendrier quitte la rangée des lieux et va tout à droite, en
-           icône : ce n'est pas un espace de plus, c'est la vue qui les
-           traverse tous. Son départ rend d'ailleurs sa place à Perso. -->
+      <!-- Tâches en deuxième position, juste après l'accueil (demande de Noé,
+           13 août 2026) : c'est l'écran où l'on va le plus souvent après le
+           check-in, il n'a pas à se gagner au bout de la rangée.
+           Perso suit : le hub existe pour servir Noé, la vie hors projets ne
+           passe pas après les projets.
+           Le calendrier, lui, reste tout à droite et en icône : ce n'est pas un
+           espace de plus, c'est la vue qui les traverse tous. -->
       <nav class="navigation" aria-label="Espaces">
         <a href="#dashboard" data-nav="dashboard">Accueil</a>
+        <a href="#taches" data-nav="taches">Tâches</a>
         <a href="#perso" data-nav="perso">Perso</a>
         <a href="#fch" data-nav="fch">FCH</a>
         <a href="#formation" data-nav="formation">Formation</a>
         <a href="#photo" data-nav="photo">Yuno</a>
-        <!-- Tâches et Calendrier ferment la rangée ensemble : ce sont les deux
-             vues transverses, celles qui regardent tous les projets à la fois.
-             Les espaces nomment des lieux, ces deux-là nomment des angles. -->
-        <a href="#taches" data-nav="taches">Tâches</a>
         ${ongletCalendrier('#calendrier', false)}
       </nav>
     </div>

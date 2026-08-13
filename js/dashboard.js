@@ -24,7 +24,8 @@ import {
   brancherCapture,
   poserAuCalendrier,
 } from './calendrier-commun.js';
-import { construireLignesTaches } from './taches.js';
+import { construireLignesTaches, trierTaches } from './taches.js';
+import { lireCache, ecrireCache } from './cache-session.js';
 
 // Les projets offerts à la création. Les mêmes que dans l'espace Calendrier :
 // 'perso' n'accepte qu'un événement, `fenetreCreation` s'en charge.
@@ -234,11 +235,65 @@ export function construireTaches(taches, annulation = null) {
   })}`;
 }
 
+// --- Le démarrage ------------------------------------------------------------
+//
+// Repris du site Yuno (13 août 2026) et porté ici : c'est la page du check-in
+// matinal, celle qu'on ouvre le plus, et elle partait sur neuf requêtes avant
+// d'afficher quoi que ce soit.
+//
+// Trois mécaniques, les mêmes que là-bas :
+//   1. le chrome d'abord — il était déjà là ;
+//   2. le dernier état de l'onglet, ressorti du cache et affiché tout de suite ;
+//   3. le chargement morceau par morceau — chaque bloc se dessine dès que SES
+//      données arrivent, sans attendre celles des autres.
+
+const CLE_CACHE = 'dashboard';
+
+// Où chaque bloc va chercher ses données. Une source rend l'objet à fondre dans
+// l'état, pas une liste nue : la semaine ramène ses quatre tables ensemble, et
+// le reste du code n'a pas à savoir qu'elles voyagent de concert.
+const SOURCES = {
+  humeur: async () => ({ humeur: await api.humeurDuJour(versDateISO()) }),
+  victoires: async () => ({ victoires: await api.dernieresVictoires(MAX_VICTOIRES) }),
+  objectifs: async () => ({ objectifs: await api.objectifsActifs() }),
+  // Toutes les tâches datées, les faites comprises — le calendrier les garde
+  // barrées. « Aujourd'hui » se déduit de cette même liste : une lecture au lieu
+  // de deux, et une seule vérité sur ce qui est coché. Cocher une tâche la barre
+  // donc aussi dans la semaine, ce qui n'était pas le cas avant.
+  taches: async () => ({ tachesDatees: await api.tachesDatees() }),
+  semaine: async () => {
+    const [evenements, publications, commandes, contacts] = await Promise.all([
+      // Les événements sans borne : une grille de semaine peut afficher un
+      // événement commencé avant elle.
+      api.evenementsTous(),
+      api.publicationsDatees(),
+      api.commandesToutes(),
+      api.contactsTous(),
+    ]);
+    return { evenements, publications, commandes, contacts };
+  },
+};
+
+// Ce que chaque source pose dans l'état. Le cache relit cette table pour ne
+// garder que des données — et pour garder l'état VIVANT (une tâche cochée, une
+// victoire retirée) plutôt que ce que le serveur avait répondu.
+const DONNEES = {
+  humeur: ['humeur'],
+  victoires: ['victoires'],
+  objectifs: ['objectifs'],
+  taches: ['tachesDatees'],
+  semaine: ['evenements', 'publications', 'commandes', 'contacts'],
+};
+
 // --- Montage ----------------------------------------------------------------
 
 function squelette() {
   return `
     <header class="jour" id="bloc-jour"></header>
+
+    <!-- L'échec de chargement se dit sous l'en-tête, sur une ligne : le reste
+         de la page tient, et ce qui était déjà affiché le reste. -->
+    <div id="bloc-erreur"></div>
 
     <section class="bloc" id="bloc-humeur"></section>
 
@@ -287,7 +342,12 @@ export default {
     const etat = {
       humeur: null,
       victoires: [],
-      taches: [],
+      objectifs: [],
+      tachesDatees: [],
+      evenements: [],
+      publications: [],
+      commandes: [],
+      contacts: [],
       humeurOuverte: false,
       annulation: null,
       creation: null,
@@ -297,6 +357,44 @@ export default {
     const aujourdhui = versDateISO();
 
     const cible = (id) => section.querySelector(`#${id}`);
+
+    // --- Le chargement, morceau par morceau ---
+    //
+    // `affichables` dit ce qu'on peut dessiner — venu du serveur ou sorti du
+    // cache. Un bloc dont la source manque garde ses points de suspension
+    // plutôt que d'afficher un vide qui aurait l'air d'une réponse.
+    const affichables = new Set();
+    const enVol = new Map();
+    let echec = false;
+    const pret = (...cles) => cles.every((cle) => affichables.has(cle));
+
+    // Le cache de session : le dernier état de l'onglet, affiché tout de suite.
+    // C'est du papier peint, jamais une source — tout est redemandé au serveur
+    // juste après, et réécrit dès la première réponse.
+    const restaure = lireCache(CLE_CACHE);
+    if (restaure) {
+      // L'humeur est datée du jour. Un cache écrit hier soir dirait « Noté,
+      // merci » pour une question qui n'a pas encore été posée aujourd'hui —
+      // et la question du matin serait perdue. Elle repart donc du serveur.
+      if (restaure.jour !== aujourdhui) delete restaure.humeur;
+
+      for (const [cle, champs] of Object.entries(DONNEES)) {
+        if (!champs.every((champ) => champ in restaure)) continue;
+        for (const champ of champs) etat[champ] = restaure[champ];
+        affichables.add(cle);
+      }
+    }
+
+    // Ce qu'on remet en cache : les données, jamais l'état d'interface (la
+    // tuile ouverte, l'humeur rouverte, la ligne d'annulation). Rouvrir
+    // l'application doit retrouver le contenu, pas une fenêtre de la veille.
+    const aGarder = () => {
+      const garde = { jour: aujourdhui };
+      for (const cle of affichables) {
+        for (const champ of DONNEES[cle]) garde[champ] = etat[champ];
+      }
+      return garde;
+    };
 
     // La tuile se redessine seule, dans son propre bloc : le reste de l'accueil
     // ne bouge pas quand on ouvre le « + ».
@@ -308,97 +406,127 @@ export default {
     }
 
     function rendreHumeur() {
+      if (!pret('humeur')) return;
       cible('bloc-humeur').innerHTML = construireHumeur(
         etat.humeurOuverte ? null : etat.humeur,
       );
     }
 
     function rendreVictoires() {
+      if (!pret('victoires')) return;
       cible('bloc-victoires').innerHTML = construireVictoires(
         etat.victoires.slice(0, MAX_VICTOIRES),
       );
     }
 
-    function rendreTaches() {
-      cible('bloc-taches').innerHTML = construireTaches(etat.taches, etat.annulation);
+    // Les intentions perso n'ont ni mesure ni date : elles n'ont donc pas leur
+    // place dans un bloc de progression. Elles se relisent dans #perso.
+    const objectifsDesProjets = () =>
+      etat.objectifs.filter((objectif) => objectif.projet !== 'perso');
+
+    function rendreObjectifs() {
+      if (!pret('objectifs')) return;
+      cible('bloc-objectifs').innerHTML = construireObjectifs(objectifsDesProjets());
     }
 
-    async function charger() {
-      // La semaine montre TOUT ce qui a une date, comme l'espace Calendrier :
-      // c'est la même grille, elle demande donc les mêmes sources. Les
-      // événements sans borne — une grille de semaine peut afficher un
-      // événement commencé avant elle.
-      const [
-        humeur,
-        victoires,
-        objectifs,
-        evenements,
-        tachesDatees,
-        duJour,
-        publications,
-        commandes,
-        contacts,
-      ] = await Promise.all([
-        api.humeurDuJour(aujourdhui),
-        api.dernieresVictoires(MAX_VICTOIRES),
-        api.objectifsActifs(),
-        api.evenementsTous(),
-        api.tachesDatees(),
-        // « Aujourd'hui » = ce qui est à faire aujourd'hui ou l'était déjà.
-        // Sans borne basse, volontairement : une échéance passée reste visible
-        // plutôt que de disparaître — le hub ne compte pas les retards, il ne
-        // les efface pas non plus.
-        api.tachesEcheanceJusqua(aujourdhui),
-        api.publicationsDatees(),
-        api.commandesToutes(),
-        api.contactsTous(),
-      ]);
-
-      etat.humeur = humeur;
-      etat.victoires = victoires;
-      etat.taches = duJour;
-
-      rendreHumeur();
-      rendreVictoires();
-      rendreTaches();
-
-      // Les intentions perso n'ont ni mesure ni date : elles n'ont donc pas leur
-      // place dans un bloc de progression. Elles se relisent dans #perso.
-      cible('bloc-objectifs').innerHTML = construireObjectifs(
-        objectifs.filter((objectif) => objectif.projet !== 'perso'),
+    // « Aujourd'hui » = ce qui est à faire aujourd'hui ou l'était déjà. Sans
+    // borne basse, volontairement : une échéance passée reste visible plutôt
+    // que de disparaître — le hub ne compte pas les retards, il ne les efface
+    // pas non plus.
+    //
+    // Le tri est celui de l'espace Tâches (priorité, date, ancienneté) : cette
+    // liste en a déjà la forme, elle en prend l'ordre. Il était jusqu'ici celui
+    // de la base — donc indécis entre deux tâches du même jour, et changeant
+    // d'un chargement à l'autre.
+    const tachesDuJour = () =>
+      trierTaches(
+        etat.tachesDatees.filter(
+          (tache) => tache.statut !== 'fait' && tache.echeance <= aujourdhui,
+        ),
       );
 
+    function rendreTaches() {
+      if (!pret('taches')) return;
+      cible('bloc-taches').innerHTML = construireTaches(tachesDuJour(), etat.annulation);
+    }
+
+    // La semaine montre TOUT ce qui a une date, comme l'espace Calendrier :
+    // c'est la même grille, elle demande donc les mêmes sources. Elle les
+    // attend toutes plutôt que de se dessiner amputée puis de se recomposer
+    // sous les yeux — une grille qui gagne des barres une à une, c'est le
+    // sautillement qu'on cherche justement à éviter.
+    function rendreSemaine() {
+      if (!pret('taches', 'semaine', 'objectifs')) return;
       cible('bloc-semaine').innerHTML = construireSemaine(
         assemblerCalendrier({
-          evenements,
-          taches: tachesDatees,
-          objectifs: objectifs.filter((objectif) => objectif.projet !== 'perso'),
-          publications,
-          commandes: commandes.filter(
+          evenements: etat.evenements,
+          taches: etat.tachesDatees,
+          objectifs: objectifsDesProjets(),
+          publications: etat.publications,
+          commandes: etat.commandes.filter(
             (commande) => commande.echeance && ['devis', 'en_cours'].includes(commande.statut),
           ),
-          relances: contacts.filter((contact) => contact.prochaine_action_date),
+          relances: etat.contacts.filter((contact) => contact.prochaine_action_date),
         }),
       );
+    }
+
+    function rendreEchec() {
+      cible('bloc-erreur').innerHTML = echec
+        ? `<p class="vide">Les données n'ont pas pu être chargées.
+             <button type="button" class="lien-discret"
+               data-action="reessayer">Réessayer</button></p>`
+        : '';
+    }
+
+    // Ce que l'arrivée d'une source redessine — et rien d'autre. Redessiner
+    // toute la page à chaque réponse ferait perdre le curseur de la note
+    // d'humeur à qui écrit pendant que le reste charge.
+    const APRES = {
+      humeur: rendreHumeur,
+      victoires: rendreVictoires,
+      objectifs: () => {
+        rendreObjectifs();
+        rendreSemaine();
+      },
+      taches: () => {
+        rendreTaches();
+        rendreSemaine();
+      },
+      semaine: rendreSemaine,
+    };
+
+    const lancer = (cle) => {
+      const promesse = SOURCES[cle]()
+        .then((donnees) => {
+          Object.assign(etat, donnees);
+          affichables.add(cle);
+          APRES[cle]();
+        })
+        .finally(() => enVol.delete(cle));
+      enVol.set(cle, promesse);
+      return promesse;
+    };
+
+    // Une source déjà en vol n'est pas relancée : revenir sur l'accueil pendant
+    // qu'il charge ne double pas ses requêtes.
+    async function charger() {
+      try {
+        await Promise.all(
+          Object.keys(SOURCES).map((cle) => enVol.get(cle) ?? lancer(cle)),
+        );
+        echec = false;
+      } catch (erreur) {
+        console.error('Chargement du tableau de bord impossible', erreur);
+        echec = true;
+      }
+      rendreEchec();
+      ecrireCache(CLE_CACHE, aGarder());
     }
 
     // Revenir sur l'accueil le relit : une tâche posée depuis le calendrier ou
     // cochée dans l'espace Tâches doit s'y voir sans recharger la page.
     this.rafraichir = charger;
-
-    try {
-      await charger();
-    } catch (erreur) {
-      console.error('Chargement du tableau de bord impossible', erreur);
-      section.innerHTML = `
-        ${construireEnTete()}
-        <p class="vide">Les données n'ont pas pu être chargées.</p>
-        <button type="button" class="bouton-secondaire" data-action="reessayer">Réessayer</button>
-      `;
-      section.querySelector('[data-action="reessayer"]')
-        ?.addEventListener('click', () => this.monter(section));
-      return;
-    }
 
     // --- Interactions, par délégation sur la section entière ---
 
@@ -494,11 +622,18 @@ export default {
 
       if (evenement.target.closest('[data-annuler]')) return annulerDerniereTache();
 
+      if (evenement.target.closest('[data-action="reessayer"]')) {
+        echec = false;
+        rendreEchec();
+        await charger();
+        return;
+      }
+
       // Le cercle de la tâche, comme dans l'espace Tâches : c'est un bouton et
       // non une case à cocher depuis que les deux listes partagent leur forme.
       const cercle = evenement.target.closest('[data-cocher]');
       if (cercle) {
-        const tache = etat.taches.find((candidate) => candidate.id === cercle.dataset.cocher);
+        const tache = tachesDuJour().find((candidate) => candidate.id === cercle.dataset.cocher);
         if (!tache) return;
 
         cercle.disabled = true;
@@ -506,11 +641,15 @@ export default {
           // Terminer une tâche crée sa victoire : elle quitte le bas de la page
           // pour rejoindre le haut.
           const { tache: faite, victoire } = await api.terminerTache(tache);
-          etat.taches = etat.taches.filter((candidate) => candidate.id !== tache.id);
+          remplacerTache(faite);
           etat.victoires = [victoire, ...etat.victoires];
           ouvrirAnnulation({ tache: faite, victoire });
           rendreVictoires();
           rendreTaches();
+          // La tâche est datée : elle est aussi dans la semaine, où elle
+          // devient barrée. Sans ce rendu, la même tâche s'y afficherait encore
+          // à faire deux blocs plus bas.
+          rendreSemaine();
         } catch (erreur) {
           console.error('Impossible de terminer la tâche', erreur);
           cercle.disabled = false;
@@ -576,6 +715,15 @@ export default {
       }, DUREE_ANNULATION);
     }
 
+    // Une tâche vient d'être cochée ou rouverte : elle reprend sa place dans la
+    // liste des tâches datées, qui est la seule à les tenir. « Aujourd'hui » et
+    // la semaine se déduisent de là, et disent donc la même chose.
+    function remplacerTache(tache) {
+      etat.tachesDatees = etat.tachesDatees.map((candidate) =>
+        candidate.id === tache.id ? tache : candidate,
+      );
+    }
+
     async function annulerDerniereTache() {
       const annulation = etat.annulation;
       if (!annulation) return;
@@ -588,12 +736,35 @@ export default {
         await api.supprimerVictoire(annulation.victoire.id);
         const tache = await api.rouvrirTache(annulation.tache);
         etat.victoires = etat.victoires.filter((v) => v.id !== annulation.victoire.id);
-        etat.taches = [...etat.taches, tache];
+        remplacerTache(tache);
       } catch (erreur) {
         console.error('Annulation impossible', erreur);
       }
       rendreTaches();
       rendreVictoires();
+      rendreSemaine();
     }
+
+    // Le cache est écrit à chaque chargement, mais l'état bouge aussi entre
+    // deux : une tâche cochée, une humeur donnée, une victoire retirée. On le
+    // reprend donc au moment où la page s'efface — le seul instant garanti sur
+    // iOS, où une application ajoutée à l'écran d'accueil n'est jamais
+    // « fermée », seulement mise de côté.
+    const garderLEtat = () => ecrireCache(CLE_CACHE, aGarder());
+    window.addEventListener('pagehide', garderLEtat);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') garderLEtat();
+    });
+
+    // Le premier rendu vient en dernier, une fois tout branché : sans quoi un
+    // clic pendant le chargement tomberait dans le vide. Il ne coûte rien — il
+    // sort du cache, ou ce sont les points de suspension du squelette.
+    rendreHumeur();
+    rendreVictoires();
+    rendreObjectifs();
+    rendreTaches();
+    rendreSemaine();
+
+    await charger();
   },
 };
