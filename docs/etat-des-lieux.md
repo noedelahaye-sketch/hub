@@ -1,8 +1,18 @@
 # État des lieux — 13 août 2026
 
-> Reprise : voir **§ 4 bis, « Par où reprendre »**. Les trois chantiers du
-> démarrage sont faits sur Yuno (§ 2 ter) ; reste à les porter aux autres
-> espaces.
+> **Reprise : § 4 bis, « Par où reprendre ».**
+>
+> La session du 13 août a ouvert **l'espace Tâches** (§ 2 quater), refait
+> **toute la capture** du hub — une tuile volante unique pour poser une tâche
+> comme n'importe quoi au calendrier —, allégé **le démarrage** de Yuno
+> (§ 2 ter) et réparé **cinq bugs antérieurs** trouvés en exerçant le code
+> (§ 2 bis bis).
+>
+> Trois choses valent d'être sues avant de continuer :
+> le **plafond de 3 tâches actives est en sommeil** (§ 2 quater), les trois
+> chantiers du démarrage ne sont **faits que sur Yuno**, et la **tuile de
+> capture** est maintenant le seul endroit où l'on crée quoi que ce soit de
+> daté — la toucher, c'est toucher quatre écrans à la fois.
 
 Point de reprise. `CLAUDE.md` dit **ce que le hub doit être** ; ce document dit
 **où il en est**, ce qui a été vérifié, ce qui ne l'a pas été, et ce qui attend
@@ -262,12 +272,14 @@ complet et ce qui reste ouvert.
   accent. Règle retenue : ne jamais demander une graisse ou une posture dont le
   fichier n'existe pas.
 
-**Données réelles en base** : les 44 contacts du carnet (dont trois portent un
-niveau de Passerelle), les 15 idées de départ avec leur pilier, et les 4 modèles
-de messages. Tout le reste est vide — aucun moment, aucun événement, aucune
-tâche. Noé n'a pas encore commencé à s'en servir pour de bon. **Conséquence
-directe : le mur de photos de l'accueil affiche son écran vide**, et ne montrera
-quelque chose qu'au premier moment logué avec une photo.
+**Données réelles en base, au soir du 13 août** : 45 contacts au carnet (dont
+trois portent un niveau de Passerelle), 15 idées avec leur pilier, 4 modèles de
+messages, 1 moment avec sa photo, 2 événements, 2 humeurs, et **4 tâches
+saisies par Noé lui-même** — les premières.
+
+C'est le changement du jour, et il compte : **Noé a commencé à s'en servir pour
+de bon.** Les écrans ne se jugent plus à vide. Aucun objectif, aucune commande
+en revanche : ces deux-là n'ont encore jamais été exercés avec de la matière.
 
 ---
 
@@ -291,11 +303,11 @@ La méthode reste la même pour l'affichage, et elle vaut d'être reprise :
   des colonnes, calculs du gist, et depuis « Terrain » — le tirage de la
   semaine, le décompte des jours avant le rendez-vous, la fenêtre de l'invite,
   la progression d'une relation après un envoi, l'ordre de la file.
-- **Ce qui reste non vérifié** : le glisser-déposer des colonnes, les chemins
-  d'écriture des autres espaces (formation, FCH, perso), et **le cochage d'une
-  tâche depuis le calendrier** — il n'y a aucune tâche `photo` datée en base, et
-  en créer une écrirait une tâche puis une victoire dans les vraies données. Le
-  rendu du cercle et le routage du clic sont vérifiés, pas le clic réel.
+- **Ce qui reste non vérifié** : le glisser-déposer des colonnes, et les chemins
+  d'écriture de `formation` et `perso`. (Le 13 août a levé le reste : le cochage
+  d'une tâche a été exercé pour de vrai — créée, cochée, décochée, supprimée,
+  base relue en SQL à chaque étape — et le calendrier du FCH aussi, ce qui a
+  d'ailleurs révélé qu'il ne s'affichait pas du tout, cf. § 2 bis bis.)
 
 **Les deux murs de photos ont été vérifiés ainsi** (12 août), avec de faux
 moments et des images SVG en 3:4 comme en 3:2, sans rien écrire en base :
@@ -714,10 +726,12 @@ avec une tâche d'essai datée du jour : cochée depuis le dashboard, elle quitt
 
 ---
 
-## 2 bis bis. Deux bugs trouvés en passant, et réparés
+## 2 bis bis. Cinq bugs antérieurs, trouvés en passant et réparés
 
-Aucun des deux ne venait des chantiers du jour. Tous deux étaient invisibles
-faute d'avoir été exercés.
+Aucun ne venait des chantiers du jour : tous dormaient depuis des jours, et
+tous étaient invisibles **faute d'avoir été exercés**. C'est la leçon de la
+session — le code qui a l'air juste ne l'est pas toujours, et seul un clic
+réel le dit.
 
 **Le calendrier du site FCH n'avait jamais pu s'afficher.** `vueCalendrier` de
 `hermitage.js` passait `etat.filtre` — la chaîne `'tout'`, qui est le filtre des
@@ -740,6 +754,25 @@ entière**, de travers, alors que le commentaire juste au-dessus annonçait
 l'inverse. Les deux lignes sont remontées sur `.navigation`, hors du `@media` —
 c'est à 375 px qu'on en a besoin, pas au-delà. Vérifié : la page ne déborde
 plus, la barre glisse.
+
+**Toutes les fenêtres volantes du site Yuno étaient mal placées.** `.vue-entre`
+porte `animation: … both` sur `transform`, et un élément dont la transformation
+est animée devient le **repère** de ses descendants en `position: fixed` — le
+`fill-mode: both` faisant durer l'effet indéfiniment. Mesuré : une tuile censée
+être centrée à 391 px se calait à 496, et le fond assombri ne couvrait que la
+section au lieu de l'écran. La classe est retirée à `animationend`. Ça valait
+pour la fiche d'un moment, celle d'un contact, la note d'idée — pas seulement
+pour la tuile de création.
+
+**Le calendrier du hub jetait l'heure et la priorité d'une tâche.** Le
+formulaire demandait « à quelle heure », `poser()` ne la transmettait pas ;
+même chose pour la publication. Yuno, lui, les faisait suivre — la fonction
+était recopiée dans deux espaces, et une seule copie avait été tenue à jour.
+C'est ce qui a décidé de mettre `poserAuCalendrier` en commun (§ 2 quater).
+
+**La flèche d'envoi se rallumait sur un champ vide**, juste après une création :
+un `disabled = false` sec dans un `finally`, qui défaisait l'extinction voulue.
+Trouvé en vérifiant autre chose.
 
 ---
 
@@ -833,6 +866,62 @@ check-in matinal, et elle part sur sept requêtes.
 
 ---
 
+## 2 quater. L'espace Tâches et la tuile de capture — la session du 13 août
+
+Le morceau le plus lourd de la journée, et celui qui a le plus bougé : six
+formulations successives de Noé, chacune corrigeant la précédente à l'usage.
+Ce qui suit est l'état d'arrivée.
+
+**L'espace `#taches` ne cache rien** : datées ou non, faites ou non, tous
+projets. C'est sa raison d'être — ailleurs le hub trie, ici on vient voir
+l'ensemble et ranger. Le détail (priorité, tri, couleurs, victoires) est plus
+haut, dans la section qui l'a vu naître.
+
+**La tuile de capture est devenue le seul geste de création daté du hub.** Un
+« + » flottant en bas à droite l'ouvre, sur l'accueil comme dans les Tâches ;
+le calendrier l'ouvre en touchant un jour. Elle sert aussi à CORRIGER une tâche
+qu'on rouvre depuis la liste.
+
+**Ce qu'il faut savoir avant d'y toucher** — elle est partagée par quatre
+écrans, et chacune de ces règles a été payée par un aller-retour :
+
+- **Les panneaux vivent en permanence dans le DOM, masqués.** On ne redessine
+  jamais la tuile pour ouvrir une pastille : cela détruirait le champ du titre,
+  ce qui referme le clavier, ce qui replace la tuile. C'est LA règle.
+- **Un bouton qui ne doit pas voler le focus annule son `pointerdown`.**
+  Pastilles, choix, flèche d'envoi. Les champs de date et d'heure en sont
+  exclus : eux en ont besoin.
+- **La position dépend de l'écran** : collée au clavier sur téléphone (en bas
+  au repos, elle remonte de sa hauteur exacte), centrée sur ordinateur.
+  `--bas-clavier` est mesurée sur `visualViewport` — la fenêtre de mise en page
+  ne bougeant pas, c'est le seul moyen de connaître la hauteur du clavier.
+- **Le fond est figé** pendant qu'elle est ouverte (`body.fond-fige`), déclenché
+  par un observateur dans `app.js` et non par les quatre appelants.
+- **Les valeurs voyagent dans des champs cachés** pour la tuile du calendrier :
+  les espaces lisent toujours le formulaire avec `FormData` et n'ont pas à
+  savoir comment la saisie s'est faite. C'est ce qui a permis de tout refaire
+  sans toucher à leur code de lecture.
+- **`poserAuCalendrier` écrit, en un seul endroit.** Elle était recopiée, et
+  c'est ce qui avait fait perdre l'heure et la priorité d'une tâche dans une
+  copie sur deux.
+
+**Les espaces se relisent quand on y revient**, par un `rafraichir()` facultatif
+que le routeur appelle. **Ne jamais remonter un espace** pour le rafraîchir :
+ses écouteurs sont sur la section, qui survit à `innerHTML`, et un second
+montage les doublerait tous.
+
+**Vérifié** : chaque chemin d'écriture exercé pour de vrai sur la base réelle
+(créer, corriger, cocher, décocher, supprimer, refuser), puis **défait**, avec
+relecture SQL à chaque fois. Aucune trace d'essai ne subsiste, et les tâches que
+Noé a ajoutées pendant la session n'ont jamais été touchées : chaque suppression
+a visé un titre exact plutôt qu'une ligne repérée à l'écran.
+
+Il n'y a **pas de base de bac à sable** : tout essai touche les vraies données.
+La méthode qui a tenu toute la journée — exercer, relire en SQL, défaire, relire
+à nouveau — est la seule qui rende cela acceptable.
+
+---
+
 ## 3. Ce qui attend une réponse de Noé
 
 **FC Hermitage** (`docs/fch-spec.md`, §7) :
@@ -864,6 +953,24 @@ check-in matinal, et elle part sur sept requêtes.
 bleus). Noé a demandé de retirer la plaque blanche qui corrigeait cela ; c'est
 assumé, mais à rouvrir s'il le trouve gênant à l'usage.
 
+**Ouvertes par la session du 13 août** — aucune ne bloque, toutes attendent
+l'usage :
+
+10. **Le plafond de 3 tâches actives dort.** Noé a demandé de masquer le réglage
+    backlog/active « pour le moment ». Conséquence assumée : « Aujourd'hui » ne
+    filtre plus, il montre les 9 premières tâches. Le jour où ce bloc redevient
+    une liste, c'est le signe qu'il faut rallumer la pastille — tout le code est
+    en place.
+11. **« Aujourd'hui » ignore les tâches sans date.** Il montre ce qui est daté
+    d'aujourd'hui ou d'avant. Une tâche notée sans échéance n'y apparaîtra
+    jamais : à confirmer que c'est bien ce qu'il veut.
+12. **Le formulaire de MODIFICATION d'un élément du calendrier garde ses menus
+    déroulants natifs.** Seul l'ajout est passé en listes de choix. Noé n'a parlé
+    que de l'ajout ; l'incohérence se verra peut-être à l'usage.
+13. **Le fondu au bord de la bande de pastilles** est une addition de ma part,
+    pas une demande : il signale qu'il reste à défiler. Trois lignes de CSS à
+    retirer s'il gêne.
+
 ---
 
 ## 4. Ce qui manque encore
@@ -894,29 +1001,45 @@ Rien d'ouvert dans les cahiers des charges. Restent des conforts :
 
 ---
 
-## 4 bis. Par où reprendre (fin de session du 12 août 2026)
+## 4 bis. Par où reprendre (fin de session du 13 août 2026)
 
 Dans cet ordre, du plus rentable au moins pressé.
 
-1. **Porter les trois chantiers du démarrage aux autres espaces.** Ils sont
-   faits sur Yuno (§ 2 ter) et n'attendent qu'un avis à l'usage avant d'être
-   généralisés — d'abord au dashboard, la page du check-in matinal, qui part sur
-   sept requêtes et n'a ni cache ni chargement par vue.
-2. **Les trois photos déjà en base pèsent 5 Mo chacune.** Les nouvelles sont
+1. **Vivre avec l'espace Tâches quelques jours avant d'y toucher.** Il est né
+   aujourd'hui et a changé six fois dans la journée. Trois décisions y attendent
+   l'usage plutôt qu'un arbitrage à froid : le sommeil du plafond de 3 actives,
+   ce que « Aujourd'hui » montre (les tâches datées du jour ou avant, jamais les
+   sans-date), et le tri qui fait passer une tâche datée avant une tâche sans
+   date à priorité égale.
+2. **Porter les trois chantiers du démarrage aux autres espaces.** Faits sur
+   Yuno seulement (§ 2 ter). Le dashboard est le plus rentable : c'est la page
+   du check-in matinal, elle part sur **neuf** requêtes depuis qu'elle assemble
+   la semaine du calendrier, et elle n'a ni cache ni chargement par vue.
+3. **Vérifier la tuile sur le vrai iPhone.** Tout a été mesuré avec un clavier
+   *simulé* (`--bas-clavier` posée à la main) : la montée de 336 px, les 0 px de
+   déplacement entre pastilles, le fond figé. Le comportement réel de Safari
+   avec un vrai clavier reste à confirmer — c'est le seul point de la session
+   dont la vérification est une imitation, pas la chose même.
+4. **Les trois photos déjà en base pèsent 5 Mo chacune.** Les nouvelles sont
    réduites à l'envoi ; les anciennes non. Les rejoindre à la main via
    « Remplacer la photo » suffit à les faire passer à la moulinette.
-3. **Vérifier Canela sur le téléphone.** Le `local("Canela-…")` marche sur le
+5. **Vérifier Canela sur le téléphone.** Le `local("Canela-…")` marche sur le
    Mac ; iOS ne fournit probablement pas la police. Le test tient en un
    regard : ouvrir Créer, regarder « À venir » — si le `À` est droit au lieu
    d'être incliné, c'est la police de secours.
-4. **Éprouver le cochage d'une tâche depuis le calendrier.** Le rendu et le
-   routage sont vérifiés, le clic réel jamais — il n'y avait aucune tâche
-   `photo` datée. Il y en a maintenant trois (faites), donc c'est testable :
-   décocher puis recocher.
-5. **Le bronze de la palette** (`#967D32`, `#EDC54E`, `#C4A341`…) n'est employé
+6. **Un espace n'est monté qu'une fois, et se relit au retour.** C'est neuf
+   (§ 2 quater). Si un écran affiche quelque chose de périmé, c'est que son
+   `rafraichir()` manque ou oublie un bloc — chercher là avant d'accuser le
+   cache de session, qui ne vit que dans Yuno.
+7. **Le bronze de la palette** (`#967D32`, `#EDC54E`, `#C4A341`…) n'est employé
    nulle part. Il pourrait remplacer le `--gris-chaud` inventé (`#a2988a`),
    mais il tire vers le doré — ce que la discipline de l'or cherchait à
    raréfier. À trancher à l'œil.
+
+**Deux chantiers sont clos et n'ont plus à figurer ici** : le cochage d'une
+tâche depuis le calendrier a été exercé pour de vrai (créée, cochée, décochée,
+supprimée, base relue en SQL), et les onze requêtes de l'ouverture de Yuno sont
+tombées à six.
 
 ---
 
@@ -925,7 +1048,7 @@ Dans cet ordre, du plus rentable au moins pressé.
 Celles qui ne sont pas déjà dans `CLAUDE.md` ou les cahiers des charges :
 
 **Les données personnelles n'entrent pas dans le dépôt.** Le dépôt est public.
-Les 43 contacts (numéros, comptes Instagram) sont allés directement dans
+Les contacts (numéros, comptes Instagram) sont allés directement dans
 Supabase via SQL, jamais dans un fichier versionné. Seul le schéma l'est. Toute
 reprise d'un tableau Notion suit cette règle.
 
@@ -984,7 +1107,44 @@ inadvertance.
 
 ---
 
-## 6. Deux pièges rencontrés, pour ne pas les revivre
+## 6. Les pièges rencontrés, pour ne pas les revivre
+
+**L'ordre dans la feuille de style décide, trois fois dans la même journée.** À
+spécificité égale, c'est la dernière règle écrite qui gagne — et trois bugs de
+la session n'avaient pas d'autre cause : `.capture-fond` déclarée avant
+`.fenetre-fond` ne s'appliquait pas ; le `@media` qui centre la tuile sur grand
+écran, placé avant `.capture`, non plus ; et deux déclarations orphelines dans
+un `@media` (`overflow-x` sans sélecteur) ne s'appliquaient à rien du tout,
+faisant défiler la page entière au lieu de la barre d'onglets. **Quand une règle
+« devrait » marcher et ne marche pas, regarder où elle est écrite avant de
+douter de ce qu'elle dit.**
+
+**Un accent grave dans un commentaire HTML, à l'intérieur d'un gabarit JS,
+ferme la chaîne.** `pas un \`<li>\` qui écoute` devient `"…" < li > "…"` — une
+comparaison. C'est du JavaScript **valide** : `node --check` passe, et l'erreur
+ne tombe qu'à l'exécution (`li is not defined`), en cassant tout l'écran.
+Rencontré deux fois. **La vérification syntaxique ne remplace pas un chargement
+dans le navigateur.**
+
+**Un élément dont la transformation est animée devient le repère de ses
+descendants en `position: fixed`.** Dans Yuno, `.vue-entre` porte
+`animation: … both` sur `transform` : le `fill-mode` faisait durer l'effet
+indéfiniment, et TOUTES les fenêtres volantes du site étaient mal placées — une
+tuile censée être centrée à 391 px se calait à 496, et le fond assombri ne
+couvrait que la section. La classe est retirée à `animationend`.
+
+**Sur iPhone, ouvrir le clavier fait défiler le document**, même quand le champ
+vit dans un élément fixe déjà visible : Safari ne regarde pas où il est
+réellement affiché. `overflow: hidden` sur le corps **ne suffit pas** — il faut
+sortir le document du flux (`position: fixed` + décalage compensatoire).
+
+**Redessiner un formulaire referme le clavier**, ce qui change la hauteur
+visible, ce qui replace tout ce qui en dépend. C'est ce qui faisait sauter la
+tuile à chaque pastille touchée. Deux règles en découlent : les panneaux
+restent dans le DOM et se bornent à basculer un `hidden`, et un bouton qui ne
+doit pas voler le focus annule son `pointerdown`.
+
+**GitHub Pages.** Un déploiement relancé à la main pendant qu'un autre était en
 
 **GitHub Pages.** Un déploiement relancé à la main pendant qu'un autre était en
 file a bloqué toute la chaîne une nuit entière : le run fantôme gardait le
@@ -1004,13 +1164,14 @@ restaurée par le routeur. Ne pas « simplifier » ces id.
 
 | Fichier | Rôle |
 |---|---|
-| `js/app.js` | Routeur, session, coquille commune des trois entrées |
-| `js/taches.js` | L'espace Tâches : toutes les tâches, la priorité, la capture |
+| `js/app.js` | Routeur, session, coquille commune des trois entrées, **fond figé sous une tuile** |
+| `js/taches.js` | L'espace Tâches : la liste, la tuile de capture, la ligne de tâche empruntée par le dashboard |
+| `js/dashboard.js` | L'accueil : humeur, victoires, objectifs, les tâches du jour, la semaine du calendrier |
 | `js/cache-session.js` | Le dernier état d'un espace, gardé le temps de l'onglet (§ 2 ter) |
 | `js/api.js` | **Tous** les appels Supabase, une fonction par usage |
 | `js/espace-projet.js` | La fabrique d'espace projet (formation) + gabarits partagés |
 | `js/publications.js` | Le calendrier éditorial, partagé Yuno/FCH — ce qui diffère passe en paramètre (cycle, checklist, piliers) |
-| `js/calendrier-commun.js` | L'assemblage de tout ce qui porte une date, les trois vues, les fenêtres, le glissement et le clavier |
+| `js/calendrier-commun.js` | L'assemblage de tout ce qui porte une date, les trois vues, le glissement et le clavier — **et la tuile « Poser au calendrier » avec `poserAuCalendrier` / `brancherCapture`, partagées par le hub, l'accueil et les deux sites** |
 | `js/yuno.js` | Le site Yuno : le Carnet, la base du carnet réseau, la Passerelle, le rendez-vous stats |
 | `js/hermitage.js` | Le site FC Hermitage |
 | `js/revisions.js` | Lecture du gist Bac-3 — chaque calcul cite sa source |
