@@ -507,6 +507,23 @@ disparu.
 - **Attention à l'ordre dans la feuille** : le `@media` qui centre sur grand
   écran doit venir APRÈS `.capture` et `.capture-popover`. À spécificité égale
   c'est la position qui tranche, et placé avant, il ne s'appliquait pas.
+- **Le fond ne bouge plus d'un pixel** (13 août, captures de Noé à l'appui : la
+  page descendait à chaque appui sur « + »). La cause : sur iPhone, ouvrir le
+  clavier fait défiler **le document** pour « amener le champ à la vue » — même
+  quand ce champ vit dans un élément `position: fixed` déjà visible. Safari ne
+  regarde pas où le champ est réellement affiché.
+  **`overflow: hidden` sur le corps ne suffit pas sur iOS** : il faut sortir le
+  document du flux. On retient la position, on fixe le corps décalé d'autant
+  (`body.fond-fige`, `top: -Ypx`) — l'écran ne bronche pas au moment de la
+  bascule — et on rend la position en refermant.
+  **Le déclenchement est dans `app.js`**, par un `MutationObserver` qui regarde
+  `.capture` apparaître, et non dans les quatre espaces qui ouvrent une tuile :
+  quatre endroits où penser à figer ET à libérer, c'est trois oublis en
+  puissance.
+  **Vérifié**, page en haut et page défilée à 300 px : le titre reste au même
+  pixel avant, pendant et après ; la position est rendue exactement ; le bouton
+  flottant ne bouge pas malgré le corps devenu fixe ; et la navigation entre
+  espaces ne laisse jamais le corps figé derrière elle.
 - **Ni `overflow`, ni `max-height` sur la tuile** : les menus se posent au-dessus
   d'elle, donc hors de sa boîte, et un conteneur de défilement les découperait.
   Piège rencontré en écrivant la règle.

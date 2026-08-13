@@ -1107,13 +1107,18 @@ body[data-espace="dashboard"] #espace-dashboard { padding-bottom: 5.5rem; }
    spécificité c'est l'ordre qui tranche — elle l'emportait. */
 .fenetre-fond.capture-fond { background: rgb(0 0 0 / 65%); }
 
-/* Tant qu'une tuile est ouverte, la page derrière ne défile plus : c'est la
-   tuile qu'on manipule, pas ce qu'il y a dessous, et un fond qui glisse sous
-   une tuile fixe donne le tournis.
-   `:has()` plutôt qu'une classe posée en JS : la tuile s'ouvre depuis quatre
-   endroits (Tâches, accueil, calendrier, sites), et quatre endroits où penser à
-   poser ET retirer une classe, c'est trois oublis en puissance. */
-body:has(.capture) { overflow: hidden; }
+/* Tant qu'une tuile est ouverte, la page derrière ne bouge plus d'un pixel.
+   `overflow: hidden` ne suffit pas sur iOS : quand le clavier s'ouvre, Safari
+   fait défiler LE DOCUMENT pour amener le champ à la vue, même s'il vit dans un
+   élément fixe déjà visible. Il faut sortir le document du flux.
+   Le décalage `top` est posé en JS (`figerLeFond`, dans app.js) : il vaut la
+   position qu'on avait, de sorte que l'écran ne bronche pas au moment où le
+   corps devient fixe. */
+body.fond-fige {
+  position: fixed;
+  width: 100%;
+  overflow: hidden;
+}
 
 /* La tuile vole au-dessus de la page, sur ce fond assombri — comme Todoist.
    Elle n'a PAS de contour, à la demande de Noé : sur un fond obscurci, l'ombre

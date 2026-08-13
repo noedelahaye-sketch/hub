@@ -165,6 +165,42 @@ let routeCourante = null;
 
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
+// --- Le fond figé sous une tuile ---------------------------------------------
+//
+// Sur iPhone, ouvrir le clavier fait défiler LA PAGE pour « amener le champ à
+// la vue » — même quand ce champ vit dans un élément `position: fixed` déjà
+// visible à l'écran. Résultat constaté par Noé : la page descendait à chaque
+// appui sur « + ».
+//
+// `overflow: hidden` sur le corps ne suffit pas sur iOS : il faut sortir le
+// document du flux. On retient donc la position, on fixe le corps décalé
+// d'autant — l'écran ne bouge pas d'un pixel — et on rend la position en
+// refermant.
+//
+// Le déclenchement est ici, dans la coquille, et non dans les quatre espaces
+// qui ouvrent une tuile : quatre endroits où penser à figer ET à libérer, c'est
+// trois oublis en puissance. Un observateur regarde `.capture` apparaître.
+let defilementFige = 0;
+
+function figerLeFond() {
+  if (document.body.classList.contains('fond-fige')) return;
+  defilementFige = window.scrollY;
+  document.body.style.top = `-${defilementFige}px`;
+  document.body.classList.add('fond-fige');
+}
+
+function libererLeFond() {
+  if (!document.body.classList.contains('fond-fige')) return;
+  document.body.classList.remove('fond-fige');
+  document.body.style.top = '';
+  window.scrollTo(0, defilementFige);
+}
+
+new MutationObserver(() => {
+  if (document.querySelector('.capture')) figerLeFond();
+  else libererLeFond();
+}).observe(document.body, { childList: true, subtree: true });
+
 function afficherEspace() {
   const route = analyserAdresse(location.hash);
   const nom = route.espace;
