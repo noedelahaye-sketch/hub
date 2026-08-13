@@ -34,6 +34,7 @@ import {
   formulaireIdee,
 } from './publications.js';
 import { depuisDateISO, echeanceLisible, echapper, versDateISO } from './format.js';
+import { brancherChoix } from './espace-projet.js';
 import {
   assemblerCalendrier,
   construireCalendrier,
@@ -405,6 +406,10 @@ export default {
         ?.addEventListener('click', () => this.monter(section, route));
       return;
     }
+
+    // Les choix des formulaires (« Noter une idée ») : ce site n'a pas de tuile
+    // de capture, donc personne ne les branche pour lui.
+    brancherChoix(section);
 
     this.naviguer(route);
 

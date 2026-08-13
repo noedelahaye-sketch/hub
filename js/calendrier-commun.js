@@ -10,7 +10,7 @@
 // et il ne fait que poser des écouteurs.
 
 import * as api from './api.js';
-import { construireFormulaire, construireFenetre } from './espace-projet.js';
+import { construireFormulaire, construireFenetre, poserLeChoix } from './espace-projet.js';
 import {
   depuisDateISO,
   versDateISO,
@@ -1448,21 +1448,6 @@ export function fenetreCreation({
 // Le comportement des pastilles, branché une fois par espace. Il ne touche
 // qu'au DOM : ouvrir un panneau n'écrit rien dans l'état de l'espace, donc rien
 // ne se redessine et aucune saisie ne se perd.
-// Un choix dans un FORMULAIRE (type `choix` de `construireFormulaire`) : le
-// bouton touché devient l'actif, et la valeur va dans le champ caché. Rien
-// n'est redessiné — le formulaire garde ce qui est déjà saisi ailleurs.
-function poserLeChoix(bouton) {
-  const groupe = bouton.closest('[data-choix-champ]');
-  if (!groupe) return;
-
-  groupe.querySelector('input[type="hidden"]').value = bouton.dataset.valeur;
-  for (const autre of groupe.querySelectorAll('button')) {
-    const actif = autre === bouton;
-    autre.classList.toggle('actif', actif);
-    autre.setAttribute('aria-pressed', String(actif));
-  }
-}
-
 export function brancherCapture(section) {
   const panneaux = () => [...section.querySelectorAll('.capture-popover')];
 

@@ -278,8 +278,8 @@ export function formulaireIdee({
     avecPli,
     champs: [
       { nom: 'titre', libelle: "L'idée, en une phrase", type: 'text', requis: true },
-      { nom: 'reseau', libelle: 'Réseau', type: 'select', options: reseaux },
-      { nom: 'format', libelle: 'Format', type: 'select', options: FORMATS },
+      { nom: 'reseau', libelle: 'Réseau', type: 'choix', options: reseaux },
+      { nom: 'format', libelle: 'Format', type: 'choix', options: FORMATS },
       ...champsEnPlus,
       {
         nom: 'rubrique',

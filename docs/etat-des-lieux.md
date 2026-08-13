@@ -1279,8 +1279,45 @@ formulaire aurait enregistré l'ancienne, en silence.
 passée de 4 h à 2 h par la nouvelle liste — `date_fin` relue en base à 19:00 au
 lieu de 21:00, tout le reste identique — puis remise à 4 h par le même chemin,
 base revenue à l'exact. Et sur une publication d'essai, réseau et format changés
-(instagram/post → tiktok/reel), relus en base, puis la ligne supprimée. Aucun
-`<select>` ne reste dans ce formulaire, ni dans le hub ni sur Yuno.
+(instagram/post → tiktok/reel), relus en base, puis la ligne supprimée.
+
+### Et les quatre autres formulaires (demande de Noé, dans la foulée)
+
+**Il ne reste plus un seul `<select>` dans le hub.** Onze champs convertis : le
+type d'un moment (création et correction), le type / la relation / le niveau
+d'une fiche du réseau (création et correction), le statut d'une commande, le
+réseau / le format / le pilier d'une idée.
+
+**Trois pièges, tous rencontrés, tous mesurés :**
+
+1. **Le site du FCH n'a pas de tuile de capture** — donc personne ne branchait
+   ses boutons de choix. La mécanique (`poserLeChoix`) a déménagé dans
+   `espace-projet.js`, à côté du constructeur de formulaires qui produit ces
+   boutons, et `brancherChoix(section)` s'appelle une fois par espace qui en a
+   besoin. `brancherCapture` l'appelle pour les autres.
+2. **Un `<select>` sans valeur préselectionne sa première option ; mes pastilles
+   ne préselectionnaient rien.** « Noter une idée » repartait donc avec un
+   réseau vide, et la base refusait la ligne. Le champ prend maintenant la
+   première option à défaut de valeur — avec un `??` et non un `||` : une valeur
+   explicitement vide (« Sans pilier ») est un choix, pas une absence.
+3. **JavaScript énumère les clés numériques avant les autres**, quel que soit
+   l'ordre d'écriture : `{ '': 'Sans pilier', 1: … }` ressortait « 1, 2, 3, 4,
+   Sans pilier », la valeur par défaut en queue. Invisible dans un menu
+   déroulant, voyant dès que les options s'alignent. Le choix vide repasse
+   devant.
+
+**Et un piège de méthode, pas de code** : le remplacement qui a posé l'appel à
+`brancherChoix` dans `hermitage.js` a réussi, celui qui devait poser son import
+a échoué **en silence** — le motif ne correspondait pas, et rien ne l'a dit.
+L'espace FCH s'est monté vide, et c'est le parcours en navigateur qui l'a
+attrapé (`brancherChoix is not defined`). Toute substitution doit lever quand
+son motif est absent ; celle-là ne le faisait pas.
+
+**Vérifié** : les vingt vues du hub et des deux sites parcourues — aucune vide,
+aucun échec, **zéro `<select>` dans tout le document** ; un contact d'essai
+modifié par les pastilles (type et relation), relu en base, puis supprimé ; une
+idée créée avec réseau, format et pilier choisis aux pastilles, relue en base
+(tiktok / reel / pilier 2), puis supprimée. Base revenue à son état exact.
 
 ---
 
@@ -1657,10 +1694,9 @@ l'usage :
 10. **« Aujourd'hui » ignore les tâches sans date — confirmé** (Noé, 13 août :
     « laisse tel quel »). Une tâche notée sans échéance n'y apparaît jamais, et
     c'est voulu : sinon le bloc du matin se remplirait de tout ce qui traîne.
-11. **Le formulaire de modification du calendrier est aligné** (13 août,
-    § 2 nonies). Restent des `<select>` natifs dans quatre formulaires : le
-    moment, la fiche réseau, la commande et l'idée. Même remède — un mot à
-    changer par champ —, à faire si Noé le demande.
+11. **Plus un seul menu déroulant natif dans le hub** (13 août, § 2 nonies) :
+    le formulaire de modification du calendrier d'abord, puis les quatre autres
+    à la demande de Noé — le moment, la fiche réseau, la commande et l'idée.
 
 ---
 

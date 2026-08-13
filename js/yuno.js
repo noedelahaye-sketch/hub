@@ -429,7 +429,7 @@ function formulaireModifierMoment(moment) {
     extra: `<input type="hidden" name="id" value="${echapper(moment.id)}">`,
     champs: [
       { nom: 'date', libelle: 'Quand', type: 'date', valeur: moment.date, requis: true },
-      { nom: 'type', libelle: 'Quoi', type: 'select', options: TYPES_MOMENT, valeur: moment.type },
+      { nom: 'type', libelle: 'Quoi', type: 'choix', options: TYPES_MOMENT, valeur: moment.type },
       { nom: 'lieu', libelle: 'Événement ou lieu', type: 'text', valeur: moment.lieu ?? '' },
       { nom: 'note', libelle: 'Note', type: 'textarea', valeur: moment.note ?? '' },
       {
@@ -586,7 +586,7 @@ function formulaireMoment(contacts, prefill = null) {
        avecPli: false,
        champs: [
          { nom: 'date', libelle: 'Quand', type: 'date', valeur: prefill?.date ?? versDateISO() },
-         { nom: 'type', libelle: 'Quoi', type: 'select', options: TYPES_MOMENT, valeur: 'match' },
+         { nom: 'type', libelle: 'Quoi', type: 'choix', options: TYPES_MOMENT, valeur: 'match' },
          { nom: 'lieu', libelle: 'Événement ou lieu', type: 'text', valeur: prefill?.lieu ?? '' },
          {
            nom: 'rencontres',
@@ -1032,7 +1032,7 @@ function fenetreNoterIdee(etat) {
          {
            nom: 'pilier',
            libelle: 'Pilier',
-           type: 'select',
+           type: 'choix',
            options: {
              '': 'Sans pilier',
              ...Object.fromEntries(
@@ -2111,12 +2111,12 @@ function fenetreContact(etat) {
          extra: `<input type="hidden" name="id" value="${echapper(contact.id)}">`,
          champs: [
            { nom: 'nom', libelle: 'Nom', type: 'text', valeur: contact.nom, requis: true },
-           { nom: 'type', libelle: 'Type', type: 'select', options: TYPES_CONTACT, valeur: contact.type },
+           { nom: 'type', libelle: 'Type', type: 'choix', options: TYPES_CONTACT, valeur: contact.type },
            { nom: 'structure', libelle: 'Structure', type: 'text', valeur: contact.structure ?? '' },
            {
              nom: 'statut',
              libelle: 'Où en est la relation',
-             type: 'select',
+             type: 'choix',
              options: Object.fromEntries(
                Object.entries(STATUTS_CONTACT).map(([cle, { nom }]) => [cle, nom]),
              ),
@@ -2282,18 +2282,18 @@ function vueCarnet(etat) {
 function champsContact() {
   return [
     { nom: 'nom', libelle: 'Nom', type: 'text', requis: true },
-    { nom: 'type', libelle: 'Type', type: 'select', options: TYPES_CONTACT, valeur: 'joueur' },
+    { nom: 'type', libelle: 'Type', type: 'choix', options: TYPES_CONTACT, valeur: 'joueur' },
     { nom: 'structure', libelle: 'Rattaché à (FC Lorient, OM, La Provence…)', type: 'text' },
     { nom: 'instagram', libelle: 'Instagram', type: 'text' },
     { nom: 'email', libelle: 'E-mail', type: 'text' },
     { nom: 'telephone', libelle: 'Téléphone', type: 'text' },
-    { nom: 'statut', libelle: 'Relation', type: 'select',
+    { nom: 'statut', libelle: 'Relation', type: 'choix',
       options: Object.fromEntries(
         Object.entries(STATUTS_CONTACT).map(([v, { nom }]) => [v, nom]),
       ),
       valeur: 'pas_de_contact' },
     { nom: 'objectif', libelle: 'Pourquoi ce contact ? (facultatif)', type: 'text' },
-    { nom: 'niveau', libelle: "Dans la file d'aller-vers ?", type: 'select',
+    { nom: 'niveau', libelle: "Dans la file d'aller-vers ?", type: 'choix',
       options: {
         '': 'Pas dans la file',
         ...Object.fromEntries(
@@ -2449,7 +2449,7 @@ function blocCommandes(etat) {
             type: 'text',
             suggestions: etat.contacts.map((contact) => contact.nom),
           },
-          { nom: 'statut', libelle: 'Où en est-elle', type: 'select',
+          { nom: 'statut', libelle: 'Où en est-elle', type: 'choix',
             options: STATUTS_COMMANDE, valeur: 'devis' },
           { nom: 'echeance', libelle: 'À livrer pour (facultatif)', type: 'date' },
           { nom: 'montant', libelle: 'Montant en euros (facultatif)', type: 'number' },

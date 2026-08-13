@@ -279,6 +279,31 @@ export function construireFenetre(titre, contenu) {
 
 // `avecPli` à false rend le formulaire nu, sans son dépliant : dans une
 // fenêtre, le titre est déjà dit par la fenêtre elle-même.
+// Un choix dans un formulaire : le bouton touché devient l'actif, et la valeur
+// va dans le champ caché de son groupe. Rien n'est redessiné — le formulaire
+// garde ce qui est déjà saisi ailleurs, curseur compris.
+export function poserLeChoix(bouton) {
+  const groupe = bouton.closest('[data-choix-champ]');
+  if (!groupe) return;
+
+  groupe.querySelector('input[type="hidden"]').value = bouton.dataset.valeur;
+  for (const autre of groupe.querySelectorAll('button')) {
+    const actif = autre === bouton;
+    autre.classList.toggle('actif', actif);
+    autre.setAttribute('aria-pressed', String(actif));
+  }
+}
+
+// À poser une fois par espace qui affiche un formulaire à choix. Les espaces
+// qui branchent déjà la tuile de capture n'en ont pas besoin — elle s'en
+// charge —, mais le site du FCH, lui, a des formulaires sans tuile.
+export function brancherChoix(section) {
+  section.addEventListener('click', (evenement) => {
+    const bouton = evenement.target.closest('[data-choix-champ] [data-choix]');
+    if (bouton) poserLeChoix(bouton);
+  });
+}
+
 export function construireFormulaire({
   id,
   libelle,
@@ -307,14 +332,30 @@ export function construireFormulaire({
     // caché — le formulaire se lit toujours avec `FormData`, il n'a pas à
     // savoir comment on a saisi.
     if (champ.type === 'choix') {
+      // Le choix VIDE passe devant. JavaScript énumère les clés numériques
+      // d'abord, quel que soit l'ordre d'écriture : `{ '': 'Sans pilier', 1: … }`
+      // ressortait « 1, 2, 3, 4, Sans pilier », et la valeur par défaut se
+      // retrouvait en queue. Invisible dans un menu déroulant, voyant dès que
+      // les options deviennent des pastilles alignées.
+      const options = Object.entries(champ.options).sort(
+        ([a], [b]) => (a === '' ? -1 : 0) - (b === '' ? -1 : 0),
+      );
+
+      // Sans valeur donnée, la PREMIÈRE option est choisie — c'est ce que fait
+      // un `<select>`, et plusieurs formulaires comptaient dessus sans le dire.
+      // Sans ça, « Noter une idée » repartait avec un réseau vide, et la base
+      // refusait la ligne. Un `??` et non un `||` : une valeur explicitement
+      // vide (« Sans pilier ») est un choix, pas une absence.
+      const valeur = champ.valeur ?? options[0]?.[0] ?? '';
+
       return `<span class="choix-champ" data-choix-champ="${champ.nom}">
-        <input type="hidden" name="${champ.nom}" value="${echapper(champ.valeur ?? '')}">
-        ${Object.entries(champ.options)
+        <input type="hidden" name="${champ.nom}" value="${echapper(valeur)}">
+        ${options
           .map(
-            ([valeur, libelleOption]) => `
-          <button type="button" data-choix="${champ.nom}" data-valeur="${echapper(valeur)}"
-            class="${String(valeur) === String(champ.valeur ?? '') ? 'actif' : ''}"
-            aria-pressed="${String(valeur) === String(champ.valeur ?? '')}"
+            ([cle, libelleOption]) => `
+          <button type="button" data-choix="${champ.nom}" data-valeur="${echapper(cle)}"
+            class="${String(cle) === String(valeur) ? 'actif' : ''}"
+            aria-pressed="${String(cle) === String(valeur)}"
             >${echapper(libelleOption)}</button>`,
           )
           .join('')}
