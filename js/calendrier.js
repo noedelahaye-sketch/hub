@@ -23,8 +23,6 @@ import {
   fenetreJour,
   elementsDuJour,
   finDeLEvenement,
-  heureSousLePoint,
-  cadrerLesHeures,
   brancherSelection,
   brancherClavier,
   brancherDeplacement,
@@ -90,7 +88,6 @@ export default {
         }`;
 
       centrerActif(section.querySelector('.filtres'));
-      cadrerLesHeures(section);
       poserLEntreeClavier?.();
     }
 
@@ -201,22 +198,6 @@ export default {
           debut: section.querySelector('#cal-debut')?.value || etat.creation.debut,
           fin: section.querySelector('#cal-fin')?.value || etat.creation.fin,
           nature: nature.dataset.natureCreation,
-        };
-        rendre();
-        section.querySelector('#cal-titre')?.focus();
-        return;
-      }
-
-      // Cliquer dans la grille horaire pose un événement à cette heure-là.
-      const creneau = evenement.target.closest('.cal-colonne-jour');
-      if (creneau && !evenement.target.closest('.cal-bloc')) {
-        const jour = creneau.dataset.jour;
-        etat.detail = null;
-        etat.creation = {
-          debut: jour,
-          fin: jour,
-          nature: 'evenement',
-          heure: heureSousLePoint(creneau, evenement.clientY),
         };
         rendre();
         section.querySelector('#cal-titre')?.focus();

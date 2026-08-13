@@ -121,6 +121,20 @@ export async function supprimerVictoire(id) {
   if (error) throw error;
 }
 
+// Décocher une tâche retire la victoire qu'elle avait créée. Le dashboard le
+// fait déjà, mais il garde l'identifiant sous la main — il vient de la créer.
+// L'espace Tâches rouvre des tâches terminées il y a des jours : il faut la
+// retrouver par sa source. Une victoire pour un travail défait serait fausse,
+// et le hub montre ce qui est accompli, pas ce qui l'a paru.
+export async function supprimerVictoireDeLaTache(tacheId) {
+  const { error } = await client
+    .from('victoires')
+    .delete()
+    .eq('source', 'tache')
+    .eq('source_id', tacheId);
+  if (error) throw error;
+}
+
 export async function ajouterVictoire({ projet, titre, source = 'manuel', source_id = null }) {
   return verifier(
     await client
@@ -186,6 +200,20 @@ export async function tachesEcheanceJusqua(finISO, { projet = null } = {}) {
 
   if (projet) requete = requete.eq('projet', projet);
   return verifier(await requete);
+}
+
+// TOUTES les tâches, sans exception : datées ou non, faites ou non, tous
+// projets. C'est la seule lecture du hub qui ne cache rien — l'espace Tâches
+// est fait pour ça, et le tri se décide à l'affichage plutôt qu'ici.
+export async function tachesToutes() {
+  return verifier(
+    await client
+      .from('taches')
+      .select('*')
+      .order('priorite')
+      .order('echeance', { nullsFirst: false })
+      .order('created_at', { ascending: false }),
+  );
 }
 
 // Toutes les tâches en cours d'un projet, actives et backlog confondus. L'ordre
@@ -285,18 +313,21 @@ export async function creerJalon({ objectif_id, titre, echeance = null, ordre = 
   );
 }
 
+// `priorite` vaut 4 par défaut, comme en base : une tâche n'est pas prioritaire
+// parce qu'elle existe.
 export async function creerTache({
   projet,
   titre,
   statut = 'backlog',
   echeance = null,
   heure = null,
+  priorite = 4,
   objectif_id = null,
 }) {
   return verifier(
     await client
       .from('taches')
-      .insert({ projet, titre, statut, echeance, heure, objectif_id })
+      .insert({ projet, titre, statut, echeance, heure, priorite, objectif_id })
       .select()
       .single(),
   );

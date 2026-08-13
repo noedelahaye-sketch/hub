@@ -76,17 +76,29 @@ sur n'importe quel calendrier.
 vue jour — ce qui est défendable pour un usage personnel où les journées sont
 rarement chargées de dix créneaux.
 
-✅ **La vue semaine a ses heures depuis le 12 août.** Elle se lit en deux
-zones : un bandeau du haut pour ce qui n'a pas d'heure — les tâches, les
-échéances, les événements de plusieurs jours — et en dessous une grille de
-vingt-quatre heures où un événement occupe sa vraie durée. Deux blocs qui se
-chevauchent se partagent la largeur du jour. La grille s'ouvre sur le premier
-événement de la semaine, pas sur minuit.
+⚠️ **La grille de vingt-quatre heures a existé du 12 au 13 août, puis Noé l'a
+fait retirer.** Elle faisait exactement ce que cette section recommande — un
+bandeau pour ce qui n'a pas d'heure, une grille horaire en dessous, un bloc à sa
+vraie durée, les chevauchements se partageant la largeur — et c'est justement
+l'occasion de noter où la recommandation se trompe.
 
-Ça a demandé une donnée qui manquait : **une durée**. Un événement à 15 h
-n'avait aucune fin. Le formulaire demande maintenant « combien de temps »
-plutôt que deux sélecteurs d'heure — on pense « un match dure deux heures »,
-pas « de 15 h à 17 h ».
+**Ce que le raisonnement ci-dessus ne pesait pas : le taux de remplissage.** La
+grille horaire est juste pour un agenda dense. Sur un calendrier à trois
+rendez-vous par semaine, elle affiche vingt-et-une cases vides pour trois
+pleines, et oblige à faire défiler pour trouver ce qu'on cherche. L'argument
+« la vue mois écrase la durée » reste vrai ; il ne suit pas qu'il faille une
+échelle de vingt-quatre heures pour le corriger.
+
+✅ **Ce qui le corrige à moindre frais, depuis le 13 août** : la semaine est une
+ligne de sept cases, l'heure s'écrit devant le titre, l'ordre est chronologique,
+et **la hauteur d'une barre est sa durée** (2,5 rem par heure). Un match de deux
+heures est deux fois plus haut qu'un rendez-vous d'une heure — la durée se voit,
+sans échelle ni défilement.
+
+La durée reste la donnée qui manquait, et elle a bien été ajoutée : un événement
+à 15 h n'avait aucune fin. Le formulaire demande « combien de temps » plutôt que
+deux sélecteurs d'heure — on pense « un match dure deux heures », pas « de 15 h
+à 17 h ». C'est elle qui donne maintenant sa hauteur à la barre.
 
 ---
 
@@ -222,7 +234,11 @@ du texte plus petit.** Une grille de sept colonnes tient à 375 px — la nôtre
 prouve — mais ce qu'on y met doit changer :
 
 - les titres deviennent illisibles au-delà de deux ou trois mots ;
-- la vue semaine sans heures perd tout intérêt sur un écran étroit ;
+- la vue semaine sans heures perd tout intérêt sur un écran étroit — à nuancer
+  depuis le 13 août : sans grille horaire mais avec l'heure écrite et la hauteur
+  proportionnelle, elle garde son intérêt, à condition que l'heure passe
+  au-dessus du titre. Sept colonnes sur 375 px, c'est 50 px par jour : « 19:00 »
+  et un titre ne tiennent pas côte à côte ;
 - l'agenda redevient la meilleure vue, parce qu'une liste ne souffre pas de
   l'étroitesse.
 
@@ -241,7 +257,8 @@ publications et des relances, pas un cadre à trente réunions par semaine.
 reconnaissent à l'œil, et une barre se déplace au glissement. Reste ceci :
 
 **✅ 4 à 7 — faits le 12 août.** Les heures dans la vue semaine, la récurrence,
-la navigation au clavier et la sémantique de la grille.
+la navigation au clavier et la sémantique de la grille. *La grille horaire a été
+retirée le 13 août — voir § 4 ; l'heure et la durée sont restées, autrement.*
 
 **8. La saisie en langage naturel.** *Effet moyen, coût élevé.* Ne vaut son prix
 qu'au-delà d'un certain volume de saisie. Pas maintenant.

@@ -72,8 +72,11 @@
 
 /* Thèmes des espaces. */
 body[data-espace="dashboard"] { --accent: #6b7f8c; --accent-doux: #eceff1; }
-/* Le calendrier est transverse : il garde le gris neutre de l'accueil. */
+/* Le calendrier et les tâches sont transverses : ils regardent tous les projets
+   et n'en portent donc aucune couleur. Ils gardent le gris neutre de l'accueil,
+   et les pastilles de projet font la distinction dans la liste. */
 body[data-espace="calendrier"] { --accent: #6b7f8c; --accent-doux: #eceff1; }
+body[data-espace="taches"] { --accent: #6b7f8c; --accent-doux: #eceff1; }
 body[data-espace="formation"] { --accent: #17786f; --accent-doux: #e3f1ef; }
 /* Yuno : le doré du logo (#e8b000, relevé sur le fichier). En clair il
    s'assombrit en ocre — un doré clair sur fond blanc ne se lit pas
@@ -198,6 +201,7 @@ body[data-espace="hermitage"] {
 
   body[data-espace="dashboard"] { --accent: #9db3c0; --accent-doux: #262a2e; }
   body[data-espace="calendrier"] { --accent: #9db3c0; --accent-doux: #262a2e; }
+  body[data-espace="taches"] { --accent: #9db3c0; --accent-doux: #262a2e; }
   body[data-espace="formation"] { --accent: #56b8ad; --accent-doux: #1b2e2c; }
   body[data-espace="photo"]     { --accent: #e8b000; --accent-doux: #2f2708; }
   body[data-espace="fch"]       { --accent: #7ba5dc; --accent-doux: #1d2733; }
@@ -415,6 +419,13 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
      leur rembourrage, et à ce prix les six onglets tiennent sur 375 px. Dès
      qu'il y a de la place, elles rejoignent l'alignement du contenu. */
   padding: var(--espace-8) var(--espace-8);
+  /* Les onglets ne tiennent pas toujours sur 375 px : on laisse glisser plutôt
+     que de rétrécir le texte, et `centrerActif` ramène l'actif dans le champ.
+     Ces deux lignes vivaient dans le `@media` ci-dessous, mais hors de tout
+     sélecteur — elles ne s'appliquaient donc à rien, et c'était la PAGE qui
+     défilait de travers sur téléphone, pas la barre. */
+  overflow-x: auto;
+  scrollbar-width: none;
   background: var(--fond);
   /* Un filet sépare les onglets du contenu, comme sur Bac-3. */
   border-bottom: 1px solid var(--bordure);
@@ -428,10 +439,6 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
     gap: var(--espace-8);
   }
   .navigation a { padding: 0 var(--espace-16); font-size: 0.9375rem; }
-  /* Cinq onglets ne tiennent pas toujours sur 375 px : on laisse glisser
-     plutôt que de rétrécir le texte. */
-  overflow-x: auto;
-  scrollbar-width: none;
 }
 
 .navigation::-webkit-scrollbar { display: none; }
@@ -468,6 +475,24 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
   color: var(--fond-carte);
   background: var(--accent);
 }
+
+/* --- L'onglet du calendrier -------------------------------------------------
+   Il ne nomme pas un lieu, il ouvre la vue qui les traverse tous : une icône
+   plutôt qu'un mot, et la dernière place de la rangée. Dernier, mais DANS la
+   rangée — pas poussé au bord opposé (demande de Noé, 13 août 2026) : une barre
+   avec un élément à part se lit comme deux barres.
+   La règle vaut pour les trois barres — le hub, Yuno et le FCH — d'où la classe
+   plutôt qu'un sélecteur de position.
+   Carré et non allongé : sans texte, le rembourrage horizontal d'un onglet
+   laisserait l'icône flotter au milieu d'une pastille de mot. */
+.nav-calendrier {
+  justify-content: center;
+  padding: 0 var(--espace-8);
+  aspect-ratio: 1;
+}
+
+/* Rien à couper ni à faire défiler dans une icône. */
+.nav-calendrier svg { display: block; flex: 0 0 auto; }
 
 /* --- Blocs de contenu ------------------------------------------------------ */
 
@@ -845,6 +870,584 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
 }
 
 .liste-taches .tache-titre { flex: 1; }
+
+/* --- L'espace Tâches -------------------------------------------------------
+   La forme vient de Todoist (capture de Noé, 13 août 2026) : un cercle coloré
+   par priorité qui coche, le titre, puis une ligne de service — la date à
+   gauche, le projet à droite.
+
+   Ce qui n'en vient PAS : la date passée n'y est pas rouge. Todoist écrit
+   « Hier » en rouge ; le hub n'a pas de couleur d'alerte et n'en aura pas. Une
+   échéance dépassée se dit du même gris que les autres, et le cercle ne change
+   pas de couleur avec le temps qui passe.
+
+   Les quatre couleurs de priorité disent une INTENSITÉ, pas un jugement : c'est
+   Noé qui les pose, l'application ne décide de rien. D'où une rampe chaude qui
+   descend jusqu'au gris — la 4 est le cas ordinaire, elle ne doit rien colorer.
+   La terre cuite de la 1 est volontairement distincte de `--erreur` : elles ne
+   se ressemblent pas, parce qu'elles ne disent pas la même chose. */
+
+:root {
+  --prio-1: #b4543f;
+  --prio-2: #c08329;
+  --prio-3: #6b7f8c;
+  --prio-4: #a8a29a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --prio-1: #d98570;
+    --prio-2: #d8a758;
+    --prio-3: #9db3c0;
+    --prio-4: #7d7871;
+  }
+}
+
+/* Une liste, pas des tuiles. Partout ailleurs le hub pose ses `.bloc li` en
+   cartes, avec la barre de couleur du projet à gauche ; ici on suit la forme
+   demandée (la capture) : des lignes séparées d'un filet, et rien d'autre.
+   Une liste de vingt tâches en vingt cartes deviendrait un mur — et la barre de
+   projet ferait double emploi avec le nom du projet, déjà coloré à droite.
+   D'où l'annulation explicite de `.bloc li` et de sa barre. */
+.bloc .liste-taches-pleine {
+  gap: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.bloc .liste-taches-pleine > .tache-ligne {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: var(--espace-12);
+  padding: var(--espace-12) 0;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--bordure);
+  border-radius: 0;
+}
+
+.bloc .liste-taches-pleine > .tache-ligne::before { content: none; }
+.bloc .liste-taches-pleine > .tache-ligne:last-child { border-bottom: none; }
+
+/* Le cercle. Un anneau vide tant que la tâche est à faire, plein une fois
+   cochée — le même geste que partout, et la couleur dit la priorité.
+   44 px de cible tactile obtenus par la marge négative : le disque visible fait
+   1,25 rem, mais on le vise avec un pouce. */
+.tache-cercle {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: calc(var(--espace-12) * -1);
+  margin-right: 0;
+  padding: var(--espace-12);
+  box-sizing: content-box;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.tache-cercle::before {
+  content: "";
+  display: block;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--prio, var(--prio-4));
+  border-radius: var(--rayon-pastille);
+  background: color-mix(in srgb, var(--prio, var(--prio-4)) 14%, transparent);
+}
+
+.tache-cercle:hover::before {
+  background: color-mix(in srgb, var(--prio, var(--prio-4)) 34%, transparent);
+}
+
+.tache-ligne[data-priorite="1"] { --prio: var(--prio-1); }
+.tache-ligne[data-priorite="2"] { --prio: var(--prio-2); }
+.tache-ligne[data-priorite="3"] { --prio: var(--prio-3); }
+.tache-ligne[data-priorite="4"] { --prio: var(--prio-4); }
+
+/* Une tâche faite garde sa place et le dit : cercle plein, titre barré. Le hub
+   ne fait pas disparaître ce qui a été accompli — et c'est aussi ce qui permet
+   de revenir sur une case cochée par erreur. */
+.tache-faite .tache-cercle::before {
+  background: var(--prio, var(--prio-4));
+}
+
+.tache-faite .tache-titre {
+  color: var(--texte-discret);
+  text-decoration: line-through;
+  text-decoration-color: var(--bordure);
+}
+
+.tache-corps {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tache-titre {
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+/* La ligne de service : tout ce qui n'est pas le titre. Elle passe à la ligne
+   plutôt que de se couper — sur 375 px, une date, deux réglages et un projet
+   ne tiennent pas côte à côte. */
+.tache-service {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-8);
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+}
+
+.tache-quand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-4);
+}
+
+.tache-quand svg { flex: none; }
+
+/* Le projet est poussé à droite, comme dans la capture, et porte sa couleur —
+   celle des tuiles du dashboard, pas une nouvelle. Deux codes couleur sur une
+   même ligne, mais sur deux objets différents : le cercle dit la priorité, le
+   nom dit le projet. Ils ne se disputent rien. */
+.tache-projet {
+  margin-left: auto;
+  font-weight: 600;
+  color: var(--couleur-projet-texte, var(--texte-discret));
+}
+
+/* Les deux réglages de ligne — priorité et statut. Ils se changent là où ils se
+   lisent : c'est le geste le plus fréquent de cette page, il ne mérite pas un
+   formulaire. Discrets tant qu'on n'y touche pas. */
+.tache-reglage {
+  min-height: 1.75rem;
+  padding: 0 var(--espace-4);
+  font-family: inherit;
+  font-size: 0.75rem;
+  color: var(--texte-discret);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--rayon-controle);
+}
+
+.tache-reglage:hover {
+  color: var(--texte);
+  border-color: var(--bordure);
+}
+
+.tache-reglage:disabled { opacity: 0.5; }
+
+/* --- La capture d'une tâche -------------------------------------------------
+   Un « + » qui ouvre une tuile, le nom qu'on écrit directement, et dessous une
+   rangée de pastilles — date, projet, priorité — dont chacune ouvre son choix.
+   Forme demandée par Noé (captures du 13 août).
+
+   Ce que ça change par rapport à un formulaire à six champs empilés : une tâche
+   se note en trois secondes, entre deux choses. Le nom suffit à la créer ; le
+   reste se pose quand on en a envie, et se voit d'un coup d'œil parce qu'une
+   pastille renseignée affiche sa valeur au lieu de son libellé. */
+
+.ouvrir-capture {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  width: 100%;
+  min-height: 2.75rem;
+  margin: 0 0 var(--espace-16);
+  padding: 0;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  text-align: left;
+  color: var(--texte-discret);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.ouvrir-capture:hover { color: var(--texte); }
+
+.ouvrir-capture-plus {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: 1.125rem;
+  line-height: 1;
+  color: var(--accent);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+}
+
+.ouvrir-capture:hover .ouvrir-capture-plus {
+  color: var(--fond-carte);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Le fond des autres fenêtres du hub est à 45 % : assez pour une fiche qu'on
+   consulte, pas pour celle-ci. Sur le thème sombre, l'onglet actif et le filtre
+   choisi sont des aplats d'accent clair, et ils traversaient — mesuré à l'œil
+   sur capture. 65 % les éteint sans noircir la page au point qu'on ne sache
+   plus où l'on est.
+   Les deux classes dans le sélecteur, et pas seulement `.capture-fond` :
+   `.fenetre-fond` est déclarée plus bas dans cette feuille, et à égalité de
+   spécificité c'est l'ordre qui tranche — elle l'emportait. */
+.fenetre-fond.capture-fond { background: rgb(0 0 0 / 65%); }
+
+/* La tuile vole au-dessus de la page, sur ce fond assombri — comme Todoist.
+   Elle n'a PAS de contour, à la demande de Noé : sur un fond obscurci, l'ombre
+   suffit à la détacher, et un trait de plus ne dirait rien de nouveau.
+
+   Sur téléphone, elle est collée en bas : c'est là qu'arrive le pouce, et là
+   que le clavier la pousse. `--bas-clavier` est mesuré en JS sur la fenêtre
+   visuelle (`visualViewport`) et vaut la hauteur que le clavier occupe : la
+   tuile se pose donc JUSTE au-dessus de lui, pas dessous. À zéro — clavier
+   fermé — `env(safe-area-inset-bottom)` la tient au-dessus de la barre de
+   gestes en plein écran. */
+.capture {
+  position: fixed;
+  z-index: 41;
+  left: 50%;
+  bottom: calc(var(--bas-clavier, 0px) + max(var(--espace-16), env(safe-area-inset-bottom, 0px)));
+  transform: translateX(-50%);
+  width: min(34rem, calc(100vw - 2 * var(--espace-16)));
+  /* Ni `overflow`, ni `max-height` : les menus se posent AU-DESSUS de la tuile,
+     donc hors de sa boîte. Un conteneur de défilement les découperait. Elle n'en
+     a pas besoin — un champ et trois pastilles tiennent toujours. */
+  margin: 0;
+  padding: var(--espace-16);
+  background: var(--fond-carte);
+  border: 0;
+  border-radius: var(--rayon-carte);
+  box-shadow: 0 12px 48px rgb(0 0 0 / 45%);
+}
+
+/* Sur ordinateur, au milieu de l'écran (demande de Noé) : il n'y a pas de
+   clavier qui monte du bas, et une tuile posée en bas d'un grand écran laisse
+   un vide au-dessus d'elle. Le `--bas-clavier` ne sert plus à rien ici — un
+   clavier physique ne prend pas de place. */
+@media (min-width: 45rem) {
+  .capture {
+    top: 50%;
+    bottom: auto;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Tuile centrée : la place au-dessus d'elle n'est plus toute la hauteur mais
+     la moitié, moins sa propre demi-hauteur. Sans cette borne, un panneau haut
+     sortirait par le haut sur un écran d'ordinateur peu profond. */
+  .capture-popover { max-height: calc(50vh - 6rem); }
+}
+
+/* Le champ du nom n'a ni cadre ni fond : dans une tuile qui n'existe que pour
+   lui, un cadre dans un cadre ne dit rien de plus. Il reste à 16 px — en
+   dessous, Safari sur iPhone zoome dès qu'on entre dedans. */
+.capture-titre {
+  width: 100%;
+  margin: 0 0 var(--espace-12);
+  padding: var(--espace-4) 0;
+  font-family: inherit;
+  /* 17px en dur, pas en rem : la racine du hub est à 15 px, et 1,0625rem
+     tombait à 15,94 px — juste sous la barre des 16 en dessous de laquelle
+     Safari iOS zoome au focus. Mesuré, pas supposé. */
+  font-size: 17px;
+  color: var(--texte);
+  background: none;
+  border: 0;
+}
+
+.capture-titre::placeholder { color: var(--texte-discret); }
+.capture-titre:focus { outline: none; }
+
+/* Une seule ligne, toujours. Le bouton d'envoi prime : il garde sa taille quoi
+   qu'il arrive, et ce sont les pastilles qui cèdent — elles défilent
+   latéralement au lieu de passer à la ligne. Une tuile dont la hauteur change
+   selon le nombre de pastilles se déplacerait sous les doigts. */
+.capture-pastilles {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--espace-8);
+}
+
+.capture-pastilles-liste {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--espace-8);
+  /* `min-width: 0` est la ligne qui fait tout : sans elle, un conteneur flex
+     refuse de rétrécir sous la largeur de son contenu (`min-width: auto` par
+     défaut), et les pastilles pousseraient le bouton hors de la tuile au lieu
+     de défiler. */
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Le défilement s'arrête sur une pastille entière, jamais coupée en deux. */
+  scroll-snap-type: x proximity;
+  /* Sinon un geste horizontal dans la bande fait reculer la page entière. */
+  overscroll-behavior-x: contain;
+}
+
+.capture-pastilles-liste::-webkit-scrollbar { display: none; }
+.capture-pastilles-liste > * { scroll-snap-align: start; }
+
+/* Un fondu au bord vers lequel il reste à défiler — sinon une pastille tranchée
+   net ressemble à un défaut de mise en page plutôt qu'à une invitation. Les
+   classes sont posées en JS : une pastille coupée alors qu'il n'y a rien après
+   serait un mensonge, et il faut donc savoir où l'on en est du défilement. */
+.capture-pastilles-liste.deborde-apres {
+  mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent 100%);
+}
+
+.capture-pastilles-liste.deborde-avant {
+  mask-image: linear-gradient(to right, transparent 0, #000 2rem);
+}
+
+.capture-pastilles-liste.deborde-avant.deborde-apres {
+  mask-image: linear-gradient(to right, transparent 0, #000 2rem,
+    #000 calc(100% - 2rem), transparent 100%);
+}
+
+.pastille-capture {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-4);
+  /* 2,25 rem — la même hauteur que les filtres, et le geste principal de cette
+     page. Pas 2,75 rem : trois pastilles à 44 px feraient de la capture un
+     formulaire, alors qu'elle doit rester une ligne qu'on remplit debout. */
+  min-height: 2.25rem;
+  padding: 0 var(--espace-12);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--texte-discret);
+  background: none;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+  cursor: pointer;
+}
+
+.pastille-capture:hover { color: var(--texte); border-color: var(--texte-discret); }
+
+/* Une pastille renseignée porte l'encre du texte : on voit d'un coup lesquelles
+   ont été remplies, sans avoir à les lire une à une. */
+.pastille-capture.remplie { color: var(--texte); border-color: var(--texte-discret); }
+
+/* Sauf la priorité, qui porte la sienne — la même que le cercle de la ligne. */
+.pastille-capture[data-priorite="1"].remplie { color: var(--prio-1); border-color: var(--prio-1); }
+.pastille-capture[data-priorite="2"].remplie { color: var(--prio-2); border-color: var(--prio-2); }
+.pastille-capture[data-priorite="3"].remplie { color: var(--prio-3); border-color: var(--prio-3); }
+
+/* L'envoi : une flèche dans un rond plein, poussée au bout de la rangée. La
+   tuile n'a qu'une action — la nommer serait redondant avec la flèche, et le
+   mot « Ajouter » prenait la place d'une pastille.
+   Éteinte tant qu'il n'y a pas de titre : c'est la seule chose que la tâche
+   exige, et un bouton qui refuse en silence vaut moins qu'un bouton éteint. */
+.capture-envoyer {
+  display: grid;
+  place-items: center;
+  /* `flex: none` : il ne rétrécit pas, il ne s'étire pas, il ne passe pas à la
+     ligne. C'est lui qui prime — pas de `margin-left: auto`, la bande de
+     pastilles occupe déjà tout ce qui reste et le pousse au bout. */
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  color: var(--fond-carte);
+  background: var(--accent);
+  border: 0;
+  border-radius: var(--rayon-pastille);
+  cursor: pointer;
+}
+
+.capture-envoyer:hover { background: color-mix(in srgb, var(--accent) 80%, var(--texte)); }
+
+.capture-envoyer:disabled {
+  color: var(--texte-discret);
+  background: color-mix(in srgb, var(--texte) 10%, transparent);
+  cursor: default;
+}
+
+/* La question posée quand on quitte une tuile commencée. Elle vit DANS la
+   tuile, pas dans une boîte native : c'est le hub qui parle, du même ton que
+   partout ailleurs. */
+.capture-confirmation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-8);
+  margin: var(--espace-12) 0 0;
+  padding: var(--espace-8) var(--espace-12);
+  font-size: 0.875rem;
+  background: var(--accent-doux);
+  border-radius: var(--rayon-controle);
+}
+
+.capture-confirmation-choix {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+}
+
+/* Le panneau d'une pastille flotte AU-DESSUS de la tuile, pas en dessous
+   d'elle : la tuile étant collée au bas de l'écran, un panneau déplié vers le
+   bas sortirait de la vue. C'est aussi ce que fait le modèle. Sans contour non
+   plus — même raison que la tuile. */
+.capture-popover {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + var(--espace-8));
+  /* La place réellement disponible AU-DESSUS de la tuile, clavier déduit :
+     la hauteur visible, moins ce que la tuile occupe (une quinzaine de rem avec
+     ses marges). Sans cette borne, le panneau de date débordait par le haut
+     quand le clavier montait — « Aujourd'hui » sortait de l'écran, donc
+     devenait intouchable. Il défile plutôt que de disparaître. */
+  max-height: calc(100vh - var(--bas-clavier, 0px) - 13rem);
+  overflow-y: auto;
+  padding: var(--espace-8);
+  background: var(--fond-carte);
+  border: 0;
+  border-radius: var(--rayon-carte);
+  box-shadow: 0 12px 48px rgb(0 0 0 / 45%);
+}
+
+/* Un choix court n'a pas besoin de toute la largeur de la tuile. */
+.capture-popover-etroit { right: auto; width: min(20rem, 100%); }
+
+.raccourcis-date,
+.choix-capture {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.raccourcis-date button,
+.choix-capture button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--espace-12);
+  width: 100%;
+  /* 2,5 rem et non 2,75 : quatre raccourcis, deux champs et une tuile doivent
+     tenir au-dessus du clavier. Le geste reste large — la ligne fait toute la
+     largeur du panneau, c'est elle la cible, pas le mot. */
+  min-height: 2.5rem;
+  padding: 0 var(--espace-8);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  text-align: left;
+  color: var(--texte);
+  background: none;
+  border: 0;
+  border-radius: var(--rayon-controle);
+  cursor: pointer;
+}
+
+/* Le raccourci de date garde son jour poussé à droite (« Ce week-end … sam. »). */
+.raccourcis-date button { justify-content: space-between; }
+
+.raccourcis-date button:hover,
+.choix-capture button:hover { background: var(--accent-doux); }
+
+/* Le filet entre deux lignes commence après l'icône, pas au bord — c'est ce que
+   fait le modèle, et ça rattache visuellement le signe à son libellé. */
+.raccourcis-date li + li button::before,
+.choix-capture li + li button::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: calc(1.125rem + var(--espace-12) + var(--espace-8));
+  right: var(--espace-8);
+  border-top: 1px solid var(--bordure);
+}
+
+.raccourcis-date li + li button::before { left: var(--espace-8); }
+
+.choix-capture button.actif { font-weight: 600; }
+
+/* Le drapeau porte la couleur, pas le libellé : quatre lignes de texte coloré
+   se liraient comme quatre états, alors qu'il n'y en a qu'un de choisi. */
+.choix-drapeau { display: flex; flex: none; }
+.choix-capture button[data-priorite="1"] .choix-drapeau { color: var(--prio-1); }
+.choix-capture button[data-priorite="2"] .choix-drapeau { color: var(--prio-2); }
+.choix-capture button[data-priorite="3"] .choix-drapeau { color: var(--prio-3); }
+.choix-capture button[data-priorite="4"] .choix-drapeau { color: var(--texte-discret); }
+
+/* Le projet, lui, se dit par une pastille de sa couleur — celle des tuiles. */
+.choix-pastille {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: var(--rayon-pastille);
+  background: var(--couleur-projet, var(--texte-discret));
+}
+
+/* Les deux champs sur une ligne : empilés, ils ajoutaient 70 px au panneau et
+   chassaient les raccourcis hors de l'écran. La date prend deux fois la place
+   de l'heure — « jj/mm/aaaa » est plus long que « --:-- ». */
+.capture-deux-champs {
+  display: flex;
+  gap: var(--espace-8);
+  margin-top: var(--espace-8);
+  padding: 0 var(--espace-8);
+}
+
+.capture-deux-champs > span { display: block; min-width: 0; }
+.capture-deux-champs > span:first-child { flex: 2; }
+.capture-deux-champs > span:last-child { flex: 1; }
+
+.champ-capture {
+  display: block;
+  margin: 0 0 var(--espace-4);
+  font-size: 0.75rem;
+  color: var(--texte-discret);
+}
+
+.capture-popover input[type="date"],
+.capture-popover input[type="time"] {
+  width: 100%;
+  min-width: 0;
+}
+
+.capture-popover .lien-discret { margin: var(--espace-12) 0 0 var(--espace-8); }
+
+/* La croix de retrait ne se cache pas derrière le survol. Ailleurs dans le hub
+   elle est en `opacity: 0` et se révèle au passage de la souris ; sur un
+   téléphone il n'y a pas de survol, et supprimer une tâche deviendrait
+   impossible. Même traitement que dans les tableaux du carnet : à demi visible
+   au repos, franche quand on la vise. */
+.tache-service .bouton-retirer { opacity: 0.5; }
+
+.tache-ligne:hover .bouton-retirer,
+.tache-service .bouton-retirer:focus-visible { opacity: 1; }
+
+/* La règle des 3 tâches actives quand elle refuse. Aucune couleur d'alerte : ce
+   n'est pas une erreur, c'est le hub qui rappelle un choix et en propose un
+   autre. Un liseré d'accent suffit à la distinguer d'une phrase de service. */
+.message-regle {
+  margin: 0 0 var(--espace-16);
+  padding: var(--espace-8) var(--espace-12);
+  font-size: 0.875rem;
+  background: var(--accent-doux);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--rayon-controle) var(--rayon-controle) 0;
+}
 
 /* --- Espace projet --------------------------------------------------------- */
 
@@ -1660,148 +2263,35 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   min-height: 7rem;
 }
 
-/* En vue semaine, le bandeau du haut ne porte que ce qui n'a pas d'heure : il
-   n'a donc pas besoin de la hauteur d'un mois. Et l'en-tête portant déjà la
-   date (« lun. 10 »), le numéro dans la case ferait doublon. */
-.cal-semaine .cal-ligne { min-height: 3.5rem; }
+/* La semaine est une ligne unique : elle prend la hauteur que le mois donne à
+   cinq ou six. Ce n'est pas de la décoration — c'est la place d'écrire l'heure
+   devant chaque titre et d'empiler ce qui tombe le même jour sans le serrer.
+   L'en-tête portant déjà la date (« lun. 10 »), le numéro dans la case ferait
+   doublon. */
+.cal-semaine .cal-ligne { min-height: 20rem; }
 .cal-semaine .cal-numero { display: none; }
 
-/* --- La semaine, d'un seul tenant -------------------------------------------
-   Les en-têtes, le bandeau du jour entier et la grille horaire ne font qu'un
-   cadre. Auparavant c'étaient trois boîtes bordées, séparées par une marge, et
-   surtout mal alignées : la grille horaire porte une gouttière d'heures à
-   gauche que les deux autres n'avaient pas, si bien que « mercredi » ne tombait
-   pas au-dessus de la colonne du mercredi.
-   La gouttière est maintenant portée par le cadre : les deux premiers blocs
-   s'écartent d'autant à gauche, la grille horaire garde sa colonne, et les sept
-   jours tombent en face du haut en bas. */
+/* Une seule ligne, donc de la place en hauteur : ici un titre passe à la ligne
+   plutôt que de se couper. En vue mois il reste sur une ligne — six semaines
+   de titres repliés feraient une page sans forme.
 
-.cal-semaine-cadre {
-  --cal-gouttiere: 3.25rem;
-  --trait-cal: color-mix(in srgb, var(--bordure) 45%, transparent);
-
-  overflow: hidden;
-  border: 1px solid var(--trait-cal);
-  border-radius: var(--rayon-carte);
+   Le bloc flex n'est pas un caprice : une barre haute comme sa durée doit
+   écrire son texte EN HAUT, là où l'événement commence. Un <button> centre son
+   contenu, et ni `display: block`, ni `flow-root`, ni `align-content: start`
+   ne le défont — mesuré, les trois laissent le texte à 58 px du haut d'une
+   barre de 150. Seul un flex explicite reprend la main. En colonne, l'heure
+   passe alors au-dessus du titre, ce qui est aussi la bonne lecture : quand,
+   puis quoi. */
+.cal-semaine .cal-barre-element {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  white-space: normal;
+  line-height: 1.35;
 }
 
-/* Les deux blocs du haut se décalent de la gouttière. Le trait vertical qui la
-   ferme est porté par eux : il prolonge celui de la colonne des heures, et la
-   ligne court alors sans rupture du haut de l'en-tête au bas de la grille. */
-.cal-semaine-cadre .cal-grille.cal-semaine {
-  /* Moins le trait : la bordure des enfants EST le trait de la gouttière, elle
-     se pose dedans et non à côté. Sans ce pixel, les colonnes du haut
-     tombaient une fraction à droite de celles de la grille horaire. */
-  padding-left: calc(var(--cal-gouttiere) - 1px);
-  border: none;
-  border-radius: 0;
-  overflow: visible;
-}
-
-.cal-semaine-cadre .cal-grille.cal-semaine > * {
-  border-left: 1px solid var(--trait-cal);
-}
-
-/* --- La grille horaire ------------------------------------------------------
-   C'est elle qui rend la semaine honnête : un bloc occupe sa vraie durée, et
-   deux blocs qui se chevauchent se partagent la largeur du jour. */
-
-.cal-heures {
-  /* La hauteur d'une heure. Assez haute pour qu'un rendez-vous d'une heure
-     porte son titre sans se tronquer, et pour que le doigt vise juste. */
-  --cal-heure: 3.75rem;
-
-  display: grid;
-  grid-template-columns: 3.25rem 1fr;
-  max-height: 30rem;
-  margin-top: var(--espace-8);
-  overflow-y: auto;
-  border: 1px solid var(--trait-cal, var(--bordure));
-  border-radius: var(--rayon-carte);
-}
-
-/* Dans le cadre commun elle n'a plus ni bordure ni marge : le trait qui la
-   sépare du bandeau suffit à dire qu'on change de registre. */
-.cal-semaine-cadre .cal-heures {
-  grid-template-columns: var(--cal-gouttiere) 1fr;
-  margin-top: 0;
-  border: none;
-  border-top: 1px solid var(--trait-cal);
-  border-radius: 0;
-}
-
-.cal-colonne-heures {
-  display: grid;
-  grid-auto-rows: var(--cal-heure);
-  border-right: 1px solid var(--trait-cal, var(--bordure));
-}
-
-.cal-heure-libelle {
-  padding: 0 var(--espace-4) 0 0;
-  font-family: var(--police-chiffre);
-  font-size: 0.625rem;
-  text-align: right;
-  color: var(--texte-discret);
-  /* Le libellé se pose SUR le trait de l'heure, pas au milieu de la case. */
-  transform: translateY(-0.4em);
-}
-
-.cal-heures-jours {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  /* Les traits d'heure sont peints, pas construits : 168 cases de plus pour
-     dessiner des lignes seraient du gâchis. */
-  background-image: repeating-linear-gradient(
-    to bottom,
-    var(--trait-cal, var(--bordure)) 0 1px,
-    transparent 1px var(--cal-heure)
-  );
-}
-
-.cal-colonne-jour {
-  position: relative;
-  border-right: 1px solid var(--trait-cal, var(--bordure));
-  cursor: pointer;
-}
-
-.cal-colonne-jour:last-child { border-right: none; }
-
-.cal-bloc {
-  position: absolute;
-  z-index: 1;
-  overflow: hidden;
-  padding: 2px var(--espace-4);
-  font-family: inherit;
-  font-size: 0.6875rem;
-  line-height: 1.25;
-  text-align: left;
-  color: var(--texte);
-  background: color-mix(in srgb, var(--couleur-projet, var(--accent)) 26%, var(--fond-carte));
-  border: 1px solid var(--fond);
-  border-left: 3px solid var(--couleur-projet, var(--accent));
-  border-radius: 3px;
-  cursor: pointer;
-}
-
-.cal-bloc:hover {
-  background: color-mix(in srgb, var(--couleur-projet, var(--accent)) 38%, var(--fond-carte));
-}
-
-.cal-bloc-heure {
-  display: block;
-  font-family: var(--police-chiffre);
-  font-size: 0.5625rem;
-  color: var(--texte-discret);
-}
-
-.cal-bloc-titre {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 600;
-}
+.cal-semaine .cal-barre-heure { margin-right: 0; }
 
 /* Une tâche faite reste au calendrier, barrée et en retrait : c'est le geste de
    Google Agenda, et il dit la bonne chose — le travail a eu lieu, il ne s'efface
@@ -1824,16 +2314,6 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 }
 
 .cal-signe-cochable:hover { color: var(--texte); }
-
-@media (max-width: 40rem) {
-  /* La gouttière rétrécit avec le reste — et le retrait des deux blocs du haut
-     avec elle, sinon l'alignement se perdrait sur téléphone. */
-  .cal-semaine-cadre { --cal-gouttiere: 2.5rem; }
-  .cal-heures { --cal-heure: 3rem; grid-template-columns: 2.5rem 1fr; max-height: 24rem; }
-  .cal-heure-libelle { font-size: 0.5625rem; }
-  .cal-bloc { font-size: 0.5625rem; padding: 1px 2px; border-left-width: 2px; }
-  .cal-bloc-heure { display: none; }
-}
 
 /* Le fond d'un jour tient toute la hauteur de sa ligne, sous les barres. C'est
    lui la cible du glissement : pas de sélection de texte, sinon le navigateur
@@ -1897,6 +2377,13 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   padding: 1px var(--espace-8);
   font-family: inherit;
   font-size: 0.6875rem;
+  /* En 700 : à 11 px sur un fond teinté, le poids normal se devinait plus qu'il
+     ne se lisait, et le 600 restait timide. C'est le titre de la barre, il doit
+     se prendre d'un coup d'œil — l'heure devant lui reste, elle, en poids
+     ordinaire et plus pâle.
+     Le 700 est un vrai fichier partout : Instrument Sans est variable (hub,
+     FCH), et Gilroy a reçu son Bold le 13 août (voir yuno.css). */
+  font-weight: 700;
   line-height: 1.5;
   text-align: left;
   text-overflow: ellipsis;
@@ -1924,6 +2411,20 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   font-size: 0.9em;
   opacity: 0.75;
 }
+
+/* L'heure devant le titre — ce qui remplace la grille horaire. En Geist Mono,
+   comme tous les chiffres du hub, et plus pâle que le titre : elle situe, elle
+   n'est pas ce qu'on lit. Elle reste visible sur téléphone, où le calendrier
+   se consulte le plus : c'est justement l'information qu'on est venu chercher. */
+.cal-barre-heure {
+  margin-right: 0.4em;
+  font-family: var(--police-chiffre);
+  font-size: 0.9em;
+  font-weight: 400;
+  color: var(--texte-discret);
+}
+
+.cal-barre-element.cal-faite .cal-barre-heure { text-decoration: none; }
 
 /* Une tâche est une chose à faire, pas une chose qui arrive : sa barre est
    creuse là où celle d'un événement est pleine. */
@@ -2126,7 +2627,7 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    lisibles à 375 px, et les barres se réduisent sans disparaître. */
 @media (max-width: 40rem) {
   .cal-ligne { min-height: 5.5rem; }
-  .cal-semaine .cal-ligne { min-height: 3rem; }
+  .cal-semaine .cal-ligne { min-height: 16rem; }
   .cal-entetes span { padding: 2px 3px; font-size: 0.625rem; letter-spacing: 0; }
   .cal-numero { min-width: 1.25rem; margin: 2px 0 1px; padding: 0 2px; font-size: 0.6875rem; }
   .cal-barre-element {

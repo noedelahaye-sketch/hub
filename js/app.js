@@ -1,8 +1,10 @@
 // Point d'entrée : garde la session, montre le bon écran, route vers les espaces.
 
 import { sessionCourante, connexion, deconnexion, surChangementSession } from './api.js';
-import { centrerActif } from './calendrier-commun.js';
+import { centrerActif, ongletCalendrier } from './calendrier-commun.js';
+import { viderLesCaches } from './cache-session.js';
 import dashboard from './dashboard.js';
+import taches from './taches.js';
 import calendrier from './calendrier.js';
 import formation from './formation.js';
 import photo from './photo.js';
@@ -13,7 +15,7 @@ import perso from './perso.js';
 
 // `photo` est la page Yuno du hub ; `yuno` est le site Yuno, qui masque tout
 // l'habillage du hub. Deux adresses, deux sensations, une seule application.
-const espaces = { dashboard, calendrier, formation, photo, yuno, fch, hermitage, perso };
+const espaces = { dashboard, taches, calendrier, formation, photo, yuno, fch, hermitage, perso };
 
 // Trois pages d'entrée pour trois applications sur l'écran d'accueil :
 // index.html (le hub), yuno.html, hermitage.html. Chacune a son manifeste, son
@@ -56,14 +58,21 @@ document.body.insertAdjacentHTML(
       </header>
 
       <!-- Perso en deuxième position, juste après l'accueil : le hub existe
-           pour servir Noé, la vie hors projets ne passe pas après eux. -->
+           pour servir Noé, la vie hors projets ne passe pas après eux.
+           Le calendrier quitte la rangée des lieux et va tout à droite, en
+           icône : ce n'est pas un espace de plus, c'est la vue qui les
+           traverse tous. Son départ rend d'ailleurs sa place à Perso. -->
       <nav class="navigation" aria-label="Espaces">
         <a href="#dashboard" data-nav="dashboard">Accueil</a>
-        <a href="#calendrier" data-nav="calendrier">Calendrier</a>
         <a href="#perso" data-nav="perso">Perso</a>
         <a href="#fch" data-nav="fch">FCH</a>
         <a href="#formation" data-nav="formation">Formation</a>
         <a href="#photo" data-nav="photo">Yuno</a>
+        <!-- Tâches et Calendrier ferment la rangée ensemble : ce sont les deux
+             vues transverses, celles qui regardent tous les projets à la fois.
+             Les espaces nomment des lieux, ces deux-là nomment des angles. -->
+        <a href="#taches" data-nav="taches">Tâches</a>
+        ${ongletCalendrier('#calendrier', false)}
       </nav>
     </div>
 
@@ -83,6 +92,7 @@ document.body.insertAdjacentHTML(
 
 const TITRES = {
   dashboard: 'Accueil',
+  taches: 'Tâches',
   calendrier: 'Calendrier',
   formation: 'Formation',
   photo: 'Yuno',
@@ -254,9 +264,13 @@ function appliquerSession(session) {
   } else {
     // À la déconnexion, on vide les espaces : ni données affichées derrière
     // l'écran de connexion, ni contenu périmé à la reconnexion suivante.
+    // Le cache de session part avec eux — il porte les mêmes données, et un
+    // écran de connexion devant un carnet de contacts encore en mémoire
+    // n'aurait aucun sens.
     for (const section of document.querySelectorAll('.espace')) {
       section.innerHTML = '';
     }
+    viderLesCaches();
     espacesMontes.clear();
     defilements.clear();
     routeCourante = null;

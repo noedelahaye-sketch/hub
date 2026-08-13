@@ -1,0 +1,877 @@
+// Espace Tâches du hub — TOUT ce qu'il y a à faire, en un seul endroit.
+//
+// C'est la seule page du hub qui ne cache rien : datées ou non, faites ou non,
+// tous projets. Ailleurs le hub trie pour Noé — le dashboard ne montre que les
+// actives du jour, un espace projet garde son backlog replié. Ici on vient
+// justement pour voir l'ensemble, ranger, et repartir.
+//
+// La forme vient de Todoist (capture de Noé, 13 août 2026) : un cercle coloré
+// par priorité qui coche la tâche, le titre, puis une ligne de service — la
+// date à gauche, le projet à droite.
+//
+// Ce qui NE vient pas de Todoist : la date passée n'est pas rouge. Todoist
+// écrit « Hier » en rouge ; le hub n'a pas de couleur d'alerte et n'en aura pas
+// (CLAUDE.md). Une échéance dépassée se dit du même gris que les autres.
+//
+// Pas de tâche perso, ici comme partout : l'espace perso n'a ni tâches, ni
+// jalons, ni retard. Le sélecteur de projet n'en propose pas.
+
+import * as api from './api.js';
+import { depuisDateISO, echeanceLisible, versDateISO, ajouterJours, echapper, NOMS_PROJETS } from './format.js';
+
+const PROJETS = {
+  formation: 'Formation',
+  photo: 'Yuno',
+  fch: 'FC Hermitage',
+};
+
+// 1 est le plus urgent, 4 le cas ordinaire — la convention de Todoist, et celle
+// de la colonne en base. Les libellés sont courts : ils tiennent dans un
+// sélecteur de ligne, à côté d'une date.
+const PRIORITES = {
+  1: 'P1 · urgent',
+  2: 'P2 · important',
+  3: 'P3 · à faire',
+  4: 'P4 · sans presse',
+};
+
+const STATUTS = {
+  backlog: 'Backlog',
+  actif: 'Active',
+};
+
+const FILTRES = { tout: 'Tous les projets', ...PROJETS };
+
+// Le glyphe de date, celui du calendrier commun — un dessin, pas un émoji.
+const DATE_ICONE = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round"
+  stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+  <path d="M3 10h18M8 3v4M16 3v4"></path>
+</svg>`;
+
+// --- Le tri ------------------------------------------------------------------
+// Exporté pour être vérifiable seul : on lui donne un tableau, on lit l'ordre.
+//
+// Trois clés, dans cet ordre : la priorité, puis la date, puis l'ancienneté.
+// Les tâches sans date passent APRÈS celles qui en ont, à priorité égale — une
+// échéance est un engagement, pas une simple précision. C'est le seul endroit
+// du hub où l'absence de date fait reculer quelque chose, et c'est assumé :
+// cette page sert à choisir quoi faire.
+
+export function trierTaches(taches) {
+  return [...taches].sort(
+    (a, b) =>
+      (a.priorite ?? 4) - (b.priorite ?? 4) ||
+      Number(Boolean(b.echeance)) - Number(Boolean(a.echeance)) ||
+      String(a.echeance ?? '').localeCompare(String(b.echeance ?? '')) ||
+      String(a.heure ?? '').localeCompare(String(b.heure ?? '')) ||
+      String(a.created_at).localeCompare(String(b.created_at)),
+  );
+}
+
+// Les faites se lisent à l'envers : la dernière terminée en haut, parce qu'on y
+// vient pour vérifier ce qu'on vient de faire ou pour décocher une erreur.
+export function trierFaites(taches) {
+  return [...taches].sort((a, b) =>
+    String(b.date_fait ?? b.created_at).localeCompare(String(a.date_fait ?? a.created_at)),
+  );
+}
+
+export function filtrerParProjet(taches, projet) {
+  return projet === 'tout' ? taches : taches.filter((tache) => tache.projet === projet);
+}
+
+// --- Le dessin ---------------------------------------------------------------
+
+// Ce que dit la ligne de date. `heure` s'y ajoute quand la tâche en porte une —
+// même convention qu'au calendrier : minuit n'existe pas, c'est « pas d'heure ».
+function quandLisible(tache) {
+  if (!tache.echeance) return '';
+  const jour = echeanceLisible(depuisDateISO(tache.echeance));
+  return tache.heure ? `${jour}, ${tache.heure.slice(0, 5)}` : jour;
+}
+
+function ligneTache(tache) {
+  const faite = tache.statut === 'fait';
+  const quand = quandLisible(tache);
+
+  return `
+    <li class="tache-ligne${faite ? ' tache-faite' : ''}"
+      data-projet="${echapper(tache.projet)}" data-priorite="${tache.priorite ?? 4}">
+      <button type="button" class="tache-cercle" data-cocher="${echapper(tache.id)}"
+        aria-pressed="${faite}"
+        aria-label="${faite ? 'Rouvrir' : 'Marquer comme faite'} « ${echapper(tache.titre)} »"
+        title="${faite ? 'Rouvrir' : 'Marquer comme faite'}"></button>
+
+      <span class="tache-corps">
+        <span class="tache-titre">${echapper(tache.titre)}</span>
+        <span class="tache-service">
+          ${quand ? `<span class="tache-quand">${DATE_ICONE}${echapper(quand)}</span>` : ''}
+          ${
+            faite
+              ? ''
+              : `<select class="tache-reglage" data-priorite-de="${echapper(tache.id)}"
+                   aria-label="Priorité de « ${echapper(tache.titre)} »">
+                   ${Object.entries(PRIORITES)
+                     .map(
+                       ([valeur, libelle]) =>
+                         `<option value="${valeur}" ${
+                           Number(valeur) === (tache.priorite ?? 4) ? 'selected' : ''
+                         }>${echapper(libelle)}</option>`,
+                     )
+                     .join('')}
+                 </select>
+                 <select class="tache-reglage" data-statut-de="${echapper(tache.id)}"
+                   aria-label="Statut de « ${echapper(tache.titre)} »">
+                   ${Object.entries(STATUTS)
+                     .map(
+                       ([valeur, libelle]) =>
+                         `<option value="${valeur}" ${
+                           valeur === tache.statut ? 'selected' : ''
+                         }>${echapper(libelle)}</option>`,
+                     )
+                     .join('')}
+                 </select>`
+          }
+          <span class="tache-projet">${echapper(NOMS_PROJETS[tache.projet] ?? tache.projet)}</span>
+          <button type="button" class="lien-discret bouton-mini bouton-retirer"
+            data-supprimer="${echapper(tache.id)}"
+            title="Supprimer cette tâche"
+            aria-label="Supprimer « ${echapper(tache.titre)} »">×</button>
+        </span>
+      </span>
+    </li>`;
+}
+
+// Exportée pour être vérifiable seule, avec des tâches factices.
+// Le refus des 3 tâches actives par projet n'est pas une erreur : c'est la
+// règle du hub qui parle, et elle propose une sortie. Elle se dit donc en
+// ligne, du même ton que le reste — pas dans une boîte native qui bloque la
+// page pour annoncer quelque chose de prévu.
+function construireMessage(message) {
+  return message ? `<p class="discret message-regle">${echapper(message)}</p>` : '';
+}
+
+export function construireListe(taches, message = null) {
+  const aFaire = trierTaches(taches.filter((tache) => tache.statut !== 'fait'));
+  const faites = trierFaites(taches.filter((tache) => tache.statut === 'fait'));
+
+  const bloc = (liste) => `<ul class="liste-taches-pleine">${liste.map(ligneTache).join('')}</ul>`;
+
+  return `
+    ${construireMessage(message)}
+    <section class="bloc">
+      <h2>À faire <span class="chiffre">${aFaire.length}</span></h2>
+      ${
+        aFaire.length
+          ? bloc(aFaire)
+          : `<p class="vide">Rien à faire ici. Note ta prochaine tâche au-dessus.</p>`
+      }
+    </section>
+
+    ${
+      faites.length
+        ? `<section class="bloc bloc-discret">
+             <details class="backlog">
+               <summary>Faites <span class="chiffre">${faites.length}</span></summary>
+               ${bloc(faites)}
+             </details>
+           </section>`
+        : ''
+    }`;
+}
+
+function construireFiltres(actif) {
+  return `
+    <div class="filtres" role="group" aria-label="Filtrer par projet">
+      ${Object.entries(FILTRES)
+        .map(
+          ([valeur, libelle]) => `
+        <button type="button" data-filtre-projet="${valeur}"
+          aria-pressed="${valeur === actif}"
+          class="${valeur === actif ? 'actif' : ''}">${echapper(libelle)}</button>`,
+        )
+        .join('')}
+    </div>`;
+}
+
+// --- La capture --------------------------------------------------------------
+// La forme vient du deuxième jeu de captures de Noé (13 août) : un « + » qui
+// ouvre une tuile, le nom de la tâche qu'on écrit directement, et en dessous
+// une rangée de pastilles — date, projet, priorité — dont chacune ouvre son
+// choix.
+//
+// Pourquoi ça vaut mieux qu'un formulaire à six champs empilés : une tâche se
+// note en trois secondes, entre deux choses. Le nom suffit à la créer ; le
+// reste se pose quand on en a envie, et se voit d'un coup d'œil parce qu'une
+// pastille renseignée affiche sa valeur.
+
+const RACCOURCIS_DATE = () => {
+  const aujourdhui = new Date();
+  // Index dans une semaine qui commence le lundi : lundi 0 … samedi 5, dimanche 6.
+  // (`getDay()` compte à partir du dimanche, d'où le décalage.)
+  const jour = (aujourdhui.getDay() + 6) % 7;
+  // « Ce week-end », c'est samedi — sauf si on y est déjà, auquel cas c'est
+  // aujourd'hui : un samedi, personne n'entend « samedi prochain ».
+  const joursAuSamedi = jour >= 5 ? 0 : 5 - jour;
+  const joursAuLundi = (7 - jour) % 7 || 7;
+
+  return [
+    ['Aujourd’hui', versDateISO(aujourdhui)],
+    ['Demain', versDateISO(ajouterJours(aujourdhui, 1))],
+    ['Ce week-end', versDateISO(ajouterJours(aujourdhui, joursAuSamedi))],
+    ['Semaine prochaine', versDateISO(ajouterJours(aujourdhui, joursAuLundi))],
+  ];
+};
+
+// Le jour de la semaine, à droite du raccourci — comme dans la capture : on
+// choisit « Ce week-end » en sachant que c'est samedi.
+function jourCourt(cle) {
+  return depuisDateISO(cle).toLocaleDateString('fr-FR', { weekday: 'short' });
+}
+
+const PASTILLE_DATE = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+  aria-hidden="true" focusable="false">
+  <rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path>
+</svg>`;
+
+// Le drapeau de priorité, comme dans Todoist : plein et coloré de 1 à 3, vide
+// pour la 4 — le cas ordinaire ne se colore pas. La hampe reste toujours un
+// trait ; seule la toile se remplit.
+const DRAPEAU = (rempli, taille = 18) => `<svg viewBox="0 0 24 24"
+  width="${taille}" height="${taille}" fill="none" stroke="currentColor"
+  stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+  aria-hidden="true" focusable="false">
+  <path d="M5 22V3"></path>
+  <path d="M5 3.5h13l-2.4 4.6L18 13H5z" fill="${rempli ? 'currentColor' : 'none'}"></path>
+</svg>`;
+
+const PASTILLE_PRIORITE = DRAPEAU(false, 14);
+
+const FLECHE = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+  stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+  aria-hidden="true" focusable="false">
+  <path d="M12 19V5M5 12l7-7 7 7"></path>
+</svg>`;
+
+const PASTILLE_PROJET = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+  aria-hidden="true" focusable="false">
+  <path d="M10 3 8 21M16 3l-2 18M3.5 8.5h17M3 15.5h17"></path>
+</svg>`;
+
+function pastille(nom, icone, texte, { rempli = false, priorite = null } = {}) {
+  return `<button type="button" class="pastille-capture${rempli ? ' remplie' : ''}"
+    data-panneau="${nom}" aria-expanded="false"
+    ${priorite ? `data-priorite="${priorite}"` : ''}>${icone}<span>${echapper(texte)}</span></button>`;
+}
+
+function panneauDate(capture) {
+  return `
+    <div class="capture-popover" data-panneau-ouvert="date">
+      <ul class="raccourcis-date">
+        ${RACCOURCIS_DATE()
+          .map(
+            ([libelle, cle]) => `
+          <li><button type="button" data-poser-date="${cle}">
+            <span>${libelle}</span>
+            <span class="discret">${echapper(jourCourt(cle))}</span>
+          </button></li>`,
+          )
+          .join('')}
+      </ul>
+      <!-- Les deux champs côte à côte, et des libellés courts : empilés, ils
+           poussaient les raccourcis hors de l'écran dès que le clavier montait.
+           « Aujourd'hui » devenait invisible, donc intouchable. -->
+      <div class="capture-deux-champs">
+        <span>
+          <label class="champ-capture" for="capture-date">Un autre jour</label>
+          <input type="date" id="capture-date" data-champ-date value="${echapper(capture.echeance ?? '')}">
+        </span>
+        <span>
+          <label class="champ-capture" for="capture-heure">Heure</label>
+          <input type="time" id="capture-heure" data-champ-heure value="${echapper(capture.heure ?? '')}">
+        </span>
+      </div>
+      ${
+        capture.echeance
+          ? `<button type="button" class="lien-discret" data-poser-date="">Retirer la date</button>`
+          : ''
+      }
+    </div>`;
+}
+
+// Le menu de priorité de Todoist, au plus près : un drapeau coloré, le libellé
+// en toutes lettres, et un filet entre les lignes. Rien d'autre — pas de coche,
+// pas d'accent : c'est le drapeau qui dit lequel est choisi, et le fond de la
+// ligne survolée qui dit où l'on est.
+function panneauPriorite(valeurCourante) {
+  return `
+    <div class="capture-popover capture-popover-etroit" data-panneau-ouvert="priorite">
+      <ul class="choix-capture">
+        ${[1, 2, 3, 4]
+          .map(
+            (rang) => `
+          <li><button type="button" data-poser-priorite="${rang}" data-priorite="${rang}"
+            aria-pressed="${rang === Number(valeurCourante)}"
+            class="${rang === Number(valeurCourante) ? 'actif' : ''}">
+            <span class="choix-drapeau">${DRAPEAU(rang !== 4)}</span>
+            <span>Priorité ${rang}</span>
+          </button></li>`,
+          )
+          .join('')}
+      </ul>
+    </div>`;
+}
+
+function panneauProjet(valeurCourante) {
+  return `
+    <div class="capture-popover capture-popover-etroit" data-panneau-ouvert="projet">
+      <ul class="choix-capture">
+        ${Object.entries(PROJETS)
+          .map(
+            ([valeur, libelle]) => `
+          <li><button type="button" data-poser-projet="${valeur}" data-projet="${valeur}"
+            aria-pressed="${valeur === valeurCourante}"
+            class="${valeur === valeurCourante ? 'actif' : ''}">
+            <span class="choix-pastille" aria-hidden="true"></span>
+            <span>${echapper(libelle)}</span>
+          </button></li>`,
+          )
+          .join('')}
+      </ul>
+    </div>`;
+}
+
+// Ce que la pastille de date affiche une fois remplie : le mot du jour plutôt
+// que la date brute, comme partout dans le hub.
+function dateLisible(capture) {
+  if (!capture.echeance) return 'Date';
+  const jour = echeanceLisible(depuisDateISO(capture.echeance));
+  return capture.heure ? `${jour}, ${capture.heure.slice(0, 5)}` : jour;
+}
+
+export function construireCapture(capture) {
+  // Le « + » reste en place quand la tuile s'ouvre : elle vole au-dessus de la
+  // page, elle ne la remplace pas. Sans lui, la liste remonterait d'un cran à
+  // chaque ouverture et redescendrait à la fermeture.
+  const bouton = `<button type="button" class="ouvrir-capture" data-ouvrir-capture>
+    <span class="ouvrir-capture-plus" aria-hidden="true">+</span>Ajouter une tâche</button>`;
+
+  if (!capture.ouverte) return bouton;
+
+  return `
+    ${bouton}
+    <div class="fenetre-fond capture-fond" data-fermer-capture></div>
+    <form class="capture" data-action="creer-tache" role="dialog" aria-modal="true"
+      aria-label="Ajouter une tâche">
+      <input type="text" id="capture-titre" name="titre" required
+        class="capture-titre" placeholder="Nom de la tâche" autocomplete="off"
+        aria-label="Nom de la tâche" value="${echapper(capture.titre)}">
+
+      <div class="capture-pastilles">
+        <!-- Les pastilles vivent dans une bande qui défile latéralement, jamais
+             sur deux lignes : c'est le bouton d'envoi qui prime, il ne bouge
+             pas d'un pixel quelle que soit leur nombre ou leur longueur. -->
+        <div class="capture-pastilles-liste">
+          ${pastille('date', PASTILLE_DATE, dateLisible(capture), { rempli: Boolean(capture.echeance) })}
+          ${pastille('projet', PASTILLE_PROJET, PROJETS[capture.projet], { rempli: true })}
+          ${pastille('priorite', PASTILLE_PRIORITE, capture.priorite === 4 ? 'Priorité' : `P${capture.priorite}`, {
+            rempli: capture.priorite !== 4,
+            priorite: capture.priorite,
+          })}
+        </div>
+        <!-- Une flèche dans un rond plutôt qu'un mot (demande de Noé, sur le
+             modèle) : la tuile n'a qu'une action, elle n'a pas besoin d'être
+             nommée. Éteinte tant qu'il n'y a pas de titre — c'est la seule
+             chose que la tâche exige. -->
+        <button type="submit" class="capture-envoyer" ${capture.titre.trim() ? '' : 'disabled'}
+          aria-label="Ajouter la tâche" title="Ajouter la tâche">${FLECHE}</button>
+      </div>
+
+      ${capture.panneau === 'date' ? panneauDate(capture) : ''}
+      ${capture.panneau === 'projet' ? panneauProjet(capture.projet) : ''}
+      ${capture.panneau === 'priorite' ? panneauPriorite(capture.priorite) : ''}
+
+      ${
+        capture.confirmationSortie
+          ? `<p class="capture-confirmation">
+               <span>Abandonner cette tâche ?</span>
+               <span class="capture-confirmation-choix">
+                 <button type="button" class="lien-discret" data-continuer-capture>Continuer</button>
+                 <button type="button" class="bouton-secondaire bouton-mini"
+                   data-abandonner-capture>Abandonner</button>
+               </span>
+             </p>`
+          : ''
+      }
+
+      <p class="message-erreur" data-erreur hidden></p>
+    </form>`;
+}
+
+function squelette(etat) {
+  return `
+    <h1>Tâches</h1>
+    <p class="discret sous-titre">Tout ce qu'il y a à faire, tous projets — daté ou non.</p>
+    <div data-bloc="capture">${construireCapture(etat.capture)}</div>
+    ${construireFiltres(etat.projet)}
+    <div data-bloc="liste"><p class="vide">…</p></div>`;
+}
+
+// --- Montage -----------------------------------------------------------------
+
+export default {
+  async monter(section) {
+    const captureVierge = (projet) => ({
+      ouverte: false,
+      titre: '',
+      echeance: null,
+      heure: null,
+      // Le projet suit le filtre courant : sur « Formation », la tâche qu'on
+      // note est presque toujours une tâche de formation. Sur « Tous », le FCH
+      // par défaut — c'est là que le travail quotidien de Noé se passe.
+      projet: PROJETS[projet] ? projet : 'fch',
+      priorite: 4,
+      panneau: null,
+      confirmationSortie: false,
+    });
+
+    // Y a-t-il quelque chose à perdre ? Le titre vit dans le champ tant qu'on
+    // tape, d'où la lecture du DOM. Le projet ne compte pas : il a un défaut,
+    // le laisser tel quel n'est pas un travail commencé.
+    const captureRemplie = () =>
+      Boolean(
+        (section.querySelector('#capture-titre')?.value ?? etat.capture.titre).trim() ||
+          etat.capture.echeance ||
+          etat.capture.priorite !== 4,
+      );
+
+    // Fermer, en demandant seulement s'il y a de quoi regretter. Confirmer
+    // l'abandon d'une tuile vide serait une question pour rien.
+    const quitterLaCapture = () => {
+      if (!captureRemplie()) {
+        etat.capture = captureVierge(etat.projet);
+        rendreCapture();
+        oublierLeClavier();
+        return;
+      }
+      etat.capture.titre = section.querySelector('#capture-titre')?.value ?? etat.capture.titre;
+      etat.capture.panneau = null;
+      etat.capture.confirmationSortie = true;
+      rendreCapture();
+    };
+
+    const etat = { taches: [], projet: 'tout', message: null, capture: captureVierge('tout') };
+
+    section.innerHTML = squelette(etat);
+
+    const rendreListe = () => {
+      const cible = section.querySelector('[data-bloc="liste"]');
+      if (cible) {
+        cible.innerHTML = construireListe(
+          filtrerParProjet(etat.taches, etat.projet),
+          etat.message,
+        );
+      }
+    };
+
+    // De quel côté la bande de pastilles a-t-elle encore de la réserve ? La
+    // feuille de style s'en sert pour poser un fondu du bon côté, et seulement
+    // là où il reste quelque chose à voir.
+    const marquerLeDebordement = () => {
+      const bande = section.querySelector('.capture-pastilles-liste');
+      if (!bande) return;
+      // Un pixel de marge : les navigateurs rendent des largeurs fractionnaires,
+      // et une bande qui tient pile se déclarerait débordante.
+      bande.classList.toggle('deborde-avant', bande.scrollLeft > 1);
+      bande.classList.toggle(
+        'deborde-apres',
+        bande.scrollLeft + bande.clientWidth < bande.scrollWidth - 1,
+      );
+    };
+
+    section.addEventListener(
+      'scroll',
+      (evenement) => {
+        if (evenement.target.closest?.('.capture-pastilles-liste')) marquerLeDebordement();
+      },
+      // En phase de capture : un défilement ne remonte pas les bulles.
+      true,
+    );
+
+    // La capture se redessine seule, et il faut y prendre soin : le titre vit
+    // dans le champ, pas dans l'état, tant qu'on tape. On le récupère avant de
+    // réécrire, et on rend le curseur à la fin — sinon ouvrir la pastille de
+    // date effacerait ce qu'on vient d'écrire.
+    const rendreCapture = ({ focus = false } = {}) => {
+      const champ = section.querySelector('#capture-titre');
+      if (champ) etat.capture.titre = champ.value;
+
+      section.querySelector('[data-bloc="capture"]').innerHTML = construireCapture(etat.capture);
+      marquerLeDebordement();
+
+      if (focus) {
+        const nouveau = section.querySelector('#capture-titre');
+        nouveau?.focus();
+        nouveau?.setSelectionRange(nouveau.value.length, nouveau.value.length);
+      }
+    };
+
+    // Seuls les filtres et la liste se redessinent : réécrire la page entière
+    // refermerait la capture à chaque case cochée.
+    const rendre = () => {
+      section.querySelector('.filtres')?.replaceWith(
+        document.createRange().createContextualFragment(construireFiltres(etat.projet))
+          .firstElementChild,
+      );
+      rendreListe();
+    };
+
+    try {
+      etat.taches = await api.tachesToutes();
+      rendreListe();
+    } catch (erreur) {
+      console.error('Chargement des tâches impossible', erreur);
+      section.innerHTML = `
+        <h1>Tâches</h1>
+        <p class="vide">Les données n'ont pas pu être chargées.</p>
+        <button type="button" class="bouton-secondaire" data-action="reessayer">Réessayer</button>`;
+      section
+        .querySelector('[data-action="reessayer"]')
+        ?.addEventListener('click', () => this.monter(section));
+      return;
+    }
+
+    const trouver = (id) => etat.taches.find((tache) => tache.id === id);
+
+    // --- Le clavier du téléphone ---
+    //
+    // Sur mobile la tuile est collée en bas, et le clavier viendrait la couvrir.
+    // `visualViewport` est le seul moyen fiable de savoir combien de place il
+    // prend : la fenêtre de mise en page (`innerHeight`) ne bouge pas quand le
+    // clavier monte, seule la fenêtre VISUELLE rétrécit. La différence entre
+    // les deux EST la hauteur du clavier.
+    //
+    // Le résultat sort en variable CSS plutôt qu'en style direct : c'est la
+    // feuille de style qui décide quoi en faire, et sur grand écran elle n'en
+    // fait rien — la tuile y est centrée, un clavier physique ne prend pas de
+    // place.
+    const fenetreVisuelle = window.visualViewport;
+
+    const mesurerLeClavier = () => {
+      if (!fenetreVisuelle) return;
+      const pris = window.innerHeight - (fenetreVisuelle.height + fenetreVisuelle.offsetTop);
+      // Arrondi et plancher à zéro : les navigateurs rendent des fractions, et
+      // une valeur négative (barre d'adresse qui se replie) n'a pas de sens ici.
+      document.documentElement.style.setProperty('--bas-clavier', `${Math.max(Math.round(pris), 0)}px`);
+    };
+
+    const oublierLeClavier = () => {
+      document.documentElement.style.removeProperty('--bas-clavier');
+    };
+
+    // Écoutés en permanence, mais ils ne coûtent rien tant que la tuile est
+    // fermée : sans elle, la variable ne sert à personne.
+    fenetreVisuelle?.addEventListener('resize', () => {
+      if (etat.capture.ouverte) mesurerLeClavier();
+    });
+    fenetreVisuelle?.addEventListener('scroll', () => {
+      if (etat.capture.ouverte) mesurerLeClavier();
+    });
+
+    // La bande de pastilles déborde ou non selon la largeur : ses fondus se
+    // recalculent donc quand la fenêtre change de taille, sinon ils restent
+    // figés sur l'état d'avant — une pastille estompée alors que tout tient.
+    window.addEventListener('resize', () => {
+      if (etat.capture.ouverte) marquerLeDebordement();
+    });
+
+    // Échap referme — d'abord le panneau ouvert, ensuite la tuile. Deux coups
+    // plutôt qu'un : refermer toute la capture parce qu'on a renoncé à choisir
+    // une priorité ferait perdre le titre déjà écrit.
+    document.addEventListener('keydown', (evenement) => {
+      if (evenement.key !== 'Escape' || !etat.capture.ouverte) return;
+      if (etat.capture.panneau) {
+        etat.capture.panneau = null;
+        rendreCapture({ focus: true });
+      } else if (etat.capture.confirmationSortie) {
+        // Échap sur la question vaut « non » : le geste d'annulation ne peut
+        // pas être celui qui détruit.
+        etat.capture.confirmationSortie = false;
+        rendreCapture({ focus: true });
+      } else {
+        quitterLaCapture();
+      }
+    });
+
+    // --- Création ---
+
+    section.addEventListener('submit', async (evenement) => {
+      const formulaire = evenement.target.closest('form[data-action="creer-tache"]');
+      if (!formulaire) return;
+      evenement.preventDefault();
+
+      const titre = formulaire.querySelector('#capture-titre').value.trim();
+      if (!titre) return;
+
+      const erreur = formulaire.querySelector('[data-erreur]');
+      const bouton = formulaire.querySelector('button[type="submit"]');
+      erreur.hidden = true;
+      bouton.disabled = true;
+
+      try {
+        // Toujours au backlog. Une tâche notée à la volée n'est pas un des trois
+        // chantiers du moment : la promouvoir se fait dans la liste, en
+        // connaissance de la règle des 3 actives.
+        const tache = await api.creerTache({
+          projet: etat.capture.projet,
+          titre,
+          statut: 'backlog',
+          echeance: etat.capture.echeance,
+          heure: etat.capture.heure,
+          priorite: etat.capture.priorite,
+        });
+        etat.taches = [tache, ...etat.taches];
+        etat.message = null;
+        // La capture reste ouverte, vidée, avec le projet et la priorité qu'on
+        // vient de choisir : on en note rarement une seule.
+        // Le champ se vide AVANT le redessin, et pas seulement l'état :
+        // `rendreCapture` relit le champ pour ne pas perdre ce qu'on tape, donc
+        // un état vidé sans champ vidé serait aussitôt réécrit par l'ancien
+        // titre.
+        formulaire.querySelector('#capture-titre').value = '';
+        etat.capture = {
+          ...etat.capture,
+          titre: '',
+          echeance: null,
+          heure: null,
+          panneau: null,
+        };
+        rendreCapture({ focus: true });
+        rendreListe();
+      } catch (souci) {
+        console.error('Tâche non créée', souci);
+        erreur.textContent = souci.message ?? "La tâche n'a pas pu être créée.";
+        erreur.hidden = false;
+      } finally {
+        bouton.disabled = false;
+      }
+    });
+
+    // --- Réglages de ligne ---
+
+    // La flèche s'allume dès qu'il y a un titre. Elle se règle ici plutôt qu'au
+    // redessin : redessiner à chaque lettre ferait perdre le curseur.
+    section.addEventListener('input', (evenement) => {
+      const champ = evenement.target.closest('#capture-titre');
+      if (!champ) return;
+      const envoyer = section.querySelector('.capture-envoyer');
+      if (envoyer) envoyer.disabled = !champ.value.trim();
+    });
+
+    section.addEventListener('change', async (evenement) => {
+      // Les deux champs natifs du panneau de date. Ils ne referment pas le
+      // panneau — on y règle souvent le jour PUIS l'heure — et surtout ils ne
+      // le REDESSINENT pas : recréer un `<input type="date">` pendant qu'on
+      // s'en sert referme le sélecteur natif du téléphone. Seule l'étiquette de
+      // la pastille est réécrite.
+      const champDate = evenement.target.closest('[data-champ-date]');
+      const champHeure = evenement.target.closest('[data-champ-heure]');
+      if (champDate || champHeure) {
+        if (champDate) {
+          etat.capture.echeance = champDate.value || null;
+          if (!etat.capture.echeance) {
+            etat.capture.heure = null;
+            const heure = section.querySelector('[data-champ-heure]');
+            if (heure) heure.value = '';
+          }
+        } else {
+          etat.capture.heure = champHeure.value || null;
+        }
+
+        const pastilleDate = section.querySelector('[data-panneau="date"]');
+        if (pastilleDate) {
+          pastilleDate.querySelector('span').textContent = dateLisible(etat.capture);
+          pastilleDate.classList.toggle('remplie', Boolean(etat.capture.echeance));
+        }
+        return;
+      }
+
+      const priorite = evenement.target.closest('[data-priorite-de]');
+      if (priorite) {
+        const tache = trouver(priorite.dataset.prioriteDe);
+        if (!tache) return;
+        priorite.disabled = true;
+        try {
+          Object.assign(tache, await api.modifierTache(tache.id, { priorite: Number(priorite.value) }));
+          rendreListe();
+        } catch (souci) {
+          console.error('Priorité non enregistrée', souci);
+          priorite.disabled = false;
+        }
+        return;
+      }
+
+      // Passer une tâche en active peut être refusé : la règle des 3 par projet
+      // se tient dans `api.changerStatutTache`, et son message est fait pour
+      // être lu tel quel.
+      const statut = evenement.target.closest('[data-statut-de]');
+      if (statut) {
+        const tache = trouver(statut.dataset.statutDe);
+        if (!tache) return;
+        statut.disabled = true;
+        try {
+          Object.assign(tache, await api.changerStatutTache(tache, statut.value));
+          etat.message = null;
+        } catch (souci) {
+          // Le refus des 3 actives n'est pas une panne : il est prévu, il a son
+          // message, et il n'a rien à faire dans le journal des erreurs. Ce qui
+          // s'y trouve doit toujours mériter d'être regardé.
+          etat.message = souci.message;
+        }
+        // Dans les deux cas on redessine : en cas de refus, le sélecteur doit
+        // revenir à ce que la base dit, pas rester sur ce qu'on a tenté.
+        rendreListe();
+      }
+    });
+
+    // --- Clics ---
+
+    section.addEventListener('click', async (evenement) => {
+      // Le rappel de la règle ne vaut que pour le geste qui l'a déclenché :
+      // au geste suivant, quel qu'il soit, il s'efface. Le laisser traîner en
+      // ferait un reproche affiché en permanence.
+      etat.message = null;
+
+      // --- La capture ---
+
+      if (evenement.target.closest('[data-ouvrir-capture]')) {
+        etat.capture = { ...captureVierge(etat.projet), ouverte: true };
+        rendreCapture({ focus: true });
+        mesurerLeClavier();
+        return;
+      }
+
+      // Un appui hors de la tuile la quitte — il n'y a plus de bouton
+      // « Annuler » (demande de Noé). La confirmation tient lieu de garde-fou.
+      if (evenement.target.closest('[data-fermer-capture]')) {
+        quitterLaCapture();
+        return;
+      }
+
+      if (evenement.target.closest('[data-abandonner-capture]')) {
+        etat.capture = captureVierge(etat.projet);
+        rendreCapture();
+        oublierLeClavier();
+        return;
+      }
+
+      if (evenement.target.closest('[data-continuer-capture]')) {
+        etat.capture.confirmationSortie = false;
+        rendreCapture({ focus: true });
+        return;
+      }
+
+      // Une pastille ouvre son panneau, et referme celui d'à côté : deux choix
+      // ouverts en même temps, c'est un formulaire, pas une capture.
+      const pastilleOuverte = evenement.target.closest('[data-panneau]');
+      if (pastilleOuverte) {
+        const nom = pastilleOuverte.dataset.panneau;
+        etat.capture.panneau = etat.capture.panneau === nom ? null : nom;
+        rendreCapture();
+        return;
+      }
+
+      const poserDate = evenement.target.closest('[data-poser-date]');
+      if (poserDate) {
+        etat.capture.echeance = poserDate.dataset.poserDate || null;
+        // Retirer la date retire l'heure avec elle : une heure sans jour ne
+        // veut rien dire, et la colonne resterait seule en base.
+        if (!etat.capture.echeance) etat.capture.heure = null;
+        etat.capture.panneau = null;
+        rendreCapture({ focus: true });
+        return;
+      }
+
+      const poserProjet = evenement.target.closest('[data-poser-projet]');
+      if (poserProjet) {
+        etat.capture.projet = poserProjet.dataset.poserProjet;
+        etat.capture.panneau = null;
+        rendreCapture({ focus: true });
+        return;
+      }
+
+      const poserPriorite = evenement.target.closest('[data-poser-priorite]');
+      if (poserPriorite) {
+        etat.capture.priorite = Number(poserPriorite.dataset.poserPriorite);
+        etat.capture.panneau = null;
+        rendreCapture({ focus: true });
+        return;
+      }
+
+      // Un clic ailleurs dans la tuile referme le panneau ouvert. Il arrive en
+      // dernier, quand rien d'autre n'a répondu : les boutons du panneau se
+      // sont déjà servis au-dessus.
+      if (etat.capture.panneau && !evenement.target.closest('.capture-popover')) {
+        etat.capture.panneau = null;
+        rendreCapture();
+        return;
+      }
+
+      const filtre = evenement.target.closest('[data-filtre-projet]');
+      if (filtre) {
+        etat.projet = filtre.dataset.filtreProjet;
+        // Le projet de la capture suit le filtre, tant qu'on n'a pas commencé
+        // à écrire : changer de filtre après avoir tapé un titre ne doit pas
+        // déplacer la tâche sous le nez de Noé.
+        if (etat.capture.ouverte && !section.querySelector('#capture-titre')?.value) {
+          etat.capture.projet = captureVierge(etat.projet).projet;
+          rendreCapture();
+        }
+        rendre();
+        return;
+      }
+
+      // Le cercle coche et décoche. Terminer crée une victoire ; rouvrir la
+      // retire, sinon le dashboard garderait la trace d'un travail défait.
+      const cercle = evenement.target.closest('[data-cocher]');
+      if (cercle) {
+        const tache = trouver(cercle.dataset.cocher);
+        if (!tache) return;
+        cercle.disabled = true;
+        try {
+          if (tache.statut === 'fait') {
+            Object.assign(tache, await api.rouvrirTache(tache));
+            await api.supprimerVictoireDeLaTache(tache.id);
+          } else {
+            const { tache: faite } = await api.terminerTache(tache);
+            Object.assign(tache, faite);
+          }
+          rendreListe();
+        } catch (souci) {
+          console.error('Tâche non mise à jour', souci);
+          cercle.disabled = false;
+        }
+        return;
+      }
+
+      const supprimer = evenement.target.closest('[data-supprimer]');
+      if (supprimer) {
+        const tache = trouver(supprimer.dataset.supprimer);
+        if (!tache || !confirm(`Supprimer « ${tache.titre} » ?`)) return;
+        supprimer.disabled = true;
+        try {
+          await api.supprimerTache(tache.id);
+          etat.taches = etat.taches.filter((candidate) => candidate.id !== tache.id);
+          rendreListe();
+        } catch (souci) {
+          console.error('Suppression impossible', souci);
+          supprimer.disabled = false;
+        }
+      }
+    });
+  },
+};

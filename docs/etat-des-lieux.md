@@ -1,7 +1,8 @@
-# État des lieux — 12 août 2026
+# État des lieux — 13 août 2026
 
-> Reprise : voir **§ 4 bis, « Par où reprendre »**. Trois chantiers de démarrage
-> attendent, et ils sont décrits là.
+> Reprise : voir **§ 4 bis, « Par où reprendre »**. Les trois chantiers du
+> démarrage sont faits sur Yuno (§ 2 ter) ; reste à les porter aux autres
+> espaces.
 
 Point de reprise. `CLAUDE.md` dit **ce que le hub doit être** ; ce document dit
 **où il en est**, ce qui a été vérifié, ce qui ne l'a pas été, et ce qui attend
@@ -19,6 +20,7 @@ https://noedelahaye-sketch.github.io/hub/
 | Surface | Adresse | État |
 |---|---|---|
 | Tableau de bord | `#dashboard` | complet |
+| Tâches | `#taches` | toutes les tâches, datées ou non, faites ou non — priorité 1 à 4 |
 | Calendrier global | `#calendrier` | grille mois/semaine + agenda ; on y pose, modifie et supprime |
 | Formation | `#formation` | complet, avec la progression lue dans le gist Bac-3 |
 | Page Yuno du hub | `#photo` | complète |
@@ -49,33 +51,75 @@ couloirs. Glisser sur des jours ouvre une fenêtre volante pour y poser un
 son détail, d'où elle se modifie et se supprime ; la glisser la reporte. Les
 filtres se cochent, et le « +N » déplie la journée.
 
-**La vue semaine a ses heures** : un bandeau pour ce qui n'a pas d'heure, puis
-une grille de 24 h où un événement occupe sa vraie durée et où deux blocs qui se
-chevauchent se partagent la largeur. **Les événements peuvent se répéter**
-(chaque semaine, quinzaine, mois) — les occurrences ne sont pas stockées, elles
-se déduisent à la lecture.
+**Les événements peuvent se répéter** (chaque semaine, quinzaine, mois) — les
+occurrences ne sont pas stockées, elles se déduisent à la lecture.
 
-**La semaine ne fait qu'un cadre** (12 août, à la demande de Noé, sur le modèle
-de Google Agenda). C'étaient trois boîtes bordées l'une sous l'autre — en-têtes,
-bandeau du jour entier, grille horaire — et surtout mal alignées : la grille
-horaire porte une gouttière d'heures à gauche que les deux autres n'avaient pas,
-si bien que « MER. 12 » ne tombait pas au-dessus de la colonne du mercredi. La
-gouttière (`--cal-gouttiere`) est maintenant portée par le cadre, les deux blocs
-du haut s'en écartent d'autant, et les sept colonnes tombent en face du haut en
-bas — vérifié à 0 px d'écart aux trois étages. Attention au pixel de
-compensation : la bordure des blocs du haut EST le trait de la gouttière, d'où
-le `calc(var(--cal-gouttiere) - 1px)`.
+**La grille de 24 h a été retirée de la vue semaine** (13 août, demande de Noé).
+Elle datait du 12 août et coûtait cher : vingt-quatre cases par jour, une
+gouttière d'heures à aligner au pixel, un cadre commun pour rattraper le
+décalage, et il fallait faire défiler pour trouver ce qu'on cherchait — une
+semaine à trois rendez-vous, c'était vingt-et-une cases vides pour trois pleines.
 
-**Les cases ont été allongées** : une heure passe de 3 à 3,75 rem (45 → 56 px),
-une case de mois de 5,5 à 7 rem (83 → 105 px).
+**Ce qui la remplace**, et qui dit la même chose en une ligne :
+
+- **La semaine est un mois d'une seule ligne** : sept cases, tout dedans, plus de
+  bandeau séparé pour ce qui n'a pas d'heure.
+- **L'heure s'écrit devant le titre** (`.cal-barre-heure`, en Geist Mono et plus
+  pâle), dans les DEUX vues — mois compris. En semaine elle passe au-dessus du
+  titre : quand, puis quoi.
+- **L'ordre est chronologique.** `segmentsDeLaSemaine` trie sur trois clés dans
+  cet ordre : le jour de départ, puis la longueur décroissante, puis l'heure.
+  La deuxième garde la règle d'avant — une barre de trois jours mérite le
+  couloir du haut, et son heure de départ ne veut rien dire ; la troisième range
+  les éléments d'un même jour, 9 h au-dessus de 15 h.
+- **La hauteur d'une barre est sa durée**, en semaine seulement : 2,5 rem par
+  heure (`HAUTEUR_PAR_HEURE`). C'est tout ce qui reste de la grille horaire —
+  non plus une échelle où tout se place, une simple proportion. En `min-height`
+  et non `height` : un titre qui passe à la ligne peut dépasser, une barre ne
+  coupe jamais son texte pour tenir dans sa durée. Pas en vue mois, où une case
+  fait 7 rem : un match de deux heures y écraserait sa journée.
+- **Le titre passe en 700.** À 11 px sur fond teinté, le poids normal se devinait
+  plus qu'il ne se lisait, et le 600 restait timide. L'heure devant lui reste en
+  400 et plus pâle.
+
+**Et pour cela, Gilroy a reçu son Bold** (`fonts/Gilroy-Bold.woff2`, 43 Ko, tiré
+des ressources FCH de Noé où la famille est complète, converti par
+`tools/convertir-polices.py`). Le dépôt ne portait que 400, 500 et 600 — et
+c'est un piège à connaître : **demander 700 ne faisait strictement rien**. Le
+navigateur retombait sur le SemiBold en silence. Mesuré avant : « Red Star -
+Sochaux » en 40 px faisait 358,92 px en 600 comme en 700. Après : 358,92 contre
+359,48 — deux dessins différents, donc un vrai fichier. C'est le même piège que
+les italiques de Canela en juin, en plus discret : là le navigateur inventait
+une pente, ici il ignorait la demande sans rien signaler. **Vérifier une graisse
+en mesurant, pas en la regardant.**
+
+**Un piège de mise en page, mesuré.** Une barre haute comme sa durée doit écrire
+son texte EN HAUT. Un `<button>` centre son contenu, et **ni `display: block`,
+ni `flow-root`, ni `align-content: start` ne le défont** — les trois laissent le
+texte à 58 px du haut d'une barre de 150. Seul un flex explicite
+(`display: flex; flex-direction: column; justify-content: flex-start`) reprend
+la main.
 
 **Les tâches et les publications portent une heure** (12 août, migrations
 `taches_heure` et `publications_heure`). Colonne `heure time` nullable dans les
-deux tables : avec heure, l'élément descend dans la grille horaire ; sans, il
-reste dans le bandeau du jour entier. Le champ est offert dans le formulaire de
-tâche, dans celui d'idée, et dans la fenêtre « Poser au calendrier ».
+deux tables. La convention à connaître : **minuit veut dire « pas d'heure »**
+(`heureDe` ne regarde que ça), parce qu'une tâche sans heure part de
+`depuisDateISO`. Le champ est offert dans le formulaire de tâche, dans celui
+d'idée, et dans la fenêtre « Poser au calendrier ».
 **« Quand » remplace « Échéance »** pour une tâche — une échéance est une date
 qu'on subit, c'est le mot des objectifs et des commandes.
+
+**L'onglet Calendrier est une icône, en dernière place** (13 août, demande de
+Noé), dans les trois barres — le hub, Yuno et le FCH. Il ne nomme pas un lieu,
+il ouvre la vue qui les traverse tous. **Dernier, mais DANS la rangée** : une
+première version le poussait au bord opposé, Noé l'a fait revenir — une barre
+avec un élément à part se lit comme deux barres. Le lien tout fait est
+`ongletCalendrier`, dans `calendrier-commun.js`.
+
+**La fenêtre « Poser au calendrier » a perdu son dépliant** : le bouton
+« Ajouter — publication » entre les pastilles de nature et le premier champ
+répétait ce que la fenêtre et les pastilles disaient déjà, et son chevron
+promettait un repli sans usage. `avecPli: false`, le mécanisme existait déjà.
 
 **Une tâche faite reste au calendrier**, barrée et en retrait, avec son cercle
 coché (`◉`). `tachesDatees` ne filtre plus les faites : ce site ne fait pas
@@ -109,6 +153,14 @@ complet et ce qui reste ouvert.
   arrondis, et `cover` : une autre proportion est recadrée, jamais déformée ni
   posée entre deux bandes. Plus de titre « Derniers moments ». Un moment sans
   photo n'y figure pas.
+- **Le carnet de terrain ne porte plus que des moments** (13 août, demande de
+  Noé). Il mêlait aussi les victoires nées ailleurs — une tâche terminée, une
+  commande livrée, un jalon atteint : « Publier trois reels » au milieu des
+  matchs couverts, ce n'est pas du terrain. Ce qui se coche à l'écran continue
+  de créer sa victoire en base et remonte au dashboard du hub ; c'est de là
+  qu'elle se retire, le Journal n'offre plus ce geste. `etat.victoires` et le
+  bouton `×` sont partis avec — Yuno ne lisait plus cette table que pour ça,
+  d'où **une requête de moins** au Journal.
 - **Le Journal porte le même mur, entier** : rien de tiré au sort, rien de
   caché, toutes les photos du plus récent au plus ancien, sur autant de lignes
   qu'il en faut. Les fiches complètes restent en dessous.
@@ -262,6 +314,291 @@ ajouter d'attributs `width`/`height`** : essayé, ils cassent la mise en page �
 le `height` l'emporte sur l'`aspect-ratio` et la vignette part à 113 × 400 au
 lieu de 113 × 150.
 
+**L'espace Tâches est né le 13 août**, à la demande de Noé, sur la forme de
+Todoist (capture à l'appui) : `#taches`, migration `taches_priorite`.
+
+- **Il ne cache rien** — datées ou non, faites ou non, tous projets. C'est sa
+  raison d'être : ailleurs le hub trie (le dashboard ne montre que les actives,
+  un espace projet replie son backlog), ici on vient voir l'ensemble et ranger.
+- **`priorite` int 1–4, défaut 4.** Convention de Todoist : 1 le plus urgent, 4
+  le cas ordinaire. Le défaut n'est pas 1, et c'est le point — une tâche n'est
+  pas prioritaire parce qu'elle existe, et une liste où tout est en 1 ne classe
+  plus rien. Entier borné par un CHECK plutôt qu'un texte : une priorité se
+  trie, et l'ordre alphabétique de « haute » et « basse » ne veut rien dire.
+- **`priorite` ne remplace pas `statut`** : l'un dit combien la tâche compte,
+  l'autre où elle en est. La règle des 3 actives par projet reste entière, et
+  `api.changerStatutTache` la tient toujours.
+- **Le tri** : priorité, puis date, puis ancienneté — et **à priorité égale, une
+  tâche datée passe avant une tâche sans date**. C'est le seul endroit du hub où
+  l'absence de date fait reculer quelque chose ; assumé, cette page sert à
+  choisir quoi faire.
+- **Décocher une tâche retire sa victoire** (`api.supprimerVictoireDeLaTache`).
+  Le dashboard le faisait déjà, mais il gardait l'identifiant sous la main — il
+  venait de la créer. Ici on rouvre des tâches terminées il y a des jours, il
+  faut la retrouver par sa source.
+- **Ce qui NE vient pas de Todoist : la date passée n'est pas rouge.** Todoist
+  écrit « Hier » en rouge ; le hub n'a pas de couleur d'alerte et n'en aura pas.
+  Une échéance dépassée se dit du même gris que les autres, et le cercle ne
+  change pas de couleur avec le temps qui passe. Les quatre couleurs de priorité
+  disent une **intensité choisie par Noé**, pas un jugement de l'application —
+  d'où une rampe chaude qui descend jusqu'au gris, et une terre cuite (`--prio-1`)
+  volontairement distincte de `--erreur`.
+- **Le refus des 3 actives se dit en ligne**, pas dans une boîte native : c'est
+  la règle qui parle et propose une sortie, pas une panne. Il s'efface au geste
+  suivant — le laisser traîner en ferait un reproche permanent — et **il n'est
+  pas journalisé en `console.error`** : ce qui s'y trouve doit mériter d'être
+  regardé.
+- **La croix de retrait ne se cache pas derrière le survol** ici. Ailleurs elle
+  est en `opacity: 0` et se révèle à la souris ; sur un téléphone il n'y a pas
+  de survol, et supprimer une tâche deviendrait impossible.
+- **Une liste, pas des tuiles.** `.bloc li` est annulé pour cette liste, barre de
+  projet comprise : vingt tâches en vingt cartes feraient un mur, et la barre
+  ferait double emploi avec le nom du projet, déjà coloré à droite.
+
+**La capture a été refaite le même jour**, sur un deuxième puis un troisième jeu
+de captures de Noé : un « + » ouvre une **tuile volante**, on écrit le nom
+directement, et **une rangée de pastilles** — date, projet, priorité — ouvre
+chacune son choix en menu flottant. Le formulaire à six champs empilés a
+disparu.
+
+- **La tuile flotte au-dessus de la page assombrie**, et pas au même endroit
+  selon l'écran (demande de Noé) : **au milieu sur ordinateur** — il n'y a pas
+  de clavier qui monte du bas, et une tuile posée en bas d'un grand écran laisse
+  un vide au-dessus d'elle — **collée en bas sur téléphone**, là où arrive le
+  pouce. Elle réutilise `.fenetre-fond`, le fond des autres fenêtres du hub.
+- **Sur téléphone elle se pose juste au-dessus du clavier.** `visualViewport`
+  est le seul moyen fiable de savoir la place qu'il prend : `innerHeight` ne
+  bouge pas quand le clavier monte, seule la fenêtre VISUELLE rétrécit, et la
+  différence entre les deux EST la hauteur du clavier. Le résultat sort en
+  variable CSS (`--bas-clavier`) plutôt qu'en style direct — c'est la feuille de
+  style qui décide quoi en faire, et sur grand écran elle n'en fait rien.
+  **Vérifié** en posant la variable à 300 px : la tuile monte de 300 px, au
+  pixel près.
+- **Ni `overflow`, ni `max-height` sur la tuile** : les menus se posent au-dessus
+  d'elle, donc hors de sa boîte, et un conteneur de défilement les découperait.
+  Piège rencontré en écrivant la règle.
+- **Sans contour**, à la demande de Noé : sur un fond obscurci, l'ombre suffit à
+  la détacher, un trait de plus ne dirait rien de nouveau.
+- **Le fond de cette fenêtre-là est à 65 %, pas 45 %.** Le réglage commun
+  suffit pour une fiche qu'on consulte ; ici l'onglet actif et le filtre choisi
+  sont des aplats d'accent clair sur thème sombre, et ils **traversaient** —
+  constaté sur capture, corrigé, revérifié. Le sélecteur est
+  `.fenetre-fond.capture-fond` et pas `.capture-fond` seul : à égalité de
+  spécificité c'est l'ordre du fichier qui tranche, et `.fenetre-fond` est
+  déclarée plus bas. Une demi-heure perdue à regarder une règle appliquée qui
+  ne s'applique pas.
+- **Le « + » reste en place** quand la tuile s'ouvre : sans lui, la liste
+  remonterait d'un cran à l'ouverture et redescendrait à la fermeture.
+- **Les menus flottent AU-DESSUS de la tuile**, jamais en dessous : elle est
+  collée au bas de l'écran, un panneau déplié vers le bas sortirait de la vue.
+- **Le menu de priorité suit le modèle de près** : un drapeau plein et coloré de
+  1 à 3, vide pour la 4, le libellé en toutes lettres, et un filet entre les
+  lignes qui **commence après l'icône**. La couleur est sur le drapeau, pas sur
+  le libellé — quatre lignes de texte coloré se liraient comme quatre états
+  actifs, alors qu'un seul est choisi.
+- **La rangée ne passe jamais à la ligne, et l'envoi prime** (demande de Noé) :
+  les pastilles vivent dans une bande qui **défile latéralement**, le bouton
+  garde sa taille et sa place quoi qu'il arrive. Une tuile dont la hauteur
+  change selon le nombre de pastilles se déplacerait sous les doigts.
+  La ligne qui fait tout est **`min-width: 0` sur la bande** : sans elle, un
+  conteneur flex refuse de rétrécir sous la largeur de son contenu
+  (`min-width: auto` par défaut) et les pastilles pousseraient le bouton hors de
+  la tuile au lieu de défiler. **Vérifié** en gonflant les libellés et en
+  ajoutant une pastille : 421 px de débordement, et le bouton n'a pas bougé d'un
+  pixel — même position, même taille, rangée toujours à 34 px de haut.
+  Un fondu marque le côté vers lequel il reste à défiler, posé en JS et
+  recalculé au redimensionnement : une pastille estompée alors que tout tient
+  serait un mensonge.
+- **L'envoi est une flèche dans un rond plein**, en bout de rangée (demande de
+  Noé, sur le modèle) : la tuile n'a qu'une action, la nommer était redondant, et
+  le mot « Ajouter » prenait la place d'une pastille. **Éteinte tant qu'il n'y a
+  pas de titre** — c'est la seule chose que la tâche exige, et un bouton qui
+  refuse en silence vaut moins qu'un bouton éteint. Elle s'allume sur `input`,
+  pas au redessin : redessiner à chaque lettre ferait perdre le curseur.
+- **Il n'y a plus de bouton « Annuler ».** On quitte en appuyant hors de la
+  tuile, et **une question s'affiche alors dans la tuile** : « Abandonner cette
+  tâche ? · Continuer · Abandonner ». Elle vit là, pas dans une boîte native :
+  c'est le hub qui parle, du même ton que partout.
+  **Elle ne se pose que s'il y a quelque chose à perdre** — un titre commencé,
+  une date, une priorité. Sur une tuile intacte, l'appui dehors ferme tout de
+  suite : confirmer l'abandon de rien serait une question pour rien. Le projet
+  ne compte pas dans ce calcul : il a un défaut, le laisser tel quel n'est pas
+  un travail commencé.
+- **Échap referme en trois temps** : d'abord le menu ouvert, puis — s'il y a de
+  quoi — la question, et Échap sur la question vaut « non ». Le geste
+  d'annulation ne peut pas être celui qui détruit. Le fond déclenche la même
+  question ; un clic dans la tuile hors menu ne referme que le menu. Les six
+  chemins sont vérifiés.
+
+- **Le nom suffit à créer.** Le reste se pose quand on en a envie, et se voit
+  d'un coup d'œil : une pastille renseignée affiche sa valeur au lieu de son
+  libellé, et celle de priorité prend sa couleur.
+- **La date offre les raccourcis de la capture** : aujourd'hui, demain, ce
+  week-end, la semaine prochaine, chacun avec son jour à droite — puis un champ
+  libre et une heure. « Ce week-end » veut dire samedi, **sauf le samedi et le
+  dimanche où c'est aujourd'hui** : un samedi, personne n'entend « samedi
+  prochain ».
+- **Ce panneau a dû maigrir** : à 365 px, clavier ouvert, il sortait par le haut
+  et « Aujourd'hui » — le raccourci le plus utile — devenait invisible, donc
+  intouchable. Ramené à **253 px** : lignes à 2,5 rem au lieu de 2,75, et les
+  champs jour et heure **côte à côte** au lieu d'empilés (70 px gagnés). Il est
+  en plus borné à la place réellement disponible au-dessus de la tuile, clavier
+  déduit — `calc(100vh - var(--bas-clavier) - 13rem)` sur téléphone,
+  `calc(50vh - 6rem)` sur ordinateur où la tuile est centrée. **Vérifié avec un
+  clavier simulé à 336 px** : le panneau commence à 33 px du haut, « Aujourd'hui »
+  est entier à l'écran, et rien n'a besoin de défiler.
+- **Une tâche capturée part au backlog**, toujours. Une tâche notée à la volée
+  n'est pas un des trois chantiers du moment ; la promouvoir se fait dans la
+  liste, en connaissance de la règle des 3 actives.
+- **La capture reste ouverte après l'envoi**, vidée, projet et priorité gardés :
+  on en note rarement une seule.
+- **Trois pièges de redessin, tous rencontrés :**
+  1. Le titre vit dans le champ, pas dans l'état, tant qu'on tape. `rendreCapture`
+     le relit avant de réécrire — sinon ouvrir la pastille de date effacerait ce
+     qu'on vient d'écrire.
+  2. Conséquence directe : après un envoi, **vider l'état ne suffit pas**, il
+     faut vider le champ AVANT de redessiner, sans quoi la relecture réécrit
+     l'ancien titre. Vu à l'essai, le champ gardait le titre de la tâche créée.
+  3. Les champs date et heure du panneau **ne redessinent pas le panneau** :
+     recréer un `<input type="date">` pendant qu'on s'en sert referme le
+     sélecteur natif du téléphone. Seule l'étiquette de la pastille est réécrite.
+- **Deux règles de forme rattrapées à la mesure**, pas à l'œil : le champ du nom
+  est en **17 px en dur** — `1,0625rem` tombait à 15,94 px avec la racine à
+  15 px, juste sous la barre des 16 en dessous de laquelle Safari iOS zoome au
+  focus ; et les pastilles font 2,25 rem, la hauteur des filtres. Pas 2,75 :
+  trois pastilles à 44 px feraient de la capture un formulaire, alors qu'elle
+  doit rester une ligne qu'on remplit debout.
+
+**Vérifié en conditions réelles** (13 août), la table `taches` étant vide au
+départ : le dessin d'abord avec six tâches factices (ordre du tri, section
+« Faites » repliée et à l'envers, filtre par projet, couleur des cercles), puis
+**le vrai chemin d'écriture** — créer, changer la priorité en ligne, renvoyer au
+backlog, cocher (victoire créée en base, relue en SQL), décocher (victoire
+retirée), supprimer. Puis quatre tâches pour éprouver le refus des 3 actives.
+Puis la capture refaite : ouverture, saisie, les trois pastilles une à une, deux
+tâches créées d'affilée. Tout a été défait à chaque fois : la base est revenue à
+**0 tâche et 1 victoire**, son état exact de départ. Zéro erreur en console, pas
+de débordement horizontal à 375 px, cercles à 43 px de cible tactile.
+
+---
+
+## 2 bis bis. Deux bugs trouvés en passant, et réparés
+
+Aucun des deux ne venait des chantiers du jour. Tous deux étaient invisibles
+faute d'avoir été exercés.
+
+**Le calendrier du site FCH n'avait jamais pu s'afficher.** `vueCalendrier` de
+`hermitage.js` passait `etat.filtre` — la chaîne `'tout'`, qui est le filtre des
+publications — là où le calendrier attend un `Set` de natures. L'écran levait
+`natures.has is not a function`, et comme `rendre()` affecte `section.innerHTML`
+en une seule expression, **la page gardait simplement le contenu précédent** :
+on cliquait « Calendrier » et l'accueil restait, sans rien qui signale l'erreur
+ailleurs que dans la console. La régression datait de la refonte du calendrier
+du 12 août, où `construireFiltres` et `construireCalendrier` ont pris un Set en
+paramètre sans que le FCH suive. Corrigé : `etat.natures = toutesLesNatures()`,
+et les cases se cochent maintenant comme dans l'espace Calendrier du hub.
+Leçon : `§ 2` notait que les chemins du FCH n'avaient pas été vérifiés — c'était
+exact, et voilà ce qui s'y cachait.
+
+**La barre d'onglets du hub ne défilait pas.** `overflow-x: auto` et
+`scrollbar-width: none` étaient écrits **dans le `@media (min-width: 45rem)` mais
+hors de tout sélecteur** : deux déclarations orphelines, donc appliquées à rien.
+Conséquence sur téléphone : ce n'était pas la barre qui glissait mais **la page
+entière**, de travers, alors que le commentaire juste au-dessus annonçait
+l'inverse. Les deux lignes sont remontées sur `.navigation`, hors du `@media` —
+c'est à 375 px qu'on en a besoin, pas au-delà. Vérifié : la page ne déborde
+plus, la barre glisse.
+
+---
+
+## 2 ter. Le démarrage — les trois chantiers, faits sur Yuno
+
+Faits le 13 août, **sur le site Yuno seulement**, en échantillon : c'est lui qui
+partait avec onze requêtes. Les autres espaces n'ont pas bougé. Le mécanisme est
+écrit pour se reprendre ailleurs — voir « ce qu'il reste à faire », plus bas.
+
+**1. Le cache de session** (`js/cache-session.js`, nouveau fichier). Le dernier
+état de l'espace est gardé en `sessionStorage` et affiché immédiatement à la
+réouverture, pendant que les données fraîches arrivent.
+
+- **C'est du papier peint, jamais une source.** Rien n'est lu pour décider quoi
+  que ce soit ; tout est réécrit dès la première réponse du serveur. **Vérifié** :
+  cache chaud + réseau branché, l'accueil redemande quand même ses cinq tables.
+  Un cache qui « épargnerait » une requête deviendrait une source de vérité, et
+  Noé verrait un jour des données d'hier sans le savoir.
+- **`sessionStorage` et non `localStorage`**, en connaissance de cause : ce sont
+  les contacts de Noé, avec leurs numéros. Fermer l'onglet les efface, et
+  `viderLesCaches()` part aussi à la déconnexion (appelé depuis `app.js`, à côté
+  du vidage des espaces).
+- **Les photos ont leur propre horloge.** Leurs adresses sont signées une heure
+  (`api.urlsDesPhotos`). Le cache retient l'instant de la signature
+  (`photosLe`) : au-delà de 45 minutes, **les moments partent avec leurs
+  photos**. Des moments sans adresses valides, ce serait le mur vide affiché à
+  tort — pire que le squelette. C'est le seul piège non évident de ce chantier.
+- Écrit après chaque chargement, **et à l'effacement de la page**
+  (`pagehide`/`visibilitychange`) : l'état bouge entre deux chargements, et sur
+  iOS une app ajoutée à l'écran d'accueil n'est jamais fermée, seulement mise de
+  côté.
+- **Mesuré** : 30 Ko pour les 13 clés (45 contacts, 15 idées, 7 envois). Le
+  module refuse au-delà de 1 Mo et oublie un cache de plus de 6 h, sans jamais
+  lever — quota plein ou navigation privée ne cassent rien, on repasse par le
+  squelette.
+
+**2. Le chargement par vue.** `SOURCES` dit où chaque morceau se cherche,
+`BESOINS` ce que chaque vue demande. Une clé n'est demandée qu'une fois par
+visite ; deux vues qui la partagent ne la redemandent pas.
+
+Compté au `fetch` intercepté, en parcourant les neuf vues à la suite :
+
+| Vue | Requêtes |
+|---|---|
+| Accueil (ouverture) | **6** — moments, événements, objectifs, publications, contacts, + signature des photos |
+| Journal | **0** — depuis que le carnet ne montre plus les victoires |
+| Créer | 1 (stats) |
+| Banque · Éditorial | **0** |
+| Calendrier | 2 (tâches, commandes) |
+| Réseau | 1 (envois) |
+| Passerelle | 1 (modèles) |
+| Carnet | 0 |
+| Retour à l'accueil | **0** |
+
+**11 requêtes pour tout visiter** (12 au relevé, moins celle des victoires
+retirée depuis), contre 11 à la seule ouverture avant. Une vue
+qui gagne un bloc doit relire sa ligne dans `BESOINS` : une clé oubliée, c'est un
+écran vide affiché à la place de données qui existent. Le filet est que toutes
+les clés de l'état partent d'un tableau vide — un oubli affiche trop peu, il ne
+casse rien.
+
+**3. Le chrome avant les données.** `monter()` dessine la signature, la barre,
+le pied et deux blocs en attente, puis charge. **Mesuré : 2,5 ms**, réseau
+coupé, avant qu'une seule requête soit partie. Le squelette suit la convention
+du reste du hub (`dashboard.js`, `perso.js`) : `<p class="vide">…</p>`.
+
+Trois conséquences de ce chantier, toutes voulues :
+
+- **Le premier rendu est passé à la fin de `monter()`**, après le branchement
+  des écouteurs — sinon un clic pendant le chargement tomberait dans le vide.
+- **Le fondu d'entrée attend le vrai contenu.** L'animer sur le squelette puis
+  le refuser au contenu ferait entrer une page vide et apparaître l'autre d'un
+  coup, exactement l'inverse de ce qu'on cherche.
+- **L'écran d'échec est devenu une ligne sous la barre**, avec « Réessayer », au
+  lieu d'une page qui remplace tout. Le chrome reste, et ce qui était déjà
+  affiché reste affiché. **Vérifié** : réseau coupé sur le carnet → chrome
+  intact + la ligne ; réseau rendu, clic → les 45 fiches, la ligne disparaît.
+
+**Comment tout cela a été vérifié** (navigateur, session ouverte, sans rien
+écrire en base) : les cinq chemins du cache un par un (relecture, péremption,
+cache illisible, cache trop gros, vidage sélectif), le premier jet lu **avant le
+moindre `await`**, le comptage des requêtes au `fetch` intercepté, le parcours
+des neuf vues avec relevé des écrans vides et des repères (45 contacts, 15
+idées, 42 cases de calendrier, 5 lignes de carnet), et zéro erreur en console.
+
+**Ce qu'il reste à faire** : `dashboard.js`, `perso.js`, `espace-projet.js`,
+`fch.js`, `photo.js` font déjà le chrome d'abord, mais **aucun n'a le cache ni
+le chargement par vue**. `hermitage.js` et `calendrier.js` n'ont même pas le
+squelette. Le dashboard est le plus rentable des suivants : c'est la page du
+check-in matinal, et elle part sur sept requêtes.
+
 ---
 
 ## 3. Ce qui attend une réponse de Noé
@@ -329,19 +666,10 @@ Rien d'ouvert dans les cahiers des charges. Restent des conforts :
 
 Dans cet ordre, du plus rentable au moins pressé.
 
-1. **Les trois chantiers du démarrage**, demandés par Noé et **non faits** —
-   volontairement laissés plutôt qu'entamés en fin de session : ils réécrivent
-   `monter()`, la partie qui décide si le site s'ouvre.
-   1. **Cache de session** : garder le dernier état en `sessionStorage` et
-      l'afficher pendant que les données fraîches arrivent. Le plus gros effet
-      ressenti pour le moins de risque — rouvrir l'app devient instantané.
-   2. **Charger par vue** : `stats`, `envois`, `modeles`, `commandes` ne servent
-      qu'au Réseau et à la Passerelle. L'accueil n'a besoin que des moments,
-      objectifs, publications et victoires. Aujourd'hui les 11 requêtes partent
-      ensemble.
-   3. **Chrome avant les données** : rendre l'en-tête, la nav et des blocs
-      squelettes, puis injecter. Aujourd'hui tout attend derrière
-      « Un instant… ».
+1. **Porter les trois chantiers du démarrage aux autres espaces.** Ils sont
+   faits sur Yuno (§ 2 ter) et n'attendent qu'un avis à l'usage avant d'être
+   généralisés — d'abord au dashboard, la page du check-in matinal, qui part sur
+   sept requêtes et n'a ni cache ni chargement par vue.
 2. **Les trois photos déjà en base pèsent 5 Mo chacune.** Les nouvelles sont
    réduites à l'envoi ; les anciennes non. Les rejoindre à la main via
    « Remplacer la photo » suffit à les faire passer à la moulinette.
@@ -445,6 +773,8 @@ restaurée par le routeur. Ne pas « simplifier » ces id.
 | Fichier | Rôle |
 |---|---|
 | `js/app.js` | Routeur, session, coquille commune des trois entrées |
+| `js/taches.js` | L'espace Tâches : toutes les tâches, la priorité, la capture |
+| `js/cache-session.js` | Le dernier état d'un espace, gardé le temps de l'onglet (§ 2 ter) |
 | `js/api.js` | **Tous** les appels Supabase, une fonction par usage |
 | `js/espace-projet.js` | La fabrique d'espace projet (formation) + gabarits partagés |
 | `js/publications.js` | Le calendrier éditorial, partagé Yuno/FCH — ce qui diffère passe en paramètre (cycle, checklist, piliers) |

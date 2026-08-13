@@ -33,6 +33,8 @@ import {
   construireCalendrier,
   construireFiltres,
   centrerActif,
+  ongletCalendrier,
+  toutesLesNatures,
 } from './calendrier-commun.js';
 
 const PROJET = 'fch';
@@ -67,10 +69,12 @@ const VUES = ['accueil', 'creer', 'calendrier', 'partenaires', 'club'];
 // --- Fabrication du HTML ----------------------------------------------------
 
 function enTete(vueActive) {
+  // Le calendrier n'est plus dans cette liste : il va en bout de barre, en
+  // icône (voir `ongletCalendrier`). « Partenaires » y gagne la place qui lui
+  // manquait sur 375 px.
   const liens = [
     ['accueil', 'Accueil', '#hermitage'],
     ['creer', 'Créer', '#hermitage/creer'],
-    ['calendrier', 'Calendrier', '#hermitage/calendrier'],
     ['partenaires', 'Partenaires', '#hermitage/partenaires'],
     ['club', 'Club', '#hermitage/club'],
   ];
@@ -87,6 +91,7 @@ function enTete(vueActive) {
           ${vue === vueActive ? 'aria-current="page"' : ''}>${libelle}</a>`,
         )
         .join('')}
+      ${ongletCalendrier('#hermitage/calendrier', vueActive === 'calendrier')}
     </nav>`;
 }
 
@@ -222,9 +227,9 @@ function vueCalendrier(etat) {
 
   return `
     ${enTete('calendrier')}
-    ${construireFiltres(etat.filtre)}
+    ${construireFiltres(etat.natures)}
     <div data-bloc="calendrier">
-      ${construireCalendrier(elements, etat.filtre)}
+      ${construireCalendrier(elements, etat.natures)}
     </div>
     ${pied()}`;
 }
@@ -282,7 +287,12 @@ export default {
       evenements: [],
       partenaires: [],
       vue: 'accueil',
+      // `filtre` est celui des publications ; `natures` celui du calendrier.
+      // Les deux ont longtemps été confondus — `vueCalendrier` passait `filtre`
+      // (la chaîne « tout ») là où le calendrier attend un Set, et l'écran
+      // levait `natures.has is not a function` sans que rien ne s'affiche.
       filtre: 'tout',
+      natures: toutesLesNatures(),
     };
 
     const rendre = () => {
@@ -450,6 +460,19 @@ export default {
       const filtre = evenement.target.closest('[data-filtre]');
       if (filtre) {
         etat.filtre = filtre.dataset.filtre;
+        rendre();
+        return;
+      }
+
+      // Les cases du calendrier : une nature qu'on décoche disparaît de la
+      // liste. Même geste que dans l'espace Calendrier du hub.
+      const filtreNature = evenement.target.closest('[data-filtre-nature]');
+      if (filtreNature) {
+        const suite = new Set(etat.natures);
+        const cle = filtreNature.dataset.filtreNature;
+        if (suite.has(cle)) suite.delete(cle);
+        else suite.add(cle);
+        etat.natures = suite;
         rendre();
         return;
       }

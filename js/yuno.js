@@ -4,11 +4,11 @@
 // « Hub », ni onglets, ni autres projets. On est chez Yuno, avec son chrome à
 // lui. La page Yuno DU hub, elle, vit dans js/photo.js (#photo).
 //
-//   #yuno              l'accueil : objectifs, aperçu création, victoires
-//   #yuno/creer        l'outil phare : calendrier éditorial + banque d'idées
+//   #yuno              l'accueil : l'invite, les compteurs, le mur de photos
+//   #yuno/journal      le carnet de terrain : le mur entier et le fil des moments
+//   #yuno/creer        l'atelier — banque d'idées et calendrier éditorial
 //   #yuno/calendrier   tout ce qui a une date chez Yuno, avec filtres
-//   #yuno/reseau       le carnet réseau (à construire)
-//   #yuno/commandes    le suivi des commandes (à construire)
+//   #yuno/reseau       la Passerelle, le carnet réseau et les commandes
 //
 // Une idée est une publication sans date : même table, deux vues.
 
@@ -47,8 +47,6 @@ import {
   fenetreJour,
   elementsDuJour,
   finDeLEvenement,
-  heureSousLePoint,
-  cadrerLesHeures,
   brancherSelection,
   brancherClavier,
   brancherDeplacement,
@@ -57,7 +55,9 @@ import {
   toutesLesNatures,
   natureParDefaut,
   centrerActif,
+  ongletCalendrier,
 } from './calendrier-commun.js';
+import { lireCache, ecrireCache } from './cache-session.js';
 
 // Les rubriques de départ de Noé (7 août 2026). La liste reste libre : elle
 // s'enrichira de son analyse du marché, plus tard.
@@ -194,11 +194,12 @@ export function animerLesCompteurs(section, { remise = false } = {}) {
 
 function enTete(vue) {
   const vueActive = ONGLET_DE_LA_VUE[vue] ?? vue;
+  // Le calendrier n'est plus dans cette liste : il va en bout de barre, en
+  // icône (voir `ongletCalendrier`). Ce sont les lieux du site qui se nomment.
   const liens = [
     ['accueil', 'Accueil', '#yuno'],
     ['journal', 'Journal', '#yuno/journal'],
     ['creer', 'Créer', '#yuno/creer'],
-    ['calendrier', 'Calendrier', '#yuno/calendrier'],
     ['reseau', 'Réseau', '#yuno/reseau'],
   ];
 
@@ -216,6 +217,7 @@ function enTete(vue) {
           ${vue === vueActive ? 'aria-current="page"' : ''}>${libelle}</a>`,
         )
         .join('')}
+      ${ongletCalendrier('#yuno/calendrier', vueActive === 'calendrier')}
     </nav>`;
 }
 
@@ -428,20 +430,6 @@ function carteMoment(moment, photos = {}) {
   return `<li class="moment">${corpsMoment(moment, photos)}</li>`;
 }
 
-function carteVictoire(victoire) {
-  return `
-    <li>
-      <span class="tuile-entete">
-        <span class="discret quand">${echapper(echeanceLisible(depuisDateISO(victoire.date)))}</span>
-        <button type="button" class="lien-discret bouton-mini bouton-retirer"
-          data-victoire="${echapper(victoire.id)}"
-          title="Retirer cette victoire"
-          aria-label="Retirer « ${echapper(victoire.titre)} »">×</button>
-      </span>
-      <span class="victoire-titre">${echapper(victoire.titre)}</span>
-    </li>`;
-}
-
 // Le tirage est au hasard, mais il tient la journée : sans ça le mur se
 // rebattrait à chaque retour sur l'accueil, et regarder ses photos deviendrait
 // un jeu de machine à sous. La date sert de graine — le mur change à minuit,
@@ -538,34 +526,24 @@ export function construireMurComplet(moments, photos = {}) {
   return vignettes(duPlusRecent, photos, 'mur-photos mur-complet');
 }
 
-// Le Journal : le fil complet, et le mur des victoires. Les moments et les
-// victoires d'avant le carnet s'y mêlent. Les victoires nées d'un moment sont
-// écartées — le moment est déjà là, et plus riche que son reflet.
-export function construireCarnet(moments, victoires, photos = {}) {
-  const entrees = [
-    ...moments.map((moment) => ({
-      date: moment.date,
-      created_at: moment.created_at,
-      html: carteMoment(moment, photos),
-    })),
-    ...victoires
-      .filter((victoire) => victoire.source !== 'moment')
-      .map((victoire) => ({
-        date: victoire.date,
-        created_at: victoire.created_at,
-        html: carteVictoire(victoire),
-      })),
-  ].sort(
+// Le Journal : le fil des moments, et rien d'autre (décision de Noé, 13 août
+// 2026). Il portait aussi les victoires nées ailleurs — une tâche terminée, une
+// commande livrée, un jalon atteint — et une ligne « Publier trois reels » au
+// milieu des matchs couverts n'est pas du terrain. Un carnet de terrain se
+// remplit dehors ; ce qui se coche à l'écran remonte au dashboard du hub, qui
+// est fait pour ça, et se retire de là.
+export function construireCarnet(moments, photos = {}) {
+  if (!moments.length) {
+    return `<p class="vide">Ton premier moment s'inscrit ici — un match, un concert, une sortie.</p>`;
+  }
+
+  const duPlusRecent = [...moments].sort(
     (a, b) =>
       String(b.date).localeCompare(String(a.date)) ||
       String(b.created_at).localeCompare(String(a.created_at)),
   );
 
-  if (!entrees.length) {
-    return `<p class="vide">Ton premier moment s'inscrit ici — un match, un concert, une sortie.</p>`;
-  }
-
-  return `<ul class="liste-carnet">${entrees.map((entree) => entree.html).join('')}</ul>`;
+  return `<ul class="liste-carnet">${duPlusRecent.map((moment) => carteMoment(moment, photos)).join('')}</ul>`;
 }
 
 // La capture : deux champs suffisent, le reste attend qu'on ait envie. Ce qui
@@ -894,7 +872,7 @@ function vueJournal(etat) {
 
     <section class="bloc">
       <h2>Le carnet de terrain</h2>
-      <div data-bloc="carnet">${construireCarnet(etat.moments, etat.victoires, etat.photos)}</div>
+      <div data-bloc="carnet">${construireCarnet(etat.moments, etat.photos)}</div>
     </section>
     ${fenetreMoment(etat)}
     ${etat.captureOuverte ? formulaireMoment(etat.contacts, etat.prefillMoment) : ''}
@@ -2393,11 +2371,75 @@ function blocCommandes(etat) {
 
 // --- Montage ----------------------------------------------------------------
 
+// Où chaque morceau de l'état va se chercher. Une source rend l'objet à fondre
+// dans l'état, pas une liste nue : les moments ramènent leurs photos avec eux,
+// et le reste du code n'a pas à savoir que ces deux-là voyagent ensemble.
+const SOURCES = {
+  objectifs: async () => ({ objectifs: await api.objectifsActifs({ projet: 'photo' }) }),
+  publications: async () => ({ publications: await api.publicationsToutes('photo') }),
+  taches: async () => ({ taches: await api.tachesDatees({ projet: 'photo' }) }),
+  // Tous les événements : la grille se promène dans le passé, et l'invite du
+  // Carnet y puise la semaine écoulée.
+  evenements: async () => ({ evenements: await api.evenementsTous({ projet: 'photo' }) }),
+  contacts: async () => ({ contacts: await api.contactsTous() }),
+  commandes: async () => ({ commandes: await api.commandesToutes() }),
+  envois: async () => ({ envois: await api.envoisTous() }),
+  modeles: async () => ({ modeles: await api.modelesTous() }),
+  stats: async () => ({ stats: await api.statsHebdoTous() }),
+  moments: async () => {
+    const moments = await api.momentsTous();
+    // Les photos vivent dans un bucket privé : leurs adresses se signent à la
+    // lecture, toutes ensemble.
+    const chemins = moments.map((moment) => moment.photo_chemin).filter(Boolean);
+    return {
+      moments,
+      photos: chemins.length ? await api.urlsDesPhotos(chemins) : {},
+      photosLe: Date.now(),
+    };
+  },
+};
+
+// Ce dont chaque vue a besoin pour se dessiner — et rien de plus. Les onze
+// requêtes partaient ensemble à l'ouverture ; l'accueil en demande cinq, la
+// banque une seule. Le reste arrive quand on va le voir.
+//
+// Une clé qui manque ici, c'est un écran vide affiché à la place de données qui
+// existent : quand une vue gagne un bloc, sa ligne se relit.
+const BESOINS = {
+  accueil: ['moments', 'evenements', 'objectifs', 'publications', 'contacts'],
+  journal: ['moments', 'evenements', 'contacts'],
+  creer: ['publications', 'stats'],
+  banque: ['publications'],
+  editorial: ['publications'],
+  calendrier: ['evenements', 'taches', 'objectifs', 'publications', 'commandes', 'contacts'],
+  reseau: ['contacts', 'envois', 'commandes'],
+  passerelle: ['contacts', 'envois', 'modeles'],
+  carnet: ['contacts', 'envois', 'modeles'],
+};
+
+const CLE_CACHE = 'yuno';
+
+// Les adresses des photos sont signées une heure (api.urlsDesPhotos). Passé ce
+// délai on ne ressort pas le mur du cache : un mur d'images mortes vaut moins
+// qu'un écran qui attend. La marge couvre l'onglet resté ouvert.
+const SIGNATURE_UTILE = 45 * 60 * 1000;
+
+// Le chrome d'abord. La signature, la barre et le pied se posent tout de suite,
+// et le contenu vient dedans — on peut changer d'onglet avant même que les
+// données soient arrivées. Les points de suspension sont ceux du reste du hub
+// (dashboard.js, perso.js) : un bloc qui attend, pas un bloc vide.
+function squelette(vue) {
+  return `
+    ${enTete(vue)}
+    <section class="bloc"><p class="vide">…</p></section>
+    <section class="bloc"><p class="vide">…</p></section>
+    ${pied()}`;
+}
+
 export default {
   async monter(section, route) {
     const etat = {
       objectifs: [],
-      victoires: [],
       moments: [],
       publications: [],
       taches: [],
@@ -2443,6 +2485,79 @@ export default {
       affichageContact: 'tableau',
     };
 
+    // --- Le chargement, morceau par morceau ---
+    //
+    // Trois ensembles, et ils ne disent pas la même chose :
+    //   `affichables` — ce qu'on peut dessiner, cache compris ;
+    //   `fraiches`    — ce qui vient du serveur pendant cette visite ;
+    //   `enVol`       — ce qui est parti et n'est pas revenu.
+    // Sans cette distinction, une donnée sortie du cache passerait pour à jour
+    // et ne serait jamais rechargée.
+    const affichables = new Set();
+    const fraiches = new Set();
+    const enVol = new Map();
+    let echecChargement = false;
+
+    // Le cache de session : le dernier état de l'onglet, affiché tout de suite.
+    const restaure = lireCache(CLE_CACHE);
+    if (restaure) {
+      if (Date.now() - (restaure.photosLe ?? 0) > SIGNATURE_UTILE) {
+        // Les moments partent avec leurs photos : des moments sans adresses
+        // valides, c'est le mur vide affiché à tort.
+        delete restaure.moments;
+        delete restaure.photos;
+      }
+      for (const [cle, valeur] of Object.entries(restaure)) {
+        if (!(cle in SOURCES) && cle !== 'photos' && cle !== 'photosLe') continue;
+        etat[cle] = valeur;
+        if (cle in SOURCES) affichables.add(cle);
+      }
+    }
+
+    // Ce qu'on remet en cache : les données, jamais l'état d'interface (les
+    // fenêtres ouvertes, les filtres, la vue). Rouvrir l'app doit retrouver le
+    // contenu, pas une fenêtre volante restée ouverte la veille.
+    const aGarder = () => {
+      const garde = {};
+      for (const cle of affichables) garde[cle] = etat[cle];
+      if (affichables.has('moments')) {
+        garde.photos = etat.photos;
+        garde.photosLe = etat.photosLe ?? 0;
+      }
+      return garde;
+    };
+
+    const lancer = (cle) => {
+      const promesse = SOURCES[cle]()
+        .then((donnees) => {
+          Object.assign(etat, donnees);
+          fraiches.add(cle);
+          affichables.add(cle);
+        })
+        .finally(() => enVol.delete(cle));
+      enVol.set(cle, promesse);
+      return promesse;
+    };
+
+    // Rend `true` si quelque chose est arrivé — pour ne pas redessiner la page
+    // quand tout était déjà là.
+    const charger = async (cles) => {
+      const aFaire = cles.filter((cle) => !fraiches.has(cle));
+      if (!aFaire.length) return false;
+
+      try {
+        await Promise.all(aFaire.map((cle) => enVol.get(cle) ?? lancer(cle)));
+        echecChargement = false;
+        ecrireCache(CLE_CACHE, aGarder());
+      } catch (erreur) {
+        console.error("Chargement de l'espace Yuno impossible", erreur);
+        echecChargement = true;
+      }
+      return true;
+    };
+
+    const pretPour = (vue) => (BESOINS[vue] ?? []).every((cle) => affichables.has(cle));
+
     // Déclaré ici parce que `rendre` s'en sert : la fonction est posée plus
     // bas, quand les écouteurs se branchent.
     let poserLEntreeClavier = null;
@@ -2453,7 +2568,10 @@ export default {
     let vueDessinee = null;
 
     const rendre = () => {
-      if (etat.vue === 'journal') section.innerHTML = vueJournal(etat);
+      const pret = pretPour(etat.vue);
+
+      if (!pret) section.innerHTML = squelette(etat.vue);
+      else if (etat.vue === 'journal') section.innerHTML = vueJournal(etat);
       else if (etat.vue === 'creer') section.innerHTML = vueCreer(etat);
       else if (etat.vue === 'banque') section.innerHTML = vueBanque(etat);
       else if (etat.vue === 'editorial') section.innerHTML = vueEditorial(etat);
@@ -2463,12 +2581,25 @@ export default {
       else if (etat.vue === 'carnet') section.innerHTML = vueCarnet(etat);
       else section.innerHTML = vueAccueil(etat);
 
+      // Le message d'échec se pose sous la barre, quelle que soit la vue : les
+      // fonctions de vue n'ont pas à connaître l'état du réseau.
+      if (echecChargement) {
+        section.querySelector('.yuno-nav')?.insertAdjacentHTML(
+          'afterend',
+          `<p class="vide">Les données n'ont pas pu être chargées.
+             <button type="button" class="lien-discret"
+               data-action="reessayer">Réessayer</button></p>`,
+        );
+      }
+
       centrerActif(section.querySelector('.yuno-nav'));
       centrerActif(section.querySelector('.filtres'));
-      cadrerLesHeures(section);
       poserLEntreeClavier?.();
 
-      if (etat.vue !== vueDessinee) {
+      // Le fondu attend le contenu : l'animer sur le squelette puis le refuser
+      // au vrai contenu ferait entrer une page vide et apparaître l'autre d'un
+      // coup — exactement l'inverse de ce qu'on cherche.
+      if (pret && etat.vue !== vueDessinee) {
         vueDessinee = etat.vue;
         animerLEntreeDeLaVue(section);
       }
@@ -2507,6 +2638,12 @@ export default {
         api.commandesToutes(),
       ]);
       Object.assign(etat, { evenements, taches, objectifs, publications, contacts, commandes });
+      // Ces six-là viennent d'être relues : elles sont fraîches, et affichables
+      // même si la vue courante ne les avait pas demandées.
+      for (const cle of ['evenements', 'taches', 'objectifs', 'publications', 'contacts', 'commandes']) {
+        fraiches.add(cle);
+        affichables.add(cle);
+      }
     };
 
     // Où écrire, par nature. Le formulaire de modification et le glissement
@@ -2534,7 +2671,9 @@ export default {
       throw new Error(`Nature inconnue : ${type}`);
     }
 
-    this.naviguer = (nouvelleRoute) => {
+    // Dessiner, puis charger ce qui manque, puis redessiner. Le premier rendu
+    // ne coûte rien : il sort du cache, ou c'est le squelette.
+    this.naviguer = async (nouvelleRoute) => {
       etat.vue = VUES.includes(nouvelleRoute?.vue) ? nouvelleRoute.vue : 'accueil';
       // Le mot de clôture ne vaut que pour l'instant où l'on vient de poster :
       // changer de page l'efface, il n'a pas à traîner. La capture pré-remplie
@@ -2542,56 +2681,8 @@ export default {
       etat.cloture = false;
       etat.prefillMoment = null;
       rendre();
+      if (await charger(BESOINS[etat.vue])) rendre();
     };
-
-    try {
-      const [objectifs, victoires, moments, publications, taches, evenements, contacts, commandes, envois, modeles, stats] =
-        await Promise.all([
-          api.objectifsActifs({ projet: 'photo' }),
-          api.victoiresDuProjet('photo', 10, { sauf: 'moment' }),
-          api.momentsTous(),
-          api.publicationsToutes('photo'),
-          api.tachesDatees({ projet: 'photo' }),
-          // Tous les événements : la grille se promène dans le passé, et
-          // l'invite du Carnet y puise la semaine écoulée.
-          api.evenementsTous({ projet: 'photo' }),
-          api.contactsTous(),
-          api.commandesToutes(),
-          api.envoisTous(),
-          api.modelesTous(),
-          api.statsHebdoTous(),
-        ]);
-      Object.assign(etat, {
-        objectifs,
-        victoires,
-        moments,
-        publications,
-        taches,
-        evenements,
-        contacts,
-        commandes,
-        envois,
-        modeles,
-        stats,
-      });
-
-      // Les photos vivent dans un bucket privé : leurs adresses se signent à la
-      // lecture, toutes ensemble.
-      const chemins = moments.map((moment) => moment.photo_chemin).filter(Boolean);
-      if (chemins.length) etat.photos = await api.urlsDesPhotos(chemins);
-    } catch (erreur) {
-      console.error("Chargement de l'espace Yuno impossible", erreur);
-      section.innerHTML = `
-        ${enTete('accueil')}
-        <p class="vide">Les données n'ont pas pu être chargées.</p>
-        <button type="button" class="bouton-secondaire" data-action="reessayer">Réessayer</button>`;
-      section
-        .querySelector('[data-action="reessayer"]')
-        ?.addEventListener('click', () => this.monter(section, route));
-      return;
-    }
-
-    this.naviguer(route);
 
     const trouverPub = (id) => etat.publications.find((pub) => pub.id === id);
     const ouvrirObjectif = (id) => {
@@ -2959,6 +3050,13 @@ export default {
     // --- Clics ---
 
     section.addEventListener('click', async (evenement) => {
+      if (evenement.target.closest('[data-action="reessayer"]')) {
+        echecChargement = false;
+        rendre();
+        if (await charger(BESOINS[etat.vue])) rendre();
+        return;
+      }
+
       if (evenement.target.closest('[data-ouvrir-note-idee]')) {
         etat.noteIdeeOuverte = true;
         rendre();
@@ -3040,22 +3138,6 @@ export default {
         return;
       }
 
-      // Cliquer dans la grille horaire pose un événement à cette heure-là.
-      const creneau = evenement.target.closest('.cal-colonne-jour');
-      if (creneau && !evenement.target.closest('.cal-bloc')) {
-        const jour = creneau.dataset.jour;
-        etat.detailCal = null;
-        etat.creationCal = {
-          debut: jour,
-          fin: jour,
-          nature: 'evenement',
-          heure: heureSousLePoint(creneau, evenement.clientY),
-        };
-        rendre();
-        section.querySelector('#cal-titre')?.focus();
-        return;
-      }
-
       const journeeComplete = evenement.target.closest('[data-jour-complet]');
       if (journeeComplete) {
         etat.creationCal = null;
@@ -3103,11 +3185,13 @@ export default {
         const tache = etat.taches.find((candidat) => candidat.id === cercle.dataset.cocherTache);
         if (!tache || tache.statut === 'fait') return;
         try {
-          const { tache: faite, victoire } = await api.terminerTache(tache);
+          // La victoire est bien créée en base — elle remonte au dashboard du
+          // hub. Elle n'est simplement plus tenue ici : le Journal ne montre
+          // que des moments.
+          const { tache: faite } = await api.terminerTache(tache);
           etat.taches = etat.taches.map((candidat) =>
             candidat.id === faite.id ? faite : candidat,
           );
-          if (victoire) etat.victoires = [victoire, ...etat.victoires];
           rendre();
         } catch (souci) {
           console.error('Tâche non terminée', souci);
@@ -3281,9 +3365,8 @@ export default {
         avancerCommande.disabled = true;
         try {
           // Livrer crée une victoire : c'en est une. Être payé, non.
-          const { commande: misAJour, victoire } = await api.avancerCommande(commande, suivant);
+          const { commande: misAJour } = await api.avancerCommande(commande, suivant);
           Object.assign(commande, misAJour);
-          if (victoire) etat.victoires = [victoire, ...etat.victoires];
           rendreCommandes();
         } catch (souci) {
           console.error("Impossible de faire avancer la commande", souci);
@@ -3455,9 +3538,8 @@ export default {
             candidat.jalons?.some((j) => j.id === jalon.dataset.jalon),
           );
           const cible = objectif.jalons.find((j) => j.id === jalon.dataset.jalon);
-          const { jalon: atteint, victoire } = await api.atteindreJalon(cible, 'photo');
+          const { jalon: atteint } = await api.atteindreJalon(cible, 'photo');
           Object.assign(cible, atteint);
-          etat.victoires = [victoire, ...etat.victoires];
           rendre();
           ouvrirObjectif(objectif.id);
         } catch (souci) {
@@ -3473,9 +3555,8 @@ export default {
         if (!objectif || !confirm(`Marquer « ${objectif.titre} » comme atteint ?`)) return;
         atteindre.disabled = true;
         try {
-          const { victoire } = await api.atteindreObjectif(objectif);
+          await api.atteindreObjectif(objectif);
           etat.objectifs = etat.objectifs.filter((o) => o.id !== objectif.id);
-          etat.victoires = [victoire, ...etat.victoires];
           rendre();
         } catch (souci) {
           console.error("Impossible de marquer l'objectif atteint", souci);
@@ -3547,18 +3628,6 @@ export default {
         return;
       }
 
-      const victoire = evenement.target.closest('[data-victoire]');
-      if (victoire) {
-        victoire.disabled = true;
-        try {
-          await api.supprimerVictoire(victoire.dataset.victoire);
-          etat.victoires = etat.victoires.filter((v) => v.id !== victoire.dataset.victoire);
-          rendre();
-        } catch (souci) {
-          console.error('Suppression de la victoire impossible', souci);
-          victoire.disabled = false;
-        }
-      }
     });
 
     // Glisser sur les jours du calendrier ouvre le formulaire, rempli de la
@@ -3905,5 +3974,20 @@ export default {
         }
       }
     });
+
+    // Le cache est écrit à chaque chargement, mais l'état bouge aussi entre
+    // deux : une idée notée, un statut changé, un moment logué. On le reprend
+    // donc au moment où la page s'efface — c'est le seul instant garanti sur
+    // iOS, où une application ajoutée à l'écran d'accueil n'est jamais
+    // « fermée », seulement mise de côté.
+    const garderLEtat = () => ecrireCache(CLE_CACHE, aGarder());
+    window.addEventListener('pagehide', garderLEtat);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') garderLEtat();
+    });
+
+    // Le premier rendu vient en dernier, après que tout est branché : sans
+    // quoi un clic pendant le chargement tomberait dans le vide.
+    await this.naviguer(route);
   },
 };

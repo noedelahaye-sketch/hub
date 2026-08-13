@@ -51,6 +51,17 @@
   src: url("../fonts/Gilroy-SemiBold.woff2") format("woff2");
   font-weight: 600; font-style: normal; font-display: swap;
 }
+/* Le 700, ajouté le 13 août pour les barres du calendrier. Il vient des
+   ressources du FCH — la famille complète y est. Sans ce fichier, demander 700
+   ne faisait STRICTEMENT rien : mesuré, « Red Star - Sochaux » en 40 px faisait
+   358,92 px en 600 comme en 700, le navigateur retombant sur le SemiBold sans
+   rien dire. C'est le même piège que les italiques de Canela, en plus discret :
+   là le navigateur inventait une pente, ici il ignorait la demande. */
+@font-face {
+  font-family: "Gilroy";
+  src: url("../fonts/Gilroy-Bold.woff2") format("woff2");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
 
 /* --- Les polices de secours, ajustées ----------------------------------------
    `font-display: swap` affiche le texte tout de suite dans une police système,
@@ -85,10 +96,14 @@
   line-gap-override: 0%;
 }
 
+/* La plage couvre 600 ET 700 : le réglage a été mesuré sur le SemiBold, et le
+   Bold en est assez proche pour que le saut reste imperceptible. Une police de
+   secours ne vit qu'un instant, le temps du chargement — la remesurer pour une
+   graisse de plus coûterait plus qu'elle ne rapporte. */
 @font-face {
   font-family: "Gilroy secours";
   src: local("Helvetica Neue"), local("Helvetica"), local("Arial");
-  font-weight: 600;
+  font-weight: 600 700;
   size-adjust: 102.72%;
   ascent-override: 89.56%;
   descent-override: 23.36%;
@@ -220,7 +235,6 @@ body[data-espace="yuno"] #vue h3 {
 body[data-espace="yuno"] .moment-lieu,
 body[data-espace="yuno"] .pub-titre,
 body[data-espace="yuno"] .contact-nom,
-body[data-espace="yuno"] .victoire-titre,
 body[data-espace="yuno"] .modele-titre {
   font-family: "Canela Deck", "Canela secours", georgia, serif;
   font-style: normal;

@@ -145,9 +145,9 @@ export function assemblerCalendrier({
       id: tache.id,
       type: 'tache',
       source: tache,
-      // Avec une heure, la tâche descend dans la grille horaire ; sans, elle
-      // reste dans le bandeau du jour entier. C'est `estHoraire` qui tranche,
-      // et il ne regarde que ça : minuit = pas d'heure.
+      // Avec une heure, la barre du calendrier l'écrit devant le titre ; sans,
+      // elle ne dit que le jour. C'est `heureDe` qui tranche, et il ne regarde
+      // que ça : minuit = pas d'heure.
       date: tache.heure
         ? new Date(`${tache.echeance}T${tache.heure}`)
         : depuisDateISO(tache.echeance),
@@ -190,8 +190,8 @@ export function assemblerCalendrier({
       id: pub.id,
       type: 'publication',
       source: pub,
-      // Comme une tâche : avec une heure, elle descend dans la grille horaire.
-      // L'heure de parution est une décision éditoriale, pas un détail.
+      // Comme une tâche : avec une heure, elle l'affiche. L'heure de parution
+      // est une décision éditoriale, pas un détail.
       date: pub.heure
         ? new Date(`${pub.date_prevue}T${pub.heure}`)
         : depuisDateISO(pub.date_prevue),
@@ -226,6 +226,31 @@ export function assemblerCalendrier({
   }
 
   return elements.sort((a, b) => a.date - b.date);
+}
+
+// --- L'onglet du calendrier ---------------------------------------------------
+// Le calendrier n'est pas un lieu comme les autres : c'est l'outil qui regarde
+// tous les autres. Dans les trois barres il porte donc une icône plutôt qu'un
+// mot, et il se tient à part, en bout de rangée. Décision de Noé, 13 août 2026.
+//
+// Un dessin et non un émoji — le hub n'écrit qu'en × ↗ ‹ ›, et un émoji
+// arriverait avec sa couleur et sa police à lui. `currentColor` le laisse
+// suivre l'encre de l'onglet, actif comme au repos.
+
+const ICONE_CALENDRIER = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+  stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+  stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+  <path d="M3 10h18M8 3v4M16 3v4"></path>
+</svg>`;
+
+// Le lien tout fait, pour les trois barres. Sans texte, l'onglet perdrait son
+// nom : `aria-label` le lui rend, et `title` le montre au survol.
+export function ongletCalendrier(adresse, actif) {
+  return `
+    <a href="${adresse}" class="nav-calendrier${actif ? ' actif' : ''}"
+      data-nav="calendrier" title="Calendrier" aria-label="Calendrier"
+      ${actif ? 'aria-current="page"' : ''}>${ICONE_CALENDRIER}</a>`;
 }
 
 // --- Les périodes ------------------------------------------------------------
@@ -372,9 +397,17 @@ function segmentsDeLaSemaine(jours, elements) {
       };
     })
     .filter(Boolean)
-    // Les plus longues d'abord, à départ égal : une barre de trois jours mérite
-    // le couloir du haut, sinon elle se faufile sous des barres d'un jour.
-    .sort((a, b) => a.depuis - b.depuis || b.jusqua - b.depuis - (a.jusqua - a.depuis));
+    // Trois clés, dans cet ordre. Le jour de départ. Puis les plus longues :
+    // une barre de trois jours mérite le couloir du haut, sinon elle se faufile
+    // sous des barres d'un jour — et une barre qui traverse la semaine n'a pas
+    // d'heure qui veuille dire quelque chose. Puis l'heure : entre deux
+    // éléments d'un même jour, celui de 9 h passe au-dessus de celui de 15 h.
+    .sort(
+      (a, b) =>
+        a.depuis - b.depuis ||
+        b.jusqua - b.depuis - (a.jusqua - a.depuis) ||
+        a.element.date - b.element.date,
+    );
 
   const couloirs = [];
   for (const segment of segments) {
@@ -404,9 +437,43 @@ const SIGNES = {
   relance: '↗',
 };
 
-function barre(segment, montrerProjet) {
+// L'heure d'un élément, quand elle veut dire quelque chose. Deux réserves :
+// minuit veut dire « pas d'heure » (c'est la convention d'`assemblerCalendrier`,
+// où une tâche sans heure part de `depuisDateISO`), et une barre qui traverse
+// plusieurs jours n'a pas d'heure à annoncer — « 19:00 » sur un trait qui court
+// du lundi au jeudi ne dirait rien de vrai.
+function heureDe(element) {
+  const date = element.date;
+  if (date.getHours() === 0 && date.getMinutes() === 0) return null;
+  if (element.jusqua && element.jusqua !== versDateISO(date)) return null;
+  return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+
+// La hauteur d'une barre en vue semaine : sa durée, à raison de 2,5 rem par
+// heure. C'est ce qui reste de la grille horaire — non plus une échelle de 24 h
+// où tout se place, mais une simple proportion : un match de deux heures est
+// deux fois plus haut qu'un rendez-vous d'une heure, et ça se voit sans compter.
+// Seul un événement a une fin déclarée ; une tâche arrive à un moment, elle
+// garde donc sa hauteur de ligne.
+const HAUTEUR_PAR_HEURE = 2.5;
+
+function hauteurSelonLaDuree(element) {
+  const fin = element.source?.date_fin ? new Date(element.source.date_fin) : null;
+  if (!fin) return null;
+
+  const minutes = (fin - element.date) / 60000;
+  if (!(minutes > 0)) return null;
+  return (minutes / 60) * HAUTEUR_PAR_HEURE;
+}
+
+function barre(segment, { montrerProjet = false, proportionnel = false } = {}) {
   const { element, deborde } = segment;
   const projet = montrerProjet ? ` data-projet="${echapper(element.projet)}"` : '';
+  const heure = heureDe(element);
+  // `min-height` et non `height` : la durée pose un plancher, un titre qui
+  // passe à la ligne peut le dépasser. Une barre ne coupe jamais son texte
+  // pour tenir dans sa durée.
+  const hauteur = proportionnel && heure ? hauteurSelonLaDuree(element) : null;
   // Une tâche faite garde sa place et le dit : cercle coché, titre barré. La
   // faire disparaître effacerait ce qu'on a accompli, ce que ce site ne fait
   // jamais.
@@ -422,11 +489,22 @@ function barre(segment, montrerProjet) {
     .join(' ');
 
   return `<button type="button" class="${classes}"${projet}
-    style="grid-column: ${segment.depuis + 1} / ${segment.jusqua + 2}; grid-row: ${segment.couloir + 2};"
+    style="grid-column: ${segment.depuis + 1} / ${segment.jusqua + 2}; grid-row: ${
+      segment.couloir + 2
+    };${hauteur ? ` min-height: ${hauteur.toFixed(2)}rem;` : ''}"
     ${element.recurrent ? 'data-recurrent' : ''}
     data-element="${echapper(element.type)}:${echapper(element.id)}"
     aria-label="${echapper(
-      `${TYPES[element.type]} · ${element.titre} · ${element.quand ?? versDateISO(element.date)}`,
+      [
+        TYPES[element.type],
+        element.titre,
+        element.quand ?? versDateISO(element.date),
+        // `quand` porte déjà l'heure pour un événement ; une tâche et une
+        // publication n'ont que leur date, l'heure se dit alors à part.
+        element.quand ? null : heure,
+      ]
+        .filter(Boolean)
+        .join(' · '),
     )}"
     title="${echapper(`${TYPES[element.type]} · ${element.titre}`)}">${
       // Le signe est décoratif : le titre de l'infobulle dit déjà la nature en
@@ -441,11 +519,16 @@ function barre(segment, montrerProjet) {
              ${element.type === 'tache' ? `title="${element.faite ? 'Faite' : 'Marquer comme faite'}"` : ''}
              aria-hidden="true">${signe}</span>`
         : ''
+    }${
+      // L'heure devant le titre, en chiffres et en retrait : c'est ce qui
+      // remplace la grille horaire. Elle est déjà dans l'étiquette lue à voix
+      // haute, d'où l'`aria-hidden`.
+      heure ? `<span class="cal-barre-heure" aria-hidden="true">${echapper(heure)}</span>` : ''
     }${echapper(element.titre)}</button>`;
 }
 
 function ligneDeSemaine(jours, elements, options) {
-  const { montrerProjet, maximum, mois, aujourdhui, selection } = options;
+  const { montrerProjet, proportionnel, maximum, mois, aujourdhui, selection } = options;
   const segments = segmentsDeLaSemaine(jours, elements);
   const visibles = maximum ? segments.filter((segment) => segment.couloir < maximum) : segments;
   const caches = maximum ? segments.filter((segment) => segment.couloir >= maximum) : [];
@@ -517,129 +600,8 @@ function ligneDeSemaine(jours, elements, options) {
   return `
     <div class="cal-ligne" style="grid-template-rows: auto repeat(${rangs}, auto) 1fr;">
       ${fonds}${numeros}
-      ${visibles.map((segment) => barre(segment, montrerProjet)).join('')}
+      ${visibles.map((segment) => barre(segment, { montrerProjet, proportionnel })).join('')}
       ${restes}
-    </div>`;
-}
-
-// --- La vue semaine, avec ses heures -----------------------------------------
-// La vue mois écrase la durée : un appel de trente minutes et un match de deux
-// heures y occupent la même case. C'est la raison d'être de la semaine — elle
-// montre où les choses se tassent, et ce qui reste entre deux blocs.
-
-const HAUTEUR_HEURE = 3; // en rem, cf. --cal-heure dans la feuille de style
-
-// Un élément est horaire s'il porte une heure et tient dans sa journée. Tout le
-// reste — les sans-heure, les sur plusieurs jours, les tâches, les échéances —
-// vit dans le bandeau du haut : ça n'a pas de place dans le temps, seulement
-// un jour.
-function estHoraire(element) {
-  // Un événement occupe une tranche ; une tâche arrive à un moment. Les deux
-  // ont leur place dans la grille horaire, les autres natures n'en ont pas.
-  if (!['evenement', 'tache', 'publication'].includes(element.type)) return false;
-  const debut = element.date;
-  if (debut.getHours() === 0 && debut.getMinutes() === 0) return false;
-  return !element.jusqua || element.jusqua === versDateISO(debut);
-}
-
-// Deux blocs qui se chevauchent se partagent la largeur du jour. On regroupe
-// par grappes de chevauchement, puis on assigne une colonne dans chaque grappe.
-function placerDansLaJournee(elements) {
-  const blocs = elements
-    .map((element) => {
-      const debut = element.date;
-      const minutesDebut = debut.getHours() * 60 + debut.getMinutes();
-      const fin = element.source?.date_fin ? new Date(element.source.date_fin) : null;
-      // Sans fin déclarée, une heure de principe : mieux vaut un bloc lisible
-      // qu'un trait sans épaisseur.
-      const minutesFin = fin ? fin.getHours() * 60 + fin.getMinutes() : minutesDebut + 60;
-
-      return {
-        element,
-        depuis: minutesDebut,
-        jusqua: Math.max(minutesFin, minutesDebut + 20),
-      };
-    })
-    .sort((a, b) => a.depuis - b.depuis || b.jusqua - a.jusqua);
-
-  const grappes = [];
-  let grappe = [];
-  let borne = -1;
-
-  for (const bloc of blocs) {
-    if (bloc.depuis >= borne && grappe.length) {
-      grappes.push(grappe);
-      grappe = [];
-    }
-    grappe.push(bloc);
-    borne = Math.max(borne, bloc.jusqua);
-  }
-  if (grappe.length) grappes.push(grappe);
-
-  for (const membres of grappes) {
-    const colonnes = [];
-    for (const bloc of membres) {
-      let rang = colonnes.findIndex((colonne) => colonne <= bloc.depuis);
-      if (rang < 0) {
-        colonnes.push(bloc.jusqua);
-        rang = colonnes.length - 1;
-      } else {
-        colonnes[rang] = bloc.jusqua;
-      }
-      bloc.colonne = rang;
-    }
-    for (const bloc of membres) bloc.colonnes = colonnes.length;
-  }
-
-  return blocs;
-}
-
-function blocHoraire(bloc, montrerProjet) {
-  const { element, depuis, jusqua, colonne, colonnes } = bloc;
-  const haut = (depuis / 60) * HAUTEUR_HEURE;
-  const hauteur = Math.max(((jusqua - depuis) / 60) * HAUTEUR_HEURE, 1.1);
-  const largeur = 100 / colonnes;
-
-  return `<button type="button" class="cal-bloc"
-    ${montrerProjet ? `data-projet="${echapper(element.projet)}"` : ''}
-    style="top: ${haut}rem; height: ${hauteur}rem;
-      left: ${colonne * largeur}%; width: ${largeur}%;"
-    ${element.recurrent ? 'data-recurrent' : ''}
-    data-element="${echapper(element.type)}:${echapper(element.id)}"
-    title="${echapper(`${element.quand} · ${element.titre}`)}">
-    <span class="cal-bloc-heure">${echapper(
-      element.date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-    )}</span>
-    <span class="cal-bloc-titre">${echapper(element.titre)}</span>
-  </button>`;
-}
-
-function grilleHoraire(jours, elements, options) {
-  const horaires = elements.filter(estHoraire);
-
-  const colonnes = jours
-    .map((jour) => {
-      const cle = versDateISO(jour);
-      const blocs = placerDansLaJournee(
-        horaires.filter((element) => versDateISO(element.date) === cle),
-      );
-      return `<div class="cal-colonne-jour" data-jour="${cle}" role="button" tabindex="-1"
-        aria-label="${echapper(
-          jour.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }),
-        )} — poser à une heure">
-        ${blocs.map((bloc) => blocHoraire(bloc, options.montrerProjet)).join('')}
-      </div>`;
-    })
-    .join('');
-
-  const heures = Array.from({ length: 24 }, (_, heure) =>
-    `<span class="cal-heure-libelle">${String(heure).padStart(2, '0')}:00</span>`,
-  ).join('');
-
-  return `
-    <div class="cal-heures">
-      <div class="cal-colonne-heures">${heures}</div>
-      <div class="cal-heures-jours" style="height: ${24 * HAUTEUR_HEURE}rem;">${colonnes}</div>
     </div>`;
 }
 
@@ -655,43 +617,41 @@ export function construireGrille(
 
   const options = {
     montrerProjet,
+    // Une barre haute comme sa durée : seulement en semaine. En mois, une case
+    // fait 7 rem — un match de deux heures y prendrait les trois quarts de sa
+    // journée et écraserait tout le reste.
+    proportionnel: vue === 'semaine',
     // En vue mois une ligne ne peut pas tout montrer : trois couloirs, puis un
-    // reste. Dans le bandeau de la semaine il y a la place, on montre tout.
+    // reste. La semaine n'a qu'une ligne et toute la hauteur : on montre tout.
     maximum: vue === 'semaine' ? 0 : 3,
     mois: vue === 'semaine' ? null : ancre.getMonth(),
     aujourdhui: versDateISO(new Date()),
     selection,
   };
 
+  // La semaine est un mois d'une seule ligne (décision de Noé, 13 août 2026).
+  // Elle a porté une grille de 24 h où chaque élément occupait sa vraie durée ;
+  // c'était beaucoup de hauteur pour peu de choses — une semaine à trois
+  // rendez-vous, c'est vingt-quatre cases vides pour trois pleines, et il
+  // fallait faire défiler pour trouver ce qu'on cherchait. Une case par jour,
+  // l'heure écrite devant le titre, l'ordre chronologique : la même information
+  // se lit d'un coup d'œil.
   if (vue === 'semaine') {
-    // Le bandeau ne porte que ce qui n'a pas d'heure : le reste descend dans
-    // la grille horaire, où il occupe sa vraie durée.
-    const sansHeure = retenus.filter((element) => !estHoraire(element));
-
-    // Un seul cadre pour toute la semaine : les en-têtes, le bandeau du jour
-    // entier et la grille horaire étaient trois boîtes bordées l'une sous
-    // l'autre, et leurs colonnes ne tombaient pas en face — la grille horaire
-    // porte une gouttière d'heures à gauche que les deux autres n'avaient pas.
-    // Ici la gouttière est prise en charge par le cadre, en retrait à gauche
-    // des deux premiers, et les sept jours s'alignent d'un bout à l'autre.
     return `
-      <div class="cal-semaine-cadre">
-        <div class="cal-grille cal-semaine" role="group"
-          aria-label="${echapper(`Calendrier, semaine du ${titreDePeriode(ancre, 'semaine')}`)}">
-          <div class="cal-entetes" aria-hidden="true">
-            ${jours
-              .map(
-                (jour) =>
-                  `<span>${JOURS_COURTS[(jour.getDay() + 6) % 7]} ${jour.getDate()}</span>`,
-              )
-              .join('')}
-          </div>
-          ${ligneDeSemaine(jours, sansHeure, options)}
+      <div class="cal-grille cal-semaine" role="group"
+        aria-label="${echapper(`Calendrier, semaine du ${titreDePeriode(ancre, 'semaine')}`)}">
+        <div class="cal-entetes" aria-hidden="true">
+          ${jours
+            .map(
+              (jour) =>
+                `<span>${JOURS_COURTS[(jour.getDay() + 6) % 7]} ${jour.getDate()}</span>`,
+            )
+            .join('')}
         </div>
-        ${grilleHoraire(jours, retenus, options)}
+        ${ligneDeSemaine(jours, retenus, options)}
       </div>
-      <p class="discret cal-aide">Le bandeau du haut porte ce qui n'a pas d'heure.
-        Clique dans la grille pour poser un événement à cette heure-là.</p>`;
+      <p class="discret cal-aide">Touche un jour — ou glisse sur une série de jours —
+        pour y poser quelque chose. Clique une barre pour la voir en détail.</p>`;
   }
 
   const lignes = [];
@@ -711,11 +671,10 @@ export function construireGrille(
       pour y poser quelque chose. Clique une barre pour la voir en détail.</p>`;
 }
 
-// Quand un événement finit, selon ce que le formulaire a reçu. Trois cas, et
-// c'est tout ce que la grille horaire a besoin de savoir :
-//   — une date de fin plus tardive : l'événement tient plusieurs jours, il vit
-//     dans le bandeau du haut et finit au soir du dernier ;
-//   — une heure et une durée : il occupe sa tranche, et la grille la dessine ;
+// Quand un événement finit, selon ce que le formulaire a reçu. Trois cas :
+//   — une date de fin plus tardive : l'événement tient plusieurs jours, sa
+//     barre les traverse et il finit au soir du dernier ;
+//   — une heure et une durée : la fin s'en déduit, et la fiche de détail la dit ;
 //   — ni l'un ni l'autre : il tient la journée, sans fin déclarée.
 export function finDeLEvenement(debut, champs) {
   if (champs.fin && champs.fin !== champs.debut) return new Date(`${champs.fin}T23:59`);
@@ -723,25 +682,6 @@ export function finDeLEvenement(debut, champs) {
 
   const minutes = Number(champs.duree) || 60;
   return new Date(debut.getTime() + minutes * 60000);
-}
-
-// Poser dans la grille horaire : le Y du clic dit l'heure. On arrondit au
-// quart d'heure — personne ne cale un match à 15 h 07.
-export function heureSousLePoint(colonne, y) {
-  const cadre = colonne.getBoundingClientRect();
-  const proportion = Math.min(Math.max((y - cadre.top) / cadre.height, 0), 0.999);
-  const minutes = Math.round((proportion * 24 * 60) / 15) * 15;
-  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
-}
-
-// La grille s'ouvre sur les heures qu'on vit, pas sur minuit.
-export function cadrerLesHeures(section) {
-  const cadre = section.querySelector('.cal-heures');
-  if (!cadre) return;
-
-  const premier = cadre.querySelector('.cal-bloc');
-  const cible = premier ? premier.offsetTop - 24 : 7 * HAUTEUR_HEURE * 16;
-  cadre.scrollTop = Math.max(cible, 0);
 }
 
 // --- L'agenda ----------------------------------------------------------------
@@ -1124,10 +1064,13 @@ export function fenetreCreation({ debut, fin, nature = 'evenement', heure = '', 
     }
     ${construireFormulaire({
       id: 'cal',
-      libelle: `Ajouter — ${NATURES_CREABLES[nature].toLowerCase()}`,
       action: 'creer-depuis-calendrier',
       bouton: 'Poser au calendrier',
-      ouvert: true,
+      // Sans dépliant : la fenêtre dit déjà qu'on ajoute, et les pastilles
+      // au-dessus disent quoi. Un « Ajouter — publication » toujours ouvert
+      // entre les deux ne faisait que répéter, et son chevron promettait un
+      // repli dont personne n'a l'usage ici.
+      avecPli: false,
       extra: `<input type="hidden" name="nature" value="${echapper(nature)}">`,
       champs: [
         { nom: 'titre', libelle: 'Quoi', type: 'text', requis: true },

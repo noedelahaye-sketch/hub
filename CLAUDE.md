@@ -81,8 +81,9 @@ Les icônes se régénèrent depuis les logos : `python3 tools/generer-icones.py
 
 ## Structure du site
 
-Huit espaces, servis par un routeur à deux niveaux (`#espace/vue/id`) :
+Neuf espaces, servis par un routeur à deux niveaux (`#espace/vue/id`) :
 - `/` ou `#dashboard` — tableau de bord global (tous projets)
+- `#taches` — **toutes** les tâches, tous projets : datées ou non, faites ou non. La seule page du hub qui ne cache rien. On y crée une tâche, on y change sa priorité (1 à 4) et son statut. Ailleurs le hub trie pour Noé ; ici on vient voir l'ensemble et ranger.
 - `#calendrier` — tout ce qui porte une date, tous projets confondus, filtres par nature (tâches, événements, publications, objectifs)
 - `#formation` — espace formation (thème : teal)
 - `#photo` — la page Yuno du hub (thème : doré) — tableau de bord réduit et porte vers le site
@@ -140,11 +141,14 @@ La progression d'un objectif = jalons atteints / jalons totaux (calculée côté
 - `jalon_id` uuid REFERENCES jalons(id) ON DELETE SET NULL (nullable)
 - `titre` text NOT NULL — toujours une action concrète commençant par un verbe
 - `statut` text default 'backlog' CHECK (statut IN ('backlog', 'actif', 'fait'))
-- `echeance` date (nullable)
+- `echeance` date (nullable) · `heure` time (nullable — minuit n'existe pas : sans heure, la colonne est NULL)
+- `priorite` int NOT NULL default 4 CHECK (priorite BETWEEN 1 AND 4) — 1 le plus urgent, 4 le cas ordinaire
 - `date_fait` timestamptz
 - `created_at` timestamptz default now()
 
 Règle métier : maximum 3 tâches en statut 'actif' par projet. L'UI doit empêcher d'en activer une 4ème (proposer d'en terminer ou repasser une en backlog).
+
+`statut` et `priorite` répondent à deux questions différentes et ne se remplacent pas : `statut` dit **où en est** la tâche, `priorite` dit **combien elle compte**. Une priorité 1 ne dispense pas de choisir ses 3 actives.
 
 ### evenements
 - `id` uuid PK

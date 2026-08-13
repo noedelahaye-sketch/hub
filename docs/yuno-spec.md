@@ -111,9 +111,9 @@ pour le texte, la Belhanda restant dans le logo, en image.
 Décision de Noé (7 août 2026) : utiliser les polices commerciales malgré le
 repo public, risques compris et acceptés. Fichiers repris de sa machine :
 Canela Deck Regular/Bold **et leurs deux italiques** (versions d'essai
-« Trial » — noté), Gilroy Regular/Medium/SemiBold. Servis en OTF/TTF faute de
-convertisseur woff2 (75–80 Ko pièce, acceptable). Ces familles ne chargent que
-dans l'espace Yuno ; le reste du hub garde les siennes.
+« Trial » — noté), Gilroy Regular/Medium/SemiBold, **plus le Bold depuis le
+13 août**. Ces familles ne chargent que dans l'espace Yuno ; le reste du hub
+garde les siennes.
 
 **Ne jamais supposer qu'une police couvre le français.** Une fonte peut être
 installée, valide, et n'avoir aucun accent : le navigateur ne prévient pas, il
@@ -122,7 +122,7 @@ sans que rien ne le signale. Se le vérifier avec `fontTools`, en lisant la
 `cmap`, plutôt qu'à l'œil.
 
 **Gilroy est servi en WOFF2** depuis le 12 août 2026 : 236 Ko de TTF devenus
-74 Ko, soit −70 %, à dessin identique. Les `.ttf` restent dans `fonts/` comme
+74 Ko, soit −70 %, à dessin identique — plus 43 Ko pour le Bold du 13 août. Les `.ttf` restent dans `fonts/` comme
 sources, ils ne sont plus servis. `python3 tools/convertir-polices.py` régénère
 (demande `pip install fonttools brotli`). **Canela reste en OTF** : quatre
 fichiers, 222 Ko téléchargés à chaque première visite — le même gain de 70 %
@@ -166,8 +166,18 @@ tous à la fois ne hiérarchise rien — si tout penche, plus rien ne ressort.
 | Onglet inactif | Canela | italique | 400 | 1 rem |
 | Titre de tuile (contenu) | Canela | romain | 400 | 1,125 rem |
 | Sous-titre, libellé fort | Gilroy | romain | 600 | — |
+| Barre du calendrier (titre) | Gilroy | romain | 700 | 0,6875 rem |
 | Corps, date, statut | Gilroy | romain | 400 | — |
 | Chiffre | Geist Mono | — | — | via `.chiffre` |
+
+**Le 700 est né le 13 août**, pour ces barres-là : à 11 px sur un fond teinté,
+le 600 restait timide. Il a fallu **ajouter le fichier** (`Gilroy-Bold.woff2`,
+tiré des ressources FCH de Noé) — le dépôt n'avait que 400/500/600, et demander
+700 sans lui ne faisait rien du tout : le navigateur retombait sur le SemiBold
+en silence, mesuré à 358,92 px dans les deux cas. Corollaire de la règle
+« ne jamais demander une graisse dont le fichier n'existe pas » : **elle se
+vérifie en mesurant une largeur, pas en regardant l'écran.** Une graisse
+manquante ne crie pas, contrairement à une italique simulée.
 
 Les titres de section ont perdu la casse haute et l'interlettrage qu'ils
 portaient en Gilroy : c'était l'habillage d'une étiquette, illisible sur un
@@ -391,9 +401,13 @@ L'accueil n'en montre qu'un tirage.
   par une URL signée d'une heure, refabriquée à chaque visite. Supprimer un
   moment efface son fichier. L'ancienne colonne `photo_fiere` reste affichée si
   elle porte une phrase écrite avant que la pièce jointe existe.
-- **Le fil**, antéchronologique, **EST le mur des victoires** : les moments et
-  les victoires d'avant le carnet s'y mêlent. Les victoires nées d'un moment en
-  sont écartées — le moment est déjà là, et plus riche que son reflet.
+- **Le fil, antéchronologique, ne porte que des moments** (13 août 2026). Il a
+  d'abord mêlé les victoires nées ailleurs — une tâche terminée, une commande
+  livrée, un jalon atteint. Noé les a fait retirer : une ligne « Publier trois
+  reels » au milieu des matchs couverts n'est pas du terrain. **Un carnet de
+  terrain se remplit dehors.** Ce qui se coche à l'écran continue de créer sa
+  victoire en base et remonte au dashboard du hub, qui est fait pour ça — et
+  c'est de là qu'elle se retire, le Journal n'offre plus ce geste.
 - **Loguer un moment crée une victoire** (`source = 'moment'`), qui remonte au
   dashboard du hub. Dans ce système, une victoire EST un moment vécu.
 - **Les rencontres comptent autant que les images.** Un nom déjà au carnet se
