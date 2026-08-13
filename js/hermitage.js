@@ -67,7 +67,7 @@ const RUBRIQUES_DEPART = [
 ];
 
 // Les partenaires sont des contacts de type 'marque' : même table que le
-// carnet réseau de Yuno, c'est la même matière (docs/fch-spec.md, §5).
+// réseau de Yuno, c'est la même matière (docs/fch-spec.md, §5).
 const TYPE_PARTENAIRE = 'marque';
 
 const VUES = ['accueil', 'creer', 'calendrier', 'partenaires', 'club'];

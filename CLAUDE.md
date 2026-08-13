@@ -259,6 +259,12 @@ site. (Principe repris du site Bac-3, où la table équivalente est respectée.)
 | Ta semaine | Agenda, Planning |
 | Aujourd'hui | À faire, Todo, Tâches du jour |
 | Backlog | Plus tard, Icebox |
+| Le réseau (les fiches de Yuno) | Le carnet, le carnet réseau, le CRM en texte courant |
+
+Le mot **carnet** ne désigne qu'une chose : le **Carnet de terrain** de Yuno,
+celui des moments. La base de contacts, elle, s'appelle **le réseau** (décision
+de Noé, 13 août 2026 — le mot en désignait deux). L'adresse `#yuno/carnet` n'a
+pas bougé : renommer une adresse casserait un favori, et elle ne se lit pas.
 
 Un bouton dit ce qui va se passer. Phrases à l'infinitif ou à l'impératif.
 

@@ -8,7 +8,7 @@
 //   #yuno/journal      le carnet de terrain : le mur entier et le fil des moments
 //   #yuno/creer        l'atelier — banque d'idées et calendrier éditorial
 //   #yuno/calendrier   tout ce qui a une date chez Yuno, avec filtres
-//   #yuno/reseau       la Passerelle, le carnet réseau et les commandes
+//   #yuno/reseau       la Passerelle, le réseau et les commandes
 //
 // Une idée est une publication sans date : même table, deux vues.
 
@@ -330,7 +330,7 @@ export function construireCompteurs(moments) {
 }
 
 // Les noms saisis au vol retrouvent leur fiche quand elle existe — même geste
-// que le carnet : une barre oblique sépare deux personnes.
+// que le réseau : une barre oblique sépare deux personnes.
 export function relierRencontres(saisie, contacts) {
   return separer(saisie ?? '').map((nom) => {
     const connu = contacts.find(
@@ -349,8 +349,8 @@ function ligneRencontres(moment) {
         ? `<span class="tag" style="--h: ${teinte(rencontre.nom)}">${echapper(rencontre.nom)}</span>`
         : `<span class="tag tag-neutre">${echapper(rencontre.nom)}<button type="button"
              class="lien-discret ouvrir-fiche" data-ouvrir-fiche="${echapper(rencontre.id)}"
-             title="Ajouter au carnet réseau"
-             aria-label="Ajouter ${echapper(rencontre.nom)} au carnet réseau">+</button></span>`,
+             title="Ajouter au réseau"
+             aria-label="Ajouter ${echapper(rencontre.nom)} au réseau">+</button></span>`,
     )
     .join('');
 
@@ -631,9 +631,9 @@ const NATURE_MOMENT = { moment: 'Moment' };
 // vient poster, sur une autre on vient noter un nom.
 //
 // Les sous-pages suivent leur onglet, comme la barre le fait déjà : la banque
-// et l'éditorial appartiennent à Créer, la Passerelle et le carnet à Réseau.
+// et l'éditorial appartiennent à Créer, la Passerelle et les fiches à Réseau.
 //
-// `contact` n'est pas une nature de la tuile : c'est la fiche du carnet, et
+// `contact` n'est pas une nature de la tuile : c'est la fiche du réseau, et
 // elle s'ouvre seule — « toutes les autres possibilités sont cachées ».
 const PLUS_PAR_VUE = {
   accueil: { nature: 'tache' },
@@ -1288,7 +1288,7 @@ function vueCalendrier(etat) {
     ${pied()}`;
 }
 
-// --- Le carnet réseau --------------------------------------------------------
+// --- Le réseau --------------------------------------------------------
 // Ce qu'une fiche doit rendre en trois secondes : le contact, et à qui la
 // personne est rattachée (docs/yuno-spec.md, §4).
 
@@ -1544,7 +1544,7 @@ function lienTelephone(contact) {
 function boutonRetirer(contact) {
   return `<button type="button" class="lien-discret bouton-mini bouton-retirer"
     data-supprimer-contact="${echapper(contact.id)}"
-    title="Retirer du carnet"
+    title="Retirer du réseau"
     aria-label="Retirer ${echapper(contact.nom)}">×</button>`;
 }
 
@@ -1800,7 +1800,7 @@ export function construireBarreFiltres(contacts, etat) {
 function messageVide(contacts) {
   return contacts.length
     ? `<p class="vide">Personne ne correspond à cette recherche.</p>`
-    : `<p class="vide">Ton carnet démarre ici — joueurs, médias, clubs.</p>`;
+    : `<p class="vide">Ton réseau démarre ici — joueurs, médias, clubs.</p>`;
 }
 
 export function construireTableauContacts(retenus, contacts, { tri = 'nom', sens = 1, ordre = null } = {}) {
@@ -2202,7 +2202,7 @@ function vueReseau(etat) {
             <span class="discret">${
               dansLaFile
                 ? `<span class="chiffre">${dansLaFile}</span> dans la file · <span class="chiffre">${etat.envois.length}</span> messages envoyés`
-                : "La file d'aller-vers, à remplir depuis le carnet"
+                : "La file d'aller-vers, à remplir depuis le réseau"
             }</span>
           </span>
         </a>
@@ -2245,12 +2245,12 @@ function vueCarnet(etat) {
     ${enTete('carnet')}
 
     <section class="bloc">
-      <h2>Le carnet</h2>
+      <h2>Le réseau</h2>
       <div class="barre-base">
         <input type="search" id="recherche-contact" class="recherche"
-          placeholder="Chercher partout dans le carnet…"
+          placeholder="Chercher partout dans le réseau…"
           value="${echapper(etat.rechercheContact)}">
-        <div class="affichages" role="group" aria-label="Affichage du carnet">
+        <div class="affichages" role="group" aria-label="Affichage du réseau">
           ${Object.entries(AFFICHAGES)
             .map(
               ([valeur, libelle]) => `
@@ -2269,7 +2269,7 @@ function vueCarnet(etat) {
 
       ${construireFormulaire({
         id: 'contact',
-        libelle: 'Ajouter au carnet',
+        libelle: 'Ajouter au réseau',
         action: 'creer-contact',
         champs: CHAMPS_CONTACT,
       })}
@@ -2277,8 +2277,8 @@ function vueCarnet(etat) {
     ${pied()}`;
 }
 
-// Les champs d'une fiche du carnet, écrits une fois : le pli du bas de la page
-// Réseau et la fenêtre du « + » posent les mêmes.
+// Les champs d'une fiche du réseau, écrits une fois : le pli du bas de la page
+// et la fenêtre du « + » posent les mêmes.
 function champsContact() {
   return [
     { nom: 'nom', libelle: 'Nom', type: 'text', requis: true },
@@ -2312,12 +2312,12 @@ const CHAMPS_CONTACT = champsContact();
 // `id` sur une page, ce sont des étiquettes qui désignent le mauvais champ.
 function formulaireNouveauContact() {
   return construireFenetre(
-    'Ajouter au carnet',
-    `<h3 class="fenetre-titre">Ajouter au carnet</h3>
+    'Ajouter au réseau',
+    `<h3 class="fenetre-titre">Ajouter au réseau</h3>
      ${construireFormulaire({
        id: 'contact-nouveau',
        action: 'creer-contact',
-       bouton: 'Ajouter au carnet',
+       bouton: 'Ajouter au réseau',
        avecPli: false,
        champs: CHAMPS_CONTACT,
      })}`,
@@ -3819,7 +3819,7 @@ export default {
         return;
       }
 
-      // Une rencontre notée au vol devient une fiche : le carnet réseau se
+      // Une rencontre notée au vol devient une fiche : le réseau se
       // remplit du terrain, sans qu'il ait fallu y penser sur le moment.
       const ouvrirFiche = evenement.target.closest('[data-ouvrir-fiche]');
       if (ouvrirFiche) {

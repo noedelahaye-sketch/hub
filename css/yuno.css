@@ -1339,7 +1339,7 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   gap: var(--espace-8);
 }
 
-/* --- Le carnet réseau ------------------------------------------------------- */
+/* --- Le réseau ------------------------------------------------------- */
 
 .recherche {
   width: 100%;

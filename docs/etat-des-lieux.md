@@ -1226,6 +1226,64 @@ l'écran « Créer » du FCH : à voir avec Noé plutôt qu'à trancher seul.
 
 ---
 
+## 2 nonies. Deux points en attente, tranchés
+
+Les deux seuls du § 3 qui demandaient du travail plutôt qu'une réponse.
+
+### Le mot « carnet » ne désigne plus qu'une chose
+
+Il en désignait deux : le **Carnet de terrain** (les moments) et le **carnet
+réseau** (les contacts). Décision de Noé : la base de contacts s'appelle
+désormais **le réseau**, tout court.
+
+Ce qui a changé de mot : le titre de la page (« Le carnet » → « Le réseau »), la
+recherche, le formulaire et sa fenêtre (« Ajouter au réseau »), la croix de
+retrait, l'écran vide (« Ton réseau démarre ici »), le renvoi depuis la
+Passerelle, et le « + » posé sur une rencontre.
+
+Ce qui garde « carnet » : tout ce qui parle des moments — « Le carnet de
+terrain », « Inscrire au carnet », « Retirer du carnet », l'invite après un
+match, et les noms de code (`construireCarnet`, `.liste-carnet`).
+
+**L'adresse `#yuno/carnet` n'a pas bougé.** Renommer une adresse casse un favori
+et le bouton retour ; celle-ci ne se lit pas, et le mot n'y trompe personne.
+
+**Vérifié** en parcourant les quatre pages du réseau et le Journal : plus une
+occurrence de « carnet » hors du Carnet de terrain.
+
+### Le formulaire de modification n'a plus de menu déroulant
+
+L'ajout était passé en listes de choix le matin même — « le rectangle bleu avec
+un menu déroulant, c'est très laid et pas agréable » —, la modification les
+avait gardés. Quatre champs restaient : la durée et la récurrence d'un
+événement, le réseau et le format d'une publication.
+
+**Un type de champ de plus, `choix`**, dans `construireFormulaire` : chaque
+option devient un bouton, la valeur voyage dans un champ caché. Le formulaire se
+lit toujours avec `FormData` — il n'a pas à savoir comment on a saisi. C'est la
+même mécanique que la tuile, et le même principe qu'ailleurs : **un seul endroit
+qui sait le faire**.
+
+**Des pastilles qui passent à la ligne**, et non une liste verticale comme dans
+la tuile : dans un formulaire on lit tout d'un coup, et quatre à six libellés
+courts tiennent sur deux lignes. Le dessin est celui des filtres — c'est le même
+geste, choisir une valeur parmi quelques-unes.
+
+**Un détail qui aurait mordu** : `brancherCapture` écoutait déjà `[data-choix]`
+pour la tuile, et allait chercher le champ caché dans `.capture`. Les choix d'un
+formulaire vivent ailleurs et portent le leur dans leur propre groupe : sans la
+distinction, ils auraient marqué le bon bouton **sans changer la valeur** — le
+formulaire aurait enregistré l'ancienne, en silence.
+
+**Vérifié en écriture réelle** : sur l'événement « Red Star - Sochaux », durée
+passée de 4 h à 2 h par la nouvelle liste — `date_fin` relue en base à 19:00 au
+lieu de 21:00, tout le reste identique — puis remise à 4 h par le même chemin,
+base revenue à l'exact. Et sur une publication d'essai, réseau et format changés
+(instagram/post → tiktok/reel), relus en base, puis la ligne supprimée. Aucun
+`<select>` ne reste dans ce formulaire, ni dans le hub ni sur Yuno.
+
+---
+
 ## 2 octies. La barre d'une tâche au calendrier
 
 Trois réglages demandés par Noé le 13 août 2026, tous dans la même phrase.
@@ -1549,41 +1607,40 @@ La méthode qui a tenu toute la journée — exercer, relire en SQL, défaire, r
 
 ## 3. Ce qui attend une réponse de Noé
 
-**FC Hermitage** (`docs/fch-spec.md`, §7) :
+**FC Hermitage — mis de côté** (Noé, 13 août : « on met de côté encore »). Les
+quatre questions restent ouvertes et attendent que ce chantier s'ouvre ; aucune
+ne gêne le reste du hub :
 1. Les rubriques éditoriales proposées (avant-match, résultats, portrait,
    coulisses, partenaire, vie du club) correspondent-elles à ce qu'il publie ?
 2. Ses 4 objectifs de fin d'alternance — nommés nulle part.
 3. Des statuts de relation pour les partenaires, ou trop tôt ?
-4. Le contenu de l'écran « Club ».
+4. Le contenu de l'écran « Club ». (Plus l'idée de la banque qui ne s'ouvre
+   pas, et la lisibilité du logo sur le bleu : tout part avec ce chantier.)
 
-**Yuno** — deux lectures de captures à confirmer :
-5. Le type des deux agences était tronqué (« Agence … ») ; « Agence » a été
-   retenu.
-6. « Nouhou Tolo » était coupé en bas de capture : lu `@salvadorebanouh`,
-   club « Sounders ».
+**Yuno** — deux lectures de captures, **confirmées justes par Noé le 13 août** :
+le type des deux agences (« Agence ») et la fiche de « Nouhou Tolo »
+(`@salvadorebanouh`, club « Sounders »). Rien à corriger.
 
-**Yuno / « Terrain »** (`docs/yuno-spec.md`, §9) :
-7. **Deux cartes de Passerelle manquent, faute de noms réels** : la ou les
-   salles de concert visées (objectif : une première accréditation), et les
-   clubs à cibler à froid. Les quatre clubs déjà au carnet sont des contacts
-   établis, donc du niveau 2, pas du 3 : ils n'ont pas été mis dans la file
-   sans son avis.
-8. L'onglet « Carnet » de l'accueil a été renommé « Accueil » quand le Journal
-   est né. Le mot « carnet » désigne donc deux choses — le Carnet de terrain et
-   le carnet réseau. À surveiller à l'usage.
+**Yuno / la Passerelle** : **l'outil sera revu dans son ensemble** (Noé,
+13 août). Ne pas y toucher par petites touches en attendant — et donc ne pas
+chercher à combler les deux cartes qui manquent (salles de concert, clubs à
+cibler à froid) : elles feront partie de la refonte.
 
-**Le bouton « + Ajouter un moment » de Yuno fait doublon** avec la porte
-« Moment » de la tuile, sur l'Accueil et le Journal (§ 2 septies). Le retirer
-rendrait le geste unique, comme dans le hub ; le garder ne coûte qu'un peu de
-place. À Noé de trancher.
+**Le mot « carnet » ne désigne plus qu'une chose** (tranché le 13 août) : le
+Carnet de terrain. La base de contacts s'appelle **le réseau** (§ 2 nonies).
+
+**Le bouton « + Ajouter un moment » de Yuno reste** (décision de Noé, 13 août
+2026). Il double la porte « Moment » de la tuile sur l'Accueil et le Journal,
+et c'est assumé : sur les deux pages du carnet, le geste le plus fréquent
+mérite d'être nommé en toutes lettres plutôt que caché derrière une pastille.
 
 **Sur le site du FCH, une idée de la banque ne s'ouvre pas** (trouvé le 13 août
 en exerçant les écritures, § 2 ter ter). Les tuiles se présentent comme des
 boutons et portent `data-ouvrir-pub`, mais `hermitage.js` n'écoute jamais cet
 attribut — Yuno, si. Une idée sans date n'a donc aucun moyen d'être avancée ni
 supprimée depuis le FCH. Deux sorties : ouvrir la même fenêtre que Yuno, ou
-assumer que l'écran « Créer » du FCH ne sert qu'à noter. C'est une question de
-forme, elle revient à Noé.
+assumer que l'écran « Créer » du FCH ne sert qu'à noter. **Repoussé
+volontairement** (Noé, 13 août) : le site du FCH sera repris à part.
 
 **Sur le fond bleu du FCH** : le logo y perd en lisibilité (traits noirs et
 bleus). Noé a demandé de retirer la plaque blanche qui corrigeait cela ; c'est
@@ -1592,17 +1649,18 @@ assumé, mais à rouvrir s'il le trouve gênant à l'usage.
 **Ouvertes par la session du 13 août** — aucune ne bloque, toutes attendent
 l'usage :
 
-9. **Le plafond de 3 tâches actives dort.** Noé a demandé de masquer le réglage
-    backlog/active « pour le moment ». Conséquence assumée : « Aujourd'hui » ne
-    filtre plus, il montre les 9 premières tâches. Le jour où ce bloc redevient
-    une liste, c'est le signe qu'il faut rallumer la pastille — tout le code est
-    en place.
-10. **« Aujourd'hui » ignore les tâches sans date.** Il montre ce qui est daté
-    d'aujourd'hui ou d'avant. Une tâche notée sans échéance n'y apparaîtra
-    jamais : à confirmer que c'est bien ce qu'il veut.
-11. **Le formulaire de MODIFICATION d'un élément du calendrier garde ses menus
-    déroulants natifs.** Seul l'ajout est passé en listes de choix. Noé n'a parlé
-    que de l'ajout ; l'incohérence se verra peut-être à l'usage.
+9. **Le plafond de 3 tâches actives dort, et il continue** (Noé, 13 août :
+    « laisse tel quel »). Le réglage backlog/active est masqué, donc rien
+    n'exerce plus le plafond, et « Aujourd'hui » ne filtre plus — il montre les
+    9 premières tâches. Le jour où ce bloc devient une liste qu'on subit, c'est
+    le signe qu'il faut rallumer la pastille : tout le code est en place.
+10. **« Aujourd'hui » ignore les tâches sans date — confirmé** (Noé, 13 août :
+    « laisse tel quel »). Une tâche notée sans échéance n'y apparaît jamais, et
+    c'est voulu : sinon le bloc du matin se remplirait de tout ce qui traîne.
+11. **Le formulaire de modification du calendrier est aligné** (13 août,
+    § 2 nonies). Restent des `<select>` natifs dans quatre formulaires : le
+    moment, la fiche réseau, la commande et l'idée. Même remède — un mot à
+    changer par champ —, à faire si Noé le demande.
 
 ---
 

@@ -299,6 +299,28 @@ export function construireFormulaire({
       )}</textarea>`;
     }
 
+    // Un choix qui se TOUCHE, pas un menu déroulant. Le hub a banni le
+    // `<select>` natif de sa tuile de capture le 13 août 2026 (« le rectangle
+    // bleu avec un menu déroulant, c'est très laid et pas agréable ») ; les
+    // formulaires de modification l'ont gardé jusqu'au soir, et l'incohérence
+    // se voyait. Chaque option est un bouton, la valeur voyage dans un champ
+    // caché — le formulaire se lit toujours avec `FormData`, il n'a pas à
+    // savoir comment on a saisi.
+    if (champ.type === 'choix') {
+      return `<span class="choix-champ" data-choix-champ="${champ.nom}">
+        <input type="hidden" name="${champ.nom}" value="${echapper(champ.valeur ?? '')}">
+        ${Object.entries(champ.options)
+          .map(
+            ([valeur, libelleOption]) => `
+          <button type="button" data-choix="${champ.nom}" data-valeur="${echapper(valeur)}"
+            class="${String(valeur) === String(champ.valeur ?? '') ? 'actif' : ''}"
+            aria-pressed="${String(valeur) === String(champ.valeur ?? '')}"
+            >${echapper(libelleOption)}</button>`,
+          )
+          .join('')}
+      </span>`;
+    }
+
     if (champ.type === 'select') {
       return `<select id="${idChamp}" name="${champ.nom}" ${requis}>${Object.entries(
         champ.options,

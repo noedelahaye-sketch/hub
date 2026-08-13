@@ -1448,6 +1448,21 @@ export function fenetreCreation({
 // Le comportement des pastilles, branché une fois par espace. Il ne touche
 // qu'au DOM : ouvrir un panneau n'écrit rien dans l'état de l'espace, donc rien
 // ne se redessine et aucune saisie ne se perd.
+// Un choix dans un FORMULAIRE (type `choix` de `construireFormulaire`) : le
+// bouton touché devient l'actif, et la valeur va dans le champ caché. Rien
+// n'est redessiné — le formulaire garde ce qui est déjà saisi ailleurs.
+function poserLeChoix(bouton) {
+  const groupe = bouton.closest('[data-choix-champ]');
+  if (!groupe) return;
+
+  groupe.querySelector('input[type="hidden"]').value = bouton.dataset.valeur;
+  for (const autre of groupe.querySelectorAll('button')) {
+    const actif = autre === bouton;
+    autre.classList.toggle('actif', actif);
+    autre.setAttribute('aria-pressed', String(actif));
+  }
+}
+
 export function brancherCapture(section) {
   const panneaux = () => [...section.querySelectorAll('.capture-popover')];
 
@@ -1536,6 +1551,15 @@ export function brancherCapture(section) {
     // qu'un champ derrière.
     const choix = evenement.target.closest('[data-choix]');
     if (choix) {
+      // Deux endroits portent des choix, et ils ne rangent pas leur valeur au
+      // même endroit : la tuile a UN champ caché par pastille, quelque part
+      // dans le formulaire ; un champ de formulaire porte le sien dans son
+      // propre groupe. On reconnaît le second à son enveloppe.
+      if (choix.closest('[data-choix-champ]')) {
+        poserLeChoix(choix);
+        return;
+      }
+
       const { choix: nom, valeur } = choix.dataset;
       const champ = section.querySelector(`.capture [name="${nom}"]`);
       if (champ) champ.value = valeur;
@@ -1631,7 +1655,7 @@ function champsDeModification(element) {
       {
         nom: 'duree',
         libelle: 'Combien de temps (si une heure est donnée)',
-        type: 'select',
+        type: 'choix',
         options: DUREES,
         valeur: String(
           ligne.date_fin && versDateISO(new Date(ligne.date_fin)) === versDateISO(debut)
@@ -1642,7 +1666,7 @@ function champsDeModification(element) {
       {
         nom: 'recurrence',
         libelle: 'Se répète',
-        type: 'select',
+        type: 'choix',
         options: RECURRENCES,
         valeur: ligne.recurrence ?? '',
       },
@@ -1661,8 +1685,8 @@ function champsDeModification(element) {
     return [
       { nom: 'titre', libelle: "L'idée", type: 'text', requis: true, valeur: ligne.titre },
       { nom: 'debut', libelle: 'Prévue le', type: 'date', requis: true, valeur: ligne.date_prevue },
-      { nom: 'reseau', libelle: 'Réseau', type: 'select', options: RESEAUX, valeur: ligne.reseau },
-      { nom: 'format', libelle: 'Format', type: 'select', options: FORMATS, valeur: ligne.format },
+      { nom: 'reseau', libelle: 'Réseau', type: 'choix', options: RESEAUX, valeur: ligne.reseau },
+      { nom: 'format', libelle: 'Format', type: 'choix', options: FORMATS, valeur: ligne.format },
     ];
   }
 

@@ -1760,10 +1760,50 @@ body.fond-fige {
   background: var(--accent);
 }
 
+/* Un choix dans un formulaire : des pastilles qu'on touche, jamais un menu
+   déroulant. Même dessin que les filtres — c'est le même geste, choisir une
+   valeur parmi quelques-unes — et la même raison qu'à la tuile de capture : un
+   menu du système au milieu d'un formulaire dessiné, c'est un cadre bleu et un
+   chevron, et surtout deux gestes au doigt au lieu d'un.
+
+   Elles passent à la ligne plutôt que de défiler : dans un formulaire on lit
+   tout, et un choix caché hors du champ de vision ne serait jamais fait. */
+.choix-champ {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-4);
+  margin-top: var(--espace-4);
+}
+
+.choix-champ button {
+  flex: 0 0 auto;
+  min-height: 2.25rem;
+  padding: 0 var(--espace-12);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--texte-discret);
+  background: none;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+  cursor: pointer;
+}
+
+.choix-champ button:hover {
+  color: var(--texte);
+  background: color-mix(in srgb, var(--texte) 8%, transparent);
+}
+
+.choix-champ button.actif {
+  color: var(--fond-carte);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
 .bloc-mois h2::first-letter { text-transform: uppercase; }
 
 /* --- Une base et ses affichages ---------------------------------------------
-   Le carnet réseau de Yuno : une liste de fiches, et plusieurs façons de la
+   Le réseau de Yuno : une liste de fiches, et plusieurs façons de la
    regarder. Ces styles servent le tableau ; les fiches réutilisent les tuiles. */
 
 .barre-base {
