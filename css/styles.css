@@ -1129,18 +1129,19 @@ body:has(.capture) { overflow: hidden; }
   position: fixed;
   z-index: 41;
   left: 50%;
-  /* Au milieu de l'écran, téléphone compris (demande de Noé, 13 août 2026) —
-     mais au milieu de ce qui RESTE visible : `--bas-clavier` retranche la
-     hauteur du clavier, sinon « le milieu » se retrouverait derrière lui. Sans
-     clavier, c'est le milieu tout court. */
-  top: calc((100vh - var(--bas-clavier, 0px)) / 2);
-  transform: translate(-50%, -50%);
-  /* La tuile MONTE quand le clavier arrive, elle ne saute pas (demande de Noé,
-     13 août 2026). C'est le seul déplacement qui reste : le clavier ne se
-     referme plus quand on touche une pastille, donc `--bas-clavier` ne change
-     qu'une fois, à l'ouverture. `prefers-reduced-motion` l'annule plus bas,
-     comme tout le reste. */
-  transition: top 220ms ease-out;
+  /* COLLÉE AU CLAVIER (demande de Noé, 13 août 2026) : en bas de l'écran au
+     repos, et elle remonte exactement de la hauteur du clavier quand il
+     apparaît. `--bas-clavier` est mesuré en JS sur la fenêtre visuelle — c'est
+     la seule façon de la connaître, la fenêtre de mise en page ne bougeant pas.
+     Une tuile posée sur le clavier, c'est la place d'un champ qu'on remplit :
+     le pouce n'a pas à traverser l'écran entre le mot et la touche. */
+  bottom: calc(var(--bas-clavier, 0px) + max(var(--espace-16), env(safe-area-inset-bottom, 0px)));
+  transform: translateX(-50%);
+  /* Elle MONTE, elle ne saute pas. C'est le seul déplacement qui reste : le
+     clavier ne se referme plus quand on touche une pastille, donc
+     `--bas-clavier` ne change qu'une fois, à l'ouverture.
+     `prefers-reduced-motion` l'annule plus bas, comme tout le reste. */
+  transition: bottom 220ms ease-out;
   width: min(34rem, calc(100vw - 2 * var(--espace-16)));
   /* Ni `overflow`, ni `max-height` : les menus se posent AU-DESSUS de la tuile,
      donc hors de sa boîte. Un conteneur de défilement les découperait. Elle n'en
@@ -1316,13 +1317,13 @@ body:has(.capture) { overflow: hidden; }
   left: 0;
   right: 0;
   bottom: calc(100% + var(--espace-8));
-  /* La place réellement disponible AU-DESSUS de la tuile, clavier déduit. La
-     tuile étant centrée dans ce qui reste visible, cette place vaut la MOITIÉ
-     de la hauteur visible, moins sa propre demi-hauteur.
+  /* La place réellement disponible AU-DESSUS de la tuile, clavier déduit : la
+     hauteur visible, moins ce que la tuile occupe en bas (une quinzaine de rem
+     avec ses marges).
      Sans cette borne, le panneau de date débordait par le haut dès que le
      clavier montait — « Aujourd'hui » sortait de l'écran, donc devenait
      intouchable. Il défile plutôt que de disparaître. */
-  max-height: calc((100vh - var(--bas-clavier, 0px)) / 2 - 5rem);
+  max-height: calc(100vh - var(--bas-clavier, 0px) - 13rem);
   overflow-y: auto;
   padding: var(--espace-8);
   background: var(--fond-carte);
@@ -1333,6 +1334,22 @@ body:has(.capture) { overflow: hidden; }
 
 /* Un choix court n'a pas besoin de toute la largeur de la tuile. */
 .capture-popover-etroit { right: auto; width: min(20rem, 100%); }
+
+/* Sur ordinateur, au milieu de l'écran (demande de Noé, 13 août 2026) : il n'y
+   a pas de clavier qui monte du bas, donc rien à quoi se coller, et une tuile
+   posée en bas d'un grand écran laisse un vide au-dessus d'elle. */
+@media (min-width: 45rem) {
+  .capture {
+    top: 50%;
+    bottom: auto;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Tuile centrée : la place au-dessus d'elle n'est plus toute la hauteur mais
+     la moitié, moins sa propre demi-hauteur. */
+  .capture-popover { max-height: calc(50vh - 6rem); }
+}
+
 
 .raccourcis-date,
 .choix-capture {

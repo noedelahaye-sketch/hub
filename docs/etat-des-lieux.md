@@ -487,18 +487,26 @@ directement, et **une rangée de pastilles** — date, projet, priorité — ouv
 chacune son choix en menu flottant. Le formulaire à six champs empilés a
 disparu.
 
-- **La tuile flotte au-dessus de la page assombrie, au milieu de l'écran** —
-  téléphone compris (13 août, demande de Noé ; elle a d'abord été collée en bas
-  sur mobile). Elle réutilise `.fenetre-fond`, le fond des autres fenêtres.
-- **« Au milieu » veut dire au milieu de ce qui reste VISIBLE**, clavier déduit,
-  sinon le milieu se retrouverait derrière lui.
-  `visualViewport` est le seul moyen fiable de connaître la place qu'il prend :
-  `innerHeight` ne bouge pas quand le clavier monte, seule la fenêtre visuelle
-  rétrécit, et la différence entre les deux EST la hauteur du clavier. Le
-  résultat sort en variable CSS (`--bas-clavier`) plutôt qu'en style direct —
-  c'est la feuille de style qui décide quoi en faire.
-  **Vérifié** avec un clavier simulé à 336 px : la tuile se centre à 238 px, le
-  milieu exact de la partie visible, contre 406 sans clavier.
+- **La tuile flotte au-dessus de la page assombrie**, et pas au même endroit
+  selon l'écran (état arrêté le 13 août, après trois formulations de Noé) :
+  **collée au clavier sur téléphone** — en bas au repos, elle remonte
+  exactement de sa hauteur quand il apparaît — et **au milieu sur ordinateur**,
+  où il n'y a pas de clavier auquel se coller et où une tuile posée en bas
+  laisserait un vide au-dessus d'elle. Elle réutilise `.fenetre-fond`, le fond
+  des autres fenêtres.
+  Une tuile posée sur le clavier, c'est la place d'un champ qu'on remplit : le
+  pouce n'a pas à traverser l'écran entre le mot et la touche.
+- **Connaître la hauteur du clavier**, c'est `visualViewport` et rien d'autre :
+  `innerHeight` ne bouge pas quand il monte, seule la fenêtre visuelle
+  rétrécit, et la différence entre les deux EST sa hauteur. Le résultat sort en
+  variable CSS (`--bas-clavier`) plutôt qu'en style direct — c'est la feuille de
+  style qui décide quoi en faire, et sur grand écran elle n'en fait rien.
+  **Vérifié** avec un clavier simulé à 336 px : la tuile passe de 16 px à
+  352 px du bas, soit **336 px de montée au pixel près**, et le panneau de date
+  tient entier au-dessus (haut à 92 px). Sur ordinateur, centrée à 0 px près.
+- **Attention à l'ordre dans la feuille** : le `@media` qui centre sur grand
+  écran doit venir APRÈS `.capture` et `.capture-popover`. À spécificité égale
+  c'est la position qui tranche, et placé avant, il ne s'appliquait pas.
 - **Ni `overflow`, ni `max-height` sur la tuile** : les menus se posent au-dessus
   d'elle, donc hors de sa boîte, et un conteneur de défilement les découperait.
   Piège rencontré en écrivant la règle.
