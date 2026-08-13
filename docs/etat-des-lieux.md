@@ -1258,16 +1258,24 @@ un menu déroulant, c'est très laid et pas agréable » —, la modification le
 avait gardés. Quatre champs restaient : la durée et la récurrence d'un
 événement, le réseau et le format d'une publication.
 
-**Un type de champ de plus, `choix`**, dans `construireFormulaire` : chaque
-option devient un bouton, la valeur voyage dans un champ caché. Le formulaire se
-lit toujours avec `FormData` — il n'a pas à savoir comment on a saisi. C'est la
-même mécanique que la tuile, et le même principe qu'ailleurs : **un seul endroit
-qui sait le faire**.
+**Un type de champ de plus, `choix`**, dans `construireFormulaire` : la valeur
+voyage dans un champ caché, le formulaire se lit toujours avec `FormData` — il
+n'a pas à savoir comment on a saisi. C'est la même mécanique que la tuile, et le
+même principe qu'ailleurs : **un seul endroit qui sait le faire**.
 
-**Des pastilles qui passent à la ligne**, et non une liste verticale comme dans
-la tuile : dans un formulaire on lit tout d'un coup, et quatre à six libellés
-courts tiennent sur deux lignes. Le dessin est celui des filtres — c'est le même
-geste, choisir une valeur parmi quelques-unes.
+**Un menu déroulant DESSINÉ, pas une rangée d'options.** Première version
+refusée par Noé (14 août) : elle alignait toutes les options en pastilles
+visibles. « Il faut que ce soit un menu déroulant mais pas natif, comme pour les
+priorités dans la tuile nouvelle tâche ». Il a raison — un formulaire de dix
+champs serait devenu un mur d'options, alors qu'on ne change qu'un réglage à la
+fois.
+
+La forme est donc exactement celle de la pastille « Priorité » : un contrôle qui
+montre la valeur choisie, de la hauteur et du cadre des autres champs, et qui
+ouvre au toucher un panneau de lignes pleine largeur. Le panneau se pose
+PAR-DESSUS ce qui suit plutôt que de pousser le formulaire — un menu qui déplace
+les champs sous le doigt fait perdre ce qu'on visait. Choisir referme et réécrit
+le libellé du contrôle : on relit tout le formulaire sans ouvrir un seul menu.
 
 **Un détail qui aurait mordu** : `brancherCapture` écoutait déjà `[data-choix]`
 pour la tuile, et allait chercher le champ caché dans `.capture`. Les choix d'un
@@ -1291,10 +1299,11 @@ réseau / le format / le pilier d'une idée.
 **Trois pièges, tous rencontrés, tous mesurés :**
 
 1. **Le site du FCH n'a pas de tuile de capture** — donc personne ne branchait
-   ses boutons de choix. La mécanique (`poserLeChoix`) a déménagé dans
-   `espace-projet.js`, à côté du constructeur de formulaires qui produit ces
-   boutons, et `brancherChoix(section)` s'appelle une fois par espace qui en a
-   besoin. `brancherCapture` l'appelle pour les autres.
+   ses menus. La mécanique (`poserLeChoix`, `basculerChoixDeFormulaire`,
+   `fermerLesChoix`) vit dans `espace-projet.js`, à côté du constructeur de
+   formulaires qui produit ces menus, et `brancherChoix(section)` s'appelle une
+   fois par espace qui en a besoin. `brancherCapture` s'en charge pour les
+   autres — c'est le même écouteur de clics qui reçoit les deux sortes.
 2. **Un `<select>` sans valeur préselectionne sa première option ; mes pastilles
    ne préselectionnaient rien.** « Noter une idée » repartait donc avec un
    réseau vide, et la base refusait la ligne. Le champ prend maintenant la

@@ -279,18 +279,52 @@ export function construireFenetre(titre, contenu) {
 
 // `avecPli` à false rend le formulaire nu, sans son dépliant : dans une
 // fenêtre, le titre est déjà dit par la fenêtre elle-même.
-// Un choix dans un formulaire : le bouton touché devient l'actif, et la valeur
-// va dans le champ caché de son groupe. Rien n'est redessiné — le formulaire
+// Le chevron du menu : un dessin, pas un caractère — il garde son épaisseur et
+// son alignement quelle que soit la police.
+const CHEVRON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round"
+  stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"></path></svg>`;
+
+// Un choix dans un formulaire : le bouton touché devient l'actif, la valeur va
+// dans le champ caché de son groupe, le libellé du déclencheur suit, et le
+// panneau se referme. Rien n'est redessiné — le formulaire
 // garde ce qui est déjà saisi ailleurs, curseur compris.
 export function poserLeChoix(bouton) {
   const groupe = bouton.closest('[data-choix-champ]');
   if (!groupe) return;
 
   groupe.querySelector('input[type="hidden"]').value = bouton.dataset.valeur;
-  for (const autre of groupe.querySelectorAll('button')) {
+  for (const autre of groupe.querySelectorAll('[data-choix]')) {
     const actif = autre === bouton;
     autre.classList.toggle('actif', actif);
     autre.setAttribute('aria-pressed', String(actif));
+  }
+
+  // Le déclencheur porte la valeur : c'est ce qui permet de relire tout le
+  // formulaire sans ouvrir un seul menu.
+  const declencheur = groupe.querySelector('[data-ouvrir-choix]');
+  if (declencheur) {
+    declencheur.innerHTML = `${bouton.textContent.trim()}${CHEVRON}`;
+    declencheur.setAttribute('aria-expanded', 'false');
+  }
+  groupe.querySelector('.choix-panneau').hidden = true;
+}
+
+// Ouvrir un menu ferme les autres : deux panneaux ouverts se recouvriraient.
+export function basculerChoixDeFormulaire(declencheur, section) {
+  const groupe = declencheur.closest('[data-choix-champ]');
+  const panneau = groupe.querySelector('.choix-panneau');
+  const ouvert = !panneau.hidden;
+
+  fermerLesChoix(section);
+  panneau.hidden = ouvert;
+  declencheur.setAttribute('aria-expanded', String(!ouvert));
+}
+
+export function fermerLesChoix(section) {
+  for (const panneau of section.querySelectorAll('.choix-panneau')) panneau.hidden = true;
+  for (const declencheur of section.querySelectorAll('[data-ouvrir-choix]')) {
+    declencheur.setAttribute('aria-expanded', 'false');
   }
 }
 
@@ -299,8 +333,20 @@ export function poserLeChoix(bouton) {
 // charge —, mais le site du FCH, lui, a des formulaires sans tuile.
 export function brancherChoix(section) {
   section.addEventListener('click', (evenement) => {
+    const declencheur = evenement.target.closest('[data-ouvrir-choix]');
+    if (declencheur) {
+      basculerChoixDeFormulaire(declencheur, section);
+      return;
+    }
+
     const bouton = evenement.target.closest('[data-choix-champ] [data-choix]');
-    if (bouton) poserLeChoix(bouton);
+    if (bouton) {
+      poserLeChoix(bouton);
+      return;
+    }
+
+    // Un clic ailleurs referme : c'est le geste attendu d'un menu.
+    fermerLesChoix(section);
   });
 }
 
@@ -324,13 +370,19 @@ export function construireFormulaire({
       )}</textarea>`;
     }
 
-    // Un choix qui se TOUCHE, pas un menu déroulant. Le hub a banni le
-    // `<select>` natif de sa tuile de capture le 13 août 2026 (« le rectangle
-    // bleu avec un menu déroulant, c'est très laid et pas agréable ») ; les
-    // formulaires de modification l'ont gardé jusqu'au soir, et l'incohérence
-    // se voyait. Chaque option est un bouton, la valeur voyage dans un champ
-    // caché — le formulaire se lit toujours avec `FormData`, il n'a pas à
-    // savoir comment on a saisi.
+    // Un menu déroulant DESSINÉ, jamais le `<select>` du système. Le hub l'a
+    // banni de sa tuile le 13 août 2026 (« le rectangle bleu avec un menu
+    // déroulant, c'est très laid et pas agréable ») ; les formulaires l'ont
+    // gardé jusqu'au lendemain.
+    //
+    // La forme est celle de la pastille « Priorité » de la tuile, et Noé l'a
+    // redemandée telle quelle : un contrôle qui montre la valeur choisie, et
+    // qui ouvre au toucher un panneau de lignes pleine largeur. Pas une rangée
+    // d'options toutes visibles — un formulaire de dix champs deviendrait un
+    // mur de pastilles.
+    //
+    // La valeur voyage dans un champ caché : le formulaire se lit toujours
+    // avec `FormData`, il n'a pas à savoir comment on a saisi.
     if (champ.type === 'choix') {
       // Le choix VIDE passe devant. JavaScript énumère les clés numériques
       // d'abord, quel que soit l'ordre d'écriture : `{ '': 'Sans pilier', 1: … }`
@@ -348,17 +400,26 @@ export function construireFormulaire({
       // vide (« Sans pilier ») est un choix, pas une absence.
       const valeur = champ.valeur ?? options[0]?.[0] ?? '';
 
+      const choisi = options.find(([cle]) => String(cle) === String(valeur));
+
       return `<span class="choix-champ" data-choix-champ="${champ.nom}">
         <input type="hidden" name="${champ.nom}" value="${echapper(valeur)}">
-        ${options
-          .map(
-            ([cle, libelleOption]) => `
-          <button type="button" data-choix="${champ.nom}" data-valeur="${echapper(cle)}"
-            class="${String(cle) === String(valeur) ? 'actif' : ''}"
-            aria-pressed="${String(cle) === String(valeur)}"
-            >${echapper(libelleOption)}</button>`,
-          )
-          .join('')}
+        <button type="button" class="choix-declencheur" data-ouvrir-choix
+          aria-expanded="false" aria-haspopup="listbox"
+          >${echapper(choisi?.[1] ?? 'Choisir')}${CHEVRON}</button>
+        <div class="choix-panneau" hidden>
+          <ul class="choix-capture">
+            ${options
+              .map(
+                ([cle, libelleOption]) => `
+              <li><button type="button" data-choix="${champ.nom}" data-valeur="${echapper(cle)}"
+                class="${String(cle) === String(valeur) ? 'actif' : ''}"
+                aria-pressed="${String(cle) === String(valeur)}"
+                >${echapper(libelleOption)}</button></li>`,
+              )
+              .join('')}
+          </ul>
+        </div>
       </span>`;
     }
 

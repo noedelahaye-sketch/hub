@@ -10,7 +10,12 @@
 // et il ne fait que poser des écouteurs.
 
 import * as api from './api.js';
-import { construireFormulaire, construireFenetre, poserLeChoix } from './espace-projet.js';
+import {
+  construireFormulaire,
+  construireFenetre,
+  poserLeChoix,
+  basculerChoixDeFormulaire,
+} from './espace-projet.js';
 import {
   depuisDateISO,
   versDateISO,
@@ -1531,6 +1536,16 @@ export function brancherCapture(section) {
   });
 
   section.addEventListener('click', (evenement) => {
+    // Les menus DÉROULANTS DES FORMULAIRES, d'abord : ils n'ont rien à voir
+    // avec les pastilles de la tuile, mais c'est le même écouteur qui reçoit
+    // leurs clics. Un espace n'appelle `brancherChoix` que s'il n'a pas de
+    // tuile — le site du FCH est le seul dans ce cas.
+    const declencheurChoix = evenement.target.closest('[data-ouvrir-choix]');
+    if (declencheurChoix) {
+      basculerChoixDeFormulaire(declencheurChoix, section);
+      return;
+    }
+
     // Un choix dans une liste : il écrit dans son champ caché, marque la ligne,
     // referme le panneau. Le formulaire n'a jamais su qu'il y avait autre chose
     // qu'un champ derrière.

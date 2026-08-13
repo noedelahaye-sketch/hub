@@ -1760,44 +1760,69 @@ body.fond-fige {
   background: var(--accent);
 }
 
-/* Un choix dans un formulaire : des pastilles qu'on touche, jamais un menu
-   déroulant. Même dessin que les filtres — c'est le même geste, choisir une
-   valeur parmi quelques-unes — et la même raison qu'à la tuile de capture : un
-   menu du système au milieu d'un formulaire dessiné, c'est un cadre bleu et un
-   chevron, et surtout deux gestes au doigt au lieu d'un.
+/* Un menu déroulant DESSINÉ, jamais celui du système (demande de Noé, 13 et
+   14 août 2026). C'est la forme de la pastille « Priorité » de la tuile : un
+   contrôle qui montre la valeur choisie, et qui ouvre au toucher un panneau de
+   lignes pleine largeur.
 
-   Elles passent à la ligne plutôt que de défiler : dans un formulaire on lit
-   tout, et un choix caché hors du champ de vision ne serait jamais fait. */
+   Une première version alignait toutes les options en pastilles visibles. Noé
+   l'a refusée, et il a raison : un formulaire de dix champs deviendrait un mur
+   d'options, alors qu'on ne change qu'un réglage à la fois. */
 .choix-champ {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--espace-4);
-  margin-top: var(--espace-4);
+  position: relative;
+  display: block;
+  margin-bottom: var(--espace-12);
 }
 
-.choix-champ button {
-  flex: 0 0 auto;
-  min-height: 2.25rem;
-  padding: 0 var(--espace-12);
+/* Le déclencheur a l'allure des autres champs — même hauteur, même cadre, même
+   rayon : dans un formulaire, un choix est un champ comme un autre. */
+.choix-declencheur {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-8);
+  width: 100%;
+  min-height: 2.75rem;
+  padding: var(--espace-8) var(--espace-12);
   font-family: inherit;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--texte-discret);
-  background: none;
+  font-size: 16px;
+  text-align: left;
+  color: var(--texte);
+  background: var(--fond-carte);
   border: 1px solid var(--bordure);
-  border-radius: var(--rayon-pastille);
+  border-radius: var(--rayon-controle);
   cursor: pointer;
 }
 
-.choix-champ button:hover {
-  color: var(--texte);
-  background: color-mix(in srgb, var(--texte) 8%, transparent);
+.choix-declencheur:hover { border-color: var(--accent); }
+.choix-declencheur svg { flex: none; color: var(--texte-discret); }
+.choix-declencheur[aria-expanded="true"] svg { transform: rotate(180deg); }
+
+/* Le panneau, sous le champ. Même dessin que celui de la tuile — c'est le même
+   objet, à un autre endroit. Il se pose PAR-DESSUS ce qui suit plutôt que de
+   pousser le formulaire : un menu qui déplace les champs sous le doigt fait
+   perdre ce qu'on visait. */
+.choix-panneau {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + var(--espace-4));
+  left: 0;
+  right: 0;
+  max-height: 15rem;
+  overflow-y: auto;
+  padding: var(--espace-8);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  box-shadow: 0 12px 48px rgb(0 0 0 / 35%);
 }
 
-.choix-champ button.actif {
-  color: var(--fond-carte);
-  background: var(--accent);
-  border-color: var(--accent);
+/* Sans icône devant, le filet part du bord du texte. */
+.choix-panneau .choix-capture li + li button::before { left: var(--espace-8); }
+
+.choix-panneau .choix-capture button.actif {
+  font-weight: 700;
+  color: var(--texte);
 }
 
 .bloc-mois h2::first-letter { text-transform: uppercase; }
