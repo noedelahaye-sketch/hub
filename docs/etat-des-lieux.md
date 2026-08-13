@@ -1320,6 +1320,40 @@ une vraie photo fabriquée sur place (900 × 1200, du 3:4), une note, une
 rencontre et l'œuvre finie : ligne, `photo_chemin` et rencontre relus en base,
 puis tout retiré depuis le Journal, **photo du stockage comprise**.
 
+**Le « + » ne propose pas la même chose selon la page** (deuxième précision de
+Noé). Le bouton est au même endroit partout ; ce qu'il ouvre, non — sur une page
+on vient poster, sur une autre on vient noter un nom :
+
+| Page | Ce que le « + » ouvre |
+|---|---|
+| Accueil, Journal | la tuile, sur **Tâche** |
+| Créer, banque, éditorial | la tuile, sur **Publication**, la pastille de nature **en dernier** |
+| Calendrier | la tuile, sur **Événement** |
+| Réseau, Passerelle, carnet | la **fiche du carnet**, seule — « toutes les autres possibilités sont cachées » |
+
+`PLUS_PAR_VUE` dit tout cela en dix lignes. **Les sous-pages suivent leur
+onglet**, comme la barre le fait déjà : la banque et l'éditorial appartiennent à
+Créer, la Passerelle et le carnet à Réseau.
+
+**La nature en dernier**, sur Créer : on y vient pour poster, et le réglage
+qu'on change le moins n'a pas à occuper la première place — ce sont la date, le
+réseau et le format qui comptent. `fenetreCreation` a gagné `natureEnDernier`
+pour ça.
+
+**La fiche du carnet est la même** que le pli du bas de la page — un seul jeu de
+champs (`CHAMPS_CONTACT`), deux façons de l'afficher. Les identifiants des
+champs diffèrent (`contact-` et `contact-nouveau-`) : deux mêmes `id` sur une
+page, ce sont des étiquettes qui désignent le mauvais champ.
+
+**Un piège au passage** : créer une fiche ne redessinait que la LISTE des
+contacts (`rendreContacts`), ce qui suffisait au pli mais laissait la fenêtre
+affichée par-dessus. Elle ne se referme que si la vue entière est redessinée.
+
+**Vérifié** : les neuf vues ouvertes une à une, avec le relevé de ce que le
+« + » propose et de l'ordre des pastilles ; une fiche créée depuis le « + » du
+carnet — fenêtre refermée, contact dans la liste, pli du bas intact — puis
+supprimée. Base relue : **45 contacts**, son état exact.
+
 **L'ancien bouton « + Ajouter un moment » reste** à sa place sur l'Accueil et le
 Journal. Il double maintenant la porte « Moment » de la tuile — c'est une
 question posée à Noé, pas un oubli : retirer ce qu'il a validé demande son avis.

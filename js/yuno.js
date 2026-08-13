@@ -626,6 +626,31 @@ function boutonPlusFlottant() {
 // pastilles. C'est une porte dans la liste, pas une ligne de plus à écrire.
 const NATURE_MOMENT = { moment: 'Moment' };
 
+// Ce que le « + » propose, page par page (demande de Noé, 13 août 2026). Le
+// bouton est au même endroit partout ; ce qu'il ouvre, non — sur une page on
+// vient poster, sur une autre on vient noter un nom.
+//
+// Les sous-pages suivent leur onglet, comme la barre le fait déjà : la banque
+// et l'éditorial appartiennent à Créer, la Passerelle et le carnet à Réseau.
+//
+// `contact` n'est pas une nature de la tuile : c'est la fiche du carnet, et
+// elle s'ouvre seule — « toutes les autres possibilités sont cachées ».
+const PLUS_PAR_VUE = {
+  accueil: { nature: 'tache' },
+  journal: { nature: 'tache' },
+  creer: { nature: 'publication', natureEnDernier: true },
+  banque: { nature: 'publication', natureEnDernier: true },
+  editorial: { nature: 'publication', natureEnDernier: true },
+  calendrier: { nature: 'evenement' },
+  reseau: { contact: true },
+  passerelle: { contact: true },
+  carnet: { contact: true },
+};
+
+// Sur la page Créer, la nature passe en DERNIER : on vient y poster, et le
+// réglage qu'on change le moins n'a pas à occuper la première place.
+const reglagesDuPlus = (vue) => PLUS_PAR_VUE[vue] ?? { nature: 'tache' };
+
 // Le bouton qui ouvre la capture. Il reste à sa place, à gauche des compteurs ;
 // c'est la fenêtre qui vient par-dessus.
 function boutonCapture() {
@@ -2246,32 +2271,57 @@ function vueCarnet(etat) {
         id: 'contact',
         libelle: 'Ajouter au carnet',
         action: 'creer-contact',
-        champs: [
-          { nom: 'nom', libelle: 'Nom', type: 'text', requis: true },
-          { nom: 'type', libelle: 'Type', type: 'select', options: TYPES_CONTACT, valeur: 'joueur' },
-          { nom: 'structure', libelle: 'Rattaché à (FC Lorient, OM, La Provence…)', type: 'text' },
-          { nom: 'instagram', libelle: 'Instagram', type: 'text' },
-          { nom: 'email', libelle: 'E-mail', type: 'text' },
-          { nom: 'telephone', libelle: 'Téléphone', type: 'text' },
-          { nom: 'statut', libelle: 'Relation', type: 'select',
-            options: Object.fromEntries(
-              Object.entries(STATUTS_CONTACT).map(([v, { nom }]) => [v, nom]),
-            ),
-            valeur: 'pas_de_contact' },
-          { nom: 'objectif', libelle: 'Pourquoi ce contact ? (facultatif)', type: 'text' },
-          { nom: 'niveau', libelle: "Dans la file d'aller-vers ?", type: 'select',
-            options: {
-              '': 'Pas dans la file',
-              ...Object.fromEntries(
-                Object.entries(NIVEAUX).map(([v, { nom }]) => [v, `${v} ${nom}`]),
-              ),
-            },
-            valeur: '' },
-          { nom: 'notes', libelle: 'Notes', type: 'textarea' },
-        ],
+        champs: CHAMPS_CONTACT,
       })}
     </section>
     ${pied()}`;
+}
+
+// Les champs d'une fiche du carnet, écrits une fois : le pli du bas de la page
+// Réseau et la fenêtre du « + » posent les mêmes.
+function champsContact() {
+  return [
+    { nom: 'nom', libelle: 'Nom', type: 'text', requis: true },
+    { nom: 'type', libelle: 'Type', type: 'select', options: TYPES_CONTACT, valeur: 'joueur' },
+    { nom: 'structure', libelle: 'Rattaché à (FC Lorient, OM, La Provence…)', type: 'text' },
+    { nom: 'instagram', libelle: 'Instagram', type: 'text' },
+    { nom: 'email', libelle: 'E-mail', type: 'text' },
+    { nom: 'telephone', libelle: 'Téléphone', type: 'text' },
+    { nom: 'statut', libelle: 'Relation', type: 'select',
+      options: Object.fromEntries(
+        Object.entries(STATUTS_CONTACT).map(([v, { nom }]) => [v, nom]),
+      ),
+      valeur: 'pas_de_contact' },
+    { nom: 'objectif', libelle: 'Pourquoi ce contact ? (facultatif)', type: 'text' },
+    { nom: 'niveau', libelle: "Dans la file d'aller-vers ?", type: 'select',
+      options: {
+        '': 'Pas dans la file',
+        ...Object.fromEntries(
+          Object.entries(NIVEAUX).map(([v, { nom }]) => [v, `${v} ${nom}`]),
+        ),
+      },
+      valeur: '' },
+    { nom: 'notes', libelle: 'Notes', type: 'textarea' },
+  ];
+}
+
+const CHAMPS_CONTACT = champsContact();
+
+// La fenêtre du « + » sur les pages du réseau : la même fiche, dans une fenêtre
+// volante. L'identifiant du formulaire diffère de celui du pli — deux mêmes
+// `id` sur une page, ce sont des étiquettes qui désignent le mauvais champ.
+function formulaireNouveauContact() {
+  return construireFenetre(
+    'Ajouter au carnet',
+    `<h3 class="fenetre-titre">Ajouter au carnet</h3>
+     ${construireFormulaire({
+       id: 'contact-nouveau',
+       action: 'creer-contact',
+       bouton: 'Ajouter au carnet',
+       avecPli: false,
+       champs: CHAMPS_CONTACT,
+     })}`,
+  );
 }
 
 // Ce que l'état dit à la base : ce qu'on cherche, ce qu'on garde, comment on
@@ -2496,6 +2546,8 @@ export default {
       souci: null,
       prefillMoment: null,
       captureOuverte: false,
+      // La fiche du carnet ouverte par le « + » des pages du réseau.
+      contactNouveau: false,
       // Les identifiants de ce qui est ouvert en fenêtre, jamais leur copie.
       ideeOuverte: null,
       momentOuvert: null,
@@ -2672,8 +2724,15 @@ export default {
         if (etat.creationCal) {
           section.insertAdjacentHTML(
             'beforeend',
-            fenetreCreation({ ...etat.creationCal, naturesEnPlus: NATURE_MOMENT }),
+            fenetreCreation({
+              ...etat.creationCal,
+              naturesEnPlus: NATURE_MOMENT,
+              natureEnDernier: reglagesDuPlus(etat.vue).natureEnDernier ?? false,
+            }),
           );
+        }
+        if (etat.contactNouveau) {
+          section.insertAdjacentHTML('beforeend', formulaireNouveauContact());
         }
         if (etat.captureOuverte) {
           section.insertAdjacentHTML(
@@ -3075,6 +3134,12 @@ export default {
       }
 
       if (action === 'creer-contact') {
+        // Ouverte par le « + », la fenêtre se referme une fois la fiche posée :
+        // on n'enchaîne pas des fiches comme on enchaîne des notes. Il faut
+        // alors redessiner la VUE, et pas seulement la liste des contacts —
+        // sans quoi la fenêtre resterait affichée par-dessus.
+        const venaitDuPlus = etat.contactNouveau;
+        etat.contactNouveau = false;
         const contact = await api.creerContact({
           nom: champs.nom.trim(),
           type: champs.type,
@@ -3087,8 +3152,10 @@ export default {
           niveau: champs.niveau ? Number(champs.niveau) : null,
           notes: champs.notes?.trim() || null,
         });
-        etat.contacts = [...etat.contacts, contact].sort((a, b) => a.nom.localeCompare(b.nom));
-        rendreContacts();
+        etat.contacts.push(contact);
+        etat.contacts.sort((a, b) => a.nom.localeCompare(b.nom));
+        if (venaitDuPlus) rendre();
+        else rendreContacts();
         return;
       }
 
@@ -3182,13 +3249,20 @@ export default {
         return;
       }
 
-      // Le « + » flottant ouvre la tuile sur un ÉVÉNEMENT : sur ce site, ce
-      // qu'on note dans l'urgence est presque toujours une date de terrain — un
-      // match, un shooting. Les quatre autres natures sont à une pastille.
+      // Le « + » flottant : ce qu'il ouvre dépend de la page (PLUS_PAR_VUE).
       if (evenement.target.closest('[data-ouvrir-plus]')) {
-        const jour = versDateISO();
+        const reglages = reglagesDuPlus(etat.vue);
         etat.detailCal = null;
-        etat.creationCal = { debut: jour, fin: jour, nature: 'evenement' };
+
+        if (reglages.contact) {
+          etat.contactNouveau = true;
+          rendre();
+          section.querySelector('#contact-nouveau-nom')?.focus();
+          return;
+        }
+
+        const jour = versDateISO();
+        etat.creationCal = { debut: jour, fin: jour, nature: reglages.nature };
         rendre();
         section.querySelector('#cal-titre')?.focus();
         return;
@@ -3207,6 +3281,7 @@ export default {
         etat.editionCal = false;
         etat.jourOuvertCal = null;
         etat.captureOuverte = false;
+        etat.contactNouveau = false;
         etat.prefillMoment = null;
         etat.ideeOuverte = null;
         etat.momentOuvert = null;
@@ -3886,6 +3961,7 @@ export default {
           etat.creationCal ||
           etat.detailCal ||
           etat.captureOuverte ||
+          etat.contactNouveau ||
           etat.jourOuvertCal ||
           etat.ideeOuverte ||
           etat.momentOuvert ||
@@ -3899,6 +3975,7 @@ export default {
       etat.detailCal = null;
       etat.jourOuvertCal = null;
       etat.captureOuverte = false;
+      etat.contactNouveau = false;
       etat.prefillMoment = null;
       etat.ideeOuverte = null;
       etat.momentOuvert = null;

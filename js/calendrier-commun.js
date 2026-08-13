@@ -1231,6 +1231,11 @@ export function fenetreCreation({
   // raconte — mais tout à faire dans le « + » de Yuno, où l'on note ce qu'on
   // vient de vivre aussi souvent qu'un rendez-vous à venir.
   naturesEnPlus = null,
+  // La pastille de nature en DERNIER au lieu d'en tête. Sur la page Créer de
+  // Yuno, on vient poster : la nature est le réglage qu'on change le moins, et
+  // ce qui compte — la date, le réseau, le format — mérite la première place
+  // (demande de Noé, 13 août 2026).
+  natureEnDernier = false,
 }) {
   const memeJour = debut === fin;
   const jourLisible = (cle) =>
@@ -1248,8 +1253,9 @@ export function fenetreCreation({
 
   const pastilles = [];
 
-  // 1. La nature, toujours en tête : c'est elle qui commande tout le reste.
-  pastilles.push(
+  // 1. La nature. En tête d'ordinaire — c'est elle qui commande tout le reste —
+  // et en queue quand l'appelant sait déjà ce qu'on vient poser.
+  const pastilleNature =
     pastilleCapture({
       nom: 'nature',
       icone: ICONE.nature,
@@ -1266,8 +1272,9 @@ export function fenetreCreation({
           class="${valeur === nature ? 'actif' : ''}">${libelle}</button></li>`,
         )
         .join('')}</ul>`,
-    }),
-  );
+    });
+
+  if (!natureEnDernier) pastilles.push(pastilleNature);
 
   // 2. Quand. Les dates se montrent et se corrigent : le glissement les
   // pré-remplit, il ne les impose pas — sans ça, un événement de plusieurs
@@ -1418,14 +1425,21 @@ export function fenetreCreation({
         aria-label="${echapper(INVITE_TITRE[nature])}">
 
       <div class="capture-pastilles">
-        <div class="capture-pastilles-liste">${pastilles.map((p) => p.pastille).join('')}</div>
+        <div class="capture-pastilles-liste">${[
+          ...pastilles,
+          ...(natureEnDernier ? [pastilleNature] : []),
+        ]
+          .map((p) => p.pastille)
+          .join('')}</div>
         <button type="submit" class="capture-envoyer" aria-label="Poser au calendrier"
           title="Poser au calendrier">${FLECHE_ENVOI}</button>
       </div>
 
       <!-- Les panneaux vivent ici, hors de la bande : elle défile, et son
            débordement masqué les découperait. Ils se posent au-dessus. -->
-      ${pastilles.map((p) => p.panneau).join('')}
+      ${[...pastilles, ...(natureEnDernier ? [pastilleNature] : [])]
+        .map((p) => p.panneau)
+        .join('')}
 
       <p class="message-erreur" data-erreur hidden></p>
     </form>`;
