@@ -1018,7 +1018,18 @@ réseau, et les trois applications se lancent hors ligne.
   version fraîche en arrière-plan pour l'ouverture suivante. Sur `localhost` :
   le réseau d'abord, le cache en secours. Sans cette inversion, chaque session
   de travail verrait une fois ses modifications ignorées — le piège classique.
-- **Le prix, assumé** : après un déploiement, le téléphone peut montrer UNE FOIS
+- **La coquille se vérifie maintenant toute seule** : `node tools/verifier-coquille.js`
+suit ce qui est réellement référencé — les trois entrées, ce qu'elles chargent,
+ce que les modules importent de proche en proche, les polices du CSS — et
+compare à la liste de `sw.js`. Écrit le 13 août après avoir constaté que
+`ecriture.js` et `mouvements.js`, nés dans la journée, n'y avaient jamais été
+ajoutés. **Mesuré** : l'application démarrait hors ligne quand même, les deux
+modules étant entrés au cache par la revalidation dès la première visite en
+ligne — la liste n'est donc pas la seule garantie, mais c'est la seule qui ne
+dépende de rien. L'outil est prouvé : en retirant un module de la liste, il le
+nomme et sort en erreur.
+
+**Le prix, assumé** : après un déploiement, le téléphone peut montrer UNE FOIS
   la version précédente. La fraîche se télécharge pendant ce temps et sera là à
   l'ouverture d'après. C'est le même marché que le cache de session, à l'échelle
   du code. En cas de doute sur un déploiement, fermer et rouvrir deux fois.
