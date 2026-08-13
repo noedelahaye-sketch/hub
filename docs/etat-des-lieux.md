@@ -116,10 +116,54 @@ première version le poussait au bord opposé, Noé l'a fait revenir — une bar
 avec un élément à part se lit comme deux barres. Le lien tout fait est
 `ongletCalendrier`, dans `calendrier-commun.js`.
 
-**La fenêtre « Poser au calendrier » a perdu son dépliant** : le bouton
-« Ajouter — publication » entre les pastilles de nature et le premier champ
-répétait ce que la fenêtre et les pastilles disaient déjà, et son chevron
-promettait un repli sans usage. `avecPli: false`, le mécanisme existait déjà.
+**« Poser au calendrier » est devenu la même tuile que la capture des Tâches**
+(13 août, demande de Noé), et c'est la seule façon d'ajouter au calendrier —
+hub, site Yuno et calendrier éditorial compris.
+
+**Les pastilles s'adaptent à la nature**, c'est tout l'objet :
+
+| Nature | Pastilles |
+|---|---|
+| Événement | Nature · Quand (heure, durée, jusqu'au) · Projet · Répétition · Lieu et notes |
+| Tâche | Nature · Quand (heure) · Projet · **Priorité** |
+| Publication | Nature · Quand (heure) · Projet · Réseau et format |
+| Objectif | Nature · Quand (échéance seule) · Projet · Le pourquoi |
+
+Le titre change d'invite avec elle : « Nom de l'événement », « L'idée, en une
+phrase », « L'objectif, formulé de façon mesurable ». « Quoi » convenait à tout
+et ne disait rien.
+
+**Le contrat avec les espaces n'a pas bougé** : les champs gardent leurs `name`,
+le formulaire son `data-action`, les natures leur `data-nature-creation`. Ni
+`calendrier.js` ni `yuno.js` n'ont eu à changer leur façon de LIRE ce qui est
+posé — c'est la présentation qui a été refaite, pas les données. Ils gagnent
+seulement deux lignes : `brancherCapture(section)` au montage, et un appel après
+chaque rendu.
+
+**Les panneaux sont tous dans le DOM, masqués.** Les valeurs vivent donc dans
+leurs champs et non dans un état à part : ouvrir une pastille ne redessine rien,
+rien de saisi ne se perd, et `fenetreCreation` reste la fonction pure que les
+espaces appellent au rendu. Ils sont rendus **hors de la bande qui défile** —
+son débordement masqué les découperait net.
+
+**Le calendrier éditorial pose une publication par défaut**, plus un événement :
+cette page ne montre QUE des publications, elle ne saurait même pas afficher ce
+qu'on venait d'y créer.
+
+**Deux bugs corrigés au passage :**
+
+- **Le calendrier du hub jetait l'heure et la priorité d'une tâche.** Le
+  formulaire demandait « à quelle heure », et `poser()` ne la transmettait pas —
+  même chose pour la publication. Yuno, lui, les faisait suivre. Vérifié en
+  posant une tâche à 18:30 en priorité 1 : les deux sont en base.
+- **Toutes les fenêtres volantes du site Yuno étaient mal placées.**
+  `.vue-entre` porte `animation: … both` sur `transform`, et un élément dont la
+  transformation est animée devient le **repère** de ses descendants en
+  `position: fixed` — le `fill-mode: both` faisant durer l'effet indéfiniment.
+  Mesuré : une tuile censée être centrée à 391 px se calait à 496, et le fond
+  assombri ne couvrait que la section au lieu de l'écran. La classe est
+  maintenant retirée à `animationend`. Ça valait pour la fiche d'un moment,
+  celle d'un contact, la note d'idée — pas seulement pour la tuile.
 
 **Une tâche faite reste au calendrier**, barrée et en retrait, avec son cercle
 coché (`◉`). `tachesDatees` ne filtre plus les faites : ce site ne fait pas

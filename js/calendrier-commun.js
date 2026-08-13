@@ -15,6 +15,7 @@ import {
   versDateISO,
   ajouterJours,
   momentLisible,
+  echeanceLisible,
   echapper,
   NOMS_PROJETS,
 } from './format.js';
@@ -981,29 +982,6 @@ export const DUREES = {
   240: '4 heures',
 };
 
-const CHAMPS_PAR_NATURE = {
-  evenement: [
-    { nom: 'lieu', libelle: 'Où (facultatif)', type: 'text' },
-    { nom: 'notes', libelle: 'Notes (facultatif)', type: 'textarea' },
-  ],
-  // Une tâche et une publication portent une heure comme un événement : avec,
-  // elles descendent dans la grille horaire ; sans, elles tiennent la journée.
-  // Pas de durée en revanche — elles arrivent à un moment, elles n'occupent pas
-  // une tranche.
-  tache: [
-    { nom: 'heure', libelle: 'À quelle heure (vide = dans la journée)', type: 'time' },
-  ],
-  publication: [
-    { nom: 'reseau', libelle: 'Réseau', type: 'select', options: RESEAUX, valeur: 'instagram' },
-    { nom: 'format', libelle: 'Format', type: 'select', options: FORMATS, valeur: 'post' },
-    { nom: 'heure', libelle: 'À quelle heure (vide = dans la journée)', type: 'time' },
-  ],
-  objectif: [
-    { nom: 'pourquoi', libelle: 'Pourquoi ? (relu les jours sans motivation)', type: 'textarea' },
-    { nom: 'cible', libelle: "À quoi tu sauras que c'est réussi", type: 'text' },
-  ],
-};
-
 const NATURES_CREABLES = {
   evenement: 'Événement',
   tache: 'Tâche',
@@ -1021,17 +999,130 @@ export function natureParDefaut(natures) {
   return seule in NATURES_CREABLES ? seule : 'evenement';
 }
 
+// --- Poser au calendrier : la tuile ------------------------------------------
+//
+// Même mécanique que la capture de l'espace Tâches (13 août 2026, demande de
+// Noé) : une tuile volante sur fond assombri, le titre écrit directement, une
+// bande de pastilles qui défile sans jamais passer à la ligne, et la flèche
+// d'envoi qui garde sa place.
+//
+// Ce qui change ici, et c'est tout l'objet : **les pastilles s'adaptent à la
+// nature** de ce qu'on pose. Un événement a une durée et se répète ; une tâche
+// a une priorité ; une publication a un réseau et un format ; un objectif a un
+// pourquoi. Chacun ne montre que ce qu'il demande.
+//
+// Le contrat avec les espaces qui l'appellent n'a pas bougé d'un pouce : les
+// champs gardent leurs `name`, le formulaire son `data-action`, et les natures
+// leur `data-nature-creation`. Ni `calendrier.js` ni `yuno.js` n'ont eu à
+// changer leur façon de lire ce qui est posé — c'est la présentation qui a été
+// refaite, pas les données.
+//
+// Les panneaux sont TOUS dans le DOM, masqués : les valeurs vivent donc dans
+// leurs champs, pas dans un état à part, et ouvrir une pastille ne redessine
+// rien. C'est ce qui permet de garder la fenêtre de création telle qu'elle
+// était côté espaces — une fonction pure appelée au rendu.
+
+const ICONE = {
+  nature: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"></path>
+    <circle cx="7.5" cy="7.5" r="1.2" fill="currentColor"></circle></svg>`,
+  quand: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>`,
+  projet: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M10 3 8 21M16 3l-2 18M3.5 8.5h17M3 15.5h17"></path></svg>`,
+  priorite: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M5 22V3"></path><path d="M5 3.5h13l-2.4 4.6L18 13H5z"></path></svg>`,
+  repetition: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M17 2l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+    <path d="M7 22l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>`,
+  reseau: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18"></path></svg>`,
+  texte: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M4 6h16M4 12h16M4 18h10"></path></svg>`,
+};
+
+const FLECHE_ENVOI = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+  stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+  aria-hidden="true" focusable="false"><path d="M12 19V5M5 12l7-7 7 7"></path></svg>`;
+
+// Ce que le titre demande, selon ce qu'on pose. « Quoi » convenait à tout et ne
+// disait rien : le mot juste rappelle à lui seul ce qu'on est en train de créer.
+const INVITE_TITRE = {
+  evenement: "Nom de l'événement",
+  tache: 'Nom de la tâche',
+  publication: "L'idée, en une phrase",
+  objectif: "L'objectif, formulé de façon mesurable",
+};
+
+const PRIORITES_CAL = {
+  1: 'Priorité 1',
+  2: 'Priorité 2',
+  3: 'Priorité 3',
+  4: 'Priorité 4',
+};
+
+function champCapture({ nom, libelle, type, valeur = '', options = null, requis = false }) {
+  const id = `cal-${nom}`;
+  const controle =
+    type === 'select'
+      ? `<select id="${id}" name="${nom}">${Object.entries(options)
+          .map(
+            ([cle, texte]) =>
+              `<option value="${echapper(cle)}" ${
+                String(cle) === String(valeur) ? 'selected' : ''
+              }>${echapper(texte)}</option>`,
+          )
+          .join('')}</select>`
+      : type === 'textarea'
+        ? `<textarea id="${id}" name="${nom}" rows="2">${echapper(valeur)}</textarea>`
+        : `<input id="${id}" name="${nom}" type="${type}" value="${echapper(valeur)}" ${
+            requis ? 'required' : ''
+          }>`;
+
+  return `<label class="champ-capture" for="${id}">${echapper(libelle)}</label>${controle}`;
+}
+
+// Une pastille et son panneau, rendus SÉPARÉMENT. La pastille part dans la
+// bande qui défile ; le panneau, lui, se pose hors d'elle — sinon l'`overflow`
+// de la bande le découperait net. Ils se retrouvent par leur nom.
+//
+// `source` dit quel champ relire pour écrire le libellé de la pastille : une
+// pastille renseignée affiche sa valeur, c'est ce qui permet de relire toute la
+// fiche sans ouvrir un seul panneau.
+function pastilleCapture({
+  nom,
+  icone,
+  defaut,
+  source = null,
+  sourceHeure = null,
+  // La valeur qui ne compte pas pour renseignée. Une priorité 4 est le cas
+  // ordinaire : la pastille doit dire « Priorité », pas « Priorité 4 ».
+  neutre = null,
+  contenu,
+  rempli = false,
+}) {
+  return {
+    pastille: `<button type="button" class="pastille-capture${rempli ? ' remplie' : ''}"
+      data-pastille="${nom}" aria-expanded="false"
+      ${source ? `data-source="${source}"` : ''}
+      ${sourceHeure ? `data-source-heure="${sourceHeure}"` : ''}
+      ${neutre !== null ? `data-neutre="${echapper(String(neutre))}"` : ''}
+      data-defaut="${echapper(defaut)}">${icone}<span data-libelle>${echapper(defaut)}</span></button>`,
+    panneau: `<div class="capture-popover" data-panneau="${nom}" hidden>${contenu}</div>`,
+  };
+}
+
 export function fenetreCreation({ debut, fin, nature = 'evenement', heure = '', projets = null }) {
   const memeJour = debut === fin;
   const jourLisible = (cle) =>
     depuisDateISO(cle).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-
-  const quand = memeJour
-    ? jourLisible(debut)
-    : `du ${depuisDateISO(debut).toLocaleDateString('fr-FR', {
-        day: 'numeric',
-        month: 'long',
-      })} au ${depuisDateISO(fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`;
 
   // Seul un événement s'étend. Une tâche, une publication ou un objectif porte
   // une date unique : on prend le premier jour, et on le dit.
@@ -1043,92 +1134,278 @@ export function fenetreCreation({ debut, fin, nature = 'evenement', heure = '', 
       Object.entries(projets).filter(([cle]) => nature === 'evenement' || cle !== 'perso'),
     );
 
-  const contenu = `
-    <p class="cal-fenetre-quand">${echapper(quand)}</p>
-    <div class="cal-natures" role="group" aria-label="Nature de ce qu'on pose">
-      ${Object.entries(NATURES_CREABLES)
+  const pastilles = [];
+
+  // 1. La nature, toujours en tête : c'est elle qui commande tout le reste.
+  pastilles.push(
+    pastilleCapture({
+      nom: 'nature',
+      icone: ICONE.nature,
+      defaut: NATURES_CREABLES[nature],
+      rempli: true,
+      contenu: `<ul class="choix-capture">${Object.entries(NATURES_CREABLES)
         .map(
           ([valeur, libelle]) => `
-        <button type="button" data-nature-creation="${valeur}"
+        <li><button type="button" data-nature-creation="${valeur}"
           aria-pressed="${valeur === nature}"
-          class="${valeur === nature ? 'actif' : ''}">${libelle}</button>`,
+          class="${valeur === nature ? 'actif' : ''}">${libelle}</button></li>`,
         )
-        .join('')}
-    </div>
-    ${
-      surLePremierJour
-        ? `<p class="discret cal-note-nature">Posé sur le ${echapper(
-            jourLisible(debut),
-          )} — seul un événement s'étend sur plusieurs jours.</p>`
-        : ''
-    }
-    ${construireFormulaire({
-      id: 'cal',
-      action: 'creer-depuis-calendrier',
-      bouton: 'Poser au calendrier',
-      // Sans dépliant : la fenêtre dit déjà qu'on ajoute, et les pastilles
-      // au-dessus disent quoi. Un « Ajouter — publication » toujours ouvert
-      // entre les deux ne faisait que répéter, et son chevron promettait un
-      // repli dont personne n'a l'usage ici.
-      avecPli: false,
-      extra: `<input type="hidden" name="nature" value="${echapper(nature)}">`,
-      champs: [
-        { nom: 'titre', libelle: 'Quoi', type: 'text', requis: true },
-        ...(projetsOfferts
-          ? [
-              {
-                nom: 'projet',
-                libelle: 'Pour quel projet',
-                type: 'select',
-                options: projetsOfferts,
-                valeur: 'photo',
-              },
-            ]
-          : []),
-        // Les dates se montrent et se corrigent. Le glissement les pré-remplit,
-        // il ne les impose pas : sans ça, un événement de plusieurs jours ne
-        // pouvait naître que d'un geste de souris — impossible au doigt.
-        ...(nature === 'evenement'
-          ? [
-              { nom: 'debut', libelle: 'Du', type: 'date', requis: true, valeur: debut },
-              {
-                nom: 'heure',
-                libelle: 'À quelle heure (vide = toute la journée)',
-                type: 'time',
-                valeur: heure,
-              },
-              {
-                nom: 'duree',
-                libelle: 'Combien de temps (si une heure est donnée)',
-                type: 'select',
-                options: DUREES,
-                valeur: '120',
-              },
-              {
-                nom: 'fin',
-                libelle: "Jusqu'au (vide = un seul jour)",
-                type: 'date',
-                valeur: memeJour ? '' : fin,
-              },
-              {
-                nom: 'recurrence',
-                libelle: 'Se répète',
-                type: 'select',
-                options: RECURRENCES,
-                valeur: '',
-              },
-              {
-                nom: 'recurrence_fin',
-                libelle: 'Se répète jusqu\'au (facultatif)',
-                type: 'date',
-              },
-            ]
-          : [{ nom: 'debut', libelle: 'Quand', type: 'date', requis: true, valeur: debut }]),
-        ...CHAMPS_PAR_NATURE[nature],
-      ],
-    })}`;
+        .join('')}</ul>`,
+    }),
+  );
 
-  return construireFenetre('Poser au calendrier', contenu);
+  // 2. Quand. Les dates se montrent et se corrigent : le glissement les
+  // pré-remplit, il ne les impose pas — sans ça, un événement de plusieurs
+  // jours ne pourrait naître que d'un geste de souris, impossible au doigt.
+  const champsQuand =
+    nature === 'evenement'
+      ? `${champCapture({ nom: 'debut', libelle: 'Du', type: 'date', valeur: debut, requis: true })}
+         <div class="capture-deux-champs">
+           <span>${champCapture({ nom: 'heure', libelle: 'À quelle heure', type: 'time', valeur: heure })}</span>
+           <span>${champCapture({ nom: 'duree', libelle: 'Combien de temps', type: 'select', options: DUREES, valeur: '120' })}</span>
+         </div>
+         ${champCapture({ nom: 'fin', libelle: "Jusqu'au (vide = un seul jour)", type: 'date', valeur: memeJour ? '' : fin })}`
+      : nature === 'objectif'
+        ? champCapture({ nom: 'debut', libelle: 'Échéance', type: 'date', valeur: debut, requis: true })
+        : `<div class="capture-deux-champs">
+             <span>${champCapture({ nom: 'debut', libelle: 'Quand', type: 'date', valeur: debut, requis: true })}</span>
+             <span>${champCapture({ nom: 'heure', libelle: 'Heure', type: 'time' })}</span>
+           </div>`;
+
+  pastilles.push(
+    pastilleCapture({
+      nom: 'quand',
+      icone: ICONE.quand,
+      defaut: jourLisible(debut),
+      source: 'debut',
+      sourceHeure: nature === 'objectif' ? null : 'heure',
+      rempli: true,
+      contenu: `${champsQuand}${
+        surLePremierJour
+          ? `<p class="discret cal-note-nature">Posé sur le ${echapper(
+              jourLisible(debut),
+            )} — seul un événement s'étend sur plusieurs jours.</p>`
+          : ''
+      }`,
+    }),
+  );
+
+  // 3. Le projet, quand l'espace en offre le choix. Le site Yuno n'en propose
+  // pas : on y est déjà chez Yuno.
+  if (projetsOfferts) {
+    pastilles.push(
+      pastilleCapture({
+        nom: 'projet',
+        icone: ICONE.projet,
+        defaut: projetsOfferts.photo ?? Object.values(projetsOfferts)[0],
+        source: 'projet',
+        rempli: true,
+        contenu: champCapture({
+          nom: 'projet',
+          libelle: 'Pour quel projet',
+          type: 'select',
+          options: projetsOfferts,
+          valeur: 'photo' in projetsOfferts ? 'photo' : Object.keys(projetsOfferts)[0],
+        }),
+      }),
+    );
+  }
+
+  // 4. Ce que cette nature-là demande, et rien d'autre.
+  if (nature === 'evenement') {
+    pastilles.push(
+      pastilleCapture({
+        nom: 'repetition',
+        icone: ICONE.repetition,
+        defaut: 'Une seule fois',
+        source: 'recurrence',
+        contenu: `${champCapture({ nom: 'recurrence', libelle: 'Se répète', type: 'select', options: RECURRENCES, valeur: '' })}
+          ${champCapture({ nom: 'recurrence_fin', libelle: "Jusqu'au (facultatif)", type: 'date' })}`,
+      }),
+      pastilleCapture({
+        nom: 'lieu',
+        icone: ICONE.texte,
+        defaut: 'Lieu et notes',
+        source: 'lieu',
+        contenu: `${champCapture({ nom: 'lieu', libelle: 'Où', type: 'text' })}
+          ${champCapture({ nom: 'notes', libelle: 'Notes', type: 'textarea' })}`,
+      }),
+    );
+  }
+
+  if (nature === 'tache') {
+    pastilles.push(
+      pastilleCapture({
+        nom: 'priorite',
+        icone: ICONE.priorite,
+        defaut: 'Priorité',
+        source: 'priorite',
+        neutre: '4',
+        contenu: champCapture({
+          nom: 'priorite',
+          libelle: 'Priorité',
+          type: 'select',
+          options: PRIORITES_CAL,
+          valeur: '4',
+        }),
+      }),
+    );
+  }
+
+  if (nature === 'publication') {
+    pastilles.push(
+      pastilleCapture({
+        nom: 'reseau',
+        icone: ICONE.reseau,
+        defaut: RESEAUX.instagram,
+        source: 'reseau',
+        rempli: true,
+        contenu: `<div class="capture-deux-champs">
+            <span>${champCapture({ nom: 'reseau', libelle: 'Réseau', type: 'select', options: RESEAUX, valeur: 'instagram' })}</span>
+            <span>${champCapture({ nom: 'format', libelle: 'Format', type: 'select', options: FORMATS, valeur: 'post' })}</span>
+          </div>`,
+      }),
+    );
+  }
+
+  if (nature === 'objectif') {
+    pastilles.push(
+      pastilleCapture({
+        nom: 'pourquoi',
+        icone: ICONE.texte,
+        defaut: 'Le pourquoi',
+        source: 'cible',
+        contenu: `${champCapture({ nom: 'pourquoi', libelle: 'Pourquoi ? (relu les jours sans motivation)', type: 'textarea' })}
+          ${champCapture({ nom: 'cible', libelle: "À quoi tu sauras que c'est réussi", type: 'text' })}`,
+      }),
+    );
+  }
+
+  return `
+    <div class="fenetre-fond capture-fond" data-fermer-fenetre></div>
+    <form class="capture" data-action="creer-depuis-calendrier" role="dialog" aria-modal="true"
+      aria-label="Poser au calendrier">
+      <input type="hidden" name="nature" value="${echapper(nature)}">
+      <input type="text" id="cal-titre" name="titre" required class="capture-titre"
+        placeholder="${echapper(INVITE_TITRE[nature])}" autocomplete="off"
+        aria-label="${echapper(INVITE_TITRE[nature])}">
+
+      <div class="capture-pastilles">
+        <div class="capture-pastilles-liste">${pastilles.map((p) => p.pastille).join('')}</div>
+        <button type="submit" class="capture-envoyer" aria-label="Poser au calendrier"
+          title="Poser au calendrier">${FLECHE_ENVOI}</button>
+      </div>
+
+      <!-- Les panneaux vivent ici, hors de la bande : elle défile, et son
+           débordement masqué les découperait. Ils se posent au-dessus. -->
+      ${pastilles.map((p) => p.panneau).join('')}
+
+      <p class="message-erreur" data-erreur hidden></p>
+    </form>`;
+}
+
+// Le comportement des pastilles, branché une fois par espace. Il ne touche
+// qu'au DOM : ouvrir un panneau n'écrit rien dans l'état de l'espace, donc rien
+// ne se redessine et aucune saisie ne se perd.
+export function brancherCapture(section) {
+  const panneaux = () => [...section.querySelectorAll('.capture-popover')];
+
+  const fermerLesPanneaux = () => {
+    for (const panneau of panneaux()) {
+      panneau.hidden = true;
+      section
+        .querySelector(`[data-pastille="${panneau.dataset.panneau}"]`)
+        ?.setAttribute('aria-expanded', 'false');
+    }
+  };
+
+  // Le libellé d'une pastille EST la valeur de son champ, quand il y en a une.
+  // C'est ce qui permet de relire toute la fiche sans ouvrir un seul panneau.
+  const rafraichirLesLibelles = () => {
+    for (const pastille of section.querySelectorAll('.capture-pastilles [data-pastille]')) {
+      const source = pastille.dataset.source;
+      if (!source) continue;
+
+      const champ = section.querySelector(`.capture [name="${source}"]`);
+      const libelle = pastille.querySelector('[data-libelle]');
+      if (!champ || !libelle) continue;
+
+      // La valeur neutre ne compte pas pour renseignée : la pastille garde son
+      // libellé, et son encre discrète.
+      const neutre = pastille.dataset.neutre;
+      let texte = '';
+      if (neutre !== undefined && champ.value === neutre) {
+        texte = '';
+      } else if (champ.tagName === 'SELECT') {
+        // Une option vide (« Une seule fois ») vaut le libellé par défaut.
+        texte = champ.value ? champ.selectedOptions[0]?.textContent.trim() : '';
+      } else if (champ.type === 'date') {
+        texte = champ.value ? echeanceLisible(depuisDateISO(champ.value)) : '';
+      } else {
+        texte = champ.value.trim();
+      }
+
+      const heure = pastille.dataset.sourceHeure
+        ? section.querySelector(`.capture [name="${pastille.dataset.sourceHeure}"]`)?.value
+        : '';
+      if (texte && heure) texte = `${texte}, ${heure}`;
+
+      libelle.textContent = texte || pastille.dataset.defaut;
+      pastille.classList.toggle('remplie', Boolean(texte));
+    }
+    marquerLeDebordement();
+  };
+
+  // De quel côté la bande a-t-elle encore de la réserve ? La feuille de style
+  // pose un fondu du bon côté, et seulement là où il reste à voir.
+  const marquerLeDebordement = () => {
+    const bande = section.querySelector('.capture-pastilles-liste');
+    if (!bande) return;
+    bande.classList.toggle('deborde-avant', bande.scrollLeft > 1);
+    bande.classList.toggle(
+      'deborde-apres',
+      bande.scrollLeft + bande.clientWidth < bande.scrollWidth - 1,
+    );
+  };
+
+  section.addEventListener('click', (evenement) => {
+    const pastille = evenement.target.closest('.capture-pastilles [data-pastille]');
+    if (pastille) {
+      const panneau = section.querySelector(
+        `.capture-popover[data-panneau="${pastille.dataset.pastille}"]`,
+      );
+      const ouvert = !panneau.hidden;
+      fermerLesPanneaux();
+      panneau.hidden = ouvert;
+      pastille.setAttribute('aria-expanded', String(!ouvert));
+      if (!ouvert) panneau.querySelector('input, select, textarea')?.focus();
+      return;
+    }
+
+    // Un clic ailleurs dans la tuile referme le panneau ouvert. Les boutons des
+    // panneaux se sont déjà servis — ils portent leurs propres écouteurs dans
+    // l'espace, et ce clic-ci arrive après eux.
+    if (evenement.target.closest('.capture') && !evenement.target.closest('.capture-popover')) {
+      fermerLesPanneaux();
+    }
+  });
+
+  section.addEventListener('input', rafraichirLesLibelles);
+  section.addEventListener('change', rafraichirLesLibelles);
+  section.addEventListener(
+    'scroll',
+    (evenement) => {
+      if (evenement.target.closest?.('.capture-pastilles-liste')) marquerLeDebordement();
+    },
+    true,
+  );
+  window.addEventListener('resize', marquerLeDebordement);
+
+  // Appelé après chaque rendu de l'espace : la tuile vient d'être réécrite.
+  return () => {
+    rafraichirLesLibelles();
+    section.querySelector('#cal-titre')?.focus();
+  };
 }
 
 // Ce qu'un élément devient quand on le supprime, dit par son verbe. Une relance

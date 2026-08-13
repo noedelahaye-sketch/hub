@@ -26,6 +26,7 @@ import {
   brancherSelection,
   brancherClavier,
   brancherDeplacement,
+  brancherCapture,
   champsApresDeplacement,
   deplacerAncre,
   toutesLesNatures,
@@ -53,9 +54,10 @@ export default {
       jourOuvert: null,
     };
 
-    // Déclaré ici parce que `rendre` s'en sert : la fonction est posée plus
-    // bas, quand les écouteurs se branchent.
+    // Déclarés ici parce que `rendre` s'en sert : les fonctions sont posées
+    // plus bas, quand les écouteurs se branchent.
     let poserLEntreeClavier = null;
+    let rafraichirLaCapture = null;
 
     function rendre() {
       section.innerHTML = `
@@ -89,6 +91,9 @@ export default {
 
       centrerActif(section.querySelector('.filtres'));
       poserLEntreeClavier?.();
+      // La tuile vient d'être réécrite : ses pastilles reprennent le libellé de
+      // leurs champs, et le curseur va au titre.
+      if (etat.creation) rafraichirLaCapture?.();
     }
 
     async function charger() {
@@ -140,6 +145,11 @@ export default {
       etat.jourOuvert = null;
       rendre();
     };
+
+    // Les pastilles de la tuile : ouverture, fermeture, libellés. Tout se joue
+    // dans le DOM — ouvrir un panneau ne redessine rien, donc rien de saisi ne
+    // se perd.
+    rafraichirLaCapture = brancherCapture(section);
 
     // Entrée ou Espace sur une case posée au clavier ouvre la même fenêtre
     // qu'un clic.
@@ -400,8 +410,18 @@ export default {
       const titre = champs.titre.trim();
       const projet = champs.projet ?? 'photo';
 
+      // L'heure et la priorité étaient offertes à l'écran et jetées ici : le
+      // formulaire demandait « à quelle heure », et la tâche arrivait sans.
+      // (Yuno, lui, les faisait suivre — c'est ce calendrier-ci qui les
+      // perdait.)
       if (champs.nature === 'tache') {
-        return api.creerTache({ projet, titre, echeance: champs.debut });
+        return api.creerTache({
+          projet,
+          titre,
+          echeance: champs.debut,
+          heure: champs.heure || null,
+          priorite: Number(champs.priorite) || 4,
+        });
       }
 
       if (champs.nature === 'publication') {
@@ -411,6 +431,7 @@ export default {
           reseau: champs.reseau,
           format: champs.format,
           date_prevue: champs.debut,
+          heure: champs.heure || null,
         });
       }
 

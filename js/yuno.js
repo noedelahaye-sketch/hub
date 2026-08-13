@@ -50,6 +50,7 @@ import {
   brancherSelection,
   brancherClavier,
   brancherDeplacement,
+  brancherCapture,
   champsApresDeplacement,
   deplacerAncre,
   toutesLesNatures,
@@ -138,6 +139,16 @@ function animerLEntreeDeLaVue(section) {
   section.classList.remove('vue-entre');
   void section.offsetWidth;
   section.classList.add('vue-entre');
+
+  // La classe part dès l'animation finie, et ce n'est pas du ménage : tant
+  // qu'elle est là, l'animation porte sur `transform`, et un élément dont la
+  // transformation est animée devient le REPÈRE de ses descendants en
+  // `position: fixed`. Résultat mesuré : une tuile censée être centrée sur
+  // l'écran (391 px) se calait à 496 px, sur le centre de la section. Le
+  // `fill-mode: both` de la règle CSS faisait durer l'effet indéfiniment.
+  section.addEventListener('animationend', () => section.classList.remove('vue-entre'), {
+    once: true,
+  });
 }
 
 // Les photos arrivent une à une, chacune quand elle est prête, au lieu de
@@ -2561,6 +2572,7 @@ export default {
     // Déclaré ici parce que `rendre` s'en sert : la fonction est posée plus
     // bas, quand les écouteurs se branchent.
     let poserLEntreeClavier = null;
+    let rafraichirLaCapture = null;
     // La vue précédemment dessinée. Le fondu ne joue qu'au CHANGEMENT DE LIEU :
     // `rendre()` est appelé à chaque geste — cocher une case, ouvrir une
     // fenêtre — et faire respirer la page entière à chaque fois serait pire
@@ -2595,6 +2607,9 @@ export default {
       centrerActif(section.querySelector('.yuno-nav'));
       centrerActif(section.querySelector('.filtres'));
       poserLEntreeClavier?.();
+      // La tuile vient d'être réécrite : ses pastilles reprennent le libellé de
+      // leurs champs, et le curseur va au titre.
+      if (etat.creationCal) rafraichirLaCapture?.();
 
       // Le fondu attend le contenu : l'animer sur le squelette puis le refuser
       // au vrai contenu ferait entrer une page vide et apparaître l'autre d'un
@@ -3632,9 +3647,20 @@ export default {
 
     // Glisser sur les jours du calendrier ouvre le formulaire, rempli de la
     // plage choisie.
+    // Les pastilles de la tuile « Poser au calendrier », comme dans l'espace
+    // Calendrier du hub : tout se joue dans le DOM, rien ne se redessine.
+    rafraichirLaCapture = brancherCapture(section);
+
+    // Ce qu'on pose par défaut. Le calendrier éditorial ne montre QUE des
+    // publications : y poser un événement par défaut serait absurde, la page
+    // ne saurait même pas l'afficher. Ailleurs, c'est le filtre qui décide —
+    // une seule nature cochée dit déjà ce qu'on est en train de faire.
+    const natureCreable = () =>
+      etat.vue === 'editorial' ? 'publication' : natureParDefaut(etat.natures);
+
     poserLEntreeClavier = brancherClavier(section, (jour) => {
       etat.detailCal = null;
-      etat.creationCal = { debut: jour, fin: jour, nature: natureParDefaut(etat.natures) };
+      etat.creationCal = { debut: jour, fin: jour, nature: natureCreable() };
       rendre();
       section.querySelector('#cal-titre')?.focus();
     });
@@ -3642,7 +3668,7 @@ export default {
 
     brancherSelection(section, ({ debut, fin }) => {
       etat.detailCal = null;
-      etat.creationCal = { debut, fin, nature: natureParDefaut(etat.natures) };
+      etat.creationCal = { debut, fin, nature: natureCreable() };
       rendre();
       section.querySelector('#cal-titre')?.focus();
     });

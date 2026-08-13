@@ -1419,10 +1419,25 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
   color: var(--texte-discret);
 }
 
-.capture-popover input[type="date"],
-.capture-popover input[type="time"] {
+/* Tous les contrôles d'un panneau tiennent la largeur : la tuile de création du
+   calendrier y met des sélecteurs et des zones de texte, pas seulement des
+   dates. Le rembourrage latéral aligne les champs sur les lignes de choix
+   au-dessus d'eux. */
+.capture-popover input,
+.capture-popover select,
+.capture-popover textarea {
   width: 100%;
   min-width: 0;
+}
+
+.capture-popover > input,
+.capture-popover > select,
+.capture-popover > textarea,
+.capture-popover > .champ-capture,
+.capture-popover > .cal-note-nature {
+  width: calc(100% - 2 * var(--espace-8));
+  margin-left: var(--espace-8);
+  margin-right: var(--espace-8);
 }
 
 .capture-popover .lien-discret { margin: var(--espace-12) 0 0 var(--espace-8); }
@@ -2571,38 +2586,15 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   cursor: pointer;
 }
 
+/* La date, dans la fiche de détail d'un élément. (Les pastilles de la tuile de
+   création s'en passent : elles portent leur valeur elles-mêmes.) */
 .cal-fenetre-quand {
   margin: 0 0 var(--espace-12);
   font-size: 0.9375rem;
   color: var(--accent);
 }
 
-.cal-natures {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--espace-4);
-  margin-bottom: var(--espace-8);
-}
-
-.cal-natures button {
-  min-height: 2.25rem;
-  padding: 0 var(--espace-12);
-  font-size: 0.8125rem;
-  font-family: inherit;
-  color: var(--texte-discret);
-  background: var(--fond);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-pastille);
-  cursor: pointer;
-}
-
-.cal-natures button.actif {
-  color: var(--fond-carte);
-  background: var(--accent);
-  border-color: var(--accent);
-}
-
-.cal-note-nature { margin: 0 0 var(--espace-8); font-size: 0.8125rem; }
+.cal-note-nature { margin: var(--espace-8) 0 0; font-size: 0.8125rem; }
 
 .cal-detail-titre {
   margin: var(--espace-8) 0 var(--espace-4);
