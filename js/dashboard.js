@@ -26,6 +26,7 @@ import {
 } from './calendrier-commun.js';
 import { construireLignesTaches, trierTaches } from './taches.js';
 import { lireCache, ecrireCache } from './cache-session.js';
+import { marquerLesEntrantes } from './mouvements.js';
 
 // Les projets offerts à la création. Les mêmes que dans l'espace Calendrier :
 // 'perso' n'accepte qu'un événement, `fenetreCreation` s'en charge.
@@ -417,11 +418,19 @@ export default {
       );
     }
 
+    // Ce qui a déjà été vu à l'écran : une ligne absente de ces mémoires vient
+    // d'arriver, et elle seule fait son entrée en fondu.
+    const victoiresVues = new Set();
+    const tachesVues = new Set();
+
     function rendreVictoires() {
       if (!pret('victoires')) return;
-      cible('bloc-victoires').innerHTML = construireVictoires(
-        etat.victoires.slice(0, MAX_VICTOIRES),
-      );
+      const bloc = cible('bloc-victoires');
+      bloc.innerHTML = construireVictoires(etat.victoires.slice(0, MAX_VICTOIRES));
+      marquerLesEntrantes(bloc, victoiresVues, {
+        selecteur: '.liste-victoires > li',
+        cle: (ligne) => ligne.querySelector('[data-victoire]')?.dataset.victoire,
+      });
     }
 
     // Les intentions perso n'ont ni mesure ni date : elles n'ont donc pas leur
@@ -452,7 +461,12 @@ export default {
 
     function rendreTaches() {
       if (!pret('taches')) return;
-      cible('bloc-taches').innerHTML = construireTaches(tachesDuJour(), etat.annulation);
+      const bloc = cible('bloc-taches');
+      bloc.innerHTML = construireTaches(tachesDuJour(), etat.annulation);
+      marquerLesEntrantes(bloc, tachesVues, {
+        selecteur: '.tache-ligne',
+        cle: (ligne) => ligne.querySelector('[data-cocher]')?.dataset.cocher,
+      });
     }
 
     // La semaine montre TOUT ce qui a une date, comme l'espace Calendrier :
@@ -565,25 +579,36 @@ export default {
       evenement.preventDefault();
 
       const champs = Object.fromEntries(new FormData(formulaire));
-      const erreur = formulaire.querySelector('[data-erreur]');
-      const bouton = formulaire.querySelector('button[type="submit"]');
-      erreur.hidden = true;
-      bouton.disabled = true;
+      formulaire.querySelector('[data-erreur]').hidden = true;
+
+      // La tuile se referme tout de suite, et ce qu'on vient de poser s'installe
+      // dans l'état sans rien redemander au serveur. Avant, chaque ligne notée
+      // depuis l'accueil relançait les HUIT requêtes de la page — alors qu'on
+      // connaît déjà la réponse : c'est ce qu'on vient d'écrire.
+      etat.creation = null;
+      rendreCreation();
 
       try {
-        await poserAuCalendrier(champs);
-        etat.creation = null;
-        rendreCreation();
-        // Ce qu'on vient de poser doit se voir : la semaine et les tâches du
-        // jour se relisent, sinon on écrit dans le vide.
-        await charger();
+        rangerLaCreation(champs.nature, await poserAuCalendrier(champs));
+        rendreTaches();
+        rendreObjectifs();
+        rendreSemaine();
       } catch (souci) {
         console.error('Enregistrement impossible', souci);
-        erreur.textContent = souci.message ?? "Ça n'a pas pu être enregistré.";
-        erreur.hidden = false;
-        bouton.disabled = false;
+        signalerEcriture();
       }
     });
+
+    // Où va ce qui vient d'être posé. La tuile pose les quatre natures ; chacune
+    // rejoint la liste dont elle vient, et les blocs se redessinent à partir de
+    // là — la semaine sait déjà assembler tout ça.
+    function rangerLaCreation(nature, ligne) {
+      if (!ligne) return;
+      if (nature === 'tache') etat.tachesDatees = [...etat.tachesDatees, ligne];
+      else if (nature === 'publication') etat.publications = [...etat.publications, ligne];
+      else if (nature === 'objectif') etat.objectifs = [...etat.objectifs, ligne];
+      else etat.evenements = [...etat.evenements, ligne];
+    }
 
     section.addEventListener('click', async (evenement) => {
       if (evenement.target.closest('[data-ouvrir-creation]')) {
@@ -611,21 +636,25 @@ export default {
         return;
       }
 
+      // La question du matin doit se répondre en un clic et se refermer aussi
+      // vite : le « Noté, merci » ne passe donc plus par le réseau non plus.
       const bouton = evenement.target.closest('.bouton-humeur');
       if (bouton) {
         const niveau = Number(bouton.dataset.niveau);
-        bouton.classList.add('en-cours');
+        const avant = etat.humeur;
+        etat.humeur = { date: aujourdhui, niveau, note: avant?.note ?? null };
+        etat.humeurOuverte = false;
+        rendreHumeur();
+
         try {
-          etat.humeur = await api.enregistrerHumeur(
-            aujourdhui,
-            niveau,
-            etat.humeur?.note ?? null,
-          );
-          etat.humeurOuverte = false;
-          rendreHumeur();
+          etat.humeur = await api.enregistrerHumeur(aujourdhui, niveau, avant?.note ?? null);
         } catch (erreur) {
           console.error("Enregistrement de l'humeur impossible", erreur);
-          bouton.classList.remove('en-cours');
+          etat.humeur = avant;
+          // La question revient telle quelle : mieux vaut la reposer que
+          // laisser croire qu'elle est enregistrée.
+          rendreHumeur();
+          signalerEcriture();
         }
         return;
       }
@@ -729,14 +758,28 @@ export default {
         // Une victoire encore provisoire n'a pas d'identifiant serveur : sa
         // croix attend la confirmation — une seconde au plus.
         if (retirer.dataset.victoire.startsWith('provisoire-')) return;
-        retirer.disabled = true;
+
+        const id = retirer.dataset.victoire;
+        const rang = etat.victoires.findIndex((v) => v.id === id);
+        if (rang === -1) return;
+        const victoire = etat.victoires[rang];
+
+        etat.victoires = etat.victoires.filter((v) => v.id !== id);
+        rendreVictoires();
+
         try {
-          await api.supprimerVictoire(retirer.dataset.victoire);
-          etat.victoires = etat.victoires.filter((v) => v.id !== retirer.dataset.victoire);
-          rendreVictoires();
+          await api.supprimerVictoire(id);
         } catch (erreur) {
           console.error('Suppression de la victoire impossible', erreur);
-          retirer.disabled = false;
+          // Remise à SA place dans le fil, qui est chronologique : la faire
+          // réapparaître en tête donnerait une victoire du jour.
+          etat.victoires = [
+            ...etat.victoires.slice(0, rang),
+            victoire,
+            ...etat.victoires.slice(rang),
+          ];
+          rendreVictoires();
+          signalerEcriture();
         }
       }
     });

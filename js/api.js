@@ -1,7 +1,14 @@
 // Tous les appels Supabase du hub passent par ce fichier.
 // Rien d'autre dans le site ne doit importer supabase-js directement.
 
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+// supabase-js vit dans le dépôt (`js/vendor/`, rapatrié par
+// `tools/telecharger-supabase.py`), comme les polices : le hub n'appelle aucun
+// CDN. Deux raisons, pas une seule — un fichier distant est le seul morceau que
+// le service worker ne peut pas garantir hors ligne, et le « @2 » d'avant
+// suivait la dernière version publiée, donc pouvait casser l'application un
+// matin sans que personne n'ait rien poussé. La version est écrite dans
+// `js/vendor/VERSION` ; on en change en relançant l'outil.
+import { createClient } from './vendor/supabase-js.js';
 import { versDateISO } from './format.js';
 
 // URL du projet et clé publique (anon) : ces deux valeurs sont publiques par

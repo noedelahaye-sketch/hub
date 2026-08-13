@@ -295,8 +295,11 @@ retard ». Le hub dit l'inverse : il montre ce qui est accompli. Reprendre sa
 palette telle quelle importerait `--flag` et l'envie de s'en servir. Le hub n'a
 pas de couleur d'alerte et n'en aura pas.
 
-Ne pas ajouter de dépendance externe : les polices sont dans `fonts/`, jamais
-appelées à un CDN.
+Ne pas ajouter de dépendance externe : les polices sont dans `fonts/` et
+supabase-js dans `js/vendor/` (figé, rapatrié par
+`tools/telecharger-supabase.py`), jamais appelés à un CDN. Depuis que la
+coquille tient en cache, un fichier distant est aussi le seul morceau que
+l'ouverture hors ligne ne peut pas garantir.
 
 ## Conventions de développement
 

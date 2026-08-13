@@ -16,13 +16,13 @@
 // Sans ça, chaque session de travail verrait une fois ses modifications
 // ignorées — le piège classique du service worker en développement.
 
-const CACHE = 'hub-coquille-v1';
+const CACHE = 'hub-coquille-v2';
 
 const EN_LOCAL = ['localhost', '127.0.0.1'].includes(self.location.hostname);
 
-// De quoi ouvrir les trois applications sans réseau. Le module Supabase en fait
-// partie : sans lui, app.js ne démarre pas. (Ses sous-modules jsdelivr entrent
-// au cache au premier passage en ligne, par la revalidation au vol.)
+// De quoi ouvrir les trois applications sans réseau. supabase-js en fait partie
+// — sans lui, app.js ne démarre pas — et il vit maintenant dans le dépôt, donc
+// il est garanti comme le reste : plus rien ici ne dépend d'un CDN.
 const COQUILLE = [
   './',
   'index.html',
@@ -51,6 +51,12 @@ const COQUILLE = [
   'js/revisions.js',
   'js/taches.js',
   'js/yuno.js',
+  'js/vendor/supabase-js.js',
+  'js/vendor/node-buffer.js',
+  'js/vendor/node-process.js',
+  'js/vendor/node-events.js',
+  'js/vendor/node-tty.js',
+  'js/vendor/node-async-hooks.js',
   'fonts/ClashDisplay-600.woff2',
   'fonts/ClashDisplay-700.woff2',
   'fonts/InstrumentSans-Variable.woff2',
@@ -72,7 +78,6 @@ const COQUILLE = [
   'img/yuno-signature.png',
   'img/yuno-logo.jpg',
   'img/fch-logo.png',
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm',
 ];
 
 self.addEventListener('install', (evenement) => {
@@ -103,12 +108,12 @@ self.addEventListener('fetch', (evenement) => {
   const requete = evenement.request;
   if (requete.method !== 'GET') return;
 
-  const url = new URL(requete.url);
   // Les données restent au réseau, toujours : Supabase (tables, auth, photos
   // signées) et l'API GitHub. En les laissant passer sans `respondWith`, le
-  // navigateur fait exactement ce qu'il faisait avant ce fichier.
-  const notre = url.origin === self.location.origin;
-  if (!notre && url.hostname !== 'cdn.jsdelivr.net') return;
+  // navigateur fait exactement ce qu'il faisait avant ce fichier. Le hub
+  // n'ayant plus aucune dépendance externe, la règle tient en une ligne : ce
+  // qui n'est pas de chez nous ne nous regarde pas.
+  if (new URL(requete.url).origin !== self.location.origin) return;
 
   evenement.respondWith(
     EN_LOCAL ? reseauPuisCache(requete) : cachePuisReseau(evenement, requete),

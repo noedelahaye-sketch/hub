@@ -17,6 +17,18 @@
   <link rel="manifest" href="manifest-fch.json">
   <meta name="theme-color" content="#113693">
 
+
+  <!-- Les deux polices du PREMIER écran, demandées avant que la feuille de
+       style ne les réclame : sans ça, le navigateur ne les découvre qu'après
+       avoir lu le CSS, et le texte s'affiche un instant dans la police du
+       système avant de sauter. `crossorigin` est obligatoire même pour nos
+       propres fichiers — une police est toujours demandée en mode anonyme, et
+       sans lui le préchargement est jeté puis refait. -->
+  <!-- Le corps de texte du site FCH -->
+  <link rel="preload" href="fonts/Gilroy-Regular.woff2" as="font" type="font/woff2" crossorigin>
+  <!-- Les titres -->
+  <link rel="preload" href="fonts/Gilroy-Bold.woff2" as="font" type="font/woff2" crossorigin>
+
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/yuno.css">
   <link rel="stylesheet" href="css/fch.css">

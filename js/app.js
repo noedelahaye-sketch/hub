@@ -215,6 +215,31 @@ function afficherEspace() {
   for (const section of document.querySelectorAll('.espace')) {
     section.hidden = section.dataset.espace !== nom;
   }
+
+  // Un fondu très court à l'arrivée sur un espace. Sans lui, changer d'onglet
+  // est un `hidden` qui bascule : l'écran CLAQUE d'un état à l'autre, et c'est
+  // ce que l'œil lit comme « pas fluide ». 130 ms et 4 px suffisent à le lire
+  // comme un mouvement plutôt que comme un remplacement. Le site Yuno a le sien
+  // depuis toujours (`vue-entre`), le hub n'avait rien.
+  //
+  // Seulement au CHANGEMENT D'ESPACE : `afficherEspace` est aussi appelé quand
+  // on navigue à l'intérieur d'un espace, et faire respirer la page entière à
+  // chaque écran ouvert serait pire que pas d'animation du tout.
+  //
+  // La classe est retirée à la fin : `both` la ferait durer, et un élément dont
+  // la transformation est animée devient le repère de ses descendants en
+  // `position: fixed` — c'est le bug qui décalait toutes les fenêtres de Yuno.
+  if (!memeEspace) {
+    const entrant = document.getElementById(`espace-${nom}`);
+    entrant.classList.remove('espace-entre');
+    void entrant.offsetWidth; // redémarre l'animation si on revient très vite
+    entrant.classList.add('espace-entre');
+    entrant.addEventListener(
+      'animationend',
+      () => entrant.classList.remove('espace-entre'),
+      { once: true },
+    );
+  }
   for (const lien of document.querySelectorAll('[data-nav]')) {
     const actif = lien.dataset.nav === nom;
     lien.classList.toggle('actif', actif);

@@ -1032,10 +1032,108 @@ réseau, et les trois applications se lancent hors ligne.
 **Vérifié en pilotant un vrai Chrome** (CDP par le WebSocket natif de Node, sans
 dépendance — les outils du navigateur intégré ne savent pas enregistrer un
 service worker) : profil neuf, `index.html` ouvert une fois → enregistré,
-**activé, 49 entrées en cache** dont le module Supabase. Puis réseau coupé :
+**activé, 54 entrées en cache** (49 avant que supabase-js entre au dépôt), dont
+les six fichiers de `js/vendor/` et **aucun CDN**. Puis réseau coupé :
 `index.html` s'ouvre entier — titre, écran de connexion, les 7 onglets, et
 Instrument Sans (donc les polices viennent bien du cache) —, `yuno.html` et
 `hermitage.html` aussi, chacune avec son titre et son `data-entree`.
+
+Le script de pilotage vit dans le bac à sable de la session, pas dans le dépôt.
+Il tient en cinquante lignes : lancer Chrome avec `--remote-debugging-port`,
+ouvrir son WebSocket, `Page.navigate`, `Runtime.evaluate`. À refaire au besoin —
+c'est le seul moyen de vérifier un service worker ici.
+
+### 3. Le reste des écritures, et ce qui les entoure
+
+Suite de la même analyse, dans la foulée. Cinq chantiers, du plus sensible au
+plus discret.
+
+**Toutes les écritures fréquentes sont passées optimistes.** Le motif est celui
+du cochage (plus haut) : l'écran change, l'écriture part derrière, l'échec
+remet l'état d'avant et le dit.
+
+| Geste | Ce qui change à l'écran | Mesuré |
+|---|---|---|
+| Poser une tâche (tuile de l'accueil) | la tuile se referme | **65 ms** |
+| Poser une tâche (espace Tâches) | la ligne apparaît, le champ se vide, le curseur reste | **55 ms** |
+| Corriger une tâche | la ligne change, la tuile se referme | immédiat |
+| Supprimer une tâche | la ligne part | **1 ms** |
+| Répondre à l'humeur | « Noté, merci » | **1 ms** |
+| Retirer une victoire | la tuile part | immédiat |
+
+Réseau ralenti d'1,5 s à chaque mesure : c'est bien l'écran qui part devant.
+
+**Deux mécaniques nouvelles, et leurs raisons :**
+
+- **La ligne d'une tâche créée existe avant d'exister en base.** Elle porte un
+  identifiant provisoire, et `trouver()` — la fonction par laquelle passent
+  cocher, ouvrir et supprimer — **ignore les tâches en vol**. Sans ça, on
+  pourrait cocher une tâche que le serveur ne connaît pas encore, et l'écriture
+  partirait sur un identifiant inventé. L'attente dure un aller-retour.
+- **Ce qui revient après un échec revient à SA place**, pas en tête : une tâche
+  supprimée par erreur reprend son rang, une victoire son ordre chronologique.
+  Une ligne qui réapparaît ailleurs ferait douter de ce qui a été défait.
+
+**Une création depuis l'accueil coûte une requête, contre neuf.** Elle en
+lançait huit de relecture après l'écriture — alors qu'on connaît la réponse,
+c'est ce qu'on vient d'écrire. `rangerLaCreation` range la ligne rendue par
+`poserAuCalendrier` dans la liste dont elle vient, et les blocs se redessinent
+de là. **Mesuré : 1 requête**, la tâche est dans « Aujourd'hui » et dans la
+semaine.
+
+**Le calendrier a enfin son squelette et son cache.** C'est le deuxième écran le
+plus visité et il attendait ses six requêtes avant d'afficher quoi que ce soit,
+alors que sa moitié fixe — titre, barre de période, filtres, les 42 cases — ne
+dépend d'aucune donnée. Le découpage qui rend le cache possible : `etat.sources`
+garde les six tables **telles qu'elles arrivent**, `etat.elements` la grille
+qu'on en tire. Seules les premières se rangent en cache — les secondes portent
+des objets `Date` et des barres calculées, que `JSON.stringify` aplatirait.
+19 Ko, et l'échec s'y dit désormais sur une ligne sous le titre, la grille
+restant affichée.
+
+**Le hub a son fondu de navigation.** Changer d'onglet était un `hidden` qui
+bascule : l'écran claquait d'un état à l'autre, et c'est ce que l'œil lit comme
+« pas fluide ». 130 ms, 4 px, seulement au changement d'ESPACE — `afficherEspace`
+est aussi appelé quand on navigue à l'intérieur d'un espace, et faire respirer
+la page entière à chaque écran ouvert serait pire que rien. La classe est
+retirée à la fin de l'animation, jamais laissée en `both` : un élément dont la
+transformation est animée devient le repère de ses descendants en
+`position: fixed`, et c'est le bug qui décalait toutes les fenêtres de Yuno.
+
+**Et les lignes qui arrivent respirent** (`js/mouvements.js`) : une tâche créée,
+une victoire qui monte. Les listes se redessinant en entier, rien ne distingue
+la ligne neuve des autres — d'où une mémoire des identifiants déjà vus, et
+l'animation sur la seule différence. **Seule l'arrivée est animée, pas le
+départ** : un élément retiré n'existe plus au moment où il faudrait l'animer, et
+le garder pour le voir partir demanderait de tenir les nœuds un à un.
+
+**supabase-js est rentré dans le dépôt** (`js/vendor/`, 280 Ko, six fichiers,
+rapatriés par `tools/telecharger-supabase.py`). Deux raisons, pas une seule :
+c'était le seul morceau que le service worker ne pouvait pas garantir hors
+ligne, et le « @2 » d'avant suivait la dernière version publiée — donc pouvait
+casser l'application un matin sans que personne n'ait rien poussé. La version
+est **figée à 2.112.3**, écrite dans `js/vendor/VERSION`. Le hub n'appelle plus
+aucun CDN, comme pour les polices.
+
+**Un piège, tout de suite rencontré** : les fichiers rapatriés étaient en
+`.mjs`, et `tools/static-server.js` ne connaissait pas l'extension — il répondait
+`application/octet-stream`, qu'un navigateur **refuse** de charger comme module.
+Ils sont donc en `.js`, où aucun serveur ne se trompe ; et le serveur local a
+appris `.mjs` au passage, pour le prochain.
+
+**Les deux polices du premier écran sont préchargées** dans les trois entrées —
+Instrument Sans et Clash Display pour le hub, Gilroy pour les sites. Sans ça, le
+navigateur ne les découvre qu'après avoir lu le CSS, et le texte s'affiche un
+instant dans la police du système. `crossorigin` est obligatoire même pour nos
+propres fichiers : une police est toujours demandée en mode anonyme, et sans lui
+le préchargement est jeté puis refait.
+
+**Vérifié** : les six fichiers `vendor` chargés et **aucune requête hors de
+`localhost` et de Supabase** ; le fondu posé puis retiré sur chaque changement
+d'espace, et jamais à l'intérieur d'un espace ; les neuf espaces parcourus sans
+un écran en échec ni un pixel de débordement à 375 px ; le cycle complet d'une
+tâche d'essai (créée, identifiant provisoire remplacé, supprimée) avec la base
+relue en SQL avant et après — **4 tâches, 3 victoires**, son état exact.
 
 ---
 
@@ -1179,21 +1277,19 @@ Dans cet ordre, du plus rentable au moins pressé.
    ce que « Aujourd'hui » montre (les tâches datées du jour ou avant, jamais les
    sans-date), et le tri qui fait passer une tâche datée avant une tâche sans
    date à priorité égale.
-2. **Le reste de l'analyse de fluidité** (§ 2 ter ter), dans cet ordre : rendre
-   optimistes les autres écritures — poser une tâche depuis la tuile, l'humeur,
-   retirer une victoire, supprimer ; **insérer localement** ce qu'on vient de
-   créer au lieu de relancer les huit requêtes du dashboard ; un **fondu de
-   navigation** dans le hub (~120 ms, le site Yuno en a un, le hub n'a rien) et
-   une transition sur l'apparition et le départ d'une ligne de tâche. Restent
-   deux détails : **auto-héberger supabase-js** (aujourd'hui appelé à jsdelivr,
-   entorse à la règle « aucune dépendance externe » qui vaut pour les polices)
-   et **précharger les deux polices** du premier écran.
-3. **Porter le démarrage aux espaces qui restent.** Yuno et le dashboard l'ont
-   (§ 2 ter et § 2 ter bis) ; `perso.js`, `espace-projet.js`, `fch.js`,
-   `photo.js`, `hermitage.js` et `calendrier.js` ne l'ont pas. Aucun n'est
-   pressé — ce ne sont pas eux qu'on ouvre le matin. `calendrier.js` serait le
-   suivant : c'est le deuxième écran le plus visité, et il n'a même pas de
-   squelette.
+2. **Ce que l'analyse de fluidité laisse ouvert** (§ 2 ter ter est fait) : les
+   écritures des DEUX SITES et des espaces projet attendent encore le réseau —
+   loguer un moment, changer le statut d'un contact, cocher un jalon, livrer une
+   commande. Le motif est écrit trois fois maintenant, il se recopie. Et deux
+   choses qui n'ont pas été faites faute de mécanique simple : **animer le
+   DÉPART** d'une ligne (il faudrait tenir les nœuds un à un plutôt que
+   redessiner), et **l'écriture optimiste des gestes du calendrier**
+   (déplacement, suppression), qui relisent encore leurs six tables.
+3. **Porter le démarrage aux espaces qui restent.** Yuno, le dashboard et le
+   calendrier l'ont (§ 2 ter, 2 ter bis, 2 ter ter) ; `perso.js`,
+   `espace-projet.js`, `fch.js`, `photo.js` et `hermitage.js` ne l'ont pas.
+   Aucun n'est pressé — ce ne sont pas eux qu'on ouvre le matin, et le service
+   worker leur a déjà retiré l'attente du code.
 4. **Vérifier la tuile sur le vrai iPhone.** Tout a été mesuré avec un clavier
    *simulé* (`--bas-clavier` posée à la main) : la montée de 336 px, les 0 px de
    déplacement entre pastilles, le fond figé. Le comportement réel de Safari
@@ -1262,6 +1358,12 @@ refusé sur une barre récurrente. Y toucher demandera une table d'exceptions.
 « harmoniser » — l'espacement reste en px, et les champs de saisie sont tenus à
 16 px, faute de quoi Safari sur iPhone zoome à chaque fois qu'on entre dans un
 champ.
+
+**Aucune dépendance n'est appelée à distance.** Les polices ET supabase-js
+vivent dans le dépôt. Ce n'est plus seulement une question de sobriété : depuis
+le service worker, un fichier distant est le seul morceau que l'ouverture hors
+ligne ne peut pas garantir. Et une version qui « suit la dernière publiée » est
+une panne qui attend son jour. Rapatrier, figer, noter le numéro.
 
 **Les polices commerciales sont dans le dépôt public**, en connaissance de
 cause : Canela Deck et Gilroy (versions d'essai), décision explicite de Noé du
@@ -1343,6 +1445,8 @@ restaurée par le routeur. Ne pas « simplifier » ces id.
 | `js/taches.js` | L'espace Tâches : la liste, la tuile de capture, la ligne de tâche empruntée par le dashboard |
 | `js/dashboard.js` | L'accueil : humeur, victoires, objectifs, les tâches du jour, la semaine du calendrier |
 | `js/cache-session.js` | Le dernier état d'un espace, gardé le temps de l'onglet (§ 2 ter) |
+| `js/mouvements.js` | Ce qui vient d'apparaître dans une liste, et rien d'autre (§ 2 ter ter) |
+| `js/vendor/` | supabase-js figé, rapatrié par `tools/telecharger-supabase.py`. Aucun CDN |
 | `sw.js` | La coquille en cache — HTML, CSS, JS, polices. **Jamais les données** (§ 2 ter ter) |
 | `js/api.js` | **Tous** les appels Supabase, une fonction par usage |
 | `js/espace-projet.js` | La fabrique d'espace projet (formation) + gabarits partagés |

@@ -2670,6 +2670,35 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   .fenetre { padding: var(--espace-16); }
 }
 
+/* --- Les mouvements ---------------------------------------------------------
+   Trois animations, et une seule idée derrière : l'œil doit voir un MOUVEMENT
+   là où il voyait un remplacement. Elles sont toutes courtes — au-delà de
+   200 ms on attend l'animation au lieu de la sentir — et toutes annulées par
+   `prefers-reduced-motion`, en bas de ce fichier. */
+
+/* L'arrivée sur un espace. Le pendant, dans le hub, du `vue-entre` de Yuno. */
+@keyframes espace-entree {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.espace-entre { animation: espace-entree 130ms ease-out; }
+
+/* Une ligne qui vient d'apparaître dans une liste : une tâche créée, une
+   victoire qui monte, une tâche décochée qui revient. Sans ça, elle SURGIT au
+   milieu de la liste, à l'identique de ses voisines, et rien ne dit laquelle
+   est neuve.
+   Seule l'ARRIVÉE est animée, pas le départ : les listes du hub se redessinent
+   par `innerHTML`, et un élément retiré n'existe plus au moment où il faudrait
+   l'animer. Le garder pour le voir partir demanderait de tenir les nœuds un à
+   un — beaucoup de machinerie pour la moitié la moins utile du geste. */
+@keyframes ligne-entree {
+  from { opacity: 0; transform: translateY(-2px); }
+  to { opacity: 1; transform: none; }
+}
+
+.ligne-entre { animation: ligne-entree 160ms ease-out; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

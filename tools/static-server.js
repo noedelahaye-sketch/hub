@@ -12,6 +12,11 @@ const TYPES = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
+  // Un type inconnu répond « application/octet-stream », et un navigateur
+  // REFUSE de charger ça comme module. Le dépôt n'a plus de `.mjs` — les
+  // fichiers de `js/vendor/` sont en `.js` pour cette raison même — mais la
+  // ligne reste : le prochain fichier en `.mjs` ne perdra pas une demi-heure.
+  ".mjs": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".png": "image/png",
   ".woff2": "font/woff2",

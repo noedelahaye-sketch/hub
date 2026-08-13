@@ -18,6 +18,7 @@
 
 import * as api from './api.js';
 import { depuisDateISO, echeanceLisible, versDateISO, ajouterJours, echapper, NOMS_PROJETS } from './format.js';
+import { marquerLesEntrantes } from './mouvements.js';
 
 const PROJETS = {
   formation: 'Formation',
@@ -507,6 +508,10 @@ export default {
 
     section.innerHTML = squelette(etat);
 
+    // Ce qui a déjà été vu à l'écran : une ligne absente de cette mémoire vient
+    // d'arriver, et elle seule fait son entrée en fondu.
+    const lignesVues = new Set();
+
     const rendreListe = () => {
       const cible = section.querySelector('[data-bloc="liste"]');
       if (cible) {
@@ -514,6 +519,10 @@ export default {
           filtrerParProjet(etat.taches, etat.projet),
           etat.message,
         );
+        marquerLesEntrantes(cible, lignesVues, {
+          selecteur: '.tache-ligne',
+          cle: (ligne) => ligne.querySelector('[data-cocher]')?.dataset.cocher,
+        });
       }
     };
 
@@ -661,7 +670,11 @@ export default {
       return;
     }
 
-    const trouver = (id) => etat.taches.find((tache) => tache.id === id);
+    // `trouver` ignore les tâches encore en vol : leur identifiant est
+    // provisoire, le serveur ne les connaît pas, et toute écriture qui les
+    // viserait échouerait. Cocher, ouvrir ou supprimer l'une d'elles ne fait
+    // donc rien — le temps d'un aller-retour, jamais plus.
+    const trouver = (id) => etat.taches.find((tache) => tache.id === id && !tache.enVol);
 
     // --- Le clavier du téléphone ---
     //
@@ -733,72 +746,89 @@ export default {
       const titre = formulaire.querySelector('#capture-titre').value.trim();
       if (!titre) return;
 
-      const erreur = formulaire.querySelector('[data-erreur]');
       const bouton = formulaire.querySelector('button[type="submit"]');
-      erreur.hidden = true;
+      formulaire.querySelector('[data-erreur]').hidden = true;
+
+      // L'ÉCRAN D'ABORD, LE RÉSEAU ENSUITE. La tuile se vide et la ligne
+      // apparaît tout de suite ; l'écriture part derrière. C'est le geste qu'on
+      // enchaîne — on note rarement une seule tâche —, donc celui où attendre
+      // se paie le plus cher.
+      const champs = {
+        projet: etat.capture.projet,
+        titre,
+        echeance: etat.capture.echeance,
+        heure: etat.capture.heure,
+        priorite: etat.capture.priorite,
+      };
+
+      // Corriger une tâche existante : la tuile se referme, le travail est
+      // fini. On n'enchaîne pas des corrections comme on enchaîne des notes.
+      if (etat.capture.id) {
+        const tache = trouver(etat.capture.id);
+        const avant = { ...tache };
+        Object.assign(tache, champs);
+        etat.capture = captureVierge(etat.projet);
+        etat.message = null;
+        rendreCapture();
+        oublierLeClavier();
+        rendreListe();
+
+        try {
+          Object.assign(tache, await api.modifierTache(avant.id, champs));
+        } catch (souci) {
+          console.error('Tâche non modifiée', souci);
+          Object.assign(tache, avant);
+          etat.message = "Ça n'a pas pu être enregistré — la tâche est revenue.";
+          rendreListe();
+        }
+        return;
+      }
+
+      // La ligne existe à l'écran avant d'exister en base. Son identifiant est
+      // provisoire — le vrai arrive avec la réponse — et tout ce qui la vise
+      // (cocher, ouvrir, supprimer) le refuse tant qu'elle le porte : agir sur
+      // une tâche que le serveur ne connaît pas encore n'a pas de sens.
+      const provisoire = {
+        ...champs,
+        id: `provisoire-${Date.now()}`,
+        statut: STATUT_A_LA_CREATION,
+        created_at: new Date().toISOString(),
+        enVol: true,
+      };
+      etat.taches = [provisoire, ...etat.taches];
+      etat.message = null;
+
+      // La capture reste ouverte, vidée, avec le projet et la priorité qu'on
+      // vient de choisir. Elle se vide EN PLACE, sans redessin — sinon le champ
+      // serait détruit et le clavier se refermerait entre deux notes, ce qui
+      // est tout ce qu'on cherche à éviter.
+      const champ = formulaire.querySelector('#capture-titre');
+      champ.value = '';
+      etat.capture = { ...etat.capture, titre: '', echeance: null, heure: null };
+
+      const champDate = section.querySelector('[data-champ-date]');
+      if (champDate) champDate.value = '';
+      const champHeure = section.querySelector('[data-champ-heure]');
+      if (champHeure) champHeure.value = '';
+
+      fermerLesPanneaux();
+      majPastilles();
       bouton.disabled = true;
+      champ.focus();
+      rendreListe();
 
       try {
-        // Corriger une tâche existante : la tuile se referme, le travail est
-        // fini. On n'enchaîne pas des corrections comme on enchaîne des notes.
-        if (etat.capture.id) {
-          const tache = trouver(etat.capture.id);
-          const modifiee = await api.modifierTache(etat.capture.id, {
-            projet: etat.capture.projet,
-            titre,
-            echeance: etat.capture.echeance,
-            heure: etat.capture.heure,
-            priorite: etat.capture.priorite,
-          });
-          Object.assign(tache, modifiee);
-          etat.capture = captureVierge(etat.projet);
-          etat.message = null;
-          rendreCapture();
-          oublierLeClavier();
-          rendreListe();
-          return;
-        }
-
-        const tache = await api.creerTache({
-          projet: etat.capture.projet,
-          titre,
-          statut: STATUT_A_LA_CREATION,
-          echeance: etat.capture.echeance,
-          heure: etat.capture.heure,
-          priorite: etat.capture.priorite,
-        });
-        etat.taches = [tache, ...etat.taches];
-        etat.message = null;
-        // La capture reste ouverte, vidée, avec le projet et la priorité qu'on
-        // vient de choisir : on en note rarement une seule. Et elle se vide EN
-        // PLACE, sans redessin — sinon le champ serait détruit et le clavier se
-        // refermerait entre deux notes, ce qui est tout ce qu'on cherche à
-        // éviter.
-        const champ = formulaire.querySelector('#capture-titre');
-        champ.value = '';
-        etat.capture = { ...etat.capture, titre: '', echeance: null, heure: null };
-
-        const champDate = section.querySelector('[data-champ-date]');
-        if (champDate) champDate.value = '';
-        const champHeure = section.querySelector('[data-champ-heure]');
-        if (champHeure) champHeure.value = '';
-
-        fermerLesPanneaux();
-        majPastilles();
-        formulaire.querySelector('.capture-envoyer').disabled = true;
-        champ.focus();
-        rendreListe();
+        const creee = await api.creerTache({ ...champs, statut: STATUT_A_LA_CREATION });
+        // On remplace en place plutôt que de réordonner : la ligne ne doit pas
+        // bouger sous les yeux au moment où le serveur répond.
+        const index = etat.taches.findIndex((t) => t.id === provisoire.id);
+        if (index !== -1) etat.taches[index] = creee;
       } catch (souci) {
         console.error('Tâche non créée', souci);
-        erreur.textContent = souci.message ?? "La tâche n'a pas pu être créée.";
-        erreur.hidden = false;
-      } finally {
-        // Rallumée seulement s'il reste de quoi envoyer : après une création
-        // réussie le champ est vide, la flèche doit rester éteinte comme à
-        // l'ouverture. (Un `disabled = false` sec la rallumait sur un champ
-        // vide, juste après l'avoir éteinte.)
-        bouton.disabled = !formulaire.querySelector('#capture-titre').value.trim();
+        etat.taches = etat.taches.filter((t) => t.id !== provisoire.id);
+        etat.message = `« ${titre} » n'a pas pu être enregistrée.`;
       }
+      rendreListe();
     });
 
     // --- Réglages de ligne ---
@@ -1023,14 +1053,26 @@ export default {
       if (supprimer) {
         const tache = trouver(supprimer.dataset.supprimer);
         if (!tache || !confirm(`Supprimer « ${tache.titre} » ?`)) return;
-        supprimer.disabled = true;
+
+        // La ligne part tout de suite : la question a déjà été posée, attendre
+        // le serveur après un « oui » n'ajoute aucune sécurité.
+        const rang = etat.taches.indexOf(tache);
+        etat.taches = etat.taches.filter((candidate) => candidate.id !== tache.id);
+        rendreListe();
+
         try {
           await api.supprimerTache(tache.id);
-          etat.taches = etat.taches.filter((candidate) => candidate.id !== tache.id);
-          rendreListe();
         } catch (souci) {
           console.error('Suppression impossible', souci);
-          supprimer.disabled = false;
+          // Remise à SA place, pas en tête : une ligne qui reviendrait
+          // ailleurs ferait douter de ce qui a été supprimé.
+          etat.taches = [
+            ...etat.taches.slice(0, rang),
+            tache,
+            ...etat.taches.slice(rang),
+          ];
+          etat.message = `« ${tache.titre} » n'a pas pu être supprimée.`;
+          rendreListe();
         }
       }
     });

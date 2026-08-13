@@ -12,6 +12,7 @@
 // — un calendrier dit quand, pas comment.
 
 import * as api from './api.js';
+import { lireCache, ecrireCache } from './cache-session.js';
 import {
   assemblerCalendrier,
   construireCalendrier,
@@ -35,6 +36,19 @@ import {
   centrerActif,
 } from './calendrier-commun.js';
 
+const CLE_CACHE = 'calendrier';
+
+// Les six tables que la grille assemble. Une clé manquante au cache n'affiche
+// rien de faux : elle affiche moins, le temps que le serveur réponde.
+const SOURCES_VIDES = {
+  evenements: [],
+  taches: [],
+  objectifs: [],
+  publications: [],
+  commandes: [],
+  contacts: [],
+};
+
 const PROJETS = {
   photo: 'Yuno',
   fch: 'FC Hermitage',
@@ -45,7 +59,13 @@ const PROJETS = {
 export default {
   async monter(section) {
     const etat = {
+      // Le dernier état de l'onglet, s'il y en a un : la grille se dessine
+      // pleine dès le premier rendu, et les données fraîches la réécrivent une
+      // fraction de seconde plus tard. Papier peint, jamais source — les six
+      // requêtes partent quand même.
+      sources: { ...SOURCES_VIDES, ...(lireCache(CLE_CACHE) ?? {}) },
       elements: [],
+      echec: false,
       natures: toutesLesNatures(),
       vue: 'mois',
       ancre: new Date(),
@@ -64,6 +84,16 @@ export default {
       section.innerHTML = `
         <h1>Calendrier</h1>
         <p class="discret sous-titre">Tout ce qui a une date, tous projets confondus.</p>
+        ${
+          // L'échec se dit sur une ligne, sous le titre : la grille reste, et
+          // ce qui venait du cache reste affiché. Une page remplacée par un
+          // message perdrait les deux.
+          etat.echec
+            ? `<p class="vide">Les données n'ont pas pu être chargées.
+                 <button type="button" class="lien-discret"
+                   data-action="reessayer">Réessayer</button></p>`
+            : ''
+        }
         ${construireBarrePeriode(etat.vue, etat.ancre)}
         ${construireFiltres(etat.natures)}
         <div data-bloc="liste">
@@ -97,19 +127,13 @@ export default {
       if (etat.creation) rafraichirLaCapture?.();
     }
 
-    async function charger() {
-      const [evenements, taches, objectifs, publications, commandes, contacts] = await Promise.all([
-        // Tous les événements, pas seulement l'à-venir : une grille se promène
-        // dans le passé, et un événement posé sur aujourd'hui à minuit
-        // disparaissait au rechargement.
-        api.evenementsTous(),
-        api.tachesDatees(),
-        api.objectifsActifs(),
-        api.publicationsDatees(),
-        api.commandesToutes(),
-        api.contactsTous(),
-      ]);
-
+    // Les six tables telles qu'elles arrivent, gardées à part de la grille
+    // qu'on en tire. C'est ce découpage qui permet le cache : `etat.elements`
+    // porte des objets `Date` et des barres calculées, `etat.sources` non — et
+    // seul ce qui traverse `JSON.stringify` sans y perdre son sens se range en
+    // cache.
+    function assembler() {
+      const { evenements, taches, objectifs, publications, commandes, contacts } = etat.sources;
       etat.elements = assemblerCalendrier({
         evenements,
         taches,
@@ -124,27 +148,44 @@ export default {
       });
     }
 
+    async function charger() {
+      try {
+        const [evenements, taches, objectifs, publications, commandes, contacts] =
+          await Promise.all([
+            // Tous les événements, pas seulement l'à-venir : une grille se
+            // promène dans le passé, et un événement posé sur aujourd'hui à
+            // minuit disparaissait au rechargement.
+            api.evenementsTous(),
+            api.tachesDatees(),
+            api.objectifsActifs(),
+            api.publicationsDatees(),
+            api.commandesToutes(),
+            api.contactsTous(),
+          ]);
+
+        etat.sources = { evenements, taches, objectifs, publications, commandes, contacts };
+        etat.echec = false;
+        ecrireCache(CLE_CACHE, etat.sources);
+      } catch (erreur) {
+        console.error('Chargement du calendrier impossible', erreur);
+        etat.echec = true;
+      }
+      assembler();
+      rendre();
+    }
+
     // Revenir sur le calendrier le relit : ce qui a été posé ailleurs doit s'y
     // voir sans recharger la page.
-    this.rafraichir = async () => {
-      await charger();
-      rendre();
-    };
+    this.rafraichir = charger;
 
-    try {
-      await charger();
-      rendre();
-    } catch (erreur) {
-      console.error('Chargement du calendrier impossible', erreur);
-      section.innerHTML = `
-        <h1>Calendrier</h1>
-        <p class="vide">Les données n'ont pas pu être chargées.</p>
-        <button type="button" class="bouton-secondaire" data-action="reessayer">Réessayer</button>`;
-      section
-        .querySelector('[data-action="reessayer"]')
-        ?.addEventListener('click', () => this.monter(section));
-      return;
-    }
+    // Le chrome d'abord — et, cache en poche, la grille pleine avec lui. Le
+    // calendrier attendait ses six requêtes avant d'afficher quoi que ce soit,
+    // alors que sa moitié fixe (titre, barre de période, filtres, cases du
+    // mois) ne dépend d'aucune donnée. C'est le deuxième écran le plus visité
+    // du hub.
+    assembler();
+    rendre();
+    charger();
 
     const fermerFenetres = () => {
       etat.creation = null;
@@ -188,7 +229,6 @@ export default {
       try {
         await appliquerA(type, id, champsApresDeplacement(element, ecart));
         await charger();
-        rendre();
       } catch (souci) {
         console.error('Déplacement impossible', souci);
       }
@@ -204,6 +244,13 @@ export default {
     section.addEventListener('click', async (evenement) => {
       if (evenement.target.closest('[data-fermer-fenetre]')) {
         fermerFenetres();
+        return;
+      }
+
+      if (evenement.target.closest('[data-action="reessayer"]')) {
+        etat.echec = false;
+        rendre();
+        await charger();
         return;
       }
 
@@ -266,7 +313,6 @@ export default {
           await effacer(type, id);
           etat.detail = null;
           await charger();
-          rendre();
         } catch (souci) {
           console.error('Suppression impossible', souci);
           supprimer.disabled = false;
@@ -337,7 +383,6 @@ export default {
         etat.detail = null;
         etat.edition = false;
         await charger();
-        rendre();
       } catch (souci) {
         console.error('Enregistrement impossible', souci);
         erreur.textContent = souci.message ?? "Ça n'a pas pu être enregistré.";
