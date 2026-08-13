@@ -2699,6 +2699,16 @@ export default {
       if (await charger(BESOINS[etat.vue])) rendre();
     };
 
+    // Revenir sur le site le relit. Ici « relire » veut dire OUBLIER ce qui a
+    // été chargé : `fraiches` est ce qui empêche de redemander deux fois la
+    // même table pendant une visite, et c'est justement lui qu'il faut vider.
+    // Les données restent affichables entre-temps — `affichables` n'est pas
+    // touché — donc rien ne clignote, l'écran se met à jour quand ça revient.
+    this.rafraichir = async () => {
+      fraiches.clear();
+      if (await charger(BESOINS[etat.vue])) rendre();
+    };
+
     const trouverPub = (id) => etat.publications.find((pub) => pub.id === id);
     const ouvrirObjectif = (id) => {
       const element = section.querySelector(`[data-objectif="${CSS.escape(id)}"]`);

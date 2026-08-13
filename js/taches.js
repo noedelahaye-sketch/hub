@@ -556,9 +556,18 @@ export default {
       rendreListe();
     };
 
-    try {
+    const charger = async () => {
       etat.taches = await api.tachesToutes();
       rendreListe();
+    };
+
+    // Revenir sur la liste la relit : une tâche posée depuis le calendrier ou
+    // cochée sur l'accueil doit s'y voir sans recharger la page. La tuile
+    // ouverte n'est pas touchée — elle vit dans son propre bloc.
+    this.rafraichir = charger;
+
+    try {
+      await charger();
     } catch (erreur) {
       console.error('Chargement des tâches impossible', erreur);
       section.innerHTML = `

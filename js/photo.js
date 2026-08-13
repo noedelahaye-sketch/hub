@@ -113,13 +113,24 @@ export default {
   async monter(section) {
     const etat = { objectifs: [], victoires: [], publications: [] };
 
-    try {
+    const charger = async () => {
       const [objectifs, victoires, publications] = await Promise.all([
         api.objectifsActifs({ projet: 'photo' }),
         api.victoiresDuProjet('photo', MAX_VICTOIRES),
         api.publicationsToutes('photo'),
       ]);
       Object.assign(etat, { objectifs, victoires, publications });
+    };
+
+    // Revenir sur la page la relit : ce qui a été fait sur le site, ou posé
+    // depuis le calendrier, doit s'y voir sans recharger.
+    this.rafraichir = async () => {
+      await charger();
+      section.innerHTML = squelette(etat);
+    };
+
+    try {
+      await charger();
     } catch (erreur) {
       console.error('Chargement de la page Yuno impossible', erreur);
       section.innerHTML = `

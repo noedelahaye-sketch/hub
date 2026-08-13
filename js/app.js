@@ -212,6 +212,19 @@ function afficherEspace() {
   } else if (memeEspace) {
     // Déjà monté et on reste dedans : l'espace n'a qu'à changer d'écran.
     espaces[nom].naviguer?.(route);
+  } else {
+    // On REVIENT sur un espace déjà monté. Il n'est pas remonté — ses écouteurs
+    // sont posés sur la section, qui survit à `innerHTML`, et un second montage
+    // les doublerait — mais il relit ses données. Sans ça, une tâche créée
+    // depuis le calendrier restait invisible sur l'accueil jusqu'au prochain
+    // rechargement de la page.
+    //
+    // `rafraichir` est facultatif : un espace qui ne lit rien n'en a pas besoin.
+    // S'il échoue, on garde ce qui est affiché — c'est périmé, pas cassé.
+    espaces[nom].naviguer?.(route);
+    Promise.resolve(espaces[nom].rafraichir?.()).catch((erreur) => {
+      console.error(`Rafraîchissement de l'espace ${nom} impossible`, erreur);
+    });
   }
 
   // On revient à la position quittée, ou en haut pour une adresse nouvelle.

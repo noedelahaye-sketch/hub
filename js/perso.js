@@ -185,7 +185,7 @@ export default {
       bloc('evenements').innerHTML = construireEvenements(etat.evenements);
     };
 
-    try {
+    const charger = async () => {
       const depuis = versDateISO(ajouterJours(new Date(), -(JOURS_COURBE - 1)));
       const [intentions, evenements, victoires, humeur] = await Promise.all([
         api.objectifsActifs({ projet: PROJET }),
@@ -199,6 +199,14 @@ export default {
       rendreVictoires();
       rendreEvenements();
       bloc('humeur').innerHTML = construireCourbeHumeur(humeur);
+    };
+
+    // Revenir sur l'espace le relit : l'humeur du jour répondue sur l'accueil
+    // doit apparaître dans la courbe sans recharger la page.
+    this.rafraichir = charger;
+
+    try {
+      await charger();
     } catch (erreur) {
       console.error("Chargement de l'espace perso impossible", erreur);
       section.innerHTML = `

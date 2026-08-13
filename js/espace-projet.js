@@ -463,7 +463,7 @@ export function creerEspaceProjet({ projet, titre, sousTitre, blocEnTete = null 
         if (element) element.open = true;
       };
 
-      try {
+      const charger = async () => {
         const [objectifs, taches, evenements, victoires] = await Promise.all([
           api.objectifsActifs({ projet }),
           api.tachesEnCours(projet),
@@ -476,6 +476,14 @@ export function creerEspaceProjet({ projet, titre, sousTitre, blocEnTete = null 
         rendreTaches();
         rendreEvenements();
         rendreVictoires();
+      };
+
+      // Revenir sur l'espace le relit : une tâche du projet posée depuis le
+      // calendrier ou cochée sur l'accueil doit s'y voir sans recharger.
+      this.rafraichir = charger;
+
+      try {
+        await charger();
       } catch (erreur) {
         console.error(`Chargement de l'espace ${projet} impossible`, erreur);
         section.innerHTML = `

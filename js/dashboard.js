@@ -382,6 +382,10 @@ export default {
       );
     }
 
+    // Revenir sur l'accueil le relit : une tâche posée depuis le calendrier ou
+    // cochée dans l'espace Tâches doit s'y voir sans recharger la page.
+    this.rafraichir = charger;
+
     try {
       await charger();
     } catch (erreur) {

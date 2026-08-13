@@ -124,6 +124,13 @@ export default {
       });
     }
 
+    // Revenir sur le calendrier le relit : ce qui a été posé ailleurs doit s'y
+    // voir sans recharger la page.
+    this.rafraichir = async () => {
+      await charger();
+      rendre();
+    };
+
     try {
       await charger();
       rendre();

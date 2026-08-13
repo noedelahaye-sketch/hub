@@ -316,7 +316,7 @@ export default {
       rendre();
     };
 
-    try {
+    const charger = async () => {
       const [objectifs, victoires, publications, taches, evenements, contacts] =
         await Promise.all([
           api.objectifsActifs({ projet: PROJET }),
@@ -335,6 +335,17 @@ export default {
         evenements,
         partenaires: contacts.filter((contact) => contact.type === TYPE_PARTENAIRE),
       });
+    };
+
+    // Revenir sur le site le relit : ce qui a été posé depuis le hub doit s'y
+    // voir sans recharger la page.
+    this.rafraichir = async () => {
+      await charger();
+      rendre();
+    };
+
+    try {
+      await charger();
     } catch (erreur) {
       console.error('Chargement du site FC Hermitage impossible', erreur);
       section.innerHTML = `

@@ -613,6 +613,30 @@ de débordement horizontal à 375 px, cercles à 43 px de cible tactile.
   se relit aussitôt : la semaine et « Aujourd'hui » se rechargent, sinon on
   écrirait dans le vide.
 
+**Les espaces se relisent quand on y revient** (13 août, demande de Noé). Un
+espace n'était monté qu'une fois : une tâche posée depuis le calendrier restait
+invisible sur l'accueil jusqu'au prochain rechargement de la page.
+
+Chaque espace pose maintenant un **`rafraichir()` facultatif**, comme il pose
+déjà `naviguer()`, et le routeur l'appelle quand on revient dessus. Les sept en
+sont équipés : accueil, tâches, calendrier, formation, perso, la page Yuno et
+la page FCH, plus les deux sites.
+
+**Il ne fallait surtout pas remonter l'espace.** Ses écouteurs sont posés sur la
+section, qui survit à `innerHTML` : un second `monter()` les aurait tous
+doublés, et chaque clic aurait compté double. `rafraichir` ne relit que les
+données et redessine.
+
+Cas particulier de Yuno : « relire » y veut dire **oublier**. `fraiches` est ce
+qui empêche de redemander deux fois la même table pendant une visite, c'est donc
+lui qu'on vide ; `affichables` n'est pas touché, l'écran ne clignote pas et se
+met à jour quand les données reviennent.
+
+**Vérifié dans les deux sens** : une tâche créée dans l'espace Tâches apparaît
+sur l'accueil au retour (« Aujourd'hui » et la grille de la semaine), et une
+tâche cochée sur l'accueil se retrouve dans « Faites » au retour sur les Tâches.
+Les six espaces parcourus deux fois de suite, sans une erreur.
+
 **`poserAuCalendrier` est passé en commun** à cette occasion. La fonction qui
 écrit ce que la tuile a saisi vivait dans l'espace Calendrier, et une troisième
 copie allait naître avec ce « + » — trois endroits où oublier de faire suivre un
