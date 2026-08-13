@@ -545,6 +545,13 @@ disparu.
 - **Ni `overflow`, ni `max-height` sur la tuile** : les menus se posent au-dessus
   d'elle, donc hors de sa boîte, et un conteneur de défilement les découperait.
   Piège rencontré en écrivant la règle.
+- **Plus arrondie que les cartes** (demande de Noé, 13 août) : `--rayon-tuile`,
+  26 px contre 16. C'est un quatrième rôle et non une exception — une carte se
+  pose dans la page, la tuile vole au-dessus d'un fond assombri. Ses panneaux
+  partagent le rayon : c'est le même objet, ce sont les mêmes coins. Un seul
+  jeton, donc partout où elle apparaît d'un coup — l'accueil, les Tâches, les
+  deux calendriers, les deux sites ; rien dans `yuno.css` ni `fch.css` ne
+  redéfinit `.capture`.
 - **Sans contour**, à la demande de Noé : sur un fond obscurci, l'ombre suffit à
   la détacher, un trait de plus ne dirait rien de nouveau.
 - **Le fond de cette fenêtre-là est à 65 %, pas 45 %.** Le réglage commun

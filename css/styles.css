@@ -56,6 +56,12 @@
   --rayon-carte: 16px;
   --rayon-controle: 10px;
   --rayon-pastille: 999px;
+  /* La tuile de capture est plus arrondie que les cartes (demande de Noé,
+     13 août 2026), et c'est un quatrième rôle, pas une exception : elle ne se
+     pose pas DANS la page comme une carte, elle vole au-dessus d'un fond
+     assombri. Ses panneaux le partagent — c'est le même objet, ce sont les
+     mêmes coins. */
+  --rayon-tuile: 26px;
 
   /* Largeur et marges reprises de Bac-3. La règle qui compte : la mise en page
      occupe toute la largeur disponible, le texte jamais — d'où les tuiles en
@@ -1155,7 +1161,7 @@ body.fond-fige {
   padding: var(--espace-16);
   background: var(--fond-carte);
   border: 0;
-  border-radius: var(--rayon-carte);
+  border-radius: var(--rayon-tuile);
   box-shadow: 0 12px 48px rgb(0 0 0 / 45%);
 }
 
@@ -1333,7 +1339,7 @@ body.fond-fige {
   padding: var(--espace-8);
   background: var(--fond-carte);
   border: 0;
-  border-radius: var(--rayon-carte);
+  border-radius: var(--rayon-tuile);
   box-shadow: 0 12px 48px rgb(0 0 0 / 45%);
 }
 

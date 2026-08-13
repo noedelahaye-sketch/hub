@@ -272,7 +272,9 @@ importante**.
 
 Repris : les trois polices auto-hébergées, l'échelle d'espacement en multiples
 de 4 (`--espace-*`), un rayon par rôle (`--rayon-carte` / `--rayon-controle` /
-`--rayon-pastille`), le retour tactile sur les boutons, la cible tactile de
+`--rayon-pastille`, plus `--rayon-tuile` né dans le hub pour la capture, qui ne
+se pose pas dans la page mais vole au-dessus), le retour tactile sur les
+boutons, la cible tactile de
 44 px minimum, le focus clavier jamais supprimé, `prefers-reduced-motion`
 respecté, le routeur à niveaux avec mémoire de défilement et titre de page, le
 manifeste PWA, `tools/static-server.js`.
