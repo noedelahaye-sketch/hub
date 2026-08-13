@@ -968,9 +968,13 @@ export function champsApresDeplacement(element, ecart) {
 // Une fenêtre par-dessus la grille, comme dans un agenda : on pose une chose
 // sans quitter la vue d'ensemble, et on la referme d'un geste.
 
-// Ce qu'une nature sait recevoir depuis le calendrier. L'espace perso n'a ni
-// tâches, ni jalons, ni publications : il n'apparaît que pour un événement —
-// un rendez-vous avec soi-même a toute sa place au calendrier.
+// Ce que perso sait recevoir. Un rendez-vous avec soi-même a toute sa place au
+// calendrier, et depuis le 13 août 2026 une tâche aussi (demande de Noé).
+// Restent dehors : la publication — l'espace perso ne publie pas, et sa table
+// n'accepte pas la valeur — et l'objectif, parce qu'un objectif perso est une
+// INTENTION : sans mesure ni date, donc rien qu'on pose sur un calendrier.
+export const NATURES_PERSO = new Set(['evenement', 'tache']);
+
 // Une durée en minutes plutôt que deux sélecteurs d'heure : on pense « un match
 // dure deux heures », pas « de 15 h à 17 h ». Elle ne sert que si une heure est
 // donnée — sans heure, l'événement tient la journée.
@@ -1172,7 +1176,7 @@ export function fenetreCreation({ debut, fin, nature = 'evenement', heure = '', 
   const projetsOfferts =
     projets &&
     Object.fromEntries(
-      Object.entries(projets).filter(([cle]) => nature === 'evenement' || cle !== 'perso'),
+      Object.entries(projets).filter(([cle]) => cle !== 'perso' || NATURES_PERSO.has(nature)),
     );
 
   const pastilles = [];

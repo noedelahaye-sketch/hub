@@ -21,10 +21,16 @@ import { depuisDateISO, echeanceLisible, versDateISO, ajouterJours, echapper, NO
 import { marquerLesEntrantes } from './mouvements.js';
 import { ajouterAussitot, retirerAussitot } from './ecriture.js';
 
+// Perso en fait partie depuis le 13 août 2026 (demande de Noé). C'est la seule
+// entorse à la règle « pas de tâche perso » de CLAUDE.md, et elle est bornée :
+// une tâche peut appartenir à la vie hors projets, mais l'espace #perso, lui,
+// n'affiche toujours ni tâche, ni jalon, ni progression. Une tâche perso se lit
+// dans cette page, au calendrier et dans « Aujourd'hui ».
 const PROJETS = {
   formation: 'Formation',
   photo: 'Yuno',
   fch: 'FC Hermitage',
+  perso: 'Perso',
 };
 
 // 1 est le plus urgent, 4 le cas ordinaire — la convention de Todoist, et celle

@@ -1215,6 +1215,53 @@ l'écran « Créer » du FCH : à voir avec Noé plutôt qu'à trancher seul.
 
 ---
 
+## 2 quinquies. La tâche perso — une entorse, bornée
+
+Demandé par Noé le 13 août 2026. Jusque-là, `taches.projet` n'acceptait que les
+trois projets professionnels — au niveau de la BASE, pas seulement de l'écran :
+la contrainte CHECK les listait un par un. Migration
+`20260813010000_taches_perso.sql`.
+
+**Ce qui change** : `perso` apparaît dans le filtre de l'espace Tâches, dans la
+pastille de projet de la tuile, et pour la nature « tâche » de la tuile du
+calendrier. Une tâche perso porte la couleur mauve de l'espace, comme partout
+ailleurs — `[data-projet="perso"]` existait déjà en CSS.
+
+**Ce qui ne change pas, et il faut le savoir avant d'y toucher** :
+
+- **`#perso` n'affiche toujours aucune tâche.** Il garde ses intentions, ses
+  rendez-vous et ses victoires. Une tâche perso se lit dans l'espace Tâches, au
+  calendrier et dans « Aujourd'hui ». C'était la lecture la plus fidèle de la
+  demande — Noé a demandé de pouvoir ASSIGNER une tâche à perso, pas de faire de
+  son espace un tableau de bord. À rouvrir avec lui si l'usage le contredit.
+- **Un jalon reste sans perso** : un jalon mesure une progression, et l'espace
+  perso n'en affiche aucune. Une publication non plus : perso ne publie pas, et
+  sa table refuse la valeur.
+- **La tuile du calendrier offre perso pour un événement ET une tâche**, jamais
+  pour une publication ni un objectif — un objectif perso est une INTENTION,
+  sans mesure ni date, donc rien qu'on pose sur un calendrier. La règle est
+  écrite une fois, dans `NATURES_PERSO`.
+
+**Vérifié** : les quatre choix dans le filtre et dans la pastille ; une tâche
+perso créée depuis l'espace Tâches (relue en base : `projet = 'perso'`), une
+autre depuis le « + » de l'accueil — elle arrive dans « Aujourd'hui » et dans la
+semaine, en mauve ; les listes de projets relevées pour les quatre natures de la
+tuile (perso présent pour tâche et événement, absent pour publication et
+objectif). Les deux tâches d'essai supprimées, base relue : son état exact.
+
+**Un bug trouvé en passant, et réparé.** La capture des Tâches **reste ouverte
+après un envoi** — c'est voulu, on en note rarement une seule. Son élément
+survivait donc dans le DOM en changeant d'onglet, et l'observateur d'`app.js`,
+qui cherchait `.capture` n'importe où, gardait **la page entière figée sur tous
+les autres espaces** : plus moyen de faire défiler l'accueil après avoir noté
+une tâche. Deux lignes : le sélecteur devient `.espace:not([hidden]) .capture`,
+et l'observateur regarde aussi l'attribut `hidden` — changer d'espace ne crée ni
+ne détruit de tuile, ça bascule un `hidden`, et c'est justement ce qui doit
+libérer le fond. **Vérifié** dans les quatre états : au départ, tuile ouverte,
+sur l'accueil tuile restée ouverte, et au retour.
+
+---
+
 ## 2 quater. L'espace Tâches et la tuile de capture — la session du 13 août
 
 Le morceau le plus lourd de la journée, et celui qui a le plus bougé : six

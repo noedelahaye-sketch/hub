@@ -37,7 +37,8 @@ Conséquences concrètes :
 
 Le hub existe pour servir Noé, pas l'inverse. Pour éviter que le professionnel n'engloutisse tout :
 - Le dashboard est SA page : il l'accueille par son prénom et s'ouvre sur lui (humeur, victoires), les projets viennent ensuite.
-- L'espace perso n'a NI tâches, NI jalons, NI échéances, NI barres de progression, NI backlog, NI notion de retard. Jamais.
+- L'espace perso n'a NI jalons, NI barres de progression, NI backlog, NI notion de retard. Jamais.
+- **Une TÂCHE peut être perso** (décision de Noé, 13 août 2026), et c'est la seule entorse. Elle se crée et se lit dans l'espace Tâches, au calendrier et dans « Aujourd'hui » — **pas dans `#perso`**, qui continue de n'afficher que des intentions, des rendez-vous et des victoires. Le principe tient : l'espace perso ne mesure rien ; une tâche perso est une chose à faire notée là où on note les choses à faire.
 - Il contient uniquement : des événements (rendez-vous avec soi-même : séances de sport, sorties, temps photo plaisir), des victoires perso, et des intentions (objectifs sans mesure ni date, ex. « prendre soin de mon sommeil », simplement relues).
 - Les victoires perso apparaissent dans le dashboard au même rang que les victoires pro : une belle séance de course compte autant qu'un post Instagram réussi.
 - Suivi d'humeur : une question par jour sur le dashboard (« Comment tu te sens ? », échelle 1–5 en un clic, note facultative). Réponse en 3 secondes, jamais de relance culpabilisante si un jour est manqué.
@@ -110,7 +111,7 @@ Ces deux valeurs peuvent figurer dans le code public. Le token d'accès personne
 
 **9 tables.** Les six premières sont celles du hub ; les trois dernières sont nées avec les sites (voir plus bas). Les tables concernées portent une colonne `projet` de type text avec contrainte CHECK (projet IN ('formation', 'photo', 'fch', 'perso')), sauf `jalons` qui hérite du projet via son objectif, et `contacts` / `commandes` qui n'en ont pas.
 
-Usage de la valeur 'perso' : autorisée dans `objectifs` (= intentions : champs cible et echeance laissés vides, aucune progression affichée), `evenements` et `victoires`. Jamais dans `taches` ni `jalons` — l'interface ne doit pas permettre de créer une tâche ou un jalon perso.
+Usage de la valeur 'perso' : autorisée dans `objectifs` (= intentions : champs cible et echeance laissés vides, aucune progression affichée), `evenements`, `victoires` et — depuis le 13 août 2026 — `taches`. Jamais dans `jalons` : un jalon mesure une progression, et l'espace perso n'en affiche aucune. Jamais dans `publications` non plus : l'espace perso ne publie pas.
 
 ### objectifs
 - `id` uuid PK default gen_random_uuid()

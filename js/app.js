@@ -196,9 +196,22 @@ function libererLeFond() {
 }
 
 new MutationObserver(() => {
-  if (document.querySelector('.capture')) figerLeFond();
+  // Une tuile qui vit dans un espace MASQUÉ ne compte pas. La capture des
+  // Tâches reste ouverte après un envoi — c'est voulu, on en note rarement une
+  // seule — et son élément survit dans le DOM quand on change d'onglet. Sans
+  // ce `:not([hidden])`, la page entière restait figée sur tous les autres
+  // espaces : plus moyen de faire défiler l'accueil après avoir noté une tâche.
+  if (document.querySelector('.espace:not([hidden]) .capture')) figerLeFond();
   else libererLeFond();
-}).observe(document.body, { childList: true, subtree: true });
+  // `attributes` en plus de `childList` : changer d'espace ne crée ni ne
+  // détruit de tuile, ça bascule un `hidden` — et c'est justement ce qui doit
+  // libérer le fond.
+}).observe(document.body, {
+  childList: true,
+  subtree: true,
+  attributes: true,
+  attributeFilter: ['hidden'],
+});
 
 function afficherEspace() {
   const route = analyserAdresse(location.hash);
