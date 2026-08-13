@@ -124,10 +124,29 @@ hub, site Yuno et calendrier éditorial compris.
 
 | Nature | Pastilles |
 |---|---|
-| Événement | Nature · Quand (heure, durée, jusqu'au) · Projet · Répétition · Lieu et notes |
+| Événement | Nature · Quand (heure, jusqu'au) · Projet · Durée · Répétition · Lieu et notes |
 | Tâche | Nature · Quand (heure) · Projet · **Priorité** |
-| Publication | Nature · Quand (heure) · Projet · Réseau et format |
+| Publication | Nature · Quand (heure) · Projet · Réseau · Format |
 | Objectif | Nature · Quand (échéance seule) · Projet · Le pourquoi |
+
+**Un choix se fait dans une LISTE, jamais dans un `<select>` natif.** C'était
+l'erreur de la première version, et Noé l'a dite sans détour : « le rectangle
+bleu avec un menu déroulant, c'est très laid et pas agréable ». Un menu du
+système, avec son cadre bleu et son chevron, au milieu d'une tuile dessinée — et
+surtout pénible au doigt : viser un contrôle de 30 px, puis une ligne dans une
+roue. Chaque option est maintenant une ligne pleine largeur, avec son drapeau de
+priorité ou sa pastille de projet, **exactement comme dans l'espace Tâches**.
+La valeur voyage dans un champ caché : les espaces lisent toujours le formulaire
+avec `FormData`, ils n'ont pas à savoir comment on l'a saisie. Vérifié en posant
+une tâche dont le projet et la priorité viennent des listes : les deux sont en
+base.
+
+Conséquence sur le découpage : la **durée** sort du panneau « Quand » et le
+**format** du panneau « Réseau ». Une liste de six durées ou neuf lignes
+réseau+format empilées dépasseraient l'écran — et « où je poste » n'est pas
+« sous quelle forme », ce sont deux décisions. Seules les dates et les heures
+restent des champs natifs : là, le sélecteur du téléphone est ce qui se fait de
+mieux.
 
 Le titre change d'invite avec elle : « Nom de l'événement », « L'idée, en une
 phrase », « L'objectif, formulé de façon mesurable ». « Quoi » convenait à tout

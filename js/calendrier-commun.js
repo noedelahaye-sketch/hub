@@ -1046,6 +1046,13 @@ const ICONE = {
   texte: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <path d="M4 6h16M4 12h16M4 18h10"></path></svg>`,
+  duree: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3.5 2"></path></svg>`,
+  format: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+    <path d="M3 15l5-5 4 4 3-3 6 6"></path></svg>`,
 };
 
 const FLECHE_ENVOI = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"
@@ -1068,25 +1075,58 @@ const PRIORITES_CAL = {
   4: 'Priorité 4',
 };
 
-function champCapture({ nom, libelle, type, valeur = '', options = null, requis = false }) {
+function champCapture({ nom, libelle, type, valeur = '', requis = false }) {
   const id = `cal-${nom}`;
   const controle =
-    type === 'select'
-      ? `<select id="${id}" name="${nom}">${Object.entries(options)
-          .map(
-            ([cle, texte]) =>
-              `<option value="${echapper(cle)}" ${
-                String(cle) === String(valeur) ? 'selected' : ''
-              }>${echapper(texte)}</option>`,
-          )
-          .join('')}</select>`
-      : type === 'textarea'
-        ? `<textarea id="${id}" name="${nom}" rows="2">${echapper(valeur)}</textarea>`
-        : `<input id="${id}" name="${nom}" type="${type}" value="${echapper(valeur)}" ${
-            requis ? 'required' : ''
-          }>`;
+    type === 'textarea'
+      ? `<textarea id="${id}" name="${nom}" rows="2">${echapper(valeur)}</textarea>`
+      : `<input id="${id}" name="${nom}" type="${type}" value="${echapper(valeur)}" ${
+          requis ? 'required' : ''
+        }>`;
 
   return `<label class="champ-capture" for="${id}">${echapper(libelle)}</label>${controle}`;
+}
+
+// Le drapeau de priorité, comme dans l'espace Tâches : plein et coloré de 1 à 3,
+// vide pour la 4 — le cas ordinaire ne se colore pas.
+const DRAPEAU_CAL = (rempli) => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+  aria-hidden="true" focusable="false">
+  <path d="M5 22V3"></path>
+  <path d="M5 3.5h13l-2.4 4.6L18 13H5z" fill="${rempli ? 'currentColor' : 'none'}"></path>
+</svg>`;
+
+// Un choix se fait dans une LISTE, jamais dans un `<select>` natif.
+//
+// C'était l'erreur de la première version : un menu déroulant du système, avec
+// son cadre bleu et son chevron, au milieu d'une tuile dessinée. Laid, et
+// surtout pénible — au doigt il faut viser un contrôle de 30 px puis une ligne
+// dans une roue. Ici chaque option est une ligne pleine largeur, avec son
+// drapeau ou sa pastille de projet, exactement comme dans l'espace Tâches.
+//
+// La valeur voyage dans un champ caché : les espaces lisent toujours le
+// formulaire avec `FormData`, ils n'ont pas à savoir comment on l'a saisie.
+function champChoix({ nom, options, valeur, decor = null }) {
+  const ligne = ([cle, texte]) => {
+    const choisi = String(cle) === String(valeur);
+    const signe =
+      decor === 'priorite'
+        ? `<span class="choix-drapeau">${DRAPEAU_CAL(String(cle) !== '4')}</span>`
+        : decor === 'projet'
+          ? '<span class="choix-pastille" aria-hidden="true"></span>'
+          : '';
+
+    return `
+      <li><button type="button" data-choix="${nom}" data-valeur="${echapper(String(cle))}"
+        aria-pressed="${choisi}"
+        ${decor === 'priorite' ? `data-priorite="${echapper(String(cle))}"` : ''}
+        ${decor === 'projet' ? `data-projet="${echapper(String(cle))}"` : ''}
+        class="${choisi ? 'actif' : ''}">${signe}<span>${echapper(texte)}</span></button></li>`;
+  };
+
+  return `
+    <input type="hidden" name="${nom}" value="${echapper(String(valeur))}">
+    <ul class="choix-capture">${Object.entries(options).map(ligne).join('')}</ul>`;
 }
 
 // Une pastille et son panneau, rendus SÉPARÉMENT. La pastille part dans la
@@ -1159,10 +1199,9 @@ export function fenetreCreation({ debut, fin, nature = 'evenement', heure = '', 
   // jours ne pourrait naître que d'un geste de souris, impossible au doigt.
   const champsQuand =
     nature === 'evenement'
-      ? `${champCapture({ nom: 'debut', libelle: 'Du', type: 'date', valeur: debut, requis: true })}
-         <div class="capture-deux-champs">
+      ? `<div class="capture-deux-champs">
+           <span>${champCapture({ nom: 'debut', libelle: 'Du', type: 'date', valeur: debut, requis: true })}</span>
            <span>${champCapture({ nom: 'heure', libelle: 'À quelle heure', type: 'time', valeur: heure })}</span>
-           <span>${champCapture({ nom: 'duree', libelle: 'Combien de temps', type: 'select', options: DUREES, valeur: '120' })}</span>
          </div>
          ${champCapture({ nom: 'fin', libelle: "Jusqu'au (vide = un seul jour)", type: 'date', valeur: memeJour ? '' : fin })}`
       : nature === 'objectif'
@@ -1200,12 +1239,11 @@ export function fenetreCreation({ debut, fin, nature = 'evenement', heure = '', 
         defaut: projetsOfferts.photo ?? Object.values(projetsOfferts)[0],
         source: 'projet',
         rempli: true,
-        contenu: champCapture({
+        contenu: champChoix({
           nom: 'projet',
-          libelle: 'Pour quel projet',
-          type: 'select',
           options: projetsOfferts,
           valeur: 'photo' in projetsOfferts ? 'photo' : Object.keys(projetsOfferts)[0],
+          decor: 'projet',
         }),
       }),
     );
@@ -1215,11 +1253,18 @@ export function fenetreCreation({ debut, fin, nature = 'evenement', heure = '', 
   if (nature === 'evenement') {
     pastilles.push(
       pastilleCapture({
+        nom: 'duree',
+        icone: ICONE.duree,
+        defaut: '2 heures',
+        source: 'duree',
+        contenu: champChoix({ nom: 'duree', options: DUREES, valeur: '120' }),
+      }),
+      pastilleCapture({
         nom: 'repetition',
         icone: ICONE.repetition,
         defaut: 'Une seule fois',
         source: 'recurrence',
-        contenu: `${champCapture({ nom: 'recurrence', libelle: 'Se répète', type: 'select', options: RECURRENCES, valeur: '' })}
+        contenu: `${champChoix({ nom: 'recurrence', options: RECURRENCES, valeur: '' })}
           ${champCapture({ nom: 'recurrence_fin', libelle: "Jusqu'au (facultatif)", type: 'date' })}`,
       }),
       pastilleCapture({
@@ -1241,12 +1286,11 @@ export function fenetreCreation({ debut, fin, nature = 'evenement', heure = '', 
         defaut: 'Priorité',
         source: 'priorite',
         neutre: '4',
-        contenu: champCapture({
+        contenu: champChoix({
           nom: 'priorite',
-          libelle: 'Priorité',
-          type: 'select',
           options: PRIORITES_CAL,
           valeur: '4',
+          decor: 'priorite',
         }),
       }),
     );
@@ -1254,16 +1298,24 @@ export function fenetreCreation({ debut, fin, nature = 'evenement', heure = '', 
 
   if (nature === 'publication') {
     pastilles.push(
+      // Deux pastilles, pas deux listes dans une : neuf lignes empilées
+      // dépasseraient l'écran, et « où je poste » n'est pas « sous quelle
+      // forme » — ce sont deux décisions.
       pastilleCapture({
         nom: 'reseau',
         icone: ICONE.reseau,
         defaut: RESEAUX.instagram,
         source: 'reseau',
         rempli: true,
-        contenu: `<div class="capture-deux-champs">
-            <span>${champCapture({ nom: 'reseau', libelle: 'Réseau', type: 'select', options: RESEAUX, valeur: 'instagram' })}</span>
-            <span>${champCapture({ nom: 'format', libelle: 'Format', type: 'select', options: FORMATS, valeur: 'post' })}</span>
-          </div>`,
+        contenu: champChoix({ nom: 'reseau', options: RESEAUX, valeur: 'instagram' }),
+      }),
+      pastilleCapture({
+        nom: 'format',
+        icone: ICONE.format,
+        defaut: FORMATS.post,
+        source: 'format',
+        rempli: true,
+        contenu: champChoix({ nom: 'format', options: FORMATS, valeur: 'post' }),
       }),
     );
   }
@@ -1336,9 +1388,17 @@ export function brancherCapture(section) {
       let texte = '';
       if (neutre !== undefined && champ.value === neutre) {
         texte = '';
-      } else if (champ.tagName === 'SELECT') {
-        // Une option vide (« Une seule fois ») vaut le libellé par défaut.
-        texte = champ.value ? champ.selectedOptions[0]?.textContent.trim() : '';
+      } else if (champ.type === 'hidden') {
+        // Un champ caché ne porte qu'une clé : son libellé se relit dans la
+        // liste de choix, là où il est écrit en toutes lettres. Une valeur vide
+        // (« Une seule fois ») vaut le libellé par défaut de la pastille.
+        texte = champ.value
+          ? section
+              .querySelector(
+                `[data-choix="${source}"][data-valeur="${CSS.escape(champ.value)}"] span:last-child`,
+              )
+              ?.textContent.trim() ?? ''
+          : '';
       } else if (champ.type === 'date') {
         texte = champ.value ? echeanceLisible(depuisDateISO(champ.value)) : '';
       } else {
@@ -1369,6 +1429,25 @@ export function brancherCapture(section) {
   };
 
   section.addEventListener('click', (evenement) => {
+    // Un choix dans une liste : il écrit dans son champ caché, marque la ligne,
+    // referme le panneau. Le formulaire n'a jamais su qu'il y avait autre chose
+    // qu'un champ derrière.
+    const choix = evenement.target.closest('[data-choix]');
+    if (choix) {
+      const { choix: nom, valeur } = choix.dataset;
+      const champ = section.querySelector(`.capture [name="${nom}"]`);
+      if (champ) champ.value = valeur;
+
+      for (const frere of section.querySelectorAll(`[data-choix="${nom}"]`)) {
+        const actif = frere === choix;
+        frere.classList.toggle('actif', actif);
+        frere.setAttribute('aria-pressed', String(actif));
+      }
+      fermerLesPanneaux();
+      rafraichirLesLibelles();
+      return;
+    }
+
     const pastille = evenement.target.closest('.capture-pastilles [data-pastille]');
     if (pastille) {
       const panneau = section.querySelector(
