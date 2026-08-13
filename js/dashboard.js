@@ -16,8 +16,33 @@ import {
   echapper,
   NOMS_PROJETS,
 } from './format.js';
-import { assemblerCalendrier, construireGrille, toutesLesNatures } from './calendrier-commun.js';
+import {
+  assemblerCalendrier,
+  construireGrille,
+  toutesLesNatures,
+  fenetreCreation,
+  brancherCapture,
+  poserAuCalendrier,
+} from './calendrier-commun.js';
 import { construireLignesTaches } from './taches.js';
+
+// Les projets offerts à la création. Les mêmes que dans l'espace Calendrier :
+// 'perso' n'accepte qu'un événement, `fenetreCreation` s'en charge.
+const PROJETS = {
+  photo: 'Yuno',
+  fch: 'FC Hermitage',
+  formation: 'Formation',
+  perso: 'Perso',
+};
+
+// Le « + » du dashboard ouvre sur une TÂCHE (demande de Noé, 13 août 2026) :
+// depuis l'accueil, neuf fois sur dix ce qu'on note est une chose à faire.
+// Les autres natures restent à une pastille.
+const NATURE_PAR_DEFAUT = 'tache';
+
+const PLUS = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none"
+  stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+  aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"></path></svg>`;
 
 const PRENOM = 'Noé';
 const MAX_VICTOIRES = 5;
@@ -240,6 +265,15 @@ function squelette() {
       <h2>Ta semaine</h2>
       <div id="bloc-semaine"><p class="vide">…</p></div>
     </section>
+
+    <!-- Le même « + » que l'espace Tâches, au même endroit : depuis l'accueil
+         aussi, on doit pouvoir noter quelque chose sans changer de page. Il
+         ouvre la tuile du calendrier — donc tout ce qui a une date, pas
+         seulement une tâche. -->
+    <button type="button" class="ouvrir-capture" data-ouvrir-creation
+      title="Ajouter au calendrier" aria-label="Ajouter au calendrier">${PLUS}</button>
+
+    <div id="bloc-creation"></div>
   `;
 }
 
@@ -256,11 +290,22 @@ export default {
       taches: [],
       humeurOuverte: false,
       annulation: null,
+      creation: null,
     };
     let minuteurAnnulation = null;
+    let rafraichirLaCapture = null;
     const aujourdhui = versDateISO();
 
     const cible = (id) => section.querySelector(`#${id}`);
+
+    // La tuile se redessine seule, dans son propre bloc : le reste de l'accueil
+    // ne bouge pas quand on ouvre le « + ».
+    function rendreCreation() {
+      cible('bloc-creation').innerHTML = etat.creation
+        ? fenetreCreation({ ...etat.creation, projets: PROJETS })
+        : '';
+      if (etat.creation) rafraichirLaCapture?.();
+    }
 
     function rendreHumeur() {
       cible('bloc-humeur').innerHTML = construireHumeur(
@@ -278,7 +323,7 @@ export default {
       cible('bloc-taches').innerHTML = construireTaches(etat.taches, etat.annulation);
     }
 
-    try {
+    async function charger() {
       // La semaine montre TOUT ce qui a une date, comme l'espace Calendrier :
       // c'est la même grille, elle demande donc les mêmes sources. Les
       // événements sans borne — une grille de semaine peut afficher un
@@ -335,6 +380,10 @@ export default {
           relances: contacts.filter((contact) => contact.prochaine_action_date),
         }),
       );
+    }
+
+    try {
+      await charger();
     } catch (erreur) {
       console.error('Chargement du tableau de bord impossible', erreur);
       section.innerHTML = `
@@ -349,7 +398,71 @@ export default {
 
     // --- Interactions, par délégation sur la section entière ---
 
+    // Les pastilles de la tuile, comme dans l'espace Calendrier.
+    rafraichirLaCapture = brancherCapture(section);
+
+    const fermerLaCreation = () => {
+      etat.creation = null;
+      rendreCreation();
+    };
+
+    // Échap ferme la tuile — le geste attendu partout ailleurs dans le hub.
+    document.addEventListener('keydown', (evenement) => {
+      if (evenement.key === 'Escape' && etat.creation) fermerLaCreation();
+    });
+
+    section.addEventListener('submit', async (evenement) => {
+      const formulaire = evenement.target.closest('form[data-action="creer-depuis-calendrier"]');
+      if (!formulaire) return;
+      evenement.preventDefault();
+
+      const champs = Object.fromEntries(new FormData(formulaire));
+      const erreur = formulaire.querySelector('[data-erreur]');
+      const bouton = formulaire.querySelector('button[type="submit"]');
+      erreur.hidden = true;
+      bouton.disabled = true;
+
+      try {
+        await poserAuCalendrier(champs);
+        etat.creation = null;
+        rendreCreation();
+        // Ce qu'on vient de poser doit se voir : la semaine et les tâches du
+        // jour se relisent, sinon on écrit dans le vide.
+        await charger();
+      } catch (souci) {
+        console.error('Enregistrement impossible', souci);
+        erreur.textContent = souci.message ?? "Ça n'a pas pu être enregistré.";
+        erreur.hidden = false;
+        bouton.disabled = false;
+      }
+    });
+
     section.addEventListener('click', async (evenement) => {
+      if (evenement.target.closest('[data-ouvrir-creation]')) {
+        etat.creation = { debut: aujourdhui, fin: aujourdhui, nature: NATURE_PAR_DEFAUT };
+        rendreCreation();
+        return;
+      }
+
+      if (evenement.target.closest('[data-fermer-fenetre]')) {
+        fermerLaCreation();
+        return;
+      }
+
+      const nature = evenement.target.closest('[data-nature-creation]');
+      if (nature) {
+        // Les dates sont éditables : on garde ce qui vient d'être saisi plutôt
+        // que de revenir à ce que la tuile avait posé en s'ouvrant.
+        etat.creation = {
+          ...etat.creation,
+          debut: section.querySelector('#cal-debut')?.value || etat.creation.debut,
+          fin: section.querySelector('#cal-fin')?.value || etat.creation.fin,
+          nature: nature.dataset.natureCreation,
+        };
+        rendreCreation();
+        return;
+      }
+
       const bouton = evenement.target.closest('.bouton-humeur');
       if (bouton) {
         const niveau = Number(bouton.dataset.niveau);

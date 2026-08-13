@@ -9,6 +9,7 @@
 // chargées, comme partout dans le hub. Seul `brancherSelection` touche au DOM,
 // et il ne fait que poser des écouteurs.
 
+import * as api from './api.js';
 import { construireFormulaire, construireFenetre } from './espace-projet.js';
 import {
   depuisDateISO,
@@ -1714,4 +1715,69 @@ export function fenetreDetail(element, { montrerProjet = false, edition = false 
     </div>`;
 
   return construireFenetre(element.titre, contenu);
+}
+
+// --- Écrire ce qu'on vient de poser ------------------------------------------
+//
+// La tuile est la même partout ; ce qu'elle écrit doit l'être aussi. Cette
+// fonction était recopiée dans l'espace Calendrier, et une troisième copie
+// allait naître avec le « + » du dashboard — trois endroits où oublier de faire
+// suivre un champ. (C'est exactement ce qui s'était produit avec l'heure et la
+// priorité d'une tâche : offertes à l'écran, jetées à l'écriture.)
+//
+// `projetParDefaut` sert aux espaces qui ne demandent pas le projet : le site
+// Yuno sait qu'il est chez lui.
+export async function poserAuCalendrier(champs, { projetParDefaut = 'photo' } = {}) {
+  const titre = champs.titre.trim();
+  const projet = champs.projet ?? projetParDefaut;
+
+  if (champs.nature === 'tache') {
+    return api.creerTache({
+      projet,
+      titre,
+      // Active d'emblée : le réglage backlog / active est masqué depuis le
+      // 13 août, une tâche notée est une tâche à faire.
+      statut: 'actif',
+      echeance: champs.debut,
+      heure: champs.heure || null,
+      priorite: Number(champs.priorite) || 4,
+    });
+  }
+
+  if (champs.nature === 'publication') {
+    return api.creerPublication({
+      projet,
+      titre,
+      reseau: champs.reseau,
+      format: champs.format,
+      date_prevue: champs.debut,
+      heure: champs.heure || null,
+    });
+  }
+
+  if (champs.nature === 'objectif') {
+    return api.creerObjectif({
+      projet,
+      titre,
+      pourquoi: champs.pourquoi?.trim() || null,
+      cible: champs.cible?.trim() || null,
+      echeance: champs.debut,
+    });
+  }
+
+  // Sans heure, l'événement tient le jour entier : minuit local, et
+  // `momentLisible` s'abstient alors d'afficher 00:00.
+  const debut = new Date(`${champs.debut}T${champs.heure || '00:00'}`);
+  const fin = finDeLEvenement(debut, champs);
+
+  return api.creerEvenement({
+    projet,
+    titre,
+    date_debut: debut.toISOString(),
+    date_fin: fin ? fin.toISOString() : null,
+    recurrence: champs.recurrence || null,
+    recurrence_fin: champs.recurrence_fin || null,
+    lieu: champs.lieu?.trim() || null,
+    notes: champs.notes?.trim() || null,
+  });
 }

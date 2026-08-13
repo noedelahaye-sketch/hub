@@ -1091,9 +1091,11 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
 
 .ouvrir-capture:hover { background: color-mix(in srgb, var(--accent) 80%, var(--texte)); }
 
-/* La dernière ligne de la liste doit pouvoir se lire et se toucher sans que le
-   bouton flottant lui passe dessus. */
-body[data-espace="taches"] #espace-taches { padding-bottom: 5.5rem; }
+/* Le dernier élément de la page doit pouvoir se lire et se toucher sans que le
+   bouton flottant lui passe dessus. Les deux espaces qui le portent : les
+   Tâches et l'accueil. */
+body[data-espace="taches"] #espace-taches,
+body[data-espace="dashboard"] #espace-dashboard { padding-bottom: 5.5rem; }
 
 /* Le fond des autres fenêtres du hub est à 45 % : assez pour une fiche qu'on
    consulte, pas pour celle-ci. Sur le thème sombre, l'onglet actif et le filtre

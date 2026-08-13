@@ -237,6 +237,8 @@ Livrer une commande insère une victoire, comme une tâche terminée.
 
 Ordre 4 avant 5 depuis le 13 août 2026 (demande de Noé) : ce qui se fait dans la journée vient avant ce qui se prépare. « Aujourd'hui » n'est donc plus le bloc discret du bas.
 
+Un **bouton « + » flottant en bas à droite** ouvre la tuile du calendrier — donc n'importe quelle nature datée — **par défaut sur une tâche**.
+
 Check-in matinal : le dashboard doit se lire en moins de 5 minutes, sans scroll excessif sur mobile.
 
 ## Vocabulaire d'interface

@@ -27,6 +27,7 @@ import {
   brancherClavier,
   brancherDeplacement,
   brancherCapture,
+  poserAuCalendrier,
   champsApresDeplacement,
   deplacerAncre,
   toutesLesNatures,
@@ -322,7 +323,7 @@ export default {
       bouton.disabled = true;
 
       try {
-        if (action === 'creer-depuis-calendrier') await poser(champs);
+        if (action === 'creer-depuis-calendrier') await poserAuCalendrier(champs);
         else await corriger(champs);
 
         etat.creation = null;
@@ -406,63 +407,5 @@ export default {
       return appliquerA(type, id, { titre, echeance: champs.debut });
     }
 
-    async function poser(champs) {
-      const titre = champs.titre.trim();
-      const projet = champs.projet ?? 'photo';
-
-      // L'heure et la priorité étaient offertes à l'écran et jetées ici : le
-      // formulaire demandait « à quelle heure », et la tâche arrivait sans.
-      // (Yuno, lui, les faisait suivre — c'est ce calendrier-ci qui les
-      // perdait.)
-      if (champs.nature === 'tache') {
-        // Active d'emblée, comme partout depuis le 13 août : le réglage
-        // backlog / active est masqué, une tâche notée est une tâche à faire.
-        return api.creerTache({
-          projet,
-          titre,
-          statut: 'actif',
-          echeance: champs.debut,
-          heure: champs.heure || null,
-          priorite: Number(champs.priorite) || 4,
-        });
-      }
-
-      if (champs.nature === 'publication') {
-        return api.creerPublication({
-          projet,
-          titre,
-          reseau: champs.reseau,
-          format: champs.format,
-          date_prevue: champs.debut,
-          heure: champs.heure || null,
-        });
-      }
-
-      if (champs.nature === 'objectif') {
-        return api.creerObjectif({
-          projet,
-          titre,
-          pourquoi: champs.pourquoi?.trim() || null,
-          cible: champs.cible?.trim() || null,
-          echeance: champs.debut,
-        });
-      }
-
-      // Sans heure, l'événement tient le jour entier : minuit local, et
-      // `momentLisible` s'abstient alors d'afficher 00:00.
-      const debut = new Date(`${champs.debut}T${champs.heure || '00:00'}`);
-      const fin = finDeLEvenement(debut, champs);
-
-      return api.creerEvenement({
-        projet,
-        titre,
-        date_debut: debut.toISOString(),
-        date_fin: fin ? fin.toISOString() : null,
-        recurrence: champs.recurrence || null,
-        recurrence_fin: champs.recurrence_fin || null,
-        lieu: champs.lieu?.trim() || null,
-        notes: champs.notes?.trim() || null,
-      });
-    }
   },
 };

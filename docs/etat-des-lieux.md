@@ -605,6 +605,20 @@ de débordement horizontal à 375 px, cercles à 43 px de cible tactile.
   « Aujourd'hui » n'est plus le bloc discret du bas. `CLAUDE.md` a été mis à
   jour — c'était son ordre 4/5.
 
+- **Le « + » du dashboard** (13 août, demande de Noé) : le même bouton flottant
+  que l'espace Tâches, au même endroit, mais il ouvre **la tuile du calendrier**
+  — donc tout ce qui a une date, pas seulement une tâche. Il s'ouvre **sur une
+  tâche** : depuis l'accueil, neuf fois sur dix ce qu'on note est une chose à
+  faire, et les autres natures restent à une pastille. Ce qui vient d'être posé
+  se relit aussitôt : la semaine et « Aujourd'hui » se rechargent, sinon on
+  écrirait dans le vide.
+
+**`poserAuCalendrier` est passé en commun** à cette occasion. La fonction qui
+écrit ce que la tuile a saisi vivait dans l'espace Calendrier, et une troisième
+copie allait naître avec ce « + » — trois endroits où oublier de faire suivre un
+champ. **C'est exactement ce qui s'était produit** avec l'heure et la priorité
+d'une tâche : offertes à l'écran, jetées à l'écriture, dans une copie seulement.
+
 **Mesuré** : le dashboard fait 922 px sur un écran de 812, soit 1,1 écran — la
 règle des « 5 minutes sans scroll excessif » tient. **Vérifié** de bout en bout
 avec une tâche d'essai datée du jour : cochée depuis le dashboard, elle quitte
