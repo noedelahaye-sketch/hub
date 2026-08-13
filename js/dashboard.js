@@ -48,6 +48,16 @@ const PLUS = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none"
 
 const PRENOM = 'Noé';
 const MAX_VICTOIRES = 5;
+
+// Les victoires sont MASQUÉES sur l'accueil (demande de Noé, 13 août 2026 —
+// « pour le moment »). Rien n'a été retiré : ce drapeau commande le bloc, sa
+// source et son rendu d'un seul endroit, et le repasser à `true` rallume tout.
+//
+// Ce qui continue de vivre sans lui : cocher une tâche CRÉE toujours sa
+// victoire en base, l'espace perso et le site du FCH les affichent, et la ligne
+// « Annuler » du bloc « Aujourd'hui » sait toujours la retirer. Seul l'affichage
+// de l'accueil se tait — et l'accueil économise une requête au passage.
+const VICTOIRES_VISIBLES = false;
 const MAX_TACHES = 9; // ce qui tient sans que « Aujourd'hui » devienne une liste
 
 // Fenêtre pendant laquelle une tâche cochée par erreur peut être décochée.
@@ -255,7 +265,9 @@ const CLE_CACHE = 'dashboard';
 // le reste du code n'a pas à savoir qu'elles voyagent de concert.
 const SOURCES = {
   humeur: async () => ({ humeur: await api.humeurDuJour(versDateISO()) }),
-  victoires: async () => ({ victoires: await api.dernieresVictoires(MAX_VICTOIRES) }),
+  ...(VICTOIRES_VISIBLES
+    ? { victoires: async () => ({ victoires: await api.dernieresVictoires(MAX_VICTOIRES) }) }
+    : {}),
   objectifs: async () => ({ objectifs: await api.objectifsActifs() }),
   // Toutes les tâches datées, les faites comprises — le calendrier les garde
   // barrées. « Aujourd'hui » se déduit de cette même liste : une lecture au lieu
@@ -280,7 +292,7 @@ const SOURCES = {
 // victoire retirée) plutôt que ce que le serveur avait répondu.
 const DONNEES = {
   humeur: ['humeur'],
-  victoires: ['victoires'],
+  ...(VICTOIRES_VISIBLES ? { victoires: ['victoires'] } : {}),
   objectifs: ['objectifs'],
   taches: ['tachesDatees'],
   semaine: ['evenements', 'publications', 'commandes', 'contacts'],
@@ -298,15 +310,17 @@ function squelette() {
 
     <section class="bloc" id="bloc-humeur"></section>
 
-    <section class="bloc">
-      <h2>Victoires récentes</h2>
-      <div id="bloc-victoires"><p class="vide">…</p></div>
-    </section>
-
-    <section class="bloc">
-      <h2>Tes objectifs</h2>
-      <div id="bloc-objectifs"><p class="vide">…</p></div>
-    </section>
+    ${
+      // Masqué pour le moment (demande de Noé, 13 août 2026) — voir
+      // VICTOIRES_VISIBLES. Le bloc disparaît en entier plutôt que de rester
+      // vide : un titre sans contenu se lit comme une panne.
+      VICTOIRES_VISIBLES
+        ? `<section class="bloc">
+             <h2>Victoires récentes</h2>
+             <div id="bloc-victoires"><p class="vide">…</p></div>
+           </section>`
+        : ''
+    }
 
     <!-- « Aujourd'hui » passe AVANT « Ta semaine » (demande de Noé, 13 août
          2026). Ce qui se fait dans la journée vient avant ce qui se prépare —
@@ -320,6 +334,15 @@ function squelette() {
     <section class="bloc">
       <h2>Ta semaine</h2>
       <div id="bloc-semaine"><p class="vide">…</p></div>
+    </section>
+
+    <!-- Les objectifs FERMENT la page (demande de Noé, 13 août 2026). Ils
+         disent le cap, pas la journée : on les relit quand on lève la tête, pas
+         en ouvrant l'application. Ce qui se fait maintenant — l'humeur, les
+         tâches du jour, la semaine — passe devant. -->
+    <section class="bloc">
+      <h2>Tes objectifs</h2>
+      <div id="bloc-objectifs"><p class="vide">…</p></div>
     </section>
 
     <!-- Le même « + » que l'espace Tâches, au même endroit : depuis l'accueil
@@ -424,8 +447,8 @@ export default {
     const tachesVues = new Set();
 
     function rendreVictoires() {
-      if (!pret('victoires')) return;
       const bloc = cible('bloc-victoires');
+      if (!bloc || !pret('victoires')) return;
       bloc.innerHTML = construireVictoires(etat.victoires.slice(0, MAX_VICTOIRES));
       marquerLesEntrantes(bloc, victoiresVues, {
         selecteur: '.liste-victoires > li',
@@ -515,6 +538,8 @@ export default {
     const APRES = {
       humeur: rendreHumeur,
       victoires: rendreVictoires,
+      // (`victoires` n'est appelé que si la source existe — voir
+      // VICTOIRES_VISIBLES.)
       objectifs: () => {
         rendreObjectifs();
         rendreSemaine();

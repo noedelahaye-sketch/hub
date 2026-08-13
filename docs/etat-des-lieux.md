@@ -1215,6 +1215,61 @@ l'écran « Créer » du FCH : à voir avec Noé plutôt qu'à trancher seul.
 
 ---
 
+## 2 septies. Le « + » de Yuno, et l'accueil réordonné
+
+Deux demandes de Noé, le 13 août 2026.
+
+### Le « + » flottant du site Yuno
+
+Le site avait déjà tout ce qu'il faut pour loguer un moment — date, type, lieu,
+rencontres, **photo**, note, œuvre finie — mais le bouton qui l'ouvrait ne
+vivait que sur l'Accueil et le Journal, à côté des compteurs. Yuno a maintenant
+**le même « + » flottant que le hub**, sur toutes ses vues : un moment se note
+en sortant du stade, pas quand on pense à revenir sur la bonne page.
+
+**Posé une seule fois, dans `rendre()`**, et non dans les neuf gabarits de vue —
+neuf endroits à tenir à jour, c'est huit oublis en puissance. La fenêtre du
+moment a suivi le même chemin : elle était recopiée dans deux vues, elle est
+désormais ajoutée à la fin du rendu, quelle que soit la vue. **Jamais sur le
+squelette** : un bouton qui ouvrirait une fenêtre sur des données absentes ne
+mènerait à rien.
+
+**Vérifié de bout en bout, depuis la vue Réseau** — celle qui ne montre aucun
+moment : le « + » présent sur les neuf vues, la fenêtre complète (sept champs),
+et un moment inscrit avec une vraie photo fabriquée sur place (900 × 1200, du
+3:4), une note, une rencontre et l'œuvre finie cochée. Relu en base : la ligne,
+son `photo_chemin`, sa rencontre. Puis retiré depuis le Journal — moment,
+rencontre et **photo du stockage** partis avec lui. Base et bucket relus :
+**1 moment, 2 rencontres, 3 victoires**, l'état exact d'avant.
+
+**L'ancien bouton « + Ajouter un moment » reste** à sa place sur l'Accueil et le
+Journal. Il fait double emploi avec le flottant sur ces deux vues — c'est une
+question posée à Noé, pas un oubli : retirer ce qu'il a validé demande son avis.
+
+### L'accueil : victoires masquées, objectifs en bas
+
+**Les victoires quittent l'accueil** (« pour le moment »), et **les objectifs
+passent après la semaine**. L'ordre affiché devient : en-tête et humeur,
+« Aujourd'hui », « Ta semaine », « Tes objectifs ».
+
+**Un seul drapeau commande le masquage** : `VICTOIRES_VISIBLES`, dans
+`dashboard.js`. Il retire le bloc du squelette, la source de la liste des
+requêtes, et fait taire le rendu. Le repasser à `true` rallume tout — c'est la
+même façon de faire que le réglage backlog/actif mis en sommeil le matin même
+(§ 2 quater).
+
+**Ce qui continue de vivre sans lui, et qu'il fallait vérifier** : cocher une
+tâche crée toujours sa victoire en base, l'espace perso et le site du FCH les
+affichent, et la ligne « Annuler » sait toujours la retirer — tout ce chemin
+touche `etat.victoires` alors que le bloc n'existe plus. **Exercé** : une tâche
+cochée depuis l'accueil puis annulée, sans une erreur en console, la base
+revenue à son état (aucune victoire de trop).
+
+**L'accueil est passé à sept requêtes** au lieu de huit : le bloc masqué ne
+demande plus rien.
+
+---
+
 ## 2 sexies. Trois mouvements de plus, et le fond qui montre sa tête
 
 Demandés par Noé le 13 août 2026, après l'analyse de fluidité.
@@ -1393,6 +1448,11 @@ La méthode qui a tenu toute la journée — exercer, relire en SQL, défaire, r
 8. L'onglet « Carnet » de l'accueil a été renommé « Accueil » quand le Journal
    est né. Le mot « carnet » désigne donc deux choses — le Carnet de terrain et
    le carnet réseau. À surveiller à l'usage.
+
+**Le bouton « + Ajouter un moment » de Yuno fait doublon** avec le « + »
+flottant, sur l'Accueil et le Journal (§ 2 septies). Le retirer rendrait le
+geste unique, comme dans le hub ; le garder ne coûte qu'un peu de place. Noé n'a
+demandé que l'ajout du flottant : à lui de trancher.
 
 **Sur le site du FCH, une idée de la banque ne s'ouvre pas** (trouvé le 13 août
 en exerçant les écritures, § 2 ter ter). Les tuiles se présentent comme des

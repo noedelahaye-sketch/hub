@@ -253,6 +253,12 @@ function pied() {
 // rencontres, œuvres finies. Aucune métrique de réseau n'entre ici — la
 // première chose vue en ouvrant le site dit ce qui compte.
 
+// Le même signe que le « + » du hub : un dessin, pas un caractère — il garde
+// son épaisseur et son centrage quelle que soit la police.
+const PLUS = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none"
+  stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+  aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"></path></svg>`;
+
 const TYPES_MOMENT = {
   match: 'Match',
   concert: 'Concert',
@@ -601,6 +607,19 @@ function formulaireMoment(contacts, prefill = null) {
   );
 }
 
+// Le « + » flottant du site, celui du hub (demande de Noé, 13 août 2026). Il
+// ouvre la MÊME fenêtre que le bouton du carnet — un moment complet : la date,
+// ce que c'était, le lieu, les rencontres, la photo, la note, l'œuvre finie.
+//
+// Il suit toutes les vues, et pas seulement l'Accueil et le Journal : un moment
+// se note en sortant du stade, pas quand on pense à revenir sur la bonne page.
+// Le pouce le trouve toujours au même endroit, exactement comme dans le hub.
+function boutonMomentFlottant() {
+  return `
+    <button type="button" class="ouvrir-capture" data-ouvrir-capture
+      title="Ajouter un moment" aria-label="Ajouter un moment">${PLUS}</button>`;
+}
+
 // Le bouton qui ouvre la capture. Il reste à sa place, à gauche des compteurs ;
 // c'est la fenêtre qui vient par-dessus.
 function boutonCapture() {
@@ -866,7 +885,6 @@ function vueAccueil(etat) {
       <div data-bloc="apercu">${construireApercuCreation(etat.publications, { idees: false })}</div>
     </section>
     ${fenetreMoment(etat)}
-    ${etat.captureOuverte ? formulaireMoment(etat.contacts, etat.prefillMoment) : ''}
     ${pied()}`;
 }
 
@@ -893,7 +911,6 @@ function vueJournal(etat) {
       <div data-bloc="carnet">${construireCarnet(etat.moments, etat.photos)}</div>
     </section>
     ${fenetreMoment(etat)}
-    ${etat.captureOuverte ? formulaireMoment(etat.contacts, etat.prefillMoment) : ''}
     ${pied()}`;
 }
 
@@ -2636,6 +2653,20 @@ export default {
           'afterend',
           `<p class="vide">${echapper(etat.souci)}</p>`,
         );
+      }
+
+      // Le « + » et la fenêtre du moment suivent toutes les vues. Posés ici
+      // plutôt que dans chacune : neuf gabarits à tenir à jour, c'est huit
+      // oublis en puissance. Pas sur le squelette — un bouton qui ouvre une
+      // fenêtre sur des données absentes ne mènerait à rien.
+      if (pret) {
+        section.insertAdjacentHTML('beforeend', boutonMomentFlottant());
+        if (etat.captureOuverte) {
+          section.insertAdjacentHTML(
+            'beforeend',
+            formulaireMoment(etat.contacts, etat.prefillMoment),
+          );
+        }
       }
 
       centrerActif(section.querySelector('.yuno-nav'));
