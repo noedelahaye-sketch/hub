@@ -607,18 +607,24 @@ function formulaireMoment(contacts, prefill = null) {
   );
 }
 
-// Le « + » flottant du site, celui du hub (demande de Noé, 13 août 2026). Il
-// ouvre la MÊME fenêtre que le bouton du carnet — un moment complet : la date,
-// ce que c'était, le lieu, les rencontres, la photo, la note, l'œuvre finie.
+// Le « + » flottant du site : LA MÊME TUILE que dans le hub (demande de Noé,
+// 13 août 2026). Elle pose un événement, une tâche, une publication, un
+// objectif — et, par une cinquième nature propre à Yuno, un moment du carnet.
 //
-// Il suit toutes les vues, et pas seulement l'Accueil et le Journal : un moment
-// se note en sortant du stade, pas quand on pense à revenir sur la bonne page.
-// Le pouce le trouve toujours au même endroit, exactement comme dans le hub.
-function boutonMomentFlottant() {
+// Il suit toutes les vues : ce qu'on note se note en sortant du stade, pas
+// quand on pense à revenir sur la bonne page. Le pouce le trouve toujours au
+// même endroit, exactement comme dans le hub.
+function boutonPlusFlottant() {
   return `
-    <button type="button" class="ouvrir-capture" data-ouvrir-capture
-      title="Ajouter un moment" aria-label="Ajouter un moment">${PLUS}</button>`;
+    <button type="button" class="ouvrir-capture" data-ouvrir-plus
+      title="Ajouter" aria-label="Ajouter">${PLUS}</button>`;
 }
+
+// La cinquième nature de la tuile, ici seulement. Elle ne se pose pas comme les
+// autres : la choisir ferme la tuile et ouvre la fenêtre du moment, qui demande
+// une photo, des rencontres et une note — rien qui tienne dans une rangée de
+// pastilles. C'est une porte dans la liste, pas une ligne de plus à écrire.
+const NATURE_MOMENT = { moment: 'Moment' };
 
 // Le bouton qui ouvre la capture. Il reste à sa place, à gauche des compteurs ;
 // c'est la fenêtre qui vient par-dessus.
@@ -1221,7 +1227,7 @@ function vueEditorial(etat) {
       </aside>
     </div>
 
-    ${etat.creationCal ? fenetreCreation(etat.creationCal) : ''}
+
     ${etat.detailCal ? fenetreDetail(etat.detailCal, { edition: etat.editionCal }) : ''}
     ${
       etat.jourOuvertCal
@@ -1247,7 +1253,7 @@ function vueCalendrier(etat) {
             })
       }
     </div>
-    ${etat.creationCal ? fenetreCreation(etat.creationCal) : ''}
+
     ${etat.detailCal ? fenetreDetail(etat.detailCal, { edition: etat.editionCal }) : ''}
     ${
       etat.jourOuvertCal
@@ -2660,7 +2666,15 @@ export default {
       // oublis en puissance. Pas sur le squelette — un bouton qui ouvre une
       // fenêtre sur des données absentes ne mènerait à rien.
       if (pret) {
-        section.insertAdjacentHTML('beforeend', boutonMomentFlottant());
+        section.insertAdjacentHTML('beforeend', boutonPlusFlottant());
+        // La tuile n'est plus écrite par les vues du calendrier : elle suit le
+        // « + », donc toutes les vues. Une seule ligne à tenir à jour.
+        if (etat.creationCal) {
+          section.insertAdjacentHTML(
+            'beforeend',
+            fenetreCreation({ ...etat.creationCal, naturesEnPlus: NATURE_MOMENT }),
+          );
+        }
         if (etat.captureOuverte) {
           section.insertAdjacentHTML(
             'beforeend',
@@ -2964,51 +2978,61 @@ export default {
         if (champs.nature === 'tache') {
           // Active d'emblée, comme partout depuis le 13 août : le réglage
           // backlog / active est masqué, une tâche notée est une tâche à faire.
-          await api.creerTache({
-            projet: 'photo',
-            titre,
-            statut: 'actif',
-            echeance: champs.debut,
-            heure: champs.heure || null,
-            priorite: Number(champs.priorite) || 4,
-          });
+          etat.taches.push(
+            await api.creerTache({
+              projet: 'photo',
+              titre,
+              statut: 'actif',
+              echeance: champs.debut,
+              heure: champs.heure || null,
+              priorite: Number(champs.priorite) || 4,
+            }),
+          );
         } else if (champs.nature === 'publication') {
-          await api.creerPublication({
-            projet: 'photo',
-            titre,
-            reseau: champs.reseau,
-            format: champs.format,
-            date_prevue: champs.debut,
-            heure: champs.heure || null,
-          });
+          etat.publications.unshift(
+            await api.creerPublication({
+              projet: 'photo',
+              titre,
+              reseau: champs.reseau,
+              format: champs.format,
+              date_prevue: champs.debut,
+              heure: champs.heure || null,
+            }),
+          );
         } else if (champs.nature === 'objectif') {
-          await api.creerObjectif({
+          const objectif = await api.creerObjectif({
             projet: 'photo',
             titre,
             pourquoi: champs.pourquoi?.trim() || null,
             cible: champs.cible?.trim() || null,
             echeance: champs.debut,
           });
+          etat.objectifs.push({ ...objectif, jalons: objectif.jalons ?? [] });
         } else {
           // Sans heure, l'événement tient le jour entier : minuit local, et
           // `momentLisible` s'abstient alors d'afficher 00:00.
           const debut = new Date(`${champs.debut}T${champs.heure || '00:00'}`);
           const fin = finDeLEvenement(debut, champs);
 
-          await api.creerEvenement({
-            projet: 'photo',
-            titre,
-            date_debut: debut.toISOString(),
-            date_fin: fin ? fin.toISOString() : null,
-            recurrence: champs.recurrence || null,
-            recurrence_fin: champs.recurrence_fin || null,
-            lieu: champs.lieu?.trim() || null,
-            notes: champs.notes?.trim() || null,
-          });
+          etat.evenements.push(
+            await api.creerEvenement({
+              projet: 'photo',
+              titre,
+              date_debut: debut.toISOString(),
+              date_fin: fin ? fin.toISOString() : null,
+              recurrence: champs.recurrence || null,
+              recurrence_fin: champs.recurrence_fin || null,
+              lieu: champs.lieu?.trim() || null,
+              notes: champs.notes?.trim() || null,
+            }),
+          );
         }
 
+        // Ce qu'on vient d'écrire prend sa place dans l'état, au lieu de
+        // relancer les six lectures du calendrier : on connaît déjà la réponse.
+        // Les listes sont modifiées SUR PLACE, comme partout depuis
+        // `js/ecriture.js`.
         etat.creationCal = null;
-        await rechargerCalendrier();
         rendre();
         return;
       }
@@ -3158,6 +3182,18 @@ export default {
         return;
       }
 
+      // Le « + » flottant ouvre la tuile sur un ÉVÉNEMENT : sur ce site, ce
+      // qu'on note dans l'urgence est presque toujours une date de terrain — un
+      // match, un shooting. Les quatre autres natures sont à une pastille.
+      if (evenement.target.closest('[data-ouvrir-plus]')) {
+        const jour = versDateISO();
+        etat.detailCal = null;
+        etat.creationCal = { debut: jour, fin: jour, nature: 'evenement' };
+        rendre();
+        section.querySelector('#cal-titre')?.focus();
+        return;
+      }
+
       if (evenement.target.closest('[data-ouvrir-capture]')) {
         etat.captureOuverte = true;
         rendre();
@@ -3251,6 +3287,21 @@ export default {
       if (evenement.target.closest('[data-annuler-edition]')) {
         etat.editionCal = false;
         rendre();
+        return;
+      }
+
+      // « Moment » n'est pas une nature qu'on pose : c'est une porte. La tuile
+      // se ferme et la fenêtre du carnet s'ouvre, avec la date déjà choisie —
+      // ce qui a été saisi dans la tuile n'est pas perdu pour autant.
+      const versLeMoment = evenement.target.closest('[data-nature-creation="moment"]');
+      if (versLeMoment) {
+        const jour = section.querySelector('#cal-debut')?.value || etat.creationCal?.debut;
+        const titre = section.querySelector('#cal-titre')?.value.trim() || '';
+        etat.creationCal = null;
+        etat.prefillMoment = { date: jour, lieu: titre };
+        etat.captureOuverte = true;
+        rendre();
+        section.querySelector('#moment-lieu')?.focus();
         return;
       }
 

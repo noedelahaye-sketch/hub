@@ -1221,29 +1221,46 @@ Deux demandes de Noé, le 13 août 2026.
 
 ### Le « + » flottant du site Yuno
 
-Le site avait déjà tout ce qu'il faut pour loguer un moment — date, type, lieu,
-rencontres, **photo**, note, œuvre finie — mais le bouton qui l'ouvrait ne
-vivait que sur l'Accueil et le Journal, à côté des compteurs. Yuno a maintenant
-**le même « + » flottant que le hub**, sur toutes ses vues : un moment se note
-en sortant du stade, pas quand on pense à revenir sur la bonne page.
+Yuno a **le même « + » que le hub**, sur ses neuf vues, et il ouvre **la même
+tuile** : événement, tâche, publication, objectif. Première version corrigée par
+Noé dans la foulée — elle n'ouvrait que la fenêtre du moment : « il faut garder
+le même système de tuile que pour le hub […] pas que les moments ».
 
-**Posé une seule fois, dans `rendre()`**, et non dans les neuf gabarits de vue —
-neuf endroits à tenir à jour, c'est huit oublis en puissance. La fenêtre du
-moment a suivi le même chemin : elle était recopiée dans deux vues, elle est
-désormais ajoutée à la fin du rendu, quelle que soit la vue. **Jamais sur le
+**Le moment est la cinquième nature**, et il ne se comporte pas comme les
+quatre autres : le choisir **ferme la tuile et ouvre la fenêtre du carnet**, qui
+demande une photo, des rencontres et une note — rien qui tienne dans une rangée
+de pastilles. C'est une porte dans la liste, pas une ligne de plus à écrire. Ce
+qui a déjà été saisi la traverse : le titre devient le lieu, la date suit.
+
+`fenetreCreation` a gagné pour cela un paramètre `naturesEnPlus`, propre à
+l'appelant. Le moment n'a rien à faire dans le calendrier du hub — ce n'est pas
+une date qu'on pose, c'est un vécu qu'on raconte — et tout à faire dans le « + »
+de Yuno.
+
+**Le bouton, la tuile et la fenêtre du moment sont posés une seule fois, dans
+`rendre()`**, et non dans les neuf gabarits de vue. La tuile était écrite par
+les deux vues du calendrier, la fenêtre du moment par deux autres : neuf
+endroits à tenir à jour, c'est huit oublis en puissance. **Jamais sur le
 squelette** : un bouton qui ouvrirait une fenêtre sur des données absentes ne
 mènerait à rien.
 
-**Vérifié de bout en bout, depuis la vue Réseau** — celle qui ne montre aucun
-moment : le « + » présent sur les neuf vues, la fenêtre complète (sept champs),
-et un moment inscrit avec une vraie photo fabriquée sur place (900 × 1200, du
-3:4), une note, une rencontre et l'œuvre finie cochée. Relu en base : la ligne,
-son `photo_chemin`, sa rencontre. Puis retiré depuis le Journal — moment,
-rencontre et **photo du stockage** partis avec lui. Base et bucket relus :
-**1 moment, 2 rencontres, 3 victoires**, l'état exact d'avant.
+**Une création ne relit plus six tables.** Le site rechargeait tout le
+calendrier après chaque envoi ; la ligne rendue par le serveur prend maintenant
+sa place dans l'état — les listes sont modifiées sur place, comme partout depuis
+`js/ecriture.js`. **Mesuré : 1 requête** pour poser un événement, 1 pour une
+tâche, contre 7 avant.
+
+**Vérifié de bout en bout** : le « + » sur les neuf vues ; les cinq natures dans
+la liste ; la porte « Moment » qui emporte le titre et la date ; un événement et
+une tâche posés depuis l'accueil, retrouvés au calendrier **sans rechargement**,
+relus en base puis supprimés. Et, avant la correction, la fenêtre du moment
+elle-même exercée depuis la vue Réseau — celle qui ne montre aucun moment — avec
+une vraie photo fabriquée sur place (900 × 1200, du 3:4), une note, une
+rencontre et l'œuvre finie : ligne, `photo_chemin` et rencontre relus en base,
+puis tout retiré depuis le Journal, **photo du stockage comprise**.
 
 **L'ancien bouton « + Ajouter un moment » reste** à sa place sur l'Accueil et le
-Journal. Il fait double emploi avec le flottant sur ces deux vues — c'est une
+Journal. Il double maintenant la porte « Moment » de la tuile — c'est une
 question posée à Noé, pas un oubli : retirer ce qu'il a validé demande son avis.
 
 ### L'accueil : victoires masquées, objectifs en bas
@@ -1449,10 +1466,10 @@ La méthode qui a tenu toute la journée — exercer, relire en SQL, défaire, r
    est né. Le mot « carnet » désigne donc deux choses — le Carnet de terrain et
    le carnet réseau. À surveiller à l'usage.
 
-**Le bouton « + Ajouter un moment » de Yuno fait doublon** avec le « + »
-flottant, sur l'Accueil et le Journal (§ 2 septies). Le retirer rendrait le
-geste unique, comme dans le hub ; le garder ne coûte qu'un peu de place. Noé n'a
-demandé que l'ajout du flottant : à lui de trancher.
+**Le bouton « + Ajouter un moment » de Yuno fait doublon** avec la porte
+« Moment » de la tuile, sur l'Accueil et le Journal (§ 2 septies). Le retirer
+rendrait le geste unique, comme dans le hub ; le garder ne coûte qu'un peu de
+place. À Noé de trancher.
 
 **Sur le site du FCH, une idée de la banque ne s'ouvre pas** (trouvé le 13 août
 en exerçant les écritures, § 2 ter ter). Les tuiles se présentent comme des

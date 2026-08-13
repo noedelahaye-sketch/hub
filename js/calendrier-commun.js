@@ -1164,7 +1164,19 @@ function pastilleCapture({
   };
 }
 
-export function fenetreCreation({ debut, fin, nature = 'evenement', heure = '', projets = null }) {
+export function fenetreCreation({
+  debut,
+  fin,
+  nature = 'evenement',
+  heure = '',
+  projets = null,
+  // Une nature que SEUL l'appelant connaît, ajoutée en fin de liste. Le site
+  // Yuno s'en sert pour son « moment » : il n'a rien à faire dans le calendrier
+  // du hub — un moment n'est pas une date qu'on pose, c'est un vécu qu'on
+  // raconte — mais tout à faire dans le « + » de Yuno, où l'on note ce qu'on
+  // vient de vivre aussi souvent qu'un rendez-vous à venir.
+  naturesEnPlus = null,
+}) {
   const memeJour = debut === fin;
   const jourLisible = (cle) =>
     depuisDateISO(cle).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -1186,9 +1198,12 @@ export function fenetreCreation({ debut, fin, nature = 'evenement', heure = '', 
     pastilleCapture({
       nom: 'nature',
       icone: ICONE.nature,
-      defaut: NATURES_CREABLES[nature],
+      defaut: { ...NATURES_CREABLES, ...(naturesEnPlus ?? {}) }[nature],
       rempli: true,
-      contenu: `<ul class="choix-capture">${Object.entries(NATURES_CREABLES)
+      contenu: `<ul class="choix-capture">${Object.entries({
+        ...NATURES_CREABLES,
+        ...(naturesEnPlus ?? {}),
+      })
         .map(
           ([valeur, libelle]) => `
         <li><button type="button" data-nature-creation="${valeur}"
