@@ -395,27 +395,10 @@ body[data-espace="yuno"] .portes {
    La première chose vue en entrant sur le site, et elle ne parle que de vécu :
    des moments, des rencontres, des œuvres. Aucune métrique de réseau ici. */
 
-/* Le bouton à gauche, les trois compteurs à sa droite : l'action et son
-   résultat sur la même ligne. Dépliée, la capture prend toute la largeur et
-   pousse les compteurs dessous — quand on saisit, ils ne servent à rien. */
-.carnet-entete {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--espace-8) var(--espace-12);
-  /* Le bouton prend la hauteur des tuiles : la ligne se tient. */
-  align-items: stretch;
-  margin-bottom: var(--espace-16);
-}
-
-.carnet-entete [data-ajout="moment"]:not([open]) > summary { height: 100%; }
-
-.carnet-entete [data-ajout="moment"][open],
-.carnet-entete [data-ajout="moment"][open] + .compteurs { grid-column: 1 / -1; }
-
-/* Sur téléphone il n'y a pas la place de mettre les quatre de front. */
-@media (max-width: 40rem) {
-  .carnet-entete { grid-template-columns: 1fr; }
-}
+/* `.carnet-entete` et `.bouton-capture` ont disparu le 14 août 2026 : les
+   compteurs ont quitté l'accueil, et au Journal c'est le « + » flottant qui
+   ouvre « Ajouter une sortie ». Il n'y a plus de bouton à poser à côté d'eux,
+   donc plus de rangée à tenir. */
 
 /* Trois de front, toujours — ce sont trois faces d'une même chose, pas une
    liste qui s'allonge. Les chiffres ne peuvent que monter. */
@@ -454,36 +437,58 @@ body[data-espace="yuno"] .portes {
    montre dix photos.
 
      ≥ 67,5 rem   dix de front, la frise entière
-     en dessous   cinq
+     45 – 67,5    cinq
+     < 45 rem     trois
 
-   Cinq sur téléphone plutôt que trois (choix de Noé, 12 août) : à cinq, la
-   frise ne fait plus que 87 px de haut au lieu de 149. Elle en montre plus et
-   prend moins de place — sur l'accueil, ce qui suit doit rester à portée de
-   regard sans faire défiler.
+   Trois sur téléphone (demande de Noé, 14 août 2026). Le 12 août on avait
+   essayé cinq — la frise tombait à 87 px de haut au lieu de 149, elle en
+   montrait plus et prenait moins de place. À l'usage, cinq vignettes de 65 px
+   de large sont trop petites pour qu'on reconnaisse la photo : une frise
+   illisible ne montre rien, quel que soit le nombre d'images qu'elle aligne.
+
+   **Le Journal, lui, reste à cinq sur téléphone** (demande de Noé, même jour).
+   Les deux murs ne comptent donc plus pareil, et c'est la différence entre les
+   deux pages : l'accueil MONTRE trois photos qu'on n'a pas demandées — elles
+   doivent se reconnaître d'un regard ; le Journal est l'archive où l'on CHERCHE
+   une photo qu'on a prise, et on la balaie d'autant mieux qu'il y en a plus à
+   l'écran. D'où deux familles de règles séparées plutôt qu'une base commune :
+   à spécificité mêlée, un palier de l'une écrasait un palier de l'autre.
 
    Le tirage en fabrique toujours dix : au-delà du compte de la largeur, elles
    se cachent. Rien à recalculer en JS quand on tourne le téléphone. */
 
 .bloc ul.mur-photos {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
   /* Serré : entre des vignettes de cette taille, 8 px de gouttière mangeraient
      la moitié d'une photo. */
   gap: var(--espace-4);
   margin-top: var(--espace-16);
 }
 
-.bloc ul.mur-photos li:nth-child(n + 6) { display: none; }
+/* La frise de l'accueil : trois, puis cinq, puis dix — et jamais plus d'une
+   ligne, d'où le compte de vignettes qui suit celui des colonnes. */
+.bloc ul.mur-photos:not(.mur-complet) { grid-template-columns: repeat(3, 1fr); }
+.bloc ul.mur-photos:not(.mur-complet) li:nth-child(n + 4) { display: none; }
 
-/* Le mur du Journal ne cache rien : c'est l'archive, elle passe à la ligne
-   autant qu'il le faut. Mêmes colonnes, mêmes emplacements — seule la règle du
-   « une seule ligne » saute, parce qu'elle appartenait à l'accueil, où ce qui
-   suit la frise doit rester sous les yeux. */
+@media (min-width: 45rem) {
+  .bloc ul.mur-photos:not(.mur-complet) { grid-template-columns: repeat(5, 1fr); }
+  .bloc ul.mur-photos:not(.mur-complet) li:nth-child(n + 4) { display: block; }
+  .bloc ul.mur-photos:not(.mur-complet) li:nth-child(n + 6) { display: none; }
+}
+
+@media (min-width: 67.5rem) {
+  .bloc ul.mur-photos:not(.mur-complet) { grid-template-columns: repeat(10, 1fr); }
+  .bloc ul.mur-photos:not(.mur-complet) li:nth-child(n + 6) { display: block; }
+}
+
+/* L'archive du Journal : cinq, puis dix. Elle ne cache jamais rien et passe à
+   la ligne autant qu'il le faut — la règle du « une seule ligne » appartenait
+   à l'accueil, où ce qui suit la frise doit rester sous les yeux. */
+.bloc ul.mur-photos.mur-complet { grid-template-columns: repeat(5, 1fr); }
 .bloc ul.mur-photos.mur-complet li { display: block; }
 
 @media (min-width: 67.5rem) {
-  .bloc ul.mur-photos { grid-template-columns: repeat(10, 1fr); }
-  .bloc ul.mur-photos li:nth-child(n + 6) { display: block; }
+  .bloc ul.mur-photos.mur-complet { grid-template-columns: repeat(10, 1fr); }
 }
 
 /* Ce ne sont pas des tuiles : ni cadre, ni fond, ni remplissage, ni coins
@@ -547,39 +552,6 @@ body[data-espace="yuno"] .portes {
 
 /* Sans script, aucune classe ne sera posée : la photo doit rester visible. */
 .mur-photos:not(:has(img.chargee)) img { opacity: 1; }
-
-/* Ajouter un moment est L'action de la page : le bouton se voit. Il ouvre une
-   fenêtre, comme au calendrier — le geste est le même partout. */
-.bouton-capture {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--espace-8);
-  width: 100%;
-  height: 100%;
-  min-height: 3rem;
-  padding: 0 var(--espace-16);
-  font-family: inherit;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  white-space: nowrap;
-  color: var(--fond-carte);
-  background: var(--accent);
-  border: none;
-  border-radius: var(--rayon-controle);
-  cursor: pointer;
-}
-
-.bouton-capture-signe {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.25rem;
-  height: 1.25rem;
-  border: 1px solid currentColor;
-  border-radius: var(--rayon-pastille);
-  line-height: 1;
-}
 
 /* La photo jointe : elle occupe la largeur de la tuile, sans jamais la
    déformer. Un clic l'ouvre en grand. */

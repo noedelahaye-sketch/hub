@@ -326,12 +326,14 @@ nature. Le hub a le même espace Calendrier, tous projets confondus
 **Elle montre et elle ouvre des portes ; elle ne gère rien** (décision de Noé,
 12 août). Dans l'ordre :
 
-1. **Les trois compteurs** — moments vécus · rencontres · œuvres finies. Ils se
-   calculent depuis les moments, ne sont stockés nulle part, et **ne peuvent que
-   monter** : c'est une réserve de valeur stable, l'anti-portée.
-2. **Loguer un moment** — le bouton de capture, en évidence. C'est l'action de
-   la page.
-3. **Le mur de photos** — sous les compteurs, une **frise sur une seule
+**Ni compteurs, ni bouton de capture depuis le 14 août 2026** (demande de Noé) :
+les trois compteurs — moments vécus · rencontres · œuvres finies — et
+« Ajouter une sortie » vivent désormais **au Journal seulement**, qui est la
+page du carnet. L'accueil s'ouvre directement sur le mur. La capture s'y
+atteint toujours par l'invite, ou par le « + » flottant dont la tuile porte la
+nature Moment.
+
+1. **Le mur de photos** — en tête de page, une **frise sur une seule
    ligne**, tirée au sort une fois par jour parmi tous les moments qui portent
    une photo (décision de Noé, 12 août). Pas de titre au-dessus, pas de fiche
    autour : l'accueil montre ce qui a été vécu, il ne le raconte pas. Un moment
@@ -344,6 +346,16 @@ nature. Le hub a le même espace Calendrier, tous projets confondus
    de pair — **dix** au-delà de 1080 px, **cinq** entre 720 et 1080, **trois**
    en dessous. Le tirage en fabrique toujours dix ; le surplus se cache en CSS,
    rien à recalculer quand on tourne le téléphone.
+
+   **Les trois paliers ont été rétablis le 14 août 2026** (demande de Noé), et
+   **pour la frise de l'accueil seulement**. Le 12 août, le CSS était passé à
+   cinq sur téléphone — la frise tombait à 87 px de haut au lieu de 149, elle en
+   montrait plus et prenait moins de place. À l'usage, cinq vignettes de 65 px
+   de large sont trop petites pour qu'on reconnaisse la photo : une frise
+   illisible ne montre rien, quel que soit le nombre d'images qu'elle aligne. Le
+   palier des cinq reste pour la tablette. **Le mur du Journal, lui, garde ses
+   cinq colonnes sur téléphone** (voir plus bas) : les deux murs ne comptent
+   plus pareil, et c'est voulu.
 
    **Ce ne sont pas des tuiles** : ni cadre, ni fond, ni coins arrondis. Une
    photo n'est pas un élément d'interface. L'emplacement est en **3:4 — le 4:3
@@ -405,17 +417,31 @@ Trois conséquences, et elles tiennent l'intention :
 « Carnet de terrain ». C'est la donnée qui a fusionné, pas les mots.
 
 - **Le mur, entier** (décision de Noé, 12 août 2026). Sous les compteurs, le
-  même mur qu'à l'accueil — mêmes emplacements en 3:4, même recadrage, mêmes
-  colonnes — avec deux différences qui sont tout l'écart entre les deux pages :
-  **rien n'est tiré au sort** et **rien n'est caché**. Toutes les photos, de la
-  plus récente à la plus ancienne, sur autant de lignes qu'il en faut. On vient
-  au Journal chercher une photo qu'on a prise ; on ne s'y laisse pas surprendre.
-  La règle du « une seule ligne » appartenait à l'accueil, où ce qui suit la
-  frise doit rester sous les yeux.
+  même mur qu'à l'accueil — mêmes emplacements en 3:4, même recadrage — avec
+  deux différences qui sont tout l'écart entre les deux pages : **rien n'est
+  tiré au sort** et **rien n'est caché**. Toutes les photos, de la plus récente
+  à la plus ancienne, sur autant de lignes qu'il en faut. On vient au Journal
+  chercher une photo qu'on a prise ; on ne s'y laisse pas surprendre. La règle
+  du « une seule ligne » appartenait à l'accueil, où ce qui suit la frise doit
+  rester sous les yeux.
+
+  **Les colonnes, elles, ne sont plus les mêmes** (demande de Noé, 14 août
+  2026) : le Journal en garde **cinq sur téléphone** quand l'accueil est passé
+  à trois — dix au-delà de 1080 px pour les deux. La raison est celle qui
+  sépare les deux pages : l'accueil MONTRE trois photos qu'on n'a pas
+  demandées, elles doivent se reconnaître d'un regard ; le Journal est
+  l'archive où l'on CHERCHE une photo précise, et on la balaie d'autant mieux
+  qu'il y en a plus à l'écran. En CSS, deux familles de règles séparées
+  (`:not(.mur-complet)` d'un côté, `.mur-complet` de l'autre) plutôt qu'une
+  base commune : à spécificité mêlée, un palier de l'une écrasait celui de
+  l'autre.
 - **La capture** s'ouvre en **fenêtre volante**, comme au calendrier — le geste
-  est le même partout dans le hub. Le bouton « Ajouter un moment » vit à gauche
-  des trois compteurs, sur l'accueil comme au Journal : l'action et son résultat
-  se répondent. Elle demande une date, un type (match · concert · sortie ·
+  est le même partout dans le hub. **C'est le « + » flottant qui l'ouvre**
+  (demande de Noé, 14 août 2026) : sur cette page il ne pose pas une date, il
+  ouvre « Ajouter une sortie » directement — comme sur les pages du réseau, où
+  il ouvre une fiche. Le bouton dédié qui vivait à gauche des compteurs a
+  disparu : le « + » est là où le pouce arrive, et il ne bouge pas quand la
+  page défile. Elle demande une date, un type (match · concert · sortie ·
   autre), le nom de la sortie, et en facultatif le lieu, les rencontres, une
   photo, une note, et la case « œuvre finie ». Deux champs suffisent — elle doit
   se remplir debout, en sortant du stade, en moins de 30 secondes.

@@ -757,7 +757,11 @@ const NATURE_MOMENT = { moment: 'Moment' };
 // elle s'ouvre seule — « toutes les autres possibilités sont cachées ».
 const PLUS_PAR_VUE = {
   accueil: { nature: 'tache' },
-  journal: { nature: 'tache' },
+  // Le Journal EST la page du carnet : son « + » ouvre directement « Ajouter
+  // une sortie » (demande de Noé, 14 août 2026), et remplace le bouton dédié
+  // qui vivait au-dessus des compteurs. Comme `contact`, ce n'est pas une
+  // nature de la tuile : la fenêtre de la sortie s'ouvre seule.
+  journal: { sortie: true },
   creer: { nature: 'publication', natureEnDernier: true },
   banque: { nature: 'publication', natureEnDernier: true },
   editorial: { nature: 'publication', natureEnDernier: true },
@@ -770,15 +774,6 @@ const PLUS_PAR_VUE = {
 // Sur la page Créer, la nature passe en DERNIER : on vient y poster, et le
 // réglage qu'on change le moins n'a pas à occuper la première place.
 const reglagesDuPlus = (vue) => PLUS_PAR_VUE[vue] ?? { nature: 'tache' };
-
-// Le bouton qui ouvre la capture. Il reste à sa place, à gauche des compteurs ;
-// c'est la fenêtre qui vient par-dessus.
-function boutonCapture() {
-  return `
-    <button type="button" class="bouton-capture" data-ouvrir-capture>
-      <span class="bouton-capture-signe" aria-hidden="true">+</span> Ajouter un moment
-    </button>`;
-}
 
 // --- Le rendez-vous stats ----------------------------------------------------
 // On ne supprime pas un réflexe, on le remplace par un rituel. Les chiffres des
@@ -1007,15 +1002,16 @@ function vueAccueil(etat) {
   return `
     ${enTete('accueil')}
 
+    <!-- Ni compteurs, ni bouton de capture ici (demande de Noé, 14 août 2026) :
+         l'accueil s'ouvre directement sur le mur. Les trois compteurs et
+         « Ajouter un moment » restent au Journal, qui EST la page du carnet —
+         et la capture s'atteint toujours de l'accueil par l'invite ou par le
+         « + » flottant, dont la tuile porte la nature Moment. -->
     <section class="bloc">
       ${construireInvite(etat)}
-      <div class="carnet-entete">
-        ${boutonCapture()}
-        ${construireCompteurs(sortiesVecues(etat.evenements))}
-      </div>
-      <!-- Le mur suit les compteurs sans titre au-dessus : dix photos n'ont
-           besoin de personne pour dire ce qu'elles sont. Pas de porte vers le
-           Journal non plus — il est dans la barre, comme Créer. -->
+      <!-- Le mur ouvre la page, sans titre au-dessus : dix photos n'ont besoin
+           de personne pour dire ce qu'elles sont. Pas de porte vers le Journal
+           non plus — il est dans la barre, comme Créer. -->
       <div data-bloc="mur-photos">${construireMurPhotos(etat.evenements, etat.photos)}</div>
     </section>
 
@@ -1054,10 +1050,10 @@ function vueJournal(etat) {
 
     <section class="bloc">
       ${construireInvite(etat)}
-      <div class="carnet-entete">
-        ${boutonCapture()}
-        ${construireCompteurs(sortiesVecues(etat.evenements))}
-      </div>
+      <!-- Plus de bouton « Ajouter une sortie » ici (demande de Noé, 14 août
+           2026) : c'est le « + » flottant qui l'ouvre, et il est là où le
+           pouce arrive. Les compteurs restent — le Journal est leur page. -->
+      ${construireCompteurs(sortiesVecues(etat.evenements))}
       <!-- Le même mur qu'à l'accueil, mais entier et dans l'ordre du temps :
            ici on cherche une photo qu'on a prise, on ne se laisse pas
            surprendre par un tirage. -->
@@ -4051,21 +4047,19 @@ export default {
           return;
         }
 
+        // Au Journal, le « + » ouvre la sortie elle-même : on vient y raconter
+        // ce qu'on a vécu, pas poser une date.
+        if (reglages.sortie) {
+          etat.captureOuverte = true;
+          rendre();
+          section.querySelector('#moment-titre')?.focus();
+          return;
+        }
+
         const jour = versDateISO();
         etat.creationCal = { debut: jour, fin: jour, nature: reglages.nature };
         rendre();
         section.querySelector('#cal-titre')?.focus();
-        return;
-      }
-
-      if (evenement.target.closest('[data-ouvrir-capture]')) {
-        etat.captureOuverte = true;
-        rendre();
-        // Le nom de la sortie est le premier champ ; venue de l'invite, la
-        // capture n'en a pas — le curseur va alors aux rencontres.
-        (
-          section.querySelector('#moment-titre') ?? section.querySelector('#moment-rencontres')
-        )?.focus();
         return;
       }
 

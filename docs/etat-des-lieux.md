@@ -231,6 +231,47 @@ dont 4 non reliées, l'état exact du départ.
 
 ---
 
+## 0 ter. L'accueil et le Journal allégés (14 août, fin de journée)
+
+Trois demandes de Noé, à la suite :
+
+- **L'accueil du site Yuno perd ses trois compteurs et son bouton de capture.**
+  Il s'ouvre maintenant sur le mur. Les compteurs et « Ajouter une sortie »
+  restent **au Journal seulement** — c'est lui la page du carnet. Portée
+  respectée : le Journal n'a pas été touché par cette demande-là.
+- **Au Journal, le « + » flottant remplace le bouton dédié** et ouvre
+  directement « Ajouter une sortie » (`PLUS_PAR_VUE.journal = { sortie: true }`,
+  sur le modèle de `contact: true` : ce n'est pas une nature de la tuile, la
+  fenêtre s'ouvre seule). `boutonCapture()`, son gestionnaire
+  `[data-ouvrir-capture]`, les règles `.carnet-entete` et `.bouton-capture` ont
+  été supprimés — plus personne ne les appelait. (Le `data-ouvrir-capture` de
+  `js/taches.js` est un autre bouton, sans rapport.)
+- **La frise de l'accueil revient à trois photos sur téléphone**, et **elle
+  seule** : le mur du Journal garde ses cinq (Noé a tranché la question de
+  portée en cours de route). Les deux murs ne comptent donc plus pareil, et
+  c'est la différence entre les deux pages — l'accueil MONTRE trois photos
+  qu'on n'a pas demandées, elles doivent se reconnaître d'un regard ; le
+  Journal est l'archive où l'on CHERCHE, et on balaie d'autant mieux qu'il y en
+  a plus à l'écran. Accueil : 3 · 5 · 10 selon la largeur. Journal : 5 · 5 · 10.
+
+**Le piège était dans la spécificité**, pas dans l'ordre. Une base commune avec
+des exceptions par page ne tient pas : `.bloc ul.mur-photos:not(.mur-complet)`
+pèse (0,3,1) et écrase le `.bloc ul.mur-photos` (0,2,1) d'un palier plus large,
+quel que soit l'ordre du fichier — l'accueil serait resté à cinq colonnes en
+1280 px. D'où **deux familles de règles séparées**, chacune avec ses paliers et
+sa spécificité constante : `:not(.mur-complet)` pour la frise, `.mur-complet`
+pour l'archive.
+
+**Vérifié aux trois largeurs, sur les deux pages** — six mesures : accueil
+3 vignettes de 112 × 149 en 375 px, 5 en 768, 10 en 1280, toujours une seule
+ligne ; Journal 5 colonnes en 375 et 768, 10 en 1280, et **13 photos visibles
+sur 13** à chaque fois, aucune cachée. Accueil sans compteurs ni bouton,
+Journal avec ses compteurs (13 moments vécus) et son « + » qui ouvre « Ajouter
+une sortie », curseur sur le titre. 0 px de débordement, zéro erreur en
+console.
+
+---
+
 ## 1. Ce qui existe
 
 Le hub est **déployé et fonctionnel** :
