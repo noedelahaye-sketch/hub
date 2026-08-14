@@ -31,6 +31,7 @@ import {
 import {
   depuisDateISO,
   echeanceLisible,
+  momentLisible,
   versDateISO,
   ajouterJours,
   echapper,
@@ -998,9 +999,67 @@ function construireInvite(etat) {
 
 // --- Les vues ----------------------------------------------------------------
 
+// Le bloc de l'accueil : la sortie du moment, sa phase, et ce qu'il y reste à
+// faire. Exportée pour être vérifiable seule, avec des sorties factices.
+//
+// Ce qu'il montre dépend de l'heure — avant on prépare, pendant on photographie,
+// après on trie. C'est le seul endroit du site où le temps qui passe change ce
+// qui s'affiche, et c'est justement ce qu'on lui demande.
+export function construireSortieDuMoment(evenements, preparations, reference = new Date()) {
+  const sortie = sortieDuMoment(evenements, reference);
+  if (!sortie) return '';
+
+  const phase = phaseDeLaSortie(sortie, reference);
+  const feuille = feuilleDeLaSortie(preparations, 'evenement', sortie.id);
+
+  const tete = `
+    <span class="tuile-entete">
+      <span class="etiquette">${PHASES_PREPA[phase]}</span>
+      <span class="discret quand">${echapper(momentLisible(new Date(sortie.date_debut)))}</span>
+    </span>
+    <h2 class="sortie-moment-titre">${echapper(sortie.titre)}</h2>`;
+
+  // Pas encore de feuille : la porte est celle qui en crée une. Le bloc reste,
+  // parce que la sortie, elle, est bien là.
+  if (!feuille) {
+    return `
+      <section class="bloc sortie-moment">
+        ${tete}
+        ${boutonPreparer(null, 'evenement', sortie.id)}
+      </section>`;
+  }
+
+  const items = feuille.items.filter((item) => item.phase === phase);
+  const restent = items.filter((item) => !item.fait);
+
+  // Ce qu'il RESTE, jamais ce qui manque : on montre les trois premières lignes
+  // à faire, et le compte dit le reste sans en faire une dette.
+  const apercu = restent.length
+    ? `<ul class="apercu-phase">${restent
+        .slice(0, 3)
+        .map(
+          (item) => `
+        <li class="tache-ligne">
+          <span class="tache-cercle" aria-hidden="true"></span>
+          <span class="tache-corps"><span class="tache-titre">${echapper(item.texte)}</span></span>
+        </li>`,
+        )
+        .join('')}</ul>`
+    : `<p class="discret">Tout est coché pour cette phase.</p>`;
+
+  return `
+    <section class="bloc sortie-moment">
+      ${tete}
+      ${apercu}
+      <a class="lien-discret" href="#yuno/preparations/${echapper(feuille.id)}">Ouvrir la
+        préparation${restent.length > 3 ? ` · ${restent.length} lignes à faire` : ''}</a>
+    </section>`;
+}
+
 function vueAccueil(etat) {
   return `
     ${enTete('accueil')}
+    ${construireSortieDuMoment(etat.evenements, etat.preparations)}
 
     <!-- Ni compteurs, ni bouton de capture ici (demande de Noé, 14 août 2026) :
          l'accueil s'ouvre directement sur le mur. Les trois compteurs et
@@ -1745,6 +1804,59 @@ function boutonPreparer(feuille, type, id) {
          data-ouvrir-preparation="${echapper(feuille.id)}">Ouvrir la préparation</button>`
     : `<button type="button" class="bouton-secondaire bouton-mini"
          data-preparer="${echapper(type)}:${echapper(id)}">Préparer</button>`;
+}
+
+// --- La sortie du moment, sur l'accueil ---------------------------------------
+// Le jour d'un match, ce qui compte n'est ni le mur ni les objectifs : c'est ce
+// qu'il reste à faire avant de partir, puis sur place, puis au retour. L'accueil
+// montre donc la phase courante de la feuille et ouvre la porte vers elle.
+
+// La fin d'une sortie, quand la colonne ne la dit pas. Deux conventions déjà
+// posées ailleurs dans le hub, reprises ici plutôt que réinventées : minuit
+// veut dire « pas d'heure » (`heureDe`), et la tuile propose deux heures par
+// défaut pour un événement qui en porte une (`DUREES`).
+export function finDeLaSortie(sortie) {
+  if (sortie.date_fin) return new Date(sortie.date_fin);
+
+  const debut = new Date(sortie.date_debut);
+  const sansHeure = debut.getHours() === 0 && debut.getMinutes() === 0;
+  if (sansHeure) {
+    // Un jour entier : la sortie tient jusqu'à la fin de sa journée.
+    const soir = new Date(debut);
+    soir.setHours(23, 59, 59, 999);
+    return soir;
+  }
+  return new Date(debut.getTime() + 2 * 60 * 60 * 1000);
+}
+
+// Combien de temps « Après » reste la phase courante. Au-delà, la sortie est
+// derrière soi : l'accueil n'a plus à en parler, et le carnet a pris le relais.
+const APRES_DURE = 24 * 60 * 60 * 1000;
+
+export function phaseDeLaSortie(sortie, reference = new Date()) {
+  const debut = new Date(sortie.date_debut);
+  const fin = finDeLaSortie(sortie);
+
+  if (reference < debut) return 'avant';
+  if (reference <= fin) return 'pendant';
+  if (reference - fin <= APRES_DURE) return 'apres';
+  return null;
+}
+
+// La sortie dont on parle sur l'accueil : celle qui est en cours, celle qui
+// vient de finir (moins de 24 h), ou la prochaine — dans cet ordre, qui est
+// simplement l'ordre du temps. Une sortie commencée passe donc devant une
+// sortie à venir, y compris le lendemain d'un match : pendant ces 24 h, ce
+// qu'on a à faire, c'est trier et retoucher.
+//
+// Les répétitions ne sont pas dépliées : une feuille de préparation appartient
+// à un événement, pas à une occurrence, et chez Yuno un match ne se répète pas.
+export function sortieDuMoment(evenements, reference = new Date()) {
+  return (
+    evenements
+      .filter((sortie) => phaseDeLaSortie(sortie, reference) !== null)
+      .sort((a, b) => new Date(a.date_debut) - new Date(b.date_debut))[0] ?? null
+  );
 }
 
 export function feuilleDeLaSortie(preparations, type, id) {
@@ -3037,7 +3149,10 @@ const BESOINS = {
   // L'accueil et le Journal montrent le vécu : c'est `evenements` qui le porte
   // depuis la fusion, avec ses photos et ses rencontres. Les préparations
   // viennent avec — la fiche d'une sortie montre son bilan.
-  accueil: ['evenements', 'objectifs', 'publications', 'contacts', 'preparations'],
+  // `modelesPrepa` sert au bloc de la sortie du moment : quand elle n'a pas
+  // encore sa feuille, il porte le bouton « Préparer », qui doit savoir combien
+  // de modèles offrir. Sans cette lecture, il créerait une feuille vierge.
+  accueil: ['evenements', 'objectifs', 'publications', 'contacts', 'preparations', 'modelesPrepa'],
   journal: ['evenements', 'contacts', 'preparations'],
   creer: ['publications', 'stats'],
   banque: ['publications'],

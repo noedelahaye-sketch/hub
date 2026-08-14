@@ -272,6 +272,45 @@ console.
 
 ---
 
+## 0 quater. La sortie du moment, sur l'accueil (14 août, soir)
+
+Demande de Noé : un lien vers la fiche de préparation du prochain événement, et
+un aperçu de ses tâches — **avant** avant le début, **pendant** pendant, et
+**après** jusqu'à 24 h après la fin.
+
+- **Trois fonctions pures**, exportées et vérifiables seules :
+  `finDeLaSortie` (la colonne `date_fin`, sinon +2 h si l'événement porte une
+  heure, sinon la fin de la journée — les deux conventions déjà posées par
+  `heureDe` et par la durée par défaut de la tuile), `phaseDeLaSortie`
+  (`avant` · `pendant` · `apres` · `null` au-delà de 24 h) et `sortieDuMoment`
+  (l'ordre du temps : la sortie commencée passe devant celle à venir).
+- **`construireSortieDuMoment`** rend le bloc, en tête d'accueil : étiquette de
+  phase, date, titre, les **trois premières lignes qui restent** (plus le compte
+  s'il y en a davantage), et le lien vers la feuille. Sans feuille, le bouton
+  « Préparer ». Tout coché : une phrase, pas un vide.
+- **L'aperçu est en lecture** — l'accueil montre et ouvre des portes, il ne gère
+  rien (décision du 12 août). Les cercles sont des `<span>`, pas des boutons.
+- `BESOINS.accueil` gagne `modelesPrepa` : sans cette lecture, le bouton
+  « Préparer » de ce bloc créerait une feuille vierge au lieu d'offrir le choix.
+  Les préparations, elles, y étaient déjà.
+- **`.bloc li` est annulé pour `.apercu-phase`**, comme pour la liste des
+  tâches : sans ça les lignes héritaient du fond et du rayon des cartes, et deux
+  lignes de texte prenaient l'air de deux champs de saisie (vu sur capture,
+  corrigé, revérifié).
+
+**Vérifié** — d'abord les fonctions pures avec des sorties factices : les
+bascules tombent au bon instant (avant → pendant à l'heure pile, pendant
+jusqu'à la fin incluse, après jusqu'à 24 h, `null` à 25 h), la fin déduite vaut
+21:00 pour un 19:00 sans `date_fin` et 23:59:59 pour un jour entier, et le choix
+entre trois sorties prend bien celle qui vient de finir. Puis le rendu, dans les
+cinq cas (avant, pendant, après, plus rien, sans feuille). Puis **en vrai** : à
+17 h 54, le bloc annonce « AVANT · ven. 14 août, 19:00 · Red Star - Sochaux » et
+les deux lignes qui restent — « Charger les batteries » étant cochée en base,
+par Noé, depuis son téléphone. Le lien ouvre la feuille, 0 px de débordement,
+zéro erreur en console.
+
+---
+
 ## 1. Ce qui existe
 
 Le hub est **déployé et fonctionnel** :

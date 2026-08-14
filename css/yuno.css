@@ -1687,3 +1687,57 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
    geste, comme dans le CRM. */
 .moment-ouvrable { cursor: pointer; }
 .moment-ouvrable:hover { border-color: var(--gris-chaud-trait); }
+
+/* --- La sortie du moment, sur l'accueil --------------------------------------
+   Le jour d'un match, ce qui compte n'est ni le mur ni les objectifs : c'est ce
+   qu'il reste à faire avant de partir, puis sur place, puis au retour. D'où ce
+   bloc en tête de page — le seul du site dont le contenu change avec l'heure. */
+
+.sortie-moment-titre {
+  margin: var(--espace-4) 0 var(--espace-12);
+  font-size: 1.25rem;
+}
+
+/* L'aperçu est en LECTURE : l'accueil montre et ouvre des portes, il ne gère
+   rien (décision du 12 août). Les cercles reprennent le dessin des tâches pour
+   qu'on les reconnaisse, mais ce ne sont pas des boutons — on coche dans la
+   feuille, où l'on va d'un geste. */
+.apercu-phase {
+  margin: 0 0 var(--espace-12);
+  padding: 0;
+  list-style: none;
+}
+
+/* `.bloc li` est annulé, comme pour la liste des tâches : ici aussi ce sont des
+   lignes séparées d'un filet, pas des tuiles. Sans ça elles héritaient du fond
+   et du rayon des cartes, et deux lignes de texte prenaient l'air de deux
+   champs de saisie. */
+.bloc .apercu-phase > .tache-ligne {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-12);
+  padding: var(--espace-8) 0;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--bordure);
+  border-radius: 0;
+}
+
+.bloc .apercu-phase > .tache-ligne::before { content: none; }
+.bloc .apercu-phase > .tache-ligne:last-child { border-bottom: none; }
+
+.apercu-phase .tache-cercle {
+  flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0;
+  padding: 0;
+  border: 2px solid var(--gris-chaud-trait);
+  border-radius: var(--rayon-pastille);
+  background: none;
+}
+
+.apercu-phase .tache-cercle::before,
+.apercu-phase .tache-cercle::after { content: none; }
+
+.apercu-phase .tache-titre { font-size: 0.9375rem; }

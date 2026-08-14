@@ -333,7 +333,33 @@ page du carnet. L'accueil s'ouvre directement sur le mur. La capture s'y
 atteint toujours par l'invite, ou par le « + » flottant dont la tuile porte la
 nature Moment.
 
-1. **Le mur de photos** — en tête de page, une **frise sur une seule
+0. **La sortie du moment** — en tête, avant le mur (demande de Noé, 14 août
+   2026). C'est le seul bloc du site **dont le contenu change avec l'heure**, et
+   c'est ce qu'on lui demande : le jour d'un match, ce qui compte n'est ni le
+   mur ni les objectifs, c'est ce qu'il reste à faire.
+
+   Il montre la sortie **en cours**, celle qui **vient de finir** (moins de
+   24 h) ou la **prochaine** — dans cet ordre, qui est celui du temps : une
+   sortie commencée passe devant une sortie à venir, y compris le lendemain
+   d'un match, parce que pendant ces 24 h le travail c'est trier et retoucher.
+   Passé ce délai, le bloc disparaît : le carnet a pris le relais.
+
+   Avec lui, **la phase courante de sa feuille de préparation** — Avant ·
+   Pendant · Après — et **les trois premières lignes qui restent à faire**,
+   plus le compte s'il y en a davantage. Tout coché, il le dit une fois et se
+   tait. Un lien ouvre la feuille ; si la sortie n'en a pas encore, le bloc
+   porte « Préparer » à la place.
+
+   **L'aperçu est en lecture** : l'accueil montre et ouvre des portes, il ne
+   gère rien. Les cercles reprennent le dessin des tâches pour qu'on les
+   reconnaisse, mais on coche dans la feuille, à un geste de là.
+
+   La fin d'une sortie, quand la colonne ne la dit pas, suit deux conventions
+   déjà posées ailleurs plutôt que d'en inventer : minuit veut dire « pas
+   d'heure » (la sortie tient alors jusqu'au soir), et un événement qui porte
+   une heure dure deux heures — la valeur que propose la tuile.
+
+1. **Le mur de photos** — sous elle, une **frise sur une seule
    ligne**, tirée au sort une fois par jour parmi tous les moments qui portent
    une photo (décision de Noé, 12 août). Pas de titre au-dessus, pas de fiche
    autour : l'accueil montre ce qui a été vécu, il ne le raconte pas. Un moment
