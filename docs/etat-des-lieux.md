@@ -41,6 +41,48 @@ référence pour leurs sites respectifs.
 
 ---
 
+## 0. Les Préparations de Yuno — l'échantillon (14 août, après-midi)
+
+Demande de Noé du jour : préparer ses matchs/événements/commandes avec des
+modèles de cases à cocher (avant · pendant · après), plus un espace bilan. Ses
+réponses : l'outil s'appelle **« Préparation »**, le modèle « Match » de départ
+part de sa liste, les deux questions du bilan lui vont, **rien côté hub** pour
+commencer. Le cahier des charges est dans `yuno-spec.md` (§4,
+`#yuno/preparations`) ; ceci est l'état de l'échantillon.
+
+**Construit et vérifié en conditions réelles :**
+
+- **Migration `20260814100000_preparations.sql`** appliquée : 4 tables
+  (`modeles_preparation`, `modeles_preparation_items`, `preparations`,
+  `preparations_items`), RLS + politiques + grants comme partout. Le modèle
+  « Match » est chargé en base (9 items, non versionnés — même pratique que les
+  modèles de messages).
+- **« Préparer » dans la fenêtre d'un événement** au calendrier Yuno
+  (`fenetreDetail` a gagné une option `actions`, vide pour le hub et le FCH —
+  vérifié : leur fenêtre n'a pas bougé). Créer copie le modèle, ouvre
+  `#yuno/preparations/<id>` ; l'événement dit ensuite « Ouvrir la préparation ».
+- **La feuille** : trois phases en colonnes (une seule sous 1080 px), lignes à
+  la forme des tâches (cercle gris — pas de priorité ici), champ d'ajout par
+  phase qui rend le focus après l'envoi, bilan ouvert à partir de la date de la
+  sortie, suppression écrite en bas. L'onglet Journal reste allumé.
+- **Exercé sur la vraie feuille du match du soir** (Red Star - Sochaux, créée
+  et GARDÉE pour Noé) : cocher/décocher, ajouter puis retirer un item, écrire
+  le bilan — base relue en SQL à chaque étape, puis bilan remis à zéro (c'était
+  un essai, le vrai s'écrira après le match). Zéro erreur console venant du
+  chantier, 0 px de débordement à 375 px, cercles à 43 px.
+
+**Pas encore construit, à la suite de la validation de l'échantillon** :
+l'éditeur de modèles depuis le site, le choix du modèle quand il y en aura
+plusieurs, « Préparer » sur une commande, la porte depuis le Journal, « aussi
+au modèle » sur un item ajouté en cours de feuille. La liste `#yuno/preparations`
+existe mais reste nue.
+
+**Un piège recroisé** : la seule erreur console de la session est un
+`JWT issued at future` (PGRST303) au chargement du tableau de bord — l'horloge
+de la machine contre celle de Supabase, antérieur au chantier, sans rapport.
+
+---
+
 ## 1. Ce qui existe
 
 Le hub est **déployé et fonctionnel** :

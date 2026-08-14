@@ -60,6 +60,7 @@ import {
   ongletCalendrier,
 } from './calendrier-commun.js';
 import { lireCache, ecrireCache } from './cache-session.js';
+import { animerLaCoche } from './mouvements.js';
 import {
   modifierAussitot,
   retirerAussitot,
@@ -115,7 +116,7 @@ function construirePiliers() {
 
 const VUES = [
   'accueil', 'journal', 'creer', 'banque', 'editorial',
-  'calendrier', 'reseau', 'passerelle', 'carnet',
+  'calendrier', 'reseau', 'passerelle', 'carnet', 'preparations',
 ];
 
 // La banque est une pièce de l'atelier : elle n'a pas son onglet, elle garde
@@ -126,6 +127,9 @@ const ONGLET_DE_LA_VUE = {
   editorial: 'creer',
   passerelle: 'reseau',
   carnet: 'reseau',
+  // Préparer et vivre sont les deux faces du même axe terrain : les feuilles
+  // de préparation gardent l'onglet Journal allumé.
+  preparations: 'journal',
 };
 
 // --- Les trois mouvements du site --------------------------------------------
@@ -1280,13 +1284,207 @@ function vueCalendrier(etat) {
       }
     </div>
 
-    ${etat.detailCal ? fenetreDetail(etat.detailCal, { edition: etat.editionCal }) : ''}
+    ${
+      etat.detailCal
+        ? fenetreDetail(etat.detailCal, {
+            edition: etat.editionCal,
+            actions: actionsPreparation(etat),
+          })
+        : ''
+    }
     ${
       etat.jourOuvertCal
         ? fenetreJour(etat.jourOuvertCal, elementsDuJour(elements, etat.jourOuvertCal))
         : ''
     }
     ${pied()}`;
+}
+
+// --- Les préparations --------------------------------------------------------
+// La feuille d'une sortie : trois phases de cases à cocher, copiées d'un
+// modèle, puis un bilan en deux questions. Un item non coché n'est JAMAIS un
+// raté : rien ici ne compte les manqués, le bilan dit d'abord l'obtenu.
+
+const PHASES_PREPA = { avant: 'Avant', pendant: 'Pendant', apres: 'Après' };
+
+// La ligne reprend la forme des tâches — même cercle, même coche : un geste se
+// reconnaît sans réfléchir. Pas de priorité ici, le cercle reste gris.
+function lignePreparation(item) {
+  return `
+    <li class="tache-ligne${item.fait ? ' tache-faite' : ''}">
+      <button type="button" class="tache-cercle" data-cocher-prepa="${echapper(item.id)}"
+        aria-pressed="${item.fait}"
+        aria-label="${item.fait ? 'Décocher' : 'Cocher'} « ${echapper(item.texte)} »"></button>
+      <span class="tache-corps"><span class="tache-titre">${echapper(item.texte)}</span></span>
+      <button type="button" class="lien-discret bouton-mini bouton-retirer"
+        data-retirer-prepa="${echapper(item.id)}"
+        title="Retirer cette ligne"
+        aria-label="Retirer « ${echapper(item.texte)} »">×</button>
+    </li>`;
+}
+
+// Une phase vide n'est pas un écran vide : le champ d'ajout est là, il suffit.
+function blocPhase(feuille, phase) {
+  const items = feuille.items.filter((item) => item.phase === phase);
+
+  return `
+    <section class="bloc prepa-phase">
+      <h2>${PHASES_PREPA[phase]}</h2>
+      ${
+        items.length
+          ? `<ul class="liste-taches-pleine prepa-liste">${items
+              .map(lignePreparation)
+              .join('')}</ul>`
+          : ''
+      }
+      <form data-action="ajouter-item-prepa" data-phase="${phase}" class="prepa-ajout">
+        <input type="hidden" name="preparation_id" value="${echapper(feuille.id)}">
+        <input type="hidden" name="phase" value="${phase}">
+        <input type="text" name="texte" autocomplete="off" required
+          aria-label="Ajouter à « ${PHASES_PREPA[phase]} »"
+          placeholder="${phase === 'pendant' ? 'Ajouter un plan…' : 'Ajouter…'}">
+        <button type="submit" class="bouton-secondaire bouton-mini">Ajouter</button>
+        <p class="message-erreur" data-erreur hidden></p>
+      </form>
+    </section>`;
+}
+
+// Le dernier « à refaire autrement » du même modèle : c'est là que le bilan
+// paie — on le relit en préparant la sortie suivante, pas en rangeant.
+export function dernierBilan(preparations, feuille) {
+  return (
+    preparations
+      .filter(
+        (autre) =>
+          autre.id !== feuille.id &&
+          autre.modele_id &&
+          autre.modele_id === feuille.modele_id &&
+          autre.bilan_mieux,
+      )
+      .sort((a, b) =>
+        String(b.date ?? b.created_at).localeCompare(String(a.date ?? a.created_at)),
+      )[0] ?? null
+  );
+}
+
+// Le bilan attend que la sortie soit vécue : avant sa date, la feuille dit
+// juste qu'il viendra. Une feuille sans date l'offre tout de suite.
+function blocBilan(feuille) {
+  const ouvert = !feuille.date || feuille.date <= versDateISO();
+
+  if (!ouvert) {
+    return `
+      <section class="bloc prepa-bilan">
+        <h2>Bilan</h2>
+        <p class="vide">Il s'écrira une fois la sortie vécue.</p>
+      </section>`;
+  }
+
+  return `
+    <section class="bloc prepa-bilan">
+      <h2>Bilan</h2>
+      ${
+        feuille.bilan_date
+          ? `<p class="discret">Noté le ${echapper(
+              depuisDateISO(feuille.bilan_date).toLocaleDateString('fr-FR', {
+                day: 'numeric',
+                month: 'long',
+              }),
+            )}.</p>`
+          : ''
+      }
+      <form data-action="noter-bilan" class="ajout">
+        <input type="hidden" name="id" value="${echapper(feuille.id)}">
+        <label for="prepa-bilan-bien">Ce qui a marché</label>
+        <textarea id="prepa-bilan-bien" name="bilan_bien" rows="3">${echapper(
+          feuille.bilan_bien ?? '',
+        )}</textarea>
+        <label for="prepa-bilan-mieux">À refaire autrement</label>
+        <textarea id="prepa-bilan-mieux" name="bilan_mieux" rows="3">${echapper(
+          feuille.bilan_mieux ?? '',
+        )}</textarea>
+        <button type="submit">${feuille.bilan_date ? 'Mettre à jour le bilan' : 'Enregistrer le bilan'}</button>
+        <p class="message-erreur" data-erreur hidden></p>
+      </form>
+    </section>`;
+}
+
+function vueFeuille(etat, feuille) {
+  const precedent = feuille.bilan_date ? null : dernierBilan(etat.preparations, feuille);
+
+  return `
+    ${enTete('preparations')}
+    <h2 class="titre-page">${echapper(feuille.titre)}</h2>
+    ${
+      feuille.date
+        ? `<p class="discret prepa-date">${echapper(
+            echeanceLisible(depuisDateISO(feuille.date)),
+          )}</p>`
+        : ''
+    }
+    ${
+      precedent
+        ? `<p class="discret prepa-rappel">Ton dernier bilan — à refaire autrement :
+             « ${echapper(precedent.bilan_mieux)} »</p>`
+        : ''
+    }
+    <div class="prepa-phases">
+      ${blocPhase(feuille, 'avant')}
+      ${blocPhase(feuille, 'pendant')}
+      ${blocPhase(feuille, 'apres')}
+    </div>
+    ${blocBilan(feuille)}
+    <p><button type="button" class="lien-discret" data-supprimer-prepa="${echapper(feuille.id)}">
+      Supprimer la préparation</button></p>
+    ${pied()}`;
+}
+
+function vuePreparations(etat) {
+  // Une adresse qui pointe une feuille connue ouvre la feuille ; sinon, la
+  // liste — un identifiant périmé ne mérite pas un écran cassé.
+  const feuille = etat.feuilleOuverte
+    ? etat.preparations.find((candidat) => candidat.id === etat.feuilleOuverte)
+    : null;
+  if (feuille) return vueFeuille(etat, feuille);
+
+  return `
+    ${enTete('preparations')}
+    <h2 class="titre-page">Préparations</h2>
+    <section class="bloc">
+      ${
+        etat.preparations.length
+          ? `<ul class="liste-preparations">${etat.preparations
+              .map(
+                (candidat) => `
+              <li><a class="prepa-ligne" href="#yuno/preparations/${echapper(candidat.id)}">
+                <span class="prepa-ligne-titre">${echapper(candidat.titre)}</span>
+                <span class="discret">${
+                  candidat.date
+                    ? echapper(echeanceLisible(depuisDateISO(candidat.date)))
+                    : ''
+                }</span>
+              </a></li>`,
+              )
+              .join('')}</ul>`
+          : `<p class="vide">Ta première préparation s'ouvrira ici — depuis un événement
+               du calendrier, touche « Préparer ».</p>`
+      }
+    </section>
+    ${pied()}`;
+}
+
+// Ce que la fenêtre de détail d'un événement propose en plus : le préparer, ou
+// rouvrir sa feuille si elle existe déjà.
+function actionsPreparation(etat) {
+  const element = etat.detailCal;
+  if (!element || element.type !== 'evenement') return '';
+
+  const feuille = etat.preparations.find((candidat) => candidat.evenement_id === element.id);
+  return feuille
+    ? `<button type="button" class="bouton-secondaire bouton-mini"
+         data-ouvrir-preparation="${echapper(feuille.id)}">Ouvrir la préparation</button>`
+    : `<button type="button" class="bouton-secondaire bouton-mini"
+         data-preparer-evenement="${echapper(element.id)}">Préparer</button>`;
 }
 
 // --- Le réseau --------------------------------------------------------
@@ -2478,6 +2676,7 @@ const SOURCES = {
   envois: async () => ({ envois: await api.envoisTous() }),
   modeles: async () => ({ modeles: await api.modelesTous() }),
   stats: async () => ({ stats: await api.statsHebdoTous() }),
+  preparations: async () => ({ preparations: await api.preparationsToutes() }),
   moments: async () => {
     const moments = await api.momentsTous();
     // Les photos vivent dans un bucket privé : leurs adresses se signent à la
@@ -2503,10 +2702,13 @@ const BESOINS = {
   creer: ['publications', 'stats'],
   banque: ['publications'],
   editorial: ['publications'],
-  calendrier: ['evenements', 'taches', 'objectifs', 'publications', 'commandes', 'contacts'],
+  // Le calendrier lit aussi les préparations : la fenêtre d'un événement doit
+  // savoir s'il a déjà sa feuille pour dire « Préparer » ou « Ouvrir ».
+  calendrier: ['evenements', 'taches', 'objectifs', 'publications', 'commandes', 'contacts', 'preparations'],
   reseau: ['contacts', 'envois', 'commandes'],
   passerelle: ['contacts', 'envois', 'modeles'],
   carnet: ['contacts', 'envois', 'modeles'],
+  preparations: ['preparations'],
 };
 
 const CLE_CACHE = 'yuno';
@@ -2541,6 +2743,10 @@ export default {
       envois: [],
       modeles: [],
       stats: [],
+      preparations: [],
+      // L'identifiant de la feuille ouverte — il vient de l'adresse
+      // (#yuno/preparations/<id>), jamais d'un état d'interface.
+      feuilleOuverte: null,
       ecartes: evenementsEcartes(),
       // Le mot dit après une écriture qui a échoué. Il vit dans l'état comme
       // le reste : `rendre()` le pose sous la barre, quelle que soit la vue.
@@ -2690,6 +2896,7 @@ export default {
       else if (etat.vue === 'reseau') section.innerHTML = vueReseau(etat);
       else if (etat.vue === 'passerelle') section.innerHTML = vuePasserelle(etat);
       else if (etat.vue === 'carnet') section.innerHTML = vueCarnet(etat);
+      else if (etat.vue === 'preparations') section.innerHTML = vuePreparations(etat);
       else section.innerHTML = vueAccueil(etat);
 
       // Le message d'échec se pose sous la barre, quelle que soit la vue : les
@@ -2819,6 +3026,7 @@ export default {
     // ne coûte rien : il sort du cache, ou c'est le squelette.
     this.naviguer = async (nouvelleRoute) => {
       etat.vue = VUES.includes(nouvelleRoute?.vue) ? nouvelleRoute.vue : 'accueil';
+      etat.feuilleOuverte = nouvelleRoute?.id ?? null;
       // Le mot de clôture ne vaut que pour l'instant où l'on vient de poster :
       // changer de page l'efface, il n'a pas à traîner. La capture pré-remplie
       // non plus — on la reprend depuis l'invite si besoin.
@@ -3179,6 +3387,44 @@ export default {
         });
         etat.modeles = [...etat.modeles, modele];
         rendreContacts();
+        return;
+      }
+
+      // Un item ajouté sur le moment — au stade, debout. Il n'entre que dans
+      // cette feuille : le modèle s'édite à part, pas d'un geste de terrain.
+      if (action === 'ajouter-item-prepa') {
+        const feuille = etat.preparations.find((f) => f.id === champs.preparation_id);
+        const texte = champs.texte.trim();
+        if (!feuille || !texte) return;
+
+        const freres = feuille.items.filter((item) => item.phase === champs.phase);
+        const item = await api.ajouterItemPreparation({
+          preparation_id: feuille.id,
+          phase: champs.phase,
+          texte,
+          ordre: Math.max(0, ...freres.map((frere) => frere.ordre ?? 0)) + 1,
+        });
+        feuille.items.push(item);
+        rendre();
+        // On en ajoute rarement un seul : le champ de la même phase reprend la
+        // main, vide (le redessin l'a réécrit).
+        section
+          .querySelector(`form[data-phase="${champs.phase}"] input[name="texte"]`)
+          ?.focus();
+        return;
+      }
+
+      if (action === 'noter-bilan') {
+        const feuille = etat.preparations.find((f) => f.id === champs.id);
+        if (!feuille) return;
+
+        const misAJour = await api.noterBilan(feuille.id, {
+          bilan_bien: champs.bilan_bien?.trim() || null,
+          bilan_mieux: champs.bilan_mieux?.trim() || null,
+        });
+        // `misAJour` ne porte pas les items : Object.assign les laisse en place.
+        Object.assign(feuille, misAJour);
+        rendre();
         return;
       }
 
@@ -3807,6 +4053,103 @@ export default {
           () => api.supprimerMoment(id, moment.photo_chemin),
           { rendre, echouer: dire },
         );
+        return;
+      }
+
+      // Cocher un item de préparation. Cocher dessine la coche puis écrit ;
+      // décocher écrit tout de suite — on ne célèbre pas un retour en arrière.
+      // Pas de victoire ici : la victoire d'une sortie, c'est le moment logué.
+      const cocherPrepa = evenement.target.closest('[data-cocher-prepa]');
+      if (cocherPrepa) {
+        const id = cocherPrepa.dataset.cocherPrepa;
+        const feuille = etat.preparations.find((f) => f.items?.some((item) => item.id === id));
+        const item = feuille?.items.find((candidat) => candidat.id === id);
+        if (!item || estProvisoire(item.id)) return;
+
+        const fait = !item.fait;
+        if (fait) await animerLaCoche(cocherPrepa);
+        await modifierAussitot(
+          item,
+          { fait },
+          () => api.modifierItemPreparation(item.id, { fait }),
+          { rendre, echouer: dire },
+        );
+        return;
+      }
+
+      const retirerPrepa = evenement.target.closest('[data-retirer-prepa]');
+      if (retirerPrepa) {
+        const id = retirerPrepa.dataset.retirerPrepa;
+        const feuille = etat.preparations.find((f) => f.items?.some((item) => item.id === id));
+        const item = feuille?.items.find((candidat) => candidat.id === id);
+        if (!item || estProvisoire(item.id)) return;
+
+        await retirerAussitot(feuille.items, item, () => api.supprimerItemPreparation(item.id), {
+          rendre,
+          echouer: dire,
+        });
+        return;
+      }
+
+      // « Préparer » depuis la fenêtre d'un événement : la feuille se crée en
+      // copiant le modèle, et la page s'ouvre dessus. Les modèles se lisent au
+      // moment du geste — c'est une création, elle attend le serveur de toute
+      // façon, et rien d'autre dans le site n'en a besoin.
+      const preparerEvenement = evenement.target.closest('[data-preparer-evenement]');
+      if (preparerEvenement) {
+        const cible = etat.evenements.find(
+          (candidat) => candidat.id === preparerEvenement.dataset.preparerEvenement,
+        );
+        if (!cible) return;
+        preparerEvenement.disabled = true;
+
+        try {
+          const modeles = await api.modelesPreparationTous();
+          const feuille = await api.creerPreparation({
+            // Un seul modèle aujourd'hui (« Match ») : on le prend. Le choix
+            // viendra avec le deuxième modèle.
+            modele: modeles[0] ?? null,
+            evenement_id: cible.id,
+            titre: cible.titre,
+            date: versDateISO(new Date(cible.date_debut)),
+          });
+          etat.preparations.unshift(feuille);
+          fraiches.add('preparations');
+          affichables.add('preparations');
+          etat.detailCal = null;
+          location.hash = `#yuno/preparations/${feuille.id}`;
+        } catch (souci) {
+          console.error('Création de la préparation impossible', souci);
+          preparerEvenement.disabled = false;
+          dire("La préparation n'a pas pu être créée.");
+        }
+        return;
+      }
+
+      const ouvrirPreparation = evenement.target.closest('[data-ouvrir-preparation]');
+      if (ouvrirPreparation) {
+        // La fenêtre du détail se ferme AVANT de partir : au retour sur le
+        // calendrier, elle n'a pas à réapparaître par-dessus la grille.
+        etat.detailCal = null;
+        location.hash = `#yuno/preparations/${ouvrirPreparation.dataset.ouvrirPreparation}`;
+        return;
+      }
+
+      const supprimerPrepa = evenement.target.closest('[data-supprimer-prepa]');
+      if (supprimerPrepa) {
+        const feuille = etat.preparations.find(
+          (candidat) => candidat.id === supprimerPrepa.dataset.supprimerPrepa,
+        );
+        if (!feuille || estProvisoire(feuille.id)) return;
+        if (!confirm(`Supprimer la préparation « ${feuille.titre} » ?`)) return;
+
+        const retiree = await retirerAussitot(
+          etat.preparations,
+          feuille,
+          () => api.supprimerPreparation(feuille.id),
+          { rendre, echouer: dire },
+        );
+        if (retiree) location.hash = '#yuno/preparations';
         return;
       }
 

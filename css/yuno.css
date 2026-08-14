@@ -1540,3 +1540,79 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 /* --- Les commandes ---------------------------------------------------------- */
 
 .commande-montant { font-size: 0.875rem; color: var(--accent); }
+
+/* --- Les préparations --------------------------------------------------------
+   La feuille d'une sortie : trois phases de cases à cocher, puis le bilan. Sur
+   grand écran les trois phases passent en colonnes — la mise en page prend la
+   largeur, le texte jamais. Les lignes reprennent la forme des tâches
+   (`.tache-ligne`, styles.css) : même cercle, même coche, cercle gris — une
+   case de préparation n'a pas de priorité. */
+
+.prepa-date { margin: calc(var(--espace-8) * -1) 0 var(--espace-16); }
+
+/* Le dernier « à refaire autrement » : un rappel qu'on lit en préparant, pas
+   une consigne. Gris chaud, comme tout ce qui accompagne sans commander. */
+.prepa-rappel {
+  margin: 0 0 var(--espace-16);
+  padding: var(--espace-8) var(--espace-12);
+  border-left: 3px solid var(--gris-chaud-trait);
+}
+
+.prepa-phases {
+  display: grid;
+  gap: var(--espace-16);
+  align-items: start;
+}
+
+@media (min-width: 67.5rem) {
+  .prepa-phases { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Le champ d'ajout tient sur une ligne : on écrit, on ajoute, on continue. */
+.prepa-ajout {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--espace-8);
+  margin-top: var(--espace-8);
+}
+
+.prepa-ajout input[type="text"] {
+  flex: 1 1 8rem;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.prepa-ajout .message-erreur { flex-basis: 100%; margin: 0; }
+
+/* La liste des feuilles : des lignes, pas des tuiles — comme l'espace Tâches,
+   et pour la même raison. `.bloc li` est donc annulé explicitement. */
+.bloc .liste-preparations {
+  gap: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.bloc .liste-preparations > li {
+  padding: 0;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--bordure);
+  border-radius: 0;
+}
+
+.bloc .liste-preparations > li:last-child { border-bottom: none; }
+
+.prepa-ligne {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espace-12);
+  width: 100%;
+  padding: var(--espace-12) 0;
+  color: var(--texte);
+  text-decoration: none;
+}
+
+.prepa-ligne-titre { flex: 1; }
+.prepa-ligne:hover .prepa-ligne-titre { text-decoration: underline; }

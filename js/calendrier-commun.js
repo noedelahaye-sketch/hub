@@ -1870,7 +1870,10 @@ export function fenetreJour(cle, elements, { montrerProjet = false } = {}) {
   return construireFenetre(lisible, `<h3 class="fenetre-titre">${echapper(lisible)}</h3>${lignes}`);
 }
 
-export function fenetreDetail(element, { montrerProjet = false, edition = false } = {}) {
+// `actions` : du HTML ajouté en tête des boutons du détail. C'est ainsi que le
+// site Yuno pose « Préparer » sur un événement — la fenêtre reste commune, et
+// le hub comme le FCH ne passent rien.
+export function fenetreDetail(element, { montrerProjet = false, edition = false, actions = '' } = {}) {
   const enTete = `
     <span class="tuile-entete">
       <span class="etiquette">${TYPES[element.type]}</span>
@@ -1931,6 +1934,7 @@ export function fenetreDetail(element, { montrerProjet = false, edition = false 
     ${element.detail ? `<p class="cal-detail-ligne">${echapper(element.detail)}</p>` : ''}
     ${element.notes ? `<p class="discret cal-detail-ligne">${echapper(element.notes)}</p>` : ''}
     <div class="cal-detail-actions">
+      ${actions}
       <button type="button" class="bouton-secondaire bouton-mini" data-modifier-element>Modifier</button>
       <button type="button" class="lien-discret bouton-mini"
         data-supprimer-element="${echapper(element.type)}:${echapper(element.id)}">${

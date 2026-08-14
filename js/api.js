@@ -780,6 +780,116 @@ export async function avancerCommande(commande, suivant) {
   return { commande: misAJour, victoire };
 }
 
+// --- Les préparations (Yuno) -------------------------------------------------
+// La feuille d'une sortie : trois phases de cases à cocher (avant, pendant,
+// après), copiées d'un modèle à la création — modifier le modèle ensuite ne
+// réécrit pas les feuilles passées. Le bilan (deux questions) vit sur la
+// feuille. Rien ici ne compte les manqués : un item non coché n'est pas un
+// raté, et aucune fonction ne le mesure.
+
+// L'ordre des items est décidé ici, en JS, plutôt que par un `order` sur la
+// table imbriquée : une option d'ordre mal nommée ne renvoie pas d'erreur, elle
+// est ignorée en silence — même piège que les transformations d'images.
+function trierItemsPreparation(items = []) {
+  return [...items].sort(
+    (a, b) =>
+      (a.ordre ?? Number.MAX_SAFE_INTEGER) - (b.ordre ?? Number.MAX_SAFE_INTEGER) ||
+      String(a.created_at).localeCompare(String(b.created_at)),
+  );
+}
+
+export async function modelesPreparationTous() {
+  const modeles = verifier(
+    await client
+      .from('modeles_preparation')
+      .select('*, items:modeles_preparation_items(id, phase, texte, ordre, created_at)')
+      .order('created_at'),
+  );
+  return modeles.map((modele) => ({ ...modele, items: trierItemsPreparation(modele.items) }));
+}
+
+export async function preparationsToutes() {
+  const feuilles = verifier(
+    await client
+      .from('preparations')
+      .select('*, items:preparations_items(id, phase, texte, fait, ordre, created_at)')
+      .order('date', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false }),
+  );
+  return feuilles.map((feuille) => ({ ...feuille, items: trierItemsPreparation(feuille.items) }));
+}
+
+// Créer une feuille, c'est COPIER le modèle : la feuille doit se relire telle
+// qu'elle a été préparée, même si le modèle change après. Titre et date sont
+// copiés de l'événement pour la même raison.
+export async function creerPreparation({
+  modele = null,
+  evenement_id = null,
+  commande_id = null,
+  titre,
+  date = null,
+}) {
+  const feuille = verifier(
+    await client
+      .from('preparations')
+      .insert({ modele_id: modele?.id ?? null, evenement_id, commande_id, titre, date })
+      .select()
+      .single(),
+  );
+
+  const aCopier = (modele?.items ?? []).map(({ phase, texte, ordre }) => ({
+    preparation_id: feuille.id,
+    phase,
+    texte,
+    ordre,
+  }));
+  const items = aCopier.length
+    ? verifier(await client.from('preparations_items').insert(aCopier).select())
+    : [];
+
+  return { ...feuille, items: trierItemsPreparation(items) };
+}
+
+export async function modifierItemPreparation(id, champs) {
+  return verifier(
+    await client.from('preparations_items').update(champs).eq('id', id).select().single(),
+  );
+}
+
+export async function ajouterItemPreparation({ preparation_id, phase, texte, ordre = null }) {
+  return verifier(
+    await client
+      .from('preparations_items')
+      .insert({ preparation_id, phase, texte, ordre })
+      .select()
+      .single(),
+  );
+}
+
+export async function supprimerItemPreparation(id) {
+  const { error } = await client.from('preparations_items').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// Le bilan s'écrit (et se réécrit) d'un coup : deux questions, une date. Pas de
+// victoire ici — la victoire d'une sortie, c'est le moment logué au carnet.
+export async function noterBilan(id, { bilan_bien = null, bilan_mieux = null }) {
+  return verifier(
+    await client
+      .from('preparations')
+      .update({ bilan_bien, bilan_mieux, bilan_date: versDateISO() })
+      .eq('id', id)
+      .select()
+      .single(),
+  );
+}
+
+export async function supprimerPreparation(id) {
+  // Les items partent avec la feuille (ON DELETE CASCADE).
+  const { error } = await client.from('preparations').delete().eq('id', id);
+  if (error) throw error;
+}
+
 // --- Le calendrier : tout ce qui porte une date ------------------------------
 // Règle commune : on montre ce qui reste à vivre ou à faire. Un événement passé
 // est passé ; une tâche ou une publication en retard de date reste affichée
