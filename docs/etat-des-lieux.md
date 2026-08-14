@@ -117,6 +117,20 @@ base, victoire créée, « Ce moment est au carnet » affiché, invite muette, l
 tuile du hub montre/cache la pastille au choix du projet. Tout l'essai défait,
 base relue à l'état exact.
 
+**« Ta semaine » s'ouvre au toucher** (demande de Noé, 14 août au soir) :
+toucher une barre de la grille de l'accueil ouvre **la fenêtre de détail de
+l'espace Calendrier** — d'où l'on modifie (formulaire d'édition complet, champ
+type de moment compris pour un événement photo) et supprime ; le « +N » déplie
+sa journée, Échap et la croix referment. Le **cercle d'une tâche s'y coche**
+aussi, comme au calendrier — il passe avant l'ouverture du détail
+(`stopPropagation`). Après une correction, l'accueil relit tout (`charger()`),
+comme l'espace Calendrier après le même geste ; `corriger` et `effacer` y sont
+les mêmes aiguillages que là-bas. **Vérifié** : détail ouvert sur le vrai match
+du soir, édition renvoyée à l'identique (base relue champ par champ — seul
+`type_moment` est passé de NULL à « match », normalisation voulue), et une
+tâche d'essai cochée depuis la grille (statut + victoire relus en SQL) puis
+tout supprimé.
+
 **L'en-tête à signature du site Yuno a disparu** (demande de Noé, même jour) :
 le site s'ouvre sur sa barre, centrée par les marges automatiques de
 `.yuno-nav` (le sélecteur `.yuno-site-tete + .yuno-nav` serait devenu lettre

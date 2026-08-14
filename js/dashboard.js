@@ -21,6 +21,10 @@ import {
   construireGrille,
   toutesLesNatures,
   fenetreCreation,
+  fenetreDetail,
+  fenetreJour,
+  elementsDuJour,
+  finDeLEvenement,
   brancherCapture,
   poserAuCalendrier,
   brancherDeplacement,
@@ -361,6 +365,7 @@ function squelette() {
       title="Ajouter au calendrier" aria-label="Ajouter au calendrier">${PLUS}</button>
 
     <div id="bloc-creation"></div>
+    <div id="bloc-detail"></div>
   `;
 }
 
@@ -383,6 +388,12 @@ export default {
       humeurOuverte: false,
       annulation: null,
       creation: null,
+      // La barre de la semaine touchée, sa fenêtre de détail (demande de Noé,
+      // 14 août 2026) : la même que l'espace Calendrier — on modifie sans
+      // quitter l'accueil, comme on y reporte déjà en glissant.
+      detail: null,
+      edition: false,
+      jourOuvert: null,
     };
     let minuteurAnnulation = null;
     let rafraichirLaCapture = null;
@@ -463,6 +474,26 @@ export default {
       rendreCreation();
       cible('bloc-creation').querySelector('#cal-titre')?.focus();
     }
+
+    // La fenêtre de détail d'une barre de la semaine, ou la journée dépliée
+    // (le « +N ») : les mêmes fenêtres que l'espace Calendrier, dans leur
+    // propre bloc — ouvrir un détail ne redessine rien d'autre.
+    function rendreDetail() {
+      cible('bloc-detail').innerHTML = etat.detail
+        ? fenetreDetail(etat.detail, { montrerProjet: true, edition: etat.edition })
+        : etat.jourOuvert
+          ? fenetreJour(etat.jourOuvert, elementsDuJour(elementsDeLaSemaine, etat.jourOuvert), {
+              montrerProjet: true,
+            })
+          : '';
+    }
+
+    const fermerLeDetail = () => {
+      etat.detail = null;
+      etat.edition = false;
+      etat.jourOuvert = null;
+      rendreDetail();
+    };
 
     function rendreHumeur() {
       if (!pret('humeur')) return;
@@ -651,12 +682,112 @@ export default {
       rendreCreation();
     };
 
-    // Échap ferme la tuile — le geste attendu partout ailleurs dans le hub.
+    // Échap ferme la tuile ou la fenêtre — le geste attendu partout ailleurs.
     document.addEventListener('keydown', (evenement) => {
-      if (evenement.key === 'Escape' && etat.creation) fermerLaCreation();
+      if (evenement.key !== 'Escape') return;
+      if (etat.creation) fermerLaCreation();
+      if (etat.detail || etat.jourOuvert) fermerLeDetail();
     });
 
+    // Corriger sur place ce qui a une date, depuis la fenêtre de détail de la
+    // semaine — le même aiguillage que l'espace Calendrier : `debut` est le nom
+    // du champ à l'écran, chaque nature range sa date dans sa propre colonne.
+    async function corriger(champs) {
+      const { type, id } = champs;
+      const titre = champs.titre.trim();
+
+      if (type === 'evenement') {
+        const debut = new Date(`${champs.debut}T${champs.heure || '00:00'}`);
+        const fin = finDeLEvenement(debut, champs);
+        return appliquerAuCalendrier(type, id, {
+          titre,
+          date_debut: debut.toISOString(),
+          date_fin: fin ? fin.toISOString() : null,
+          recurrence: champs.recurrence || null,
+          recurrence_fin: champs.recurrence_fin || null,
+          lieu: champs.lieu?.trim() || null,
+          notes: champs.notes?.trim() || null,
+          // Le champ n'existe que sur un événement photo (champsDeModification).
+          ...(champs.type_moment !== undefined
+            ? { type_moment: champs.type_moment || null }
+            : {}),
+        });
+      }
+
+      if (type === 'publication') {
+        return appliquerAuCalendrier(type, id, {
+          titre,
+          date_prevue: champs.debut,
+          reseau: champs.reseau,
+          format: champs.format,
+        });
+      }
+
+      if (type === 'objectif') {
+        return appliquerAuCalendrier(type, id, {
+          titre,
+          echeance: champs.debut,
+          pourquoi: champs.pourquoi?.trim() || null,
+          cible: champs.cible?.trim() || null,
+        });
+      }
+
+      if (type === 'commande') {
+        return appliquerAuCalendrier(type, id, {
+          titre,
+          echeance: champs.debut,
+          client: champs.client?.trim() || null,
+        });
+      }
+
+      if (type === 'relance') {
+        return appliquerAuCalendrier(type, id, {
+          prochaine_action: titre,
+          prochaine_action_date: champs.debut,
+        });
+      }
+
+      // Tâche et jalon : un titre et une échéance.
+      return appliquerAuCalendrier(type, id, { titre, echeance: champs.debut });
+    }
+
+    // Chaque nature se supprime là où elle vit ; une relance n'est pas une
+    // ligne à effacer, c'est une date qu'on retire d'une fiche.
+    async function effacer(type, id) {
+      if (type === 'evenement') return api.supprimerEvenement(id);
+      if (type === 'tache') return api.supprimerTache(id);
+      if (type === 'publication') return api.supprimerPublication(id);
+      if (type === 'objectif') return api.supprimerObjectif(id);
+      if (type === 'jalon') return api.supprimerJalon(id);
+      if (type === 'commande') return api.supprimerCommande(id);
+      if (type === 'relance') return api.modifierContact(id, { prochaine_action_date: null });
+      throw new Error(`Nature inconnue : ${type}`);
+    }
+
     section.addEventListener('submit', async (evenement) => {
+      const modification = evenement.target.closest(
+        'form[data-action="modifier-depuis-calendrier"]',
+      );
+      if (modification) {
+        evenement.preventDefault();
+        const champs = Object.fromEntries(new FormData(modification));
+        const erreur = modification.querySelector('[data-erreur]');
+        erreur.hidden = true;
+
+        try {
+          await corriger(champs);
+          fermerLeDetail();
+          // La correction peut toucher n'importe quel bloc : on relit tout,
+          // comme le fait l'espace Calendrier après le même geste.
+          await charger();
+        } catch (souci) {
+          console.error('Enregistrement impossible', souci);
+          erreur.textContent = souci.message ?? "Ça n'a pas pu être enregistré.";
+          erreur.hidden = false;
+        }
+        return;
+      }
+
       const formulaire = evenement.target.closest('form[data-action="creer-depuis-calendrier"]');
       if (!formulaire) return;
       evenement.preventDefault();
@@ -725,6 +856,7 @@ export default {
 
       if (evenement.target.closest('[data-fermer-fenetre]')) {
         fermerLaCreation();
+        fermerLeDetail();
         return;
       }
 
@@ -739,6 +871,94 @@ export default {
           nature: nature.dataset.natureCreation,
         };
         rendreCreation();
+        return;
+      }
+
+      // Le cercle d'une tâche DANS LA SEMAINE : il coche sans ouvrir le
+      // détail, comme au calendrier — il passe donc avant l'ouverture. Le
+      // décochage, lui, garde le chemin de la fenêtre ou de l'espace Tâches.
+      const cercleSemaine = evenement.target.closest('[data-cocher-tache]');
+      if (cercleSemaine) {
+        evenement.stopPropagation();
+        const tache = etat.tachesDatees.find(
+          (candidate) => candidate.id === cercleSemaine.dataset.cocherTache,
+        );
+        if (!tache || tache.statut === 'fait' || ecrituresEnVol.has(tache.id)) return;
+
+        await animerLaCoche(cercleSemaine);
+        const avant = { ...tache };
+        ecrituresEnVol.add(tache.id);
+        try {
+          // `avant` part à l'API : elle relit le statut pour créer la victoire.
+          await modifierAussitot(
+            tache,
+            { statut: 'fait', date_fait: new Date().toISOString() },
+            async () => (await api.terminerTache(avant)).tache,
+            {
+              rendre: () => {
+                rendreTaches();
+                rendreSemaine();
+              },
+              echouer: signalerEcriture,
+            },
+          );
+        } finally {
+          ecrituresEnVol.delete(tache.id);
+        }
+        return;
+      }
+
+      // Toucher une barre de la semaine ouvre son détail — la même fenêtre que
+      // l'espace Calendrier, d'où l'on modifie et supprime (demande de Noé,
+      // 14 août 2026).
+      const ouvrirElement = evenement.target.closest('[data-element]');
+      if (ouvrirElement) {
+        const [type, id] = ouvrirElement.dataset.element.split(':');
+        etat.detail =
+          elementsDeLaSemaine.find(
+            (candidat) => candidat.type === type && String(candidat.id) === id,
+          ) ?? null;
+        etat.edition = false;
+        etat.jourOuvert = null;
+        rendreDetail();
+        return;
+      }
+
+      const journeeComplete = evenement.target.closest('[data-jour-complet]');
+      if (journeeComplete) {
+        etat.detail = null;
+        etat.jourOuvert = journeeComplete.dataset.jourComplet;
+        rendreDetail();
+        return;
+      }
+
+      if (evenement.target.closest('[data-modifier-element]')) {
+        etat.edition = true;
+        rendreDetail();
+        cible('bloc-detail').querySelector('#cal-edition-titre')?.focus();
+        return;
+      }
+
+      if (evenement.target.closest('[data-annuler-edition]')) {
+        etat.edition = false;
+        rendreDetail();
+        return;
+      }
+
+      const supprimerElement = evenement.target.closest('[data-supprimer-element]');
+      if (supprimerElement) {
+        const [type, id] = supprimerElement.dataset.supprimerElement.split(':');
+        if (!confirm(`Supprimer « ${etat.detail?.titre} » ?`)) return;
+        supprimerElement.disabled = true;
+        try {
+          await effacer(type, id);
+          fermerLeDetail();
+          await charger();
+        } catch (souci) {
+          console.error('Suppression impossible', souci);
+          supprimerElement.disabled = false;
+          signalerEcriture();
+        }
         return;
       }
 
