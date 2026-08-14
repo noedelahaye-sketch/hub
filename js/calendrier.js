@@ -411,6 +411,10 @@ export default {
           recurrence_fin: champs.recurrence_fin || null,
           lieu: champs.lieu?.trim() || null,
           notes: champs.notes?.trim() || null,
+          // Le champ n'existe que sur un événement photo (champsDeModification).
+          ...(champs.type_moment !== undefined
+            ? { type_moment: champs.type_moment || null }
+            : {}),
         });
       }
 

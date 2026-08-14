@@ -349,11 +349,16 @@ export async function creerEvenement({
   notes = null,
   recurrence = null,
   recurrence_fin = null,
+  // Yuno seulement : le type du moment qui naîtra de cette sortie.
+  type_moment = null,
 }) {
   return verifier(
     await client
       .from('evenements')
-      .insert({ projet, titre, date_debut, date_fin, lieu, notes, recurrence, recurrence_fin })
+      .insert({
+        projet, titre, date_debut, date_fin, lieu, notes,
+        recurrence, recurrence_fin, type_moment,
+      })
       .select()
       .single(),
   );

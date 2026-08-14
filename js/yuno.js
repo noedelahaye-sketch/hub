@@ -228,11 +228,10 @@ function enTete(vue) {
   ];
 
   return `
-    <header class="yuno-site-tete">
-      <!-- La signature EST le titre : ni « Yuno » en texte, ni sous-titre
-           (décision de Noé, 7 août 2026). L'alt porte le nom pour l'accessibilité. -->
-      <img class="yuno-signature" src="img/yuno-signature.png" alt="Yuno">
-    </header>
+    <!-- Plus de signature en tête (demande de Noé, 14 août 2026) : elle
+         occupait le haut de chaque page pour redire ce qu'on sait déjà. Le
+         site s'ouvre sur sa barre ; le titre de l'onglet dit « Yuno · yuno_rph »,
+         et la signature reste sur la page #photo du hub, à la porte d'entrée. -->
     <nav class="yuno-nav" aria-label="Le site Yuno">
       ${liens
         .map(
@@ -590,6 +589,11 @@ function formulaireMoment(contacts, prefill = null) {
        bouton: 'Inscrire au carnet',
        // Dans une fenêtre, le titre est déjà dit : le formulaire se rend nu.
        avecPli: false,
+       // Venu de l'invite, le moment garde le lien dur vers son événement :
+       // c'est lui qui fait taire l'invite et interdit les doublons du bilan.
+       extra: prefill?.evenement_id
+         ? `<input type="hidden" name="evenement_id" value="${echapper(prefill.evenement_id)}">`
+         : '',
        champs: [
          { nom: 'date', libelle: 'Quand', type: 'date', valeur: prefill?.date ?? versDateISO() },
          { nom: 'type', libelle: 'Quoi', type: 'choix', options: TYPES_MOMENT, valeur: 'match' },
@@ -852,12 +856,24 @@ function ecarterEvenement(id) {
 export function evenementsARattraper(evenements, moments, ecartes = [], reference = new Date()) {
   const debut = versDateISO(ajouterJours(reference, -7));
   const jaLogue = new Set(moments.map((moment) => moment.date));
+  // Le lien dur d'abord : un moment qui pointe son événement le règle pour de
+  // bon, quel que soit le jour où il a été noté. Le jour logué reste en second
+  // garde-fou, pour les moments notés sans lien.
+  const evenementsVecus = new Set(
+    moments.map((moment) => moment.evenement_id).filter(Boolean),
+  );
 
   return evenements
     .filter((evenement) => {
       const quand = new Date(evenement.date_debut);
       const jour = versDateISO(quand);
-      return quand <= reference && jour >= debut && !jaLogue.has(jour) && !ecartes.includes(evenement.id);
+      return (
+        quand <= reference &&
+        jour >= debut &&
+        !evenementsVecus.has(evenement.id) &&
+        !jaLogue.has(jour) &&
+        !ecartes.includes(evenement.id)
+      );
     })
     .sort((a, b) => String(b.date_debut).localeCompare(String(a.date_debut)));
 }
@@ -1392,9 +1408,22 @@ export function dernierBilan(preparations, feuille) {
   );
 }
 
+// Le moment déjà logué pour cette sortie, s'il existe. Le lien dur ne vaut que
+// pour une feuille d'événement — une feuille de commande ou libre n'en a pas.
+export function momentDeLaFeuille(moments, feuille) {
+  if (!feuille.evenement_id) return null;
+  return moments.find((moment) => moment.evenement_id === feuille.evenement_id) ?? null;
+}
+
 // Le bilan attend que la sortie soit vécue : avant sa date, la feuille dit
 // juste qu'il viendra. Une feuille sans date l'offre tout de suite.
-function blocBilan(feuille) {
+//
+// Au PREMIER enregistrement, il propose d'inscrire le moment au carnet — la
+// photo, les rencontres, et la case « Noter ce moment au carnet », cochée
+// d'avance : le chemin normal ne demande rien de plus, mais Noé reste l'auteur
+// (décision du 14 août 2026). La proposition disparaît si le moment existe
+// déjà ; ensuite, le moment se corrige au Journal, pas d'ici.
+function blocBilan(etat, feuille) {
   const ouvert = !feuille.date || feuille.date <= versDateISO();
 
   if (!ouvert) {
@@ -1404,6 +1433,9 @@ function blocBilan(feuille) {
         <p class="vide">Il s'écrira une fois la sortie vécue.</p>
       </section>`;
   }
+
+  const dejaAuCarnet = momentDeLaFeuille(etat.moments, feuille);
+  const proposerLeMoment = !feuille.bilan_date && !dejaAuCarnet;
 
   return `
     <section class="bloc prepa-bilan">
@@ -1418,6 +1450,7 @@ function blocBilan(feuille) {
             )}.</p>`
           : ''
       }
+      ${dejaAuCarnet ? `<p class="discret">Ce moment est au carnet.</p>` : ''}
       <form data-action="noter-bilan" class="ajout">
         <input type="hidden" name="id" value="${echapper(feuille.id)}">
         <label for="prepa-bilan-bien">Ce qui a marché</label>
@@ -1428,6 +1461,22 @@ function blocBilan(feuille) {
         <textarea id="prepa-bilan-mieux" name="bilan_mieux" rows="3">${echapper(
           feuille.bilan_mieux ?? '',
         )}</textarea>
+        ${
+          proposerLeMoment
+            ? `
+        <label for="prepa-bilan-photo">La photo dont je suis fier</label>
+        <input type="file" id="prepa-bilan-photo" name="photo" accept="image/*">
+        <label for="prepa-bilan-rencontres">Qui j'ai rencontré (sépare par une barre oblique)</label>
+        <input type="text" id="prepa-bilan-rencontres" name="rencontres" autocomplete="off"
+          list="prepa-rencontres-connues">
+        <datalist id="prepa-rencontres-connues">${etat.contacts
+          .map((contact) => `<option value="${echapper(contact.nom)}"></option>`)
+          .join('')}</datalist>
+        <label class="prepa-au-modele">
+          <input type="checkbox" name="carnet" value="oui" checked>
+          Noter ce moment au carnet</label>`
+            : ''
+        }
         <button type="submit">${feuille.bilan_date ? 'Mettre à jour le bilan' : 'Enregistrer le bilan'}</button>
         <p class="message-erreur" data-erreur hidden></p>
       </form>
@@ -1459,7 +1508,7 @@ function vueFeuille(etat, feuille) {
       ${blocPhase(feuille, 'pendant', { auModele })}
       ${blocPhase(feuille, 'apres', { auModele })}
     </div>
-    ${blocBilan(feuille)}
+    ${blocBilan(etat, feuille)}
     <p><button type="button" class="lien-discret" data-supprimer-prepa="${echapper(feuille.id)}">
       Supprimer la préparation</button></p>
     ${pied()}`;
@@ -2868,7 +2917,10 @@ const BESOINS = {
   reseau: ['contacts', 'envois', 'commandes', 'preparations', 'modelesPrepa'],
   passerelle: ['contacts', 'envois', 'modeles'],
   carnet: ['contacts', 'envois', 'modeles'],
-  preparations: ['preparations', 'modelesPrepa'],
+  // La feuille lit aussi le carnet : le bilan propose d'y inscrire le moment
+  // (moments pour ne jamais faire de doublon, contacts pour relier les
+  // rencontres, evenements pour hériter du type de moment).
+  preparations: ['preparations', 'modelesPrepa', 'moments', 'contacts', 'evenements'],
   modeles: ['preparations', 'modelesPrepa'],
 };
 
@@ -3103,6 +3155,9 @@ export default {
               ...etat.creationCal,
               naturesEnPlus: NATURE_MOMENT,
               natureEnDernier: reglagesDuPlus(etat.vue).natureEnDernier ?? false,
+              // Chez Yuno tout est photo : un événement porte toujours sa
+              // pastille de type de moment.
+              typeMoment: true,
             }),
           );
         }
@@ -3342,6 +3397,7 @@ export default {
           photo_chemin: chemin,
           note: champs.note?.trim() || null,
           oeuvre_finie: champs.oeuvre_finie === 'oui',
+          evenement_id: champs.evenement_id || null,
         };
 
         const { moment: logue } = await api.creerMoment({
@@ -3380,6 +3436,9 @@ export default {
             recurrence_fin: champs.recurrence_fin || null,
             lieu: champs.lieu?.trim() || null,
             notes: champs.notes?.trim() || null,
+            ...(champs.type_moment !== undefined
+              ? { type_moment: champs.type_moment || null }
+              : {}),
           });
         } else if (type === 'publication') {
           await api.modifierPublication(id, {
@@ -3471,6 +3530,7 @@ export default {
               recurrence_fin: champs.recurrence_fin || null,
               lieu: champs.lieu?.trim() || null,
               notes: champs.notes?.trim() || null,
+              type_moment: champs.type_moment || null,
             }),
           );
         }
@@ -3659,12 +3719,48 @@ export default {
         const feuille = etat.preparations.find((f) => f.id === champs.id);
         if (!feuille) return;
 
+        // Le moment ne s'inscrit que si la case l'a dit ET qu'il n'existe pas
+        // déjà : le compteur « moments vécus » ne doit dire que du vrai, et un
+        // renvoi du formulaire après un échec ne crée jamais de doublon.
+        const inscrire = champs.carnet === 'oui' && !momentDeLaFeuille(etat.moments, feuille);
+
+        // La photo part en premier, comme au carnet : si l'envoi échoue, rien
+        // n'est écrit et le formulaire reste rempli.
+        const fichier = champs.photo;
+        const chemin =
+          inscrire && fichier instanceof File && fichier.size
+            ? await api.televerserPhotoMoment(fichier)
+            : null;
+
         const misAJour = await api.noterBilan(feuille.id, {
           bilan_bien: champs.bilan_bien?.trim() || null,
           bilan_mieux: champs.bilan_mieux?.trim() || null,
         });
         // `misAJour` ne porte pas les items : Object.assign les laisse en place.
         Object.assign(feuille, misAJour);
+
+        if (inscrire) {
+          // Le type vient de l'événement (sa pastille à la création) ; une
+          // feuille de commande donne « autre », une feuille libre « match ».
+          const evenement = etat.evenements.find((e) => e.id === feuille.evenement_id);
+          const moment = {
+            date: feuille.date ?? versDateISO(),
+            type: evenement?.type_moment ?? (feuille.commande_id ? 'autre' : 'match'),
+            lieu: feuille.titre,
+            photo_chemin: chemin,
+            note: null,
+            oeuvre_finie: false,
+            evenement_id: feuille.evenement_id ?? null,
+          };
+          const { moment: logue } = await api.creerMoment({
+            moment,
+            rencontres: relierRencontres(champs.rencontres, etat.contacts),
+            titre: titreDuMoment(moment),
+          });
+          if (chemin) Object.assign(etat.photos, await api.urlsDesPhotos([chemin]));
+          etat.moments = [logue, ...etat.moments];
+        }
+
         rendre();
         return;
       }
@@ -4158,6 +4254,7 @@ export default {
         etat.prefillMoment = {
           date: versDateISO(new Date(passe.date_debut)),
           lieu: passe.titre,
+          evenement_id: passe.id,
         };
         etat.captureOuverte = true;
         etat.ecartes = ecarterEvenement(passe.id);

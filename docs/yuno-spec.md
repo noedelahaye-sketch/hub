@@ -294,9 +294,11 @@ de *sortir du hub* en entrant chez Yuno :
   porte « Entrer sur le site Yuno ». Habillage du hub conservé. Rien ne s'y
   gère.
 - **`#yuno` — le site Yuno.** Tout l'habillage du hub disparaît : ni logo Hub,
-  ni onglets, ni autres projets. En-tête : la signature seule
-  (`img/yuno-signature.png`, PNG transparent déposé par Noé le 7 août) — ni
-  « Yuno » en texte, ni sous-titre. Navigation :
+  ni onglets, ni autres projets. **Plus d'en-tête du tout depuis le 14 août
+  2026** (demande de Noé) : la signature (`img/yuno-signature.png`) occupait le
+  haut de chaque page pour redire ce qu'on sait déjà — le site s'ouvre sur sa
+  barre, le titre de l'onglet dit « Yuno · yuno_rph », et la signature reste à
+  la porte d'entrée, sur la page `#photo` du hub. Navigation :
   Accueil · Journal · Créer · Calendrier · Réseau. **Le site est toujours
   sombre**, quel que soit le réglage du téléphone : la signature blanche et or
   ne vit que sur fond sombre, et ça dit « on a quitté le hub ». Fond `#181818`,
@@ -746,6 +748,18 @@ questions : « Ce qui a marché » et « À refaire autrement ».
   feuille suivante du même modèle, le dernier « à refaire autrement » se relit
   en tête — c'est là que le bilan paie. **Cocher toute la feuille ne crée pas
   de victoire** : la victoire d'une sortie, c'est le moment logué au carnet.
+- **Le bilan inscrit le moment au carnet** (idée de Noé, 14 août 2026). Au
+  premier enregistrement, le formulaire propose la photo, les rencontres, et
+  une case « Noter ce moment au carnet » **cochée d'avance** — le chemin normal
+  ne demande rien de plus, mais Noé reste l'auteur. Le moment naît **lié à
+  l'événement** (`moments.evenement_id`), avec la date et le lieu de la
+  feuille, et son **type hérité de l'événement** : un événement photo porte sa
+  pastille « type de moment » (match · concert · sortie · autre) à la création
+  — dans la tuile du site, et dans celle du hub où elle n'apparaît que si le
+  projet choisi est photo. Jamais de doublon : si le moment de la sortie existe
+  déjà, la proposition disparaît (« Ce moment est au carnet »), et l'invite du
+  Journal se tait par le même lien. Ensuite, le moment se corrige au Journal,
+  pas depuis le bilan.
 
 ---
 
@@ -761,7 +775,7 @@ et ce paragraphe ne fait que dire à quoi sert chaque table.
 | `publications` | le calendrier éditorial. `date_prevue` NULL = banque d'idées. Colonnes Yuno : `pilier`, `preuve`, `pourquoi_moi` (NULL pour le FCH) |
 | `contacts` | le carnet réseau, et la couche Passerelle (`objectif`, `niveau`, `date_dernier_envoi`, `prochaine_action`, `prochaine_action_date`) |
 | `commandes` | le suivi, du devis au paiement. `client_id` relie au carnet |
-| `moments` | le Carnet de terrain — un moment vécu = une ligne. `photo_chemin` pointe le fichier dans le bucket privé `moments` |
+| `moments` | le Carnet de terrain — un moment vécu = une ligne. `photo_chemin` pointe le fichier dans le bucket privé `moments` ; `evenement_id` relie la sortie vécue à son événement (posé par le bilan d'une préparation ou par l'invite) |
 | `rencontres` | qui a été rencontré, à quel moment. `contact_id` facultatif |
 | `journal_envois` | un envoi = une ligne. **Aucune colonne « répondu »** |
 | `stats_hebdo` | un rendez-vous = une ligne. `reponse_rituelle` est NOT NULL |

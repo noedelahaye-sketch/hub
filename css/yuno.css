@@ -287,26 +287,12 @@ body[data-espace="yuno"] .lien-externe-titre {
 .yuno-tete h1 { margin-bottom: 0; }
 .yuno-tete .sous-titre { margin: 0; }
 
-/* L'en-tête du SITE : la signature, entière, centrée — rien d'autre. */
-.yuno-site-tete {
-  display: flex;
-  justify-content: center;
-  margin: 0;
-}
-
-/* Le fichier source garde ~20 % de marges transparentes autour du dessin :
-   les marges négatives les résorbent sans toucher à l'image. */
-.yuno-signature {
-  display: block;
-  width: 170px;
-  max-width: 50vw;
-  margin: -28px 0 -22px;
-}
-
-/* Centrage par marges automatiques : contrairement à justify-content:center,
-   il n'ampute pas le début de la barre quand elle déborde et défile. */
-.yuno-site-tete + .yuno-nav > a:first-child { margin-left: auto; }
-.yuno-site-tete + .yuno-nav > a:last-child { margin-right: auto; }
+/* L'en-tête à signature a disparu (demande de Noé, 14 août 2026) : le site
+   s'ouvre sur sa barre. Centrage par marges automatiques : contrairement à
+   justify-content:center, il n'ampute pas le début de la barre quand elle
+   déborde et défile. */
+.yuno-nav > a:first-child { margin-left: auto; }
+.yuno-nav > a:last-child { margin-right: auto; }
 
 /* La seule sortie du site, tout en bas et discrète : en plein écran sur
    téléphone il n'y a pas de barre d'adresse, il faut bien une porte. */

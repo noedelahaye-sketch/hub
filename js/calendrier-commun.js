@@ -1206,6 +1206,20 @@ const ICONE = {
     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <rect x="3" y="3" width="18" height="18" rx="2"></rect>
     <path d="M3 15l5-5 4 4 3-3 6 6"></path></svg>`,
+  moment: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M4 8h3l2-3h6l2 3h3v12H4z"></path>
+    <circle cx="12" cy="13" r="3.5"></circle></svg>`,
+};
+
+// Le type du moment qui naîtra d'un événement Yuno — les mêmes quatre valeurs
+// que le Carnet de terrain (TYPES_MOMENT dans yuno.js, qui importe ce
+// fichier-ci : la constante vit donc ici pour ne pas croiser les imports).
+const TYPES_MOMENT_CAL = {
+  match: 'Match',
+  concert: 'Concert',
+  sortie: 'Sortie',
+  autre: 'Autre',
 };
 
 const FLECHE_ENVOI = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"
@@ -1300,6 +1314,11 @@ function pastilleCapture({
   neutre = null,
   contenu,
   rempli = false,
+  // Une pastille qui n'existe que pour UN projet : elle porte le sien, et
+  // `brancherCapture` la montre ou la masque quand le choix du projet change.
+  // `cachee` dit son état au premier rendu.
+  siProjet = null,
+  cachee = false,
 }) {
   return {
     pastille: `<button type="button" class="pastille-capture${rempli ? ' remplie' : ''}"
@@ -1307,6 +1326,8 @@ function pastilleCapture({
       ${source ? `data-source="${source}"` : ''}
       ${sourceHeure ? `data-source-heure="${sourceHeure}"` : ''}
       ${neutre !== null ? `data-neutre="${echapper(String(neutre))}"` : ''}
+      ${siProjet ? `data-si-projet="${echapper(siProjet)}"` : ''}
+      ${cachee ? 'hidden' : ''}
       data-defaut="${echapper(defaut)}">${icone}<span data-libelle>${echapper(defaut)}</span></button>`,
     panneau: `<div class="capture-popover" data-panneau="${nom}" hidden>${contenu}</div>`,
   };
@@ -1329,6 +1350,11 @@ export function fenetreCreation({
   // ce qui compte — la date, le réseau, le format — mérite la première place
   // (demande de Noé, 13 août 2026).
   natureEnDernier = false,
+  // Le type du moment (match · concert…) sur un événement. Le site Yuno le
+  // passe à vrai — chez lui tout est photo. Le hub n'a pas besoin de l'écrire :
+  // dès que ses projets offrent 'photo', la pastille existe, révélée quand le
+  // projet choisi est photo (demande de Noé, 14 août 2026).
+  typeMoment = false,
   // Ce que la tuile porte DÉJÀ. Vide à la création — c'est le cas ordinaire —,
   // rempli quand on rouvre une ligne pour la corriger : le titre dans le champ,
   // le projet et la priorité sur leurs pastilles. La tuile ne sait pas si elle
@@ -1411,6 +1437,14 @@ export function fenetreCreation({
 
   // 3. Le projet, quand l'espace en offre le choix. Le site Yuno n'en propose
   // pas : on y est déjà chez Yuno.
+  const projetInitial = projetsOfferts
+    ? valeurs.projet && valeurs.projet in projetsOfferts
+      ? valeurs.projet
+      : 'photo' in projetsOfferts
+        ? 'photo'
+        : Object.keys(projetsOfferts)[0]
+    : null;
+
   if (projetsOfferts) {
     pastilles.push(
       pastilleCapture({
@@ -1422,12 +1456,7 @@ export function fenetreCreation({
         contenu: champChoix({
           nom: 'projet',
           options: projetsOfferts,
-          valeur:
-            valeurs.projet && valeurs.projet in projetsOfferts
-              ? valeurs.projet
-              : 'photo' in projetsOfferts
-                ? 'photo'
-                : Object.keys(projetsOfferts)[0],
+          valeur: projetInitial,
           decor: 'projet',
         }),
       }),
@@ -1461,6 +1490,29 @@ export function fenetreCreation({
           ${champCapture({ nom: 'notes', libelle: 'Notes', type: 'textarea' })}`,
       }),
     );
+
+    // Le type du moment qui naîtra de cette sortie — c'est le bilan de la
+    // préparation qui s'en servira pour inscrire le vécu au carnet. Yuno
+    // seulement : dans le hub, la pastille attend que le projet choisi soit
+    // photo (elle porte data-si-projet, brancherCapture la révèle et la cache).
+    if (typeMoment || projetsOfferts?.photo) {
+      pastilles.push(
+        pastilleCapture({
+          nom: 'type_moment',
+          icone: ICONE.moment,
+          defaut: TYPES_MOMENT_CAL.match,
+          source: 'type_moment',
+          rempli: true,
+          siProjet: projetsOfferts ? 'photo' : null,
+          cachee: Boolean(projetsOfferts) && projetInitial !== 'photo',
+          contenu: champChoix({
+            nom: 'type_moment',
+            options: TYPES_MOMENT_CAL,
+            valeur: valeurs.type_moment ?? 'match',
+          }),
+        }),
+      );
+    }
   }
 
   if (nature === 'tache') {
@@ -1668,6 +1720,17 @@ export function brancherCapture(section) {
         frere.classList.toggle('actif', actif);
         frere.setAttribute('aria-pressed', String(actif));
       }
+
+      // Les pastilles qui n'existent que pour un projet suivent le choix : le
+      // type de moment apparaît quand on pose l'événement chez Yuno, et
+      // disparaît sinon. Sa valeur reste dans son champ caché — les lecteurs
+      // du formulaire l'ignorent quand le projet n'est pas le sien.
+      if (nom === 'projet') {
+        for (const conditionnelle of section.querySelectorAll('.capture [data-si-projet]')) {
+          conditionnelle.hidden = valeur !== conditionnelle.dataset.siProjet;
+        }
+      }
+
       fermerLesPanneaux();
       rafraichirLesLibelles();
       return;
@@ -1775,6 +1838,17 @@ function champsDeModification(element) {
         type: 'date',
         valeur: ligne.recurrence_fin ?? '',
       },
+      // Un événement photo porte le type du moment qui en naîtra ; les autres
+      // projets n'ont pas ce champ, et le corriger n'a de sens que chez Yuno.
+      ...(element.projet === 'photo'
+        ? [{
+            nom: 'type_moment',
+            libelle: 'Type de moment',
+            type: 'choix',
+            options: TYPES_MOMENT_CAL,
+            valeur: ligne.type_moment ?? 'match',
+          }]
+        : []),
       { nom: 'lieu', libelle: 'Où', type: 'text', valeur: ligne.lieu ?? '' },
       { nom: 'notes', libelle: 'Notes', type: 'textarea', valeur: ligne.notes ?? '' },
     ];
@@ -2007,5 +2081,8 @@ export async function poserAuCalendrier(champs, { projetParDefaut = 'photo' } = 
     recurrence_fin: champs.recurrence_fin || null,
     lieu: champs.lieu?.trim() || null,
     notes: champs.notes?.trim() || null,
+    // Le champ existe même quand sa pastille est cachée : seul un événement
+    // photo le garde — ailleurs, un type de moment ne veut rien dire.
+    type_moment: projet === 'photo' ? champs.type_moment || null : null,
   });
 }

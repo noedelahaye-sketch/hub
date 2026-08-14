@@ -100,6 +100,29 @@ commencer. Le cahier des charges est dans `yuno-spec.md` (§4,
 choix offrira). État final de la base revérifié : 1 feuille (le match du
 soir), 1 modèle « Match » à 9 lignes, 0 commande.
 
+**Le bilan inscrit le moment au carnet** (idée de Noé, même jour — migration
+`20260814150000_moments_evenement`) : `moments.evenement_id` fait le lien dur,
+`evenements.type_moment` porte le type (pastille « type de moment » dans la
+tuile — toujours chez Yuno, révélée dans le hub quand le projet choisi est
+photo, via `data-si-projet` posé par `brancherCapture`). Au premier
+enregistrement du bilan : photo, rencontres, case « Noter ce moment au
+carnet » cochée d'avance — le moment naît lié, type hérité, victoire comprise ;
+la photo et les rencontres vont au MOMENT, rien ne se stocke en double dans le
+bilan. Jamais de doublon (`momentDeLaFeuille` garde l'écriture ET l'affichage),
+et l'invite du Journal se tait par le même lien (`evenementsARattraper`).
+`BESOINS.preparations` monte à cinq lectures (+ moments, contacts, evenements).
+**Vérifié de bout en bout** sur un événement d'essai d'hier, type concert :
+feuille créée, bilan enregistré avec deux rencontres — moment `concert` lié en
+base, victoire créée, « Ce moment est au carnet » affiché, invite muette, la
+tuile du hub montre/cache la pastille au choix du projet. Tout l'essai défait,
+base relue à l'état exact.
+
+**L'en-tête à signature du site Yuno a disparu** (demande de Noé, même jour) :
+le site s'ouvre sur sa barre, centrée par les marges automatiques de
+`.yuno-nav` (le sélecteur `.yuno-site-tete + .yuno-nav` serait devenu lettre
+morte — vérifié à 1280 px, 433 px de part et d'autre). La signature reste sur
+la page `#photo` du hub.
+
 **Les lignes d'une feuille de préparation sont resserrées — et seulement
 elles** (14 août, demande de Noé : « moins de place, moins d'espace entre 2 »,
 précisée ensuite : la liste générale des tâches ne bouge pas). Une première

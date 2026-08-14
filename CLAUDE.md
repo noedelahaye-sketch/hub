@@ -162,6 +162,7 @@ Règle métier : maximum 3 tâches en statut 'actif' par projet. L'UI doit empê
 - `date_fin` timestamptz
 - `lieu` text
 - `notes` text
+- `type_moment` text (nullable) CHECK (match, concert, sortie, autre) — Yuno seulement : le type du moment qui naîtra de cette sortie (pastille à la création quand le projet est photo). Voir docs/yuno-spec.md, Préparations.
 - `created_at` timestamptz default now()
 
 ### victoires
