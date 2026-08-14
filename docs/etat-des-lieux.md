@@ -100,6 +100,18 @@ commencer. Le cahier des charges est dans `yuno-spec.md` (§4,
 choix offrira). État final de la base revérifié : 1 feuille (le match du
 soir), 1 modèle « Match » à 9 lignes, 0 commande.
 
+**Les lignes d'une feuille de préparation sont resserrées — et seulement
+elles** (14 août, demande de Noé : « moins de place, moins d'espace entre 2 »,
+précisée ensuite : la liste générale des tâches ne bouge pas). Une première
+version avait resserré la règle commune, donc l'espace Tâches et
+« Aujourd'hui » avec ; Noé l'a fait défaire. La règle vit maintenant dans
+`yuno.css` (`.bloc .prepa-liste > .tache-ligne`, 8 px au lieu de 12) — même
+spécificité que la règle commune, c'est l'ordre de chargement qui la fait
+gagner. Mesuré : 47 px la ligne de feuille (55 avant), 62 inchangés dans
+Tâches. Le cercle garde sa cible de 44 px par son propre rembourrage. Piège
+recroisé en vérifiant : la coquille en cache sert l'ancien CSS un rechargement
+durant — mesurer après DEUX rechargements, sinon on mesure la version d'avant.
+
 **Un piège recroisé** : la seule erreur console de la session est un
 `JWT issued at future` (PGRST303) au chargement du tableau de bord — l'horloge
 de la machine contre celle de Supabase, antérieur au chantier, sans rapport.

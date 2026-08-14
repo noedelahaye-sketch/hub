@@ -1558,6 +1558,15 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   border-left: 3px solid var(--gris-chaud-trait);
 }
 
+/* Les lignes d'une feuille sont plus serrées que celles des tâches (demande de
+   Noé, 14 août 2026 — et seulement elles : la liste générale des tâches garde
+   son air). Une feuille est une checklist qu'on parcourt d'un œil, souvent
+   debout ; neuf lignes doivent tenir sous le pouce. Même spécificité que la
+   règle commune de styles.css : c'est l'ordre de chargement (yuno.css après)
+   qui fait gagner celle-ci. Le cercle garde sa cible de 44 px par son propre
+   rembourrage — il déborde un peu sur le filet, et c'est assumé. */
+.bloc .prepa-liste > .tache-ligne { padding: var(--espace-8) 0; }
+
 .prepa-phases {
   display: grid;
   gap: var(--espace-16);
