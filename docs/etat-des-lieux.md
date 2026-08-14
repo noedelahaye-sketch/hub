@@ -1226,6 +1226,34 @@ l'écran « Créer » du FCH : à voir avec Noé plutôt qu'à trancher seul.
 
 ---
 
+## 2 undecies. Une tâche de l'accueil se corrige en la touchant
+
+Demandé par Noé le 14 août 2026. Dans l'espace Tâches, appuyer sur une ligne la
+rouvre depuis le 13 ; sur l'accueil, elle ne répondait pas — `construireLignesTaches`
+y était appelée avec `ouvrable: false`, faute de tuile pour corriger.
+
+**C'est la tuile du « + » qui sert**, pré-remplie. `fenetreCreation` a gagné un
+paramètre `valeurs` — le titre dans le champ, le projet et la priorité sur leurs
+pastilles. La tuile ne sait toujours pas si elle crée ou si elle corrige : c'est
+l'espace qui le sait, à l'envoi, en regardant si `etat.creation` porte un `id`.
+
+**L'écriture est optimiste**, comme le reste : la ligne change à l'écran, et
+revient si le serveur refuse. Mesuré : **89 ms** entre l'envoi et la tuile
+refermée, liste à jour.
+
+**Ce qui n'a pas changé, et c'est voulu** : une tâche ne se SUPPRIME toujours
+pas depuis l'accueil. Effacer n'a rien à faire dans un check-in du matin, et le
+geste existe deux onglets plus loin.
+
+**Vérifié** : la tuile s'ouvre remplie (titre, date, projet, priorité) ; un
+titre et une priorité changés, relus en base, le reste intact ; le « + » crée
+toujours (il s'ouvre vide) ; le cercle coche toujours sans ouvrir la tuile ;
+réseau coupé, la correction ne reste pas à l'écran et la ligne d'excuse
+s'affiche ; l'espace Tâches n'a pas bougé. Tâche d'essai supprimée — **8 tâches
+en base**, celles de Noé.
+
+---
+
 ## 2 decies. Glisser une barre depuis l'accueil, et voir ce qu'on tient
 
 Deux demandes de Noé, le 14 août 2026.

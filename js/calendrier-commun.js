@@ -1329,6 +1329,11 @@ export function fenetreCreation({
   // ce qui compte — la date, le réseau, le format — mérite la première place
   // (demande de Noé, 13 août 2026).
   natureEnDernier = false,
+  // Ce que la tuile porte DÉJÀ. Vide à la création — c'est le cas ordinaire —,
+  // rempli quand on rouvre une ligne pour la corriger : le titre dans le champ,
+  // le projet et la priorité sur leurs pastilles. La tuile ne sait pas si elle
+  // crée ou si elle corrige ; c'est l'espace qui le sait, à l'envoi.
+  valeurs = {},
 }) {
   const memeJour = debut === fin;
   const jourLisible = (cle) =>
@@ -1417,7 +1422,12 @@ export function fenetreCreation({
         contenu: champChoix({
           nom: 'projet',
           options: projetsOfferts,
-          valeur: 'photo' in projetsOfferts ? 'photo' : Object.keys(projetsOfferts)[0],
+          valeur:
+            valeurs.projet && valeurs.projet in projetsOfferts
+              ? valeurs.projet
+              : 'photo' in projetsOfferts
+                ? 'photo'
+                : Object.keys(projetsOfferts)[0],
           decor: 'projet',
         }),
       }),
@@ -1464,7 +1474,7 @@ export function fenetreCreation({
         contenu: champChoix({
           nom: 'priorite',
           options: PRIORITES_CAL,
-          valeur: '4',
+          valeur: String(valeurs.priorite ?? '4'),
           decor: 'priorite',
         }),
       }),
@@ -1514,6 +1524,7 @@ export function fenetreCreation({
       aria-label="Poser au calendrier">
       <input type="hidden" name="nature" value="${echapper(nature)}">
       <input type="text" id="cal-titre" name="titre" required class="capture-titre"
+        value="${echapper(valeurs.titre ?? '')}"
         placeholder="${echapper(INVITE_TITRE[nature])}" autocomplete="off"
         aria-label="${echapper(INVITE_TITRE[nature])}">
 

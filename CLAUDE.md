@@ -235,7 +235,7 @@ Livrer une commande insère une victoire, comme une tâche terminée.
 2. **Victoires récentes** : les 5 dernières, tous projets perso inclus, avec pastille couleur du projet.
    **Masquées depuis le 13 août 2026** (décision de Noé, « pour le moment ») : le drapeau `VICTOIRES_VISIBLES` de `js/dashboard.js` commande le bloc, sa source et son rendu. Cocher une tâche crée toujours sa victoire en base, et l'espace perso comme le site du FCH continuent de les afficher — seul l'accueil se tait.
 3. **Progression des objectifs** : chaque objectif actif avec sa barre de progression et son échéance. Clic → le pourquoi + les jalons. **En BAS de page depuis le 13 août 2026** (décision de Noé) : ils disent le cap, pas la journée — on les relit quand on lève la tête, pas en ouvrant l'application.
-4. **Aujourd'hui** : les tâches à faire aujourd'hui (ou qui l'étaient déjà — pas de borne basse, le hub ne compte pas les retards mais ne les efface pas), max 9, **dans la forme exacte de l'espace Tâches**. Cochables directement.
+4. **Aujourd'hui** : les tâches à faire aujourd'hui (ou qui l'étaient déjà — pas de borne basse, le hub ne compte pas les retards mais ne les efface pas), max 9, **dans la forme exacte de l'espace Tâches**. Cochables directement, et **ouvrables** : appuyer sur une tâche la rouvre dans la tuile, pré-remplie (14 août 2026). Elle ne s'y supprime pas — ce geste vit dans l'espace Tâches.
 5. **Ta semaine** : un **aperçu du calendrier hebdomadaire**, tous projets et toutes natures confondus — la même grille que `#calendrier` en vue semaine.
 
 Ordre 4 avant 5 depuis le 13 août 2026 (demande de Noé) : ce qui se fait dans la journée vient avant ce qui se prépare. « Aujourd'hui » n'est donc plus le bloc discret du bas.

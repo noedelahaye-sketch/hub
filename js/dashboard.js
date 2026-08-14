@@ -244,8 +244,12 @@ export function construireTaches(taches, annulation = null) {
     return `${ligneAnnulation}<p class="vide">Rien à faire aujourd'hui.</p>`;
   }
 
+  // Ouvrables depuis le 14 août 2026 (demande de Noé) : appuyer sur une tâche
+  // la rouvre dans la tuile, ici comme dans l'espace Tâches. Elle ne se
+  // supprime toujours pas d'ici — effacer n'a rien à faire dans un check-in du
+  // matin, et le geste existe deux onglets plus loin.
   return `${ligneAnnulation}${construireLignesTaches(taches.slice(0, MAX_TACHES), {
-    ouvrable: false,
+    ouvrable: true,
     supprimable: false,
   })}`;
 }
@@ -436,6 +440,28 @@ export default {
         ? fenetreCreation({ ...etat.creation, projets: PROJETS })
         : '';
       if (etat.creation) rafraichirLaCapture?.();
+    }
+
+    // Rouvrir une tâche de « Aujourd'hui » : la même tuile que le « + », mais
+    // remplie de ce qu'elle contient. `id` est ce qui distingue les deux — la
+    // tuile ne sait pas si elle crée ou si elle corrige, c'est l'envoi qui le
+    // sait.
+    function ouvrirLaTache(id) {
+      const tache = etat.tachesDatees.find((candidate) => candidate.id === id);
+      if (!tache) return;
+
+      etat.creation = {
+        id: tache.id,
+        nature: 'tache',
+        debut: tache.echeance,
+        fin: tache.echeance,
+        // La base rend « 18:00:00 » ; le champ n'en veut que les heures et les
+        // minutes, sans quoi il refuse la valeur et s'affiche vide.
+        heure: tache.heure ? tache.heure.slice(0, 5) : '',
+        valeurs: { titre: tache.titre, projet: tache.projet, priorite: tache.priorite },
+      };
+      rendreCreation();
+      cible('bloc-creation').querySelector('#cal-titre')?.focus();
     }
 
     function rendreHumeur() {
@@ -638,12 +664,35 @@ export default {
       const champs = Object.fromEntries(new FormData(formulaire));
       formulaire.querySelector('[data-erreur]').hidden = true;
 
+      // Corriger une tâche rouverte, ou en poser une neuve : `id` tranche.
+      const corrige = etat.creation?.id
+        ? etat.tachesDatees.find((tache) => tache.id === etat.creation.id)
+        : null;
+
       // La tuile se referme tout de suite, et ce qu'on vient de poser s'installe
       // dans l'état sans rien redemander au serveur. Avant, chaque ligne notée
       // depuis l'accueil relançait les HUIT requêtes de la page — alors qu'on
       // connaît déjà la réponse : c'est ce qu'on vient d'écrire.
       etat.creation = null;
       rendreCreation();
+
+      if (corrige) {
+        const modifs = {
+          titre: champs.titre.trim(),
+          projet: champs.projet,
+          echeance: champs.debut,
+          heure: champs.heure || null,
+          priorite: Number(champs.priorite) || 4,
+        };
+        await modifierAussitot(corrige, modifs, () => api.modifierTache(corrige.id, modifs), {
+          rendre: () => {
+            rendreTaches();
+            rendreSemaine();
+          },
+          echouer: signalerEcriture,
+        });
+        return;
+      }
 
       try {
         rangerLaCreation(champs.nature, await poserAuCalendrier(champs));
@@ -723,6 +772,15 @@ export default {
       }
 
       if (evenement.target.closest('[data-annuler]')) return annulerDerniereTache();
+
+      // Appuyer sur une tâche la rouvre pour la corriger (demande de Noé,
+      // 14 août 2026). C'est un vrai bouton, pas une ligne qui écoute les
+      // clics : au clavier comme au lecteur d'écran, une tâche s'ouvre.
+      const ouvrir = evenement.target.closest('[data-ouvrir]');
+      if (ouvrir) {
+        ouvrirLaTache(ouvrir.dataset.ouvrir);
+        return;
+      }
 
       if (evenement.target.closest('[data-action="reessayer"]')) {
         echec = false;
