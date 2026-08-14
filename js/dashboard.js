@@ -23,10 +23,14 @@ import {
   fenetreCreation,
   brancherCapture,
   poserAuCalendrier,
+  brancherDeplacement,
+  appliquerAuCalendrier,
+  champsApresDeplacement,
 } from './calendrier-commun.js';
 import { construireLignesTaches, trierTaches } from './taches.js';
 import { lireCache, ecrireCache } from './cache-session.js';
 import { marquerLesEntrantes, animerLaCoche } from './mouvements.js';
+import { modifierAussitot } from './ecriture.js';
 
 // Les projets offerts à la création. Les mêmes que dans l'espace Calendrier :
 // 'perso' n'accepte qu'un événement, `fenetreCreation` s'en charge.
@@ -497,20 +501,24 @@ export default {
     // attend toutes plutôt que de se dessiner amputée puis de se recomposer
     // sous les yeux — une grille qui gagne des barres une à une, c'est le
     // sautillement qu'on cherche justement à éviter.
+    // Ce que la semaine a assemblé, gardé sous la main : glisser une barre a
+    // besoin de retrouver l'élément saisi ET sa ligne d'origine, pour savoir
+    // quelle colonne décaler en base.
+    let elementsDeLaSemaine = [];
+
     function rendreSemaine() {
       if (!pret('taches', 'semaine', 'objectifs')) return;
-      cible('bloc-semaine').innerHTML = construireSemaine(
-        assemblerCalendrier({
-          evenements: etat.evenements,
-          taches: etat.tachesDatees,
-          objectifs: objectifsDesProjets(),
-          publications: etat.publications,
-          commandes: etat.commandes.filter(
-            (commande) => commande.echeance && ['devis', 'en_cours'].includes(commande.statut),
-          ),
-          relances: etat.contacts.filter((contact) => contact.prochaine_action_date),
-        }),
-      );
+      elementsDeLaSemaine = assemblerCalendrier({
+        evenements: etat.evenements,
+        taches: etat.tachesDatees,
+        objectifs: objectifsDesProjets(),
+        publications: etat.publications,
+        commandes: etat.commandes.filter(
+          (commande) => commande.echeance && ['devis', 'en_cours'].includes(commande.statut),
+        ),
+        relances: etat.contacts.filter((contact) => contact.prochaine_action_date),
+      });
+      cible('bloc-semaine').innerHTML = construireSemaine(elementsDeLaSemaine);
     }
 
     function rendreEchec() {
@@ -587,6 +595,30 @@ export default {
 
     // Les pastilles de la tuile, comme dans l'espace Calendrier.
     rafraichirLaCapture = brancherCapture(section);
+
+    // Glisser une barre de la semaine la reporte, sans quitter l'accueil
+    // (demande de Noé, 14 août 2026). C'est la même grille que l'espace
+    // Calendrier, donc le même geste — il n'y avait aucune raison qu'il
+    // s'arrête à la porte du tableau de bord.
+    //
+    // L'écriture est optimiste comme le reste : la barre change de jour tout de
+    // suite, et revient si le serveur refuse.
+    brancherDeplacement(section, async ({ element: cle, ecart }) => {
+      const [type, id] = cle.split(':');
+      const element = elementsDeLaSemaine.find(
+        (candidat) => candidat.type === type && String(candidat.id) === id,
+      );
+      if (!element?.source) return;
+
+      const champs = champsApresDeplacement(element, ecart);
+      await modifierAussitot(element.source, champs, () => appliquerAuCalendrier(type, id, champs), {
+        rendre: () => {
+          rendreSemaine();
+          rendreTaches();
+        },
+        echouer: signalerEcriture,
+      });
+    });
 
     const fermerLaCreation = () => {
       etat.creation = null;

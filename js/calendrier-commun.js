@@ -930,14 +930,41 @@ export function brancherDeplacement(section, quandDeplace) {
     }
   };
 
+  // Ce qu'on a dans la main (demande de Noé, 14 août 2026). Sans lui, un
+  // déplacement n'était qu'une barre pâlie et une case teintée : on devinait
+  // qu'il se passait quelque chose, on ne voyait pas QUOI on déplaçait.
+  //
+  // C'est une copie de la barre, en `position: fixed`, qui suit le pointeur.
+  // Une copie et non l'original : l'original vit dans une grille dont il occupe
+  // une colonne et une ligne — le sortir du flux ferait sauter tout le reste.
+  const prendreEnMain = (barre, x, y) => {
+    const boite = barre.getBoundingClientRect();
+    const fantome = barre.cloneNode(true);
+    fantome.classList.add('cal-fantome');
+    fantome.removeAttribute('id');
+    fantome.style.width = `${boite.width}px`;
+    // La barre reste sous le doigt là où on l'a saisie, pas centrée dessus :
+    // c'est ce décalage qui donne l'impression de tenir l'objet.
+    fantome.dataset.decalageX = String(boite.left - x);
+    fantome.dataset.decalageY = String(boite.top - y);
+    document.body.append(fantome);
+    return fantome;
+  };
+
+  const suivreLaMain = (fantome, x, y) => {
+    fantome.style.transform = `translate(${x + Number(fantome.dataset.decalageX)}px, ${
+      y + Number(fantome.dataset.decalageY)
+    }px)`;
+  };
+
   const lacher = () => {
     prise?.barre.classList.remove('en-deplacement');
+    prise?.fantome?.remove();
     viser(null);
     prise = null;
   };
 
   section.addEventListener('pointerdown', (evenement) => {
-    if (evenement.pointerType === 'touch') return;
     const barre = evenement.target.closest('.cal-barre-element');
     // Une série ne se déplace pas au glissement : décaler une occurrence
     // décalerait toutes les autres, ce que personne n'attend d'un geste.
@@ -946,9 +973,20 @@ export function brancherDeplacement(section, quandDeplace) {
     const jour = jourSousLePoint(evenement.clientX, evenement.clientY);
     if (!jour) return;
 
-    // Sans ça, le navigateur sélectionne le texte des barres traversées.
-    evenement.preventDefault();
-    prise = { barre, jour, x: evenement.clientX, y: evenement.clientY, bouge: false };
+    // À la souris, on empêche tout de suite la sélection du texte traversé. Au
+    // DOIGT, non : tant qu'on ne sait pas si c'est un glissement ou un
+    // défilement, il faut laisser la page libre de défiler.
+    if (evenement.pointerType !== 'touch') evenement.preventDefault();
+    prise = {
+      barre,
+      jour,
+      x: evenement.clientX,
+      y: evenement.clientY,
+      bouge: false,
+      fantome: null,
+      tactile: evenement.pointerType === 'touch',
+      pointeur: evenement.pointerId,
+    };
   });
 
   section.addEventListener('pointermove', (evenement) => {
@@ -956,18 +994,54 @@ export function brancherDeplacement(section, quandDeplace) {
 
     // Quelques pixels de tolérance : un clic tremblant reste un clic.
     if (!prise.bouge) {
-      if (Math.hypot(evenement.clientX - prise.x, evenement.clientY - prise.y) < 5) return;
+      const dx = evenement.clientX - prise.x;
+      const dy = evenement.clientY - prise.y;
+      if (Math.hypot(dx, dy) < 5) return;
+
+      // AU DOIGT, seul un mouvement franchement horizontal saisit la barre. Le
+      // vertical appartient au défilement de la page — c'est ce que dit
+      // `touch-action: pan-y` sur la barre, et il faut le dire aussi ici :
+      // sinon le premier pixel de travers déclencherait un déplacement au
+      // milieu d'un défilement. Conséquence assumée : en vue MOIS, changer de
+      // semaine au doigt ne se fait pas au glissement ; en vue semaine, où les
+      // jours sont côte à côte, tout est horizontal.
+      if (prise.tactile && Math.abs(dx) <= Math.abs(dy)) {
+        prise = null;
+        return;
+      }
+
       prise.bouge = true;
       prise.barre.classList.add('en-deplacement');
+      prise.fantome = prendreEnMain(prise.barre, evenement.clientX, evenement.clientY);
+      // Le pointeur est capturé : la barre continue de recevoir ses
+      // déplacements même quand le doigt sort d'elle, ce qui est le cas dès le
+      // premier pixel. Sous `try` parce que la capture LÈVE quand le pointeur
+      // n'est plus valide — et une capture ratée ne doit pas emporter le
+      // déplacement avec elle.
+      try {
+        prise.barre.setPointerCapture(prise.pointeur);
+      } catch {
+        // Tant pis : le glissement marche encore, il perd juste le suivi hors
+        // de la barre.
+      }
     }
 
+    suivreLaMain(prise.fantome, evenement.clientX, evenement.clientY);
     viser(jourSousLePoint(evenement.clientX, evenement.clientY));
   });
 
   section.addEventListener('pointerup', (evenement) => {
     if (!prise) return;
 
-    const { barre, jour, bouge } = prise;
+    const { barre, jour, bouge, pointeur } = prise;
+    // Même précaution qu'à la prise, et elle compte double ici : cette ligne
+    // est la PREMIÈRE du relâchement. Si elle lève, tout ce qui suit — le
+    // report lui-même — ne se fait pas, et le geste est perdu sans un mot.
+    try {
+      barre.releasePointerCapture(pointeur);
+    } catch {
+      // Le pointeur n'était plus à capturer : rien à relâcher.
+    }
     const arrivee = jourSousLePoint(evenement.clientX, evenement.clientY);
     lacher();
 
@@ -997,6 +1071,20 @@ export function brancherDeplacement(section, quandDeplace) {
 
 // Ce qu'un déplacement change, par nature. Un événement garde sa durée et son
 // heure : on décale ses deux bornes du même nombre de jours.
+// Où écrire, par nature. Recopiée à l'identique dans l'espace Calendrier et
+// dans le site Yuno, elle allait l'être une troisième fois pour l'accueil : le
+// même motif que `poserAuCalendrier`, et la même leçon — c'est dans la copie
+// oubliée qu'un champ finit par manquer.
+export async function appliquerAuCalendrier(type, id, champs) {
+  if (type === 'evenement') return api.modifierEvenement(id, champs);
+  if (type === 'publication') return api.modifierPublication(id, champs);
+  if (type === 'objectif') return api.modifierObjectif(id, champs);
+  if (type === 'commande') return api.modifierCommande(id, champs);
+  if (type === 'relance') return api.modifierContact(id, champs);
+  if (type === 'jalon') return api.modifierJalon(id, champs);
+  return api.modifierTache(id, champs);
+}
+
 export function champsApresDeplacement(element, ecart) {
   const ligne = element.source ?? {};
   const decaler = (iso) => versDateISO(ajouterJours(depuisDateISO(iso), ecart));

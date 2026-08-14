@@ -2685,8 +2685,32 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 .cal-reste:hover { color: var(--texte); background: color-mix(in srgb, var(--texte) 10%, transparent); }
 
 /* Le glissement : la barre s'efface, le jour visé s'allume. */
-.cal-barre-element.en-deplacement { opacity: 0.45; cursor: grabbing; }
+.cal-barre-element.en-deplacement { opacity: 0.3; cursor: grabbing; }
 .cal-cible { background: var(--accent-doux); }
+
+/* Ce qu'on a dans la main : une copie de la barre qui suit le pointeur
+   (demande de Noé, 14 août 2026). Elle vit dans le `body`, hors de la grille —
+   sortir l'originale de son flux ferait sauter tout le reste de la semaine.
+
+   `pointer-events: none` est vital : sans lui, la copie serait toujours sous le
+   doigt, et `elementsFromPoint` ne verrait jamais le jour survolé. */
+.cal-fantome {
+  position: fixed;
+  z-index: 60;
+  top: 0;
+  left: 0;
+  margin: 0;
+  pointer-events: none;
+  opacity: 0.95;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
+  transform: translate(-1000px, -1000px);
+}
+
+/* Au doigt, une barre laisse passer le défilement VERTICAL et retient
+   l'horizontal : c'est ce qui permet de la glisser d'un jour à l'autre sans
+   que la page parte. Le code de déplacement applique la même règle — voir
+   `brancherDeplacement`. */
+.cal-barre-element { touch-action: pan-y; }
 
 /* La journée dépliée. */
 .cal-journee { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--espace-4); }

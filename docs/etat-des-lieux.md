@@ -1226,6 +1226,74 @@ l'écran « Créer » du FCH : à voir avec Noé plutôt qu'à trancher seul.
 
 ---
 
+## 2 decies. Glisser une barre depuis l'accueil, et voir ce qu'on tient
+
+Deux demandes de Noé, le 14 août 2026.
+
+### Le geste marche depuis la semaine de l'accueil
+
+La grille de « Ta semaine » est **la même fonction** que celle de l'espace
+Calendrier ; seul le brancheur manquait. `brancherDeplacement` est maintenant
+posé sur le tableau de bord aussi, et l'écriture y est **optimiste** comme le
+reste : la barre change de jour tout de suite, et revient si le serveur refuse.
+
+**`appliquerAuCalendrier` est passée en commun** à cette occasion. Elle était
+recopiée à l'identique dans l'espace Calendrier et dans le site Yuno, et une
+troisième copie allait naître pour l'accueil — exactement l'histoire de
+`poserAuCalendrier`, et la même leçon : c'est dans la copie oubliée qu'un champ
+finit par manquer.
+
+### On voit ce qu'on a dans la main
+
+Avant, un déplacement n'était qu'une barre pâlie et une case teintée : on
+devinait qu'il se passait quelque chose, on ne voyait pas QUOI on déplaçait.
+
+**Une copie de la barre suit le pointeur** (`.cal-fantome`), en `position:
+fixed`, dans le `body`. Une copie et non l'originale : l'originale occupe une
+colonne et une ligne de la grille, la sortir du flux ferait sauter tout le
+reste. Elle garde le décalage de la prise — la barre reste sous le doigt là où
+on l'a saisie, pas centrée dessus — et c'est ce détail qui donne l'impression de
+tenir l'objet.
+
+**`pointer-events: none` sur la copie est vital** : sans lui, elle serait
+toujours sous le doigt, et `elementsFromPoint` ne verrait jamais le jour
+survolé — donc plus aucune cible, et aucun report.
+
+### Le glissement marche au doigt, ce qui n'était pas le cas
+
+`brancherDeplacement` commençait par `if (evenement.pointerType === 'touch')
+return` : **le déplacement n'existait pas sur téléphone**, c'est-à-dire là où
+Noé s'en sert. Il fallait le lever pour que la demande ait un sens.
+
+La règle qui rend ça possible sans casser le défilement : `touch-action: pan-y`
+sur les barres, et la même règle dans le code — **au doigt, seul un mouvement
+franchement horizontal saisit la barre**. Le vertical appartient à la page. En
+vue semaine, où les sept jours sont côte à côte, tout déplacement est
+horizontal ; **en vue mois, changer de semaine au doigt ne se fait donc pas au
+glissement**, et c'est assumé.
+
+**Un piège trouvé en exerçant** : `setPointerCapture` et surtout
+`releasePointerCapture` **lèvent** quand le pointeur n'est plus valide. La
+seconde était la première ligne du relâchement : quand elle levait, le report
+lui-même ne se faisait pas, **et rien ne le disait**. Les deux sont sous `try`.
+
+**Vérifié** : un vrai glissement à la souris depuis l'accueil (jeudi → samedi),
+relu en base ; la copie visible en cours de geste, avec la barre d'origine pâlie
+et le jour d'arrivée allumé (capture à l'appui) ; l'annulation qui ne laisse ni
+copie ni surbrillance ni écriture ; au doigt, un mouvement vertical qui ne
+saisit rien et un mouvement horizontal qui reporte (relu en base) ; et le même
+geste, inchangé, dans l'espace Calendrier et sur le site Yuno. Le détail ne
+s'ouvre pas derrière un glissement — l'avalement du clic tient toujours.
+
+**Un piège de vérification, coûteux** : le serveur local du port 4173
+appartenait à une autre session de travail et servait des fichiers **périmés**.
+Trois essais ont conclu « le glissement ne marche pas » alors que le code était
+juste — la page ne l'avait jamais reçu. `curl` sur le fichier servi l'a montré
+en une seconde. **Quand un comportement neuf ne se produit pas, vérifier
+d'abord que le serveur sert bien le fichier qu'on vient d'écrire.**
+
+---
+
 ## 2 nonies. Deux points en attente, tranchés
 
 Les deux seuls du § 3 qui demandaient du travail plutôt qu'une réponse.

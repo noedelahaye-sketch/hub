@@ -50,6 +50,7 @@ import {
   brancherSelection,
   brancherClavier,
   brancherDeplacement,
+  appliquerAuCalendrier,
   brancherCapture,
   champsApresDeplacement,
   deplacerAncre,
@@ -2801,16 +2802,6 @@ export default {
 
     // Où écrire, par nature. Le formulaire de modification et le glissement
     // passent tous deux par ici — seuls les champs changent.
-    async function appliquerAuCalendrier(type, id, champs) {
-      if (type === 'evenement') return api.modifierEvenement(id, champs);
-      if (type === 'publication') return api.modifierPublication(id, champs);
-      if (type === 'objectif') return api.modifierObjectif(id, champs);
-      if (type === 'commande') return api.modifierCommande(id, champs);
-      if (type === 'relance') return api.modifierContact(id, champs);
-      if (type === 'jalon') return api.modifierJalon(id, champs);
-      return api.modifierTache(id, champs);
-    }
-
     // Chaque nature se supprime là où elle vit. Une relance n'est pas une ligne
     // à effacer : c'est une date qu'on retire d'une fiche du carnet.
     async function effacerDuCalendrier(type, id) {
