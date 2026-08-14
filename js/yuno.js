@@ -529,11 +529,60 @@ function formulaireModifierMoment(sortie) {
 //
 // Elle s'ouvre en grand au clic, comme une vignette du mur : une sortie SANS
 // photo n'a pas de vignette, et son bilan serait alors inatteignable.
-function carteMoment(sortie, photos = {}) {
-  return `<li class="moment moment-ouvrable" data-ouvrir-sortie="${echapper(sortie.id)}">${corpsMoment(
-    sortie,
-    photos,
-  )}</li>`;
+// Deux marques minuscules, en trait : une photo jointe, des gens rencontrés.
+// Des dessins et non des émojis — un émoji arriverait avec sa couleur et sa
+// police à lui, au milieu d'une ligne qui doit rester grise.
+const MARQUE_PHOTO = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+  aria-hidden="true" focusable="false">
+  <path d="M4 8h3l2-3h6l2 3h3v12H4z"></path><circle cx="12" cy="13" r="3.2"></circle></svg>`;
+
+const MARQUE_GENS = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+  aria-hidden="true" focusable="false">
+  <circle cx="9" cy="8" r="3.2"></circle>
+  <path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"></path>
+  <path d="M16 5.5a3.2 3.2 0 0 1 0 6M17.5 14.8c2.1.6 3.5 2.4 3.5 5.2"></path></svg>`;
+
+// Une ligne, pas une carte (demande de Noé, 14 août 2026). Le carnet est fait
+// pour s'allonger : cinquante sorties en cinquante cartes deviennent un mur
+// qu'on ne parcourt plus. La ligne dit le nécessaire — quand, quoi, et trois
+// marques — et le clic ouvre la fiche entière, comme la banque d'idées et le
+// réseau le font déjà. Le retrait vit dans la fenêtre : une croix par ligne,
+// sur cinquante lignes, c'est cinquante occasions de se tromper.
+function ligneCarnet(sortie, photos = {}) {
+  const rencontres = sortie.rencontres?.length ?? 0;
+  const aUnePhoto = Boolean(sortie.photo_chemin && photos[sortie.photo_chemin]);
+  const jour = depuisDateISO(jourDeLaSortie(sortie));
+
+  return `
+    <li>
+      <button type="button" class="sortie-ligne" data-ouvrir-sortie="${echapper(sortie.id)}"
+        aria-label="Ouvrir « ${echapper(titreDuMoment(sortie))} »">
+        <span class="sortie-ligne-quand chiffre">${echapper(
+          jour.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' }),
+        )}</span>
+        <span class="sortie-ligne-titre">${echapper(sortie.titre ?? titreDuMoment(sortie))}</span>
+        <span class="sortie-ligne-marques">
+          ${
+            sortie.oeuvre_finie
+              ? '<span class="etiquette etiquette-oeuvre" title="Œuvre finie">Œuvre</span>'
+              : ''
+          }
+          <span class="etiquette">${echapper(
+            TYPES_MOMENT[sortie.type_moment] ?? TYPES_MOMENT.autre,
+          )}</span>
+          ${aUnePhoto ? `<span class="sortie-marque" title="Une photo">${MARQUE_PHOTO}</span>` : ''}
+          ${
+            rencontres
+              ? `<span class="sortie-marque" title="${rencontres} rencontre${
+                  rencontres > 1 ? 's' : ''
+                }">${MARQUE_GENS}<span class="chiffre">${rencontres}</span></span>`
+              : ''
+          }
+        </span>
+      </button>
+    </li>`;
 }
 
 // Le tirage est au hasard, mais il tient la journée : sans ça le mur se
@@ -654,7 +703,7 @@ export function construireCarnet(evenements, photos = {}) {
   }
 
   return `<ul class="liste-carnet">${duPlusRecent(sorties)
-    .map((sortie) => carteMoment(sortie, photos))
+    .map((sortie) => ligneCarnet(sortie, photos))
     .join('')}</ul>`;
 }
 
@@ -1034,13 +1083,21 @@ export function construireSortieDuMoment(evenements, preparations, reference = n
 
   // Ce qu'il RESTE, jamais ce qui manque : on montre les trois premières lignes
   // à faire, et le compte dit le reste sans en faire une dette.
+  //
+  // Elles se cochent d'ici (demande de Noé, 14 août 2026). C'est la seule chose
+  // que l'accueil laisse faire, et elle se défend : au bord du terrain on n'a
+  // pas le temps d'ouvrir une page pour dire qu'on a chargé les batteries. Le
+  // cercle est le même bouton que partout — `data-cocher-prepa` est déjà écouté
+  // sur la section entière, l'accueil n'a rien à brancher.
   const apercu = restent.length
     ? `<ul class="apercu-phase">${restent
         .slice(0, 3)
         .map(
           (item) => `
         <li class="tache-ligne">
-          <span class="tache-cercle" aria-hidden="true"></span>
+          <button type="button" class="tache-cercle" data-cocher-prepa="${echapper(item.id)}"
+            aria-pressed="false"
+            aria-label="Cocher « ${echapper(item.texte)} »"></button>
           <span class="tache-corps"><span class="tache-titre">${echapper(item.texte)}</span></span>
         </li>`,
         )
@@ -4240,12 +4297,19 @@ export default {
       // la croix retire, le « + » d'une rencontre lui ouvre une fiche. Chacun
       // garde son geste, comme dans le CRM.
       const ficheSortie = evenement.target.closest('[data-ouvrir-sortie]');
-      if (ficheSortie && !evenement.target.closest('a, button, input, select, textarea, label')) {
-        etat.momentOuvert = ficheSortie.dataset.ouvrirSortie;
-        etat.editionMoment = false;
-        rendre();
-        section.querySelector('.fenetre-fermer')?.focus();
-        return;
+      if (ficheSortie) {
+        // Ce qui porte son propre geste à l'intérieur d'une ligne — un lien, une
+        // croix — le garde. Mais depuis que la ligne du carnet EST un bouton,
+        // elle se trouve elle-même dans cette recherche : sans la seconde
+        // condition, plus aucune fiche ne s'ouvrait.
+        const interne = evenement.target.closest('a, button, input, select, textarea, label');
+        if (!interne || interne === ficheSortie) {
+          etat.momentOuvert = ficheSortie.dataset.ouvrirSortie;
+          etat.editionMoment = false;
+          rendre();
+          section.querySelector('.fenetre-fermer')?.focus();
+          return;
+        }
       }
 
       // Une vignette du mur ouvre sa sortie : le lieu, la date, les

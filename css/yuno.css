@@ -1681,12 +1681,91 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 .liste-choix-modeles li:last-child .choix-modele { border-bottom: none; }
 .liste-choix-modeles .choix-modele:hover { background: var(--fond); }
 
-/* Une fiche du carnet s'ouvre en grand au clic — c'est le seul chemin vers le
-   bilan d'une sortie sans photo, qui n'a pas de vignette au mur. Le curseur le
-   dit ; ses propres boutons (la croix, le « + » d'une rencontre) gardent leur
-   geste, comme dans le CRM. */
-.moment-ouvrable { cursor: pointer; }
-.moment-ouvrable:hover { border-color: var(--gris-chaud-trait); }
+/* --- Le carnet, en lignes ----------------------------------------------------
+   Des LIGNES et non des cartes (demande de Noé, 14 août 2026) : le carnet est
+   fait pour s'allonger, et cinquante sorties en cinquante cartes deviennent un
+   mur qu'on ne parcourt plus. Chaque ligne dit quand, quoi, et trois marques ;
+   le clic ouvre la fiche entière — le même geste que la banque d'idées et le
+   réseau. `.bloc li` est donc annulé, barre de projet comprise. */
+.bloc .liste-carnet {
+  gap: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.bloc .liste-carnet > li {
+  padding: 0;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--bordure);
+  border-radius: 0;
+}
+
+.bloc .liste-carnet > li::before { content: none; }
+.bloc .liste-carnet > li:last-child { border-bottom: none; }
+
+/* La ligne EST le bouton : toute la sortie est la cible, pas seulement son
+   titre. Il faut donc défaire ce qu'un `<button>` apporte. */
+.sortie-ligne {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-12);
+  width: 100%;
+  /* 44 px de cible tactile — mesuré, pas supposé : la racine du hub est à
+     15 px, donc 2,75 rem ne faisaient que 41 px. */
+  min-height: 2.9375rem;
+  padding: var(--espace-8) 0;
+  font-family: inherit;
+  font-size: 1rem;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.sortie-ligne:hover .sortie-ligne-titre { color: var(--accent); }
+
+/* La date en chiffres, largeur fixe : les lignes s'alignent, et l'œil descend
+   la colonne des dates sans accrocher. */
+.sortie-ligne-quand {
+  flex: none;
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+}
+
+/* Le titre prend la place qui reste et se coupe plutôt que de passer à la
+   ligne : une liste qu'on parcourt doit garder une hauteur de ligne constante.
+   Le titre entier est dans la fiche, à un clic. */
+.sortie-ligne-titre {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sortie-ligne-marques {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  color: var(--gris-chaud);
+}
+
+.sortie-marque {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.75rem;
+}
+
+/* Sur téléphone, la place manque : le type se devine à la fiche, les deux
+   marques et l'œuvre finie suffisent à lire la ligne. */
+@media (max-width: 30rem) {
+  .sortie-ligne-marques > .etiquette:not(.etiquette-oeuvre) { display: none; }
+}
 
 /* --- La sortie du moment, sur l'accueil --------------------------------------
    Le jour d'un match, ce qui compte n'est ni le mur ni les objectifs : c'est ce
@@ -1698,10 +1777,11 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   font-size: 1.25rem;
 }
 
-/* L'aperçu est en LECTURE : l'accueil montre et ouvre des portes, il ne gère
-   rien (décision du 12 août). Les cercles reprennent le dessin des tâches pour
-   qu'on les reconnaisse, mais ce ne sont pas des boutons — on coche dans la
-   feuille, où l'on va d'un geste. */
+/* Les lignes se cochent d'ici (demande de Noé, 14 août 2026) : c'est la seule
+   chose que l'accueil laisse faire, et au bord du terrain elle vaut mieux
+   qu'une page à ouvrir. Le cercle garde donc le dessin COMMUN des tâches —
+   ses pseudo-éléments, sa coche animée et sa cible de 44 px : rien n'est
+   redéfini ici, sans quoi l'animation n'aurait plus de quoi se dessiner. */
 .apercu-phase {
   margin: 0 0 var(--espace-12);
   padding: 0;
@@ -1725,19 +1805,5 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 
 .bloc .apercu-phase > .tache-ligne::before { content: none; }
 .bloc .apercu-phase > .tache-ligne:last-child { border-bottom: none; }
-
-.apercu-phase .tache-cercle {
-  flex: none;
-  width: 1.125rem;
-  height: 1.125rem;
-  margin: 0;
-  padding: 0;
-  border: 2px solid var(--gris-chaud-trait);
-  border-radius: var(--rayon-pastille);
-  background: none;
-}
-
-.apercu-phase .tache-cercle::before,
-.apercu-phase .tache-cercle::after { content: none; }
 
 .apercu-phase .tache-titre { font-size: 0.9375rem; }

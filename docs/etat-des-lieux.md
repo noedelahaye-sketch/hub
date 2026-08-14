@@ -311,6 +311,40 @@ zéro erreur en console.
 
 ---
 
+## 0 quinquies. L'aperçu cochable, et le carnet en lignes (14 août, soir)
+
+- **Les lignes de l'aperçu se cochent depuis l'accueil** (demande de Noé). Les
+  `<span>` sont redevenus des `<button data-cocher-prepa>` — le gestionnaire
+  était déjà posé sur la section entière, l'accueil n'a rien eu à brancher. Le
+  CSS qui redéfinissait le cercle a été **supprimé** plutôt qu'étendu : le
+  dessin commun porte les pseudo-éléments de la coche et la cible de 44 px, et
+  les redéfinir aurait laissé l'animation sans rien à dessiner.
+  **Vérifié** en cochant depuis l'accueil (`coche-vient` s'anime, la ligne quitte
+  l'aperçu, la base suit), puis en décochant depuis la feuille : la ligne revient
+  sur l'accueil. La feuille de Noé est revenue à son état exact — « Charger les
+  batteries » cochée par lui, le reste non.
+
+- **Le carnet de terrain passe en LISTE** (demande de Noé : « les tuiles
+  prennent trop de place, il y en aura beaucoup »). `carteMoment` a laissé la
+  place à `ligneCarnet` : date, titre coupé à l'ellipsis, et trois marques
+  minuscules (type, photo, nombre de rencontres, plus « Œuvre »). Le clic ouvre
+  la fiche complète — le geste de la banque d'idées et du réseau. La croix de
+  retrait a quitté la ligne : elle vit dans la fenêtre, avec le crayon.
+  **Mesuré** : 13 sorties tiennent en 548 px, soit 41 px par ligne contre une
+  carte de plusieurs lignes chacune.
+
+**Deux pièges, tous deux trouvés en vérifiant plutôt qu'en relisant :**
+
+1. **La ligne étant devenue un `<button>`, plus aucune fiche ne s'ouvrait.** Le
+   gestionnaire portait `!evenement.target.closest('a, button, …')` — la garde
+   qui laisse un bouton interne (la croix, le « + » d'une rencontre) garder son
+   geste. La ligne se trouvait elle-même. Corrigé en acceptant le cas où
+   l'élément trouvé EST la ligne.
+2. **2,75 rem ne font pas 44 px ici.** La racine du hub est à 15 px : la cible
+   tombait à 41. Portée à 2,9375 rem, **mesurée** à 44.
+
+---
+
 ## 1. Ce qui existe
 
 Le hub est **déployé et fonctionnel** :

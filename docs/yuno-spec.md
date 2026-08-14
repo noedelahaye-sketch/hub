@@ -350,9 +350,11 @@ nature Moment.
    tait. Un lien ouvre la feuille ; si la sortie n'en a pas encore, le bloc
    porte « Préparer » à la place.
 
-   **L'aperçu est en lecture** : l'accueil montre et ouvre des portes, il ne
-   gère rien. Les cercles reprennent le dessin des tâches pour qu'on les
-   reconnaisse, mais on coche dans la feuille, à un geste de là.
+   **Les lignes se cochent depuis l'accueil** (demande de Noé, 14 août 2026).
+   C'est la seule entorse à « l'accueil ne gère rien », et elle se défend : au
+   bord du terrain, on n'ouvre pas une page pour dire qu'on a chargé les
+   batteries. Le cercle est le même bouton que partout — même coche dessinée,
+   même cible de 44 px — et l'écriture part derrière, comme ailleurs.
 
    La fin d'une sortie, quand la colonne ne la dit pas, suit deux conventions
    déjà posées ailleurs plutôt que d'en inventer : minuit veut dire « pas
@@ -487,6 +489,16 @@ Trois conséquences, et elles tiennent l'intention :
   sortie du carnet efface son fichier. Le bucket garde son nom (`moments`) :
   c'est un nom de stockage, pas un mot d'interface, et le renommer casserait
   les chemins déjà écrits en base.
+- **Le fil est une LISTE, plus des cartes** (demande de Noé, 14 août 2026) :
+  le carnet est fait pour s'allonger, et cinquante sorties en cinquante cartes
+  deviennent un mur qu'on ne parcourt plus. Une ligne dit la date, le nom de la
+  sortie et trois marques minuscules — le type, une photo jointe, le nombre de
+  rencontres, plus « Œuvre » quand il y en a une. Le titre se coupe plutôt que
+  de passer à la ligne : une liste qu'on parcourt garde une hauteur constante.
+  **Le clic ouvre la fiche entière**, comme la banque d'idées et le réseau, et
+  c'est là que vivent le crayon et « Retirer du carnet » — une croix par ligne,
+  sur cinquante lignes, ce sont cinquante occasions de se tromper. Sur téléphone
+  l'étiquette de type s'efface : la place manque, et la fiche la redit.
 - **Le fil, antéchronologique, ne porte que des moments** (13 août 2026). Il a
   d'abord mêlé les victoires nées ailleurs — une tâche terminée, une commande
   livrée, un jalon atteint. Noé les a fait retirer : une ligne « Publier trois
