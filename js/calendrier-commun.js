@@ -1403,6 +1403,15 @@ export function fenetreCreation({
   // 2. Quand. Les dates se montrent et se corrigent : le glissement les
   // pré-remplit, il ne les impose pas — sans ça, un événement de plusieurs
   // jours ne pourrait naître que d'un geste de souris, impossible au doigt.
+  //
+  // **La date peut être absente**, et la tuile s'ouvre alors sur « Quand » à
+  // remplir plutôt que sur aujourd'hui : c'est ainsi qu'on note une idée dans
+  // la banque, où une publication SANS date est justement ce qu'on cherche à
+  // créer (demande de Noé, 14 août 2026). Seul un événement exige sa date —
+  // `date_debut` est NOT NULL, et un événement sans jour n'existe pas.
+  const dateFournie = Boolean(debut);
+  const dateRequise = nature === 'evenement' || dateFournie;
+
   const champsQuand =
     nature === 'evenement'
       ? `<div class="capture-deux-champs">
@@ -1411,9 +1420,9 @@ export function fenetreCreation({
          </div>
          ${champCapture({ nom: 'fin', libelle: "Jusqu'au (vide = un seul jour)", type: 'date', valeur: memeJour ? '' : fin })}`
       : nature === 'objectif'
-        ? champCapture({ nom: 'debut', libelle: 'Échéance', type: 'date', valeur: debut, requis: true })
+        ? champCapture({ nom: 'debut', libelle: 'Échéance', type: 'date', valeur: debut, requis: dateRequise })
         : `<div class="capture-deux-champs">
-             <span>${champCapture({ nom: 'debut', libelle: 'Quand', type: 'date', valeur: debut, requis: true })}</span>
+             <span>${champCapture({ nom: 'debut', libelle: 'Quand', type: 'date', valeur: debut, requis: dateRequise })}</span>
              <span>${champCapture({ nom: 'heure', libelle: 'Heure', type: 'time' })}</span>
            </div>`;
 
@@ -1421,10 +1430,12 @@ export function fenetreCreation({
     pastilleCapture({
       nom: 'quand',
       icone: ICONE.quand,
-      defaut: jourLisible(debut),
+      // Sans date, la pastille dit ce qu'elle attend au lieu d'afficher un
+      // jour que personne n'a choisi — et elle reste en encre discrète.
+      defaut: dateFournie ? jourLisible(debut) : 'Quand',
       source: 'debut',
       sourceHeure: nature === 'objectif' ? null : 'heure',
-      rempli: true,
+      rempli: dateFournie,
       contenu: `${champsQuand}${
         surLePremierJour
           ? `<p class="discret cal-note-nature">Posé sur le ${echapper(
@@ -2052,8 +2063,10 @@ export async function poserAuCalendrier(champs, { projetParDefaut = 'photo' } = 
       titre,
       reseau: champs.reseau,
       format: champs.format,
-      date_prevue: champs.debut,
-      heure: champs.heure || null,
+      // Sans date, c'est une idée : elle rejoint la banque. Une heure sans
+      // date ne veut rien dire, elle part avec.
+      date_prevue: champs.debut || null,
+      heure: (champs.debut && champs.heure) || null,
     });
   }
 

@@ -597,11 +597,32 @@ on les cherche et disparaître quand on lit le reste.
 site du FCH : la banque et « Publiées » sont seules à passer par
 `construireApercuPublication`.
 
+**L'idée du jour ouvre la page** (demande de Noé, 14 août 2026) : une idée de
+la banque, tirée au sort une fois par jour, offerte en arrivant. Elle ne demande
+rien — elle est là, on la lit, on la garde ou on passe. C'est le pendant du mur
+de photos : même tirage à graine (la date), même stabilité dans la journée, même
+changement à minuit, rien de stocké. Un petit bouton en tête **en tire une
+autre**, sans mémoire — le re-tirage ne survit pas au changement de page, et
+demain l'idée du jour reprend sa place. La tuile s'ouvre au clic sur la fiche de
+l'idée, comme dans la banque.
+
+Elle ne remplace pas « Je ne sais pas quoi poster », qui répond à une autre
+question : celle-là est contextuelle — y a-t-il un match cette semaine ? — et se
+déplie quand on la cherche.
+
 **Les deux façons d'attaquer, côte à côte** (12 août 2026) : « Noter une idée »
 quand on en a une, « Je ne sais pas quoi poster » quand on n'en a pas. Elles se
 valent, donc même taille et même allure. Noter passe par une **fenêtre
 volante** — le geste est celui de la capture d'un moment, il est le même partout
 dans le site.
+
+**Le « + » de Créer et de la banque s'ouvre SANS date** (demande de Noé,
+14 août 2026). Une idée est une publication sans date : l'ouvrir sur aujourd'hui
+la programmait pour le jour même, et il fallait la déprogrammer pour qu'elle
+rejoigne la banque. La pastille dit « Quand » au lieu d'un jour que personne n'a
+choisi, et le champ n'est plus requis — seul un événement exige sa date, sa
+colonne étant NOT NULL. L'éditorial, lui, garde la sienne : c'est un calendrier,
+on y pose sur un jour.
 
 **Le tirage de la semaine** répond les jours de panne : « Je ne sais pas quoi
 poster » pose une seule question — y a-t-il un match cette semaine ? — puis

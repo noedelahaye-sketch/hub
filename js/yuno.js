@@ -619,6 +619,15 @@ function tirageDuJour(liste, jour) {
     return graine / 4294967296;
   };
 
+  // Huit tours à vide, et ils ne sont pas décoratifs. Deux dates voisines
+  // donnent deux graines voisines — « 15 » et « 16 » ne diffèrent que d'une
+  // unité — et un générateur congruentiel garde cette proximité sur son premier
+  // tirage. Mesuré avant : sur quinze jours et cinq idées, deux d'entre elles ne
+  // sortaient JAMAIS, et deux jours de suite rendaient souvent la même. Le
+  // brassage décorrèle les graines proches ; le tirage reste stable dans la
+  // journée, puisqu'il part toujours de la même date.
+  for (let tour = 0; tour < 8; tour += 1) suivant();
+
   const tirees = [...liste];
   for (let i = tirees.length - 1; i > 0; i -= 1) {
     const j = Math.floor(suivant() * (i + 1));
@@ -833,8 +842,13 @@ const PLUS_PAR_VUE = {
   // qui vivait au-dessus des compteurs. Comme `contact`, ce n'est pas une
   // nature de la tuile : la fenêtre de la sortie s'ouvre seule.
   journal: { sortie: true },
-  creer: { nature: 'publication', natureEnDernier: true },
-  banque: { nature: 'publication', natureEnDernier: true },
+  // Sur Créer et dans la banque, le « + » note une IDÉE : il s'ouvre donc sans
+  // date (demande de Noé, 14 août 2026). Une idée est une publication sans
+  // date — l'ouvrir sur aujourd'hui la programmait pour le jour même, et il
+  // fallait ensuite la déprogrammer pour qu'elle rejoigne la banque.
+  // L'éditorial garde sa date : c'est un calendrier, on y pose sur un jour.
+  creer: { nature: 'publication', natureEnDernier: true, sansDate: true },
+  banque: { nature: 'publication', natureEnDernier: true, sansDate: true },
   editorial: { nature: 'publication', natureEnDernier: true },
   calendrier: { nature: 'evenement' },
   reseau: { contact: true },
@@ -1275,6 +1289,66 @@ export function construireTirage(tirage) {
     </div>`;
 }
 
+// --- L'idée du jour -----------------------------------------------------------
+// Une idée de la banque, tirée au sort une fois par jour, offerte en arrivant
+// sur Créer (demande de Noé, 14 août 2026). Elle ne demande rien : elle est là,
+// on la lit, on la garde ou on passe. C'est le pendant du mur de photos — même
+// tirage à graine, même stabilité dans la journée, même changement à minuit.
+//
+// Elle ne remplace pas « Je ne sais pas quoi poster », qui répond à une autre
+// question : celle-là est contextuelle (« y a-t-il un match cette semaine ? »)
+// et se déplie quand on la cherche.
+export function ideeDuJour(publications, jour = versDateISO()) {
+  const banque = publications.filter((pub) => !pub.date_prevue && pub.statut !== 'publie');
+  return tirageDuJour(banque, jour)[0] ?? null;
+}
+
+// Le signe du re-tirage : deux flèches en boucle. Un dessin, pas un caractère —
+// le site n'écrit qu'en × + ↗ ‹ ›, et un émoji arriverait avec sa police à lui.
+const RETIRER_AU_SORT = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+  aria-hidden="true" focusable="false">
+  <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M21 3v5h-5"></path>
+  <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path><path d="M3 21v-5h5"></path></svg>`;
+
+// `autreId` est l'idée qu'on vient de retirer à la main : tant qu'elle est là,
+// c'est elle qu'on montre. Elle ne survit pas au changement de page — demain
+// l'idée du jour reprend sa place, et c'est très bien ainsi.
+//
+// Un IDENTIFIANT et non l'objet : l'idée affichée peut être supprimée depuis sa
+// propre fiche, et une ligne gardée sous la main survivrait à sa suppression.
+export function construireIdeeDuJour(publications, { autreId = null, jour = versDateISO() } = {}) {
+  const autre = autreId ? publications.find((pub) => pub.id === autreId) : null;
+  const idee = autre ?? ideeDuJour(publications, jour);
+
+  if (!idee) {
+    return `
+      <section class="bloc idee-jour">
+        <h2>L'idée du jour</h2>
+        <p class="vide">Ta banque est vide — note une idée, même bancale, et elle reviendra
+          t'inspirer un matin.</p>
+      </section>`;
+  }
+
+  return `
+    <section class="bloc idee-jour">
+      <div class="idee-jour-tete">
+        <h2>L'idée du jour</h2>
+        <button type="button" class="bouton-icone" data-retirer-idee
+          title="En tirer une autre" aria-label="En tirer une autre">${RETIRER_AU_SORT}</button>
+      </div>
+      <button type="button" class="idee-jour-corps" data-ouvrir-pub="${echapper(idee.id)}"
+        aria-label="Ouvrir « ${echapper(idee.titre)} »">
+        <span class="tuile-entete">
+          ${idee.pilier ? etiquettePilier(idee.pilier) : ''}
+          <span class="etiquette">${echapper(FORMATS[idee.format] ?? idee.format)}</span>
+        </span>
+        <span class="pub-titre">${echapper(idee.titre)}</span>
+        ${idee.preuve ? `<span class="discret pub-preuve">${echapper(idee.preuve)}</span>` : ''}
+      </button>
+    </section>`;
+}
+
 function blocTirage(etat) {
   return `
     <details class="tirage" ${etat.tirage ? 'open' : ''}>
@@ -1333,6 +1407,8 @@ function vueCreer(etat) {
         ? `<p class="note-cloture">C'est posté. Ferme l'app, la suite se passe dehors.</p>`
         : ''
     }
+
+    ${construireIdeeDuJour(etat.publications, { autreId: etat.ideeAutre })}
 
     <section class="bloc">
       <h2>Les quatre piliers</h2>
@@ -3318,6 +3394,9 @@ export default {
       pilier: 'tout',
       statutIdee: 'tout',
       tirage: null,
+      // L'idée retirée à la main sur Créer, par son identifiant. Nulle par
+      // défaut : c'est l'idée du jour qui s'affiche.
+      ideeAutre: null,
       cloture: false,
       rechercheContact: '',
       filtresOuverts: false,
@@ -3607,6 +3686,9 @@ export default {
       // non plus — on la reprend depuis l'invite si besoin.
       etat.cloture = false;
       etat.prefillMoment = null;
+      // Le re-tirage ne vaut que pour l'instant où l'on cherche : revenir sur
+      // Créer rend sa place à l'idée du jour.
+      etat.ideeAutre = null;
       rendre();
       if (await charger(BESOINS[etat.vue])) rendre();
     };
@@ -3868,8 +3950,10 @@ export default {
               titre,
               reseau: champs.reseau,
               format: champs.format,
-              date_prevue: champs.debut,
-              heure: champs.heure || null,
+              // Sans date, c'est une idée : elle rejoint la banque. Une heure
+              // sans date ne veut rien dire, elle part avec.
+              date_prevue: champs.debut || null,
+              heure: (champs.debut && champs.heure) || null,
             }),
           );
         } else if (champs.nature === 'objectif') {
@@ -4249,7 +4333,7 @@ export default {
           return;
         }
 
-        const jour = versDateISO();
+        const jour = reglages.sansDate ? '' : versDateISO();
         etat.creationCal = { debut: jour, fin: jour, nature: reglages.nature };
         rendre();
         section.querySelector('#cal-titre')?.focus();
@@ -4695,6 +4779,23 @@ export default {
       const ecarterInvite = evenement.target.closest('[data-ecarter-evenement]');
       if (ecarterInvite) {
         etat.ecartes = ecarterEvenement(ecarterInvite.dataset.ecarterEvenement);
+        rendre();
+        return;
+      }
+
+      // « En tirer une autre » : un tirage franc, sans mémoire. On écarte
+      // l'idée affichée du tirage — un bouton qui rend la même idée a l'air
+      // cassé, même quand il a bien tiré.
+      if (evenement.target.closest('[data-retirer-idee]')) {
+        const banque = etat.publications.filter(
+          (pub) => !pub.date_prevue && pub.statut !== 'publie',
+        );
+        const affichee = etat.ideeAutre ?? ideeDuJour(etat.publications)?.id;
+        const autres = banque.filter((pub) => pub.id !== affichee);
+        const source = autres.length ? autres : banque;
+        etat.ideeAutre = source.length
+          ? source[Math.floor(Math.random() * source.length)].id
+          : null;
         rendre();
         return;
       }

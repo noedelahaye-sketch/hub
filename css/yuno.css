@@ -1815,3 +1815,48 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 .bloc .apercu-phase > .tache-ligne:last-child { border-bottom: none; }
 
 .apercu-phase .tache-titre { font-size: 0.9375rem; }
+
+/* --- L'idée du jour ----------------------------------------------------------
+   Une idée de la banque, tirée une fois par jour, offerte en arrivant sur
+   Créer. Elle ne demande rien : elle est là, on la lit, on la garde ou on
+   passe. Le bouton en tête en tire une autre, sans mémoire. */
+
+.idee-jour-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-12);
+}
+
+.idee-jour-tete h2 { margin-bottom: 0; }
+
+/* La tuile entière ouvre la fiche de l'idée — même geste que la banque. Il faut
+   donc défaire ce qu'un `<button>` apporte : le centrage, la police du système,
+   le cadre. */
+.idee-jour-corps {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espace-8);
+  width: 100%;
+  margin-top: var(--espace-12);
+  padding: var(--espace-12) var(--espace-16);
+  font-family: inherit;
+  font-size: 1rem;
+  text-align: left;
+  color: inherit;
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+  cursor: pointer;
+}
+
+.idee-jour-corps:hover { border-color: var(--gris-chaud-trait); }
+
+/* Le titre de l'idée porte la voix du site : c'est du contenu, pas un libellé
+   d'interface. */
+.idee-jour-corps .pub-titre {
+  font-family: "Canela Deck", var(--police-titre);
+  font-size: 1.125rem;
+  line-height: 1.3;
+}

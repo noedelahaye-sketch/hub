@@ -359,6 +359,42 @@ zéro erreur en console.
 
 ---
 
+## 0 sexies. La banque sans date, et l'idée du jour (15 août)
+
+**Le « + » de Créer et de la banque s'ouvre sans date** (demande de Noé). Une
+idée est une publication sans date ; l'ouvrir sur aujourd'hui la programmait
+pour le jour même. Quatre points touchés, parce que la date était supposée
+partout : `fenetreCreation` (pastille « Quand » non remplie, champ plus requis —
+sauf pour un événement, dont la colonne est NOT NULL), `poserAuCalendrier`
+(`date_prevue: champs.debut || null`, et l'heure part avec), la **copie** du
+même code dans `yuno.js` — encore elle —, et `PLUS_PAR_VUE` (`sansDate: true`
+sur `creer` et `banque`, pas sur `editorial` qui est un calendrier).
+**Vérifié** : tuile ouverte sans date, idée d'essai créée puis relue **depuis le
+serveur** (`date_prevue: null`, `heure: null`, statut `idee`), puis supprimée par
+l'interface ; le calendrier Yuno, l'éditorial et le hub gardent leur date du
+jour et leur champ requis.
+
+**L'idée du jour ouvre la page Créer** (demande de Noé) : une idée de la banque
+tirée une fois par jour, plus un bouton pour en tirer une autre. `ideeDuJour`
+réutilise `tirageDuJour` — la graine est la date, comme pour le mur de photos.
+Le re-tirage garde un **identifiant** et non la ligne : une idée supprimée
+depuis sa propre fiche serait restée affichée.
+
+**Un biais du tirage, trouvé en le mesurant** — et il dormait depuis le 12 août
+dans le mur de photos. La graine d'un jour et celle du lendemain ne diffèrent
+que d'une unité, et un générateur congruentiel garde cette proximité sur son
+**premier** tirage. Mesuré sur quinze jours et cinq idées : deux d'entre elles
+ne sortaient **jamais**, et deux jours de suite rendaient souvent la même. Huit
+tours à vide après la graine décorrèlent les départs. Remesuré sur 100 jours :
+17 à 22 tirages par idée (l'idéal étant 20) et 20 % de répétitions d'un jour à
+l'autre — exactement ce qu'on attend avec cinq éléments. Le tirage reste stable
+dans la journée, puisqu'il repart de la même date. **Leçon** : un tirage se
+vérifie par sa distribution sur beaucoup de tirages, pas en le regardant une
+fois — à l'œil, « ça change bien d'un jour à l'autre » était vrai et masquait
+que deux idées sur cinq étaient invisibles.
+
+---
+
 ## 1. Ce qui existe
 
 Le hub est **déployé et fonctionnel** :
