@@ -1616,3 +1616,67 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 
 .prepa-ligne-titre { flex: 1; }
 .prepa-ligne:hover .prepa-ligne-titre { text-decoration: underline; }
+
+/* L'éditeur d'un modèle. Le nom s'écrit grand — c'est le titre de la page,
+   et il s'édite en place, comme les items. */
+.prepa-modele-nom {
+  max-width: 24rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: var(--espace-8);
+}
+
+/* Un item de modèle est un champ : il se corrige là où il se lit. Il prend la
+   place du corps de la ligne, sans le fond ni la marge d'un champ de saisie. */
+.prepa-liste .modele-item {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+  background: none;
+  border-color: transparent;
+}
+
+.prepa-liste .modele-item:hover,
+.prepa-liste .modele-item:focus { border-color: var(--bordure); }
+
+/* « Aussi au modèle » : une décision par item, petite et à côté du geste. */
+.prepa-au-modele {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.prepa-au-modele input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+/* Le choix du modèle : des lignes pleine largeur dans la fenêtre volante —
+   un choix se fait dans une liste, jamais dans un menu natif. */
+.liste-choix-modeles {
+  list-style: none;
+  margin: var(--espace-12) 0 0;
+  padding: 0;
+}
+
+.liste-choix-modeles .choix-modele {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espace-12);
+  width: 100%;
+  min-height: 2.75rem;
+  padding: var(--espace-8) var(--espace-8);
+  text-align: left;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  cursor: pointer;
+}
+
+.liste-choix-modeles li:last-child .choix-modele { border-bottom: none; }
+.liste-choix-modeles .choix-modele:hover { background: var(--fond); }

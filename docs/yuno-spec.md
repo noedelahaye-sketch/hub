@@ -710,31 +710,42 @@ même travail, et l'argent est une conséquence, pas un juge. Les livrées et
 payées se replient en bas, comme le backlog. Une commande à échéance apparaît
 au calendrier (Yuno et hub).
 
-### `#yuno/preparations` — les Préparations *(échantillon du 14 août 2026)*
+### `#yuno/preparations` — les Préparations *(construites le 14 août 2026)*
 
-Préparer une sortie — match, concert, plus tard une commande — avec des
-modèles. Une **feuille de préparation** porte trois phases de cases à cocher
-(**Avant** · **Pendant**, la liste des plans photo · **Après**), puis un
-**bilan** en deux questions : « Ce qui a marché » et « À refaire autrement ».
+Préparer une sortie — match, concert, commande — avec des modèles. Une
+**feuille de préparation** porte trois phases de cases à cocher (**Avant** ·
+**Pendant**, la liste des plans photo · **Après**), puis un **bilan** en deux
+questions : « Ce qui a marché » et « À refaire autrement ».
 
-- **Elle naît de l'événement** : la fenêtre de détail d'un événement, au
-  calendrier Yuno, porte « Préparer » — ou « Ouvrir la préparation » si la
-  feuille existe déjà. C'est là qu'on est la veille d'un match ; l'outil vient
-  à soi. La liste des feuilles vit sur `#yuno/preparations` (l'onglet Journal
-  reste allumé : préparer et vivre sont les deux faces du même axe terrain).
+- **Elle naît de la sortie** : la fenêtre de détail d'un événement ou d'une
+  commande, au calendrier Yuno, porte « Préparer » — ou « Ouvrir la
+  préparation » si la feuille existe déjà. La tuile d'une commande, dans
+  Réseau, porte le même bouton. C'est là qu'on est la veille d'un match ;
+  l'outil vient à soi. La liste des feuilles vit sur `#yuno/preparations`,
+  atteinte par une porte discrète au Journal (l'onglet Journal reste allumé :
+  préparer et vivre sont les deux faces du même axe terrain).
 - **Créer une feuille COPIE le modèle.** Modifier le modèle ensuite ne réécrit
   pas les feuilles passées : le bilan d'octobre doit refléter ce qui était
-  prévu en octobre. Un item s'ajoute sur le moment, dans la feuille seulement.
+  prévu en octobre.
+- **Avec plusieurs modèles, le choix s'ouvre en fenêtre volante** — une liste,
+  jamais un menu natif — qui offre aussi la feuille vierge. Avec un seul
+  modèle (ou aucun), pas de question : la feuille se crée tout de suite.
+- **Les modèles s'éditent depuis le site** (`#yuno/modeles/<id>`, portes en bas
+  de la liste) : le nom et les items se corrigent en place — comme les modèles
+  de messages de la Passerelle —, une ligne s'ajoute par phase, se retire à la
+  croix. Un champ vidé reprend son texte : une ligne sans texte se retire, elle
+  ne se vide pas. Supprimer un modèle laisse les feuilles intactes (copies, et
+  `modele_id` en SET NULL).
+- **Un item ajouté en cours de feuille peut entrer « aussi au modèle »** : une
+  case à côté du champ d'ajout, décochée à chaque fois — entrer au modèle est
+  une décision par item, pas un réglage. C'est la boucle d'apprentissage : le
+  modèle s'enrichit du terrain.
 - **Un item non coché n'est JAMAIS un raté.** Aucun compteur de manqués, aucun
   pourcentage de complétion, nulle part. Le bilan dit d'abord l'obtenu.
 - **Le bilan attend la date de la sortie**, puis s'écrit et se réécrit. À la
   feuille suivante du même modèle, le dernier « à refaire autrement » se relit
   en tête — c'est là que le bilan paie. **Cocher toute la feuille ne crée pas
   de victoire** : la victoire d'une sortie, c'est le moment logué au carnet.
-- **Reste à construire** (après validation de l'échantillon) : l'éditeur de
-  modèles depuis le site, le choix du modèle quand il y en aura plusieurs,
-  « Préparer » sur une commande, la porte vers la liste depuis le Journal, et
-  « aussi au modèle » sur un item ajouté en cours de feuille.
 
 ---
 

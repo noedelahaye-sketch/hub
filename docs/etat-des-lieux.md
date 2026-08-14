@@ -71,11 +71,34 @@ commencer. Le cahier des charges est dans `yuno-spec.md` (§4,
   un essai, le vrai s'écrira après le match). Zéro erreur console venant du
   chantier, 0 px de débordement à 375 px, cercles à 43 px.
 
-**Pas encore construit, à la suite de la validation de l'échantillon** :
-l'éditeur de modèles depuis le site, le choix du modèle quand il y en aura
-plusieurs, « Préparer » sur une commande, la porte depuis le Journal, « aussi
-au modèle » sur un item ajouté en cours de feuille. La liste `#yuno/preparations`
-existe mais reste nue.
+**La suite a été construite dans la foulée** (même jour, demande de Noé —
+« fait la suite »), et l'outil est complet :
+
+- **L'éditeur de modèles** (`#yuno/modeles/<id>`, portes en bas de la liste des
+  préparations, avec un formulaire « Nouveau modèle » qui ouvre l'éditeur) :
+  nom et items se corrigent **en place** sur `change`, comme les modèles de
+  messages — un champ vidé reprend son texte, une ligne se retire à la croix.
+  Vérifié en SQL : corriger, ajouter, retirer, puis retour à l'état exact.
+- **Le choix du modèle** quand il y en a plusieurs : une fenêtre volante en
+  liste (jamais un menu natif), feuille vierge offerte. Un seul modèle = pas de
+  question. Vérifié avec un modèle « Essai » créé puis supprimé ; Échap ferme.
+- **« Préparer » sur une commande** : dans la fenêtre du calendrier (les deux
+  natures passent par le même `boutonPreparer`) et sur la tuile de la commande
+  dans Réseau — `construireCommandes` prend les préparations en second
+  paramètre facultatif. Une commande sans échéance donne une feuille sans date,
+  dont le bilan est ouvert d'emblée. Vérifié avec une commande d'essai, tout
+  supprimé après.
+- **La porte au Journal**, discrète, en bas — sans compteur : le Journal n'a
+  pas à charger les feuilles pour ouvrir une porte.
+- **« Aussi au modèle »** : une case par ajout, décochée à chaque fois, visible
+  seulement si le modèle d'origine existe encore. Vérifié : l'item entre dans
+  la feuille ET dans le modèle ; si la seconde écriture échoue, la feuille
+  garde le sien et une ligne le dit.
+
+`BESOINS` : `calendrier` et `reseau` chargent désormais `preparations` +
+`modelesPrepa` (savoir si une sortie a sa feuille, et combien de modèles le
+choix offrira). État final de la base revérifié : 1 feuille (le match du
+soir), 1 modèle « Match » à 9 lignes, 0 commande.
 
 **Un piège recroisé** : la seule erreur console de la session est un
 `JWT issued at future` (PGRST303) au chargement du tableau de bord — l'horloge

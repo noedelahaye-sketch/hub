@@ -116,7 +116,7 @@ function construirePiliers() {
 
 const VUES = [
   'accueil', 'journal', 'creer', 'banque', 'editorial',
-  'calendrier', 'reseau', 'passerelle', 'carnet', 'preparations',
+  'calendrier', 'reseau', 'passerelle', 'carnet', 'preparations', 'modeles',
 ];
 
 // La banque est une pièce de l'atelier : elle n'a pas son onglet, elle garde
@@ -128,8 +128,9 @@ const ONGLET_DE_LA_VUE = {
   passerelle: 'reseau',
   carnet: 'reseau',
   // Préparer et vivre sont les deux faces du même axe terrain : les feuilles
-  // de préparation gardent l'onglet Journal allumé.
+  // de préparation et leurs modèles gardent l'onglet Journal allumé.
   preparations: 'journal',
+  modeles: 'journal',
 };
 
 // --- Les trois mouvements du site --------------------------------------------
@@ -946,6 +947,20 @@ function vueJournal(etat) {
       <h2>Le carnet de terrain</h2>
       <div data-bloc="carnet">${construireCarnet(etat.moments, etat.photos)}</div>
     </section>
+
+    <!-- La porte discrète vers les préparations : préparer et vivre sont les
+         deux faces du même axe terrain. Pas de compteur — le Journal n'a pas
+         à charger les feuilles pour ouvrir une porte. -->
+    <section class="bloc">
+      <div class="portes">
+        <a class="lien-externe" href="#yuno/preparations">
+          <span class="lien-externe-texte">
+            <span class="lien-externe-titre">Préparations</span>
+            <span class="discret">Avant · pendant · après, et le bilan</span>
+          </span>
+        </a>
+      </div>
+    </section>
     ${fenetreMoment(etat)}
     ${pied()}`;
 }
@@ -1324,7 +1339,11 @@ function lignePreparation(item) {
 }
 
 // Une phase vide n'est pas un écran vide : le champ d'ajout est là, il suffit.
-function blocPhase(feuille, phase) {
+// `auModele` : l'item ajouté peut aussi entrer dans le modèle d'origine —
+// c'est la boucle d'apprentissage, le modèle s'enrichit du terrain. La case
+// n'apparaît que si le modèle existe encore, et repart décochée à chaque
+// ajout : entrer au modèle est une décision par item, pas un réglage.
+function blocPhase(feuille, phase, { auModele = false } = {}) {
   const items = feuille.items.filter((item) => item.phase === phase);
 
   return `
@@ -1344,6 +1363,12 @@ function blocPhase(feuille, phase) {
           aria-label="Ajouter à « ${PHASES_PREPA[phase]} »"
           placeholder="${phase === 'pendant' ? 'Ajouter un plan…' : 'Ajouter…'}">
         <button type="submit" class="bouton-secondaire bouton-mini">Ajouter</button>
+        ${
+          auModele
+            ? `<label class="prepa-au-modele discret">
+                 <input type="checkbox" name="au_modele" value="oui"> aussi au modèle</label>`
+            : ''
+        }
         <p class="message-erreur" data-erreur hidden></p>
       </form>
     </section>`;
@@ -1411,6 +1436,7 @@ function blocBilan(feuille) {
 
 function vueFeuille(etat, feuille) {
   const precedent = feuille.bilan_date ? null : dernierBilan(etat.preparations, feuille);
+  const auModele = etat.modelesPrepa.some((modele) => modele.id === feuille.modele_id);
 
   return `
     ${enTete('preparations')}
@@ -1429,9 +1455,9 @@ function vueFeuille(etat, feuille) {
         : ''
     }
     <div class="prepa-phases">
-      ${blocPhase(feuille, 'avant')}
-      ${blocPhase(feuille, 'pendant')}
-      ${blocPhase(feuille, 'apres')}
+      ${blocPhase(feuille, 'avant', { auModele })}
+      ${blocPhase(feuille, 'pendant', { auModele })}
+      ${blocPhase(feuille, 'apres', { auModele })}
     </div>
     ${blocBilan(feuille)}
     <p><button type="button" class="lien-discret" data-supprimer-prepa="${echapper(feuille.id)}">
@@ -1470,21 +1496,149 @@ function vuePreparations(etat) {
                du calendrier, touche « Préparer ».</p>`
       }
     </section>
+
+    <section class="bloc">
+      <h2>Modèles</h2>
+      ${
+        etat.modelesPrepa.length
+          ? `<ul class="liste-preparations">${etat.modelesPrepa
+              .map(
+                (modele) => `
+              <li><a class="prepa-ligne" href="#yuno/modeles/${echapper(modele.id)}">
+                <span class="prepa-ligne-titre">${echapper(modele.nom)}</span>
+                <span class="discret"><span class="chiffre">${modele.items.length}</span> lignes</span>
+              </a></li>`,
+              )
+              .join('')}</ul>`
+          : ''
+      }
+      <form data-action="creer-modele-prepa" class="prepa-ajout">
+        <input type="text" name="nom" autocomplete="off" required
+          aria-label="Nom du nouveau modèle" placeholder="Nouveau modèle — son nom…">
+        <button type="submit" class="bouton-secondaire bouton-mini">Créer</button>
+        <p class="message-erreur" data-erreur hidden></p>
+      </form>
+    </section>
     ${pied()}`;
 }
 
-// Ce que la fenêtre de détail d'un événement propose en plus : le préparer, ou
-// rouvrir sa feuille si elle existe déjà.
-function actionsPreparation(etat) {
-  const element = etat.detailCal;
-  if (!element || element.type !== 'evenement') return '';
+// --- L'éditeur d'un modèle ---
+// Les items s'éditent en place, comme les modèles de messages de la
+// Passerelle : le texte se corrige dans son champ et s'enregistre en le
+// quittant, sans bouton. Modifier un modèle ne touche aucune feuille passée.
 
-  const feuille = etat.preparations.find((candidat) => candidat.evenement_id === element.id);
+function blocPhaseModele(modele, phase) {
+  const items = modele.items.filter((item) => item.phase === phase);
+
+  return `
+    <section class="bloc prepa-phase">
+      <h2>${PHASES_PREPA[phase]}</h2>
+      ${
+        items.length
+          ? `<ul class="liste-taches-pleine prepa-liste">${items
+              .map(
+                (item) => `
+            <li class="tache-ligne">
+              <input type="text" class="modele-item" data-item-modele="${echapper(item.id)}"
+                value="${echapper(item.texte)}" aria-label="Texte de la ligne">
+              <button type="button" class="lien-discret bouton-mini bouton-retirer"
+                data-retirer-item-modele="${echapper(item.id)}"
+                title="Retirer cette ligne"
+                aria-label="Retirer « ${echapper(item.texte)} »">×</button>
+            </li>`,
+              )
+              .join('')}</ul>`
+          : ''
+      }
+      <form data-action="ajouter-item-modele" data-phase="${phase}" class="prepa-ajout">
+        <input type="hidden" name="modele_id" value="${echapper(modele.id)}">
+        <input type="hidden" name="phase" value="${phase}">
+        <input type="text" name="texte" autocomplete="off" required
+          aria-label="Ajouter à « ${PHASES_PREPA[phase]} »"
+          placeholder="${phase === 'pendant' ? 'Ajouter un plan…' : 'Ajouter…'}">
+        <button type="submit" class="bouton-secondaire bouton-mini">Ajouter</button>
+        <p class="message-erreur" data-erreur hidden></p>
+      </form>
+    </section>`;
+}
+
+function vueModele(etat) {
+  const modele = etat.modelesPrepa.find((candidat) => candidat.id === etat.feuilleOuverte);
+  // Modèle inconnu (supprimé, adresse périmée) : la liste, pas un écran cassé.
+  if (!modele) return vuePreparations({ ...etat, feuilleOuverte: null });
+
+  return `
+    ${enTete('modeles')}
+    <h2 class="titre-page">Modèle</h2>
+    <input type="text" class="prepa-modele-nom" data-nom-modele="${echapper(modele.id)}"
+      value="${echapper(modele.nom)}" aria-label="Nom du modèle">
+    <p class="discret">Il se copie dans chaque nouvelle feuille — le modifier ne
+      change pas les feuilles déjà créées.</p>
+    <div class="prepa-phases">
+      ${blocPhaseModele(modele, 'avant')}
+      ${blocPhaseModele(modele, 'pendant')}
+      ${blocPhaseModele(modele, 'apres')}
+    </div>
+    <p><button type="button" class="lien-discret" data-supprimer-modele-prepa="${echapper(modele.id)}">
+      Supprimer le modèle</button></p>
+    ${pied()}`;
+}
+
+// Le bouton d'une sortie : la préparer, ou rouvrir sa feuille si elle existe.
+// Il sert à la fenêtre de détail du calendrier ET aux tuiles de commandes.
+function boutonPreparer(feuille, type, id) {
   return feuille
     ? `<button type="button" class="bouton-secondaire bouton-mini"
          data-ouvrir-preparation="${echapper(feuille.id)}">Ouvrir la préparation</button>`
     : `<button type="button" class="bouton-secondaire bouton-mini"
-         data-preparer-evenement="${echapper(element.id)}">Préparer</button>`;
+         data-preparer="${echapper(type)}:${echapper(id)}">Préparer</button>`;
+}
+
+export function feuilleDeLaSortie(preparations, type, id) {
+  return (
+    preparations.find((feuille) =>
+      type === 'evenement' ? feuille.evenement_id === id : feuille.commande_id === id,
+    ) ?? null
+  );
+}
+
+// Ce que la fenêtre de détail du calendrier propose en plus, pour ce qui se
+// prépare : un événement ou une commande.
+function actionsPreparation(etat) {
+  const element = etat.detailCal;
+  if (!element || !['evenement', 'commande'].includes(element.type)) return '';
+
+  return boutonPreparer(
+    feuilleDeLaSortie(etat.preparations, element.type, element.id),
+    element.type,
+    element.id,
+  );
+}
+
+// Plusieurs modèles : le choix se fait dans une LISTE, en fenêtre volante —
+// jamais dans un menu natif. Un seul modèle ne pose pas de question.
+function fenetreChoixModele(etat) {
+  return construireFenetre(
+    'Préparer',
+    `
+    <h3 class="fenetre-titre">Préparer « ${echapper(etat.choixPrepa.titre)} »</h3>
+    <p class="discret">Avec quel modèle ?</p>
+    <ul class="liste-choix-modeles">
+      ${etat.modelesPrepa
+        .map(
+          (modele) => `
+        <li><button type="button" class="choix-modele" data-modele-choisi="${echapper(modele.id)}">
+          <span>${echapper(modele.nom)}</span>
+          <span class="discret"><span class="chiffre">${modele.items.length}</span> lignes</span>
+        </button></li>`,
+        )
+        .join('')}
+      <li><button type="button" class="choix-modele" data-modele-choisi="">
+        <span>Feuille vierge</span>
+        <span class="discret">sans modèle</span>
+      </button></li>
+    </ul>`,
+  );
 }
 
 // --- Le réseau --------------------------------------------------------
@@ -2559,7 +2713,10 @@ const AVANCER_COMMANDE = {
   payee: 'Marquer payée',
 };
 
-export function construireCommandes(commandes) {
+// `preparations` est facultatif : une commande se prépare comme un match, et
+// sa tuile porte le bouton — mais le site du FCH ou un essai isolé peuvent
+// dessiner des commandes sans connaître les feuilles.
+export function construireCommandes(commandes, preparations = []) {
   const ouvertes = commandes.filter((commande) => ['devis', 'en_cours'].includes(commande.statut));
   const closes = commandes.filter((commande) => ['livree', 'payee'].includes(commande.statut));
 
@@ -2603,6 +2760,7 @@ export function construireCommandes(commandes) {
                  data-avancer-commande="${echapper(commande.id)}">${AVANCER_COMMANDE[suivant]}</button>`
             : ''
         }
+        ${boutonPreparer(feuilleDeLaSortie(preparations, 'commande', commande.id), 'commande', commande.id)}
         ${
           commande.lien_livrable
             ? `<a class="discret" href="${echapper(commande.lien_livrable)}"
@@ -2633,7 +2791,7 @@ function blocCommandes(etat) {
   return `
     <section class="bloc">
       <h2>Commandes</h2>
-      <div data-bloc="commandes">${construireCommandes(etat.commandes)}</div>
+      <div data-bloc="commandes">${construireCommandes(etat.commandes, etat.preparations)}</div>
       ${construireFormulaire({
         id: 'commande',
         libelle: 'Ajouter une commande',
@@ -2677,6 +2835,7 @@ const SOURCES = {
   modeles: async () => ({ modeles: await api.modelesTous() }),
   stats: async () => ({ stats: await api.statsHebdoTous() }),
   preparations: async () => ({ preparations: await api.preparationsToutes() }),
+  modelesPrepa: async () => ({ modelesPrepa: await api.modelesPreparationTous() }),
   moments: async () => {
     const moments = await api.momentsTous();
     // Les photos vivent dans un bucket privé : leurs adresses se signent à la
@@ -2702,13 +2861,15 @@ const BESOINS = {
   creer: ['publications', 'stats'],
   banque: ['publications'],
   editorial: ['publications'],
-  // Le calendrier lit aussi les préparations : la fenêtre d'un événement doit
-  // savoir s'il a déjà sa feuille pour dire « Préparer » ou « Ouvrir ».
-  calendrier: ['evenements', 'taches', 'objectifs', 'publications', 'commandes', 'contacts', 'preparations'],
-  reseau: ['contacts', 'envois', 'commandes'],
+  // Le calendrier et le réseau lisent aussi les préparations et leurs
+  // modèles : un événement ou une commande doit savoir s'il a déjà sa feuille
+  // (« Préparer » ou « Ouvrir »), et combien de modèles le choix offrira.
+  calendrier: ['evenements', 'taches', 'objectifs', 'publications', 'commandes', 'contacts', 'preparations', 'modelesPrepa'],
+  reseau: ['contacts', 'envois', 'commandes', 'preparations', 'modelesPrepa'],
   passerelle: ['contacts', 'envois', 'modeles'],
   carnet: ['contacts', 'envois', 'modeles'],
-  preparations: ['preparations'],
+  preparations: ['preparations', 'modelesPrepa'],
+  modeles: ['preparations', 'modelesPrepa'],
 };
 
 const CLE_CACHE = 'yuno';
@@ -2744,9 +2905,14 @@ export default {
       modeles: [],
       stats: [],
       preparations: [],
-      // L'identifiant de la feuille ouverte — il vient de l'adresse
-      // (#yuno/preparations/<id>), jamais d'un état d'interface.
+      modelesPrepa: [],
+      // L'identifiant de la feuille (ou du modèle) ouvert — il vient de
+      // l'adresse (#yuno/preparations/<id>, #yuno/modeles/<id>), jamais d'un
+      // état d'interface.
       feuilleOuverte: null,
+      // La sortie en attente d'un modèle, quand il y en a plusieurs : la
+      // fenêtre de choix est ouverte tant que c'est posé.
+      choixPrepa: null,
       ecartes: evenementsEcartes(),
       // Le mot dit après une écriture qui a échoué. Il vit dans l'état comme
       // le reste : `rendre()` le pose sous la barre, quelle que soit la vue.
@@ -2897,6 +3063,7 @@ export default {
       else if (etat.vue === 'passerelle') section.innerHTML = vuePasserelle(etat);
       else if (etat.vue === 'carnet') section.innerHTML = vueCarnet(etat);
       else if (etat.vue === 'preparations') section.innerHTML = vuePreparations(etat);
+      else if (etat.vue === 'modeles') section.innerHTML = vueModele(etat);
       else section.innerHTML = vueAccueil(etat);
 
       // Le message d'échec se pose sous la barre, quelle que soit la vue : les
@@ -2942,6 +3109,9 @@ export default {
         if (etat.contactNouveau) {
           section.insertAdjacentHTML('beforeend', formulaireNouveauContact());
         }
+        if (etat.choixPrepa) {
+          section.insertAdjacentHTML('beforeend', fenetreChoixModele(etat));
+        }
         if (etat.captureOuverte) {
           section.insertAdjacentHTML(
             'beforeend',
@@ -2983,7 +3153,7 @@ export default {
 
     const rendreCommandes = () => {
       const cible = section.querySelector('[data-bloc="commandes"]');
-      if (cible) cible.innerHTML = construireCommandes(etat.commandes);
+      if (cible) cible.innerHTML = construireCommandes(etat.commandes, etat.preparations);
     };
 
     // Le routeur rappelle `naviguer` à chaque changement de hash dans l'espace.
@@ -3021,6 +3191,25 @@ export default {
       if (type === 'relance') return api.modifierContact(id, { prochaine_action_date: null });
       throw new Error(`Nature inconnue : ${type}`);
     }
+
+    // Créer une feuille et l'ouvrir. Pas d'écriture optimiste ici : la page de
+    // la feuille a besoin du vrai identifiant pour être son adresse.
+    const creerFeuille = async (cible, modele, bouton) => {
+      bouton.disabled = true;
+      try {
+        const feuille = await api.creerPreparation({ modele, ...cible });
+        etat.preparations.unshift(feuille);
+        fraiches.add('preparations');
+        affichables.add('preparations');
+        etat.detailCal = null;
+        location.hash = `#yuno/preparations/${feuille.id}`;
+      } catch (souci) {
+        console.error('Création de la préparation impossible', souci);
+        bouton.disabled = false;
+        // `dire` redessine : le bouton est recréé actif, la ligne dit l'échec.
+        dire("La préparation n'a pas pu être créée.");
+      }
+    };
 
     // Dessiner, puis charger ce qui manque, puis redessiner. Le premier rendu
     // ne coûte rien : il sort du cache, ou c'est le squelette.
@@ -3405,9 +3594,61 @@ export default {
           ordre: Math.max(0, ...freres.map((frere) => frere.ordre ?? 0)) + 1,
         });
         feuille.items.push(item);
+
+        // « Aussi au modèle » : la boucle d'apprentissage. Si cette seconde
+        // écriture échoue, l'item de la feuille reste — le dire suffit.
+        if (champs.au_modele === 'oui') {
+          const modele = etat.modelesPrepa.find((m) => m.id === feuille.modele_id);
+          if (modele) {
+            try {
+              const freresModele = modele.items.filter((i) => i.phase === champs.phase);
+              const itemModele = await api.ajouterItemModele({
+                modele_id: modele.id,
+                phase: champs.phase,
+                texte,
+                ordre: Math.max(0, ...freresModele.map((f) => f.ordre ?? 0)) + 1,
+              });
+              modele.items.push(itemModele);
+            } catch (souci) {
+              console.error('Ajout au modèle impossible', souci);
+              dire('Ajouté à la feuille, mais pas au modèle.');
+            }
+          }
+        }
+
         rendre();
         // On en ajoute rarement un seul : le champ de la même phase reprend la
         // main, vide (le redessin l'a réécrit).
+        section
+          .querySelector(`form[data-phase="${champs.phase}"] input[name="texte"]`)
+          ?.focus();
+        return;
+      }
+
+      if (action === 'creer-modele-prepa') {
+        const nom = champs.nom.trim();
+        if (!nom) return;
+        const modele = await api.creerModelePreparation({ nom });
+        etat.modelesPrepa.push(modele);
+        // On va le remplir : l'éditeur s'ouvre, c'est lui la suite du geste.
+        location.hash = `#yuno/modeles/${modele.id}`;
+        return;
+      }
+
+      if (action === 'ajouter-item-modele') {
+        const modele = etat.modelesPrepa.find((m) => m.id === champs.modele_id);
+        const texte = champs.texte.trim();
+        if (!modele || !texte) return;
+
+        const freres = modele.items.filter((item) => item.phase === champs.phase);
+        const item = await api.ajouterItemModele({
+          modele_id: modele.id,
+          phase: champs.phase,
+          texte,
+          ordre: Math.max(0, ...freres.map((frere) => frere.ordre ?? 0)) + 1,
+        });
+        modele.items.push(item);
+        rendre();
         section
           .querySelector(`form[data-phase="${champs.phase}"] input[name="texte"]`)
           ?.focus();
@@ -3526,6 +3767,7 @@ export default {
         etat.noteIdeeOuverte = false;
         etat.contactOuvert = null;
         etat.editionContact = false;
+        etat.choixPrepa = null;
         rendre();
         return;
       }
@@ -4091,38 +4333,53 @@ export default {
         return;
       }
 
-      // « Préparer » depuis la fenêtre d'un événement : la feuille se crée en
-      // copiant le modèle, et la page s'ouvre dessus. Les modèles se lisent au
-      // moment du geste — c'est une création, elle attend le serveur de toute
-      // façon, et rien d'autre dans le site n'en a besoin.
-      const preparerEvenement = evenement.target.closest('[data-preparer-evenement]');
-      if (preparerEvenement) {
-        const cible = etat.evenements.find(
-          (candidat) => candidat.id === preparerEvenement.dataset.preparerEvenement,
-        );
-        if (!cible) return;
-        preparerEvenement.disabled = true;
-
-        try {
-          const modeles = await api.modelesPreparationTous();
-          const feuille = await api.creerPreparation({
-            // Un seul modèle aujourd'hui (« Match ») : on le prend. Le choix
-            // viendra avec le deuxième modèle.
-            modele: modeles[0] ?? null,
-            evenement_id: cible.id,
-            titre: cible.titre,
-            date: versDateISO(new Date(cible.date_debut)),
-          });
-          etat.preparations.unshift(feuille);
-          fraiches.add('preparations');
-          affichables.add('preparations');
-          etat.detailCal = null;
-          location.hash = `#yuno/preparations/${feuille.id}`;
-        } catch (souci) {
-          console.error('Création de la préparation impossible', souci);
-          preparerEvenement.disabled = false;
-          dire("La préparation n'a pas pu être créée.");
+      // « Préparer » sur un événement ou une commande. Avec un seul modèle (ou
+      // aucun), la feuille se crée tout de suite ; avec plusieurs, la fenêtre
+      // de choix s'ouvre — une liste, jamais un menu natif.
+      const preparer = evenement.target.closest('[data-preparer]');
+      if (preparer) {
+        const [type, id] = preparer.dataset.preparer.split(':');
+        let cible = null;
+        if (type === 'evenement') {
+          const source = etat.evenements.find((candidat) => candidat.id === id);
+          if (source) {
+            cible = {
+              evenement_id: source.id,
+              titre: source.titre,
+              date: versDateISO(new Date(source.date_debut)),
+            };
+          }
+        } else {
+          const source = etat.commandes.find((candidat) => candidat.id === id);
+          if (source && !estProvisoire(source.id)) {
+            cible = { commande_id: source.id, titre: source.titre, date: source.echeance ?? null };
+          }
         }
+        if (!cible) return;
+
+        if (etat.modelesPrepa.length > 1) {
+          etat.detailCal = null;
+          etat.choixPrepa = cible;
+          rendre();
+          section.querySelector('.fenetre-fermer')?.focus();
+          return;
+        }
+        await creerFeuille(cible, etat.modelesPrepa[0] ?? null, preparer);
+        return;
+      }
+
+      // Le modèle choisi dans la fenêtre. Un attribut vide dit « feuille
+      // vierge » : le bouton existe, le modèle non.
+      const modeleChoisi = evenement.target.closest('[data-modele-choisi]');
+      if (modeleChoisi) {
+        const cible = etat.choixPrepa;
+        if (!cible) return;
+        const modele =
+          etat.modelesPrepa.find(
+            (candidat) => candidat.id === modeleChoisi.dataset.modeleChoisi,
+          ) ?? null;
+        etat.choixPrepa = null;
+        await creerFeuille(cible, modele, modeleChoisi);
         return;
       }
 
@@ -4132,6 +4389,44 @@ export default {
         // calendrier, elle n'a pas à réapparaître par-dessus la grille.
         etat.detailCal = null;
         location.hash = `#yuno/preparations/${ouvrirPreparation.dataset.ouvrirPreparation}`;
+        return;
+      }
+
+      const retirerItemModele = evenement.target.closest('[data-retirer-item-modele]');
+      if (retirerItemModele) {
+        const id = retirerItemModele.dataset.retirerItemModele;
+        const modele = etat.modelesPrepa.find((m) => m.items?.some((item) => item.id === id));
+        const item = modele?.items.find((candidat) => candidat.id === id);
+        if (!item || estProvisoire(item.id)) return;
+
+        await retirerAussitot(modele.items, item, () => api.supprimerItemModele(item.id), {
+          rendre,
+          echouer: dire,
+        });
+        return;
+      }
+
+      const supprimerModelePrepa = evenement.target.closest('[data-supprimer-modele-prepa]');
+      if (supprimerModelePrepa) {
+        const modele = etat.modelesPrepa.find(
+          (candidat) => candidat.id === supprimerModelePrepa.dataset.supprimerModelePrepa,
+        );
+        if (!modele || estProvisoire(modele.id)) return;
+        if (
+          !confirm(
+            `Supprimer le modèle « ${modele.nom} » ? Les feuilles déjà créées gardent leurs copies.`,
+          )
+        ) {
+          return;
+        }
+
+        const retire = await retirerAussitot(
+          etat.modelesPrepa,
+          modele,
+          () => api.supprimerModelePreparation(modele.id),
+          { rendre, echouer: dire },
+        );
+        if (retire) location.hash = '#yuno/preparations';
         return;
       }
 
@@ -4300,7 +4595,8 @@ export default {
           etat.ideeOuverte ||
           etat.momentOuvert ||
           etat.noteIdeeOuverte ||
-          etat.contactOuvert
+          etat.contactOuvert ||
+          etat.choixPrepa
         )
       ) {
         return;
@@ -4317,6 +4613,7 @@ export default {
       etat.noteIdeeOuverte = false;
       etat.contactOuvert = null;
       etat.editionContact = false;
+      etat.choixPrepa = null;
       rendre();
     });
 
@@ -4460,6 +4757,45 @@ export default {
           () => api.modifierContact(contact.id, { [colonne]: valeur }),
           { echouer: (message) => { rendreContacts(); dire(message); } },
         );
+        return;
+      }
+
+      // L'éditeur de modèles : le nom et les items se corrigent en place, sans
+      // redessin — la valeur est déjà sous les yeux, comme les champs vifs de
+      // la Passerelle. Un champ vidé reprend son texte : une ligne sans texte
+      // n'existe pas, elle se RETIRE (la croix est à côté).
+      const nomModele = evenement.target.closest('[data-nom-modele]');
+      if (nomModele) {
+        const modele = etat.modelesPrepa.find((m) => m.id === nomModele.dataset.nomModele);
+        if (!modele || estProvisoire(modele.id)) return;
+        const nom = nomModele.value.trim();
+        if (!nom) {
+          nomModele.value = modele.nom;
+          return;
+        }
+        await modifierAussitot(
+          modele,
+          { nom },
+          () => api.modifierModelePreparation(modele.id, { nom }),
+          { echouer: (message) => { rendre(); dire(message); } },
+        );
+        return;
+      }
+
+      const itemModele = evenement.target.closest('[data-item-modele]');
+      if (itemModele) {
+        const id = itemModele.dataset.itemModele;
+        const modele = etat.modelesPrepa.find((m) => m.items?.some((item) => item.id === id));
+        const item = modele?.items.find((candidat) => candidat.id === id);
+        if (!item || estProvisoire(item.id)) return;
+        const texte = itemModele.value.trim();
+        if (!texte) {
+          itemModele.value = item.texte;
+          return;
+        }
+        await modifierAussitot(item, { texte }, () => api.modifierItemModele(item.id, { texte }), {
+          echouer: (message) => { rendre(); dire(message); },
+        });
         return;
       }
 

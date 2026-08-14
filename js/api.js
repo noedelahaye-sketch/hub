@@ -890,6 +890,49 @@ export async function supprimerPreparation(id) {
   if (error) throw error;
 }
 
+// Les modèles s'éditent depuis le site : nom, et items par phase. Supprimer un
+// modèle ne touche pas les feuilles déjà créées — elles portent leurs copies,
+// et leur `modele_id` passe à NULL (ON DELETE SET NULL).
+
+export async function creerModelePreparation({ nom }) {
+  const modele = verifier(
+    await client.from('modeles_preparation').insert({ nom }).select().single(),
+  );
+  return { ...modele, items: [] };
+}
+
+export async function modifierModelePreparation(id, champs) {
+  return verifier(
+    await client.from('modeles_preparation').update(champs).eq('id', id).select().single(),
+  );
+}
+
+export async function supprimerModelePreparation(id) {
+  const { error } = await client.from('modeles_preparation').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function ajouterItemModele({ modele_id, phase, texte, ordre = null }) {
+  return verifier(
+    await client
+      .from('modeles_preparation_items')
+      .insert({ modele_id, phase, texte, ordre })
+      .select()
+      .single(),
+  );
+}
+
+export async function modifierItemModele(id, champs) {
+  return verifier(
+    await client.from('modeles_preparation_items').update(champs).eq('id', id).select().single(),
+  );
+}
+
+export async function supprimerItemModele(id) {
+  const { error } = await client.from('modeles_preparation_items').delete().eq('id', id);
+  if (error) throw error;
+}
+
 // --- Le calendrier : tout ce qui porte une date ------------------------------
 // Règle commune : on montre ce qui reste à vivre ou à faire. Un événement passé
 // est passé ; une tâche ou une publication en retard de date reste affichée
