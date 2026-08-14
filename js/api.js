@@ -652,25 +652,19 @@ export async function retirerDuCarnet(id, chemin = null) {
 
 // Une rencontre notée au vol devient une fiche du carnet : la photo est un pont
 // vers les gens, encore faut-il que le pont mène quelque part.
-export async function ouvrirFichePourRencontre(rencontre) {
-  const contact = await creerContact({
-    nom: rencontre.nom,
-    // Ils se sont vus en vrai : le contact est établi, ce n'est pas un envoi
-    // à froid. Le reste de la fiche se complète dans Réseau.
-    statut: 'contact_etabli',
-    dernier_echange: versDateISO(),
-  });
-
-  const liee = verifier(
+//
+// La fiche est écrite par le formulaire (`creerContact`), pas ici : depuis le
+// 14 août 2026, le « + » d'une rencontre ouvre la fiche complète au lieu d'en
+// poser une qui ne porterait qu'un nom. Il ne reste donc que le raccord.
+export async function relierRencontreAuContact(rencontreId, contactId) {
+  return verifier(
     await client
       .from('rencontres')
-      .update({ contact_id: contact.id })
-      .eq('id', rencontre.id)
+      .update({ contact_id: contactId })
+      .eq('id', rencontreId)
       .select()
       .single(),
   );
-
-  return { contact, rencontre: liee };
 }
 
 // --- Carnet réseau (Yuno) ----------------------------------------------------

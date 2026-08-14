@@ -200,6 +200,37 @@ de la machine contre celle de Supabase, antérieur au chantier, sans rapport.
 
 ---
 
+## 0 bis. Le « + » d'une rencontre ouvre sa fiche (14 août, fin de journée)
+
+Demande de Noé : une personne croisée et pas encore au réseau doit pouvoir
+recevoir **tous ses détails** au moment où l'on appuie sur son « + », au lieu
+d'une fiche qui ne porte qu'un nom et qu'il faut aller compléter deux écrans
+plus loin.
+
+- **Le « + » ouvre le formulaire du réseau**, pré-rempli : nom écrit, relation
+  sur `contact_etabli`, et `dernier_echange` **au jour de la sortie** — pas au
+  jour de la saisie. `rencontre_id` voyage dans un champ caché ; à
+  l'enregistrement, `api.relierRencontreAuContact` fait le raccord et le « + »
+  disparaît du nom. `api.ouvrirFichePourRencontre` (qui écrivait la fiche
+  minimale) a disparu avec l'ancien geste.
+- **La fenêtre ne se ferme qu'après l'écriture** : un échec réseau garde les
+  huit champs saisis. L'ancienne version vidait l'état avant l'appel — la
+  saisie était perdue. C'est l'exception « formulaires » de `js/ecriture.js`,
+  qui compte d'autant plus ici.
+- **`photographe` est un type de contact** (migration
+  `20260814170000_contacts_type_photographe`). `agence` et `autre` existaient
+  déjà depuis le 7 août — vérifié avant d'y toucher.
+
+**Vérifié** sur une sortie d'essai et sa rencontre, créées pour l'occasion (les
+quatre rencontres non reliées de Noé n'ont pas été touchées) : fenêtre ouverte
+pré-remplie, « Photographe » offert dans la liste, fiche complète enregistrée —
+type, structure, Instagram, mail, téléphone, notes, `dernier_echange` au jour de
+la sortie —, rencontre reliée en base, « + » disparu de l'écran, zéro erreur en
+console. Essai entièrement défait : 46 contacts, 15 événements, 7 rencontres
+dont 4 non reliées, l'état exact du départ.
+
+---
+
 ## 1. Ce qui existe
 
 Le hub est **déployé et fonctionnel** :

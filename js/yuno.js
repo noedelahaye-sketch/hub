@@ -1804,6 +1804,9 @@ function fenetreChoixModele(etat) {
 
 const TYPES_CONTACT = {
   joueur: 'Joueur',
+  // Les confrères du bord terrain (14 août 2026) : ce sont eux qu'on croise le
+  // plus en couvrant un match, et « autre » ne les rangeait pas.
+  photographe: 'Photographe',
   club: 'Club',
   media: 'Média',
   agence: 'Agence',
@@ -2789,10 +2792,19 @@ function vueCarnet(etat) {
 
 // Les champs d'une fiche du réseau, écrits une fois : le pli du bas de la page
 // et la fenêtre du « + » posent les mêmes.
-function champsContact() {
+// `prefill` : ce que la fiche sait déjà d'elle-même. Vide au cas ordinaire ;
+// rempli quand elle naît d'une rencontre notée au vol — le nom est écrit, et
+// la relation part de « contact établi » (ils se sont vus en vrai).
+function champsContact(prefill = {}) {
   return [
-    { nom: 'nom', libelle: 'Nom', type: 'text', requis: true },
-    { nom: 'type', libelle: 'Type', type: 'choix', options: TYPES_CONTACT, valeur: 'joueur' },
+    { nom: 'nom', libelle: 'Nom', type: 'text', requis: true, valeur: prefill.nom ?? '' },
+    {
+      nom: 'type',
+      libelle: 'Type',
+      type: 'choix',
+      options: TYPES_CONTACT,
+      valeur: prefill.type ?? 'joueur',
+    },
     { nom: 'structure', libelle: 'Rattaché à (FC Lorient, OM, La Provence…)', type: 'text' },
     { nom: 'instagram', libelle: 'Instagram', type: 'text' },
     { nom: 'email', libelle: 'E-mail', type: 'text' },
@@ -2801,7 +2813,7 @@ function champsContact() {
       options: Object.fromEntries(
         Object.entries(STATUTS_CONTACT).map(([v, { nom }]) => [v, nom]),
       ),
-      valeur: 'pas_de_contact' },
+      valeur: prefill.statut ?? 'pas_de_contact' },
     { nom: 'objectif', libelle: 'Pourquoi ce contact ? (facultatif)', type: 'text' },
     { nom: 'niveau', libelle: "Dans la file d'aller-vers ?", type: 'choix',
       options: {
@@ -2820,16 +2832,28 @@ const CHAMPS_CONTACT = champsContact();
 // La fenêtre du « + » sur les pages du réseau : la même fiche, dans une fenêtre
 // volante. L'identifiant du formulaire diffère de celui du pli — deux mêmes
 // `id` sur une page, ce sont des étiquettes qui désignent le mauvais champ.
-function formulaireNouveauContact() {
+// `prefill` arrive quand la fiche naît d'une rencontre : le nom est déjà
+// écrit, la relation part de « contact établi », et `rencontre_id` voyage dans
+// un champ caché pour que la rencontre se relie à la fiche une fois posée.
+// Sans lui, la fenêtre est celle du « + » des pages du réseau, telle quelle.
+function formulaireNouveauContact(prefill = null) {
   return construireFenetre(
     'Ajouter au réseau',
     `<h3 class="fenetre-titre">Ajouter au réseau</h3>
+     ${
+       prefill?.quand
+         ? `<p class="discret">Rencontré ${echapper(prefill.quand)}.</p>`
+         : ''
+     }
      ${construireFormulaire({
        id: 'contact-nouveau',
        action: 'creer-contact',
        bouton: 'Ajouter au réseau',
        avecPli: false,
-       champs: CHAMPS_CONTACT,
+       extra: prefill?.rencontre_id
+         ? `<input type="hidden" name="rencontre_id" value="${echapper(prefill.rencontre_id)}">`
+         : '',
+       champs: prefill ? champsContact(prefill) : CHAMPS_CONTACT,
      })}`,
   );
 }
@@ -3273,7 +3297,14 @@ export default {
           );
         }
         if (etat.contactNouveau) {
-          section.insertAdjacentHTML('beforeend', formulaireNouveauContact());
+          // `true` = le « + » des pages du réseau ; un objet = la fiche naît
+          // d'une rencontre, et porte ce qu'on sait déjà d'elle.
+          section.insertAdjacentHTML(
+            'beforeend',
+            formulaireNouveauContact(
+              typeof etat.contactNouveau === 'object' ? etat.contactNouveau : null,
+            ),
+          );
         }
         if (etat.choixPrepa) {
           section.insertAdjacentHTML('beforeend', fenetreChoixModele(etat));
@@ -3733,8 +3764,10 @@ export default {
         // on n'enchaîne pas des fiches comme on enchaîne des notes. Il faut
         // alors redessiner la VUE, et pas seulement la liste des contacts —
         // sans quoi la fenêtre resterait affichée par-dessus.
-        const venaitDuPlus = etat.contactNouveau;
-        etat.contactNouveau = false;
+        const venaitDuPlus = Boolean(etat.contactNouveau);
+        const depuisRencontre =
+          typeof etat.contactNouveau === 'object' ? etat.contactNouveau : null;
+
         const contact = await api.creerContact({
           nom: champs.nom.trim(),
           type: champs.type,
@@ -3746,9 +3779,31 @@ export default {
           objectif: champs.objectif?.trim() || null,
           niveau: champs.niveau ? Number(champs.niveau) : null,
           notes: champs.notes?.trim() || null,
+          dernier_echange: depuisRencontre?.dernier_echange ?? null,
         });
+
+        // La rencontre pointe désormais sa fiche : le « + » disparaît, le nom
+        // devient une étiquette reliée.
+        if (champs.rencontre_id) {
+          await api.relierRencontreAuContact(champs.rencontre_id, contact.id);
+          for (const sortie of etat.evenements) {
+            const rencontre = sortie.rencontres?.find(
+              (candidat) => candidat.id === champs.rencontre_id,
+            );
+            if (rencontre) {
+              rencontre.contact_id = contact.id;
+              break;
+            }
+          }
+        }
+
         etat.contacts.push(contact);
         etat.contacts.sort((a, b) => a.nom.localeCompare(b.nom));
+        // La fenêtre ne se ferme qu'une fois la fiche écrite : si le serveur
+        // refuse, l'erreur s'affiche dedans et la saisie reste — c'est
+        // l'exception des formulaires à l'écriture optimiste, et elle compte
+        // d'autant plus ici qu'on vient de remplir huit champs.
+        etat.contactNouveau = false;
         if (venaitDuPlus) rendre();
         else rendreContacts();
         return;
@@ -4734,6 +4789,12 @@ export default {
 
       // Une rencontre notée au vol devient une fiche : le réseau se
       // remplit du terrain, sans qu'il ait fallu y penser sur le moment.
+      //
+      // Le « + » OUVRE LA FICHE au lieu de l'écrire (demande de Noé, 14 août
+      // 2026). Avant, il créait en base une fiche qui ne portait qu'un nom, et
+      // il fallait aller la retrouver dans le réseau pour dire qui était cette
+      // personne. Maintenant tout se remplit au moment où l'on s'en souvient —
+      // c'est-à-dire tout de suite après la sortie.
       const ouvrirFiche = evenement.target.closest('[data-ouvrir-fiche]');
       if (ouvrirFiche) {
         const id = ouvrirFiche.dataset.ouvrirFiche;
@@ -4741,17 +4802,20 @@ export default {
           candidat.rencontres?.some((rencontre) => rencontre.id === id),
         );
         const rencontre = sortie?.rencontres.find((candidat) => candidat.id === id);
-        if (!rencontre) return;
-        ouvrirFiche.disabled = true;
-        try {
-          const { contact, rencontre: liee } = await api.ouvrirFichePourRencontre(rencontre);
-          Object.assign(rencontre, liee);
-          etat.contacts = [...etat.contacts, contact].sort((a, b) => a.nom.localeCompare(b.nom));
-          rendre();
-        } catch (souci) {
-          console.error("Ouverture de la fiche impossible", souci);
-          ouvrirFiche.disabled = false;
-        }
+        if (!rencontre || estProvisoire(rencontre.id)) return;
+
+        etat.contactNouveau = {
+          nom: rencontre.nom,
+          // Ils se sont vus en vrai : la relation ne part pas de zéro.
+          statut: 'contact_etabli',
+          rencontre_id: rencontre.id,
+          // Le dernier échange EST le jour de la sortie, pas celui où l'on
+          // remplit la fiche : le carnet se souvient de quand on s'est vus.
+          dernier_echange: versDateISO(new Date(sortie.date_debut)),
+          quand: echeanceLisible(depuisDateISO(versDateISO(new Date(sortie.date_debut)))),
+        };
+        rendre();
+        section.querySelector('#contact-nouveau-nom')?.focus();
         return;
       }
 

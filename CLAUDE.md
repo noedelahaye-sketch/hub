@@ -210,7 +210,7 @@ Carnet unique : le réseau de Yuno **et** les partenaires du FCH. Pas de colonne
 
 - `id` uuid PK
 - `nom` text NOT NULL
-- `type` text default 'autre' CHECK (joueur, club, media, agence, marque, autre)
+- `type` text default 'autre' CHECK (joueur, photographe, club, media, agence, marque, autre)
 - `structure` text — le rattachement (FC Lorient, OM, La Provence…)
 - `instagram` text · `email` text · `telephone` text — plusieurs valeurs possibles, séparées par une barre oblique
 - `statut` text default 'pas_de_contact' CHECK (pas_de_contact, message_envoye, contact_etabli, bon_contact) — la progression de la relation, dans cet ordre

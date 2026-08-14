@@ -445,9 +445,17 @@ Trois conséquences, et elles tiennent l'intention :
 - **Loguer un moment crée une victoire** (`source = 'moment'`), qui remonte au
   dashboard du hub. Dans ce système, une victoire EST un moment vécu.
 - **Les rencontres comptent autant que les images.** Un nom déjà au carnet se
-  relie tout seul à sa fiche ; un inconnu garde un « + » pour lui en ouvrir une
-  (statut `contact_etabli` : ils se sont vus en vrai). La capture ne s'arrête
-  jamais pour ça.
+  relie tout seul à sa fiche ; un inconnu garde un « + » à côté de son nom. La
+  capture ne s'arrête jamais pour ça.
+- **Le « + » OUVRE la fiche complète, il ne l'écrit plus** (demande de Noé,
+  14 août 2026). Il posait une fiche qui ne portait qu'un nom, et il fallait
+  aller la retrouver dans le réseau pour dire qui était cette personne. Il
+  ouvre maintenant le formulaire du réseau, **le nom déjà écrit**, la relation
+  sur **« contact établi »** (ils se sont vus en vrai) et le **dernier échange
+  au jour de la sortie** — pas au jour où l'on remplit la fiche. Tout se
+  renseigne donc au moment où l'on s'en souvient : type, rattachement,
+  Instagram, mail, téléphone, notes. La fenêtre ne se ferme qu'une fois la
+  fiche écrite : un échec réseau garde la saisie, comme tout formulaire.
 
 ### `#yuno/creer` — l'outil phare
 
@@ -677,9 +685,11 @@ Instagram est accepté avec ou sans arobase, ou collé en URL entière. **Un
 contact peut porter plusieurs comptes ou adresses**, séparés par une barre
 oblique — le carnet de Noé en contient — et chacun devient son propre lien.
 
-Types : joueur, club, média, **agence**, marque, autre. Les agences sont
-arrivées avec la seconde moitié du carnet : ce ne sont ni des médias ni des
-marques, ce sont des intermédiaires.
+Types : joueur, **photographe**, club, média, **agence**, marque, autre. Les
+agences sont arrivées avec la seconde moitié du carnet : ce ne sont ni des
+médias ni des marques, ce sont des intermédiaires. Le photographe est arrivé le
+14 août 2026 : ce sont les confrères croisés au bord du terrain, la moitié des
+rencontres d'un match, et les ranger en « autre » revenait à ne pas les ranger.
 
 **L'échelle de relation s'est allongée** (12 août) sans rien perdre :
 `pas de contact → message envoyé → relancé → répondu → contact établi →
