@@ -1,18 +1,37 @@
-# État des lieux — 13 août 2026
+# État des lieux — 14 août 2026
 
 > **Reprise : § 4 bis, « Par où reprendre ».**
 >
-> La session du 13 août a ouvert **l'espace Tâches** (§ 2 quater), refait
-> **toute la capture** du hub — une tuile volante unique pour poser une tâche
-> comme n'importe quoi au calendrier —, allégé **le démarrage** de Yuno
-> (§ 2 ter) et réparé **cinq bugs antérieurs** trouvés en exerçant le code
-> (§ 2 bis bis).
+> **Ce que la session des 13–14 août a fait**, du plus structurant au plus fin.
+> Les sections détaillées sont en ordre inverse (la plus récente d'abord) : le
+> tableau ci-dessous sert de carte.
 >
-> Trois choses valent d'être sues avant de continuer :
-> le **plafond de 3 tâches actives est en sommeil** (§ 2 quater), les trois
-> chantiers du démarrage ne sont **faits que sur Yuno**, et la **tuile de
-> capture** est maintenant le seul endroit où l'on crée quoi que ce soit de
-> daté — la toucher, c'est toucher quatre écrans à la fois.
+> | Chantier | Où |
+> |---|---|
+> | L'espace **Tâches** et la **tuile de capture**, seul geste de création daté | § 2 quater |
+> | Le **démarrage** — cache de session, chargement par morceaux, chrome d'abord | § 2 ter (Yuno), 2 ter bis (accueil), 2 ter ter (calendrier) |
+> | **La fluidité** : l'écran avant le réseau, partout — hub et deux sites | § 2 ter ter, § 4 |
+> | La **coquille en cache** (service worker) et la fin des CDN | § 2 ter ter |
+> | Les **mouvements** : éclair au toucher, coche dessinée, fondu de navigation | § 2 sexies |
+> | Le **« + » de Yuno**, qui s'adapte à la page | § 2 septies |
+> | Le **calendrier** : barres indépendantes, glissement depuis l'accueil, fantôme | § 2 octies, 2 decies |
+> | **Plus un seul menu déroulant natif** dans le hub | § 2 nonies |
+> | La **tâche perso**, et le mot **réseau** qui remplace « carnet » | § 2 quinquies, 2 nonies |
+>
+> **Cinq choses valent d'être sues avant de continuer :**
+>
+> 1. **L'écran passe devant le réseau** partout où le geste tient en un clic.
+>    La mécanique est dans `js/ecriture.js` — ne pas la recopier. Les
+>    formulaires font exception, volontairement (§ 4).
+> 2. **La tuile de capture est le seul geste de création daté**, et elle sert
+>    aussi à corriger. La toucher, c'est toucher cinq écrans à la fois.
+> 3. **Le plafond de 3 tâches actives dort** (§ 3, point 9), et « Aujourd'hui »
+>    ne filtre donc plus.
+> 4. **Le hub n'appelle plus aucun CDN** : polices et supabase-js sont dans le
+>    dépôt. `node tools/verifier-coquille.js` garde la liste du service worker
+>    complète.
+> 5. **Le FCH et la Passerelle sont mis de côté** par Noé — ne pas les
+>    entamer par petites touches (§ 3).
 
 Point de reprise. `CLAUDE.md` dit **ce que le hub doit être** ; ce document dit
 **où il en est**, ce qui a été vérifié, ce qui ne l'a pas été, et ce qui attend
@@ -278,14 +297,16 @@ complet et ce qui reste ouvert.
   accent. Règle retenue : ne jamais demander une graisse ou une posture dont le
   fichier n'existe pas.
 
-**Données réelles en base, au soir du 13 août** : 45 contacts au carnet (dont
+**Données réelles en base, au soir du 14 août** : 45 fiches au réseau (dont
 trois portent un niveau de Passerelle), 15 idées avec leur pilier, 4 modèles de
-messages, 1 moment avec sa photo, 2 événements, 2 humeurs, et **4 tâches
-saisies par Noé lui-même** — les premières.
+messages, 1 moment avec sa photo, 2 événements, 3 humeurs, et **8 tâches
+saisies par Noé lui-même**. Aucun objectif, aucune commande : ces deux-là n'ont
+toujours jamais été exercés avec de la matière.
 
-C'est le changement du jour, et il compte : **Noé a commencé à s'en servir pour
-de bon.** Les écrans ne se jugent plus à vide. Aucun objectif, aucune commande
-en revanche : ces deux-là n'ont encore jamais été exercés avec de la matière.
+**Noé s'en sert pour de bon.** Il a coché une tâche depuis son téléphone, noté
+son humeur (« Fatigué mais excité, content de ce qui m'attend — match ce soir »)
+et posé quatre tâches pour aujourd'hui. Les écrans ne se jugent plus à vide, et
+c'est ce qui a fait remonter la plupart des demandes de ces deux jours.
 
 ---
 
@@ -1833,14 +1854,19 @@ Rien d'ouvert dans les cahiers des charges. Restent des conforts :
 
 ---
 
-## 4 bis. Par où reprendre (fin de session du 13 août 2026)
+## 4 bis. Par où reprendre (fin de session du 14 août 2026)
 
 Dans cet ordre, du plus rentable au moins pressé.
 
-1. **Vivre avec l'espace Tâches quelques jours avant d'y toucher.** Il est né
-   aujourd'hui et a changé six fois dans la journée. Trois décisions y attendent
-   l'usage plutôt qu'un arbitrage à froid : le sommeil du plafond de 3 actives,
-   ce que « Aujourd'hui » montre (les tâches datées du jour ou avant, jamais les
+**Avant tout : la session a beaucoup touché à ce que Noé utilise chaque matin.**
+Il s'en sert pour de bon depuis le 13 — 8 tâches saisies par lui, une humeur
+notée, une tâche cochée depuis son téléphone. Le premier réflexe n'est donc pas
+d'ajouter, c'est de **le laisser vivre avec** et d'écouter ce qui coince.
+
+1. **Vivre avec l'espace Tâches et l'accueil avant d'y toucher.** Ils ont changé
+   dix fois en deux jours. Trois décisions y attendent l'usage plutôt qu'un
+   arbitrage à froid : le sommeil du plafond de 3 actives, ce que
+   « Aujourd'hui » montre (les tâches datées du jour ou avant, jamais les
    sans-date), et le tri qui fait passer une tâche datée avant une tâche sans
    date à priorité égale.
 2. **Ce que l'analyse de fluidité laisse ouvert.** Les deux sites sont faits
@@ -1874,10 +1900,38 @@ Dans cet ordre, du plus rentable au moins pressé.
    cache de session, qui ne vit que dans Yuno et sur l'accueil.
 
 
-**Deux chantiers sont clos et n'ont plus à figurer ici** : le cochage d'une
-tâche depuis le calendrier a été exercé pour de vrai (créée, cochée, décochée,
-supprimée, base relue en SQL), et les onze requêtes de l'ouverture de Yuno sont
-tombées à six.
+7. **Le glissement au doigt ne marche qu'à l'horizontale** (§ 2 decies). En vue
+   semaine c'est tout ce qu'il faut ; en vue mois, changer de semaine au doigt
+   demande d'ouvrir la barre et de corriger sa date. À rouvrir si Noé le
+   signale — la sortie serait un appui long qui fige le défilement.
+
+**Ce qui est clos et n'a plus à figurer ici** : le cochage d'une tâche depuis le
+calendrier (exercé pour de vrai), les onze requêtes de l'ouverture de Yuno
+tombées à six, l'alignement des menus déroulants, et le mot « carnet » qui ne
+désigne plus deux choses.
+
+### Deux outils écrits cette session, à connaître
+
+- `node tools/verifier-coquille.js` — la liste du service worker contient-elle
+  tout ce qui est référencé ? Sort en erreur sinon. À lancer après avoir ajouté
+  un module, une police ou une icône.
+- `python3 tools/telecharger-supabase.py [version]` — rapatrie supabase-js dans
+  `js/vendor/`. À relancer pour changer de version, jamais autrement.
+
+### Une méthode qui a tenu deux jours, et qu'il faut garder
+
+**Exercer, relire, défaire, relire à nouveau.** Il n'y a pas de base de bac à
+sable : chaque essai touche les vraies données de Noé. Tout ce qui a été écrit
+cette session l'a été sur des lignes créées pour l'occasion, relues après coup,
+puis supprimées — et la base a été recomptée à chaque fois. Deux fois une ligne
+de Noé a été touchée par erreur ; les deux fois, elle a été rendue à l'identique
+dans la minute.
+
+**Et le navigateur tranche, pas la lecture du code.** Trois pannes de la session
+ont été trouvées comme ça et par aucun autre moyen : un import oublié en silence
+(l'espace FCH montait vide), un `<select>` sans valeur qui préselectionnait sa
+première option alors que les pastilles ne préselectionnaient rien, et un
+`releasePointerCapture` qui levait et emportait le report avec lui.
 
 ---
 
@@ -1953,6 +2007,38 @@ inadvertance.
 
 ## 6. Les pièges rencontrés, pour ne pas les revivre
 
+**Une substitution automatique qui ne trouve pas son motif ne dit rien.** Le
+script qui a posé l'appel à `brancherChoix` dans `hermitage.js` a réussi ; celui
+qui devait poser son import a échoué en silence, et l'espace FCH s'est monté
+vide. Toute substitution doit LEVER quand son motif est absent — et ce qui a
+attrapé la panne, ce n'est pas `node --check`, c'est le parcours en navigateur.
+
+**Un `<select>` sans valeur préselectionne sa première option.** Des formulaires
+comptaient dessus sans le dire : en les remplaçant par des pastilles qui ne
+préselectionnaient rien, « Noter une idée » repartait avec un réseau vide, et la
+base refusait la ligne. Remplacer un contrôle natif, c'est hériter de ses
+défauts implicites.
+
+**JavaScript énumère les clés numériques avant les autres**, quel que soit
+l'ordre d'écriture : `{ '': 'Sans pilier', 1: … }` ressort « 1, 2, 3, 4, Sans
+pilier ». Invisible dans un menu déroulant, voyant dès que les options
+s'alignent.
+
+**`setPointerCapture` et `releasePointerCapture` lèvent** quand le pointeur
+n'est plus valide. La seconde était la première ligne du relâchement d'un
+glissement : quand elle levait, le report ne se faisait pas, sans un mot.
+
+**Un élément de grille s'étire à la hauteur de sa ligne.** Une tâche du jeudi
+placée dans le même couloir qu'un match de deux heures du vendredi prenait sa
+hauteur — deux choses sans rapport, rendues jumelles par la mise en page.
+`align-self: start` coupe le lien, mais il faut ALORS empiler chaque jour à
+part, sinon la tâche garde sa taille et laisse un trou.
+
+**Le serveur local peut servir des fichiers périmés.** Celui du port 4173
+appartenait à une autre session de travail : trois essais ont conclu « le
+glissement ne marche pas » alors que la page n'avait jamais reçu le code. Un
+`curl` sur le fichier servi le dit en une seconde.
+
 **L'ordre dans la feuille de style décide, trois fois dans la même journée.** À
 spécificité égale, c'est la dernière règle écrite qui gagne — et trois bugs de
 la session n'avaient pas d'autre cause : `.capture-fond` déclarée avant
@@ -2010,17 +2096,18 @@ restaurée par le routeur. Ne pas « simplifier » ces id.
 |---|---|
 | `js/app.js` | Routeur, session, coquille commune des trois entrées, **fond figé sous une tuile** |
 | `js/taches.js` | L'espace Tâches : la liste, la tuile de capture, la ligne de tâche empruntée par le dashboard |
-| `js/dashboard.js` | L'accueil : humeur, victoires, objectifs, les tâches du jour, la semaine du calendrier |
+| `js/dashboard.js` | L'accueil : humeur, les tâches du jour (cochables, ouvrables), la semaine du calendrier (déplaçable), les objectifs. Victoires masquées |
 | `js/cache-session.js` | Le dernier état d'un espace, gardé le temps de l'onglet (§ 2 ter) |
 | `js/mouvements.js` | Ce qui vient d'apparaître dans une liste, et rien d'autre (§ 2 ter ter) |
 | `js/ecriture.js` | L'écran d'abord, le réseau ensuite — les trois formes de geste, et leur retour en arrière |
+| `sw.js` | La coquille en cache — HTML, CSS, JS, polices. **Jamais les données** : Supabase et GitHub lui échappent par un test d'origine (§ 2 ter ter) |
 | `js/vendor/` | supabase-js figé, rapatrié par `tools/telecharger-supabase.py`. Aucun CDN |
-| `sw.js` | La coquille en cache — HTML, CSS, JS, polices. **Jamais les données** (§ 2 ter ter) |
+| `tools/verifier-coquille.js` | La liste de `sw.js` contient-elle tout ce qui est référencé ? |
 | `js/api.js` | **Tous** les appels Supabase, une fonction par usage |
 | `js/espace-projet.js` | La fabrique d'espace projet (formation) + gabarits partagés |
 | `js/publications.js` | Le calendrier éditorial, partagé Yuno/FCH — ce qui diffère passe en paramètre (cycle, checklist, piliers) |
 | `js/calendrier-commun.js` | L'assemblage de tout ce qui porte une date, les trois vues, le glissement et le clavier — **et la tuile « Poser au calendrier » avec `poserAuCalendrier` / `brancherCapture`, partagées par le hub, l'accueil et les deux sites** |
-| `js/yuno.js` | Le site Yuno : le Carnet, la base du carnet réseau, la Passerelle, le rendez-vous stats |
+| `js/yuno.js` | Le site Yuno : le Carnet de terrain, le réseau, la Passerelle, le rendez-vous stats |
 | `js/hermitage.js` | Le site FC Hermitage |
 | `js/revisions.js` | Lecture du gist Bac-3 — chaque calcul cite sa source |
 | `tools/generer-icones.py` | Les icônes des trois applications |
