@@ -117,6 +117,51 @@ base, victoire créée, « Ce moment est au carnet » affiché, invite muette, l
 tuile du hub montre/cache la pastille au choix du projet. Tout l'essai défait,
 base relue à l'état exact.
 
+## 0 bis. La fusion des moments et des événements (14 août, soir)
+
+**Idée de Noé** : « je ne vois pas d'utilisation des moments qui ne sont pas
+liés à un évènement, il faut que ça devienne une et même chose ». Il avait
+raison, et le code du jour le prouvait — depuis que le bilan créait le moment,
+celui-ci ne faisait que recopier son événement. **La table `moments` a
+disparu** (migration `20260814180000_fusion_moments_evenements`) ; l'événement
+porte ses deux faces : prévue (date, lieu, `type_moment`, sa préparation) et
+vécue (`vecu`, `photo_chemin`, `note`, `oeuvre_finie`, ses `rencontres`).
+
+**Les deux arbitrages de Noé** : `vecu` ne se pose que par un geste, jamais au
+passage de la date ; et le vocabulaire ne bouge pas — l'écran dit toujours
+« Moments vécus ».
+
+**Ce que la migration a fait**, vérifié ligne par ligne : le moment de juin
+(RDC - Danemark, sa photo, ses 2 rencontres, sa victoire) est devenu un
+événement photo vécu au 3 juin — **minuit LOCAL et non UTC**, sinon la
+convention « minuit = pas d'heure » aurait affiché 02:00. Les rencontres ont
+changé de clé (`evenement_id`), les victoires de cible (`source_id` pointe
+l'événement ; `source = 'moment'` reste, il dit la nature du geste, pas la
+table). Une sauvegarde JSON des données a été prise avant le `drop table`.
+
+**Trois conséquences dans l'usage**, toutes voulues :
+
+1. **« Retirer du carnet » ne supprime plus rien** : la sortie reste au
+   calendrier à sa date, seule sa face vécue s'efface (`retirerDuCarnet`).
+2. **Une sortie notée au vol entre au calendrier** — c'en est un événement.
+3. **La fiche d'une sortie montre le bilan de sa préparation** et ouvre sur la
+   feuille. Elle s'ouvre depuis une vignette du mur **ou depuis sa carte du
+   carnet** : une sortie sans photo n'a pas de vignette, son bilan serait
+   autrement inatteignable.
+
+**Une requête de moins** : `SOURCES.moments` a disparu, `SOURCES.evenements`
+ramène les rencontres et signe les photos.
+
+**Vérifié de bout en bout, en conditions réelles** : le bilan du vrai match du
+soir marque l'événement vécu (base relue : `vecu`, rencontre, victoire, aucun
+doublon), sa fiche affiche le bilan, « Retirer du carnet » le sort du carnet en
+le laissant au calendrier, une sortie spontanée créée depuis la capture apparaît
+au calendrier, sa correction suit jusqu'au titre de sa victoire et **préserve
+l'heure**. Tout défait : base revenue à 3 événements (1 vécu), 2 rencontres,
+7 victoires. Zéro erreur console sur un onglet neuf.
+
+---
+
 **« Ta semaine » s'ouvre au toucher** (demande de Noé, 14 août au soir) :
 toucher une barre de la grille de l'accueil ouvre **la fenêtre de détail de
 l'espace Calendrier** — d'où l'on modifie (formulaire d'édition complet, champ

@@ -162,8 +162,12 @@ Règle métier : maximum 3 tâches en statut 'actif' par projet. L'UI doit empê
 - `date_fin` timestamptz
 - `lieu` text
 - `notes` text
-- `type_moment` text (nullable) CHECK (match, concert, sortie, autre) — Yuno seulement : le type du moment qui naîtra de cette sortie (pastille à la création quand le projet est photo). Voir docs/yuno-spec.md, Préparations.
+- `type_moment` text (nullable) CHECK (match, concert, sortie, autre) — Yuno seulement : le type de la sortie (pastille à la création quand le projet est photo).
+- `vecu` boolean NOT NULL default false — **la face vécue** : cette sortie a eu lieu et elle est au Carnet de terrain. Posée par un geste (bilan d'une préparation, invite du carnet, capture d'une sortie) — **jamais** par le temps qui passe : un match où Noé n'est pas allé ne doit pas compter.
+- `photo_chemin` text · `note` text · `oeuvre_finie` boolean NOT NULL default false — le reste de la face vécue.
 - `created_at` timestamptz default now()
+
+**Un événement porte deux faces depuis le 14 août 2026** (fusion des moments et des événements) : ce qui est *prévu* (date, lieu, type, sa préparation) et ce qui a été *vécu* (les quatre colonnes ci-dessus, plus ses `rencontres`). La table `moments` a disparu — elle ne faisait que recopier son événement. Le vocabulaire, lui, ne bouge pas : l'interface dit toujours « Moments vécus » et « Carnet de terrain ». Voir docs/yuno-spec.md.
 
 ### victoires
 - `id` uuid PK

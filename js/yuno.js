@@ -295,28 +295,52 @@ const CRAYON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none"
   <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
 </svg>`;
 
-// Ce qu'un moment devient au dashboard du hub, où il arrive sans son carnet
-// autour : « Match · OM-Lyon », ou « Match » tout court si le lieu manque. Le
-// point médian plutôt qu'un tiret : les lieux en contiennent souvent un.
-export function titreDuMoment({ type, lieu }) {
-  const quoi = TYPES_MOMENT[type] ?? TYPES_MOMENT.autre;
-  return lieu?.trim() ? `${quoi} · ${lieu.trim()}` : quoi;
+// --- Une sortie vécue EST un événement (fusion du 14 août 2026) --------------
+//
+// Avant, un moment doublait son événement : même date, même lieu, même type.
+// L'événement porte maintenant les deux faces — ce qui est prévu, et ce qui a
+// été vécu (`vecu`, la photo, la note, l'œuvre finie, ses rencontres).
+//
+// Le VOCABULAIRE ne bouge pas : l'écran dit toujours « Moments vécus » et
+// « Carnet de terrain ». C'est la donnée qui a fusionné, pas les mots.
+//
+// `vecu` ne se pose jamais tout seul au passage de la date (décision de Noé) :
+// un match où l'on n'est pas allé compterait, et le compteur cesserait de dire
+// du vrai. Il se pose par un geste — le bilan, l'invite, ou la capture.
+
+export const estVecue = (evenement) => Boolean(evenement.vecu);
+
+export function sortiesVecues(evenements) {
+  return evenements.filter(estVecue);
+}
+
+// Le jour d'une sortie, en date nue : la victoire, le tri et l'affichage n'ont
+// que faire de l'heure. `date_debut` est un timestamptz, `date` était une date.
+export const jourDeLaSortie = (evenement) => versDateISO(new Date(evenement.date_debut));
+
+// Ce qu'une sortie devient au dashboard du hub, où elle arrive sans son carnet
+// autour : « Match · OM-Lyon », ou « Match » tout court si le titre manque. Le
+// point médian plutôt qu'un tiret : les intitulés en contiennent souvent un.
+export function titreDuMoment({ type_moment, titre, lieu }) {
+  const quoi = TYPES_MOMENT[type_moment] ?? TYPES_MOMENT.autre;
+  const nom = (titre ?? lieu ?? '').trim();
+  return nom ? `${quoi} · ${nom}` : quoi;
 }
 
 // Les trois compteurs de l'accueil. Ils se calculent, ils ne se stockent pas :
 // ce sont des faits accumulés, ils ne peuvent que monter. Les rencontres se
 // comptent une par une, pas par personne — revoir quelqu'un au bord du terrain
 // est un moment vécu de plus, pas un doublon.
-export function compteursCarnet(moments) {
+export function compteursCarnet(sorties) {
   return {
-    moments: moments.length,
-    rencontres: moments.reduce((somme, moment) => somme + (moment.rencontres?.length ?? 0), 0),
-    oeuvres: moments.filter((moment) => moment.oeuvre_finie).length,
+    moments: sorties.length,
+    rencontres: sorties.reduce((somme, sortie) => somme + (sortie.rencontres?.length ?? 0), 0),
+    oeuvres: sorties.filter((sortie) => sortie.oeuvre_finie).length,
   };
 }
 
-export function construireCompteurs(moments) {
-  const { moments: vecus, rencontres, oeuvres } = compteursCarnet(moments);
+export function construireCompteurs(sorties) {
+  const { moments: vecus, rencontres, oeuvres } = compteursCarnet(sorties);
   // `data-vers` porte la valeur d'arrivée : le compteur part de 0 et y monte
   // au premier rendu. Le texte est écrit d'emblée à sa valeur finale — si le
   // script ne tourne pas, ou si l'on refuse le mouvement, le chiffre est juste.
@@ -345,10 +369,10 @@ export function relierRencontres(saisie, contacts) {
   });
 }
 
-function ligneRencontres(moment) {
-  if (!moment.rencontres?.length) return '';
+function ligneRencontres(sortie) {
+  if (!sortie.rencontres?.length) return '';
 
-  const noms = moment.rencontres
+  const noms = sortie.rencontres
     .map((rencontre) =>
       rencontre.contact_id
         ? `<span class="tag" style="--h: ${teinte(rencontre.nom)}">${echapper(rencontre.nom)}</span>`
@@ -362,30 +386,76 @@ function ligneRencontres(moment) {
   return `<span class="moment-rencontres"><span class="discret">Rencontré</span>${noms}</span>`;
 }
 
-// Le détail d'un moment, sans son enveloppe : le carnet l'enferme dans un
+// Le bilan de la sortie, tel qu'il a été écrit sur sa feuille de préparation.
+// Il vit dans la fiche depuis la fusion (demande de Noé, 14 août 2026) : ce
+// qu'on a préparé et ce qu'on a vécu sont deux faces d'une même sortie, et
+// c'est ici qu'on vient les relire.
+function bilanDeLaSortie(sortie, preparations = []) {
+  const feuille = preparations.find((candidat) => candidat.evenement_id === sortie.id);
+  if (!feuille) return '';
+
+  const aUnBilan = feuille.bilan_bien || feuille.bilan_mieux;
+
+  return `
+      <span class="sortie-bilan">
+        ${
+          aUnBilan
+            ? `${
+                feuille.bilan_bien
+                  ? `<span class="sortie-bilan-ligne">
+                       <span class="discret">Ce qui a marché</span>
+                       <span>${echapper(feuille.bilan_bien)}</span></span>`
+                  : ''
+              }
+              ${
+                feuille.bilan_mieux
+                  ? `<span class="sortie-bilan-ligne">
+                       <span class="discret">À refaire autrement</span>
+                       <span>${echapper(feuille.bilan_mieux)}</span></span>`
+                  : ''
+              }`
+            : ''
+        }
+        <a class="lien-discret" href="#yuno/preparations/${echapper(feuille.id)}">${
+          aUnBilan ? 'Voir la préparation' : 'Écrire le bilan'
+        }</a>
+      </span>`;
+}
+
+// Le détail d'une sortie, sans son enveloppe : le carnet l'enferme dans un
 // <li>, la fenêtre ouverte depuis une vignette le pose tel quel.
 // `fenetre` : dans une fenêtre volante, la croix de retrait tomberait juste
 // sous celle qui ferme, au même bord — deux « × » dont l'un est irréversible.
 // Le geste s'écrit alors, comme pour les idées de la banque.
-function corpsMoment(moment, photos = {}, { fenetre = false } = {}) {
-  const photo = moment.photo_chemin ? photos[moment.photo_chemin] : null;
+function corpsMoment(sortie, photos = {}, { fenetre = false, preparations = [] } = {}) {
+  const photo = sortie.photo_chemin ? photos[sortie.photo_chemin] : null;
+  // Le titre porte le nom de la sortie ; le lieu ne se répète que s'il dit
+  // autre chose (« Stade Bauer » sous « Red Star - Sochaux »).
+  const lieuUtile = sortie.lieu && sortie.lieu.trim() !== (sortie.titre ?? '').trim()
+    ? sortie.lieu
+    : null;
 
   return `
       <span class="tuile-entete">
-        <span class="etiquette">${echapper(TYPES_MOMENT[moment.type] ?? moment.type)}</span>
-        ${moment.oeuvre_finie ? '<span class="etiquette etiquette-oeuvre">Œuvre finie</span>' : ''}
-        <span class="discret quand">${echapper(echeanceLisible(depuisDateISO(moment.date)))}</span>
+        <span class="etiquette">${echapper(
+          TYPES_MOMENT[sortie.type_moment] ?? TYPES_MOMENT.autre,
+        )}</span>
+        ${sortie.oeuvre_finie ? '<span class="etiquette etiquette-oeuvre">Œuvre finie</span>' : ''}
+        <span class="discret quand">${echapper(
+          echeanceLisible(depuisDateISO(jourDeLaSortie(sortie))),
+        )}</span>
         ${
           fenetre
             ? ''
             : `<button type="button" class="lien-discret bouton-mini bouton-retirer"
-                 data-supprimer-moment="${echapper(moment.id)}"
-                 title="Retirer ce moment"
-                 aria-label="Retirer « ${echapper(titreDuMoment(moment))} »">×</button>`
+                 data-supprimer-moment="${echapper(sortie.id)}"
+                 title="Retirer du carnet"
+                 aria-label="Retirer « ${echapper(titreDuMoment(sortie))} » du carnet">×</button>`
         }
       </span>
-      ${moment.lieu ? `<span class="moment-lieu">${echapper(moment.lieu)}</span>` : ''}
-      ${ligneRencontres(moment)}
+      ${sortie.titre ? `<span class="moment-titre">${echapper(sortie.titre)}</span>` : ''}
+      ${lieuUtile ? `<span class="moment-lieu">${echapper(lieuUtile)}</span>` : ''}
+      ${ligneRencontres(sortie)}
       ${
         // La photo n'est plus dans la fiche du carnet : elle est déjà dans la
         // frise, juste au-dessus, et la fiche la répétait en grand. Elle reste
@@ -396,25 +466,18 @@ function corpsMoment(moment, photos = {}, { fenetre = false } = {}) {
                  loading="lazy"></a>`
           : ''
       }
-      ${
-        // Une phrase écrite avant que la photo puisse être jointe : elle reste.
-        !photo && moment.photo_fiere
-          ? `<span class="moment-photo"><span class="discret">La photo dont je suis fier</span><span>${echapper(
-              moment.photo_fiere,
-            )}</span></span>`
-          : ''
-      }
-      ${moment.note ? `<span class="discret moment-note">${echapper(moment.note)}</span>` : ''}
+      ${sortie.note ? `<span class="discret moment-note">${echapper(sortie.note)}</span>` : ''}
+      ${fenetre ? bilanDeLaSortie(sortie, preparations) : ''}
       ${
         fenetre
           ? `<span class="moment-actions">
                <button type="button" class="bouton-icone"
-                 data-modifier-moment="${echapper(moment.id)}"
-                 title="Modifier ce moment"
-                 aria-label="Modifier « ${echapper(titreDuMoment(moment))} »">${CRAYON}</button>
+                 data-modifier-moment="${echapper(sortie.id)}"
+                 title="Modifier cette sortie"
+                 aria-label="Modifier « ${echapper(titreDuMoment(sortie))} »">${CRAYON}</button>
                <button type="button" class="lien-discret bouton-mini bouton-retirer"
-                 data-supprimer-moment="${echapper(moment.id)}"
-                 aria-label="Retirer « ${echapper(titreDuMoment(moment))} »"
+                 data-supprimer-moment="${echapper(sortie.id)}"
+                 aria-label="Retirer « ${echapper(titreDuMoment(sortie))} » du carnet"
                  >Retirer du carnet</button>
              </span>`
           : ''
@@ -425,38 +488,51 @@ function corpsMoment(moment, photos = {}, { fenetre = false } = {}) {
 // ni à la photo ni aux rencontres : l'une vit dans le stockage, les autres dans
 // leur table, et chacune demande son propre geste. Corriger une date ou un lieu
 // mal tapé est le besoin courant ; le reste attend d'être demandé.
-function formulaireModifierMoment(moment) {
+function formulaireModifierMoment(sortie) {
   return construireFormulaire({
     id: 'moment-edition',
     action: 'modifier-moment',
     bouton: 'Enregistrer',
     avecPli: false,
-    extra: `<input type="hidden" name="id" value="${echapper(moment.id)}">`,
+    extra: `<input type="hidden" name="id" value="${echapper(sortie.id)}">`,
     champs: [
-      { nom: 'date', libelle: 'Quand', type: 'date', valeur: moment.date, requis: true },
-      { nom: 'type', libelle: 'Quoi', type: 'choix', options: TYPES_MOMENT, valeur: moment.type },
-      { nom: 'lieu', libelle: 'Événement ou lieu', type: 'text', valeur: moment.lieu ?? '' },
-      { nom: 'note', libelle: 'Note', type: 'textarea', valeur: moment.note ?? '' },
+      { nom: 'date', libelle: 'Quand', type: 'date', valeur: jourDeLaSortie(sortie), requis: true },
+      {
+        nom: 'type_moment',
+        libelle: 'Quoi',
+        type: 'choix',
+        options: TYPES_MOMENT,
+        valeur: sortie.type_moment ?? 'match',
+      },
+      { nom: 'titre', libelle: 'La sortie', type: 'text', valeur: sortie.titre ?? '', requis: true },
+      { nom: 'lieu', libelle: 'Où (facultatif)', type: 'text', valeur: sortie.lieu ?? '' },
+      { nom: 'note', libelle: 'Note', type: 'textarea', valeur: sortie.note ?? '' },
       {
         nom: 'photo',
         // Un champ fichier ne peut pas afficher son contenu actuel : le libellé
         // dit donc s'il y a déjà une photo, et ce qu'un nouveau fichier fera.
-        libelle: moment.photo_chemin
+        libelle: sortie.photo_chemin
           ? 'Remplacer la photo (laisser vide pour garder celle-ci)'
           : 'Ajouter une photo',
         type: 'file',
         accepte: 'image/*',
       },
-      { nom: 'oeuvre_finie', libelle: 'Œuvre finie', type: 'checkbox', valeur: moment.oeuvre_finie },
+      { nom: 'oeuvre_finie', libelle: 'Œuvre finie', type: 'checkbox', valeur: sortie.oeuvre_finie },
     ],
   });
 }
 
-// La fiche complète d'un moment. Elle ne sert plus qu'au Journal — l'accueil
-// est passé au mur de photos — donc le retrait y est toujours offert : c'est là
+// La fiche d'une sortie au Journal. Elle ne sert plus qu'ici — l'accueil est
+// passé au mur de photos — donc le retrait y est toujours offert : c'est là
 // qu'on gère.
-function carteMoment(moment, photos = {}) {
-  return `<li class="moment">${corpsMoment(moment, photos)}</li>`;
+//
+// Elle s'ouvre en grand au clic, comme une vignette du mur : une sortie SANS
+// photo n'a pas de vignette, et son bilan serait alors inatteignable.
+function carteMoment(sortie, photos = {}) {
+  return `<li class="moment moment-ouvrable" data-ouvrir-sortie="${echapper(sortie.id)}">${corpsMoment(
+    sortie,
+    photos,
+  )}</li>`;
 }
 
 // Le tirage est au hasard, mais il tient la journée : sans ça le mur se
@@ -480,27 +556,30 @@ function tirageDuJour(liste, jour) {
   return tirees;
 }
 
-// Les moments qui portent une photo dont l'adresse est déjà signée. Un moment
-// sans photo n'a rien à faire dans un mur de photos.
-function momentsIllustres(moments, photos) {
-  return moments.filter((moment) => moment.photo_chemin && photos[moment.photo_chemin]);
+// Les sorties VÉCUES qui portent une photo dont l'adresse est déjà signée. Une
+// sortie sans photo n'a rien à faire dans un mur de photos, et un événement à
+// venir non plus — le mur montre ce qui a été vécu.
+function momentsIllustres(evenements, photos) {
+  return sortiesVecues(evenements).filter(
+    (sortie) => sortie.photo_chemin && photos[sortie.photo_chemin],
+  );
 }
 
 // Le dessin d'un mur, une fois l'ordre décidé. Les deux murs du site — le
 // tirage de l'accueil et la frise complète du Journal — n'en diffèrent que par
 // cet ordre et par ce que la feuille de style laisse voir.
-function vignettes(moments, photos, classes = 'mur-photos') {
-  return `<ul class="${classes}">${moments
-    .map((moment) => {
-      const photo = photos[moment.photo_chemin];
-      // Un bouton, pas un lien vers le fichier : le clic ouvre le moment —
-      // son lieu, sa date, ses rencontres, sa note — et pas une image nue
-      // dans un onglet vide.
+function vignettes(sorties, photos, classes = 'mur-photos') {
+  return `<ul class="${classes}">${sorties
+    .map((sortie) => {
+      const photo = photos[sortie.photo_chemin];
+      // Un bouton, pas un lien vers le fichier : le clic ouvre la sortie — son
+      // lieu, sa date, ses rencontres, sa note, son bilan — et pas une image
+      // nue dans un onglet vide.
       return `
         <li>
-          <button type="button" data-ouvrir-moment="${echapper(moment.id)}"
-            aria-label="Ouvrir « ${echapper(titreDuMoment(moment))} »">
-            <img src="${echapper(photo)}" alt="${echapper(titreDuMoment(moment))}"
+          <button type="button" data-ouvrir-moment="${echapper(sortie.id)}"
+            aria-label="Ouvrir « ${echapper(titreDuMoment(sortie))} »">
+            <img src="${echapper(photo)}" alt="${echapper(titreDuMoment(sortie))}"
               loading="lazy" decoding="async">
           </button>
         </li>`;
@@ -508,15 +587,15 @@ function vignettes(moments, photos, classes = 'mur-photos') {
     .join('')}</ul>`;
 }
 
-const MUR_VIDE = `<p class="vide">Tes photos s'afficheront ici — joins-en une à ton prochain moment.</p>`;
+const MUR_VIDE = `<p class="vide">Tes photos s'afficheront ici — joins-en une à ta prochaine sortie.</p>`;
 
 // L'accueil ne montre plus des fiches de moments : il montre des photos. Une
 // frise sur une seule ligne sous les compteurs — la preuve de ce qui a été
 // vécu, pas son compte rendu. Le détail (lieu, rencontres, note) reste au
 // Journal. Dix sont montées ; la feuille de style en laisse voir cinq ou dix
 // selon la largeur.
-export function construireMurPhotos(moments, photos = {}, jour = versDateISO(), limite = 10) {
-  const avecPhoto = momentsIllustres(moments, photos);
+export function construireMurPhotos(evenements, photos = {}, jour = versDateISO(), limite = 10) {
+  const avecPhoto = momentsIllustres(evenements, photos);
   if (!avecPhoto.length) return MUR_VIDE;
 
   return vignettes(tirageDuJour(avecPhoto, jour).slice(0, limite), photos);
@@ -532,27 +611,33 @@ export function construireMurPhotos(moments, photos = {}, jour = versDateISO(), 
 function fenetreMoment(etat) {
   if (!etat.momentOuvert) return '';
 
-  const moment = etat.moments.find((candidat) => candidat.id === etat.momentOuvert);
-  if (!moment) return '';
+  const sortie = etat.evenements.find((candidat) => candidat.id === etat.momentOuvert);
+  if (!sortie) return '';
 
   const contenu = etat.editionMoment
-    ? `<h3 class="fenetre-titre">Modifier le moment</h3>${formulaireModifierMoment(moment)}`
-    : `<div class="moment moment-complet">${corpsMoment(moment, etat.photos, { fenetre: true })}</div>`;
+    ? `<h3 class="fenetre-titre">Modifier la sortie</h3>${formulaireModifierMoment(sortie)}`
+    : `<div class="moment moment-complet">${corpsMoment(sortie, etat.photos, {
+        fenetre: true,
+        preparations: etat.preparations,
+      })}</div>`;
 
-  return construireFenetre(titreDuMoment(moment), contenu);
+  return construireFenetre(titreDuMoment(sortie), contenu);
 }
 
-export function construireMurComplet(moments, photos = {}) {
-  const avecPhoto = momentsIllustres(moments, photos);
-  if (!avecPhoto.length) return MUR_VIDE;
-
-  const duPlusRecent = [...avecPhoto].sort(
+// Le plus récent d'abord — le Journal est l'archive, on y descend dans le temps.
+function duPlusRecent(sorties) {
+  return [...sorties].sort(
     (a, b) =>
-      String(b.date).localeCompare(String(a.date)) ||
+      String(b.date_debut).localeCompare(String(a.date_debut)) ||
       String(b.created_at).localeCompare(String(a.created_at)),
   );
+}
 
-  return vignettes(duPlusRecent, photos, 'mur-photos mur-complet');
+export function construireMurComplet(evenements, photos = {}) {
+  const avecPhoto = momentsIllustres(evenements, photos);
+  if (!avecPhoto.length) return MUR_VIDE;
+
+  return vignettes(duPlusRecent(avecPhoto), photos, 'mur-photos mur-complet');
 }
 
 // Le Journal : le fil des moments, et rien d'autre (décision de Noé, 13 août
@@ -561,43 +646,68 @@ export function construireMurComplet(moments, photos = {}) {
 // milieu des matchs couverts n'est pas du terrain. Un carnet de terrain se
 // remplit dehors ; ce qui se coche à l'écran remonte au dashboard du hub, qui
 // est fait pour ça, et se retire de là.
-export function construireCarnet(moments, photos = {}) {
-  if (!moments.length) {
-    return `<p class="vide">Ton premier moment s'inscrit ici — un match, un concert, une sortie.</p>`;
+export function construireCarnet(evenements, photos = {}) {
+  const sorties = sortiesVecues(evenements);
+  if (!sorties.length) {
+    return `<p class="vide">Ta première sortie s'inscrit ici — un match, un concert, une sortie.</p>`;
   }
 
-  const duPlusRecent = [...moments].sort(
-    (a, b) =>
-      String(b.date).localeCompare(String(a.date)) ||
-      String(b.created_at).localeCompare(String(a.created_at)),
-  );
-
-  return `<ul class="liste-carnet">${duPlusRecent.map((moment) => carteMoment(moment, photos)).join('')}</ul>`;
+  return `<ul class="liste-carnet">${duPlusRecent(sorties)
+    .map((sortie) => carteMoment(sortie, photos))
+    .join('')}</ul>`;
 }
 
 // La capture : deux champs suffisent, le reste attend qu'on ait envie. Ce qui
 // compte est qu'elle se remplisse debout, en sortant du stade.
-// `prefill` arrive quand l'invite du calendrier a été acceptée : la date et le
-// lieu de l'événement sont déjà là, il ne reste qu'à raconter.
+//
+// DEUX cas depuis la fusion, et ils ne demandent pas la même chose :
+//   — une sortie qui n'était pas au calendrier : elle y entre, déjà vécue, et
+//     il faut donc son nom et sa date ;
+//   — une sortie DÉJÀ au calendrier (l'invite acceptée) : elle porte son nom et
+//     sa date, il ne reste qu'à RACONTER — rencontres, photo, note. Redemander
+//     ce qui est déjà écrit serait un formulaire pour rien, et changer la date
+//     ici écraserait l'heure du match.
 function formulaireMoment(contacts, prefill = null) {
+  const surUnEvenement = Boolean(prefill?.evenement_id);
+  const titre = surUnEvenement ? `Raconter « ${prefill.titre} »` : 'Ajouter une sortie';
+
+  const champsDeLaSortie = surUnEvenement
+    ? []
+    : [
+        { nom: 'date', libelle: 'Quand', type: 'date', valeur: prefill?.date ?? versDateISO() },
+        {
+          nom: 'type_moment',
+          libelle: 'Quoi',
+          type: 'choix',
+          options: TYPES_MOMENT,
+          valeur: 'match',
+        },
+        {
+          nom: 'titre',
+          libelle: 'La sortie',
+          type: 'text',
+          valeur: prefill?.lieu ?? '',
+          requis: true,
+        },
+        { nom: 'lieu', libelle: 'Où (facultatif)', type: 'text' },
+      ];
+
   return construireFenetre(
-    'Ajouter un moment',
-    `<h3 class="fenetre-titre">Ajouter un moment</h3>
+    titre,
+    `<h3 class="fenetre-titre">${echapper(titre)}</h3>
      ${construireFormulaire({
        id: 'moment',
        action: 'ajouter-moment',
        bouton: 'Inscrire au carnet',
        // Dans une fenêtre, le titre est déjà dit : le formulaire se rend nu.
        avecPli: false,
-       // Venu de l'invite, le moment garde le lien dur vers son événement :
-       // c'est lui qui fait taire l'invite et interdit les doublons du bilan.
-       extra: prefill?.evenement_id
+       // La sortie déjà au calendrier voyage par son identifiant : c'est lui
+       // qui fait qu'on la marque vécue au lieu d'en créer une seconde.
+       extra: surUnEvenement
          ? `<input type="hidden" name="evenement_id" value="${echapper(prefill.evenement_id)}">`
          : '',
        champs: [
-         { nom: 'date', libelle: 'Quand', type: 'date', valeur: prefill?.date ?? versDateISO() },
-         { nom: 'type', libelle: 'Quoi', type: 'choix', options: TYPES_MOMENT, valeur: 'match' },
-         { nom: 'lieu', libelle: 'Événement ou lieu', type: 'text', valeur: prefill?.lieu ?? '' },
+         ...champsDeLaSortie,
          {
            nom: 'rencontres',
            libelle: "Qui j'ai rencontré (sépare par une barre oblique)",
@@ -853,25 +963,20 @@ function ecarterEvenement(id) {
 
 // Les sept derniers jours seulement : passé ce délai, l'invite n'est plus une
 // aide, c'est un reproche. Un jour déjà logué ne redemande rien.
-export function evenementsARattraper(evenements, moments, ecartes = [], reference = new Date()) {
+// Depuis la fusion, la question est simple : quels événements sont passés sans
+// avoir été marqués vécus ? Plus de rapprochement par date entre deux tables —
+// c'est la même ligne qui porte la sortie et son vécu.
+export function evenementsARattraper(evenements, ecartes = [], reference = new Date()) {
   const debut = versDateISO(ajouterJours(reference, -7));
-  const jaLogue = new Set(moments.map((moment) => moment.date));
-  // Le lien dur d'abord : un moment qui pointe son événement le règle pour de
-  // bon, quel que soit le jour où il a été noté. Le jour logué reste en second
-  // garde-fou, pour les moments notés sans lien.
-  const evenementsVecus = new Set(
-    moments.map((moment) => moment.evenement_id).filter(Boolean),
-  );
 
   return evenements
     .filter((evenement) => {
       const quand = new Date(evenement.date_debut);
       const jour = versDateISO(quand);
       return (
+        !evenement.vecu &&
         quand <= reference &&
         jour >= debut &&
-        !evenementsVecus.has(evenement.id) &&
-        !jaLogue.has(jour) &&
         !ecartes.includes(evenement.id)
       );
     })
@@ -880,7 +985,7 @@ export function evenementsARattraper(evenements, moments, ecartes = [], referenc
 
 function construireInvite(etat) {
   // Une seule à la fois : trois invites empilées, c'est une liste de reproches.
-  const [evenement] = evenementsARattraper(etat.evenements, etat.moments, etat.ecartes);
+  const [evenement] = evenementsARattraper(etat.evenements, etat.ecartes);
   if (!evenement) return '';
 
   return `
@@ -906,12 +1011,12 @@ function vueAccueil(etat) {
       ${construireInvite(etat)}
       <div class="carnet-entete">
         ${boutonCapture()}
-        ${construireCompteurs(etat.moments)}
+        ${construireCompteurs(sortiesVecues(etat.evenements))}
       </div>
       <!-- Le mur suit les compteurs sans titre au-dessus : dix photos n'ont
            besoin de personne pour dire ce qu'elles sont. Pas de porte vers le
            Journal non plus — il est dans la barre, comme Créer. -->
-      <div data-bloc="mur-photos">${construireMurPhotos(etat.moments, etat.photos)}</div>
+      <div data-bloc="mur-photos">${construireMurPhotos(etat.evenements, etat.photos)}</div>
     </section>
 
     <section class="bloc">
@@ -951,17 +1056,17 @@ function vueJournal(etat) {
       ${construireInvite(etat)}
       <div class="carnet-entete">
         ${boutonCapture()}
-        ${construireCompteurs(etat.moments)}
+        ${construireCompteurs(sortiesVecues(etat.evenements))}
       </div>
       <!-- Le même mur qu'à l'accueil, mais entier et dans l'ordre du temps :
            ici on cherche une photo qu'on a prise, on ne se laisse pas
            surprendre par un tirage. -->
-      <div data-bloc="mur-complet">${construireMurComplet(etat.moments, etat.photos)}</div>
+      <div data-bloc="mur-complet">${construireMurComplet(etat.evenements, etat.photos)}</div>
     </section>
 
     <section class="bloc">
       <h2>Le carnet de terrain</h2>
-      <div data-bloc="carnet">${construireCarnet(etat.moments, etat.photos)}</div>
+      <div data-bloc="carnet">${construireCarnet(etat.evenements, etat.photos)}</div>
     </section>
 
     <!-- La porte discrète vers les préparations : préparer et vivre sont les
@@ -1408,11 +1513,14 @@ export function dernierBilan(preparations, feuille) {
   );
 }
 
-// Le moment déjà logué pour cette sortie, s'il existe. Le lien dur ne vaut que
-// pour une feuille d'événement — une feuille de commande ou libre n'en a pas.
-export function momentDeLaFeuille(moments, feuille) {
+// La sortie de cette feuille, si elle est déjà au carnet. Depuis la fusion,
+// c'est l'événement lui-même qui le dit : `vecu`. Une feuille de commande n'a
+// pas d'événement — la case du bilan ne s'y offre qu'une fois, ce qui suffit à
+// interdire le doublon.
+export function momentDeLaFeuille(evenements, feuille) {
   if (!feuille.evenement_id) return null;
-  return moments.find((moment) => moment.evenement_id === feuille.evenement_id) ?? null;
+  const sortie = evenements.find((candidat) => candidat.id === feuille.evenement_id);
+  return sortie?.vecu ? sortie : null;
 }
 
 // Le bilan attend que la sortie soit vécue : avant sa date, la feuille dit
@@ -1434,7 +1542,7 @@ function blocBilan(etat, feuille) {
       </section>`;
   }
 
-  const dejaAuCarnet = momentDeLaFeuille(etat.moments, feuille);
+  const dejaAuCarnet = momentDeLaFeuille(etat.evenements, feuille);
   const proposerLeMoment = !feuille.bilan_date && !dejaAuCarnet;
 
   return `
@@ -2875,9 +2983,21 @@ const SOURCES = {
   objectifs: async () => ({ objectifs: await api.objectifsActifs({ projet: 'photo' }) }),
   publications: async () => ({ publications: await api.publicationsToutes('photo') }),
   taches: async () => ({ taches: await api.tachesDatees({ projet: 'photo' }) }),
-  // Tous les événements : la grille se promène dans le passé, et l'invite du
-  // Carnet y puise la semaine écoulée.
-  evenements: async () => ({ evenements: await api.evenementsTous({ projet: 'photo' }) }),
+  // Tous les événements, avec leur face vécue : la grille se promène dans le
+  // passé, l'invite du Carnet y puise la semaine écoulée, et le carnet lui-même
+  // n'a plus d'autre source depuis la fusion — les sorties vécues SONT des
+  // événements. D'où les rencontres et les photos qui voyagent avec.
+  evenements: async () => {
+    const evenements = await api.evenementsTous({ projet: 'photo', avecRencontres: true });
+    // Les photos vivent dans un bucket privé : leurs adresses se signent à la
+    // lecture, toutes ensemble.
+    const chemins = evenements.map((evenement) => evenement.photo_chemin).filter(Boolean);
+    return {
+      evenements,
+      photos: chemins.length ? await api.urlsDesPhotos(chemins) : {},
+      photosLe: Date.now(),
+    };
+  },
   contacts: async () => ({ contacts: await api.contactsTous() }),
   commandes: async () => ({ commandes: await api.commandesToutes() }),
   envois: async () => ({ envois: await api.envoisTous() }),
@@ -2885,17 +3005,6 @@ const SOURCES = {
   stats: async () => ({ stats: await api.statsHebdoTous() }),
   preparations: async () => ({ preparations: await api.preparationsToutes() }),
   modelesPrepa: async () => ({ modelesPrepa: await api.modelesPreparationTous() }),
-  moments: async () => {
-    const moments = await api.momentsTous();
-    // Les photos vivent dans un bucket privé : leurs adresses se signent à la
-    // lecture, toutes ensemble.
-    const chemins = moments.map((moment) => moment.photo_chemin).filter(Boolean);
-    return {
-      moments,
-      photos: chemins.length ? await api.urlsDesPhotos(chemins) : {},
-      photosLe: Date.now(),
-    };
-  },
 };
 
 // Ce dont chaque vue a besoin pour se dessiner — et rien de plus. Les onze
@@ -2905,8 +3014,11 @@ const SOURCES = {
 // Une clé qui manque ici, c'est un écran vide affiché à la place de données qui
 // existent : quand une vue gagne un bloc, sa ligne se relit.
 const BESOINS = {
-  accueil: ['moments', 'evenements', 'objectifs', 'publications', 'contacts'],
-  journal: ['moments', 'evenements', 'contacts'],
+  // L'accueil et le Journal montrent le vécu : c'est `evenements` qui le porte
+  // depuis la fusion, avec ses photos et ses rencontres. Les préparations
+  // viennent avec — la fiche d'une sortie montre son bilan.
+  accueil: ['evenements', 'objectifs', 'publications', 'contacts', 'preparations'],
+  journal: ['evenements', 'contacts', 'preparations'],
   creer: ['publications', 'stats'],
   banque: ['publications'],
   editorial: ['publications'],
@@ -2917,10 +3029,10 @@ const BESOINS = {
   reseau: ['contacts', 'envois', 'commandes', 'preparations', 'modelesPrepa'],
   passerelle: ['contacts', 'envois', 'modeles'],
   carnet: ['contacts', 'envois', 'modeles'],
-  // La feuille lit aussi le carnet : le bilan propose d'y inscrire le moment
-  // (moments pour ne jamais faire de doublon, contacts pour relier les
-  // rencontres, evenements pour hériter du type de moment).
-  preparations: ['preparations', 'modelesPrepa', 'moments', 'contacts', 'evenements'],
+  // La feuille lit aussi les sorties : le bilan propose d'inscrire celle-ci au
+  // carnet (l'événement dit s'il est déjà vécu et de quel type ; les contacts
+  // relient les rencontres).
+  preparations: ['preparations', 'modelesPrepa', 'contacts', 'evenements'],
   modeles: ['preparations', 'modelesPrepa'],
 };
 
@@ -2947,7 +3059,6 @@ export default {
   async monter(section, route) {
     const etat = {
       objectifs: [],
-      moments: [],
       publications: [],
       taches: [],
       evenements: [],
@@ -3036,9 +3147,9 @@ export default {
     const restaure = lireCache(CLE_CACHE);
     if (restaure) {
       if (Date.now() - (restaure.photosLe ?? 0) > SIGNATURE_UTILE) {
-        // Les moments partent avec leurs photos : des moments sans adresses
+        // Les événements partent avec leurs photos : des sorties sans adresses
         // valides, c'est le mur vide affiché à tort.
-        delete restaure.moments;
+        delete restaure.evenements;
         delete restaure.photos;
       }
       for (const [cle, valeur] of Object.entries(restaure)) {
@@ -3054,7 +3165,7 @@ export default {
     const aGarder = () => {
       const garde = {};
       for (const cle of affichables) garde[cle] = etat[cle];
-      if (affichables.has('moments')) {
+      if (affichables.has('evenements')) {
         garde.photos = etat.photos;
         garde.photosLe = etat.photosLe ?? 0;
       }
@@ -3343,7 +3454,7 @@ export default {
       }
 
       if (action === 'modifier-moment') {
-        const ancien = etat.moments.find((candidat) => candidat.id === champs.id);
+        const ancien = etat.evenements.find((candidat) => candidat.id === champs.id);
         const fichier = champs.photo;
         // La nouvelle photo part AVANT l'écriture : si l'envoi échoue, rien
         // n'est modifié et le formulaire reste ouvert, rempli.
@@ -3352,20 +3463,35 @@ export default {
             ? await api.televerserPhotoMoment(fichier)
             : null;
 
+        // L'HEURE DE LA SORTIE EST CONSERVÉE. Le carnet ne demande qu'un jour ;
+        // recomposer `date_debut` à minuit effacerait le coup d'envoi de 19 h.
+        const ancienDebut = new Date(ancien.date_debut);
+        const heure = ancienDebut.getHours() || ancienDebut.getMinutes()
+          ? `${String(ancienDebut.getHours()).padStart(2, '0')}:${String(
+              ancienDebut.getMinutes(),
+            ).padStart(2, '0')}`
+          : '00:00';
+
         const modifs = {
-          date: champs.date,
-          type: champs.type,
+          date_debut: new Date(`${champs.date}T${heure}`).toISOString(),
+          type_moment: champs.type_moment,
+          titre: champs.titre.trim(),
           lieu: champs.lieu?.trim() || null,
           note: champs.note?.trim() || null,
           oeuvre_finie: champs.oeuvre_finie === 'oui',
           ...(nouveauChemin ? { photo_chemin: nouveauChemin } : {}),
         };
 
-        const modifie = await api.modifierMoment(champs.id, modifs, titreDuMoment(modifs));
+        const modifie = await api.modifierSortie(
+          champs.id,
+          modifs,
+          titreDuMoment(modifs),
+          champs.date,
+        );
 
         // Les rencontres ne sont pas renvoyées par la mise à jour : on garde
         // celles qu'on avait, sans quoi la ligne « Rencontré » disparaîtrait.
-        etat.moments = etat.moments.map((candidat) =>
+        etat.evenements = etat.evenements.map((candidat) =>
           candidat.id === champs.id
             ? { ...candidat, ...modifie, rencontres: candidat.rencontres }
             : candidat,
@@ -3384,31 +3510,52 @@ export default {
       }
 
       if (action === 'ajouter-moment') {
-        // La photo part avant le moment : si le téléversement échoue, rien
+        // La photo part avant la sortie : si le téléversement échoue, rien
         // n'est écrit et le formulaire reste rempli.
         const fichier = champs.photo;
         const chemin =
           fichier instanceof File && fichier.size ? await api.televerserPhotoMoment(fichier) : null;
 
-        const moment = {
-          date: champs.date || versDateISO(),
-          type: champs.type,
-          lieu: champs.lieu?.trim() || null,
+        const vecu = {
           photo_chemin: chemin,
           note: champs.note?.trim() || null,
           oeuvre_finie: champs.oeuvre_finie === 'oui',
-          evenement_id: champs.evenement_id || null,
         };
+        const rencontres = relierRencontres(champs.rencontres, etat.contacts);
 
-        const { moment: logue } = await api.creerMoment({
-          moment,
-          rencontres: relierRencontres(champs.rencontres, etat.contacts),
-          titre: titreDuMoment(moment),
-        });
+        // Deux chemins depuis la fusion : la sortie était déjà au calendrier
+        // (l'invite) — elle gagne sa face vécue —, ou elle n'y était pas — elle
+        // y entre, déjà vécue.
+        let logue;
+        if (champs.evenement_id) {
+          const deja = etat.evenements.find((e) => e.id === champs.evenement_id);
+          ({ evenement: logue } = await api.marquerSortieVecue(champs.evenement_id, vecu, {
+            rencontres,
+            titre: titreDuMoment(deja ?? {}),
+          }));
+        } else {
+          const nouvelle = {
+            titre: champs.titre.trim(),
+            // Sans heure : minuit local, la convention du hub pour « pas
+            // d'heure » — la sortie est déjà passée, son horaire n'importe plus.
+            date_debut: new Date(`${champs.date || versDateISO()}T00:00`).toISOString(),
+            lieu: champs.lieu?.trim() || null,
+            type_moment: champs.type_moment,
+            ...vecu,
+          };
+          ({ evenement: logue } = await api.creerSortieVecue({
+            evenement: nouvelle,
+            rencontres,
+            titre: titreDuMoment(nouvelle),
+          }));
+        }
 
         if (chemin) Object.assign(etat.photos, await api.urlsDesPhotos([chemin]));
 
-        etat.moments = [logue, ...etat.moments];
+        etat.evenements = [
+          logue,
+          ...etat.evenements.filter((candidat) => candidat.id !== logue.id),
+        ];
         etat.prefillMoment = null;
         etat.captureOuverte = false;
         rendre();
@@ -3722,7 +3869,7 @@ export default {
         // Le moment ne s'inscrit que si la case l'a dit ET qu'il n'existe pas
         // déjà : le compteur « moments vécus » ne doit dire que du vrai, et un
         // renvoi du formulaire après un échec ne crée jamais de doublon.
-        const inscrire = champs.carnet === 'oui' && !momentDeLaFeuille(etat.moments, feuille);
+        const inscrire = champs.carnet === 'oui' && !momentDeLaFeuille(etat.evenements, feuille);
 
         // La photo part en premier, comme au carnet : si l'envoi échoue, rien
         // n'est écrit et le formulaire reste rempli.
@@ -3740,25 +3887,39 @@ export default {
         Object.assign(feuille, misAJour);
 
         if (inscrire) {
-          // Le type vient de l'événement (sa pastille à la création) ; une
-          // feuille de commande donne « autre », une feuille libre « match ».
-          const evenement = etat.evenements.find((e) => e.id === feuille.evenement_id);
-          const moment = {
-            date: feuille.date ?? versDateISO(),
-            type: evenement?.type_moment ?? (feuille.commande_id ? 'autre' : 'match'),
-            lieu: feuille.titre,
-            photo_chemin: chemin,
-            note: null,
-            oeuvre_finie: false,
-            evenement_id: feuille.evenement_id ?? null,
-          };
-          const { moment: logue } = await api.creerMoment({
-            moment,
-            rencontres: relierRencontres(champs.rencontres, etat.contacts),
-            titre: titreDuMoment(moment),
-          });
+          const rencontres = relierRencontres(champs.rencontres, etat.contacts);
+          const vecu = { photo_chemin: chemin, note: null, oeuvre_finie: false };
+          const existant = etat.evenements.find((e) => e.id === feuille.evenement_id);
+
+          // La feuille d'un ÉVÉNEMENT marque sa sortie vécue — la même ligne,
+          // rien de nouveau. Celle d'une commande (ou sans sortie) en crée une :
+          // il n'y a rien au calendrier à marquer.
+          let logue;
+          if (existant) {
+            ({ evenement: logue } = await api.marquerSortieVecue(existant.id, vecu, {
+              rencontres,
+              titre: titreDuMoment(existant),
+            }));
+          } else {
+            const nouvelle = {
+              titre: feuille.titre,
+              date_debut: new Date(`${feuille.date ?? versDateISO()}T00:00`).toISOString(),
+              // Une commande livrée n'est ni un match ni un concert.
+              type_moment: feuille.commande_id ? 'autre' : 'match',
+              ...vecu,
+            };
+            ({ evenement: logue } = await api.creerSortieVecue({
+              evenement: nouvelle,
+              rencontres,
+              titre: titreDuMoment(nouvelle),
+            }));
+          }
+
           if (chemin) Object.assign(etat.photos, await api.urlsDesPhotos([chemin]));
-          etat.moments = [logue, ...etat.moments];
+          etat.evenements = [
+            logue,
+            ...etat.evenements.filter((candidat) => candidat.id !== logue.id),
+          ];
         }
 
         rendre();
@@ -3845,7 +4006,11 @@ export default {
       if (evenement.target.closest('[data-ouvrir-capture]')) {
         etat.captureOuverte = true;
         rendre();
-        section.querySelector('#moment-lieu')?.focus();
+        // Le nom de la sortie est le premier champ ; venue de l'invite, la
+        // capture n'en a pas — le curseur va alors aux rencontres.
+        (
+          section.querySelector('#moment-titre') ?? section.querySelector('#moment-rencontres')
+        )?.focus();
         return;
       }
 
@@ -3907,8 +4072,20 @@ export default {
         return;
       }
 
-      // Une vignette du mur ouvre son moment : le lieu, la date, les
-      // rencontres, la note. La photo en grand est dedans.
+      // Une fiche du carnet s'ouvre en grand au clic — sauf par ses commandes :
+      // la croix retire, le « + » d'une rencontre lui ouvre une fiche. Chacun
+      // garde son geste, comme dans le CRM.
+      const ficheSortie = evenement.target.closest('[data-ouvrir-sortie]');
+      if (ficheSortie && !evenement.target.closest('a, button, input, select, textarea, label')) {
+        etat.momentOuvert = ficheSortie.dataset.ouvrirSortie;
+        etat.editionMoment = false;
+        rendre();
+        section.querySelector('.fenetre-fermer')?.focus();
+        return;
+      }
+
+      // Une vignette du mur ouvre sa sortie : le lieu, la date, les
+      // rencontres, la note, le bilan. La photo en grand est dedans.
       const vignette = evenement.target.closest('[data-ouvrir-moment]');
       if (vignette) {
         etat.momentOuvert = vignette.dataset.ouvrirMoment;
@@ -3948,10 +4125,12 @@ export default {
         const jour = section.querySelector('#cal-debut')?.value || etat.creationCal?.debut;
         const titre = section.querySelector('#cal-titre')?.value.trim() || '';
         etat.creationCal = null;
+        // `lieu` porte ici le NOM de la sortie : la capture le pose dans son
+        // champ « La sortie », qui est le titre de l'événement à naître.
         etat.prefillMoment = { date: jour, lieu: titre };
         etat.captureOuverte = true;
         rendre();
-        section.querySelector('#moment-lieu')?.focus();
+        section.querySelector('#moment-titre')?.focus();
         return;
       }
 
@@ -4251,9 +4430,11 @@ export default {
           (candidat) => candidat.id === loguerEvenement.dataset.loguerEvenement,
         );
         if (!passe) return;
+        // La sortie est déjà au calendrier : la capture ne redemandera ni son
+        // nom ni sa date, seulement ce qui s'y est vécu.
         etat.prefillMoment = {
           date: versDateISO(new Date(passe.date_debut)),
-          lieu: passe.titre,
+          titre: passe.titre,
           evenement_id: passe.id,
         };
         etat.captureOuverte = true;
@@ -4378,18 +4559,24 @@ export default {
         return;
       }
 
+      // « Retirer du carnet » ne supprime plus rien depuis la fusion : la
+      // sortie a bien eu lieu, elle reste au calendrier à sa date. C'est sa
+      // FACE VÉCUE qui s'efface — photo, note, œuvre finie, rencontres, et la
+      // victoire qui n'en était que le reflet.
       const supprimerMoment = evenement.target.closest('[data-supprimer-moment]');
       if (supprimerMoment) {
         const id = supprimerMoment.dataset.supprimerMoment;
-        const moment = etat.moments.find((candidat) => candidat.id === id);
-        if (!moment || !confirm(`Retirer « ${titreDuMoment(moment)} » du carnet ?`)) return;
+        const sortie = etat.evenements.find((candidat) => candidat.id === id);
+        if (!sortie || !confirm(`Retirer « ${titreDuMoment(sortie)} » du carnet ?`)) return;
         if (estProvisoire(id)) return;
-        // Retiré depuis sa propre fenêtre : elle n'a plus de sujet.
+        // Retirée depuis sa propre fenêtre : elle n'a plus de sujet.
         if (etat.momentOuvert === id) etat.momentOuvert = null;
-        await retirerAussitot(
-          etat.moments,
-          moment,
-          () => api.supprimerMoment(id, moment.photo_chemin),
+
+        const chemin = sortie.photo_chemin;
+        await modifierAussitot(
+          sortie,
+          { vecu: false, photo_chemin: null, note: null, oeuvre_finie: false, rencontres: [] },
+          () => api.retirerDuCarnet(id, chemin),
           { rendre, echouer: dire },
         );
         return;
@@ -4550,10 +4737,10 @@ export default {
       const ouvrirFiche = evenement.target.closest('[data-ouvrir-fiche]');
       if (ouvrirFiche) {
         const id = ouvrirFiche.dataset.ouvrirFiche;
-        const moment = etat.moments.find((candidat) =>
+        const sortie = etat.evenements.find((candidat) =>
           candidat.rencontres?.some((rencontre) => rencontre.id === id),
         );
-        const rencontre = moment?.rencontres.find((candidat) => candidat.id === id);
+        const rencontre = sortie?.rencontres.find((candidat) => candidat.id === id);
         if (!rencontre) return;
         ouvrirFiche.disabled = true;
         try {

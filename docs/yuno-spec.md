@@ -382,6 +382,28 @@ vivent dans le `localStorage`). Une seule à la fois.
 La page source des moments : tout s'y retrouve, s'y ajoute et s'y retire.
 L'accueil n'en montre qu'un tirage.
 
+**Un moment vécu EST un événement** (décision de Noé, 14 août 2026). Depuis que
+le bilan d'une préparation créait le moment, celui-ci ne faisait plus que
+recopier son événement — même date, même lieu, même type. Deux objets pour une
+seule chose. L'événement porte désormais ses deux faces :
+
+- **prévue** : sa date, son lieu, son `type_moment`, sa feuille de préparation ;
+- **vécue** : `vecu`, sa photo, sa note, « œuvre finie », ses rencontres.
+
+Trois conséquences, et elles tiennent l'intention :
+
+1. **`vecu` ne se pose que par un geste** — le bilan, l'invite acceptée, ou la
+   capture. **Jamais au passage de la date** : un match où Noé n'est pas allé
+   compterait, et les compteurs cesseraient de dire du vrai.
+2. **« Retirer du carnet » ne supprime plus rien** : la sortie a eu lieu, elle
+   reste au calendrier à sa date. Seule sa face vécue s'efface — photo, note,
+   œuvre finie, rencontres, et la victoire qui n'en était que le reflet.
+3. **Une sortie notée au vol entre au calendrier**, puisqu'elle en est un
+   événement. Ce qui a été vécu se retrouve donc là où on cherche les dates.
+
+**Le vocabulaire n'a pas bougé** : l'écran dit toujours « Moments vécus » et
+« Carnet de terrain ». C'est la donnée qui a fusionné, pas les mots.
+
 - **Le mur, entier** (décision de Noé, 12 août 2026). Sous les compteurs, le
   même mur qu'à l'accueil — mêmes emplacements en 3:4, même recadrage, mêmes
   colonnes — avec deux différences qui sont tout l'écart entre les deux pages :
@@ -394,15 +416,25 @@ L'accueil n'en montre qu'un tirage.
   est le même partout dans le hub. Le bouton « Ajouter un moment » vit à gauche
   des trois compteurs, sur l'accueil comme au Journal : l'action et son résultat
   se répondent. Elle demande une date, un type (match · concert · sortie ·
-  autre), et en facultatif l'événement ou le lieu, les rencontres, une photo,
-  une note, et la case « œuvre finie ». Deux champs suffisent — elle doit se
-  remplir debout, en sortant du stade, en moins de 30 secondes.
+  autre), le nom de la sortie, et en facultatif le lieu, les rencontres, une
+  photo, une note, et la case « œuvre finie ». Deux champs suffisent — elle doit
+  se remplir debout, en sortant du stade, en moins de 30 secondes.
+  **Venue de l'invite, elle ne demande QUE le vécu** (rencontres, photo, note) :
+  la sortie est déjà au calendrier, elle porte son nom et sa date — les
+  redemander serait un formulaire pour rien, et changer la date ici écraserait
+  l'heure du match.
+- **Une fiche s'ouvre en grand au clic**, depuis une vignette du mur comme
+  depuis sa carte du carnet — une sortie sans photo n'a pas de vignette, et son
+  bilan serait autrement inatteignable. La fenêtre montre le type, la date, le
+  nom, le lieu, les rencontres, la note, la photo en grand, **et le bilan de sa
+  préparation** avec une porte vers la feuille (demande de Noé, 14 août 2026).
 - **La photo se joint, elle ne se décrit pas.** Elle vit dans un bucket
   Supabase **privé** (`moments`) : le site et le dépôt sont publics, un bucket
   ouvert donnerait des liens recopiables par n'importe qui. On n'y accède que
-  par une URL signée d'une heure, refabriquée à chaque visite. Supprimer un
-  moment efface son fichier. L'ancienne colonne `photo_fiere` reste affichée si
-  elle porte une phrase écrite avant que la pièce jointe existe.
+  par une URL signée d'une heure, refabriquée à chaque visite. Retirer une
+  sortie du carnet efface son fichier. Le bucket garde son nom (`moments`) :
+  c'est un nom de stockage, pas un mot d'interface, et le renommer casserait
+  les chemins déjà écrits en base.
 - **Le fil, antéchronologique, ne porte que des moments** (13 août 2026). Il a
   d'abord mêlé les victoires nées ailleurs — une tâche terminée, une commande
   livrée, un jalon atteint. Noé les a fait retirer : une ligne « Publier trois
@@ -775,8 +807,8 @@ et ce paragraphe ne fait que dire à quoi sert chaque table.
 | `publications` | le calendrier éditorial. `date_prevue` NULL = banque d'idées. Colonnes Yuno : `pilier`, `preuve`, `pourquoi_moi` (NULL pour le FCH) |
 | `contacts` | le carnet réseau, et la couche Passerelle (`objectif`, `niveau`, `date_dernier_envoi`, `prochaine_action`, `prochaine_action_date`) |
 | `commandes` | le suivi, du devis au paiement. `client_id` relie au carnet |
-| `moments` | le Carnet de terrain — un moment vécu = une ligne. `photo_chemin` pointe le fichier dans le bucket privé `moments` ; `evenement_id` relie la sortie vécue à son événement (posé par le bilan d'une préparation ou par l'invite) |
-| `rencontres` | qui a été rencontré, à quel moment. `contact_id` facultatif |
+| `evenements` | **une sortie, deux faces** — prévue (date, lieu, `type_moment`) et vécue (`vecu`, `photo_chemin`, `note`, `oeuvre_finie`). C'est le Carnet de terrain depuis la fusion du 14 août 2026 ; la table `moments` a disparu |
+| `rencontres` | qui a été rencontré, à quelle sortie (`evenement_id`). `contact_id` facultatif |
 | `journal_envois` | un envoi = une ligne. **Aucune colonne « répondu »** |
 | `stats_hebdo` | un rendez-vous = une ligne. `reponse_rituelle` est NOT NULL |
 | `modeles_messages` | la bibliothèque de messages à personnaliser |

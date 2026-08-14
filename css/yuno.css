@@ -232,7 +232,7 @@ body[data-espace="yuno"] #vue h3 {
    titres. Ce qui l'entoure (étiquettes, dates, statuts, notes) reste en Gilroy.
    Un romain de labeur se lit plus petit qu'un sans-serif : un cran au-dessus
    du Gilroy qu'il remplace. */
-body[data-espace="yuno"] .moment-lieu,
+body[data-espace="yuno"] .moment-titre,
 body[data-espace="yuno"] .pub-titre,
 body[data-espace="yuno"] .contact-nom,
 body[data-espace="yuno"] .modele-titre {
@@ -241,7 +241,7 @@ body[data-espace="yuno"] .modele-titre {
   font-weight: 400;
 }
 
-body[data-espace="yuno"] .moment-lieu,
+body[data-espace="yuno"] .moment-titre,
 body[data-espace="yuno"] .pub-titre,
 body[data-espace="yuno"] .contact-nom {
   font-size: 1.125rem;
@@ -602,12 +602,45 @@ body[data-espace="yuno"] .portes {
    vient chercher. Le type du moment reste en étiquette neutre. */
 .etiquette-oeuvre { color: var(--accent); border-color: var(--accent); }
 
-.moment-lieu {
+/* Le nom de la sortie — c'est le titre de l'événement depuis la fusion du
+   14 août 2026. Le lieu passe dessous, en second, et ne s'écrit que s'il dit
+   autre chose que le titre. */
+.moment-titre {
   display: block;
   width: 100%;
   font-size: 1.0625rem;
   font-weight: 600;
 }
+
+.moment-lieu {
+  display: block;
+  width: 100%;
+  margin-top: 2px;
+  font-size: 0.875rem;
+  color: var(--texte-discret);
+}
+
+/* Le bilan de la préparation, dans la fiche de la sortie : ce qui a été
+   préparé et ce qui a été vécu sont deux faces d'une même chose, et c'est ici
+   qu'on vient les relire. Un filet gris chaud, comme tout ce qui accompagne. */
+.sortie-bilan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-4);
+  width: 100%;
+  margin-top: var(--espace-12);
+  padding-left: var(--espace-12);
+  border-left: 2px solid var(--gris-chaud-trait);
+  font-size: 0.875rem;
+}
+
+.sortie-bilan-ligne {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sortie-bilan .lien-discret { align-self: flex-start; }
 
 .moment-rencontres {
   display: flex;
@@ -1675,3 +1708,10 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 
 .liste-choix-modeles li:last-child .choix-modele { border-bottom: none; }
 .liste-choix-modeles .choix-modele:hover { background: var(--fond); }
+
+/* Une fiche du carnet s'ouvre en grand au clic — c'est le seul chemin vers le
+   bilan d'une sortie sans photo, qui n'a pas de vignette au mur. Le curseur le
+   dit ; ses propres boutons (la croix, le « + » d'une rencontre) gardent leur
+   geste, comme dans le CRM. */
+.moment-ouvrable { cursor: pointer; }
+.moment-ouvrable:hover { border-color: var(--gris-chaud-trait); }

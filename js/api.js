@@ -432,43 +432,43 @@ export async function supprimerPublication(id) {
 }
 
 // --- Le Carnet de terrain (Yuno) ---------------------------------------------
-// Les moments vécus : matchs couverts, concerts, sorties. Les compteurs de
-// l'accueil s'en déduisent — rien n'est stocké, des faits accumulés ne peuvent
-// que monter.
+// Une sortie vécue EST un événement (fusion du 14 août 2026) : matchs
+// couverts, concerts, sorties. `vecu` dit qu'on y était, et il ne se pose que
+// par un geste — jamais par le temps qui passe. Les compteurs de l'accueil s'en
+// déduisent : rien n'est stocké, des faits accumulés ne peuvent que monter.
 
-export async function momentsTous() {
+// Les rencontres d'une sortie, insérées ensemble. Rendues telles quelles pour
+// que l'écran les affiche sans relire la table.
+async function poserLesRencontres(evenementId, rencontres) {
+  if (!rencontres.length) return [];
   return verifier(
     await client
-      .from('moments')
-      .select('*, rencontres(id, nom, contact_id)')
-      .order('date', { ascending: false })
-      .order('created_at', { ascending: false }),
+      .from('rencontres')
+      .insert(
+        rencontres.map(({ nom, contact_id = null }) => ({
+          evenement_id: evenementId,
+          nom,
+          contact_id,
+        })),
+      )
+      .select(),
   );
 }
 
-// Loguer un moment crée sa victoire : dans ce système, une victoire EST un
-// moment vécu. Elle remonte au dashboard du hub, au même rang que les autres.
-// Le titre est fabriqué par l'appelant : le vocabulaire appartient à l'écran.
-export async function creerMoment({ moment, rencontres = [], titre }) {
+// Inscrire au carnet une sortie qui n'était PAS au calendrier : elle y entre
+// par la même occasion, déjà vécue. C'est la capture du Journal.
+// Le titre de la victoire est fabriqué par l'appelant : le vocabulaire
+// appartient à l'écran.
+export async function creerSortieVecue({ evenement, rencontres = [], titre }) {
   const cree = verifier(
-    await client.from('moments').insert(moment).select().single(),
+    await client
+      .from('evenements')
+      .insert({ ...evenement, projet: 'photo', vecu: true })
+      .select()
+      .single(),
   );
 
-  const lignes = rencontres.length
-    ? verifier(
-        await client
-          .from('rencontres')
-          .insert(
-            rencontres.map(({ nom, contact_id = null }) => ({
-              moment_id: cree.id,
-              nom,
-              contact_id,
-            })),
-          )
-          .select(),
-      )
-    : [];
-
+  const lignes = await poserLesRencontres(cree.id, rencontres);
   const victoire = await ajouterVictoire({
     projet: 'photo',
     titre,
@@ -476,7 +476,31 @@ export async function creerMoment({ moment, rencontres = [], titre }) {
     source_id: cree.id,
   });
 
-  return { moment: { ...cree, rencontres: lignes }, victoire };
+  return { evenement: { ...cree, rencontres: lignes }, victoire };
+}
+
+// Inscrire au carnet une sortie DÉJÀ au calendrier : le bilan d'une
+// préparation, ou l'invite acceptée. L'événement ne bouge pas de place ; il
+// gagne sa face vécue. Une victoire naît, comme pour toute sortie vécue.
+export async function marquerSortieVecue(id, champs, { rencontres = [], titre }) {
+  const misAJour = verifier(
+    await client
+      .from('evenements')
+      .update({ ...champs, vecu: true })
+      .eq('id', id)
+      .select()
+      .single(),
+  );
+
+  const lignes = await poserLesRencontres(id, rencontres);
+  const victoire = await ajouterVictoire({
+    projet: 'photo',
+    titre,
+    source: 'moment',
+    source_id: id,
+  });
+
+  return { evenement: { ...misAJour, rencontres: lignes }, victoire };
 }
 
 // --- Les photos des moments --------------------------------------------------
@@ -565,46 +589,44 @@ export async function urlsDesPhotos(chemins) {
   );
 }
 
-// Corriger un moment déjà logué : la date, le type, le lieu, la note, la case
-// « œuvre finie ». Ni la photo ni les rencontres — l'une vit dans le stockage,
-// les autres dans leur propre table ; elles demandent chacune leur geste.
-// Le titre de la victoire est le reflet du moment : il suit, sinon le dashboard
-// du hub garderait l'ancien nom pour toujours.
-export async function modifierMoment(id, champs, titre) {
+// Corriger une sortie vécue : sa date, son type, son lieu, sa note, la case
+// « œuvre finie », sa photo. C'est un événement — le titre de la victoire est
+// son reflet et suit, sinon le dashboard du hub garderait l'ancien nom pour
+// toujours. `date` est celle de la victoire (une date nue), tirée du début.
+export async function modifierSortie(id, champs, titre, dateISO) {
   const modifie = verifier(
-    await client.from('moments').update(champs).eq('id', id).select().single(),
+    await client.from('evenements').update(champs).eq('id', id).select().single(),
   );
 
   const { error } = await client
     .from('victoires')
-    .update({ titre, date: champs.date })
+    .update({ titre, date: dateISO })
     .eq('source', 'moment')
     .eq('source_id', id);
-  if (error) console.error('Victoire du moment non mise à jour', error);
+  if (error) console.error('Victoire de la sortie non mise à jour', error);
 
   return modifie;
 }
 
-// Effacer un seul fichier du stockage, sans toucher au moment. Sert quand une
+// Effacer un seul fichier du stockage, sans toucher à la sortie. Sert quand une
 // photo en remplace une autre : l'ancienne n'est plus référencée par personne.
+// Le bucket s'appelle toujours `moments` — c'est un nom de stockage, pas un mot
+// d'interface, et le renommer casserait les chemins déjà écrits en base.
 export async function supprimerPhotoMoment(chemin) {
   const { error } = await client.storage.from('moments').remove([chemin]);
   if (error) console.error('Ancienne photo non supprimée du stockage', error);
 }
 
-export async function supprimerMoment(id, chemin = null) {
-  // La photo part avec son moment : personne d'autre ne s'en sert.
+// Retirer une sortie DU CARNET, sans la retirer du calendrier (fusion du
+// 14 août 2026). C'est tout l'intérêt de la fusion : l'événement a eu lieu, il
+// reste à sa date ; seule sa face vécue s'efface — la photo, la note, l'œuvre
+// finie, les rencontres, et la victoire qui n'en était que le reflet.
+export async function retirerDuCarnet(id, chemin = null) {
   if (chemin) {
     const { error } = await client.storage.from('moments').remove([chemin]);
     if (error) console.error('Photo non supprimée du stockage', error);
   }
 
-  return supprimerLigneMoment(id);
-}
-
-async function supprimerLigneMoment(id) {
-  // La victoire d'un moment n'est que son reflet au dashboard : elle part avec
-  // lui. Les rencontres suivent d'elles-mêmes (ON DELETE CASCADE).
   const { error: erreurVictoire } = await client
     .from('victoires')
     .delete()
@@ -612,8 +634,20 @@ async function supprimerLigneMoment(id) {
     .eq('source_id', id);
   if (erreurVictoire) throw erreurVictoire;
 
-  const { error } = await client.from('moments').delete().eq('id', id);
-  if (error) throw error;
+  const { error: erreurRencontres } = await client
+    .from('rencontres')
+    .delete()
+    .eq('evenement_id', id);
+  if (erreurRencontres) throw erreurRencontres;
+
+  return verifier(
+    await client
+      .from('evenements')
+      .update({ vecu: false, photo_chemin: null, note: null, oeuvre_finie: false })
+      .eq('id', id)
+      .select()
+      .single(),
+  );
 }
 
 // Une rencontre notée au vol devient une fiche du carnet : la photo est un pont
@@ -947,8 +981,14 @@ export async function supprimerItemModele(id) {
 // faut tout, pas seulement ce qui reste à vivre. C'est ce qui distingue une
 // grille d'une liste de rappels — et sans ça, un événement posé sur aujourd'hui
 // à minuit disparaissait au rechargement.
-export async function evenementsTous({ projet = null } = {}) {
-  let requete = client.from('evenements').select('*').order('date_debut');
+// `avecRencontres` : le site Yuno lit ses événements avec leur face vécue
+// complète — une sortie vécue EST un événement depuis la fusion, et le carnet
+// n'a donc plus de table à lui. Les autres espaces s'en passent.
+export async function evenementsTous({ projet = null, avecRencontres = false } = {}) {
+  let requete = client
+    .from('evenements')
+    .select(avecRencontres ? '*, rencontres(id, nom, contact_id)' : '*')
+    .order('date_debut');
   if (projet) requete = requete.eq('projet', projet);
   return verifier(await requete);
 }
