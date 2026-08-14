@@ -1687,8 +1687,14 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
    mur qu'on ne parcourt plus. Chaque ligne dit quand, quoi, et trois marques ;
    le clic ouvre la fiche entière — le même geste que la banque d'idées et le
    réseau. `.bloc li` est donc annulé, barre de projet comprise. */
+/* `row-gap` à zéro pour que les filets se suivent sans trou — mais SURTOUT PAS
+   `gap`, qui vaut pour les deux axes : sur grand écran la liste passe en trois
+   colonnes (règle du hub), et les lignes se touchaient alors bord à bord. Le
+   nombre de rencontres d'une colonne venait coller à la date de la suivante.
+   32 px les séparent (demande de Noé, 14 août 2026). */
 .bloc .liste-carnet {
-  gap: 0;
+  row-gap: 0;
+  column-gap: var(--espace-32);
   list-style: none;
   margin: 0;
   padding: 0;
@@ -1727,10 +1733,12 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 
 .sortie-ligne:hover .sortie-ligne-titre { color: var(--accent); }
 
-/* La date en chiffres, largeur fixe : les lignes s'alignent, et l'œil descend
-   la colonne des dates sans accrocher. */
+/* La date garde une largeur minimale : « 05 août » et « 16 mai » n'ont pas la
+   même longueur, et sans elle les titres partiraient chacun de son bord. L'œil
+   doit pouvoir descendre la colonne des titres sans accrocher. */
 .sortie-ligne-quand {
   flex: none;
+  min-width: 5.25rem;
   font-size: 0.8125rem;
   color: var(--texte-discret);
 }

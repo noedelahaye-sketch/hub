@@ -493,7 +493,13 @@ Trois conséquences, et elles tiennent l'intention :
   le carnet est fait pour s'allonger, et cinquante sorties en cinquante cartes
   deviennent un mur qu'on ne parcourt plus. Une ligne dit la date, le nom de la
   sortie et trois marques minuscules — le type, une photo jointe, le nombre de
-  rencontres, plus « Œuvre » quand il y en a une. Le titre se coupe plutôt que
+  rencontres, plus « Œuvre » quand il y en a une. **La date s'écrit en toutes
+  lettres pour l'année en cours** (« 05 août ») **et en chiffres pour les années
+  d'avant** (« 31/12/25 ») : dans l'année courante l'année ne dit rien et une
+  date lisible vaut mieux ; passé le 31 décembre elle devient l'information
+  principale, et la forme chiffrée la porte sans allonger la ligne. La police
+  suit les trois leviers — Geist Mono est pour ce qui se lit comme un code, pas
+  pour « 05 août », qui reste en Gilroy. Le titre se coupe plutôt que
   de passer à la ligne : une liste qu'on parcourt garde une hauteur constante.
   **Le clic ouvre la fiche entière**, comme la banque d'idées et le réseau, et
   c'est là que vivent le crayon et « Retirer du carnet » — une croix par ligne,

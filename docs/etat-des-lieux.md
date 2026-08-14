@@ -333,6 +333,20 @@ zéro erreur en console.
   **Mesuré** : 13 sorties tiennent en 548 px, soit 41 px par ligne contre une
   carte de plusieurs lignes chacune.
 
+- **La date de la ligne s'écrit** (demande de Noé) : « 05 août » pour l'année en
+  cours, « 31/12/25 » pour les précédentes — et la classe `.chiffre` ne suit que
+  la seconde forme, la règle typographique réservant Geist Mono à ce qui se lit
+  comme un code. `quandDeLaLigne(jour, reference)` est exportée et prend sa
+  référence en paramètre : la bascule se vérifie sans dépendre de l'horloge.
+- **32 px entre les colonnes de la liste, sur ordinateur** (demande de Noé). La
+  cause était à moi : `gap: 0`, posé pour que les filets se suivent sans trou,
+  vaut pour LES DEUX AXES — et sur grand écran la liste passe en trois colonnes
+  (règle du hub). Les lignes se touchaient donc bord à bord, et le nombre de
+  rencontres d'une colonne venait coller à la date de la suivante. `row-gap: 0`
+  + `column-gap: var(--espace-32)`. La colonne de date gagne au passage une
+  `min-width` : sans elle, « 05 août » et « 16 mai » faisaient partir chaque
+  titre de son propre bord.
+
 **Deux pièges, tous deux trouvés en vérifiant plutôt qu'en relisant :**
 
 1. **La ligne étant devenue un `<button>`, plus aucune fiche ne s'ouvrait.** Le

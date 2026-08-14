@@ -550,17 +550,38 @@ const MARQUE_GENS = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none"
 // marques — et le clic ouvre la fiche entière, comme la banque d'idées et le
 // réseau le font déjà. Le retrait vit dans la fenêtre : une croix par ligne,
 // sur cinquante lignes, c'est cinquante occasions de se tromper.
-function ligneCarnet(sortie, photos = {}) {
+// La date d'une ligne du carnet. **Écrite en toutes lettres pour l'année en
+// cours** — « 05 août » — et **en chiffres pour les années d'avant** —
+// « 05/08/25 » (demande de Noé, 14 août 2026). C'est l'année qui manque qui
+// décide : dans l'année courante elle ne dit rien, et une date lisible vaut
+// mieux ; passé le 31 décembre, elle devient l'information principale, et la
+// forme chiffrée la porte sans allonger la ligne.
+//
+// La police suit la règle des trois leviers : Geist Mono (`.chiffre`) est pour
+// ce qui se lit comme un code, pas pour une date en toutes lettres — « 05 août »
+// est une phrase, elle reste en Gilroy.
+export function quandDeLaLigne(jour, reference = new Date()) {
+  const memeAnnee = jour.getFullYear() === reference.getFullYear();
+  return {
+    texte: memeAnnee
+      ? jour.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long' })
+      : jour.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' }),
+    enChiffres: !memeAnnee,
+  };
+}
+
+function ligneCarnet(sortie, photos = {}, reference = new Date()) {
   const rencontres = sortie.rencontres?.length ?? 0;
   const aUnePhoto = Boolean(sortie.photo_chemin && photos[sortie.photo_chemin]);
   const jour = depuisDateISO(jourDeLaSortie(sortie));
+  const quand = quandDeLaLigne(jour, reference);
 
   return `
     <li>
       <button type="button" class="sortie-ligne" data-ouvrir-sortie="${echapper(sortie.id)}"
         aria-label="Ouvrir « ${echapper(titreDuMoment(sortie))} »">
-        <span class="sortie-ligne-quand chiffre">${echapper(
-          jour.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' }),
+        <span class="sortie-ligne-quand${quand.enChiffres ? ' chiffre' : ''}">${echapper(
+          quand.texte,
         )}</span>
         <span class="sortie-ligne-titre">${echapper(sortie.titre ?? titreDuMoment(sortie))}</span>
         <span class="sortie-ligne-marques">
@@ -696,14 +717,14 @@ export function construireMurComplet(evenements, photos = {}) {
 // milieu des matchs couverts n'est pas du terrain. Un carnet de terrain se
 // remplit dehors ; ce qui se coche à l'écran remonte au dashboard du hub, qui
 // est fait pour ça, et se retire de là.
-export function construireCarnet(evenements, photos = {}) {
+export function construireCarnet(evenements, photos = {}, reference = new Date()) {
   const sorties = sortiesVecues(evenements);
   if (!sorties.length) {
     return `<p class="vide">Ta première sortie s'inscrit ici — un match, un concert, une sortie.</p>`;
   }
 
   return `<ul class="liste-carnet">${duPlusRecent(sorties)
-    .map((sortie) => ligneCarnet(sortie, photos))
+    .map((sortie) => ligneCarnet(sortie, photos, reference))
     .join('')}</ul>`;
 }
 
