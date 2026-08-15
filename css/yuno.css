@@ -1180,74 +1180,11 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   border-radius: var(--rayon-carte);
 }
 
-/* --- Le rendez-vous stats ---------------------------------------------------
-   Six jours sur sept, cette section ne montre AUCUN chiffre de réseau : un
-   compte à rebours, et la porte fermée. C'est tout l'intérêt. */
-
-.rdv-ferme,
-.rdv-ouvert {
-  padding: var(--espace-16);
-  background: var(--fond-carte);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-carte);
-}
-
-.rdv-attente { margin: 0 0 var(--espace-8); font-size: 0.9375rem; }
-.rdv-attente strong { color: var(--accent); font-weight: 600; }
-.rdv-ferme p.discret { margin: 0; font-size: 0.875rem; }
-
-.rdv-reglage {
-  display: flex;
-  align-items: center;
-  gap: var(--espace-8);
-  margin-top: var(--espace-16);
-  padding-top: var(--espace-12);
-  font-size: 0.75rem;
-  border-top: 1px solid var(--bordure);
-}
-
-.rdv-reglage select {
-  margin: 0;
-  padding: var(--espace-4) var(--espace-8);
-  font-size: 0.875rem;
-  font-family: inherit;
-  color: var(--texte);
-  background: var(--fond);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-controle);
-}
-
-.rdv-historique {
-  display: grid;
-  gap: var(--espace-16);
-  margin-top: var(--espace-16);
-}
-
-@media (min-width: 45rem) {
-  .rdv-historique { grid-template-columns: repeat(2, 1fr); }
-}
-
-/* Une courbe par mesure : deux échelles sur un même axe ne se comparent pas.
-   Trait fin, points discrets, aucun quadrillage — on lit une tendance, pas un
-   tableau de bord. */
-.courbe { margin: 0; }
-
-.courbe figcaption {
-  margin-bottom: var(--espace-4);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--texte-discret);
-}
-
-.courbe-dessin { display: block; width: 100%; height: auto; }
-.courbe-trait { stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.courbe-point { fill: var(--accent); }
-
-/* Les bornes portent les chiffres ; le texte reste en encre, jamais en couleur
-   de série. */
-.courbe-bornes { display: block; margin-top: var(--espace-4); font-size: 0.75rem; }
+/* Le rendez-vous stats et ses courbes ont été retirés le 15 août 2026 (demande
+   de Noé : « j'en trouve pas le besoin pour le moment, et surtout pas sur cette
+   forme »). La table `stats_hebdo` reste en base — rien n'y est détruit — et
+   `js/perso.js` garde sa propre courbe d'humeur, qui ne partageait pas ces
+   styles. Voir docs/yuno-spec.md, §4. */
 
 /* --- L'invite à loguer un moment -------------------------------------------- */
 

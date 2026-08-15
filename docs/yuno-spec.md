@@ -23,7 +23,8 @@ confort :
 1. **Le succès se mesure en moments vécus** — matchs couverts, rencontres,
    œuvres finies. Les vues sont une donnée, jamais un verdict.
 2. **Les réseaux sont une vitrine, pas une résidence** — on dépose l'œuvre, on
-   repart. Les stats ont un rendez-vous hebdomadaire, jamais un fil continu.
+   repart. Les stats avaient un rendez-vous hebdomadaire, jamais un fil continu ;
+   depuis le 15 août 2026 elles n'ont plus d'écran du tout (§4).
 3. **L'argent est une conséquence, pas un juge.**
 4. **L'aller-vers se muscle par micro-doses graduées** — on mesure l'effort
    (les messages envoyés), jamais le résultat (les réponses reçues).
@@ -38,7 +39,8 @@ valeur sur des chiffres ? est-ce que ça pousse vers les gens ou permet de les
 reste l'auteur ?
 
 **Conséquences dures, à ne pas défaire :** aucune métrique sociale (vues,
-abonnés, portée) hors du rendez-vous stats ; aucun taux de réponse ni compte de
+abonnés, portée) **nulle part** — le rendez-vous stats qui en était la seule
+exception a été retiré le 15 août 2026 ; aucun taux de réponse ni compte de
 silences nulle part ; pas de streak, pas de rouge, pas de « raté ».
 
 ---
@@ -663,27 +665,20 @@ rien de convenable. **À la souris seulement** : au doigt, capturer le glissemen
 entrerait en conflit avec le défilement de la page ; sur téléphone on consulte,
 on programme au bureau.
 
-### `#yuno/creer` — le rendez-vous stats (en bas de l'écran)
 
-**On ne supprime pas un réflexe, on le remplace par un rituel.** Les chiffres
-des réseaux n'existent nulle part ailleurs dans le site.
+### Le rendez-vous stats — retiré le 15 août 2026
 
-- **Six jours sur sept, la section ne montre AUCUN chiffre** : ni courbe, ni
-  aperçu, ni total. Un compte à rebours (« Rendez-vous dimanche — dans 4 jours »)
-  et le réglage du jour, rien d'autre. Le verrou est côté client, et c'est
-  assumé : le système n'empêche pas la triche, il assèche le réflexe.
-- **Le jour J** : un formulaire de cinq minutes — abonnés, portée de la semaine,
-  top post — qui **ne s'enregistre pas sans la question rituelle** : « est-ce que
-  ça change quelque chose à mes actions cette semaine ? ». « Non » est une
-  réponse acceptée ; l'absence de réponse, non. C'est elle qui transforme la
-  surveillance en pilotage.
-- **L'historique n'est visible que pendant le rendez-vous.** Une courbe par
-  mesure — **jamais deux échelles sur un même axe**, des abonnés et une portée
-  hebdomadaire ne se comparent pas. Trait fin, points discrets, pas de
-  quadrillage, et les chiffres écrits en encre plutôt qu'en couleur de série.
-  La courbe se dessine à partir du deuxième rendez-vous.
-- Le jour du rendez-vous vit dans le `localStorage` (défaut : dimanche), comme
-  l'ordre des colonnes. C'est un réglage personnel, pas une donnée.
+Il a existé du 12 au 15 août : un jour par semaine, les chiffres des réseaux
+(abonnés, portée, top post) et une question rituelle — « est-ce que ça change
+quelque chose à mes actions cette semaine ? » — ; le reste du temps, un compte à
+rebours et rien d'autre. **Noé l'a retiré** : « j'en trouve pas le besoin pour
+le moment, et surtout pas sur cette forme. »
+
+Ce qui NE change pas : le principe qui l'avait fait naître. Les réseaux sont une
+vitrine, pas une résidence ; **aucune métrique sociale n'apparaît nulle part
+dans le site**, et c'est maintenant vrai sans exception. La table `stats_hebdo`
+reste en base avec ses lignes — le besoin peut revenir sous une autre forme, et
+rien ne justifie de détruire des relevés pour retirer un écran.
 
 ### `#yuno/reseau` — le carnet réseau *(construit)*
 

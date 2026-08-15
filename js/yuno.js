@@ -859,161 +859,6 @@ const PLUS_PAR_VUE = {
 // réglage qu'on change le moins n'a pas à occuper la première place.
 const reglagesDuPlus = (vue) => PLUS_PAR_VUE[vue] ?? { nature: 'tache' };
 
-// --- Le rendez-vous stats ----------------------------------------------------
-// On ne supprime pas un réflexe, on le remplace par un rituel. Les chiffres des
-// réseaux n'existent nulle part ailleurs dans le site : ici, un jour par
-// semaine, et le reste du temps un compte à rebours et rien d'autre.
-
-const JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-
-const CLE_JOUR_RDV = 'yuno-jour-rendez-vous';
-
-export function jourRendezVousEnregistre() {
-  try {
-    const brut = localStorage.getItem(CLE_JOUR_RDV);
-    const jour = Number(brut);
-    return brut !== null && jour >= 0 && jour <= 6 ? jour : 0;
-  } catch {
-    return 0;
-  }
-}
-
-function retenirJourRendezVous(jour) {
-  try {
-    localStorage.setItem(CLE_JOUR_RDV, String(jour));
-  } catch {
-    // Navigation privée : le réglage tient pour la visite.
-  }
-}
-
-export function estJourDeRendezVous(jour, reference = new Date()) {
-  return reference.getDay() === jour;
-}
-
-// 0 le jour même, 7 jamais : le rendez-vous suivant est toujours dans la semaine.
-export function joursAvantRendezVous(jour, reference = new Date()) {
-  return (jour - reference.getDay() + 7) % 7;
-}
-
-// Une courbe par mesure, jamais deux échelles sur un même axe : des abonnés et
-// une portée hebdomadaire ne se comparent pas. Une seule série, donc pas de
-// légende — le titre la nomme. Deux points minimum, sinon il n'y a pas de
-// courbe, juste un chiffre.
-export function construireCourbe(stats, cle, titre) {
-  const points = stats.filter((ligne) => ligne[cle] !== null && ligne[cle] !== undefined);
-
-  if (points.length < 2) {
-    return `<p class="vide">${echapper(titre)} — la courbe se dessine à partir du deuxième rendez-vous.</p>`;
-  }
-
-  const largeur = 320;
-  const hauteur = 72;
-  const marge = 10;
-  const valeurs = points.map((ligne) => Number(ligne[cle]));
-  const bas = Math.min(...valeurs);
-  const haut = Math.max(...valeurs);
-  const etendue = haut - bas || 1;
-
-  const abscisse = (index) => marge + (index * (largeur - 2 * marge)) / (points.length - 1);
-  const ordonnee = (valeur) =>
-    hauteur - marge - ((valeur - bas) / etendue) * (hauteur - 2 * marge);
-
-  const chemin = points
-    .map((ligne, index) => `${index ? 'L' : 'M'}${abscisse(index).toFixed(1)} ${ordonnee(Number(ligne[cle])).toFixed(1)}`)
-    .join(' ');
-
-  const pastilles = points
-    .map(
-      (ligne, index) => `
-      <circle cx="${abscisse(index).toFixed(1)}" cy="${ordonnee(Number(ligne[cle])).toFixed(1)}" r="4"
-        class="courbe-point"><title>${echapper(
-          `${ligne.date} — ${ligne[cle]}`,
-        )}</title></circle>`,
-    )
-    .join('');
-
-  const premier = valeurs[0];
-  const dernier = valeurs[valeurs.length - 1];
-
-  return `
-    <figure class="courbe">
-      <figcaption>${echapper(titre)}</figcaption>
-      <svg viewBox="0 0 ${largeur} ${hauteur}" class="courbe-dessin" role="img"
-        aria-label="${echapper(`${titre} : de ${premier} à ${dernier} sur ${points.length} rendez-vous.`)}">
-        <path d="${chemin}" class="courbe-trait" fill="none"/>
-        ${pastilles}
-      </svg>
-      <span class="discret courbe-bornes">
-        <span class="chiffre">${premier}</span> au premier rendez-vous ·
-        <span class="chiffre">${dernier}</span> au dernier
-      </span>
-    </figure>`;
-}
-
-function formulaireStats() {
-  return construireFormulaire({
-    id: 'stats',
-    libelle: 'Remplir le rendez-vous',
-    action: 'noter-stats',
-    bouton: 'Enregistrer et refermer',
-    ouvert: true,
-    champs: [
-      { nom: 'abonnes', libelle: 'Abonnés', type: 'number' },
-      { nom: 'reach', libelle: 'Portée de la semaine', type: 'number' },
-      { nom: 'top_post', libelle: 'Le post qui a le mieux marché', type: 'text' },
-      {
-        nom: 'reponse_rituelle',
-        libelle: "Est-ce que ça change quelque chose à mes actions cette semaine ? (« non » est une réponse)",
-        type: 'textarea',
-        requis: true,
-      },
-    ],
-  });
-}
-
-export function construireRendezVous(etat, reference = new Date()) {
-  const jour = etat.jourRdv;
-
-  const reglage = `
-    <label class="rdv-reglage">
-      <span class="discret">Jour du rendez-vous</span>
-      <select data-jour-rdv>
-        ${JOURS.map(
-          (nom, index) =>
-            `<option value="${index}" ${index === jour ? 'selected' : ''}>${nom}</option>`,
-        ).join('')}
-      </select>
-    </label>`;
-
-  if (!estJourDeRendezVous(jour, reference)) {
-    const reste = joursAvantRendezVous(jour, reference);
-    // Rien d'autre ici : pas un chiffre, pas une courbe, pas un aperçu.
-    return `
-      <div class="rdv-ferme">
-        <p class="rdv-attente">Rendez-vous <strong>${JOURS[jour]}</strong> —
-          ${reste === 1 ? 'demain' : `dans <strong>${reste} jours</strong>`}.</p>
-        <p class="discret">Les chiffres attendent là. D'ici là, la suite se passe dehors.</p>
-        ${reglage}
-      </div>`;
-  }
-
-  const dejaFait = etat.stats.some((ligne) => ligne.date === versDateISO(reference));
-
-  return `
-    <div class="rdv-ouvert">
-      ${
-        dejaFait
-          ? `<p class="rdv-attente">C'est fait pour cette semaine. À ${JOURS[jour]} prochain.</p>`
-          : formulaireStats()
-      }
-      <div class="rdv-historique">
-        ${construireCourbe(etat.stats, 'abonnes', 'Abonnés')}
-        ${construireCourbe(etat.stats, 'reach', 'Portée hebdomadaire')}
-      </div>
-      ${reglage}
-    </div>`;
-}
-
 // --- L'invite du calendrier --------------------------------------------------
 // Un événement passé propose de devenir un moment : le pont entre l'agenda et
 // le Carnet, pour que le vécu se capture sans discipline en plus. Écartée, elle
@@ -1352,10 +1197,6 @@ function vueCreer(etat) {
       <div data-bloc="a-venir">${construireAVenir(etat.publications, options)}</div>
     </section>
 
-    <section class="bloc bloc-discret">
-      <h2>Rendez-vous stats</h2>
-      <div data-bloc="rendez-vous">${construireRendezVous(etat)}</div>
-    </section>
     ${pied()}`;
 }
 
@@ -3194,7 +3035,6 @@ const SOURCES = {
   commandes: async () => ({ commandes: await api.commandesToutes() }),
   envois: async () => ({ envois: await api.envoisTous() }),
   modeles: async () => ({ modeles: await api.modelesTous() }),
-  stats: async () => ({ stats: await api.statsHebdoTous() }),
   preparations: async () => ({ preparations: await api.preparationsToutes() }),
   modelesPrepa: async () => ({ modelesPrepa: await api.modelesPreparationTous() }),
 };
@@ -3214,7 +3054,7 @@ const BESOINS = {
   // de modèles offrir. Sans cette lecture, il créerait une feuille vierge.
   accueil: ['evenements', 'objectifs', 'publications', 'contacts', 'preparations', 'modelesPrepa'],
   journal: ['evenements', 'contacts', 'preparations'],
-  creer: ['publications', 'stats'],
+  creer: ['publications'],
   banque: ['publications'],
   editorial: ['publications'],
   // Le calendrier et le réseau lisent aussi les préparations et leurs
@@ -3261,7 +3101,6 @@ export default {
       commandes: [],
       envois: [],
       modeles: [],
-      stats: [],
       preparations: [],
       modelesPrepa: [],
       // L'identifiant de la feuille (ou du modèle) ouvert — il vient de
@@ -3286,7 +3125,6 @@ export default {
       contactOuvert: null,
       editionContact: false,
       photos: {},
-      jourRdv: jourRendezVousEnregistre(),
       objectifDoux: objectifDouxEnregistre(),
       vue: 'accueil',
       natures: toutesLesNatures(),
@@ -3907,21 +3745,6 @@ export default {
         // Les listes sont modifiées SUR PLACE, comme partout depuis
         // `js/ecriture.js`.
         etat.creationCal = null;
-        rendre();
-        return;
-      }
-
-      if (action === 'noter-stats') {
-        const ligne = await api.enregistrerStats({
-          date: versDateISO(),
-          abonnes: champs.abonnes ? Number(champs.abonnes) : null,
-          reach: champs.reach ? Number(champs.reach) : null,
-          top_post: champs.top_post?.trim() || null,
-          reponse_rituelle: champs.reponse_rituelle.trim(),
-        });
-        etat.stats = [...etat.stats.filter((s) => s.date !== ligne.date), ligne].sort((a, b) =>
-          a.date.localeCompare(b.date),
-        );
         rendre();
         return;
       }
@@ -5351,14 +5174,6 @@ export default {
         await modifierAussitot(modele, champs, () => api.modifierModele(id, champs), {
           echouer: (message) => { rendre(); dire(message); },
         });
-        return;
-      }
-
-      const jourRdv = evenement.target.closest('[data-jour-rdv]');
-      if (jourRdv) {
-        etat.jourRdv = Number(jourRdv.value);
-        retenirJourRendezVous(etat.jourRdv);
-        rendre();
         return;
       }
 

@@ -436,6 +436,31 @@ sans risque : passé le premier passage, elle ne trouve plus rien. **Elle n'a pa
 
 ---
 
+## 0 octies. Le rendez-vous stats est retiré (15 août)
+
+Demande de Noé : « j'en trouve pas le besoin pour le moment, et surtout pas sur
+cette forme. » Sont partis : la section entière de `yuno.js` (5 385 caractères —
+`construireRendezVous`, `construireCourbe`, `formulaireStats`,
+`estJourDeRendezVous`, `joursAvantRendezVous`, le réglage du jour en
+`localStorage`), le bloc de la page Créer, l'action `noter-stats`, le sélecteur
+de jour, la source `stats` et son entrée dans `BESOINS.creer`, les deux
+fonctions d'API, et 2 006 caractères de CSS — dont les styles `.courbe*`, qui ne
+servaient qu'à lui (`js/perso.js` a sa propre courbe d'humeur, elle ne les
+partageait pas ; vérifié avant de couper).
+
+**La table `stats_hebdo` reste en base, avec ses lignes.** Le besoin peut
+revenir sous une autre forme, et rien ne justifie de détruire des relevés pour
+retirer un écran. Le principe qui l'avait fait naître ne bouge pas non plus :
+aucune métrique sociale nulle part — c'est désormais vrai sans exception, le
+rendez-vous en était la seule.
+
+**Vérifié** : les huit vues du site chargent, aucune ne montre plus de chiffres
+de réseaux, une requête de moins au chargement de Créer. (Un faux positif au
+passage : la page Créer contient bien le mot « abonnés » — c'est la preuve
+écrite par Noé dans une de ses idées, pas un reste de code.)
+
+---
+
 ## 1. Ce qui existe
 
 Le hub est **déployé et fonctionnel** :

@@ -717,24 +717,11 @@ export async function enregistrerEnvoi({ contact, statut }) {
   return { envoi, contact: misAJour };
 }
 
-// --- Le rendez-vous stats (Yuno) ---------------------------------------------
-// Les chiffres des réseaux ne vivent QUE là. Ils ne se lisent pas ailleurs dans
-// le site, et rien d'autre n'appelle ces deux fonctions : la surveillance
-// devient un rituel hebdomadaire au lieu d'un réflexe.
-
-export async function statsHebdoTous() {
-  return verifier(await client.from('stats_hebdo').select('*').order('date'));
-}
-
-export async function enregistrerStats({ date, abonnes, reach, top_post, reponse_rituelle }) {
-  return verifier(
-    await client
-      .from('stats_hebdo')
-      .upsert({ date, abonnes, reach, top_post, reponse_rituelle }, { onConflict: 'date' })
-      .select()
-      .single(),
-  );
-}
+// Le rendez-vous stats a été retiré du site le 15 août 2026 (demande de Noé).
+// `statsHebdoTous` et `enregistrerStats` partent avec lui : plus rien ne les
+// appelait. **La table `stats_hebdo` reste en base**, avec ses lignes — le
+// besoin peut revenir, sous une autre forme, et rien ne justifie de détruire
+// des relevés pour retirer un écran.
 
 // --- Les modèles de messages (Yuno) ------------------------------------------
 // La friction du premier message est le principal mur de l'aller-vers : un
