@@ -71,6 +71,7 @@ const COQUILLE = [
   'fonts/Gilroy-Medium.woff2',
   'fonts/Gilroy-SemiBold.woff2',
   'fonts/Gilroy-Bold.woff2',
+  'fonts/Gilroy-Heavy.woff2',
   'img/apple-touch-icon.png',
   'img/icone-512.png',
   'img/icone-yuno-180.png',

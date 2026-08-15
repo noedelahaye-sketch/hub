@@ -63,6 +63,22 @@
   font-weight: 700; font-style: normal; font-display: swap;
 }
 
+/* Le HEAVY sert aux CHIFFRES, et à eux seuls (demande de Noé, 15 août 2026 :
+   « encore plus gras »). C'est le plus lourd de la famille — plus que le Black,
+   contrairement à ce que l'ordre des noms laisse croire. **Mesuré**, parce que
+   les métadonnées mentent : les deux fichiers déclarent `usWeightClass=400` et
+   la même avance. En comptant les pixels encrés d'un même chiffre à 120 px :
+   Bold 7 916, Black 9 745, Heavy 10 616 — le Heavy est 8,9 % au-dessus du
+   Black. Le Black a donc été retiré du dépôt, il n'avait plus d'emploi.
+   Déclaré en 900 : c'est la graisse la plus lourde que le site sert, et le
+   chiffre CSS ne fait que la nommer. Converti par tools/convertir-polices.py
+   (123 Ko de TTF devenus 39 Ko). */
+@font-face {
+  font-family: "Gilroy";
+  src: url("../fonts/Gilroy-Heavy.woff2") format("woff2");
+  font-weight: 900; font-style: normal; font-display: swap;
+}
+
 /* --- Les polices de secours, ajustées ----------------------------------------
    `font-display: swap` affiche le texte tout de suite dans une police système,
    puis bascule. Sans réglage, la bascule fait sauter la page : la police
@@ -240,6 +256,19 @@ body[data-espace="yuno"] #vue h3 {
   font-family: "Gilroy", "Gilroy secours", var(--police-texte);
   font-style: normal;
   font-weight: 600;
+}
+
+/* Les chiffres passent en Gilroy 700 (demande de Noé, 15 août 2026 : « une
+   police un peu plus grasse et qui se marie mieux »). Ils étaient en Geist
+   Mono — la police du hub, et la seule du site qui n'appartienne ni à Canela
+   ni à Gilroy : deux polices se marient, trois se croisent.
+   Le rôle ne change pas pour autant, il se confirme : un compteur est une
+   MESURE, et la mesure est le domaine de Gilroy (« ce que le site FAIT »).
+   Le 700 existe depuis le 13 août — avant, le demander n'aurait rien fait,
+   le navigateur serait retombé sur le SemiBold sans rien dire. */
+body[data-espace="yuno"] .chiffre {
+  font-family: "Gilroy", "Gilroy secours", var(--police-texte);
+  font-weight: 900;
 }
 
 /* Le titre d'une tuile est du contenu, pas une annonce : le lieu d'un moment,

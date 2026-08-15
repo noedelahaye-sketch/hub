@@ -528,6 +528,36 @@ calendrier** — c'est le comportement voulu depuis la fusion. L'essai a ensuite
 
 ---
 
+## 0 undecies. Les chiffres de Yuno passent en Gilroy Heavy (15 août)
+
+Demande de Noé : « une police un peu plus grasse et qui se marie mieux avec les
+autres polices du site », puis « encore plus gras que ça ». Les chiffres
+(`.chiffre` : compteurs du Journal, file de la Passerelle, comptes de la banque
+et du carnet) étaient en **Geist Mono** — la police du hub, et la seule du site
+qui n'appartienne ni à Canela ni à Gilroy. Deux polices se marient, trois se
+croisent. Le rôle, lui, se confirme au lieu de changer : un compteur est une
+mesure, et la mesure est le domaine de Gilroy.
+
+**Trois crans, et le dernier a demandé une mesure.** Gilroy s'arrêtait à 700
+dans le dépôt ; le 800 et le 900 dormaient dans les ressources FCH de Noé, d'où
+le Bold était déjà venu en août. Noé a ensuite déposé lui-même le **Heavy**.
+Or l'ordre des noms ment : Black (900) n'est PAS le plus gras de cette famille.
+Les métadonnées ne tranchaient pas non plus — les deux fichiers déclarent
+`usWeightClass=400` et la même avance du zéro. **Compté en pixels encrés** sur
+le même chiffre à 120 px, dans un canvas : Bold 7 916 · Black 9 745 · **Heavy
+10 616**, soit 8,9 % au-dessus du Black. Le Heavy est donc servi en 900, et le
+Black a été retiré du dépôt — 41 Ko qui n'auraient rien fait.
+
+Converti par `tools/convertir-polices.py` (123 Ko → 39 Ko, −68 %), ajouté à la
+coquille du service worker, `node tools/verifier-coquille.js` repassé au vert
+(48 fichiers). **Vérifié à l'écran** : la graisse appliquée est bien 900, le
+fichier est `loaded`, et le rendu réel du 900 mesure 10 616 pixels encrés —
+c'est le Heavy, pas un substitut. C'est la troisième fois que ce piège est
+évité en mesurant : **une graisse absente ne se signale jamais**, le navigateur
+retombe sur la plus proche en silence.
+
+---
+
 ## 1. Ce qui existe
 
 Le hub est **déployé et fonctionnel** :

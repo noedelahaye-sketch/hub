@@ -123,6 +123,18 @@ va chercher la lettre manquante ailleurs et le mot se retrouve en deux fontes
 sans que rien ne le signale. Se le vérifier avec `fontTools`, en lisant la
 `cmap`, plutôt qu'à l'œil.
 
+**Les chiffres du site sont en Gilroy Heavy** (15 août 2026, demande de Noé :
+« une police un peu plus grasse et qui se marie mieux »). Ils étaient en Geist
+Mono — la police du hub, et la seule qui n'appartienne ni à Canela ni à Gilroy :
+deux polices se marient, trois se croisent. Le rôle ne change pas, il se
+confirme : un compteur est une **mesure**, domaine de Gilroy.
+
+**Le Heavy est plus lourd que le Black**, contrairement à ce que l'ordre des
+noms laisse croire — et il a fallu le **mesurer**, les deux fichiers déclarant
+`usWeightClass=400` et la même avance. En comptant les pixels encrés d'un même
+chiffre à 120 px : Bold 7 916, Black 9 745, **Heavy 10 616**. Il est déclaré en
+900 (la graisse la plus lourde que le site sert) et ne pèse que 39 Ko en WOFF2.
+
 **Gilroy est servi en WOFF2** depuis le 12 août 2026 : 236 Ko de TTF devenus
 74 Ko, soit −70 %, à dessin identique — plus 43 Ko pour le Bold du 13 août. Les `.ttf` restent dans `fonts/` comme
 sources, ils ne sont plus servis. `python3 tools/convertir-polices.py` régénère
