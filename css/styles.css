@@ -1981,6 +1981,24 @@ body.fond-fige {
 
 .choix-en-place > .choix-declencheur:hover { color: var(--accent); }
 
+/* Quand le déclencheur EST une pastille de statut, il en garde l'allure : le
+   rembourrage et la petite taille viennent de `.choix-statut`, mais cette
+   règle-ci pèse deux classes et les écraserait — d'où la reprise explicite.
+   La couleur et le fond, eux, passent déjà : `body[data-espace] .choix-statut`
+   pèse plus lourd. */
+.choix-en-place > .choix-declencheur.choix-statut {
+  padding: 2px var(--espace-8);
+  font-size: 0.75rem;
+}
+
+/* Dans le menu, chaque option porte sa propre pastille : sept relations qui se
+   suivent se distinguent mieux par la couleur que par la lecture. */
+.choix-panneau .choix-capture .choix-statut {
+  display: inline-block;
+  padding: 2px var(--espace-8);
+  border-radius: var(--rayon-controle);
+}
+
 /* Le panneau se pose au bord gauche de son déclencheur et prend la largeur de
    ses options, pas celle de la puce : `right: auto` défait l'étirement que la
    règle de formulaire impose. */

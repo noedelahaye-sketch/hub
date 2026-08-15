@@ -611,6 +611,16 @@ tableau, il se retrouve **dans** un `.bloc` — et `.bloc li` dessinait alors
 chaque option comme une carte : fond, cadre, 12 px de rembourrage, **64 px par
 ligne**. Annulé pour `.bloc .choix-panneau .choix-capture li`, remesuré à 38 px.
 
+**Chaque relation porte sa couleur** (demande de Noé dans la foulée), sur le
+déclencheur comme dans le menu : sept valeurs qui se suivent se distinguent
+mieux par la teinte que par la lecture. Les teintes existaient déjà
+(`STATUTS_CONTACT`), mais la couleur s'était **éteinte** au passage à la liste —
+et la cause vaut d'être retenue : le bouton recevait **deux attributs `class`**,
+le sien puis celui du statut, et **le second est ignoré en silence**. `menuChoix`
+fusionne désormais classe et style dans les attributs qu'il écrit. Deux reprises
+de spécificité au passage : `.choix-en-place > .choix-declencheur` (deux
+classes) écrasait le rembourrage de `.choix-statut` (une seule).
+
 **Vérifié** en conditions réelles : le filtre Type ramène 47 fiches à 5 clubs et
 la puce s'allume ; le changement de relation d'un contact part en base
 (« Alicia » passée puis **rendue** à `contact_etabli`) ; plus aucun `select`

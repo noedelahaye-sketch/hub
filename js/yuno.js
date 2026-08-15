@@ -1850,25 +1850,45 @@ function fenetreChoixModele(etat) {
 // L'ouverture, la fermeture et « un seul panneau à la fois » viennent du
 // composant commun : c'est `data-choix-champ` + `data-ouvrir-choix` qui les
 // apportent, et `brancherCapture` les branche déjà dans cet espace.
-function menuChoix({ nom, libelle, options, valeur, attribut, habillage = '' }) {
+// `couleurDe(cle)` rend la classe et la teinte d'une valeur, quand elles en ont
+// une. Elle habille l'option DANS le menu et la valeur choisie sur le
+// déclencheur : une relation se reconnaît à sa couleur avant de se lire.
+//
+// La classe et le style sont fusionnés dans les attributs du bouton, jamais
+// ajoutés à côté : **deux attributs `class` sur un même élément, et le second
+// est ignoré en silence** — c'est ce qui avait éteint la couleur du statut en
+// passant du menu natif à la liste.
+function menuChoix({ nom, libelle, options, valeur, attribut, couleurDe = null }) {
   const choisi = options.find(([cle]) => String(cle) === String(valeur));
+
+  const habiller = (cle) => {
+    const couleur = couleurDe?.(cle);
+    if (!couleur) return { classe: '', style: '' };
+    return {
+      classe: couleur.teinte === null ? 'choix-statut choix-statut-neutre' : 'choix-statut',
+      style: couleur.teinte === null ? '' : ` style="--h: ${couleur.teinte}"`,
+    };
+  };
+
+  const tete = habiller(choisi?.[0]);
 
   return `
     <span class="choix-champ choix-en-place" data-choix-champ="${echapper(nom)}">
-      <button type="button" class="choix-declencheur" data-ouvrir-choix
-        aria-expanded="false" aria-haspopup="listbox" ${habillage}
+      <button type="button" class="choix-declencheur ${tete.classe}" data-ouvrir-choix
+        aria-expanded="false" aria-haspopup="listbox"${tete.style}
         ${libelle ? `aria-label="${echapper(libelle)}"` : ''}
         >${echapper(choisi?.[1] ?? 'Choisir')}${CHEVRON}</button>
       <div class="choix-panneau" hidden>
         <ul class="choix-capture">
           ${options
-            .map(
-              ([cle, texte]) => `
+            .map(([cle, texte]) => {
+              const { classe, style } = habiller(cle);
+              return `
             <li><button type="button" ${attribut}="${echapper(String(cle))}"
               aria-pressed="${String(cle) === String(valeur)}"
               class="${String(cle) === String(valeur) ? 'actif' : ''}"
-              ><span>${echapper(texte)}</span></button></li>`,
-            )
+              ><span class="${classe}"${style}>${echapper(texte)}</span></button></li>`;
+            })
             .join('')}
         </ul>
       </div>
@@ -1988,14 +2008,6 @@ const COLONNES = [
     },
     texte: (contact) => (STATUTS_CONTACT[contact.statut] ?? {}).nom ?? '',
     cellule: (contact) => {
-      const statut = STATUTS_CONTACT[contact.statut] ?? { nom: contact.statut, teinte: null };
-      // Sans teinte, une classe plutôt qu'une variable : une règle de classe se
-      // laisse porter à la bonne spécificité sur les sites, pas une variable.
-      const habillage =
-        statut.teinte === null
-          ? 'class="choix-statut choix-statut-neutre"'
-          : `class="choix-statut" style="--h: ${statut.teinte}"`;
-
       // Le geste vit sur chaque option (`data-statut`), pas sur un menu du
       // système : l'espace écoute déjà cet attribut, il n'a rien changé.
       // L'identifiant du contact voyage sur le conteneur, que le gestionnaire
@@ -2006,7 +2018,10 @@ const COLONNES = [
         options: Object.entries(STATUTS_CONTACT).map(([valeur, { nom }]) => [valeur, nom]),
         valeur: contact.statut,
         attribut: 'data-statut',
-        habillage,
+        // Chaque relation porte sa teinte, sur le déclencheur comme dans le
+        // menu (demande de Noé, 15 août 2026) : sept valeurs qui se suivent se
+        // distinguent mieux par la couleur que par la lecture.
+        couleurDe: (cle) => STATUTS_CONTACT[cle] ?? { teinte: null },
       })}</span>`;
     },
     filtre: {
