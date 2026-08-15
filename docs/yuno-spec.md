@@ -1105,7 +1105,12 @@ des pastilles de la tuile de capture, avec un petit **« + » à droite** qui ne
 défile pas. **Elle suit l'écran** : courte sur téléphone, elle s'étire sur
 ordinateur et montre trois ou quatre personnes d'un coup. Un **fondu** marque
 le côté où il reste à voir — posé en JS, jamais quand il n'y a plus rien
-après, y compris au redimensionnement. Chaque personne porte **la couleur de son type**, celle-là même que la colonne
+après, y compris au redimensionnement. **Les fiches encore à « pas de contact » n'y figurent pas** (15 août 2026) : la
+carte montre les gens qu'on a touchés, pas les noms qu'on a notés — ceux-là
+vivent au carnet, et le « + » les y rejoint. Le compteur « entrés au réseau »,
+lui, les compte : une fiche existe, le nom EST au réseau.
+
+Chaque personne porte **la couleur de son type**, celle-là même que la colonne
 « Type » du CRM — le hachage de son libellé (`teinteDuType` appelle la
 `teinte` commune) : un joueur est violet des deux côtés du site, une personne
 du club turquoise. Pas de table de teintes parallèle, qui divergerait au

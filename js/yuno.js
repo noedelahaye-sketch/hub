@@ -3008,7 +3008,12 @@ function bandeContacts(piste, dedans, choisiId) {
 }
 
 function carteFournee(piste, contacts, choisiId = null) {
-  const dedans = contactsDuClub(piste, contacts);
+  // Les fiches encore à « pas de contact » restent en dehors (demande de Noé,
+  // 15 août 2026) : la carte montre les gens qu'on a touchés, pas les noms
+  // qu'on a notés. Elles sont au carnet, et le « + » les y rejoint.
+  const dedans = contactsDuClub(piste, contacts).filter(
+    (contact) => contact.statut !== 'pas_de_contact',
+  );
 
   // Les gestes vivent en colonne, à droite, croix comprise (demandes de Noé,
   // 15 août au soir) : plus de rangée d'en-tête, la pastille du championnat
