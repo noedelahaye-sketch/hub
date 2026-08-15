@@ -2959,7 +2959,10 @@ export function contactsDuClub(piste, contacts = []) {
   );
   const nee = contacts.find((contact) => contact.id === piste.contact_id);
   if (nee && !dedans.includes(nee)) dedans.unshift(nee);
-  return dedans;
+  // Le contact du club passe devant (demande de Noé, 15 août 2026) : c'est la
+  // porte officielle, celle par où l'on entre. Le tri est stable, donc les
+  // autres gardent leur ordre.
+  return dedans.sort((a, b) => (b.type === 'club') - (a.type === 'club'));
 }
 
 // Les gens du club, en bande qui défile — la forme des pastilles de la tuile de
@@ -2979,7 +2982,7 @@ function bandeContacts(piste, dedans, choisiId) {
           data-piste-du-contact="${echapper(piste.id)}"
           aria-pressed="${contact === choisi}"
           title="${echapper(TYPES_CONTACT[contact.type] ?? contact.type ?? '')}"
-          >${echapper(contact.nom)}</button>`,
+          ><span>${echapper(contact.nom)}</span></button>`,
     )
     .join('');
 

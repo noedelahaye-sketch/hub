@@ -1614,22 +1614,30 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
    « Type » du CRM (`teinte` du libellé) : un joueur est violet des deux côtés
    du site, une personne du club turquoise. Choisie, sa pastille s'allume. */
 .pastille-personne {
+  display: inline-flex;
+  align-items: center;
   flex: none;
-  /* Un nom long ne pousse pas la bande : il se coupe, et le survol le dit en
-     entier. */
-  max-width: 6rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding: 2px var(--espace-8);
+  max-width: 6.5rem;
+  /* La même hauteur que le menu de relation, juste dessous : deux contrôles
+     empilés qui ne s'accordent pas se voient tout de suite. */
+  min-height: 2rem;
+  padding: 0 var(--espace-8);
   font-family: inherit;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 600;
-  white-space: nowrap;
   color: hsl(var(--h) 60% 72%);
   background: hsl(var(--h) 60% 65% / 16%);
   border: 1px solid transparent;
   border-radius: var(--rayon-pastille);
   cursor: pointer;
+}
+
+/* Un nom long ne pousse pas la bande : il se coupe, et le survol le dit en
+   entier. La coupure vit sur le texte, pas sur le bouton devenu flex. */
+.pastille-personne > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .pastille-personne.actif { border-color: hsl(var(--h) 55% 58%); }
@@ -1650,19 +1658,24 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 .pastille-ajout:hover,
 .pastille-ajout:focus-visible { color: var(--accent); }
 
-/* La relation de la personne regardée, sous la bande. */
+/* La relation de la personne regardée, sous la bande. Son déclencheur se serre
+   pour laisser la place aux pastilles : c'est une mention qu'on change de temps
+   en temps, pas le geste principal de la carte. Le panneau, lui, garde ses
+   cibles de 44 px — c'est là qu'on choisit. */
 .fournee-relation { display: block; }
 .fournee-relation .choix-champ { margin: 0; }
 
-/* Les deux gestes se distinguent par la couleur, au même volume sonore :
-   « Envoyé ✓ » dans le doré doux du site, « Noter le contact » dans le même
-   traitement en bleu (demande de Noé). */
-.fournee-actions .bouton-envoye { margin-left: 0; }
-
-.fournee-actions [data-trouve-piste] {
-  color: var(--bleu);
-  background: color-mix(in srgb, var(--bleu) 14%, transparent);
+.fournee-relation .choix-declencheur {
+  min-height: 2rem;
+  padding: var(--espace-4) var(--espace-8);
+  font-size: 0.8125rem;
 }
+
+/* Les deux gestes se distinguent par la couleur, au même volume sonore :
+   « Envoyé ✓ » dans le doré doux du site. Le bleu qui habillait « Noter le
+   contact » est parti avec lui : ce geste est devenu le « + » de la bande, et
+   un signe ne se peint pas. */
+.fournee-actions .bouton-envoye { margin-left: 0; }
 
 /* Le lien du match reste une porte, mais discrète : c'est une information qui
    se consulte, pas un geste qu'on met en avant. */
