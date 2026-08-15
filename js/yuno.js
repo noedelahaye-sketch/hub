@@ -1573,7 +1573,40 @@ export function vendrediDeLaSemaine(reference = new Date()) {
 function construireWeekend(etat) {
   const vendredi = etat.ancreWeekend;
   const dimanche = ajouterJours(vendredi, 2);
-  const matchs = etat.matchsWeekend;
+  const tous = etat.matchsWeekend;
+  const competition = etat.competitionWeekend;
+
+  // La division d'une rencontre vient de son club recevant : le calendrier
+  // officiel ne la porte pas, le vivier oui.
+  const divisionDe = (match) =>
+    etat.pistes.find((piste) => piste.id === match.piste_id)?.division;
+
+  const matchs = !tous
+    ? tous
+    : competition === 'tout'
+      ? tous
+      : tous.filter((match) => divisionDe(match) === competition);
+
+  // Un week-end de football, ce sont huit championnats à la fois : le filtre
+  // ramène la colonne à une seule compétition (demande de Noé, 15 août 2026).
+  // Seules les compétitions qui jouent ce week-end sont offertes — plus celle
+  // qui est choisie, même vide, sinon on ne pourrait plus la relâcher.
+  const compte = (cle) =>
+    !tous ? 0 : cle === 'tout' ? tous.length : tous.filter((m) => divisionDe(m) === cle).length;
+
+  const filtres = [
+    ['tout', 'Tout'],
+    ...Object.entries(DIVISIONS).filter(
+      ([cle]) => compte(cle) > 0 || cle === competition,
+    ),
+  ]
+    .map(
+      ([cle, nom]) => `
+      <button type="button" data-competition="${cle}"
+        aria-pressed="${cle === competition}" class="${cle === competition ? 'actif' : ''}"
+        >${echapper(nom)} <span class="chiffre">${compte(cle)}</span></button>`,
+    )
+    .join('');
 
   const titre = `${vendredi.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
     → ${dimanche.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`;
@@ -1621,9 +1654,9 @@ function construireWeekend(etat) {
                   <span class="discret weekend-journee">J${match.journee}</span>
                   ${
                     pose
-                      ? `<span class="weekend-pose" title="Déjà au calendrier"
+                      ? `<span class="match-pose" title="Déjà au calendrier"
                           aria-label="Déjà au calendrier">${ICONES_PORTES.matchs}</span>`
-                      : `<button type="button" class="weekend-poser"
+                      : `<button type="button" class="poser-match"
                           data-poser-match="${echapper(recevant.id)}"
                           data-match-journee="${match.journee}"
                           data-match-date="${echapper(match.date)}"
@@ -1650,7 +1683,42 @@ function construireWeekend(etat) {
         aria-label="Week-end suivant">›</button>
       ${matchs?.length ? `<span class="discret chiffre">${matchs.length}</span>` : ''}
     </div>
+    ${tous?.length ? `<div class="filtres" role="group" aria-label="Compétition">${filtres}</div>` : ''}
     ${corps}`;
+}
+
+// Les deux clubs de l'affiche, ajoutés au formulaire de modification d'un
+// événement (demande de Noé, 15 août 2026). Un match posé depuis le vivier
+// arrive déjà relié ; un match noté à la main, ou vécu avant que le lien
+// n'existe, ne l'est pas — et sans lien, il ne compte nulle part.
+//
+// On écrit le NOM du club, comme « Rattaché à » sur une fiche du réseau : même
+// geste, même règle — le nom exact relie, autre chose délie —, avec la liste du
+// vivier en appui pour ne pas avoir à l'orthographier de mémoire.
+export function champsDesClubs(element, pistes = []) {
+  if (element?.type !== 'evenement') return [];
+
+  const noms = [...pistes]
+    .map((piste) => piste.nom)
+    .sort((a, b) => a.localeCompare(b, 'fr'));
+  const nomDe = (id) => pistes.find((piste) => piste.id === id)?.nom ?? '';
+
+  return [
+    {
+      nom: 'club_recevant',
+      libelle: 'Club qui reçoit (son nom au vivier)',
+      type: 'text',
+      suggestions: noms,
+      valeur: nomDe(element.source?.club_recevant),
+    },
+    {
+      nom: 'club_visiteur',
+      libelle: 'Club qui se déplace',
+      type: 'text',
+      suggestions: noms,
+      valeur: nomDe(element.source?.club_visiteur),
+    },
+  ];
 }
 
 function vueCalendrier(etat) {
@@ -1681,6 +1749,7 @@ function vueCalendrier(etat) {
         ? fenetreDetail(etat.detailCal, {
             edition: etat.editionCal,
             actions: actionsPreparation(etat),
+            champsEnPlus: champsDesClubs(etat.detailCal, etat.pistes),
           })
         : ''
     }
@@ -3094,6 +3163,19 @@ function bandeContacts(piste, dedans, choisiId) {
     )
     .join('');
 
+  // Sans personne au club, le geste reprend sa pleine forme — un bouton bleu du
+  // volume d'« Envoyé ✓ » (demande de Noé, 15 août au soir) : c'est ALORS le
+  // geste de la carte, et un « + » seul au bout d'une bande vide ne se voyait
+  // pas. Dès qu'il y a quelqu'un, il redevient le petit « + » qui prolonge la
+  // bande : la carte parle des gens, pas du bouton qui les ajoute.
+  if (!dedans.length) {
+    return `
+      <button type="button" class="bouton-secondaire bouton-mini bouton-trouve"
+        data-trouve-piste="${echapper(piste.id)}"
+        aria-label="Ajouter un contact à ${echapper(piste.nom)}"
+        >Ajouter un contact</button>`;
+  }
+
   return `
     <span class="fournee-bande">
       <span class="fournee-bande-liste">${pastilles}</span>
@@ -3123,12 +3205,17 @@ function carteFournee(piste, contacts, choisiId = null) {
     (contact) => contact.statut !== 'pas_de_contact',
   );
 
-  // Les gestes vivent en colonne, à droite, croix comprise (demandes de Noé,
-  // 15 août au soir) : plus de rangée d'en-tête, la pastille du championnat
-  // suit le nom — la carte tient en trois lignes.
+  // Les gestes vivent en colonne (demandes de Noé, 15 août au soir) : plus de
+  // rangée d'en-tête, la pastille du championnat suit le nom — la carte tient en
+  // trois lignes. La croix, elle, a quitté la colonne : elle ne parle pas du
+  // club mais de la carte, et se range au coin haut droit de la tuile.
   return `
     <li>
       <span class="fournee-corps">
+        <button type="button" class="lien-discret bouton-mini bouton-retirer fournee-reposer"
+          data-reposer-piste="${echapper(piste.id)}"
+          title="Reposer au vivier"
+          aria-label="Reposer ${echapper(piste.nom)} au vivier">×</button>
         <span class="fournee-infos">
           <span class="fournee-nom">
             <span class="contact-nom">${echapper(piste.nom)}</span>
@@ -3143,10 +3230,6 @@ function carteFournee(piste, contacts, choisiId = null) {
           <span class="piste-liens">${liensPiste(piste).join('')}</span>
         </span>
         <span class="fournee-actions">
-          <button type="button" class="lien-discret bouton-mini bouton-retirer fournee-reposer"
-            data-reposer-piste="${echapper(piste.id)}"
-            title="Reposer au vivier"
-            aria-label="Reposer ${echapper(piste.nom)} au vivier">×</button>
           ${bandeContacts(piste, dedans, choisiId)}
           ${
             // Sans personne connue, la date de l'envoi dit ce qui a été fait :
@@ -3365,14 +3448,16 @@ function construirePropositions(pistes, graine, passees, fenetreOuverte) {
       )
     : '';
 
-  // La porte et sa voisine : la tuile du club à traiter, et à sa droite un
-  // bouton-tuile qui ouvre la fenêtre des dix (demande de Noé, 15 août au
-  // soir) — deux tuiles de même rang, pas un lien caché sous la carte.
+  // La porte et sa voisine : un bouton-tuile qui ouvre la fenêtre des dix, et
+  // le club à traiter (demande de Noé, 15 août au soir) — deux tuiles de même
+  // rang, pas un lien caché sous la carte. Le bouton passe DEVANT le 15 août au
+  // soir (demande de Noé) : on choisit d'abord dans quelle liste on pioche, le
+  // club proposé vient après et prend toute la largeur qui reste.
   return `
     <div class="porte-rangee">
-      <ul class="porte-liste">${lignePiste(premiere, { passer: true })}</ul>
       <button type="button" class="porte-dizaine" data-voir-propositions>
         Les propositions de la semaine</button>
+      <ul class="porte-liste">${lignePiste(premiere, { passer: true })}</ul>
     </div>
     ${fenetre}`;
 }
@@ -3427,13 +3512,36 @@ export function afficheDuMatch(piste, match) {
     : `${match.adversaire} – ${piste.nom}`;
 }
 
-// Les matchs à venir d'un club, chacun posable au calendrier d'un geste. Le
-// match déjà posé porte son événement plutôt qu'un bouton : on ne pose pas
-// deux fois la même affiche.
+// Les prochains matchs d'un club **qui restent à poser**, trois au plus
+// (demande de Noé, 15 août 2026) : la fiche PROPOSE, elle ne récite pas un
+// calendrier. Celui qui est déjà au calendrier sort de la liste — il n'y a plus
+// rien à en faire ici, et il occupait une des trois places.
+//
+// Posé ? On le reconnaît à la date et au club, pas au titre : celui-ci a pu être
+// réécrit, et c'est justement ce qu'on lui permet.
+const PROPOSITIONS_MATCHS = 3;
+
 function construireMatchsDuClub(piste, etat) {
   const matchs = etat.matchsDuClub[piste.id];
   if (!matchs) return `<p class="vide">…</p>`;
-  if (!matchs.length) return `<p class="vide">Plus de match à son calendrier.</p>`;
+
+  const aPoser = matchs
+    .filter(
+      (match) =>
+        !etat.evenements.some(
+          (evenement) =>
+            versDateISO(new Date(evenement.date_debut)) === match.date &&
+            (evenement.club_recevant === piste.id ||
+              evenement.club_visiteur === piste.id),
+        ),
+    )
+    .slice(0, PROPOSITIONS_MATCHS);
+
+  if (!aPoser.length) {
+    return `<p class="vide">${
+      matchs.length ? 'Ses prochains matchs sont déjà à ton calendrier.' : 'Plus de match à son calendrier.'
+    }</p>`;
+  }
 
   // Les dates viennent du calendrier publié : la journée et l'affiche sont
   // sûres, le jour exact et l'horaire ne le sont pas encore. On le dit, plutôt
@@ -3441,38 +3549,52 @@ function construireMatchsDuClub(piste, etat) {
   const avertissement = `<p class="discret club-approx">Le jour et l'heure se
     précisent plus tard : la tuile s'ouvre, tu corriges avant de poser.</p>`;
 
-  return `${avertissement}<ul class="club-matchs">${matchs
+  // Une tuile par match, celle du week-end : l'affiche, la date, et le
+  // calendrier au bout en guise de geste (demande de Noé, 15 août 2026 —
+  // « Poser au calendrier… » écrivait en toutes lettres ce qu'une icône dit).
+  return `${avertissement}<ul class="club-matchs club-matchs-tuiles">${aPoser
     .map((match) => {
       const affiche = afficheDuMatch(piste, match);
-      // Posé ? On le reconnaît à la date et au club, pas au titre : celui-ci a
-      // pu être réécrit, et c'est justement ce qu'on lui permet.
-      const pose = etat.evenements.find(
-        (evenement) =>
-          versDateISO(new Date(evenement.date_debut)) === match.date &&
-          (evenement.club_recevant === piste.id || evenement.club_visiteur === piste.id),
-      );
 
       return `
         <li>
-          <span class="club-match-affiche">
-            <span class="discret">J${match.journee}</span>
-            <span class="contact-nom">${echapper(affiche)}</span>
-            <span class="discret">${echapper(
-              echeanceLisible(depuisDateISO(match.date)),
-            )}</span>
-          </span>
-          ${
-            pose
-              ? `<span class="discret club-match-pose">✓ au calendrier</span>`
-              : `<button type="button" class="bouton-secondaire bouton-mini"
-                  data-poser-match="${echapper(piste.id)}"
-                  data-match-journee="${match.journee}"
-                  data-match-date="${echapper(match.date)}"
-                  >Poser au calendrier…</button>`
-          }
+          <span class="discret club-match-journee">J${match.journee}</span>
+          <span class="contact-nom">${echapper(affiche)}</span>
+          <span class="discret club-match-quand">${echapper(
+            echeanceLisible(depuisDateISO(match.date)),
+          )}</span>
+          <button type="button" class="poser-match"
+            data-poser-match="${echapper(piste.id)}"
+            data-match-journee="${match.journee}"
+            data-match-date="${echapper(match.date)}"
+            title="Poser au calendrier"
+            aria-label="Poser ${echapper(affiche)} au calendrier"
+            >${ICONES_PORTES.matchs}</button>
         </li>`;
     })
     .join('')}</ul>`;
+}
+
+// Les matchs de ce club que Noé a couverts (demande de Noé, 15 août 2026). Un
+// seul chiffre : « au calendrier » et « rencontres » ont été retirés le jour
+// même — la fiche dit ce qui a été fait avec ce club, le reste est déjà plus bas
+// ou ailleurs.
+//
+// Un événement appartient au club dès qu'il le porte d'un côté ou de l'autre de
+// l'affiche : c'est le LIEN qui fait le match, pas le titre ni `type_moment`. Et
+// « couvert » veut dire VÉCU — la face vécue de l'événement, posée par un geste.
+// Un match posé au calendrier où Noé n'est pas allé ne compte pas : sans quoi le
+// compteur cesserait de dire du vrai.
+//
+// Calculée sur les événements déjà en mémoire, sans une lecture de plus, et
+// exportée pour être vérifiable seule : deux tableaux suffisent, ni session ni
+// réseau.
+export function matchsCouverts(piste, evenements) {
+  return evenements.filter(
+    (evenement) =>
+      estVecue(evenement) &&
+      (evenement.club_recevant === piste.id || evenement.club_visiteur === piste.id),
+  ).length;
 }
 
 // La fiche d'un club : tout ce qu'on sait de lui sur un écran (demande de Noé,
@@ -3485,6 +3607,7 @@ function fenetreClub(etat) {
   if (!piste) return '';
 
   const dedans = contactsDuClub(piste, etat.contacts);
+  const couverts = matchsCouverts(piste, etat.evenements);
   const etatDuClub = piste.date_contacte
     ? `Écrit ${echeanceLisible(depuisDateISO(piste.date_contacte))}`
     : piste.en_fournee
@@ -3513,16 +3636,31 @@ function fenetreClub(etat) {
   return construireFenetre(
     piste.nom,
     `<h3 class="fenetre-titre">${echapper(piste.nom)}</h3>
-     <p class="club-entete">
-       ${pastillesPiste(piste)}
-       <span class="discret">${echapper(etatDuClub)}</span>
-     </p>
-     ${
-       piste.prochain
-         ? `<p class="discret club-match">${echapper(texteProchainMatch(piste))} —
-             ${echapper(echeanceLisible(depuisDateISO(piste.prochain.date)))}</p>`
-         : ''
-     }
+
+     <!-- Les infos du club à gauche, ce qu'on a fait avec lui à droite (demande
+          de Noé, 15 août 2026). Un seul chiffre, et il tient dans la hauteur
+          des deux lignes qu'il longe : la fiche dit l'obtenu sans y consacrer
+          une rangée. Un zéro n'est pas une faute — c'est un club qui attend. -->
+     <div class="club-tete">
+       <div class="club-tete-infos">
+         <p class="club-entete">
+           ${pastillesPiste(piste)}
+           <span class="discret">${echapper(etatDuClub)}</span>
+         </p>
+         ${
+           piste.prochain
+             ? `<p class="discret club-match">${echapper(texteProchainMatch(piste))} —
+                 ${echapper(echeanceLisible(depuisDateISO(piste.prochain.date)))}</p>`
+             : ''
+         }
+       </div>
+       <p class="club-bilan">
+         <span class="chiffre">${couverts}</span>
+         <span class="discret">Match${couverts > 1 ? 's' : ''} couvert${
+           couverts > 1 ? 's' : ''
+         }</span>
+       </p>
+     </div>
 
      <!-- Les portes en icônes, sous les infos du club : la même rangée que sur
           une carte de la fournée (demande de Noé, 15 août 2026). Quatre lignes
@@ -3673,7 +3811,7 @@ export function construirePasserelle({
     <section class="file-niveau">
       ${
         fournee.length
-          ? `<ul>${fournee
+          ? `<ul class="fournee-liste">${fournee
               .map((piste) => carteFournee(piste, contacts, contactChoisi[piste.id]))
               .join('')}</ul>`
           : `<p class="vide">Choisis ci-dessus les clubs de ta semaine,
@@ -4265,6 +4403,10 @@ export default {
       // week-end qui vient, pas sur celui qu'on regardait hier.
       ancreWeekend: vendrediDeLaSemaine(),
       matchsWeekend: null,
+      // La compétition regardée au week-end. Elle SURVIT au changement de
+      // week-end : on suit une division de semaine en semaine, on ne la
+      // rechoisit pas à chaque coup de flèche.
+      competitionWeekend: 'tout',
       // Le club dont la fiche est ouverte, au vivier, et ses matchs à venir —
       // chargés à l'ouverture, gardés ensuite : on rouvre souvent la même
       // fiche, et le calendrier d'un club ne bouge pas dans la journée.
@@ -4944,6 +5086,26 @@ export default {
             notes: champs.notes?.trim() || null,
             ...(champs.type_moment !== undefined
               ? { type_moment: champs.type_moment || null }
+              : {}),
+            // Les deux clubs de l'affiche, par leur nom. C'est ce lien — et lui
+            // seul — qui fait compter un match dans le bilan d'un club : un
+            // titre n'est pas une preuve, deux clubs peuvent porter le même mot
+            // et une affiche se réécrit.
+            //
+            // Comme `type_moment` : on n'écrit ces colonnes que si le
+            // formulaire les portait. Un formulaire sans ces champs ne doit pas
+            // délier un match au passage.
+            ...(champs.club_recevant !== undefined
+              ? {
+                  club_recevant:
+                    pisteDeLaStructure(champs.club_recevant, etat.pistes)?.id ?? null,
+                }
+              : {}),
+            ...(champs.club_visiteur !== undefined
+              ? {
+                  club_visiteur:
+                    pisteDeLaStructure(champs.club_visiteur, etat.pistes)?.id ?? null,
+                }
               : {}),
           });
         } else if (type === 'publication') {
@@ -5888,6 +6050,16 @@ export default {
         etat.matchsWeekend = null;
         rendreWeekend();
         await chargerLeWeekend();
+        return;
+      }
+
+      // Le filtre du week-end : une compétition à la fois, « Tout » compris.
+      // Rien à relire — les rencontres sont déjà là, on ne fait que trier.
+      const competition = evenement.target.closest('[data-competition]');
+      if (competition) {
+        etat.competitionWeekend = competition.dataset.competition;
+        rendreWeekend();
+        centrerActif(section.querySelector('.filtres'));
         return;
       }
 

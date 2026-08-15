@@ -428,13 +428,23 @@ body[data-espace="yuno"] .lien-externe-titre { font-size: 1rem; }
 body[data-espace="yuno"] .lien-externe:hover { border-color: var(--gris-chaud-trait); }
 body[data-espace="yuno"] .lien-externe .discret { font-size: 0.8125rem; }
 
-/* Les portes du réseau se rangent côte à côte, à leur largeur, plutôt qu'en
-   deux moitiés d'écran. Elles s'alignent en hauteur : c'est une paire, et
-   l'une n'a pas à être plus courte parce que son libellé tient sur une ligne. */
+/* Les portes du réseau se rangent côte à côte, TOUJOURS — téléphone compris
+   (demande de Noé, 15 août 2026). Elles s'alignent en hauteur : c'est une paire,
+   et l'une n'a pas à être plus courte parce que son libellé tient sur une ligne.
+   Empilées, elles se lisaient comme deux étapes l'une après l'autre ; côte à
+   côte, elles disent ce qu'elles sont — deux portes au même rang. */
 body[data-espace="yuno"] .portes {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: stretch;
+}
+
+/* Moitié-moitié, et `min-width: 0` pour que le texte se replie au lieu
+   d'imposer sa largeur : un élément flex refuse par défaut de descendre sous
+   la largeur de son contenu. */
+body[data-espace="yuno"] .portes > * {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 /* --- Le Carnet de terrain ---------------------------------------------------
@@ -1538,14 +1548,34 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 /* Le prochain match d'une carte de fournée : sa propre ligne, sous le nom. */
 .piste-match { width: 100%; font-size: 0.8125rem; }
 
+/* QUATRE cartes de front sur un écran d'ordinateur (demande de Noé, 15 août au
+   soir), là où les listes du hub se rangent par 21 rem — soit trois sur 1240 px.
+   18 rem laisse passer la quatrième (4 × 288 + 3 × 8 = 1176 ≤ 1240) sans forcer :
+   `auto-fill` en met autant que la largeur en porte, donc trois sur un écran
+   plus étroit, deux, puis une sur téléphone. Rien n'est figé à quatre — c'est le
+   plancher qui descend.
+   Sélecteur assez fort pour l'emporter sur `.bloc ul:not(.liste-jalons)`, qui
+   pose les 21 rem. */
+body[data-espace="yuno"] ul.fournee-liste {
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+}
+
 /* La carte en deux colonnes : les infos à gauche, les gestes empilés à
    droite — la carte gagne la hauteur d'une rangée de boutons. Sur téléphone,
-   les gestes repassent dessous, alignés à droite. */
+   les gestes repassent dessous.
+   Un seul pas dans toute la tuile depuis le 15 août 2026 (demande de Noé) :
+   8 px entre le nom, le match, les portes, les gens et leur relation. Deux
+   écarts différents dans une même carte se voient — l'œil lit une rangée serrée
+   et une rangée lâche là où il n'y a qu'une pile.
+   Une exception, le soir même (demande de Noé) : 12 px entre les portes de
+   recherche et les gens du club. C'est le seul endroit où la pile change de
+   sujet — au-dessus le club et où le chercher, en dessous les personnes et ce
+   qu'on leur a écrit. L'écart le dit sans qu'il faille un trait. */
 .fournee-corps {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: var(--espace-8) var(--espace-12);
+  gap: var(--espace-12) var(--espace-8);
   width: 100%;
 }
 
@@ -1567,24 +1597,49 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 
 .fournee-nom .contact-nom { width: auto; }
 
-/* La croix ouvre la colonne des gestes, alignée à droite : au coin absolu, elle
-   passait sous la bande de contacts dès qu'un club en comptait deux. */
-.fournee-reposer { align-self: flex-end; margin: 0; }
+/* La croix au coin haut DROIT de la tuile (précision de Noé, 15 août 2026) :
+   c'est le seul geste de la carte qui ne parle pas du club mais de la carte
+   elle-même — il se range là où l'on ferme, pas dans la colonne où l'on agit.
+   Elle retrouve le coin absolu, qu'elle avait dû quitter quand la bande de
+   contacts tenait ce bord : la bande est à gauche depuis ce matin, le coin est
+   libre. Dans le flux, elle s'octroyait une rangée pour elle seule, et la tuile
+   avait un étage vide au milieu. */
+.fournee-corps { position: relative; }
 
+.fournee-reposer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin: 0;
+}
+
+/* Le nom s'arrête avant la croix : sans cette réserve, un nom long passait
+   dessous. */
+.fournee-nom { padding-right: var(--espace-24); }
+
+/* Les gens, leur relation, le « + » et « Envoyé ✓ » : tous calés à gauche
+   (demande de Noé, 15 août 2026). Alignés à droite, ils flottaient loin des
+   infos qu'ils concernent, et chaque rangée commençait à un endroit différent
+   selon sa longueur. Un seul bord, et la colonne se lit d'un trait. */
 .fournee-actions {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
+  align-items: flex-start;
   justify-content: center;
-  gap: var(--espace-4);
+  gap: var(--espace-8);
   /* Une base plutôt qu'un « auto » : la bande de contacts a besoin d'une
      largeur pour défiler au lieu de pousser la carte. Elle suit l'écran — sur
      téléphone la place manque et la bande se raccourcit, sur ordinateur elle
-     s'étire et montre trois ou quatre personnes d'un coup. */
-  flex: 0 1 12rem;
+     s'étire et montre trois ou quatre personnes d'un coup.
+     Ni `margin-left: auto` ni `align-self: center` depuis le 15 août 2026 : sur
+     téléphone la colonne passe sous les infos, et elle doit y commencer au même
+     bord qu'elles — poussée à droite, elle flottait dans le vide à côté du nom
+     du club.
+     Et elle PREND toute la place qui reste (`flex: 1 1`) plutôt que de s'arrêter
+     à sa base : sans quoi la croix, calée au bout de la colonne, tombait au
+     milieu de la tuile au lieu de son bord droit. */
+  flex: 1 1 12rem;
   min-width: 0;
-  margin-left: auto;
-  align-self: center;
 }
 
 @media (min-width: 45rem) {
@@ -1600,7 +1655,7 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 .fournee-actions .bouton-secondaire { margin-top: 0; }
 
 /* L'envoi fait au compte du club : une mention, pas un geste. */
-.fournee-envoye { font-size: 0.8125rem; text-align: center; }
+.fournee-envoye { font-size: 0.8125rem; text-align: left; }
 .fournee-actions .choix-champ { margin: 0; }
 
 /* Les gens du club, dans la colonne des gestes : une bande qui défile de
@@ -1609,10 +1664,12 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 .fournee-bande {
   display: flex;
   align-items: center;
-  /* Calés à droite, contre le bord de la tuile : la colonne des gestes se lit
-     de ce côté-là, et une bande courte ne doit pas flotter au milieu. */
-  justify-content: flex-end;
+  /* Calés à gauche depuis le 15 août 2026 (demande de Noé), avec le reste de la
+     colonne. Le « + » suit la dernière personne au lieu de tenir le bord droit :
+     ajouter quelqu'un prolonge la bande, c'est le même geste que la lire. */
+  justify-content: flex-start;
   gap: var(--espace-8);
+  width: 100%;
   max-width: 100%;
   min-width: 0;
 }
@@ -1700,7 +1757,7 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
    pour laisser la place aux pastilles : c'est une mention qu'on change de temps
    en temps, pas le geste principal de la carte. Le panneau, lui, garde ses
    cibles de 44 px — c'est là qu'on choisit. */
-.fournee-relation { display: flex; justify-content: flex-end; }
+.fournee-relation { display: flex; justify-content: flex-start; }
 .fournee-relation .choix-champ { margin: 0; }
 
 .fournee-relation .choix-declencheur {
@@ -1710,10 +1767,17 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 }
 
 /* Les deux gestes se distinguent par la couleur, au même volume sonore :
-   « Envoyé ✓ » dans le doré doux du site. Le bleu qui habillait « Noter le
-   contact » est parti avec lui : ce geste est devenu le « + » de la bande, et
-   un signe ne se peint pas. */
+   « Envoyé ✓ » dans le doré doux du site, « Ajouter un contact » dans le même
+   traitement en bleu. Ce bleu était parti quand le geste s'était réduit au « + »
+   de la bande ; il revient le 15 août au soir (demande de Noé) pour le seul cas
+   où la bande est vide — là, ajouter quelqu'un EST le geste de la carte. Avec du
+   monde au club, le « + » suffit : un signe ne se peint pas. */
 .fournee-actions .bouton-envoye { margin-left: 0; }
+
+.fournee-actions .bouton-trouve {
+  color: var(--bleu);
+  background: color-mix(in srgb, var(--bleu) 14%, transparent);
+}
 
 /* Le lien du match reste une porte, mais discrète : c'est une information qui
    se consulte, pas un geste qu'on met en avant. */
@@ -1765,9 +1829,18 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   gap: var(--espace-8);
 }
 
-.porte-rangee .porte-liste {
+/* Le club proposé prend toute la largeur qui reste (demande de Noé, 15 août
+   2026). `grid-template-columns` remis à une seule colonne : sur grand écran,
+   une liste du hub se met d'elle-même en colonnes de 21 rem (styles.css), et
+   cette liste-là n'a qu'un élément — il occupait le premier tiers et laissait
+   deux tiers de vide à côté du bouton. */
+/* `ul.porte-liste` et non `.porte-liste` : la règle d'en face
+   (`.bloc ul:not(.liste-jalons)`) porte un élément dans son sélecteur, il en
+   faut un ici aussi pour la contrer. */
+.porte-rangee ul.porte-liste {
   flex: 1 1 auto;
   min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .porte-dizaine {
@@ -1808,6 +1881,40 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 /* Les portes de la fiche : la rangée d'icônes des cartes de fournée. */
 .fenetre .piste-liens { margin-bottom: var(--espace-8); }
 
+/* Les infos du club à gauche, ses matchs couverts à droite. Le chiffre garde sa
+   largeur quoi qu'il arrive (`flex: none`) : c'est le nom du club et son
+   prochain match qui cèdent, eux savent se couper. */
+.club-tete {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+}
+
+.club-tete-infos { flex: 1 1 auto; min-width: 0; }
+
+.club-bilan {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  max-width: 7rem;
+  margin: 0;
+  padding: var(--espace-8);
+  text-align: center;
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+}
+
+.club-bilan .chiffre {
+  font-size: 1.375rem;
+  line-height: 1.1;
+  color: var(--accent);
+}
+
+.club-bilan .discret { font-size: 0.6875rem; line-height: 1.2; }
+
 .club-titre {
   display: flex;
   align-items: center;
@@ -1818,8 +1925,9 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   font-weight: 600;
 }
 
-/* Les matchs d'un club : l'affiche, la date, et le geste qui le pose au
-   calendrier — ou la marque qu'il y est déjà. */
+/* Les matchs d'un club : l'affiche, la date, et le calendrier au bout.
+   `.club-match-affiche`, `.club-match-pose` et le bouton en toutes lettres ont
+   disparu le 15 août 2026 — la fiche propose des tuiles, comme le week-end. */
 .club-matchs li {
   display: flex;
   align-items: center;
@@ -1831,19 +1939,33 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 
 .club-matchs li:last-child { border-bottom: none; }
 
-.club-match-affiche {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: var(--espace-8);
-  flex: 1 1 12rem;
-  min-width: 0;
+.club-approx { margin: 0 0 var(--espace-8); font-size: 0.8125rem; }
+
+/* Les trois matchs proposés dans la fiche : les tuiles du week-end, telles
+   quelles (demande de Noé, 15 août 2026). Une ligne chacune, l'affiche qui se
+   coupe s'il le faut, et le calendrier au bout. */
+.club-matchs-tuiles li {
+  flex-wrap: nowrap;
+  padding: var(--espace-8);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
 }
 
-.club-match-affiche .contact-nom { width: auto; font-size: 0.9375rem; }
-.club-matchs .bouton-secondaire { margin: 0; }
-.club-match-pose { font-size: 0.8125rem; color: var(--accent); }
-.club-approx { margin: 0 0 var(--espace-8); font-size: 0.8125rem; }
+body[data-espace="yuno"] .club-matchs-tuiles .contact-nom {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--police-texte);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.club-match-journee,
+.club-match-quand { flex: none; font-size: 0.75rem; }
 
 /* --- Les matchs du week-end --------------------------------------------------
    Ce que le calendrier ne montre pas : les rencontres qu'on POURRAIT couvrir,
@@ -1896,8 +2018,8 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 .weekend-jour .club-matchs li {
   min-width: 0;
   flex-wrap: nowrap;
-  gap: var(--espace-4);
-  padding: var(--espace-4) var(--espace-8);
+  gap: var(--espace-8);
+  padding: var(--espace-8);
   background: var(--fond-carte);
   border: 1px solid var(--bordure);
   border-left: 3px solid hsl(var(--h) 50% 55%);
@@ -1914,22 +2036,22 @@ body[data-espace="yuno"] .weekend-jour .contact-nom {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: var(--police-texte);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 500;
 }
 
 .weekend-jour .tag {
   flex: none;
   padding: 0 var(--espace-4);
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
 }
 
-.weekend-journee { flex: none; font-size: 0.6875rem; }
+.weekend-journee { flex: none; font-size: 0.75rem; }
 
 /* Le geste tient dans une icône : la zone tactile déborde en transparent pour
    garder ses 44 px sans peser sur la ligne. */
-.weekend-poser,
-.weekend-pose {
+.poser-match,
+.match-pose {
   position: relative;
   display: inline-flex;
   flex: none;
@@ -1941,20 +2063,20 @@ body[data-espace="yuno"] .weekend-jour .contact-nom {
   cursor: pointer;
 }
 
-.weekend-poser svg,
-.weekend-pose svg { width: 16px; height: 16px; }
+.poser-match svg,
+.match-pose svg { width: 18px; height: 18px; }
 
-.weekend-poser::before {
+.poser-match::before {
   content: "";
   position: absolute;
   inset: -12px;
 }
 
-.weekend-poser:hover,
-.weekend-poser:focus-visible { color: var(--accent); }
+.poser-match:hover,
+.poser-match:focus-visible { color: var(--accent); }
 
 /* Posé, il ne se touche plus : l'icône passe à l'or et perd son geste. */
-.weekend-pose { color: var(--accent); cursor: default; }
+.match-pose { color: var(--accent); cursor: default; }
 
 .weekend-jour h4 {
   display: flex;

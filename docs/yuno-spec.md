@@ -983,15 +983,43 @@ La page, de haut en bas :
   type club, structure, et `piste_id` en champ caché pour relier la piste à la
   fiche) et « Envoyé ✓ ». La croix repose le club au vivier — un choix, jamais
   compté.
+  **Le geste d'ajout a deux formes** (demande de Noé, 15 août au soir). Club
+  sans personne : un **bouton bleu « Ajouter un contact »**, du volume d'« Envoyé
+  ✓ » — c'est ALORS le geste de la carte, et un « + » seul au bout d'une bande
+  vide ne se voyait pas. Dès qu'il y a quelqu'un : le **petit « + »** qui
+  prolonge la bande, la carte parlant des gens et non du bouton qui les ajoute.
+  **Quatre cartes de front** sur un écran d'ordinateur (18 rem de plancher, là
+  où les listes du hub en posent 21 et n'en tenaient que trois) ; trois, deux,
+  puis une à mesure que l'écran rétrécit — `auto-fill` en met autant que la
+  largeur en porte, rien n'est figé.
+  **Tout est calé à gauche, sauf la croix** (demande de Noé, 15 août au soir) :
+  les gens du club, leur relation, le « + » et « Envoyé ✓ » partent du même bord
+  que le nom et le prochain match. Alignés à droite, ils flottaient loin des
+  infos qu'ils concernent, et chaque rangée commençait ailleurs selon sa
+  longueur. **La croix, elle, tient le coin haut droit de la tuile** : c'est le
+  seul geste qui ne parle pas du club mais de la carte — il se range là où l'on
+  ferme. Elle y est posée en absolu, ce qui lui évite de s'octroyer une rangée à
+  elle seule au milieu de la carte (le coin s'est libéré quand la bande de
+  contacts est passée à gauche). **Un seul pas partout, 8 px** : deux écarts
+  différents dans une même tuile se voient. **Une exception, 12 px entre les
+  portes de recherche et les gens** : c'est le seul endroit où la pile change de
+  sujet — au-dessus le club et où le chercher, en dessous les personnes et ce
+  qu'on leur a écrit. L'écart le dit sans qu'il faille un trait.
 - **« Une porte à ouvrir »** : UN club à la fois, pas une liste (demande de
   Noé, 15 août au soir — dix cartes d'un coup faisaient un mur). La tête de la
   dizaine s'affiche en **ligne compacte** — division, nom, prochain match, un
   « + » et une croix « passer », cibles tactiles 44 px. Ajouter ou passer fait
   apparaître le suivant. « Passer » est un **choix d'écran** : gardé dans le
   `localStorage` pour la semaine, jamais écrit en base — le club reviendra.
-  À droite de la tuile, un **bouton-tuile « Les propositions de la semaine »**
-  (dessous, en pleine largeur, sur téléphone) ouvre la fenêtre volante des dix
-  propositions en lignes, chacune son « + » — pour composer d'un coup d'œil.
+  **Le bouton-tuile « Les propositions de la semaine » vient EN PREMIER**
+  (demande de Noé, 15 août au soir), et la tuile du club **prend toute la
+  largeur qui reste** — on choisit d'abord dans quelle liste on pioche, le club
+  proposé vient après. Sur téléphone, les deux s'empilent dans cet ordre, en
+  pleine largeur. (La liste du club doit y reprendre `grid-template-columns` :
+  sur grand écran, une liste du hub se met d'elle-même en colonnes de 21 rem, et
+  celle-ci, qui n'a qu'un élément, n'occupait que le premier tiers.) Le bouton
+  ouvre la fenêtre volante des dix propositions en lignes, chacune son « + » —
+  pour composer d'un coup d'œil.
   « Proposer d'autres clubs » (dans la fenêtre) tire une nouvelle donne et
   remet les passages à zéro. Dans la tuile, le lien du match est gris — une
   information qui se consulte — et « + » comme « × » sont de petits ronds dont
@@ -1021,6 +1049,10 @@ La page, de haut en bas :
   comme celles du palier Réseau : **Le vivier** et **Les modèles**. Le pli
   « chantier Clubs » et la bibliothèque de modèles ont déménagé dedans — la
   Passerelle ne garde que ce sur quoi on agit aujourd'hui.
+  **Côte à côte y compris sur téléphone** (précision de Noé, 15 août au soir) :
+  elles ne s'empilent plus. Moitié-moitié, leur texte se replie sur deux ou trois
+  lignes. Empilées, elles se lisaient comme deux étapes l'une après l'autre ;
+  côte à côte, elles disent ce qu'elles sont — deux portes au même rang.
 
 **Ni titres ni sous-titres depuis le 15 août au soir** (demande de Noé) : le
 bandeau ouvre la page, la porte du jour vient dessous, la fournée suit d'elle-
@@ -1051,15 +1083,28 @@ on sait dans quelle colonne on est sans relire son en-tête. Une rencontre est
 **une tuile** d'une ligne, sa tranche gauche à la couleur du jour : sa division
 en pastille, l'affiche dans la police du texte (et non celle des titres), la
 journée, et **une icône calendrier** au bout qui la pose — vingt matchs par
-colonne ne tiennent pas autrement. Posée, l'icône passe à l'or et perd son
-geste. Sa zone tactile garde 44 px en débordant en transparent. Les trois colonnes restent même vides — sinon la
+colonne ne tiennent pas autrement. Elle respire un peu plus depuis que le
+filtre existe (demande de Noé, 15 août 2026) : la colonne n'a plus à porter
+tout un week-end d'un coup, la tuile peut reprendre son souffle. Posée, l'icône
+passe à l'or et perd son geste. Sa zone tactile garde 44 px en débordant en transparent. Les trois colonnes restent même vides — sinon la
 grille se décale d'un week-end à l'autre — et s'empilent sur téléphone. C'est
 le rythme du football, et celui d'un photographe qui prépare sa semaine.
+
+**Un filtre par compétition** coiffe les trois colonnes (demande de Noé,
+15 août 2026) : la forme des filtres du vivier, « Tout » puis une pastille par
+championnat, chacune avec son compte. Trente-trois rencontres en un week-end ne
+se lisent pas d'un coup ; une division à la fois, oui. Seuls les championnats
+qui **jouent ce week-end** sont offerts — plus celui qui est choisi, même à
+zéro, sinon on ne pourrait plus le relâcher. Le choix **survit au changement de
+week-end** : on suit une division de semaine en semaine, on ne la rechoisit pas
+à chaque coup de flèche. Rien ne se relit au clic — les rencontres sont déjà
+là, on ne fait que trier ; le compte de la barre suit le filtre.
 
 La vue s'ajoute par `vuesEnPlus`, même contrat que `naturesEnPlus` pour la
 tuile : le hub n'a pas de vivier, il ne la voit pas. Le calendrier éditorial
 non plus — il partage `vueCal` et retombe sur le mois. Les filtres de nature
-disparaissent sur cette vue : elle ne montre rien de posé. Les flèches passent
+disparaissent sur cette vue : elle ne montre rien de posé — celui des
+compétitions les remplace. Les flèches passent
 d'un week-end à l'autre ; les rencontres ne se chargent **qu'en arrivant sur la
 vue**, jamais avec le calendrier. Chaque affiche porte « Poser… », qui ouvre la tuile
 pré-remplie comme depuis la fiche d'un club, et celles déjà au calendrier le
@@ -1093,8 +1138,43 @@ propre fiche, qui remplace celle du club — jamais deux fenêtres empilées. Un
 pas. Les commandes de la ligne gardent leur geste : le « + » choisit, le lien
 du match mène dehors.
 
-**Ses matchs, posables au calendrier** (15 août 2026). La fiche charge les six
-prochains matchs du club et pose sur chacun « Poser au calendrier… ».
+**Ses matchs couverts, à droite des infos du club** (demande de Noé, 15 août
+2026). **Un seul chiffre** : « au calendrier » et « rencontres » l'ont
+accompagné une heure avant d'être retirés le jour même — la fiche dit ce qui a
+été fait avec ce club, le reste est déjà plus bas ou ailleurs. Il se pose à
+droite, dans la hauteur des deux lignes qu'il longe (les pastilles, le prochain
+match), plutôt qu'en rangée sous elles : la fiche dit l'obtenu sans y consacrer
+un étage. Il se calcule sur les événements déjà en mémoire, sans une lecture de
+plus. Un zéro n'est pas une faute — c'est un club qui attend.
+
+Deux règles tiennent ce chiffre honnête :
+- **Un match appartient au club par son LIEN**, `club_recevant` ou
+  `club_visiteur` — pas par son titre. Un intitulé n'est pas une preuve : deux
+  clubs partagent un mot, et une affiche se réécrit.
+- **« Couvert » veut dire VÉCU**, la face vécue de l'événement, posée par un
+  geste. Un match posé au calendrier où Noé n'est pas allé ne compte pas.
+
+**Relier un événement à ses clubs, à la main** (demande de Noé, 15 août 2026).
+Un match posé depuis le vivier arrive relié tout seul ; un match noté à la main,
+ou vécu avant que le lien n'existe, ne l'est pas — et sans lien, il ne compte
+nulle part. Le formulaire de modification d'un événement porte donc deux champs
+de plus, « Club qui reçoit » et « Club qui se déplace » : on y **écrit le nom du
+club**, avec la liste du vivier en appui. Même geste et même règle que
+« Rattaché à » sur une fiche du réseau — le nom exact relie, autre chose délie.
+Ils s'ajoutent par `champsEnPlus`, même contrat que `vuesEnPlus` : le hub n'a pas
+de vivier, il ne les voit pas, et un formulaire qui ne les porte pas ne délie
+rien au passage.
+
+**Ses matchs : trois propositions, pas un calendrier** (demande de Noé, 15 août
+2026). La fiche charge les six prochains matchs du club, **écarte ceux qui sont
+déjà à ton calendrier** — il n'y a plus rien à en faire ici, et ils occupaient
+une place — et **en propose trois au plus**. Chacun est **une tuile**, celle du
+week-end : la journée, l'affiche, la date, et **une icône calendrier** au bout.
+« Poser au calendrier… » écrivait en toutes lettres ce qu'un symbole dit (même
+correction que la vue Week-end). Le geste et l'icône sont les mêmes des deux
+côtés — une seule règle CSS, `.poser-match` / `.match-pose`. Quand les trois
+prochains sont déjà posés, la fiche le dit plutôt que de se taire : « Ses
+prochains matchs sont déjà à ton calendrier. »
 
 **Le geste n'écrit rien tout de suite : il OUVRE la tuile déjà remplie**
 (correction demandée par Noé le même jour). Le calendrier publié donne la

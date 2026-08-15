@@ -2019,7 +2019,15 @@ export function fenetreJour(cle, elements, { montrerProjet = false } = {}) {
 // `actions` : du HTML ajouté en tête des boutons du détail. C'est ainsi que le
 // site Yuno pose « Préparer » sur un événement — la fenêtre reste commune, et
 // le hub comme le FCH ne passent rien.
-export function fenetreDetail(element, { montrerProjet = false, edition = false, actions = '' } = {}) {
+//
+// `champsEnPlus` : des champs ajoutés au formulaire de modification, même
+// contrat que `vuesEnPlus` au calendrier. Yuno y met les deux clubs de
+// l'affiche, qu'il est le seul à connaître — le hub n'a pas de vivier, il ne
+// les voit pas.
+export function fenetreDetail(
+  element,
+  { montrerProjet = false, edition = false, actions = '', champsEnPlus = [] } = {},
+) {
   const enTete = `
     <span class="tuile-entete">
       <span class="etiquette">${TYPES[element.type]}</span>
@@ -2043,7 +2051,7 @@ export function fenetreDetail(element, { montrerProjet = false, edition = false,
         ouvert: true,
         extra: `<input type="hidden" name="type" value="${echapper(element.type)}">
                 <input type="hidden" name="id" value="${echapper(element.id)}">`,
-        champs: champsDeModification(element),
+        champs: [...champsDeModification(element), ...champsEnPlus],
       })}
       <button type="button" class="lien-discret bouton-mini" data-annuler-edition>Annuler</button>`;
 
