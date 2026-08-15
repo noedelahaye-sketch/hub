@@ -3290,8 +3290,10 @@ function etatDeLaPiste(piste) {
 function ligneVivier(piste) {
   const etat = etatDeLaPiste(piste);
 
+  // La ligne entière ouvre la fiche du club — sauf ses commandes, qui gardent
+  // leur geste (le « + » choisit, le lien du match mène dehors).
   return `
-    <li class="proposition proposition-${etat}">
+    <li class="proposition proposition-${etat}" data-ouvrir-club="${echapper(piste.id)}">
       ${pastillesPiste(piste)}
       <span class="contact-nom">${echapper(piste.nom)}</span>
       ${lienMatchs(piste)}
@@ -3306,6 +3308,83 @@ function ligneVivier(piste) {
                 aria-label="Ajouter ${echapper(piste.nom)} à la fournée">+</button>`
       }
     </li>`;
+}
+
+// La fiche d'un club : tout ce qu'on sait de lui sur un écran (demande de Noé,
+// 15 août 2026). Elle s'ouvre en touchant sa ligne au vivier, et montre ce que
+// les listes abrègent — les quatre portes en toutes lettres, et TOUS ses
+// contacts, « pas de contact » compris : ici on cherche, on n'agit pas.
+function fenetreClub(etat) {
+  if (!etat.clubOuvert) return '';
+  const piste = etat.pistes.find((candidat) => candidat.id === etat.clubOuvert);
+  if (!piste) return '';
+
+  const dedans = contactsDuClub(piste, etat.contacts);
+  const etatDuClub = piste.date_contacte
+    ? `Écrit ${echeanceLisible(depuisDateISO(piste.date_contacte))}`
+    : piste.en_fournee
+      ? 'Dans ta fournée de la semaine'
+      : 'Jamais contacté';
+
+  const portes = portesPiste(piste)
+    .map(
+      ([cle, nom, url]) => `
+      <li><a class="club-porte" href="${url}" target="_blank" rel="noopener"
+        >${ICONES_PORTES[cle]}<span>${echapper(nom)}</span></a></li>`,
+    )
+    .join('');
+
+  const gens = dedans.length
+    ? `<ul class="club-contacts">${dedans
+        .map((contact) => {
+          const statut = statutLisible(contact.statut);
+          return `
+          <li>
+            <button type="button" class="club-contact" data-ouvrir-contact="${echapper(contact.id)}">
+              <span class="contact-nom">${echapper(contact.nom)}</span>
+              ${pastilleTexte(
+                TYPES_CONTACT[contact.type] ?? contact.type ?? 'Autre',
+                teinteDuType(contact.type),
+              )}
+              ${pastilleTexte(statut.nom, statut.teinte)}
+            </button>
+          </li>`;
+        })
+        .join('')}</ul>`
+    : `<p class="vide">Personne ici pour l'instant. Le « + » ouvre une fiche.</p>`;
+
+  return construireFenetre(
+    piste.nom,
+    `<h3 class="fenetre-titre">${echapper(piste.nom)}</h3>
+     <p class="club-entete">
+       ${pastillesPiste(piste)}
+       <span class="discret">${echapper(etatDuClub)}</span>
+     </p>
+     ${
+       piste.prochain
+         ? `<p class="discret club-match">${echapper(texteProchainMatch(piste))} —
+             ${echapper(echeanceLisible(depuisDateISO(piste.prochain.date)))}</p>`
+         : ''
+     }
+
+     <h4 class="club-titre">Où chercher</h4>
+     <ul class="club-portes">${portes}</ul>
+
+     <h4 class="club-titre">Les contacts
+       ${dedans.length ? `<span class="chiffre">${dedans.length}</span>` : ''}
+       <button type="button" class="pastille-ajout" data-trouve-piste="${echapper(piste.id)}"
+         title="Ajouter un contact" aria-label="Ajouter un contact à ${echapper(piste.nom)}"
+         >+</button>
+     </h4>
+     ${gens}
+
+     ${
+       piste.en_fournee
+         ? ''
+         : `<button type="button" class="bouton-secondaire" data-choisir-piste="${echapper(piste.id)}"
+             >Ajouter à ma fournée</button>`
+     }`,
+  );
 }
 
 export function construireVivier(pistes, division = 'tout', contacts = []) {
@@ -4018,6 +4097,8 @@ export default {
       divisionVivier: 'tout',
       // La personne regardée sur chaque carte de la fournée, par piste.
       contactChoisi: {},
+      // Le club dont la fiche est ouverte, au vivier.
+      clubOuvert: null,
       preparations: [],
       modelesPrepa: [],
       // L'identifiant de la feuille (ou du modèle) ouvert — il vient de
@@ -4234,6 +4315,9 @@ export default {
         // déjà dans sa propre vue — l'ajouter ici la doublerait.
         if (etat.contactOuvert && etat.vue !== 'carnet') {
           section.insertAdjacentHTML('beforeend', fenetreContact(etat));
+        }
+        if (etat.clubOuvert) {
+          section.insertAdjacentHTML('beforeend', fenetreClub(etat));
         }
         if (etat.contactNouveau) {
           // `true` = le « + » des pages du réseau ; un objet = la fiche naît
@@ -5139,6 +5223,7 @@ export default {
         etat.editionContact = false;
         etat.choixPrepa = null;
         etat.propositionsOuvertes = false;
+        etat.clubOuvert = null;
         rendre();
         return;
       }
@@ -5566,6 +5651,28 @@ export default {
       if (evenement.target.closest('[data-voir-propositions]')) {
         etat.propositionsOuvertes = true;
         rendreContacts();
+        section.querySelector('.fenetre-fermer')?.focus();
+        return;
+      }
+
+      // Toucher la ligne d'un club, au vivier, ouvre sa fiche — sauf par ses
+      // commandes : le « + » choisit, le lien du match mène dehors.
+      const ouvrirClub = evenement.target.closest('[data-ouvrir-club]');
+      if (ouvrirClub && !evenement.target.closest('a, button')) {
+        etat.clubOuvert = ouvrirClub.dataset.ouvrirClub;
+        rendre();
+        section.querySelector('.fenetre-fermer')?.focus();
+        return;
+      }
+
+      // Depuis la fiche d'un club, une ligne de contact ouvre la sienne : une
+      // fenêtre remplace l'autre, on ne les empile pas.
+      const ouvrirContactDuClub = evenement.target.closest('.club-contact[data-ouvrir-contact]');
+      if (ouvrirContactDuClub) {
+        etat.clubOuvert = null;
+        etat.contactOuvert = ouvrirContactDuClub.dataset.ouvrirContact;
+        etat.editionContact = false;
+        rendre();
         section.querySelector('.fenetre-fermer')?.focus();
         return;
       }

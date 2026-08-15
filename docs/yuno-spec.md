@@ -1055,6 +1055,16 @@ son geste dépend de l'état du club : un « + » s'il est libre, « dans ta
 fournée » s'il y est déjà, « ✓ contacté » si c'est un fait acquis. Ces deux
 derniers ne se rechoisissent pas.
 
+**Toucher une ligne ouvre la fiche du club** (15 août 2026) : ce que les
+listes abrègent, sur un écran. Son état (jamais contacté · dans ta fournée ·
+écrit tel jour), son prochain match, **les quatre portes en toutes lettres**,
+et **tous ses contacts — « pas de contact » compris**, au rebours de la carte
+de la Passerelle : ici on cherche, on n'agit pas. Chaque contact ouvre sa
+propre fiche, qui remplace celle du club — jamais deux fenêtres empilées. Un
+« + » y ajoute quelqu'un, et un bouton met le club à la fournée s'il n'y est
+pas. Les commandes de la ligne gardent leur geste : le « + » choisit, le lien
+du match mène dehors.
+
 **Le chemin parcouru s'annonce en tête** (« 12 clubs contactés sur 97 ») : le
 chantier a déménagé ici, parce que le chemin et le fonds parlent de la même
 chose. Tant qu'il vaut zéro, la page dit « Le premier ouvre la saison ».

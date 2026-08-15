@@ -1783,6 +1783,78 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   .porte-dizaine { flex: 1 1 100%; }
 }
 
+/* --- La fiche d'un club ------------------------------------------------------
+   Ce que les listes abrègent : les quatre portes en toutes lettres, et TOUS
+   ses contacts — « pas de contact » compris, puisqu'ici on cherche. */
+
+.club-entete {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--espace-8);
+  margin: 0 0 var(--espace-4);
+}
+
+.club-match { margin: 0 0 var(--espace-16); font-size: 0.875rem; }
+
+.club-titre {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  margin: var(--espace-24) 0 var(--espace-8);
+  font-family: "Gilroy", "Gilroy secours", var(--police-texte);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* Hors d'un `.bloc`, une liste retrouve ses puces : on les retire ici. */
+.club-portes,
+.club-contacts {
+  display: grid;
+  gap: var(--espace-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.club-porte {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-12);
+  min-height: 2.75rem;
+  padding: 0 var(--espace-12);
+  color: var(--texte);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  text-decoration: none;
+}
+
+.club-porte:hover { border-color: var(--accent); }
+
+/* Chaque contact du club, avec son type et l'état de la relation. La ligne
+   entière ouvre sa fiche. */
+
+.club-contact {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--espace-8);
+  width: 100%;
+  min-height: 2.75rem;
+  padding: var(--espace-8) var(--espace-12);
+  font-family: inherit;
+  text-align: left;
+  color: var(--texte);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  cursor: pointer;
+}
+
+.club-contact:hover { border-color: var(--accent); }
+.club-contact .contact-nom { width: auto; flex: 1 1 auto; }
+
 /* --- Le vivier ---------------------------------------------------------------
    Les 97 clubs, filtrés par compétition. Le chemin parcouru se dit en tête :
    ici comme ailleurs, on annonce l'obtenu avant le reste. */
