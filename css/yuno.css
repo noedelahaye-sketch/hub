@@ -1591,6 +1591,9 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 .fournee-bande {
   display: flex;
   align-items: center;
+  /* Calés à droite, contre le bord de la tuile : la colonne des gestes se lit
+     de ce côté-là, et une bande courte ne doit pas flotter au milieu. */
+  justify-content: flex-end;
   gap: var(--espace-8);
   max-width: 100%;
   min-width: 0;
@@ -1662,7 +1665,7 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
    pour laisser la place aux pastilles : c'est une mention qu'on change de temps
    en temps, pas le geste principal de la carte. Le panneau, lui, garde ses
    cibles de 44 px — c'est là qu'on choisit. */
-.fournee-relation { display: block; }
+.fournee-relation { display: flex; justify-content: flex-end; }
 .fournee-relation .choix-champ { margin: 0; }
 
 .fournee-relation .choix-declencheur {
