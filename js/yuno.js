@@ -4229,6 +4229,12 @@ export default {
             }),
           );
         }
+        // La fiche d'un contact suit les pages qui en montrent : la Passerelle
+        // l'ouvre depuis une pastille de sa bande. Le carnet, lui, la pose
+        // déjà dans sa propre vue — l'ajouter ici la doublerait.
+        if (etat.contactOuvert && etat.vue !== 'carnet') {
+          section.insertAdjacentHTML('beforeend', fenetreContact(etat));
+        }
         if (etat.contactNouveau) {
           // `true` = le « + » des pages du réseau ; un objet = la fiche naît
           // d'une rencontre, et porte ce qu'on sait déjà d'elle.
@@ -5565,9 +5571,20 @@ export default {
       }
 
       // Toucher une pastille de la bande change la personne regardée : c'est
-      // sa relation qui s'affiche dessous.
+      // sa relation qui s'affiche dessous. La toucher une SECONDE fois — elle
+      // est alors déjà choisie — ouvre sa fiche (demande de Noé, 15 août
+      // 2026) : on regarde, puis on veut en savoir plus. La classe dit l'état
+      // affiché mieux que l'état lui-même, dont le premier contact est absent
+      // tant qu'on n'a rien touché.
       const contactActif = evenement.target.closest('[data-contact-actif]');
       if (contactActif) {
+        if (contactActif.classList.contains('actif')) {
+          etat.contactOuvert = contactActif.dataset.contactActif;
+          etat.editionContact = false;
+          rendre();
+          section.querySelector('.fenetre-fermer')?.focus();
+          return;
+        }
         etat.contactChoisi = {
           ...etat.contactChoisi,
           [contactActif.dataset.pisteDuContact]: contactActif.dataset.contactActif,

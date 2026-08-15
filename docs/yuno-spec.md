@@ -1117,7 +1117,10 @@ du club turquoise. Pas de table de teintes parallèle, qui divergerait au
 premier type ajouté.
 
 **Sous la bande, le menu de la relation** de la personne regardée. Toucher une
-autre pastille change la personne, donc le menu : la carte reste d'un seul
+autre pastille change la personne, donc le menu ; **toucher celle déjà choisie
+ouvre sa fiche** (15 août 2026) — on regarde, puis on veut en savoir plus. La
+fiche du carnet s'ouvre alors en fenêtre volante sans quitter la Passerelle,
+modification comprise. Ainsi : la carte reste d'un seul
 tenant, et un club de cinq personnes n'y prend pas plus de place qu'un club
 d'une seule.
 
