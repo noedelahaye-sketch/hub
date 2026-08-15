@@ -6,93 +6,103 @@
 > les deux cahiers des charges (`yuno-spec.md`, `fch-spec.md`) font autorité sur
 > leurs sites. À relire au début d'une session, à mettre à jour à la fin.
 >
-> **Les sections § 0 racontent les deux dernières journées** (14–15 août, puis
-> la Passerelle v2 le 15 après-midi), la plus récente d'abord ; les § 1 et
+> **§ 0 raconte la dernière session** (15 août : la Passerelle et tout ce
+> qu'elle a fait naître), **§ 0 ante celle d'avant** (14–15 août : les
+> préparations, la fusion moments/événements, l'identité de Yuno). Les § 1 et
 > suivants décrivent l'état stable et les chantiers antérieurs.
 
-## 0. La Passerelle v2 — 15 août, après-midi
+## 0. La session du 15 août — Yuno passe au réseau
 
-**La Passerelle a été réécrite à la demande de Noé** (« la structure actuelle
-me perd ») : elle n'est plus une file de fiches par niveaux, elle est le
-**rituel hebdomadaire d'ouverture de portes** vers des clubs jamais contactés.
-Le cahier des charges fait autorité : `yuno-spec.md`, § `#yuno/passerelle`.
+**Vingt-trois commits, tous poussés.** Toute la session a porté sur **la
+Passerelle et ce qu'elle a fait naître** : un vivier de clubs, leurs
+calendriers, et les liens entre clubs, contacts et événements. Le hub n'a pas
+été touché ; `calendrier-commun.js`, partagé avec lui, l'a été une fois (voir
+plus bas). Le cahier des charges fait autorité sur le détail :
+`yuno-spec.md`, §§ `#yuno/passerelle`, `#yuno/vivier`, `#yuno/messages`.
 
-- **Table `pistes`** (migration `20260815160000_passerelle_pistes.sql`,
-  appliquée) : 97 clubs définis avec Noé — L1/L2/L3 2026-27 au complet et
-  vérifiées sur le web, 8 belges, 5+1 suisses, 7+1 allemands (< 7 h de train de
-  Paris), 10 italiens, 10+1 espagnols ; colonne `leopard` pour les clubs d'un
-  international congolais (pont CAN 2027).
-- **La page** : métrique (inchangée) · **« Une porte à ouvrir »** — un seul
-  club à traiter (ligne compacte, petits « + » ajouter / « × » passer à zone
-  tactile 44 px, lien du match en gris ; le suivant prend la place ; à droite,
-  le bouton-tuile « Les propositions de la semaine » ouvre la fenêtre des dix ;
-  les passages vivent au `localStorage`, semaine par semaine) · fournée de la
-  semaine (cartes avec 4 portes de recherche, capture, « Envoyé ✓ ») ·
-  chantier Clubs replié · modèles (inchangés). Tirage semé : **70 % français —
-  3 L1 + 2 L2 + 2 L3 — et 3 pays étrangers qui tournent** (la France est le
-  fil rouge, l'étranger un objectif second).
-- **Le prochain match s'affiche** (« J1 · reçoit LOSC Lille ») : table
-  `matchs_pistes` + vue `prochain_match_par_piste`
-  (migration `20260815200000_matchs_pistes.sql`), chargées depuis fbref.com
-  via le navigateur (le site refuse les lectures hors navigateur). **Les 97
-  clubs du vivier ont leur calendrier — 3 314 lignes.** Adversaire et journée
-  sûrs, date indicative (précision acceptée par Noé). Deux migrations tiennent
-  le journal : `20260815210000` (L1, L2, Bundesliga, Serie A, La Liga, Suisse,
-  Almería — seule la L1 a ses données dans le dépôt, les autres lots vivent en
-  base, la source web étant rejouable) et `20260815220000` (Ligue 3 et
-  Belgique, données incluses — le PDF officiel de la L3 et le parcours
-  journée par journée de proleague.be ne se rejouent pas d'un clic).
-- **Les portes d'une carte de fournée sont des icônes sans cadre** : calendrier
-  et planète-presse en bleu Yuno, LinkedIn et Instagram avec leur vrai logo
-  (SVG intégrés dans `js/yuno.js`). La fenêtre de la dizaine n'a plus de titre
-  (le bouton-tuile qui l'ouvre le dit déjà).
-- **Tout vérifié dans le navigateur** ce jour : choisir, reposer, envoyer
-  (avec et sans fiche), capture pré-remplie avec `piste_id`, nouvelle dizaine,
-  porte du palier Réseau. Noé a suivi en direct et a fait le premier
-  « Envoyé ✓ » lui-même (AJ Auxerre).
+### Ce qui a été construit
 
-**Ouvert après cette session :**
+| Chantier | Où |
+|---|---|
+| **La Passerelle v2** — le rituel hebdomadaire, à la place de la file par niveaux | `#yuno/passerelle` |
+| **Le vivier** — 97 clubs, filtrés par compétition, avec la fiche de chacun | `#yuno/vivier` |
+| **Les modèles de messages**, sortis de la Passerelle | `#yuno/messages` |
+| **Les calendriers** — 3 314 lignes, les 97 clubs ont leur prochain match | `matchs_pistes` |
+| **La vue « Week-end »** — les rencontres à couvrir, 3 colonnes colorées | `#yuno/calendrier` |
+| **« À relancer »** — un message sans suite revient le lundi | `contacts.statut` |
+| **Les liens** — fiche ↔ club (« rattaché à »), événement ↔ clubs (un match) | `pistes`, `evenements` |
 
-- **L'« Envoyé ✓ » d'Auxerre était-il un essai ?** Si oui, remettre la piste au
-  vivier et retirer l'envoi demande un passage en base (l'interface ne défait
-  pas un fait, par principe). Demander à Noé avant d'y toucher.
+**Six migrations, toutes appliquées** : `20260815160000` (le vivier, données
+incluses), `20260815200000` (matchs, Ligue 1 incluse), `20260815210000`
+(journal des chargements web), `20260815220000` (Ligue 3 et Belgique, données
+incluses), `20260815230000` (statut `a_relancer`), `20260815240000`
+(`evenements.club_recevant` / `club_visiteur`).
+
+### Trois règles posées cette session, qui ne se défont pas sans la défaire
+
+1. **Le titre d'un match est COPIÉ, jamais dérivé.** Il naît de l'affiche du
+   calendrier officiel, puis vit sa vie — le réécrire ne touche pas aux liens,
+   et corriger un lien ne le réécrit jamais. Un match posé se reconnaît **à sa
+   date et à son club, pas à son texte**. C'est la règle des préparations,
+   étendue ; elle a été vérifiée en renommant un événement en base.
+2. **On n'invente pas une heure.** Le calendrier publié donne la journée et
+   l'affiche à coup sûr, jamais l'horaire : « Poser au calendrier… » **ouvre la
+   tuile pré-remplie** au lieu d'écrire, et Noé corrige avant de valider.
+3. **« À relancer » est le seul état qui change avec le temps** dans ce dépôt.
+   Il ne prétend rien de ce que Noé aurait fait — il lève un rappel — et ne
+   bascule jamais sans date d'envoi connue.
+
+### L'état de la base, au soir du 15 août
+
+| | |
+|---|---|
+| Vivier | **97 clubs** · 1 contacté (Sochaux) · 1 en fournée |
+| Calendriers | **3 314 lignes**, les 97 clubs ont leur prochain match |
+| Envois | **1** — le premier vrai de Noé |
+| Réseau | **50 fiches** (35 contact établi, 7 bon contact, 7 pas de contact, 1 message envoyé) |
+| Événements | **16**, dont **1 relié à des clubs** (Torino – Milan, posé par Noé) |
+| Objectifs · commandes | **0** — toujours jamais exercés |
+
+### Ce qui reste ouvert
+
+- **Les objectifs sont à zéro**, et c'est le point le plus important de cette
+  liste. Le bas du dashboard existe pour eux, décembre approche (4 dossiers
+  Studi + la vidéo, fin de l'alternance FCH) et rien n'est posé. Le cap long
+  terme est la priorité n° 2 du produit ; il est vide.
+- **La Suisse s'arrête à la J22** — seules journées publiées à la mi-août. Les
+  douze dernières restent à charger ; en profiter pour re-vérifier les dates
+  des autres championnats si des reports se sont accumulés.
 - **Les mentions Léopard sont figées au 15 août**, mercato encore ouvert :
   Stroeykens (Anderlecht) et M.-A. Balikwisha (Antwerp) n'ont pas été inscrits
-  faute de certitude ; revérifier après la fermeture du marché.
-- **La Suisse s'arrête à la J22**, seules journées publiées à la mi-août ; les
-  douze dernières restent à charger plus tard. En profiter pour re-vérifier
-  les dates des autres championnats si des reports se sont accumulés.
-- **La Passerelle repart de zéro** (15 août, à la demande de Noé) : l'essai
-  d'Auxerre a été défait, puis `journal_envois` a été vidé et les deux
-  `date_dernier_envoi` du 12 août effacées — c'étaient des clics de test de la
-  v1, pas des messages. Les statuts des fiches (« bon contact » sur
-  LeopardLeader et BoomSportRDC) n'ont pas bougé : ces relations-là sont
-  réelles.
-- **Le bandeau a été refondu** le même jour : « cette semaine » (avec
-  l'objectif doux dessous, qui tourne d'un toucher), « clubs contactés »
-  (12/97, en remplacement du cumul d'envois) et « entrés au réseau » (masqué
-  tant qu'il vaut zéro). Voir `yuno-spec.md`.
-- **Le niveau d'aller-vers a disparu** (champ du formulaire, colonne du
-  tableau, ses 47 `select` natifs et son geste) : la file qu'il rangeait
-  n'existe plus. La colonne `contacts.niveau` reste en base avec ses valeurs —
-  on ne détruit pas des données pour retirer un écran.
-- **La carte d'un club montre tous ses contacts**, en pastilles colorées par
-  type dans une rangée qui défile ; toucher une pastille ouvre sa relation.
-- **« À relancer » boucle le rituel** (migration `20260815230000`) : un message
-  resté sans suite bascule le lundi, le club revient dans les propositions avec
-  sa pastille « Relance » (trois au plus, devant le tirage), et sa carte
-  retrouve un bouton « Relancé ✓ ». C'est **le seul état qui change avec le
-  temps** dans ce dépôt — la bascule se fait à l'ouverture de la Passerelle,
-  faute de tâche de fond, et jamais sans date d'envoi connue. « Répondu » est
-  sorti de l'interface au passage (valeur toujours acceptée en base).
-- **La Passerelle s'est allégée de deux blocs**, partis en pages : le **vivier**
-  (`#yuno/vivier` — les 97 clubs filtrés par compétition, avec le chantier en
-  tête) et les **modèles** (`#yuno/messages`). Deux portes en pied de page les
-  desservent. Les titres et sous-titres de la Passerelle ont sauté dans la
-  foulée : elle tient désormais sur un écran.
+  faute de certitude. À revérifier après la fermeture.
 - **Les trois autres chantiers** discutés avec Noé — concerts/événements,
   accréditation Vélodrome, médias congolais tous les mois — attendent que la
-  forme Clubs soit validée à l'usage.
+  forme Clubs soit éprouvée à l'usage. Le premier à faire serait **les médias
+  congolais** : c'est le seul qui a un rythme (mensuel), donc le seul qui ait
+  besoin d'un outil qui s'en souvienne.
+- **La Passerelle n'a servi qu'une fois.** Noé a fait son premier envoi le
+  15 août. Avant d'ajouter quoi que ce soit, la laisser tourner une semaine ou
+  deux : c'est la méthode du projet, et elle vaut ici plus qu'ailleurs.
+
+### Pièges rencontrés cette session
+
+- **`node --check` ne voit pas tout.** Un backtick de trop dans un gabarit de
+  `calendrier-commun.js` est passé : le fichier restait valide, la barre aurait
+  affiché du code. `node tools/verifier-gabarits.js` **et l'écran** sont les
+  seuls juges.
+- **Un import manquant ne dit rien à l'écran.** `dateLongue` absent des imports
+  de `yuno.js` dessinait un bloc vide, compteur et titre corrects — seule la
+  console parlait.
+- **Un élément de grille ne rétrécit pas tout seul** : sans `min-width: 0`, les
+  tuiles du week-end débordaient sur la colonne voisine.
+- **Une règle CSS écrite pour un bouton disparu peut survivre à sa cible** : le
+  fond bleu du « + » venait d'un sélecteur par attribut resté en place.
+- **Noé pilote l'aperçu en même temps.** Un état qui change sous les tests n'est
+  pas forcément un bug — vérifier la base avant de conclure, et préférer les
+  `ref` de `read_page` aux clics par coordonnées.
+- **`calendrier-commun.js` a été touché une fois**, pour `vuesEnPlus` (la vue
+  Week-end). Même contrat que `naturesEnPlus` : le hub ne voit rien de nouveau.
+  Le calendrier éditorial partage `vueCal` et retombe sur le mois.
 
 ---
 
@@ -127,7 +137,7 @@ profondeur ; le hub n'a été touché qu'aux endroits qu'il partage.
 4. **L'écran passe devant le réseau** partout où le geste tient en un clic
    (`js/ecriture.js` — ne pas la recopier). Les formulaires font exception.
 5. **Le FCH reste mis de côté** par Noé — ne pas l'entamer par petites touches
-   (§ 3). La Passerelle, elle, a été réécrite le 15 après-midi (§ 0).
+   (§ 3). Yuno, lui, a occupé toute la session du 15 (§ 0).
 
 ### L'état de la base, au soir du 15 août
 
@@ -2089,48 +2099,57 @@ Rien d'ouvert dans les cahiers des charges. Restent des conforts :
 
 ---
 
-## 4 bis. Par où reprendre (fin de session du 15 août 2026)
+## 4 bis. Par où reprendre (fin de session du 15 août 2026, au soir)
 
 Dans cet ordre, du plus rentable au moins pressé.
 
-**Avant tout : laisser vivre.** Le site Yuno a été refondu en deux jours — les
-Préparations sont nées, le Carnet a fusionné avec le calendrier, Créer a changé
-trois fois de forme. Noé s'en sert pour de bon (il a coché « Charger les
-batteries » depuis son téléphone pendant qu'on travaillait). Le premier réflexe
-n'est pas d'ajouter : c'est **d'écouter ce qui coince après un vrai match**.
+**Avant tout : laisser vivre.** Yuno a été refondu trois jours d'affilée — les
+Préparations, la fusion du Carnet et du calendrier, puis toute la Passerelle et
+son vivier. Noé s'en sert pour de bon : il a fait son premier vrai envoi le
+15 août et posé un match au calendrier. Le premier réflexe n'est pas
+d'ajouter, c'est **d'écouter ce qui coince après une vraie semaine de
+rituel** — et après un vrai match.
 
-1. **Regarder ce que devient « En chantier ».** Le bloc a été créé pour donner
+1. **Poser les objectifs.** C'est le point le plus rentable du hub, et il ne
+   concerne pas Yuno : la table `objectifs` est **vide**, alors que le bas du
+   dashboard existe pour eux et que décembre approche (4 dossiers Studi + la
+   vidéo, fin de l'alternance FCH). Le cap long terme est la priorité n° 2 du
+   produit ; en parler à Noé avant de construire quoi que ce soit d'autre.
+2. **Écouter la Passerelle après une semaine.** Elle n'a servi qu'une fois. Les
+   trois chantiers en attente (concerts, Vélodrome, médias congolais) ne
+   valent qu'une fois la forme Clubs éprouvée — et le premier à faire serait
+   les **médias congolais**, seul chantier à avoir un rythme (mensuel).
+3. **Regarder ce que devient « En chantier ».** Le bloc a été créé pour donner
    un lieu aux statuts intermédiaires, qui n'ont jamais servi. S'il est encore
    vide dans une semaine, ce n'est pas le bloc qu'il faut corriger : c'est que
    le pipeline en cinq étapes ne correspond pas à la façon de travailler de
    Noé, et il faudra le lui demander plutôt que de le meubler.
-2. **Le premier vrai bilan de préparation.** La chaîne complète (bilan → moment
+4. **Le premier vrai bilan de préparation.** La chaîne complète (bilan → moment
    au carnet, avec photo et rencontres) a été vérifiée sur des essais, jamais
    après une vraie sortie. C'est le prochain moment de vérité de l'outil.
-3. **Le choix entre plusieurs modèles n'a jamais servi** : il n'existe qu'un
+5. **Le choix entre plusieurs modèles n'a jamais servi** : il n'existe qu'un
    modèle (« Match »). Le jour où Noé en crée un second (« Concert »), regarder
    que la fenêtre de choix tombe juste.
-4. **Vérifier sur le vrai iPhone** ce qui n'a été mesuré qu'au navigateur : la
+6. **Vérifier sur le vrai iPhone** ce qui n'a été mesuré qu'au navigateur : la
    tuile avec un clavier réel (tout a été fait avec un clavier *simulé*), le
    service worker dans une application ajoutée à l'écran d'accueil, et Canela
    (si le « À » de « À venir » est droit au lieu d'incliné, c'est la police de
    secours).
-5. **Les 47 menus « Niveau » du CRM** sont les derniers `select` natifs. Le
-   composant est prêt (`menuChoix`) : c'est vingt minutes, mais Noé ne l'a pas
-   demandé.
-6. **Ce que l'analyse de fluidité laisse ouvert** : les **espaces projet**
+7. **Ce que l'analyse de fluidité laisse ouvert** : les **espaces projet**
    (`espace-projet.js`) ne sont pas convertis à `js/ecriture.js`, et les gestes
    du calendrier relisent encore leurs six tables après coup. Convertir un
    geste tient en dix lignes. **Ne pas convertir les formulaires** — c'est un
    choix (§ 4).
-7. **Porter le démarrage par morceaux** à `perso.js`, `espace-projet.js`,
+8. **Porter le démarrage par morceaux** à `perso.js`, `espace-projet.js`,
    `fch.js`, `photo.js`, `hermitage.js`. Aucun n'est pressé : ce ne sont pas
    eux qu'on ouvre le matin.
 
 **Ce qui est clos et n'a plus à figurer ici** : le cochage d'une tâche depuis le
 calendrier, les onze requêtes de Yuno tombées à six, l'alignement des menus
-déroulants, le mot « carnet » qui ne désigne plus deux choses, et la table
-`moments`, qui n'existe plus.
+déroulants, le mot « carnet » qui ne désigne plus deux choses, la table
+`moments` qui n'existe plus — et, depuis le 15 août au soir, **les 47 menus
+« Niveau » du CRM**, partis avec la file qu'ils rangeaient (c'étaient les
+derniers `select` natifs du site).
 
 ### Les outils du dépôt, à connaître
 
