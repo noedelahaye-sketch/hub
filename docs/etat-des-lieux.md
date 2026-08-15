@@ -794,6 +794,18 @@ espaces du hub chargent (la palette vit dans styles.css, partagée par tous).
 
 ---
 
+## 0 undevicies. Le pli « Ajouter au réseau » quitte le CRM (15 août)
+
+Demande de Noé. Le formulaire de fin de page faisait doublon avec le « + »
+flottant, qui ouvre la même fiche en fenêtre depuis le 13 août — et celui du
+bas obligeait à parcourir 47 lignes pour l'atteindre. Vérifié avant de couper
+que le geste ne se perdait pas (`PLUS_PAR_VUE.carnet = { contact: true }`), et
+après : le « + » ouvre bien « Ajouter au réseau » avec ses huit champs.
+`CHAMPS_CONTACT` reste employé par la fenêtre, la page finit sur sa dernière
+fiche, 0 px de débordement.
+
+---
+
 ## 1. Ce qui existe
 
 Le hub est **déployé et fonctionnel** :

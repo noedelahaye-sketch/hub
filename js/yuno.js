@@ -3035,19 +3035,17 @@ function vueCarnet(etat) {
 
       <div data-bloc="contacts">${construireContacts(etat.contacts, optionsBase(etat))}</div>
       ${fenetreContact(etat)}
-
-      ${construireFormulaire({
-        id: 'contact',
-        libelle: 'Ajouter au réseau',
-        action: 'creer-contact',
-        champs: CHAMPS_CONTACT,
-      })}
+      <!-- Plus de pli « Ajouter au réseau » en fin de page (demande de Noé,
+           15 août 2026) : le « + » flottant ouvre la même fiche, en fenêtre, et
+           il est là où le pouce arrive. Deux chemins vers le même formulaire,
+           c'était un de trop — et celui du bas obligeait à parcourir 47 lignes
+           pour l'atteindre. -->
     </section>
     ${pied()}`;
 }
 
-// Les champs d'une fiche du réseau, écrits une fois : le pli du bas de la page
-// et la fenêtre du « + » posent les mêmes.
+// Les champs d'une fiche du réseau. Ils ne servent plus qu'à la fenêtre du
+// « + » depuis que le pli du bas de page a disparu (15 août 2026).
 // `prefill` : ce que la fiche sait déjà d'elle-même. Vide au cas ordinaire ;
 // rempli quand elle naît d'une rencontre notée au vol — le nom est écrit, et
 // la relation part de « contact établi » (ils se sont vus en vrai).
