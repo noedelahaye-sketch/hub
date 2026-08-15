@@ -444,41 +444,35 @@ function corpsMoment(sortie, photos = {}, { fenetre = false, preparations = [] }
         <span class="discret quand">${echapper(
           echeanceLisible(depuisDateISO(jourDeLaSortie(sortie))),
         )}</span>
-        ${
-          fenetre
-            ? ''
-            : `<button type="button" class="lien-discret bouton-mini bouton-retirer"
-                 data-supprimer-moment="${echapper(sortie.id)}"
-                 title="Retirer du carnet"
-                 aria-label="Retirer « ${echapper(titreDuMoment(sortie))} » du carnet">×</button>`
-        }
       </span>
-      ${sortie.titre ? `<span class="moment-titre">${echapper(sortie.titre)}</span>` : ''}
-      ${lieuUtile ? `<span class="moment-lieu">${echapper(lieuUtile)}</span>` : ''}
-      ${ligneRencontres(sortie)}
       ${
-        // La photo n'est plus dans la fiche du carnet : elle est déjà dans la
-        // frise, juste au-dessus, et la fiche la répétait en grand. Elle reste
-        // dans la fenêtre, qui est justement l'endroit où on l'a demandée.
+        // La photo EN PREMIER, juste sous l'en-tête (demande de Noé, 15 août
+        // 2026) : c'est elle qu'on vient revoir, et la faire attendre sous le
+        // titre, le lieu et les rencontres revenait à la traiter comme une
+        // pièce jointe. Le reste se lit dessous, dans l'ordre du récit.
         fenetre && photo
           ? `<a class="moment-image" href="${echapper(photo)}" target="_blank" rel="noopener">
                <img src="${echapper(photo)}" alt="La photo dont je suis fier"
                  loading="lazy"></a>`
           : ''
       }
+      ${sortie.titre ? `<span class="moment-titre">${echapper(sortie.titre)}</span>` : ''}
+      ${lieuUtile ? `<span class="moment-lieu">${echapper(lieuUtile)}</span>` : ''}
+      ${ligneRencontres(sortie)}
       ${sortie.note ? `<span class="discret moment-note">${echapper(sortie.note)}</span>` : ''}
       ${fenetre ? bilanDeLaSortie(sortie, preparations) : ''}
       ${
+        // La fiche ne porte plus QUE le crayon (demande de Noé, 15 août 2026) :
+        // on vient y lire une sortie et parfois la corriger, jamais l'effacer.
+        // Le retrait vit au carnet, sur la ligne — c'est là qu'on range, et
+        // c'est le seul écran où l'on voit ce qu'on est en train de retirer au
+        // milieu du reste.
         fenetre
           ? `<span class="moment-actions">
                <button type="button" class="bouton-icone"
                  data-modifier-moment="${echapper(sortie.id)}"
                  title="Modifier cette sortie"
                  aria-label="Modifier « ${echapper(titreDuMoment(sortie))} »">${CRAYON}</button>
-               <button type="button" class="lien-discret bouton-mini bouton-retirer"
-                 data-supprimer-moment="${echapper(sortie.id)}"
-                 aria-label="Retirer « ${echapper(titreDuMoment(sortie))} » du carnet"
-                 >Retirer du carnet</button>
              </span>`
           : ''
       }`;
@@ -602,6 +596,18 @@ function ligneCarnet(sortie, photos = {}, reference = new Date()) {
           }
         </span>
       </button>
+      <!-- La croix vit À CÔTÉ de la ligne, pas dedans : la ligne est déjà un
+           bouton, et deux boutons ne s'imbriquent pas — c'est le même piège
+           qu'au calendrier, où le cercle d'une tâche a dû sortir de sa barre.
+           (Et le mot « bouton » s'écrit ici sans accents graves ni chevrons :
+           dans un commentaire de gabarit, ils ferment la chaîne.)
+           C'est ici, et nulle part ailleurs, qu'on retire une sortie du carnet
+           (demande de Noé, 15 août 2026) : la fiche se lit et se corrige, le
+           carnet est l'écran où l'on range. -->
+      <button type="button" class="lien-discret bouton-mini bouton-retirer"
+        data-supprimer-moment="${echapper(sortie.id)}"
+        title="Retirer du carnet"
+        aria-label="Retirer « ${echapper(titreDuMoment(sortie))} » du carnet">×</button>
     </li>`;
 }
 

@@ -490,6 +490,44 @@ crayon aligné avec la croix, retrait centré à 12,19 px, aucun chevauchement.
 
 ---
 
+## 0 decies. Le retrait passe au carnet, la photo passe devant (15 août)
+
+- **« Retirer du carnet » quitte la fiche** (demande de Noé) : elle se lit et se
+  corrige, le carnet est l'écran où l'on range. **Attention au piège** : en
+  passant le carnet en lignes, la croix avait été retirée des lignes *parce que*
+  le retrait vivait dans la fiche. Enlever le bouton sans rien remettre aurait
+  laissé le site **sans aucun moyen de supprimer** — la croix est donc revenue
+  sur la ligne, à côté d'elle et non dedans (la ligne est un bouton, et deux
+  boutons ne s'imbriquent pas : même piège qu'au calendrier).
+- **La photo passe en tête de la fiche**, juste sous l'en-tête, avant le titre.
+
+**Trois pièges, tous trouvés à l'exécution :**
+
+1. **Le piège des accents graves, rencontré une troisième fois** — et cette fois
+   c'est moi qui l'ai écrit, dans le commentaire même qui expliquait pourquoi la
+   croix sort du bouton. Un nom de balise entre accents graves dans un
+   commentaire de gabarit **ferme la chaîne** : `node --check` passe, et le site
+   lève `ReferenceError: button is not defined` au rendu. Symptôme trompeur :
+   l'écran gardait la page précédente (le piège documenté de `rendre()`, qui
+   affecte `innerHTML` en une seule expression). Le commentaire dit maintenant
+   « bouton » en toutes lettres, et prévient.
+2. **`flex-wrap: wrap` hérité de `.bloc li`** faisait descendre la croix sous la
+   ligne : 83 px de haut au lieu de 44, mesuré. `nowrap` sur le `li`, et la
+   ligne passe de `width: 100%` à `flex: 1` — sans quoi elle réclamait toute la
+   largeur et poussait la croix dehors.
+3. **Deux faux positifs de mes propres tests** : une fenêtre restée ouverte d'un
+   test précédent faisait croire que la croix ouvrait la fiche, et une hauteur
+   mesurée sur un nœud détaché par `rendre()` donnait 0. Repris depuis un état
+   propre : la croix ne fait qu'ouvrir la confirmation, et la ligne fait 45 px.
+
+**Vérifié de bout en bout** sur une sortie d'essai créée pour l'occasion : elle
+entre au carnet (14 lignes), la croix demande « Retirer « … » du carnet ? », la
+ligne s'en va (13 lignes) et l'événement repasse `vecu: false` **en restant au
+calendrier** — c'est le comportement voulu depuis la fusion. L'essai a ensuite
+été supprimé pour de bon : 15 événements photo, 13 vécus, l'état de départ.
+
+---
+
 ## 1. Ce qui existe
 
 Le hub est **déployé et fonctionnel** :

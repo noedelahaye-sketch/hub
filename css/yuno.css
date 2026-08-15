@@ -1052,11 +1052,6 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   padding-right: calc(2 * 2.25rem + var(--espace-8));
 }
 
-/* Le retrait se dit en petit : c'est un geste qu'on ne cherche pas. */
-.fenetre .moment-actions .bouton-retirer {
-  font-size: 0.8125rem;
-}
-
 /* Le `margin-left: auto` qui poussait le retrait au bout est parti avec le
    crayon : il n'y a plus rien à sa gauche dont l'éloigner, et il contredirait
    le centrage. La distance à laquelle il tenait est devenue verticale — le
@@ -1616,6 +1611,14 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 }
 
 .bloc .liste-carnet > li {
+  /* La ligne et sa croix côte à côte : la croix ne peut pas vivre DANS la
+     ligne, qui est déjà un bouton. `nowrap` est indispensable — `.bloc li`
+     passe en `wrap`, et la croix descendait sous la ligne : 83 px de haut au
+     lieu de 44, mesuré. */
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--espace-8);
   padding: 0;
   background: none;
   border: 0;
@@ -1624,6 +1627,13 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 }
 
 .bloc .liste-carnet > li::before { content: none; }
+
+/* La croix se vise au doigt : le caractère fait 16 px de large, la cible doit
+   en faire 34, et prendre toute la hauteur de la ligne. Mesuré avant : 16 × 30. */
+.bloc .liste-carnet .bouton-retirer {
+  align-self: stretch;
+  min-width: 2.25rem;
+}
 .bloc .liste-carnet > li:last-child { border-bottom: none; }
 
 /* La ligne EST le bouton : toute la sortie est la cible, pas seulement son
@@ -1632,7 +1642,9 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   display: flex;
   align-items: center;
   gap: var(--espace-12);
-  width: 100%;
+  /* La place qui reste, pas toute la largeur : la croix est à côté d'elle. */
+  flex: 1;
+  min-width: 0;
   /* 44 px de cible tactile — mesuré, pas supposé : la racine du hub est à
      15 px, donc 2,75 rem ne faisaient que 41 px. */
   min-height: 2.9375rem;
