@@ -717,6 +717,35 @@ export async function enregistrerEnvoi({ contact, statut }) {
   return { envoi, contact: misAJour };
 }
 
+// Le vivier de pistes : les clubs à contacter, définis avec Noé (15 août
+// 2026). Une piste avance par faits — choisie pour la fournée, puis contactée
+// (datée) — et « contactée » ne redescend jamais.
+
+export async function pistesToutes() {
+  return verifier(await client.from('pistes').select('*').order('nom'));
+}
+
+export async function modifierPiste(id, champs) {
+  return verifier(
+    await client.from('pistes').update(champs).eq('id', id).select().single(),
+  );
+}
+
+// LE prochain match de chaque club du vivier — la vue fait le tri, jamais plus
+// d'une ligne par piste. L'adversaire et la journée sont sûrs ; la date est
+// celle du calendrier publié, elle peut glisser avec la télévision.
+export async function prochainsMatchsParPiste() {
+  return verifier(await client.from('prochain_match_par_piste').select('*'));
+}
+
+// Un premier message parti au compte du club, sans personne nommée : l'envoi
+// compte quand même — le compteur mesure l'effort, pas le carnet d'adresses.
+export async function enregistrerEnvoiLibre() {
+  return verifier(
+    await client.from('journal_envois').insert({ date: versDateISO() }).select().single(),
+  );
+}
+
 // Le rendez-vous stats a été retiré du site le 15 août 2026 (demande de Noé).
 // `statsHebdoTous` et `enregistrerStats` partent avec lui : plus rien ne les
 // appelait. **La table `stats_hebdo` reste en base**, avec ses lignes — le

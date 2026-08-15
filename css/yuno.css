@@ -1365,8 +1365,9 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 .contact-echange input { margin: 0; }
 
 /* --- La Passerelle ----------------------------------------------------------
-   La file d'action de la semaine. Une seule métrique : ce que Noé envoie. Rien
-   ici ne compte une réponse, et rien n'est rouge. */
+   Le rituel de la semaine : la fournée de clubs choisis, la dizaine proposée,
+   le chantier replié. Une seule métrique : ce que Noé envoie. Rien ici ne
+   compte une réponse, et rien n'est rouge. */
 
 .passerelle-metrique {
   display: flex;
@@ -1439,21 +1440,213 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   font-weight: 600;
 }
 
-/* Le rang porte la gradation : 1 est le pas le plus court. */
-.file-rang {
+.file-compte { font-size: 0.8125rem; }
+.file-aide { margin: 0 0 var(--espace-8); font-size: 0.8125rem; }
+
+/* La croix « reposer » se pousse au bord droit de l'en-tête : collée à la
+   pastille, elle se confondait avec elle. */
+.file-niveau .tuile-entete .bouton-retirer { margin-left: auto; }
+
+/* Les portes de recherche d'un club : chercher ne part jamais d'une page
+   blanche. Une rangée d'icônes nues, sans cadre (demande de Noé) — calendrier
+   et presse dans le bleu de Yuno, LinkedIn et Instagram avec leur vrai logo.
+   Petites à l'œil, 44 px au doigt : la zone tactile déborde en transparent. */
+.piste-liens {
+  display: flex;
+  gap: var(--espace-8);
+  width: 100%;
+}
+
+.piste-porte {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  font-size: 0.8125rem;
-  color: var(--fond-carte);
-  background: var(--accent);
-  border-radius: var(--rayon-pastille);
+  width: 2rem;
+  height: 2rem;
+  color: var(--bleu);
 }
 
-.file-compte { font-size: 0.8125rem; }
-.file-aide { margin: 0 0 var(--espace-8); font-size: 0.8125rem; }
+.piste-porte::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+}
+
+/* L'international congolais du club : l'accroche, et le pont vers la CAN 2027.
+   La pastille prend l'accent doré — c'est le fil rouge, pas une étiquette de
+   plus. */
+.tag-leopard {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+/* Une proposition est une LIGNE, pas une carte (demande de Noé, 15 août) : la
+   division, le nom, le calendrier à un clic, et un « + » à droite pour la
+   choisir. Dix cartes pleines faisaient de la dizaine un mur. */
+.proposition {
+  align-items: center;
+  padding-top: var(--espace-8);
+  padding-bottom: var(--espace-8);
+}
+
+.proposition { flex-wrap: nowrap; }
+
+/* Le nom cède la place plutôt que de pousser le « + » à la ligne : une
+   proposition tient sur UNE ligne, l'ellipse dit le reste. */
+.proposition .contact-nom {
+  display: block;
+  width: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.proposition .quand { flex: none; }
+
+/* Le prochain match d'une carte de fournée : sa propre ligne, sous le nom. */
+.piste-match { width: 100%; font-size: 0.8125rem; }
+
+/* La carte en deux colonnes : les infos à gauche, les gestes empilés à
+   droite — la carte gagne la hauteur d'une rangée de boutons. Sur téléphone,
+   les gestes repassent dessous, alignés à droite. */
+.fournee-corps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--espace-8) var(--espace-12);
+  width: 100%;
+}
+
+.fournee-infos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-8);
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+/* Le nom du club, sa pastille de championnat à sa droite. */
+.fournee-nom {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--espace-8);
+}
+
+.fournee-nom .contact-nom { width: auto; }
+
+/* La croix reste au coin de la tuile, hors du centrage des boutons — plus de
+   rangée d'en-tête. */
+.fournee-reposer {
+  position: absolute;
+  top: var(--espace-8);
+  right: var(--espace-12);
+  margin: 0;
+}
+
+.fournee-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: var(--espace-4);
+  flex: 0 1 auto;
+  margin-left: auto;
+  align-self: center;
+}
+
+/* Les boutons portent une marge haute de 1 rem par défaut (styles.css) :
+   dans la colonne, c'est l'écart du dessus qui commande, pas eux. */
+.fournee-actions .bouton-secondaire { margin-top: 0; }
+
+/* Les deux gestes se distinguent par la couleur, au même volume sonore :
+   « Envoyé ✓ » dans le doré doux du site, « Noter le contact » dans le même
+   traitement en bleu (demande de Noé). */
+.fournee-actions .bouton-envoye { margin-left: 0; }
+
+.fournee-actions [data-trouve-piste] {
+  color: var(--bleu);
+  background: color-mix(in srgb, var(--bleu) 14%, transparent);
+}
+
+/* Le lien du match reste une porte, mais discrète : c'est une information qui
+   se consulte, pas un geste qu'on met en avant. */
+.proposition .quand { color: var(--texte-discret); }
+
+/* Un petit rond à l'œil, 44 px au doigt : la zone tactile déborde en
+   transparent (::before), la règle de la cible ne plie pas. */
+.proposition-choisir {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  font-size: 1.125rem;
+  line-height: 1;
+  font-family: inherit;
+  color: var(--accent);
+  background: transparent;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+  cursor: pointer;
+}
+
+.proposition-choisir::before {
+  content: "";
+  position: absolute;
+  inset: -7px;
+}
+
+/* La croix « passer » : même rond que le « + », en retrait — passer n'est pas
+   un geste qu'on met en avant, c'est une permission. */
+.proposition-passer { color: var(--texte-discret); }
+
+/* La porte et sa voisine : la tuile du club, et le bouton-tuile qui ouvre la
+   fenêtre des dix. Deux tuiles de même rang, côte à côte. */
+.porte-rangee {
+  display: flex;
+  align-items: stretch;
+  gap: var(--espace-8);
+}
+
+.porte-rangee .porte-liste {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.porte-dizaine {
+  flex: 0 1 9rem;
+  padding: var(--espace-8) var(--espace-12);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--texte);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+  cursor: pointer;
+}
+
+/* Sur téléphone, la voisine passe dessous en pleine largeur : deux tuiles
+   côte à côte y écraseraient le nom du club. */
+@media (max-width: 30rem) {
+  .porte-rangee { flex-wrap: wrap; }
+  .porte-dizaine { flex: 1 1 100%; }
+}
+
+/* Les clubs contactés cette semaine restent sous les yeux jusqu'à lundi : le
+   geste accompli ne disparaît pas de l'écran qui l'a demandé. */
+.note-contactes { margin: var(--espace-8) 0 0; font-size: 0.8125rem; }
+
+/* Le chantier : une ligne par championnat, les noms contactés en dessous. */
+.bloc-chantier { margin-top: var(--espace-24); }
+.chantier-noms { width: 100%; font-size: 0.8125rem; }
 
 /* Un champ qui se lit comme du texte et s'édite au clic : le geste du carnet,
    appliqué au « pourquoi » et à la prochaine action. */
@@ -1473,17 +1666,7 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 .champ-vif:hover { border-color: var(--bordure); }
 .champ-vif:focus { border-color: var(--accent); background: var(--fond); outline: none; }
 
-.file-suite {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--espace-8);
-  width: 100%;
-}
-
-.file-suite .champ-vif { flex: 1 1 12rem; }
-.file-suite .champ-date { flex: 0 1 10rem; }
-
-/* Le seul bouton de la file, et il ne parle que d'effort. */
+/* Le seul bouton qui compte, et il ne parle que d'effort. */
 .bouton-envoye { margin-left: auto; }
 
 /* --- Les modèles de messages ------------------------------------------------ */

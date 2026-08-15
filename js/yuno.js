@@ -2345,6 +2345,31 @@ function retenirObjectifDoux(valeur) {
   }
 }
 
+// Les pistes « passées » de la semaine. Passer un club est un choix d'écran,
+// pas un fait sur le club — il vit dans le navigateur, jamais en base, et
+// s'efface de lui-même au changement de semaine.
+const CLE_PISTES_PASSEES = 'yuno-pistes-passees';
+
+function pistesPasseesEnregistrees() {
+  try {
+    const brut = JSON.parse(localStorage.getItem(CLE_PISTES_PASSEES));
+    return brut?.semaine === versDateISO(debutDeSemaine()) ? (brut.ids ?? []) : [];
+  } catch {
+    return [];
+  }
+}
+
+function retenirPistesPassees(ids) {
+  try {
+    localStorage.setItem(
+      CLE_PISTES_PASSEES,
+      JSON.stringify({ semaine: versDateISO(debutDeSemaine()), ids }),
+    );
+  } catch {
+    // Navigation privée, quota plein : les passages tiennent pour la visite.
+  }
+}
+
 export function ordreEnregistre() {
   try {
     const brut = localStorage.getItem(CLE_ORDRE);
@@ -2677,11 +2702,20 @@ export function construireFichesContacts(retenus, contacts) {
 }
 
 // --- La Passerelle -----------------------------------------------------------
-// Un troisième dessin de la même base, pas un module à part : la file d'action
-// de la semaine, groupée par micro-dose. La métrique est le nombre de messages
-// ENVOYÉS — ce que Noé contrôle. Ni taux de réponse, ni compte de silences :
-// si le compteur dépendait des réponses, chaque silence deviendrait un rejet
-// mesuré.
+// Réécrite le 15 août 2026 (demande de Noé) : l'ancienne file par niveaux
+// (Répondre · Relancer · Ouvrir) le perdait — elle ne savait parler que des
+// fiches déjà au réseau, alors que l'objectif premier est de contacter des
+// clubs JAMAIS contactés. La Passerelle est désormais le rituel de la
+// semaine : elle propose une dizaine de clubs du vivier (table `pistes`,
+// 97 clubs définis avec Noé), Noé choisit les siens selon leurs matchs à
+// venir — le site est statique, il ne lit aucun calendrier : il les met à un
+// clic, et Noé juge — puis chaque club choisi porte ses portes de recherche,
+// la capture de la personne trouvée, et « Envoyé ✓ ». Le réseau devient le
+// résultat de la Passerelle, plus son préalable.
+//
+// La métrique, elle, ne change pas : le nombre de messages ENVOYÉS — ce que
+// Noé contrôle. Ni taux de réponse, ni compte de silences : si le compteur
+// dépendait des réponses, chaque silence deviendrait un rejet mesuré.
 
 // La semaine commence le lundi.
 export function debutDeSemaine(reference = new Date()) {
@@ -2696,56 +2730,214 @@ export function envoisDeLaSemaine(envois, reference = new Date()) {
   return envois.filter((envoi) => envoi.date >= debut).length;
 }
 
-// Dans la file, une case vide passe DEVANT — au rebours du tableau. « Jamais
-// écrit » est ce qui attend le plus, pas ce qui est le plus ancien.
-function ordreDeLaFile(a, b) {
-  const da = a.date_dernier_envoi ?? '';
-  const db = b.date_dernier_envoi ?? '';
-  if (da === db) return a.nom.localeCompare(b.nom, 'fr');
-  if (!da) return -1;
-  if (!db) return 1;
-  return da.localeCompare(db);
+// Les huit championnats du vivier, en deux familles (décision de Noé, 15 août
+// 2026) : la France est le FIL ROUGE de la saison, Ligue 1 en tête ;
+// l'étranger est un objectif second — aller shooter dehors — qui demande moins
+// de régularité. La dizaine proposée s'en souvient : environ 70 % de clubs
+// français, et les pays étrangers tournent d'une semaine à l'autre.
+export const DIVISIONS = {
+  ligue1: 'Ligue 1',
+  ligue2: 'Ligue 2',
+  ligue3: 'Ligue 3',
+  belgique: 'Belgique',
+  suisse: 'Suisse',
+  allemagne: 'Allemagne',
+  italie: 'Italie',
+  espagne: 'Espagne',
+};
+
+const DIVISIONS_FRANCAISES = ['ligue1', 'ligue2', 'ligue3'];
+const DIVISIONS_ETRANGERES = ['belgique', 'suisse', 'allemagne', 'italie', 'espagne'];
+const PART_FRANCAISE = 0.7;
+
+// Un mélange SEMÉ (mulberry32 + Fisher-Yates) : la même graine redonne le même
+// tirage, pour que la dizaine proposée ne bouge pas sous les yeux à chaque
+// redessin. Seuls deux gestes changent la graine : « Proposer d'autres clubs »,
+// et le passage à une nouvelle semaine.
+function melangeSeme(liste, graine) {
+  let a = graine >>> 0 || 1;
+  const alea = () => {
+    a += 0x6d2b79f5;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const copie = [...liste];
+  for (let i = copie.length - 1; i > 0; i--) {
+    const j = Math.floor(alea() * (i + 1));
+    [copie[i], copie[j]] = [copie[j], copie[i]];
+  }
+  return copie;
 }
 
-function carteFile(contact) {
-  const liens = [lienInstagram(contact), lienEmail(contact), lienTelephone(contact)].filter(
-    Boolean,
-  );
-  const statut = STATUTS_CONTACT[contact.statut] ?? { nom: contact.statut, teinte: null };
+// Un tour par paquet, jusqu'au nombre demandé ou l'épuisement.
+function tirer(paquets, nombre) {
+  const choix = [];
+  for (let tour = 0; choix.length < nombre; tour++) {
+    const avant = choix.length;
+    for (const paquet of paquets) {
+      if (paquet[tour] && choix.length < nombre) choix.push(paquet[tour]);
+    }
+    if (choix.length === avant) break;
+  }
+  return choix;
+}
 
+// La dizaine proposée : des clubs jamais contactés, hors fournée. Environ 70 %
+// de français — un tour par division, la Ligue 1 ouvre chaque tour, elle prend
+// donc les places restantes — et le solde à l'étranger, où l'ORDRE DES PAYS
+// est lui-même mélangé par la graine : trois pays différents d'une semaine à
+// l'autre, à la mesure d'un objectif qui demande moins de régularité.
+export function pistesProposees(pistes, graine, nombre = 10, passees = []) {
+  const ecartees = new Set(passees);
+  const libres = pistes.filter(
+    (piste) => !piste.en_fournee && !piste.date_contacte && !ecartees.has(piste.id),
+  );
+  const paquets = (divisions, decalage) =>
+    divisions.map((division, rang) =>
+      melangeSeme(
+        libres.filter((piste) => piste.division === division),
+        graine + decalage + rang,
+      ),
+    );
+
+  const francaises = paquets(DIVISIONS_FRANCAISES, 0);
+  const etrangeres = melangeSeme(paquets(DIVISIONS_ETRANGERES, 10), graine + 20);
+
+  const partFrancaise = Math.round(nombre * PART_FRANCAISE);
+  let francais = tirer(francaises, partFrancaise);
+  let etrangers = tirer(etrangeres, nombre - partFrancaise);
+
+  // Un vivier qui s'épuise ne raccourcit pas la dizaine : l'autre complète.
+  if (francais.length < partFrancaise) {
+    etrangers = tirer(etrangeres, nombre - francais.length);
+  } else if (etrangers.length < nombre - partFrancaise) {
+    francais = tirer(francaises, nombre - etrangers.length);
+  }
+
+  return [...francais, ...etrangers];
+}
+
+// Chercher ne part jamais d'une page blanche : quatre portes par club,
+// fabriquées depuis son nom. « Matchs à venir » d'abord — c'est le critère de
+// choix de Noé — puis les trois chemins vers la bonne personne.
+function portesPiste(piste) {
+  const chercher = (texte) =>
+    `https://www.google.com/search?q=${encodeURIComponent(texte)}`;
+
+  return [
+    ['matchs', 'Matchs à venir', chercher(`${piste.nom} calendrier prochains matchs`)],
+    ['presse', 'Contact presse', chercher(`${piste.nom} contact presse accréditation`)],
+    [
+      'linkedin',
+      'LinkedIn',
+      `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(
+        `responsable communication ${piste.nom}`,
+      )}`,
+    ],
+    ['instagram', 'Instagram', chercher(`${piste.nom} instagram officiel`)],
+  ];
+}
+
+// Les portes d'une carte de fournée sont des ICÔNES (demande de Noé, 15 août
+// au soir) : calendrier, planète pour la presse, LinkedIn, Instagram. Des SVG
+// intégrés, comme le chevron des formulaires — jamais un fichier distant.
+const ICONES_PORTES = {
+  matchs: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+    focusable="false"><rect x="3" y="4" width="18" height="18" rx="2"></rect>
+    <line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line>
+    <line x1="3" y1="10" x2="21" y2="10"></line></svg>`,
+  presse: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+    focusable="false"><circle cx="12" cy="12" r="10"></circle>
+    <line x1="2" y1="12" x2="22" y2="12"></line>
+    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`,
+  // Les deux marques portent leur VRAI logo, couleurs comprises (demande de
+  // Noé) : le carré bleu « in », le carré dégradé à l'appareil photo. Dessinés
+  // en SVG dans le fichier — jamais une image distante. Le dégradé Instagram
+  // porte un id : il se répète d'une carte à l'autre, et c'est voulu — tous
+  // identiques, le navigateur prend le premier.
+  linkedin: `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+    <rect width="24" height="24" rx="5" fill="#0a66c2"></rect>
+    <circle cx="6.8" cy="6.9" r="1.9" fill="#fff"></circle>
+    <rect x="5.1" y="9.9" width="3.4" height="9" fill="#fff"></rect>
+    <path fill="#fff" d="M10.9 9.9h3.3v1.3c.5-.8 1.6-1.6 3.2-1.6 2.6 0 4 1.7 4 4.7v4.6H18v-4.2c0-1.4-.6-2.3-1.8-2.3-1.1 0-1.9.8-1.9 2.3v4.2h-3.4z"></path></svg>`,
+  instagram: `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+    <defs><linearGradient id="degrade-instagram" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#fdc468"></stop>
+      <stop offset="0.4" stop-color="#f65c8a"></stop>
+      <stop offset="0.7" stop-color="#c74dbe"></stop>
+      <stop offset="1" stop-color="#5a63d8"></stop>
+    </linearGradient></defs>
+    <rect width="24" height="24" rx="6" fill="url(#degrade-instagram)"></rect>
+    <rect x="5" y="5" width="14" height="14" rx="4.2" fill="none" stroke="#fff" stroke-width="1.8"></rect>
+    <circle cx="12" cy="12" r="3.4" fill="none" stroke="#fff" stroke-width="1.8"></circle>
+    <circle cx="16.4" cy="7.6" r="1.1" fill="#fff"></circle></svg>`,
+};
+
+function liensPiste(piste) {
+  return portesPiste(piste).map(
+    ([cle, nom, url]) =>
+      `<a class="piste-porte" data-porte="${cle}" href="${url}" target="_blank" rel="noopener"
+        title="${echapper(nom)}" aria-label="${echapper(nom)} — ${echapper(piste.nom)}"
+        >${ICONES_PORTES[cle]}</a>`,
+  );
+}
+
+// Les deux pastilles d'une piste : son championnat (une teinte stable par
+// division), et l'international congolais qui y joue — l'accroche toute
+// trouvée, et le pont vers le fil rouge CAN 2027.
+function pastillesPiste(piste) {
+  return `
+    ${pastilleTexte(DIVISIONS[piste.division] ?? piste.division)}
+    ${
+      piste.leopard
+        ? `<span class="tag tag-leopard">Léopard · ${echapper(piste.leopard)}</span>`
+        : ''
+    }`;
+}
+
+// Une carte de la fournée : les portes de recherche, la personne trouvée (ou
+// le bouton pour la noter), et « Envoyé ✓ ». La croix repose le club au
+// vivier — c'est un choix, pas un échec, et rien ne le compte.
+function carteFournee(piste, contacts) {
+  const fiche = contacts.find((contact) => contact.id === piste.contact_id);
+
+  // Les gestes vivent en colonne, à droite, croix comprise (demandes de Noé,
+  // 15 août au soir) : plus de rangée d'en-tête, la pastille du championnat
+  // suit le nom — la carte tient en trois lignes.
   return `
     <li>
-      <span class="tuile-entete">
-        ${
-          contact.structure
-            ? `<span class="contact-structure">${echapper(contact.structure)}</span>`
-            : ''
-        }
-        ${pastilleTexte(statut.nom, statut.teinte)}
-        ${
-          contact.date_dernier_envoi
-            ? `<span class="discret quand">écrit ${echapper(
-                echeanceLisible(depuisDateISO(contact.date_dernier_envoi)),
-              )}</span>`
-            : ''
-        }
-      </span>
-      <span class="contact-nom">${echapper(contact.nom)}</span>
-      <input class="champ-vif" type="text" data-objectif-contact="${echapper(contact.id)}"
-        value="${echapper(contact.objectif ?? '')}" placeholder="Pourquoi ce contact ?"
-        aria-label="Objectif pour ${echapper(contact.nom)}">
-      <span class="file-suite">
-        <input class="champ-vif" type="text" data-prochaine-action="${echapper(contact.id)}"
-          value="${echapper(contact.prochaine_action ?? '')}" placeholder="Prochaine action"
-          aria-label="Prochaine action pour ${echapper(contact.nom)}">
-        <input class="champ-vif champ-date" type="date" data-prochaine-date="${echapper(contact.id)}"
-          value="${echapper(contact.prochaine_action_date ?? '')}"
-          aria-label="Quand, pour ${echapper(contact.nom)}">
-      </span>
-      <span class="pub-actions">
-        ${liens.length ? `<span class="contact-liens">${joindre(liens)}</span>` : ''}
-        <button type="button" class="bouton-secondaire bouton-mini bouton-envoye"
-          data-envoye="${echapper(contact.id)}">Envoyé ✓</button>
+      <span class="fournee-corps">
+        <span class="fournee-infos">
+          <span class="fournee-nom">
+            <span class="contact-nom">${echapper(piste.nom)}</span>
+            ${pastillesPiste(piste)}
+          </span>
+          ${
+            piste.prochain
+              ? `<span class="discret piste-match">${echapper(texteProchainMatch(piste))}
+                  — ${echapper(echeanceLisible(depuisDateISO(piste.prochain.date)))}</span>`
+              : ''
+          }
+          <span class="piste-liens">${liensPiste(piste).join('')}</span>
+        </span>
+        <span class="fournee-actions">
+          <button type="button" class="lien-discret bouton-mini bouton-retirer fournee-reposer"
+            data-reposer-piste="${echapper(piste.id)}"
+            title="Reposer au vivier"
+            aria-label="Reposer ${echapper(piste.nom)} au vivier">×</button>
+          ${
+            fiche
+              ? `<span class="discret">Fiche : ${echapper(fiche.nom)}</span>`
+              : `<button type="button" class="bouton-secondaire bouton-mini"
+                  data-trouve-piste="${echapper(piste.id)}">Noter le contact</button>`
+          }
+          <button type="button" class="bouton-secondaire bouton-mini bouton-envoye"
+            data-envoye-piste="${echapper(piste.id)}">Envoyé ✓</button>
+        </span>
       </span>
     </li>`;
 }
@@ -2826,35 +3018,190 @@ export function construireModeles(modeles = []) {
     </details>`;
 }
 
-export function construirePasserelle(contacts, { envois = [], objectifDoux = 1, modeles = [] } = {}) {
-  const groupes = Object.entries(NIVEAUX)
-    .map(([niveau, { nom, aide }]) => ({
-      niveau,
-      nom,
-      aide,
-      dedans: contacts.filter((contact) => String(contact.niveau) === niveau).sort(ordreDeLaFile),
-    }))
-    .map(
-      ({ niveau, nom, aide, dedans }) => `
-      <section class="file-niveau">
-        <h3><span class="file-rang chiffre">${niveau}</span> ${echapper(nom)}
-          ${dedans.length ? `<span class="discret file-compte chiffre">${dedans.length}</span>` : ''}
-        </h3>
-        <p class="discret file-aide">${echapper(aide)}</p>
-        ${
-          dedans.length
-            ? `<ul>${dedans.map(carteFile).join('')}</ul>`
-            : `<p class="vide">Personne ici pour l'instant.</p>`
-        }
-      </section>`,
-    )
+// Le prochain match d'une piste, en une phrase courte : « J1 · reçoit LOSC
+// Lille ». L'adversaire et la journée sont sûrs ; la date, indicative, se lit
+// au survol. Sans calendrier chargé (championnats étrangers pour l'instant),
+// on retombe sur le lien générique.
+function texteProchainMatch(piste) {
+  if (!piste.prochain) return null;
+  const { journee, adversaire, domicile } = piste.prochain;
+  return `J${journee} · ${domicile ? 'reçoit' : 'chez'} ${adversaire}`;
+}
+
+function lienMatchs(piste) {
+  const texte = texteProchainMatch(piste);
+  const quand = piste.prochain
+    ? ` title="${echapper(echeanceLisible(depuisDateISO(piste.prochain.date)))}"`
+    : '';
+  return `<a class="quand" href="${portesPiste(piste)[0][2]}"
+    target="_blank" rel="noopener"${quand}>${echapper(texte ?? 'Matchs à venir')}</a>`;
+}
+
+// Une proposition en LIGNE : la division, le nom, le prochain match à un clic,
+// et un « + » à droite. La même ligne partout — la porte du haut de page y
+// ajoute une croix pour passer (demande de Noé, 15 août au soir).
+function lignePiste(piste, { passer = false } = {}) {
+  return `
+    <li class="proposition">
+      ${pastillesPiste(piste)}
+      <span class="contact-nom">${echapper(piste.nom)}</span>
+      ${lienMatchs(piste)}
+      <button type="button" class="proposition-choisir"
+        data-choisir-piste="${echapper(piste.id)}"
+        title="Ajouter à la fournée"
+        aria-label="Ajouter ${echapper(piste.nom)} à la fournée">+</button>
+      ${
+        passer
+          ? `<button type="button" class="proposition-choisir proposition-passer"
+              data-passer-piste="${echapper(piste.id)}"
+              title="Passer — le suivant prend sa place"
+              aria-label="Passer ${echapper(piste.nom)}">×</button>`
+          : ''
+      }
+    </li>`;
+}
+
+// UNE porte à la fois (demande de Noé, 15 août au soir) : dix clubs affichés
+// d'un coup faisaient un mur à lire — un seul appelle un geste. Le club en
+// tête de la dizaine se traite (ajouter, ou passer — le suivant prend sa
+// place), et la dizaine complète attend dans une fenêtre volante, pour les
+// semaines où l'on préfère composer d'un coup d'œil.
+function construirePropositions(pistes, graine, passees, fenetreOuverte) {
+  const propositions = pistesProposees(pistes, graine, 10, passees);
+
+  if (!propositions.length) {
+    return passees.length
+      ? `<p class="vide">Toute la dizaine est passée en revue.</p>
+         <p class="note-file">
+           <button type="button" class="lien-discret" data-proposer-autres>
+             Proposer d'autres clubs</button>
+         </p>`
+      : `<p class="vide">Tout le vivier a été contacté. Le réseau a grandi —
+          la suite se passe dans le carnet.</p>`;
+  }
+
+  const [premiere] = propositions;
+
+  // La même ligne compacte que dans la fenêtre, croix de passage en plus —
+  // « Passer » ne s'enregistre pas en base : c'est un choix d'écran, pas un
+  // fait sur le club, il reviendra une autre semaine. « Toute la dizaine »
+  // vit HORS de la tuile : c'est une porte vers la fenêtre, pas un geste sur
+  // ce club-là.
+  // Pas de titre dans la fenêtre : le bouton qui l'ouvre vient de le dire
+  // (demande de Noé, 15 août au soir). L'aria-label de la fenêtre le garde
+  // pour les lecteurs d'écran.
+  const fenetre = fenetreOuverte
+    ? construireFenetre(
+        'Les propositions de la semaine',
+        `<ul class="liste-propositions">${propositions
+           .map((piste) => lignePiste(piste))
+           .join('')}</ul>
+         <p class="note-file">
+           <button type="button" class="lien-discret" data-proposer-autres>
+             Proposer d'autres clubs</button>
+         </p>`,
+      )
+    : '';
+
+  // La porte et sa voisine : la tuile du club à traiter, et à sa droite un
+  // bouton-tuile qui ouvre la fenêtre des dix (demande de Noé, 15 août au
+  // soir) — deux tuiles de même rang, pas un lien caché sous la carte.
+  return `
+    <div class="porte-rangee">
+      <ul class="porte-liste">${lignePiste(premiere, { passer: true })}</ul>
+      <button type="button" class="porte-dizaine" data-voir-propositions>
+        Les propositions de la semaine</button>
+    </div>
+    ${fenetre}`;
+}
+
+// Le chantier Clubs, replié : le chemin parcouru, division par division. Un
+// club contacté est un fait acquis — il ne redescend pas, et rien ici ne
+// parle de ce qui « reste » : on dit l'obtenu.
+function construireChantier(pistes) {
+  const contactees = pistes.filter((piste) => piste.date_contacte);
+
+  const lignes = Object.entries(DIVISIONS)
+    .map(([division, nom]) => {
+      const dedans = pistes.filter((piste) => piste.division === division);
+      if (!dedans.length) return '';
+      const faites = dedans.filter((piste) => piste.date_contacte);
+
+      return `
+        <li>
+          <span class="contact-nom">${echapper(nom)}</span>
+          <span class="discret"><span class="chiffre">${faites.length}</span>
+            club${faites.length > 1 ? 's' : ''} contacté${faites.length > 1 ? 's' : ''}
+            sur <span class="chiffre">${dedans.length}</span></span>
+          ${
+            faites.length
+              ? `<span class="discret chantier-noms">✓ ${faites
+                  .map((piste) => echapper(piste.nom))
+                  .join(' · ')}</span>`
+              : ''
+          }
+        </li>`;
+    })
     .join('');
 
   return `
+    <details class="backlog bloc-chantier">
+      <summary>Le chantier Clubs
+        <span class="chiffre">${contactees.length}/${pistes.length}</span>
+      </summary>
+      <ul>${lignes}</ul>
+    </details>`;
+}
+
+export function construirePasserelle({
+  pistes = [],
+  contacts = [],
+  envois = [],
+  objectifDoux = 1,
+  modeles = [],
+  grainePropositions = 1,
+  pistesPassees = [],
+  propositionsOuvertes = false,
+} = {}) {
+  const fournee = pistes.filter((piste) => piste.en_fournee && !piste.date_contacte);
+  const debut = versDateISO(debutDeSemaine());
+  const contacteesSemaine = pistes.filter(
+    (piste) => piste.date_contacte && piste.date_contacte >= debut,
+  );
+
+  return `
     ${construireMetrique(envois, objectifDoux)}
-    <div class="passerelle-file">${groupes}</div>
-    <p class="discret note-file">Un contact entre dans la file quand tu lui donnes un niveau —
-      depuis la colonne « Niveau » du tableau.</p>
+
+    <section class="file-niveau">
+      <h3>Une porte à ouvrir</h3>
+      <p class="discret file-aide">Un club à la fois : regarde ses matchs à
+        venir, ajoute-le à ta fournée — ou passe, le suivant prend sa place.</p>
+      ${construirePropositions(pistes, grainePropositions, pistesPassees, propositionsOuvertes)}
+    </section>
+
+    <section class="file-niveau">
+      <h3>Ta fournée de la semaine
+        ${fournee.length ? `<span class="discret file-compte chiffre">${fournee.length}</span>` : ''}
+      </h3>
+      <p class="discret file-aide">Les clubs choisis cette semaine. Trouve la bonne
+        personne par les portes de la carte, écris-lui — un modèle est en bas de
+        page — puis « Envoyé ✓ ».</p>
+      ${
+        fournee.length
+          ? `<ul>${fournee.map((piste) => carteFournee(piste, contacts)).join('')}</ul>`
+          : `<p class="vide">Choisis ci-dessus les clubs de ta semaine,
+              selon leurs matchs à venir.</p>`
+      }
+      ${
+        contacteesSemaine.length
+          ? `<p class="discret note-contactes">Cette semaine : ${contacteesSemaine
+              .map((piste) => `✓ ${echapper(piste.nom)}`)
+              .join(' · ')}</p>`
+          : ''
+      }
+    </section>
+
+    ${construireChantier(pistes)}
     ${construireModeles(modeles)}`;
 }
 
@@ -2957,7 +3304,7 @@ export function construireContacts(contacts, options = {}) {
 // une file où l'on agit. Les mêler sur un écran obligeait à basculer entre les
 // deux pour rien.
 function vueReseau(etat) {
-  const dansLaFile = etat.contacts.filter((contact) => contact.niveau).length;
+  const fournee = etat.pistes.filter((piste) => piste.en_fournee && !piste.date_contacte).length;
 
   return `
     ${enTete('reseau')}
@@ -2969,9 +3316,9 @@ function vueReseau(etat) {
           <span class="lien-externe-texte">
             <span class="lien-externe-titre">La Passerelle</span>
             <span class="discret">${
-              dansLaFile
-                ? `<span class="chiffre">${dansLaFile}</span> dans la file · <span class="chiffre">${etat.envois.length}</span> messages envoyés`
-                : "La file d'aller-vers, à remplir depuis le réseau"
+              fournee
+                ? `<span class="chiffre">${fournee}</span> club${fournee > 1 ? 's' : ''} dans la fournée · <span class="chiffre">${etat.envois.length}</span> messages envoyés`
+                : 'Le rituel de la semaine : ouvrir les portes de nouveaux clubs'
             }</span>
           </span>
         </a>
@@ -2990,21 +3337,15 @@ function vueReseau(etat) {
     ${pied()}`;
 }
 
-// La Passerelle : la file d'action, et rien d'autre. Pas de panneau de
-// colonnes ici — on n'y range pas, on y écrit.
+// La Passerelle : le rituel de la semaine, et rien d'autre. Pas de recherche,
+// pas de panneau de colonnes — on ne range pas ici, on ouvre des portes.
 function vuePasserelle(etat) {
   return `
     ${enTete('passerelle')}
 
     <section class="bloc">
       <h2>La Passerelle</h2>
-      <input type="search" id="recherche-contact" class="recherche"
-        placeholder="Chercher dans la file…"
-        value="${echapper(etat.rechercheContact)}">
-      <div data-bloc="contacts">${construirePasserelle(
-        baseContacts(etat.contacts, optionsBase(etat)),
-        optionsBase(etat),
-      )}</div>
+      <div data-bloc="contacts">${construirePasserelle(etat)}</div>
     </section>
     ${pied()}`;
 }
@@ -3059,7 +3400,8 @@ function champsContact(prefill = {}) {
       options: TYPES_CONTACT,
       valeur: prefill.type ?? 'joueur',
     },
-    { nom: 'structure', libelle: 'Rattaché à (FC Lorient, OM, La Provence…)', type: 'text' },
+    { nom: 'structure', libelle: 'Rattaché à (FC Lorient, OM, La Provence…)', type: 'text',
+      valeur: prefill.structure ?? '' },
     { nom: 'instagram', libelle: 'Instagram', type: 'text' },
     { nom: 'email', libelle: 'E-mail', type: 'text' },
     { nom: 'telephone', libelle: 'Téléphone', type: 'text' },
@@ -3104,9 +3446,16 @@ function formulaireNouveauContact(prefill = null) {
        action: 'creer-contact',
        bouton: 'Ajouter au réseau',
        avecPli: false,
-       extra: prefill?.rencontre_id
-         ? `<input type="hidden" name="rencontre_id" value="${echapper(prefill.rencontre_id)}">`
-         : '',
+       extra: [
+         prefill?.rencontre_id
+           ? `<input type="hidden" name="rencontre_id" value="${echapper(prefill.rencontre_id)}">`
+           : '',
+         // La fiche naît d'une piste de la Passerelle : l'identifiant voyage
+         // pour que la piste se relie à la fiche une fois posée.
+         prefill?.piste_id
+           ? `<input type="hidden" name="piste_id" value="${echapper(prefill.piste_id)}">`
+           : '',
+       ].join(''),
        champs: prefill ? champsContact(prefill) : CHAMPS_CONTACT,
      })}`,
   );
@@ -3280,6 +3629,17 @@ const SOURCES = {
   commandes: async () => ({ commandes: await api.commandesToutes() }),
   envois: async () => ({ envois: await api.envoisTous() }),
   modeles: async () => ({ modeles: await api.modelesTous() }),
+  // Le prochain match voyage SUR sa piste (`piste.prochain`) : il suit le club
+  // partout — cartes, lignes, cache de session — sans clé d'état à part.
+  pistes: async () => {
+    const [pistes, prochains] = await Promise.all([
+      api.pistesToutes(),
+      api.prochainsMatchsParPiste(),
+    ]);
+    const parPiste = new Map(prochains.map((match) => [match.piste_id, match]));
+    for (const piste of pistes) piste.prochain = parPiste.get(piste.id) ?? null;
+    return { pistes };
+  },
   preparations: async () => ({ preparations: await api.preparationsToutes() }),
   modelesPrepa: async () => ({ modelesPrepa: await api.modelesPreparationTous() }),
 };
@@ -3306,8 +3666,8 @@ const BESOINS = {
   // modèles : un événement ou une commande doit savoir s'il a déjà sa feuille
   // (« Préparer » ou « Ouvrir »), et combien de modèles le choix offrira.
   calendrier: ['evenements', 'taches', 'objectifs', 'publications', 'commandes', 'contacts', 'preparations', 'modelesPrepa'],
-  reseau: ['contacts', 'envois', 'commandes', 'preparations', 'modelesPrepa'],
-  passerelle: ['contacts', 'envois', 'modeles'],
+  reseau: ['contacts', 'envois', 'commandes', 'preparations', 'modelesPrepa', 'pistes'],
+  passerelle: ['contacts', 'envois', 'modeles', 'pistes'],
   carnet: ['contacts', 'envois', 'modeles'],
   // La feuille lit aussi les sorties : le bilan propose d'inscrire celle-ci au
   // carnet (l'événement dit s'il est déjà vécu et de quel type ; les contacts
@@ -3346,6 +3706,15 @@ export default {
       commandes: [],
       envois: [],
       modeles: [],
+      pistes: [],
+      // La graine du tirage des propositions : celle de la semaine par défaut
+      // — la dizaine change donc chaque lundi toute seule — et « Proposer
+      // d'autres clubs » en prend une neuve.
+      grainePropositions: Number(versDateISO(debutDeSemaine()).replaceAll('-', '')),
+      // Les clubs passés cette semaine (choix d'écran, localStorage), et la
+      // fenêtre de la dizaine.
+      pistesPassees: pistesPasseesEnregistrees(),
+      propositionsOuvertes: false,
       preparations: [],
       modelesPrepa: [],
       // L'identifiant de la feuille (ou du modèle) ouvert — il vient de
@@ -3600,16 +3969,50 @@ export default {
       const cible = section.querySelector('[data-bloc="contacts"]');
       if (!cible) return;
 
-      // Les deux outils partagent la base et le bloc, pas le dessin.
+      // Les deux outils partagent le bloc, pas le dessin : la Passerelle lit
+      // le vivier de pistes, le carnet lit la base de contacts.
       cible.innerHTML =
         etat.vue === 'passerelle'
-          ? construirePasserelle(baseContacts(etat.contacts, optionsBase(etat)), optionsBase(etat))
+          ? construirePasserelle(etat)
           : construireContacts(etat.contacts, optionsBase(etat));
     };
 
     const rendreCommandes = () => {
       const cible = section.querySelector('[data-bloc="commandes"]');
       if (cible) cible.innerHTML = construireCommandes(etat.commandes, etat.preparations);
+    };
+
+    // Un envoi de plus pour une fiche : la ligne au journal, et la fiche qui
+    // avance. Partagé entre le carnet (« Envoyé ✓ » d'une fiche) et la
+    // Passerelle (« Envoyé ✓ » d'une piste qui a sa fiche).
+    //
+    // Le statut suivant se calcule AVANT : `modifierAussitot` a déjà changé la
+    // fiche quand la requête part, et relire `contact.statut` là-dedans ferait
+    // avancer d'un cran de trop (« message envoyé » deviendrait « relance »
+    // sans qu'on ait relancé).
+    const enregistrerLEnvoi = async (contact) => {
+      const date = versDateISO();
+      const suivant = statutApresEnvoi(contact.statut);
+
+      // L'envoi provisoire est retiré si l'écriture échoue — sans quoi le
+      // compteur, qui ne peut que monter, garderait un envoi qui n'a pas eu
+      // lieu.
+      const envoiProvisoire = { id: identifiantProvisoire(), contact_id: contact.id, date };
+      etat.envois = [envoiProvisoire, ...etat.envois];
+
+      const misAJour = await modifierAussitot(
+        contact,
+        { statut: suivant, date_dernier_envoi: date },
+        async () =>
+          (await api.enregistrerEnvoi({ contact: { id: contact.id }, statut: suivant })).contact,
+        { rendre: rendreContacts, echouer: dire },
+      );
+
+      if (!misAJour) {
+        etat.envois = etat.envois.filter((envoi) => envoi.id !== envoiProvisoire.id);
+        rendreContacts();
+      }
+      return misAJour;
     };
 
     // Le routeur rappelle `naviguer` à chaque changement de hash dans l'espace.
@@ -4032,6 +4435,22 @@ export default {
           dernier_echange: depuisRencontre?.dernier_echange ?? null,
         });
 
+        // La piste pointe désormais sa fiche : la carte de la fournée montre
+        // la personne, et son « Envoyé ✓ » fera avancer la relation. Si cette
+        // seconde écriture échoue, la fiche existe quand même — le dire suffit.
+        if (champs.piste_id) {
+          const piste = etat.pistes.find((p) => p.id === champs.piste_id);
+          if (piste) {
+            try {
+              await api.modifierPiste(piste.id, { contact_id: contact.id });
+              piste.contact_id = contact.id;
+            } catch (souci) {
+              console.error('Lien de la piste impossible', souci);
+              dire('La fiche est créée, mais la piste n’a pas pu être reliée.');
+            }
+          }
+        }
+
         // La rencontre pointe désormais sa fiche : le « + » disparaît, le nom
         // devient une étiquette reliée.
         if (champs.rencontre_id) {
@@ -4324,6 +4743,7 @@ export default {
         etat.contactOuvert = null;
         etat.editionContact = false;
         etat.choixPrepa = null;
+        etat.propositionsOuvertes = false;
         rendre();
         return;
       }
@@ -4701,34 +5121,118 @@ export default {
       if (envoye) {
         const contact = etat.contacts.find((c) => c.id === envoye.dataset.envoye);
         if (!contact || estProvisoire(contact.id)) return;
-
         // Deux effets pour un geste : la fiche avance, et le compteur monte.
-        //
-        // Le statut suivant se calcule AVANT : `modifierAussitot` a déjà changé
-        // la fiche quand la requête part, et relire `contact.statut` là-dedans
-        // ferait avancer d'un cran de trop (« message envoyé » deviendrait
-        // « relance » sans qu'on ait relancé).
-        const date = versDateISO();
-        const suivant = statutApresEnvoi(contact.statut);
+        await enregistrerLEnvoi(contact);
+        return;
+      }
 
-        // L'envoi provisoire est retiré si l'écriture échoue — sans quoi le
-        // compteur, qui ne peut que monter, garderait un envoi qui n'a pas eu
-        // lieu.
-        const envoiProvisoire = { id: identifiantProvisoire(), contact_id: contact.id, date };
-        etat.envois = [envoiProvisoire, ...etat.envois];
-
-        const misAJour = await modifierAussitot(
-          contact,
-          { statut: suivant, date_dernier_envoi: date },
-          async () =>
-            (await api.enregistrerEnvoi({ contact: { id: contact.id }, statut: suivant })).contact,
+      // Un club de la dizaine proposée rejoint la fournée. Un geste, pas de
+      // panier : toucher, c'est choisir.
+      const choisirPiste = evenement.target.closest('[data-choisir-piste]');
+      if (choisirPiste) {
+        const piste = etat.pistes.find((p) => p.id === choisirPiste.dataset.choisirPiste);
+        if (!piste || estProvisoire(piste.id)) return;
+        await modifierAussitot(
+          piste,
+          { en_fournee: true },
+          () => api.modifierPiste(piste.id, { en_fournee: true }),
           { rendre: rendreContacts, echouer: dire },
         );
+        return;
+      }
 
-        if (!misAJour) {
-          etat.envois = etat.envois.filter((envoi) => envoi.id !== envoiProvisoire.id);
-          rendreContacts();
+      // Reposer un club au vivier : le seul retour en arrière d'une piste, et
+      // c'est un choix de Noé — rien ne le compte, rien ne le reproche.
+      const reposerPiste = evenement.target.closest('[data-reposer-piste]');
+      if (reposerPiste) {
+        const piste = etat.pistes.find((p) => p.id === reposerPiste.dataset.reposerPiste);
+        if (!piste || estProvisoire(piste.id)) return;
+        await modifierAussitot(
+          piste,
+          { en_fournee: false },
+          () => api.modifierPiste(piste.id, { en_fournee: false }),
+          { rendre: rendreContacts, echouer: dire },
+        );
+        return;
+      }
+
+      // Passer le club proposé : le suivant prend sa place. Un choix d'écran,
+      // jamais écrit en base — le club reviendra une autre semaine.
+      const passerPiste = evenement.target.closest('[data-passer-piste]');
+      if (passerPiste) {
+        etat.pistesPassees = [...etat.pistesPassees, passerPiste.dataset.passerPiste];
+        retenirPistesPassees(etat.pistesPassees);
+        rendreContacts();
+        return;
+      }
+
+      // La dizaine complète, en fenêtre volante — pour composer d'un coup
+      // d'œil les semaines où une porte à la fois ne suffit pas.
+      if (evenement.target.closest('[data-voir-propositions]')) {
+        etat.propositionsOuvertes = true;
+        rendreContacts();
+        section.querySelector('.fenetre-fermer')?.focus();
+        return;
+      }
+
+      // Une autre dizaine : graine neuve, passages remis à zéro — c'est une
+      // nouvelle donne, pas la même relue.
+      const proposerAutres = evenement.target.closest('[data-proposer-autres]');
+      if (proposerAutres) {
+        etat.grainePropositions = Date.now();
+        etat.pistesPassees = [];
+        retenirPistesPassees([]);
+        rendreContacts();
+        return;
+      }
+
+      // La personne trouvée pour un club : la fiche s'ouvre, structure déjà
+      // remplie, et `piste_id` voyage pour que la piste se relie à la fiche.
+      const trouvePiste = evenement.target.closest('[data-trouve-piste]');
+      if (trouvePiste) {
+        const piste = etat.pistes.find((p) => p.id === trouvePiste.dataset.trouvePiste);
+        if (!piste || estProvisoire(piste.id)) return;
+        etat.contactNouveau = { structure: piste.nom, type: 'club', piste_id: piste.id };
+        rendre();
+        return;
+      }
+
+      // « Envoyé ✓ » d'une piste : l'envoi compte, et le club est contacté —
+      // un fait daté, qui ne redescend jamais. Avec une fiche, la relation
+      // avance aussi ; sans fiche, le message est parti au compte du club, et
+      // l'effort compte quand même.
+      const envoyePiste = evenement.target.closest('[data-envoye-piste]');
+      if (envoyePiste) {
+        const piste = etat.pistes.find((p) => p.id === envoyePiste.dataset.envoyePiste);
+        if (!piste || estProvisoire(piste.id)) return;
+
+        const fiche = etat.contacts.find((contact) => contact.id === piste.contact_id);
+        if (fiche && !estProvisoire(fiche.id)) {
+          await enregistrerLEnvoi(fiche);
+        } else {
+          const envoiProvisoire = {
+            id: identifiantProvisoire(),
+            contact_id: null,
+            date: versDateISO(),
+          };
+          etat.envois = [envoiProvisoire, ...etat.envois];
+          try {
+            const envoi = await api.enregistrerEnvoiLibre();
+            const rang = etat.envois.indexOf(envoiProvisoire);
+            if (rang !== -1) etat.envois[rang] = envoi;
+          } catch (souci) {
+            console.error("Enregistrement de l'envoi impossible", souci);
+            etat.envois = etat.envois.filter((envoi) => envoi.id !== envoiProvisoire.id);
+            dire("L'envoi n'a pas pu être enregistré.");
+          }
         }
+
+        await modifierAussitot(
+          piste,
+          { date_contacte: versDateISO() },
+          () => api.modifierPiste(piste.id, { date_contacte: versDateISO() }),
+          { rendre: rendreContacts, echouer: dire },
+        );
         return;
       }
 
@@ -5350,42 +5854,14 @@ export default {
         return;
       }
 
-      // Les champs vifs de la Passerelle s'enregistrent en quittant le champ,
-      // sans rien redessiner : la valeur est déjà sous les yeux, et un
-      // redessin ferait sauter la page sous le doigt.
-      const champVif =
-        evenement.target.closest('[data-objectif-contact]') ??
-        evenement.target.closest('[data-prochaine-action]') ??
-        evenement.target.closest('[data-prochaine-date]');
-
-      if (champVif) {
-        const { objectifContact, prochaineAction, prochaineDate } = champVif.dataset;
-        const contact = etat.contacts.find(
-          (c) => c.id === (objectifContact ?? prochaineAction ?? prochaineDate),
-        );
-        if (!contact) return;
-
-        const valeur = champVif.value.trim() || null;
-        const colonne = objectifContact
-          ? 'objectif'
-          : prochaineAction
-            ? 'prochaine_action'
-            : 'prochaine_action_date';
-
-        // Sans redessin : la valeur est déjà dans le champ, sous les yeux. Le
-        // retour en arrière, lui, doit se voir — d'où le rendu au seul échec.
-        await modifierAussitot(
-          contact,
-          { [colonne]: valeur },
-          () => api.modifierContact(contact.id, { [colonne]: valeur }),
-          { echouer: (message) => { rendreContacts(); dire(message); } },
-        );
-        return;
-      }
+      // Les champs vifs « pourquoi ce contact » et « prochaine action » de
+      // l'ancienne file par niveaux sont partis avec elle (15 août 2026) : ces
+      // colonnes s'éditent depuis la fiche du carnet, et la relance datée
+      // continue d'apparaître au calendrier.
 
       // L'éditeur de modèles : le nom et les items se corrigent en place, sans
-      // redessin — la valeur est déjà sous les yeux, comme les champs vifs de
-      // la Passerelle. Un champ vidé reprend son texte : une ligne sans texte
+      // redessin — la valeur est déjà sous les yeux, comme les modèles de
+      // messages. Un champ vidé reprend son texte : une ligne sans texte
       // n'existe pas, elle se RETIRE (la croix est à côté).
       const nomModele = evenement.target.closest('[data-nom-modele]');
       if (nomModele) {
