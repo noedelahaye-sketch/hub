@@ -1,808 +1,186 @@
-# État des lieux — 14 août 2026
+# État des lieux — 15 août 2026
 
 > **Reprise : § 4 bis, « Par où reprendre ».**
 >
-> **Ce que la session des 13–14 août a fait**, du plus structurant au plus fin.
-> Les sections détaillées sont en ordre inverse (la plus récente d'abord) : le
-> tableau ci-dessous sert de carte.
+> Ce document dit **où en est le hub** — `CLAUDE.md` dit ce qu'il doit être, et
+> les deux cahiers des charges (`yuno-spec.md`, `fch-spec.md`) font autorité sur
+> leurs sites. À relire au début d'une session, à mettre à jour à la fin.
 >
-> | Chantier | Où |
-> |---|---|
-> | L'espace **Tâches** et la **tuile de capture**, seul geste de création daté | § 2 quater |
-> | Le **démarrage** — cache de session, chargement par morceaux, chrome d'abord | § 2 ter (Yuno), 2 ter bis (accueil), 2 ter ter (calendrier) |
-> | **La fluidité** : l'écran avant le réseau, partout — hub et deux sites | § 2 ter ter, § 4 |
-> | La **coquille en cache** (service worker) et la fin des CDN | § 2 ter ter |
-> | Les **mouvements** : éclair au toucher, coche dessinée, fondu de navigation | § 2 sexies |
-> | Le **« + » de Yuno**, qui s'adapte à la page | § 2 septies |
-> | Le **calendrier** : barres indépendantes, glissement depuis l'accueil, fantôme | § 2 octies, 2 decies |
-> | **Plus un seul menu déroulant natif** dans le hub | § 2 nonies |
-> | La **tâche perso**, et le mot **réseau** qui remplace « carnet » | § 2 quinquies, 2 nonies |
->
-> **Cinq choses valent d'être sues avant de continuer :**
->
-> 1. **L'écran passe devant le réseau** partout où le geste tient en un clic.
->    La mécanique est dans `js/ecriture.js` — ne pas la recopier. Les
->    formulaires font exception, volontairement (§ 4).
-> 2. **La tuile de capture est le seul geste de création daté**, et elle sert
->    aussi à corriger. La toucher, c'est toucher cinq écrans à la fois.
-> 3. **Le plafond de 3 tâches actives dort** (§ 3, point 9), et « Aujourd'hui »
->    ne filtre donc plus.
-> 4. **Le hub n'appelle plus aucun CDN** : polices et supabase-js sont dans le
->    dépôt. `node tools/verifier-coquille.js` garde la liste du service worker
->    complète.
-> 5. **Le FCH et la Passerelle sont mis de côté** par Noé — ne pas les
->    entamer par petites touches (§ 3).
+> **Les sections § 0 racontent les deux dernières journées** (14–15 août), la
+> plus récente d'abord ; les § 1 et suivants décrivent l'état stable et les
+> chantiers antérieurs.
 
-Point de reprise. `CLAUDE.md` dit **ce que le hub doit être** ; ce document dit
-**où il en est**, ce qui a été vérifié, ce qui ne l'a pas été, et ce qui attend
-une réponse de Noé. À relire au début d'une session, et à mettre à jour à la
-fin. Les deux cahiers des charges (`yuno-spec.md`, `fch-spec.md`) restent la
-référence pour leurs sites respectifs.
+## 0. La session des 14–15 août, en un coup d'œil
 
----
+**Vingt-quatre commits, tous poussés.** Le site Yuno a été refondu en
+profondeur ; le hub n'a été touché qu'aux endroits qu'il partage.
 
-## 0. Les Préparations de Yuno — l'échantillon (14 août, après-midi)
+### Ce qui a été construit
 
-Demande de Noé du jour : préparer ses matchs/événements/commandes avec des
-modèles de cases à cocher (avant · pendant · après), plus un espace bilan. Ses
-réponses : l'outil s'appelle **« Préparation »**, le modèle « Match » de départ
-part de sa liste, les deux questions du bilan lui vont, **rien côté hub** pour
-commencer. Le cahier des charges est dans `yuno-spec.md` (§4,
-`#yuno/preparations`) ; ceci est l'état de l'échantillon.
+| Chantier | Où le lire |
+|---|---|
+| **Les Préparations** — feuilles avant/pendant/après, modèles éditables, bilan | § 0 bis |
+| **La fusion moments ↔ événements** : une sortie, deux faces (prévue, vécue) | § 0 ter |
+| **Créer refondue** : le pipeline d'une idée, et sa forme | § 0 quater |
+| **L'identité de Yuno** : trois couleurs, Gilroy Heavy, titres réduits | § 0 quinquies |
+| **Ce qui a été retiré** : rendez-vous stats, « Œuvre finie », doublons | § 0 sexies |
 
-**Construit et vérifié en conditions réelles :**
+### Cinq choses à savoir avant de continuer
 
-- **Migration `20260814100000_preparations.sql`** appliquée : 4 tables
-  (`modeles_preparation`, `modeles_preparation_items`, `preparations`,
-  `preparations_items`), RLS + politiques + grants comme partout. Le modèle
-  « Match » est chargé en base (9 items, non versionnés — même pratique que les
-  modèles de messages).
-- **« Préparer » dans la fenêtre d'un événement** au calendrier Yuno
-  (`fenetreDetail` a gagné une option `actions`, vide pour le hub et le FCH —
-  vérifié : leur fenêtre n'a pas bougé). Créer copie le modèle, ouvre
-  `#yuno/preparations/<id>` ; l'événement dit ensuite « Ouvrir la préparation ».
-- **La feuille** : trois phases en colonnes (une seule sous 1080 px), lignes à
-  la forme des tâches (cercle gris — pas de priorité ici), champ d'ajout par
-  phase qui rend le focus après l'envoi, bilan ouvert à partir de la date de la
-  sortie, suppression écrite en bas. L'onglet Journal reste allumé.
-- **Exercé sur la vraie feuille du match du soir** (Red Star - Sochaux, créée
-  et GARDÉE pour Noé) : cocher/décocher, ajouter puis retirer un item, écrire
-  le bilan — base relue en SQL à chaque étape, puis bilan remis à zéro (c'était
-  un essai, le vrai s'écrira après le match). Zéro erreur console venant du
-  chantier, 0 px de débordement à 375 px, cercles à 43 px.
+1. **`node tools/verifier-gabarits.js` avant de pousser du HTML dans un
+   gabarit.** Un accent grave nu dans un commentaire HTML ferme la chaîne :
+   `node --check` passe, le module casse au chargement. Le piège s'est produit
+   **quatre fois** en trois jours ; l'outil le voit, rien d'autre ne le voyait.
+2. **La coquille en cache sert l'ancienne version un rechargement durant.**
+   Mesurer ou juger APRÈS deux rechargements, sinon on regarde la version
+   d'avant — piège rencontré plusieurs fois par jour.
+3. **Une graisse ou une couleur se vérifie en MESURANT.** Une police absente ne
+   se signale pas (le navigateur retombe sur la plus proche), deux attributs
+   `class` sur un élément et le second est ignoré en silence. Trois défauts
+   invisibles à l'œil ont été trouvés ainsi cette session.
+4. **L'écran passe devant le réseau** partout où le geste tient en un clic
+   (`js/ecriture.js` — ne pas la recopier). Les formulaires font exception.
+5. **Le FCH et la Passerelle restent mis de côté** par Noé — ne pas les entamer
+   par petites touches (§ 3).
 
-**La suite a été construite dans la foulée** (même jour, demande de Noé —
-« fait la suite »), et l'outil est complet :
+### L'état de la base, au soir du 15 août
 
-- **L'éditeur de modèles** (`#yuno/modeles/<id>`, portes en bas de la liste des
-  préparations, avec un formulaire « Nouveau modèle » qui ouvre l'éditeur) :
-  nom et items se corrigent **en place** sur `change`, comme les modèles de
-  messages — un champ vidé reprend son texte, une ligne se retire à la croix.
-  Vérifié en SQL : corriger, ajouter, retirer, puis retour à l'état exact.
-- **Le choix du modèle** quand il y en a plusieurs : une fenêtre volante en
-  liste (jamais un menu natif), feuille vierge offerte. Un seul modèle = pas de
-  question. Vérifié avec un modèle « Essai » créé puis supprimé ; Échap ferme.
-- **« Préparer » sur une commande** : dans la fenêtre du calendrier (les deux
-  natures passent par le même `boutonPreparer`) et sur la tuile de la commande
-  dans Réseau — `construireCommandes` prend les préparations en second
-  paramètre facultatif. Une commande sans échéance donne une feuille sans date,
-  dont le bilan est ouvert d'emblée. Vérifié avec une commande d'essai, tout
-  supprimé après.
-- **La porte au Journal**, discrète, en bas — sans compteur : le Journal n'a
-  pas à charger les feuilles pour ouvrir une porte.
-- **« Aussi au modèle »** : une case par ajout, décochée à chaque fois, visible
-  seulement si le modèle d'origine existe encore. Vérifié : l'item entre dans
-  la feuille ET dans le modèle ; si la seconde écriture échoue, la feuille
-  garde le sien et une ligne le dit.
+| | |
+|---|---|
+| Événements | **15**, dont **13 vécus** (le Carnet de terrain) |
+| Publications | **18 idées**, aucune datée, aucune publiée |
+| Réseau | **47 fiches**, 7 rencontres (3 sans fiche) |
+| Préparations | **1 feuille** (Red Star - Sochaux), **1 modèle** (« Match », 9 lignes) |
+| Tâches · victoires · humeurs | 8 · 21 · 3 |
+| Objectifs · commandes | **0** — jamais exercés avec de la matière |
 
-`BESOINS` : `calendrier` et `reseau` chargent désormais `preparations` +
-`modelesPrepa` (savoir si une sortie a sa feuille, et combien de modèles le
-choix offrira). État final de la base revérifié : 1 feuille (le match du
-soir), 1 modèle « Match » à 9 lignes, 0 commande.
+**Toutes les migrations sont appliquées**, y compris
+`20260815100000_publications_post_unique` (passée en fin de session : la
+conversion des données avait été faite par l'API, le commentaire de colonne
+attendait).
 
-**Le bilan inscrit le moment au carnet** (idée de Noé, même jour — migration
-`20260814150000_moments_evenement`) : `moments.evenement_id` fait le lien dur,
-`evenements.type_moment` porte le type (pastille « type de moment » dans la
-tuile — toujours chez Yuno, révélée dans le hub quand le projet choisi est
-photo, via `data-si-projet` posé par `brancherCapture`). Au premier
-enregistrement du bilan : photo, rencontres, case « Noter ce moment au
-carnet » cochée d'avance — le moment naît lié, type hérité, victoire comprise ;
-la photo et les rencontres vont au MOMENT, rien ne se stocke en double dans le
-bilan. Jamais de doublon (`momentDeLaFeuille` garde l'écriture ET l'affichage),
-et l'invite du Journal se tait par le même lien (`evenementsARattraper`).
-`BESOINS.preparations` monte à cinq lectures (+ moments, contacts, evenements).
-**Vérifié de bout en bout** sur un événement d'essai d'hier, type concert :
-feuille créée, bilan enregistré avec deux rencontres — moment `concert` lié en
-base, victoire créée, « Ce moment est au carnet » affiché, invite muette, la
-tuile du hub montre/cache la pastille au choix du projet. Tout l'essai défait,
-base relue à l'état exact.
+### Ce qui reste ouvert
 
-## 0 bis. La fusion des moments et des événements (14 août, soir)
-
-**Idée de Noé** : « je ne vois pas d'utilisation des moments qui ne sont pas
-liés à un évènement, il faut que ça devienne une et même chose ». Il avait
-raison, et le code du jour le prouvait — depuis que le bilan créait le moment,
-celui-ci ne faisait que recopier son événement. **La table `moments` a
-disparu** (migration `20260814180000_fusion_moments_evenements`) ; l'événement
-porte ses deux faces : prévue (date, lieu, `type_moment`, sa préparation) et
-vécue (`vecu`, `photo_chemin`, `note`, `oeuvre_finie`, ses `rencontres`).
-
-**Les deux arbitrages de Noé** : `vecu` ne se pose que par un geste, jamais au
-passage de la date ; et le vocabulaire ne bouge pas — l'écran dit toujours
-« Moments vécus ».
-
-**Ce que la migration a fait**, vérifié ligne par ligne : le moment de juin
-(RDC - Danemark, sa photo, ses 2 rencontres, sa victoire) est devenu un
-événement photo vécu au 3 juin — **minuit LOCAL et non UTC**, sinon la
-convention « minuit = pas d'heure » aurait affiché 02:00. Les rencontres ont
-changé de clé (`evenement_id`), les victoires de cible (`source_id` pointe
-l'événement ; `source = 'moment'` reste, il dit la nature du geste, pas la
-table). Une sauvegarde JSON des données a été prise avant le `drop table`.
-
-**Trois conséquences dans l'usage**, toutes voulues :
-
-1. **« Retirer du carnet » ne supprime plus rien** : la sortie reste au
-   calendrier à sa date, seule sa face vécue s'efface (`retirerDuCarnet`).
-2. **Une sortie notée au vol entre au calendrier** — c'en est un événement.
-3. **La fiche d'une sortie montre le bilan de sa préparation** et ouvre sur la
-   feuille. Elle s'ouvre depuis une vignette du mur **ou depuis sa carte du
-   carnet** : une sortie sans photo n'a pas de vignette, son bilan serait
-   autrement inatteignable.
-
-**Une requête de moins** : `SOURCES.moments` a disparu, `SOURCES.evenements`
-ramène les rencontres et signe les photos.
-
-**Vérifié de bout en bout, en conditions réelles** : le bilan du vrai match du
-soir marque l'événement vécu (base relue : `vecu`, rencontre, victoire, aucun
-doublon), sa fiche affiche le bilan, « Retirer du carnet » le sort du carnet en
-le laissant au calendrier, une sortie spontanée créée depuis la capture apparaît
-au calendrier, sa correction suit jusqu'au titre de sa victoire et **préserve
-l'heure**. Tout défait : base revenue à 3 événements (1 vécu), 2 rencontres,
-7 victoires. Zéro erreur console sur un onglet neuf.
+- **« En chantier » est vide, et c'est le point à observer.** Les statuts
+  intermédiaires (à développer, brouillon, prêt) n'ont jamais servi ; le bloc
+  existe maintenant pour leur donner un lieu. Si dans une semaine il est encore
+  vide, c'est le pipeline qui ne correspond pas à la façon de travailler de
+  Noé — pas le bloc.
+- **Aucune publication programmée.** Le plancher de 2/semaine n'est pas exercé.
+- **Les 47 menus « Niveau » du CRM** sont les derniers `select` natifs du site.
+  Noé ne les a pas demandés — à proposer s'il repasse par là.
+- **Le FCH perd « Post »** : `FORMATS` est commun aux deux sites, et le format
+  a fusionné avec « Carrousel ». Sans effet aujourd'hui (aucune publication
+  FCH), à trancher le jour où il en aura.
+- **Un décalage d'horloge** fait apparaître par intermittence
+  `JWT issued at future` (PGRST303) au chargement : l'horloge de la machine
+  contre celle de Supabase. Sans rapport avec le code, jamais reproduit sur le
+  téléphone.
 
 ---
 
-**« Ta semaine » s'ouvre au toucher** (demande de Noé, 14 août au soir) :
-toucher une barre de la grille de l'accueil ouvre **la fenêtre de détail de
-l'espace Calendrier** — d'où l'on modifie (formulaire d'édition complet, champ
-type de moment compris pour un événement photo) et supprime ; le « +N » déplie
-sa journée, Échap et la croix referment. Le **cercle d'une tâche s'y coche**
-aussi, comme au calendrier — il passe avant l'ouverture du détail
-(`stopPropagation`). Après une correction, l'accueil relit tout (`charger()`),
-comme l'espace Calendrier après le même geste ; `corriger` et `effacer` y sont
-les mêmes aiguillages que là-bas. **Vérifié** : détail ouvert sur le vrai match
-du soir, édition renvoyée à l'identique (base relue champ par champ — seul
-`type_moment` est passé de NULL à « match », normalisation voulue), et une
-tâche d'essai cochée depuis la grille (statut + victoire relus en SQL) puis
-tout supprimé.
+## 0 bis. Les Préparations (14–15 août)
 
-**L'en-tête à signature du site Yuno a disparu** (demande de Noé, même jour) :
-le site s'ouvre sur sa barre, centrée par les marges automatiques de
-`.yuno-nav` (le sélecteur `.yuno-site-tete + .yuno-nav` serait devenu lettre
-morte — vérifié à 1280 px, 433 px de part et d'autre). La signature reste sur
-la page `#photo` du hub.
+Préparer une sortie — match, concert, commande — avec des modèles. Le cahier des
+charges est dans `yuno-spec.md` (§4, `#yuno/preparations`) ; ici, l'état.
 
-**Les lignes d'une feuille de préparation sont resserrées — et seulement
-elles** (14 août, demande de Noé : « moins de place, moins d'espace entre 2 »,
-précisée ensuite : la liste générale des tâches ne bouge pas). Une première
-version avait resserré la règle commune, donc l'espace Tâches et
-« Aujourd'hui » avec ; Noé l'a fait défaire. La règle vit maintenant dans
-`yuno.css` (`.bloc .prepa-liste > .tache-ligne`, 8 px au lieu de 12) — même
-spécificité que la règle commune, c'est l'ordre de chargement qui la fait
-gagner. Mesuré : 47 px la ligne de feuille (55 avant), 62 inchangés dans
-Tâches. Le cercle garde sa cible de 44 px par son propre rembourrage. Piège
-recroisé en vérifiant : la coquille en cache sert l'ancien CSS un rechargement
-durant — mesurer après DEUX rechargements, sinon on mesure la version d'avant.
+- **Quatre tables** (migration `20260814100000_preparations`) : modèles et leurs
+  items, feuilles et les leurs. **Créer une feuille COPIE le modèle** — le bilan
+  d'octobre doit refléter ce qui était prévu en octobre.
+- **Trois phases** (avant · pendant · après), cases cochables à la forme des
+  tâches, ajout d'une ligne en cours de route avec l'option « aussi au modèle »
+  (la boucle d'apprentissage). **Un item non coché n'est jamais un raté** :
+  aucun compteur de manqués nulle part.
+- **Les modèles s'éditent depuis le site** (`#yuno/modeles/<id>`) : nom et items
+  se corrigent en place, comme les modèles de messages.
+- **Le bilan inscrit le moment au carnet** : deux questions, plus la photo et
+  les rencontres, et une case « Noter ce moment au carnet » cochée d'avance —
+  Noé reste l'auteur. Le moment naît lié à l'événement, son **type hérité** de
+  la pastille posée à la création.
+- **L'accueil montre la sortie du moment** et la phase courante de sa feuille
+  (avant / pendant / après jusqu'à 24 h), avec les trois lignes qui restent —
+  **cochables depuis l'accueil**.
 
-**Un piège recroisé** : la seule erreur console de la session est un
-`JWT issued at future` (PGRST303) au chargement du tableau de bord — l'horloge
-de la machine contre celle de Supabase, antérieur au chantier, sans rapport.
+**Vérifié en réel** sur le match du 14 août : feuille créée, items cochés et
+décochés, bilan écrit puis effacé, moment lié généré avec sa victoire, tout
+défait. **Reste à faire** : un seul modèle existe (« Match ») ; le choix entre
+modèles est écrit mais n'a jamais servi en usage réel.
 
 ---
 
-## 0 bis. Le « + » d'une rencontre ouvre sa fiche (14 août, fin de journée)
+## 0 ter. La fusion des moments et des événements (14 août)
 
-Demande de Noé : une personne croisée et pas encore au réseau doit pouvoir
-recevoir **tous ses détails** au moment où l'on appuie sur son « + », au lieu
-d'une fiche qui ne porte qu'un nom et qu'il faut aller compléter deux écrans
-plus loin.
+**La table `moments` a disparu** (migration `20260814125118`). Un événement
+porte désormais **deux faces** : ce qui est *prévu* (date, lieu, `type_moment`,
+sa préparation) et ce qui a été *vécu* (`vecu`, `photo_chemin`, `note`,
+`oeuvre_finie`, ses rencontres). Le vocabulaire n'a pas bougé : l'interface dit
+toujours « Moments vécus » et « Carnet de terrain ».
 
-- **Le « + » ouvre le formulaire du réseau**, pré-rempli : nom écrit, relation
-  sur `contact_etabli`, et `dernier_echange` **au jour de la sortie** — pas au
-  jour de la saisie. `rencontre_id` voyage dans un champ caché ; à
-  l'enregistrement, `api.relierRencontreAuContact` fait le raccord et le « + »
-  disparaît du nom. `api.ouvrirFichePourRencontre` (qui écrivait la fiche
-  minimale) a disparu avec l'ancien geste.
-- **La fenêtre ne se ferme qu'après l'écriture** : un échec réseau garde les
-  huit champs saisis. L'ancienne version vidait l'état avant l'appel — la
-  saisie était perdue. C'est l'exception « formulaires » de `js/ecriture.js`,
-  qui compte d'autant plus ici.
-- **`photographe` est un type de contact** (migration
-  `20260814170000_contacts_type_photographe`). `agence` et `autre` existaient
-  déjà depuis le 7 août — vérifié avant d'y toucher.
-
-**Vérifié** sur une sortie d'essai et sa rencontre, créées pour l'occasion (les
-quatre rencontres non reliées de Noé n'ont pas été touchées) : fenêtre ouverte
-pré-remplie, « Photographe » offert dans la liste, fiche complète enregistrée —
-type, structure, Instagram, mail, téléphone, notes, `dernier_echange` au jour de
-la sortie —, rencontre reliée en base, « + » disparu de l'écran, zéro erreur en
-console. Essai entièrement défait : 46 contacts, 15 événements, 7 rencontres
-dont 4 non reliées, l'état exact du départ.
+- **`vecu` se pose par un GESTE, jamais par le temps qui passe** : un match où
+  Noé n'est pas allé ne doit pas compter.
+- **« Retirer du carnet » efface la face vécue** — l'événement reste au
+  calendrier. Le geste vit **sur la ligne du carnet**, plus dans la fiche.
+- **Le carnet est passé en lignes** : 13 sorties tiennent en 548 px. Date en
+  toutes lettres pour l'année en cours, en chiffres pour les précédentes.
+- **Le « + » d'une rencontre ouvre la fiche complète** du réseau, pré-remplie
+  (nom, « contact établi », dernier échange au jour de la sortie).
 
 ---
 
-## 0 ter. L'accueil et le Journal allégés (14 août, fin de journée)
+## 0 quater. Créer, refondue (15 août)
 
-Trois demandes de Noé, à la suite :
+**Le constat qui a tout commandé** : 18 idées, toutes en statut « idée », zéro
+programmée, zéro publiée. La page savait collecter, rien n'y faisait avancer.
 
-- **L'accueil du site Yuno perd ses trois compteurs et son bouton de capture.**
-  Il s'ouvre maintenant sur le mur. Les compteurs et « Ajouter une sortie »
-  restent **au Journal seulement** — c'est lui la page du carnet. Portée
-  respectée : le Journal n'a pas été touché par cette demande-là.
-- **Au Journal, le « + » flottant remplace le bouton dédié** et ouvre
-  directement « Ajouter une sortie » (`PLUS_PAR_VUE.journal = { sortie: true }`,
-  sur le modèle de `contact: true` : ce n'est pas une nature de la tuile, la
-  fenêtre s'ouvre seule). `boutonCapture()`, son gestionnaire
-  `[data-ouvrir-capture]`, les règles `.carnet-entete` et `.bouton-capture` ont
-  été supprimés — plus personne ne les appelait. (Le `data-ouvrir-capture` de
-  `js/taches.js` est un autre bouton, sans rapport.)
-- **La frise de l'accueil revient à trois photos sur téléphone**, et **elle
-  seule** : le mur du Journal garde ses cinq (Noé a tranché la question de
-  portée en cours de route). Les deux murs ne comptent donc plus pareil, et
-  c'est la différence entre les deux pages — l'accueil MONTRE trois photos
-  qu'on n'a pas demandées, elles doivent se reconnaître d'un regard ; le
-  Journal est l'archive où l'on CHERCHE, et on balaie d'autant mieux qu'il y en
-  a plus à l'écran. Accueil : 3 · 5 · 10 selon la largeur. Journal : 5 · 5 · 10.
+**Elle raconte maintenant le chemin d'une idée** : `01` la carte du jour (avec
+le geste de programmer dans son coin) → `02` Cette semaine → `03` En chantier →
+les deux portes → les piliers repliés. Détail complet dans `yuno-spec.md`.
 
-**Le piège était dans la spécificité**, pas dans l'ordre. Une base commune avec
-des exceptions par page ne tient pas : `.bloc ul.mur-photos:not(.mur-complet)`
-pèse (0,3,1) et écrase le `.bloc ul.mur-photos` (0,2,1) d'un palier plus large,
-quel que soit l'ordre du fichier — l'accueil serait resté à cinq colonnes en
-1280 px. D'où **deux familles de règles séparées**, chacune avec ses paliers et
-sa spécificité constante : `:not(.mur-complet)` pour la frise, `.mur-complet`
-pour l'archive.
-
-**Vérifié aux trois largeurs, sur les deux pages** — six mesures : accueil
-3 vignettes de 112 × 149 en 375 px, 5 en 768, 10 en 1280, toujours une seule
-ligne ; Journal 5 colonnes en 375 et 768, 10 en 1280, et **13 photos visibles
-sur 13** à chaque fois, aucune cachée. Accueil sans compteurs ni bouton,
-Journal avec ses compteurs (13 moments vécus) et son « + » qui ouvre « Ajouter
-une sortie », curseur sur le titre. 0 px de débordement, zéro erreur en
-console.
+- **Trois familles de formes** : la carte pour le contenu, la **ligne** pour le
+  flux, la tuile pour les portes.
+- **Les vides montrent leur lieu** (l'icône du bloc, grande et pâle).
+- **Le « + » de Créer et de la banque s'ouvre sans date** : une idée est une
+  publication sans date.
+- **La tuile de capture a gagné pilier et notes** — elle est le seul endroit où
+  une idée s'écrit depuis que « Noter une idée » a disparu.
 
 ---
 
-## 0 quater. La sortie du moment, sur l'accueil (14 août, soir)
+## 0 quinquies. L'identité visuelle (15 août)
 
-Demande de Noé : un lien vers la fiche de préparation du prochain événement, et
-un aperçu de ses tâches — **avant** avant le début, **pendant** pendant, et
-**après** jusqu'à 24 h après la fin.
-
-- **Trois fonctions pures**, exportées et vérifiables seules :
-  `finDeLaSortie` (la colonne `date_fin`, sinon +2 h si l'événement porte une
-  heure, sinon la fin de la journée — les deux conventions déjà posées par
-  `heureDe` et par la durée par défaut de la tuile), `phaseDeLaSortie`
-  (`avant` · `pendant` · `apres` · `null` au-delà de 24 h) et `sortieDuMoment`
-  (l'ordre du temps : la sortie commencée passe devant celle à venir).
-- **`construireSortieDuMoment`** rend le bloc, en tête d'accueil : étiquette de
-  phase, date, titre, les **trois premières lignes qui restent** (plus le compte
-  s'il y en a davantage), et le lien vers la feuille. Sans feuille, le bouton
-  « Préparer ». Tout coché : une phrase, pas un vide.
-- **L'aperçu est en lecture** — l'accueil montre et ouvre des portes, il ne gère
-  rien (décision du 12 août). Les cercles sont des `<span>`, pas des boutons.
-- `BESOINS.accueil` gagne `modelesPrepa` : sans cette lecture, le bouton
-  « Préparer » de ce bloc créerait une feuille vierge au lieu d'offrir le choix.
-  Les préparations, elles, y étaient déjà.
-- **`.bloc li` est annulé pour `.apercu-phase`**, comme pour la liste des
-  tâches : sans ça les lignes héritaient du fond et du rayon des cartes, et deux
-  lignes de texte prenaient l'air de deux champs de saisie (vu sur capture,
-  corrigé, revérifié).
-
-**Vérifié** — d'abord les fonctions pures avec des sorties factices : les
-bascules tombent au bon instant (avant → pendant à l'heure pile, pendant
-jusqu'à la fin incluse, après jusqu'à 24 h, `null` à 25 h), la fin déduite vaut
-21:00 pour un 19:00 sans `date_fin` et 23:59:59 pour un jour entier, et le choix
-entre trois sorties prend bien celle qui vient de finir. Puis le rendu, dans les
-cinq cas (avant, pendant, après, plus rien, sans feuille). Puis **en vrai** : à
-17 h 54, le bloc annonce « AVANT · ven. 14 août, 19:00 · Red Star - Sochaux » et
-les deux lignes qui restent — « Charger les batteries » étant cochée en base,
-par Noé, depuis son téléphone. Le lien ouvre la feuille, 0 px de débordement,
-zéro erreur en console.
+- **Trois couleurs, trois rôles** : le gris foncé (le fond), l'**or** (l'état
+  actif, les chiffres, l'action qui part), le **bleu** `#7198f4` (la matière
+  créative). Le bleu vit **chez Yuno seulement**.
+- **Les quatre piliers sont les quatre dernières nuances de la même échelle
+  bleue** — identité et classement dans la même famille. Encre blanche mesurée
+  à 7,21 · 9,26 · 11,97 · 14,99. Le coût est connu et accepté par Noé : en barre
+  de 3 px sur une carte, les rangs 3 et 4 tombent à 1,29 et 1,03.
+- **Les chiffres sont en Gilroy Heavy** — plus lourd que le Black, ce que les
+  métadonnées ne disaient pas : trouvé en comptant les pixels encrés.
+- **Les titres du site ont baissé d'un cran**, l'en-tête à signature a disparu,
+  et **les liens nus prennent l'accent de leur espace** (il n'existait aucune
+  règle : c'était le bleu du navigateur).
+- **Plus aucun menu natif** dans le CRM (filtres, relation) ni dans la banque —
+  sauf les 47 « Niveau ».
 
 ---
 
-## 0 quinquies. L'aperçu cochable, et le carnet en lignes (14 août, soir)
-
-- **Les lignes de l'aperçu se cochent depuis l'accueil** (demande de Noé). Les
-  `<span>` sont redevenus des `<button data-cocher-prepa>` — le gestionnaire
-  était déjà posé sur la section entière, l'accueil n'a rien eu à brancher. Le
-  CSS qui redéfinissait le cercle a été **supprimé** plutôt qu'étendu : le
-  dessin commun porte les pseudo-éléments de la coche et la cible de 44 px, et
-  les redéfinir aurait laissé l'animation sans rien à dessiner.
-  **Vérifié** en cochant depuis l'accueil (`coche-vient` s'anime, la ligne quitte
-  l'aperçu, la base suit), puis en décochant depuis la feuille : la ligne revient
-  sur l'accueil. La feuille de Noé est revenue à son état exact — « Charger les
-  batteries » cochée par lui, le reste non.
-
-- **Le carnet de terrain passe en LISTE** (demande de Noé : « les tuiles
-  prennent trop de place, il y en aura beaucoup »). `carteMoment` a laissé la
-  place à `ligneCarnet` : date, titre coupé à l'ellipsis, et trois marques
-  minuscules (type, photo, nombre de rencontres, plus « Œuvre »). Le clic ouvre
-  la fiche complète — le geste de la banque d'idées et du réseau. La croix de
-  retrait a quitté la ligne : elle vit dans la fenêtre, avec le crayon.
-  **Mesuré** : 13 sorties tiennent en 548 px, soit 41 px par ligne contre une
-  carte de plusieurs lignes chacune.
-
-- **La date de la ligne s'écrit** (demande de Noé) : « 05 août » pour l'année en
-  cours, « 31/12/25 » pour les précédentes — et la classe `.chiffre` ne suit que
-  la seconde forme, la règle typographique réservant Geist Mono à ce qui se lit
-  comme un code. `quandDeLaLigne(jour, reference)` est exportée et prend sa
-  référence en paramètre : la bascule se vérifie sans dépendre de l'horloge.
-- **32 px entre les colonnes de la liste, sur ordinateur** (demande de Noé). La
-  cause était à moi : `gap: 0`, posé pour que les filets se suivent sans trou,
-  vaut pour LES DEUX AXES — et sur grand écran la liste passe en trois colonnes
-  (règle du hub). Les lignes se touchaient donc bord à bord, et le nombre de
-  rencontres d'une colonne venait coller à la date de la suivante. `row-gap: 0`
-  + `column-gap: var(--espace-32)`. La colonne de date gagne au passage une
-  `min-width` : sans elle, « 05 août » et « 16 mai » faisaient partir chaque
-  titre de son propre bord.
-
-**Deux pièges, tous deux trouvés en vérifiant plutôt qu'en relisant :**
-
-1. **La ligne étant devenue un `<button>`, plus aucune fiche ne s'ouvrait.** Le
-   gestionnaire portait `!evenement.target.closest('a, button, …')` — la garde
-   qui laisse un bouton interne (la croix, le « + » d'une rencontre) garder son
-   geste. La ligne se trouvait elle-même. Corrigé en acceptant le cas où
-   l'élément trouvé EST la ligne.
-2. **2,75 rem ne font pas 44 px ici.** La racine du hub est à 15 px : la cible
-   tombait à 41. Portée à 2,9375 rem, **mesurée** à 44.
-
----
-
-## 0 sexies. La banque sans date, et l'idée du jour (15 août)
-
-**Le « + » de Créer et de la banque s'ouvre sans date** (demande de Noé). Une
-idée est une publication sans date ; l'ouvrir sur aujourd'hui la programmait
-pour le jour même. Quatre points touchés, parce que la date était supposée
-partout : `fenetreCreation` (pastille « Quand » non remplie, champ plus requis —
-sauf pour un événement, dont la colonne est NOT NULL), `poserAuCalendrier`
-(`date_prevue: champs.debut || null`, et l'heure part avec), la **copie** du
-même code dans `yuno.js` — encore elle —, et `PLUS_PAR_VUE` (`sansDate: true`
-sur `creer` et `banque`, pas sur `editorial` qui est un calendrier).
-**Vérifié** : tuile ouverte sans date, idée d'essai créée puis relue **depuis le
-serveur** (`date_prevue: null`, `heure: null`, statut `idee`), puis supprimée par
-l'interface ; le calendrier Yuno, l'éditorial et le hub gardent leur date du
-jour et leur champ requis.
-
-**L'idée du jour ouvre la page Créer** (demande de Noé) : une idée de la banque
-tirée une fois par jour, plus un bouton pour en tirer une autre. `ideeDuJour`
-réutilise `tirageDuJour` — la graine est la date, comme pour le mur de photos.
-Le re-tirage garde un **identifiant** et non la ligne : une idée supprimée
-depuis sa propre fiche serait restée affichée.
-
-**Un biais du tirage, trouvé en le mesurant** — et il dormait depuis le 12 août
-dans le mur de photos. La graine d'un jour et celle du lendemain ne diffèrent
-que d'une unité, et un générateur congruentiel garde cette proximité sur son
-**premier** tirage. Mesuré sur quinze jours et cinq idées : deux d'entre elles
-ne sortaient **jamais**, et deux jours de suite rendaient souvent la même. Huit
-tours à vide après la graine décorrèlent les départs. Remesuré sur 100 jours :
-17 à 22 tirages par idée (l'idéal étant 20) et 20 % de répétitions d'un jour à
-l'autre — exactement ce qu'on attend avec cinq éléments. Le tirage reste stable
-dans la journée, puisqu'il repart de la même date. **Leçon** : un tirage se
-vérifie par sa distribution sur beaucoup de tirages, pas en le regardant une
-fois — à l'œil, « ça change bien d'un jour à l'autre » était vrai et masquait
-que deux idées sur cinq étaient invisibles.
-
----
-
-## 0 septies. Créer épuré, titres réduits, un seul format (15 août)
-
-**Trois demandes de Noé, dans la foulée :**
-
-- **« Noter une idée » et « Je ne sais pas quoi poster » quittent Créer**, et
-  avec eux `blocTirage`, `construireTirage`, `tirerIdee`, `fenetreNoterIdee`,
-  les états `tirage` et `noteIdeeOuverte`, leurs gestionnaires et ~2 300
-  caractères de CSS — tout ce qui n'avait plus de déclencheur. `formulaireIdee`
-  reste dans `publications.js` : **le site du FCH s'en sert encore**, vérifié
-  avant de toucher.
-- **La tuile du « + » gagne une pastille `pilier` et une pastille `notes`**
-  (nature publication). Elles sont apportées par l'appelant, comme `typeMoment` :
-  les piliers appartiennent à Yuno, le hub et le FCH n'en ont pas. C'était la
-  condition pour retirer le formulaire — la tuile est désormais le seul endroit
-  où une idée s'écrit. **Vérifié** : idée d'essai créée avec pilier 2 et une
-  note, relue depuis le serveur (`pilier: 2`, `notes` posées, `date_prevue:
-  null`), puis supprimée.
-- **Tous les titres du site Yuno baissent d'un cran.** Canela est un romain de
-  labeur : à taille égale il pèse plus qu'un sans-serif. Titres de page
-  22,5 → 18,75 px, titres de section 20,6 → 16,9 px, `h1` 2 → 1,625 rem, et le
-  `.fenetre-titre` **scopé à Yuno** (la règle commune sert aussi au hub). La
-  hiérarchie ne bouge pas : page > section > sous-titre.
-- **Un seul format de publication : `carrousel`.** « Post et carrousel, c'est la
-  même chose pour moi » — la première version gardait `post`, Noé a corrigé en
-  cours de route. Les 13 publications concernées sont passées en `carrousel`, et
-  la checklist carrousel s'affiche désormais pour ce format (elle reconnaît
-  encore `post`, pour d'anciennes lignes). **Le CHECK n'est pas resserré** :
-  c'est la règle du dépôt, un CHECK s'élargit et ne se resserre jamais.
-  Conséquence à connaître : le FCH perd « Post » lui aussi, `FORMATS` étant
-  commun — il n'a aucune publication à ce jour.
-
-**Le serveur MCP Supabase s'est déconnecté pendant la session.** Les deux
-conversions de données ont donc été faites **par l'API depuis le navigateur**
-(session ouverte, mêmes politiques RLS), et la migration
-`20260815100000_publications_post_unique.sql` est écrite pour être rejouable
-sans risque : passé le premier passage, elle ne trouve plus rien. **Elle n'a pas
-été exécutée côté serveur** — les données sont déjà à jour, mais le
-`comment on column` qu'elle porte attend une prochaine application.
-
----
-
-## 0 octies. Le rendez-vous stats est retiré (15 août)
-
-Demande de Noé : « j'en trouve pas le besoin pour le moment, et surtout pas sur
-cette forme. » Sont partis : la section entière de `yuno.js` (5 385 caractères —
-`construireRendezVous`, `construireCourbe`, `formulaireStats`,
-`estJourDeRendezVous`, `joursAvantRendezVous`, le réglage du jour en
-`localStorage`), le bloc de la page Créer, l'action `noter-stats`, le sélecteur
-de jour, la source `stats` et son entrée dans `BESOINS.creer`, les deux
-fonctions d'API, et 2 006 caractères de CSS — dont les styles `.courbe*`, qui ne
-servaient qu'à lui (`js/perso.js` a sa propre courbe d'humeur, elle ne les
-partageait pas ; vérifié avant de couper).
-
-**La table `stats_hebdo` reste en base, avec ses lignes.** Le besoin peut
-revenir sous une autre forme, et rien ne justifie de détruire des relevés pour
-retirer un écran. Le principe qui l'avait fait naître ne bouge pas non plus :
-aucune métrique sociale nulle part — c'est désormais vrai sans exception, le
-rendez-vous en était la seule.
-
-**Vérifié** : les huit vues du site chargent, aucune ne montre plus de chiffres
-de réseaux, une requête de moins au chargement de Créer. (Un faux positif au
-passage : la page Créer contient bien le mot « abonnés » — c'est la preuve
-écrite par Noé dans une de ses idées, pas un reste de code.)
-
----
-
-## 0 nonies. Les deux gestes de la fiche d'une sortie (15 août)
-
-Demande de Noé, sur la fenêtre qui s'ouvre depuis le Journal comme depuis
-l'accueil — c'est la même : « Retirer du carnet » en plus petit et centré, le
-crayon réduit et monté en haut à droite.
-
-Les deux gestes ne se valaient pas mais se ressemblaient : corriger est courant
-et sans risque, retirer du carnet est rare et définitif. Côte à côte et de même
-taille, ils faisaient deux boutons jumeaux. Le crayon rejoint donc la croix de
-fermeture dans le coin (2,25 rem, sans cadre, sorti du flux) ; le retrait reste
-seul en bas, à 12 px et centré. Le `margin-left: auto` qui le poussait au bout
-est parti : il n'a plus rien à sa gauche dont s'éloigner, et la distance à
-laquelle il tenait est devenue verticale.
-
-**Un défaut que la mesure seule n'aurait pas montré** : le crayon en position
-absolue passait **par-dessus la date** de l'en-tête — lu sur capture,
-« le 3 j✏️in ». Le titre d'une fenêtre a sa marge réservée depuis toujours
-(`.fenetre-titre`), mais l'en-tête d'une sortie n'avait jamais eu de bouton à
-côté d'elle. Corrigé par un `padding-right` de la largeur des deux boutons sur
-`.fenetre .moment-complet > .tuile-entete` ; remesuré : 16 px d'écart entre la
-date et le crayon. Trois sélecteurs approximatifs avaient été écrits d'abord —
-la structure réelle (`.fenetre > .moment-complet > .tuile-entete`) a été lue
-dans le DOM plutôt que devinée.
-
-**Vérifié** depuis les deux entrées, ligne du carnet et vignette du mur :
-crayon aligné avec la croix, retrait centré à 12,19 px, aucun chevauchement.
-
----
-
-## 0 decies. Le retrait passe au carnet, la photo passe devant (15 août)
-
-- **« Retirer du carnet » quitte la fiche** (demande de Noé) : elle se lit et se
-  corrige, le carnet est l'écran où l'on range. **Attention au piège** : en
-  passant le carnet en lignes, la croix avait été retirée des lignes *parce que*
-  le retrait vivait dans la fiche. Enlever le bouton sans rien remettre aurait
-  laissé le site **sans aucun moyen de supprimer** — la croix est donc revenue
-  sur la ligne, à côté d'elle et non dedans (la ligne est un bouton, et deux
-  boutons ne s'imbriquent pas : même piège qu'au calendrier).
-- **La photo passe en tête de la fiche**, juste sous l'en-tête, avant le titre.
-
-**Trois pièges, tous trouvés à l'exécution :**
-
-1. **Le piège des accents graves, rencontré une troisième fois** — et cette fois
-   c'est moi qui l'ai écrit, dans le commentaire même qui expliquait pourquoi la
-   croix sort du bouton. Un nom de balise entre accents graves dans un
-   commentaire de gabarit **ferme la chaîne** : `node --check` passe, et le site
-   lève `ReferenceError: button is not defined` au rendu. Symptôme trompeur :
-   l'écran gardait la page précédente (le piège documenté de `rendre()`, qui
-   affecte `innerHTML` en une seule expression). Le commentaire dit maintenant
-   « bouton » en toutes lettres, et prévient.
-2. **`flex-wrap: wrap` hérité de `.bloc li`** faisait descendre la croix sous la
-   ligne : 83 px de haut au lieu de 44, mesuré. `nowrap` sur le `li`, et la
-   ligne passe de `width: 100%` à `flex: 1` — sans quoi elle réclamait toute la
-   largeur et poussait la croix dehors.
-3. **Deux faux positifs de mes propres tests** : une fenêtre restée ouverte d'un
-   test précédent faisait croire que la croix ouvrait la fiche, et une hauteur
-   mesurée sur un nœud détaché par `rendre()` donnait 0. Repris depuis un état
-   propre : la croix ne fait qu'ouvrir la confirmation, et la ligne fait 45 px.
-
-**Vérifié de bout en bout** sur une sortie d'essai créée pour l'occasion : elle
-entre au carnet (14 lignes), la croix demande « Retirer « … » du carnet ? », la
-ligne s'en va (13 lignes) et l'événement repasse `vecu: false` **en restant au
-calendrier** — c'est le comportement voulu depuis la fusion. L'essai a ensuite
-été supprimé pour de bon : 15 événements photo, 13 vécus, l'état de départ.
-
----
-
-## 0 undecies. Les chiffres de Yuno passent en Gilroy Heavy (15 août)
-
-Demande de Noé : « une police un peu plus grasse et qui se marie mieux avec les
-autres polices du site », puis « encore plus gras que ça ». Les chiffres
-(`.chiffre` : compteurs du Journal, file de la Passerelle, comptes de la banque
-et du carnet) étaient en **Geist Mono** — la police du hub, et la seule du site
-qui n'appartienne ni à Canela ni à Gilroy. Deux polices se marient, trois se
-croisent. Le rôle, lui, se confirme au lieu de changer : un compteur est une
-mesure, et la mesure est le domaine de Gilroy.
-
-**Trois crans, et le dernier a demandé une mesure.** Gilroy s'arrêtait à 700
-dans le dépôt ; le 800 et le 900 dormaient dans les ressources FCH de Noé, d'où
-le Bold était déjà venu en août. Noé a ensuite déposé lui-même le **Heavy**.
-Or l'ordre des noms ment : Black (900) n'est PAS le plus gras de cette famille.
-Les métadonnées ne tranchaient pas non plus — les deux fichiers déclarent
-`usWeightClass=400` et la même avance du zéro. **Compté en pixels encrés** sur
-le même chiffre à 120 px, dans un canvas : Bold 7 916 · Black 9 745 · **Heavy
-10 616**, soit 8,9 % au-dessus du Black. Le Heavy est donc servi en 900, et le
-Black a été retiré du dépôt — 41 Ko qui n'auraient rien fait.
-
-Converti par `tools/convertir-polices.py` (123 Ko → 39 Ko, −68 %), ajouté à la
-coquille du service worker, `node tools/verifier-coquille.js` repassé au vert
-(48 fichiers). **Vérifié à l'écran** : la graisse appliquée est bien 900, le
-fichier est `loaded`, et le rendu réel du 900 mesure 10 616 pixels encrés —
-c'est le Heavy, pas un substitut. C'est la troisième fois que ce piège est
-évité en mesurant : **une graisse absente ne se signale jamais**, le navigateur
-retombe sur la plus proche en silence.
-
----
-
-## 0 duodecies. « Œuvre finie » est masquée (15 août)
-
-Noé a d'abord demandé **ce que la case voulait dire** — la réponse est venue des
-documents fondateurs (`Yuno/pourquoi-terrain-yuno.md`), pas de ma mémoire :
-elle compte le travail d'atelier mené jusqu'au bout, et vient de la distinction
-qui gouverne tout le système, **l'écran-atelier contre l'écran-refuge** (créer :
-actif, fini, au service d'une œuvre ; consommer : passif, sans fin).
-
-Puis : « l'utilisation me paraît très futile, on peut l'enlever ou au moins la
-masquer ». **Masquée**, donc — le motif déjà employé deux fois dans ce dépôt
-(`VICTOIRES_VISIBLES`, le réglage backlog/actif). Le drapeau `OEUVRE_VISIBLE`
-de `js/yuno.js` commande d'un seul endroit **cinq** points : le compteur, le
-formulaire de capture, celui de correction, l'étiquette de la fiche et la marque
-du carnet. La colonne `oeuvre_finie` garde ses valeurs ; le repasser à `true`
-rallume tout.
-
-**Ce que ses chiffres disaient** : 0 sur treize sorties. C'était la seule des
-trois mesures qui demandait de revenir cocher une case **des jours après** la
-sortie, une fois le tri et la retouche finis — le geste n'arrivait jamais. Les
-deux autres se cochent dans l'instant du vécu.
-
-`.compteurs` passe de `repeat(3, 1fr)` à `repeat(auto-fit, minmax(0, 1fr))` :
-trois colonnes figées auraient laissé une case vide, et rallumer le troisième
-compteur le remettra en ligne sans qu'on ait à recompter.
-
-**Vérifié** : deux compteurs bien répartis, aucune mention d'« œuvre » nulle
-part — ni dans la fiche, ni dans le formulaire de correction, ni dans la
-capture, ni sur les lignes du carnet — et les valeurs en base intactes.
-
----
-
-## 0 terdecies. Les derniers menus natifs du CRM (15 août)
-
-Demande de Noé : les filtres du CRM, puis « pareil pour le paramètre relation ».
-C'était la règle du 13 août — « un choix se fait dans une LISTE, jamais dans un
-`select` natif » — que le CRM n'avait jamais suivie.
-
-`menuChoix()` (js/yuno.js) dessine le composant commun des formulaires
-(`choix-champ` + `choix-declencheur` + `choix-panneau`), branché par
-`brancherCapture` qui apporte déjà l'ouverture, la fermeture et « un seul
-panneau à la fois ». **La différence avec un choix de formulaire** : rien n'est
-saisi pour être envoyé plus tard, choisir AGIT. Il n'y a donc pas de champ
-caché, chaque option porte l'attribut de son geste, et le sujet voyage sur le
-conteneur (`data-filtre-de`, `data-statut-de`) — une option ne peut pas porter
-à la fois sa valeur et son sujet. Les deux gestionnaires passent de `change` à
-`click`.
-
-**Un piège de contexte, vu sur capture puis mesuré** : dans la tuile de capture,
-le panneau vit hors des blocs. Posé dans une puce de filtre ou une cellule de
-tableau, il se retrouve **dans** un `.bloc` — et `.bloc li` dessinait alors
-chaque option comme une carte : fond, cadre, 12 px de rembourrage, **64 px par
-ligne**. Annulé pour `.bloc .choix-panneau .choix-capture li`, remesuré à 38 px.
-
-**Chaque relation porte sa couleur** (demande de Noé dans la foulée), sur le
-déclencheur comme dans le menu : sept valeurs qui se suivent se distinguent
-mieux par la teinte que par la lecture. Les teintes existaient déjà
-(`STATUTS_CONTACT`), mais la couleur s'était **éteinte** au passage à la liste —
-et la cause vaut d'être retenue : le bouton recevait **deux attributs `class`**,
-le sien puis celui du statut, et **le second est ignoré en silence**. `menuChoix`
-fusionne désormais classe et style dans les attributs qu'il écrit. Deux reprises
-de spécificité au passage : `.choix-en-place > .choix-declencheur` (deux
-classes) écrasait le rembourrage de `.choix-statut` (une seule).
-
-**Le menu s'est resserré** (demande de Noé, même jour) : options à 2 rem au lieu
-de 2,5, panneau à 4 px de marge, plafond relevé à 20 rem — un menu qui défile
-n'est pas condensé, il est tronqué. Mesuré : la ligne passe de 38 à **30 px**,
-et les sept relations tiennent d'un coup (268 px). **La tuile de capture ne
-bouge pas** : ses options restent à 38 px (revérifié), parce que là-bas elles
-sont peu nombreuses et visées au pouce au-dessus du clavier.
-
-**Vérifié** en conditions réelles : le filtre Type ramène 47 fiches à 5 clubs et
-la puce s'allume ; le changement de relation d'un contact part en base
-(« Alicia » passée puis **rendue** à `contact_etabli`) ; plus aucun `select`
-dans les filtres ni dans la colonne Relation. Les 47 `select` restants sont ceux
-de la colonne **Niveau**, que Noé n'a pas demandés — dis-le si tu veux qu'ils
-suivent.
-
----
-
-## 0 quaterdecies. Créer réorganisée autour du pipeline (15 août)
-
-Analyse demandée par Noé, proposition validée en trois arbitrages (« Ok pour
-les 3, fais tout ça »). Le constat qui commande tout : **18 idées, toutes en
-statut « idée », zéro programmée, zéro publiée** — la page savait collecter,
-rien n'y faisait avancer.
-
-Le nouvel ordre est le chemin d'une idée : **l'idée du jour** (avec « La
-programmer » sous la tuile — hors du bouton, qui en est un) → **Cette semaine**
-(le daté à 7 jours, sans borne basse ; le reste dans « Plus tard », replié ;
-« À venir » a disparu) → **En chantier** (les statuts intermédiaires sans date —
-enfin un usage) → **les portes** avec leur métier écrit et le compte d'idées →
-**les piliers repliés** en bas, la phrase-test en résumé. Les filtres de la
-banque passent en listes (`menuChoix`), leurs gestionnaires de `change` à
-`click`.
-
-**Un piège qui a montré sa chaîne complète** : `construirePublication` manquait
-aux imports — et le symptôme était à trois bancs du crime. Programmer une idée
-ne s'écrivait pas en base, sans erreur visible sur le geste : `modifierAussitot`
-pose l'état, appelle `rendre()` — qui lève la ReferenceError AVANT le `try` —
-et l'écriture ne part jamais. L'état optimiste était posé, l'écran figé, la base
-intacte. `node --check` ne voit pas un import manquant ; seule l'exécution le
-dit, une fois de plus.
-
-**Vérifié de bout en bout, en réel** : une idée programmée depuis la tuile
-(base relue : datée du 17), apparue dans « Cette semaine » (« dans 2 jours »),
-avancée en « à développer » depuis sa tuile, **déprogrammée → passée d'elle-même
-dans « En chantier »** (le flux exact du dessin), puis rendue à son état
-d'origine. Filtres de la banque : 18 → 3 sur le pilier 2, retour à 18, zéro
-`select` natif restant dans l'atelier. Piliers : se déplient, se replient.
-0 px de débordement. Base finale : 18 idées, l'état exact du départ.
-
----
-
-## 0 quindecies. La forme de Créer (15 août, nuit)
-
-Proposition en cinq points + option, validée en bloc (« garde tout, fais
-l'échantillon puis généralise »). Le détail des choix est dans `yuno-spec.md`
-(§4, « La forme de la page ») ; ici, ce qui a été appris en construisant :
-
-- **La palette des piliers existait déjà, complète** (`--pilier-1…4`, encres,
-  fonds, cascade `[data-pilier]` dans styles.css) — et la pastille de l'idée du
-  jour restait grise parce qu'`etiquettePilier` de yuno.js n'écrivait pas
-  `data-pilier`. Le système de couleurs avait un interrupteur, personne ne
-  l'appuyait. Même oubli dans la colonne de l'éditorial ; la barre gauche des
-  tuiles de la banque s'est accrochée au même attribut, posé sur le `li` dans
-  publications.js (inoffensif pour le FCH : pas de pilier, pas d'attribut).
-- **Le lien bleu était le NAVIGATEUR** : aucune règle `a { color }` n'existait
-  dans tout le hub. Corrigé au niveau le plus bas — `a { color: var(--accent) }`
-  dans styles.css, spécificité minimale : chaque espace colore ses liens nus à
-  son accent, et tout lien déjà habillé garde le sien.
-- **Une phrase avec des points colorés au milieu doit couler comme une
-  phrase** : le `display: flex` du résumé des piliers la découpait en morceaux
-  sur téléphone (vu sur capture). Repassé en texte normal, cible tactile par le
-  rembourrage.
-- **Vérifié en réel** : idée programmée depuis la carte → ligne du flux
-  « demain · titre · idée » avec son point violet (44 px), les quatre couleurs
-  distinctes relevées sur les barres de la banque, la carte chaude au premier
-  écran, les vides dessinés, 01·02·03 en place, 0 px de débordement. L'idée
-  d'essai a été rendue à la banque : 18 idées, 0 datée — l'état exact.
-
----
-
-## 0 sexdecies. Le geste dans le coin, et un garde-fou (15 août, nuit)
-
-Deux demandes de Noé : remplacer le re-tirage de la carte du jour par un geste
-de **programmer** (avec son icône, ce qui supprime la ligne « La programmer »),
-et pouvoir **ouvrir le détail** en touchant la carte.
-
-- **Le détail ne s'ouvrait pas, et c'était un vrai manque** : `fenetreIdee`
-  n'était rendue que par la banque, et ma réécriture de Créer l'avait laissée
-  de côté. Le clic posait bien `etat.ideeOuverte`, personne ne le dessinait.
-- **Le champ date est transparent PAR-DESSUS l'icône**, plutôt que déclenché en
-  JS : le clic tombe sur lui, le sélecteur natif s'ouvre partout, sans dépendre
-  de showPicker (tardif chez Safari). Vérifié par `elementFromPoint` au centre
-  du geste : c'est bien l'INPUT qu'on touche. 44 px de cible.
-- Le re-tirage part avec son état (`ideeAutre`), son gestionnaire et son icône.
-
-**Le piège des accents graves, une QUATRIÈME fois** — et cette fois dans le
-commentaire qui expliquait justement pourquoi le champ est transparent. Le
-module ne se chargeait plus du tout : les trois écrans (connexion, chargement,
-app) restaient visibles ensemble, et `#espace-yuno` était vide. Symptôme
-déroutant, cause minuscule.
-
-**D'où un garde-fou, plutôt qu'une résolution de vigilance** :
-`node tools/verifier-gabarits.js` lit chaque fichier de `js/` en machine à
-états — il suit l'ouverture des gabarits, saute chaînes et commentaires JS, et
-signale tout commentaire HTML contenant un accent grave **nu** à l'intérieur
-d'un gabarit. Les accents graves **échappés** sont acceptés : c'est la façon
-correcte d'en écrire un, et `js/app.js` le fait depuis toujours (premier faux
-positif de l'outil, corrigé). **Prouvé** en réintroduisant le piège : `node
---check` passe, l'outil sort en erreur avec le fichier et la ligne. Ajouté aux
-conventions de `CLAUDE.md`.
-
-**Vérifié** : la carte ouvre sa fiche au toucher, le geste programme (idée
-d'essai datée du 18, ligne « dans 3 jours » apparue dans « Cette semaine »,
-puis rendue à la banque — 18 idées, 0 datée).
-
----
-
-## 0 duodevicies. Le BLEU, troisième couleur de Yuno (15 août, nuit)
-
-Trois passes en une soirée, et c'est la dernière qui tient : le violet devient
-la troisième couleur, puis elle est réservée à Yuno et les piliers passent en
-bleu (essai), puis **le bleu prend toute la place** — la couleur d'identité
-comme le classement. Noé a validé les barres telles quelles : le problème de
-contraste signalé (1,03 sur le rang 4) ne le gêne pas à l'usage, la pastille
-portant l'information.
-
-- `--bleu: #7198f4` sur `body[data-espace="yuno"]` : la **tête** de l'échelle
-  bleue, quand les piliers en sont la **queue** — identité et classement dans
-  la même famille. Prise assez haut pour **se lire en texte** (6,34 sur le
-  fond, 5,53 sur une carte) : le violet plafonnait à 3,7, sous le seuil, et les
-  numéros d'étape sont bien du texte.
-- Le hub et le FCH gardent leurs deux couleurs : rien dans `:root`.
-
-- `--violet` quitte `:root` pour `body[data-espace="yuno"]` : le hub et le FCH
-  gardent leurs deux couleurs.
-- Piliers : `#114ad0 · #0e3daa · #0b2f84 · #08225e` (teinte 222, crans 600 à
-  900). **Encre blanche excellente** : 7,21 · 9,26 · 11,97 · 14,99.
-
-**Ce que l'essai coûte, mesuré avant de l'appliquer et signalé à Noé** : les
-quatre dernières nuances sont faites pour PORTER de l'encre claire, pas pour se
-voir SUR du sombre. Sur la carte (#242426), la barre de 3 px des tuiles de la
-banque tombe à **2,15 · 1,67 · 1,29 · 1,03** de contraste — le rang 4 est
-littéralement invisible (1,03 = la couleur du fond). Les pastilles pleines, en
-revanche, sont impeccables. Deux sorties possibles si Noé garde le bleu :
-éclaircir la barre (une nuance plus haute pour ce seul usage), ou remonter
-l'échelle entière de deux crans.
-
-## 0 septendecies. Le violet, troisième couleur (15 août, nuit)
-
-Décision de Noé : « le violet comme 3e couleur principale (après le gris foncé
-et le doré) », et **les quatre piliers en quatre nuances d'un même violet**.
-
-- **La palette des piliers est refaite** : une seule teinte (263°) qui
-  s'assombrit, `#bf9cf6 · #955eed · #6917ee · #4905b8`. L'étagement est
-  **calculé, pas choisi à l'œil** : chaque rang est deux fois moins lumineux que
-  le précédent, et les contrastes de l'encre sur son aplat valent 8,74 · 4,80 ·
-  7,10 · 10,52 — les quatre au-dessus du seuil AA. Les encres basculent du noir
-  violacé au blanc entre le rang 2 et le rang 3, là où la luminosité l'exige.
-- **Le prix est assumé et écrit dans la spec** : quatre nuances se distinguent
-  moins vite que quatre couleurs. On le paie par un étagement régulier, et parce
-  que la couleur d'un pilier est toujours un rappel — le nom l'accompagne, sauf
-  sur le point d'une ligne de flux, où la fiche le dit.
-- **`--violet` entre dans la palette** avec son rôle : la matière créative. Il
-  ne prend jamais la place de l'or (l'état actif, les chiffres). Employé aux
-  numéros d'étape de Créer et au filet d'entrée de la banque.
-- **`--pilier-N-fond` a été retiré** : quatre variables déclarées et transmises
-  par la cascade depuis le 12 août, **jamais lues nulle part**.
-
-**Vérifié** : les quatre nuances relevées une par une sur les barres de la
-banque et sur la légende du bas de Créer, les sept vues du site et les sept
-espaces du hub chargent (la palette vit dans styles.css, partagée par tous).
-
----
-
-## 0 undevicies. Le pli « Ajouter au réseau » quitte le CRM (15 août)
-
-Demande de Noé. Le formulaire de fin de page faisait doublon avec le « + »
-flottant, qui ouvre la même fiche en fenêtre depuis le 13 août — et celui du
-bas obligeait à parcourir 47 lignes pour l'atteindre. Vérifié avant de couper
-que le geste ne se perdait pas (`PLUS_PAR_VUE.carnet = { contact: true }`), et
-après : le « + » ouvre bien « Ajouter au réseau » avec ses huit champs.
-`CHAMPS_CONTACT` reste employé par la fenêtre, la page finit sur sa dernière
-fiche, 0 px de débordement.
+## 0 sexies. Ce qui a été retiré (15 août)
+
+Toujours sur décision de Noé, et **jamais en détruisant des données** :
+
+- **Le rendez-vous stats** : ~5 400 caractères de JS et 2 000 de CSS. La table
+  `stats_hebdo` reste en base. Conséquence heureuse : « aucune métrique sociale
+  nulle part » devient vrai sans exception.
+- **« Œuvre finie »** : masquée par le drapeau `OEUVRE_VISIBLE` (cinq points
+  d'un coup), la colonne garde ses valeurs. Elle était à 0 sur 13 sorties —
+  c'était la seule mesure qui demandait de revenir cocher des jours après.
+- **Le tirage « Je ne sais pas quoi poster »**, le formulaire « Noter une
+  idée », le pli « Ajouter au réseau » du CRM : trois doublons de gestes qui
+  existaient ailleurs, mieux placés.
+- **Du code mort emporté avec eux** : `carteMoment`, `construireAVenir` chez
+  Yuno, `boutonCapture`, `--pilier-N-fond` (déclaré depuis le 12 août, jamais
+  lu), les deux fonctions d'API des stats.
 
 ---
 
@@ -818,7 +196,7 @@ https://noedelahaye-sketch.github.io/hub/
 | Calendrier global | `#calendrier` | grille mois/semaine + agenda ; on y pose, modifie et supprime |
 | Formation | `#formation` | complet, avec la progression lue dans le gist Bac-3 |
 | Page Yuno du hub | `#photo` | complète |
-| **Site Yuno** | `#yuno` | Accueil · Journal · Créer · Calendrier · Réseau — le système « Terrain » v1.1 |
+| **Site Yuno** | `#yuno` | Accueil · Journal · Créer · Calendrier · Réseau — plus les **Préparations** (`#yuno/preparations`, `#yuno/modeles`), sous l'onglet Journal |
 | Page FCH du hub | `#fch` | complète |
 | **Site FC Hermitage** | `#hermitage` | Accueil · Créer · Calendrier · Partenaires — « Club » attend son contenu |
 | Perso | `#perso` | complet |
@@ -2535,6 +1913,14 @@ La méthode qui a tenu toute la journée — exercer, relire en SQL, défaire, r
 
 ## 3. Ce qui attend une réponse de Noé
 
+**Deux points nés le 15 août :**
+- **Le FCH perd le format « Post »** — `FORMATS` est commun aux deux sites, et
+  « post » a fusionné avec « carrousel » chez Yuno. Sans effet aujourd'hui (le
+  FCH n'a aucune publication) ; à trancher le jour où il en aura.
+- **Les 47 menus « Niveau » du CRM** restent les derniers `select` natifs du
+  site. Noé ne les a pas demandés — à proposer s'il repasse par le réseau.
+
+
 **FC Hermitage — mis de côté** (Noé, 13 août : « on met de côté encore »). Les
 quatre questions restent ouvertes et attendent que ce chantier s'ouvre ; aucune
 ne gêne le reste du hub :
@@ -2619,64 +2005,59 @@ Rien d'ouvert dans les cahiers des charges. Restent des conforts :
 
 ---
 
-## 4 bis. Par où reprendre (fin de session du 14 août 2026)
+## 4 bis. Par où reprendre (fin de session du 15 août 2026)
 
 Dans cet ordre, du plus rentable au moins pressé.
 
-**Avant tout : la session a beaucoup touché à ce que Noé utilise chaque matin.**
-Il s'en sert pour de bon depuis le 13 — 8 tâches saisies par lui, une humeur
-notée, une tâche cochée depuis son téléphone. Le premier réflexe n'est donc pas
-d'ajouter, c'est de **le laisser vivre avec** et d'écouter ce qui coince.
+**Avant tout : laisser vivre.** Le site Yuno a été refondu en deux jours — les
+Préparations sont nées, le Carnet a fusionné avec le calendrier, Créer a changé
+trois fois de forme. Noé s'en sert pour de bon (il a coché « Charger les
+batteries » depuis son téléphone pendant qu'on travaillait). Le premier réflexe
+n'est pas d'ajouter : c'est **d'écouter ce qui coince après un vrai match**.
 
-1. **Vivre avec l'espace Tâches et l'accueil avant d'y toucher.** Ils ont changé
-   dix fois en deux jours. Trois décisions y attendent l'usage plutôt qu'un
-   arbitrage à froid : le sommeil du plafond de 3 actives, ce que
-   « Aujourd'hui » montre (les tâches datées du jour ou avant, jamais les
-   sans-date), et le tri qui fait passer une tâche datée avant une tâche sans
-   date à priorité égale.
-2. **Ce que l'analyse de fluidité laisse ouvert.** Les deux sites sont faits
-   (§ 2 ter ter, 4). Restent : les **espaces projet** (`espace-projet.js` —
-   cocher une tâche, un jalon) qui n'ont pas été convertis, et les **gestes du
-   calendrier** (déplacer, supprimer) qui relisent encore leurs six tables après
-   coup. Plus une chose qu'aucune mécanique simple ne donne : **animer le
-   DÉPART** d'une ligne, qui demanderait de tenir les nœuds un à un plutôt que
-   de redessiner.
-   Le module `js/ecriture.js` est là : convertir un geste tient en dix lignes.
-   **Ne pas convertir les formulaires** — c'est un choix, pas un oubli (§ 4).
-3. **Porter le démarrage aux espaces qui restent.** Yuno, le dashboard et le
-   calendrier l'ont (§ 2 ter, 2 ter bis, 2 ter ter) ; `perso.js`,
-   `espace-projet.js`, `fch.js`, `photo.js` et `hermitage.js` ne l'ont pas.
-   Aucun n'est pressé — ce ne sont pas eux qu'on ouvre le matin, et le service
-   worker leur a déjà retiré l'attente du code.
-4. **Vérifier la tuile sur le vrai iPhone.** Tout a été mesuré avec un clavier
-   *simulé* (`--bas-clavier` posée à la main) : la montée de 336 px, les 0 px de
-   déplacement entre pastilles, le fond figé. Le comportement réel de Safari
-   avec un vrai clavier reste à confirmer — c'est le seul point de la session
-   dont la vérification est une imitation, pas la chose même. Même occasion :
-   **le service worker sur iOS**, où une application ajoutée à l'écran d'accueil
-   se comporte différemment d'un onglet.
-5. **Vérifier Canela sur le téléphone.** Le `local("Canela-…")` marche sur le
-   Mac ; iOS ne fournit probablement pas la police. Le test tient en un
-   regard : ouvrir Créer, regarder « À venir » — si le `À` est droit au lieu
-   d'être incliné, c'est la police de secours.
-6. **Un espace n'est monté qu'une fois, et se relit au retour.** C'est neuf
-   (§ 2 quater). Si un écran affiche quelque chose de périmé, c'est que son
-   `rafraichir()` manque ou oublie un bloc — chercher là avant d'accuser le
-   cache de session, qui ne vit que dans Yuno et sur l'accueil.
-
-
-7. **Le glissement au doigt ne marche qu'à l'horizontale** (§ 2 decies). En vue
-   semaine c'est tout ce qu'il faut ; en vue mois, changer de semaine au doigt
-   demande d'ouvrir la barre et de corriger sa date. À rouvrir si Noé le
-   signale — la sortie serait un appui long qui fige le défilement.
+1. **Regarder ce que devient « En chantier ».** Le bloc a été créé pour donner
+   un lieu aux statuts intermédiaires, qui n'ont jamais servi. S'il est encore
+   vide dans une semaine, ce n'est pas le bloc qu'il faut corriger : c'est que
+   le pipeline en cinq étapes ne correspond pas à la façon de travailler de
+   Noé, et il faudra le lui demander plutôt que de le meubler.
+2. **Le premier vrai bilan de préparation.** La chaîne complète (bilan → moment
+   au carnet, avec photo et rencontres) a été vérifiée sur des essais, jamais
+   après une vraie sortie. C'est le prochain moment de vérité de l'outil.
+3. **Le choix entre plusieurs modèles n'a jamais servi** : il n'existe qu'un
+   modèle (« Match »). Le jour où Noé en crée un second (« Concert »), regarder
+   que la fenêtre de choix tombe juste.
+4. **Vérifier sur le vrai iPhone** ce qui n'a été mesuré qu'au navigateur : la
+   tuile avec un clavier réel (tout a été fait avec un clavier *simulé*), le
+   service worker dans une application ajoutée à l'écran d'accueil, et Canela
+   (si le « À » de « À venir » est droit au lieu d'incliné, c'est la police de
+   secours).
+5. **Les 47 menus « Niveau » du CRM** sont les derniers `select` natifs. Le
+   composant est prêt (`menuChoix`) : c'est vingt minutes, mais Noé ne l'a pas
+   demandé.
+6. **Ce que l'analyse de fluidité laisse ouvert** : les **espaces projet**
+   (`espace-projet.js`) ne sont pas convertis à `js/ecriture.js`, et les gestes
+   du calendrier relisent encore leurs six tables après coup. Convertir un
+   geste tient en dix lignes. **Ne pas convertir les formulaires** — c'est un
+   choix (§ 4).
+7. **Porter le démarrage par morceaux** à `perso.js`, `espace-projet.js`,
+   `fch.js`, `photo.js`, `hermitage.js`. Aucun n'est pressé : ce ne sont pas
+   eux qu'on ouvre le matin.
 
 **Ce qui est clos et n'a plus à figurer ici** : le cochage d'une tâche depuis le
-calendrier (exercé pour de vrai), les onze requêtes de l'ouverture de Yuno
-tombées à six, l'alignement des menus déroulants, et le mot « carnet » qui ne
-désigne plus deux choses.
+calendrier, les onze requêtes de Yuno tombées à six, l'alignement des menus
+déroulants, le mot « carnet » qui ne désigne plus deux choses, et la table
+`moments`, qui n'existe plus.
 
-### Deux outils écrits cette session, à connaître
+### Les outils du dépôt, à connaître
 
+- **`node tools/verifier-gabarits.js`** — *écrit le 15 août, le plus important
+  des trois.* Un accent grave **nu** dans un commentaire HTML, à l'intérieur
+  d'un gabarit JS, ferme la chaîne : le fichier reste valide pour
+  `node --check`, et le module casse au chargement en emportant tout l'écran.
+  Le piège s'est produit **quatre fois** entre le 13 et le 15 août. L'outil lit
+  chaque fichier en machine à états et sort en erreur avec le fichier et la
+  ligne ; les accents graves **échappés** sont acceptés (c'est la façon
+  correcte d'en écrire un, et `js/app.js` le fait depuis toujours).
 - `node tools/verifier-coquille.js` — la liste du service worker contient-elle
   tout ce qui est référencé ? Sort en erreur sinon. À lancer après avoir ajouté
   un module, une police ou une icône.
@@ -2771,6 +2152,53 @@ inadvertance.
 ---
 
 ## 6. Les pièges rencontrés, pour ne pas les revivre
+
+**Un accent grave nu dans un commentaire de gabarit ferme la chaîne.** QUATRE
+fois entre le 13 et le 15 août — c'est le piège le plus coûteux du dépôt. Le
+fichier reste du JavaScript valide (`node --check` passe), et le module casse
+au **chargement** : l'écran garde la page précédente, ou les trois écrans de
+l'application s'affichent ensemble. Symptôme énorme, cause d'un caractère.
+**`node tools/verifier-gabarits.js` le voit maintenant** — le lancer avant de
+pousser du HTML dans un gabarit.
+
+**Une graisse absente ne se signale jamais** : le navigateur retombe sur la
+plus proche, en silence. Vérifier en MESURANT la largeur d'une même chaîne dans
+les deux graisses — deux valeurs identiques veulent dire que le fichier
+n'existe pas. (Vaut aussi pour les italiques, piège rencontré en juin.)
+
+**Deux attributs `class` sur un même élément : le second est ignoré.** Les
+couleurs de statut du CRM se sont éteintes comme ça en passant du `<select>` à
+la liste — aucune erreur, juste une couleur qui disparaît. Fusionner les
+classes dans l'attribut qu'on écrit, jamais en ajouter un second.
+
+**Une variable CSS peut exister sans que rien ne l'allume.** La palette des
+piliers était complète depuis le 12 août ; les pastilles restaient grises parce
+que le HTML n'écrivait pas `data-pilier`. Un système de couleurs a un
+interrupteur — vérifier qu'on l'appuie.
+
+**`gap` vaut pour les DEUX axes.** Un `gap: 0` posé pour coller des filets
+verticalement a supprimé l'espace entre les colonnes quand la liste est passée
+en trois colonnes sur grand écran. Utiliser `row-gap` quand on ne parle que du
+vertical.
+
+**`flex-wrap: wrap` hérité fait descendre ce qu'on croyait à côté.** Une croix
+posée à côté d'une ligne se retrouvait dessous : 83 px de haut au lieu de 44.
+
+**Un rendu optimiste masque l'erreur qui le suit.** Un import manquant faisait
+lever `rendre()` **après** que l'état ait été posé et **avant** l'appel réseau :
+l'écran semblait ignorer le geste, la base restait intacte, et rien n'apparaissait
+sur le moment. Trouvé en relisant la base après le geste, pas en relisant le code.
+
+**Mes propres tests produisent des faux positifs.** Une fenêtre restée ouverte
+d'un essai précédent faisait croire qu'une croix ouvrait une fiche ; un nœud
+détaché par `rendre()` donnait une hauteur de 0. Repartir d'un état propre avant
+de conclure — et se méfier d'une mesure qui contredit ce que le code dit.
+
+**Un tirage se vérifie par sa DISTRIBUTION, pas en le regardant une fois.** La
+graine du mur de photos donnait des jours voisins très corrélés : sur quinze
+jours et cinq idées, deux ne sortaient jamais. À l'œil, « ça change bien d'un
+jour à l'autre » était vrai et masquait tout. Compté sur 100 tirages, corrigé
+par un brassage à vide du générateur.
 
 **Une substitution automatique qui ne trouve pas son motif ne dit rien.** Le
 script qui a posé l'appel à `brancherChoix` dans `hermitage.js` a réussi ; celui
