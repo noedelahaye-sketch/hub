@@ -395,6 +395,47 @@ que deux idées sur cinq étaient invisibles.
 
 ---
 
+## 0 septies. Créer épuré, titres réduits, un seul format (15 août)
+
+**Trois demandes de Noé, dans la foulée :**
+
+- **« Noter une idée » et « Je ne sais pas quoi poster » quittent Créer**, et
+  avec eux `blocTirage`, `construireTirage`, `tirerIdee`, `fenetreNoterIdee`,
+  les états `tirage` et `noteIdeeOuverte`, leurs gestionnaires et ~2 300
+  caractères de CSS — tout ce qui n'avait plus de déclencheur. `formulaireIdee`
+  reste dans `publications.js` : **le site du FCH s'en sert encore**, vérifié
+  avant de toucher.
+- **La tuile du « + » gagne une pastille `pilier` et une pastille `notes`**
+  (nature publication). Elles sont apportées par l'appelant, comme `typeMoment` :
+  les piliers appartiennent à Yuno, le hub et le FCH n'en ont pas. C'était la
+  condition pour retirer le formulaire — la tuile est désormais le seul endroit
+  où une idée s'écrit. **Vérifié** : idée d'essai créée avec pilier 2 et une
+  note, relue depuis le serveur (`pilier: 2`, `notes` posées, `date_prevue:
+  null`), puis supprimée.
+- **Tous les titres du site Yuno baissent d'un cran.** Canela est un romain de
+  labeur : à taille égale il pèse plus qu'un sans-serif. Titres de page
+  22,5 → 18,75 px, titres de section 20,6 → 16,9 px, `h1` 2 → 1,625 rem, et le
+  `.fenetre-titre` **scopé à Yuno** (la règle commune sert aussi au hub). La
+  hiérarchie ne bouge pas : page > section > sous-titre.
+- **Un seul format de publication : `carrousel`.** « Post et carrousel, c'est la
+  même chose pour moi » — la première version gardait `post`, Noé a corrigé en
+  cours de route. Les 13 publications concernées sont passées en `carrousel`, et
+  la checklist carrousel s'affiche désormais pour ce format (elle reconnaît
+  encore `post`, pour d'anciennes lignes). **Le CHECK n'est pas resserré** :
+  c'est la règle du dépôt, un CHECK s'élargit et ne se resserre jamais.
+  Conséquence à connaître : le FCH perd « Post » lui aussi, `FORMATS` étant
+  commun — il n'a aucune publication à ce jour.
+
+**Le serveur MCP Supabase s'est déconnecté pendant la session.** Les deux
+conversions de données ont donc été faites **par l'API depuis le navigateur**
+(session ouverte, mêmes politiques RLS), et la migration
+`20260815100000_publications_post_unique.sql` est écrite pour être rejouable
+sans risque : passé le premier passage, elle ne trouve plus rien. **Elle n'a pas
+été exécutée côté serveur** — les données sont déjà à jour, mais le
+`comment on column` qu'elle porte attend une prochaine application.
+
+---
+
 ## 1. Ce qui existe
 
 Le hub est **déployé et fonctionnel** :

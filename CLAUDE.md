@@ -197,7 +197,7 @@ Le calendrier éditorial. **Une idée est une publication sans date** (`date_pre
 - `projet` text NOT NULL default 'photo' CHECK (projet IN ('formation', 'photo', 'fch')) — pas de 'perso' : l'espace perso ne publie pas
 - `titre` text NOT NULL — l'idée, en une phrase
 - `reseau` text default 'instagram' CHECK (instagram, tiktok, linkedin, facebook, youtube)
-- `format` text default 'post' CHECK (post, carrousel, reel, story)
+- `format` text default 'post' CHECK (post, carrousel, reel, story) — **seuls `carrousel`, `reel` et `story` sont offerts depuis le 15 août 2026** : « post et carrousel, c'est la même chose » (Noé), et c'est carrousel qui reste. `post` demeure accepté par le CHECK — un CHECK s'élargit, il ne se resserre jamais — mais plus rien ne l'écrit.
 - `statut` text default 'idee' CHECK (idee, brouillon, pret, publie)
 - `date_prevue` date (nullable — NULL = banque d'idées)
 - `rubrique` text — la série récurrente, libre

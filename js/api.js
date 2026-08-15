@@ -399,7 +399,7 @@ export async function creerPublication({
   projet,
   titre,
   reseau = 'instagram',
-  format = 'post',
+  format = 'carrousel',
   rubrique = null,
   notes = null,
   date_prevue = null,

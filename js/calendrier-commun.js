@@ -33,7 +33,13 @@ export const RESEAUX = {
   facebook: 'Facebook',
   youtube: 'YouTube',
 };
-export const FORMATS = { post: 'Post', carrousel: 'Carrousel', reel: 'Réel', story: 'Story' };
+// « Post et carrousel, c'est la même chose pour moi » (Noé, 15 août 2026), et
+// c'est CARROUSEL qui reste : une image ou sept, c'est le même geste et la
+// même préparation. Le format `post` reste ACCEPTÉ par la base — un CHECK
+// s'élargit, il ne se resserre jamais — mais il n'est plus offert, et les
+// publications qui le portaient sont passées en `carrousel`
+// (migration 20260815100000).
+export const FORMATS = { carrousel: 'Carrousel', reel: 'Réel', story: 'Story' };
 
 // Les types d'éléments datés.
 const TYPES = {
@@ -1210,6 +1216,11 @@ const ICONE = {
     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <path d="M4 8h3l2-3h6l2 3h3v12H4z"></path>
     <circle cx="12" cy="13" r="3.5"></circle></svg>`,
+  // Quatre colonnes : les quatre piliers éditoriaux de Yuno.
+  pilier: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M4 20V9M9.3 20V9M14.7 20V9M20 20V9"></path>
+    <path d="M2.5 20h19M12 3 2.5 7.5h19z"></path></svg>`,
 };
 
 // Le type du moment qui naîtra d'un événement Yuno — les mêmes quatre valeurs
@@ -1355,6 +1366,15 @@ export function fenetreCreation({
   // dès que ses projets offrent 'photo', la pastille existe, révélée quand le
   // projet choisi est photo (demande de Noé, 14 août 2026).
   typeMoment = false,
+  // Les piliers éditoriaux, sur une publication. Ils appartiennent à Yuno — le
+  // hub et le FCH n'en ont pas — et c'est donc l'appelant qui les apporte, déjà
+  // aplatis en { rang: libellé }. Sans eux, pas de pastille.
+  piliers = null,
+  // La pastille de notes, sur une publication. Depuis que « Noter une idée » a
+  // disparu de Créer (demande de Noé, 15 août 2026), la tuile est le seul
+  // endroit où l'on écrit une idée : ce qu'on avait à dire de plus doit tenir
+  // ici, sinon il ne se dit nulle part.
+  notes = false,
   // Ce que la tuile porte DÉJÀ. Vide à la création — c'est le cas ordinaire —,
   // rempli quand on rouvre une ligne pour la corriger : le titre dans le champ,
   // le projet et la priorité sur leurs pastilles. La tuile ne sait pas si elle
@@ -1560,12 +1580,48 @@ export function fenetreCreation({
       pastilleCapture({
         nom: 'format',
         icone: ICONE.format,
-        defaut: FORMATS.post,
+        defaut: FORMATS.carrousel,
         source: 'format',
         rempli: true,
-        contenu: champChoix({ nom: 'format', options: FORMATS, valeur: 'post' }),
+        contenu: champChoix({ nom: 'format', options: FORMATS, valeur: 'carrousel' }),
       }),
     );
+
+    // Le pilier ferme un débat : « ça rentre dans un pilier ? oui → je crée ».
+    // Il est facultatif — une idée sans pilier reste une idée, et proposer vaut
+    // mieux que renvoyer à un classement pas fait.
+    if (piliers) {
+      pastilles.push(
+        pastilleCapture({
+          nom: 'pilier',
+          icone: ICONE.pilier,
+          defaut: 'Pilier',
+          source: 'pilier',
+          neutre: '',
+          contenu: champChoix({
+            nom: 'pilier',
+            options: { '': 'Sans pilier', ...piliers },
+            valeur: '',
+          }),
+        }),
+      );
+    }
+
+    if (notes) {
+      pastilles.push(
+        pastilleCapture({
+          nom: 'notes',
+          icone: ICONE.texte,
+          defaut: 'Notes',
+          source: 'notes',
+          contenu: champCapture({
+            nom: 'notes',
+            libelle: "Ce qu'il faut se rappeler de l'idée",
+            type: 'textarea',
+          }),
+        }),
+      );
+    }
   }
 
   if (nature === 'objectif') {
@@ -2067,6 +2123,10 @@ export async function poserAuCalendrier(champs, { projetParDefaut = 'photo' } = 
       // date ne veut rien dire, elle part avec.
       date_prevue: champs.debut || null,
       heure: (champs.debut && champs.heure) || null,
+      // Les deux pastilles de Yuno. Le hub ne les offre pas : `champs` ne les
+      // porte alors pas, et les colonnes restent nulles.
+      pilier: champs.pilier ? Number(champs.pilier) : null,
+      notes: champs.notes?.trim() || null,
     });
   }
 

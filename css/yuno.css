@@ -201,20 +201,37 @@ body[data-espace="yuno"] #vue h2 {
   letter-spacing: 0;
 }
 
+/* Tous les titres du site ont baissé d'un cran le 15 août 2026 (demande de
+   Noé). Canela est un romain de labeur : à taille égale il pèse plus qu'un
+   sans-serif, et sur un site qu'on parcourt debout, un titre n'a pas à occuper
+   le tiers de l'écran. La hiérarchie, elle, ne bouge pas — page > section >
+   sous-titre — c'est l'échelle entière qui descend. */
 body[data-espace="yuno"] #vue h1 {
   font-weight: 700;
-  font-size: 2rem;
+  font-size: 1.625rem;
+}
+
+/* Le titre d'une page vit hors des blocs : il porte le nom du lieu où l'on
+   vient d'entrer, et reste donc au-dessus des titres de section. */
+body[data-espace="yuno"] #vue .titre-page {
+  font-size: 1.25rem;
 }
 
 /* Les titres de section perdent la casse haute et l'interlettrage : c'était
    l'habillage d'une étiquette en Gilroy, et il rendait un romain incliné de
    11 px illisible. Un titre de section redevient un titre, pas un libellé. */
 body[data-espace="yuno"] #vue .bloc h2 {
-  font-size: 1.375rem;
+  font-size: 1.125rem;
   font-weight: 700;
   text-transform: none;
   letter-spacing: 0;
   color: var(--texte);
+}
+
+/* Le titre d'une fenêtre suit la même baisse. La règle commune vit dans
+   styles.css et sert aussi au hub : elle n'est réduite qu'ici. */
+body[data-espace="yuno"] .fenetre-titre {
+  font-size: 1.125rem;
 }
 
 /* Les sous-titres sont des libellés fonctionnels : Gilroy, et de la graisse
@@ -919,85 +936,11 @@ body[data-espace="yuno"] .etiquette {
   border-color: var(--pilier, var(--gris-chaud-trait));
 }
 
-/* --- Les deux façons d'attaquer ----------------------------------------------
-   « Noter une idée » quand on en a une, « Je ne sais pas quoi poster » quand on
-   n'en a pas. Les deux se valent : même taille, même bordure, côte à côte. Une
-   seule occupe la ligne dès que la seconde se déplie — le tirage a besoin de
-   place pour poser sa question et sa réponse. */
-
-.deux-gestes {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--espace-8);
-  align-items: start;
-}
-
-.deux-gestes .tirage { margin-top: 0; }
-.deux-gestes .tirage > summary { display: flex; justify-content: center; width: 100%; }
-.deux-gestes .tirage[open] { grid-column: 1 / -1; }
-
-@media (max-width: 30rem) {
-  .deux-gestes { grid-template-columns: 1fr; }
-}
-
-/* Le bouton se dessine comme le résumé du tirage : ce sont deux gestes de même
-   rang, ils ne peuvent pas avoir deux allures. */
-.bouton-geste {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  min-height: 2.75rem;
-  padding: 0 var(--espace-16);
-  font-family: inherit;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--accent);
-  background: none;
-  border: 1px solid var(--accent);
-  border-radius: var(--rayon-controle);
-  cursor: pointer;
-}
-
-/* --- Le tirage de la semaine ------------------------------------------------ */
-
-.tirage { margin-top: var(--espace-12); }
-
-/* Ce bouton doit se trouver un jour de panne : il se voit, sans crier. */
-.tirage > summary {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.75rem;
-  padding: 0 var(--espace-16);
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--accent);
-  list-style: none;
-  cursor: pointer;
-  border: 1px solid var(--accent);
-  border-radius: var(--rayon-controle);
-}
-
-.tirage > summary::-webkit-details-marker { display: none; }
-.tirage[open] > summary { margin-bottom: var(--espace-12); }
-.tirage > p { margin: 0 0 var(--espace-8); font-size: 0.875rem; }
-
-.tirage-choix {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--espace-8);
-  margin-bottom: var(--espace-12);
-}
-
-.tirage-idee {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--espace-4);
-  padding: var(--espace-12) var(--espace-16);
-  background: var(--fond-carte);
-  border: 1px solid var(--accent);
-  border-radius: var(--rayon-carte);
-}
+/* « Noter une idée », « Je ne sais pas quoi poster » et le tirage de la semaine
+   ont disparu le 15 août 2026 (demande de Noé) : la tuile du « + » sait écrire
+   une idée entière — pilier et notes compris — et l'idée du jour, en tête de
+   page, a rendu le tirage à la demande superflu. Leurs styles partent avec eux.
+   Voir docs/yuno-spec.md, §4. */
 
 /* --- La banque d'idées ------------------------------------------------------ */
 
@@ -1621,7 +1564,7 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
    et il s'édite en place, comme les items. */
 .prepa-modele-nom {
   max-width: 24rem;
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 600;
   margin-bottom: var(--espace-8);
 }
@@ -1782,7 +1725,7 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 
 .sortie-moment-titre {
   margin: var(--espace-4) 0 var(--espace-12);
-  font-size: 1.25rem;
+  font-size: 1.125rem;
 }
 
 /* Les lignes se cochent d'ici (demande de Noé, 14 août 2026) : c'est la seule

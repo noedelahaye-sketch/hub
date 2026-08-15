@@ -610,11 +610,14 @@ Elle ne remplace pas « Je ne sais pas quoi poster », qui répond à une autre
 question : celle-là est contextuelle — y a-t-il un match cette semaine ? — et se
 déplie quand on la cherche.
 
-**Les deux façons d'attaquer, côte à côte** (12 août 2026) : « Noter une idée »
-quand on en a une, « Je ne sais pas quoi poster » quand on n'en a pas. Elles se
-valent, donc même taille et même allure. Noter passe par une **fenêtre
-volante** — le geste est celui de la capture d'un moment, il est le même partout
-dans le site.
+**« Noter une idée » et « Je ne sais pas quoi poster » ont disparu**
+(15 août 2026, demande de Noé). Le premier ouvrait un formulaire que **la tuile
+du « + » sait désormais remplir** : elle a gagné une pastille **pilier** et une
+pastille **notes** pour ça — depuis, elle est le seul endroit où une idée
+s'écrit, et tout ce qu'on a à en dire doit donc tenir dedans. Le second faisait
+doublon avec l'idée du jour, qui est en tête de page et se retire d'un bouton.
+Les piliers restent chez Yuno : c'est l'appelant qui les apporte à la tuile, le
+hub et le FCH n'en ont pas.
 
 **Le « + » de Créer et de la banque s'ouvre SANS date** (demande de Noé,
 14 août 2026). Une idée est une publication sans date : l'ouvrir sur aujourd'hui
@@ -624,12 +627,9 @@ choisi, et le champ n'est plus requis — seul un événement exige sa date, sa
 colonne étant NOT NULL. L'éditorial, lui, garde la sienne : c'est un calendrier,
 on y pose sur un jour.
 
-**Le tirage de la semaine** répond les jours de panne : « Je ne sais pas quoi
-poster » pose une seule question — y a-t-il un match cette semaine ? — puis
-propose une idée. Avec match, le terrain est là, on le montre (piliers 1 et 2) ;
-sans match, l'éducatif ne dépend d'aucun calendrier et passe devant (pilier 3).
-Une idée sans pilier reste tirable : proposer vaut mieux que renvoyer à un
-classement pas fait.
+**Le tirage de la semaine a été retiré** avec le bouton qui l'ouvrait : l'idée
+du jour rend le même service, sans poser de question et sans qu'on ait à la
+chercher.
 
 **La checklist carrousel** s'affiche repliée sur les publications au format
 carrousel — hook de 5 à 8 mots, slides 1 ET 2 fortes, tension → développement →

@@ -126,7 +126,12 @@ export function corpsPublication(pub, options = {}) {
           : ''
       }
       ${pub.notes ? `<span class="discret pub-notes">${echapper(pub.notes)}</span>` : ''}
-      ${checklist && pub.format === 'carrousel' ? checklistCarrousel() : ''}
+      ${
+        // `post` reste reconnu à côté de `carrousel` : les deux formats ont
+        // fusionné le 15 août 2026, et d'anciennes lignes peuvent encore
+        // porter l'un ou l'autre.
+        checklist && ['carrousel', 'post'].includes(pub.format) ? checklistCarrousel() : ''
+      }
       <span class="pub-actions">
         <span class="pub-statut">statut : <strong>${NOMS_STATUTS[pub.statut]}</strong></span>
         ${

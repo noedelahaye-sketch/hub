@@ -26,7 +26,6 @@ import {
   construirePubliees,
   construireApercuCreation,
   corpsPublication,
-  formulaireIdee,
 } from './publications.js';
 import {
   depuisDateISO,
@@ -1233,30 +1232,6 @@ function vueJournal(etat) {
     ${pied()}`;
 }
 
-// Le tirage de la semaine. Avec match, le terrain est là : on le montre
-// (piliers 1 et 2). Sans match, l'éducatif ne dépend d'aucun calendrier, il
-// passe devant (pilier 3). `hasard` est un paramètre pour que le tirage se
-// vérifie sans dépendre de la chance.
-export function tirerIdee(publications, { avecMatch = true } = {}, hasard = Math.random) {
-  const banque = publications.filter((pub) => !pub.date_prevue && pub.statut !== 'publie');
-  if (!banque.length) return null;
-
-  const prefere = avecMatch ? [1, 2] : [3];
-  const prefereesDabord = [
-    banque.filter((pub) => prefere.includes(pub.pilier)),
-    // À défaut, n'importe quel autre pilier — sans ordre entre eux.
-    banque.filter((pub) => pub.pilier && !prefere.includes(pub.pilier)),
-  ];
-
-  for (const lot of prefereesDabord) {
-    if (lot.length) return lot[Math.floor(hasard() * lot.length)];
-  }
-
-  // Aucune idée n'a encore de pilier : on tire quand même. Proposer quelque
-  // chose vaut mieux que renvoyer à un classement pas fait.
-  return banque[Math.floor(hasard() * banque.length)];
-}
-
 export function filtrerBanque(publications, { pilier = 'tout', statutIdee = 'tout' } = {}) {
   return publications.filter((pub) => {
     if (pilier !== 'tout' && String(pub.pilier ?? '') !== pilier) return false;
@@ -1269,24 +1244,6 @@ function etiquettePilier(rang) {
   return `<span class="etiquette etiquette-pilier">${echapper(
     `${rang}. ${PILIERS[rang]?.nom ?? ''}`,
   )}</span>`;
-}
-
-export function construireTirage(tirage) {
-  if (!tirage) return '';
-  if (!tirage.idee) {
-    return `<p class="vide">La banque est vide pour l'instant. Note une idée, même bancale.</p>`;
-  }
-
-  const { idee } = tirage;
-  return `
-    <div class="tirage-idee">
-      <span class="tuile-entete">
-        ${idee.pilier ? etiquettePilier(idee.pilier) : ''}
-        <span class="discret quand">${tirage.avecMatch ? 'semaine avec match' : 'semaine sans match'}</span>
-      </span>
-      <span class="pub-titre">${echapper(idee.titre)}</span>
-      ${idee.preuve ? `<span class="discret pub-preuve">${echapper(idee.preuve)}</span>` : ''}
-    </div>`;
 }
 
 // --- L'idée du jour -----------------------------------------------------------
@@ -1349,53 +1306,6 @@ export function construireIdeeDuJour(publications, { autreId = null, jour = vers
     </section>`;
 }
 
-function blocTirage(etat) {
-  return `
-    <details class="tirage" ${etat.tirage ? 'open' : ''}>
-      <summary>Je ne sais pas quoi poster</summary>
-      <p class="discret">Cette semaine, il y a un match ?</p>
-      <div class="tirage-choix">
-        <button type="button" class="bouton-secondaire bouton-mini" data-tirer="avec">
-          Oui, il y a un match</button>
-        <button type="button" class="bouton-secondaire bouton-mini" data-tirer="sans">
-          Non, pas de match</button>
-      </div>
-      <div data-bloc="tirage">${construireTirage(etat.tirage)}</div>
-    </details>`;
-}
-
-// Noter une idée s'ouvre en fenêtre volante, comme la capture d'un moment : le
-// geste est le même partout dans le site. Le formulaire sort de son dépliant —
-// dans une fenêtre, le titre est déjà dit.
-function fenetreNoterIdee(etat) {
-  return construireFenetre(
-    'Noter une idée',
-    `<h3 class="fenetre-titre">Noter une idée</h3>
-     ${formulaireIdee({
-       publications: etat.publications,
-       rubriquesDepart: RUBRIQUES_DEPART,
-       reseaux: RESEAUX_YUNO,
-       avecPli: false,
-       champsEnPlus: [
-         {
-           nom: 'pilier',
-           libelle: 'Pilier',
-           type: 'choix',
-           options: {
-             '': 'Sans pilier',
-             ...Object.fromEntries(
-               Object.entries(PILIERS).map(([rang, { nom }]) => [rang, `${rang}. ${nom}`]),
-             ),
-           },
-           valeur: '',
-         },
-         { nom: 'preuve', libelle: 'Preuve — pourquoi ce format marche déjà (facultatif)', type: 'text' },
-         { nom: 'pourquoi_moi', libelle: 'Pourquoi chez moi (facultatif)', type: 'text' },
-       ],
-     })}`,
-  );
-}
-
 function vueCreer(etat) {
   // Ce qui distingue Créer chez Yuno : son cycle, sa checklist, ses piliers.
   const options = { cycle: STATUTS_YUNO, checklist: true, piliers: PILIERS };
@@ -1416,14 +1326,11 @@ function vueCreer(etat) {
     </section>
 
     <section class="bloc">
-      <!-- Les deux façons d'attaquer : j'ai une idée, ou je n'en ai pas. Elles
-           se valent, donc elles sont côte à côte et de la même taille. Noter
-           passe par une fenêtre volante, comme la capture d'un moment — le
-           geste est le même partout dans le site. -->
-      <div class="deux-gestes">
-        <button type="button" class="bouton-geste" data-ouvrir-note-idee>Noter une idée</button>
-        ${blocTirage(etat)}
-      </div>
+      <!-- Ni « Noter une idée », ni « Je ne sais pas quoi poster » (demande de
+           Noé, 15 août 2026). Le premier ouvrait un formulaire que la tuile du
+           « + » sait désormais remplir — elle a gagné le pilier et les notes
+           pour ça. Le second faisait doublon avec l'idée du jour, qui est en
+           tête de page et se retire d'un bouton. -->
 
       <!-- Les deux lieux de l'atelier, côte à côte et sans titre au-dessus :
            une icône et deux mots disent déjà où l'on va. Un libellé de section
@@ -1439,7 +1346,6 @@ function vueCreer(etat) {
         </a>
       </div>
     </section>
-    ${etat.noteIdeeOuverte ? fenetreNoterIdee(etat) : ''}
 
     <section class="bloc">
       <h2>À venir</h2>
@@ -3377,7 +3283,6 @@ export default {
       ideeOuverte: null,
       momentOuvert: null,
       editionMoment: false,
-      noteIdeeOuverte: false,
       contactOuvert: null,
       editionContact: false,
       photos: {},
@@ -3393,7 +3298,6 @@ export default {
       jourOuvertCal: null,
       pilier: 'tout',
       statutIdee: 'tout',
-      tirage: null,
       // L'idée retirée à la main sur Créer, par son identifiant. Nulle par
       // défaut : c'est l'idée du jour qui s'affiche.
       ideeAutre: null,
@@ -3561,6 +3465,13 @@ export default {
               // Chez Yuno tout est photo : un événement porte toujours sa
               // pastille de type de moment.
               typeMoment: true,
+              // Et une publication porte son pilier et ses notes : depuis que
+              // « Noter une idée » a disparu de Créer, la tuile est le seul
+              // endroit où une idée s'écrit.
+              piliers: Object.fromEntries(
+                Object.entries(PILIERS).map(([rang, { nom }]) => [rang, `${rang}. ${nom}`]),
+              ),
+              notes: true,
             }),
           );
         }
@@ -3954,6 +3865,11 @@ export default {
               // sans date ne veut rien dire, elle part avec.
               date_prevue: champs.debut || null,
               heure: (champs.debut && champs.heure) || null,
+              // Depuis que « Noter une idée » a disparu, la tuile est le seul
+              // endroit où l'on écrit une idée : elle porte le pilier et les
+              // notes, et ils doivent donc arriver jusqu'ici.
+              pilier: champs.pilier ? Number(champs.pilier) : null,
+              notes: champs.notes?.trim() || null,
             }),
           );
         } else if (champs.nature === 'objectif') {
@@ -4027,7 +3943,6 @@ export default {
         });
         etat.publications = [publication, ...etat.publications];
         // L'idée est notée : la fenêtre se referme. On note et on repart.
-        etat.noteIdeeOuverte = false;
         rendre();
         return;
       }
@@ -4305,13 +4220,6 @@ export default {
         return;
       }
 
-      if (evenement.target.closest('[data-ouvrir-note-idee]')) {
-        etat.noteIdeeOuverte = true;
-        rendre();
-        section.querySelector('#pub-titre')?.focus();
-        return;
-      }
-
       // Le « + » flottant : ce qu'il ouvre dépend de la page (PLUS_PAR_VUE).
       if (evenement.target.closest('[data-ouvrir-plus]')) {
         const reglages = reglagesDuPlus(etat.vue);
@@ -4351,7 +4259,6 @@ export default {
         etat.ideeOuverte = null;
         etat.momentOuvert = null;
         etat.editionMoment = false;
-        etat.noteIdeeOuverte = false;
         etat.contactOuvert = null;
         etat.editionContact = false;
         etat.choixPrepa = null;
@@ -4800,14 +4707,6 @@ export default {
         return;
       }
 
-      const tirer = evenement.target.closest('[data-tirer]');
-      if (tirer) {
-        const avecMatch = tirer.dataset.tirer === 'avec';
-        etat.tirage = { avecMatch, idee: tirerIdee(etat.publications, { avecMatch }) };
-        rendre();
-        return;
-      }
-
       const avancer = evenement.target.closest('[data-avancer]');
       if (avancer) {
         const pub = trouverPub(avancer.dataset.avancer);
@@ -5237,7 +5136,6 @@ export default {
           etat.jourOuvertCal ||
           etat.ideeOuverte ||
           etat.momentOuvert ||
-          etat.noteIdeeOuverte ||
           etat.contactOuvert ||
           etat.choixPrepa
         )
@@ -5253,7 +5151,6 @@ export default {
       etat.ideeOuverte = null;
       etat.momentOuvert = null;
       etat.editionMoment = false;
-      etat.noteIdeeOuverte = false;
       etat.contactOuvert = null;
       etat.editionContact = false;
       etat.choixPrepa = null;
