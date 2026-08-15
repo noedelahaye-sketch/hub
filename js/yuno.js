@@ -3327,7 +3327,13 @@ function construireMatchsDuClub(piste, etat) {
   if (!matchs) return `<p class="vide">…</p>`;
   if (!matchs.length) return `<p class="vide">Plus de match à son calendrier.</p>`;
 
-  return `<ul class="club-matchs">${matchs
+  // Les dates viennent du calendrier publié : la journée et l'affiche sont
+  // sûres, le jour exact et l'horaire ne le sont pas encore. On le dit, plutôt
+  // que de laisser croire à une heure qui n'existe pas.
+  const avertissement = `<p class="discret club-approx">Le jour et l'heure se
+    précisent plus tard : la tuile s'ouvre, tu corriges avant de poser.</p>`;
+
+  return `${avertissement}<ul class="club-matchs">${matchs
     .map((match) => {
       const affiche = afficheDuMatch(piste, match);
       // Posé ? On le reconnaît à la date et au club, pas au titre : celui-ci a
@@ -3354,7 +3360,7 @@ function construireMatchsDuClub(piste, etat) {
                   data-poser-match="${echapper(piste.id)}"
                   data-match-journee="${match.journee}"
                   data-match-date="${echapper(match.date)}"
-                  >Poser au calendrier</button>`
+                  >Poser au calendrier…</button>`
           }
         </li>`;
     })
@@ -4902,9 +4908,14 @@ export default {
               date_fin: fin ? fin.toISOString() : null,
               recurrence: champs.recurrence || null,
               recurrence_fin: champs.recurrence_fin || null,
-              lieu: champs.lieu?.trim() || null,
+              lieu: champs.lieu?.trim() || etat.creationCal?.clubs?.lieu || null,
               notes: champs.notes?.trim() || null,
               type_moment: champs.type_moment || null,
+              // Les deux clubs quand la tuile a été ouverte depuis un match du
+              // vivier. Le titre, lui, est ce que Noé a laissé dans le champ —
+              // copié de l'affiche, puis libre.
+              club_recevant: etat.creationCal?.clubs?.recevant ?? null,
+              club_visiteur: etat.creationCal?.clubs?.visiteur ?? null,
             }),
           );
         }
@@ -5731,10 +5742,11 @@ export default {
         return;
       }
 
-      // Poser un match au calendrier : l'événement naît complet — le titre
-      // COPIÉ de l'affiche, la date du calendrier officiel, le type « match »,
-      // et les deux clubs reliés. Le titre est libre ensuite : le réécrire ne
-      // touche pas aux liens, et les liens ne le réécrivent jamais.
+      // Un match du calendrier officiel n'a souvent PAS d'horaire, et son jour
+      // peut encore glisser (demande de Noé, 15 août 2026) : le geste n'écrit
+      // donc rien tout de suite, il OUVRE la tuile déjà remplie — titre, date
+      // approchée, type « match », les deux clubs — et Noé corrige le jour et
+      // l'heure avant de valider. Poser directement aurait inventé une heure.
       const poserMatch = evenement.target.closest('[data-poser-match]');
       if (poserMatch) {
         const piste = etat.pistes.find((p) => p.id === poserMatch.dataset.poserMatch);
@@ -5745,28 +5757,26 @@ export default {
         );
         if (!piste || !match) return;
 
-        const adversaire = etat.pistes.find(
-          (candidat) => candidat.nom === match.adversaire,
-        );
+        const adversaire = etat.pistes.find((candidat) => candidat.nom === match.adversaire);
         const recevant = match.domicile ? piste : adversaire;
         const visiteur = match.domicile ? adversaire : piste;
 
-        try {
-          const pose = await api.creerEvenement({
-            projet: 'photo',
-            titre: afficheDuMatch(piste, match),
-            date_debut: `${match.date}T00:00:00`,
+        etat.clubOuvert = null;
+        etat.creationCal = {
+          debut: match.date,
+          fin: match.date,
+          nature: 'evenement',
+          valeurs: { titre: afficheDuMatch(piste, match), type_moment: 'match' },
+          // Les deux clubs voyagent dans l'état, pas dans le formulaire : la
+          // tuile est commune au hub, elle n'a pas à connaître le vivier.
+          clubs: {
+            recevant: recevant?.id ?? null,
+            visiteur: visiteur?.id ?? null,
             lieu: recevant?.nom ?? null,
-            type_moment: 'match',
-            club_recevant: recevant?.id ?? null,
-            club_visiteur: visiteur?.id ?? null,
-          });
-          etat.evenements = [...etat.evenements, pose];
-          rendre();
-        } catch (souci) {
-          console.error('Pose du match impossible', souci);
-          dire("Le match n'a pas pu être posé au calendrier.");
-        }
+          },
+        };
+        rendre();
+        section.querySelector('#cal-titre')?.focus();
         return;
       }
 

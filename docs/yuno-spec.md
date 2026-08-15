@@ -1066,11 +1066,18 @@ propre fiche, qui remplace celle du club — jamais deux fenêtres empilées. Un
 pas. Les commandes de la ligne gardent leur geste : le « + » choisit, le lien
 du match mène dehors.
 
-**Ses matchs, posables au calendrier d'un geste** (15 août 2026). La fiche
-charge les six prochains matchs du club et pose sur chacun « Poser au
-calendrier ». Le clic crée l'événement complet — titre, date, type « match »,
-lieu, **et les deux clubs reliés** (`evenements.club_recevant` /
-`club_visiteur`) — sans que Noé écrive un mot.
+**Ses matchs, posables au calendrier** (15 août 2026). La fiche charge les six
+prochains matchs du club et pose sur chacun « Poser au calendrier… ».
+
+**Le geste n'écrit rien tout de suite : il OUVRE la tuile déjà remplie**
+(correction demandée par Noé le même jour). Le calendrier publié donne la
+journée et l'affiche à coup sûr, mais **le jour exact et l'horaire se précisent
+plus tard** : poser directement aurait inventé une heure. La tuile s'ouvre donc
+avec le titre, la date approchée, le type « match », le lieu et **les deux
+clubs** (`evenements.club_recevant` / `club_visiteur`, portés par l'état, pas
+par le formulaire — la tuile est commune au hub et n'a pas à connaître le
+vivier), et Noé corrige avant de valider. La fiche le dit en une ligne, plutôt
+que de laisser croire à une heure qui n'existe pas.
 
 **Le titre est COPIÉ de l'affiche, jamais dérivé d'elle.** C'est la règle des
 préparations, appliquée ici : « Sochaux – Guingamp » naît du calendrier
