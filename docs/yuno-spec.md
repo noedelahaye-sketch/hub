@@ -398,12 +398,18 @@ nature Moment.
    Sur les photos déjà en 3:4, c'est-à-dire presque toutes, rien n'est coupé.
 
    **Une vignette est un bouton, pas un lien vers le fichier.** Le clic ouvre
-   une **fenêtre volante avec le détail du moment** — son type, sa date, son
-   lieu, ses rencontres, sa note, et la photo en grand. Ouvrir une image nue
-   dans un onglet vide ne disait rien de ce qu'on avait vécu ce jour-là. Le
-   retrait y est offert, écrit (« Retirer du carnet ») et non par une croix : la
-   croix de fermeture occupe déjà ce coin. Même fenêtre depuis l'accueil et
-   depuis le Journal.
+   une **fenêtre volante avec le détail de la sortie**. Ouvrir une image nue
+   dans un onglet vide ne disait rien de ce qu'on avait vécu ce jour-là. Même
+   fenêtre depuis l'accueil et depuis le Journal.
+
+   **Son ordre, arrêté le 15 août 2026** (demande de Noé) : l'en-tête (type,
+   date, et le crayon rangé près de la croix de fermeture), **la photo**, puis
+   le titre, le lieu, les rencontres, la note et le bilan. La photo passe devant
+   parce que c'est elle qu'on vient revoir ; la faire attendre sous trois lignes
+   de texte revenait à la traiter comme une pièce jointe.
+
+   **On n'y retire plus rien** (même jour) : la fiche se lit et se corrige, le
+   **carnet** est l'écran où l'on range.
 4. **Objectifs** — ceux du projet photo, avec pourquoi et jalons.
 5. **En création** — seulement ce qui est programmé. Ni banque d'idées, ni
    porte vers Créer, ni porte vers le Journal (décision de Noé, 12 août) : ces
@@ -503,10 +509,14 @@ Trois conséquences, et elles tiennent l'intention :
   suit les trois leviers — Geist Mono est pour ce qui se lit comme un code, pas
   pour « 05 août », qui reste en Gilroy. Le titre se coupe plutôt que
   de passer à la ligne : une liste qu'on parcourt garde une hauteur constante.
-  **Le clic ouvre la fiche entière**, comme la banque d'idées et le réseau, et
-  c'est là que vivent le crayon et « Retirer du carnet » — une croix par ligne,
-  sur cinquante lignes, ce sont cinquante occasions de se tromper. Sur téléphone
-  l'étiquette de type s'efface : la place manque, et la fiche la redit.
+  **Le clic ouvre la fiche entière**, comme la banque d'idées et le réseau ; le
+  crayon y vit. **La croix de retrait, elle, est sur la ligne** (15 août 2026) —
+  à côté d'elle et non dedans, la ligne étant déjà un bouton et deux boutons ne
+  s'imbriquant pas. C'est le seul endroit du site où l'on retire une sortie du
+  carnet : on range là où l'on voit ce qu'on retire, au milieu du reste. Rappel
+  de ce que le geste veut dire depuis la fusion — la face vécue s'efface,
+  **l'événement reste au calendrier**. Sur téléphone l'étiquette de type
+  s'efface : la place manque, et la fiche la redit.
 - **Le fil, antéchronologique, ne porte que des moments** (13 août 2026). Il a
   d'abord mêlé les victoires nées ailleurs — une tâche terminée, une commande
   livrée, un jalon atteint. Noé les a fait retirer : une ligne « Publier trois
