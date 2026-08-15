@@ -1027,6 +1027,21 @@ bandeau ouvre la page, la porte du jour vient dessous, la fournée suit d'elle-
 même. Les formes disent ce que les titres disaient — une ligne compacte pour
 le club proposé, des cartes pour ceux qu'on a pris.
 
+**« Rattaché à » relie une fiche au vivier** (demande de Noé, 15 août 2026).
+Le champ propose les 97 clubs — une `datalist`, donc **la saisie reste libre** :
+« La Provence » n'est pas au vivier et doit pouvoir s'écrire. Écrire le nom
+exact d'un club (casse et espaces de bord ignorés) pose `pistes.contact_id` :
+la personne devient le contact de ce club, la Passerelle la montre sur sa carte
+et le bandeau la compte dans « entrés au réseau ».
+
+- **Une piste ne garde qu'une fiche** — sa carte n'en montre qu'une. Un second
+  rattaché au même club garde sa structure écrite, sans prendre la place du
+  premier.
+- Changer le « rattaché à » d'une fiche déjà liée **déplace le lien** : la
+  personne a changé de club, l'ancienne piste se libère.
+- Les fiches qui portaient déjà le nom exact d'un club ont été reliées au
+  passage (OM — service presse, Tuomas Ollila).
+
 ### `#yuno/vivier` — le vivier *(sa page)*
 
 Le pendant du carnet, côté clubs : **la Passerelle est un rituel où l'on agit**

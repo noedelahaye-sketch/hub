@@ -3439,7 +3439,8 @@ function fenetreContact(etat) {
          champs: [
            { nom: 'nom', libelle: 'Nom', type: 'text', valeur: contact.nom, requis: true },
            { nom: 'type', libelle: 'Type', type: 'choix', options: TYPES_CONTACT, valeur: contact.type },
-           { nom: 'structure', libelle: 'Structure', type: 'text', valeur: contact.structure ?? '' },
+           { nom: 'structure', libelle: 'Rattaché à', type: 'text',
+             valeur: contact.structure ?? '', suggestions: nomsDesClubs(etat.pistes) },
            {
              nom: 'statut',
              libelle: 'Où en est la relation',
@@ -3631,7 +3632,7 @@ function vueCarnet(etat) {
 // `prefill` : ce que la fiche sait déjà d'elle-même. Vide au cas ordinaire ;
 // rempli quand elle naît d'une rencontre notée au vol — le nom est écrit, et
 // la relation part de « contact établi » (ils se sont vus en vrai).
-function champsContact(prefill = {}) {
+function champsContact(prefill = {}, clubs = []) {
   return [
     { nom: 'nom', libelle: 'Nom', type: 'text', requis: true, valeur: prefill.nom ?? '' },
     {
@@ -3641,8 +3642,11 @@ function champsContact(prefill = {}) {
       options: TYPES_CONTACT,
       valeur: prefill.type ?? 'joueur',
     },
+    // Les 97 clubs du vivier se proposent ici (demande de Noé, 15 août 2026) :
+    // écrire le nom exact d'un club RELIE la fiche à sa piste. Le champ reste
+    // libre — « La Provence » n'est pas au vivier et doit pouvoir s'écrire.
     { nom: 'structure', libelle: 'Rattaché à (FC Lorient, OM, La Provence…)', type: 'text',
-      valeur: prefill.structure ?? '' },
+      valeur: prefill.structure ?? '', suggestions: clubs },
     { nom: 'instagram', libelle: 'Instagram', type: 'text' },
     { nom: 'email', libelle: 'E-mail', type: 'text' },
     { nom: 'telephone', libelle: 'Téléphone', type: 'text' },
@@ -3664,7 +3668,19 @@ function champsContact(prefill = {}) {
   ];
 }
 
-const CHAMPS_CONTACT = champsContact();
+// Les noms du vivier, pour les suggestions du champ « rattaché à ».
+function nomsDesClubs(pistes = []) {
+  return [...pistes].map((piste) => piste.nom).sort((a, b) => a.localeCompare(b, 'fr'));
+}
+
+// La piste dont le nom est celui écrit dans « rattaché à ». La comparaison
+// ignore la casse et les espaces de bord : on relie ce que Noé a voulu écrire,
+// pas ce qu'il a tapé au caractère près.
+export function pisteDeLaStructure(structure, pistes = []) {
+  const cherche = (structure ?? '').trim().toLocaleLowerCase('fr');
+  if (!cherche) return null;
+  return pistes.find((piste) => piste.nom.toLocaleLowerCase('fr') === cherche) ?? null;
+}
 
 // La fenêtre du « + » sur les pages du réseau : la même fiche, dans une fenêtre
 // volante. L'identifiant du formulaire diffère de celui du pli — deux mêmes
@@ -3673,7 +3689,7 @@ const CHAMPS_CONTACT = champsContact();
 // écrit, la relation part de « contact établi », et `rencontre_id` voyage dans
 // un champ caché pour que la rencontre se relie à la fiche une fois posée.
 // Sans lui, la fenêtre est celle du « + » des pages du réseau, telle quelle.
-function formulaireNouveauContact(prefill = null) {
+function formulaireNouveauContact(prefill = null, pistes = []) {
   return construireFenetre(
     'Ajouter au réseau',
     `<h3 class="fenetre-titre">Ajouter au réseau</h3>
@@ -3697,7 +3713,7 @@ function formulaireNouveauContact(prefill = null) {
            ? `<input type="hidden" name="piste_id" value="${echapper(prefill.piste_id)}">`
            : '',
        ].join(''),
-       champs: prefill ? champsContact(prefill) : CHAMPS_CONTACT,
+       champs: champsContact(prefill ?? {}, nomsDesClubs(pistes)),
      })}`,
   );
 }
@@ -3911,7 +3927,7 @@ const BESOINS = {
   passerelle: ['contacts', 'envois', 'modeles', 'pistes'],
   vivier: ['pistes', 'contacts'],
   messages: ['modeles'],
-  carnet: ['contacts', 'envois', 'modeles'],
+  carnet: ['contacts', 'envois', 'modeles', 'pistes'],
   // La feuille lit aussi les sorties : le bilan propose d'inscrire celle-ci au
   // carnet (l'événement dit s'il est déjà vécu et de quel type ; les contacts
   // relient les rencontres).
@@ -4179,6 +4195,7 @@ export default {
             'beforeend',
             formulaireNouveauContact(
               typeof etat.contactNouveau === 'object' ? etat.contactNouveau : null,
+              etat.pistes,
             ),
           );
         }
@@ -4233,6 +4250,35 @@ export default {
     const rendreCommandes = () => {
       const cible = section.querySelector('[data-bloc="commandes"]');
       if (cible) cible.innerHTML = construireCommandes(etat.commandes, etat.preparations);
+    };
+
+    // « Rattaché à » relie la fiche au vivier (demande de Noé, 15 août 2026) :
+    // écrire le nom d'un club y attache la personne, et la Passerelle la
+    // retrouve sur la carte de ce club. Écrire autre chose détache.
+    //
+    // Une piste ne garde qu'UNE fiche — la carte n'en montre qu'une —, donc on
+    // ne prend pas la place d'une autre : le premier rattaché reste le contact
+    // de référence du club, et le second garde simplement sa structure écrite.
+    // Le lien se déplace en revanche quand la personne change de club.
+    const relierAuVivier = async (contact) => {
+      const cible = pisteDeLaStructure(contact.structure, etat.pistes);
+      const ancienne = etat.pistes.find((piste) => piste.contact_id === contact.id);
+      if (cible === ancienne) return;
+
+      const aEcrire = [];
+      if (ancienne) aEcrire.push([ancienne, null]);
+      if (cible && !cible.contact_id) aEcrire.push([cible, contact.id]);
+      if (!aEcrire.length) return;
+
+      try {
+        await Promise.all(
+          aEcrire.map(([piste, valeur]) => api.modifierPiste(piste.id, { contact_id: valeur })),
+        );
+        for (const [piste, valeur] of aEcrire) piste.contact_id = valeur;
+      } catch (souci) {
+        console.error('Lien au vivier impossible', souci);
+        dire('La fiche est enregistrée, mais le lien au club n’a pas pu se faire.');
+      }
     };
 
     // Un envoi de plus pour une fiche : la ligne au journal, et la fiche qui
@@ -4420,6 +4466,7 @@ export default {
         etat.contacts = etat.contacts.map((candidat) =>
           candidat.id === champs.id ? { ...candidat, ...modifie } : candidat,
         );
+        await relierAuVivier(etat.contacts.find((c) => c.id === champs.id));
         // On revient à la fiche : la correction se voit avant de refermer.
         etat.editionContact = false;
         rendre();
@@ -4718,6 +4765,9 @@ export default {
         // La piste pointe désormais sa fiche : la carte de la fournée montre
         // la personne, et son « Envoyé ✓ » fera avancer la relation. Si cette
         // seconde écriture échoue, la fiche existe quand même — le dire suffit.
+        //
+        // Deux chemins mènent ici : la Passerelle, qui désigne sa piste dans un
+        // champ caché, et le carnet, où c'est « rattaché à » qui la nomme.
         if (champs.piste_id) {
           const piste = etat.pistes.find((p) => p.id === champs.piste_id);
           if (piste) {
@@ -4729,6 +4779,8 @@ export default {
               dire('La fiche est créée, mais la piste n’a pas pu être reliée.');
             }
           }
+        } else {
+          await relierAuVivier(contact);
         }
 
         // La rencontre pointe désormais sa fiche : le « + » disparaît, le nom
