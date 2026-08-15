@@ -22,6 +22,9 @@ confort :
 
 1. **Le succès se mesure en moments vécus** — matchs couverts, rencontres,
    œuvres finies. Les vues sont une donnée, jamais un verdict.
+   *(« Œuvre finie » est masquée depuis le 15 août 2026 — voir §4. Le principe
+   ne change pas ; c'est sa troisième mesure qui s'est révélée futile à
+   l'usage.)*
 2. **Les réseaux sont une vitrine, pas une résidence** — on dépose l'œuvre, on
    repart. Les stats avaient un rendez-vous hebdomadaire, jamais un fil continu ;
    depuis le 15 août 2026 elles n'ont plus d'écran du tout (§4).
@@ -207,7 +210,7 @@ onglet actif, compteurs, icônes, bordures survolées, barres décoratives,
 | Le focus clavier | Les bordures survolées |
 | Les chiffres (compteurs, métriques) | Les barres décoratives |
 | Le statut d'une publication | Les étiquettes de réseau et de pilier |
-| « Œuvre finie » — rare, et c'est ce que le site célèbre | Les liens survolés |
+| « Œuvre finie » — rare, et c'est ce que le site célèbre *(masquée depuis le 15 août 2026)* | Les liens survolés |
 
 Un gris **chaud** et non neutre : sur un fond aussi sombre, un gris froid tire
 au bleu et jure avec le doré du logo. Contrastes mesurés sur la carte : gris
@@ -341,7 +344,8 @@ nature. Le hub a le même espace Calendrier, tous projets confondus
 12 août). Dans l'ordre :
 
 **Ni compteurs, ni bouton de capture depuis le 14 août 2026** (demande de Noé) :
-les trois compteurs — moments vécus · rencontres · œuvres finies — et
+les compteurs — moments vécus · rencontres, et « œuvres finies » jusqu'au
+15 août 2026 — et
 « Ajouter une sortie » vivent désormais **au Journal seulement**, qui est la
 page du carnet. L'accueil s'ouvre directement sur le mur. La capture s'y
 atteint toujours par l'invite, ou par le « + » flottant dont la tuile porte la
@@ -491,7 +495,7 @@ Trois conséquences, et elles tiennent l'intention :
   disparu : le « + » est là où le pouce arrive, et il ne bouge pas quand la
   page défile. Elle demande une date, un type (match · concert · sortie ·
   autre), le nom de la sortie, et en facultatif le lieu, les rencontres, une
-  photo, une note, et la case « œuvre finie ». Deux champs suffisent — elle doit
+  photo, une note. Deux champs suffisent — elle doit
   se remplir debout, en sortant du stade, en moins de 30 secondes.
   **Venue de l'invite, elle ne demande QUE le vécu** (rencontres, photo, note) :
   la sortie est déjà au calendrier, elle porte son nom et sa date — les
@@ -529,6 +533,17 @@ Trois conséquences, et elles tiennent l'intention :
   de ce que le geste veut dire depuis la fusion — la face vécue s'efface,
   **l'événement reste au calendrier**. Sur téléphone l'étiquette de type
   s'efface : la place manque, et la fiche la redit.
+- **« Œuvre finie » est masquée** (15 août 2026, décision de Noé : « l'utilisation
+  me paraît très futile »). Elle comptait le travail d'atelier mené jusqu'au
+  bout — une série triée, retouchée, achevée — et venait de la distinction
+  fondatrice entre l'écran-atelier et l'écran-refuge. Ce qui l'a tuée à l'usage
+  se lit dans ses chiffres : **0 sur treize sorties**. C'était la seule des
+  trois mesures qui demandait de revenir cocher une case des jours après la
+  sortie, quand le tri et la retouche étaient finis — le geste n'arrivait
+  jamais. Le drapeau `OEUVRE_VISIBLE` de `js/yuno.js` commande d'un seul endroit
+  le compteur, les deux formulaires, l'étiquette de la fiche et la marque du
+  carnet ; **la colonne `oeuvre_finie` garde ses valeurs**, et le repasser à
+  `true` rallume tout. Même façon de faire que `VICTOIRES_VISIBLES` au hub.
 - **Le fil, antéchronologique, ne porte que des moments** (13 août 2026). Il a
   d'abord mêlé les victoires nées ailleurs — une tâche terminée, une commande
   livrée, un jalon atteint. Noé les a fait retirer : une ligne « Publier trois

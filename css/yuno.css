@@ -448,9 +448,13 @@ body[data-espace="yuno"] .portes {
 
 /* Trois de front, toujours — ce sont trois faces d'une même chose, pas une
    liste qui s'allonge. Les chiffres ne peuvent que monter. */
+/* Autant de colonnes que de compteurs : ils étaient trois, ils sont deux depuis
+   que « Œuvre finie » est masquée (15 août 2026), et une grille figée à trois
+   aurait laissé une case vide. `auto-fit` les répartit sans qu'on ait à
+   compter — rallumer le troisième le remettra en ligne tout seul. */
 .bloc ul.compteurs {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
   gap: var(--espace-8);
   margin-bottom: 0;
 }

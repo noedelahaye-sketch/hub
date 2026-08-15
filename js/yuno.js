@@ -264,6 +264,20 @@ const PLUS = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none"
   stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
   aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"></path></svg>`;
 
+// « Œuvre finie » est MASQUÉE (demande de Noé, 15 août 2026 — « l'utilisation me
+// paraît très futile »). Elle comptait le travail d'atelier mené jusqu'au bout :
+// une série triée, retouchée, achevée. C'était le troisième terme du principe
+// fondateur (« matchs couverts, rencontres, œuvres finies ») et le seul des
+// trois qui demandait de revenir cocher une case des jours après la sortie —
+// c'est probablement ce qui l'a rendue futile à l'usage : elle est restée à 0
+// sur treize sorties.
+//
+// Rien n'est détruit : la colonne `oeuvre_finie` garde ses valeurs, et ce
+// drapeau commande d'un seul endroit le compteur, les deux formulaires,
+// l'étiquette de la fiche et la marque du carnet. Le repasser à `true` rallume
+// tout. Même façon de faire que `VICTOIRES_VISIBLES` dans js/dashboard.js.
+const OEUVRE_VISIBLE = false;
+
 const TYPES_MOMENT = {
   match: 'Match',
   concert: 'Concert',
@@ -354,7 +368,7 @@ export function construireCompteurs(sorties) {
     <ul class="compteurs">
       ${compteur(vecus, 'Moments vécus')}
       ${compteur(rencontres, 'Rencontres')}
-      ${compteur(oeuvres, 'Œuvres finies')}
+      ${OEUVRE_VISIBLE ? compteur(oeuvres, 'Œuvres finies') : ''}
     </ul>`;
 }
 
@@ -440,7 +454,7 @@ function corpsMoment(sortie, photos = {}, { fenetre = false, preparations = [] }
         <span class="etiquette">${echapper(
           TYPES_MOMENT[sortie.type_moment] ?? TYPES_MOMENT.autre,
         )}</span>
-        ${sortie.oeuvre_finie ? '<span class="etiquette etiquette-oeuvre">Œuvre finie</span>' : ''}
+        ${OEUVRE_VISIBLE && sortie.oeuvre_finie ? '<span class="etiquette etiquette-oeuvre">Œuvre finie</span>' : ''}
         <span class="discret quand">${echapper(
           echeanceLisible(depuisDateISO(jourDeLaSortie(sortie))),
         )}</span>
@@ -511,7 +525,9 @@ function formulaireModifierMoment(sortie) {
         type: 'file',
         accepte: 'image/*',
       },
-      { nom: 'oeuvre_finie', libelle: 'Œuvre finie', type: 'checkbox', valeur: sortie.oeuvre_finie },
+      ...(OEUVRE_VISIBLE
+        ? [{ nom: 'oeuvre_finie', libelle: 'Œuvre finie', type: 'checkbox', valeur: sortie.oeuvre_finie }]
+        : []),
     ],
   });
 }
@@ -579,7 +595,7 @@ function ligneCarnet(sortie, photos = {}, reference = new Date()) {
         <span class="sortie-ligne-titre">${echapper(sortie.titre ?? titreDuMoment(sortie))}</span>
         <span class="sortie-ligne-marques">
           ${
-            sortie.oeuvre_finie
+            OEUVRE_VISIBLE && sortie.oeuvre_finie
               ? '<span class="etiquette etiquette-oeuvre" title="Œuvre finie">Œuvre</span>'
               : ''
           }
@@ -806,7 +822,9 @@ function formulaireMoment(contacts, prefill = null) {
            accepte: 'image/*',
          },
          { nom: 'note', libelle: 'Note libre', type: 'textarea' },
-         { nom: 'oeuvre_finie', libelle: 'Une œuvre finie', type: 'checkbox' },
+         ...(OEUVRE_VISIBLE
+           ? [{ nom: 'oeuvre_finie', libelle: 'Une œuvre finie', type: 'checkbox' }]
+           : []),
        ],
      })}`,
   );

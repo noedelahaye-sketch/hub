@@ -558,6 +558,37 @@ retombe sur la plus proche en silence.
 
 ---
 
+## 0 duodecies. « Œuvre finie » est masquée (15 août)
+
+Noé a d'abord demandé **ce que la case voulait dire** — la réponse est venue des
+documents fondateurs (`Yuno/pourquoi-terrain-yuno.md`), pas de ma mémoire :
+elle compte le travail d'atelier mené jusqu'au bout, et vient de la distinction
+qui gouverne tout le système, **l'écran-atelier contre l'écran-refuge** (créer :
+actif, fini, au service d'une œuvre ; consommer : passif, sans fin).
+
+Puis : « l'utilisation me paraît très futile, on peut l'enlever ou au moins la
+masquer ». **Masquée**, donc — le motif déjà employé deux fois dans ce dépôt
+(`VICTOIRES_VISIBLES`, le réglage backlog/actif). Le drapeau `OEUVRE_VISIBLE`
+de `js/yuno.js` commande d'un seul endroit **cinq** points : le compteur, le
+formulaire de capture, celui de correction, l'étiquette de la fiche et la marque
+du carnet. La colonne `oeuvre_finie` garde ses valeurs ; le repasser à `true`
+rallume tout.
+
+**Ce que ses chiffres disaient** : 0 sur treize sorties. C'était la seule des
+trois mesures qui demandait de revenir cocher une case **des jours après** la
+sortie, une fois le tri et la retouche finis — le geste n'arrivait jamais. Les
+deux autres se cochent dans l'instant du vécu.
+
+`.compteurs` passe de `repeat(3, 1fr)` à `repeat(auto-fit, minmax(0, 1fr))` :
+trois colonnes figées auraient laissé une case vide, et rallumer le troisième
+compteur le remettra en ligne sans qu'on ait à recompter.
+
+**Vérifié** : deux compteurs bien répartis, aucune mention d'« œuvre » nulle
+part — ni dans la fiche, ni dans le formulaire de correction, ni dans la
+capture, ni sur les lignes du carnet — et les valeurs en base intactes.
+
+---
+
 ## 1. Ce qui existe
 
 Le hub est **déployé et fonctionnel** :
