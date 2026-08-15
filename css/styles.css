@@ -98,6 +98,13 @@ body[data-espace="photo"]     { --accent: #8f6c00; --accent-doux: #f7efcf; }
 body[data-espace="yuno"] {
   color-scheme: dark;
 
+  /* La TROISIÈME couleur du site, après le gris foncé et le doré — et **chez
+     Yuno seulement** (décision de Noé, 15 août 2026) : elle appartient à cette
+     identité, pas au hub ni au FCH. Elle dit la MATIÈRE CRÉATIVE : les idées,
+     le chemin qui les mène à une date, ce qui n'est pas encore parti. Elle ne
+     prend jamais la place de l'or, qui dit l'état actif et les chiffres. */
+  --violet: #8b4bf1;
+
   --fond: #181818;
   /* Deux crans au-dessus du fond, et non un : à #222222 les tuiles flottaient à
      peine, surtout sans ombre pour les décoller. La bordure monte avec elles,
@@ -128,33 +135,37 @@ body[data-espace="yuno"] {
      on lit l'équilibre de la banque d'un coup d'œil, ce qu'une liste de chiffres
      dorés identiques ne permettait pas.
 
-     **Quatre nuances d'un même violet depuis le 15 août 2026** (décision de
-     Noé : le violet devient la troisième couleur du site, après le gris foncé
-     et le doré). Avant, les quatre piliers portaient quatre teintes étrangères
-     — jaune, orange, bleu, violet — - lisibles mais sans parenté : le
-     classement ressemblait à quatre marques, pas à quatre faces d'un même
-     travail. Une seule teinte (263°) qui s'assombrit dit ce qu'ils sont.
+     **Quatre nuances d'une même couleur depuis le 15 août 2026** (décision de
+     Noé). Avant, les quatre piliers portaient quatre teintes étrangères —
+     jaune, orange, bleu, violet — lisibles mais sans parenté : le classement
+     ressemblait à quatre marques, pas à quatre faces d'un même travail. Une
+     seule teinte qui s'assombrit dit ce qu'ils sont.
+
+     **En bleu (222°), les quatre dernières nuances d'une échelle de neuf** —
+     essai demandé par Noé le 15 août 2026, après un premier jeu en violet.
 
      Le prix, assumé : quatre nuances se distinguent moins vite que quatre
-     couleurs. On le paie en étageant régulièrement — chaque rang est deux fois
-     plus sombre que le précédent (mesuré) — et parce que la couleur d'un pilier
-     est un rappel, jamais la seule information : le nom l'accompagne toujours,
-     sauf sur le point d'une ligne de flux, où la fiche le dit.
+     couleurs. La couleur d'un pilier est un rappel, jamais la seule
+     information — le nom l'accompagne toujours, sauf sur le point d'une ligne
+     de flux, où la fiche le dit.
 
-     Contrastes mesurés de l'encre sur son aplat : 8,74 · 4,80 · 7,10 · 10,52 —
-     les quatre au-dessus du seuil AA (4,5). C'est la pastille PLEINE qui porte
-     la couleur, jamais le texte nu : à 63 % de luminosité, un violet ne se lit
-     pas en lettres sur ce fond.
+     Contrastes mesurés de l'encre blanche sur son aplat : 7,21 · 9,26 · 11,97 ·
+     14,99 — les quatre très au-dessus du seuil AA (4,5). C'est la pastille
+     PLEINE qui porte la couleur, jamais le texte nu : sous 50 % de luminosité,
+     un bleu ne se lit pas en lettres sur ce fond.
+
+     **Ce que ces nuances coûtent, mesuré** : sur la carte (#242426), une barre
+     de 3 px tombe à 2,15 · 1,67 · 1,29 · 1,03 de contraste. Le rang 4 est
+     littéralement invisible — 1,03, c'est la couleur du fond. Les quatre
+     dernières nuances sont faites pour porter de l'encre claire, pas pour se
+     voir SUR du sombre.
 
      L'or (#e8b000) reste à part : il ne dit ni une catégorie ni un thème, il dit
-     l'état actif et les chiffres. Le violet, lui, dit la MATIÈRE CRÉATIVE —
-     les piliers, les idées, ce qui n'est pas encore parti. */
-  --violet: #8b4bf1;
-
-  --pilier-1: #bf9cf6; --pilier-1-encre: #150029;
-  --pilier-2: #955eed; --pilier-2-encre: #150029;
-  --pilier-3: #6917ee; --pilier-3-encre: #ffffff;
-  --pilier-4: #4905b8; --pilier-4-encre: #ffffff;
+     l'état actif et les chiffres. */
+  --pilier-1: #114ad0; --pilier-1-encre: #ffffff;
+  --pilier-2: #0e3daa; --pilier-2-encre: #ffffff;
+  --pilier-3: #0b2f84; --pilier-3-encre: #ffffff;
+  --pilier-4: #08225e; --pilier-4-encre: #ffffff;
 }
 
 /* Chaque élément qui connaît son pilier pose sa couleur, et tout ce qui vit

@@ -105,12 +105,16 @@ dessus :
 |---|---|
 | Gris foncé | le fond, le calme, tout ce qui accompagne |
 | **Or** `#e8b000` | l'état actif, les chiffres, l'action qui part |
-| **Violet** `#8b4bf1` | la **matière créative** — les piliers, les idées, ce qui n'est pas encore parti |
+| **Violet** `#8b4bf1` | la **matière créative** — les idées, le chemin qui les mène à une date |
 
-Le violet se voit aujourd'hui sur les quatre piliers (§3, palette), les numéros
-d'étape du pipeline de Créer, et le filet d'entrée de la banque. Il ne prend
-jamais la place de l'or : un numéro d'étape n'est ni un état actif ni un
-chiffre qui compte.
+Il vit **chez Yuno seulement** (décision de Noé, 15 août 2026) : la variable
+est déclarée sur `body[data-espace="yuno"]`, pas dans la racine — le hub et le
+FCH gardent leurs deux couleurs. On le voit sur les numéros d'étape du pipeline
+de Créer et le filet d'entrée de la banque ; il ne prend jamais la place de
+l'or, car un numéro d'étape n'est ni un état actif ni un chiffre qui compte.
+
+**Les piliers, eux, sont en bleu** depuis le même jour (essai en cours) : voir
+§3, où l'échelle et son coût sont mesurés.
 
 
 | Rôle | Valeur | Note |

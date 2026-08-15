@@ -737,6 +737,26 @@ puis rendue à la banque — 18 idées, 0 datée).
 
 ---
 
+## 0 duodevicies. Le violet chez Yuno seul, les piliers en bleu (15 août, nuit)
+
+Deux précisions de Noé après le premier jeu violet : le violet est la troisième
+couleur **de Yuno seulement**, et les piliers passent **en bleu, les quatre
+dernières nuances** d'une échelle de neuf.
+
+- `--violet` quitte `:root` pour `body[data-espace="yuno"]` : le hub et le FCH
+  gardent leurs deux couleurs.
+- Piliers : `#114ad0 · #0e3daa · #0b2f84 · #08225e` (teinte 222, crans 600 à
+  900). **Encre blanche excellente** : 7,21 · 9,26 · 11,97 · 14,99.
+
+**Ce que l'essai coûte, mesuré avant de l'appliquer et signalé à Noé** : les
+quatre dernières nuances sont faites pour PORTER de l'encre claire, pas pour se
+voir SUR du sombre. Sur la carte (#242426), la barre de 3 px des tuiles de la
+banque tombe à **2,15 · 1,67 · 1,29 · 1,03** de contraste — le rang 4 est
+littéralement invisible (1,03 = la couleur du fond). Les pastilles pleines, en
+revanche, sont impeccables. Deux sorties possibles si Noé garde le bleu :
+éclaircir la barre (une nuance plus haute pour ce seul usage), ou remonter
+l'échelle entière de deux crans.
+
 ## 0 septendecies. Le violet, troisième couleur (15 août, nuit)
 
 Décision de Noé : « le violet comme 3e couleur principale (après le gris foncé
