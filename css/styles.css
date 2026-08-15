@@ -1999,6 +1999,24 @@ body.fond-fige {
   border-radius: var(--rayon-controle);
 }
 
+/* Un menu posé dans la page se resserre (demande de Noé, 15 août 2026) : ses
+   options descendent à 2 rem au lieu de 2,5, et le panneau à 4 px de marge.
+   Sept relations à 40 px faisaient une colonne plus haute que la fenêtre.
+   **La tuile de capture ne bouge pas** : là-bas les options sont peu
+   nombreuses, visées au pouce au-dessus du clavier, et 2,5 rem s'y justifie.
+   La cible reste large — c'est la ligne entière, pas le mot. */
+.choix-en-place > .choix-panneau {
+  padding: var(--espace-4);
+  /* Assez haut pour que les sept relations tiennent d'un coup : un menu qui
+     défile n'est pas condensé, il est tronqué. Mesuré : 266 px de contenu. */
+  max-height: 20rem;
+}
+
+.choix-en-place > .choix-panneau .choix-capture button {
+  min-height: 2rem;
+  font-size: 0.875rem;
+}
+
 /* Le panneau se pose au bord gauche de son déclencheur et prend la largeur de
    ses options, pas celle de la puce : `right: auto` défait l'étirement que la
    règle de formulaire impose. */

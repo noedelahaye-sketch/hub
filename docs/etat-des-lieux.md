@@ -621,6 +621,13 @@ fusionne désormais classe et style dans les attributs qu'il écrit. Deux repris
 de spécificité au passage : `.choix-en-place > .choix-declencheur` (deux
 classes) écrasait le rembourrage de `.choix-statut` (une seule).
 
+**Le menu s'est resserré** (demande de Noé, même jour) : options à 2 rem au lieu
+de 2,5, panneau à 4 px de marge, plafond relevé à 20 rem — un menu qui défile
+n'est pas condensé, il est tronqué. Mesuré : la ligne passe de 38 à **30 px**,
+et les sept relations tiennent d'un coup (268 px). **La tuile de capture ne
+bouge pas** : ses options restent à 38 px (revérifié), parce que là-bas elles
+sont peu nombreuses et visées au pouce au-dessus du clavier.
+
 **Vérifié** en conditions réelles : le filtre Type ramène 47 fiches à 5 clubs et
 la puce s'allume ; le changement de relation d'un contact part en base
 (« Alicia » passée puis **rendue** à `contact_etabli`) ; plus aucun `select`
