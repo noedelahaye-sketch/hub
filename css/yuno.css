@@ -1384,7 +1384,9 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 .metrique {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 2px;
+  text-align: center;
 }
 
 .metrique .chiffre { font-size: 1.5rem; line-height: 1.1; color: var(--accent); }
@@ -1402,7 +1404,6 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   padding: 0;
   font-family: inherit;
   font-size: 0.75rem;
-  text-align: left;
   color: var(--texte-discret);
   background: none;
   border: none;
