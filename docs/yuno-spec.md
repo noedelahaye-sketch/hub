@@ -1050,9 +1050,15 @@ relance courtoise.
 fait acquis, qui ne redescend jamais. Avec une fiche reliée, la relation avance
 aussi (**une relation vivante ne redescend jamais**) ; sans fiche, le message
 est parti au compte du club et l'envoi compte quand même (`journal_envois`
-avec `contact_id` NULL). Le club contacté reste affiché sous la fournée
-jusqu'au lundi (« Cette semaine : ✓ … ») : le geste accompli ne disparaît pas
-de l'écran qui l'a demandé.
+avec `contact_id` NULL).
+
+**La carte ne disparaît pas de la fournée** (demande de Noé, 15 août 2026) :
+elle change de geste. « Envoyé ✓ » cède la place à **l'état de la relation** —
+le même menu que la colonne « Relation » du carnet, avec ses sept valeurs et
+leurs teintes — qui se fait avancer d'ici, sans passer par le CRM. Sans fiche
+reliée, il n'y a pas de relation à suivre : la carte affiche « ✓ écrit
+aujourd'hui » et garde son bouton « Noter le contact », pour rattacher
+quelqu'un plus tard. La fournée se vide d'elle-même au changement de semaine.
 
 Les autres chantiers évoqués avec Noé — concerts et événements, accréditation
 Vélodrome, médias congolais à rythme mensuel — viendront une fois cette forme

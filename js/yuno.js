@@ -2936,12 +2936,31 @@ function carteFournee(piste, contacts) {
             aria-label="Reposer ${echapper(piste.nom)} au vivier">×</button>
           ${
             fiche
-              ? `<span class="discret">Fiche : ${echapper(fiche.nom)}</span>`
+              ? `<span class="discret fournee-fiche">${echapper(fiche.nom)}</span>`
               : `<button type="button" class="bouton-secondaire bouton-mini"
                   data-trouve-piste="${echapper(piste.id)}">Noter le contact</button>`
           }
-          <button type="button" class="bouton-secondaire bouton-mini bouton-envoye"
-            data-envoye-piste="${echapper(piste.id)}">Envoyé ✓</button>
+          ${
+            // Écrit, la carte reste (demande de Noé, 15 août 2026) : « Envoyé ✓ »
+            // cède la place à l'état de la relation, qui se fait avancer d'ici.
+            // Sans fiche — un message parti au compte du club — il n'y a pas de
+            // relation à suivre : la date de l'envoi tient lieu de réponse.
+            piste.date_contacte
+              ? fiche
+                ? `<span data-statut-de="${echapper(fiche.id)}">${menuChoix({
+                    nom: `statut-fournee-${fiche.id}`,
+                    libelle: `Relation avec ${fiche.nom}`,
+                    options: Object.entries(STATUTS_CONTACT).map(([valeur, { nom }]) => [valeur, nom]),
+                    valeur: fiche.statut,
+                    attribut: 'data-statut',
+                    couleurDe: (cle) => STATUTS_CONTACT[cle] ?? { teinte: null },
+                  })}</span>`
+                : `<span class="discret fournee-envoye">✓ écrit ${echapper(
+                    echeanceLisible(depuisDateISO(piste.date_contacte)),
+                  )}</span>`
+              : `<button type="button" class="bouton-secondaire bouton-mini bouton-envoye"
+                  data-envoye-piste="${echapper(piste.id)}">Envoyé ✓</button>`
+          }
         </span>
       </span>
     </li>`;
@@ -3268,11 +3287,10 @@ export function construirePasserelle({
   pistesPassees = [],
   propositionsOuvertes = false,
 } = {}) {
-  const fournee = pistes.filter((piste) => piste.en_fournee && !piste.date_contacte);
-  const debut = versDateISO(debutDeSemaine());
-  const contacteesSemaine = pistes.filter(
-    (piste) => piste.date_contacte && piste.date_contacte >= debut,
-  );
+  // La fournée garde ses clubs écrits (demande de Noé, 15 août 2026) : la carte
+  // ne s'évapore pas au moment où l'on vient d'agir dessus, elle change de
+  // geste. Elle se vide au changement de semaine, quand la fournée se refait.
+  const fournee = pistes.filter((piste) => piste.en_fournee);
 
   return `
     ${construireMetrique({ envois, pistes, objectifDoux })}
@@ -3295,13 +3313,8 @@ export function construirePasserelle({
           : `<p class="vide">Choisis ci-dessus les clubs de ta semaine,
               selon leurs matchs à venir.</p>`
       }
-      ${
-        contacteesSemaine.length
-          ? `<p class="discret note-contactes">Cette semaine : ${contacteesSemaine
-              .map((piste) => `✓ ${echapper(piste.nom)}`)
-              .join(' · ')}</p>`
-          : ''
-      }
+      <!-- Plus de rappel « Cette semaine : ✓ … » : il disait ce qui venait de
+           disparaître de l'écran. Les cartes restent, il n'a plus d'objet. -->
     </section>
 
     <div class="portes">
