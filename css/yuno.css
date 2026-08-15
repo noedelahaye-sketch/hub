@@ -1015,17 +1015,52 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   padding-right: var(--espace-32);
 }
 
+/* Les deux gestes d'une sortie, revus le 15 août 2026 (demande de Noé) : le
+   crayon monte se ranger dans le coin, avec la croix de fermeture, et le
+   retrait reste seul en bas — petit et centré. Les deux ne se valent pas :
+   corriger est courant et sans risque, retirer du carnet est rare et définitif.
+   Les mettre côte à côte, de même taille, en faisait deux boutons jumeaux. */
 .fenetre .moment-actions {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--espace-8);
   width: 100%;
   margin-top: var(--espace-8);
 }
 
-/* Le retrait se pousse au bout : entre le crayon et lui, la distance vaut
-   mieux qu'un avertissement. */
-.fenetre .moment-actions .bouton-retirer { margin-left: auto; }
+/* Le crayon sort du flux et se pose à gauche de la croix — d'où le décalage de
+   sa largeur (2,25 rem), la seule valeur à tenir à jour si `.fenetre-fermer`
+   changeait de taille. La fenêtre est en `position: fixed` : elle sert donc
+   elle-même de repère, et le bouton ne bouge pas quand le contenu défile. */
+.fenetre .moment-actions .bouton-icone {
+  position: absolute;
+  top: var(--espace-8);
+  right: calc(var(--espace-8) + 2.25rem);
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+}
+
+.fenetre .moment-actions .bouton-icone svg { width: 15px; height: 15px; }
+
+/* La place des DEUX boutons se réserve en tête, sinon la date passe dessous —
+   vu sur capture : « le 3 j✏️in ». Le titre de fenêtre a la sienne depuis
+   toujours (`.fenetre-titre`, marge de 2 rem pour la seule croix) ; l'en-tête
+   d'une sortie n'avait rien, faute d'avoir jamais eu de bouton à côté. */
+.fenetre .moment-complet > .tuile-entete {
+  padding-right: calc(2 * 2.25rem + var(--espace-8));
+}
+
+/* Le retrait se dit en petit : c'est un geste qu'on ne cherche pas. */
+.fenetre .moment-actions .bouton-retirer {
+  font-size: 0.8125rem;
+}
+
+/* Le `margin-left: auto` qui poussait le retrait au bout est parti avec le
+   crayon : il n'y a plus rien à sa gauche dont l'éloigner, et il contredirait
+   le centrage. La distance à laquelle il tenait est devenue verticale — le
+   crayon est monté dans le coin. */
 
 /* Un bouton de retrait ne se révèle au survol que dans une liste — la règle de
    styles.css vise `.bloc li:hover`. Dans une fenêtre volante il n'y a pas de

@@ -461,6 +461,35 @@ passage : la page Créer contient bien le mot « abonnés » — c'est la preuve
 
 ---
 
+## 0 nonies. Les deux gestes de la fiche d'une sortie (15 août)
+
+Demande de Noé, sur la fenêtre qui s'ouvre depuis le Journal comme depuis
+l'accueil — c'est la même : « Retirer du carnet » en plus petit et centré, le
+crayon réduit et monté en haut à droite.
+
+Les deux gestes ne se valaient pas mais se ressemblaient : corriger est courant
+et sans risque, retirer du carnet est rare et définitif. Côte à côte et de même
+taille, ils faisaient deux boutons jumeaux. Le crayon rejoint donc la croix de
+fermeture dans le coin (2,25 rem, sans cadre, sorti du flux) ; le retrait reste
+seul en bas, à 12 px et centré. Le `margin-left: auto` qui le poussait au bout
+est parti : il n'a plus rien à sa gauche dont s'éloigner, et la distance à
+laquelle il tenait est devenue verticale.
+
+**Un défaut que la mesure seule n'aurait pas montré** : le crayon en position
+absolue passait **par-dessus la date** de l'en-tête — lu sur capture,
+« le 3 j✏️in ». Le titre d'une fenêtre a sa marge réservée depuis toujours
+(`.fenetre-titre`), mais l'en-tête d'une sortie n'avait jamais eu de bouton à
+côté d'elle. Corrigé par un `padding-right` de la largeur des deux boutons sur
+`.fenetre .moment-complet > .tuile-entete` ; remesuré : 16 px d'écart entre la
+date et le crayon. Trois sélecteurs approximatifs avaient été écrits d'abord —
+la structure réelle (`.fenetre > .moment-complet > .tuile-entete`) a été lue
+dans le DOM plutôt que devinée.
+
+**Vérifié** depuis les deux entrées, ligne du carnet et vignette du mur :
+crayon aligné avec la croix, retrait centré à 12,19 px, aucun chevauchement.
+
+---
+
 ## 1. Ce qui existe
 
 Le hub est **déployé et fonctionnel** :
