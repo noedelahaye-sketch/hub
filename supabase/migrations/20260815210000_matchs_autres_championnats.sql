@@ -1,0 +1,35 @@
+-- Les calendriers des autres championnats (15 août 2026, au soir).
+--
+-- Après l'échantillon Ligue 1 (migration 20260815200000, données incluses),
+-- les autres championnats ont été chargés dans `matchs_pistes` par la même
+-- méthode — page « Scores & Fixtures » de fbref.com lue par le navigateur
+-- (le site refuse les lectures hors navigateur), noms convertis vers ceux du
+-- vivier, insertion par CTE VALUES + jointure sur pistes.nom.
+--
+-- **Les données de ces lots vivent en base, pas dans ce fichier** : ~1 800
+-- lignes de plus, dont la valeur est éphémère (une saison) et la source
+-- publique et rejouable. Ce fichier tient le journal de ce qui a été chargé,
+-- pour que le dépôt reste le témoin du schéma ET de la méthode.
+--
+-- Chargé le 15 août 2026 :
+--   Ligue 2      306 matchs (612 lignes)  — 34 journées complètes
+--   Bundesliga   272 lignes (8 clubs × 34)
+--   Serie A      380 lignes (10 clubs × 38)
+--   La Liga      380 lignes (10 clubs × 38)
+--   Super League 132 lignes (6 clubs × 22 journées publiées à cette date)
+--   Segunda       42 lignes (UD Almería × 42)
+--
+-- Pas encore chargeable à cette date :
+--   Ligue 3   — absente de fbref ; le site officiel (ligue3betclic.fr) ne
+--               publie que les journées jouées. À recharger quand une source
+--               donne la saison entière, ou journée par journée.
+--   Belgique  — fbref affiche encore la saison 2025-2026 pour la Pro League.
+--               À recharger quand la page bascule sur 2026-2027.
+--
+-- À la relecture de mi-saison (reports accumulés), rejouer la méthode :
+-- extraire, `delete from matchs_pistes where piste_id in (...)` par
+-- championnat, réinsérer.
+
+-- Aucune évolution de schéma dans cette migration : elle documente un
+-- chargement de données.
+select 1;

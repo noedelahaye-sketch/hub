@@ -6,11 +6,73 @@
 > les deux cahiers des charges (`yuno-spec.md`, `fch-spec.md`) font autorité sur
 > leurs sites. À relire au début d'une session, à mettre à jour à la fin.
 >
-> **Les sections § 0 racontent les deux dernières journées** (14–15 août), la
-> plus récente d'abord ; les § 1 et suivants décrivent l'état stable et les
-> chantiers antérieurs.
+> **Les sections § 0 racontent les deux dernières journées** (14–15 août, puis
+> la Passerelle v2 le 15 après-midi), la plus récente d'abord ; les § 1 et
+> suivants décrivent l'état stable et les chantiers antérieurs.
 
-## 0. La session des 14–15 août, en un coup d'œil
+## 0. La Passerelle v2 — 15 août, après-midi
+
+**La Passerelle a été réécrite à la demande de Noé** (« la structure actuelle
+me perd ») : elle n'est plus une file de fiches par niveaux, elle est le
+**rituel hebdomadaire d'ouverture de portes** vers des clubs jamais contactés.
+Le cahier des charges fait autorité : `yuno-spec.md`, § `#yuno/passerelle`.
+
+- **Table `pistes`** (migration `20260815160000_passerelle_pistes.sql`,
+  appliquée) : 97 clubs définis avec Noé — L1/L2/L3 2026-27 au complet et
+  vérifiées sur le web, 8 belges, 5+1 suisses, 7+1 allemands (< 7 h de train de
+  Paris), 10 italiens, 10+1 espagnols ; colonne `leopard` pour les clubs d'un
+  international congolais (pont CAN 2027).
+- **La page** : métrique (inchangée) · **« Une porte à ouvrir »** — un seul
+  club à traiter (ligne compacte, petits « + » ajouter / « × » passer à zone
+  tactile 44 px, lien du match en gris ; le suivant prend la place ; à droite,
+  le bouton-tuile « Les propositions de la semaine » ouvre la fenêtre des dix ;
+  les passages vivent au `localStorage`, semaine par semaine) · fournée de la
+  semaine (cartes avec 4 portes de recherche, capture, « Envoyé ✓ ») ·
+  chantier Clubs replié · modèles (inchangés). Tirage semé : **70 % français —
+  3 L1 + 2 L2 + 2 L3 — et 3 pays étrangers qui tournent** (la France est le
+  fil rouge, l'étranger un objectif second).
+- **Le prochain match s'affiche** (« J1 · reçoit LOSC Lille ») : table
+  `matchs_pistes` + vue `prochain_match_par_piste`
+  (migration `20260815200000_matchs_pistes.sql`), chargées depuis fbref.com
+  via le navigateur (le site refuse les lectures hors navigateur). **Chargé le
+  15 août : L1, L2, Bundesliga, Serie A, La Liga, Suisse (22 journées
+  publiées), Almería — ~2 400 lignes, 71 clubs sur 97.** Adversaire et journée
+  sûrs, date indicative (précision acceptée par Noé). La migration
+  `20260815210000` tient le journal : seule la Ligue 1 a ses données dans le
+  dépôt, les autres lots vivent en base (source publique, rejouable).
+- **Les portes d'une carte de fournée sont des icônes sans cadre** : calendrier
+  et planète-presse en bleu Yuno, LinkedIn et Instagram avec leur vrai logo
+  (SVG intégrés dans `js/yuno.js`). La fenêtre de la dizaine n'a plus de titre
+  (le bouton-tuile qui l'ouvre le dit déjà).
+- **Tout vérifié dans le navigateur** ce jour : choisir, reposer, envoyer
+  (avec et sans fiche), capture pré-remplie avec `piste_id`, nouvelle dizaine,
+  porte du palier Réseau. Noé a suivi en direct et a fait le premier
+  « Envoyé ✓ » lui-même (AJ Auxerre).
+
+**Ouvert après cette session :**
+
+- **L'« Envoyé ✓ » d'Auxerre était-il un essai ?** Si oui, remettre la piste au
+  vivier et retirer l'envoi demande un passage en base (l'interface ne défait
+  pas un fait, par principe). Demander à Noé avant d'y toucher.
+- **La colonne « Niveau » du carnet est orpheline** : plus aucune file ne la
+  lit. La retirer ou la laisser — à trancher avec Noé (c'étaient aussi les
+  derniers `select` natifs, voir plus bas).
+- **Les mentions Léopard sont figées au 15 août**, mercato encore ouvert :
+  Stroeykens (Anderlecht) et M.-A. Balikwisha (Antwerp) n'ont pas été inscrits
+  faute de certitude ; revérifier après la fermeture du marché.
+- **Deux calendriers restent à charger dans `matchs_pistes`** : la **Ligue 3**
+  (absente de fbref ; ligue3betclic.fr ne publie que les journées jouées) et
+  la **Belgique** (fbref affiche encore la saison 2025-26 pour la Pro League).
+  Même méthode que les autres quand une source publie — et la **Suisse
+  s'arrête à la J22** publiée, à compléter plus tard. En profiter pour
+  re-vérifier les dates si des reports se sont accumulés.
+- **Les trois autres chantiers** discutés avec Noé — concerts/événements,
+  accréditation Vélodrome, médias congolais tous les mois — attendent que la
+  forme Clubs soit validée à l'usage.
+
+---
+
+## 0 ante. La session des 14–15 août, en un coup d'œil
 
 **Vingt-quatre commits, tous poussés.** Le site Yuno a été refondu en
 profondeur ; le hub n'a été touché qu'aux endroits qu'il partage.
@@ -40,8 +102,8 @@ profondeur ; le hub n'a été touché qu'aux endroits qu'il partage.
    invisibles à l'œil ont été trouvés ainsi cette session.
 4. **L'écran passe devant le réseau** partout où le geste tient en un clic
    (`js/ecriture.js` — ne pas la recopier). Les formulaires font exception.
-5. **Le FCH et la Passerelle restent mis de côté** par Noé — ne pas les entamer
-   par petites touches (§ 3).
+5. **Le FCH reste mis de côté** par Noé — ne pas l'entamer par petites touches
+   (§ 3). La Passerelle, elle, a été réécrite le 15 après-midi (§ 0).
 
 ### L'état de la base, au soir du 15 août
 

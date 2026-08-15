@@ -920,42 +920,102 @@ ce qui marche.
 
 **Elle a quitté le carnet le 12 août, à la demande de Noé.** `#yuno/reseau` est
 devenu un palier avec deux portes : le carnet est un **fonds où l'on cherche**,
-la Passerelle une **file où l'on agit**. Les mêler sur un écran obligeait à
-basculer entre les deux pour rien. Les deux pages gardent l'onglet Réseau
-allumé, et les commandes restent sur le palier.
+la Passerelle un **rituel où l'on agit**. Les deux pages gardent l'onglet
+Réseau allumé, et les commandes restent sur le palier.
 
-Elles partagent la même base — `baseContacts()` filtre, cherche et trie pour
-les deux. Noé avait déjà construit son pipeline relationnel sans le nommer ; on
-ajoute la couche qui pousse à l'action.
+**Réécrite le 15 août 2026 (demande de Noé : « la structure actuelle me
+perd »).** La première Passerelle était une file de fiches déjà au réseau,
+groupée par niveaux (Répondre · Relancer · Ouvrir) — elle ne savait pas parler
+des gens **jamais contactés**, qui sont pourtant l'objectif premier. Elle est
+désormais le **rituel hebdomadaire d'ouverture de portes**, construit autour
+d'un **vivier de 97 clubs** défini avec Noé (table `pistes`) : Ligue 1, Ligue 2
+et Ligue 3 au complet (saison 2026-2027, listes vérifiées), les grands clubs
+des pays frontaliers — 8 belges, 5 suisses, 10 italiens, 10 espagnols, et
+7 allemands *à moins de 7 h de train de Paris* (critère de Noé ; Wolfsburg et
+Hambourg écartés) — plus les clubs où joue un **international congolais**
+(colonne `leopard` : Standard de Liège/Epolo, Sion/Fayulu, Augsburg/Mbuku,
+Almería/Cipenga — l'accroche éditoriale, et le pont vers le fil rouge
+CAN 2027).
 
-- **La file d'action de la semaine**, groupée par micro-dose : **1 Répondre**
-  (des messages reçus qui attendent), **2 Relancer** (des relations vivantes à
-  entretenir), **3 Ouvrir** (des portes à pousser). La peur du rejet ne se
-  contourne pas, elle s'entraîne — d'où la gradation. Un contact entre dans la
-  file quand on lui donne un niveau, depuis la colonne « Niveau » du tableau.
-- **Dans la file, une case vide passe DEVANT**, au rebours du tableau :
-  « jamais écrit » est ce qui attend le plus, pas ce qui est le plus ancien.
-- **La seule métrique : les messages envoyés** — cumul et « cette semaine »,
-  déduits d'un journal (une ligne = un envoi). **La table `journal_envois` n'a
-  pas de colonne « répondu », et c'est délibéré** : si le compteur dépendait des
-  réponses, chaque silence deviendrait un rejet mesuré. Ne jamais afficher de
-  taux de réponse ni de compte de non-réponses.
-- **« Envoyé ✓ »** enregistre l'envoi, date la fiche et fait avancer la
-  relation. **Une relation vivante ne redescend jamais** : écrire à quelqu'un
-  qui a répondu ne le ramène pas à « relancé ».
-- **L'objectif doux** (défaut 1 envoi/semaine, réglable, dans le
-  `localStorage`) se dit une fois atteint — « C'est fait pour cette semaine » —
-  et se tait en dessous. Un plancher rassurant, jamais une dette.
-- **La bibliothèque de modèles** : la friction du premier message est le
-  principal mur de l'aller-vers. Titres et corps s'éditent en place, un bouton
-  copie le texte pour le coller ailleurs. Quatre modèles de départ, chargés en
-  base : accréditation concert, premier contact club, proposition à un média,
-  relance courtoise.
+La page, de haut en bas :
 
-Champs ajoutés à une fiche, tous facultatifs : `objectif` (pourquoi ce contact),
-`niveau` (1–3), `date_dernier_envoi` — **distinct de `dernier_echange`** : un
-envoi est un effort à soi, un échange est bidirectionnel — `prochaine_action` et
-`prochaine_action_date`, qui portent la relance au calendrier.
+- **La métrique** (inchangée) : messages envoyés, cumul et « cette semaine »,
+  déduits de `journal_envois` (une ligne = un envoi). **Pas de colonne
+  « répondu », délibérément** : si le compteur dépendait des réponses, chaque
+  silence deviendrait un rejet mesuré. Jamais de taux de réponse. L'objectif
+  doux (réglable, `localStorage`) se dit une fois atteint et se tait en
+  dessous.
+- **« Ta fournée de la semaine »** : les clubs que Noé a choisis. Chaque carte
+  porte ses **quatre portes de recherche en icônes, sans cadre** (demande de
+  Noé, 15 août au soir) — calendrier et planète-presse dans le bleu de Yuno,
+  **LinkedIn et Instagram avec leur vrai logo et leurs couleurs officielles**,
+  dessinés en SVG dans `js/yuno.js` (jamais une image distante). Les adresses
+  se fabriquent depuis le nom du club (LinkedIn pré-rempli « responsable
+  communication + club ») : le site est statique et sans dépendance,
+  **il met le bon endroit à un clic et Noé juge**. Cibles tactiles 44 px, la
+  zone déborde en transparent.
+  Puis « Noter la personne trouvée » (la fiche du réseau s'ouvre pré-remplie :
+  type club, structure, et `piste_id` en champ caché pour relier la piste à la
+  fiche) et « Envoyé ✓ ». La croix repose le club au vivier — un choix, jamais
+  compté.
+- **« Une porte à ouvrir »** : UN club à la fois, pas une liste (demande de
+  Noé, 15 août au soir — dix cartes d'un coup faisaient un mur). La tête de la
+  dizaine s'affiche en **ligne compacte** — division, nom, prochain match, un
+  « + » et une croix « passer », cibles tactiles 44 px. Ajouter ou passer fait
+  apparaître le suivant. « Passer » est un **choix d'écran** : gardé dans le
+  `localStorage` pour la semaine, jamais écrit en base — le club reviendra.
+  À droite de la tuile, un **bouton-tuile « Les propositions de la semaine »**
+  (dessous, en pleine largeur, sur téléphone) ouvre la fenêtre volante des dix
+  propositions en lignes, chacune son « + » — pour composer d'un coup d'œil.
+  « Proposer d'autres clubs » (dans la fenêtre) tire une nouvelle donne et
+  remet les passages à zéro. Dans la tuile, le lien du match est gris — une
+  information qui se consulte — et « + » comme « × » sont de petits ronds dont
+  la zone tactile garde 44 px (elle déborde en transparent).
+- **La dizaine elle-même** se tire du vivier en deux familles (précision de
+  Noé, 15 août au soir) : **la France est le fil rouge de la saison,
+  l'étranger un objectif second** — aller shooter dehors — qui demande moins de
+  régularité. **Environ 70 % de français** (un tour par division, la Ligue 1
+  ouvre chaque tour et prend les places restantes : 3 L1 + 2 L2 + 2 L3), le
+  solde à l'étranger où l'ordre des pays est lui-même mélangé — trois pays
+  différents d'une semaine à l'autre. Tirage SEMÉ qui change chaque lundi.
+- **Le prochain match s'affiche** (idée de Noé, 15 août au soir) : « J1 ·
+  reçoit LOSC Lille », parce que **c'est le calendrier des matchs qui décide de
+  la fournée**. Les appariements d'une saison sont publics et figés dès l'été :
+  la table `matchs_pistes` les charge une fois par saison (source fbref.com),
+  et la vue `prochain_match_par_piste` en sert un par club. **L'adversaire et
+  la journée sont sûrs ; la date est indicative** (elle glisse avec la
+  télévision) — elle se lit au survol sur la ligne, en clair sur la carte de
+  fournée. Sans calendrier chargé, la ligne retombe sur « Matchs à venir ».
+  Chargé au 15 août 2026 : Ligue 1, Ligue 2, Bundesliga, Serie A, La Liga,
+  Super League suisse (journées publiées) et l'Almería (Segunda). **Restent la
+  Ligue 3 et la Belgique**, dont les calendriers complets n'étaient pas encore
+  publiés sur la source — voir la migration `20260815210000`, qui tient le
+  journal des chargements et de la méthode.
+- **« Le chantier Clubs »**, replié : le chemin parcouru, division par
+  division. « 12 clubs contactés sur 97 » — on dit l'obtenu, jamais le
+  « reste ».
+- **La bibliothèque de modèles** (inchangée) : titres et corps s'éditent en
+  place, un bouton copie le texte.
+
+**« Envoyé ✓ » d'une piste** enregistre l'envoi et date `date_contacte` — un
+fait acquis, qui ne redescend jamais. Avec une fiche reliée, la relation avance
+aussi (**une relation vivante ne redescend jamais**) ; sans fiche, le message
+est parti au compte du club et l'envoi compte quand même (`journal_envois`
+avec `contact_id` NULL). Le club contacté reste affiché sous la fournée
+jusqu'au lundi (« Cette semaine : ✓ … ») : le geste accompli ne disparaît pas
+de l'écran qui l'a demandé.
+
+Les autres chantiers évoqués avec Noé — concerts et événements, accréditation
+Vélodrome, médias congolais à rythme mensuel — viendront une fois cette forme
+validée à l'usage ; le vivier et la carte savent déjà porter le Léopard d'un
+club.
+
+Champs d'une fiche hérités de la v1, tous facultatifs : `objectif` (pourquoi ce
+contact), `niveau` (1–3, orphelin depuis la v2 — la colonne « Niveau » du
+tableau existe encore mais n'alimente plus aucune file), `date_dernier_envoi` —
+**distinct de `dernier_echange`** : un envoi est un effort à soi, un échange
+est bidirectionnel — `prochaine_action` et `prochaine_action_date`, qui portent
+la relance au calendrier.
 
 **Les contacts eux-mêmes ne sont pas dans ce dépôt.** Ce sont des données
 personnelles réelles (numéros, comptes) et le dépôt est public : elles vivent
@@ -1039,7 +1099,9 @@ et ce paragraphe ne fait que dire à quoi sert chaque table.
 | `commandes` | le suivi, du devis au paiement. `client_id` relie au carnet |
 | `evenements` | **une sortie, deux faces** — prévue (date, lieu, `type_moment`) et vécue (`vecu`, `photo_chemin`, `note`, `oeuvre_finie`). C'est le Carnet de terrain depuis la fusion du 14 août 2026 ; la table `moments` a disparu |
 | `rencontres` | qui a été rencontré, à quelle sortie (`evenement_id`). `contact_id` facultatif |
-| `journal_envois` | un envoi = une ligne. **Aucune colonne « répondu »** |
+| `journal_envois` | un envoi = une ligne, `contact_id` NULL quand le message est parti au compte d'un club. **Aucune colonne « répondu »** |
+| `pistes` | le vivier de la Passerelle : 97 clubs à contacter (division, `leopard`, `en_fournee`, `date_contacte`, `contact_id`) |
+| `matchs_pistes` | le calendrier des clubs du vivier, une ligne par match et par piste — chargé par saison, dates indicatives. La vue `prochain_match_par_piste` en sert un par club |
 | `stats_hebdo` | un rendez-vous = une ligne. `reponse_rituelle` est NOT NULL |
 | `modeles_messages` | la bibliothèque de messages à personnaliser |
 | `modeles_preparation` · `modeles_preparation_items` | les modèles de préparation (« Match »…) et leurs items par phase |
