@@ -1102,7 +1102,10 @@ rappel, et il se corrige à la main comme n'importe quel statut.
 attaché. Les fiches dont « rattaché à » porte le nom du club — plus celle née
 de la piste — s'alignent en une **bande qui défile de gauche à droite**, celle
 des pastilles de la tuile de capture, avec un petit **« + » à droite** qui ne
-défile pas. Chaque personne porte **la couleur de son type**, celle-là même que la colonne
+défile pas. **Elle suit l'écran** : courte sur téléphone, elle s'étire sur
+ordinateur et montre trois ou quatre personnes d'un coup. Un **fondu** marque
+le côté où il reste à voir — posé en JS, jamais quand il n'y a plus rien
+après, y compris au redimensionnement. Chaque personne porte **la couleur de son type**, celle-là même que la colonne
 « Type » du CRM — le hachage de son libellé (`teinteDuType` appelle la
 `teinte` commune) : un joueur est violet des deux côtés du site, une personne
 du club turquoise. Pas de table de teintes parallèle, qui divergerait au

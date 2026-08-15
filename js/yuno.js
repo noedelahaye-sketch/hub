@@ -4262,6 +4262,22 @@ export default {
       }
       reveletLesPhotos(section);
       animerLesCompteurs(section);
+      marquerLesDebordements();
+    };
+
+    // De quel côté une bande de contacts a-t-elle encore de la réserve ? La
+    // feuille de style pose un fondu du bon côté, et seulement là où il reste à
+    // voir — une pastille tranchée net sans rien après ressemblerait à un
+    // défaut de mise en page. Même mécanique que la tuile de capture, mais sur
+    // plusieurs bandes : une par carte de la fournée.
+    const marquerLesDebordements = () => {
+      for (const bande of section.querySelectorAll('.fournee-bande-liste')) {
+        bande.classList.toggle('deborde-avant', bande.scrollLeft > 1);
+        bande.classList.toggle(
+          'deborde-apres',
+          bande.scrollLeft + bande.clientWidth < bande.scrollWidth - 1,
+        );
+      }
     };
 
     // Ne redessine que la liste des contacts : réécrire la vue entière ferait
@@ -4281,6 +4297,7 @@ export default {
             : etat.vue === 'messages'
               ? construireModeles(etat.modeles)
               : construireContacts(etat.contacts, optionsBase(etat));
+      marquerLesDebordements();
     };
 
     const rendreCommandes = () => {
@@ -6076,6 +6093,23 @@ export default {
       viserLeJour(null);
       ideePrise = null;
     };
+
+    // La bande s'élargit avec l'écran : ce qui débordait sur téléphone tient
+    // parfois d'un bloc sur ordinateur, et le fondu doit disparaître avec le
+    // débordement. Sans ça, il annoncerait une réserve qui n'existe plus.
+    window.addEventListener('resize', marquerLesDebordements);
+
+    // Le fondu suit le doigt : `scroll` ne remonte pas, on l'écoute donc à la
+    // capture, sur la section entière.
+    section.addEventListener(
+      'scroll',
+      (evenement) => {
+        if (evenement.target.classList?.contains('fournee-bande-liste')) {
+          marquerLesDebordements();
+        }
+      },
+      true,
+    );
 
     section.addEventListener('pointerdown', (evenement) => {
       if (evenement.pointerType === 'touch') return;
