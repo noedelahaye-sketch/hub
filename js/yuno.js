@@ -2025,7 +2025,11 @@ function fenetreChoixModele(etat) {
 // ajoutés à côté : **deux attributs `class` sur un même élément, et le second
 // est ignoré en silence** — c'est ce qui avait éteint la couleur du statut en
 // passant du menu natif à la liste.
-function menuChoix({ nom, libelle, options, valeur, attribut, couleurDe = null }) {
+// `tete` habille le déclencheur autrement que la valeur choisie : sur une carte
+// de la Passerelle, la pastille montre le NOM de la personne et la couleur de
+// son type, et c'est le panneau qui parle de la relation. Sans elle, le
+// déclencheur dit la valeur, comme partout ailleurs.
+function menuChoix({ nom, libelle, options, valeur, attribut, couleurDe = null, tete = null }) {
   const choisi = options.find(([cle]) => String(cle) === String(valeur));
 
   const habiller = (cle) => {
@@ -2037,14 +2041,21 @@ function menuChoix({ nom, libelle, options, valeur, attribut, couleurDe = null }
     };
   };
 
-  const tete = habiller(choisi?.[0]);
+  const apparence = tete
+    ? {
+        classe: tete.teinte === null || tete.teinte === undefined
+          ? 'choix-statut choix-statut-neutre'
+          : 'choix-statut',
+        style: tete.teinte === null || tete.teinte === undefined ? '' : ` style="--h: ${tete.teinte}"`,
+      }
+    : habiller(choisi?.[0]);
 
   return `
     <span class="choix-champ choix-en-place" data-choix-champ="${echapper(nom)}">
-      <button type="button" class="choix-declencheur ${tete.classe}" data-ouvrir-choix
-        aria-expanded="false" aria-haspopup="listbox"${tete.style}
+      <button type="button" class="choix-declencheur ${apparence.classe}" data-ouvrir-choix
+        aria-expanded="false" aria-haspopup="listbox"${apparence.style}
         ${libelle ? `aria-label="${echapper(libelle)}"` : ''}
-        >${echapper(choisi?.[1] ?? 'Choisir')}${CHEVRON}</button>
+        >${echapper(tete?.texte ?? choisi?.[1] ?? 'Choisir')}${CHEVRON}</button>
       <div class="choix-panneau" hidden>
         <ul class="choix-capture">
           ${options
@@ -2074,6 +2085,19 @@ const TYPES_CONTACT = {
   autre: 'Autre',
 };
 
+// La teinte d'un type, pour les pastilles de personnes sur les cartes de la
+// Passerelle (demande de Noé, 15 août 2026) : d'un coup d'œil on voit à qui on
+// a affaire dans un club — un joueur, le service presse, un confrère.
+const TEINTES_TYPE = {
+  joueur: 150,
+  photographe: 215,
+  club: 42,
+  media: 280,
+  agence: 195,
+  marque: 335,
+  autre: null,
+};
+
 // Où en est la relation. Repris du tableau Notion de Noé, dans son ordre de
 // progression : c'est lui qui fait du carnet un CRM plutôt qu'un annuaire.
 // Chaque statut a sa teinte fixe — aucune ne signale une alerte.
@@ -2101,13 +2125,11 @@ function statutLisible(cle) {
   return STATUTS_CONTACT[cle] ?? STATUTS_RETIRES[cle] ?? { nom: cle ?? '', teinte: null };
 }
 
-// Les trois micro-doses de l'aller-vers, de la plus sûre à la plus grande. La
-// peur du rejet ne se contourne pas, elle s'entraîne : d'où la gradation.
-const NIVEAUX = {
-  1: { nom: 'Répondre', aide: 'Des messages reçus qui attendent.' },
-  2: { nom: 'Relancer', aide: 'Des relations vivantes, à entretenir.' },
-  3: { nom: 'Ouvrir', aide: 'Des portes à pousser. Le plus grand pas.' },
-};
+// Les trois niveaux d'aller-vers (1 Répondre · 2 Relancer · 3 Ouvrir) sont
+// partis le 15 août 2026 avec la file qu'ils rangeaient : la Passerelle v2 ne
+// s'en sert plus, et la colonne du CRM ne faisait plus que la demander. La
+// colonne `contacts.niveau` RESTE en base, avec ses valeurs — on ne détruit
+// pas des données pour retirer un écran.
 
 // Où va la relation après un envoi de plus. Une relation vivante ne redescend
 // jamais : écrire à quelqu'un qui a répondu ne le ramène pas à « relancé ».
@@ -2226,32 +2248,6 @@ const COLONNES = [
       libelle: (contact) => statutLisible(contact.statut).nom,
       // Les statuts se rangent dans leur progression, pas par ordre alphabétique.
       ordre: (contact) => Object.keys(STATUTS_CONTACT).indexOf(contact.statut),
-    },
-  },
-  {
-    cle: 'niveau',
-    titre: 'Niveau',
-    // Le niveau se trie sur la gradation : 1 est plus proche que 3.
-    valeur: (contact) => (contact.niveau ? String(contact.niveau) : ''),
-    texte: (contact) => (NIVEAUX[contact.niveau] ?? {}).nom ?? '',
-    cellule: (contact) => `<select class="choix-niveau" data-niveau="${echapper(contact.id)}"
-      aria-label="Niveau d'aller-vers pour ${echapper(contact.nom)}">
-      <option value="">—</option>
-      ${Object.entries(NIVEAUX)
-        .map(
-          ([valeur, { nom }]) =>
-            `<option value="${valeur}" ${
-              String(contact.niveau) === valeur ? 'selected' : ''
-            }>${valeur} ${nom}</option>`,
-        )
-        .join('')}
-    </select>`,
-    filtre: {
-      cle: (contact) => (contact.niveau ? String(contact.niveau) : ''),
-      libelle: (contact) =>
-        contact.niveau ? `${contact.niveau} ${NIVEAUX[contact.niveau].nom}` : 'Hors file',
-      // Les sans-niveau en dernier : ils ne sont pas un quatrième niveau.
-      ordre: (contact) => contact.niveau ?? 9,
     },
   },
   {
@@ -2957,8 +2953,38 @@ function pastillesPiste(piste) {
 // Une carte de la fournée : les portes de recherche, la personne trouvée (ou
 // le bouton pour la noter), et « Envoyé ✓ ». La croix repose le club au
 // vivier — c'est un choix, pas un échec, et rien ne le compte.
+// Tous ceux qu'on connaît dans ce club (demande de Noé, 15 août 2026) : les
+// fiches dont « rattaché à » porte son nom, plus celle née de la piste si elle
+// ne l'a pas encore écrit. Un club, ce n'est pas une personne — au service
+// presse s'ajoutent un joueur, un confrère, un attaché.
+export function contactsDuClub(piste, contacts = []) {
+  const cherche = piste.nom.toLocaleLowerCase('fr');
+  const dedans = contacts.filter(
+    (contact) => (contact.structure ?? '').trim().toLocaleLowerCase('fr') === cherche,
+  );
+  const nee = contacts.find((contact) => contact.id === piste.contact_id);
+  if (nee && !dedans.includes(nee)) dedans.unshift(nee);
+  return dedans;
+}
+
+// La pastille d'une personne : son nom, la couleur de son type, et le panneau
+// de sa relation au clic. Le geste est celui du carnet — `data-statut` sur
+// l'option, le contact sur le conteneur —, l'espace l'écoutait déjà.
+function pastilleContact(contact) {
+  return `
+    <span class="contact-pastille" data-statut-de="${echapper(contact.id)}">${menuChoix({
+      nom: `relation-${contact.id}`,
+      libelle: `Relation avec ${contact.nom} — ${TYPES_CONTACT[contact.type] ?? contact.type}`,
+      options: Object.entries(STATUTS_CONTACT).map(([valeur, { nom }]) => [valeur, nom]),
+      valeur: contact.statut,
+      attribut: 'data-statut',
+      couleurDe: statutLisible,
+      tete: { texte: contact.nom, teinte: TEINTES_TYPE[contact.type] ?? null },
+    })}</span>`;
+}
+
 function carteFournee(piste, contacts) {
-  const fiche = contacts.find((contact) => contact.id === piste.contact_id);
+  const dedans = contactsDuClub(piste, contacts);
 
   // Les gestes vivent en colonne, à droite, croix comprise (demandes de Noé,
   // 15 août au soir) : plus de rangée d'en-tête, la pastille du championnat
@@ -2978,37 +3004,33 @@ function carteFournee(piste, contacts) {
               : ''
           }
           <span class="piste-liens">${liensPiste(piste).join('')}</span>
+          ${
+            // Tout le monde qu'on connaît dans ce club, en une rangée qui
+            // défile sur le côté : un club en compte parfois plusieurs, et la
+            // carte ne doit pas grandir pour autant. Chaque pastille porte la
+            // couleur de son type ; la toucher ouvre sa relation.
+            dedans.length
+              ? `<span class="fournee-contacts">${dedans.map(pastilleContact).join('')}</span>`
+              : ''
+          }
         </span>
         <span class="fournee-actions">
           <button type="button" class="lien-discret bouton-mini bouton-retirer fournee-reposer"
             data-reposer-piste="${echapper(piste.id)}"
             title="Reposer au vivier"
             aria-label="Reposer ${echapper(piste.nom)} au vivier">×</button>
+          <button type="button" class="bouton-secondaire bouton-mini"
+            data-trouve-piste="${echapper(piste.id)}">${
+              dedans.length ? 'Ajouter un contact' : 'Noter le contact'
+            }</button>
           ${
-            fiche
-              ? `<span class="discret fournee-fiche">${echapper(fiche.nom)}</span>`
-              : `<button type="button" class="bouton-secondaire bouton-mini"
-                  data-trouve-piste="${echapper(piste.id)}">Noter le contact</button>`
-          }
-          ${
-            // L'état de la relation, dès qu'une fiche existe : c'est lui qui
-            // remplace « Envoyé ✓ » une fois le message parti (demande de Noé,
-            // 15 août 2026), et il se fait avancer d'ici. Sans fiche — un
-            // message au compte du club — la date de l'envoi en tient lieu.
-            fiche
-              ? `<span data-statut-de="${echapper(fiche.id)}">${menuChoix({
-                  nom: `statut-fournee-${fiche.id}`,
-                  libelle: `Relation avec ${fiche.nom}`,
-                  options: Object.entries(STATUTS_CONTACT).map(([valeur, { nom }]) => [valeur, nom]),
-                  valeur: fiche.statut,
-                  attribut: 'data-statut',
-                  couleurDe: statutLisible,
-                })}</span>`
-              : piste.date_contacte
-                ? `<span class="discret fournee-envoye">✓ écrit ${echapper(
-                    echeanceLisible(depuisDateISO(piste.date_contacte)),
-                  )}</span>`
-                : ''
+            // Sans personne connue, la date de l'envoi dit ce qui a été fait :
+            // le message est parti au compte du club.
+            !dedans.length && piste.date_contacte
+              ? `<span class="discret fournee-envoye">✓ écrit ${echapper(
+                  echeanceLisible(depuisDateISO(piste.date_contacte)),
+                )}</span>`
+              : ''
           }
           ${
             // Le bouton d'envoi revient pour une relance : le message est de
@@ -3045,12 +3067,15 @@ export function objectifSuivant(objectifDoux) {
 export function construireMetrique({
   envois = [],
   pistes = [],
+  contacts = [],
   objectifDoux = 1,
   reference = new Date(),
 } = {}) {
   const semaine = envoisDeLaSemaine(envois, reference);
   const contactees = pistes.filter((piste) => piste.date_contacte).length;
-  const auReseau = pistes.filter((piste) => piste.contact_id).length;
+  // Un club est entré au réseau dès qu'on y connaît quelqu'un — pas seulement
+  // la fiche née de la piste : « rattaché à » en amène d'autres.
+  const auReseau = pistes.filter((piste) => contactsDuClub(piste, contacts).length).length;
 
   return `
     <div class="passerelle-metrique">
@@ -3370,7 +3395,7 @@ export function construirePasserelle({
   const fournee = pistes.filter((piste) => piste.en_fournee);
 
   return `
-    ${construireMetrique({ envois, pistes, objectifDoux })}
+    ${construireMetrique({ envois, pistes, contacts, objectifDoux })}
 
     <!-- UN seul titre depuis le 15 août 2026 (demande de Noé) : il chapeaute
          tout ce sur quoi on agit — le club proposé et la fournée. Les
@@ -3656,14 +3681,6 @@ function champsContact(prefill = {}, clubs = []) {
       ),
       valeur: prefill.statut ?? 'pas_de_contact' },
     { nom: 'objectif', libelle: 'Pourquoi ce contact ? (facultatif)', type: 'text' },
-    { nom: 'niveau', libelle: "Dans la file d'aller-vers ?", type: 'choix',
-      options: {
-        '': 'Pas dans la file',
-        ...Object.fromEntries(
-          Object.entries(NIVEAUX).map(([v, { nom }]) => [v, `${v} ${nom}`]),
-        ),
-      },
-      valeur: '' },
     { nom: 'notes', libelle: 'Notes', type: 'textarea' },
   ];
 }
@@ -4757,7 +4774,6 @@ export default {
           telephone: champs.telephone?.trim() || null,
           statut: champs.statut,
           objectif: champs.objectif?.trim() || null,
-          niveau: champs.niveau ? Number(champs.niveau) : null,
           notes: champs.notes?.trim() || null,
           dernier_echange: depuisRencontre?.dernier_echange ?? null,
         });
@@ -6187,22 +6203,6 @@ export default {
       }
 
       // Dater le dernier échange d'un contact, au même geste.
-
-      // Le niveau se change au même geste que le statut : c'est lui qui fait
-      // entrer un contact dans la file, ou l'en sort.
-      const niveau = evenement.target.closest('[data-niveau]');
-      if (niveau) {
-        const contact = etat.contacts.find((c) => c.id === niveau.dataset.niveau);
-        if (!contact) return;
-        const valeurNiveau = niveau.value ? Number(niveau.value) : null;
-        await modifierAussitot(
-          contact,
-          { niveau: valeurNiveau },
-          () => api.modifierContact(contact.id, { niveau: valeurNiveau }),
-          { rendre: rendreContacts, echouer: dire },
-        );
-        return;
-      }
 
       // Les champs vifs « pourquoi ce contact » et « prochaine action » de
       // l'ancienne file par niveaux sont partis avec elle (15 août 2026) : ces

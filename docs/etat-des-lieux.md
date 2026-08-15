@@ -56,9 +56,6 @@ Le cahier des charges fait autorité : `yuno-spec.md`, § `#yuno/passerelle`.
 - **L'« Envoyé ✓ » d'Auxerre était-il un essai ?** Si oui, remettre la piste au
   vivier et retirer l'envoi demande un passage en base (l'interface ne défait
   pas un fait, par principe). Demander à Noé avant d'y toucher.
-- **La colonne « Niveau » du carnet est orpheline** : plus aucune file ne la
-  lit. La retirer ou la laisser — à trancher avec Noé (c'étaient aussi les
-  derniers `select` natifs, voir plus bas).
 - **Les mentions Léopard sont figées au 15 août**, mercato encore ouvert :
   Stroeykens (Anderlecht) et M.-A. Balikwisha (Antwerp) n'ont pas été inscrits
   faute de certitude ; revérifier après la fermeture du marché.
@@ -75,6 +72,12 @@ Le cahier des charges fait autorité : `yuno-spec.md`, § `#yuno/passerelle`.
   l'objectif doux dessous, qui tourne d'un toucher), « clubs contactés »
   (12/97, en remplacement du cumul d'envois) et « entrés au réseau » (masqué
   tant qu'il vaut zéro). Voir `yuno-spec.md`.
+- **Le niveau d'aller-vers a disparu** (champ du formulaire, colonne du
+  tableau, ses 47 `select` natifs et son geste) : la file qu'il rangeait
+  n'existe plus. La colonne `contacts.niveau` reste en base avec ses valeurs —
+  on ne détruit pas des données pour retirer un écran.
+- **La carte d'un club montre tous ses contacts**, en pastilles colorées par
+  type dans une rangée qui défile ; toucher une pastille ouvre sa relation.
 - **« À relancer » boucle le rituel** (migration `20260815230000`) : un message
   resté sans suite bascule le lundi, le club revient dans les propositions avec
   sa pastille « Relance » (trois au plus, devant le tirage), et sa carte
@@ -150,8 +153,6 @@ attendait).
   vide, c'est le pipeline qui ne correspond pas à la façon de travailler de
   Noé — pas le bloc.
 - **Aucune publication programmée.** Le plancher de 2/semaine n'est pas exercé.
-- **Les 47 menus « Niveau » du CRM** sont les derniers `select` natifs du site.
-  Noé ne les a pas demandés — à proposer s'il repasse par là.
 - **Le FCH perd « Post »** : `FORMATS` est commun aux deux sites, et le format
   a fusionné avec « Carrousel ». Sans effet aujourd'hui (aucune publication
   FCH), à trancher le jour où il en aura.

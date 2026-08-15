@@ -1583,11 +1583,34 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
    dans la colonne, c'est l'écart du dessus qui commande, pas eux. */
 .fournee-actions .bouton-secondaire { margin-top: 0; }
 
-/* Le nom de la fiche liée, et l'envoi fait au compte du club : deux mentions,
-   pas des gestes. Le menu de statut, lui, garde sa taille de contrôle. */
-.fournee-fiche,
+/* L'envoi fait au compte du club : une mention, pas un geste. */
 .fournee-envoye { font-size: 0.8125rem; text-align: center; }
 .fournee-actions .choix-champ { margin: 0; }
+
+/* Tout le monde qu'on connaît dans un club, en une rangée qui défile sur le
+   côté : un club en compte parfois cinq, et la carte ne doit pas grandir pour
+   autant. Le défilement est tactile, sans barre visible — on pousse du pouce. */
+.fournee-contacts {
+  display: flex;
+  gap: var(--espace-8);
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+}
+
+.fournee-contacts::-webkit-scrollbar { display: none; }
+
+/* Une pastille ne se laisse pas écraser par ses voisines, et son panneau de
+   relation s'ouvre par-dessus la rangée plutôt que dedans. */
+.contact-pastille {
+  flex: none;
+  scroll-snap-align: start;
+}
+
+.contact-pastille .choix-champ { margin: 0; }
+.contact-pastille .choix-panneau { min-width: 11rem; }
 
 /* Les deux gestes se distinguent par la couleur, au même volume sonore :
    « Envoyé ✓ » dans le doré doux du site, « Noter le contact » dans le même

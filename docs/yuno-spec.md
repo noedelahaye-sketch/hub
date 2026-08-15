@@ -1097,6 +1097,15 @@ rappel, et il se corrige à la main comme n'importe quel statut.
 - Sa carte de fournée retrouve un bouton d'envoi, libellé **« Relancé ✓ »**, et
   `statutApresEnvoi` mène `a_relancer` → `relance`.
 
+**La carte montre TOUT LE MONDE qu'on connaît dans le club** (demande de Noé,
+15 août 2026) : au service presse s'ajoutent un joueur, un confrère, un
+attaché. Les fiches dont « rattaché à » porte le nom du club — plus celle née
+de la piste — s'alignent en une **rangée qui défile sur le côté**, pour que la
+carte ne grandisse pas quand le club en compte cinq. Chaque personne est une
+**pastille à la couleur de son type** (joueur, photographe, club, média,
+agence, marque) ; **la toucher ouvre sa relation**, modifiable d'ici. Le bouton
+devient « Ajouter un contact » dès qu'il y a quelqu'un.
+
 **La carte ne disparaît pas de la fournée** (demande de Noé, 15 août 2026) :
 elle change de geste. « Envoyé ✓ » cède la place à **l'état de la relation** —
 le même menu que la colonne « Relation » du carnet, avec ses sept valeurs et
@@ -1111,8 +1120,7 @@ validée à l'usage ; le vivier et la carte savent déjà porter le Léopard d'u
 club.
 
 Champs d'une fiche hérités de la v1, tous facultatifs : `objectif` (pourquoi ce
-contact), `niveau` (1–3, orphelin depuis la v2 — la colonne « Niveau » du
-tableau existe encore mais n'alimente plus aucune file), `date_dernier_envoi` —
+contact), `date_dernier_envoi` —
 **distinct de `dernier_echange`** : un envoi est un effort à soi, un échange
 est bidirectionnel — `prochaine_action` et `prochaine_action_date`, qui portent
 la relance au calendrier.
@@ -1195,7 +1203,7 @@ et ce paragraphe ne fait que dire à quoi sert chaque table.
 | Table | Ce qu'elle porte |
 |---|---|
 | `publications` | le calendrier éditorial. `date_prevue` NULL = banque d'idées. Colonnes Yuno : `pilier`, `preuve`, `pourquoi_moi` (NULL pour le FCH) |
-| `contacts` | le carnet réseau, et la couche Passerelle (`objectif`, `niveau`, `date_dernier_envoi`, `prochaine_action`, `prochaine_action_date`) |
+| `contacts` | le carnet réseau, et la couche Passerelle (`objectif`, `date_dernier_envoi`, `prochaine_action`, `prochaine_action_date`). `niveau` reste en base mais plus rien ne l'écrit ni ne le lit depuis le 15 août 2026 |
 | `commandes` | le suivi, du devis au paiement. `client_id` relie au carnet |
 | `evenements` | **une sortie, deux faces** — prévue (date, lieu, `type_moment`) et vécue (`vecu`, `photo_chemin`, `note`, `oeuvre_finie`). C'est le Carnet de terrain depuis la fusion du 14 août 2026 ; la table `moments` a disparu |
 | `rencontres` | qui a été rencontré, à quelle sortie (`evenement_id`). `contact_id` facultatif |
