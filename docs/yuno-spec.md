@@ -1046,8 +1046,10 @@ et le bandeau la compte dans « entrés au réseau ».
 à côté de Mois · Semaine · Agenda. Les trois autres montrent ce qui est POSÉ ;
 celle-ci montre ce qu'on **pourrait couvrir** : toutes les rencontres du
 vendredi au dimanche, tous championnats du vivier confondus, **en trois
-colonnes, une par jour**. Une rencontre = **une ligne** : sa division en
-pastille, l'affiche dans la police du texte (et non celle des titres), la
+colonnes, une par jour**. **Chaque jour porte sa teinte** — bleu, or, violet, les trois couleurs de Yuno :
+on sait dans quelle colonne on est sans relire son en-tête. Une rencontre est
+**une tuile** d'une ligne, sa tranche gauche à la couleur du jour : sa division
+en pastille, l'affiche dans la police du texte (et non celle des titres), la
 journée, et **une icône calendrier** au bout qui la pose — vingt matchs par
 colonne ne tiennent pas autrement. Posée, l'icône passe à l'or et perd son
 geste. Sa zone tactile garde 44 px en débordant en transparent. Les trois colonnes restent même vides — sinon la

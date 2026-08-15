@@ -1588,8 +1588,11 @@ function construireWeekend(etat) {
           const jour = versDateISO(ajouterJours(vendredi, decalage));
           const dedans = matchs.filter((match) => match.date === jour);
 
+          // Une teinte par jour (demande de Noé, 15 août 2026) : le week-end
+          // se lit d'un coup d'œil, on sait dans quelle colonne on est sans
+          // relire l'en-tête. Bleu, or, violet — les trois couleurs de Yuno.
           return `
-        <section class="weekend-jour">
+        <section class="weekend-jour" style="--h: ${[222, 45, 280][decalage]}">
           <h4>${echapper(dateLongue(depuisDateISO(jour)))}
             ${dedans.length ? `<span class="discret chiffre">${dedans.length}</span>` : ''}
           </h4>

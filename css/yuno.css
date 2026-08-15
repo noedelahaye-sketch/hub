@@ -1863,18 +1863,48 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   .weekend-grille { grid-template-columns: repeat(3, 1fr); }
 }
 
-.weekend-jour { min-width: 0; }
+/* Chaque jour porte sa teinte — bleu, or, violet, posées en JS. La colonne se
+   reconnaît d'un coup d'œil, sans relire son en-tête. */
+.weekend-jour {
+  min-width: 0;
+  padding: var(--espace-8);
+  background: hsl(var(--h) 40% 50% / 6%);
+  border: 1px solid hsl(var(--h) 35% 45% / 25%);
+  border-radius: var(--rayon-carte);
+}
 
 /* Vingt rencontres dans une colonne : tout rétrécit pour tenir sur une ligne
    chacune — l'affiche dans la police du texte et non celle des titres, la
    pastille de division réduite, et le calendrier au bout en guise de geste. */
-.weekend-jour h4 { font-size: 0.8125rem; }
+.weekend-jour h4 {
+  font-size: 0.8125rem;
+  color: hsl(var(--h) 55% 74%);
+  text-transform: capitalize;
+}
+
+/* Chaque rencontre est une tuile, et non plus une ligne d'un tableau : elle se
+   touche, elle se distingue de sa voisine, et sa tranche gauche reprend la
+   teinte du jour. */
+/* `min-width: 0` sur la grille ET sur ses tuiles : sans lui, un élément de
+   grille refuse de descendre sous la largeur de son contenu, et la tuile
+   déborde de sa colonne au lieu de couper le nom. */
+.weekend-jour .club-matchs {
+  gap: var(--espace-4);
+  grid-template-columns: minmax(0, 1fr);
+}
 
 .weekend-jour .club-matchs li {
+  min-width: 0;
   flex-wrap: nowrap;
   gap: var(--espace-4);
-  padding: var(--espace-4) 0;
+  padding: var(--espace-4) var(--espace-8);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-left: 3px solid hsl(var(--h) 50% 55%);
+  border-radius: var(--rayon-controle);
 }
+
+.weekend-jour .club-matchs li:last-child { border-bottom: 1px solid var(--bordure); }
 
 body[data-espace="yuno"] .weekend-jour .contact-nom {
   flex: 1 1 auto;
