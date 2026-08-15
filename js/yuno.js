@@ -2085,18 +2085,13 @@ const TYPES_CONTACT = {
   autre: 'Autre',
 };
 
-// La teinte d'un type, pour les pastilles de personnes sur les cartes de la
-// Passerelle (demande de Noé, 15 août 2026) : d'un coup d'œil on voit à qui on
-// a affaire dans un club — un joueur, le service presse, un confrère.
-const TEINTES_TYPE = {
-  joueur: 150,
-  photographe: 215,
-  club: 42,
-  media: 280,
-  agence: 195,
-  marque: 335,
-  autre: null,
-};
+// La teinte d'un type vient de la MÊME règle que le CRM — le hachage de son
+// libellé (`teinte`) — pour qu'un joueur soit du même violet des deux côtés du
+// site, et une personne du club du même turquoise. Une seule source, pas une
+// table parallèle qui divergerait au premier type ajouté.
+function teinteDuType(type) {
+  return teinte(TYPES_CONTACT[type] ?? type ?? 'Autre');
+}
 
 // Où en est la relation. Repris du tableau Notion de Noé, dans son ordre de
 // progression : c'est lui qui fait du carnet un CRM plutôt qu'un annuaire.
@@ -2976,20 +2971,16 @@ function bandeContacts(piste, dedans, choisiId) {
   const choisi = dedans.find((contact) => contact.id === choisiId) ?? dedans[0];
 
   const pastilles = dedans
-    .map((contact) => {
-      const teinte = TEINTES_TYPE[contact.type];
-      return `
-        <button type="button"
-          class="pastille-capture pastille-personne${contact === choisi ? ' actif' : ''}${
-            teinte === null || teinte === undefined ? ' pastille-personne-neutre' : ''
-          }"
-          ${teinte === null || teinte === undefined ? '' : `style="--h: ${teinte}"`}
+    .map(
+      (contact) => `
+        <button type="button" class="pastille-personne${contact === choisi ? ' actif' : ''}"
+          style="--h: ${teinteDuType(contact.type)}"
           data-contact-actif="${echapper(contact.id)}"
           data-piste-du-contact="${echapper(piste.id)}"
           aria-pressed="${contact === choisi}"
           title="${echapper(TYPES_CONTACT[contact.type] ?? contact.type ?? '')}"
-          >${echapper(contact.nom)}</button>`;
-    })
+          >${echapper(contact.nom)}</button>`,
+    )
     .join('');
 
   return `
@@ -3034,13 +3025,13 @@ function carteFournee(piste, contacts, choisiId = null) {
               : ''
           }
           <span class="piste-liens">${liensPiste(piste).join('')}</span>
-          ${bandeContacts(piste, dedans, choisiId)}
         </span>
         <span class="fournee-actions">
           <button type="button" class="lien-discret bouton-mini bouton-retirer fournee-reposer"
             data-reposer-piste="${echapper(piste.id)}"
             title="Reposer au vivier"
             aria-label="Reposer ${echapper(piste.nom)} au vivier">×</button>
+          ${bandeContacts(piste, dedans, choisiId)}
           ${
             // Sans personne connue, la date de l'envoi dit ce qui a été fait :
             // le message est parti au compte du club.

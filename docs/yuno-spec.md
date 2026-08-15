@@ -1102,9 +1102,11 @@ rappel, et il se corrige à la main comme n'importe quel statut.
 attaché. Les fiches dont « rattaché à » porte le nom du club — plus celle née
 de la piste — s'alignent en une **bande qui défile de gauche à droite**, celle
 des pastilles de la tuile de capture, avec un petit **« + » à droite** qui ne
-défile pas. Chaque personne porte **la couleur de son type** (joueur,
-photographe, club, média, agence, marque) : Ewan Schnell est doré parce qu'il
-est rattaché au type « club ».
+défile pas. Chaque personne porte **la couleur de son type**, celle-là même que la colonne
+« Type » du CRM — le hachage de son libellé (`teinteDuType` appelle la
+`teinte` commune) : un joueur est violet des deux côtés du site, une personne
+du club turquoise. Pas de table de teintes parallèle, qui divergerait au
+premier type ajouté.
 
 **Sous la bande, le menu de la relation** de la personne regardée. Toucher une
 autre pastille change la personne, donc le menu : la carte reste d'un seul

@@ -1559,14 +1559,9 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 
 .fournee-nom .contact-nom { width: auto; }
 
-/* La croix reste au coin de la tuile, hors du centrage des boutons — plus de
-   rangée d'en-tête. */
-.fournee-reposer {
-  position: absolute;
-  top: var(--espace-8);
-  right: var(--espace-12);
-  margin: 0;
-}
+/* La croix ouvre la colonne des gestes, alignée à droite : au coin absolu, elle
+   passait sous la bande de contacts dès qu'un club en comptait deux. */
+.fournee-reposer { align-self: flex-end; margin: 0; }
 
 .fournee-actions {
   display: flex;
@@ -1574,7 +1569,10 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   align-items: stretch;
   justify-content: center;
   gap: var(--espace-4);
-  flex: 0 1 auto;
+  /* Une base plutôt qu'un « auto » : la bande de contacts a besoin d'une
+     largeur pour défiler au lieu de pousser la carte. */
+  flex: 0 1 14.5rem;
+  min-width: 0;
   margin-left: auto;
   align-self: center;
 }
@@ -1587,21 +1585,21 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 .fournee-envoye { font-size: 0.8125rem; text-align: center; }
 .fournee-actions .choix-champ { margin: 0; }
 
-/* Les gens du club : une bande qui défile de gauche à droite, la forme des
-   pastilles de la tuile de capture, et un « + » qui garde sa place à droite.
-   Un club en compte parfois cinq — la carte ne doit pas grandir pour autant. */
+/* Les gens du club, dans la colonne des gestes : une bande qui défile de
+   gauche à droite, un « + » discret au bout, et sous elle la relation de celui
+   qu'on regarde. Un club en compte parfois cinq — la carte n'en grandit pas. */
 .fournee-bande {
   display: flex;
   align-items: center;
   gap: var(--espace-8);
-  width: 100%;
+  max-width: 100%;
   min-width: 0;
 }
 
 .fournee-bande-liste {
   display: flex;
-  gap: var(--espace-8);
-  flex: 1 1 auto;
+  gap: var(--espace-4);
+  flex: 0 1 auto;
   min-width: 0;
   overflow-x: auto;
   scrollbar-width: none;
@@ -1612,47 +1610,48 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 .fournee-bande-liste::-webkit-scrollbar { display: none; }
 .fournee-bande-liste > * { scroll-snap-align: start; }
 
-/* Chaque personne porte la couleur de son type — un joueur, le service presse,
-   un confrère se distinguent d'un coup d'œil. Choisie, sa pastille s'allume. */
+/* Chaque personne porte la couleur de son type, celle-là même que la colonne
+   « Type » du CRM (`teinte` du libellé) : un joueur est violet des deux côtés
+   du site, une personne du club turquoise. Choisie, sa pastille s'allume. */
 .pastille-personne {
-  color: hsl(var(--h) 45% 68%);
-  border-color: hsl(var(--h) 40% 40%);
-}
-
-.pastille-personne-neutre { color: var(--texte-discret); border-color: var(--bordure); }
-
-.pastille-personne.actif {
-  color: hsl(var(--h) 60% 78%);
-  background: hsl(var(--h) 55% 50% / 18%);
-  border-color: hsl(var(--h) 50% 55%);
-}
-
-.pastille-personne-neutre.actif {
-  color: var(--texte);
-  background: color-mix(in srgb, var(--texte-discret) 16%, transparent);
-  border-color: var(--texte-discret);
-}
-
-/* Le « + » de la bande : rond, discret, et il ne défile pas avec elle. */
-.pastille-ajout {
   flex: none;
-  width: 2.25rem;
-  height: 2.25rem;
+  /* Un nom long ne pousse pas la bande : il se coupe, et le survol le dit en
+     entier. */
+  max-width: 6rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 2px var(--espace-8);
   font-family: inherit;
-  font-size: 1.125rem;
-  line-height: 1;
-  color: var(--texte-discret);
-  background: none;
-  border: 1px dashed var(--bordure);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: hsl(var(--h) 60% 72%);
+  background: hsl(var(--h) 60% 65% / 16%);
+  border: 1px solid transparent;
   border-radius: var(--rayon-pastille);
   cursor: pointer;
 }
 
+.pastille-personne.actif { border-color: hsl(var(--h) 55% 58%); }
+
+/* Le « + » ne s'annonce pas : un signe au bout de la bande, pas un bouton. */
+.pastille-ajout {
+  flex: none;
+  padding: 0 2px;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  line-height: 1;
+  color: var(--texte-discret);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
 .pastille-ajout:hover,
-.pastille-ajout:focus-visible { color: var(--accent); border-color: var(--accent); }
+.pastille-ajout:focus-visible { color: var(--accent); }
 
 /* La relation de la personne regardée, sous la bande. */
-.fournee-relation { display: block; width: 100%; }
+.fournee-relation { display: block; }
 .fournee-relation .choix-champ { margin: 0; }
 
 /* Les deux gestes se distinguent par la couleur, au même volume sonore :
