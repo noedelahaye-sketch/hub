@@ -351,13 +351,18 @@ export async function creerEvenement({
   recurrence_fin = null,
   // Yuno seulement : le type du moment qui naîtra de cette sortie.
   type_moment = null,
+  // Yuno seulement : les deux clubs d'un match, posés à la création depuis le
+  // calendrier officiel. Le titre, lui, est COPIÉ de l'affiche et vit sa vie —
+  // le réécrire ne touche pas aux liens.
+  club_recevant = null,
+  club_visiteur = null,
 }) {
   return verifier(
     await client
       .from('evenements')
       .insert({
         projet, titre, date_debut, date_fin, lieu, notes,
-        recurrence, recurrence_fin, type_moment,
+        recurrence, recurrence_fin, type_moment, club_recevant, club_visiteur,
       })
       .select()
       .single(),
@@ -736,6 +741,20 @@ export async function modifierPiste(id, champs) {
 // celle du calendrier publié, elle peut glisser avec la télévision.
 export async function prochainsMatchsParPiste() {
   return verifier(await client.from('prochain_match_par_piste').select('*'));
+}
+
+// Les prochains matchs d'UN club, pour sa fiche : on n'en charge que là, et
+// seulement ceux à venir — le passé du calendrier ne se pose plus.
+export async function matchsAVenirDUnClub(pisteId, combien = 6) {
+  return verifier(
+    await client
+      .from('matchs_pistes')
+      .select('*')
+      .eq('piste_id', pisteId)
+      .gte('date', versDateISO())
+      .order('date')
+      .limit(combien),
+  );
 }
 
 // Un premier message parti au compte du club, sans personne nommée : l'envoi

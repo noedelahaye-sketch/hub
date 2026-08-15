@@ -3310,6 +3310,57 @@ function ligneVivier(piste) {
     </li>`;
 }
 
+// L'affiche d'un match, telle qu'elle s'écrit : le club qui reçoit d'abord.
+// C'est ce texte que l'événement copiera pour titre — et qu'il gardera même si
+// Noé le réécrit ensuite.
+export function afficheDuMatch(piste, match) {
+  return match.domicile
+    ? `${piste.nom} – ${match.adversaire}`
+    : `${match.adversaire} – ${piste.nom}`;
+}
+
+// Les matchs à venir d'un club, chacun posable au calendrier d'un geste. Le
+// match déjà posé porte son événement plutôt qu'un bouton : on ne pose pas
+// deux fois la même affiche.
+function construireMatchsDuClub(piste, etat) {
+  const matchs = etat.matchsDuClub[piste.id];
+  if (!matchs) return `<p class="vide">…</p>`;
+  if (!matchs.length) return `<p class="vide">Plus de match à son calendrier.</p>`;
+
+  return `<ul class="club-matchs">${matchs
+    .map((match) => {
+      const affiche = afficheDuMatch(piste, match);
+      // Posé ? On le reconnaît à la date et au club, pas au titre : celui-ci a
+      // pu être réécrit, et c'est justement ce qu'on lui permet.
+      const pose = etat.evenements.find(
+        (evenement) =>
+          versDateISO(new Date(evenement.date_debut)) === match.date &&
+          (evenement.club_recevant === piste.id || evenement.club_visiteur === piste.id),
+      );
+
+      return `
+        <li>
+          <span class="club-match-affiche">
+            <span class="discret">J${match.journee}</span>
+            <span class="contact-nom">${echapper(affiche)}</span>
+            <span class="discret">${echapper(
+              echeanceLisible(depuisDateISO(match.date)),
+            )}</span>
+          </span>
+          ${
+            pose
+              ? `<span class="discret club-match-pose">✓ au calendrier</span>`
+              : `<button type="button" class="bouton-secondaire bouton-mini"
+                  data-poser-match="${echapper(piste.id)}"
+                  data-match-journee="${match.journee}"
+                  data-match-date="${echapper(match.date)}"
+                  >Poser au calendrier</button>`
+          }
+        </li>`;
+    })
+    .join('')}</ul>`;
+}
+
 // La fiche d'un club : tout ce qu'on sait de lui sur un écran (demande de Noé,
 // 15 août 2026). Elle s'ouvre en touchant sa ligne au vivier, et montre ce que
 // les listes abrègent — les quatre portes en toutes lettres, et TOUS ses
@@ -3364,6 +3415,9 @@ function fenetreClub(etat) {
           titrées prenaient la moitié de la fiche pour dire ce que quatre
           symboles disent aussi bien. -->
      <span class="piste-liens">${liensPiste(piste).join('')}</span>
+
+     <h4 class="club-titre">Ses matchs</h4>
+     ${construireMatchsDuClub(piste, etat)}
 
      <h4 class="club-titre">Les contacts
        ${dedans.length ? `<span class="chiffre">${dedans.length}</span>` : ''}
@@ -4038,7 +4092,7 @@ const BESOINS = {
   calendrier: ['evenements', 'taches', 'objectifs', 'publications', 'commandes', 'contacts', 'preparations', 'modelesPrepa'],
   reseau: ['contacts', 'envois', 'commandes', 'preparations', 'modelesPrepa', 'pistes'],
   passerelle: ['contacts', 'envois', 'modeles', 'pistes'],
-  vivier: ['pistes', 'contacts'],
+  vivier: ['pistes', 'contacts', 'evenements'],
   messages: ['modeles'],
   carnet: ['contacts', 'envois', 'modeles', 'pistes'],
   // La feuille lit aussi les sorties : le bilan propose d'inscrire celle-ci au
@@ -4092,8 +4146,11 @@ export default {
       divisionVivier: 'tout',
       // La personne regardée sur chaque carte de la fournée, par piste.
       contactChoisi: {},
-      // Le club dont la fiche est ouverte, au vivier.
+      // Le club dont la fiche est ouverte, au vivier, et ses matchs à venir —
+      // chargés à l'ouverture, gardés ensuite : on rouvre souvent la même
+      // fiche, et le calendrier d'un club ne bouge pas dans la journée.
       clubOuvert: null,
+      matchsDuClub: {},
       preparations: [],
       modelesPrepa: [],
       // L'identifiant de la feuille (ou du modèle) ouvert — il vient de
@@ -5654,9 +5711,62 @@ export default {
       // commandes : le « + » choisit, le lien du match mène dehors.
       const ouvrirClub = evenement.target.closest('[data-ouvrir-club]');
       if (ouvrirClub && !evenement.target.closest('a, button')) {
-        etat.clubOuvert = ouvrirClub.dataset.ouvrirClub;
+        const id = ouvrirClub.dataset.ouvrirClub;
+        etat.clubOuvert = id;
         rendre();
         section.querySelector('.fenetre-fermer')?.focus();
+
+        // Les matchs du club ne se chargent qu'ici, et qu'une fois : la fiche
+        // s'ouvre tout de suite avec ses points de suspension, ils arrivent
+        // derrière.
+        if (!etat.matchsDuClub[id]) {
+          try {
+            etat.matchsDuClub[id] = await api.matchsAVenirDUnClub(id);
+          } catch (souci) {
+            console.error('Lecture des matchs impossible', souci);
+            etat.matchsDuClub[id] = [];
+          }
+          if (etat.clubOuvert === id) rendre();
+        }
+        return;
+      }
+
+      // Poser un match au calendrier : l'événement naît complet — le titre
+      // COPIÉ de l'affiche, la date du calendrier officiel, le type « match »,
+      // et les deux clubs reliés. Le titre est libre ensuite : le réécrire ne
+      // touche pas aux liens, et les liens ne le réécrivent jamais.
+      const poserMatch = evenement.target.closest('[data-poser-match]');
+      if (poserMatch) {
+        const piste = etat.pistes.find((p) => p.id === poserMatch.dataset.poserMatch);
+        const match = etat.matchsDuClub[piste?.id]?.find(
+          (candidat) =>
+            candidat.date === poserMatch.dataset.matchDate &&
+            String(candidat.journee) === poserMatch.dataset.matchJournee,
+        );
+        if (!piste || !match) return;
+
+        const adversaire = etat.pistes.find(
+          (candidat) => candidat.nom === match.adversaire,
+        );
+        const recevant = match.domicile ? piste : adversaire;
+        const visiteur = match.domicile ? adversaire : piste;
+
+        try {
+          const pose = await api.creerEvenement({
+            projet: 'photo',
+            titre: afficheDuMatch(piste, match),
+            date_debut: `${match.date}T00:00:00`,
+            lieu: recevant?.nom ?? null,
+            type_moment: 'match',
+            club_recevant: recevant?.id ?? null,
+            club_visiteur: visiteur?.id ?? null,
+          });
+          etat.evenements = [...etat.evenements, pose];
+          rendre();
+        } catch (souci) {
+          console.error('Pose du match impossible', souci);
+          dire("Le match n'a pas pu être posé au calendrier.");
+        }
         return;
       }
 

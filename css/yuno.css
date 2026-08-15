@@ -1818,7 +1818,34 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   font-weight: 600;
 }
 
+/* Les matchs d'un club : l'affiche, la date, et le geste qui le pose au
+   calendrier — ou la marque qu'il y est déjà. */
+.club-matchs li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--espace-8);
+  padding: var(--espace-8) 0;
+  border-bottom: 1px solid var(--bordure);
+}
+
+.club-matchs li:last-child { border-bottom: none; }
+
+.club-match-affiche {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--espace-8);
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.club-match-affiche .contact-nom { width: auto; font-size: 0.9375rem; }
+.club-matchs .bouton-secondaire { margin: 0; }
+.club-match-pose { font-size: 0.8125rem; color: var(--accent); }
+
 /* Hors d'un `.bloc`, une liste retrouve ses puces : on les retire ici. */
+.club-matchs,
 .club-contacts {
   display: grid;
   gap: var(--espace-4);

@@ -1066,6 +1066,19 @@ propre fiche, qui remplace celle du club — jamais deux fenêtres empilées. Un
 pas. Les commandes de la ligne gardent leur geste : le « + » choisit, le lien
 du match mène dehors.
 
+**Ses matchs, posables au calendrier d'un geste** (15 août 2026). La fiche
+charge les six prochains matchs du club et pose sur chacun « Poser au
+calendrier ». Le clic crée l'événement complet — titre, date, type « match »,
+lieu, **et les deux clubs reliés** (`evenements.club_recevant` /
+`club_visiteur`) — sans que Noé écrive un mot.
+
+**Le titre est COPIÉ de l'affiche, jamais dérivé d'elle.** C'est la règle des
+préparations, appliquée ici : « Sochaux – Guingamp » naît du calendrier
+officiel, puis vit sa vie. Le réécrire en « Ma première accréditation L2 » ne
+touche pas aux liens, et corriger un lien ne réécrit jamais le titre. Un match
+déjà posé se reconnaît d'ailleurs **à sa date et à son club, pas à son
+texte** — c'est ce qui permet de le renommer sans qu'il redevienne à poser.
+
 **Le chemin parcouru s'annonce en tête** (« 12 clubs contactés sur 97 ») : le
 chantier a déménagé ici, parce que le chemin et le fonds parlent de la même
 chose. Tant qu'il vaut zéro, la page dit « Le premier ouvre la saison ».
