@@ -1500,6 +1500,8 @@ function vueEditorial(etat) {
   return `
     ${enTete('editorial')}
     <h2 class="titre-page">Calendrier éditorial</h2>
+    <!-- Pas de vue « Week-end » ici : l'éditorial programme des publications,
+         il n'a rien à faire des rencontres à couvrir. -->
     ${construireBarrePeriode(etat.vueCal, etat.ancreCal)}
 
     <div class="editorial">
@@ -1507,7 +1509,11 @@ function vueEditorial(etat) {
         ${
           etat.vueCal === 'agenda'
             ? construireCalendrier(programmees, natures)
-            : construireGrille(programmees, natures, etat.vueCal, etat.ancreCal, {
+            : construireGrille(programmees, natures,
+                // « Week-end » n'existe que du côté du calendrier : ici, le
+                // choix retombe sur le mois.
+                etat.vueCal === 'weekend' ? 'mois' : etat.vueCal,
+                etat.ancreCal, {
                 selection: etat.creationCal,
               })
         }
@@ -1572,24 +1578,24 @@ function construireWeekend(etat) {
   const titre = `${vendredi.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
     → ${dimanche.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`;
 
+  // Trois colonnes, une par jour (demande de Noé, 15 août 2026), et les trois
+  // toujours là : un vendredi sans match laisse sa colonne vide plutôt que de
+  // décaler les deux autres.
   const corps = !matchs
     ? `<p class="vide">…</p>`
-    : !matchs.length
-      ? `<p class="vide">Pas de rencontre ce week-end-là. Les championnats
-          respirent aussi.</p>`
-      : Object.entries(
-          matchs.reduce((jours, match) => {
-            (jours[match.date] = jours[match.date] ?? []).push(match);
-            return jours;
-          }, {}),
-        )
-          .map(
-            ([jour, dedans]) => `
+    : `<div class="weekend-grille">${[0, 1, 2]
+        .map((decalage) => {
+          const jour = versDateISO(ajouterJours(vendredi, decalage));
+          const dedans = matchs.filter((match) => match.date === jour);
+
+          return `
         <section class="weekend-jour">
           <h4>${echapper(dateLongue(depuisDateISO(jour)))}
-            <span class="discret chiffre">${dedans.length}</span>
+            ${dedans.length ? `<span class="discret chiffre">${dedans.length}</span>` : ''}
           </h4>
-          <ul class="club-matchs">${dedans
+          ${
+            dedans.length
+              ? `<ul class="club-matchs">${dedans
             .map((match) => {
               const recevant = etat.pistes.find((piste) => piste.id === match.piste_id);
               if (!recevant) return '';
@@ -1619,26 +1625,24 @@ function construireWeekend(etat) {
                           >Poser…</button>`
                   }
                 </li>`;
-            })
-            .join('')}</ul>
-        </section>`,
-          )
-          .join('');
+                  })
+                  .join('')}</ul>`
+              : `<p class="vide">Pas de rencontre.</p>`
+          }
+        </section>`;
+        })
+        .join('')}</div>`;
 
   return `
-    <details class="backlog bloc-weekend"${etat.weekendOuvert ? ' open' : ''}>
-      <summary>Les matchs du week-end
-        ${matchs?.length ? `<span class="chiffre">${matchs.length}</span>` : ''}
-      </summary>
-      <div class="cal-nav weekend-nav">
-        <button type="button" class="cal-fleche" data-weekend="-1"
-          aria-label="Week-end précédent">‹</button>
-        <span class="cal-titre">${echapper(titre)}</span>
-        <button type="button" class="cal-fleche" data-weekend="1"
-          aria-label="Week-end suivant">›</button>
-      </div>
-      ${corps}
-    </details>`;
+    <div class="cal-nav weekend-nav">
+      <button type="button" class="cal-fleche" data-weekend="-1"
+        aria-label="Week-end précédent">‹</button>
+      <span class="cal-titre">${echapper(titre)}</span>
+      <button type="button" class="cal-fleche" data-weekend="1"
+        aria-label="Week-end suivant">›</button>
+      ${matchs?.length ? `<span class="discret chiffre">${matchs.length}</span>` : ''}
+    </div>
+    ${corps}`;
 }
 
 function vueCalendrier(etat) {
@@ -1646,19 +1650,23 @@ function vueCalendrier(etat) {
 
   return `
     ${enTete('calendrier')}
-    ${construireBarrePeriode(etat.vueCal, etat.ancreCal)}
-    ${construireFiltres(etat.natures)}
+    ${construireBarrePeriode(etat.vueCal, etat.ancreCal, {
+      // Les rencontres qu'on POURRAIT couvrir : une vue de Yuno seul, le hub
+      // n'a pas de vivier.
+      vuesEnPlus: { weekend: 'Week-end' },
+    })}
+    ${etat.vueCal === 'weekend' ? '' : construireFiltres(etat.natures)}
     <div data-bloc="calendrier">
       ${
-        etat.vueCal === 'agenda'
-          ? construireCalendrier(elements, etat.natures)
-          : construireGrille(elements, etat.natures, etat.vueCal, etat.ancreCal, {
-              selection: etat.creationCal,
-            })
+        etat.vueCal === 'weekend'
+          ? construireWeekend(etat)
+          : etat.vueCal === 'agenda'
+            ? construireCalendrier(elements, etat.natures)
+            : construireGrille(elements, etat.natures, etat.vueCal, etat.ancreCal, {
+                selection: etat.creationCal,
+              })
       }
     </div>
-
-    <div data-bloc="weekend">${construireWeekend(etat)}</div>
 
     ${
       etat.detailCal
@@ -4249,7 +4257,6 @@ export default {
       // week-end qui vient, pas sur celui qu'on regardait hier.
       ancreWeekend: vendrediDeLaSemaine(),
       matchsWeekend: null,
-      weekendOuvert: false,
       // Le club dont la fiche est ouverte, au vivier, et ses matchs à venir —
       // chargés à l'ouverture, gardés ensuite : on rouvre souvent la même
       // fiche, et le calendrier d'un club ne bouge pas dans la journée.
@@ -4557,8 +4564,8 @@ export default {
     };
 
     const rendreWeekend = () => {
-      const cible = section.querySelector('[data-bloc="weekend"]');
-      if (cible) cible.innerHTML = construireWeekend(etat);
+      const cible = section.querySelector('[data-bloc="calendrier"]');
+      if (cible && etat.vueCal === 'weekend') cible.innerHTML = construireWeekend(etat);
     };
 
     // Les rencontres du week-end regardé. Chargées à la demande — l'ouverture
@@ -5601,6 +5608,9 @@ export default {
       if (vueCal) {
         etat.vueCal = vueCal.dataset.vueCal;
         rendre();
+        // Les rencontres du week-end ne se lisent qu'en arrivant sur leur vue :
+        // les trois autres n'en ont pas besoin.
+        if (etat.vueCal === 'weekend' && !etat.matchsWeekend) await chargerLeWeekend();
         return;
       }
 
@@ -5868,7 +5878,6 @@ export default {
           7 * Number(flecheWeekend.dataset.weekend),
         );
         etat.matchsWeekend = null;
-        etat.weekendOuvert = true;
         rendreWeekend();
         await chargerLeWeekend();
         return;
@@ -6474,18 +6483,6 @@ export default {
     // parfois d'un bloc sur ordinateur, et le fondu doit disparaître avec le
     // débordement. Sans ça, il annoncerait une réserve qui n'existe plus.
     window.addEventListener('resize', marquerLesDebordements);
-
-    // Ouvrir le pli du week-end le charge, une fois. `toggle` ne remonte pas :
-    // on l'écoute à la capture, comme le défilement.
-    section.addEventListener(
-      'toggle',
-      async (evenement) => {
-        if (!evenement.target.classList?.contains('bloc-weekend')) return;
-        etat.weekendOuvert = evenement.target.open;
-        if (etat.weekendOuvert && !etat.matchsWeekend) await chargerLeWeekend();
-      },
-      true,
-    );
 
     // Le fondu suit le doigt : `scroll` ne remonte pas, on l'écoute donc à la
     // capture, sur la section entière.

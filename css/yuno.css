@@ -1851,7 +1851,23 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 .bloc-weekend { margin-top: var(--espace-24); }
 .weekend-nav { margin: var(--espace-8) 0 var(--espace-16); }
 
-.weekend-jour { margin-bottom: var(--espace-16); }
+/* Trois colonnes, une par jour — et les trois toujours là, même vide : sinon
+   la grille se décale d'un week-end à l'autre. Sur téléphone elles s'empilent,
+   trois colonnes de noms de clubs n'y tiendraient pas. */
+.weekend-grille {
+  display: grid;
+  gap: var(--espace-16);
+}
+
+@media (min-width: 45rem) {
+  .weekend-grille { grid-template-columns: repeat(3, 1fr); }
+}
+
+.weekend-jour { min-width: 0; }
+
+/* En colonne, l'affiche prend toute la largeur et le geste passe dessous. */
+.weekend-jour .club-match-affiche { flex: 1 1 100%; }
+.weekend-jour .club-matchs li { align-items: flex-start; }
 
 .weekend-jour h4 {
   display: flex;

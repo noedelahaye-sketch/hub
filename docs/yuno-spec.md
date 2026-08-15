@@ -1042,13 +1042,20 @@ et le bandeau la compte dans « entrés au réseau ».
 - Les fiches qui portaient déjà le nom exact d'un club ont été reliées au
   passage (OM — service presse, Tuomas Ollila).
 
-**Les matchs du week-end, sous le calendrier** (demande de Noé, 15 août 2026).
-Un pli replié — c'est un repérage, pas l'agenda — qui liste **toutes les
-rencontres du vendredi au dimanche**, tous championnats du vivier confondus,
-groupées par jour et marquées de leur division. C'est le rythme du football, et
-celui d'un photographe qui prépare sa semaine. Les flèches passent d'un
-week-end à l'autre ; les rencontres ne se chargent **qu'à l'ouverture du pli**,
-jamais avec le calendrier. Chaque affiche porte « Poser… », qui ouvre la tuile
+**« Week-end », quatrième vue du calendrier** (demande de Noé, 15 août 2026),
+à côté de Mois · Semaine · Agenda. Les trois autres montrent ce qui est POSÉ ;
+celle-ci montre ce qu'on **pourrait couvrir** : toutes les rencontres du
+vendredi au dimanche, tous championnats du vivier confondus, **en trois
+colonnes, une par jour**. Les trois colonnes restent même vides — sinon la
+grille se décale d'un week-end à l'autre — et s'empilent sur téléphone. C'est
+le rythme du football, et celui d'un photographe qui prépare sa semaine.
+
+La vue s'ajoute par `vuesEnPlus`, même contrat que `naturesEnPlus` pour la
+tuile : le hub n'a pas de vivier, il ne la voit pas. Le calendrier éditorial
+non plus — il partage `vueCal` et retombe sur le mois. Les filtres de nature
+disparaissent sur cette vue : elle ne montre rien de posé. Les flèches passent
+d'un week-end à l'autre ; les rencontres ne se chargent **qu'en arrivant sur la
+vue**, jamais avec le calendrier. Chaque affiche porte « Poser… », qui ouvre la tuile
 pré-remplie comme depuis la fiche d'un club, et celles déjà au calendrier le
 disent.
 

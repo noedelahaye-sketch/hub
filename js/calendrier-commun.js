@@ -352,11 +352,16 @@ export function construireFiltres(natures) {
     </div>`;
 }
 
-export function construireBarrePeriode(vue, ancre) {
+// `vuesEnPlus` : des vues que SEUL l'appelant connaît, ajoutées en fin de
+// sélecteur — même contrat que `naturesEnPlus` pour la tuile. Le site Yuno s'en
+// sert pour son week-end (les rencontres qu'il pourrait couvrir), qui n'a rien
+// à faire dans le calendrier du hub. Elles portent leur propre navigation : la
+// barre n'affiche la sienne que pour les vues qu'elle sait déplacer.
+export function construireBarrePeriode(vue, ancre, { vuesEnPlus = null } = {}) {
   return `
     <div class="cal-barre">
       <div class="affichages" role="group" aria-label="Affichage du calendrier">
-        ${Object.entries(VUES_CALENDRIER)
+        ${Object.entries({ ...VUES_CALENDRIER, ...(vuesEnPlus ?? {}) })
           .map(
             ([valeur, libelle]) => `
           <button type="button" data-vue-cal="${valeur}"
@@ -366,7 +371,7 @@ export function construireBarrePeriode(vue, ancre) {
           .join('')}
       </div>
       ${
-        vue === 'agenda'
+        vue === 'agenda' || !(vue in VUES_CALENDRIER)
           ? ''
           : `<div class="cal-nav">
                <button type="button" class="cal-fleche" data-periode="-1"
