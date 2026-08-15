@@ -96,7 +96,22 @@ pas structurants.
 ## 3. Identité
 
 **Couleurs** — celles du logo (`img/yuno-logo.jpg`, déposé le 7 août 2026 ;
-valeurs mesurées sur le fichier) :
+valeurs mesurées sur le fichier), **plus le violet depuis le 15 août 2026** :
+c'est la troisième couleur du site (décision de Noé), après le gris foncé du
+fond et le doré. Chacune a son rôle, et c'est ce qui les empêche de se marcher
+dessus :
+
+| Couleur | Ce qu'elle dit |
+|---|---|
+| Gris foncé | le fond, le calme, tout ce qui accompagne |
+| **Or** `#e8b000` | l'état actif, les chiffres, l'action qui part |
+| **Violet** `#8b4bf1` | la **matière créative** — les piliers, les idées, ce qui n'est pas encore parti |
+
+Le violet se voit aujourd'hui sur les quatre piliers (§3, palette), les numéros
+d'étape du pipeline de Créer, et le filet d'entrée de la banque. Il ne prend
+jamais la place de l'or : un numéro d'étape n'est ni un état actif ni un
+chiffre qui compte.
+
 
 | Rôle | Valeur | Note |
 |---|---|---|

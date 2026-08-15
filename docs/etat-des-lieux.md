@@ -737,6 +737,33 @@ puis rendue à la banque — 18 idées, 0 datée).
 
 ---
 
+## 0 septendecies. Le violet, troisième couleur (15 août, nuit)
+
+Décision de Noé : « le violet comme 3e couleur principale (après le gris foncé
+et le doré) », et **les quatre piliers en quatre nuances d'un même violet**.
+
+- **La palette des piliers est refaite** : une seule teinte (263°) qui
+  s'assombrit, `#bf9cf6 · #955eed · #6917ee · #4905b8`. L'étagement est
+  **calculé, pas choisi à l'œil** : chaque rang est deux fois moins lumineux que
+  le précédent, et les contrastes de l'encre sur son aplat valent 8,74 · 4,80 ·
+  7,10 · 10,52 — les quatre au-dessus du seuil AA. Les encres basculent du noir
+  violacé au blanc entre le rang 2 et le rang 3, là où la luminosité l'exige.
+- **Le prix est assumé et écrit dans la spec** : quatre nuances se distinguent
+  moins vite que quatre couleurs. On le paie par un étagement régulier, et parce
+  que la couleur d'un pilier est toujours un rappel — le nom l'accompagne, sauf
+  sur le point d'une ligne de flux, où la fiche le dit.
+- **`--violet` entre dans la palette** avec son rôle : la matière créative. Il
+  ne prend jamais la place de l'or (l'état actif, les chiffres). Employé aux
+  numéros d'étape de Créer et au filet d'entrée de la banque.
+- **`--pilier-N-fond` a été retiré** : quatre variables déclarées et transmises
+  par la cascade depuis le 12 août, **jamais lues nulle part**.
+
+**Vérifié** : les quatre nuances relevées une par une sur les barres de la
+banque et sur la légende du bas de Créer, les sept vues du site et les sept
+espaces du hub chargent (la palette vit dans styles.css, partagée par tous).
+
+---
+
 ## 1. Ce qui existe
 
 Le hub est **déployé et fonctionnel** :

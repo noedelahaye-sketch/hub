@@ -1003,7 +1003,14 @@ body[data-espace="yuno"] .etiquette {
 
 /* --- La banque d'idées ------------------------------------------------------ */
 
-.banque-intro { margin: -4px 0 var(--espace-16); font-size: 0.9375rem; }
+/* La banque est le fonds créatif : son filet d'entrée porte le violet, comme
+   les piliers qui la classent. */
+.banque-intro {
+  margin: -4px 0 var(--espace-16);
+  padding-left: var(--espace-12);
+  font-size: 0.9375rem;
+  border-left: 3px solid var(--violet);
+}
 
 /* Les tuiles de la banque sont plus étroites que partout ailleurs, et leur
    texte descend d'un cran. Une banque est un fonds où l'on fouille : ce qui
@@ -1908,12 +1915,14 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
    la LIGNE pour le flux, la tuile pour les portes. L'œil comprend la page avant
    de la lire. */
 
-/* Le numéro d'étape : le pipeline se lit 01 · 02 · 03. Gris chaud, jamais une
-   couleur d'état — c'est un repère, pas un badge. */
+/* Le numéro d'étape : le pipeline se lit 01 · 02 · 03. En VIOLET depuis le
+   15 août 2026 — la troisième couleur du site dit la matière créative, et le
+   chemin d'une idée en fait partie. Jamais l'or : celui-ci dit l'état actif et
+   les chiffres qui comptent, un numéro d'étape n'est ni l'un ni l'autre. */
 .etape {
   margin-right: var(--espace-8);
   font-size: 0.8125rem;
-  color: var(--gris-chaud);
+  color: var(--violet);
 }
 
 /* Les lignes du flux : même famille que le carnet et les tâches. `.bloc li`
