@@ -90,6 +90,7 @@ export function construireApercuPublication(pub, options = {}) {
 
   return `
     <li class="tuile-apercu" role="button" tabindex="0"
+      ${pub.pilier ? `data-pilier="${echapper(String(pub.pilier))}"` : ''}
       data-ouvrir-pub="${echapper(pub.id)}"
       aria-label="Ouvrir « ${echapper(pub.titre)} »">
       ${entetePublication(pub, piliers)}

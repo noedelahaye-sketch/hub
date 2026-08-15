@@ -401,6 +401,12 @@ body[data-entree="hermitage"] .fch-pied { display: none; }
   color: var(--accent);
 }
 
+/* Un lien nu dans le contenu prend l'accent de son espace (bleu au hub, doré
+   chez Yuno…). Sans cette règle, c'était le bleu-violet du NAVIGATEUR qui
+   sortait — repéré par Noé sur Créer, le 15 août 2026. Spécificité minimale :
+   tout lien déjà habillé (navigation, portes, lignes) garde sa couleur. */
+a { color: var(--accent); }
+
 .lien-discret {
   padding: 0;
   font-size: 0.875rem;

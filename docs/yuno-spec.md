@@ -666,6 +666,32 @@ est le chemin d'une idée :
 Les filtres de la banque (pilier, statut) sont passés **en listes** le même
 jour — les derniers menus natifs de l'atelier, même composant que le CRM.
 
+**La forme de la page** (proposition validée en bloc par Noé, 15 août 2026) :
+
+- **La carte du jour est la seule carte chaude de la page** : un souffle d'or
+  dans le fond (7 % d'accent), une bordure teintée, la date du jour en tête, le
+  re-tirage dans son coin, le geste de programmer dans son pied. Tout le reste
+  est froid — c'est ce contraste qui dit « c'est ici que ça commence ».
+- **Trois familles de formes** : la carte pour le contenu, la **ligne** pour le
+  flux (« Cette semaine », « En chantier » — date, point de pilier, titre,
+  statut ; le clic ouvre la fiche où les gestes vivent), la tuile pour les
+  portes. L'œil comprend la page avant de la lire.
+- **Les couleurs de piliers partout où un pilier apparaît** — la palette
+  existait (`--pilier-1…4` + encres + fonds), c'est `data-pilier` qui l'allume,
+  et il manquait sur les pastilles de Yuno. Pastilles pleines sur la carte et
+  dans la banque, **barre gauche des tuiles de la banque** portée par le
+  pilier : d'un regard, la répartition des 18 idées entre les quatre axes. De
+  la couleur qui dit quelque chose, jamais de la décoration.
+- **Les vides montrent leur lieu** : l'icône du bloc, grande et pâle, au-dessus
+  de la phrase — une promesse dessinée, pas une ligne d'excuse.
+- **Le chemin est numéroté** — 01 · 02 · 03 en gris chaud devant les titres :
+  la page dit visuellement qu'elle est un pipeline.
+- **Les liens nus prennent l'accent de leur espace** (règle posée dans
+  styles.css, un seul `a { color: var(--accent) }`) : avant elle, c'était le
+  bleu-violet du navigateur qui sortait — l'intrus repéré par Noé.
+- **La ligne des piliers porte sa légende** : les quatre points colorés dans la
+  phrase repliée, en bas de page.
+
 **L'idée du jour ouvre la page** (demande de Noé, 14 août 2026) : une idée de
 la banque, tirée au sort une fois par jour, offerte en arrivant. Elle ne demande
 rien — elle est là, on la lit, on la garde ou on passe. C'est le pendant du mur

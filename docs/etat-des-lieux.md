@@ -671,6 +671,35 @@ d'origine. Filtres de la banque : 18 → 3 sur le pilier 2, retour à 18, zéro
 
 ---
 
+## 0 quindecies. La forme de Créer (15 août, nuit)
+
+Proposition en cinq points + option, validée en bloc (« garde tout, fais
+l'échantillon puis généralise »). Le détail des choix est dans `yuno-spec.md`
+(§4, « La forme de la page ») ; ici, ce qui a été appris en construisant :
+
+- **La palette des piliers existait déjà, complète** (`--pilier-1…4`, encres,
+  fonds, cascade `[data-pilier]` dans styles.css) — et la pastille de l'idée du
+  jour restait grise parce qu'`etiquettePilier` de yuno.js n'écrivait pas
+  `data-pilier`. Le système de couleurs avait un interrupteur, personne ne
+  l'appuyait. Même oubli dans la colonne de l'éditorial ; la barre gauche des
+  tuiles de la banque s'est accrochée au même attribut, posé sur le `li` dans
+  publications.js (inoffensif pour le FCH : pas de pilier, pas d'attribut).
+- **Le lien bleu était le NAVIGATEUR** : aucune règle `a { color }` n'existait
+  dans tout le hub. Corrigé au niveau le plus bas — `a { color: var(--accent) }`
+  dans styles.css, spécificité minimale : chaque espace colore ses liens nus à
+  son accent, et tout lien déjà habillé garde le sien.
+- **Une phrase avec des points colorés au milieu doit couler comme une
+  phrase** : le `display: flex` du résumé des piliers la découpait en morceaux
+  sur téléphone (vu sur capture). Repassé en texte normal, cible tactile par le
+  rembourrage.
+- **Vérifié en réel** : idée programmée depuis la carte → ligne du flux
+  « demain · titre · idée » avec son point violet (44 px), les quatre couleurs
+  distinctes relevées sur les barres de la banque, la carte chaude au premier
+  écran, les vides dessinés, 01·02·03 en place, 0 px de débordement. L'idée
+  d'essai a été rendue à la banque : 18 idées, 0 datée — l'état exact.
+
+---
+
 ## 1. Ce qui existe
 
 Le hub est **déployé et fonctionnel** :

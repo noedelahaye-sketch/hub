@@ -23,7 +23,6 @@ import {
   STATUTS_YUNO,
   NOMS_STATUTS,
   construireBanque,
-  construirePublication,
   construirePubliees,
   construireApercuCreation,
   corpsPublication,
@@ -1110,8 +1109,11 @@ export function filtrerBanque(publications, { pilier = 'tout', statutIdee = 'tou
   });
 }
 
+// `data-pilier` est ce qui ALLUME la couleur : la cascade de styles.css pose
+// `--pilier` et son encre dessus. Sans lui, la pastille restait un contour
+// gris — le système de couleurs existait, personne ne l'appelait.
 function etiquettePilier(rang) {
-  return `<span class="etiquette etiquette-pilier">${echapper(
+  return `<span class="etiquette etiquette-pilier" data-pilier="${echapper(String(rang))}">${echapper(
     `${rang}. ${PILIERS[rang]?.nom ?? ''}`,
   )}</span>`;
 }
@@ -1151,39 +1153,47 @@ export function construireIdeeDuJour(publications, { autreId = null, jour = vers
   if (!idee) {
     return `
       <section class="bloc idee-jour">
-        <h2>L'idée du jour</h2>
+        <h2><span class="etape chiffre">01</span>L'idée du jour</h2>
         <p class="vide">Ta banque est vide — note une idée, même bancale, et elle reviendra
           t'inspirer un matin.</p>
       </section>`;
   }
 
+  // La CARTE DU JOUR (forme validée par Noé, 15 août 2026) : la seule carte
+  // chaude de la page — un souffle d'or dans le fond, la date du jour en tête,
+  // le re-tirage dans son coin, et le geste de programmer DANS la carte. C'est
+  // l'objet qu'on vient tirer chaque matin, il ne ressemble à rien d'autre.
   return `
     <section class="bloc idee-jour">
       <div class="idee-jour-tete">
-        <h2>L'idée du jour</h2>
-        <button type="button" class="bouton-icone" data-retirer-idee
-          title="En tirer une autre" aria-label="En tirer une autre">${RETIRER_AU_SORT}</button>
+        <h2><span class="etape chiffre">01</span>L'idée du jour</h2>
+        <span class="discret idee-jour-date">le ${echapper(
+          depuisDateISO(jour).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }),
+        )}</span>
       </div>
-      <button type="button" class="idee-jour-corps" data-ouvrir-pub="${echapper(idee.id)}"
-        aria-label="Ouvrir « ${echapper(idee.titre)} »">
-        <span class="tuile-entete">
-          ${idee.pilier ? etiquettePilier(idee.pilier) : ''}
-          <span class="etiquette">${echapper(FORMATS[idee.format] ?? idee.format)}</span>
-        </span>
-        <span class="pub-titre">${echapper(idee.titre)}</span>
-        ${idee.preuve ? `<span class="discret pub-preuve">${echapper(idee.preuve)}</span>` : ''}
-      </button>
-      <!-- Programmer, à deux touches de l'inspiration (demande de Noé, 15 août
-           2026) : choisir une date suffit, le geste data-programmer existait
-           déjà dans les fiches. HORS du bouton — la tuile en est un, et deux
-           boutons ne s'imbriquent pas. Une fois datée, l'idée quitte la banque :
-           la tuile en tire une autre au rendu suivant, et la programmée
-           réapparaît juste dessous, dans « Cette semaine » ou « Plus tard ». -->
-      <div class="idee-jour-pied">
-        <label class="discret" for="idee-jour-date">La programmer :</label>
-        <input type="date" id="idee-jour-date" class="pub-programmer"
-          data-programmer="${echapper(idee.id)}"
-          aria-label="Programmer « ${echapper(idee.titre)} »">
+      <div class="carte-jour">
+        <button type="button" class="bouton-icone carte-jour-retirage" data-retirer-idee
+          title="En tirer une autre" aria-label="En tirer une autre">${RETIRER_AU_SORT}</button>
+        <button type="button" class="idee-jour-corps" data-ouvrir-pub="${echapper(idee.id)}"
+          aria-label="Ouvrir « ${echapper(idee.titre)} »">
+          <span class="tuile-entete">
+            ${idee.pilier ? etiquettePilier(idee.pilier) : ''}
+            <span class="etiquette">${echapper(FORMATS[idee.format] ?? idee.format)}</span>
+          </span>
+          <span class="pub-titre">${echapper(idee.titre)}</span>
+          ${idee.preuve ? `<span class="discret pub-preuve">${echapper(idee.preuve)}</span>` : ''}
+        </button>
+        <!-- Programmer, à deux touches de l'inspiration : choisir une date
+             suffit, le geste data-programmer existait déjà dans les fiches.
+             HORS du bouton de la tuile — deux boutons ne s'imbriquent pas. Une
+             fois datée, l'idée quitte la banque : la carte en tire une autre,
+             et la programmée réapparaît juste dessous. -->
+        <div class="idee-jour-pied">
+          <label class="discret" for="idee-jour-programmer">La programmer :</label>
+          <input type="date" id="idee-jour-programmer" class="pub-programmer"
+            data-programmer="${echapper(idee.id)}"
+            aria-label="Programmer « ${echapper(idee.titre)} »">
+        </div>
       </div>
     </section>`;
 }
@@ -1221,17 +1231,53 @@ export function enChantier(publications) {
   );
 }
 
+// Une ligne du flux : la date quand elle existe, le pilier en point coloré, le
+// titre, le statut. Le clic ouvre la fiche — corrections et avancées y vivent.
+function lignePublication(pub, { avecDate = true } = {}) {
+  return `
+    <li><button type="button" class="pub-ligne" data-ouvrir-pub="${echapper(pub.id)}"
+      aria-label="Ouvrir « ${echapper(pub.titre)} »">
+      ${
+        avecDate && pub.date_prevue
+          ? `<span class="pub-ligne-quand">${echapper(
+              echeanceLisible(depuisDateISO(pub.date_prevue)),
+            )}</span>`
+          : ''
+      }
+      ${
+        pub.pilier
+          ? `<span class="point-pilier" data-pilier="${echapper(String(pub.pilier))}"
+               aria-hidden="true"></span>`
+          : ''
+      }
+      <span class="pub-ligne-titre">${echapper(pub.titre)}</span>
+      <span class="etiquette">${NOMS_STATUTS[pub.statut] ?? pub.statut}</span>
+    </button></li>`;
+}
+
 function vueCreer(etat) {
-  // Ce qui distingue Créer chez Yuno : son cycle, sa checklist, ses piliers.
-  const options = { cycle: STATUTS_YUNO, checklist: true, piliers: PILIERS };
   const { semaine, plusTard } = partagerLAVenir(etat.publications);
   const chantier = enChantier(etat.publications);
   const idees = etat.publications.filter(
     (pub) => !pub.date_prevue && pub.statut !== 'publie',
   ).length;
 
-  const tuiles = (liste) =>
-    `<ul>${liste.map((pub) => construirePublication(pub, options)).join('')}</ul>`;
+  // Le flux se lit en LIGNES, pas en tuiles (forme validée par Noé, 15 août
+  // 2026) : date, point de pilier, titre, statut — et le clic ouvre la fiche,
+  // où tous les gestes vivent déjà. Trois familles de formes sur la page :
+  // la carte pour le contenu, la ligne pour le flux, la tuile pour les portes.
+  const lignes = (liste, reglages = {}) =>
+    `<ul class="liste-flux">${liste
+      .map((pub) => lignePublication(pub, reglages))
+      .join('')}</ul>`;
+
+  // Un vide qui montre son lieu : l'icône du bloc, grande et pâle, au-dessus
+  // de la phrase. Une promesse dessinée, pas une ligne d'excuse.
+  const videDessine = (icone, phrase) => `
+    <p class="vide vide-dessine">
+      <span class="vide-icone" aria-hidden="true">${icone}</span>
+      <span>${phrase}</span>
+    </p>`;
 
   return `
     ${enTete('creer')}
@@ -1248,20 +1294,22 @@ function vueCreer(etat) {
          CE QUI EST PRÉVU, un effort que Noé contrôle, jamais un compteur de
          manque. Le reste du daté attend replié : la semaine d'abord. -->
     <section class="bloc">
-      <h2>Cette semaine</h2>
+      <h2><span class="etape chiffre">02</span>Cette semaine</h2>
       <div data-bloc="semaine">
         ${
           semaine.length
-            ? tuiles(semaine)
-            : `<p class="vide">Rien cette semaine —
-                 <a href="#yuno/editorial">pose une idée sur un jour</a>.</p>`
+            ? lignes(semaine)
+            : videDessine(
+                CALENDRIER,
+                `Rien cette semaine — <a href="#yuno/editorial">pose une idée sur un jour</a>.`,
+              )
         }
       </div>
       ${
         plusTard.length
           ? `<details class="backlog">
                <summary>Plus tard <span class="chiffre">${plusTard.length}</span></summary>
-               ${tuiles(plusTard)}
+               ${lignes(plusTard)}
              </details>`
           : ''
       }
@@ -1272,13 +1320,16 @@ function vueCreer(etat) {
          brouillon, prêt) — jamais exercés jusqu'ici. Une idée qu'on avance
          depuis sa fiche vient ici, puis se pose sur un jour. -->
     <section class="bloc">
-      <h2>En chantier</h2>
+      <h2><span class="etape chiffre">03</span>En chantier</h2>
       <div data-bloc="chantier">
         ${
           chantier.length
-            ? tuiles(chantier)
-            : `<p class="vide">L'établi est vide. Fais avancer une idée de la banque :
-                 elle passe ici, puis au calendrier.</p>`
+            ? lignes(chantier, { avecDate: false })
+            : videDessine(
+                AMPOULE,
+                `L'établi est vide. Fais avancer une idée de la banque :
+                 elle passe ici, puis au calendrier.`,
+              )
         }
       </div>
     </section>
@@ -1308,7 +1359,11 @@ function vueCreer(etat) {
          chaque visite. Un écran entier rendu à l'action. -->
     <section class="bloc piliers-repli">
       <details>
-        <summary>Ça rentre dans un pilier ? Oui → je crée.</summary>
+        <summary>Ça rentre dans un pilier ?
+          <span class="points-piliers" aria-hidden="true">${[1, 2, 3, 4]
+            .map((rang) => `<span class="point-pilier" data-pilier="${rang}"></span>`)
+            .join('')}</span>
+          Oui → je crée.</summary>
         ${construirePiliers()}
       </details>
     </section>
@@ -1457,9 +1512,9 @@ function vueEditorial(etat) {
                   <span class="tuile-entete">
                     ${
                       pub.pilier
-                        ? `<span class="etiquette etiquette-pilier">${echapper(
+                        ? `<span class="etiquette etiquette-pilier" data-pilier="${echapper(
                             String(pub.pilier),
-                          )}</span>`
+                          )}">${echapper(String(pub.pilier))}</span>`
                         : ''
                     }
                     <span class="etiquette">${echapper(FORMATS[pub.format] ?? pub.format)}</span>

@@ -986,13 +986,14 @@ body[data-espace="yuno"] .etiquette {
 
 /* Les piliers, repliés en bas de page (15 août 2026) : la phrase-test en
    résumé, le tableau des rôles derrière. On le rouvre les jours de doute. */
+/* En texte qui coule, pas en flex : une phrase avec ses points colorés au
+   milieu doit se replier comme une phrase — le flex la découpait en morceaux
+   sur téléphone (vu sur capture). La cible tactile vient du rembourrage. */
 .piliers-repli summary {
   font-weight: 600;
   cursor: pointer;
   list-style: none;
-  min-height: 2.75rem;
-  display: flex;
-  align-items: center;
+  padding: var(--espace-12) 0;
 }
 
 .piliers-repli summary::-webkit-details-marker { display: none; }
@@ -1807,44 +1808,175 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 /* La tuile entière ouvre la fiche de l'idée — même geste que la banque. Il faut
    donc défaire ce qu'un `<button>` apporte : le centrage, la police du système,
    le cadre. */
+/* Le corps vit DANS la carte : il n'a plus ni fond ni cadre à lui. */
 .idee-jour-corps {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: var(--espace-8);
   width: 100%;
-  margin-top: var(--espace-12);
-  padding: var(--espace-12) var(--espace-16);
+  /* De la place pour le re-tirage posé dans le coin. */
+  padding: 0 var(--espace-32) 0 0;
   font-family: inherit;
   font-size: 1rem;
   text-align: left;
   color: inherit;
-  background: var(--fond-carte);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-carte);
+  background: none;
+  border: 0;
   cursor: pointer;
 }
 
-.idee-jour-corps:hover { border-color: var(--gris-chaud-trait); }
-
 /* Le titre de l'idée porte la voix du site : c'est du contenu, pas un libellé
    d'interface. */
-/* Programmer depuis l'idée du jour : une ligne sous la tuile, hors du bouton.
-   Le champ garde la petite forme des fiches (`.pub-programmer`). */
+/* --- La carte du jour ---------------------------------------------------------
+   La seule carte CHAUDE de la page (forme validée par Noé, 15 août 2026) : un
+   souffle d'or dans le fond, une bordure teintée, le re-tirage dans son coin,
+   et le geste de programmer dans son pied. Tout le reste de la page est froid —
+   c'est ce contraste qui dit « c'est ici que ça commence ». */
+.carte-jour {
+  position: relative;
+  padding: var(--espace-16);
+  background: color-mix(in srgb, var(--accent) 7%, var(--fond-carte));
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: var(--rayon-carte);
+}
+
+.carte-jour-retirage {
+  position: absolute;
+  top: var(--espace-8);
+  right: var(--espace-8);
+  z-index: 1;
+}
+
+/* La date du jour, à droite du titre : la carte se tire chaque matin. */
+.idee-jour-date { font-size: 0.8125rem; }
+
+/* Le pied : le geste dans la carte, séparé d'un filet teinté. */
 .idee-jour-pied {
   display: flex;
   align-items: center;
   gap: var(--espace-8);
-  margin-top: var(--espace-8);
+  margin-top: var(--espace-12);
+  padding-top: var(--espace-12);
+  border-top: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .idee-jour-pied input[type="date"] {
   width: auto;
   margin: 0;
+  background: var(--fond);
 }
 
 .idee-jour-corps .pub-titre {
   font-family: "Canela Deck", var(--police-titre);
-  font-size: 1.125rem;
-  line-height: 1.3;
+  font-size: 1.375rem;
+  line-height: 1.25;
+}
+
+.idee-jour-corps:hover .pub-titre { color: var(--accent); }
+
+
+/* --- Le flux en lignes, les vides dessinés, le chemin numéroté ---------------
+   Trois familles de formes sur Créer (15 août 2026) : la carte pour le contenu,
+   la LIGNE pour le flux, la tuile pour les portes. L'œil comprend la page avant
+   de la lire. */
+
+/* Le numéro d'étape : le pipeline se lit 01 · 02 · 03. Gris chaud, jamais une
+   couleur d'état — c'est un repère, pas un badge. */
+.etape {
+  margin-right: var(--espace-8);
+  font-size: 0.8125rem;
+  color: var(--gris-chaud);
+}
+
+/* Les lignes du flux : même famille que le carnet et les tâches. `.bloc li`
+   est annulé, comme partout où une liste remplace des cartes. */
+.bloc .liste-flux {
+  gap: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.bloc .liste-flux > li {
+  display: block;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--bordure);
+  border-radius: 0;
+}
+
+.bloc .liste-flux > li::before { content: none; }
+.bloc .liste-flux > li:last-child { border-bottom: none; }
+
+.pub-ligne {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-12);
+  width: 100%;
+  min-height: 2.9375rem;
+  padding: var(--espace-8) 0;
+  font-family: inherit;
+  font-size: 1rem;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.pub-ligne:hover .pub-ligne-titre { color: var(--accent); }
+
+.pub-ligne-quand {
+  flex: none;
+  min-width: 5.25rem;
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+}
+
+.pub-ligne-titre {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Le point de pilier : la couleur sans le mot. Sur une ligne, le nom entier
+   serait du bruit — le point suffit, la fiche dit le reste. */
+.point-pilier {
+  flex: none;
+  display: inline-block;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: var(--rayon-pastille);
+  background: var(--pilier, var(--gris-chaud-trait));
+}
+
+/* La légende des piliers, dans la ligne repliée du bas. */
+.points-piliers {
+  display: inline-flex;
+  gap: var(--espace-4);
+  margin: 0 var(--espace-8);
+  vertical-align: middle;
+}
+
+/* Un vide qui montre son lieu : l'icône du bloc, grande et pâle, au-dessus de
+   sa phrase. Une promesse dessinée, pas une ligne d'excuse. */
+.vide-dessine {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espace-8);
+}
+
+.vide-icone { color: var(--gris-chaud-trait); }
+.vide-icone svg { width: 40px; height: 40px; }
+
+/* La tuile de la banque porte la couleur de son pilier en barre, à gauche —
+   comme les tuiles de projet du hub. D'un regard : la répartition des idées
+   entre les quatre axes. La cascade [data-pilier] pose déjà --pilier dessus. */
+.bloc li.tuile-apercu[data-pilier] {
+  border-left: 3px solid var(--pilier);
 }
