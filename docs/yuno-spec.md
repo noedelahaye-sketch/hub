@@ -105,7 +105,7 @@ dessus :
 |---|---|
 | Gris foncé | le fond, le calme, tout ce qui accompagne |
 | **Or** `#e8b000` | l'état actif, les chiffres, l'action qui part |
-| **Violet** `#8b4bf1` | la **matière créative** — les idées, le chemin qui les mène à une date |
+| **Bleu** `#7198f4` | la **matière créative** — les idées, le chemin qui les mène à une date |
 
 Il vit **chez Yuno seulement** (décision de Noé, 15 août 2026) : la variable
 est déclarée sur `body[data-espace="yuno"]`, pas dans la racine — le hub et le
@@ -113,8 +113,11 @@ FCH gardent leurs deux couleurs. On le voit sur les numéros d'étape du pipelin
 de Créer et le filet d'entrée de la banque ; il ne prend jamais la place de
 l'or, car un numéro d'étape n'est ni un état actif ni un chiffre qui compte.
 
-**Les piliers, eux, sont en bleu** depuis le même jour (essai en cours) : voir
-§3, où l'échelle et son coût sont mesurés.
+**La couleur d'identité et le classement viennent de la même famille** : la
+troisième couleur est la tête de l'échelle bleue (222°), les quatre piliers en
+sont la queue (§3). Elle est prise assez haut pour **se lire en texte** — 6,34
+sur le fond, 5,53 sur une carte ; le violet essayé d'abord plafonnait à 3,7,
+sous le seuil pour un texte, ce que les numéros d'étape sont.
 
 
 | Rôle | Valeur | Note |

@@ -737,11 +737,21 @@ puis rendue à la banque — 18 idées, 0 datée).
 
 ---
 
-## 0 duodevicies. Le violet chez Yuno seul, les piliers en bleu (15 août, nuit)
+## 0 duodevicies. Le BLEU, troisième couleur de Yuno (15 août, nuit)
 
-Deux précisions de Noé après le premier jeu violet : le violet est la troisième
-couleur **de Yuno seulement**, et les piliers passent **en bleu, les quatre
-dernières nuances** d'une échelle de neuf.
+Trois passes en une soirée, et c'est la dernière qui tient : le violet devient
+la troisième couleur, puis elle est réservée à Yuno et les piliers passent en
+bleu (essai), puis **le bleu prend toute la place** — la couleur d'identité
+comme le classement. Noé a validé les barres telles quelles : le problème de
+contraste signalé (1,03 sur le rang 4) ne le gêne pas à l'usage, la pastille
+portant l'information.
+
+- `--bleu: #7198f4` sur `body[data-espace="yuno"]` : la **tête** de l'échelle
+  bleue, quand les piliers en sont la **queue** — identité et classement dans
+  la même famille. Prise assez haut pour **se lire en texte** (6,34 sur le
+  fond, 5,53 sur une carte) : le violet plafonnait à 3,7, sous le seuil, et les
+  numéros d'étape sont bien du texte.
+- Le hub et le FCH gardent leurs deux couleurs : rien dans `:root`.
 
 - `--violet` quitte `:root` pour `body[data-espace="yuno"]` : le hub et le FCH
   gardent leurs deux couleurs.
