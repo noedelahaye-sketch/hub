@@ -17,6 +17,7 @@ import {
   construireFormulaire,
   construireFenetre,
   construireObjectifs,
+  CHEVRON,
 } from './espace-projet.js';
 import {
   STATUTS_YUNO,
@@ -1835,6 +1836,45 @@ function fenetreChoixModele(etat) {
 // Ce qu'une fiche doit rendre en trois secondes : le contact, et à qui la
 // personne est rattachée (docs/yuno-spec.md, §4).
 
+// --- Un choix en liste, hors formulaire -------------------------------------
+// « Un choix se fait dans une LISTE, jamais dans un `select` natif » — la règle
+// du 13 août valait pour la tuile de capture ; le CRM gardait deux menus du
+// système (les filtres et la relation d'un contact), que Noé a fait passer à la
+// liste le 15 août 2026.
+//
+// La différence avec les choix de formulaire (`espace-projet.js`) : ici rien
+// n'est saisi pour être envoyé plus tard — choisir AGIT tout de suite. Il n'y a
+// donc pas de champ caché, et les options portent l'attribut de leur geste
+// (`data-filtre-colonne`, `data-statut`) que l'espace écoute déjà.
+//
+// L'ouverture, la fermeture et « un seul panneau à la fois » viennent du
+// composant commun : c'est `data-choix-champ` + `data-ouvrir-choix` qui les
+// apportent, et `brancherCapture` les branche déjà dans cet espace.
+function menuChoix({ nom, libelle, options, valeur, attribut, habillage = '' }) {
+  const choisi = options.find(([cle]) => String(cle) === String(valeur));
+
+  return `
+    <span class="choix-champ choix-en-place" data-choix-champ="${echapper(nom)}">
+      <button type="button" class="choix-declencheur" data-ouvrir-choix
+        aria-expanded="false" aria-haspopup="listbox" ${habillage}
+        ${libelle ? `aria-label="${echapper(libelle)}"` : ''}
+        >${echapper(choisi?.[1] ?? 'Choisir')}${CHEVRON}</button>
+      <div class="choix-panneau" hidden>
+        <ul class="choix-capture">
+          ${options
+            .map(
+              ([cle, texte]) => `
+            <li><button type="button" ${attribut}="${echapper(String(cle))}"
+              aria-pressed="${String(cle) === String(valeur)}"
+              class="${String(cle) === String(valeur) ? 'actif' : ''}"
+              ><span>${echapper(texte)}</span></button></li>`,
+            )
+            .join('')}
+        </ul>
+      </div>
+    </span>`;
+}
+
 const TYPES_CONTACT = {
   joueur: 'Joueur',
   // Les confrères du bord terrain (14 août 2026) : ce sont eux qu'on croise le
@@ -1956,15 +1996,18 @@ const COLONNES = [
           ? 'class="choix-statut choix-statut-neutre"'
           : `class="choix-statut" style="--h: ${statut.teinte}"`;
 
-      return `<select ${habillage} data-statut="${echapper(contact.id)}"
-        aria-label="Relation avec ${echapper(contact.nom)}">
-        ${Object.entries(STATUTS_CONTACT)
-          .map(
-            ([valeur, { nom }]) =>
-              `<option value="${valeur}" ${valeur === contact.statut ? 'selected' : ''}>${nom}</option>`,
-          )
-          .join('')}
-      </select>`;
+      // Le geste vit sur chaque option (`data-statut`), pas sur un menu du
+      // système : l'espace écoute déjà cet attribut, il n'a rien changé.
+      // L'identifiant du contact voyage sur le conteneur, que le gestionnaire
+      // relit — une option ne peut pas porter à la fois sa valeur et son sujet.
+      return `<span data-statut-de="${echapper(contact.id)}">${menuChoix({
+        nom: `statut-${contact.id}`,
+        libelle: `Relation avec ${contact.nom}`,
+        options: Object.entries(STATUTS_CONTACT).map(([valeur, { nom }]) => [valeur, nom]),
+        valeur: contact.statut,
+        attribut: 'data-statut',
+        habillage,
+      })}</span>`;
     },
     filtre: {
       cle: (contact) => contact.statut ?? '',
@@ -2289,22 +2332,25 @@ export function construireBarreFiltres(contacts, etat) {
       const choisi = filtres[colonne.cle] ?? 'tout';
       const choix = choixDuFiltre(contacts, colonne);
 
+      // Le compte de chaque valeur reste dans le libellé : c'est lui qui dit
+      // s'il vaut la peine de filtrer là-dessus. « Tous » n'en porte pas — il
+      // ne filtre rien, il annule.
+      const options = [
+        ['tout', 'Tous'],
+        ...choix.map(({ cle, libelle, compte }) => [cle, `${libelle} (${compte})`]),
+      ];
+
       return `
-        <span class="puce-filtre ${choisi === 'tout' ? '' : 'actif'}">
-          <label>
-            <span class="discret">${echapper(colonne.titre)}</span>
-            <select data-filtre-colonne="${colonne.cle}">
-              <option value="tout">Tous</option>
-              ${choix
-                .map(
-                  ({ cle, libelle, compte }) =>
-                    `<option value="${echapper(cle)}" ${cle === choisi ? 'selected' : ''}>${echapper(
-                      libelle,
-                    )} (${compte})</option>`,
-                )
-                .join('')}
-            </select>
-          </label>
+        <span class="puce-filtre ${choisi === 'tout' ? '' : 'actif'}"
+          data-filtre-de="${colonne.cle}">
+          <span class="discret">${echapper(colonne.titre)}</span>
+          ${menuChoix({
+            nom: `filtre-${colonne.cle}`,
+            libelle: `Filtrer par ${colonne.titre}`,
+            options,
+            valeur: choisi,
+            attribut: 'data-filtre-colonne-valeur',
+          })}
           <button type="button" class="lien-discret retirer-filtre"
             data-retirer-filtre="${colonne.cle}"
             title="Retirer ce filtre"
@@ -4390,6 +4436,38 @@ export default {
         return;
       }
 
+      // Un filtre du CRM : la valeur est sur l'option, la colonne sur la puce.
+      const choixFiltre = evenement.target.closest('[data-filtre-colonne-valeur]');
+      if (choixFiltre) {
+        const cle = choixFiltre.closest('[data-filtre-de]')?.dataset.filtreDe;
+        if (!cle) return;
+        etat.filtresContact = {
+          ...etat.filtresContact,
+          [cle]: choixFiltre.dataset.filtreColonneValeur,
+        };
+        rendre();
+        return;
+      }
+
+      // Le statut se change dans la cellule : c'est le geste le plus fréquent
+      // d'un CRM, il ne mérite pas un formulaire. Depuis le 15 août 2026 c'est
+      // une liste et non plus un menu du système — la valeur est sur l'option,
+      // le contact sur le conteneur.
+      const choixStatut = evenement.target.closest('[data-statut]');
+      if (choixStatut) {
+        const id = choixStatut.closest('[data-statut-de]')?.dataset.statutDe;
+        const contact = etat.contacts.find((c) => c.id === id);
+        if (!contact || estProvisoire(contact.id)) return;
+        const valeur = choixStatut.dataset.statut;
+        await modifierAussitot(
+          contact,
+          { statut: valeur },
+          () => api.modifierContact(contact.id, { statut: valeur }),
+          { rendre: rendreContacts, echouer: dire },
+        );
+        return;
+      }
+
       // Cliquer une colonne trie dessus ; la recliquer inverse le sens.
       const trier = evenement.target.closest('[data-trier]');
       if (trier) {
@@ -5088,15 +5166,6 @@ export default {
       }
 
       // Dater le dernier échange d'un contact, au même geste.
-      const filtreColonne = evenement.target.closest('[data-filtre-colonne]');
-      if (filtreColonne) {
-        etat.filtresContact = {
-          ...etat.filtresContact,
-          [filtreColonne.dataset.filtreColonne]: filtreColonne.value,
-        };
-        rendre();
-        return;
-      }
 
       // Le niveau se change au même geste que le statut : c'est lui qui fait
       // entrer un contact dans la file, ou l'en sort.
@@ -5223,19 +5292,6 @@ export default {
         return;
       }
 
-      // Le statut se change dans la cellule : c'est le geste le plus fréquent
-      // d'un CRM, il ne mérite pas un formulaire.
-      const statut = evenement.target.closest('[data-statut]');
-      if (statut) {
-        const contact = etat.contacts.find((c) => c.id === statut.dataset.statut);
-        if (!contact || estProvisoire(contact.id)) return;
-        await modifierAussitot(
-          contact,
-          { statut: statut.value },
-          () => api.modifierContact(contact.id, { statut: statut.value }),
-          { rendre: rendreContacts, echouer: dire },
-        );
-      }
     });
 
     // Le cache est écrit à chaque chargement, mais l'état bouge aussi entre

@@ -589,6 +589,37 @@ capture, ni sur les lignes du carnet — et les valeurs en base intactes.
 
 ---
 
+## 0 terdecies. Les derniers menus natifs du CRM (15 août)
+
+Demande de Noé : les filtres du CRM, puis « pareil pour le paramètre relation ».
+C'était la règle du 13 août — « un choix se fait dans une LISTE, jamais dans un
+`select` natif » — que le CRM n'avait jamais suivie.
+
+`menuChoix()` (js/yuno.js) dessine le composant commun des formulaires
+(`choix-champ` + `choix-declencheur` + `choix-panneau`), branché par
+`brancherCapture` qui apporte déjà l'ouverture, la fermeture et « un seul
+panneau à la fois ». **La différence avec un choix de formulaire** : rien n'est
+saisi pour être envoyé plus tard, choisir AGIT. Il n'y a donc pas de champ
+caché, chaque option porte l'attribut de son geste, et le sujet voyage sur le
+conteneur (`data-filtre-de`, `data-statut-de`) — une option ne peut pas porter
+à la fois sa valeur et son sujet. Les deux gestionnaires passent de `change` à
+`click`.
+
+**Un piège de contexte, vu sur capture puis mesuré** : dans la tuile de capture,
+le panneau vit hors des blocs. Posé dans une puce de filtre ou une cellule de
+tableau, il se retrouve **dans** un `.bloc` — et `.bloc li` dessinait alors
+chaque option comme une carte : fond, cadre, 12 px de rembourrage, **64 px par
+ligne**. Annulé pour `.bloc .choix-panneau .choix-capture li`, remesuré à 38 px.
+
+**Vérifié** en conditions réelles : le filtre Type ramène 47 fiches à 5 clubs et
+la puce s'allume ; le changement de relation d'un contact part en base
+(« Alicia » passée puis **rendue** à `contact_etabli`) ; plus aucun `select`
+dans les filtres ni dans la colonne Relation. Les 47 `select` restants sont ceux
+de la colonne **Niveau**, que Noé n'a pas demandés — dis-le si tu veux qu'ils
+suivent.
+
+---
+
 ## 1. Ce qui existe
 
 Le hub est **déployé et fonctionnel** :

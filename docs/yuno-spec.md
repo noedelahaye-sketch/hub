@@ -808,6 +808,16 @@ Instagram est accepté avec ou sans arobase, ou collé en URL entière. **Un
 contact peut porter plusieurs comptes ou adresses**, séparés par une barre
 oblique — le carnet de Noé en contient — et chacun devient son propre lien.
 
+**Le type et la relation se choisissent dans une LISTE**, jamais dans un menu
+du système — la règle du 13 août, appliquée au CRM le 15 août 2026 (demande de
+Noé) : les filtres de la barre et la colonne « Relation » gardaient des
+`select` natifs. Le composant est celui des formulaires (`choix-champ`), avec
+une différence : ici rien n'est saisi pour plus tard, **choisir agit tout de
+suite**. Pas de champ caché donc, et chaque option porte l'attribut de son geste
+(`data-filtre-colonne-valeur`, `data-statut`) que l'espace écoutait déjà ; le
+sujet (la colonne, le contact) voyage sur le conteneur — une option ne peut pas
+porter à la fois sa valeur et son sujet.
+
 Types : joueur, **photographe**, club, média, **agence**, marque, autre. Les
 agences sont arrivées avec la seconde moitié du carnet : ce ne sont ni des
 médias ni des marques, ce sont des intermédiaires. Le photographe est arrivé le

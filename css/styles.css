@@ -1820,6 +1820,21 @@ body.fond-fige {
 /* Sans icône devant, le filet part du bord du texte. */
 .choix-panneau .choix-capture li + li button::before { left: var(--espace-8); }
 
+/* `.bloc li` est annulé DANS un panneau de choix. La tuile de capture vit hors
+   des blocs et n'a jamais rencontré le problème ; posé dans une puce de filtre
+   ou une cellule de tableau (15 août 2026), le panneau se retrouve à
+   l'intérieur d'un `.bloc`, et chaque option se dessinait alors comme une
+   carte — fond, cadre, 12 px de rembourrage, 64 px de haut par ligne. */
+.bloc .choix-panneau .choix-capture li {
+  display: block;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+
+.bloc .choix-panneau .choix-capture li::before { content: none; }
+
 .choix-panneau .choix-capture button.actif {
   font-weight: 700;
   color: var(--texte);
@@ -1941,26 +1956,39 @@ body.fond-fige {
 
 .puce-filtre.actif .discret { color: var(--accent); }
 
-.puce-filtre label {
-  display: flex;
-  align-items: center;
-  gap: var(--espace-8);
-  margin: 0;
+.puce-filtre .discret { margin-right: var(--espace-8); }
+
+/* --- Un choix en liste posé DANS la page ------------------------------------
+   Le même composant que dans un formulaire, mais il n'y remplace pas un champ :
+   il remplace un menu du système, au milieu d'une puce de filtre ou d'une
+   cellule de tableau (15 août 2026). Il perd donc le cadre, le fond et la
+   largeur pleine du déclencheur — sinon une puce contiendrait une boîte, et une
+   cellule aussi. Le panneau, lui, garde tout son dessin : c'est le même objet.
+   `width: max-content` : la ligne ne doit pas s'étirer à la largeur du menu,
+   c'est le contraire — le menu prend la largeur de ce qu'il dit. */
+.choix-en-place { display: inline-block; margin: 0; }
+
+.choix-en-place > .choix-declencheur {
+  width: max-content;
+  min-height: 2.25rem;
+  padding: var(--espace-4) 0;
   font-size: inherit;
   font-weight: inherit;
-}
-
-.puce-filtre select {
-  width: auto;
-  margin: 0;
-  padding: var(--espace-8) 0;
-  min-height: 2.25rem;
-  font-family: inherit;
-  font-size: 0.8125rem;
-  font-weight: 600;
   color: inherit;
   background: none;
   border: 0;
+}
+
+.choix-en-place > .choix-declencheur:hover { color: var(--accent); }
+
+/* Le panneau se pose au bord gauche de son déclencheur et prend la largeur de
+   ses options, pas celle de la puce : `right: auto` défait l'étirement que la
+   règle de formulaire impose. */
+.choix-en-place > .choix-panneau {
+  right: auto;
+  min-width: 12rem;
+  font-weight: 400;
+  text-align: left;
 }
 
 .retirer-filtre {
