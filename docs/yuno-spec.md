@@ -939,12 +939,27 @@ CAN 2027).
 
 La page, de haut en bas :
 
-- **La métrique** (inchangée) : messages envoyés, cumul et « cette semaine »,
-  déduits de `journal_envois` (une ligne = un envoi). **Pas de colonne
-  « répondu », délibérément** : si le compteur dépendait des réponses, chaque
-  silence deviendrait un rejet mesuré. Jamais de taux de réponse. L'objectif
-  doux (réglable, `localStorage`) se dit une fois atteint et se tait en
-  dessous.
+- **Le bandeau : trois chiffres, trois échelles de temps** (refonte du 15 août
+  2026, demande de Noé — le bandeau datait de la v1, quand la Passerelle
+  n'était qu'une file de messages).
+  1. **« cette semaine »** — les envois des sept derniers jours, déduits de
+     `journal_envois` (une ligne = un envoi). Le rituel, la seule chose qui
+     appelle une action aujourd'hui. L'**objectif doux** se range dessous, en
+     petit : il qualifie ce chiffre, il n'en est pas un. Il tourne d'un
+     toucher (1 → 2 → 3 → 5 → 1, `localStorage`) plutôt que de dérouler un
+     `select`, banni du site depuis le 13 août. Atteint, il se dit
+     (« C'est fait pour cette semaine ») ; en dessous, il se tait.
+  2. **« clubs contactés »** — « 12/97 », la saison. Il a remplacé le cumul
+     des envois : « 47 messages » ne situe rien, là où une part d'un ensemble
+     fini dit le chemin parcouru. Même vertu que le cumul (il ne redescend
+     jamais), plus le repère.
+  3. **« entrés au réseau »** — les fiches nées de la Passerelle
+     (`pistes.contact_id`), le fruit du rituel. **Il n'apparaît qu'à partir
+     de 1** : un compteur à zéro serait un reproche.
+
+  **Rien ici ne compte les réponses ni les silences**, et `journal_envois` n'a
+  toujours pas de colonne « répondu » : un taux ferait de chaque non-réponse
+  un échec mesuré. Les trois chiffres ne mesurent que ce que Noé contrôle.
 - **« Ta fournée de la semaine »** : les clubs que Noé a choisis. Chaque carte
   porte ses **quatre portes de recherche en icônes, sans cadre** (demande de
   Noé, 15 août au soir) — calendrier et planète-presse dans le bleu de Yuno,

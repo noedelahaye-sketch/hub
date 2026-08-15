@@ -1390,32 +1390,31 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 .metrique .chiffre { font-size: 1.5rem; line-height: 1.1; color: var(--accent); }
 .metrique .discret { font-size: 0.75rem; }
 
-/* Le réglage se pose à droite : c'est un curseur qu'on touche deux fois par an,
-   pas une jauge à surveiller. */
-.metrique-objectif {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-left: auto;
-  font-size: 0.75rem;
-}
+/* Le dénominateur du vivier : « 12/97 ». Plus petit que le chiffre qu'il
+   situe — c'est le repère, pas la nouvelle. */
+.metrique-sur { font-size: 0.9375rem; color: var(--texte-discret); }
 
-.metrique-objectif select {
-  margin: 0;
-  padding: var(--espace-4) var(--espace-8);
-  font-size: 0.875rem;
+/* Le réglage se range SOUS le chiffre de la semaine, qu'il qualifie : c'est un
+   curseur qu'on touche deux fois par an, pas une donnée. Un bouton qui tourne
+   plutôt qu'un menu déroulant — le `select` natif est banni du site. */
+.metrique-reglage {
+  margin: 2px 0 0;
+  padding: 0;
   font-family: inherit;
-  color: var(--texte);
-  background: var(--fond);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-controle);
+  font-size: 0.75rem;
+  text-align: left;
+  color: var(--texte-discret);
+  background: none;
+  border: none;
+  border-bottom: 1px dotted var(--bordure);
+  cursor: pointer;
 }
 
-/* Sur téléphone le réglage passe à la ligne : poussé à droite tout seul, il
-   avait l'air d'un chiffre de plus. */
+.metrique-reglage:hover,
+.metrique-reglage:focus-visible { color: var(--accent); }
+
 @media (max-width: 30rem) {
   .passerelle-metrique { gap: var(--espace-16); }
-  .metrique-objectif { width: 100%; margin-left: 0; }
 }
 
 /* Atteint, on le dit une fois. En dessous, on ne dit rien : un plancher

@@ -65,9 +65,16 @@ Le cahier des charges fait autorité : `yuno-spec.md`, § `#yuno/passerelle`.
 - **La Suisse s'arrête à la J22**, seules journées publiées à la mi-août ; les
   douze dernières restent à charger plus tard. En profiter pour re-vérifier
   les dates des autres championnats si des reports se sont accumulés.
-- **L'essai d'Auxerre a été défait** (15 août, à la demande de Noé) : la piste
-  est revenue au vivier et son envoi a été retiré du journal — le compteur ne
-  compte que des messages réellement partis. La Passerelle repart de zéro.
+- **La Passerelle repart de zéro** (15 août, à la demande de Noé) : l'essai
+  d'Auxerre a été défait, puis `journal_envois` a été vidé et les deux
+  `date_dernier_envoi` du 12 août effacées — c'étaient des clics de test de la
+  v1, pas des messages. Les statuts des fiches (« bon contact » sur
+  LeopardLeader et BoomSportRDC) n'ont pas bougé : ces relations-là sont
+  réelles.
+- **Le bandeau a été refondu** le même jour : « cette semaine » (avec
+  l'objectif doux dessous, qui tourne d'un toucher), « clubs contactés »
+  (12/97, en remplacement du cumul d'envois) et « entrés au réseau » (masqué
+  tant qu'il vaut zéro). Voir `yuno-spec.md`.
 - **Les trois autres chantiers** discutés avec Noé — concerts/événements,
   accréditation Vélodrome, médias congolais tous les mois — attendent que la
   forme Clubs soit validée à l'usage.

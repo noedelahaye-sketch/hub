@@ -2942,30 +2942,59 @@ function carteFournee(piste, contacts) {
     </li>`;
 }
 
-export function construireMetrique(envois, objectifDoux, reference = new Date()) {
+// Les paliers de l'objectif doux. Le réglage tourne d'un toucher plutôt que de
+// dérouler un menu : un `select` natif est banni du site depuis le 13 août, et
+// quatre paliers ne valent pas un panneau.
+export const PALIERS_OBJECTIF = [1, 2, 3, 5];
+
+export function objectifSuivant(objectifDoux) {
+  const rang = PALIERS_OBJECTIF.indexOf(objectifDoux);
+  return PALIERS_OBJECTIF[(rang + 1) % PALIERS_OBJECTIF.length];
+}
+
+// Trois chiffres, trois échelles de temps (refonte du 15 août 2026, demande de
+// Noé) : la semaine (le rituel), le vivier (la saison), le réseau (le fruit).
+//
+// Le cumul des envois a disparu : « 47 messages » ne situe rien, là où « 12
+// clubs sur 97 » dit le chemin dans un ensemble fini. Rien ici ne compte les
+// réponses ni les silences — un taux ferait de chaque non-réponse un échec
+// mesuré, et c'est le principe fondateur de la Passerelle.
+export function construireMetrique({
+  envois = [],
+  pistes = [],
+  objectifDoux = 1,
+  reference = new Date(),
+} = {}) {
   const semaine = envoisDeLaSemaine(envois, reference);
+  const contactees = pistes.filter((piste) => piste.date_contacte).length;
+  const auReseau = pistes.filter((piste) => piste.contact_id).length;
 
   return `
     <div class="passerelle-metrique">
       <span class="metrique">
-        <span class="chiffre">${envois.length}</span>
-        <span class="discret">messages envoyés</span>
-      </span>
-      <span class="metrique">
         <span class="chiffre">${semaine}</span>
         <span class="discret">cette semaine</span>
+        <button type="button" class="metrique-reglage" data-objectif-doux="${objectifDoux}"
+          title="Changer l'objectif de la semaine">objectif&nbsp;: ${objectifDoux}/semaine</button>
       </span>
-      <label class="metrique-objectif">
-        <span class="discret">Objectif doux</span>
-        <select data-objectif-doux>
-          ${[1, 2, 3, 5]
-            .map(
-              (valeur) =>
-                `<option value="${valeur}" ${valeur === objectifDoux ? 'selected' : ''}>${valeur} / semaine</option>`,
-            )
-            .join('')}
-        </select>
-      </label>
+      ${
+        pistes.length
+          ? `<span class="metrique">
+              <span class="chiffre">${contactees}<span class="metrique-sur">/${pistes.length}</span></span>
+              <span class="discret">clubs contactés</span>
+            </span>`
+          : ''
+      }
+      ${
+        // À zéro, il ne s'affiche pas : un compteur vide serait un reproche,
+        // et l'écran a mieux à dire.
+        auReseau
+          ? `<span class="metrique">
+              <span class="chiffre">${auReseau}</span>
+              <span class="discret">entré${auReseau > 1 ? 's' : ''} au réseau</span>
+            </span>`
+          : ''
+      }
     </div>
     ${
       // Un plancher rassurant, jamais une dette : atteint, on le dit ; en
@@ -3170,7 +3199,7 @@ export function construirePasserelle({
   );
 
   return `
-    ${construireMetrique(envois, objectifDoux)}
+    ${construireMetrique({ envois, pistes, objectifDoux })}
 
     <section class="file-niveau">
       <h3>Une porte à ouvrir</h3>
@@ -5175,6 +5204,15 @@ export default {
         return;
       }
 
+      // L'objectif de la semaine tourne d'un toucher : 1 → 2 → 3 → 5 → 1.
+      const objectifDoux = evenement.target.closest('[data-objectif-doux]');
+      if (objectifDoux) {
+        etat.objectifDoux = objectifSuivant(Number(objectifDoux.dataset.objectifDoux));
+        retenirObjectifDoux(etat.objectifDoux);
+        rendreContacts();
+        return;
+      }
+
       // Une autre dizaine : graine neuve, passages remis à zéro — c'est une
       // nouvelle donne, pas la même relue.
       const proposerAutres = evenement.target.closest('[data-proposer-autres]');
@@ -5910,14 +5948,6 @@ export default {
         await modifierAussitot(modele, champs, () => api.modifierModele(id, champs), {
           echouer: (message) => { rendre(); dire(message); },
         });
-        return;
-      }
-
-      const objectifDoux = evenement.target.closest('[data-objectif-doux]');
-      if (objectifDoux) {
-        etat.objectifDoux = Number(objectifDoux.value);
-        retenirObjectifDoux(etat.objectifDoux);
-        rendreContacts();
         return;
       }
 
