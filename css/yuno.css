@@ -1493,6 +1493,13 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   background: color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
+/* Une relance se signale sans crier : ce club a déjà reçu un message, on ne
+   repart pas de zéro — ce n'est ni une alerte ni un retard. */
+.tag-relance {
+  color: hsl(30 55% 62%);
+  background: hsl(30 55% 55% / 16%);
+}
+
 /* Une proposition est une LIGNE, pas une carte (demande de Noé, 15 août) : la
    division, le nom, le calendrier à un clic, et un « + » à droite pour la
    choisir. Dix cartes pleines faisaient de la dizaine un mur. */

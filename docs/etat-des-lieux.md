@@ -75,6 +75,13 @@ Le cahier des charges fait autorité : `yuno-spec.md`, § `#yuno/passerelle`.
   l'objectif doux dessous, qui tourne d'un toucher), « clubs contactés »
   (12/97, en remplacement du cumul d'envois) et « entrés au réseau » (masqué
   tant qu'il vaut zéro). Voir `yuno-spec.md`.
+- **« À relancer » boucle le rituel** (migration `20260815230000`) : un message
+  resté sans suite bascule le lundi, le club revient dans les propositions avec
+  sa pastille « Relance » (trois au plus, devant le tirage), et sa carte
+  retrouve un bouton « Relancé ✓ ». C'est **le seul état qui change avec le
+  temps** dans ce dépôt — la bascule se fait à l'ouverture de la Passerelle,
+  faute de tâche de fond, et jamais sans date d'envoi connue. « Répondu » est
+  sorti de l'interface au passage (valeur toujours acceptée en base).
 - **La Passerelle s'est allégée de deux blocs**, partis en pages : le **vivier**
   (`#yuno/vivier` — les 97 clubs filtrés par compétition, avec le chantier en
   tête) et les **modèles** (`#yuno/messages`). Deux portes en pied de page les

@@ -2077,16 +2077,29 @@ const TYPES_CONTACT = {
 // Où en est la relation. Repris du tableau Notion de Noé, dans son ordre de
 // progression : c'est lui qui fait du carnet un CRM plutôt qu'un annuaire.
 // Chaque statut a sa teinte fixe — aucune ne signale une alerte.
+// L'échelle des relations. « À relancer » est entré le 15 août 2026 entre le
+// message et la relance : un message resté sans suite à la fin de la semaine
+// n'est pas un échec, c'est une relance due. « Répondu » est parti le même
+// jour — la valeur reste acceptée en base (un CHECK s'élargit, il ne se
+// resserre jamais) mais l'interface ne l'offre plus.
 const STATUTS_CONTACT = {
   pas_de_contact: { nom: 'Pas de contact', teinte: null },
   message_envoye: { nom: 'Message envoyé', teinte: 215 },
+  a_relancer: { nom: 'À relancer', teinte: 30 },
   relance: { nom: 'Relancé', teinte: 255 },
-  repondu: { nom: 'Répondu', teinte: 195 },
   // Doré pour « établi », vert pour « bon » — l'ordre du tableau Notion de Noé.
   contact_etabli: { nom: 'Contact établi', teinte: 42 },
   bon_contact: { nom: 'Bon contact', teinte: 152 },
   opportunite: { nom: 'Opportunité', teinte: 310 },
 };
+
+// Un statut qui n'est plus offert reste lisible : une fiche ancienne ne doit
+// pas afficher sa clé brute.
+const STATUTS_RETIRES = { repondu: { nom: 'Répondu', teinte: 195 } };
+
+function statutLisible(cle) {
+  return STATUTS_CONTACT[cle] ?? STATUTS_RETIRES[cle] ?? { nom: cle ?? '', teinte: null };
+}
 
 // Les trois micro-doses de l'aller-vers, de la plus sûre à la plus grande. La
 // peur du rejet ne se contourne pas, elle s'entraîne : d'où la gradation.
@@ -2100,8 +2113,25 @@ const NIVEAUX = {
 // jamais : écrire à quelqu'un qui a répondu ne le ramène pas à « relancé ».
 export function statutApresEnvoi(statut) {
   if (!statut || statut === 'pas_de_contact') return 'message_envoye';
-  if (statut === 'message_envoye' || statut === 'relance') return 'relance';
+  // Écrire à quelqu'un qu'on devait relancer, c'est l'avoir relancé.
+  if (statut === 'message_envoye' || statut === 'a_relancer' || statut === 'relance') {
+    return 'relance';
+  }
   return statut;
+}
+
+// Le lundi, un message resté sans suite devient une relance due. Le site est
+// statique : la bascule se fait à l'ouverture de la Passerelle, sur les fiches
+// écrites AVANT la semaine en cours. Sans date d'envoi, on ne touche à rien —
+// on ne sait pas quand le message est parti, et on n'invente pas un retard.
+export function fichesABasculer(contacts, reference = new Date()) {
+  const debut = versDateISO(debutDeSemaine(reference));
+  return contacts.filter(
+    (contact) =>
+      contact.statut === 'message_envoye' &&
+      contact.date_dernier_envoi &&
+      contact.date_dernier_envoi < debut,
+  );
 }
 
 // Une teinte stable par valeur : « Rennes » garde la même couleur d'une visite
@@ -2173,7 +2203,7 @@ const COLONNES = [
       const ordre = Object.keys(STATUTS_CONTACT).indexOf(contact.statut);
       return ordre < 0 ? '' : String(ordre);
     },
-    texte: (contact) => (STATUTS_CONTACT[contact.statut] ?? {}).nom ?? '',
+    texte: (contact) => statutLisible(contact.statut).nom,
     cellule: (contact) => {
       // Le geste vit sur chaque option (`data-statut`), pas sur un menu du
       // système : l'espace écoute déjà cet attribut, il n'a rien changé.
@@ -2188,12 +2218,12 @@ const COLONNES = [
         // Chaque relation porte sa teinte, sur le déclencheur comme dans le
         // menu (demande de Noé, 15 août 2026) : sept valeurs qui se suivent se
         // distinguent mieux par la couleur que par la lecture.
-        couleurDe: (cle) => STATUTS_CONTACT[cle] ?? { teinte: null },
+        couleurDe: statutLisible,
       })}</span>`;
     },
     filtre: {
       cle: (contact) => contact.statut ?? '',
-      libelle: (contact) => (STATUTS_CONTACT[contact.statut] ?? {}).nom ?? contact.statut ?? '',
+      libelle: (contact) => statutLisible(contact.statut).nom,
       // Les statuts se rangent dans leur progression, pas par ordre alphabétique.
       ordre: (contact) => Object.keys(STATUTS_CONTACT).indexOf(contact.statut),
     },
@@ -2693,8 +2723,8 @@ export function construireFichesContacts(retenus, contacts) {
             ${pastilleTexte(TYPES_CONTACT[contact.type] ?? contact.type)}
             ${contact.structure ? pastilleTexte(contact.structure) : ''}
             ${pastilleTexte(
-              (STATUTS_CONTACT[contact.statut] ?? {}).nom ?? contact.statut,
-              (STATUTS_CONTACT[contact.statut] ?? {}).teinte,
+              statutLisible(contact.statut).nom,
+              statutLisible(contact.statut).teinte,
             )}
             ${boutonRetirer(contact)}
           </span>
@@ -2794,8 +2824,21 @@ function tirer(paquets, nombre) {
 // donc les places restantes — et le solde à l'étranger, où l'ORDRE DES PAYS
 // est lui-même mélangé par la graine : trois pays différents d'une semaine à
 // l'autre, à la mesure d'un objectif qui demande moins de régularité.
+// Un club dont la fiche attend une relance revient dans les propositions. Le
+// drapeau se pose sur la piste au chargement (`piste.aRelancer`), comme le
+// prochain match : le tirage n'a pas à connaître les contacts.
+export const RELANCES_MAX = 3;
+
 export function pistesProposees(pistes, graine, nombre = 10, passees = []) {
   const ecartees = new Set(passees);
+
+  // Les relances passent devant : une relance est due, une porte neuve est
+  // offerte. Trois au plus, pour que le rituel continue d'ouvrir.
+  const relances = pistes
+    .filter((piste) => piste.aRelancer && !piste.en_fournee && !ecartees.has(piste.id))
+    .sort((a, b) => (a.date_contacte ?? '').localeCompare(b.date_contacte ?? ''))
+    .slice(0, RELANCES_MAX);
+
   const libres = pistes.filter(
     (piste) => !piste.en_fournee && !piste.date_contacte && !ecartees.has(piste.id),
   );
@@ -2810,18 +2853,20 @@ export function pistesProposees(pistes, graine, nombre = 10, passees = []) {
   const francaises = paquets(DIVISIONS_FRANCAISES, 0);
   const etrangeres = melangeSeme(paquets(DIVISIONS_ETRANGERES, 10), graine + 20);
 
-  const partFrancaise = Math.round(nombre * PART_FRANCAISE);
+  // Les relances prises, le tirage remplit le reste de la dizaine.
+  const places = Math.max(0, nombre - relances.length);
+  const partFrancaise = Math.round(places * PART_FRANCAISE);
   let francais = tirer(francaises, partFrancaise);
-  let etrangers = tirer(etrangeres, nombre - partFrancaise);
+  let etrangers = tirer(etrangeres, places - partFrancaise);
 
   // Un vivier qui s'épuise ne raccourcit pas la dizaine : l'autre complète.
   if (francais.length < partFrancaise) {
-    etrangers = tirer(etrangeres, nombre - francais.length);
-  } else if (etrangers.length < nombre - partFrancaise) {
-    francais = tirer(francaises, nombre - etrangers.length);
+    etrangers = tirer(etrangeres, places - francais.length);
+  } else if (etrangers.length < places - partFrancaise) {
+    francais = tirer(francaises, places - etrangers.length);
   }
 
-  return [...francais, ...etrangers];
+  return [...relances, ...francais, ...etrangers];
 }
 
 // Chercher ne part jamais d'une page blanche : quatre portes par club,
@@ -2898,6 +2943,11 @@ function pastillesPiste(piste) {
   return `
     ${pastilleTexte(DIVISIONS[piste.division] ?? piste.division)}
     ${
+      // La relance se signale : ce club a déjà reçu un message, on ne repart
+      // pas de zéro en lui écrivant.
+      piste.aRelancer ? `<span class="tag tag-relance">Relance</span>` : ''
+    }
+    ${
       piste.leopard
         ? `<span class="tag tag-leopard">Léopard · ${echapper(piste.leopard)}</span>`
         : ''
@@ -2941,25 +2991,34 @@ function carteFournee(piste, contacts) {
                   data-trouve-piste="${echapper(piste.id)}">Noter le contact</button>`
           }
           ${
-            // Écrit, la carte reste (demande de Noé, 15 août 2026) : « Envoyé ✓ »
-            // cède la place à l'état de la relation, qui se fait avancer d'ici.
-            // Sans fiche — un message parti au compte du club — il n'y a pas de
-            // relation à suivre : la date de l'envoi tient lieu de réponse.
-            piste.date_contacte
-              ? fiche
-                ? `<span data-statut-de="${echapper(fiche.id)}">${menuChoix({
-                    nom: `statut-fournee-${fiche.id}`,
-                    libelle: `Relation avec ${fiche.nom}`,
-                    options: Object.entries(STATUTS_CONTACT).map(([valeur, { nom }]) => [valeur, nom]),
-                    valeur: fiche.statut,
-                    attribut: 'data-statut',
-                    couleurDe: (cle) => STATUTS_CONTACT[cle] ?? { teinte: null },
-                  })}</span>`
-                : `<span class="discret fournee-envoye">✓ écrit ${echapper(
+            // L'état de la relation, dès qu'une fiche existe : c'est lui qui
+            // remplace « Envoyé ✓ » une fois le message parti (demande de Noé,
+            // 15 août 2026), et il se fait avancer d'ici. Sans fiche — un
+            // message au compte du club — la date de l'envoi en tient lieu.
+            fiche
+              ? `<span data-statut-de="${echapper(fiche.id)}">${menuChoix({
+                  nom: `statut-fournee-${fiche.id}`,
+                  libelle: `Relation avec ${fiche.nom}`,
+                  options: Object.entries(STATUTS_CONTACT).map(([valeur, { nom }]) => [valeur, nom]),
+                  valeur: fiche.statut,
+                  attribut: 'data-statut',
+                  couleurDe: statutLisible,
+                })}</span>`
+              : piste.date_contacte
+                ? `<span class="discret fournee-envoye">✓ écrit ${echapper(
                     echeanceLisible(depuisDateISO(piste.date_contacte)),
                   )}</span>`
-              : `<button type="button" class="bouton-secondaire bouton-mini bouton-envoye"
-                  data-envoye-piste="${echapper(piste.id)}">Envoyé ✓</button>`
+                : ''
+          }
+          ${
+            // Le bouton d'envoi revient pour une relance : le message est de
+            // nouveau dû, et « Envoyé ✓ » le comptera comme tel.
+            !piste.date_contacte || piste.aRelancer
+              ? `<button type="button" class="bouton-secondaire bouton-mini bouton-envoye"
+                  data-envoye-piste="${echapper(piste.id)}">${
+                    piste.aRelancer ? 'Relancé ✓' : 'Envoyé ✓'
+                  }</button>`
+              : ''
           }
         </span>
       </span>
@@ -3178,8 +3237,11 @@ function construirePropositions(pistes, graine, passees, fenetreOuverte) {
 // L'état d'une piste, en un mot. L'ordre compte : contactée d'abord, c'est un
 // fait acquis qui prime sur tout le reste.
 function etatDeLaPiste(piste) {
-  if (piste.date_contacte) return 'contactee';
   if (piste.en_fournee) return 'fournee';
+  // Une relance due se rechoisit : le club est contacté, mais le message est
+  // de nouveau à écrire. Elle passe donc devant « contactée ».
+  if (piste.aRelancer) return 'libre';
+  if (piste.date_contacte) return 'contactee';
   return 'libre';
 }
 
@@ -3204,7 +3266,9 @@ function ligneVivier(piste) {
     </li>`;
 }
 
-export function construireVivier(pistes, division = 'tout') {
+export function construireVivier(pistes, division = 'tout', contacts = []) {
+  marquerLesRelances(pistes, contacts);
+
   const dedans = division === 'tout'
     ? pistes
     : pistes.filter((piste) => piste.division === division);
@@ -3277,6 +3341,17 @@ function construireChantier(pistes) {
     </details>`;
 }
 
+// Le drapeau de relance vit sur la piste, comme le prochain match : le tirage
+// et les cartes n'ont pas à connaître la base de contacts. Posé à chaque
+// dessin, il suit le statut de la fiche sans rien mémoriser.
+export function marquerLesRelances(pistes, contacts) {
+  const parId = new Map(contacts.map((contact) => [contact.id, contact]));
+  for (const piste of pistes) {
+    piste.aRelancer = parId.get(piste.contact_id)?.statut === 'a_relancer';
+  }
+  return pistes;
+}
+
 export function construirePasserelle({
   pistes = [],
   contacts = [],
@@ -3287,6 +3362,8 @@ export function construirePasserelle({
   pistesPassees = [],
   propositionsOuvertes = false,
 } = {}) {
+  marquerLesRelances(pistes, contacts);
+
   // La fournée garde ses clubs écrits (demande de Noé, 15 août 2026) : la carte
   // ne s'évapore pas au moment où l'on vient d'agir dessus, elle change de
   // geste. Elle se vide au changement de semaine, quand la fournée se refait.
@@ -3391,8 +3468,8 @@ function fenetreContact(etat) {
        <span class="tuile-entete">
          ${pastilleTexte(TYPES_CONTACT[contact.type] ?? contact.type)}
          ${pastilleTexte(
-           (STATUTS_CONTACT[contact.statut] ?? {}).nom ?? contact.statut,
-           (STATUTS_CONTACT[contact.statut] ?? {}).teinte,
+           statutLisible(contact.statut).nom,
+           statutLisible(contact.statut).teinte,
          )}
        </span>
        <span class="contact-nom">${echapper(contact.nom)}</span>
@@ -3493,7 +3570,7 @@ function vueVivier(etat) {
 
     <section class="bloc">
       <h2>Le vivier</h2>
-      <div data-bloc="contacts">${construireVivier(etat.pistes, etat.divisionVivier)}</div>
+      <div data-bloc="contacts">${construireVivier(etat.pistes, etat.divisionVivier, etat.contacts)}</div>
     </section>
     ${pied()}`;
 }
@@ -3832,7 +3909,7 @@ const BESOINS = {
   calendrier: ['evenements', 'taches', 'objectifs', 'publications', 'commandes', 'contacts', 'preparations', 'modelesPrepa'],
   reseau: ['contacts', 'envois', 'commandes', 'preparations', 'modelesPrepa', 'pistes'],
   passerelle: ['contacts', 'envois', 'modeles', 'pistes'],
-  vivier: ['pistes'],
+  vivier: ['pistes', 'contacts'],
   messages: ['modeles'],
   carnet: ['contacts', 'envois', 'modeles'],
   // La feuille lit aussi les sorties : le bilan propose d'inscrire celle-ci au
@@ -4147,7 +4224,7 @@ export default {
         etat.vue === 'passerelle'
           ? construirePasserelle(etat)
           : etat.vue === 'vivier'
-            ? construireVivier(etat.pistes, etat.divisionVivier)
+            ? construireVivier(etat.pistes, etat.divisionVivier, etat.contacts)
             : etat.vue === 'messages'
               ? construireModeles(etat.modeles)
               : construireContacts(etat.contacts, optionsBase(etat));
@@ -4258,6 +4335,7 @@ export default {
       etat.prefillMoment = null;
       rendre();
       if (await charger(BESOINS[etat.vue])) rendre();
+      if (await leverLesRelances()) rendre();
     };
 
     // Revenir sur le site le relit. Ici « relire » veut dire OUBLIER ce qui a
@@ -4268,6 +4346,32 @@ export default {
     this.rafraichir = async () => {
       fraiches.clear();
       if (await charger(BESOINS[etat.vue])) rendre();
+      if (await leverLesRelances()) rendre();
+    };
+
+    // Le lundi venu, les messages restés sans suite deviennent des relances
+    // dues. Le site est statique : la bascule se fait ici, à l'ouverture de la
+    // Passerelle, en une écriture groupée et silencieuse — c'est un rappel qui
+    // se lève, pas un geste de Noé, et il n'a pas à s'annoncer.
+    //
+    // L'écriture précède l'affichage, au rebours du reste du site : rien ne
+    // presse ici, et montrer « à relancer » avant que la base l'ait accepté
+    // serait afficher un état que personne n'a demandé.
+    const leverLesRelances = async () => {
+      if (etat.vue !== 'passerelle' && etat.vue !== 'vivier') return false;
+      const aBasculer = fichesABasculer(etat.contacts);
+      if (!aBasculer.length) return false;
+
+      try {
+        await Promise.all(
+          aBasculer.map((contact) => api.modifierContact(contact.id, { statut: 'a_relancer' })),
+        );
+        for (const contact of aBasculer) contact.statut = 'a_relancer';
+        return true;
+      } catch (souci) {
+        console.error('Bascule des relances impossible', souci);
+        return false;
+      }
     };
 
     const trouverPub = (id) => etat.publications.find((pub) => pub.id === id);

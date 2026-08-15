@@ -914,10 +914,17 @@ médias ni des marques, ce sont des intermédiaires. Le photographe est arrivé 
 14 août 2026 : ce sont les confrères croisés au bord du terrain, la moitié des
 rencontres d'un match, et les ranger en « autre » revenait à ne pas les ranger.
 
-**L'échelle de relation s'est allongée** (12 août) sans rien perdre :
-`pas de contact → message envoyé → relancé → répondu → contact établi →
-bon contact → opportunité`. « Bon contact » est conservé — on ne remplace pas
-ce qui marche.
+**L'échelle de relation** (12 août, remaniée le 15) :
+`pas de contact → message envoyé → à relancer → relancé → contact établi →
+bon contact → opportunité`. « Bon contact » est conservé depuis l'origine — on
+ne remplace pas ce qui marche.
+
+**« À relancer » est entré le 15 août, « répondu » est sorti** (demande de
+Noé). Le premier porte la mécanique de relance décrite plus bas ; le second
+faisait double emploi avec « contact établi ». La valeur `repondu` **reste
+acceptée en base** — un CHECK s'élargit, il ne se resserre jamais — mais
+l'interface ne l'offre plus ; une vieille fiche qui la porterait resterait
+lisible (`statutLisible`). Aucune ne la portait au moment du changement.
 
 ### `#yuno/passerelle` — la Passerelle *(sa page)*
 
@@ -1051,6 +1058,29 @@ fait acquis, qui ne redescend jamais. Avec une fiche reliée, la relation avance
 aussi (**une relation vivante ne redescend jamais**) ; sans fiche, le message
 est parti au compte du club et l'envoi compte quand même (`journal_envois`
 avec `contact_id` NULL).
+
+**Le lundi, un message sans suite devient une relance due** (demande de Noé,
+15 août 2026). C'est **le seul état de ce dépôt qui change avec le temps** —
+ailleurs, un fait se pose par un geste, jamais par le calendrier. La nuance
+tient : « à relancer » n'affirme rien de ce que Noé aurait fait, il lève un
+rappel, et il se corrige à la main comme n'importe quel statut.
+
+- La bascule (`message_envoye` → `a_relancer`) se fait **à l'ouverture de la
+  Passerelle ou du vivier** : le site est statique, il n'a pas de tâche de
+  fond. Une écriture groupée, silencieuse — un rappel n'a pas à s'annoncer.
+- Elle ne touche que les fiches **écrites avant la semaine en cours**. Sans
+  `date_dernier_envoi`, on ne bascule pas : on ne sait pas quand le message est
+  parti, et on n'invente pas un retard.
+- **L'écriture précède l'affichage**, au rebours du reste du site : rien ne
+  presse, et montrer « à relancer » avant que la base l'ait accepté serait
+  afficher un état que personne n'a demandé.
+- Le club **revient alors dans les propositions**, avec une pastille
+  **« Relance »** — ni alerte ni retard, juste le rappel qu'on ne repart pas de
+  zéro. Les relances passent **devant** le tirage (une relance est due, une
+  porte neuve est offerte) mais **trois au plus** (`RELANCES_MAX`) : le rituel
+  doit continuer d'ouvrir. Au vivier, une relance redevient choisissable.
+- Sa carte de fournée retrouve un bouton d'envoi, libellé **« Relancé ✓ »**, et
+  `statutApresEnvoi` mène `a_relancer` → `relance`.
 
 **La carte ne disparaît pas de la fournée** (demande de Noé, 15 août 2026) :
 elle change de geste. « Envoyé ✓ » cède la place à **l'état de la relation** —
