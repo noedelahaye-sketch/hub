@@ -1132,23 +1132,22 @@ export function ideeDuJour(publications, jour = versDateISO()) {
   return tirageDuJour(banque, jour)[0] ?? null;
 }
 
-// Le signe du re-tirage : deux flèches en boucle. Un dessin, pas un caractère —
-// le site n'écrit qu'en × + ↗ ‹ ›, et un émoji arriverait avec sa police à lui.
-const RETIRER_AU_SORT = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none"
-  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+// Programmer : un calendrier avec un « + ». Un dessin, pas un caractère — le
+// site n'écrit qu'en × + ↗ ‹ ›, et un émoji arriverait avec sa police à lui.
+const PROGRAMMER = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+  stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
   aria-hidden="true" focusable="false">
-  <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M21 3v5h-5"></path>
-  <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path><path d="M3 21v-5h5"></path></svg>`;
+  <path d="M21 11.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h6.5"></path>
+  <path d="M3 10h18M8 2v4M16 2v4"></path>
+  <path d="M18 15v6M15 18h6"></path></svg>`;
 
-// `autreId` est l'idée qu'on vient de retirer à la main : tant qu'elle est là,
-// c'est elle qu'on montre. Elle ne survit pas au changement de page — demain
-// l'idée du jour reprend sa place, et c'est très bien ainsi.
-//
-// Un IDENTIFIANT et non l'objet : l'idée affichée peut être supprimée depuis sa
-// propre fiche, et une ligne gardée sous la main survivrait à sa suppression.
-export function construireIdeeDuJour(publications, { autreId = null, jour = versDateISO() } = {}) {
-  const autre = autreId ? publications.find((pub) => pub.id === autreId) : null;
-  const idee = autre ?? ideeDuJour(publications, jour);
+// Le re-tirage à la main a disparu le 15 août 2026 (demande de Noé) : le coin
+// de la carte porte désormais le geste de programmer, qui vaut mieux qu'un
+// second tirage. L'idée du jour reste tirée une fois par jour, et change à
+// minuit — c'est ce qui en fait une carte qu'on tire, pas une roue qu'on
+// tourne.
+export function construireIdeeDuJour(publications, { jour = versDateISO() } = {}) {
+  const idee = ideeDuJour(publications, jour);
 
   if (!idee) {
     return `
@@ -1172,8 +1171,21 @@ export function construireIdeeDuJour(publications, { autreId = null, jour = vers
         )}</span>
       </div>
       <div class="carte-jour">
-        <button type="button" class="bouton-icone carte-jour-retirage" data-retirer-idee
-          title="En tirer une autre" aria-label="En tirer une autre">${RETIRER_AU_SORT}</button>
+        <!-- Programmer tient dans le coin (demande de Noé, 15 août 2026), à la
+             place du re-tirage : une icône, et la ligne « La programmer » qui
+             traînait sous la carte disparaît.
+             Le champ date est TRANSPARENT PAR-DESSUS l'icône, et non déclenché
+             en JS : le clic tombe directement sur lui, donc le sélecteur natif
+             s'ouvre partout, sans dépendre de la méthode showPicker que
+             Safari n'a eu que tard (et qui s'écrit ici sans accents graves :
+             dans un commentaire de gabarit, ils ferment la chaîne). HORS du bouton du corps — deux contrôles ne s'imbriquent
+             pas. -->
+        <span class="carte-jour-geste">
+          <span class="carte-jour-icone" aria-hidden="true">${PROGRAMMER}</span>
+          <input type="date" class="carte-jour-date" data-programmer="${echapper(idee.id)}"
+            title="Programmer cette idée"
+            aria-label="Programmer « ${echapper(idee.titre)} »">
+        </span>
         <button type="button" class="idee-jour-corps" data-ouvrir-pub="${echapper(idee.id)}"
           aria-label="Ouvrir « ${echapper(idee.titre)} »">
           <span class="tuile-entete">
@@ -1183,17 +1195,6 @@ export function construireIdeeDuJour(publications, { autreId = null, jour = vers
           <span class="pub-titre">${echapper(idee.titre)}</span>
           ${idee.preuve ? `<span class="discret pub-preuve">${echapper(idee.preuve)}</span>` : ''}
         </button>
-        <!-- Programmer, à deux touches de l'inspiration : choisir une date
-             suffit, le geste data-programmer existait déjà dans les fiches.
-             HORS du bouton de la tuile — deux boutons ne s'imbriquent pas. Une
-             fois datée, l'idée quitte la banque : la carte en tire une autre,
-             et la programmée réapparaît juste dessous. -->
-        <div class="idee-jour-pied">
-          <label class="discret" for="idee-jour-programmer">La programmer :</label>
-          <input type="date" id="idee-jour-programmer" class="pub-programmer"
-            data-programmer="${echapper(idee.id)}"
-            aria-label="Programmer « ${echapper(idee.titre)} »">
-        </div>
       </div>
     </section>`;
 }
@@ -1287,7 +1288,7 @@ function vueCreer(etat) {
         : ''
     }
 
-    ${construireIdeeDuJour(etat.publications, { autreId: etat.ideeAutre })}
+    ${construireIdeeDuJour(etat.publications)}
 
     <!-- « Cette semaine » remplace « À venir » (15 août 2026) : c'est le seul
          bloc qui serve le plancher des 2 publications par semaine — en montrant
@@ -1352,6 +1353,13 @@ function vueCreer(etat) {
         </a>
       </div>
     </section>
+
+    ${
+      // La fiche d'une idée, ouverte depuis la carte du jour ou une ligne du
+      // flux. Elle était rendue par la seule banque : depuis Créer, le clic ne
+      // menait nulle part (signalé par Noé, 15 août 2026).
+      fenetreIdee(etat, { cycle: STATUTS_YUNO, checklist: true, piliers: PILIERS })
+    }
 
     <!-- Les piliers, repliés et en bas de page (15 août 2026) : c'est la
          stratégie de Noé, il la connaît par cœur. La phrase-test suffit au
@@ -3375,9 +3383,6 @@ export default {
       jourOuvertCal: null,
       pilier: 'tout',
       statutIdee: 'tout',
-      // L'idée retirée à la main sur Créer, par son identifiant. Nulle par
-      // défaut : c'est l'idée du jour qui s'affiche.
-      ideeAutre: null,
       cloture: false,
       rechercheContact: '',
       filtresOuverts: false,
@@ -3674,9 +3679,6 @@ export default {
       // non plus — on la reprend depuis l'invite si besoin.
       etat.cloture = false;
       etat.prefillMoment = null;
-      // Le re-tirage ne vaut que pour l'instant où l'on cherche : revenir sur
-      // Créer rend sa place à l'idée du jour.
-      etat.ideeAutre = null;
       rendre();
       if (await charger(BESOINS[etat.vue])) rendre();
     };
@@ -4795,23 +4797,6 @@ export default {
       const ecarterInvite = evenement.target.closest('[data-ecarter-evenement]');
       if (ecarterInvite) {
         etat.ecartes = ecarterEvenement(ecarterInvite.dataset.ecarterEvenement);
-        rendre();
-        return;
-      }
-
-      // « En tirer une autre » : un tirage franc, sans mémoire. On écarte
-      // l'idée affichée du tirage — un bouton qui rend la même idée a l'air
-      // cassé, même quand il a bien tiré.
-      if (evenement.target.closest('[data-retirer-idee]')) {
-        const banque = etat.publications.filter(
-          (pub) => !pub.date_prevue && pub.statut !== 'publie',
-        );
-        const affichee = etat.ideeAutre ?? ideeDuJour(etat.publications)?.id;
-        const autres = banque.filter((pub) => pub.id !== affichee);
-        const source = autres.length ? autres : banque;
-        etat.ideeAutre = source.length
-          ? source[Math.floor(Math.random() * source.length)].id
-          : null;
         rendre();
         return;
       }

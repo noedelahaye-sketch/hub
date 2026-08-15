@@ -700,6 +700,43 @@ l'échantillon puis généralise »). Le détail des choix est dans `yuno-spec.m
 
 ---
 
+## 0 sexdecies. Le geste dans le coin, et un garde-fou (15 août, nuit)
+
+Deux demandes de Noé : remplacer le re-tirage de la carte du jour par un geste
+de **programmer** (avec son icône, ce qui supprime la ligne « La programmer »),
+et pouvoir **ouvrir le détail** en touchant la carte.
+
+- **Le détail ne s'ouvrait pas, et c'était un vrai manque** : `fenetreIdee`
+  n'était rendue que par la banque, et ma réécriture de Créer l'avait laissée
+  de côté. Le clic posait bien `etat.ideeOuverte`, personne ne le dessinait.
+- **Le champ date est transparent PAR-DESSUS l'icône**, plutôt que déclenché en
+  JS : le clic tombe sur lui, le sélecteur natif s'ouvre partout, sans dépendre
+  de showPicker (tardif chez Safari). Vérifié par `elementFromPoint` au centre
+  du geste : c'est bien l'INPUT qu'on touche. 44 px de cible.
+- Le re-tirage part avec son état (`ideeAutre`), son gestionnaire et son icône.
+
+**Le piège des accents graves, une QUATRIÈME fois** — et cette fois dans le
+commentaire qui expliquait justement pourquoi le champ est transparent. Le
+module ne se chargeait plus du tout : les trois écrans (connexion, chargement,
+app) restaient visibles ensemble, et `#espace-yuno` était vide. Symptôme
+déroutant, cause minuscule.
+
+**D'où un garde-fou, plutôt qu'une résolution de vigilance** :
+`node tools/verifier-gabarits.js` lit chaque fichier de `js/` en machine à
+états — il suit l'ouverture des gabarits, saute chaînes et commentaires JS, et
+signale tout commentaire HTML contenant un accent grave **nu** à l'intérieur
+d'un gabarit. Les accents graves **échappés** sont acceptés : c'est la façon
+correcte d'en écrire un, et `js/app.js` le fait depuis toujours (premier faux
+positif de l'outil, corrigé). **Prouvé** en réintroduisant le piège : `node
+--check` passe, l'outil sort en erreur avec le fichier et la ligne. Ajouté aux
+conventions de `CLAUDE.md`.
+
+**Vérifié** : la carte ouvre sa fiche au toucher, le geste programme (idée
+d'essai datée du 18, ligne « dans 3 jours » apparue dans « Cette semaine »,
+puis rendue à la banque — 18 idées, 0 datée).
+
+---
+
 ## 1. Ce qui existe
 
 Le hub est **déployé et fonctionnel** :

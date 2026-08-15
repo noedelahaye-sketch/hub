@@ -669,9 +669,18 @@ jour — les derniers menus natifs de l'atelier, même composant que le CRM.
 **La forme de la page** (proposition validée en bloc par Noé, 15 août 2026) :
 
 - **La carte du jour est la seule carte chaude de la page** : un souffle d'or
-  dans le fond (7 % d'accent), une bordure teintée, la date du jour en tête, le
-  re-tirage dans son coin, le geste de programmer dans son pied. Tout le reste
-  est froid — c'est ce contraste qui dit « c'est ici que ça commence ».
+  dans le fond (7 % d'accent), une bordure teintée, la date du jour en tête.
+  Tout le reste est froid — c'est ce contraste qui dit « c'est ici que ça
+  commence ». **Son coin porte le geste de programmer** (une icône calendrier
+  avec un « + ») : le re-tirage à la main a été retiré le 15 août 2026, et la
+  ligne « La programmer » qui traînait dessous a disparu avec lui. L'idée du
+  jour reste tirée une fois par jour et change à minuit — c'est une carte qu'on
+  tire, pas une roue qu'on tourne. **Toucher la carte ouvre la fiche** de
+  l'idée, comme partout ailleurs.
+
+  Le champ date est **transparent par-dessus l'icône**, et non déclenché en JS :
+  le clic tombe directement sur lui, donc le sélecteur natif s'ouvre partout —
+  sans dépendre de la méthode showPicker, que Safari n'a eue que tard.
 - **Trois familles de formes** : la carte pour le contenu, la **ligne** pour le
   flux (« Cette semaine », « En chantier » — date, point de pilier, titre,
   statut ; le clic ouvre la fiche où les gestes vivent), la tuile pour les

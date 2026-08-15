@@ -1841,31 +1841,58 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   border-radius: var(--rayon-carte);
 }
 
-.carte-jour-retirage {
+/* Le geste de programmer, dans le coin de la carte. L'icône se voit, le champ
+   date est transparent PAR-DESSUS elle : le clic tombe sur l'input, donc le
+   sélecteur natif s'ouvre partout — sans `showPicker()`, que Safari n'a eu que
+   tard. 44 px de cible, comme partout. */
+.carte-jour-geste {
   position: absolute;
   top: var(--espace-8);
   right: var(--espace-8);
   z-index: 1;
+  display: block;
+  width: 2.9375rem;
+  height: 2.9375rem;
+}
+
+.carte-jour-icone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: var(--rayon-controle);
+}
+
+.carte-jour-geste:hover .carte-jour-icone {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+/* Le champ recouvre l'icône, invisible mais bien là : c'est LUI qu'on touche.
+   `opacity` et non `visibility` — un champ masqué ne recevrait plus le clic. */
+.carte-jour-date {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Le focus clavier doit se voir : c'est l'icône qui le porte, pas le champ
+   transparent. */
+.carte-jour-date:focus-visible + .carte-jour-icone,
+.carte-jour-geste:focus-within .carte-jour-icone {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* La date du jour, à droite du titre : la carte se tire chaque matin. */
 .idee-jour-date { font-size: 0.8125rem; }
-
-/* Le pied : le geste dans la carte, séparé d'un filet teinté. */
-.idee-jour-pied {
-  display: flex;
-  align-items: center;
-  gap: var(--espace-8);
-  margin-top: var(--espace-12);
-  padding-top: var(--espace-12);
-  border-top: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
-}
-
-.idee-jour-pied input[type="date"] {
-  width: auto;
-  margin: 0;
-  background: var(--fond);
-}
 
 .idee-jour-corps .pub-titre {
   font-family: "Canela Deck", var(--police-titre);
