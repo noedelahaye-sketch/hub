@@ -346,10 +346,13 @@ de *sortir du hub* en entrant chez Yuno :
   d'adresse.
 
 **Cinq entrées dans la barre, et des sous-pages qui n'en ajoutent pas.** La
-banque d'idées (`#yuno/banque`), la Passerelle (`#yuno/passerelle`) et le
-carnet (`#yuno/carnet`) sont des pages à part entière, atteintes par une tuile
-depuis leur palier, et qui gardent allumé l'onglet dont elles dépendent —
-Créer pour la première, Réseau pour les deux autres. Une barre de navigation ne
+banque d'idées (`#yuno/banque`), la Passerelle (`#yuno/passerelle`), le vivier
+(`#yuno/vivier`), les modèles de messages (`#yuno/messages`) et le carnet
+(`#yuno/carnet`) sont des pages à part entière, atteintes par une tuile depuis
+leur palier, et qui gardent allumé l'onglet dont elles dépendent — Créer pour
+la première, Réseau pour les autres. La vue s'appelle `messages` et non
+`modeles` : ce nom-là était pris par les modèles de préparation, qui gardent
+l'onglet Journal. Une barre de navigation ne
 doit pas grandir à chaque écran qu'on ajoute. `ONGLET_DE_LA_VUE`, dans
 `js/yuno.js`, dit quel onglet allumer pour quelle vue.
 
@@ -1007,11 +1010,41 @@ La page, de haut en bas :
   `20260815220000` tiennent le journal des chargements et de la méthode —
   fbref.com pour la plupart, le PDF officiel pour la Ligue 3, proleague.be
   pour la Belgique.
-- **« Le chantier Clubs »**, replié : le chemin parcouru, division par
-  division. « 12 clubs contactés sur 97 » — on dit l'obtenu, jamais le
-  « reste ».
-- **La bibliothèque de modèles** (inchangée) : titres et corps s'éditent en
-  place, un bouton copie le texte.
+- **Deux portes en pied de page** (15 août 2026, demande de Noé), côte à côte
+  comme celles du palier Réseau : **Le vivier** et **Les modèles**. Le pli
+  « chantier Clubs » et la bibliothèque de modèles ont déménagé dedans — la
+  Passerelle ne garde que ce sur quoi on agit aujourd'hui.
+
+**Ni titres ni sous-titres depuis le 15 août au soir** (demande de Noé) : le
+bandeau ouvre la page, la porte du jour vient dessous, la fournée suit d'elle-
+même. Les formes disent ce que les titres disaient — une ligne compacte pour
+le club proposé, des cartes pour ceux qu'on a pris.
+
+### `#yuno/vivier` — le vivier *(sa page)*
+
+Le pendant du carnet, côté clubs : **la Passerelle est un rituel où l'on agit**
+— elle ne sert qu'une porte à la fois — **et le vivier un fonds où l'on
+cherche**, les 97 clubs à portée, filtrés par compétition (« Tout 97 »,
+« Ligue 1 18 », « Suisse 6 »…). On y va pour prendre un club précis, ou pour
+parcourir une division entière avant un déplacement.
+
+Chaque ligne est celle des propositions — division, nom, prochain match — et
+son geste dépend de l'état du club : un « + » s'il est libre, « dans ta
+fournée » s'il y est déjà, « ✓ contacté » si c'est un fait acquis. Ces deux
+derniers ne se rechoisissent pas.
+
+**Le chemin parcouru s'annonce en tête** (« 12 clubs contactés sur 97 ») : le
+chantier a déménagé ici, parce que le chemin et le fonds parlent de la même
+chose. Tant qu'il vaut zéro, la page dit « Le premier ouvre la saison ».
+
+### `#yuno/messages` — les modèles de messages *(sa page)*
+
+La bibliothèque a quitté le bas de la Passerelle le 15 août 2026 : **la
+friction du premier message se travaille à froid**, en amont du rituel, pas au
+bas de l'écran où l'on agit. Titres et corps s'éditent en place, un bouton
+copie le texte pour le coller ailleurs. Quatre modèles de départ, chargés en
+base : accréditation concert, premier contact club, proposition à un média,
+relance courtoise.
 
 **« Envoyé ✓ » d'une piste** enregistre l'envoi et date `date_contacte` — un
 fait acquis, qui ne redescend jamais. Avec une fiche reliée, la relation avance

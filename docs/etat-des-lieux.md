@@ -75,6 +75,11 @@ Le cahier des charges fait autorité : `yuno-spec.md`, § `#yuno/passerelle`.
   l'objectif doux dessous, qui tourne d'un toucher), « clubs contactés »
   (12/97, en remplacement du cumul d'envois) et « entrés au réseau » (masqué
   tant qu'il vaut zéro). Voir `yuno-spec.md`.
+- **La Passerelle s'est allégée de deux blocs**, partis en pages : le **vivier**
+  (`#yuno/vivier` — les 97 clubs filtrés par compétition, avec le chantier en
+  tête) et les **modèles** (`#yuno/messages`). Deux portes en pied de page les
+  desservent. Les titres et sous-titres de la Passerelle ont sauté dans la
+  foulée : elle tient désormais sur un écran.
 - **Les trois autres chantiers** discutés avec Noé — concerts/événements,
   accréditation Vélodrome, médias congolais tous les mois — attendent que la
   forme Clubs soit validée à l'usage.

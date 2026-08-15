@@ -1440,6 +1440,14 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   font-weight: 600;
 }
 
+/* Le seul titre de la Passerelle : il ouvre ce sur quoi on agit. */
+.titre-semaine {
+  margin: 0 0 var(--espace-8);
+  font-family: "Gilroy", "Gilroy secours", var(--police-texte);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
 .file-compte { font-size: 0.8125rem; }
 .file-aide { margin: 0 0 var(--espace-8); font-size: 0.8125rem; }
 
@@ -1490,7 +1498,9 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   padding-bottom: var(--espace-8);
 }
 
-.proposition { flex-wrap: nowrap; }
+/* `.bloc li` pose déjà `flex-wrap: wrap` et l'emporterait en spécificité : une
+   proposition tient sur une ligne, il faut le dire plus fort qu'elle. */
+.bloc li.proposition { flex-wrap: nowrap; }
 
 /* Le nom cède la place plutôt que de pousser le « + » à la ligne : une
    proposition tient sur UNE ligne, l'ellipse dit le reste. */
@@ -1574,7 +1584,15 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 
 /* Le lien du match reste une porte, mais discrète : c'est une information qui
    se consulte, pas un geste qu'on met en avant. */
-.proposition .quand { color: var(--texte-discret); }
+/* Le match cède avant le nom quand la place manque : c'est le club qu'on lit
+   d'abord, l'affiche vient après. */
+.proposition .quand {
+  color: var(--texte-discret);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* Un petit rond à l'œil, 44 px au doigt : la zone tactile déborde en
    transparent (::before), la règle de la cible ne plie pas. */
@@ -1639,6 +1657,19 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   .porte-rangee { flex-wrap: wrap; }
   .porte-dizaine { flex: 1 1 100%; }
 }
+
+/* --- Le vivier ---------------------------------------------------------------
+   Les 97 clubs, filtrés par compétition. Le chemin parcouru se dit en tête :
+   ici comme ailleurs, on annonce l'obtenu avant le reste. */
+
+.vivier-chemin { margin: 0 0 var(--espace-12); font-size: 0.875rem; }
+
+/* L'état d'une ligne remplace son « + » : un club contacté est un fait acquis,
+   un club en fournée attend déjà son message. Ni l'un ni l'autre ne se
+   rechoisit. */
+.vivier-etat { flex: none; font-size: 0.8125rem; }
+.proposition-contactee .contact-nom { color: var(--texte-discret); }
+.proposition-contactee .vivier-etat { color: var(--accent); }
 
 /* Les clubs contactés cette semaine restent sous les yeux jusqu'à lundi : le
    geste accompli ne disparaît pas de l'écran qui l'a demandé. */

@@ -116,7 +116,8 @@ function construirePiliers() {
 
 const VUES = [
   'accueil', 'journal', 'creer', 'banque', 'editorial',
-  'calendrier', 'reseau', 'passerelle', 'carnet', 'preparations', 'modeles',
+  'calendrier', 'reseau', 'passerelle', 'vivier', 'messages', 'carnet', 'preparations',
+  'modeles',
 ];
 
 // La banque est une pièce de l'atelier : elle n'a pas son onglet, elle garde
@@ -126,6 +127,10 @@ const ONGLET_DE_LA_VUE = {
   banque: 'creer',
   editorial: 'creer',
   passerelle: 'reseau',
+  vivier: 'reseau',
+  // Les modèles de messages : « messages » et non « modeles », déjà pris par
+  // les modèles de préparation, qui gardent l'onglet Journal.
+  messages: 'reseau',
   carnet: 'reseau',
   // Préparer et vivre sont les deux faces du même axe terrain : les feuilles
   // de préparation et leurs modèles gardent l'onglet Journal allumé.
@@ -3144,6 +3149,77 @@ function construirePropositions(pistes, graine, passees, fenetreOuverte) {
     ${fenetre}`;
 }
 
+// --- Le vivier ---------------------------------------------------------------
+// Le pendant du carnet, côté clubs (demande de Noé, 15 août 2026) : la
+// Passerelle est un rituel où l'on agit — elle sert UNE porte à la fois — et
+// le vivier un fonds où l'on cherche, les 97 clubs à portée, triés par
+// compétition. Le chantier y a déménagé : le chemin parcouru et le fonds
+// parlent de la même chose, ils vivent au même endroit.
+
+// L'état d'une piste, en un mot. L'ordre compte : contactée d'abord, c'est un
+// fait acquis qui prime sur tout le reste.
+function etatDeLaPiste(piste) {
+  if (piste.date_contacte) return 'contactee';
+  if (piste.en_fournee) return 'fournee';
+  return 'libre';
+}
+
+function ligneVivier(piste) {
+  const etat = etatDeLaPiste(piste);
+
+  return `
+    <li class="proposition proposition-${etat}">
+      ${pastillesPiste(piste)}
+      <span class="contact-nom">${echapper(piste.nom)}</span>
+      ${lienMatchs(piste)}
+      ${
+        etat === 'contactee'
+          ? `<span class="discret vivier-etat">✓ contacté</span>`
+          : etat === 'fournee'
+            ? `<span class="discret vivier-etat">dans ta fournée</span>`
+            : `<button type="button" class="proposition-choisir"
+                data-choisir-piste="${echapper(piste.id)}"
+                title="Ajouter à la fournée"
+                aria-label="Ajouter ${echapper(piste.nom)} à la fournée">+</button>`
+      }
+    </li>`;
+}
+
+export function construireVivier(pistes, division = 'tout') {
+  const dedans = division === 'tout'
+    ? pistes
+    : pistes.filter((piste) => piste.division === division);
+
+  const compte = (cles) => pistes.filter((p) => cles === 'tout' || p.division === cles).length;
+  const filtres = [['tout', 'Tout'], ...Object.entries(DIVISIONS)]
+    .map(
+      ([cle, nom]) => `
+      <button type="button" data-division="${cle}"
+        aria-pressed="${cle === division}" class="${cle === division ? 'actif' : ''}"
+        >${echapper(nom)} <span class="chiffre">${compte(cle)}</span></button>`,
+    )
+    .join('');
+
+  // Le chemin parcouru, en tête : le vivier dit d'abord l'obtenu.
+  const contactees = pistes.filter((piste) => piste.date_contacte).length;
+
+  return `
+    <p class="discret vivier-chemin">
+      <span class="chiffre">${contactees}</span> club${contactees > 1 ? 's' : ''}
+      contacté${contactees > 1 ? 's' : ''} sur <span class="chiffre">${pistes.length}</span>.
+      ${contactees ? '' : 'Le premier ouvre la saison.'}
+    </p>
+    <div class="filtres" role="group" aria-label="Compétition">${filtres}</div>
+    ${
+      dedans.length
+        ? `<ul>${[...dedans]
+            .sort((a, b) => a.nom.localeCompare(b.nom, 'fr'))
+            .map(ligneVivier)
+            .join('')}</ul>`
+        : `<p class="vide">Aucun club dans cette compétition.</p>`
+    }`;
+}
+
 // Le chantier Clubs, replié : le chemin parcouru, division par division. Un
 // club contacté est un fait acquis — il ne redescend pas, et rien ici ne
 // parle de ce qui « reste » : on dit l'obtenu.
@@ -3201,20 +3277,18 @@ export function construirePasserelle({
   return `
     ${construireMetrique({ envois, pistes, objectifDoux })}
 
+    <!-- UN seul titre depuis le 15 août 2026 (demande de Noé) : il chapeaute
+         tout ce sur quoi on agit — le club proposé et la fournée. Les
+         sous-titres explicatifs ont sauté, et les formes disent ce qu'ils
+         disaient : une ligne compacte pour le club proposé, des cartes pour
+         ceux qu'on a pris. -->
+    <h3 class="titre-semaine">Les messages de la semaine</h3>
+
     <section class="file-niveau">
-      <h3>Une porte à ouvrir</h3>
-      <p class="discret file-aide">Un club à la fois : regarde ses matchs à
-        venir, ajoute-le à ta fournée — ou passe, le suivant prend sa place.</p>
       ${construirePropositions(pistes, grainePropositions, pistesPassees, propositionsOuvertes)}
     </section>
 
     <section class="file-niveau">
-      <h3>Ta fournée de la semaine
-        ${fournee.length ? `<span class="discret file-compte chiffre">${fournee.length}</span>` : ''}
-      </h3>
-      <p class="discret file-aide">Les clubs choisis cette semaine. Trouve la bonne
-        personne par les portes de la carte, écris-lui — un modèle est en bas de
-        page — puis « Envoyé ✓ ».</p>
       ${
         fournee.length
           ? `<ul>${fournee.map((piste) => carteFournee(piste, contacts)).join('')}</ul>`
@@ -3230,8 +3304,26 @@ export function construirePasserelle({
       }
     </section>
 
-    ${construireChantier(pistes)}
-    ${construireModeles(modeles)}`;
+    <div class="portes">
+      <a class="lien-externe" href="#yuno/vivier">
+        <span class="lien-externe-texte">
+          <span class="lien-externe-titre">Le vivier</span>
+          <span class="discret">Les <span class="chiffre">${pistes.length}</span> clubs,
+            par compétition</span>
+        </span>
+      </a>
+
+      <a class="lien-externe" href="#yuno/messages">
+        <span class="lien-externe-texte">
+          <span class="lien-externe-titre">Les modèles</span>
+          <span class="discret">${
+            modeles.length
+              ? `<span class="chiffre">${modeles.length}</span> messages à personnaliser`
+              : 'Écrire ses premières phrases'
+          }</span>
+        </span>
+      </a>
+    </div>`;
 }
 
 // Le point d'entrée : on lit la base, puis on la dessine selon l'affichage.
@@ -3375,6 +3467,36 @@ function vuePasserelle(etat) {
     <section class="bloc">
       <h2>La Passerelle</h2>
       <div data-bloc="contacts">${construirePasserelle(etat)}</div>
+    </section>
+    ${pied()}`;
+}
+
+// Le vivier : les 97 clubs, filtrés par compétition. On y cherche un club
+// précis ou l'on parcourt une division entière — la Passerelle, elle, ne sert
+// qu'une porte à la fois.
+function vueVivier(etat) {
+  return `
+    ${enTete('vivier')}
+
+    <section class="bloc">
+      <h2>Le vivier</h2>
+      <div data-bloc="contacts">${construireVivier(etat.pistes, etat.divisionVivier)}</div>
+    </section>
+    ${pied()}`;
+}
+
+// Les modèles de messages ont leur page depuis le 15 août 2026 (demande de
+// Noé) : la friction du premier message se traite à froid, en amont du
+// rituel — pas au bas de l'écran où l'on agit.
+function vueMessages(etat) {
+  return `
+    ${enTete('messages')}
+
+    <section class="bloc">
+      <h2>Les modèles de messages</h2>
+      <p class="discret file-aide">La friction du premier message est le principal
+        mur de l'aller-vers : une phrase déjà écrite en abaisse le coût.</p>
+      <div data-bloc="contacts">${construireModeles(etat.modeles)}</div>
     </section>
     ${pied()}`;
 }
@@ -3697,6 +3819,8 @@ const BESOINS = {
   calendrier: ['evenements', 'taches', 'objectifs', 'publications', 'commandes', 'contacts', 'preparations', 'modelesPrepa'],
   reseau: ['contacts', 'envois', 'commandes', 'preparations', 'modelesPrepa', 'pistes'],
   passerelle: ['contacts', 'envois', 'modeles', 'pistes'],
+  vivier: ['pistes'],
+  messages: ['modeles'],
   carnet: ['contacts', 'envois', 'modeles'],
   // La feuille lit aussi les sorties : le bilan propose d'inscrire celle-ci au
   // carnet (l'événement dit s'il est déjà vécu et de quel type ; les contacts
@@ -3744,6 +3868,9 @@ export default {
       // fenêtre de la dizaine.
       pistesPassees: pistesPasseesEnregistrees(),
       propositionsOuvertes: false,
+      // La compétition regardée au vivier. État d'écran, pas un réglage : on
+      // rouvre la page sur tout le vivier.
+      divisionVivier: 'tout',
       preparations: [],
       modelesPrepa: [],
       // L'identifiant de la feuille (ou du modèle) ouvert — il vient de
@@ -3898,6 +4025,8 @@ export default {
       else if (etat.vue === 'calendrier') section.innerHTML = vueCalendrier(etat);
       else if (etat.vue === 'reseau') section.innerHTML = vueReseau(etat);
       else if (etat.vue === 'passerelle') section.innerHTML = vuePasserelle(etat);
+      else if (etat.vue === 'vivier') section.innerHTML = vueVivier(etat);
+      else if (etat.vue === 'messages') section.innerHTML = vueMessages(etat);
       else if (etat.vue === 'carnet') section.innerHTML = vueCarnet(etat);
       else if (etat.vue === 'preparations') section.innerHTML = vuePreparations(etat);
       else if (etat.vue === 'modeles') section.innerHTML = vueModele(etat);
@@ -3998,12 +4127,17 @@ export default {
       const cible = section.querySelector('[data-bloc="contacts"]');
       if (!cible) return;
 
-      // Les deux outils partagent le bloc, pas le dessin : la Passerelle lit
-      // le vivier de pistes, le carnet lit la base de contacts.
+      // Les pages du Réseau partagent le bloc vif, pas le dessin : la
+      // Passerelle lit le vivier, le vivier le filtre, les modèles se lisent
+      // seuls, et le carnet lit la base de contacts.
       cible.innerHTML =
         etat.vue === 'passerelle'
           ? construirePasserelle(etat)
-          : construireContacts(etat.contacts, optionsBase(etat));
+          : etat.vue === 'vivier'
+            ? construireVivier(etat.pistes, etat.divisionVivier)
+            : etat.vue === 'messages'
+              ? construireModeles(etat.modeles)
+              : construireContacts(etat.contacts, optionsBase(etat));
     };
 
     const rendreCommandes = () => {
@@ -5201,6 +5335,15 @@ export default {
         etat.propositionsOuvertes = true;
         rendreContacts();
         section.querySelector('.fenetre-fermer')?.focus();
+        return;
+      }
+
+      // Le filtre du vivier : une compétition à la fois, « Tout » compris.
+      const division = evenement.target.closest('[data-division]');
+      if (division) {
+        etat.divisionVivier = division.dataset.division;
+        rendreContacts();
+        centrerActif(section.querySelector('.filtres'));
         return;
       }
 
