@@ -1042,6 +1042,20 @@ et le bandeau la compte dans « entrés au réseau ».
 - Les fiches qui portaient déjà le nom exact d'un club ont été reliées au
   passage (OM — service presse, Tuomas Ollila).
 
+**Les matchs du week-end, sous le calendrier** (demande de Noé, 15 août 2026).
+Un pli replié — c'est un repérage, pas l'agenda — qui liste **toutes les
+rencontres du vendredi au dimanche**, tous championnats du vivier confondus,
+groupées par jour et marquées de leur division. C'est le rythme du football, et
+celui d'un photographe qui prépare sa semaine. Les flèches passent d'un
+week-end à l'autre ; les rencontres ne se chargent **qu'à l'ouverture du pli**,
+jamais avec le calendrier. Chaque affiche porte « Poser… », qui ouvre la tuile
+pré-remplie comme depuis la fiche d'un club, et celles déjà au calendrier le
+disent.
+
+Une seule requête suffit à les avoir toutes sans doublon : `domicile = true`,
+puisque la table dénormalisée donne exactement une ligne par match côté club
+qui reçoit.
+
 ### `#yuno/vivier` — le vivier *(sa page)*
 
 Le pendant du carnet, côté clubs : **la Passerelle est un rituel où l'on agit**

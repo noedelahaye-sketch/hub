@@ -31,6 +31,7 @@ import {
   depuisDateISO,
   echeanceLisible,
   momentLisible,
+  dateLongue,
   versDateISO,
   ajouterJours,
   echapper,
@@ -1551,6 +1552,95 @@ function vueEditorial(etat) {
     ${pied()}`;
 }
 
+// --- Le week-end -------------------------------------------------------------
+// Ce que le calendrier ne peut pas montrer : les matchs qu'on POURRAIT couvrir.
+// Du vendredi au dimanche, toutes divisions confondues (demande de Noé, 15 août
+// 2026) — c'est le rythme du football, et celui d'un photographe qui prépare sa
+// semaine.
+
+// Le vendredi de la semaine d'une date. La semaine commence le lundi, le
+// week-end s'ouvre donc quatre jours plus tard.
+export function vendrediDeLaSemaine(reference = new Date()) {
+  return ajouterJours(debutDeSemaine(reference), 4);
+}
+
+function construireWeekend(etat) {
+  const vendredi = etat.ancreWeekend;
+  const dimanche = ajouterJours(vendredi, 2);
+  const matchs = etat.matchsWeekend;
+
+  const titre = `${vendredi.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}
+    → ${dimanche.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`;
+
+  const corps = !matchs
+    ? `<p class="vide">…</p>`
+    : !matchs.length
+      ? `<p class="vide">Pas de rencontre ce week-end-là. Les championnats
+          respirent aussi.</p>`
+      : Object.entries(
+          matchs.reduce((jours, match) => {
+            (jours[match.date] = jours[match.date] ?? []).push(match);
+            return jours;
+          }, {}),
+        )
+          .map(
+            ([jour, dedans]) => `
+        <section class="weekend-jour">
+          <h4>${echapper(dateLongue(depuisDateISO(jour)))}
+            <span class="discret chiffre">${dedans.length}</span>
+          </h4>
+          <ul class="club-matchs">${dedans
+            .map((match) => {
+              const recevant = etat.pistes.find((piste) => piste.id === match.piste_id);
+              if (!recevant) return '';
+              const pose = etat.evenements.find(
+                (evenement) =>
+                  versDateISO(new Date(evenement.date_debut)) === match.date &&
+                  (evenement.club_recevant === recevant.id ||
+                    evenement.club_visiteur === recevant.id),
+              );
+
+              return `
+                <li>
+                  <span class="club-match-affiche">
+                    ${pastilleTexte(DIVISIONS[recevant.division] ?? recevant.division)}
+                    <span class="contact-nom">${echapper(
+                      afficheDuMatch(recevant, match),
+                    )}</span>
+                    <span class="discret">J${match.journee}</span>
+                  </span>
+                  ${
+                    pose
+                      ? `<span class="discret club-match-pose">✓ au calendrier</span>`
+                      : `<button type="button" class="bouton-secondaire bouton-mini"
+                          data-poser-match="${echapper(recevant.id)}"
+                          data-match-journee="${match.journee}"
+                          data-match-date="${echapper(match.date)}"
+                          >Poser…</button>`
+                  }
+                </li>`;
+            })
+            .join('')}</ul>
+        </section>`,
+          )
+          .join('');
+
+  return `
+    <details class="backlog bloc-weekend"${etat.weekendOuvert ? ' open' : ''}>
+      <summary>Les matchs du week-end
+        ${matchs?.length ? `<span class="chiffre">${matchs.length}</span>` : ''}
+      </summary>
+      <div class="cal-nav weekend-nav">
+        <button type="button" class="cal-fleche" data-weekend="-1"
+          aria-label="Week-end précédent">‹</button>
+        <span class="cal-titre">${echapper(titre)}</span>
+        <button type="button" class="cal-fleche" data-weekend="1"
+          aria-label="Week-end suivant">›</button>
+      </div>
+      ${corps}
+    </details>`;
+}
+
 function vueCalendrier(etat) {
   const elements = elementsDuCalendrier(etat);
 
@@ -1567,6 +1657,8 @@ function vueCalendrier(etat) {
             })
       }
     </div>
+
+    <div data-bloc="weekend">${construireWeekend(etat)}</div>
 
     ${
       etat.detailCal
@@ -4095,7 +4187,7 @@ const BESOINS = {
   // Le calendrier et le réseau lisent aussi les préparations et leurs
   // modèles : un événement ou une commande doit savoir s'il a déjà sa feuille
   // (« Préparer » ou « Ouvrir »), et combien de modèles le choix offrira.
-  calendrier: ['evenements', 'taches', 'objectifs', 'publications', 'commandes', 'contacts', 'preparations', 'modelesPrepa'],
+  calendrier: ['evenements', 'taches', 'objectifs', 'publications', 'commandes', 'contacts', 'preparations', 'modelesPrepa', 'pistes'],
   reseau: ['contacts', 'envois', 'commandes', 'preparations', 'modelesPrepa', 'pistes'],
   passerelle: ['contacts', 'envois', 'modeles', 'pistes'],
   vivier: ['pistes', 'contacts', 'evenements'],
@@ -4152,6 +4244,12 @@ export default {
       divisionVivier: 'tout',
       // La personne regardée sur chaque carte de la fournée, par piste.
       contactChoisi: {},
+      // Le week-end regardé au calendrier : son vendredi, ses rencontres, et
+      // le pli ouvert ou non. Un état d'écran — on rouvre le calendrier sur le
+      // week-end qui vient, pas sur celui qu'on regardait hier.
+      ancreWeekend: vendrediDeLaSemaine(),
+      matchsWeekend: null,
+      weekendOuvert: false,
       // Le club dont la fiche est ouverte, au vivier, et ses matchs à venir —
       // chargés à l'ouverture, gardés ensuite : on rouvre souvent la même
       // fiche, et le calendrier d'un club ne bouge pas dans la journée.
@@ -4456,6 +4554,26 @@ export default {
     const rendreCommandes = () => {
       const cible = section.querySelector('[data-bloc="commandes"]');
       if (cible) cible.innerHTML = construireCommandes(etat.commandes, etat.preparations);
+    };
+
+    const rendreWeekend = () => {
+      const cible = section.querySelector('[data-bloc="weekend"]');
+      if (cible) cible.innerHTML = construireWeekend(etat);
+    };
+
+    // Les rencontres du week-end regardé. Chargées à la demande — l'ouverture
+    // du pli, un coup de flèche — et jamais avec le calendrier : on ne paie pas
+    // une lecture pour un bloc qu'on n'a pas ouvert.
+    const chargerLeWeekend = async () => {
+      const vendredi = versDateISO(etat.ancreWeekend);
+      const dimanche = versDateISO(ajouterJours(etat.ancreWeekend, 2));
+      try {
+        etat.matchsWeekend = await api.matchsEntre(vendredi, dimanche);
+      } catch (souci) {
+        console.error('Lecture des matchs du week-end impossible', souci);
+        etat.matchsWeekend = [];
+      }
+      rendreWeekend();
     };
 
     // « Rattaché à » relie la fiche au vivier (demande de Noé, 15 août 2026) :
@@ -5742,6 +5860,20 @@ export default {
         return;
       }
 
+      // Le week-end d'avant, celui d'après : sept jours à chaque fois.
+      const flecheWeekend = evenement.target.closest('[data-weekend]');
+      if (flecheWeekend) {
+        etat.ancreWeekend = ajouterJours(
+          etat.ancreWeekend,
+          7 * Number(flecheWeekend.dataset.weekend),
+        );
+        etat.matchsWeekend = null;
+        etat.weekendOuvert = true;
+        rendreWeekend();
+        await chargerLeWeekend();
+        return;
+      }
+
       // Un match du calendrier officiel n'a souvent PAS d'horaire, et son jour
       // peut encore glisser (demande de Noé, 15 août 2026) : le geste n'écrit
       // donc rien tout de suite, il OUVRE la tuile déjà remplie — titre, date
@@ -6342,6 +6474,18 @@ export default {
     // parfois d'un bloc sur ordinateur, et le fondu doit disparaître avec le
     // débordement. Sans ça, il annoncerait une réserve qui n'existe plus.
     window.addEventListener('resize', marquerLesDebordements);
+
+    // Ouvrir le pli du week-end le charge, une fois. `toggle` ne remonte pas :
+    // on l'écoute à la capture, comme le défilement.
+    section.addEventListener(
+      'toggle',
+      async (evenement) => {
+        if (!evenement.target.classList?.contains('bloc-weekend')) return;
+        etat.weekendOuvert = evenement.target.open;
+        if (etat.weekendOuvert && !etat.matchsWeekend) await chargerLeWeekend();
+      },
+      true,
+    );
 
     // Le fondu suit le doigt : `scroll` ne remonte pas, on l'écoute donc à la
     // capture, sur la section entière.

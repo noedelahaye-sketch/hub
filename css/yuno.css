@@ -1845,6 +1845,25 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 .club-match-pose { font-size: 0.8125rem; color: var(--accent); }
 .club-approx { margin: 0 0 var(--espace-8); font-size: 0.8125rem; }
 
+/* --- Les matchs du week-end --------------------------------------------------
+   Ce que le calendrier ne montre pas : les rencontres qu'on POURRAIT couvrir,
+   du vendredi au dimanche. Replié par défaut — c'est un repérage, pas l'agenda. */
+.bloc-weekend { margin-top: var(--espace-24); }
+.weekend-nav { margin: var(--espace-8) 0 var(--espace-16); }
+
+.weekend-jour { margin-bottom: var(--espace-16); }
+
+.weekend-jour h4 {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espace-8);
+  margin: 0 0 var(--espace-4);
+  font-family: "Gilroy", "Gilroy secours", var(--police-texte);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
 /* Hors d'un `.bloc`, une liste retrouve ses puces : on les retire ici. */
 .club-matchs,
 .club-contacts {

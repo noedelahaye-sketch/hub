@@ -743,6 +743,22 @@ export async function prochainsMatchsParPiste() {
   return verifier(await client.from('prochain_match_par_piste').select('*'));
 }
 
+// Toutes les rencontres d'une période, pour la vue week-end du calendrier.
+// `domicile = true` suffit à les avoir TOUTES sans doublon : chaque match a
+// exactement une ligne côté club qui reçoit — c'est ce que la table
+// dénormalisée donne gratuitement.
+export async function matchsEntre(debutISO, finISO) {
+  return verifier(
+    await client
+      .from('matchs_pistes')
+      .select('*')
+      .eq('domicile', true)
+      .gte('date', debutISO)
+      .lte('date', finISO)
+      .order('date'),
+  );
+}
+
 // Les prochains matchs d'UN club, pour sa fiche : on n'en charge que là, et
 // seulement ceux à venir — le passé du calendrier ne se pose plus.
 export async function matchsAVenirDUnClub(pisteId, combien = 6) {
