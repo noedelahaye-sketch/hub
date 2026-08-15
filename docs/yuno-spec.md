@@ -393,6 +393,19 @@ nature Moment.
    tait. Un lien ouvre la feuille ; si la sortie n'en a pas encore, le bloc
    porte « Préparer » à la place.
 
+   **Une croix le retire de l'accueil** (demande de Noé, 15 août au soir),
+   **juste après la date et sur sa ligne d'écriture** — un mot de plus au bout
+   de la phrase, séparé par un seul blanc. Petite à l'œil, 44 px au doigt : sa
+   zone tactile déborde en transparent, sans pousser la date d'un pixel. Elle ne supprime RIEN : la feuille reste entière à
+   sa page, la sortie reste au calendrier — c'est la place à l'écran qu'on
+   reprend, pas le travail qu'on efface. Le choix vaut pour cette sortie-là ; la
+   suivante reprendra la tête de l'accueil. Comme le « Plus tard » de l'invite,
+   il vit dans le `localStorage` (clé `yuno-prepas-ecartees`, distincte de celle
+   des invites : écarter une préparation ne veut pas dire écarter une invite) et
+   non en base — c'est un choix d'écran, pas un fait sur la sortie. Discrète au
+   repos, franche au survol : elle est là quand on la cherche, elle n'appelle
+   pas.
+
    **Les lignes se cochent depuis l'accueil** (demande de Noé, 14 août 2026).
    C'est la seule entorse à « l'accueil ne gère rien », et elle se défend : au
    bord du terrain, on n'ouvre pas une page pour dire qu'on a chargé les
@@ -518,7 +531,10 @@ Trois conséquences, et elles tiennent l'intention :
   ouvre « Ajouter une sortie » directement — comme sur les pages du réseau, où
   il ouvre une fiche. Le bouton dédié qui vivait à gauche des compteurs a
   disparu : le « + » est là où le pouce arrive, et il ne bouge pas quand la
-  page défile. Elle demande une date, un type (match · concert · sortie ·
+  page défile. **Il se retire dès qu'une fenêtre est ouverte** (demande de Noé,
+  15 août au soir) : son gros rond doré flottait par-dessus la fiche d'un club,
+  au coin où l'on ne peut rien en faire. Une fenêtre est un moment où l'on
+  regarde UNE chose ; rien n'a à s'ajouter par-dessus. Elle demande une date, un type (match · concert · sortie ·
   autre), le nom de la sortie, et en facultatif le lieu, les rencontres, une
   photo, une note. Deux champs suffisent — elle doit
   se remplir debout, en sortant du stade, en moins de 30 secondes.
@@ -1011,7 +1027,7 @@ La page, de haut en bas :
   « + » et une croix « passer », cibles tactiles 44 px. Ajouter ou passer fait
   apparaître le suivant. « Passer » est un **choix d'écran** : gardé dans le
   `localStorage` pour la semaine, jamais écrit en base — le club reviendra.
-  **Le bouton-tuile « Les propositions de la semaine » vient EN PREMIER**
+  **Le bouton-tuile « Propositions de la semaine » vient EN PREMIER**
   (demande de Noé, 15 août au soir), et la tuile du club **prend toute la
   largeur qui reste** — on choisit d'abord dans quelle liste on pioche, le club
   proposé vient après. Sur téléphone, les deux s'empilent dans cet ordre, en
@@ -1020,6 +1036,19 @@ La page, de haut en bas :
   celle-ci, qui n'a qu'un élément, n'occupait que le premier tiers.) Le bouton
   ouvre la fenêtre volante des dix propositions en lignes, chacune son « + » —
   pour composer d'un coup d'œil.
+  Il a **perdu son « Les », gagné du gras, pris le bleu et passé en Canela
+  italique gras** le même soir (demande de Noé) : c'est une PORTE, pas une tuile
+  de plus — elle mène à la dizaine quand ses voisines parlent d'un club, et elle
+  prend donc le traitement des deux portes du pied de page. Ni l'italique ni le
+  gras ne sont simulés (`CanelaDeck-BoldItalic.otf` est dans `fonts/`, le site
+  s'y refuse). Et le corps est **celui du titre « La Passerelle » et des deux
+  autres portes** — 1,125 rem : quatre éléments de même rang, un seul corps. C'est le **seul contrôle du site en Canela** — `#vue button` met
+  tous les autres en Gilroy, et il faut reprendre ce sélecteur mot pour mot pour
+  l'excepter, un ID pesant plus que n'importe quelle classe. Le bleu est celui d'« Ajouter un
+  contact », le seul autre geste du site qui ouvre quelque chose plutôt que
+  d'acter un fait ; l'or reste à ce qui est vrai. La fenêtre garde le libellé du
+  bouton **au mot près** pour les lecteurs d'écran, puisqu'elle n'affiche aucun
+  titre.
   « Proposer d'autres clubs » (dans la fenêtre) tire une nouvelle donne et
   remet les passages à zéro. Dans la tuile, le lien du match est gris — une
   information qui se consulte — et « + » comme « × » sont de petits ronds dont
@@ -1052,7 +1081,9 @@ La page, de haut en bas :
   **Côte à côte y compris sur téléphone** (précision de Noé, 15 août au soir) :
   elles ne s'empilent plus. Moitié-moitié, leur texte se replie sur deux ou trois
   lignes. Empilées, elles se lisaient comme deux étapes l'une après l'autre ;
-  côte à côte, elles disent ce qu'elles sont — deux portes au même rang.
+  côte à côte, elles disent ce qu'elles sont — deux portes au même rang. Leur nom
+  monte d'un cran le même soir (1,125 rem) : depuis qu'elles partagent la
+  largeur, il pesait moins que la ligne qui l'explique.
 
 **Ni titres ni sous-titres depuis le 15 août au soir** (demande de Noé) : le
 bandeau ouvre la page, la porte du jour vient dessous, la fournée suit d'elle-
@@ -1122,10 +1153,61 @@ cherche**, les 97 clubs à portée, filtrés par compétition (« Tout 97 »,
 « Ligue 1 18 », « Suisse 6 »…). On y va pour prendre un club précis, ou pour
 parcourir une division entière avant un déplacement.
 
-Chaque ligne est celle des propositions — division, nom, prochain match — et
-son geste dépend de l'état du club : un « + » s'il est libre, « dans ta
-fournée » s'il y est déjà, « ✓ contacté » si c'est un fait acquis. Ces deux
+Chaque ligne est celle des propositions — division, **écusson**, nom, prochain
+match — et son geste dépend de l'état du club : un « + » s'il est libre, « dans
+ta fournée » s'il y est déjà, « ✓ contacté » si c'est un fait acquis. Ces deux
 derniers ne se rechoisissent pas.
+
+**L'écusson devant le nom** (demande de Noé, 15 août 2026), 20 px : dans une
+liste de 97 lignes, l'œil reconnaît un blason avant de lire un nom. Il ne
+remplace pas le nom, il l'accroche — d'où sa taille, et son `aria-hidden` : un
+lecteur d'écran dirait deux fois le même club.
+
+**Partout où un club se nomme**, le soir même : la ligne du vivier et celles de
+la fenêtre des dix (20 px), la ligne du club proposé de la semaine (20 px), et
+**28 px** en tête de la fiche du club comme sur les cartes de la fournée — là,
+l'écusson ne signale plus dans une liste, il tient compagnie au nom.
+
+**Et le nom descend d'un cran** — 1 rem au lieu de 1,125 — dans les lignes et
+sur les cartes (demande de Noé, dans la foulée) : le blason reconnaît le club,
+le nom n'a plus à le crier. Ce qu'on perd en corps se regagne en **nom entier** :
+sur un écran de 390 px, la liste passe de douze noms coupés à neuf, et
+« FC Sochaux-Montbéliard » tient de nouveau sur une ligne avec sa pastille. Le
+titre de la fiche, lui, ne bouge pas : c'est le titre d'une fenêtre, pas une
+ligne de liste.
+
+**Toute la ligne se cale au MILIEU** (correction du 15 août au soir) : la
+pastille, l'écusson, le nom, l'affiche et le geste du bout partagent le centre
+de la tuile. `.bloc li` impose `align-items: baseline` et l'emportait en
+spécificité ; or la ligne de base d'une image, c'est son bord bas — l'écusson se
+posait sur le pied des lettres et flottait au-dessus du centre.
+
+Les 97 images sont **dans le dépôt** (`img/clubs/`, 64 px, ~800 Ko en tout),
+jamais appelées à un CDN : c'est la règle du hub, celle des polices et de
+supabase-js. Un écusson distant, ce serait une dépendance de plus, une requête
+que la coquille hors ligne ne peut pas garantir, et l'adresse IP de Noé envoyée
+à un tiers à chaque ouverture du vivier.
+
+`tools/telecharger-logos.py` les rapatrie de deux sources publiques et sans
+clé — **ESPN** pour 79 clubs, **TheSportsDB** pour les 18 du National, qu'ESPN
+ne couvre pas. La table nom → source y est **écrite et relue club par club**,
+jamais rejouée à l'exécution : un rapprochement automatique pourrait changer un
+écusson dans le dos de Noé. L'outil écrit `js/logos-clubs.js`, qui relie le nom
+EXACT du club à son fichier — un club absent de cette table n'a pas d'écusson,
+et l'interface le sait avant de dessiner (pas d'image cassée, pas de requête
+pour rien). Ajouter un club au vivier demande donc une ligne dans l'outil et une
+exécution ; sans elle, la ligne s'affiche comme avant.
+
+Côté coquille, `js/logos-clubs.js` est préchargé, **les 97 images non** : elles
+se mettent en cache toutes seules à la première visite (le service worker garde
+ce qui vient de chez nous), là où les précharger allongerait l'installation de
+800 Ko — et un seul fichier manquant ferait échouer l'installation entière.
+
+Effet de bord assumé et corrigé le même jour : l'écusson prend 28 px sur la
+ligne, et sur téléphone « Real Betis » devenait « Re… ». Le lien du match
+**rétrécit désormais huit fois plus vite que le nom** — sa règle disait déjà
+qu'il devait céder le premier, mais il était en `flex: none` et c'est le nom qui
+se coupait à sa place.
 
 **Toucher une ligne ouvre la fiche du club** (15 août 2026) : ce que les
 listes abrègent, sur un écran. Son état (jamais contacté · dans ta fournée ·
@@ -1157,13 +1239,28 @@ Deux règles tiennent ce chiffre honnête :
 **Relier un événement à ses clubs, à la main** (demande de Noé, 15 août 2026).
 Un match posé depuis le vivier arrive relié tout seul ; un match noté à la main,
 ou vécu avant que le lien n'existe, ne l'est pas — et sans lien, il ne compte
-nulle part. Le formulaire de modification d'un événement porte donc deux champs
-de plus, « Club qui reçoit » et « Club qui se déplace » : on y **écrit le nom du
-club**, avec la liste du vivier en appui. Même geste et même règle que
-« Rattaché à » sur une fiche du réseau — le nom exact relie, autre chose délie.
-Ils s'ajoutent par `champsEnPlus`, même contrat que `vuesEnPlus` : le hub n'a pas
-de vivier, il ne les voit pas, et un formulaire qui ne les porte pas ne délie
-rien au passage.
+nulle part. **Les DEUX formulaires portent donc les deux clubs** : la tuile de
+création (pastille « Clubs ») et le formulaire de modification (deux champs de
+plus). Le second sans le premier ne servait qu'à rattraper l'oubli ; le premier
+permet d'inscrire une sortie passée déjà reliée.
+
+**Et surtout les DEUX formulaires du Carnet** — « Ajouter une sortie » et
+« Modifier la sortie » (demande de Noé, 15 août au soir, la vraie place du
+besoin) : c'est là qu'une sortie devient le match couvert d'un club, et le lien
+doit pouvoir se poser au moment où l'on raconte. « Raconter … », qui se tait sur
+tout ce que l'événement sait déjà, les offre quand même : ses clubs sont
+justement ce qu'il peut ignorer.
+
+On y **écrit le nom du club**, avec la liste du vivier en appui. Même geste et
+même règle que « Rattaché à » sur une fiche du réseau — le nom exact relie,
+autre chose délie, un champ vide délie. Le hub n'a pas de vivier et ne voit ni
+la pastille (`clubs`) ni les champs (`champsEnPlus`) : même contrat que
+`vuesEnPlus`, et un formulaire qui ne les porte pas ne délie rien au passage.
+
+Depuis le vivier, la tuile s'ouvre **pastille remplie** : les deux noms sont
+connus, et ce sont ces champs-là qui font foi à l'envoi — Noé peut donc encore
+corriger l'affiche avant de poser. Un adversaire absent du vivier laisse son
+champ vide, ce qui est la vérité : ce n'est pas un club qu'il suit.
 
 **Ses matchs : trois propositions, pas un calendrier** (demande de Noé, 15 août
 2026). La fiche charge les six prochains matchs du club, **écarte ceux qui sont

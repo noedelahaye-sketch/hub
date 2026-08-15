@@ -46,6 +46,12 @@ const COQUILLE = [
   'js/format.js',
   'js/formation.js',
   'js/hermitage.js',
+  // La table des écussons, oui ; les 97 images, non. Elles se mettent en cache
+  // toutes seules à la première visite du vivier (le `fetch` ci-dessous garde
+  // tout ce qui vient de chez nous), là où les précharger allongerait
+  // l'installation de 800 Ko — et un seul fichier manquant ferait échouer le
+  // `addAll` en entier, donc l'installation.
+  'js/logos-clubs.js',
   'js/mouvements.js',
   'js/perso.js',
   'js/photo.js',

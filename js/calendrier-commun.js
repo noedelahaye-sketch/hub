@@ -1258,14 +1258,23 @@ const PRIORITES_CAL = {
   4: 'Priorité 4',
 };
 
-function champCapture({ nom, libelle, type, valeur = '', requis = false }) {
+// `suggestions` : une liste d'appui derrière un champ de texte libre (même
+// mécanique que les formulaires, `datalist`). On écrit ce qu'on veut, la liste
+// évite d'avoir à l'orthographier de mémoire.
+function champCapture({ nom, libelle, type, valeur = '', requis = false, suggestions = null }) {
   const id = `cal-${nom}`;
+  const liste = suggestions?.length
+    ? `<datalist id="${id}-liste">${suggestions
+        .map((suggestion) => `<option value="${echapper(suggestion)}"></option>`)
+        .join('')}</datalist>`
+    : '';
+
   const controle =
     type === 'textarea'
       ? `<textarea id="${id}" name="${nom}" rows="2">${echapper(valeur)}</textarea>`
       : `<input id="${id}" name="${nom}" type="${type}" value="${echapper(valeur)}" ${
           requis ? 'required' : ''
-        }>`;
+        } ${liste ? `list="${id}-liste"` : ''}>${liste}`;
 
   return `<label class="champ-capture" for="${id}">${echapper(libelle)}</label>${controle}`;
 }
@@ -1371,6 +1380,9 @@ export function fenetreCreation({
   // dès que ses projets offrent 'photo', la pastille existe, révélée quand le
   // projet choisi est photo (demande de Noé, 14 août 2026).
   typeMoment = false,
+  // Les noms des clubs du vivier, pour relier un événement à son affiche. Yuno
+  // les apporte ; le hub n'a pas de vivier et ne voit donc pas la pastille.
+  clubs = null,
   // Les piliers éditoriaux, sur une publication. Ils appartiennent à Yuno — le
   // hub et le FCH n'en ont pas — et c'est donc l'appelant qui les apporte, déjà
   // aplatis en { rang: libellé }. Sans eux, pas de pastille.
@@ -1546,6 +1558,42 @@ export function fenetreCreation({
             options: TYPES_MOMENT_CAL,
             valeur: valeurs.type_moment ?? 'match',
           }),
+        }),
+      );
+    }
+
+    // Les deux clubs de l'affiche (demande de Noé, 15 août au soir). Un match
+    // posé depuis le vivier arrive relié tout seul ; un match noté à la main —
+    // et surtout un match PASSÉ qu'on inscrit après coup — ne l'était pas, et
+    // sans lien il ne compte au bilan d'aucun club.
+    //
+    // On écrit le NOM, comme au formulaire de modification et comme « Rattaché
+    // à » sur une fiche du réseau : même geste, même règle — le nom exact relie,
+    // autre chose délie. La liste du vivier est en appui derrière le champ.
+    //
+    // Yuno seulement : c'est lui qui apporte les noms, le hub n'a pas de vivier.
+    if (clubs?.length) {
+      pastilles.push(
+        pastilleCapture({
+          nom: 'clubs',
+          icone: ICONE.moment,
+          defaut: 'Clubs',
+          source: 'club_recevant',
+          contenu: `
+            ${champCapture({
+              nom: 'club_recevant',
+              libelle: 'Club qui reçoit (son nom au vivier)',
+              type: 'text',
+              valeur: valeurs.club_recevant ?? '',
+              suggestions: clubs,
+            })}
+            ${champCapture({
+              nom: 'club_visiteur',
+              libelle: 'Club qui se déplace',
+              type: 'text',
+              valeur: valeurs.club_visiteur ?? '',
+              suggestions: clubs,
+            })}`,
         }),
       );
     }

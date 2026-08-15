@@ -81,6 +81,11 @@ application, un site n'a pas de hub à quitter.
 
 Les icônes se régénèrent depuis les logos : `python3 tools/generer-icones.py`.
 
+Les écussons des clubs du vivier vivent dans `img/clubs/` et se rapatrient par
+`python3 tools/telecharger-logos.py` — comme les polices, ils sont dans le
+dépôt et jamais appelés à un CDN. L'outil réécrit `js/logos-clubs.js`, la table
+qui relie le nom exact d'un club à son fichier.
+
 ## Structure du site
 
 Neuf espaces, servis par un routeur à deux niveaux (`#espace/vue/id`) :

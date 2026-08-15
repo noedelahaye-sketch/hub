@@ -69,6 +69,27 @@ import {
   identifiantProvisoire,
   estProvisoire,
 } from './ecriture.js';
+import { LOGOS_CLUBS } from './logos-clubs.js';
+
+// L'écusson d'un club, s'il en a un (demande de Noé, 15 août 2026). Les images
+// sont dans le dépôt — jamais un CDN, comme les polices et supabase-js — et
+// rapatriées par `tools/telecharger-logos.py`.
+//
+// Un club sans écusson ne laisse RIEN : pas de cadre vide, pas d'image cassée.
+// La table générée dit avant de dessiner ce qui existe, et le nom du club porte
+// déjà son identité — l'écusson la double, il ne la remplace pas. D'où
+// `aria-hidden` : un lecteur d'écran lirait deux fois le même club.
+// `grand` : 28 px en tête d'une fiche, où l'écusson tient compagnie au nom ;
+// 20 px dans une liste, où il ne fait qu'accrocher l'œil. La taille vit en CSS
+// (`.club-ecusson-grand`), les fichiers font 64 px et servent les deux.
+export function ecussonDuClub(nom, { grand = false } = {}) {
+  const fichier = LOGOS_CLUBS[nom];
+  if (!fichier) return '';
+  const cote = grand ? 28 : 20;
+  return `<img class="club-ecusson${grand ? ' club-ecusson-grand' : ''}"
+    src="img/clubs/${fichier}" alt="" aria-hidden="true" loading="lazy"
+    width="${cote}" height="${cote}">`;
+}
 
 // Les rubriques de départ de Noé (7 août 2026). La liste reste libre : elle
 // s'enrichira de son analyse du marché, plus tard.
@@ -498,11 +519,42 @@ function corpsMoment(sortie, photos = {}, { fenetre = false, preparations = [] }
       }`;
 }
 
+// Les deux clubs de l'affiche, tels qu'ils s'offrent dans un formulaire du
+// carnet (demande de Noé, 15 août au soir). C'est ICI qu'une sortie devient un
+// match couvert : le lien doit pouvoir se poser au moment où l'on raconte, pas
+// seulement au calendrier.
+//
+// On écrit le NOM, avec la liste du vivier en appui — même geste et même règle
+// que « Rattaché à » sur une fiche du réseau, et que les deux autres endroits
+// où ce lien se pose : le nom exact relie, autre chose délie, un champ vide
+// délie.
+function champsClubsDeLaSortie(sortie, pistes) {
+  const nomDe = (id) => pistes.find((piste) => piste.id === id)?.nom ?? '';
+  const noms = nomsDesClubs(pistes);
+
+  return [
+    {
+      nom: 'club_recevant',
+      libelle: 'Club qui reçoit (son nom au vivier)',
+      type: 'text',
+      valeur: nomDe(sortie?.club_recevant),
+      suggestions: noms,
+    },
+    {
+      nom: 'club_visiteur',
+      libelle: 'Club qui se déplace',
+      type: 'text',
+      valeur: nomDe(sortie?.club_visiteur),
+      suggestions: noms,
+    },
+  ];
+}
+
 // Le formulaire de correction, dans la même fenêtre que la fiche. Il ne touche
 // ni à la photo ni aux rencontres : l'une vit dans le stockage, les autres dans
 // leur table, et chacune demande son propre geste. Corriger une date ou un lieu
 // mal tapé est le besoin courant ; le reste attend d'être demandé.
-function formulaireModifierMoment(sortie) {
+function formulaireModifierMoment(sortie, pistes = []) {
   return construireFormulaire({
     id: 'moment-edition',
     action: 'modifier-moment',
@@ -520,6 +572,7 @@ function formulaireModifierMoment(sortie) {
       },
       { nom: 'titre', libelle: 'La sortie', type: 'text', valeur: sortie.titre ?? '', requis: true },
       { nom: 'lieu', libelle: 'Où (facultatif)', type: 'text', valeur: sortie.lieu ?? '' },
+      ...champsClubsDeLaSortie(sortie, pistes),
       { nom: 'note', libelle: 'Note', type: 'textarea', valeur: sortie.note ?? '' },
       {
         nom: 'photo',
@@ -722,7 +775,10 @@ function fenetreMoment(etat) {
   if (!sortie) return '';
 
   const contenu = etat.editionMoment
-    ? `<h3 class="fenetre-titre">Modifier la sortie</h3>${formulaireModifierMoment(sortie)}`
+    ? `<h3 class="fenetre-titre">Modifier la sortie</h3>${formulaireModifierMoment(
+        sortie,
+        etat.pistes,
+      )}`
     : `<div class="moment moment-complet">${corpsMoment(sortie, etat.photos, {
         fenetre: true,
         preparations: etat.preparations,
@@ -774,7 +830,7 @@ export function construireCarnet(evenements, photos = {}, reference = new Date()
 //     sa date, il ne reste qu'à RACONTER — rencontres, photo, note. Redemander
 //     ce qui est déjà écrit serait un formulaire pour rien, et changer la date
 //     ici écraserait l'heure du match.
-function formulaireMoment(contacts, prefill = null) {
+function formulaireMoment(contacts, prefill = null, pistes = []) {
   const surUnEvenement = Boolean(prefill?.evenement_id);
   const titre = surUnEvenement ? `Raconter « ${prefill.titre} »` : 'Ajouter une sortie';
 
@@ -799,6 +855,12 @@ function formulaireMoment(contacts, prefill = null) {
         { nom: 'lieu', libelle: 'Où (facultatif)', type: 'text' },
       ];
 
+  // Les clubs s'offrent dans les DEUX cas. Sur une sortie déjà au calendrier
+  // (« Raconter … »), le reste du formulaire se tait parce que l'événement le
+  // sait déjà — mais justement pas ses clubs si personne ne les a posés : c'est
+  // le seul champ de la sortie qui a encore quelque chose à apprendre.
+  const clubs = champsClubsDeLaSortie(prefill?.sortie ?? null, pistes);
+
   return construireFenetre(
     titre,
     `<h3 class="fenetre-titre">${echapper(titre)}</h3>
@@ -815,6 +877,7 @@ function formulaireMoment(contacts, prefill = null) {
          : '',
        champs: [
          ...champsDeLaSortie,
+         ...clubs,
          {
            nom: 'rencontres',
            libelle: "Qui j'ai rencontré (sépare par une barre oblique)",
@@ -888,6 +951,37 @@ const PLUS_PAR_VUE = {
 // Sur la page Créer, la nature passe en DERNIER : on vient y poster, et le
 // réglage qu'on change le moins n'a pas à occuper la première place.
 const reglagesDuPlus = (vue) => PLUS_PAR_VUE[vue] ?? { nature: 'tache' };
+
+// --- La préparation écartée de l'accueil -------------------------------------
+// La sortie du moment tient le haut de l'accueil avec sa préparation. Une croix
+// la retire quand Noé n'en veut plus là (demande de Noé, 15 août au soir) : la
+// feuille n'est PAS supprimée — elle vit à sa page, et le bloc reviendra pour
+// la sortie suivante. C'est un choix d'écran, pas un fait sur la sortie, donc il
+// vit dans le `localStorage` comme celui de l'invite, et non en base.
+//
+// Sa propre clé : écarter la préparation de l'accueil ne veut pas dire la même
+// chose qu'écarter l'invite du carnet, et l'une ne doit pas emporter l'autre.
+
+const CLE_PREPAS_ECARTEES = 'yuno-prepas-ecartees';
+
+export function prepasEcartees() {
+  try {
+    const brut = localStorage.getItem(CLE_PREPAS_ECARTEES);
+    return brut ? JSON.parse(brut) : [];
+  } catch {
+    return [];
+  }
+}
+
+function ecarterPrepa(id) {
+  const suite = [...new Set([...prepasEcartees(), id])];
+  try {
+    localStorage.setItem(CLE_PREPAS_ECARTEES, JSON.stringify(suite));
+  } catch {
+    // Tant pis : le bloc reviendra à la prochaine visite.
+  }
+  return suite;
+}
 
 // --- L'invite du calendrier --------------------------------------------------
 // Un événement passé propose de devenir un moment : le pont entre l'agenda et
@@ -963,9 +1057,17 @@ function construireInvite(etat) {
 // Ce qu'il montre dépend de l'heure — avant on prépare, pendant on photographie,
 // après on trie. C'est le seul endroit du site où le temps qui passe change ce
 // qui s'affiche, et c'est justement ce qu'on lui demande.
-export function construireSortieDuMoment(evenements, preparations, reference = new Date()) {
+export function construireSortieDuMoment(
+  evenements,
+  preparations,
+  reference = new Date(),
+  ecartees = [],
+) {
   const sortie = sortieDuMoment(evenements, reference);
   if (!sortie) return '';
+  // Écartée d'ici : l'accueil se tait sur cette sortie-là. La feuille n'est pas
+  // touchée, et la sortie suivante reprendra la place.
+  if (ecartees.includes(sortie.id)) return '';
 
   const phase = phaseDeLaSortie(sortie, reference);
   const feuille = feuilleDeLaSortie(preparations, 'evenement', sortie.id);
@@ -974,6 +1076,10 @@ export function construireSortieDuMoment(evenements, preparations, reference = n
     <span class="tuile-entete">
       <span class="etiquette">${PHASES_PREPA[phase]}</span>
       <span class="discret quand">${echapper(momentLisible(new Date(sortie.date_debut)))}</span>
+      <button type="button" class="lien-discret bouton-mini bouton-retirer"
+        data-ecarter-prepa="${echapper(sortie.id)}"
+        title="Retirer de l'accueil"
+        aria-label="Retirer « ${echapper(sortie.titre)} » de l'accueil">×</button>
     </span>
     <h2 class="sortie-moment-titre">${echapper(sortie.titre)}</h2>`;
 
@@ -1025,7 +1131,12 @@ export function construireSortieDuMoment(evenements, preparations, reference = n
 function vueAccueil(etat) {
   return `
     ${enTete('accueil')}
-    ${construireSortieDuMoment(etat.evenements, etat.preparations)}
+    ${construireSortieDuMoment(
+      etat.evenements,
+      etat.preparations,
+      new Date(),
+      etat.prepasEcartees,
+    )}
 
     <!-- Ni compteurs, ni bouton de capture ici (demande de Noé, 14 août 2026) :
          l'accueil s'ouvre directement sur le mur. Les trois compteurs et
@@ -3218,6 +3329,7 @@ function carteFournee(piste, contacts, choisiId = null) {
           aria-label="Reposer ${echapper(piste.nom)} au vivier">×</button>
         <span class="fournee-infos">
           <span class="fournee-nom">
+            ${ecussonDuClub(piste.nom, { grand: true })}
             <span class="contact-nom">${echapper(piste.nom)}</span>
             ${pastillesPiste(piste)}
           </span>
@@ -3389,6 +3501,7 @@ function lignePiste(piste, { passer = false } = {}) {
   return `
     <li class="proposition">
       ${pastillesPiste(piste)}
+      ${ecussonDuClub(piste.nom)}
       <span class="contact-nom">${echapper(piste.nom)}</span>
       ${lienMatchs(piste)}
       <button type="button" class="proposition-choisir"
@@ -3437,7 +3550,10 @@ function construirePropositions(pistes, graine, passees, fenetreOuverte) {
   // pour les lecteurs d'écran.
   const fenetre = fenetreOuverte
     ? construireFenetre(
-        'Les propositions de la semaine',
+        // Le nom que porte le bouton qui l'ouvre, au mot près : c'est lui qui
+        // sert de titre pour les lecteurs d'écran, la fenêtre n'en affichant
+        // aucun.
+        'Propositions de la semaine',
         `<ul class="liste-propositions">${propositions
            .map((piste) => lignePiste(piste))
            .join('')}</ul>
@@ -3456,7 +3572,7 @@ function construirePropositions(pistes, graine, passees, fenetreOuverte) {
   return `
     <div class="porte-rangee">
       <button type="button" class="porte-dizaine" data-voir-propositions>
-        Les propositions de la semaine</button>
+        Propositions de la semaine</button>
       <ul class="porte-liste">${lignePiste(premiere, { passer: true })}</ul>
     </div>
     ${fenetre}`;
@@ -3488,6 +3604,7 @@ function ligneVivier(piste) {
   return `
     <li class="proposition proposition-${etat}" data-ouvrir-club="${echapper(piste.id)}">
       ${pastillesPiste(piste)}
+      ${ecussonDuClub(piste.nom)}
       <span class="contact-nom">${echapper(piste.nom)}</span>
       ${lienMatchs(piste)}
       ${
@@ -3635,7 +3752,9 @@ function fenetreClub(etat) {
 
   return construireFenetre(
     piste.nom,
-    `<h3 class="fenetre-titre">${echapper(piste.nom)}</h3>
+    `<h3 class="fenetre-titre titre-club">
+       ${ecussonDuClub(piste.nom, { grand: true })}${echapper(piste.nom)}
+     </h3>
 
      <!-- Les infos du club à gauche, ce qu'on a fait avec lui à droite (demande
           de Noé, 15 août 2026). Un seul chiffre, et il tient dans la hauteur
@@ -4422,6 +4541,8 @@ export default {
       // fenêtre de choix est ouverte tant que c'est posé.
       choixPrepa: null,
       ecartes: evenementsEcartes(),
+      // Les sorties dont la préparation ne s'affiche plus à l'accueil.
+      prepasEcartees: prepasEcartees(),
       // Le mot dit après une écriture qui a échoué. Il vit dans l'état comme
       // le reste : `rendre()` le pose sous la barre, quelle que soit la vue.
       souci: null,
@@ -4600,7 +4721,24 @@ export default {
       // oublis en puissance. Pas sur le squelette — un bouton qui ouvre une
       // fenêtre sur des données absentes ne mènerait à rien.
       if (pret) {
-        section.insertAdjacentHTML('beforeend', boutonPlusFlottant());
+        // Le « + » se retire dès qu'une fenêtre est ouverte (demande de Noé,
+        // 15 août au soir) : son gros rond doré flottait par-dessus la fiche
+        // d'un club, au coin où l'on ne peut rien en faire. Une fenêtre est un
+        // moment où l'on regarde UNE chose ; rien n'a à s'ajouter par-dessus.
+        // La tuile de capture, elle, garde son fond assombri, qui le couvrait
+        // déjà.
+        const fenetreOuverte =
+          etat.clubOuvert ||
+          etat.contactOuvert ||
+          etat.contactNouveau ||
+          etat.momentOuvert ||
+          etat.ideeOuverte ||
+          etat.detailCal ||
+          etat.jourOuvertCal ||
+          etat.choixPrepa ||
+          etat.captureOuverte;
+
+        if (!fenetreOuverte) section.insertAdjacentHTML('beforeend', boutonPlusFlottant());
         // La tuile n'est plus écrite par les vues du calendrier : elle suit le
         // « + », donc toutes les vues. Une seule ligne à tenir à jour.
         if (etat.creationCal) {
@@ -4613,6 +4751,11 @@ export default {
               // Chez Yuno tout est photo : un événement porte toujours sa
               // pastille de type de moment.
               typeMoment: true,
+              // Et sa pastille de clubs : c'est ce lien qui fait compter un
+              // match au bilan d'un club, et il doit pouvoir se poser à la
+              // main — sur une sortie passée qu'on inscrit après coup, en
+              // particulier (demande de Noé, 15 août au soir).
+              clubs: nomsDesClubs(etat.pistes),
               // Et une publication porte son pilier et ses notes : depuis que
               // « Noter une idée » a disparu de Créer, la tuile est le seul
               // endroit où une idée s'écrit.
@@ -4649,7 +4792,7 @@ export default {
         if (etat.captureOuverte) {
           section.insertAdjacentHTML(
             'beforeend',
-            formulaireMoment(etat.contacts, etat.prefillMoment),
+            formulaireMoment(etat.contacts, etat.prefillMoment, etat.pistes),
           );
         }
       }
@@ -4980,6 +5123,10 @@ export default {
           lieu: champs.lieu?.trim() || null,
           note: champs.note?.trim() || null,
           oeuvre_finie: champs.oeuvre_finie === 'oui',
+          // Les deux clubs de l'affiche, par leur nom : c'est ce lien qui fait
+          // compter la sortie au bilan d'un club.
+          club_recevant: pisteDeLaStructure(champs.club_recevant, etat.pistes)?.id ?? null,
+          club_visiteur: pisteDeLaStructure(champs.club_visiteur, etat.pistes)?.id ?? null,
           ...(nouveauChemin ? { photo_chemin: nouveauChemin } : {}),
         };
 
@@ -5021,6 +5168,11 @@ export default {
           photo_chemin: chemin,
           note: champs.note?.trim() || null,
           oeuvre_finie: champs.oeuvre_finie === 'oui',
+          // Les deux clubs, dans les deux chemins : c'est ici qu'une sortie
+          // devient le match couvert d'un club, qu'elle entre au carnet ou
+          // qu'elle y gagne seulement sa face vécue.
+          club_recevant: pisteDeLaStructure(champs.club_recevant, etat.pistes)?.id ?? null,
+          club_visiteur: pisteDeLaStructure(champs.club_visiteur, etat.pistes)?.id ?? null,
         };
         const rencontres = relierRencontres(champs.rencontres, etat.contacts);
 
@@ -5206,11 +5358,12 @@ export default {
               lieu: champs.lieu?.trim() || etat.creationCal?.clubs?.lieu || null,
               notes: champs.notes?.trim() || null,
               type_moment: champs.type_moment || null,
-              // Les deux clubs quand la tuile a été ouverte depuis un match du
-              // vivier. Le titre, lui, est ce que Noé a laissé dans le champ —
-              // copié de l'affiche, puis libre.
-              club_recevant: etat.creationCal?.clubs?.recevant ?? null,
-              club_visiteur: etat.creationCal?.clubs?.visiteur ?? null,
+              // Les deux clubs de l'affiche, par leur nom — la pastille
+              // « Clubs » de la tuile, pré-remplie quand le geste vient du
+              // vivier. C'est ce lien qui fait compter un match au bilan d'un
+              // club ; le titre, lui, reste ce que Noé a laissé dans le champ.
+              club_recevant: pisteDeLaStructure(champs.club_recevant, etat.pistes)?.id ?? null,
+              club_visiteur: pisteDeLaStructure(champs.club_visiteur, etat.pistes)?.id ?? null,
             }),
           );
         }
@@ -6087,14 +6240,18 @@ export default {
           debut: match.date,
           fin: match.date,
           nature: 'evenement',
-          valeurs: { titre: afficheDuMatch(piste, match), type_moment: 'match' },
-          // Les deux clubs voyagent dans l'état, pas dans le formulaire : la
-          // tuile est commune au hub, elle n'a pas à connaître le vivier.
-          clubs: {
-            recevant: recevant?.id ?? null,
-            visiteur: visiteur?.id ?? null,
-            lieu: recevant?.nom ?? null,
+          valeurs: {
+            titre: afficheDuMatch(piste, match),
+            type_moment: 'match',
+            // La pastille « Clubs » s'ouvre déjà remplie : le geste vient du
+            // vivier, les deux noms sont connus. Ce sont ces champs-là qui font
+            // foi à l'envoi — Noé peut donc encore corriger l'affiche.
+            club_recevant: recevant?.nom ?? '',
+            club_visiteur: visiteur?.nom ?? '',
           },
+          // Le lieu voyage à part : il ne s'écrit dans aucun champ de la tuile,
+          // il sert de valeur par défaut si Noé n'en donne pas.
+          clubs: { lieu: recevant?.nom ?? null },
         };
         rendre();
         section.querySelector('#cal-titre')?.focus();
@@ -6268,6 +6425,10 @@ export default {
           date: versDateISO(new Date(passe.date_debut)),
           titre: passe.titre,
           evenement_id: passe.id,
+          // La sortie elle-même voyage : ses clubs sont les seuls champs que le
+          // formulaire redemande, et ils doivent s'ouvrir sur ce qui est déjà
+          // posé plutôt que vides.
+          sortie: passe,
         };
         etat.captureOuverte = true;
         etat.ecartes = ecarterEvenement(passe.id);
@@ -6278,6 +6439,16 @@ export default {
       const ecarterInvite = evenement.target.closest('[data-ecarter-evenement]');
       if (ecarterInvite) {
         etat.ecartes = ecarterEvenement(ecarterInvite.dataset.ecarterEvenement);
+        rendre();
+        return;
+      }
+
+      // La préparation quitte l'accueil, et rien d'autre : la feuille reste
+      // entière à sa page, la sortie reste au calendrier. C'est la place à
+      // l'écran qu'on reprend, pas le travail qu'on efface.
+      const ecarterLaPrepa = evenement.target.closest('[data-ecarter-prepa]');
+      if (ecarterLaPrepa) {
+        etat.prepasEcartees = ecarterPrepa(ecarterLaPrepa.dataset.ecarterPrepa);
         rendre();
         return;
       }

@@ -420,7 +420,10 @@ body[data-espace="yuno"] .lien-externe {
    largeur. C'est un objet qu'on vise du doigt, pas une ligne de liste. */
 body[data-espace="yuno"] .lien-externe-texte { gap: var(--espace-4); }
 
-body[data-espace="yuno"] .lien-externe-titre { font-size: 1rem; }
+/* Un cran plus haut le 15 août au soir (demande de Noé) : ce sont les deux
+   dernières portes de la page, et depuis qu'elles se partagent la largeur sur
+   téléphone, leur nom pesait moins que la ligne qui l'explique. */
+body[data-espace="yuno"] .lien-externe-titre { font-size: 1.125rem; }
 
 /* Un survol n'est pas un état : il dit « tu peux cliquer ici », rien de plus.
    L'or est réservé à ce qui est vrai — l'onglet où l'on se trouve, le focus
@@ -1519,9 +1522,40 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   padding-bottom: var(--espace-8);
 }
 
-/* `.bloc li` pose déjà `flex-wrap: wrap` et l'emporterait en spécificité : une
-   proposition tient sur une ligne, il faut le dire plus fort qu'elle. */
-.bloc li.proposition { flex-wrap: nowrap; }
+/* `.bloc li` pose déjà `flex-wrap: wrap` ET `align-items: baseline`, et
+   l'emporte en spécificité sur `.proposition` : une proposition tient sur une
+   ligne et se cale au MILIEU, il faut le dire plus fort qu'elle.
+   Le milieu et non la ligne d'écriture (correction demandée le 15 août au
+   soir) : la ligne de base d'une image, c'est son bord bas — l'écusson se
+   posait donc sur le pied des lettres, et flottait de quelques pixels au-dessus
+   du centre de la tuile. Tout se centre ensemble : la pastille, l'écusson, le
+   nom, l'affiche et le geste du bout. */
+.bloc li.proposition {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+/* L'écusson du club, devant son nom (demande de Noé, 15 août 2026). Petit — il
+   reconnaît, il ne décore pas : c'est le nom qu'on lit, l'écusson accroche
+   l'œil au passage dans une liste de 97 lignes.
+   `object-fit: contain` parce qu'un écusson n'est pas toujours carré : un
+   fanion allongé doit tenir dans son carré sans être écrasé. */
+.club-ecusson {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+/* En tête de la fiche du club, il tient compagnie au nom plutôt que de le
+   signaler : un peu plus grand, et centré sur la ligne du titre. */
+.club-ecusson-grand { width: 28px; height: 28px; }
+
+.titre-club {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+}
 
 /* Au vivier, une ligne entière ouvre la fiche du club : elle le dit au survol,
    comme les autres tuiles ouvrables du site (le trait gris chaud). Ses
@@ -1543,7 +1577,24 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   white-space: nowrap;
 }
 
-.proposition .quand { flex: none; }
+/* Un cran plus petit que le Canela des autres titres depuis que l'écusson est
+   là (demande de Noé, 15 août au soir) : le blason reconnaît le club, le nom
+   n'a plus à le crier. Ce qu'on gagne en corps, on le gagne en NOM ENTIER —
+   « AS Saint-Étienne » ne se coupait plus qu'à cause de ces deux points.
+   Sélecteur en `body[data-espace="yuno"]` comme la règle qu'il corrige : sans
+   ça, le 1.125rem commun l'emporterait en spécificité. */
+body[data-espace="yuno"] .proposition .contact-nom,
+body[data-espace="yuno"] .fournee-nom .contact-nom {
+  font-size: 1rem;
+}
+
+/* Le match rétrécit HUIT fois plus vite que le nom (15 août 2026). La règle
+   plus bas lui donne déjà l'ellipse et dit qu'il doit céder le premier — mais
+   il était en `flex: none`, donc c'est le nom qui se coupait à sa place, et
+   « Real Betis » devenait « Re… » dès que l'écusson est arrivé. Un facteur de
+   rétrécissement plutôt qu'un `flex: none` : l'affiche s'abrège tant qu'elle
+   peut, et le nom du club reste entier. */
+.proposition .quand { flex: 0 8 auto; }
 
 /* Le prochain match d'une carte de fournée : sa propre ligne, sous le nom. */
 .piste-match { width: 100%; font-size: 0.8125rem; }
@@ -1843,18 +1894,43 @@ body[data-espace="yuno"] ul.fournee-liste {
   grid-template-columns: minmax(0, 1fr);
 }
 
+/* En bleu et plus gras depuis le 15 août au soir (demande de Noé) : c'est une
+   PORTE, pas une tuile de plus — elle mène à la dizaine, quand ses voisines
+   parlent d'un club. Le bleu est celui de « Ajouter un contact », le seul autre
+   geste du site qui ouvre quelque chose plutôt que d'acter un fait ; l'or reste
+   à ce qui est vrai. */
 .porte-dizaine {
   flex: 0 1 9rem;
   padding: var(--espace-8) var(--espace-12);
-  font-family: inherit;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  /* La taille des trois portes de la page et du titre « La Passerelle »
+     (demande de Noé, 15 août au soir) : même rôle, même corps. */
+  font-size: 1.125rem;
+  font-weight: 700;
   text-align: center;
-  color: var(--texte);
-  background: var(--fond-carte);
-  border: 1px solid var(--bordure);
+  color: var(--bleu);
+  background: color-mix(in srgb, var(--bleu) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--bleu) 30%, transparent);
   border-radius: var(--rayon-carte);
   cursor: pointer;
+}
+
+.porte-dizaine:hover,
+.porte-dizaine:focus-visible {
+  background: color-mix(in srgb, var(--bleu) 22%, transparent);
+}
+
+/* En Canela ITALIQUE GRAS (demande de Noé, 15 août au soir), comme les titres
+   des deux portes du pied de page : cette porte-ci en est une troisième, elle
+   prend leur traitement. Les quatre coupes existent en fichier
+   (`CanelaDeck-BoldItalic.otf`) : ni l'italique ni le gras ne sont simulés par
+   le navigateur — le site s'y refuse (voir l'en-tête du fichier).
+   Le sélecteur reprend celui qu'il corrige (`#vue button` met tous les
+   contrôles du site en Gilroy) : un ID pèse plus que n'importe quelle classe,
+   il faut le lui reprendre mot pour mot et ajouter la classe. C'est la seule
+   exception à cette règle, et elle se voit. */
+body[data-espace="yuno"] #vue button.porte-dizaine {
+  font-family: "Canela Deck", "Canela secours", georgia, serif;
+  font-style: italic;
 }
 
 /* Sur téléphone, la voisine passe dessous en pleine largeur : deux tuiles
@@ -2444,6 +2520,35 @@ body[data-espace="yuno"] .weekend-jour .contact-nom {
   margin: var(--espace-4) 0 var(--espace-12);
   font-size: 1.125rem;
 }
+
+/* La croix qui retire le bloc de l'accueil (demande de Noé, 15 août au soir).
+   `.bouton-retirer` naît transparent et n'apparaît qu'au survol d'un `li` — ici
+   c'est une section, il faut donc lui redonner sa visibilité. Discrète au
+   repos, franche au survol : elle est là quand on la cherche, elle n'appelle
+   pas. Au doigt, la règle commune la laisse déjà à mi-encre.
+   Juste après la date, sur sa ligne d'écriture (précision de Noé, le soir
+   même) : la rangée est en `baseline`, et la croix reprend la hauteur de ligne
+   du texte pour s'y poser comme un mot de plus — pas de `line-height: 1` ici,
+   qui la ferait pendre sous les chiffres. Un seul blanc les sépare, celui de la
+   rangée. */
+.sortie-moment .tuile-entete .bouton-retirer {
+  position: relative;
+  padding: 0;
+  font-size: 1rem;
+  line-height: inherit;
+  opacity: 0.4;
+}
+
+/* Petite à l'œil, 44 px au doigt : la zone tactile déborde en transparent, sans
+   pousser la date d'un pixel. Même recette que les icônes du week-end. */
+.sortie-moment .tuile-entete .bouton-retirer::before {
+  content: "";
+  position: absolute;
+  inset: -14px;
+}
+
+.sortie-moment:hover .bouton-retirer,
+.sortie-moment .bouton-retirer:focus-visible { opacity: 1; }
 
 /* Les lignes se cochent d'ici (demande de Noé, 14 août 2026) : c'est la seule
    chose que l'accueil laisse faire, et au bord du terrain elle vaut mieux
