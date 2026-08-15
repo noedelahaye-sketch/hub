@@ -1430,6 +1430,10 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 
 .file-niveau { margin-bottom: var(--espace-24); }
 
+/* Le club proposé et la fournée forment une seule pile : entre eux, l'écart
+   des tuiles entre elles, pas celui qui sépare deux blocs. */
+.file-porte { margin-bottom: var(--espace-8); }
+
 .file-niveau h3 {
   display: flex;
   align-items: center;

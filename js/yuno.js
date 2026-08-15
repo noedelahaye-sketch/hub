@@ -3284,7 +3284,7 @@ export function construirePasserelle({
          ceux qu'on a pris. -->
     <h3 class="titre-semaine">Les messages de la semaine</h3>
 
-    <section class="file-niveau">
+    <section class="file-niveau file-porte">
       ${construirePropositions(pistes, grainePropositions, pistesPassees, propositionsOuvertes)}
     </section>
 
