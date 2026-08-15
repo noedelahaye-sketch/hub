@@ -878,6 +878,15 @@ body[data-espace="yuno"] .etiquette {
   color: var(--gris-chaud);
 }
 
+/* Le métier de chaque porte, écrit dessous : « poser sur les jours »,
+   « fouiller les 18 ». La distinction ne se lisait pas depuis la page. */
+.grande-porte-sous {
+  display: block;
+  margin-top: var(--espace-4);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
 .grande-porte-titre {
   font-family: "Canela Deck", "Canela secours", georgia, serif;
   font-style: italic;
@@ -974,6 +983,22 @@ body[data-espace="yuno"] .etiquette {
    une idée entière — pilier et notes compris — et l'idée du jour, en tête de
    page, a rendu le tirage à la demande superflu. Leurs styles partent avec eux.
    Voir docs/yuno-spec.md, §4. */
+
+/* Les piliers, repliés en bas de page (15 août 2026) : la phrase-test en
+   résumé, le tableau des rôles derrière. On le rouvre les jours de doute. */
+.piliers-repli summary {
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+}
+
+.piliers-repli summary::-webkit-details-marker { display: none; }
+.piliers-repli summary::after { content: " ›"; margin-left: var(--espace-8); color: var(--gris-chaud); }
+.piliers-repli details[open] summary::after { content: " ⌄"; }
+.piliers-repli details[open] summary { margin-bottom: var(--espace-8); }
 
 /* --- La banque d'idées ------------------------------------------------------ */
 
@@ -1170,23 +1195,12 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
    pas un filtre de plus. */
 .barre-banque .compte-base { margin: 0 0 0 auto; }
 
-.barre-banque label {
+.barre-banque .filtre-banque {
   display: flex;
   align-items: center;
   gap: var(--espace-8);
   margin: 0;
   font-size: 0.75rem;
-}
-
-.barre-banque select {
-  margin: 0;
-  padding: var(--espace-4) var(--espace-8);
-  font-size: 0.875rem;
-  font-family: inherit;
-  color: var(--texte);
-  background: var(--fond-carte);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-controle);
 }
 
 .pub-preuve {
@@ -1815,6 +1829,20 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 
 /* Le titre de l'idée porte la voix du site : c'est du contenu, pas un libellé
    d'interface. */
+/* Programmer depuis l'idée du jour : une ligne sous la tuile, hors du bouton.
+   Le champ garde la petite forme des fiches (`.pub-programmer`). */
+.idee-jour-pied {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  margin-top: var(--espace-8);
+}
+
+.idee-jour-pied input[type="date"] {
+  width: auto;
+  margin: 0;
+}
+
 .idee-jour-corps .pub-titre {
   font-family: "Canela Deck", var(--police-titre);
   font-size: 1.125rem;

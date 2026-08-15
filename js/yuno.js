@@ -22,8 +22,8 @@ import {
 import {
   STATUTS_YUNO,
   NOMS_STATUTS,
-  construireAVenir,
   construireBanque,
+  construirePublication,
   construirePubliees,
   construireApercuCreation,
   corpsPublication,
@@ -110,8 +110,8 @@ function construirePiliers() {
           )
           .join('')}
       </ul>
-      <p class="discret piliers-test">Ça rentre dans un pilier ? Oui → je crée.
-        Plancher : 2 publications par semaine. Les stories restent une zone franche.</p>
+      <p class="discret piliers-test">Plancher : 2 publications par semaine.
+        Les stories restent une zone franche.</p>
     </div>`;
 }
 
@@ -1173,12 +1173,65 @@ export function construireIdeeDuJour(publications, { autreId = null, jour = vers
         <span class="pub-titre">${echapper(idee.titre)}</span>
         ${idee.preuve ? `<span class="discret pub-preuve">${echapper(idee.preuve)}</span>` : ''}
       </button>
+      <!-- Programmer, à deux touches de l'inspiration (demande de Noé, 15 août
+           2026) : choisir une date suffit, le geste data-programmer existait
+           déjà dans les fiches. HORS du bouton — la tuile en est un, et deux
+           boutons ne s'imbriquent pas. Une fois datée, l'idée quitte la banque :
+           la tuile en tire une autre au rendu suivant, et la programmée
+           réapparaît juste dessous, dans « Cette semaine » ou « Plus tard ». -->
+      <div class="idee-jour-pied">
+        <label class="discret" for="idee-jour-date">La programmer :</label>
+        <input type="date" id="idee-jour-date" class="pub-programmer"
+          data-programmer="${echapper(idee.id)}"
+          aria-label="Programmer « ${echapper(idee.titre)} »">
+      </div>
     </section>`;
+}
+
+// --- Le pipeline de Créer -----------------------------------------------------
+// La page raconte le chemin d'une idée : l'étincelle (l'idée du jour), le
+// chantier (ce qu'on fabrique), ce qui part (cette semaine), où fouiller (les
+// portes). Réorganisée le 15 août 2026 : les données disaient 18 idées, zéro
+// programmée, zéro publiée — la page savait collecter, rien n'y faisait
+// avancer.
+
+// Ce qui est daté, coupé en deux : la semaine qui vient, et le reste. Pas de
+// borne basse — une publication datée d'hier et pas encore publiée reste dans
+// la semaine, sobrement : le hub ne compte pas les retards, il ne les efface
+// pas non plus.
+export function partagerLAVenir(publications, reference = new Date()) {
+  const datees = publications
+    .filter((pub) => pub.date_prevue && pub.statut !== 'publie')
+    .sort((a, b) => a.date_prevue.localeCompare(b.date_prevue));
+  const borne = versDateISO(ajouterJours(reference, 7));
+
+  return {
+    semaine: datees.filter((pub) => pub.date_prevue <= borne),
+    plusTard: datees.filter((pub) => pub.date_prevue > borne),
+  };
+}
+
+// L'établi : les idées qu'on fait avancer, pas encore posées sur un jour. Une
+// idée datée vit dans le flux du calendrier — c'est « Cette semaine » qui la
+// montre, avec son statut sur la tuile ; la faire figurer deux fois sur la
+// même page ne dirait rien de plus.
+export function enChantier(publications) {
+  return publications.filter(
+    (pub) => !pub.date_prevue && ['a_developper', 'brouillon', 'pret'].includes(pub.statut),
+  );
 }
 
 function vueCreer(etat) {
   // Ce qui distingue Créer chez Yuno : son cycle, sa checklist, ses piliers.
   const options = { cycle: STATUTS_YUNO, checklist: true, piliers: PILIERS };
+  const { semaine, plusTard } = partagerLAVenir(etat.publications);
+  const chantier = enChantier(etat.publications);
+  const idees = etat.publications.filter(
+    (pub) => !pub.date_prevue && pub.statut !== 'publie',
+  ).length;
+
+  const tuiles = (liste) =>
+    `<ul>${liste.map((pub) => construirePublication(pub, options)).join('')}</ul>`;
 
   return `
     ${enTete('creer')}
@@ -1190,36 +1243,74 @@ function vueCreer(etat) {
 
     ${construireIdeeDuJour(etat.publications, { autreId: etat.ideeAutre })}
 
+    <!-- « Cette semaine » remplace « À venir » (15 août 2026) : c'est le seul
+         bloc qui serve le plancher des 2 publications par semaine — en montrant
+         CE QUI EST PRÉVU, un effort que Noé contrôle, jamais un compteur de
+         manque. Le reste du daté attend replié : la semaine d'abord. -->
     <section class="bloc">
-      <h2>Les quatre piliers</h2>
-      ${construirePiliers()}
+      <h2>Cette semaine</h2>
+      <div data-bloc="semaine">
+        ${
+          semaine.length
+            ? tuiles(semaine)
+            : `<p class="vide">Rien cette semaine —
+                 <a href="#yuno/editorial">pose une idée sur un jour</a>.</p>`
+        }
+      </div>
+      ${
+        plusTard.length
+          ? `<details class="backlog">
+               <summary>Plus tard <span class="chiffre">${plusTard.length}</span></summary>
+               ${tuiles(plusTard)}
+             </details>`
+          : ''
+      }
     </section>
 
+    <!-- L'établi : le chaînon qui manquait entre la banque et le calendrier.
+         C'est lui qui donne un usage aux statuts intermédiaires (à développer,
+         brouillon, prêt) — jamais exercés jusqu'ici. Une idée qu'on avance
+         depuis sa fiche vient ici, puis se pose sur un jour. -->
     <section class="bloc">
-      <!-- Ni « Noter une idée », ni « Je ne sais pas quoi poster » (demande de
-           Noé, 15 août 2026). Le premier ouvrait un formulaire que la tuile du
-           « + » sait désormais remplir — elle a gagné le pilier et les notes
-           pour ça. Le second faisait doublon avec l'idée du jour, qui est en
-           tête de page et se retire d'un bouton. -->
+      <h2>En chantier</h2>
+      <div data-bloc="chantier">
+        ${
+          chantier.length
+            ? tuiles(chantier)
+            : `<p class="vide">L'établi est vide. Fais avancer une idée de la banque :
+                 elle passe ici, puis au calendrier.</p>`
+        }
+      </div>
+    </section>
 
-      <!-- Les deux lieux de l'atelier, côte à côte et sans titre au-dessus :
-           une icône et deux mots disent déjà où l'on va. Un libellé de section
-           qui répète le nom de la porte n'ajoute rien. -->
+    <!-- Les deux lieux de l'atelier, chacun avec son métier écrit : la
+         distinction (poser sur les jours / fouiller le fonds) ne se lisait pas
+         depuis cette page. Le compte d'idées rend la porte vivante. -->
+    <section class="bloc">
       <div class="grandes-portes">
         <a class="grande-porte" href="#yuno/editorial">
           <span class="grande-porte-icone" aria-hidden="true">${CALENDRIER}</span>
           <span class="grande-porte-titre">Calendrier<br>éditorial</span>
+          <span class="discret grande-porte-sous">Poser sur les jours</span>
         </a>
         <a class="grande-porte" href="#yuno/banque">
           <span class="grande-porte-icone" aria-hidden="true">${AMPOULE}</span>
           <span class="grande-porte-titre">Banque<br>d'idées</span>
+          <span class="discret grande-porte-sous"><span class="chiffre">${idees}</span>
+            idée${idees > 1 ? 's' : ''} à fouiller</span>
         </a>
       </div>
     </section>
 
-    <section class="bloc">
-      <h2>À venir</h2>
-      <div data-bloc="a-venir">${construireAVenir(etat.publications, options)}</div>
+    <!-- Les piliers, repliés et en bas de page (15 août 2026) : c'est la
+         stratégie de Noé, il la connaît par cœur. La phrase-test suffit au
+         quotidien ; le tableau des rôles se relit les jours de doute, pas à
+         chaque visite. Un écran entier rendu à l'action. -->
+    <section class="bloc piliers-repli">
+      <details>
+        <summary>Ça rentre dans un pilier ? Oui → je crée.</summary>
+        ${construirePiliers()}
+      </details>
     </section>
 
     ${pied()}`;
@@ -1241,31 +1332,39 @@ function vueBanque(etat) {
         et il ne réclame rien.</p>
 
       <div class="barre-banque">
-        <label>
+        <!-- En listes depuis le 15 août 2026 : les deux derniers menus natifs
+             de l'atelier. Comme au CRM, choisir AGIT — la valeur vit sur
+             l'option, pas dans un champ. -->
+        <span class="filtre-banque">
           <span class="discret">Pilier</span>
-          <select data-filtre-pilier>
-            <option value="tout" ${etat.pilier === 'tout' ? 'selected' : ''}>Tous</option>
-            ${Object.entries(PILIERS)
-              .map(
-                ([rang, { nom }]) =>
-                  `<option value="${rang}" ${etat.pilier === rang ? 'selected' : ''}>${rang}. ${echapper(nom)}</option>`,
-              )
-              .join('')}
-            <option value="" ${etat.pilier === '' ? 'selected' : ''}>Sans pilier</option>
-          </select>
-        </label>
-        <label>
+          ${menuChoix({
+            nom: 'filtre-pilier',
+            libelle: 'Filtrer par pilier',
+            options: [
+              ['tout', 'Tous'],
+              ...Object.entries(PILIERS).map(([rang, { nom }]) => [rang, `${rang}. ${nom}`]),
+              ['', 'Sans pilier'],
+            ],
+            valeur: etat.pilier,
+            attribut: 'data-filtre-pilier-valeur',
+          })}
+        </span>
+        <span class="filtre-banque">
           <span class="discret">Statut</span>
-          <select data-filtre-statut-idee>
-            <option value="tout" ${etat.statutIdee === 'tout' ? 'selected' : ''}>Tous</option>
-            ${STATUTS_YUNO.filter((statut) => statut !== 'publie')
-              .map(
-                (statut) =>
-                  `<option value="${statut}" ${etat.statutIdee === statut ? 'selected' : ''}>${NOMS_STATUTS[statut]}</option>`,
-              )
-              .join('')}
-          </select>
-        </label>
+          ${menuChoix({
+            nom: 'filtre-statut-idee',
+            libelle: 'Filtrer par statut',
+            options: [
+              ['tout', 'Tous'],
+              ...STATUTS_YUNO.filter((statut) => statut !== 'publie').map((statut) => [
+                statut,
+                NOMS_STATUTS[statut],
+              ]),
+            ],
+            valeur: etat.statutIdee,
+            attribut: 'data-filtre-statut-idee-valeur',
+          })}
+        </span>
         <span class="discret compte-base"><span class="chiffre">${retenues.length}</span> sur
           <span class="chiffre">${etat.publications.length}</span></span>
       </div>
@@ -4451,6 +4550,21 @@ export default {
         return;
       }
 
+      // Les filtres de la banque : la valeur vit sur l'option choisie.
+      const choixPilier = evenement.target.closest('[data-filtre-pilier-valeur]');
+      if (choixPilier) {
+        etat.pilier = choixPilier.dataset.filtrePilierValeur;
+        rendre();
+        return;
+      }
+
+      const choixStatutIdee = evenement.target.closest('[data-filtre-statut-idee-valeur]');
+      if (choixStatutIdee) {
+        etat.statutIdee = choixStatutIdee.dataset.filtreStatutIdeeValeur;
+        rendre();
+        return;
+      }
+
       // Un filtre du CRM : la valeur est sur l'option, la colonne sur la puce.
       const choixFiltre = evenement.target.closest('[data-filtre-colonne-valeur]');
       if (choixFiltre) {
@@ -5282,20 +5396,6 @@ export default {
         await modifierAussitot(modele, champs, () => api.modifierModele(id, champs), {
           echouer: (message) => { rendre(); dire(message); },
         });
-        return;
-      }
-
-      const filtrePilier = evenement.target.closest('[data-filtre-pilier]');
-      if (filtrePilier) {
-        etat.pilier = filtrePilier.value;
-        rendre();
-        return;
-      }
-
-      const filtreStatutIdee = evenement.target.closest('[data-filtre-statut-idee]');
-      if (filtreStatutIdee) {
-        etat.statutIdee = filtreStatutIdee.value;
-        rendre();
         return;
       }
 

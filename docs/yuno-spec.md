@@ -636,6 +636,36 @@ on les cherche et disparaître quand on lit le reste.
 site du FCH : la banque et « Publiées » sont seules à passer par
 `construireApercuPublication`.
 
+**La page raconte le pipeline, pas les lieux** (réorganisation du 15 août 2026,
+sur analyse validée par Noé — les données disaient 18 idées, zéro programmée,
+zéro publiée : la page savait collecter, rien n'y faisait avancer). Son ordre
+est le chemin d'une idée :
+
+1. **L'idée du jour** — l'étincelle, avec un champ « La programmer » sous la
+   tuile : l'inspiration du matin se pose sur un jour en deux touches. Une fois
+   datée, l'idée quitte la banque, la tuile en tire une autre, et la programmée
+   réapparaît juste dessous.
+2. **Cette semaine** — ce qui est programmé à 7 jours. Le seul bloc qui serve le
+   plancher des 2 publications par semaine, en montrant **ce qui est prévu** (un
+   effort que Noé contrôle), jamais un compteur de manque. Sans borne basse :
+   une publication datée d'hier et pas publiée y reste, sobrement. Le daté
+   au-delà attend dans « Plus tard », replié. (« À venir » a disparu dans cette
+   coupe.)
+3. **En chantier** — l'établi : les idées en « à développer », « brouillon » ou
+   « prêt », **sans date**. C'est le chaînon entre la banque et le calendrier,
+   et ce qui donne enfin un usage aux statuts intermédiaires. Une idée datée vit
+   dans le flux du calendrier, son statut se lit sur sa tuile — pas de double
+   affichage.
+4. **Les deux portes**, chacune avec son métier écrit : « Poser sur les jours »
+   (éditorial), « N idées à fouiller » (banque, avec le compte).
+5. **Les piliers, repliés en bas** : la phrase-test en résumé (« Ça rentre dans
+   un pilier ? Oui → je crée. »), le tableau des rôles derrière. C'est la
+   stratégie de Noé, il la connaît par cœur — on la relit les jours de doute,
+   pas à chaque visite.
+
+Les filtres de la banque (pilier, statut) sont passés **en listes** le même
+jour — les derniers menus natifs de l'atelier, même composant que le CRM.
+
 **L'idée du jour ouvre la page** (demande de Noé, 14 août 2026) : une idée de
 la banque, tirée au sort une fois par jour, offerte en arrivant. Elle ne demande
 rien — elle est là, on la lit, on la garde ou on passe. C'est le pendant du mur

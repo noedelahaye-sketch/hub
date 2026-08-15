@@ -637,6 +637,40 @@ suivent.
 
 ---
 
+## 0 quaterdecies. Créer réorganisée autour du pipeline (15 août)
+
+Analyse demandée par Noé, proposition validée en trois arbitrages (« Ok pour
+les 3, fais tout ça »). Le constat qui commande tout : **18 idées, toutes en
+statut « idée », zéro programmée, zéro publiée** — la page savait collecter,
+rien n'y faisait avancer.
+
+Le nouvel ordre est le chemin d'une idée : **l'idée du jour** (avec « La
+programmer » sous la tuile — hors du bouton, qui en est un) → **Cette semaine**
+(le daté à 7 jours, sans borne basse ; le reste dans « Plus tard », replié ;
+« À venir » a disparu) → **En chantier** (les statuts intermédiaires sans date —
+enfin un usage) → **les portes** avec leur métier écrit et le compte d'idées →
+**les piliers repliés** en bas, la phrase-test en résumé. Les filtres de la
+banque passent en listes (`menuChoix`), leurs gestionnaires de `change` à
+`click`.
+
+**Un piège qui a montré sa chaîne complète** : `construirePublication` manquait
+aux imports — et le symptôme était à trois bancs du crime. Programmer une idée
+ne s'écrivait pas en base, sans erreur visible sur le geste : `modifierAussitot`
+pose l'état, appelle `rendre()` — qui lève la ReferenceError AVANT le `try` —
+et l'écriture ne part jamais. L'état optimiste était posé, l'écran figé, la base
+intacte. `node --check` ne voit pas un import manquant ; seule l'exécution le
+dit, une fois de plus.
+
+**Vérifié de bout en bout, en réel** : une idée programmée depuis la tuile
+(base relue : datée du 17), apparue dans « Cette semaine » (« dans 2 jours »),
+avancée en « à développer » depuis sa tuile, **déprogrammée → passée d'elle-même
+dans « En chantier »** (le flux exact du dessin), puis rendue à son état
+d'origine. Filtres de la banque : 18 → 3 sur le pilier 2, retour à 18, zéro
+`select` natif restant dans l'atelier. Piliers : se déplient, se replient.
+0 px de débordement. Base finale : 18 idées, l'état exact du départ.
+
+---
+
 ## 1. Ce qui existe
 
 Le hub est **déployé et fonctionnel** :
