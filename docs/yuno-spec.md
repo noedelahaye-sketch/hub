@@ -1057,8 +1057,9 @@ derniers ne se rechoisissent pas.
 
 **Toucher une ligne ouvre la fiche du club** (15 août 2026) : ce que les
 listes abrègent, sur un écran. Son état (jamais contacté · dans ta fournée ·
-écrit tel jour), son prochain match, **les quatre portes en toutes lettres**,
-et **tous ses contacts — « pas de contact » compris**, au rebours de la carte
+écrit tel jour), son prochain match, **les quatre portes en icônes** — la même
+rangée que sur une carte de la fournée, quatre lignes titrées prenaient la
+moitié de la fiche — et **tous ses contacts — « pas de contact » compris**, au rebours de la carte
 de la Passerelle : ici on cherche, on n'agit pas. Chaque contact ouvre sa
 propre fiche, qui remplace celle du club — jamais deux fenêtres empilées. Un
 « + » y ajoute quelqu'un, et un bouton met le club à la fournée s'il n'y est

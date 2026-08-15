@@ -3326,14 +3326,6 @@ function fenetreClub(etat) {
       ? 'Dans ta fournée de la semaine'
       : 'Jamais contacté';
 
-  const portes = portesPiste(piste)
-    .map(
-      ([cle, nom, url]) => `
-      <li><a class="club-porte" href="${url}" target="_blank" rel="noopener"
-        >${ICONES_PORTES[cle]}<span>${echapper(nom)}</span></a></li>`,
-    )
-    .join('');
-
   const gens = dedans.length
     ? `<ul class="club-contacts">${dedans
         .map((contact) => {
@@ -3367,8 +3359,11 @@ function fenetreClub(etat) {
          : ''
      }
 
-     <h4 class="club-titre">Où chercher</h4>
-     <ul class="club-portes">${portes}</ul>
+     <!-- Les portes en icônes, sous les infos du club : la même rangée que sur
+          une carte de la fournée (demande de Noé, 15 août 2026). Quatre lignes
+          titrées prenaient la moitié de la fiche pour dire ce que quatre
+          symboles disent aussi bien. -->
+     <span class="piste-liens">${liensPiste(piste).join('')}</span>
 
      <h4 class="club-titre">Les contacts
        ${dedans.length ? `<span class="chiffre">${dedans.length}</span>` : ''}

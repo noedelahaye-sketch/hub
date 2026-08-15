@@ -1513,6 +1513,14 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
    proposition tient sur une ligne, il faut le dire plus fort qu'elle. */
 .bloc li.proposition { flex-wrap: nowrap; }
 
+/* Au vivier, une ligne entière ouvre la fiche du club : elle le dit au survol,
+   comme les autres tuiles ouvrables du site (le trait gris chaud). Ses
+   commandes gardent leur curseur — elles, elles font autre chose. */
+.proposition[data-ouvrir-club] { cursor: pointer; }
+.proposition[data-ouvrir-club]:hover { border-color: var(--gris-chaud-trait); }
+.proposition[data-ouvrir-club] a,
+.proposition[data-ouvrir-club] button { cursor: pointer; }
+
 /* Le nom cède la place plutôt que de pousser le « + » à la ligne : une
    proposition tient sur UNE ligne, l'ellipse dit le reste. */
 .proposition .contact-nom {
@@ -1795,7 +1803,10 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   margin: 0 0 var(--espace-4);
 }
 
-.club-match { margin: 0 0 var(--espace-16); font-size: 0.875rem; }
+.club-match { margin: 0 0 var(--espace-12); font-size: 0.875rem; }
+
+/* Les portes de la fiche : la rangée d'icônes des cartes de fournée. */
+.fenetre .piste-liens { margin-bottom: var(--espace-8); }
 
 .club-titre {
   display: flex;
@@ -1808,7 +1819,6 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 }
 
 /* Hors d'un `.bloc`, une liste retrouve ses puces : on les retire ici. */
-.club-portes,
 .club-contacts {
   display: grid;
   gap: var(--espace-4);
@@ -1816,21 +1826,6 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
   padding: 0;
   list-style: none;
 }
-
-.club-porte {
-  display: flex;
-  align-items: center;
-  gap: var(--espace-12);
-  min-height: 2.75rem;
-  padding: 0 var(--espace-12);
-  color: var(--texte);
-  background: var(--fond-carte);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-controle);
-  text-decoration: none;
-}
-
-.club-porte:hover { border-color: var(--accent); }
 
 /* Chaque contact du club, avec son type et l'état de la relation. La ligne
    entière ouvre sa fiche. */
