@@ -986,11 +986,12 @@ La page, de haut en bas :
   la journée sont sûrs ; la date est indicative** (elle glisse avec la
   télévision) — elle se lit au survol sur la ligne, en clair sur la carte de
   fournée. Sans calendrier chargé, la ligne retombe sur « Matchs à venir ».
-  Chargé au 15 août 2026 : Ligue 1, Ligue 2, Bundesliga, Serie A, La Liga,
-  Super League suisse (journées publiées) et l'Almería (Segunda). **Restent la
-  Ligue 3 et la Belgique**, dont les calendriers complets n'étaient pas encore
-  publiés sur la source — voir la migration `20260815210000`, qui tient le
-  journal des chargements et de la méthode.
+  **Les 97 clubs du vivier ont leur calendrier** (15 août 2026) : Ligue 1,
+  Ligue 2, Ligue 3, Bundesliga, Serie A, La Liga, Belgique, Suisse (les
+  journées publiées) et l'Almería. Les migrations `20260815210000` et
+  `20260815220000` tiennent le journal des chargements et de la méthode —
+  fbref.com pour la plupart, le PDF officiel pour la Ligue 3, proleague.be
+  pour la Belgique.
 - **« Le chantier Clubs »**, replié : le chemin parcouru, division par
   division. « 12 clubs contactés sur 97 » — on dit l'obtenu, jamais le
   « reste ».

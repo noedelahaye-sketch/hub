@@ -34,12 +34,14 @@ Le cahier des charges fait autorité : `yuno-spec.md`, § `#yuno/passerelle`.
 - **Le prochain match s'affiche** (« J1 · reçoit LOSC Lille ») : table
   `matchs_pistes` + vue `prochain_match_par_piste`
   (migration `20260815200000_matchs_pistes.sql`), chargées depuis fbref.com
-  via le navigateur (le site refuse les lectures hors navigateur). **Chargé le
-  15 août : L1, L2, Bundesliga, Serie A, La Liga, Suisse (22 journées
-  publiées), Almería — ~2 400 lignes, 71 clubs sur 97.** Adversaire et journée
-  sûrs, date indicative (précision acceptée par Noé). La migration
-  `20260815210000` tient le journal : seule la Ligue 1 a ses données dans le
-  dépôt, les autres lots vivent en base (source publique, rejouable).
+  via le navigateur (le site refuse les lectures hors navigateur). **Les 97
+  clubs du vivier ont leur calendrier — 3 314 lignes.** Adversaire et journée
+  sûrs, date indicative (précision acceptée par Noé). Deux migrations tiennent
+  le journal : `20260815210000` (L1, L2, Bundesliga, Serie A, La Liga, Suisse,
+  Almería — seule la L1 a ses données dans le dépôt, les autres lots vivent en
+  base, la source web étant rejouable) et `20260815220000` (Ligue 3 et
+  Belgique, données incluses — le PDF officiel de la L3 et le parcours
+  journée par journée de proleague.be ne se rejouent pas d'un clic).
 - **Les portes d'une carte de fournée sont des icônes sans cadre** : calendrier
   et planète-presse en bleu Yuno, LinkedIn et Instagram avec leur vrai logo
   (SVG intégrés dans `js/yuno.js`). La fenêtre de la dizaine n'a plus de titre
@@ -60,12 +62,12 @@ Le cahier des charges fait autorité : `yuno-spec.md`, § `#yuno/passerelle`.
 - **Les mentions Léopard sont figées au 15 août**, mercato encore ouvert :
   Stroeykens (Anderlecht) et M.-A. Balikwisha (Antwerp) n'ont pas été inscrits
   faute de certitude ; revérifier après la fermeture du marché.
-- **Deux calendriers restent à charger dans `matchs_pistes`** : la **Ligue 3**
-  (absente de fbref ; ligue3betclic.fr ne publie que les journées jouées) et
-  la **Belgique** (fbref affiche encore la saison 2025-26 pour la Pro League).
-  Même méthode que les autres quand une source publie — et la **Suisse
-  s'arrête à la J22** publiée, à compléter plus tard. En profiter pour
-  re-vérifier les dates si des reports se sont accumulés.
+- **La Suisse s'arrête à la J22**, seules journées publiées à la mi-août ; les
+  douze dernières restent à charger plus tard. En profiter pour re-vérifier
+  les dates des autres championnats si des reports se sont accumulés.
+- **L'essai d'Auxerre a été défait** (15 août, à la demande de Noé) : la piste
+  est revenue au vivier et son envoi a été retiré du journal — le compteur ne
+  compte que des messages réellement partis. La Passerelle repart de zéro.
 - **Les trois autres chantiers** discutés avec Noé — concerts/événements,
   accréditation Vélodrome, médias congolais tous les mois — attendent que la
   forme Clubs soit validée à l'usage.
