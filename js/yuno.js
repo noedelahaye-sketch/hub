@@ -1606,23 +1606,28 @@ function construireWeekend(etat) {
                     evenement.club_visiteur === recevant.id),
               );
 
+              // Une ligne par rencontre, et rien qu'une : la division, l'affiche,
+              // la journée, et le calendrier au bout. Vingt matchs par colonne
+              // ne tiennent pas autrement (demande de Noé, 15 août 2026).
               return `
                 <li>
-                  <span class="club-match-affiche">
-                    ${pastilleTexte(DIVISIONS[recevant.division] ?? recevant.division)}
-                    <span class="contact-nom">${echapper(
-                      afficheDuMatch(recevant, match),
-                    )}</span>
-                    <span class="discret">J${match.journee}</span>
-                  </span>
+                  ${pastilleTexte(DIVISIONS[recevant.division] ?? recevant.division)}
+                  <span class="contact-nom">${echapper(
+                    afficheDuMatch(recevant, match),
+                  )}</span>
+                  <span class="discret weekend-journee">J${match.journee}</span>
                   ${
                     pose
-                      ? `<span class="discret club-match-pose">✓ au calendrier</span>`
-                      : `<button type="button" class="bouton-secondaire bouton-mini"
+                      ? `<span class="weekend-pose" title="Déjà au calendrier"
+                          aria-label="Déjà au calendrier">${ICONES_PORTES.matchs}</span>`
+                      : `<button type="button" class="weekend-poser"
                           data-poser-match="${echapper(recevant.id)}"
                           data-match-journee="${match.journee}"
                           data-match-date="${echapper(match.date)}"
-                          >Poser…</button>`
+                          title="Poser au calendrier"
+                          aria-label="Poser ${echapper(
+                            afficheDuMatch(recevant, match),
+                          )} au calendrier">${ICONES_PORTES.matchs}</button>`
                   }
                 </li>`;
                   })

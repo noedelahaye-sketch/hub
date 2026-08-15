@@ -1865,9 +1865,66 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 
 .weekend-jour { min-width: 0; }
 
-/* En colonne, l'affiche prend toute la largeur et le geste passe dessous. */
-.weekend-jour .club-match-affiche { flex: 1 1 100%; }
-.weekend-jour .club-matchs li { align-items: flex-start; }
+/* Vingt rencontres dans une colonne : tout rétrécit pour tenir sur une ligne
+   chacune — l'affiche dans la police du texte et non celle des titres, la
+   pastille de division réduite, et le calendrier au bout en guise de geste. */
+.weekend-jour h4 { font-size: 0.8125rem; }
+
+.weekend-jour .club-matchs li {
+  flex-wrap: nowrap;
+  gap: var(--espace-4);
+  padding: var(--espace-4) 0;
+}
+
+body[data-espace="yuno"] .weekend-jour .contact-nom {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--police-texte);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.weekend-jour .tag {
+  flex: none;
+  padding: 0 var(--espace-4);
+  font-size: 0.625rem;
+}
+
+.weekend-journee { flex: none; font-size: 0.6875rem; }
+
+/* Le geste tient dans une icône : la zone tactile déborde en transparent pour
+   garder ses 44 px sans peser sur la ligne. */
+.weekend-poser,
+.weekend-pose {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  padding: 0;
+  color: var(--texte-discret);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.weekend-poser svg,
+.weekend-pose svg { width: 16px; height: 16px; }
+
+.weekend-poser::before {
+  content: "";
+  position: absolute;
+  inset: -12px;
+}
+
+.weekend-poser:hover,
+.weekend-poser:focus-visible { color: var(--accent); }
+
+/* Posé, il ne se touche plus : l'icône passe à l'or et perd son geste. */
+.weekend-pose { color: var(--accent); cursor: default; }
 
 .weekend-jour h4 {
   display: flex;
