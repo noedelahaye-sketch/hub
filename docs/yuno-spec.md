@@ -1100,11 +1100,16 @@ rappel, et il se corrige à la main comme n'importe quel statut.
 **La carte montre TOUT LE MONDE qu'on connaît dans le club** (demande de Noé,
 15 août 2026) : au service presse s'ajoutent un joueur, un confrère, un
 attaché. Les fiches dont « rattaché à » porte le nom du club — plus celle née
-de la piste — s'alignent en une **rangée qui défile sur le côté**, pour que la
-carte ne grandisse pas quand le club en compte cinq. Chaque personne est une
-**pastille à la couleur de son type** (joueur, photographe, club, média,
-agence, marque) ; **la toucher ouvre sa relation**, modifiable d'ici. Le bouton
-devient « Ajouter un contact » dès qu'il y a quelqu'un.
+de la piste — s'alignent en une **bande qui défile de gauche à droite**, celle
+des pastilles de la tuile de capture, avec un petit **« + » à droite** qui ne
+défile pas. Chaque personne porte **la couleur de son type** (joueur,
+photographe, club, média, agence, marque) : Ewan Schnell est doré parce qu'il
+est rattaché au type « club ».
+
+**Sous la bande, le menu de la relation** de la personne regardée. Toucher une
+autre pastille change la personne, donc le menu : la carte reste d'un seul
+tenant, et un club de cinq personnes n'y prend pas plus de place qu'un club
+d'une seule.
 
 **La carte ne disparaît pas de la fournée** (demande de Noé, 15 août 2026) :
 elle change de geste. « Envoyé ✓ » cède la place à **l'état de la relation** —

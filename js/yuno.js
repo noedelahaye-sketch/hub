@@ -2967,23 +2967,53 @@ export function contactsDuClub(piste, contacts = []) {
   return dedans;
 }
 
-// La pastille d'une personne : son nom, la couleur de son type, et le panneau
-// de sa relation au clic. Le geste est celui du carnet — `data-statut` sur
-// l'option, le contact sur le conteneur —, l'espace l'écoutait déjà.
-function pastilleContact(contact) {
+// Les gens du club, en bande qui défile — la forme des pastilles de la tuile de
+// capture (demande de Noé, 15 août 2026), un petit « + » à droite pour en
+// ajouter, et SOUS la bande le menu de relation de celui qu'on regarde.
+// Chaque pastille porte la couleur de son type : Ewan Schnell est doré parce
+// qu'il est rattaché au type « club ».
+function bandeContacts(piste, dedans, choisiId) {
+  const choisi = dedans.find((contact) => contact.id === choisiId) ?? dedans[0];
+
+  const pastilles = dedans
+    .map((contact) => {
+      const teinte = TEINTES_TYPE[contact.type];
+      return `
+        <button type="button"
+          class="pastille-capture pastille-personne${contact === choisi ? ' actif' : ''}${
+            teinte === null || teinte === undefined ? ' pastille-personne-neutre' : ''
+          }"
+          ${teinte === null || teinte === undefined ? '' : `style="--h: ${teinte}"`}
+          data-contact-actif="${echapper(contact.id)}"
+          data-piste-du-contact="${echapper(piste.id)}"
+          aria-pressed="${contact === choisi}"
+          title="${echapper(TYPES_CONTACT[contact.type] ?? contact.type ?? '')}"
+          >${echapper(contact.nom)}</button>`;
+    })
+    .join('');
+
   return `
-    <span class="contact-pastille" data-statut-de="${echapper(contact.id)}">${menuChoix({
-      nom: `relation-${contact.id}`,
-      libelle: `Relation avec ${contact.nom} — ${TYPES_CONTACT[contact.type] ?? contact.type}`,
-      options: Object.entries(STATUTS_CONTACT).map(([valeur, { nom }]) => [valeur, nom]),
-      valeur: contact.statut,
-      attribut: 'data-statut',
-      couleurDe: statutLisible,
-      tete: { texte: contact.nom, teinte: TEINTES_TYPE[contact.type] ?? null },
-    })}</span>`;
+    <span class="fournee-bande">
+      <span class="fournee-bande-liste">${pastilles}</span>
+      <button type="button" class="pastille-ajout" data-trouve-piste="${echapper(piste.id)}"
+        title="Ajouter un contact"
+        aria-label="Ajouter un contact à ${echapper(piste.nom)}">+</button>
+    </span>
+    ${
+      choisi
+        ? `<span class="fournee-relation" data-statut-de="${echapper(choisi.id)}">${menuChoix({
+            nom: `relation-${choisi.id}`,
+            libelle: `Relation avec ${choisi.nom}`,
+            options: Object.entries(STATUTS_CONTACT).map(([valeur, { nom }]) => [valeur, nom]),
+            valeur: choisi.statut,
+            attribut: 'data-statut',
+            couleurDe: statutLisible,
+          })}</span>`
+        : ''
+    }`;
 }
 
-function carteFournee(piste, contacts) {
+function carteFournee(piste, contacts, choisiId = null) {
   const dedans = contactsDuClub(piste, contacts);
 
   // Les gestes vivent en colonne, à droite, croix comprise (demandes de Noé,
@@ -3004,25 +3034,13 @@ function carteFournee(piste, contacts) {
               : ''
           }
           <span class="piste-liens">${liensPiste(piste).join('')}</span>
-          ${
-            // Tout le monde qu'on connaît dans ce club, en une rangée qui
-            // défile sur le côté : un club en compte parfois plusieurs, et la
-            // carte ne doit pas grandir pour autant. Chaque pastille porte la
-            // couleur de son type ; la toucher ouvre sa relation.
-            dedans.length
-              ? `<span class="fournee-contacts">${dedans.map(pastilleContact).join('')}</span>`
-              : ''
-          }
+          ${bandeContacts(piste, dedans, choisiId)}
         </span>
         <span class="fournee-actions">
           <button type="button" class="lien-discret bouton-mini bouton-retirer fournee-reposer"
             data-reposer-piste="${echapper(piste.id)}"
             title="Reposer au vivier"
             aria-label="Reposer ${echapper(piste.nom)} au vivier">×</button>
-          <button type="button" class="bouton-secondaire bouton-mini"
-            data-trouve-piste="${echapper(piste.id)}">${
-              dedans.length ? 'Ajouter un contact' : 'Noter le contact'
-            }</button>
           ${
             // Sans personne connue, la date de l'envoi dit ce qui a été fait :
             // le message est parti au compte du club.
@@ -3386,6 +3404,9 @@ export function construirePasserelle({
   grainePropositions = 1,
   pistesPassees = [],
   propositionsOuvertes = false,
+  // Quelle personne du club est regardée, par piste. Un état d'écran : la
+  // bande garde son premier venu tant qu'on n'en touche pas une autre.
+  contactChoisi = {},
 } = {}) {
   marquerLesRelances(pistes, contacts);
 
@@ -3411,7 +3432,9 @@ export function construirePasserelle({
     <section class="file-niveau">
       ${
         fournee.length
-          ? `<ul>${fournee.map((piste) => carteFournee(piste, contacts)).join('')}</ul>`
+          ? `<ul>${fournee
+              .map((piste) => carteFournee(piste, contacts, contactChoisi[piste.id]))
+              .join('')}</ul>`
           : `<p class="vide">Choisis ci-dessus les clubs de ta semaine,
               selon leurs matchs à venir.</p>`
       }
@@ -3994,6 +4017,8 @@ export default {
       // La compétition regardée au vivier. État d'écran, pas un réglage : on
       // rouvre la page sur tout le vivier.
       divisionVivier: 'tout',
+      // La personne regardée sur chaque carte de la fournée, par piste.
+      contactChoisi: {},
       preparations: [],
       modelesPrepa: [],
       // L'identifiant de la feuille (ou du modèle) ouvert — il vient de
@@ -5520,6 +5545,18 @@ export default {
         etat.propositionsOuvertes = true;
         rendreContacts();
         section.querySelector('.fenetre-fermer')?.focus();
+        return;
+      }
+
+      // Toucher une pastille de la bande change la personne regardée : c'est
+      // sa relation qui s'affiche dessous.
+      const contactActif = evenement.target.closest('[data-contact-actif]');
+      if (contactActif) {
+        etat.contactChoisi = {
+          ...etat.contactChoisi,
+          [contactActif.dataset.pisteDuContact]: contactActif.dataset.contactActif,
+        };
+        rendreContacts();
         return;
       }
 
