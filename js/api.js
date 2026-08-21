@@ -518,8 +518,19 @@ export async function marquerSortieVecue(id, champs, { rencontres = [], titre })
 // léger, et rien ne se voit. La marge est large — la photo n'est jamais
 // affichée à plus de 1158 × 900, même sur un écran qui dessine trois pixels par
 // point. Le décider ici et nulle part ailleurs.
-export const COTE_LONG_PHOTO = 2400;
-export const QUALITE_PHOTO = 0.85;
+//
+// Resserré le 21 août 2026 (2400 px / 0,85 → 1600 px / 0,82) : Supabase a
+// écrit — la bande passante du plan gratuit part presque toute dans les photos.
+// 1600 px couvrent un plein écran de téléphone Retina (≈400 px CSS × 3) ; le
+// hub montre le souvenir, il n'archive pas le fichier de boîtier, qui reste
+// chez Noé.
+export const COTE_LONG_PHOTO = 1600;
+export const QUALITE_PHOTO = 0.82;
+
+// Au-dessus de ce poids, on ré-encode MÊME une image déjà sous la barre des
+// 1600 px : un JPEG peu compressé de 1500 px peut peser 2 Mo, et il partait
+// tel quel — c'est lui qui brûlait la bande passante, pas les grandes images.
+export const POIDS_CONFORT_PHOTO = 500 * 1024;
 
 // Redimensionne avant l'envoi. Une photo de 5 Mo n'a aucune raison d'entrer
 // dans le bucket : c'est le poste le plus lourd du site, très loin devant tout
@@ -545,12 +556,14 @@ export async function reduirePourLeCarnet(fichier) {
   }
 
   const cote = Math.max(bitmap.width, bitmap.height);
-  if (cote <= COTE_LONG_PHOTO) {
+  // Sous la barre ET déjà légère : le ré-encodage ne ferait que perdre de la
+  // qualité. Sous la barre mais lourde : on ré-encode sans redimensionner.
+  if (cote <= COTE_LONG_PHOTO && fichier.size <= POIDS_CONFORT_PHOTO) {
     bitmap.close?.();
     return fichier;
   }
 
-  const echelle = COTE_LONG_PHOTO / cote;
+  const echelle = Math.min(1, COTE_LONG_PHOTO / cote);
   const toile = document.createElement('canvas');
   toile.width = Math.round(bitmap.width * echelle);
   toile.height = Math.round(bitmap.height * echelle);
@@ -582,16 +595,70 @@ export async function televerserPhotoMoment(fichier) {
   return chemin;
 }
 
-// Une signature d'une heure : le temps d'une visite, pas davantage.
+// Des signatures d'UN MOIS, gardées et réutilisées (décision de Noé, 21 août
+// 2026 — le mail de Supabase). Elles duraient une heure et se redemandaient à
+// chaque session : chaque visite recevait des adresses NEUVES, et le navigateur,
+// qui met en cache par adresse, retéléchargeait toutes les photos qu'il avait
+// déjà. C'était l'essentiel de la bande passante du site.
+//
+// Le garde-manger vit dans le localStorage : tant qu'une adresse a moins de
+// 25 jours, on la ressert telle quelle — le navigateur reconnaît l'adresse et
+// ressort l'image de son cache, rien ne descend. Les 5 jours de marge couvrent
+// l'onglet qui reste ouvert : une adresse servie à 25 jours reste valable 5
+// jours de plus.
+//
+// Le coût, assumé : un lien qui fuirait resterait valable un mois au lieu d'une
+// heure. Les photos restent privées — sans lien signé, le bucket ne répond pas.
+const CLE_PHOTOS_SIGNEES = 'yuno-photos-signees';
+export const DUREE_SIGNATURE_PHOTOS = 30 * 24 * 3600;
+export const REUTILISATION_PHOTOS = 25 * 24 * 3600 * 1000;
+
+function lireLesSignatures() {
+  try {
+    return JSON.parse(localStorage.getItem(CLE_PHOTOS_SIGNEES)) ?? {};
+  } catch {
+    return {};
+  }
+}
+
 export async function urlsDesPhotos(chemins) {
   if (!chemins.length) return {};
 
-  const { data, error } = await client.storage.from('moments').createSignedUrls(chemins, 3600);
+  const maintenant = Date.now();
+  const gardees = lireLesSignatures();
+  const fraiches = Object.fromEntries(
+    chemins
+      .filter((c) => gardees[c] && maintenant - gardees[c].le < REUTILISATION_PHOTOS)
+      .map((c) => [c, gardees[c].url]),
+  );
+
+  const manquants = chemins.filter((c) => !(c in fraiches));
+  if (!manquants.length) return fraiches;
+
+  const { data, error } = await client.storage
+    .from('moments')
+    .createSignedUrls(manquants, DUREE_SIGNATURE_PHOTOS);
   if (error) throw error;
 
-  return Object.fromEntries(
+  const neuves = Object.fromEntries(
     data.filter((entree) => entree.signedUrl).map((entree) => [entree.path, entree.signedUrl]),
   );
+
+  // On réécrit le garde-manger sans ses entrées périmées : il ne grossit pas
+  // avec les photos disparues. Un localStorage qui refuse n'empêche rien —
+  // on perd seulement la réutilisation.
+  try {
+    const suite = {};
+    for (const [c, entree] of Object.entries(gardees)) {
+      if (maintenant - entree.le < REUTILISATION_PHOTOS) suite[c] = entree;
+    }
+    for (const [c, url] of Object.entries(neuves)) suite[c] = { url, le: maintenant };
+    localStorage.setItem(CLE_PHOTOS_SIGNEES, JSON.stringify(suite));
+  } catch {
+    // Tant pis : la prochaine visite resignera.
+  }
+
+  return { ...fraiches, ...neuves };
 }
 
 // Corriger une sortie vécue : sa date, son type, son lieu, sa note, la case

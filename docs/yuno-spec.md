@@ -550,8 +550,27 @@ Trois conséquences, et elles tiennent l'intention :
 - **La photo se joint, elle ne se décrit pas.** Elle vit dans un bucket
   Supabase **privé** (`moments`) : le site et le dépôt sont publics, un bucket
   ouvert donnerait des liens recopiables par n'importe qui. On n'y accède que
-  par une URL signée d'une heure, refabriquée à chaque visite. Retirer une
-  sortie du carnet efface son fichier. Le bucket garde son nom (`moments`) :
+  par une URL signée. Retirer une sortie du carnet efface son fichier.
+
+  **Les URL sont signées UN MOIS et réutilisées 25 jours** (décision de Noé,
+  21 août 2026 — le mail de Supabase : la bande passante du plan gratuit
+  partait presque toute dans les photos). Elles duraient une heure et se
+  refabriquaient à chaque visite : des adresses neuves à chaque fois, donc un
+  navigateur incapable de resservir son cache — il retéléchargeait des photos
+  qu'il avait déjà. Le garde-manger vit dans le `localStorage`
+  (`yuno-photos-signees`, dans `api.urlsDesPhotos`) ; les 5 jours de marge
+  couvrent l'onglet resté ouvert, et `SIGNATURE_UTILE` (le cache d'écran de
+  Yuno) pointe sur la même constante pour ne jamais diverger. Le coût, assumé :
+  un lien qui fuirait vivrait un mois au lieu d'une heure — les photos restent
+  privées, sans lien le bucket ne répond pas.
+
+  **La photo est réduite AVANT l'envoi** (`reduirePourLeCarnet`, resserrée le
+  21 août 2026 : 1600 px de côté long, JPEG 0,82 — elle était à 2400 px/0,85).
+  1600 px couvrent un plein écran de téléphone Retina ; le hub montre le
+  souvenir, le fichier de boîtier reste chez Noé. Une image déjà sous la barre
+  mais au-dessus de 500 Ko est ré-encodée quand même : un JPEG peu compressé de
+  1500 px pesait 2 Mo et partait tel quel — c'est lui qui coûtait, pas les
+  grandes images. Sous la barre ET légère, elle passe intacte. Le bucket garde son nom (`moments`) :
   c'est un nom de stockage, pas un mot d'interface, et le renommer casserait
   les chemins déjà écrits en base.
 - **Le fil est une LISTE, plus des cartes** (demande de Noé, 14 août 2026) :

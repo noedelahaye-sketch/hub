@@ -4475,10 +4475,12 @@ const BESOINS = {
 
 const CLE_CACHE = 'yuno';
 
-// Les adresses des photos sont signées une heure (api.urlsDesPhotos). Passé ce
-// délai on ne ressort pas le mur du cache : un mur d'images mortes vaut moins
-// qu'un écran qui attend. La marge couvre l'onglet resté ouvert.
-const SIGNATURE_UTILE = 45 * 60 * 1000;
+// Les adresses des photos sont signées un mois et réutilisées 25 jours
+// (api.urlsDesPhotos, 21 août 2026). Passé ce délai on ne ressort pas le mur du
+// cache : un mur d'images mortes vaut moins qu'un écran qui attend. La MÊME
+// constante que le garde-manger d'api.js — deux durées écrites à deux endroits
+// finiraient par diverger, et c'est l'écart entre elles qui ferait le bug.
+const SIGNATURE_UTILE = api.REUTILISATION_PHOTOS;
 
 // Le chrome d'abord. La signature, la barre et le pied se posent tout de suite,
 // et le contenu vient dedans — on peut changer d'onglet avant même que les
