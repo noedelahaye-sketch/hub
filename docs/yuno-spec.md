@@ -1543,7 +1543,10 @@ questions : « Ce qui a marché » et « À refaire autrement ».
   veille d'un match ; l'outil vient à soi. La liste des feuilles vit sur
   `#yuno/preparations` — **une page à part entière, avec les modèles**
   (demande de Noé, 21 août au soir), atteinte par la tuile du tableau de bord
-  Missions. Le Journal n'y mène plus.
+  Missions. Le Journal n'y mène plus. **Les feuilles s'affichent en tuiles
+  compactes, plus hautes que larges, côte à côte** (même soir) : titre en
+  tête, date en pied, « Bilan écrit » quand il l'est — une rangée se parcourt
+  d'un coup d'œil. Les modèles restent en lignes.
 - **Les feuilles et modèles du FCH n'apparaissent pas ici** (demande de Noé,
   21 août au soir) : les réunions du club ont leurs propres fiches sur leur
   site. Yuno filtre par le projet de l'événement lié — une feuille sans

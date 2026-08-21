@@ -2036,17 +2036,21 @@ function vuePreparations(etat) {
     <h2 class="titre-page">Préparations</h2>
     <section class="bloc">
       ${
+        // En tuiles compactes, plus hautes que larges, côte à côte (demande
+        // de Noé, 21 août 2026 au soir) : une rangée de feuilles se parcourt
+        // d'un coup d'œil, là où les lignes empilées mangeaient la page.
         etat.preparations.length
-          ? `<ul class="liste-preparations">${etat.preparations
+          ? `<ul class="tuiles-preparations">${etat.preparations
               .map(
                 (candidat) => `
-              <li><a class="prepa-ligne" href="#yuno/preparations/${echapper(candidat.id)}">
-                <span class="prepa-ligne-titre">${echapper(candidat.titre)}</span>
-                <span class="discret">${
+              <li><a class="tuile-prepa" href="#yuno/preparations/${echapper(candidat.id)}">
+                <span class="tuile-prepa-titre">${echapper(candidat.titre)}</span>
+                <span class="discret tuile-prepa-date">${
                   candidat.date
                     ? echapper(echeanceLisible(depuisDateISO(candidat.date)))
                     : ''
                 }</span>
+                ${candidat.bilan_date ? '<span class="etiquette">Bilan écrit</span>' : ''}
               </a></li>`,
               )
               .join('')}</ul>`
