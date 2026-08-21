@@ -1,4 +1,4 @@
-# État des lieux — 15 août 2026
+# État des lieux — 21 août 2026
 
 > **Reprise : § 4 bis, « Par où reprendre ».**
 >
@@ -6,12 +6,106 @@
 > les deux cahiers des charges (`yuno-spec.md`, `fch-spec.md`) font autorité sur
 > leurs sites. À relire au début d'une session, à mettre à jour à la fin.
 >
-> **§ 0 raconte la dernière session** (15 août : la Passerelle et tout ce
-> qu'elle a fait naître), **§ 0 ante celle d'avant** (14–15 août : les
-> préparations, la fusion moments/événements, l'identité de Yuno). Les § 1 et
-> suivants décrivent l'état stable et les chantiers antérieurs.
+> **§ 0 raconte la dernière session** (21 août : les photos allégées, la
+> semaine qui tourne, la loupe, et les réunions du FCH), **§ 0 ante celle
+> d'avant** (15 août : la Passerelle), **§ 0 ante bis** les 14–15 août. Les
+> § 1 et suivants décrivent l'état stable et les chantiers antérieurs.
 
-## 0. La session du 15 août — Yuno passe au réseau
+## 0. La session du 21 août — l'egress, la semaine, et les réunions du FCH
+
+**Cinq commits, tous poussés** (`ee372bf` et `c1dc1ad` ferment la soirée du
+15 ; `1dd9bda`, `60f17d6` et `8762577` sont du 21). Les cahiers des charges
+font autorité sur le détail : `yuno-spec.md` et `fch-spec.md`, mis à jour au
+fil de l'eau.
+
+### La fin de soirée du 15 (après le dernier état des lieux)
+
+| Chantier | Où |
+|---|---|
+| La vue Week-end filtrée **par compétition**, tuiles élargies | `#yuno/calendrier` |
+| La fiche d'un club : **« Matchs couverts »** à droite, **3 matchs proposés** en tuiles | `#yuno/vivier` |
+| **Relier un événement à ses clubs** — partout : tuile, modification, les deux formulaires du Carnet | `calendrier-commun`, `yuno.js` |
+| La carte de la fournée refaite : tout à gauche, croix au coin, bouton bleu, **4 de front** | `#yuno/passerelle` |
+| **Les écussons des 97 clubs**, partout où un club se nomme | `img/clubs/`, `js/logos-clubs.js` |
+| Le « + » flottant **se retire** quand une fenêtre est ouverte ; croix pour écarter la préparation de l'accueil | `yuno.js` |
+
+Les écussons sont **dans le dépôt** (804 Ko, 64 px), rapatriés par
+`tools/telecharger-logos.py` — ESPN pour 79 clubs, TheSportsDB pour les 18 du
+National ; la table nom → fichier est ÉCRITE dans l'outil, jamais rejouée. La
+coquille précharge la table, pas les images.
+
+### Le 21 août, premier chantier : la bande passante (mail de Supabase)
+
+Supabase a écrit : le **cached egress** dépassait les 5 Go du plan gratuit.
+Diagnostic vérifié : 26 photos quasi pleine taille (43 Mo), servies par des
+liens signés UNE HEURE refabriqués à chaque visite — des adresses toujours
+neuves, donc un navigateur qui retéléchargeait ce qu'il avait déjà.
+
+Deux réponses (commit `1dd9bda`) :
+
+- **la réduction à l'envoi resserrée** : 1600 px / JPEG 0,82 (au lieu de
+  2400/0,85), et une image déjà petite mais au-dessus de 500 Ko est ré-encodée
+  quand même — c'était le trou. Les 26 photos en ligne ont été repassées au
+  même moulin, chacune vérifiée décodable et plus légère avant d'écraser :
+  **43 Mo → 8,6 Mo** ;
+- **les liens signés durent UN MOIS et se réutilisent 25 jours** depuis un
+  garde-manger `localStorage` (`yuno-photos-signees`, dans `api.urlsDesPhotos`).
+  `SIGNATURE_UTILE` (yuno.js) pointe sur la même constante.
+
+Attendu : l'egress mensuel divisé par ~80. **À vérifier dans quelques jours**
+sur le tableau de bord Supabase (Settings → Usage).
+
+### Le 21 août, deuxième chantier : la semaine qui tourne, et la loupe
+
+- **La fournée est hebdomadaire pour de vrai** (migration
+  `20260821120000_fournee_semaine.sql`) : la spec le promettait, rien ne le
+  faisait — le commentaire SQL de `en_fournee` disait même l'inverse.
+  `fournee_semaine` garde le lundi du choix, posé dans le même geste ; au
+  chargement des pistes, les fournées d'une semaine passée retournent au
+  vivier (le site n'a pas de minuit à lui — c'est la première visite de la
+  semaine qui fait le ménage). Les propositions tournaient déjà (graine =
+  lundi, « passer » effacé avec la semaine).
+- **Une loupe sur Réseau, Passerelle et vivier** : la barre se déploie à
+  gauche de la loupe, sur la ligne du titre — la loupe ne bouge pas d'un
+  pixel, pas d'anneau doré ; rien ne s'affiche tant que rien n'est tapé ; les
+  résultats sont des lignes à filets (la ligne du vivier, sans le prochain
+  match) ; le « + » ajoute à la fournée sans changer de page, sans perdre le
+  curseur.
+
+### Le 21 août, troisième chantier : les réunions du FC Hermitage
+
+Le gros morceau (commit `60f17d6`), spécifié avec Noé avant d'être construit.
+`fch-spec.md` fait autorité ; en bref :
+
+- **une réunion est une FACE de l'événement** : `reunion_objet` (CHECK ca ·
+  alternance · communication · partenariat · autre — libellé « CA » tel quel,
+  demande de Noé) en est le marqueur, plus `reunion_animee`. Pastille
+  « Réunion » sur la tuile : toujours offerte sur le site FCH, révélée au hub
+  quand le projet choisi est fch — le motif exact de `type_moment`/photo ;
+- **le site FCH a gagné le « + » flottant** (tuile commune, nature Événement
+  d'abord) et un onglet **Réunions** ; son accueil ouvre sur **la réunion du
+  moment** (phase + 3 lignes cochables) ;
+- **la feuille de préparation est un module commun** désormais
+  (`js/preparations-commun.js`, CSS déménagé dans `styles.css`) — la leçon du
+  calendrier : un deuxième site, un module, jamais une copie. Yuno vérifié
+  intact ;
+- **six modèles semés** en migration (`20260821150000_reunions_fch.sql`), du
+  vrai savoir-faire de conduite de réunion : CA en deux versions (« CA ·
+  j'anime » / « CA · j'y assiste » — animer et assister sont deux métiers),
+  point alternance, réunion communication, rendez-vous partenaire, les
+  essentiels. **Le bon modèle se propose d'office** (objet + rôle) ;
+- **le bilan n'est pas le compte-rendu officiel** : deux questions pour soi,
+  une troisième pour l'animateur seulement (`bilan_animation`), et **chaque
+  ligne « à faire » devient une tâche fch** à la première écriture — jamais
+  aux suivantes.
+
+Testé de bout en bout sur le vrai site (création → préparation → coche →
+bilan → tâche), puis nettoyé. Deux bugs attrapés en route : la **liste
+blanche** de `creerEvenement` qui jetait les colonnes nouvelles en silence, et
+le **double branchement** `brancherChoix` + `brancherCapture` qui refermait
+les menus de formulaire du FCH sitôt ouverts (commit `8762577`).
+
+## 0 ante. La session du 15 août — Yuno passe au réseau
 
 **Vingt-trois commits, tous poussés.** Toute la session a porté sur **la
 Passerelle et ce qu'elle a fait naître** : un vivier de clubs, leurs
@@ -106,7 +200,7 @@ incluses), `20260815230000` (statut `a_relancer`), `20260815240000`
 
 ---
 
-## 0 ante. La session des 14–15 août, en un coup d'œil
+## 0 ante bis. La session des 14–15 août, en un coup d'œil
 
 **Vingt-quatre commits, tous poussés.** Le site Yuno a été refondu en
 profondeur ; le hub n'a été touché qu'aux endroits qu'il partage.
@@ -2099,50 +2193,50 @@ Rien d'ouvert dans les cahiers des charges. Restent des conforts :
 
 ---
 
-## 4 bis. Par où reprendre (fin de session du 15 août 2026, au soir)
+## 4 bis. Par où reprendre (fin de session du 21 août 2026)
 
-Dans cet ordre, du plus rentable au moins pressé.
+Dans cet ordre, du plus pressé au moins pressé.
 
-**Avant tout : laisser vivre.** Yuno a été refondu trois jours d'affilée — les
-Préparations, la fusion du Carnet et du calendrier, puis toute la Passerelle et
-son vivier. Noé s'en sert pour de bon : il a fait son premier vrai envoi le
-15 août et posé un match au calendrier. Le premier réflexe n'est pas
-d'ajouter, c'est **d'écouter ce qui coince après une vraie semaine de
-rituel** — et après un vrai match.
+**D'abord, deux choses périssables :**
 
-1. **Poser les objectifs.** C'est le point le plus rentable du hub, et il ne
-   concerne pas Yuno : la table `objectifs` est **vide**, alors que le bas du
-   dashboard existe pour eux et que décembre approche (4 dossiers Studi + la
-   vidéo, fin de l'alternance FCH). Le cap long terme est la priorité n° 2 du
-   produit ; en parler à Noé avant de construire quoi que ce soit d'autre.
-2. **Écouter la Passerelle après une semaine.** Elle n'a servi qu'une fois. Les
-   trois chantiers en attente (concerts, Vélodrome, médias congolais) ne
-   valent qu'une fois la forme Clubs éprouvée — et le premier à faire serait
-   les **médias congolais**, seul chantier à avoir un rythme (mensuel).
-3. **Regarder ce que devient « En chantier ».** Le bloc a été créé pour donner
-   un lieu aux statuts intermédiaires, qui n'ont jamais servi. S'il est encore
-   vide dans une semaine, ce n'est pas le bloc qu'il faut corriger : c'est que
-   le pipeline en cinq étapes ne correspond pas à la façon de travailler de
-   Noé, et il faudra le lui demander plutôt que de le meubler.
-4. **Le premier vrai bilan de préparation.** La chaîne complète (bilan → moment
-   au carnet, avec photo et rencontres) a été vérifiée sur des essais, jamais
-   après une vraie sortie. C'est le prochain moment de vérité de l'outil.
-5. **Le choix entre plusieurs modèles n'a jamais servi** : il n'existe qu'un
-   modèle (« Match »). Le jour où Noé en crée un second (« Concert »), regarder
-   que la fenêtre de choix tombe juste.
-6. **Vérifier sur le vrai iPhone** ce qui n'a été mesuré qu'au navigateur : la
-   tuile avec un clavier réel (tout a été fait avec un clavier *simulé*), le
-   service worker dans une application ajoutée à l'écran d'accueil, et Canela
-   (si le « À » de « À venir » est droit au lieu d'incliné, c'est la police de
-   secours).
-7. **Ce que l'analyse de fluidité laisse ouvert** : les **espaces projet**
-   (`espace-projet.js`) ne sont pas convertis à `js/ecriture.js`, et les gestes
-   du calendrier relisent encore leurs six tables après coup. Convertir un
-   geste tient en dix lignes. **Ne pas convertir les formulaires** — c'est un
-   choix (§ 4).
-8. **Porter le démarrage par morceaux** à `perso.js`, `espace-projet.js`,
-   `fch.js`, `photo.js`, `hermitage.js`. Aucun n'est pressé : ce ne sont pas
-   eux qu'on ouvre le matin.
+1. **La sauvegarde des 26 photos originales** (43 Mo) vit dans le dossier
+   temporaire de la session du 21 août
+   (`/private/tmp/claude-501/…/scratchpad/photos-originales/`). Le système
+   peut le nettoyer. Si Noé veut garder les pleines tailles, **les copier
+   maintenant** ; sinon, rien à faire — les versions recompressées sont en
+   ligne et vérifiées, et ses fichiers de boîtier restent chez lui.
+2. **Vérifier l'egress dans quelques jours** (tableau de bord Supabase,
+   Settings → Usage) : la courbe doit s'aplatir nettement. Si elle ne
+   s'aplatit pas, le diagnostic était incomplet — revenir au § 0.
+
+**Ensuite, écouter avant d'ajouter :**
+
+3. **Les réunions du FCH n'ont jamais servi en vrai.** Le premier CA ou le
+   premier point d'alternance dira si les modèles semés tombent juste, si le
+   bilan à trois questions est le bon geste, et si les tâches créées depuis le
+   bilan atterrissent au bon endroit. Écouter ça avant de construire l'éditeur
+   de modèles de réunion (noté « pas encore » dans `fch-spec.md`, § 6).
+4. **La Passerelle après une vraie semaine de rituel** — et maintenant que la
+   fournée se vide toute seule au lundi, regarder si ce vidage tombe bien pour
+   Noé ou s'il voudrait un rappel des clubs non contactés de la semaine
+   passée.
+5. **Poser les objectifs.** Toujours d'actualité : la table `objectifs` reste
+   quasi vide alors que décembre approche (4 dossiers Studi + la vidéo, fin de
+   l'alternance FCH). Le cap long terme est la priorité n° 2 du produit.
+6. **Le premier vrai bilan de préparation Yuno** (bilan → moment au carnet,
+   photo et rencontres) n'a toujours pas eu lieu après une vraie sortie.
+7. **Vérifier sur le vrai iPhone** : la tuile avec un clavier réel, le service
+   worker en application d'écran d'accueil, Canela, et maintenant **le poids
+   d'une visite du Journal** (les photos doivent venir du cache à la deuxième
+   visite).
+8. **Les chantiers de fond inchangés** : conversion des espaces projet à
+   `js/ecriture.js`, démarrage par morceaux à porter aux petits espaces. Rien
+   de pressé.
+
+**En veille, sans suite pour l'instant** : une erreur console
+`JWT issued at future` (PGRST303) vue les 15 et 21 août au chargement — un
+décalage d'horloge entre la machine et Supabase, sans effet visible à l'usage.
+Si des chargements se mettent à échouer pour de vrai, commencer par là.
 
 **Ce qui est clos et n'a plus à figurer ici** : le cochage d'une tâche depuis le
 calendrier, les onze requêtes de Yuno tombées à six, l'alignement des menus
@@ -2255,6 +2349,26 @@ inadvertance.
 ---
 
 ## 6. Les pièges rencontrés, pour ne pas les revivre
+
+**Les listes blanches d'`api.js` jettent les colonnes nouvelles en silence.**
+Deuxième morsure le 21 août : `creerEvenement` insère des colonnes NOMMÉES, et
+`reunion_objet` offert à l'écran arrivait `null` en base — le piège exact de
+l'heure et de la priorité des tâches, déjà documenté. Toute colonne ajoutée à
+une table doit être ajoutée À LA MAIN dans le `creer…`/`modifier…` d'api.js
+concerné ; le test de bout en bout (écrire puis RELIRE la base) est le seul
+filet qui l'attrape.
+
+**`brancherChoix` et `brancherCapture` ne cohabitent jamais** dans un même
+espace : le second branche AUSSI les menus déroulants des formulaires. Les
+deux ensemble traitent chaque clic deux fois — et un panneau basculé deux fois
+reste fermé (les menus du FCH, 21 août). La règle : un espace avec tuile de
+capture appelle `brancherCapture` seul ; sans tuile, `brancherChoix` seul.
+
+**`document.querySelector` attrape aussi les sections MASQUÉES du hub.** Les
+espaces montés restent dans le DOM ; « le premier `.ouvrir-capture` du
+document » peut être celui d'un autre espace, invisible. Dans les tests
+navigateur comme dans le code : viser depuis la section de l'espace, jamais
+depuis `document`.
 
 **Un accent grave nu dans un commentaire de gabarit ferme la chaîne.** QUATRE
 fois entre le 13 et le 15 août — c'est le piège le plus coûteux du dépôt. Le
