@@ -105,6 +105,69 @@ blanche** de `creerEvenement` qui jetait les colonnes nouvelles en silence, et
 le **double branchement** `brancherChoix` + `brancherCapture` qui refermait
 les menus de formulaire du FCH sitôt ouverts (commit `8762577`).
 
+### Le 21 août au soir : le calendrier du FCH, puis la refonte des réunions
+
+**Pas encore commité en fin de session.** Trois chantiers, dans cet ordre :
+
+1. **Le calendrier du site FCH a ses trois vues** — mois (par défaut),
+   semaine, agenda, avec la barre de période. Tout vient de
+   `calendrier-commun.js` ; seul `hermitage.js` a changé. Sont venues avec :
+   la fenêtre de détail (modifier, supprimer), le glissement pour poser, le
+   report d'une barre, le « +N », le cercle d'une tâche cochable, Échap. Les
+   **grilles montrent le passé**, l'agenda garde sa règle (ce qui vient).
+   Réparé au passage : la **pastille de nature de la tuile ne faisait rien**
+   sur ce site — aucun gestionnaire pour `data-nature-creation`, on ne pouvait
+   donc y noter qu'un événement.
+2. **La case « Relances/Commandes » a quitté ses filtres** (demande de Noé) :
+   le site n'assemble ni l'une ni l'autre. `construireFiltres` accepte une
+   option `offertes` ; le hub et Yuno gardent leurs cinq cases.
+3. **Les réunions, entièrement refaites** (demande de Noé, avec le guide
+   « Réunions efficaces » du club en pièce jointe) : la feuille à cases
+   listait des gestes, le guide demande une **structure**. Voir `fch-spec.md`,
+   qui fait autorité — en bref : trois tables neuves
+   (`20260821200000_fiches_reunion.sql`, **appliquée**), une fiche en six
+   blocs (contrat, ordre du jour orienté action, présentation, suivi, kit
+   d'animation si j'anime, conclure), et un **tableau des actions** qui
+   survit aux fiches et jumelle une action « pour moi » avec une tâche fch.
+   Les **portes vers le Drive** en font le point d'entrée unique : « créer »
+   copie le dernier document (le thème du club suit), un bouton copie le nom
+   attendu par la convention du dossier, et le lien se colle sur la fiche.
+
+Testé sur le vrai site (fiche → point → traité → action → tâche jumelle),
+vérifié en base, puis nettoyé. **Une fiche vide subsiste volontairement** :
+celle de la « Réunion CA » du 24 août — la prochaine, autant qu'elle attende
+déjà. Les six modèles de préparation du matin restent en base sans servir.
+
+4. **Le FCH n'avait aucune couleur dans le calendrier du hub** — signalé par
+   Noé, et c'était un vrai bug, pas un oubli de goût. Le FCH est le seul
+   projet dont `--couleur-projet` est un **dégradé** (ses deux couleurs) ; or
+   le calendrier s'en servait pour des **bordures** et des `color-mix()`, qui
+   exigent une couleur. CSS jette la déclaration entière sans un mot : les
+   barres du club sortaient sans fond ET sans bordure (`border-left-width: 0`,
+   vérifié au navigateur), seules de tous les projets.
+
+   Deux corrections. La variable de couleur pleine s'appelait
+   `--couleur-projet-texte` — **un nom qui mentait**, et c'est lui qui a piégé
+   le calendrier : elle est renommée **`--couleur-projet-pleine`**, avec la
+   vraie règle écrite au-dessus des définitions (dégradé = `background` et
+   rien d'autre ; pleine = partout où une couleur est exigée). Les trois
+   règles fautives (`.cal-barre-element`, `.cal-type-tache`,
+   `.cal-journee-ligne`) l'utilisent désormais.
+
+   **La couleur pleine du FCH est le ROUGE, pas le bleu** (choix de Noé, qui a
+   demandé de trancher selon la ressemblance — mesuré plutôt qu'estimé à
+   l'œil). Écart perceptuel du bleu du club au perso : **26 en clair, 18 en
+   sombre**, quand les deux projets les plus proches du hub sont déjà à 55 et
+   53 — le bleu était deux à trois fois trop près. Le rouge se pose à 53 et
+   54, l'écart de tout le monde, et rien d'autre n'est rouge dans la palette.
+
+   **Ce rouge n'est pas une couleur d'alerte, et le hub n'en a toujours pas.**
+   Il est posé sur *tout* ce qui vient du club, quel que soit l'état de la
+   ligne : une couleur qui ne bouge jamais ne peut rien signaler. Ne pas la
+   « corriger » plus tard en croyant appliquer la règle du § philosophie.
+   Le dégradé, lui, reste partout où un fond l'accepte (pastilles, trait de
+   l'agenda) : les deux couleurs du club continuent de s'y voir.
+
 ## 0 ante. La session du 15 août — Yuno passe au réseau
 
 **Vingt-trois commits, tous poussés.** Toute la session a porté sur **la
@@ -2211,11 +2274,14 @@ Dans cet ordre, du plus pressé au moins pressé.
 
 **Ensuite, écouter avant d'ajouter :**
 
-3. **Les réunions du FCH n'ont jamais servi en vrai.** Le premier CA ou le
-   premier point d'alternance dira si les modèles semés tombent juste, si le
-   bilan à trois questions est le bon geste, et si les tâches créées depuis le
-   bilan atterrissent au bon endroit. Écouter ça avant de construire l'éditeur
-   de modèles de réunion (noté « pas encore » dans `fch-spec.md`, § 6).
+3. **La fiche de réunion n'a jamais servi en vrai — le CA du 24 août est le
+   premier test.** Sa fiche attend déjà, vide. Ce qu'il faudra regarder : le
+   contrat se remplit-il vraiment avant (ou seulement le soir même) ; l'ordre
+   du jour minuté tient-il face au réel ; le compte-rendu part-il sous 48 h ;
+   et le tableau des actions est-il relu à la réunion suivante — c'est
+   l'habitude que le guide place en priorité absolue, et la seule qui dira si
+   l'outil sert. Écouter ça avant d'ajouter quoi que ce soit (modèles de
+   points récurrents, export du compte-rendu, rappels).
 4. **La Passerelle après une vraie semaine de rituel** — et maintenant que la
    fournée se vide toute seule au lundi, regarder si ce vidage tombe bien pour
    Noé ou s'il voudrait un rappel des clubs non contactés de la semaine

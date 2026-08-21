@@ -143,3 +143,68 @@
 
 .a-venir-bloc p { margin: 0 0 var(--espace-8); }
 .a-venir-bloc p:last-child { margin-bottom: 0; }
+
+/* --- Les fiches de réunion ---------------------------------------------------
+   La structure du guide « Réunions efficaces » : le contrat, l'ordre du jour,
+   le tableau des actions. Les listes reprennent l'habit commun des blocs ;
+   ici ne vivent que les pièces propres à la fiche. */
+
+/* Le statut d'une action est une étiquette qui se CLIQUE : même habit que les
+   autres étiquettes, l'habit de bouton du navigateur en moins. */
+button.action-statut {
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.action-responsable {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.action-faite {
+  text-decoration: line-through;
+  color: var(--texte-discret);
+}
+
+.reunion-objectif { display: block; }
+
+/* Traité / Reporté : deux petits gestes sous le point, l'actif prend l'accent. */
+.odj-statuts {
+  display: flex;
+  gap: var(--espace-12);
+  margin-top: var(--espace-4);
+}
+
+.odj-statuts .actif { color: var(--accent); }
+
+/* Les portes vers le Drive, côte à côte. */
+.reunion-portes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-8);
+  margin: var(--espace-8) 0;
+}
+
+.reunion-sous-titre {
+  margin: var(--espace-24) 0 var(--espace-8);
+  font-size: 1rem;
+}
+
+/* Le kit d'animation : la situation en étiquette, la phrase dessous. */
+.kit-animation {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-12);
+  margin: var(--espace-12) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kit-animation li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}

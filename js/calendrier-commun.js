@@ -336,10 +336,15 @@ export function centrerActif(conteneur, selecteur = '.actif') {
 
 // Les filtres se cochent, ils ne s'excluent plus : voir les publications ET les
 // tâches sans les objectifs était impossible avec des onglets.
-export function construireFiltres(natures) {
+//
+// `offertes` : les seules natures à proposer, quand l'appelant n'assemble pas
+// tout — le site FCH n'a ni relance ni commande, une case sans effet ne
+// mérite pas sa place (demande de Noé, 21 août 2026). Absent = toutes.
+export function construireFiltres(natures, { offertes = null } = {}) {
   return `
     <div class="cal-filtres" role="group" aria-label="Ce que le calendrier montre">
       ${Object.keys(NATURES)
+        .filter((nature) => !offertes || offertes.includes(nature))
         .map(
           (nature) => `
         <label class="cal-coche ${natures.has(nature) ? 'actif' : ''}">

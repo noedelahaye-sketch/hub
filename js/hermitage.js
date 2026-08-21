@@ -34,23 +34,27 @@ import {
   formulaireIdee,
 } from './publications.js';
 import { depuisDateISO, echeanceLisible, momentLisible, echapper, versDateISO } from './format.js';
-import {
-  PHASES_PREPA,
-  blocPhase,
-  dernierBilan,
-  feuilleDeLaSortie,
-  boutonPreparer,
-  finDeLaSortie,
-  phaseDeLaSortie,
-} from './preparations-commun.js';
+import { finDeLaSortie, phaseDeLaSortie } from './preparations-commun.js';
 
 import {
   assemblerCalendrier,
   construireCalendrier,
   construireFiltres,
+  construireBarrePeriode,
+  construireGrille,
+  fenetreDetail,
+  fenetreJour,
+  elementsDuJour,
+  finDeLEvenement,
+  brancherSelection,
+  brancherClavier,
+  brancherDeplacement,
+  appliquerAuCalendrier,
+  champsApresDeplacement,
+  deplacerAncre,
+  natureParDefaut,
   centrerActif,
   ongletCalendrier,
-  toutesLesNatures,
   fenetreCreation,
   brancherCapture,
   poserAuCalendrier,
@@ -85,6 +89,11 @@ const RUBRIQUES_DEPART = [
 const TYPE_PARTENAIRE = 'marque';
 
 const VUES = ['accueil', 'creer', 'reunions', 'calendrier', 'partenaires', 'club'];
+
+// Les natures que le calendrier du site assemble — ni relance ni commande,
+// elles vivent chez Yuno. La liste sert aux filtres (pas de case sans effet)
+// et à l'état initial des cases cochées.
+const NATURES_FCH = ['evenement', 'tache', 'publication', 'objectif'];
 
 // --- Fabrication du HTML ----------------------------------------------------
 
@@ -171,15 +180,88 @@ export function construirePartenaires(partenaires) {
 // --- Les réunions --------------------------------------------------------------
 // Une réunion est un ÉVÉNEMENT fch dont `reunion_objet` est posé (demande de
 // Noé, 21 août 2026). Elle se note au calendrier — le « + », nature Événement,
-// pastille Réunion — et se PRÉPARE ici : la feuille de Yuno, trois phases et
-// un bilan, avec des modèles selon l'objet et selon qu'on anime ou non.
+// pastille Réunion — et se prépare ici, sur une FICHE structurée par le guide
+// « Réunions efficaces » du club (refonte du 21 août au soir : la feuille à
+// cases de Yuno listait des gestes, le guide demande une structure).
 //
-// Le bilan n'est PAS le compte-rendu officiel : c'est ce qui concerne Noé — à
-// retenir, à faire — plus, s'il animait, un regard sur le déroulé. Et chaque
-// ligne « à faire » devient une tâche fch à l'enregistrement : ce qui se
-// décide en réunion entre dans le circuit, au lieu de dormir dans une note.
+//   AVANT — le contrat : le type de réunion, l'objectif formulé « à la fin,
+//   nous devons avoir… », les participants utiles, ce qui s'envoie avant, et
+//   l'ordre du jour orienté action — chaque point commence par un verbe,
+//   annonce sa sortie attendue et son temps. Trois gros sujets maximum.
+//
+//   PENDANT — tenir le cadre : le déroulé sous les yeux, chaque point clos
+//   par « traité » ou un report EXPLICITE, et le kit d'animation si j'anime.
+//
+//   APRÈS — le compte-rendu court : décisions prises, actions (quoi, qui,
+//   pour quand), points en attente, prochain suivi. Les actions entrent au
+//   TABLEAU DES ACTIONS — la mémoire du club, qui survit aux fiches — et la
+//   réunion suivante s'ouvre en le relisant. Une action « pour moi » devient
+//   aussi une tâche fch : ce qui se décide entre dans le circuit.
+//
+// La présentation et le compte-rendu vivent sur le Drive du club : la fiche
+// ouvre les portes (copier le dernier document garde les couleurs du club) et
+// garde les liens une fois les documents créés.
 
 const estReunion = (evenement) => Boolean(evenement.reunion_objet);
+
+// Les types du guide : le type commande la méthode — une réunion d'information
+// est courte, une décision finit par un choix écrit, une coordination par un
+// tableau de rôles.
+const TYPES_REUNION = {
+  information: 'Information',
+  decision: 'Décision',
+  coordination: 'Coordination',
+  probleme: 'Problème à résoudre',
+  ideation: 'Idées',
+  bilan: 'Bilan',
+  gouvernance: 'Gouvernance',
+};
+
+// Les types d'un point d'ordre du jour, dits en verbes : un point efficace
+// commence par un verbe d'action et annonce un résultat, pas un thème.
+const TYPES_POINT = {
+  decision: 'Décider',
+  information: 'Informer',
+  coordination: 'Répartir',
+  probleme: 'Résoudre',
+  ideation: 'Chercher des idées',
+  bilan: 'Faire le bilan',
+  suivi: 'Suivre',
+};
+
+const STATUTS_ACTION = { a_faire: 'À faire', en_cours: 'En cours', fait: 'Fait' };
+const ACTION_SUIVANT = { a_faire: 'en_cours', en_cours: 'fait', fait: 'a_faire' };
+
+// Les portes vers le Drive du club. « Créer » = copier le dernier document en
+// date : la copie Google garde le thème et les couleurs, il ne reste qu'à la
+// renommer (le bouton « copier le titre » évite de le retaper). Ces
+// identifiants n'ouvrent rien à qui n'a pas accès au Drive.
+const DRIVE_REUNIONS = {
+  dossier: 'https://drive.google.com/drive/folders/1TZqniACN90sCX6vyEQdP5_cMUvlZtGlM',
+  modelePresentation:
+    'https://docs.google.com/presentation/d/16L4xcnL97JUBNupp4TQLSui7NYjRVFvl_KKBakwDjIA/copy',
+  modeleCompteRendu:
+    'https://docs.google.com/document/d/1c_HWckFwqnCGqtPENBViVRygGB0GqhRO5D4hyJrVfM4/copy',
+};
+
+// Le nom attendu sur le Drive — la convention du dossier : « Réunion CA - 08/06/26 ».
+export function titreDrive(fiche) {
+  if (!fiche.date) return fiche.titre;
+  const [annee, mois, jour] = fiche.date.split('-');
+  return `${fiche.titre} - ${jour}/${mois}/${annee.slice(2)}`;
+}
+
+function ficheDeLaReunion(fiches, evenementId) {
+  return fiches.find((fiche) => fiche.evenement_id === evenementId) ?? null;
+}
+
+function boutonFiche(fiche, evenement) {
+  return fiche
+    ? `<button type="button" class="bouton-secondaire bouton-mini"
+         data-ouvrir-fiche="${echapper(fiche.id)}">Ouvrir la fiche</button>`
+    : `<button type="button" class="bouton-secondaire bouton-mini"
+         data-creer-fiche="${echapper(evenement.id)}">Préparer</button>`;
+}
 
 function etiquettesReunion(evenement) {
   return `<span class="etiquette">${echapper(
@@ -187,129 +269,458 @@ function etiquettesReunion(evenement) {
   )}</span>${evenement.reunion_animee ? `<span class="etiquette">J'anime</span>` : ''}`;
 }
 
-// Le modèle qui correspond le mieux à la réunion : même objet et même rôle
-// d'abord, puis même objet peu importe le rôle, puis l'objet « autre », puis
-// une feuille vierge. Proposé D'OFFICE : le bon réflexe ne doit rien coûter.
-export function modelePourReunion(modeles, evenement) {
-  const duProjet = modeles.filter((modele) => modele.projet === PROJET);
-  const memeObjet = duProjet.filter((modele) => modele.objet === evenement.reunion_objet);
-
-  return (
-    memeObjet.find((modele) => modele.anime === Boolean(evenement.reunion_animee)) ??
-    memeObjet.find((modele) => modele.anime === null) ??
-    memeObjet[0] ??
-    duProjet.find((modele) => modele.objet === 'autre') ??
-    null
-  );
-}
-
-function ligneReunion(evenement, preparations) {
-  const feuille = feuilleDeLaSortie(preparations, 'evenement', evenement.id);
+function ligneReunion(evenement, fiches) {
+  const fiche = ficheDeLaReunion(fiches, evenement.id);
 
   return `
     <li>
       <span class="tuile-entete">
         ${etiquettesReunion(evenement)}
+        ${
+          fiche?.type_reunion
+            ? `<span class="etiquette">${TYPES_REUNION[fiche.type_reunion]}</span>`
+            : ''
+        }
         <span class="discret quand">${echapper(
           momentLisible(new Date(evenement.date_debut)),
         )}</span>
       </span>
       <span class="reunion-titre">${echapper(evenement.titre)}</span>
       ${
-        feuille?.bilan_date
-          ? `<span class="discret">Bilan écrit ${echapper(
-              echeanceLisible(depuisDateISO(feuille.bilan_date)),
+        fiche?.objectif
+          ? `<span class="discret reunion-objectif">${echapper(fiche.objectif)}</span>`
+          : ''
+      }
+      ${
+        fiche?.cr_date
+          ? `<span class="discret">Compte-rendu écrit ${echapper(
+              echeanceLisible(depuisDateISO(fiche.cr_date)),
             )}</span>`
           : ''
       }
-      ${boutonPreparer(feuille, 'evenement', evenement.id)}
+      ${boutonFiche(fiche, evenement)}
     </li>`;
 }
 
-// Le bilan d'une réunion. Deux questions pour tous, une troisième pour
-// l'animateur — et le contrat des tâches écrit noir sur blanc sous le champ.
-function blocBilanReunion(feuille, evenement) {
-  const animee = Boolean(evenement?.reunion_animee);
-  const pasEncore =
-    evenement && new Date(evenement.date_debut) > new Date() && !feuille.bilan_date;
-
-  if (pasEncore) {
-    return `
-      <section class="bloc prepa-bilan">
-        <h2>Le bilan</h2>
-        <p class="discret">Il s'écrira après la réunion — ce qui te concerne,
-          pas le compte-rendu officiel.</p>
-      </section>`;
-  }
-
+// Une ligne du tableau des actions : le statut se change d'un clic (à faire →
+// en cours → fait → à faire), l'action se retire d'une croix. Une action faite
+// reste visible sur sa fiche — elle raconte la réunion — mais quitte le
+// tableau, qui ne montre que ce qui reste à tenir.
+function ligneAction(action) {
   return `
-    <section class="bloc prepa-bilan">
-      <h2>Le bilan</h2>
-      <form data-action="noter-bilan-reunion" class="ajout">
-        <input type="hidden" name="id" value="${echapper(feuille.id)}">
-        <label for="reunion-bilan-retenu">Ce qu'il faut retenir — pour toi</label>
-        <textarea id="reunion-bilan-retenu" name="bilan_bien" rows="3">${echapper(
-          feuille.bilan_bien ?? '',
-        )}</textarea>
-        <label for="reunion-bilan-actions">Ce que ça te donne à faire — une ligne, une tâche</label>
-        <textarea id="reunion-bilan-actions" name="bilan_mieux" rows="3">${echapper(
-          feuille.bilan_mieux ?? '',
-        )}</textarea>
+    <li>
+      <span class="tuile-entete">
+        <button type="button" class="etiquette action-statut"
+          data-action-statut="${echapper(action.id)}"
+          title="Changer le statut"
+          aria-label="Statut : ${STATUTS_ACTION[action.statut]} — changer">${
+            STATUTS_ACTION[action.statut]
+          }</button>
+        ${action.responsable ? `<span class="action-responsable">${echapper(action.responsable)}</span>` : ''}
         ${
-          animee
-            ? `<label for="reunion-bilan-animation">Comment la réunion s'est déroulée —
-                 à refaire autrement quand tu animeras</label>
-               <textarea id="reunion-bilan-animation" name="bilan_animation" rows="3">${echapper(
-                 feuille.bilan_animation ?? '',
-               )}</textarea>`
+          action.echeance
+            ? `<span class="discret quand">${echapper(
+                echeanceLisible(depuisDateISO(action.echeance)),
+              )}</span>`
             : ''
         }
-        <p class="discret">${
-          feuille.bilan_date
-            ? 'Le bilan est écrit — le corriger ne recrée pas de tâches.'
-            : 'À l\'enregistrement, chaque ligne « à faire » devient une tâche FCH.'
-        }</p>
-        <button type="submit" class="bouton-secondaire">Enregistrer le bilan</button>
-        <p class="message-erreur" data-erreur hidden></p>
-      </form>
+        <button type="button" class="lien-discret bouton-mini bouton-retirer"
+          data-retirer-action="${echapper(action.id)}"
+          title="Retirer" aria-label="Retirer « ${echapper(action.texte)} »">×</button>
+      </span>
+      <span class="${action.statut === 'fait' ? 'action-faite' : ''}">${echapper(action.texte)}${
+        action.tache_id ? ` <span class="discret">· aussi une tâche</span>` : ''
+      }</span>
+    </li>`;
+}
+
+// --- Les blocs de la fiche ---------------------------------------------------
+
+// AVANT — le contrat de réunion : ce qui se définit avant de convoquer, pour
+// que personne n'arrive en pensant débattre quand d'autres viennent décider.
+function blocContrat(fiche, animee) {
+  return `
+    <section class="bloc">
+      <h2>Le contrat</h2>
+      <p class="discret">Si personne ne peut compléter « à la fin, nous devons
+        avoir… », la réunion n'est pas encore prête.</p>
+      ${construireFormulaire({
+        id: 'fiche-contrat',
+        libelle: 'Le contrat',
+        action: 'preparer-reunion',
+        bouton: 'Enregistrer',
+        avecPli: false,
+        extra: `<input type="hidden" name="id" value="${echapper(fiche.id)}">`,
+        champs: [
+          {
+            nom: 'type_reunion',
+            libelle: 'Le type de réunion — il commande la méthode',
+            type: 'choix',
+            options: { '': 'À choisir', ...TYPES_REUNION },
+            valeur: fiche.type_reunion ?? '',
+          },
+          {
+            nom: 'objectif',
+            libelle: 'À la fin de la réunion, nous devons avoir…',
+            type: 'textarea',
+            valeur: fiche.objectif ?? '',
+          },
+          {
+            nom: 'participants',
+            libelle: 'Les participants nécessaires — les personnes utiles, pas tout le monde',
+            type: 'text',
+            valeur: fiche.participants ?? '',
+          },
+          {
+            nom: 'infos_avant',
+            libelle: 'À envoyer avant : documents, chiffres, options',
+            type: 'textarea',
+            valeur: fiche.infos_avant ?? '',
+          },
+          {
+            nom: 'notes_avant',
+            libelle: animee
+              ? 'Tes notes : points sensibles, et qui les portera'
+              : 'Tes notes : questions, ce que tu dois présenter ou défendre',
+            type: 'textarea',
+            valeur: fiche.notes_avant ?? '',
+          },
+        ],
+      })}
     </section>`;
 }
 
-function vueFeuilleReunion(etat, feuille) {
-  const evenement = etat.evenements.find((e) => e.id === feuille.evenement_id) ?? null;
-  const precedent = feuille.bilan_date ? null : dernierBilan(etat.preparations, feuille);
-  const auModele = etat.modelesPrepa.some((modele) => modele.id === feuille.modele_id);
+// L'ordre du jour orienté action : des résultats à produire, pas des thèmes.
+function blocOrdreDuJour(fiche) {
+  const total = fiche.points.reduce((somme, point) => somme + (point.minutes ?? 0), 0);
+
+  const lignes = fiche.points
+    .map(
+      (point) => `
+    <li>
+      <span class="tuile-entete">
+        ${
+          point.type_point
+            ? `<span class="etiquette">${TYPES_POINT[point.type_point] ?? ''}</span>`
+            : ''
+        }
+        ${point.minutes ? `<span class="discret"><span class="chiffre">${point.minutes}</span> min</span>` : ''}
+        <button type="button" class="lien-discret bouton-mini bouton-retirer"
+          data-retirer-point="${echapper(point.id)}"
+          title="Retirer" aria-label="Retirer « ${echapper(point.titre)} »">×</button>
+      </span>
+      <span class="reunion-titre">${echapper(point.titre)}</span>
+      ${
+        point.sortie
+          ? `<span class="discret">Sortie attendue : ${echapper(point.sortie)}</span>`
+          : ''
+      }
+      <span class="odj-statuts">
+        <button type="button" class="lien-discret bouton-mini ${point.statut === 'traite' ? 'actif' : ''}"
+          data-point-statut="${echapper(point.id)}:traite"
+          aria-pressed="${point.statut === 'traite'}">${
+            point.statut === 'traite' ? '✓ Traité' : 'Traité'
+          }</button>
+        <button type="button" class="lien-discret bouton-mini ${point.statut === 'reporte' ? 'actif' : ''}"
+          data-point-statut="${echapper(point.id)}:reporte"
+          aria-pressed="${point.statut === 'reporte'}">${
+            point.statut === 'reporte' ? '→ Reporté' : 'Reporté'
+          }</button>
+      </span>
+    </li>`,
+    )
+    .join('');
+
+  return `
+    <section class="bloc">
+      <h2>L'ordre du jour</h2>
+      <p class="discret">Chaque point commence par un verbe et annonce sa sortie.
+        Pendant la réunion, chaque point se clôt : traité, ou reporté — explicitement.${
+          total ? ` <span class="chiffre">${total}</span> min prévues.` : ''
+        }</p>
+      ${
+        fiche.points.length
+          ? `<ul class="liste-reunions">${lignes}</ul>`
+          : `<p class="vide">Le premier point donne le ton : « Décider… », « Répartir… », « Valider… »</p>`
+      }
+      ${
+        fiche.points.length > 3
+          ? `<p class="discret">Plus de trois sujets : le guide conseille d'en garder trois —
+               lesquels peuvent attendre ?</p>`
+          : ''
+      }
+      ${construireFormulaire({
+        id: 'fiche-point',
+        libelle: 'Ajouter un point',
+        action: 'ajouter-point-reunion',
+        bouton: 'Ajouter',
+        extra: `<input type="hidden" name="fiche_id" value="${echapper(fiche.id)}">`,
+        champs: [
+          {
+            nom: 'titre',
+            libelle: 'Le point — un verbe d\'action : décider, valider, répartir…',
+            type: 'text',
+            requis: true,
+          },
+          { nom: 'type_point', libelle: 'Pour quoi faire', type: 'choix', options: { '': '—', ...TYPES_POINT } },
+          { nom: 'minutes', libelle: 'Temps prévu (minutes)', type: 'number' },
+          { nom: 'sortie', libelle: 'La sortie attendue — un résultat, pas un thème', type: 'text' },
+        ],
+      })}
+    </section>`;
+}
+
+// Le suivi : la réunion s'ouvre en relisant ce qui était prévu. « Qu'est-ce qui
+// était prévu ? Qu'est-ce qui a été fait ? Qu'est-ce qui bloque ? »
+function blocSuivi(actionsOuvertes) {
+  if (!actionsOuvertes.length) return '';
+
+  return `
+    <section class="bloc">
+      <h2>Ouvrir par le suivi</h2>
+      <p class="discret">Ce qui était prévu aux réunions d'avant — fait, en cours, bloqué ?</p>
+      <ul class="liste-reunions">${actionsOuvertes.map(ligneAction).join('')}</ul>
+    </section>`;
+}
+
+// La présentation, sur le Drive du club.
+function blocPresentation(fiche) {
+  return `
+    <section class="bloc">
+      <h2>La présentation</h2>
+      ${
+        fiche.lien_presentation
+          ? `<a class="lien-externe" href="${echapper(fiche.lien_presentation)}"
+               target="_blank" rel="noopener">
+               <span class="lien-externe-texte">
+                 <span class="lien-externe-titre">Ouvrir la présentation</span>
+                 <span class="discret">${echapper(titreDrive(fiche))}</span>
+               </span>
+               <span class="lien-externe-fleche" aria-hidden="true">→</span>
+             </a>`
+          : `<p class="discret">Copier la dernière garde les couleurs du club. Renomme la
+               copie « ${echapper(titreDrive(fiche))} » —
+               <button type="button" class="lien-discret bouton-mini"
+                 data-copier-titre="${echapper(titreDrive(fiche))}">copier le titre</button></p>`
+      }
+      <p class="reunion-portes">
+        <a class="bouton-secondaire bouton-mini" href="${DRIVE_REUNIONS.modelePresentation}"
+          target="_blank" rel="noopener">Créer la présentation (copie de la dernière)</a>
+        <a class="lien-discret bouton-mini" href="${DRIVE_REUNIONS.dossier}"
+          target="_blank" rel="noopener">Ouvrir le dossier Réunions</a>
+      </p>
+      ${construireFormulaire({
+        id: 'fiche-lien-pres',
+        libelle: fiche.lien_presentation ? 'Changer le lien' : 'Coller le lien de la présentation',
+        action: 'lien-presentation',
+        bouton: 'Garder le lien',
+        extra: `<input type="hidden" name="id" value="${echapper(fiche.id)}">`,
+        champs: [
+          { nom: 'lien', libelle: 'Le lien du document', type: 'url', valeur: fiche.lien_presentation ?? '' },
+        ],
+      })}
+    </section>`;
+}
+
+// Le kit d'animation — les phrases du guide, sous la main pendant la réunion.
+const KIT_ANIMATION = [
+  ['Recentrer', '« Je note le sujet, mais il n\'est pas dans l\'objectif — on le met au parking. »'],
+  ['Faire trancher', '« On valide l\'option A, l\'option B, ou il manque une information pour décider ? »'],
+  ['Clarifier', '« Quand tu dis que ça ne marche pas, tu penses à quel fait concret ? »'],
+  ['Responsabiliser', '« Qui prend cette action ? Pour quelle date ? De quoi as-tu besoin ? »'],
+  ['Éviter le flou', '« On est d\'accord sur l\'intention. Quelle est la première action visible ? »'],
+  ['Conclure', '« Je reformule : la décision est…, le responsable est…, l\'échéance est… »'],
+];
+
+function blocKitAnimation() {
+  return `
+    <section class="bloc">
+      <details class="ajout">
+        <summary>Le kit d'animation</summary>
+        <p class="discret">L'animateur n'est pas celui qui parle le plus : il protège
+          l'objectif, le temps, la parole et la décision.</p>
+        <ul class="kit-animation">
+          ${KIT_ANIMATION.map(
+            ([situation, phrase]) => `
+            <li><span class="etiquette">${situation}</span>
+              <span class="discret">${echapper(phrase)}</span></li>`,
+          ).join('')}
+        </ul>
+      </details>
+    </section>`;
+}
+
+// APRÈS — le compte-rendu court : quelqu'un qui n'était pas là doit comprendre
+// ce qui a été décidé et ce qu'il faut faire. Pas trois pages de discussion.
+function blocConclure(fiche, animee, actionsDeLaFiche) {
+  return `
+    <section class="bloc">
+      <h2>Conclure</h2>
+      <p class="discret">À chaud, sous 48 h — c'est l'après-réunion qui transforme
+        la discussion en fonctionnement du club.</p>
+
+      <h3 class="reunion-sous-titre">Les actions décidées</h3>
+      ${
+        actionsDeLaFiche.length
+          ? `<ul class="liste-reunions">${actionsDeLaFiche.map(ligneAction).join('')}</ul>`
+          : `<p class="vide">Chaque action décidée s'inscrit ici : quoi, qui, pour quand.</p>`
+      }
+      ${construireFormulaire({
+        id: 'fiche-action',
+        libelle: 'Ajouter une action',
+        action: 'ajouter-action-club',
+        bouton: 'Ajouter',
+        extra: `<input type="hidden" name="fiche_id" value="${echapper(fiche.id)}">`,
+        champs: [
+          { nom: 'texte', libelle: 'L\'action — concrète et visible', type: 'text', requis: true },
+          { nom: 'responsable', libelle: 'Qui s\'en charge', type: 'text' },
+          { nom: 'echeance', libelle: 'Pour quand', type: 'date' },
+          {
+            nom: 'pour_moi',
+            libelle: 'C\'est pour moi — en faire aussi une tâche FCH',
+            type: 'checkbox',
+          },
+        ],
+      })}
+
+      <h3 class="reunion-sous-titre">Le compte-rendu</h3>
+      ${construireFormulaire({
+        id: 'fiche-cr',
+        libelle: 'Le compte-rendu',
+        action: 'conclure-reunion',
+        bouton: 'Enregistrer le compte-rendu',
+        avecPli: false,
+        extra: `<input type="hidden" name="id" value="${echapper(fiche.id)}">`,
+        champs: [
+          {
+            nom: 'cr_decisions',
+            libelle: 'Les décisions prises — une par ligne',
+            type: 'textarea',
+            valeur: fiche.cr_decisions ?? '',
+          },
+          {
+            nom: 'cr_en_attente',
+            libelle: 'Points en attente : reportés, arbitrages à venir',
+            type: 'textarea',
+            valeur: fiche.cr_en_attente ?? '',
+          },
+          {
+            nom: 'cr_suivi',
+            libelle: 'Prochain point de contrôle',
+            type: 'date',
+            valeur: fiche.cr_suivi ?? '',
+          },
+          {
+            nom: 'bilan_retenu',
+            libelle: 'Pour toi : ce que tu retiens',
+            type: 'textarea',
+            valeur: fiche.bilan_retenu ?? '',
+          },
+          ...(animee
+            ? [
+                {
+                  nom: 'bilan_animation',
+                  libelle: 'L\'animation : à refaire autrement la prochaine fois',
+                  type: 'textarea',
+                  valeur: fiche.bilan_animation ?? '',
+                },
+              ]
+            : []),
+        ],
+      })}
+      ${
+        fiche.cr_date
+          ? `<p class="discret">Compte-rendu écrit ${echapper(
+              echeanceLisible(depuisDateISO(fiche.cr_date)),
+            )}.</p>`
+          : ''
+      }
+
+      <h3 class="reunion-sous-titre">Sur le Drive</h3>
+      ${
+        fiche.lien_compte_rendu
+          ? `<a class="lien-externe" href="${echapper(fiche.lien_compte_rendu)}"
+               target="_blank" rel="noopener">
+               <span class="lien-externe-texte">
+                 <span class="lien-externe-titre">Ouvrir le compte-rendu</span>
+                 <span class="discret">${echapper(titreDrive(fiche))}</span>
+               </span>
+               <span class="lien-externe-fleche" aria-hidden="true">→</span>
+             </a>`
+          : `<p class="reunion-portes">
+               <a class="bouton-secondaire bouton-mini" href="${DRIVE_REUNIONS.modeleCompteRendu}"
+                 target="_blank" rel="noopener">Créer le compte-rendu (copie du dernier)</a>
+             </p>`
+      }
+      ${construireFormulaire({
+        id: 'fiche-lien-cr',
+        libelle: fiche.lien_compte_rendu ? 'Changer le lien' : 'Coller le lien du compte-rendu',
+        action: 'lien-compte-rendu',
+        bouton: 'Garder le lien',
+        extra: `<input type="hidden" name="id" value="${echapper(fiche.id)}">`,
+        champs: [
+          { nom: 'lien', libelle: 'Le lien du document', type: 'url', valeur: fiche.lien_compte_rendu ?? '' },
+        ],
+      })}
+    </section>`;
+}
+
+// Le dernier regard sur l'animation d'une réunion du même objet : la boucle
+// d'apprentissage — le bilan paie quand on le relit en préparant la suivante.
+function dernierRegardAnimation(etat, fiche, evenement) {
+  if (!evenement) return null;
+  return (
+    etat.fiches.find(
+      (autre) =>
+        autre.id !== fiche.id &&
+        autre.bilan_animation &&
+        etat.evenements.find((e) => e.id === autre.evenement_id)?.reunion_objet ===
+          evenement.reunion_objet,
+    ) ?? null
+  );
+}
+
+function vueFicheReunion(etat, fiche) {
+  const evenement = etat.evenements.find((e) => e.id === fiche.evenement_id) ?? null;
+  const animee = Boolean(evenement?.reunion_animee);
+  const actionsDeLaFiche = etat.actionsClub.filter((action) => action.fiche_id === fiche.id);
+  const suivi = etat.actionsClub.filter(
+    (action) => action.fiche_id !== fiche.id && action.statut !== 'fait',
+  );
+  const precedent = animee && !fiche.bilan_animation
+    ? dernierRegardAnimation(etat, fiche, evenement)
+    : null;
 
   return `
     ${enTete('reunions')}
-    <h2 class="titre-page">${echapper(feuille.titre)}</h2>
+    <h2 class="titre-page">${echapper(fiche.titre)}</h2>
     <p class="discret prepa-date">
-      ${feuille.date ? echapper(echeanceLisible(depuisDateISO(feuille.date))) : ''}
+      ${fiche.date ? echapper(echeanceLisible(depuisDateISO(fiche.date))) : ''}
       ${evenement ? `· ${echapper(REUNION_OBJETS[evenement.reunion_objet] ?? 'Réunion')}${
-        evenement.reunion_animee ? " · j'anime" : ''
+        animee ? " · j'anime" : ''
       }` : ''}
     </p>
     ${
       precedent
-        ? `<p class="discret prepa-rappel">Ton dernier bilan — à refaire autrement :
-             « ${echapper(precedent.bilan_animation ?? precedent.bilan_mieux)} »</p>`
+        ? `<p class="discret prepa-rappel">Ton dernier regard sur l'animation —
+             à refaire autrement : « ${echapper(precedent.bilan_animation)} »</p>`
         : ''
     }
-    <div class="prepa-phases">
-      ${blocPhase(feuille, 'avant', { auModele })}
-      ${blocPhase(feuille, 'pendant', { auModele })}
-      ${blocPhase(feuille, 'apres', { auModele })}
-    </div>
-    ${blocBilanReunion(feuille, evenement)}
-    <p><button type="button" class="lien-discret" data-supprimer-prepa="${echapper(feuille.id)}">
-      Supprimer la préparation</button></p>
+    ${blocContrat(fiche, animee)}
+    ${blocOrdreDuJour(fiche)}
+    ${blocPresentation(fiche)}
+    ${blocSuivi(suivi)}
+    ${animee ? blocKitAnimation() : ''}
+    ${blocConclure(fiche, animee, actionsDeLaFiche)}
+    <p><button type="button" class="lien-discret" data-supprimer-fiche="${echapper(fiche.id)}">
+      Supprimer la fiche</button></p>
     ${pied()}`;
 }
 
 function vueReunions(etat) {
   if (etat.reunionOuverte) {
-    const feuille = etat.preparations.find((f) => f.id === etat.reunionOuverte);
-    if (feuille) return vueFeuilleReunion(etat, feuille);
+    const fiche = etat.fiches.find((f) => f.id === etat.reunionOuverte);
+    if (fiche) return vueFicheReunion(etat, fiche);
   }
 
   const reunions = etat.evenements.filter(estReunion);
@@ -321,6 +732,10 @@ function vueReunions(etat) {
     .filter((e) => finDeLaSortie(e) < maintenant)
     .sort((a, b) => new Date(b.date_debut) - new Date(a.date_debut));
 
+  // Le tableau permanent des actions — la mémoire du club. Il ne montre que ce
+  // qui reste à tenir ; les actions faites racontent leur réunion sur sa fiche.
+  const ouvertes = etat.actionsClub.filter((action) => action.statut !== 'fait');
+
   return `
     ${enTete('reunions')}
 
@@ -328,9 +743,20 @@ function vueReunions(etat) {
       <h2>À préparer</h2>
       ${
         aVenir.length
-          ? `<ul>${aVenir.map((e) => ligneReunion(e, etat.preparations)).join('')}</ul>`
+          ? `<ul class="liste-reunions">${aVenir.map((e) => ligneReunion(e, etat.fiches)).join('')}</ul>`
           : `<p class="vide">Ta prochaine réunion se note au calendrier : le « + »,
               nature Événement, pastille Réunion.</p>`
+      }
+    </section>
+
+    <section class="bloc">
+      <h2>Le tableau des actions</h2>
+      <p class="discret">Ce qui a été décidé, qui s'en charge, pour quand — le suivi
+        rend les engagements visibles, il n'est pas là pour culpabiliser.</p>
+      ${
+        ouvertes.length
+          ? `<ul class="liste-reunions">${ouvertes.map(ligneAction).join('')}</ul>`
+          : `<p class="vide">Les actions décidées en réunion s'inscriront ici.</p>`
       }
     </section>
 
@@ -338,7 +764,7 @@ function vueReunions(etat) {
       passees.length
         ? `<section class="bloc">
              <h2>Passées</h2>
-             <ul>${passees.map((e) => ligneReunion(e, etat.preparations)).join('')}</ul>
+             <ul class="liste-reunions">${passees.map((e) => ligneReunion(e, etat.fiches)).join('')}</ul>
            </section>`
         : ''
     }
@@ -347,7 +773,9 @@ function vueReunions(etat) {
 
 // La réunion du moment, en tête de l'accueil (demande de Noé, 21 août 2026) —
 // le pendant de « la sortie du moment » chez Yuno : le jour d'un conseil, ce
-// qui compte n'est ni la com' ni les objectifs, c'est ce qu'il reste à faire.
+// qui compte n'est ni la com' ni les objectifs, c'est la fiche.
+const PHASES_REUNION = { avant: 'À préparer', pendant: 'En ce moment', apres: 'À conclure' };
+
 function blocReunionDuMoment(etat) {
   const maintenant = new Date();
   const reunions = etat.evenements.filter(estReunion);
@@ -366,15 +794,17 @@ function blocReunionDuMoment(etat) {
   if (!reunion) return '';
 
   const phase = phaseDeLaSortie(reunion, maintenant) ?? 'avant';
-  const feuille = feuilleDeLaSortie(etat.preparations, 'evenement', reunion.id);
-  const restent = feuille
-    ? feuille.items.filter((item) => item.phase === phase && !item.fait)
+  const fiche = ficheDeLaReunion(etat.fiches, reunion.id);
+  // Ce que le moment demande : avant, le contrat ; pendant, l'ordre du jour
+  // sous les yeux ; après, le compte-rendu à chaud.
+  const restants = fiche
+    ? fiche.points.filter((point) => point.statut === 'a_venir').slice(0, 3)
     : [];
 
   return `
     <section class="bloc">
       <span class="tuile-entete">
-        <span class="etiquette">${PHASES_PREPA[phase]}</span>
+        <span class="etiquette">${PHASES_REUNION[phase]}</span>
         ${etiquettesReunion(reunion)}
         <span class="discret quand">${echapper(
           momentLisible(new Date(reunion.date_debut)),
@@ -382,27 +812,28 @@ function blocReunionDuMoment(etat) {
       </span>
       <h2 class="reunion-moment-titre">${echapper(reunion.titre)}</h2>
       ${
-        feuille
-          ? `${
-              restent.length
-                ? `<ul class="liste-taches-pleine prepa-liste">${restent
-                    .slice(0, 3)
-                    .map(
-                      (item) => `
-                  <li class="tache-ligne">
-                    <button type="button" class="tache-cercle" data-cocher-prepa="${echapper(item.id)}"
-                      aria-pressed="false"
-                      aria-label="Cocher « ${echapper(item.texte)} »"></button>
-                    <span class="tache-corps"><span class="tache-titre">${echapper(item.texte)}</span></span>
-                  </li>`,
-                    )
-                    .join('')}</ul>`
-                : `<p class="discret">Tout est coché pour cette phase.</p>`
-            }
-            <a class="lien-discret" href="#hermitage/reunions/${echapper(feuille.id)}">Ouvrir la
-              préparation${restent.length > 3 ? ` · ${restent.length} lignes à faire` : ''}</a>`
-          : boutonPreparer(null, 'evenement', reunion.id)
+        fiche?.objectif
+          ? `<p class="discret reunion-objectif">À la fin : ${echapper(fiche.objectif)}</p>`
+          : ''
       }
+      ${
+        phase === 'apres' && fiche && !fiche.cr_date
+          ? `<p class="discret">Le compte-rendu s'écrit à chaud — sous 48 h il devient
+               une habitude.</p>`
+          : restants.length
+            ? `<ul class="liste-reunions accueil-odj">${restants
+                .map(
+                  (point) => `
+              <li><span class="reunion-titre">${echapper(point.titre)}</span>${
+                point.minutes
+                  ? ` <span class="discret"><span class="chiffre">${point.minutes}</span> min</span>`
+                  : ''
+              }</li>`,
+                )
+                .join('')}</ul>`
+            : ''
+      }
+      ${boutonFiche(fiche, reunion)}
     </section>`;
 }
 
@@ -475,26 +906,115 @@ function vueCreer(etat) {
     ${pied()}`;
 }
 
-function vueCalendrier(etat) {
-  // L'état porte aussi le passé depuis que les réunions ont leurs bilans ; le
-  // calendrier du site, lui, continue de ne montrer que ce qui vient.
-  const maintenant = new Date();
-  const elements = assemblerCalendrier({
-    evenements: etat.evenements.filter((e) => new Date(e.date_debut) >= maintenant),
+// Tout ce que le calendrier du site assemble. Pas de commande ni de relance :
+// elles vivent chez Yuno, le club n'en a pas.
+function elementsDuCalendrierFch(etat) {
+  return assemblerCalendrier({
+    evenements: etat.evenements,
     taches: etat.taches,
     objectifs: etat.objectifs,
     publications: etat.publications.filter(
       (pub) => pub.date_prevue && pub.statut !== 'publie',
     ),
   });
+}
+
+function vueCalendrier(etat) {
+  const elements = elementsDuCalendrierFch(etat);
+
+  // Les mêmes trois vues que le hub et Yuno : mois, semaine, agenda (demande
+  // de Noé, 21 août 2026). Les grilles se promènent — un mois passé doit
+  // montrer ses jours — ; l'agenda, lui, continue de ne dire que ce qui vient.
+  const aujourdhui = versDateISO(new Date());
+  const aVenir = elements.filter(
+    (element) =>
+      versDateISO(element.date) >= aujourdhui ||
+      (element.jusqua && element.jusqua >= aujourdhui),
+  );
 
   return `
     ${enTete('calendrier')}
-    ${construireFiltres(etat.natures)}
+    ${construireBarrePeriode(etat.vueCal, etat.ancreCal)}
+    ${construireFiltres(etat.natures, { offertes: NATURES_FCH })}
     <div data-bloc="calendrier">
-      ${construireCalendrier(elements, etat.natures)}
+      ${
+        etat.vueCal === 'agenda'
+          ? construireCalendrier(aVenir, etat.natures)
+          : construireGrille(elements, etat.natures, etat.vueCal, etat.ancreCal, {
+              selection: etat.creationCal,
+            })
+      }
     </div>
+    ${etat.detailCal ? fenetreDetail(etat.detailCal, { edition: etat.editionCal }) : ''}
+    ${
+      etat.jourOuvertCal
+        ? fenetreJour(etat.jourOuvertCal, elementsDuJour(elements, etat.jourOuvertCal))
+        : ''
+    }
     ${pied()}`;
+}
+
+// Corriger sur place, depuis la fenêtre de détail. Chaque nature range sa date
+// dans sa propre colonne : `debut` est le nom du champ à l'écran, pas celui de
+// la base. Même circuit que l'espace Calendrier du hub, réduit aux natures que
+// le site assemble.
+async function corrigerDepuisCalendrier(champs) {
+  const { type, id } = champs;
+  const titre = champs.titre.trim();
+
+  if (type === 'evenement') {
+    const debut = new Date(`${champs.debut}T${champs.heure || '00:00'}`);
+    const fin = finDeLEvenement(debut, champs);
+    return appliquerAuCalendrier(type, id, {
+      titre,
+      date_debut: debut.toISOString(),
+      date_fin: fin ? fin.toISOString() : null,
+      recurrence: champs.recurrence || null,
+      recurrence_fin: champs.recurrence_fin || null,
+      lieu: champs.lieu?.trim() || null,
+      notes: champs.notes?.trim() || null,
+      // La face réunion : l'objet — vide = pas une réunion — et qui l'anime.
+      // Le checkbox décoché est absent du formulaire ; sans objet, pas
+      // d'animation qui tienne.
+      ...(champs.reunion_objet !== undefined
+        ? {
+            reunion_objet: champs.reunion_objet || null,
+            reunion_animee: champs.reunion_objet ? champs.reunion_animee === 'oui' : false,
+          }
+        : {}),
+    });
+  }
+
+  if (type === 'publication') {
+    return appliquerAuCalendrier(type, id, {
+      titre,
+      date_prevue: champs.debut,
+      reseau: champs.reseau,
+      format: champs.format,
+    });
+  }
+
+  if (type === 'objectif') {
+    return appliquerAuCalendrier(type, id, {
+      titre,
+      echeance: champs.debut,
+      pourquoi: champs.pourquoi?.trim() || null,
+      cible: champs.cible?.trim() || null,
+    });
+  }
+
+  // Tâche et jalon : un titre et une échéance, rien de plus ici.
+  return appliquerAuCalendrier(type, id, { titre, echeance: champs.debut });
+}
+
+// Chaque nature se supprime là où elle vit — même règle que le hub.
+async function effacerDuCalendrier(type, id) {
+  if (type === 'evenement') return api.supprimerEvenement(id);
+  if (type === 'tache') return api.supprimerTache(id);
+  if (type === 'publication') return api.supprimerPublication(id);
+  if (type === 'objectif') return api.supprimerObjectif(id);
+  if (type === 'jalon') return api.supprimerJalon(id);
+  throw new Error(`Nature inconnue : ${type}`);
 }
 
 function vuePartenaires(etat) {
@@ -549,10 +1069,10 @@ export default {
       taches: [],
       evenements: [],
       partenaires: [],
-      preparations: [],
-      modelesPrepa: [],
+      fiches: [],
+      actionsClub: [],
       vue: 'accueil',
-      // La feuille de réunion ouverte : son id vient de l'adresse
+      // La fiche de réunion ouverte : son id vient de l'adresse
       // (#hermitage/reunions/<id>), jamais d'un état d'interface.
       reunionOuverte: null,
       // La tuile de capture du « + » : le site en a une depuis le 21 août 2026
@@ -563,11 +1083,23 @@ export default {
       // (la chaîne « tout ») là où le calendrier attend un Set, et l'écran
       // levait `natures.has is not a function` sans que rien ne s'affiche.
       filtre: 'tout',
-      natures: toutesLesNatures(),
+      natures: new Set(NATURES_FCH),
+      // Le calendrier a ses trois vues depuis le 21 août 2026 (demande de
+      // Noé) : la grille du mois d'abord, comme au hub et chez Yuno.
+      vueCal: 'mois',
+      ancreCal: new Date(),
+      detailCal: null,
+      editionCal: false,
+      jourOuvertCal: null,
       // Le mot dit après une écriture qui a échoué. L'écran est déjà revenu en
       // arrière tout seul ; un geste défait en silence ressemble à une panne.
       souci: null,
     };
+
+    // Déclarés ici parce que `rendre` s'en sert : les fonctions sont posées
+    // plus bas, quand les écouteurs se branchent.
+    let poserLEntreeClavier = null;
+    let rafraichirLaCapture = null;
 
     let minuteurSouci = null;
     const dire = (message) => {
@@ -612,6 +1144,10 @@ export default {
 
       centrerActif(section.querySelector('.fch-nav'));
       centrerActif(section.querySelector('.filtres'));
+      // La grille vient d'être réécrite : elle a perdu son point d'entrée
+      // clavier, et la tuile ouverte ses libellés de pastilles.
+      poserLEntreeClavier?.();
+      if (etat.creationCal) rafraichirLaCapture?.();
     };
 
     // Une victoire qui n'existe pas encore en base : elle s'affiche pendant
@@ -648,19 +1184,19 @@ export default {
     };
 
     const charger = async () => {
-      const [objectifs, victoires, publications, taches, evenements, contacts, feuilles, modeles] =
+      const [objectifs, victoires, publications, taches, evenements, contacts, fiches, actionsClub] =
         await Promise.all([
           api.objectifsActifs({ projet: PROJET }),
           api.victoiresDuProjet(PROJET),
           api.publicationsToutes(PROJET),
           api.tachesDatees({ projet: PROJET }),
           // TOUS les événements depuis le 21 août 2026, plus seulement ceux à
-          // venir : les réunions passées portent leurs bilans. Le calendrier,
+          // venir : les réunions passées portent leurs fiches. Le calendrier,
           // lui, refiltre l'avenir — son affichage n'a pas bougé.
           api.evenementsTous({ projet: PROJET }),
           api.contactsTous(),
-          api.preparationsToutes(),
-          api.modelesPreparationTous(),
+          api.fichesReunionToutes(),
+          api.actionsClubToutes(),
         ]);
 
       Object.assign(etat, {
@@ -670,11 +1206,8 @@ export default {
         taches,
         evenements,
         partenaires: contacts.filter((contact) => contact.type === TYPE_PARTENAIRE),
-        // Les feuilles des autres projets ne gênent pas : elles ne se
-        // rattachent à aucun événement fch, rien ne les affiche. Les modèles,
-        // eux, sont filtrés : la liste de choix ne doit dire que le club.
-        preparations: feuilles,
-        modelesPrepa: modeles.filter((modele) => modele.projet === PROJET),
+        fiches,
+        actionsClub,
       });
     };
 
@@ -704,7 +1237,62 @@ export default {
     // des formulaires — `brancherChoix`, qui servait quand ce site n'avait pas
     // de tuile, est parti avec : les deux ensemble traitaient chaque clic deux
     // fois, et un panneau basculé deux fois reste fermé.
-    brancherCapture(section);
+    rafraichirLaCapture = brancherCapture(section);
+
+    const fermerFenetres = () => {
+      etat.creationCal = null;
+      etat.detailCal = null;
+      etat.editionCal = false;
+      etat.jourOuvertCal = null;
+      rendre();
+    };
+
+    // Entrée ou Espace sur une case posée au clavier ouvre la même fenêtre
+    // qu'un clic.
+    poserLEntreeClavier = brancherClavier(section, (jour) => {
+      etat.detailCal = null;
+      etat.creationCal = { debut: jour, fin: jour, nature: natureParDefaut(etat.natures) };
+      rendre();
+      section.querySelector('#cal-titre')?.focus();
+    });
+    poserLEntreeClavier();
+
+    // Glisser sur un jour — ou une série de jours — ouvre la tuile, dates déjà
+    // posées. Même geste que dans le hub et chez Yuno.
+    brancherSelection(section, ({ debut, fin }) => {
+      etat.detailCal = null;
+      etat.creationCal = { debut, fin, nature: natureParDefaut(etat.natures) };
+      rendre();
+      section.querySelector('#cal-titre')?.focus();
+    });
+
+    // Glisser une barre la reporte : l'action la plus fréquente après créer.
+    brancherDeplacement(section, async ({ element: cle, ecart }) => {
+      const [type, id] = cle.split(':');
+      const element = elementsDuCalendrierFch(etat).find(
+        (candidat) => candidat.type === type && String(candidat.id) === id,
+      );
+      if (!element) return;
+
+      try {
+        await appliquerAuCalendrier(type, id, champsApresDeplacement(element, ecart));
+        await charger();
+        rendre();
+      } catch (souci) {
+        console.error('Déplacement impossible', souci);
+        dire("Le report n'a pas pu être enregistré.");
+      }
+    });
+
+    // Échap ferme la fenêtre — c'est le geste attendu partout ailleurs.
+    document.addEventListener('keydown', (evenement) => {
+      if (
+        evenement.key === 'Escape' &&
+        (etat.creationCal || etat.detailCal || etat.jourOuvertCal)
+      ) {
+        fermerFenetres();
+      }
+    });
 
     this.naviguer(route);
 
@@ -748,64 +1336,104 @@ export default {
         return;
       }
 
-      if (action === 'ajouter-item-prepa') {
-        const feuille = etat.preparations.find((f) => f.id === champs.preparation_id);
-        if (!feuille) return;
-        const item = await api.ajouterItemPreparation({
-          preparation_id: champs.preparation_id,
-          phase: champs.phase,
-          texte: champs.texte.trim(),
-        });
-        feuille.items.push(item);
-        // La boucle d'apprentissage : l'item peut entrer au modèle d'origine.
-        if (champs.au_modele === 'oui' && feuille.modele_id) {
-          await api.ajouterItemModele({
-            modele_id: feuille.modele_id,
-            phase: champs.phase,
-            texte: champs.texte.trim(),
-          });
-        }
+      // Le formulaire de la fenêtre de détail : une date mal posée se répare,
+      // la supprimer pour la recréer ferait perdre tout le reste de la fiche.
+      if (action === 'modifier-depuis-calendrier') {
+        await corrigerDepuisCalendrier(champs);
+        etat.detailCal = null;
+        etat.editionCal = false;
+        await charger();
         rendre();
         return;
       }
 
-      if (action === 'noter-bilan-reunion') {
-        const feuille = etat.preparations.find((f) => f.id === champs.id);
-        if (!feuille) return;
+      // Le contrat de la fiche : type, objectif, participants, envois, notes.
+      if (action === 'preparer-reunion') {
+        const fiche = etat.fiches.find((f) => f.id === champs.id);
+        if (!fiche) return;
+        const misAJour = await api.modifierFicheReunion(champs.id, {
+          type_reunion: champs.type_reunion || null,
+          objectif: champs.objectif?.trim() || null,
+          participants: champs.participants?.trim() || null,
+          infos_avant: champs.infos_avant?.trim() || null,
+          notes_avant: champs.notes_avant?.trim() || null,
+        });
+        Object.assign(fiche, misAJour);
+        rendre();
+        return;
+      }
 
-        const evenement = etat.evenements.find((e) => e.id === feuille.evenement_id);
-        // Les tâches ne naissent qu'à la PREMIÈRE écriture : corriger un bilan
-        // ne doit pas les recréer en double.
-        const premiereEcriture = !feuille.bilan_date;
+      if (action === 'ajouter-point-reunion') {
+        const fiche = etat.fiches.find((f) => f.id === champs.fiche_id);
+        if (!fiche) return;
+        const point = await api.ajouterPointReunion({
+          fiche_id: champs.fiche_id,
+          titre: champs.titre.trim(),
+          type_point: champs.type_point || null,
+          minutes: Number(champs.minutes) || null,
+          sortie: champs.sortie?.trim() || null,
+          ordre: fiche.points.length + 1,
+        });
+        fiche.points.push(point);
+        rendre();
+        return;
+      }
 
-        const misAJour = await api.noterBilan(champs.id, {
-          bilan_bien: champs.bilan_bien?.trim() || null,
-          bilan_mieux: champs.bilan_mieux?.trim() || null,
-          ...(evenement?.reunion_animee
+      // Une action décidée entre au tableau du club — et, si elle est pour
+      // Noé, dans le circuit des tâches : les deux restent reliées.
+      if (action === 'ajouter-action-club') {
+        let tache_id = null;
+        if (champs.pour_moi === 'oui') {
+          const tache = await api.creerTache({
+            projet: PROJET,
+            titre: champs.texte.trim(),
+            statut: 'actif',
+            priorite: 4,
+            echeance: champs.echeance || null,
+          });
+          etat.taches.push(tache);
+          tache_id = tache.id;
+        }
+        const actionClub = await api.ajouterActionClub({
+          fiche_id: champs.fiche_id,
+          texte: champs.texte.trim(),
+          responsable: champs.pour_moi === 'oui' ? champs.responsable?.trim() || 'Noé' : champs.responsable?.trim() || null,
+          echeance: champs.echeance || null,
+          tache_id,
+        });
+        etat.actionsClub.push(actionClub);
+        rendre();
+        return;
+      }
+
+      // Le compte-rendu court, et ce qui ne regarde que Noé. `cr_date` se pose
+      // à la première écriture et ne bouge plus : elle dit quand le CR est né.
+      if (action === 'conclure-reunion') {
+        const fiche = etat.fiches.find((f) => f.id === champs.id);
+        if (!fiche) return;
+        const misAJour = await api.modifierFicheReunion(champs.id, {
+          cr_decisions: champs.cr_decisions?.trim() || null,
+          cr_en_attente: champs.cr_en_attente?.trim() || null,
+          cr_suivi: champs.cr_suivi || null,
+          cr_date: fiche.cr_date ?? versDateISO(),
+          bilan_retenu: champs.bilan_retenu?.trim() || null,
+          ...(champs.bilan_animation !== undefined
             ? { bilan_animation: champs.bilan_animation?.trim() || null }
             : {}),
         });
-        Object.assign(feuille, misAJour);
+        Object.assign(fiche, misAJour);
+        rendre();
+        return;
+      }
 
-        if (premiereEcriture) {
-          const actions = (champs.bilan_mieux ?? '')
-            .split('\n')
-            .map((ligne) => ligne.trim())
-            .filter(Boolean);
-          for (const titre of actions) {
-            etat.taches.push(
-              await api.creerTache({ projet: PROJET, titre, statut: 'actif', priorite: 4 }),
-            );
-          }
-          if (actions.length) {
-            dire(
-              `${actions.length} tâche${actions.length > 1 ? 's' : ''} créée${
-                actions.length > 1 ? 's' : ''
-              } depuis le bilan — elles t'attendent au hub.`,
-            );
-          }
-        }
-
+      if (action === 'lien-presentation' || action === 'lien-compte-rendu') {
+        const fiche = etat.fiches.find((f) => f.id === champs.id);
+        if (!fiche) return;
+        const colonne = action === 'lien-presentation' ? 'lien_presentation' : 'lien_compte_rendu';
+        const misAJour = await api.modifierFicheReunion(champs.id, {
+          [colonne]: champs.lien?.trim() || null,
+        });
+        Object.assign(fiche, misAJour);
         rendre();
         return;
       }
@@ -890,58 +1518,173 @@ export default {
       // Le « + » ouvre la tuile, sur un événement : c'est pour noter une
       // réunion que ce site l'a gagnée. Le fond assombri la referme.
       if (evenement.target.closest('[data-ouvrir-plus]')) {
+        etat.detailCal = null;
+        etat.editionCal = false;
+        etat.jourOuvertCal = null;
         etat.creationCal = { debut: versDateISO(), nature: 'evenement' };
         rendre();
         section.querySelector('#cal-titre')?.focus();
         return;
       }
       if (evenement.target.closest('[data-fermer-fenetre]')) {
+        fermerFenetres();
+        return;
+      }
+
+      // La pastille de nature de la tuile : la fiche se redessine pour la
+      // nature choisie. Les dates sont éditables — on garde ce qui vient
+      // d'être saisi plutôt que de revenir à ce que le glissement avait posé.
+      const natureCreation = evenement.target.closest('[data-nature-creation]');
+      if (natureCreation) {
+        etat.creationCal = {
+          ...etat.creationCal,
+          debut: section.querySelector('#cal-debut')?.value || etat.creationCal?.debut,
+          fin: section.querySelector('#cal-fin')?.value || etat.creationCal?.fin,
+          nature: natureCreation.dataset.natureCreation,
+        };
+        rendre();
+        section.querySelector('#cal-titre')?.focus();
+        return;
+      }
+
+      // Le « +N » d'une case pleine déplie sa journée.
+      const journee = evenement.target.closest('[data-jour-complet]');
+      if (journee) {
         etat.creationCal = null;
+        etat.detailCal = null;
+        etat.jourOuvertCal = journee.dataset.jourComplet;
         rendre();
         return;
       }
 
-      // « Préparer » : la feuille naît du modèle qui correspond — même objet,
-      // même rôle — proposé d'office. Le bon réflexe ne doit rien coûter.
-      const preparer = evenement.target.closest('[data-preparer]');
-      if (preparer) {
-        const [, id] = preparer.dataset.preparer.split(':');
-        const reunion = etat.evenements.find((e) => e.id === id);
+      // Le cercle d'une tâche se coche depuis la grille, sans ouvrir son
+      // détail : c'est le geste le plus fréquent, il ne mérite pas une
+      // fenêtre. Il passe AVANT l'ouverture du détail — le cercle est dans la
+      // barre, et sans cette priorité le clic ouvrirait la fenêtre par-dessus.
+      const cercle = evenement.target.closest('[data-cocher-tache]');
+      if (cercle) {
+        evenement.stopPropagation();
+        const tache = etat.taches.find((candidat) => candidat.id === cercle.dataset.cocherTache);
+        if (!tache || tache.statut === 'fait' || estProvisoire(tache.id)) return;
+
+        const avantTache = { ...tache };
+        const provisoire = victoireProvisoire(tache.titre);
+        etat.victoires.unshift(provisoire);
+        const faite = await modifierAussitot(
+          tache,
+          { statut: 'fait', date_fait: new Date().toISOString() },
+          async () => {
+            const { tache: rendue, victoire } = await api.terminerTache(avantTache);
+            remplacerVictoire(provisoire, victoire);
+            return rendue;
+          },
+          { rendre, echouer: dire },
+        );
+        if (!faite) retirerVictoire(provisoire);
+        return;
+      }
+
+      // Une barre de la grille, une ligne de l'agenda ou de la journée
+      // dépliée : toutes mènent au détail.
+      const ouvrirDetail = evenement.target.closest('[data-element]');
+      if (ouvrirDetail) {
+        const [type, id] = ouvrirDetail.dataset.element.split(':');
+        etat.creationCal = null;
+        etat.editionCal = false;
+        etat.jourOuvertCal = null;
+        etat.detailCal = elementsDuCalendrierFch(etat).find(
+          (element) => element.type === type && String(element.id) === id,
+        );
+        rendre();
+        return;
+      }
+
+      if (evenement.target.closest('[data-modifier-element]')) {
+        etat.editionCal = true;
+        rendre();
+        section.querySelector('#cal-edition-titre')?.focus();
+        return;
+      }
+
+      if (evenement.target.closest('[data-annuler-edition]')) {
+        etat.editionCal = false;
+        rendre();
+        return;
+      }
+
+      const supprimerElement = evenement.target.closest('[data-supprimer-element]');
+      if (supprimerElement) {
+        const [type, id] = supprimerElement.dataset.supprimerElement.split(':');
+        if (!confirm(`Supprimer « ${etat.detailCal?.titre} » ?`)) return;
+        supprimerElement.disabled = true;
+        try {
+          await effacerDuCalendrier(type, id);
+          etat.detailCal = null;
+          await charger();
+          rendre();
+        } catch (souci) {
+          console.error('Suppression impossible', souci);
+          supprimerElement.disabled = false;
+        }
+        return;
+      }
+
+      const vueCal = evenement.target.closest('[data-vue-cal]');
+      if (vueCal) {
+        etat.vueCal = vueCal.dataset.vueCal;
+        rendre();
+        return;
+      }
+
+      const periode = evenement.target.closest('[data-periode]');
+      if (periode) {
+        const sens = Number(periode.dataset.periode);
+        // 0 = « Aujourd'hui » : on ne se perd jamais longtemps dans un calendrier.
+        etat.ancreCal = sens === 0 ? new Date() : deplacerAncre(etat.ancreCal, etat.vueCal, sens);
+        rendre();
+        return;
+      }
+
+      // « Préparer » : la fiche naît vide — la structure EST le savoir-faire —
+      // et s'ouvre aussitôt. Titre et date sont copiés de l'événement.
+      const creerFiche = evenement.target.closest('[data-creer-fiche]');
+      if (creerFiche) {
+        const reunion = etat.evenements.find((e) => e.id === creerFiche.dataset.creerFiche);
         if (!reunion) return;
         try {
-          const feuille = await api.creerPreparation({
-            modele: modelePourReunion(etat.modelesPrepa, reunion),
+          const fiche = await api.creerFicheReunion({
             evenement_id: reunion.id,
             titre: reunion.titre,
             date: versDateISO(new Date(reunion.date_debut)),
           });
-          etat.preparations.unshift(feuille);
-          location.hash = `#hermitage/reunions/${feuille.id}`;
+          etat.fiches.unshift(fiche);
+          location.hash = `#hermitage/reunions/${fiche.id}`;
         } catch (souci) {
-          console.error('Création de la préparation impossible', souci);
-          dire("La préparation n'a pas pu être créée.");
+          console.error('Création de la fiche impossible', souci);
+          dire("La fiche n'a pas pu être créée.");
         }
         return;
       }
 
-      const ouvrirPrepa = evenement.target.closest('[data-ouvrir-preparation]');
-      if (ouvrirPrepa) {
-        location.hash = `#hermitage/reunions/${ouvrirPrepa.dataset.ouvrirPreparation}`;
+      const ouvrirFiche = evenement.target.closest('[data-ouvrir-fiche]');
+      if (ouvrirFiche) {
+        location.hash = `#hermitage/reunions/${ouvrirFiche.dataset.ouvrirFiche}`;
         return;
       }
 
-      // Cocher une ligne — depuis la feuille comme depuis l'accueil. L'écran
-      // d'abord, l'écriture derrière, le retour en arrière si elle échoue.
-      const cocherPrepa = evenement.target.closest('[data-cocher-prepa]');
-      if (cocherPrepa) {
-        const id = cocherPrepa.dataset.cocherPrepa;
-        for (const feuille of etat.preparations) {
-          const item = feuille.items.find((candidat) => candidat.id === id);
-          if (!item) continue;
+      // Un point de l'ordre du jour se clôt : traité, ou reporté. Recliquer le
+      // même statut le retire — un geste se défait par le même geste.
+      const pointStatut = evenement.target.closest('[data-point-statut]');
+      if (pointStatut) {
+        const [id, statut] = pointStatut.dataset.pointStatut.split(':');
+        for (const fiche of etat.fiches) {
+          const point = fiche.points.find((candidat) => candidat.id === id);
+          if (!point) continue;
+          const suivant = point.statut === statut ? 'a_venir' : statut;
           await modifierAussitot(
-            item,
-            { fait: !item.fait },
-            () => api.modifierItemPreparation(id, { fait: !item.fait }),
+            point,
+            { statut: suivant },
+            () => api.modifierPointReunion(id, { statut: suivant }),
             { rendre, echouer: dire },
           );
           return;
@@ -949,16 +1692,16 @@ export default {
         return;
       }
 
-      const retirerPrepa = evenement.target.closest('[data-retirer-prepa]');
-      if (retirerPrepa) {
-        const id = retirerPrepa.dataset.retirerPrepa;
-        for (const feuille of etat.preparations) {
-          const rang = feuille.items.findIndex((candidat) => candidat.id === id);
+      const retirerPoint = evenement.target.closest('[data-retirer-point]');
+      if (retirerPoint) {
+        const id = retirerPoint.dataset.retirerPoint;
+        for (const fiche of etat.fiches) {
+          const rang = fiche.points.findIndex((candidat) => candidat.id === id);
           if (rang === -1) continue;
           await retirerAussitot(
-            feuille.items,
-            feuille.items[rang],
-            () => api.supprimerItemPreparation(id),
+            fiche.points,
+            fiche.points[rang],
+            () => api.supprimerPointReunion(id),
             { rendre, echouer: dire },
           );
           return;
@@ -966,16 +1709,65 @@ export default {
         return;
       }
 
-      const supprimerPrepa = evenement.target.closest('[data-supprimer-prepa]');
-      if (supprimerPrepa) {
-        const id = supprimerPrepa.dataset.supprimerPrepa;
+      // Le statut d'une action tourne : à faire → en cours → fait → à faire.
+      const actionStatut = evenement.target.closest('[data-action-statut]');
+      if (actionStatut) {
+        const actionClub = etat.actionsClub.find(
+          (candidat) => candidat.id === actionStatut.dataset.actionStatut,
+        );
+        if (!actionClub || estProvisoire(actionClub.id)) return;
+        const suivant = ACTION_SUIVANT[actionClub.statut];
+        await modifierAussitot(
+          actionClub,
+          { statut: suivant },
+          () => api.modifierActionClub(actionClub.id, { statut: suivant }),
+          { rendre, echouer: dire },
+        );
+        return;
+      }
+
+      const retirerAction = evenement.target.closest('[data-retirer-action]');
+      if (retirerAction) {
+        const actionClub = etat.actionsClub.find(
+          (candidat) => candidat.id === retirerAction.dataset.retirerAction,
+        );
+        if (!actionClub || estProvisoire(actionClub.id)) return;
+        await retirerAussitot(
+          etat.actionsClub,
+          actionClub,
+          () => api.supprimerActionClub(actionClub.id),
+          { rendre, echouer: dire },
+        );
+        return;
+      }
+
+      // Le titre attendu sur le Drive, dans le presse-papiers : renommer la
+      // copie ne demande plus que de coller.
+      const copierTitre = evenement.target.closest('[data-copier-titre]');
+      if (copierTitre) {
         try {
-          await api.supprimerPreparation(id);
-          etat.preparations = etat.preparations.filter((f) => f.id !== id);
+          await navigator.clipboard.writeText(copierTitre.dataset.copierTitre);
+          dire('Titre copié — colle-le en renommant la copie sur le Drive.');
+        } catch {
+          dire('La copie a été refusée par le navigateur — retape le titre.');
+        }
+        return;
+      }
+
+      const supprimerFiche = evenement.target.closest('[data-supprimer-fiche]');
+      if (supprimerFiche) {
+        const id = supprimerFiche.dataset.supprimerFiche;
+        const fiche = etat.fiches.find((f) => f.id === id);
+        if (!confirm(`Supprimer la fiche « ${fiche?.titre} » ? Les actions du tableau sont conservées.`)) {
+          return;
+        }
+        try {
+          await api.supprimerFicheReunion(id);
+          etat.fiches = etat.fiches.filter((f) => f.id !== id);
           location.hash = '#hermitage/reunions';
         } catch (souci) {
           console.error('Suppression impossible', souci);
-          dire("La préparation n'a pas pu être supprimée.");
+          dire("La fiche n'a pas pu être supprimée.");
         }
         return;
       }

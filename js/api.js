@@ -1115,6 +1115,120 @@ export async function supprimerItemModele(id) {
   if (error) throw error;
 }
 
+// --- Les fiches de réunion (FCH) ---------------------------------------------
+// La structure du guide « Réunions efficaces » : le contrat avant (type,
+// objectif, ordre du jour orienté action), le compte-rendu court après, et le
+// tableau permanent des actions du club. Voir docs/fch-spec.md.
+
+export async function fichesReunionToutes() {
+  const fiches = verifier(
+    await client
+      .from('fiches_reunion')
+      .select('*, points:fiches_reunion_points(*)')
+      .order('date', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false }),
+  );
+  return fiches.map((fiche) => ({
+    ...fiche,
+    points: (fiche.points ?? []).sort(
+      (a, b) =>
+        (a.ordre ?? 0) - (b.ordre ?? 0) ||
+        String(a.created_at).localeCompare(String(b.created_at)),
+    ),
+  }));
+}
+
+// Titre et date sont copiés de l'événement, comme pour une feuille de
+// préparation : la fiche se lit seule, et survit à son événement.
+export async function creerFicheReunion({ evenement_id = null, titre, date = null }) {
+  const fiche = verifier(
+    await client
+      .from('fiches_reunion')
+      .insert({ evenement_id, titre, date })
+      .select()
+      .single(),
+  );
+  return { ...fiche, points: [] };
+}
+
+export async function modifierFicheReunion(id, champs) {
+  return verifier(
+    await client.from('fiches_reunion').update(champs).eq('id', id).select().single(),
+  );
+}
+
+export async function supprimerFicheReunion(id) {
+  // Les points partent avec la fiche (CASCADE) ; les actions restent — le
+  // tableau du club est une mémoire, pas une annexe (SET NULL).
+  const { error } = await client.from('fiches_reunion').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function ajouterPointReunion({
+  fiche_id,
+  titre,
+  type_point = null,
+  minutes = null,
+  sortie = null,
+  ordre = null,
+}) {
+  return verifier(
+    await client
+      .from('fiches_reunion_points')
+      .insert({ fiche_id, titre, type_point, minutes, sortie, ordre })
+      .select()
+      .single(),
+  );
+}
+
+export async function modifierPointReunion(id, champs) {
+  return verifier(
+    await client.from('fiches_reunion_points').update(champs).eq('id', id).select().single(),
+  );
+}
+
+export async function supprimerPointReunion(id) {
+  const { error } = await client.from('fiches_reunion_points').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function actionsClubToutes() {
+  return verifier(
+    await client
+      .from('actions_club')
+      .select('*')
+      .order('echeance', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: true }),
+  );
+}
+
+export async function ajouterActionClub({
+  fiche_id = null,
+  texte,
+  responsable = null,
+  echeance = null,
+  tache_id = null,
+}) {
+  return verifier(
+    await client
+      .from('actions_club')
+      .insert({ fiche_id, texte, responsable, echeance, tache_id })
+      .select()
+      .single(),
+  );
+}
+
+export async function modifierActionClub(id, champs) {
+  return verifier(
+    await client.from('actions_club').update(champs).eq('id', id).select().single(),
+  );
+}
+
+export async function supprimerActionClub(id) {
+  const { error } = await client.from('actions_club').delete().eq('id', id);
+  if (error) throw error;
+}
+
 // --- Le calendrier : tout ce qui porte une date ------------------------------
 // Règle commune : on montre ce qui reste à vivre ou à faire. Un événement passé
 // est passé ; une tâche ou une publication en retard de date reste affichée

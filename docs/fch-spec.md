@@ -135,27 +135,60 @@ fch, exactement comme le type de moment avec photo.
 Les objets : **CA, alternance, communication, partenariat, autre** — la liste
 s'élargira si le besoin vient.
 
-**La préparation est la feuille de Yuno**, trois phases et des cases : le
-module a déménagé dans `preparations-commun.js` (même leçon que le
-calendrier — un deuxième site, un module commun, jamais une copie). Ce qui
-change, c'est le contenu : la préparation d'une réunion est un savoir-faire,
-et **six modèles semés en migration** le portent — CA en deux versions
-(j'anime / j'y assiste : animer et assister sont deux métiers), point
-alternance, réunion communication, rendez-vous partenaire, et les essentiels.
-**Le bon modèle se propose d'office** : même objet et même rôle d'abord, puis
-même objet, puis les essentiels. Le bon réflexe ne doit rien coûter. La boucle
-d'apprentissage de Yuno vaut ici : « aussi au modèle » enrichit le modèle
-depuis le terrain.
+#### La FICHE de réunion (refonte du 21 août 2026 au soir)
 
-**Le bilan n'est PAS le compte-rendu officiel** (décision de Noé) : c'est ce
-qui LE concerne. Deux questions pour tous — « Ce qu'il faut retenir — pour
-toi », « Ce que ça te donne à faire » — et une troisième pour l'animateur
-seulement : « Comment la réunion s'est déroulée », relue en préparant la
-suivante (le rappel du dernier bilan la ressert). **Chaque ligne « à faire »
-devient une tâche fch à l'enregistrement** — une ligne, une tâche, le contrat
-est écrit sous le champ — et seulement à la PREMIÈRE écriture : corriger un
-bilan ne recrée rien. Ce qui se décide en réunion entre dans le circuit
-(« Aujourd'hui », l'espace Tâches), au lieu de dormir dans une note.
+La feuille à cases de Yuno a tenu une journée : elle listait des gestes, or
+préparer une réunion demande une **structure**. Noé a fourni le guide
+« Réunions efficaces » du club (`docs/` n'en garde pas de copie — il vit sur
+son Drive), et c'est lui qui commande désormais l'outil. Sa thèse, en une
+ligne : *une réunion se prépare par un objectif clair, s'anime avec une
+méthode adaptée, et se termine par un plan d'action suivi.*
+
+La fiche suit ce déroulé, dans cet ordre :
+
+1. **Le contrat** — le **type** de réunion (information · décision ·
+   coordination · problème · idées · bilan · gouvernance : le type commande la
+   méthode), l'**objectif** sous la forme imposée par le guide — *« À la fin de
+   la réunion, nous devons avoir… »*, les **participants nécessaires** (les
+   personnes utiles, pas tout le monde), ce qui **s'envoie avant**, et les
+   notes de Noé (libellées selon qu'il anime ou assiste).
+2. **L'ordre du jour orienté action** — un point = un verbe (*décider,
+   valider, répartir…*), un type, un temps, et sa **sortie attendue** : un
+   résultat, pas un thème. Le total des minutes s'affiche ; au-delà de trois
+   points, une ligne discrète rappelle la limite du guide — un conseil, jamais
+   un blocage. **Pendant** la réunion chaque point se clôt : *traité* ou
+   *reporté* — le report explicite est une exigence du guide, pas un oubli.
+3. **La présentation** (voir le Drive, plus bas).
+4. **Ouvrir par le suivi** — les actions encore ouvertes des réunions
+   précédentes. « Qu'est-ce qui était prévu ? Qu'est-ce qui a été fait ?
+   Qu'est-ce qui bloque ? » C'est l'habitude que le guide place en priorité.
+5. **Le kit d'animation** — les six phrases du guide (recentrer, faire
+   trancher, clarifier, responsabiliser, éviter le flou, conclure), repliées.
+   **Seulement si Noé anime** : un participant n'a pas à porter ce cadre.
+6. **Conclure** — les **actions décidées** (quoi, qui, pour quand), puis le
+   **compte-rendu court** : décisions, points en attente, prochain point de
+   contrôle. Plus ce qui ne regarde que Noé : ce qu'il retient, et — s'il
+   animait — le regard sur l'animation, resservi en préparant la suivante.
+
+**Le tableau des actions est la mémoire du club.** Une action décidée y entre
+avec son responsable et son échéance, **survit à sa fiche** (`ON DELETE SET
+NULL`) et se suit d'un clic : à faire → en cours → fait. L'écran Réunions le
+montre en entier ; une fiche montre les siennes plus le suivi des autres.
+Cochée « c'est pour moi », l'action devient **aussi une tâche fch** — les deux
+restent reliées par `tache_id`, et ce qui se décide en réunion entre dans le
+circuit (« Aujourd'hui », l'espace Tâches) au lieu de dormir dans une note.
+
+**Le Drive porte les documents, la fiche porte les portes.** Les présentations
+vivent dans *L'Administratif du FCH › Réunions CA*, les comptes-rendus avec
+elles. « Créer » **copie le dernier document en date** : la copie Google garde
+le thème, les couleurs et la structure du club — rien à reconstruire. Un
+bouton met dans le presse-papiers le nom attendu par la convention du dossier
+(« Réunion CA - 08/06/26 »), et le lien du document créé se colle sur la
+fiche : elle devient le point d'entrée unique.
+
+Les six modèles de préparation semés le 21 août au matin restent en base mais
+ne servent plus au site : le savoir-faire vit désormais dans la structure de
+la fiche, pas dans des listes à copier.
 
 ### `#hermitage/calendrier` — tout ce qui porte une date
 
@@ -181,13 +214,30 @@ L'écran existe, dit ce qu'il attend, et se remplira quand l'usage aura parlé.
 
 ## 5. Les données
 
-Aucune table nouvelle — et les réunions n'en ont pas créé non plus (21 août
-2026) : `evenements` a gagné `reunion_objet` (CHECK ca · alternance ·
-communication · partenariat · autre, non nul = réunion) et `reunion_animee` ;
-`modeles_preparation` a gagné `projet`, `objet` et `anime` (le couple qui
-propose le bon modèle d'office) ; `preparations` a gagné `bilan_animation`,
-la troisième question de l'animateur. Les feuilles, elles, se rattachaient
-déjà à n'importe quel événement.
+Les réunions n'ont d'abord rien créé (21 août 2026, matin) : `evenements` a
+gagné `reunion_objet` (CHECK ca · alternance · communication · partenariat ·
+autre, non nul = réunion) et `reunion_animee` ; `modeles_preparation` a gagné
+`projet`, `objet` et `anime` ; `preparations` a gagné `bilan_animation`.
+
+**Trois tables sont nées le soir même**, avec la fiche de réunion
+(`20260821200000_fiches_reunion.sql`) :
+
+- `fiches_reunion` — une par réunion, rattachée à son événement (SET NULL :
+  supprimer l'événement ne perd pas ce qui a été préparé). Elle porte le
+  contrat (`type_reunion`, `objectif`, `participants`, `infos_avant`,
+  `notes_avant`), les deux liens du Drive, le compte-rendu (`cr_decisions`,
+  `cr_en_attente`, `cr_suivi`, `cr_date`) et ce qui ne regarde que Noé
+  (`bilan_retenu`, `bilan_animation`). `cr_date` se pose à la première
+  écriture et ne bouge plus : elle dit quand le compte-rendu est né.
+- `fiches_reunion_points` — l'ordre du jour : titre, `type_point`, `minutes`,
+  `sortie`, et le `statut` qui clôt le point (à venir · traité · reporté).
+  CASCADE : les points appartiennent à leur fiche.
+- `actions_club` — le tableau permanent. `fiche_id` en SET NULL (la mémoire
+  survit à la fiche), `tache_id` vers la tâche jumelle quand l'action est pour
+  Noé, et un `statut` à trois temps.
+
+La limite de trois points par réunion vit à l'écran, **pas en contrainte** :
+un quatrième sujet est un choix assumé, pas une faute que la base refuse.
 
 Le projet `fch` utilise :
 
