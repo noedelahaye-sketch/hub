@@ -984,7 +984,12 @@ export async function preparationsToutes() {
   const feuilles = verifier(
     await client
       .from('preparations')
-      .select('*, items:preparations_items(id, phase, texte, fait, ordre, created_at)')
+      // Le projet de l'événement voyage avec la feuille : c'est lui qui
+      // permet au site Yuno d'écarter les feuilles de réunion du FCH —
+      // la table n'a pas de colonne projet à elle.
+      .select(
+        '*, items:preparations_items(id, phase, texte, fait, ordre, created_at), evenement:evenements(projet)',
+      )
       .order('date', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false }),
   );

@@ -8,7 +8,10 @@
 //   #yuno/journal      le carnet de terrain : le mur entier et le fil des moments
 //   #yuno/creer        l'atelier — banque d'idées et calendrier éditorial
 //   #yuno/calendrier   tout ce qui a une date chez Yuno, avec filtres
-//   #yuno/reseau       la Passerelle, le réseau et les commandes
+//   #yuno/reseau       la Passerelle — l'onglet Réseau ouvre le rituel
+//                      (refonte du 21 août 2026 : le palier-couloir a disparu,
+//                      une sous-navigation relie les cinq pages du réseau)
+//   #yuno/commandes    les commandes — leur page depuis la même refonte
 //
 // Une idée est une publication sans date : même table, deux vues.
 
@@ -147,8 +150,8 @@ function construirePiliers() {
 
 const VUES = [
   'accueil', 'journal', 'creer', 'banque', 'editorial',
-  'calendrier', 'reseau', 'passerelle', 'vivier', 'messages', 'carnet', 'preparations',
-  'modeles',
+  'calendrier', 'reseau', 'passerelle', 'vivier', 'messages', 'carnet', 'missions',
+  'commandes', 'preparations', 'modeles',
 ];
 
 // La banque est une pièce de l'atelier : elle n'a pas son onglet, elle garde
@@ -160,13 +163,19 @@ const ONGLET_DE_LA_VUE = {
   passerelle: 'reseau',
   vivier: 'reseau',
   // Les modèles de messages : « messages » et non « modeles », déjà pris par
-  // les modèles de préparation, qui gardent l'onglet Journal.
+  // les modèles de préparation. Leur page est une arrière-boutique sans
+  // entrée de navigation — elle garde l'onglet Réseau allumé, c'est de là
+  // qu'on y vient.
   messages: 'reseau',
   carnet: 'reseau',
-  // Préparer et vivre sont les deux faces du même axe terrain : les feuilles
-  // de préparation et leurs modèles gardent l'onglet Journal allumé.
-  preparations: 'journal',
-  modeles: 'journal',
+  // MISSIONS depuis le 21 août 2026 au soir (demande de Noé) : le travail
+  // concret — préparer un événement, livrer une commande. L'onglet ouvre le
+  // tableau de bord `#yuno/missions` (option A validée) ; `commandes` reste
+  // une adresse qui y mène, et les préparations avec leurs modèles gardent
+  // leur page à part entière.
+  commandes: 'missions',
+  preparations: 'missions',
+  modeles: 'missions',
 };
 
 // --- Les trois mouvements du site --------------------------------------------
@@ -252,14 +261,25 @@ export function animerLesCompteurs(section, { remise = false } = {}) {
 
 // --- Fabrication du HTML ----------------------------------------------------
 
-function enTete(vue) {
+// `etat` : la barre porte la LOUPE depuis le 21 août 2026 au soir (demande de
+// Noé) — visible sur toutes les pages, tout à droite, et elle ne cherche pour
+// l'instant que les clubs du vivier. Ouverte, la barre de recherche prend la
+// ligne des onglets (ils s'effacent le temps de chercher — Échap ou la loupe
+// les ramènent), et les résultats se posent sous la barre. Le squelette la
+// montre fermée : `zoneLoupeClubs` a un défaut pour ça.
+function enTete(vue, etat = null) {
   const vueActive = ONGLET_DE_LA_VUE[vue] ?? vue;
+  const rechercheOuverte = Boolean(etat) && etat.rechercheClub !== null;
   // Le calendrier n'est plus dans cette liste : il va en bout de barre, en
   // icône (voir `ongletCalendrier`). Ce sont les lieux du site qui se nomment.
   const liens = [
     ['accueil', 'Accueil', '#yuno'],
     ['journal', 'Journal', '#yuno/journal'],
     ['creer', 'Créer', '#yuno/creer'],
+    // MISSIONS (nom validé par Noé, 21 août 2026) : préparer un événement et
+    // livrer une commande, le même axe du métier. L'onglet ouvre le tableau
+    // de bord — à préparer, puis le pipeline des commandes.
+    ['missions', 'Missions', '#yuno/missions'],
     ['reseau', 'Réseau', '#yuno/reseau'],
   ];
 
@@ -269,15 +289,21 @@ function enTete(vue) {
          site s'ouvre sur sa barre ; le titre de l'onglet dit « Yuno · yuno_rph »,
          et la signature reste sur la page #photo du hub, à la porte d'entrée. -->
     <nav class="yuno-nav" aria-label="Le site Yuno">
-      ${liens
-        .map(
-          ([vue, libelle, adresse]) => `
+      ${
+        rechercheOuverte
+          ? ''
+          : `${liens
+              .map(
+                ([vue, libelle, adresse]) => `
         <a href="${adresse}" class="${vue === vueActive ? 'actif' : ''}"
           ${vue === vueActive ? 'aria-current="page"' : ''}>${libelle}</a>`,
-        )
-        .join('')}
-      ${ongletCalendrier('#yuno/calendrier', vueActive === 'calendrier')}
-    </nav>`;
+              )
+              .join('')}
+      ${ongletCalendrier('#yuno/calendrier', vueActive === 'calendrier')}`
+      }
+      ${zoneLoupeClubs(etat ?? undefined)}
+    </nav>
+    ${etat ? listeResultatsClubs(etat) : ''}`;
 }
 
 // La seule mention du hub sur tout le site, tout en bas : en plein écran sur
@@ -288,6 +314,14 @@ function pied() {
       <a class="lien-discret" href="#photo">Quitter le site</a>
     </footer>`;
 }
+
+// Pas de sous-navigation en pastilles : essayée le 21 août 2026, retirée le
+// soir même (« pas trop fan », Noé). La famille du réseau se relie autrement —
+// des TUILES en fin de page (CRM et vivier sous la Passerelle), et le bandeau
+// lui-même est cliquable : « clubs contactés » ouvre le vivier, « entrés au
+// réseau » ouvre le CRM. Les modèles de messages n'ont plus d'entrée de
+// navigation : un lien discret là où l'on s'en sert (Passerelle, CRM), la
+// page `#yuno/messages` restant leur arrière-boutique.
 
 // --- Le Carnet de terrain ----------------------------------------------------
 // L'accueil du site affiche le vécu, jamais le social : matchs couverts,
@@ -955,6 +989,10 @@ const PLUS_PAR_VUE = {
   reseau: { contact: true },
   passerelle: { contact: true },
   carnet: { contact: true },
+  // Chez les Missions, le « + » ouvre une commande — en fenêtre volante,
+  // comme tous les ajouts du site (demande de Noé, 21 août au soir).
+  missions: { commande: true },
+  commandes: { commande: true },
 };
 
 // Sur la page Créer, la nature passe en DERNIER : on vient y poster, et le
@@ -1139,7 +1177,7 @@ export function construireSortieDuMoment(
 
 function vueAccueil(etat) {
   return `
-    ${enTete('accueil')}
+    ${enTete('accueil', etat)}
     ${construireSortieDuMoment(
       etat.evenements,
       etat.preparations,
@@ -1191,7 +1229,7 @@ function vueAccueil(etat) {
 // capture, et le retrait. L'accueil n'en montre que les derniers.
 function vueJournal(etat) {
   return `
-    ${enTete('journal')}
+    ${enTete('journal', etat)}
 
     <section class="bloc">
       ${construireInvite(etat)}
@@ -1210,19 +1248,9 @@ function vueJournal(etat) {
       <div data-bloc="carnet">${construireCarnet(etat.evenements, etat.photos)}</div>
     </section>
 
-    <!-- La porte discrète vers les préparations : préparer et vivre sont les
-         deux faces du même axe terrain. Pas de compteur — le Journal n'a pas
-         à charger les feuilles pour ouvrir une porte. -->
-    <section class="bloc">
-      <div class="portes">
-        <a class="lien-externe" href="#yuno/preparations">
-          <span class="lien-externe-texte">
-            <span class="lien-externe-titre">Préparations</span>
-            <span class="discret">Avant · pendant · après, et le bilan</span>
-          </span>
-        </a>
-      </div>
-    </section>
+    <!-- Plus de porte vers les préparations (demande de Noé, 21 août au
+         soir) : elles vivent chez les Missions désormais — le Journal garde
+         le vécu, l'avant se prépare ailleurs. -->
     ${fenetreMoment(etat)}
     ${pied()}`;
 }
@@ -1407,7 +1435,7 @@ function vueCreer(etat) {
     </p>`;
 
   return `
-    ${enTete('creer')}
+    ${enTete('creer', etat)}
     ${
       etat.cloture
         ? `<p class="note-cloture">C'est posté. Ferme l'app, la suite se passe dehors.</p>`
@@ -1513,7 +1541,7 @@ function vueBanque(etat) {
   const retenues = filtrerBanque(etat.publications, etat);
 
   return `
-    ${enTete('banque')}
+    ${enTete('banque', etat)}
 
     <section class="bloc">
       <h2>Banque d'idées</h2>
@@ -1618,7 +1646,7 @@ function vueEditorial(etat) {
     .sort((a, b) => b.created_at.localeCompare(a.created_at));
 
   return `
-    ${enTete('editorial')}
+    ${enTete('editorial', etat)}
     <h2 class="titre-page">Calendrier éditorial</h2>
     <!-- Pas de vue « Week-end » ici : l'éditorial programme des publications,
          il n'a rien à faire des rencontres à couvrir. -->
@@ -1845,7 +1873,7 @@ function vueCalendrier(etat) {
   const elements = elementsDuCalendrier(etat);
 
   return `
-    ${enTete('calendrier')}
+    ${enTete('calendrier', etat)}
     ${construireBarrePeriode(etat.vueCal, etat.ancreCal, {
       // Les rencontres qu'on POURRAIT couvrir : une vue de Yuno seul, le hub
       // n'a pas de vivier.
@@ -1969,7 +1997,7 @@ function vueFeuille(etat, feuille) {
   const auModele = etat.modelesPrepa.some((modele) => modele.id === feuille.modele_id);
 
   return `
-    ${enTete('preparations')}
+    ${enTete('preparations', etat)}
     <h2 class="titre-page">${echapper(feuille.titre)}</h2>
     ${
       feuille.date
@@ -2004,7 +2032,7 @@ function vuePreparations(etat) {
   if (feuille) return vueFeuille(etat, feuille);
 
   return `
-    ${enTete('preparations')}
+    ${enTete('preparations', etat)}
     <h2 class="titre-page">Préparations</h2>
     <section class="bloc">
       ${
@@ -2049,6 +2077,7 @@ function vuePreparations(etat) {
         <p class="message-erreur" data-erreur hidden></p>
       </form>
     </section>
+
     ${pied()}`;
 }
 
@@ -2098,7 +2127,7 @@ function vueModele(etat) {
   if (!modele) return vuePreparations({ ...etat, feuilleOuverte: null });
 
   return `
-    ${enTete('modeles')}
+    ${enTete('modeles', etat)}
     <h2 class="titre-page">Modèle</h2>
     <input type="text" class="prepa-modele-nom" data-nom-modele="${echapper(modele.id)}"
       value="${echapper(modele.nom)}" aria-label="Nom du modèle">
@@ -3295,21 +3324,25 @@ export function construireMetrique({
           title="Changer l'objectif de la semaine">objectif&nbsp;: ${objectifDoux}/semaine</button>
       </span>
       ${
+        // Les deux chiffres suivants sont des PORTES (demande de Noé, 21 août
+        // au soir) : « clubs contactés » ouvre le vivier qu'il compte,
+        // « entrés au réseau » ouvre le CRM où ils vivent. Le chiffre dit
+        // l'état ET mène au fonds — pas de sous-navigation pour ça.
         pistes.length
-          ? `<span class="metrique">
+          ? `<a class="metrique" href="#yuno/vivier" title="Ouvrir le vivier">
               <span class="chiffre">${contactees}<span class="metrique-sur">/${pistes.length}</span></span>
               <span class="discret">clubs contactés</span>
-            </span>`
+            </a>`
           : ''
       }
       ${
         // À zéro, il ne s'affiche pas : un compteur vide serait un reproche,
         // et l'écran a mieux à dire.
         auReseau
-          ? `<span class="metrique">
+          ? `<a class="metrique" href="#yuno/carnet" title="Ouvrir le CRM">
               <span class="chiffre">${auReseau}</span>
               <span class="discret">entré${auReseau > 1 ? 's' : ''} au réseau</span>
-            </span>`
+            </a>`
           : ''
       }
     </div>
@@ -3715,7 +3748,7 @@ const LOUPE = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"
 // déploie À SA GAUCHE, sur la même ligne, et la loupe en fait partie — à
 // gauche du champ, comme l'icône d'un champ de recherche (demande de Noé,
 // 21 août 2026). Le fondu vient de la droite : la barre naît de la loupe.
-function zoneLoupeClubs(etat) {
+function zoneLoupeClubs(etat = { rechercheClub: null }) {
   const loupe = `
     <button type="button" class="loupe-clubs" data-ouvrir-recherche
       title="${etat.rechercheClub === null ? 'Chercher un club' : 'Fermer la recherche'}"
@@ -3866,7 +3899,6 @@ export function construirePasserelle({
   contacts = [],
   envois = [],
   objectifDoux = 1,
-  modeles = [],
   grainePropositions = 1,
   pistesPassees = [],
   propositionsOuvertes = false,
@@ -3907,27 +3939,9 @@ export function construirePasserelle({
       <!-- Plus de rappel « Cette semaine : ✓ … » : il disait ce qui venait de
            disparaître de l'écran. Les cartes restent, il n'a plus d'objet. -->
     </section>
-
-    <div class="portes">
-      <a class="lien-externe" href="#yuno/vivier">
-        <span class="lien-externe-texte">
-          <span class="lien-externe-titre">Le vivier</span>
-          <span class="discret">Les <span class="chiffre">${pistes.length}</span> clubs,
-            par compétition</span>
-        </span>
-      </a>
-
-      <a class="lien-externe" href="#yuno/messages">
-        <span class="lien-externe-texte">
-          <span class="lien-externe-titre">Les modèles</span>
-          <span class="discret">${
-            modeles.length
-              ? `<span class="chiffre">${modeles.length}</span> messages à personnaliser`
-              : 'Écrire ses premières phrases'
-          }</span>
-        </span>
-      </a>
-    </div>`;
+    <!-- Les deux portes en pied (vivier, modèles) sont parties le 21 août
+         2026 avec le palier : la sous-navigation du réseau les rend
+         redondantes — chaque page de la famille est à un clic, d'en haut. -->`;
 }
 
 // Le point d'entrée : on lit la base, puis on la dessine selon l'affichage.
@@ -4003,6 +4017,8 @@ function fenetreContact(etat) {
        )}
        ${contact.notes ? `<span class="discret contact-notes">${echapper(contact.notes)}</span>` : ''}
        <span class="moment-actions">
+         <button type="button" class="lien-discret bouton-mini"
+           data-nouvelle-commande="${echapper(contact.nom)}">Nouvelle commande</button>
          <button type="button" class="bouton-icone"
            data-modifier-contact="${echapper(contact.id)}"
            title="Modifier cette fiche"
@@ -4029,52 +4045,43 @@ export function construireContacts(contacts, options = {}) {
 // pas le même geste. Le carnet est un fonds où l'on cherche ; la Passerelle est
 // une file où l'on agit. Les mêler sur un écran obligeait à basculer entre les
 // deux pour rien.
-function vueReseau(etat) {
-  const fournee = etat.pistes.filter((piste) => piste.en_fournee && !piste.date_contacte).length;
-
-  return `
-    ${enTete('reseau')}
-
-    <section class="bloc">
-      <h2 class="titre-loupe">Le réseau ${zoneLoupeClubs(etat)}</h2>
-      ${listeResultatsClubs(etat)}
-      <div class="portes">
-        <a class="lien-externe" href="#yuno/passerelle">
-          <span class="lien-externe-texte">
-            <span class="lien-externe-titre">La Passerelle</span>
-            <span class="discret">${
-              fournee
-                ? `<span class="chiffre">${fournee}</span> club${fournee > 1 ? 's' : ''} dans la fournée · <span class="chiffre">${etat.envois.length}</span> messages envoyés`
-                : 'Le rituel de la semaine : ouvrir les portes de nouveaux clubs'
-            }</span>
-          </span>
-        </a>
-
-        <a class="lien-externe" href="#yuno/carnet">
-          <span class="lien-externe-texte">
-            <span class="lien-externe-titre">CRM</span>
-            <span class="discret"><span class="chiffre">${etat.contacts.length}</span> fiches ·
-              tableau, fiches, filtres</span>
-          </span>
-        </a>
-      </div>
-    </section>
-
-    ${blocCommandes(etat)}
-    ${pied()}`;
-}
-
-// La Passerelle : le rituel de la semaine, et rien d'autre. Pas de recherche,
-// pas de panneau de colonnes — on ne range pas ici, on ouvre des portes.
+// La Passerelle : le rituel de la semaine — et, depuis la refonte du 21 août
+// 2026, LA page de l'onglet Réseau : cliquer « Réseau » ouvre le bandeau et
+// la fournée, pas un couloir. `#yuno/passerelle` reste une adresse valide qui
+// montre la même page — renommer une adresse casserait un favori.
 function vuePasserelle(etat) {
   return `
-    ${enTete('passerelle')}
+    ${enTete('reseau', etat)}
 
     <section class="bloc">
-      <h2 class="titre-loupe">La Passerelle ${zoneLoupeClubs(etat)}</h2>
-      ${listeResultatsClubs(etat)}
+      <!-- Plus de titre « La Passerelle » (demande de Noé, 21 août au soir) :
+           le bandeau ouvre la page. La loupe vit désormais dans la barre
+           d'onglets, comme partout — plus de rangée à elle ici. -->
       <div data-bloc="contacts">${construirePasserelle(etat)}</div>
     </section>
+
+    <!-- Les deux fonds, en tuiles de fin de page (demande de Noé, 21 août au
+         soir — les pastilles de sous-navigation n'ont pas pris) : le CRM et le
+         vivier, côte à côte. Les modèles de messages n'ont qu'un lien discret,
+         leur page est une arrière-boutique. -->
+    <div class="portes">
+      <a class="lien-externe" href="#yuno/carnet">
+        <span class="lien-externe-texte">
+          <span class="lien-externe-titre">CRM</span>
+          <span class="discret"><span class="chiffre">${etat.contacts.length}</span> fiches ·
+            tableau, fiches, filtres</span>
+        </span>
+      </a>
+
+      <a class="lien-externe" href="#yuno/vivier">
+        <span class="lien-externe-texte">
+          <span class="lien-externe-titre">Le vivier</span>
+          <span class="discret">Les <span class="chiffre">${etat.pistes.length}</span> clubs,
+            par compétition</span>
+        </span>
+      </a>
+    </div>
+    <p><a class="lien-discret" href="#yuno/messages">Modèles de messages</a></p>
     ${pied()}`;
 }
 
@@ -4083,11 +4090,10 @@ function vuePasserelle(etat) {
 // qu'une porte à la fois.
 function vueVivier(etat) {
   return `
-    ${enTete('vivier')}
+    ${enTete('vivier', etat)}
 
     <section class="bloc">
-      <h2 class="titre-loupe">Le vivier ${zoneLoupeClubs(etat)}</h2>
-      ${listeResultatsClubs(etat)}
+      <h2>Le vivier</h2>
       <div data-bloc="contacts">${construireVivier(etat.pistes, etat.divisionVivier, etat.contacts)}</div>
     </section>
     ${pied()}`;
@@ -4098,7 +4104,7 @@ function vueVivier(etat) {
 // rituel — pas au bas de l'écran où l'on agit.
 function vueMessages(etat) {
   return `
-    ${enTete('messages')}
+    ${enTete('messages', etat)}
 
     <section class="bloc">
       <h2>Les modèles de messages</h2>
@@ -4109,9 +4115,151 @@ function vueMessages(etat) {
     ${pied()}`;
 }
 
+// MISSIONS — le tableau de bord du travail concret (option A, validée par Noé
+// le 21 août 2026 au soir). L'ÉVÉNEMENT est le pivot : une commande le vise
+// (`commandes.evenement_id`), une préparation le précède, le Journal en garde
+// le vécu. D'où une seule liste « À préparer » — les prochains événements,
+// qu'ils portent une commande ou non — puis le pipeline des commandes, et la
+// tuile vers la page des préparations. Pas de total encaissé : l'argent est
+// une conséquence, pas un juge (retranché par Noé, « pas pour le moment »).
+
+// Les 30 prochains jours, commandes en premier (chacun chronologique) : le
+// travail payé passe devant, mais rien ne se cache — une sortie libre se
+// prépare aussi.
+const HORIZON_A_PREPARER = 30;
+
+function blocAPreparer(etat) {
+  const maintenant = new Date();
+  const horizon = ajouterJours(maintenant, HORIZON_A_PREPARER);
+  const commandeDe = new Map(
+    etat.commandes
+      .filter((c) => c.evenement_id && ['devis', 'en_cours'].includes(c.statut))
+      .map((c) => [c.evenement_id, c]),
+  );
+
+  const aVenir = etat.evenements
+    .filter((e) => {
+      const debut = new Date(e.date_debut);
+      return debut >= maintenant && debut <= horizon;
+    })
+    .sort((a, b) => new Date(a.date_debut) - new Date(b.date_debut));
+  const lignes = [
+    ...aVenir.filter((e) => commandeDe.has(e.id)),
+    ...aVenir.filter((e) => !commandeDe.has(e.id)),
+  ];
+
+  if (!lignes.length) {
+    return `<p class="vide">Tes événements des <span class="chiffre">${HORIZON_A_PREPARER}</span>
+      prochains jours s'afficheront ici, prêts à préparer — ils se notent au calendrier.</p>`;
+  }
+
+  return `<ul>${lignes
+    .map((evenement) => {
+      const commande = commandeDe.get(evenement.id);
+      return `
+    <li>
+      <span class="tuile-entete">
+        ${
+          commande
+            ? `<span class="etiquette">Commande</span>${
+                commande.client
+                  ? `<span class="contact-structure">${echapper(commande.client)}</span>`
+                  : ''
+              }`
+            : `<span class="etiquette">${TYPES_MOMENT[evenement.type_moment] ?? 'Sortie'}</span>`
+        }
+        <span class="discret quand">${echapper(momentLisible(new Date(evenement.date_debut)))}</span>
+      </span>
+      <span class="pub-titre">${echapper(evenement.titre)}</span>
+      ${evenement.lieu ? `<span class="discret">${echapper(evenement.lieu)}</span>` : ''}
+      ${boutonPreparer(
+        feuilleDeLaSortie(etat.preparations, 'evenement', evenement.id),
+        'evenement',
+        evenement.id,
+      )}
+    </li>`;
+    })
+    .join('')}</ul>`;
+}
+
+function vueMissions(etat) {
+  return `
+    ${enTete('missions', etat)}
+
+    <section class="bloc">
+      <h2>À préparer</h2>
+      <div data-bloc="a-preparer">${blocAPreparer(etat)}</div>
+    </section>
+
+    <section class="bloc">
+      <h2>Les commandes</h2>
+      <div data-bloc="commandes">${construireCommandes(
+        etat.commandes,
+        etat.preparations,
+        etat.evenements,
+      )}</div>
+    </section>
+
+    <div class="portes">
+      <a class="lien-externe" href="#yuno/preparations">
+        <span class="lien-externe-texte">
+          <span class="lien-externe-titre">Préparations</span>
+          <span class="discret">Toutes les feuilles, et leurs modèles</span>
+        </span>
+      </a>
+    </div>
+    ${pied()}`;
+}
+
+// La commande s'ajoute en FENÊTRE VOLANTE, comme tous les ajouts du site
+// (demande de Noé, 21 août au soir) : le « + » des pages Missions l'ouvre, et
+// « Nouvelle commande » depuis une fiche du CRM arrive ici, client déjà écrit.
+function fenetreCommande(etat) {
+  // Les événements à venir en appui du champ : écrire le titre exact relie la
+  // commande à son événement — même geste que « Rattaché à » pour les clubs.
+  // La saisie reste libre : une commande sans événement est possible.
+  const aVenir = etat.evenements
+    .filter((e) => new Date(e.date_debut) >= new Date())
+    .sort((a, b) => new Date(a.date_debut) - new Date(b.date_debut))
+    .map((e) => e.titre);
+
+  return construireFenetre(
+    'Nouvelle commande',
+    `<h3 class="fenetre-titre">Nouvelle commande</h3>
+     ${construireFormulaire({
+       id: 'commande',
+       action: 'creer-commande',
+       bouton: 'Ajouter la commande',
+       avecPli: false,
+       champs: [
+         { nom: 'titre', libelle: 'Commande', type: 'text', requis: true },
+         {
+           nom: 'client',
+           libelle: 'Client',
+           type: 'text',
+           valeur: etat.prefillCommande ?? '',
+           suggestions: etat.contacts.map((contact) => contact.nom),
+         },
+         {
+           nom: 'evenement',
+           libelle: "L'événement visé (son titre au calendrier)",
+           type: 'text',
+           suggestions: aVenir,
+         },
+         { nom: 'statut', libelle: 'Où en est-elle', type: 'choix',
+           options: STATUTS_COMMANDE, valeur: 'devis' },
+         { nom: 'echeance', libelle: 'À livrer pour (facultatif)', type: 'date' },
+         { nom: 'montant', libelle: 'Montant en euros (facultatif)', type: 'number' },
+         { nom: 'lien_livrable', libelle: 'Lien du livrable (facultatif)', type: 'text' },
+         { nom: 'notes', libelle: 'Notes', type: 'textarea' },
+       ],
+     })}`,
+  );
+}
+
 function vueCarnet(etat) {
   return `
-    ${enTete('carnet')}
+    ${enTete('carnet', etat)}
 
     <section class="bloc">
       <h2>Le réseau</h2>
@@ -4141,6 +4289,9 @@ function vueCarnet(etat) {
            c'était un de trop — et celui du bas obligeait à parcourir 47 lignes
            pour l'atteindre. -->
     </section>
+    <!-- Les modèles de messages, à portée d'ici aussi (demande de Noé, 21 août
+         au soir) : on écrit depuis une fiche autant que depuis le rituel. -->
+    <p><a class="lien-discret" href="#yuno/messages">Modèles de messages</a></p>
     ${pied()}`;
 }
 
@@ -4266,12 +4417,17 @@ const AVANCER_COMMANDE = {
 // `preparations` est facultatif : une commande se prépare comme un match, et
 // sa tuile porte le bouton — mais le site du FCH ou un essai isolé peuvent
 // dessiner des commandes sans connaître les feuilles.
-export function construireCommandes(commandes, preparations = []) {
+export function construireCommandes(commandes, preparations = [], evenements = []) {
   const ouvertes = commandes.filter((commande) => ['devis', 'en_cours'].includes(commande.statut));
   const closes = commandes.filter((commande) => ['livree', 'payee'].includes(commande.statut));
 
   const tuile = (commande) => {
     const suivant = CYCLE_COMMANDE[CYCLE_COMMANDE.indexOf(commande.statut) + 1];
+    // L'événement visé (21 août 2026 au soir) : une commande de terrain a
+    // presque toujours un match ou un concert au bout.
+    const evenementLie = commande.evenement_id
+      ? evenements.find((candidat) => candidat.id === commande.evenement_id) ?? null
+      : null;
 
     return `
     <li>
@@ -4299,6 +4455,12 @@ export function construireCommandes(commandes, preparations = []) {
           aria-label="Supprimer « ${echapper(commande.titre)} »">×</button>
       </span>
       <span class="pub-titre">${echapper(commande.titre)}</span>
+      ${
+        evenementLie
+          ? `<span class="discret">Pour ${echapper(evenementLie.titre)} ·
+              ${echapper(momentLisible(new Date(evenementLie.date_debut)))}</span>`
+          : ''
+      }
       ${commande.notes ? `<span class="discret pub-notes">${echapper(commande.notes)}</span>` : ''}
       <span class="pub-actions">
         <span class="pub-statut">statut : <strong>${echapper(
@@ -4337,35 +4499,9 @@ export function construireCommandes(commandes, preparations = []) {
     }`;
 }
 
-function blocCommandes(etat) {
-  return `
-    <section class="bloc">
-      <h2>Commandes</h2>
-      <div data-bloc="commandes">${construireCommandes(etat.commandes, etat.preparations)}</div>
-      ${construireFormulaire({
-        id: 'commande',
-        libelle: 'Ajouter une commande',
-        action: 'creer-commande',
-        champs: [
-          { nom: 'titre', libelle: 'Commande', type: 'text', requis: true },
-          // Le client se relie au carnet quand le nom y figure — même geste que
-          // les rencontres du Journal, et le carnet reste la source des noms.
-          {
-            nom: 'client',
-            libelle: 'Client',
-            type: 'text',
-            suggestions: etat.contacts.map((contact) => contact.nom),
-          },
-          { nom: 'statut', libelle: 'Où en est-elle', type: 'choix',
-            options: STATUTS_COMMANDE, valeur: 'devis' },
-          { nom: 'echeance', libelle: 'À livrer pour (facultatif)', type: 'date' },
-          { nom: 'montant', libelle: 'Montant en euros (facultatif)', type: 'number' },
-          { nom: 'lien_livrable', libelle: 'Lien du livrable (facultatif)', type: 'text' },
-          { nom: 'notes', libelle: 'Notes', type: 'textarea' },
-        ],
-      })}
-    </section>`;
-}
+// Le formulaire plié « Ajouter une commande » est parti le 21 août au soir :
+// la commande s'ajoute en fenêtre volante (`fenetreCommande`), comme tout le
+// reste du site.
 
 // --- Montage ----------------------------------------------------------------
 
@@ -4426,8 +4562,21 @@ const SOURCES = {
 
     return { pistes };
   },
-  preparations: async () => ({ preparations: await api.preparationsToutes() }),
-  modelesPrepa: async () => ({ modelesPrepa: await api.modelesPreparationTous() }),
+  // Les préparations et modèles du FCH restent chez le club (demande de Noé,
+  // 21 août 2026 au soir) : une feuille de réunion et ses six modèles n'ont
+  // rien à faire dans les listes de Yuno. Une feuille sans événement (une
+  // commande, ou un événement disparu) est de Yuno par nature — le FCH n'en
+  // crée plus depuis que ses réunions ont leur fiche.
+  preparations: async () => ({
+    preparations: (await api.preparationsToutes()).filter(
+      (feuille) => !feuille.evenement || feuille.evenement.projet === 'photo',
+    ),
+  }),
+  modelesPrepa: async () => ({
+    modelesPrepa: (await api.modelesPreparationTous()).filter(
+      (modele) => modele.projet === 'photo',
+    ),
+  }),
 };
 
 // Ce dont chaque vue a besoin pour se dessiner — et rien de plus. Les onze
@@ -4452,11 +4601,20 @@ const BESOINS = {
   // modèles : un événement ou une commande doit savoir s'il a déjà sa feuille
   // (« Préparer » ou « Ouvrir »), et combien de modèles le choix offrira.
   calendrier: ['evenements', 'taches', 'objectifs', 'publications', 'commandes', 'contacts', 'preparations', 'modelesPrepa', 'pistes'],
-  reseau: ['contacts', 'envois', 'commandes', 'preparations', 'modelesPrepa', 'pistes'],
-  passerelle: ['contacts', 'envois', 'modeles', 'pistes'],
+  // L'onglet Réseau ouvre la Passerelle depuis le 21 août 2026 : les deux
+  // adresses lisent la même chose. Les commandes, parties sur leur page,
+  // ont emporté leurs lectures — la page d'arrivée du réseau en fait quatre.
+  reseau: ['contacts', 'envois', 'pistes'],
+  passerelle: ['contacts', 'envois', 'pistes'],
   vivier: ['pistes', 'contacts', 'evenements'],
   messages: ['modeles'],
   carnet: ['contacts', 'envois', 'modeles', 'pistes'],
+  // Le tableau de bord des Missions lit les événements (la liste « À
+  // préparer » et le lien commande → événement), les commandes, et les
+  // feuilles avec leurs modèles — « Préparer / Ouvrir » doit savoir si une
+  // feuille existe et combien de modèles le choix offrira.
+  missions: ['evenements', 'commandes', 'contacts', 'preparations', 'modelesPrepa'],
+  commandes: ['evenements', 'commandes', 'contacts', 'preparations', 'modelesPrepa'],
   // La feuille lit aussi les sorties : le bilan propose d'inscrire celle-ci au
   // carnet (l'événement dit s'il est déjà vécu et de quel type ; les contacts
   // relient les rencontres).
@@ -4478,6 +4636,7 @@ const SIGNATURE_UTILE = api.REUTILISATION_PHOTOS;
 // données soient arrivées. Les points de suspension sont ceux du reste du hub
 // (dashboard.js, perso.js) : un bloc qui attend, pas un bloc vide.
 function squelette(vue) {
+  // Pas d'état ici : la loupe se montre fermée, c'est son défaut.
   return `
     ${enTete(vue)}
     <section class="bloc"><p class="vide">…</p></section>
@@ -4542,6 +4701,10 @@ export default {
       // le reste : `rendre()` le pose sous la barre, quelle que soit la vue.
       souci: null,
       prefillMoment: null,
+      // La fenêtre « Nouvelle commande », et le client qu'elle porte déjà
+      // quand elle naît d'une fiche du CRM. Effacés en quittant les Missions.
+      commandeNouvelle: false,
+      prefillCommande: null,
       captureOuverte: false,
       // La fiche du carnet ouverte par le « + » des pages du réseau.
       contactNouveau: false,
@@ -4680,8 +4843,12 @@ export default {
       else if (etat.vue === 'banque') section.innerHTML = vueBanque(etat);
       else if (etat.vue === 'editorial') section.innerHTML = vueEditorial(etat);
       else if (etat.vue === 'calendrier') section.innerHTML = vueCalendrier(etat);
-      else if (etat.vue === 'reseau') section.innerHTML = vueReseau(etat);
-      else if (etat.vue === 'passerelle') section.innerHTML = vuePasserelle(etat);
+      // Deux adresses, une même page : l'onglet Réseau ouvre la Passerelle.
+      else if (etat.vue === 'reseau' || etat.vue === 'passerelle')
+        section.innerHTML = vuePasserelle(etat);
+      // « commandes » est une adresse de la même page : le tableau de bord.
+      else if (etat.vue === 'missions' || etat.vue === 'commandes')
+        section.innerHTML = vueMissions(etat);
       else if (etat.vue === 'vivier') section.innerHTML = vueVivier(etat);
       else if (etat.vue === 'messages') section.innerHTML = vueMessages(etat);
       else if (etat.vue === 'carnet') section.innerHTML = vueCarnet(etat);
@@ -4726,6 +4893,7 @@ export default {
           etat.clubOuvert ||
           etat.contactOuvert ||
           etat.contactNouveau ||
+          etat.commandeNouvelle ||
           etat.momentOuvert ||
           etat.ideeOuverte ||
           etat.detailCal ||
@@ -4784,6 +4952,9 @@ export default {
         if (etat.choixPrepa) {
           section.insertAdjacentHTML('beforeend', fenetreChoixModele(etat));
         }
+        if (etat.commandeNouvelle) {
+          section.insertAdjacentHTML('beforeend', fenetreCommande(etat));
+        }
         if (etat.captureOuverte) {
           section.insertAdjacentHTML(
             'beforeend',
@@ -4836,7 +5007,7 @@ export default {
       // Passerelle lit le vivier, le vivier le filtre, les modèles se lisent
       // seuls, et le carnet lit la base de contacts.
       cible.innerHTML =
-        etat.vue === 'passerelle'
+        etat.vue === 'passerelle' || etat.vue === 'reseau'
           ? construirePasserelle(etat)
           : etat.vue === 'vivier'
             ? construireVivier(etat.pistes, etat.divisionVivier, etat.contacts)
@@ -4860,7 +5031,9 @@ export default {
 
     const rendreCommandes = () => {
       const cible = section.querySelector('[data-bloc="commandes"]');
-      if (cible) cible.innerHTML = construireCommandes(etat.commandes, etat.preparations);
+      if (cible) {
+        cible.innerHTML = construireCommandes(etat.commandes, etat.preparations, etat.evenements);
+      }
     };
 
     const rendreWeekend = () => {
@@ -5010,6 +5183,12 @@ export default {
       // non plus — on la reprend depuis l'invite si besoin.
       etat.cloture = false;
       etat.prefillMoment = null;
+      // La fenêtre de commande et son client pré-rempli n'ont de sens que
+      // chez les Missions : ailleurs, on les referme.
+      if (etat.vue !== 'missions' && etat.vue !== 'commandes') {
+        etat.commandeNouvelle = false;
+        etat.prefillCommande = null;
+      }
       rendre();
       if (await charger(BESOINS[etat.vue])) rendre();
       if (await leverLesRelances()) rendre();
@@ -5035,7 +5214,11 @@ export default {
     // presse ici, et montrer « à relancer » avant que la base l'ait accepté
     // serait afficher un état que personne n'a demandé.
     const leverLesRelances = async () => {
-      if (etat.vue !== 'passerelle' && etat.vue !== 'vivier') return false;
+      // « reseau » EST la Passerelle depuis le 21 août 2026 : la bascule du
+      // lundi doit se lever aussi quand on arrive par l'onglet.
+      if (etat.vue !== 'passerelle' && etat.vue !== 'reseau' && etat.vue !== 'vivier') {
+        return false;
+      }
       const aBasculer = fichesABasculer(etat.contacts);
       if (!aBasculer.length) return false;
 
@@ -5480,11 +5663,21 @@ export default {
         const connu = nomClient
           ? etat.contacts.find((contact) => contact.nom.toLowerCase() === nomClient.toLowerCase())
           : null;
+        // L'événement visé se relie par son titre exact — même règle que
+        // « Rattaché à » pour les clubs : le nom exact relie, autre chose
+        // laisse la commande libre.
+        const nomEvenement = champs.evenement?.trim() || null;
+        const evenementLie = nomEvenement
+          ? etat.evenements.find(
+              (candidat) => candidat.titre.trim().toLowerCase() === nomEvenement.toLowerCase(),
+            )
+          : null;
 
         const commande = await api.creerCommande({
           titre: champs.titre.trim(),
           client: connu?.nom ?? nomClient,
           client_id: connu?.id ?? null,
+          evenement_id: evenementLie?.id ?? null,
           statut: champs.statut,
           echeance: champs.echeance || null,
           montant: champs.montant ? Number(champs.montant) : null,
@@ -5492,7 +5685,11 @@ export default {
           notes: champs.notes?.trim() || null,
         });
         etat.commandes = [commande, ...etat.commandes];
-        rendreCommandes();
+        // La fenêtre volante se referme sur le geste accompli, et le tableau
+        // de bord entier se redessine — « À préparer » peut avoir changé.
+        etat.commandeNouvelle = false;
+        etat.prefillCommande = null;
+        rendre();
         return;
       }
 
@@ -5710,6 +5907,13 @@ export default {
           return;
         }
 
+        if (reglages.commande) {
+          etat.commandeNouvelle = true;
+          rendre();
+          section.querySelector('#commande-titre')?.focus();
+          return;
+        }
+
         // Au Journal, le « + » ouvre la sortie elle-même : on vient y raconter
         // ce qu'on a vécu, pas poser une date.
         if (reglages.sortie) {
@@ -5733,6 +5937,8 @@ export default {
         etat.jourOuvertCal = null;
         etat.captureOuverte = false;
         etat.contactNouveau = false;
+        etat.commandeNouvelle = false;
+        etat.prefillCommande = null;
         etat.prefillMoment = null;
         etat.ideeOuverte = null;
         etat.momentOuvert = null;
@@ -5761,6 +5967,19 @@ export default {
         etat.editionContact = true;
         rendre();
         section.querySelector('#contact-edition-nom')?.focus();
+        return;
+      }
+
+      // « Nouvelle commande » depuis une fiche : c'est le sens naturel du
+      // geste — une commande naît d'une relation. La page Missions s'ouvre
+      // avec la fenêtre volante, le client déjà écrit.
+      const nouvelleCommande = evenement.target.closest('[data-nouvelle-commande]');
+      if (nouvelleCommande) {
+        etat.prefillCommande = nouvelleCommande.dataset.nouvelleCommande;
+        etat.commandeNouvelle = true;
+        etat.contactOuvert = null;
+        etat.editionContact = false;
+        location.hash = '#yuno/missions';
         return;
       }
 
@@ -6127,12 +6346,18 @@ export default {
         return;
       }
 
-      // La loupe déplie la recherche sous le titre — et la replie si elle est
-      // déjà là. Le focus va droit au champ : on est venu taper.
+      // La loupe déplie la recherche sur la ligne des onglets — et la replie
+      // si elle est déjà là. Le focus va droit au champ : on est venu taper.
+      // Elle vit sur TOUTES les pages depuis le 21 août au soir (demande de
+      // Noé) : celles qui ne lisent pas le vivier le chargent au premier clic,
+      // et la liste se remplit quand il arrive — le champ garde son curseur.
       if (evenement.target.closest('[data-ouvrir-recherche]')) {
         etat.rechercheClub = etat.rechercheClub === null ? '' : null;
         rendre();
         section.querySelector('[data-recherche-club]')?.focus();
+        if (etat.rechercheClub !== null && (await charger(['pistes', 'contacts']))) {
+          remplirLaRecherche();
+        }
         return;
       }
 
@@ -6918,6 +7143,7 @@ export default {
           etat.detailCal ||
           etat.captureOuverte ||
           etat.contactNouveau ||
+          etat.commandeNouvelle ||
           etat.jourOuvertCal ||
           etat.ideeOuverte ||
           etat.momentOuvert ||
@@ -6933,6 +7159,8 @@ export default {
       etat.jourOuvertCal = null;
       etat.captureOuverte = false;
       etat.contactNouveau = false;
+      etat.commandeNouvelle = false;
+      etat.prefillCommande = null;
       etat.prefillMoment = null;
       etat.ideeOuverte = null;
       etat.momentOuvert = null;

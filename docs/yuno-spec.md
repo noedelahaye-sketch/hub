@@ -842,7 +842,15 @@ dans le site**, et c'est maintenant vrai sans exception. La table `stats_hebdo`
 reste en base avec ses lignes — le besoin peut revenir sous une autre forme, et
 rien ne justifie de détruire des relevés pour retirer un écran.
 
-### `#yuno/reseau` — le carnet réseau *(construit)*
+### `#yuno/carnet` — le carnet réseau *(construit)*
+
+> L'adresse du CRM est `#yuno/carnet` depuis le 12 août ; jusqu'au 21 août,
+> `#yuno/reseau` était un palier qui y menait. **Le palier est mort le
+> 21 août 2026** (refonte demandée par Noé) : l'onglet Réseau ouvre désormais
+> la Passerelle. Le CRM s'atteint depuis elle par deux chemins : le chiffre
+> « entrés au réseau » du bandeau, et sa **tuile de fin de page**. (Une
+> sous-navigation en pastilles a été essayée le même jour et retirée le soir —
+> « pas trop fan » : la famille se relie par des tuiles, pas par une barre.)
 
 Un CRM sans le mot. Qui y entre (réponse du 7 août) : **les joueurs, les gens
 des médias, les gens des clubs**, principalement. Ce qu'une fiche doit rendre
@@ -961,12 +969,30 @@ acceptée en base** — un CHECK s'élargit, il ne se resserre jamais — mais
 l'interface ne l'offre plus ; une vieille fiche qui la porterait resterait
 lisible (`statutLisible`). Aucune ne la portait au moment du changement.
 
-### `#yuno/passerelle` — la Passerelle *(sa page)*
+### `#yuno/reseau` — la Passerelle *(la page de l'onglet Réseau)*
 
-**Elle a quitté le carnet le 12 août, à la demande de Noé.** `#yuno/reseau` est
-devenu un palier avec deux portes : le carnet est un **fonds où l'on cherche**,
-la Passerelle un **rituel où l'on agit**. Les deux pages gardent l'onglet
-Réseau allumé, et les commandes restent sur le palier.
+**Elle a quitté le carnet le 12 août, à la demande de Noé** : le carnet est un
+**fonds où l'on cherche**, la Passerelle un **rituel où l'on agit**. Et depuis
+la refonte du **21 août 2026** (demande de Noé), c'est **elle que l'onglet
+Réseau ouvre** : le rituel est la première chose qu'on voit — le bandeau, la
+porte à ouvrir, la fournée — plus un couloir à traverser. `#yuno/passerelle`
+reste une adresse valide qui montre la même page : on ne casse pas un favori.
+
+La refonte, précisée par Noé le soir même :
+
+- **Plus de titre « La Passerelle »** : le bandeau ouvre la page, il n'a pas
+  besoin d'être annoncé. Sans titre, la rangée de la loupe était une **ligne
+  vide** (retour de Noé) — réglé en montant la loupe **dans la barre
+  d'onglets**, où elle vit désormais pour tout le site (voir plus bas).
+- **Le bandeau est centré, et deux de ses chiffres sont des portes** :
+  « clubs contactés » ouvre le vivier qu'il compte, « entrés au réseau » ouvre
+  le CRM où ils vivent. Le survol souligne le libellé — un bandeau qui crie
+  trois liens ne serait plus un bandeau.
+- **« Propositions de la semaine » et la tuile du club proposé font la même
+  largeur** (moitié-moitié) : deux tuiles de même rang, la géométrie le dit.
+- **Deux tuiles de fin de page, CRM et Le vivier, côte à côte** — le motif qui
+  remplace la sous-navigation en pastilles, essayée et retirée le même jour.
+  Sous elles, un lien discret « Modèles de messages ».
 
 **Réécrite le 15 août 2026 (demande de Noé : « la structure actuelle me
 perd »).** La première Passerelle était une file de fiches déjà au réseau,
@@ -1171,20 +1197,28 @@ Une seule requête suffit à les avoir toutes sans doublon : `domicile = true`,
 puisque la table dénormalisée donne exactement une ligne par match côté club
 qui reçoit.
 
-**Une loupe sur les trois pages où l'on pense clubs** — Réseau, Passerelle,
-vivier (demande de Noé, 21 août 2026) : chercher un club et l'ajouter à la
-fournée de la semaine sans parcourir les 97 lignes ni changer de page. Elle vit
-au bord droit du titre de la page ; le clic **déploie la barre à sa gauche, sur
-la ligne du titre même** — jamais dans une fenêtre, jamais dans une tuile
-(corrections de Noé, le jour même) — d'un fondu qui vient de la droite : la
-barre naît de la loupe. **La loupe ne bouge pas d'un pixel** : elle reste au
-bord droit et finit donc **à droite de la barre**, le champ déployé à sa gauche
-(précision de Noé) — un contrôle qui saute de place au clic ferait chercher des
-yeux ce qu'on vient de toucher. La recliquer referme ; Échap aussi. **Pas
-d'anneau doré à l'ouverture** (même précision) : la barre vient d'apparaître
+**Une loupe dans la barre d'onglets, sur TOUTES les pages** (demande de Noé,
+21 août 2026 — d'abord au bord droit du titre des trois pages « clubs », puis
+montée dans la barre le soir même) : chercher un club du vivier et l'ajouter à
+la fournée sans changer de page, d'où qu'on soit. Elle ferme la rangée, tout à
+droite — c'est sa marge automatique qui centre les onglets, en pendant de
+celle du premier — et **reste visible quand la barre déborde et défile sur
+téléphone** (`position: sticky` au bord droit, sur le fond de la page). Pour
+l'instant elle ne cherche **que les clubs du vivier**.
+
+Le clic **déploie la barre de recherche sur la ligne des onglets** — ils
+s'effacent le temps de chercher, Échap ou la loupe les ramènent — jamais dans
+une fenêtre, jamais dans une tuile (corrections de Noé). **La loupe ne bouge
+pas d'un pixel** : elle reste au bord droit, le champ déployé à sa gauche — un
+contrôle qui saute de place au clic ferait chercher des yeux ce qu'on vient de
+toucher. Les pages qui ne lisent pas le vivier (Créer, Journal…) **le chargent
+au premier clic** ; la liste se remplit quand il arrive, le champ garde son
+curseur. **Pas d'anneau doré à l'ouverture** : la barre vient d'apparaître
 avec son cadre et son curseur, l'anneau redisait ce qui se voit — le focus se
 dit par la bordure qui s'éclaircit (`:focus-within`), le champ étant nu dans la
-barre qui porte le cadre.
+barre qui porte le cadre. Les résultats se posent **sous la barre, au-dessus
+de la page** — leur liste vit hors de tout `.bloc` et porte donc elle-même son
+habit (`.recherche-clubs`, lignes à filets du vivier).
 
 Rien ne s'affiche tant que rien n'est tapé — on est venu taper un nom, le
 vivier existe pour relire la liste ; dès les premières lettres, les clubs
@@ -1345,7 +1379,7 @@ texte** — c'est ce qui permet de le renommer sans qu'il redevienne à poser.
 chantier a déménagé ici, parce que le chemin et le fonds parlent de la même
 chose. Tant qu'il vaut zéro, la page dit « Le premier ouvre la saison ».
 
-### `#yuno/messages` — les modèles de messages *(sa page)*
+### `#yuno/messages` — les modèles de messages *(l'arrière-boutique)*
 
 La bibliothèque a quitté le bas de la Passerelle le 15 août 2026 : **la
 friction du premier message se travaille à froid**, en amont du rituel, pas au
@@ -1353,6 +1387,11 @@ bas de l'écran où l'on agit. Titres et corps s'éditent en place, un bouton
 copie le texte pour le coller ailleurs. Quatre modèles de départ, chargés en
 base : accréditation concert, premier contact club, proposition à un média,
 relance courtoise.
+
+**Sans entrée de navigation depuis le 21 août 2026** (demande de Noé) : la
+page est une arrière-boutique, atteinte par un **lien discret « Modèles de
+messages »** posé là où l'on écrit — en bas de la Passerelle et en bas du CRM.
+Elle garde l'onglet Réseau allumé, c'est de là qu'on y vient.
 
 **« Envoyé ✓ » d'une piste** enregistre l'envoi et date `date_contacte` — un
 fait acquis, qui ne redescend jamais. Avec une fiche reliée, la relation avance
@@ -1447,12 +1486,42 @@ la relance au calendrier.
 personnelles réelles (numéros, comptes) et le dépôt est public : elles vivent
 uniquement dans Supabase, derrière la connexion. Seul le schéma est versionné.
 
-### `#yuno/reseau` — les commandes *(section, plus un onglet)*
+### `#yuno/missions` — le tableau de bord des Missions *(la page de l'onglet)*
 
-**Une commande naît d'une relation** : elle n'a pas besoin d'un onglet à elle,
-et le sien a disparu le 12 août. Titre, client (relié à une fiche du carnet
-quand le nom y figure), statut, échéance, montant facultatif, lien du livrable,
-notes.
+**L'option A, validée par Noé le 21 août 2026 au soir : l'ÉVÉNEMENT est le
+pivot.** Une commande le vise (`commandes.evenement_id` — « ce sera souvent
+lié à des matchs ou des événements concrets, pas des projets sur de longs
+mois »), une préparation le précède, le Journal en garde le vécu. L'onglet
+**Missions** (nom validé) ouvre ce tableau de bord :
+
+1. **« À préparer »** — les événements des **30 prochains jours**, commandes
+   en premier puis chronologique, *une seule liste* : chaque ligne dit si
+   c'est une commande (étiquette + client) ou une sortie libre (type du
+   moment), et porte « Préparer / Ouvrir la préparation ». C'est là que les
+   préparations rejoignent les commandes ET les événements sans commande.
+2. **« Les commandes »** — le pipeline (devis → payée, closes repliées),
+   chaque commande affichant l'événement qu'elle vise (« Pour X · date »).
+3. **Tuile de fin de page → Préparations** — la page à part entière.
+
+`#yuno/commandes` reste une adresse qui montre la même page. Champs d'une
+commande : titre, client (relié au carnet quand le nom y figure),
+**événement visé** (relié par son titre exact — même règle que « Rattaché à »
+pour les clubs, saisie libre), statut, échéance, montant facultatif, lien du
+livrable, notes.
+
+**La commande s'ajoute en FENÊTRE VOLANTE** (demande de Noé — « comme
+l'ensemble des autres ajouts ») : le « + » flottant des pages Missions
+l'ouvre ; le formulaire plié en bas de page a disparu. **« Nouvelle
+commande » depuis une fiche du CRM** ouvre la même fenêtre sur la page
+Missions, client déjà écrit ; le pré-rempli s'efface en quittant les
+Missions, Échap referme.
+
+**Pas de total encaissé** — tranché par Noé le 21 août (« pas pour le
+moment ») : l'argent reste une conséquence, pas un juge.
+
+**Le lien au Journal ne demande rien de neuf** : le bilan d'une feuille
+inscrit déjà le moment au carnet — Missions tient l'avant, le Journal garde
+l'après. La porte « Préparations » du Journal est partie (demande de Noé).
 
 Le cycle va du devis au paiement : `devis → en cours → livrée → payée`.
 **Livrer crée une victoire ; encaisser n'en crée pas une seconde** — c'est le
@@ -1469,11 +1538,17 @@ questions : « Ce qui a marché » et « À refaire autrement ».
 
 - **Elle naît de la sortie** : la fenêtre de détail d'un événement ou d'une
   commande, au calendrier Yuno, porte « Préparer » — ou « Ouvrir la
-  préparation » si la feuille existe déjà. La tuile d'une commande, dans
-  Réseau, porte le même bouton. C'est là qu'on est la veille d'un match ;
-  l'outil vient à soi. La liste des feuilles vit sur `#yuno/preparations`,
-  atteinte par une porte discrète au Journal (l'onglet Journal reste allumé :
-  préparer et vivre sont les deux faces du même axe terrain).
+  préparation » si la feuille existe déjà. La tuile d'une commande et la liste
+  « À préparer » des Missions portent le même bouton. C'est là qu'on est la
+  veille d'un match ; l'outil vient à soi. La liste des feuilles vit sur
+  `#yuno/preparations` — **une page à part entière, avec les modèles**
+  (demande de Noé, 21 août au soir), atteinte par la tuile du tableau de bord
+  Missions. Le Journal n'y mène plus.
+- **Les feuilles et modèles du FCH n'apparaissent pas ici** (demande de Noé,
+  21 août au soir) : les réunions du club ont leurs propres fiches sur leur
+  site. Yuno filtre par le projet de l'événement lié — une feuille sans
+  événement (une commande) est de Yuno par nature — et ne garde que les
+  modèles `projet = 'photo'`.
 - **Créer une feuille COPIE le modèle.** Modifier le modèle ensuite ne réécrit
   pas les feuilles passées : le bilan d'octobre doit refléter ce qui était
   prévu en octobre.
@@ -1522,7 +1597,7 @@ et ce paragraphe ne fait que dire à quoi sert chaque table.
 |---|---|
 | `publications` | le calendrier éditorial. `date_prevue` NULL = banque d'idées. Colonnes Yuno : `pilier`, `preuve`, `pourquoi_moi` (NULL pour le FCH) |
 | `contacts` | le carnet réseau, et la couche Passerelle (`objectif`, `date_dernier_envoi`, `prochaine_action`, `prochaine_action_date`). `niveau` reste en base mais plus rien ne l'écrit ni ne le lit depuis le 15 août 2026 |
-| `commandes` | le suivi, du devis au paiement. `client_id` relie au carnet |
+| `commandes` | le suivi, du devis au paiement. `client_id` relie au carnet, `evenement_id` à l'événement visé (21 août 2026, migration `20260821220000`) |
 | `evenements` | **une sortie, deux faces** — prévue (date, lieu, `type_moment`) et vécue (`vecu`, `photo_chemin`, `note`, `oeuvre_finie`). C'est le Carnet de terrain depuis la fusion du 14 août 2026 ; la table `moments` a disparu |
 | `rencontres` | qui a été rencontré, à quelle sortie (`evenement_id`). `contact_id` facultatif |
 | `journal_envois` | un envoi = une ligne, `contact_id` NULL quand le message est parti au compte d'un club. **Aucune colonne « répondu »** |
@@ -1623,5 +1698,6 @@ Elle vient du document « pourquoi » et ne se lit nulle part dans le code :
    accréditation), et les clubs que Noé veut cibler à froid — les quatre déjà
    au carnet sont des contacts établis, donc du niveau 2, pas du 3.
 
-Le reste a été tranché. Les cinq écrans du site sont construits : Accueil,
-Journal, Créer, Calendrier, Réseau. Prochaine étape : l'usage réel.
+Le reste a été tranché. Les six familles du site sont construites : Accueil,
+Journal, Créer, Missions (nom provisoire), Réseau, Calendrier. Prochaine
+étape : l'usage réel.

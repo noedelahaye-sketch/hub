@@ -168,6 +168,67 @@ déjà. Les six modèles de préparation du matin restent en base sans servir.
    Le dégradé, lui, reste partout où un fond l'accepte (pastilles, trait de
    l'agenda) : les deux couleurs du club continuent de s'y voir.
 
+5. **La refonte du Réseau chez Yuno**, en deux passes le même soir : proposée
+   dans le chat, validée, construite avec une sous-navigation en pastilles —
+   puis **corrigée sur les retours de Noé** (« pas trop fan des pastilles »).
+   `yuno-spec.md` fait autorité ; l'état final :
+
+   - **le palier `#yuno/reseau` est mort** — l'onglet Réseau ouvre la
+     Passerelle (bandeau + fournée), `#yuno/passerelle` reste un alias, les
+     relances du lundi se lèvent aussi sur `reseau` ;
+   - **pas de sous-navigation** : la famille se relie par des **tuiles de fin
+     de page** (CRM et Le vivier côte à côte sous la Passerelle) et par le
+     **bandeau cliquable** — « clubs contactés » ouvre le vivier, « entrés au
+     réseau » ouvre le CRM. Le bandeau est **centré**, le titre « La
+     Passerelle » a disparu (la loupe reste au bord droit), et « Propositions
+     de la semaine » fait **la même largeur** que la tuile du club proposé ;
+   - **nouvel onglet MISSIONS** (⚠ nom provisoire, choisi par moi — à valider
+     par Noé) entre Créer et Réseau : il ouvre `#yuno/preparations` et
+     regroupe préparations, leurs modèles et les **commandes**
+     (`#yuno/commandes`, leur page) — tuiles croisées Préparations ↔
+     Commandes. « Nouvelle commande » depuis une fiche du CRM pré-remplit le
+     client (`etat.prefillCommande`, effacé en quittant la page). Pas de
+     total encaissé — tranché, « pas pour le moment » ;
+   - **les modèles de messages sont une arrière-boutique** : plus d'entrée de
+     navigation, un lien discret en bas de la Passerelle et du CRM ;
+   - **les feuilles et modèles du FCH n'entrent plus dans Yuno** (demande de
+     Noé) : `preparationsToutes` embarque le projet de l'événement lié, Yuno
+     filtre photo (une feuille sans événement est à lui), et les modèles sur
+     `projet = 'photo'`.
+
+   Vérifié au navigateur : arrivée par l'onglet, alias, chiffres-portes,
+   Missions (liste sans le FCH), Commandes, fiche → Nouvelle commande ; rien
+   créé en base.
+
+6. **La loupe est montée dans la barre d'onglets** (demande de Noé, dernier
+   geste de la session) : visible sur TOUTES les pages du site, tout à droite
+   — sa marge automatique centre les onglets en pendant de celle du premier —
+   et **sticky au bord droit sur téléphone**, où la barre déborde et défile.
+   Ouverte, la barre de recherche prend la ligne des onglets (ils s'effacent,
+   Échap les ramène) et les résultats se posent dessous ; les pages qui ne
+   lisent pas le vivier le **chargent au premier clic**. Elle ne cherche que
+   les clubs du vivier — extension à d'autres fonds envisageable plus tard.
+   `enTete(vue, etat)` porte tout ; `squelette` la montre fermée. La liste
+   `.recherche-clubs` vit hors `.bloc` et porte son propre habit. À savoir :
+   sur 375 px, **l'icône calendrier passe hors écran** (5 onglets + 2 icônes) —
+   la barre défile pour l'atteindre ; si ça gêne Noé, resserrer les onglets ou
+   rendre le calendrier sticky aussi.
+
+7. **Les Missions réorganisées — l'événement pivot** (option A, proposée à
+   l'écrit et validée par Noé, nom « Missions » confirmé). `yuno-spec.md`
+   fait autorité ; en bref : `commandes.evenement_id` en base (migration
+   `20260821220000`, **appliquée**) ; l'onglet ouvre **`#yuno/missions`**, un
+   tableau de bord — « À préparer » (les événements des 30 prochains jours,
+   commandes puis sorties, avec l'état de leur feuille), « Les commandes »
+   (pipeline, l'événement visé affiché), tuile → Préparations (page à part
+   entière avec les modèles, `#yuno/commandes` restant un alias). La
+   **commande s'ajoute en fenêtre volante** (le « + » des pages Missions ; le
+   formulaire plié a disparu), l'événement se relie par son titre exact
+   (datalist des événements à venir). « Nouvelle commande » d'une fiche CRM
+   ouvre cette fenêtre sur Missions, client pré-rempli. **La porte
+   Préparations du Journal est partie.** Tout vérifié au navigateur, rien
+   créé en base.
+
 ## 0 ante. La session du 15 août — Yuno passe au réseau
 
 **Vingt-trois commits, tous poussés.** Toute la session a porté sur **la

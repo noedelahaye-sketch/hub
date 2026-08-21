@@ -336,9 +336,26 @@ body[data-espace="yuno"] .lien-externe-titre {
 /* L'en-tête à signature a disparu (demande de Noé, 14 août 2026) : le site
    s'ouvre sur sa barre. Centrage par marges automatiques : contrairement à
    justify-content:center, il n'ampute pas le début de la barre quand elle
-   déborde et défile. */
+   déborde et défile.
+   Depuis que la LOUPE ferme la rangée (21 août au soir, demande de Noé),
+   c'est SA marge automatique (`.loupe-clubs`) qui fait le pendant de
+   celle-ci : les onglets se centrent entre les deux, la loupe tient le bord
+   droit — sur toutes les pages. */
+.yuno-nav { align-items: center; }
 .yuno-nav > a:first-child { margin-left: auto; }
-.yuno-nav > a:last-child { margin-right: auto; }
+
+/* La barre de recherche ouverte prend la ligne des onglets à elle seule :
+   pas de retrait à gauche — il n'y a plus de titre à côté duquel se caler. */
+.yuno-nav > .barre-loupe { margin-left: 0; }
+
+/* « Visible constamment » vaut aussi sur téléphone, où la barre déborde et
+   défile : la loupe COLLE au bord droit (sticky dans l'axe du défilement),
+   sur le fond de la page — sans lui, les onglets glisseraient sous elle. */
+.yuno-nav > .loupe-clubs {
+  position: sticky;
+  right: 0;
+  background: var(--fond);
+}
 
 /* La seule sortie du site, tout en bas et discrète : en plein écran sur
    téléphone il n'y a pas de barre d'adresse, il faut bien une porte. */
@@ -1385,6 +1402,9 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 .passerelle-metrique {
   display: flex;
   align-items: center;
+  /* Centré (demande de Noé, 21 août au soir) : trois chiffres calés à gauche
+     laissaient la moitié du bandeau vide. */
+  justify-content: center;
   flex-wrap: wrap;
   gap: var(--espace-24);
   margin-bottom: var(--espace-12);
@@ -1404,6 +1424,18 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 
 .metrique .chiffre { font-size: 1.5rem; line-height: 1.1; color: var(--accent); }
 .metrique .discret { font-size: 0.75rem; }
+
+/* Deux des trois chiffres sont des portes (demande de Noé, 21 août au soir) :
+   « clubs contactés » ouvre le vivier, « entrés au réseau » le CRM. Même habit
+   que leurs voisins — le survol souligne le libellé, seul signe qu'on peut
+   entrer : un bandeau qui crie trois liens ne serait plus un bandeau. */
+a.metrique { text-decoration: none; }
+
+a.metrique:hover .discret,
+a.metrique:focus-visible .discret {
+  color: var(--texte);
+  text-decoration: underline;
+}
 
 /* Le dénominateur du vivier : « 12/97 ». Plus petit que le chiffre qu'il
    situe — c'est le repère, pas la nouvelle. */
@@ -1888,8 +1920,12 @@ body[data-espace="yuno"] ul.fournee-liste {
 /* `ul.porte-liste` et non `.porte-liste` : la règle d'en face
    (`.bloc ul:not(.liste-jalons)`) porte un élément dans son sélecteur, il en
    faut un ici aussi pour la contrer. */
+/* Moitié-moitié depuis le 21 août au soir (demande de Noé) : la porte des
+   propositions et la tuile du club proposé font la même largeur — deux tuiles
+   de même rang, la géométrie le dit aussi. `flex-basis: 0` partage l'espace
+   sans regarder le contenu. */
 .porte-rangee ul.porte-liste {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-width: 0;
   grid-template-columns: minmax(0, 1fr);
 }
@@ -1900,7 +1936,8 @@ body[data-espace="yuno"] ul.fournee-liste {
    geste du site qui ouvre quelque chose plutôt que d'acter un fait ; l'or reste
    à ce qui est vrai. */
 .porte-dizaine {
-  flex: 0 1 9rem;
+  flex: 1 1 0;
+  min-width: 0;
   padding: var(--espace-8) var(--espace-12);
   /* La taille des trois portes de la page et du titre « La Passerelle »
      (demande de Noé, 15 août au soir) : même rôle, même corps. */
@@ -1948,11 +1985,8 @@ body[data-espace="yuno"] #vue button.porte-dizaine {
 /* La loupe vit dans le titre, poussée au bord droit : elle appartient à la
    page, pas à un bloc particulier. Discrète au repos — c'est une porte, pas
    une invitation pressante. */
-.titre-loupe {
-  display: flex;
-  align-items: center;
-  gap: var(--espace-8);
-}
+/* `.titre-loupe` est parti le 21 août au soir : la loupe vit dans la barre
+   d'onglets, plus au bord d'un titre. */
 
 .loupe-clubs {
   position: relative;
@@ -2033,28 +2067,41 @@ body[data-espace="yuno"] #vue button.porte-dizaine {
 .barre-loupe:focus-within { border-color: var(--gris-chaud-trait); }
 
 /* Les résultats suivent le titre dans le flux du bloc. */
-.recherche-clubs { margin-bottom: var(--espace-16); }
-
 /* Les résultats sont des LIGNES À FILETS, pas des tuiles (correction de Noé,
    21 août 2026) : on parcourt une liste de noms, le cadre n'apportait que du
-   bruit. Le filet s'éclaircit au survol — la règle commune du vivier change la
-   couleur de bordure, ici il n'en reste qu'une. Une seule colonne, même sur
-   grand écran : une recherche se lit de haut en bas. */
-.bloc .recherche-clubs ul {
+   bruit. Une seule colonne, même sur grand écran : une recherche se lit de
+   haut en bas.
+   La liste vit HORS de tout `.bloc` depuis que la loupe habite la barre
+   d'onglets (21 août au soir) : elle porte donc elle-même ce que `.bloc ul`
+   et `.bloc li` lui donnaient — le désarmement du `ul` (puces, marges) et la
+   ligne en flex calée sur la ligne d'écriture. */
+.recherche-clubs {
   display: flex;
   flex-direction: column;
   gap: 0;
+  margin: 0 0 var(--espace-16);
+  padding: 0;
+  list-style: none;
 }
 
-.bloc .recherche-clubs li {
+.recherche-clubs li {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--espace-8);
   padding: var(--espace-8) var(--espace-4);
-  background: none;
-  border: none;
   border-bottom: 1px solid var(--bordure);
-  border-radius: 0;
 }
 
-.bloc .recherche-clubs li:last-child { border-bottom: none; }
+.recherche-clubs li:last-child { border-bottom: none; }
+
+/* Les lignes sont celles du vivier (`.proposition`) : une seule rangée, tout
+   centré ensemble — l'écusson est une image, la ligne de base serait son bord
+   bas. Même règle que `.bloc li.proposition`, redite hors bloc. */
+.recherche-clubs li.proposition {
+  flex-wrap: nowrap;
+  align-items: center;
+}
 
 /* Le message « aucun club » est une ligne de texte, rien d'autre. */
 .recherche-clubs li.vide { border-bottom: none; }
