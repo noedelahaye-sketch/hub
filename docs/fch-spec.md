@@ -51,8 +51,8 @@ inventé à la place de Noé.
 
 | Rôle | Valeur | Note |
 |---|---|---|
-| Fond du site | `#113693` | Le bleu du club porte tout le site (choix de Noé). |
-| Tuiles | `#1e47a8` | Assez au-dessus du fond pour se détacher sans cerne appuyé. |
+| Fond du site | radial `#0039a6 → #16337d (58 %) → #0a102c`, depuis le coin haut droit | **Le mot final de Noé** (21 août 2026 au soir, après plusieurs allers-retours — linéaire, deux couches, puis ceci) : le bleu vif du club rayonne du coin HAUT DROIT et s'assombrit vers le coin opposé, jusqu'au bleu nuit presque noir. Palette de sa première image ; `farthest-corner` en ellipse épouse les proportions de la page. `min-height: 100vh` sur le body, sans quoi une page courte arrêtait le dégradé avec elle et laissait une bande unie dessous. `--fond` reste `#113693`, dans la pente, pour les rares aplats qui la peignent. |
+| Tuiles | `#1e47a8` | Se détachent sur toute la hauteur du dégradé — discrètes en haut, très nettes vers le pied, et c'est assumé. |
 | Accent | `#f2b705` | Le jaune. Seule couleur du club qui ressorte sur ce bleu. |
 | Rouge du club | `#df0000` | Seconde couleur d'identité, dans le liseré. |
 | Texte | blanc | |
@@ -61,8 +61,12 @@ inventé à la place de Noé.
 site Yuno est toujours sombre. Deux conséquences assumées :
 
 - **L'accent est jaune, pas bleu.** Un accent bleu sur fond bleu ne
-  signalerait rien. Le jaune porte les barres de progression, l'onglet actif,
-  les étiquettes — et ne signale jamais une alerte, la règle du hub tient.
+  signalerait rien. Le jaune porte les barres de progression et les
+  étiquettes — et ne signale jamais une alerte, la règle du hub tient.
+  **L'onglet actif, lui, s'écrit en BLANC depuis le 21 août au soir**
+  (demande de Noé — la pastille jaune est partie) : les autres onglets
+  restent dans le bleu-gris adapté au fond, et un voile blanc très léger
+  garde à l'actif sa forme de pastille.
 - **Le logo reste en PNG transparent**, à même le fond bleu, sans plaque
   (choix de Noé du 7 août : la plaque blanche a été essayée puis retirée).
   Ses traits noirs et bleus se lisent moins qu'ils ne le feraient sur clair —

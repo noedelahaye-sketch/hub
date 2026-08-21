@@ -6,6 +6,25 @@
    Bac-3), à la demande de Noé. Sa différence tient à la couleur, à la mise en
    page et au logo. */
 
+/* --- Le fond en dégradé -------------------------------------------------------
+   Un RADIAL depuis le coin haut droit — le mot final de Noé (21 août 2026 au
+   soir, après plusieurs allers-retours : linéaire, deux couches, puis ceci) :
+   le bleu vif du club rayonne du coin haut droit et s'assombrit en
+   s'éloignant, jusqu'au bleu nuit presque noir au coin opposé. La palette est
+   celle de sa première image ; `farthest-corner` en ellipse épouse les
+   proportions de la page. `--fond` (#113693) reste dans la pente pour les
+   rares aplats qui la peignent, et les tuiles (`--fond-carte`) se détachent
+   sur toute la hauteur — d'autant plus fort vers le sombre, et c'est voulu. */
+body[data-espace="hermitage"] {
+  /* Sans plancher, une page courte arrêtait le dégradé avec elle et laissait
+     une bande unie dessous : la pente doit couvrir au moins l'écran. */
+  min-height: 100vh;
+  /* Le point médian règle la LARGEUR de la lumière. Réglé à l'œil par Noé :
+     50 trop serré, 65 trop large, 58 le bon — ne pas « arrondir ». */
+  background: radial-gradient(farthest-corner at 100% 0%,
+    #0039a6 0%, #16337d 58%, #0a102c 100%);
+}
+
 /* --- L'en-tête du site ------------------------------------------------------
    Le logo entier, centré, en PNG transparent à même le fond bleu (choix de
    Noé, 7 août 2026). */
@@ -62,11 +81,13 @@
   background: color-mix(in srgb, var(--texte) 8%, transparent);
 }
 
-/* L'onglet actif : jaune plein, texte dans le bleu du fond. C'est le contraste
-   le plus fort dont on dispose sur cette page. */
+/* L'onglet actif s'écrit en BLANC (demande de Noé, 21 août 2026 au soir — la
+   pastille jaune est partie avec) ; les autres restent dans le bleu-gris
+   adapté au fond (`--texte-discret`). Un voile blanc très léger garde à
+   l'onglet sa forme de pastille sans concurrencer l'encre. */
 .fch-nav a.actif {
-  color: #113693;
-  background: var(--accent);
+  color: #ffffff;
+  background: color-mix(in srgb, #ffffff 12%, transparent);
 }
 
 /* Le liseré du club sous la barre : rouge, plein, et fin. Une seule touche
