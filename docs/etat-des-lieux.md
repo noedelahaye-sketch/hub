@@ -229,6 +229,16 @@ déjà. Les six modèles de préparation du matin restent en base sans servir.
    Préparations du Journal est partie.** Tout vérifié au navigateur, rien
    créé en base.
 
+8. **Deux retouches de forme pour finir** : les feuilles de préparation en
+   **tuiles compactes** (plus hautes que larges, côte à côte — titre en tête,
+   date en pied, « Bilan écrit » quand il l'est ; les modèles restent en
+   lignes), et **l'habillage du site FCH** — un dégradé **radial depuis le
+   coin haut droit** (bleu vif `#0039a6` → bleu nuit `#0a102c`, médian à
+   58 % réglé à l'œil par Noé après plusieurs allers-retours : ne pas
+   « arrondir »), `min-height: 100vh` contre la bande unie des pages
+   courtes, et **l'onglet actif écrit en blanc** (la pastille jaune est
+   partie). `fch-spec.md` porte le détail.
+
 ## 0 ante. La session du 15 août — Yuno passe au réseau
 
 **Vingt-trois commits, tous poussés.** Toute la session a porté sur **la
