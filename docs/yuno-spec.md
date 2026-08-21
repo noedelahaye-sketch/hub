@@ -1124,6 +1124,13 @@ et le bandeau la compte dans « entrés au réseau ».
 - Les fiches qui portaient déjà le nom exact d'un club ont été reliées au
   passage (OM — service presse, Tuomas Ollila).
 
+**La feuille de préparation est devenue un module commun** (21 août 2026,
+`js/preparations-commun.js`) : les réunions du FC Hermitage s'en servent aussi.
+Rien ne change à l'écran chez Yuno — phases, items, bilan, boucle « aussi au
+modèle » — et ses modèles portent désormais `projet = 'photo'` : chaque site ne
+voit que les siens. Le CSS a suivi dans `styles.css`, le site du club ne
+chargeant pas `yuno.css`.
+
 **« Week-end », quatrième vue du calendrier** (demande de Noé, 15 août 2026),
 à côté de Mois · Semaine · Agenda. Les trois autres montrent ce qui est POSÉ ;
 celle-ci montre ce qu'on **pourrait couvrir** : toutes les rencontres du
@@ -1163,6 +1170,31 @@ disent.
 Une seule requête suffit à les avoir toutes sans doublon : `domicile = true`,
 puisque la table dénormalisée donne exactement une ligne par match côté club
 qui reçoit.
+
+**Une loupe sur les trois pages où l'on pense clubs** — Réseau, Passerelle,
+vivier (demande de Noé, 21 août 2026) : chercher un club et l'ajouter à la
+fournée de la semaine sans parcourir les 97 lignes ni changer de page. Elle vit
+au bord droit du titre de la page ; le clic **déploie la barre à sa gauche, sur
+la ligne du titre même** — jamais dans une fenêtre, jamais dans une tuile
+(corrections de Noé, le jour même) — d'un fondu qui vient de la droite : la
+barre naît de la loupe. **La loupe ne bouge pas d'un pixel** : elle reste au
+bord droit et finit donc **à droite de la barre**, le champ déployé à sa gauche
+(précision de Noé) — un contrôle qui saute de place au clic ferait chercher des
+yeux ce qu'on vient de toucher. La recliquer referme ; Échap aussi. **Pas
+d'anneau doré à l'ouverture** (même précision) : la barre vient d'apparaître
+avec son cadre et son curseur, l'anneau redisait ce qui se voit — le focus se
+dit par la bordure qui s'éclaircit (`:focus-within`), le champ étant nu dans la
+barre qui porte le cadre.
+
+Rien ne s'affiche tant que rien n'est tapé — on est venu taper un nom, le
+vivier existe pour relire la liste ; dès les premières lettres, les clubs
+correspondants apparaissent (sans accents ni casse : « bale » trouve Bâle).
+Les résultats sont **des lignes à filets, pas des tuiles** : la ligne du vivier
+— pastille, écusson, nom, « + » ou état — sans le prochain match, qui prenait
+la place du nom, et en une seule colonne même sur grand écran. Seule la liste
+se redessine à la frappe : le champ garde son curseur. Le « + » ajoute à la
+fournée et la ligne change d'état sous les yeux ; toucher la ligne ouvre la
+fiche du club.
 
 ### `#yuno/vivier` — le vivier *(sa page)*
 
@@ -1385,6 +1417,20 @@ leurs teintes — qui se fait avancer d'ici, sans passer par le CRM. Sans fiche
 reliée, il n'y a pas de relation à suivre : la carte affiche « ✓ écrit
 aujourd'hui » et garde son bouton « Noter le contact », pour rattacher
 quelqu'un plus tard. La fournée se vide d'elle-même au changement de semaine.
+
+**Le vidage hebdomadaire est réel depuis le 21 août 2026** (décision de Noé —
+la phrase ci-dessus était une promesse que rien ne tenait : le commentaire SQL
+de `en_fournee` disait même l'inverse). La colonne `fournee_semaine` garde le
+LUNDI de la semaine du choix, posée dans le même geste que `en_fournee` ; au
+chargement des pistes, le site repère les fournées d'une semaine passée, les
+repose au vivier à l'écran et envoie UN update derrière — le site est statique,
+il n'a pas de minuit à lui, c'est la première visite de la semaine qui fait le
+ménage. Un échec d'écriture ne casse rien : le prochain chargement retente. Un
+club contacté sort aussi — sa carte n'était gardée que pour finir la semaine —
+et, non contacté, il redevient proposable : il est libre à nouveau. Les
+propositions, elles, étaient déjà hebdomadaires (graine = lundi courant, les
+« passés » s'effacent avec la semaine) : les deux moitiés de la page tournent
+désormais ensemble.
 
 Les autres chantiers évoqués avec Noé — concerts et événements, accréditation
 Vélodrome, médias congolais à rythme mensuel — viendront une fois cette forme

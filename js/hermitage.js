@@ -33,7 +33,16 @@ import {
   construireApercuCreation,
   formulaireIdee,
 } from './publications.js';
-import { depuisDateISO, echeanceLisible, echapper, versDateISO } from './format.js';
+import { depuisDateISO, echeanceLisible, momentLisible, echapper, versDateISO } from './format.js';
+import {
+  PHASES_PREPA,
+  blocPhase,
+  dernierBilan,
+  feuilleDeLaSortie,
+  boutonPreparer,
+  finDeLaSortie,
+  phaseDeLaSortie,
+} from './preparations-commun.js';
 import { brancherChoix } from './espace-projet.js';
 import {
   assemblerCalendrier,
@@ -42,6 +51,10 @@ import {
   centrerActif,
   ongletCalendrier,
   toutesLesNatures,
+  fenetreCreation,
+  brancherCapture,
+  poserAuCalendrier,
+  REUNION_OBJETS,
 } from './calendrier-commun.js';
 
 const PROJET = 'fch';
@@ -71,7 +84,7 @@ const RUBRIQUES_DEPART = [
 // réseau de Yuno, c'est la même matière (docs/fch-spec.md, §5).
 const TYPE_PARTENAIRE = 'marque';
 
-const VUES = ['accueil', 'creer', 'calendrier', 'partenaires', 'club'];
+const VUES = ['accueil', 'creer', 'reunions', 'calendrier', 'partenaires', 'club'];
 
 // --- Fabrication du HTML ----------------------------------------------------
 
@@ -82,6 +95,7 @@ function enTete(vueActive) {
   const liens = [
     ['accueil', 'Accueil', '#hermitage'],
     ['creer', 'Créer', '#hermitage/creer'],
+    ['reunions', 'Réunions', '#hermitage/reunions'],
     ['partenaires', 'Partenaires', '#hermitage/partenaires'],
     ['club', 'Club', '#hermitage/club'],
   ];
@@ -154,11 +168,250 @@ export function construirePartenaires(partenaires) {
     .join('')}</ul>`;
 }
 
+// --- Les réunions --------------------------------------------------------------
+// Une réunion est un ÉVÉNEMENT fch dont `reunion_objet` est posé (demande de
+// Noé, 21 août 2026). Elle se note au calendrier — le « + », nature Événement,
+// pastille Réunion — et se PRÉPARE ici : la feuille de Yuno, trois phases et
+// un bilan, avec des modèles selon l'objet et selon qu'on anime ou non.
+//
+// Le bilan n'est PAS le compte-rendu officiel : c'est ce qui concerne Noé — à
+// retenir, à faire — plus, s'il animait, un regard sur le déroulé. Et chaque
+// ligne « à faire » devient une tâche fch à l'enregistrement : ce qui se
+// décide en réunion entre dans le circuit, au lieu de dormir dans une note.
+
+const estReunion = (evenement) => Boolean(evenement.reunion_objet);
+
+function etiquettesReunion(evenement) {
+  return `<span class="etiquette">${echapper(
+    REUNION_OBJETS[evenement.reunion_objet] ?? 'Réunion',
+  )}</span>${evenement.reunion_animee ? `<span class="etiquette">J'anime</span>` : ''}`;
+}
+
+// Le modèle qui correspond le mieux à la réunion : même objet et même rôle
+// d'abord, puis même objet peu importe le rôle, puis l'objet « autre », puis
+// une feuille vierge. Proposé D'OFFICE : le bon réflexe ne doit rien coûter.
+export function modelePourReunion(modeles, evenement) {
+  const duProjet = modeles.filter((modele) => modele.projet === PROJET);
+  const memeObjet = duProjet.filter((modele) => modele.objet === evenement.reunion_objet);
+
+  return (
+    memeObjet.find((modele) => modele.anime === Boolean(evenement.reunion_animee)) ??
+    memeObjet.find((modele) => modele.anime === null) ??
+    memeObjet[0] ??
+    duProjet.find((modele) => modele.objet === 'autre') ??
+    null
+  );
+}
+
+function ligneReunion(evenement, preparations) {
+  const feuille = feuilleDeLaSortie(preparations, 'evenement', evenement.id);
+
+  return `
+    <li>
+      <span class="tuile-entete">
+        ${etiquettesReunion(evenement)}
+        <span class="discret quand">${echapper(
+          momentLisible(new Date(evenement.date_debut)),
+        )}</span>
+      </span>
+      <span class="reunion-titre">${echapper(evenement.titre)}</span>
+      ${
+        feuille?.bilan_date
+          ? `<span class="discret">Bilan écrit ${echapper(
+              echeanceLisible(depuisDateISO(feuille.bilan_date)),
+            )}</span>`
+          : ''
+      }
+      ${boutonPreparer(feuille, 'evenement', evenement.id)}
+    </li>`;
+}
+
+// Le bilan d'une réunion. Deux questions pour tous, une troisième pour
+// l'animateur — et le contrat des tâches écrit noir sur blanc sous le champ.
+function blocBilanReunion(feuille, evenement) {
+  const animee = Boolean(evenement?.reunion_animee);
+  const pasEncore =
+    evenement && new Date(evenement.date_debut) > new Date() && !feuille.bilan_date;
+
+  if (pasEncore) {
+    return `
+      <section class="bloc prepa-bilan">
+        <h2>Le bilan</h2>
+        <p class="discret">Il s'écrira après la réunion — ce qui te concerne,
+          pas le compte-rendu officiel.</p>
+      </section>`;
+  }
+
+  return `
+    <section class="bloc prepa-bilan">
+      <h2>Le bilan</h2>
+      <form data-action="noter-bilan-reunion" class="ajout">
+        <input type="hidden" name="id" value="${echapper(feuille.id)}">
+        <label for="reunion-bilan-retenu">Ce qu'il faut retenir — pour toi</label>
+        <textarea id="reunion-bilan-retenu" name="bilan_bien" rows="3">${echapper(
+          feuille.bilan_bien ?? '',
+        )}</textarea>
+        <label for="reunion-bilan-actions">Ce que ça te donne à faire — une ligne, une tâche</label>
+        <textarea id="reunion-bilan-actions" name="bilan_mieux" rows="3">${echapper(
+          feuille.bilan_mieux ?? '',
+        )}</textarea>
+        ${
+          animee
+            ? `<label for="reunion-bilan-animation">Comment la réunion s'est déroulée —
+                 à refaire autrement quand tu animeras</label>
+               <textarea id="reunion-bilan-animation" name="bilan_animation" rows="3">${echapper(
+                 feuille.bilan_animation ?? '',
+               )}</textarea>`
+            : ''
+        }
+        <p class="discret">${
+          feuille.bilan_date
+            ? 'Le bilan est écrit — le corriger ne recrée pas de tâches.'
+            : 'À l\'enregistrement, chaque ligne « à faire » devient une tâche FCH.'
+        }</p>
+        <button type="submit" class="bouton-secondaire">Enregistrer le bilan</button>
+        <p class="message-erreur" data-erreur hidden></p>
+      </form>
+    </section>`;
+}
+
+function vueFeuilleReunion(etat, feuille) {
+  const evenement = etat.evenements.find((e) => e.id === feuille.evenement_id) ?? null;
+  const precedent = feuille.bilan_date ? null : dernierBilan(etat.preparations, feuille);
+  const auModele = etat.modelesPrepa.some((modele) => modele.id === feuille.modele_id);
+
+  return `
+    ${enTete('reunions')}
+    <h2 class="titre-page">${echapper(feuille.titre)}</h2>
+    <p class="discret prepa-date">
+      ${feuille.date ? echapper(echeanceLisible(depuisDateISO(feuille.date))) : ''}
+      ${evenement ? `· ${echapper(REUNION_OBJETS[evenement.reunion_objet] ?? 'Réunion')}${
+        evenement.reunion_animee ? " · j'anime" : ''
+      }` : ''}
+    </p>
+    ${
+      precedent
+        ? `<p class="discret prepa-rappel">Ton dernier bilan — à refaire autrement :
+             « ${echapper(precedent.bilan_animation ?? precedent.bilan_mieux)} »</p>`
+        : ''
+    }
+    <div class="prepa-phases">
+      ${blocPhase(feuille, 'avant', { auModele })}
+      ${blocPhase(feuille, 'pendant', { auModele })}
+      ${blocPhase(feuille, 'apres', { auModele })}
+    </div>
+    ${blocBilanReunion(feuille, evenement)}
+    <p><button type="button" class="lien-discret" data-supprimer-prepa="${echapper(feuille.id)}">
+      Supprimer la préparation</button></p>
+    ${pied()}`;
+}
+
+function vueReunions(etat) {
+  if (etat.reunionOuverte) {
+    const feuille = etat.preparations.find((f) => f.id === etat.reunionOuverte);
+    if (feuille) return vueFeuilleReunion(etat, feuille);
+  }
+
+  const reunions = etat.evenements.filter(estReunion);
+  const maintenant = new Date();
+  const aVenir = reunions
+    .filter((e) => finDeLaSortie(e) >= maintenant)
+    .sort((a, b) => new Date(a.date_debut) - new Date(b.date_debut));
+  const passees = reunions
+    .filter((e) => finDeLaSortie(e) < maintenant)
+    .sort((a, b) => new Date(b.date_debut) - new Date(a.date_debut));
+
+  return `
+    ${enTete('reunions')}
+
+    <section class="bloc">
+      <h2>À préparer</h2>
+      ${
+        aVenir.length
+          ? `<ul>${aVenir.map((e) => ligneReunion(e, etat.preparations)).join('')}</ul>`
+          : `<p class="vide">Ta prochaine réunion se note au calendrier : le « + »,
+              nature Événement, pastille Réunion.</p>`
+      }
+    </section>
+
+    ${
+      passees.length
+        ? `<section class="bloc">
+             <h2>Passées</h2>
+             <ul>${passees.map((e) => ligneReunion(e, etat.preparations)).join('')}</ul>
+           </section>`
+        : ''
+    }
+    ${pied()}`;
+}
+
+// La réunion du moment, en tête de l'accueil (demande de Noé, 21 août 2026) —
+// le pendant de « la sortie du moment » chez Yuno : le jour d'un conseil, ce
+// qui compte n'est ni la com' ni les objectifs, c'est ce qu'il reste à faire.
+function blocReunionDuMoment(etat) {
+  const maintenant = new Date();
+  const reunions = etat.evenements.filter(estReunion);
+
+  const enCours = reunions
+    .filter((e) => {
+      const phase = phaseDeLaSortie(e, maintenant);
+      return phase === 'pendant' || phase === 'apres';
+    })
+    .sort((a, b) => new Date(b.date_debut) - new Date(a.date_debut))[0];
+  const prochaine = reunions
+    .filter((e) => new Date(e.date_debut) > maintenant)
+    .sort((a, b) => new Date(a.date_debut) - new Date(b.date_debut))[0];
+
+  const reunion = enCours ?? prochaine;
+  if (!reunion) return '';
+
+  const phase = phaseDeLaSortie(reunion, maintenant) ?? 'avant';
+  const feuille = feuilleDeLaSortie(etat.preparations, 'evenement', reunion.id);
+  const restent = feuille
+    ? feuille.items.filter((item) => item.phase === phase && !item.fait)
+    : [];
+
+  return `
+    <section class="bloc">
+      <span class="tuile-entete">
+        <span class="etiquette">${PHASES_PREPA[phase]}</span>
+        ${etiquettesReunion(reunion)}
+        <span class="discret quand">${echapper(
+          momentLisible(new Date(reunion.date_debut)),
+        )}</span>
+      </span>
+      <h2 class="reunion-moment-titre">${echapper(reunion.titre)}</h2>
+      ${
+        feuille
+          ? `${
+              restent.length
+                ? `<ul class="liste-taches-pleine prepa-liste">${restent
+                    .slice(0, 3)
+                    .map(
+                      (item) => `
+                  <li class="tache-ligne">
+                    <button type="button" class="tache-cercle" data-cocher-prepa="${echapper(item.id)}"
+                      aria-pressed="false"
+                      aria-label="Cocher « ${echapper(item.texte)} »"></button>
+                    <span class="tache-corps"><span class="tache-titre">${echapper(item.texte)}</span></span>
+                  </li>`,
+                    )
+                    .join('')}</ul>`
+                : `<p class="discret">Tout est coché pour cette phase.</p>`
+            }
+            <a class="lien-discret" href="#hermitage/reunions/${echapper(feuille.id)}">Ouvrir la
+              préparation${restent.length > 3 ? ` · ${restent.length} lignes à faire` : ''}</a>`
+          : boutonPreparer(null, 'evenement', reunion.id)
+      }
+    </section>`;
+}
+
 // --- Les vues ----------------------------------------------------------------
 
 function vueAccueil(etat) {
   return `
     ${enTete('accueil')}
+    ${blocReunionDuMoment(etat)}
 
     <section class="bloc">
       <h2>Objectifs de fin d'alternance</h2>
@@ -223,8 +476,11 @@ function vueCreer(etat) {
 }
 
 function vueCalendrier(etat) {
+  // L'état porte aussi le passé depuis que les réunions ont leurs bilans ; le
+  // calendrier du site, lui, continue de ne montrer que ce qui vient.
+  const maintenant = new Date();
   const elements = assemblerCalendrier({
-    evenements: etat.evenements,
+    evenements: etat.evenements.filter((e) => new Date(e.date_debut) >= maintenant),
     taches: etat.taches,
     objectifs: etat.objectifs,
     publications: etat.publications.filter(
@@ -293,7 +549,15 @@ export default {
       taches: [],
       evenements: [],
       partenaires: [],
+      preparations: [],
+      modelesPrepa: [],
       vue: 'accueil',
+      // La feuille de réunion ouverte : son id vient de l'adresse
+      // (#hermitage/reunions/<id>), jamais d'un état d'interface.
+      reunionOuverte: null,
+      // La tuile de capture du « + » : le site en a une depuis le 21 août 2026
+      // (décision de Noé) — une réunion se note en sortant de la salle.
+      creationCal: null,
       // `filtre` est celui des publications ; `natures` celui du calendrier.
       // Les deux ont longtemps été confondus — `vueCalendrier` passait `filtre`
       // (la chaîne « tout ») là où le calendrier attend un Set, et l'écran
@@ -318,10 +582,27 @@ export default {
 
     const rendre = () => {
       if (etat.vue === 'creer') section.innerHTML = vueCreer(etat);
+      else if (etat.vue === 'reunions') section.innerHTML = vueReunions(etat);
       else if (etat.vue === 'calendrier') section.innerHTML = vueCalendrier(etat);
       else if (etat.vue === 'partenaires') section.innerHTML = vuePartenaires(etat);
       else if (etat.vue === 'club') section.innerHTML = vueClub();
       else section.innerHTML = vueAccueil(etat);
+
+      // Le « + » flottant suit toutes les vues (décision de Noé, 21 août
+      // 2026) : une réunion se note en sortant de la salle, pas en pensant à
+      // revenir sur la bonne page. La tuile est celle du hub — nature
+      // Événement d'abord, la pastille Réunion toujours offerte.
+      section.insertAdjacentHTML(
+        'beforeend',
+        `<button type="button" class="ouvrir-capture" data-ouvrir-plus
+           title="Ajouter" aria-label="Ajouter">+</button>`,
+      );
+      if (etat.creationCal) {
+        section.insertAdjacentHTML(
+          'beforeend',
+          fenetreCreation({ ...etat.creationCal, reunion: true }),
+        );
+      }
 
       if (etat.souci) {
         section
@@ -362,18 +643,24 @@ export default {
 
     this.naviguer = (nouvelleRoute) => {
       etat.vue = VUES.includes(nouvelleRoute?.vue) ? nouvelleRoute.vue : 'accueil';
+      etat.reunionOuverte = etat.vue === 'reunions' ? nouvelleRoute?.id ?? null : null;
       rendre();
     };
 
     const charger = async () => {
-      const [objectifs, victoires, publications, taches, evenements, contacts] =
+      const [objectifs, victoires, publications, taches, evenements, contacts, feuilles, modeles] =
         await Promise.all([
           api.objectifsActifs({ projet: PROJET }),
           api.victoiresDuProjet(PROJET),
           api.publicationsToutes(PROJET),
           api.tachesDatees({ projet: PROJET }),
-          api.evenementsDepuis(new Date().toISOString(), { projet: PROJET }),
+          // TOUS les événements depuis le 21 août 2026, plus seulement ceux à
+          // venir : les réunions passées portent leurs bilans. Le calendrier,
+          // lui, refiltre l'avenir — son affichage n'a pas bougé.
+          api.evenementsTous({ projet: PROJET }),
           api.contactsTous(),
+          api.preparationsToutes(),
+          api.modelesPreparationTous(),
         ]);
 
       Object.assign(etat, {
@@ -383,6 +670,11 @@ export default {
         taches,
         evenements,
         partenaires: contacts.filter((contact) => contact.type === TYPE_PARTENAIRE),
+        // Les feuilles des autres projets ne gênent pas : elles ne se
+        // rattachent à aucun événement fch, rien ne les affiche. Les modèles,
+        // eux, sont filtrés : la liste de choix ne doit dire que le club.
+        preparations: feuilles,
+        modelesPrepa: modeles.filter((modele) => modele.projet === PROJET),
       });
     };
 
@@ -407,9 +699,11 @@ export default {
       return;
     }
 
-    // Les choix des formulaires (« Noter une idée ») : ce site n'a pas de tuile
-    // de capture, donc personne ne les branche pour lui.
+    // Les choix des formulaires, et la tuile de capture : le site a son « + »
+    // depuis le 21 août 2026 (décision de Noé) — les pastilles de la tuile ont
+    // besoin de leur branchement, comme dans le hub.
     brancherChoix(section);
+    brancherCapture(section);
 
     this.naviguer(route);
 
@@ -444,6 +738,77 @@ export default {
     });
 
     async function appliquer(action, champs) {
+      // La tuile du « + » : tout passe par le circuit commun, projet fch.
+      if (action === 'creer-depuis-calendrier') {
+        await poserAuCalendrier(champs, { projetParDefaut: PROJET });
+        etat.creationCal = null;
+        await charger();
+        rendre();
+        return;
+      }
+
+      if (action === 'ajouter-item-prepa') {
+        const feuille = etat.preparations.find((f) => f.id === champs.preparation_id);
+        if (!feuille) return;
+        const item = await api.ajouterItemPreparation({
+          preparation_id: champs.preparation_id,
+          phase: champs.phase,
+          texte: champs.texte.trim(),
+        });
+        feuille.items.push(item);
+        // La boucle d'apprentissage : l'item peut entrer au modèle d'origine.
+        if (champs.au_modele === 'oui' && feuille.modele_id) {
+          await api.ajouterItemModele({
+            modele_id: feuille.modele_id,
+            phase: champs.phase,
+            texte: champs.texte.trim(),
+          });
+        }
+        rendre();
+        return;
+      }
+
+      if (action === 'noter-bilan-reunion') {
+        const feuille = etat.preparations.find((f) => f.id === champs.id);
+        if (!feuille) return;
+
+        const evenement = etat.evenements.find((e) => e.id === feuille.evenement_id);
+        // Les tâches ne naissent qu'à la PREMIÈRE écriture : corriger un bilan
+        // ne doit pas les recréer en double.
+        const premiereEcriture = !feuille.bilan_date;
+
+        const misAJour = await api.noterBilan(champs.id, {
+          bilan_bien: champs.bilan_bien?.trim() || null,
+          bilan_mieux: champs.bilan_mieux?.trim() || null,
+          ...(evenement?.reunion_animee
+            ? { bilan_animation: champs.bilan_animation?.trim() || null }
+            : {}),
+        });
+        Object.assign(feuille, misAJour);
+
+        if (premiereEcriture) {
+          const actions = (champs.bilan_mieux ?? '')
+            .split('\n')
+            .map((ligne) => ligne.trim())
+            .filter(Boolean);
+          for (const titre of actions) {
+            etat.taches.push(
+              await api.creerTache({ projet: PROJET, titre, statut: 'actif', priorite: 4 }),
+            );
+          }
+          if (actions.length) {
+            dire(
+              `${actions.length} tâche${actions.length > 1 ? 's' : ''} créée${
+                actions.length > 1 ? 's' : ''
+              } depuis le bilan — elles t'attendent au hub.`,
+            );
+          }
+        }
+
+        rendre();
+        return;
+      }
+
       if (action === 'noter-idee') {
         const publication = await api.creerPublication({
           projet: PROJET,
@@ -521,6 +886,99 @@ export default {
     // --- Clics ---
 
     section.addEventListener('click', async (evenement) => {
+      // Le « + » ouvre la tuile, sur un événement : c'est pour noter une
+      // réunion que ce site l'a gagnée. Le fond assombri la referme.
+      if (evenement.target.closest('[data-ouvrir-plus]')) {
+        etat.creationCal = { debut: versDateISO(), nature: 'evenement' };
+        rendre();
+        section.querySelector('#cal-titre')?.focus();
+        return;
+      }
+      if (evenement.target.closest('[data-fermer-fenetre]')) {
+        etat.creationCal = null;
+        rendre();
+        return;
+      }
+
+      // « Préparer » : la feuille naît du modèle qui correspond — même objet,
+      // même rôle — proposé d'office. Le bon réflexe ne doit rien coûter.
+      const preparer = evenement.target.closest('[data-preparer]');
+      if (preparer) {
+        const [, id] = preparer.dataset.preparer.split(':');
+        const reunion = etat.evenements.find((e) => e.id === id);
+        if (!reunion) return;
+        try {
+          const feuille = await api.creerPreparation({
+            modele: modelePourReunion(etat.modelesPrepa, reunion),
+            evenement_id: reunion.id,
+            titre: reunion.titre,
+            date: versDateISO(new Date(reunion.date_debut)),
+          });
+          etat.preparations.unshift(feuille);
+          location.hash = `#hermitage/reunions/${feuille.id}`;
+        } catch (souci) {
+          console.error('Création de la préparation impossible', souci);
+          dire("La préparation n'a pas pu être créée.");
+        }
+        return;
+      }
+
+      const ouvrirPrepa = evenement.target.closest('[data-ouvrir-preparation]');
+      if (ouvrirPrepa) {
+        location.hash = `#hermitage/reunions/${ouvrirPrepa.dataset.ouvrirPreparation}`;
+        return;
+      }
+
+      // Cocher une ligne — depuis la feuille comme depuis l'accueil. L'écran
+      // d'abord, l'écriture derrière, le retour en arrière si elle échoue.
+      const cocherPrepa = evenement.target.closest('[data-cocher-prepa]');
+      if (cocherPrepa) {
+        const id = cocherPrepa.dataset.cocherPrepa;
+        for (const feuille of etat.preparations) {
+          const item = feuille.items.find((candidat) => candidat.id === id);
+          if (!item) continue;
+          await modifierAussitot(
+            item,
+            { fait: !item.fait },
+            () => api.modifierItemPreparation(id, { fait: !item.fait }),
+            { rendre, echouer: dire },
+          );
+          return;
+        }
+        return;
+      }
+
+      const retirerPrepa = evenement.target.closest('[data-retirer-prepa]');
+      if (retirerPrepa) {
+        const id = retirerPrepa.dataset.retirerPrepa;
+        for (const feuille of etat.preparations) {
+          const rang = feuille.items.findIndex((candidat) => candidat.id === id);
+          if (rang === -1) continue;
+          await retirerAussitot(
+            feuille.items,
+            feuille.items[rang],
+            () => api.supprimerItemPreparation(id),
+            { rendre, echouer: dire },
+          );
+          return;
+        }
+        return;
+      }
+
+      const supprimerPrepa = evenement.target.closest('[data-supprimer-prepa]');
+      if (supprimerPrepa) {
+        const id = supprimerPrepa.dataset.supprimerPrepa;
+        try {
+          await api.supprimerPreparation(id);
+          etat.preparations = etat.preparations.filter((f) => f.id !== id);
+          location.hash = '#hermitage/reunions';
+        } catch (souci) {
+          console.error('Suppression impossible', souci);
+          dire("La préparation n'a pas pu être supprimée.");
+        }
+        return;
+      }
+
       const filtre = evenement.target.closest('[data-filtre]');
       if (filtre) {
         etat.filtre = filtre.dataset.filtre;

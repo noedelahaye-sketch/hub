@@ -1940,6 +1940,125 @@ body[data-espace="yuno"] #vue button.porte-dizaine {
   .porte-dizaine { flex: 1 1 100%; }
 }
 
+/* --- La recherche d'un club ---------------------------------------------------
+   Une loupe sur les trois pages où l'on pense clubs — Réseau, Passerelle,
+   vivier : taper trois lettres et ajouter le club à la fournée, sans parcourir
+   les 97 lignes. La fenêtre ressert la ligne du vivier telle quelle. */
+
+/* La loupe vit dans le titre, poussée au bord droit : elle appartient à la
+   page, pas à un bloc particulier. Discrète au repos — c'est une porte, pas
+   une invitation pressante. */
+.titre-loupe {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+}
+
+.loupe-clubs {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  margin-left: auto;
+  padding: 0;
+  color: var(--texte-discret);
+  background: none;
+  border: none;
+  border-radius: var(--rayon-pastille);
+  cursor: pointer;
+}
+
+.loupe-clubs:hover,
+.loupe-clubs:focus-visible { color: var(--accent); }
+
+/* Petite à l'œil, 44 px au doigt : la zone tactile déborde en transparent. */
+.loupe-clubs::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+}
+
+/* La barre vit SUR LA LIGNE DU TITRE, déployée à gauche de la loupe (demande
+   de Noé, 21 août 2026) : la loupe en fait partie, à gauche du champ, comme
+   l'icône d'un champ de recherche. Elle naît de la loupe — le fondu vient de
+   la droite — et le titre reste à sa place, la barre prend le reste.
+   `prefers-reduced-motion` coupe le mouvement, comme tout le reste du site. */
+.barre-loupe {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-left: var(--espace-16);
+  padding: 0 var(--espace-4);
+  background: color-mix(in srgb, var(--texte) 5%, transparent);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  transform-origin: right center;
+  animation: barre-loupe-deplie 200ms ease-out;
+}
+
+@keyframes barre-loupe-deplie {
+  from { opacity: 0; transform: scaleX(0.55); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Dans la barre, la loupe perd sa marge de bord : c'est l'icône du champ,
+   restée exactement là où le bouton était — au bord droit. */
+.barre-loupe .loupe-clubs { margin-left: 0; }
+
+/* Le champ est nu — la barre porte le cadre — et reprend la police du texte :
+   il est DANS un h2, il n'a pas à écrire en Canela italique. Pas d'anneau doré
+   à l'ouverture (demande de Noé, 21 août 2026) : la barre vient d'apparaître
+   avec son cadre et son curseur qui clignote, l'anneau redisait ce qui se voit
+   déjà. Le focus reste dit — la bordure s'éclaircit tant qu'on est dedans, et
+   au clavier c'est le même chemin (`:focus-within`). */
+.barre-loupe .recherche-club {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: var(--espace-8) var(--espace-4);
+  font-family: var(--police-texte);
+  font-size: 0.9375rem;
+  font-style: normal;
+  font-weight: 400;
+  background: none;
+  border: none;
+}
+
+.barre-loupe .recherche-club:focus-visible { outline: none; }
+
+.barre-loupe:focus-within { border-color: var(--gris-chaud-trait); }
+
+/* Les résultats suivent le titre dans le flux du bloc. */
+.recherche-clubs { margin-bottom: var(--espace-16); }
+
+/* Les résultats sont des LIGNES À FILETS, pas des tuiles (correction de Noé,
+   21 août 2026) : on parcourt une liste de noms, le cadre n'apportait que du
+   bruit. Le filet s'éclaircit au survol — la règle commune du vivier change la
+   couleur de bordure, ici il n'en reste qu'une. Une seule colonne, même sur
+   grand écran : une recherche se lit de haut en bas. */
+.bloc .recherche-clubs ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.bloc .recherche-clubs li {
+  padding: var(--espace-8) var(--espace-4);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--bordure);
+  border-radius: 0;
+}
+
+.bloc .recherche-clubs li:last-child { border-bottom: none; }
+
+/* Le message « aucun club » est une ligne de texte, rien d'autre. */
+.recherche-clubs li.vide { border-bottom: none; }
+
 /* --- La fiche d'un club ------------------------------------------------------
    Ce que les listes abrègent : les quatre portes en toutes lettres, et TOUS
    ses contacts — « pas de contact » compris, puisqu'ici on cherche. */
@@ -2251,154 +2370,11 @@ body[data-espace="yuno"] .weekend-jour .contact-nom {
 
 .commande-montant { font-size: 0.875rem; color: var(--accent); }
 
-/* --- Les préparations --------------------------------------------------------
-   La feuille d'une sortie : trois phases de cases à cocher, puis le bilan. Sur
-   grand écran les trois phases passent en colonnes — la mise en page prend la
-   largeur, le texte jamais. Les lignes reprennent la forme des tâches
-   (`.tache-ligne`, styles.css) : même cercle, même coche, cercle gris — une
-   case de préparation n'a pas de priorité. */
-
-.prepa-date { margin: calc(var(--espace-8) * -1) 0 var(--espace-16); }
-
-/* Le dernier « à refaire autrement » : un rappel qu'on lit en préparant, pas
-   une consigne. Gris chaud, comme tout ce qui accompagne sans commander. */
-.prepa-rappel {
-  margin: 0 0 var(--espace-16);
-  padding: var(--espace-8) var(--espace-12);
-  border-left: 3px solid var(--gris-chaud-trait);
-}
-
-/* Les lignes d'une feuille sont plus serrées que celles des tâches (demande de
-   Noé, 14 août 2026 — et seulement elles : la liste générale des tâches garde
-   son air). Une feuille est une checklist qu'on parcourt d'un œil, souvent
-   debout ; neuf lignes doivent tenir sous le pouce. Même spécificité que la
-   règle commune de styles.css : c'est l'ordre de chargement (yuno.css après)
-   qui fait gagner celle-ci. Le cercle garde sa cible de 44 px par son propre
-   rembourrage — il déborde un peu sur le filet, et c'est assumé. */
-.bloc .prepa-liste > .tache-ligne { padding: var(--espace-8) 0; }
-
-.prepa-phases {
-  display: grid;
-  gap: var(--espace-16);
-  align-items: start;
-}
-
-@media (min-width: 67.5rem) {
-  .prepa-phases { grid-template-columns: repeat(3, 1fr); }
-}
-
-/* Le champ d'ajout tient sur une ligne : on écrit, on ajoute, on continue. */
-.prepa-ajout {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--espace-8);
-  margin-top: var(--espace-8);
-}
-
-.prepa-ajout input[type="text"] {
-  flex: 1 1 8rem;
-  min-width: 0;
-  margin-bottom: 0;
-}
-
-.prepa-ajout .message-erreur { flex-basis: 100%; margin: 0; }
-
-/* La liste des feuilles : des lignes, pas des tuiles — comme l'espace Tâches,
-   et pour la même raison. `.bloc li` est donc annulé explicitement. */
-.bloc .liste-preparations {
-  gap: 0;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.bloc .liste-preparations > li {
-  padding: 0;
-  background: none;
-  border: 0;
-  border-bottom: 1px solid var(--bordure);
-  border-radius: 0;
-}
-
-.bloc .liste-preparations > li:last-child { border-bottom: none; }
-
-.prepa-ligne {
-  display: flex;
-  align-items: baseline;
-  gap: var(--espace-12);
-  width: 100%;
-  padding: var(--espace-12) 0;
-  color: var(--texte);
-  text-decoration: none;
-}
-
-.prepa-ligne-titre { flex: 1; }
-.prepa-ligne:hover .prepa-ligne-titre { text-decoration: underline; }
-
-/* L'éditeur d'un modèle. Le nom s'écrit grand — c'est le titre de la page,
-   et il s'édite en place, comme les items. */
-.prepa-modele-nom {
-  max-width: 24rem;
-  font-size: 1.125rem;
-  font-weight: 600;
-  margin-bottom: var(--espace-8);
-}
-
-/* Un item de modèle est un champ : il se corrige là où il se lit. Il prend la
-   place du corps de la ligne, sans le fond ni la marge d'un champ de saisie. */
-.prepa-liste .modele-item {
-  flex: 1;
-  min-width: 0;
-  margin-bottom: 0;
-  background: none;
-  border-color: transparent;
-}
-
-.prepa-liste .modele-item:hover,
-.prepa-liste .modele-item:focus { border-color: var(--bordure); }
-
-/* « Aussi au modèle » : une décision par item, petite et à côté du geste. */
-.prepa-au-modele {
-  flex-basis: 100%;
-  display: flex;
-  align-items: center;
-  gap: var(--espace-8);
-  font-size: 0.8125rem;
-  cursor: pointer;
-}
-
-.prepa-au-modele input[type="checkbox"] {
-  width: auto;
-  margin: 0;
-}
-
-/* Le choix du modèle : des lignes pleine largeur dans la fenêtre volante —
-   un choix se fait dans une liste, jamais dans un menu natif. */
-.liste-choix-modeles {
-  list-style: none;
-  margin: var(--espace-12) 0 0;
-  padding: 0;
-}
-
-.liste-choix-modeles .choix-modele {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--espace-12);
-  width: 100%;
-  min-height: 2.75rem;
-  padding: var(--espace-8) var(--espace-8);
-  text-align: left;
-  background: none;
-  border: 0;
-  border-bottom: 1px solid var(--bordure);
-  border-radius: var(--rayon-controle);
-  cursor: pointer;
-}
-
-.liste-choix-modeles li:last-child .choix-modele { border-bottom: none; }
-.liste-choix-modeles .choix-modele:hover { background: var(--fond); }
+/* --- Les préparations : déménagées --------------------------------------------
+   Le paquet entier vit dans styles.css depuis le 21 août 2026 : la feuille de
+   préparation sert aussi aux réunions du FC Hermitage, qui ne charge pas cette
+   feuille de style — le style commun va au fichier commun, comme le module JS
+   (`preparations-commun.js`). */
 
 /* --- Le carnet, en lignes ----------------------------------------------------
    Des LIGNES et non des cartes (demande de Noé, 14 août 2026) : le carnet est

@@ -711,6 +711,17 @@ export default {
           ...(champs.type_moment !== undefined
             ? { type_moment: champs.type_moment || null }
             : {}),
+          // Et ceux-ci que sur un événement fch. Le checkbox décoché est absent
+          // du formulaire : c'est l'objet, toujours présent, qui dit que la
+          // face réunion voyageait. Sans objet, pas d'animation qui tienne.
+          ...(champs.reunion_objet !== undefined
+            ? {
+                reunion_objet: champs.reunion_objet || null,
+                reunion_animee: champs.reunion_objet
+                  ? champs.reunion_animee === 'oui'
+                  : false,
+              }
+            : {}),
         });
       }
 

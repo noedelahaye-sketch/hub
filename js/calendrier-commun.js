@@ -1186,6 +1186,20 @@ export function natureParDefaut(natures) {
 // rien. C'est ce qui permet de garder la fenêtre de création telle qu'elle
 // était côté espaces — une fonction pure appelée au rendu.
 
+// Les objets de réunion du FCH (demande de Noé, 21 août 2026). L'objet est le
+// MARQUEUR : un événement fch dont `reunion_objet` est non nul est une réunion,
+// comme une publication sans date est une idée. La liste s'élargira si le
+// besoin vient — le CHECK en base est déjà posé pour ces cinq-là.
+export const REUNION_OBJETS = {
+  // « CA » tel quel (demande de Noé, 21 août 2026) : c'est le mot qu'il dit,
+  // et le libellé long mangeait la pastille comme les lignes de réunion.
+  ca: 'CA',
+  alternance: 'Alternance',
+  communication: 'Communication',
+  partenariat: 'Partenariat',
+  autre: 'Autre',
+};
+
 const ICONE = {
   nature: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1221,6 +1235,12 @@ const ICONE = {
     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <path d="M4 8h3l2-3h6l2 3h3v12H4z"></path>
     <circle cx="12" cy="13" r="3.5"></circle></svg>`,
+  reunion: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="9" cy="8" r="3.2"></circle>
+    <path d="M3.5 19c.7-3 2.7-4.5 5.5-4.5s4.8 1.5 5.5 4.5"></path>
+    <circle cx="17" cy="9" r="2.6"></circle>
+    <path d="M15.5 14.6c2.4.2 4.1 1.6 4.9 4"></path></svg>`,
   // Quatre colonnes : les quatre piliers éditoriaux de Yuno.
   pilier: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1380,6 +1400,11 @@ export function fenetreCreation({
   // dès que ses projets offrent 'photo', la pastille existe, révélée quand le
   // projet choisi est photo (demande de Noé, 14 août 2026).
   typeMoment = false,
+  // La pastille « Réunion » sur un événement, offerte quand le projet est fch
+  // (demande de Noé, 21 août 2026). Le site FCH la passe à vrai — chez lui
+  // tout est club ; dans le hub elle se révèle quand le projet choisi est fch,
+  // exactement comme `type_moment` avec photo.
+  reunion = false,
   // Les noms des clubs du vivier, pour relier un événement à son affiche. Yuno
   // les apporte ; le hub n'a pas de vivier et ne voit donc pas la pastille.
   clubs = null,
@@ -1558,6 +1583,32 @@ export function fenetreCreation({
             options: TYPES_MOMENT_CAL,
             valeur: valeurs.type_moment ?? 'match',
           }),
+        }),
+      );
+    }
+
+    // La réunion : son objet — qui est le marqueur — et « j'anime ». Une seule
+    // pastille pour les deux réglages : ils se décident ensemble, en posant la
+    // réunion, pas en deux visites de panneaux.
+    if (reunion || projetsOfferts?.fch) {
+      pastilles.push(
+        pastilleCapture({
+          nom: 'reunion',
+          icone: ICONE.reunion,
+          defaut: 'Réunion',
+          source: 'reunion_objet',
+          neutre: '',
+          siProjet: projetsOfferts ? 'fch' : null,
+          cachee: Boolean(projetsOfferts) && projetInitial !== 'fch',
+          contenu: `${champChoix({
+            nom: 'reunion_objet',
+            options: { '': 'Pas une réunion', ...REUNION_OBJETS },
+            valeur: valeurs.reunion_objet ?? '',
+          })}
+          <label class="capture-case">
+            <input type="checkbox" name="reunion_animee" value="oui"
+              ${valeurs.reunion_animee ? 'checked' : ''}> J'anime la réunion
+          </label>`,
         }),
       );
     }
@@ -1969,6 +2020,25 @@ function champsDeModification(element) {
             valeur: ligne.type_moment ?? 'match',
           }]
         : []),
+      // Et un événement fch porte sa face réunion : l'objet — vide = pas une
+      // réunion — et qui l'anime (demande de Noé, 21 août 2026).
+      ...(element.projet === 'fch'
+        ? [
+            {
+              nom: 'reunion_objet',
+              libelle: 'Réunion (son objet)',
+              type: 'choix',
+              options: { '': 'Pas une réunion', ...REUNION_OBJETS },
+              valeur: ligne.reunion_objet ?? '',
+            },
+            {
+              nom: 'reunion_animee',
+              libelle: "J'anime la réunion",
+              type: 'checkbox',
+              valeur: Boolean(ligne.reunion_animee),
+            },
+          ]
+        : []),
       { nom: 'lieu', libelle: 'Où', type: 'text', valeur: ligne.lieu ?? '' },
       { nom: 'notes', libelle: 'Notes', type: 'textarea', valeur: ligne.notes ?? '' },
     ];
@@ -2218,5 +2288,10 @@ export async function poserAuCalendrier(champs, { projetParDefaut = 'photo' } = 
     // Le champ existe même quand sa pastille est cachée : seul un événement
     // photo le garde — ailleurs, un type de moment ne veut rien dire.
     type_moment: projet === 'photo' ? champs.type_moment || null : null,
+    // Même règle pour la réunion : elle n'existe qu'au FCH. L'objet vide dit
+    // « pas une réunion », et l'animation ne survit pas sans objet.
+    reunion_objet: projet === 'fch' ? champs.reunion_objet || null : null,
+    reunion_animee:
+      projet === 'fch' && champs.reunion_objet ? champs.reunion_animee === 'oui' : false,
   });
 }

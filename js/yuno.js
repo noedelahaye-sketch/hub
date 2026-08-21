@@ -70,6 +70,15 @@ import {
   estProvisoire,
 } from './ecriture.js';
 import { LOGOS_CLUBS } from './logos-clubs.js';
+import {
+  PHASES_PREPA,
+  blocPhase,
+  dernierBilan,
+  feuilleDeLaSortie,
+  boutonPreparer,
+  finDeLaSortie,
+  phaseDeLaSortie,
+} from './preparations-commun.js';
 
 // L'écusson d'un club, s'il en a un (demande de Noé, 15 août 2026). Les images
 // sont dans le dépôt — jamais un CDN, comme les polices et supabase-js — et
@@ -1877,78 +1886,6 @@ function vueCalendrier(etat) {
 // modèle, puis un bilan en deux questions. Un item non coché n'est JAMAIS un
 // raté : rien ici ne compte les manqués, le bilan dit d'abord l'obtenu.
 
-const PHASES_PREPA = { avant: 'Avant', pendant: 'Pendant', apres: 'Après' };
-
-// La ligne reprend la forme des tâches — même cercle, même coche : un geste se
-// reconnaît sans réfléchir. Pas de priorité ici, le cercle reste gris.
-function lignePreparation(item) {
-  return `
-    <li class="tache-ligne${item.fait ? ' tache-faite' : ''}">
-      <button type="button" class="tache-cercle" data-cocher-prepa="${echapper(item.id)}"
-        aria-pressed="${item.fait}"
-        aria-label="${item.fait ? 'Décocher' : 'Cocher'} « ${echapper(item.texte)} »"></button>
-      <span class="tache-corps"><span class="tache-titre">${echapper(item.texte)}</span></span>
-      <button type="button" class="lien-discret bouton-mini bouton-retirer"
-        data-retirer-prepa="${echapper(item.id)}"
-        title="Retirer cette ligne"
-        aria-label="Retirer « ${echapper(item.texte)} »">×</button>
-    </li>`;
-}
-
-// Une phase vide n'est pas un écran vide : le champ d'ajout est là, il suffit.
-// `auModele` : l'item ajouté peut aussi entrer dans le modèle d'origine —
-// c'est la boucle d'apprentissage, le modèle s'enrichit du terrain. La case
-// n'apparaît que si le modèle existe encore, et repart décochée à chaque
-// ajout : entrer au modèle est une décision par item, pas un réglage.
-function blocPhase(feuille, phase, { auModele = false } = {}) {
-  const items = feuille.items.filter((item) => item.phase === phase);
-
-  return `
-    <section class="bloc prepa-phase">
-      <h2>${PHASES_PREPA[phase]}</h2>
-      ${
-        items.length
-          ? `<ul class="liste-taches-pleine prepa-liste">${items
-              .map(lignePreparation)
-              .join('')}</ul>`
-          : ''
-      }
-      <form data-action="ajouter-item-prepa" data-phase="${phase}" class="prepa-ajout">
-        <input type="hidden" name="preparation_id" value="${echapper(feuille.id)}">
-        <input type="hidden" name="phase" value="${phase}">
-        <input type="text" name="texte" autocomplete="off" required
-          aria-label="Ajouter à « ${PHASES_PREPA[phase]} »"
-          placeholder="${phase === 'pendant' ? 'Ajouter un plan…' : 'Ajouter…'}">
-        <button type="submit" class="bouton-secondaire bouton-mini">Ajouter</button>
-        ${
-          auModele
-            ? `<label class="prepa-au-modele discret">
-                 <input type="checkbox" name="au_modele" value="oui"> aussi au modèle</label>`
-            : ''
-        }
-        <p class="message-erreur" data-erreur hidden></p>
-      </form>
-    </section>`;
-}
-
-// Le dernier « à refaire autrement » du même modèle : c'est là que le bilan
-// paie — on le relit en préparant la sortie suivante, pas en rangeant.
-export function dernierBilan(preparations, feuille) {
-  return (
-    preparations
-      .filter(
-        (autre) =>
-          autre.id !== feuille.id &&
-          autre.modele_id &&
-          autre.modele_id === feuille.modele_id &&
-          autre.bilan_mieux,
-      )
-      .sort((a, b) =>
-        String(b.date ?? b.created_at).localeCompare(String(a.date ?? a.created_at)),
-      )[0] ?? null
-  );
-}
-
 // La sortie de cette feuille, si elle est déjà au carnet. Depuis la fusion,
 // c'est l'événement lui-même qui le dit : `vecu`. Une feuille de commande n'a
 // pas d'événement — la case du bilan ne s'y offre qu'une fois, ce qui suffit à
@@ -2049,7 +1986,7 @@ function vueFeuille(etat, feuille) {
     }
     <div class="prepa-phases">
       ${blocPhase(feuille, 'avant', { auModele })}
-      ${blocPhase(feuille, 'pendant', { auModele })}
+      ${blocPhase(feuille, 'pendant', { auModele, invitePendant: 'Ajouter un plan…' })}
       ${blocPhase(feuille, 'apres', { auModele })}
     </div>
     ${blocBilan(etat, feuille)}
@@ -2179,50 +2116,10 @@ function vueModele(etat) {
 
 // Le bouton d'une sortie : la préparer, ou rouvrir sa feuille si elle existe.
 // Il sert à la fenêtre de détail du calendrier ET aux tuiles de commandes.
-function boutonPreparer(feuille, type, id) {
-  return feuille
-    ? `<button type="button" class="bouton-secondaire bouton-mini"
-         data-ouvrir-preparation="${echapper(feuille.id)}">Ouvrir la préparation</button>`
-    : `<button type="button" class="bouton-secondaire bouton-mini"
-         data-preparer="${echapper(type)}:${echapper(id)}">Préparer</button>`;
-}
-
 // --- La sortie du moment, sur l'accueil ---------------------------------------
 // Le jour d'un match, ce qui compte n'est ni le mur ni les objectifs : c'est ce
 // qu'il reste à faire avant de partir, puis sur place, puis au retour. L'accueil
 // montre donc la phase courante de la feuille et ouvre la porte vers elle.
-
-// La fin d'une sortie, quand la colonne ne la dit pas. Deux conventions déjà
-// posées ailleurs dans le hub, reprises ici plutôt que réinventées : minuit
-// veut dire « pas d'heure » (`heureDe`), et la tuile propose deux heures par
-// défaut pour un événement qui en porte une (`DUREES`).
-export function finDeLaSortie(sortie) {
-  if (sortie.date_fin) return new Date(sortie.date_fin);
-
-  const debut = new Date(sortie.date_debut);
-  const sansHeure = debut.getHours() === 0 && debut.getMinutes() === 0;
-  if (sansHeure) {
-    // Un jour entier : la sortie tient jusqu'à la fin de sa journée.
-    const soir = new Date(debut);
-    soir.setHours(23, 59, 59, 999);
-    return soir;
-  }
-  return new Date(debut.getTime() + 2 * 60 * 60 * 1000);
-}
-
-// Combien de temps « Après » reste la phase courante. Au-delà, la sortie est
-// derrière soi : l'accueil n'a plus à en parler, et le carnet a pris le relais.
-const APRES_DURE = 24 * 60 * 60 * 1000;
-
-export function phaseDeLaSortie(sortie, reference = new Date()) {
-  const debut = new Date(sortie.date_debut);
-  const fin = finDeLaSortie(sortie);
-
-  if (reference < debut) return 'avant';
-  if (reference <= fin) return 'pendant';
-  if (reference - fin <= APRES_DURE) return 'apres';
-  return null;
-}
 
 // La sortie dont on parle sur l'accueil : celle qui est en cours, celle qui
 // vient de finir (moins de 24 h), ou la prochaine — dans cet ordre, qui est
@@ -2237,14 +2134,6 @@ export function sortieDuMoment(evenements, reference = new Date()) {
     evenements
       .filter((sortie) => phaseDeLaSortie(sortie, reference) !== null)
       .sort((a, b) => new Date(a.date_debut) - new Date(b.date_debut))[0] ?? null
-  );
-}
-
-export function feuilleDeLaSortie(preparations, type, id) {
-  return (
-    preparations.find((feuille) =>
-      type === 'evenement' ? feuille.evenement_id === id : feuille.commande_id === id,
-    ) ?? null
   );
 }
 
@@ -3596,7 +3485,9 @@ function etatDeLaPiste(piste) {
   return 'libre';
 }
 
-function ligneVivier(piste) {
+// `match: false` : la recherche s'en passe (demande de Noé, 21 août 2026) —
+// on y vient pour un nom, l'affiche du week-end prenait la place du nom.
+function ligneVivier(piste, { match = true } = {}) {
   const etat = etatDeLaPiste(piste);
 
   // La ligne entière ouvre la fiche du club — sauf ses commandes, qui gardent
@@ -3606,7 +3497,7 @@ function ligneVivier(piste) {
       ${pastillesPiste(piste)}
       ${ecussonDuClub(piste.nom)}
       <span class="contact-nom">${echapper(piste.nom)}</span>
-      ${lienMatchs(piste)}
+      ${match ? lienMatchs(piste) : ''}
       ${
         etat === 'contactee'
           ? `<span class="discret vivier-etat">✓ contacté</span>`
@@ -3805,6 +3696,83 @@ function fenetreClub(etat) {
              >Ajouter à ma fournée</button>`
      }`,
   );
+}
+
+// --- La recherche d'un club ---------------------------------------------------
+// Une loupe sur les trois pages où l'on pense clubs — Réseau, Passerelle,
+// vivier (demande de Noé, 21 août 2026) : taper trois lettres et ajouter le
+// club à la fournée de la semaine, sans parcourir les 97 lignes ni changer de
+// page. La fenêtre resservit la LIGNE DU VIVIER telle quelle : même écusson,
+// même état, même « + » — un seul geste à connaître, un seul code à tenir.
+
+const LOUPE = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round"
+  stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <circle cx="11" cy="11" r="7"></circle>
+  <path d="m21 21-4.3-4.3"></path></svg>`;
+
+// Fermée : la loupe seule au bord droit du titre. Ouverte : la barre se
+// déploie À SA GAUCHE, sur la même ligne, et la loupe en fait partie — à
+// gauche du champ, comme l'icône d'un champ de recherche (demande de Noé,
+// 21 août 2026). Le fondu vient de la droite : la barre naît de la loupe.
+function zoneLoupeClubs(etat) {
+  const loupe = `
+    <button type="button" class="loupe-clubs" data-ouvrir-recherche
+      title="${etat.rechercheClub === null ? 'Chercher un club' : 'Fermer la recherche'}"
+      aria-expanded="${etat.rechercheClub !== null}"
+      aria-label="${etat.rechercheClub === null ? 'Chercher un club' : 'Fermer la recherche'}">${LOUPE}</button>`;
+
+  if (etat.rechercheClub === null) return loupe;
+
+  // La loupe ne bouge pas d'un pixel : elle reste au bord droit, et c'est le
+  // champ qui se déploie à sa gauche — elle finit donc à DROITE de la barre
+  // (précision de Noé, 21 août 2026). Un contrôle qui saute de place au clic
+  // ferait chercher des yeux ce qu'on vient de toucher.
+  return `
+    <span class="barre-loupe">
+      <input type="text" class="recherche-club" data-recherche-club
+        value="${echapper(etat.rechercheClub)}"
+        placeholder="Chercher un club…" autocomplete="off"
+        aria-label="Chercher un club du vivier">
+      ${loupe}
+    </span>`;
+}
+
+// Sans accents ni casse : « seville » trouve Séville, « bale » trouve Bâle.
+function normalPourRecherche(texte) {
+  return texte
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+// Le corps de la liste, seul : c'est lui — et lui seulement — qui se redessine
+// à chaque frappe, pour que le champ garde son curseur.
+export function construireResultatsClubs(pistes, contacts = [], texte = '') {
+  // Champ vide : rien. On est venu TAPER un nom, pas relire les 97 lignes —
+  // le vivier existe pour ça (demande de Noé, 21 août 2026).
+  const cherche = normalPourRecherche(texte.trim());
+  if (!cherche) return '';
+
+  marquerLesRelances(pistes, contacts);
+  const dedans = [...pistes]
+    .filter((piste) => normalPourRecherche(piste.nom).includes(cherche))
+    .sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+
+  return dedans.length
+    ? dedans.map((piste) => ligneVivier(piste, { match: false })).join('')
+    : `<li class="vide">Aucun club de ce nom au vivier.</li>`;
+}
+
+// À PLAT dans la page, jamais dans une fenêtre (correction de Noé, 21 août
+// 2026) : les résultats suivent le titre dans le flux — les mêmes lignes que
+// le vivier, en lignes à filets.
+function listeResultatsClubs(etat) {
+  if (etat.rechercheClub === null) return '';
+  return `
+    <ul class="recherche-clubs" data-bloc="resultats-clubs">
+      ${construireResultatsClubs(etat.pistes, etat.contacts, etat.rechercheClub)}
+    </ul>`;
 }
 
 export function construireVivier(pistes, division = 'tout', contacts = []) {
@@ -4068,7 +4036,8 @@ function vueReseau(etat) {
     ${enTete('reseau')}
 
     <section class="bloc">
-      <h2>Le réseau</h2>
+      <h2 class="titre-loupe">Le réseau ${zoneLoupeClubs(etat)}</h2>
+      ${listeResultatsClubs(etat)}
       <div class="portes">
         <a class="lien-externe" href="#yuno/passerelle">
           <span class="lien-externe-texte">
@@ -4102,7 +4071,8 @@ function vuePasserelle(etat) {
     ${enTete('passerelle')}
 
     <section class="bloc">
-      <h2>La Passerelle</h2>
+      <h2 class="titre-loupe">La Passerelle ${zoneLoupeClubs(etat)}</h2>
+      ${listeResultatsClubs(etat)}
       <div data-bloc="contacts">${construirePasserelle(etat)}</div>
     </section>
     ${pied()}`;
@@ -4116,7 +4086,8 @@ function vueVivier(etat) {
     ${enTete('vivier')}
 
     <section class="bloc">
-      <h2>Le vivier</h2>
+      <h2 class="titre-loupe">Le vivier ${zoneLoupeClubs(etat)}</h2>
+      ${listeResultatsClubs(etat)}
       <div data-bloc="contacts">${construireVivier(etat.pistes, etat.divisionVivier, etat.contacts)}</div>
     </section>
     ${pied()}`;
@@ -4433,6 +4404,26 @@ const SOURCES = {
     ]);
     const parPiste = new Map(prochains.map((match) => [match.piste_id, match]));
     for (const piste of pistes) piste.prochain = parPiste.get(piste.id) ?? null;
+
+    // La fournée est HEBDOMADAIRE (décision de Noé, 21 août 2026) : un club
+    // choisi en semaine N ne s'affiche plus en semaine N+1. Le site n'a pas de
+    // minuit à lui — c'est ce chargement-ci qui fait le ménage, à la première
+    // visite de la semaine. L'écran d'abord (les pistes arrivent déjà vidées),
+    // l'écriture derrière ; si elle échoue, le prochain chargement retentera —
+    // rien à remettre en arrière, l'état vrai est « plus en fournée ».
+    // Une piste sans semaine (donnée d'avant la migration) est traitée comme
+    // finie : pas de preuve de fraîcheur, pas de place dans la fournée.
+    const lundi = versDateISO(debutDeSemaine());
+    const finies = pistes.filter(
+      (piste) => piste.en_fournee && (piste.fournee_semaine ?? '') < lundi,
+    );
+    if (finies.length) {
+      for (const piste of finies) piste.en_fournee = false;
+      api.viderLaFournee(finies.map((piste) => piste.id)).catch((souci) => {
+        console.error('Vidage de la fournée impossible', souci);
+      });
+    }
+
     return { pistes };
   },
   preparations: async () => ({ preparations: await api.preparationsToutes() }),
@@ -4517,6 +4508,8 @@ export default {
       // La compétition regardée au vivier. État d'écran, pas un réglage : on
       // rouvre la page sur tout le vivier.
       divisionVivier: 'tout',
+      // La recherche d'un club : null fenêtre fermée, sinon le texte tapé.
+      rechercheClub: null,
       // La personne regardée sur chaque carte de la fournée, par piste.
       contactChoisi: {},
       // Le week-end regardé au calendrier : son vendredi, ses rencontres, et
@@ -4851,6 +4844,18 @@ export default {
               ? construireModeles(etat.modeles)
               : construireContacts(etat.contacts, optionsBase(etat));
       marquerLesDebordements();
+    };
+
+    // La liste des résultats, SEULE : le champ garde son curseur à la frappe.
+    const remplirLaRecherche = () => {
+      const cible = section.querySelector('[data-bloc="resultats-clubs"]');
+      if (cible) {
+        cible.innerHTML = construireResultatsClubs(
+          etat.pistes,
+          etat.contacts,
+          etat.rechercheClub ?? '',
+        );
+      }
     };
 
     const rendreCommandes = () => {
@@ -6122,17 +6127,32 @@ export default {
         return;
       }
 
+      // La loupe déplie la recherche sous le titre — et la replie si elle est
+      // déjà là. Le focus va droit au champ : on est venu taper.
+      if (evenement.target.closest('[data-ouvrir-recherche]')) {
+        etat.rechercheClub = etat.rechercheClub === null ? '' : null;
+        rendre();
+        section.querySelector('[data-recherche-club]')?.focus();
+        return;
+      }
+
+
       // Un club de la dizaine proposée rejoint la fournée. Un geste, pas de
       // panier : toucher, c'est choisir.
       const choisirPiste = evenement.target.closest('[data-choisir-piste]');
       if (choisirPiste) {
         const piste = etat.pistes.find((p) => p.id === choisirPiste.dataset.choisirPiste);
         if (!piste || estProvisoire(piste.id)) return;
+        // La semaine part avec le choix, dans le MÊME geste : c'est elle qui
+        // dira au prochain lundi que cette fournée est finie.
+        const choix = { en_fournee: true, fournee_semaine: versDateISO(debutDeSemaine()) };
         await modifierAussitot(
           piste,
-          { en_fournee: true },
-          () => api.modifierPiste(piste.id, { en_fournee: true }),
-          { rendre: rendreContacts, echouer: dire },
+          choix,
+          () => api.modifierPiste(piste.id, choix),
+          // La recherche, si elle est ouverte, voit la ligne changer d'état
+          // (« dans ta fournée ») sans perdre ni le champ ni le curseur.
+          { rendre: () => { rendreContacts(); remplirLaRecherche(); }, echouer: dire },
         );
         return;
       }
@@ -6902,7 +6922,8 @@ export default {
           etat.ideeOuverte ||
           etat.momentOuvert ||
           etat.contactOuvert ||
-          etat.choixPrepa
+          etat.choixPrepa ||
+          etat.rechercheClub !== null
         )
       ) {
         return;
@@ -6919,6 +6940,7 @@ export default {
       etat.contactOuvert = null;
       etat.editionContact = false;
       etat.choixPrepa = null;
+      etat.rechercheClub = null;
       rendre();
     });
 
@@ -6983,6 +7005,13 @@ export default {
 
     // La recherche du carnet filtre à la frappe, sans bouton.
     section.addEventListener('input', (evenement) => {
+      const rechercheDeClub = evenement.target.closest('[data-recherche-club]');
+      if (rechercheDeClub) {
+        etat.rechercheClub = rechercheDeClub.value;
+        remplirLaRecherche();
+        return;
+      }
+
       const recherche = evenement.target.closest('#recherche-contact');
       if (!recherche) return;
       etat.rechercheContact = recherche.value;

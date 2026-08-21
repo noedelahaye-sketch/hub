@@ -89,11 +89,21 @@ la couleur, à la mise en page et au logo.
 
 ### `#hermitage` — l'accueil
 
+0. **La réunion du moment** (21 août 2026) — en tête quand une réunion est en
+   cours, vient de finir (moins de 24 h) ou approche : sa phase (Avant ·
+   Pendant · Après), jusqu'à trois lignes de sa préparation encore à faire,
+   cochables d'ici, et la porte vers la feuille. Le pendant de « la sortie du
+   moment » chez Yuno : le jour d'un conseil, ce qui compte n'est ni la com'
+   ni les objectifs.
 1. **Objectifs** — les 4 objectifs de fin d'alternance, avec pourquoi et
    jalons. Le cap avant tout, comme partout dans le hub.
 2. **La com' à venir** — les prochaines publications programmées, avec la
    porte vers Créer.
 3. **Victoires** — partenariats signés, publications qui ont marché, jalons.
+
+Le site a gagné **le « + » flottant** le même jour (décision de Noé) : la
+tuile du hub, ouverte sur la nature Événement — une réunion se note en sortant
+de la salle. La pastille « Réunion » y est toujours offerte.
 
 ### `#hermitage/creer` — l'outil phare
 
@@ -112,6 +122,40 @@ Ce qui change du côté FCH :
 Techniquement : la table `publications` a reçu une colonne `projet` — c'est le
 même outil et la même table, filtrés. Un second tableau identique aurait été
 une duplication sans raison.
+
+### `#hermitage/reunions` — préparer, tenir, retenir
+
+**Une réunion est une FACE de l'événement** (demande de Noé, 21 août 2026) :
+un événement `fch` dont `reunion_objet` est posé — l'objet EST le marqueur,
+comme une publication sans date est une idée. Elle se note au calendrier (le
+« + », nature Événement, pastille Réunion : objet + « j'anime »), depuis le
+site comme depuis le hub — la pastille s'y révèle quand le projet choisi est
+fch, exactement comme le type de moment avec photo.
+
+Les objets : **CA, alternance, communication, partenariat, autre** — la liste
+s'élargira si le besoin vient.
+
+**La préparation est la feuille de Yuno**, trois phases et des cases : le
+module a déménagé dans `preparations-commun.js` (même leçon que le
+calendrier — un deuxième site, un module commun, jamais une copie). Ce qui
+change, c'est le contenu : la préparation d'une réunion est un savoir-faire,
+et **six modèles semés en migration** le portent — CA en deux versions
+(j'anime / j'y assiste : animer et assister sont deux métiers), point
+alternance, réunion communication, rendez-vous partenaire, et les essentiels.
+**Le bon modèle se propose d'office** : même objet et même rôle d'abord, puis
+même objet, puis les essentiels. Le bon réflexe ne doit rien coûter. La boucle
+d'apprentissage de Yuno vaut ici : « aussi au modèle » enrichit le modèle
+depuis le terrain.
+
+**Le bilan n'est PAS le compte-rendu officiel** (décision de Noé) : c'est ce
+qui LE concerne. Deux questions pour tous — « Ce qu'il faut retenir — pour
+toi », « Ce que ça te donne à faire » — et une troisième pour l'animateur
+seulement : « Comment la réunion s'est déroulée », relue en préparant la
+suivante (le rappel du dernier bilan la ressert). **Chaque ligne « à faire »
+devient une tâche fch à l'enregistrement** — une ligne, une tâche, le contrat
+est écrit sous le champ — et seulement à la PREMIÈRE écriture : corriger un
+bilan ne recrée rien. Ce qui se décide en réunion entre dans le circuit
+(« Aujourd'hui », l'espace Tâches), au lieu de dormir dans une note.
 
 ### `#hermitage/calendrier` — tout ce qui porte une date
 
@@ -137,7 +181,15 @@ L'écran existe, dit ce qu'il attend, et se remplira quand l'usage aura parlé.
 
 ## 5. Les données
 
-Aucune table nouvelle. Le projet `fch` utilise :
+Aucune table nouvelle — et les réunions n'en ont pas créé non plus (21 août
+2026) : `evenements` a gagné `reunion_objet` (CHECK ca · alternance ·
+communication · partenariat · autre, non nul = réunion) et `reunion_animee` ;
+`modeles_preparation` a gagné `projet`, `objet` et `anime` (le couple qui
+propose le bon modèle d'office) ; `preparations` a gagné `bilan_animation`,
+la troisième question de l'animateur. Les feuilles, elles, se rattachaient
+déjà à n'importe quel événement.
+
+Le projet `fch` utilise :
 
 - `objectifs`, `jalons`, `taches`, `evenements`, `victoires` — les tables du
   hub, filtrées sur `projet = 'fch'` ;
@@ -157,6 +209,9 @@ reste.
 - **La partie marketing au-delà des partenaires** : rien n'est nommé, rien ne
   se construit.
 - **L'organisation club** : l'écran existe, son contenu attend l'usage.
+- **L'éditeur de modèles de réunion** : les six modèles semés se corrigent
+  par la boucle « aussi au modèle » depuis une feuille ; un écran d'édition
+  complet (comme `#yuno/modeles/<id>`) attendra que le besoin se montre.
 - **Toute idée d'outil non demandée.** La structure en sous-adresses
   (`#hermitage/<outil>`) permet d'ajouter un écran sans toucher aux autres :
   c'est ce qui autorise à attendre.

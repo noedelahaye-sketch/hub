@@ -54,6 +54,7 @@ const COQUILLE = [
   'js/logos-clubs.js',
   'js/mouvements.js',
   'js/perso.js',
+  'js/preparations-commun.js',
   'js/photo.js',
   'js/publications.js',
   'js/revisions.js',

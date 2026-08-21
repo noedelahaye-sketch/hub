@@ -356,6 +356,12 @@ export async function creerEvenement({
   // le réécrire ne touche pas aux liens.
   club_recevant = null,
   club_visiteur = null,
+  // FCH seulement : la face réunion — l'objet est le marqueur, l'animation ne
+  // vit pas sans lui. Deux colonnes à ne pas oublier ICI : cette liste est une
+  // liste blanche, et un champ absent tombe en silence — c'est exactement le
+  // piège de l'heure et de la priorité, déjà raconté plus haut.
+  reunion_objet = null,
+  reunion_animee = false,
 }) {
   return verifier(
     await client
@@ -363,6 +369,7 @@ export async function creerEvenement({
       .insert({
         projet, titre, date_debut, date_fin, lieu, notes,
         recurrence, recurrence_fin, type_moment, club_recevant, club_visiteur,
+        reunion_objet, reunion_animee,
       })
       .select()
       .single(),
@@ -803,6 +810,20 @@ export async function modifierPiste(id, champs) {
   );
 }
 
+// La fournée d'une semaine passée retourne au vivier, d'un seul UPDATE
+// (décision de Noé, 21 août 2026). Le site est statique, il n'a pas de minuit
+// à lui : c'est la première visite de la semaine qui fait le ménage.
+// `fournee_semaine` reste posée — c'est `en_fournee` qui dit l'état, la date
+// ne sert qu'à savoir si la semaine est finie.
+export async function viderLaFournee(ids) {
+  if (!ids.length) return;
+  const { error } = await client
+    .from('pistes')
+    .update({ en_fournee: false })
+    .in('id', ids);
+  if (error) throw error;
+}
+
 // LE prochain match de chaque club du vivier — la vue fait le tri, jamais plus
 // d'une ligne par piste. L'adversaire et la journée sont sûrs ; la date est
 // celle du calendrier publié, elle peut glisser avec la télévision.
@@ -1024,11 +1045,21 @@ export async function supprimerItemPreparation(id) {
 
 // Le bilan s'écrit (et se réécrit) d'un coup : deux questions, une date. Pas de
 // victoire ici — la victoire d'une sortie, c'est le moment logué au carnet.
-export async function noterBilan(id, { bilan_bien = null, bilan_mieux = null }) {
+// `bilan_animation` : la troisième question des réunions animées (FCH). Les
+// bilans de Yuno ne la passent pas — elle reste alors intouchée.
+export async function noterBilan(
+  id,
+  { bilan_bien = null, bilan_mieux = null, bilan_animation } = {},
+) {
   return verifier(
     await client
       .from('preparations')
-      .update({ bilan_bien, bilan_mieux, bilan_date: versDateISO() })
+      .update({
+        bilan_bien,
+        bilan_mieux,
+        bilan_date: versDateISO(),
+        ...(bilan_animation !== undefined ? { bilan_animation } : {}),
+      })
       .eq('id', id)
       .select()
       .single(),
