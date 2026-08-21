@@ -43,7 +43,7 @@ import {
   finDeLaSortie,
   phaseDeLaSortie,
 } from './preparations-commun.js';
-import { brancherChoix } from './espace-projet.js';
+
 import {
   assemblerCalendrier,
   construireCalendrier,
@@ -699,10 +699,11 @@ export default {
       return;
     }
 
-    // Les choix des formulaires, et la tuile de capture : le site a son « + »
-    // depuis le 21 août 2026 (décision de Noé) — les pastilles de la tuile ont
-    // besoin de leur branchement, comme dans le hub.
-    brancherChoix(section);
+    // La tuile de capture : le site a son « + » depuis le 21 août 2026
+    // (décision de Noé). `brancherCapture` branche AUSSI les menus déroulants
+    // des formulaires — `brancherChoix`, qui servait quand ce site n'avait pas
+    // de tuile, est parti avec : les deux ensemble traitaient chaque clic deux
+    // fois, et un panneau basculé deux fois reste fermé.
     brancherCapture(section);
 
     this.naviguer(route);
