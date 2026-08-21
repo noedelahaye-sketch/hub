@@ -650,7 +650,7 @@ a { color: var(--accent); }
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--couleur-projet-texte);
+  color: var(--couleur-projet-pleine);
 }
 
 
@@ -711,21 +711,45 @@ a { color: var(--accent); }
 .bouton-secondaire:disabled:active { transform: none; }
 
 /* Couleurs de projet : fixes, indépendantes de l'espace affiché. Deux variables
-   par projet — l'une peut être un dégradé (le FCH porte ses deux couleurs) et ne
-   sert donc qu'en fond, l'autre est une couleur pleine pour le texte. */
-[data-projet="formation"] { --couleur-projet: #17786f; --couleur-projet-texte: #17786f; }
-[data-projet="photo"]     { --couleur-projet: #8f6c00; --couleur-projet-texte: #8f6c00; }
-[data-projet="perso"]     { --couleur-projet: #8878b4; --couleur-projet-texte: #8878b4; }
+   par projet, et la différence n'est PAS « fond » contre « texte » — c'est
+   dégradé contre couleur pleine :
+     --couleur-projet        peut être un dégradé (le FCH porte ses deux
+                             couleurs). Elle ne vaut donc QUE là où une image
+                             de fond est acceptée : `background`, et rien d'autre.
+     --couleur-projet-pleine toujours une vraie couleur. Partout ailleurs —
+                             `color`, une bordure, un `color-mix()`.
+   Le nom de la seconde disait « texte », et c'est ce qui a piégé le calendrier
+   (21 août 2026) : ses barres prenaient le dégradé pour leur bordure et leur
+   mélange de fond, deux endroits qui exigent une couleur. CSS jette la
+   déclaration entière sans un mot — les éléments du FCH s'affichaient donc
+   sans bordure ET sans fond, seuls de tous les projets à n'avoir aucune
+   couleur. Un nom qui ment finit toujours par coûter une soirée. */
+[data-projet="formation"] { --couleur-projet: #17786f; --couleur-projet-pleine: #17786f; }
+[data-projet="photo"]     { --couleur-projet: #8f6c00; --couleur-projet-pleine: #8f6c00; }
+[data-projet="perso"]     { --couleur-projet: #8878b4; --couleur-projet-pleine: #8878b4; }
+/* Le FCH est le seul projet à porter DEUX couleurs : le dégradé les montre
+   toutes les deux là où un fond l'accepte, et la couleur pleine doit en
+   choisir une. C'est le ROUGE (décision de Noé, 21 août 2026, après mesure).
+   Le bleu du club tombait trop près du perso — écart perceptuel de 26 en
+   clair et de 18 en sombre, quand les deux projets les plus proches du hub
+   sont déjà à 55 et 53. Le rouge se pose à 53 et 54 : l'écart de tout le
+   monde. Rien d'autre n'est rouge dans la palette, un coup d'œil suffit.
+
+   Ce rouge n'est PAS une couleur d'alerte, et le hub n'en a toujours pas : il
+   est posé sur TOUT ce qui vient du club, quel que soit l'état de la ligne.
+   Une couleur qui ne bouge jamais ne peut rien signaler — elle nomme un
+   projet, elle ne juge pas une échéance. Le site du club dit déjà la même
+   chose avec son liseré rouge sous la navigation. */
 [data-projet="fch"] {
   --couleur-projet: linear-gradient(180deg,
     var(--club-fch-bleu) 50%, var(--club-fch-rouge) 50%);
-  --couleur-projet-texte: var(--club-fch-bleu);
+  --couleur-projet-pleine: var(--club-fch-rouge);
 }
 
 @media (prefers-color-scheme: dark) {
-  [data-projet="formation"] { --couleur-projet: #56b8ad; --couleur-projet-texte: #56b8ad; }
-  [data-projet="photo"]     { --couleur-projet: #e8b000; --couleur-projet-texte: #e8b000; }
-  [data-projet="perso"]     { --couleur-projet: #b3a3d9; --couleur-projet-texte: #b3a3d9; }
+  [data-projet="formation"] { --couleur-projet: #56b8ad; --couleur-projet-pleine: #56b8ad; }
+  [data-projet="photo"]     { --couleur-projet: #e8b000; --couleur-projet-pleine: #e8b000; }
+  [data-projet="perso"]     { --couleur-projet: #b3a3d9; --couleur-projet-pleine: #b3a3d9; }
 }
 
 /* Pastille — encore utilisée là où une tuile serait trop lourde. */
@@ -1133,7 +1157,7 @@ a { color: var(--accent); }
    différents : le cercle dit la priorité, le nom dit le projet. */
 .tache-projet {
   font-weight: 600;
-  color: var(--couleur-projet-texte, var(--texte-discret));
+  color: var(--couleur-projet-pleine, var(--texte-discret));
 }
 
 /* Les deux réglages de ligne — priorité et statut. Ils se changent là où ils se
@@ -2703,15 +2727,18 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--texte);
-  background: color-mix(in srgb, var(--couleur-projet, var(--accent)) 22%, var(--fond-carte));
+  /* La couleur PLEINE, jamais `--couleur-projet` : un `color-mix()` et une
+     bordure exigent une couleur, et le dégradé du FCH y était rejeté en
+     silence — ses barres n'avaient donc ni fond ni trait (21 août 2026). */
+  background: color-mix(in srgb, var(--couleur-projet-pleine, var(--accent)) 22%, var(--fond-carte));
   border: none;
-  border-left: 3px solid var(--couleur-projet, var(--accent));
+  border-left: 3px solid var(--couleur-projet-pleine, var(--accent));
   border-radius: 3px;
   cursor: pointer;
 }
 
 .cal-barre-element:hover {
-  background: color-mix(in srgb, var(--couleur-projet, var(--accent)) 34%, var(--fond-carte));
+  background: color-mix(in srgb, var(--couleur-projet-pleine, var(--accent)) 34%, var(--fond-carte));
 }
 
 .cal-barre-element.deborde-avant { border-left: none; border-radius: 0 3px 3px 0; margin-left: 0; }
@@ -2762,12 +2789,12 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 .cal-type-tache {
   background: transparent;
   border: none;
-  border-left: 3px solid var(--couleur-projet, var(--accent));
+  border-left: 3px solid var(--couleur-projet-pleine, var(--accent));
   border-radius: 0 3px 3px 0;
 }
 
 .cal-type-tache:hover {
-  background: color-mix(in srgb, var(--couleur-projet, var(--accent)) 18%, var(--fond-carte));
+  background: color-mix(in srgb, var(--couleur-projet-pleine, var(--accent)) 18%, var(--fond-carte));
 }
 
 /* Le « +N » s'ouvre : c'est un bouton, il en a l'air. */
@@ -2832,7 +2859,7 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   color: var(--texte);
   background: var(--fond);
   border: 1px solid var(--bordure);
-  border-left: 3px solid var(--couleur-projet, var(--accent));
+  border-left: 3px solid var(--couleur-projet-pleine, var(--accent));
   border-radius: var(--rayon-controle);
   cursor: pointer;
 }
