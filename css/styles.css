@@ -978,7 +978,11 @@ a { color: var(--accent); }
   --prio-1: #b4543f;
   --prio-2: #c08329;
   --prio-3: #6b7f8c;
-  --prio-4: #a8a29a;
+  /* Assombri le 24 août 2026 : à #a8a29a le cercle du cas ordinaire — donc le
+     plus fréquent — ne faisait que 2,53:1 sur une carte, sous le seuil de 3:1
+     d'un élément non textuel (WCAG 1.4.11). Il est à 3,61 sur carte et 3,46 sur
+     le fond, et reste le plus discret des quatre : la priorité 3 est à 4,17. */
+  --prio-4: #8c867d;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1049,7 +1053,12 @@ a { color: var(--accent); }
   display: block;
   width: 1.25rem;
   height: 1.25rem;
-  border: 2px solid var(--prio, var(--prio-4));
+  /* Le trait s'épaissit avec l'urgence (décision de Noé, 24 août 2026). La
+     priorité était dite par la SEULE couleur ; elle l'est maintenant aussi par
+     une forme, pour qui ne distingue pas les quatre teintes (WCAG 1.4.1).
+     C'est une épaisseur et non un texte : la ligne de service ne s'encombre
+     pas, et le geste du matin ne change pas. */
+  border: var(--prio-trait, 2px) solid var(--prio, var(--prio-4));
   border-radius: var(--rayon-pastille);
   background: color-mix(in srgb, var(--prio, var(--prio-4)) 14%, transparent);
   transition: background-color 200ms ease-out;
@@ -1105,10 +1114,16 @@ a { color: var(--accent); }
   background: color-mix(in srgb, var(--prio, var(--prio-4)) 34%, transparent);
 }
 
-.tache-ligne[data-priorite="1"] { --prio: var(--prio-1); }
-.tache-ligne[data-priorite="2"] { --prio: var(--prio-2); }
-.tache-ligne[data-priorite="3"] { --prio: var(--prio-3); }
-.tache-ligne[data-priorite="4"] { --prio: var(--prio-4); }
+/* Quatre couleurs ET quatre épaisseurs. Les écarts sont d'un pixel plein entre
+   les trois premières : en niveaux de gris, une échelle plus serrée rendait 2 et
+   3 jumelles — vérifié à l'écran, la page passée en `grayscale(1)`.
+   Le pas s'arrête à 1,5 px pour le cas ordinaire, et ne descend pas à 1 : c'est
+   le cercle le plus fréquent des quatre, et un filet trop mince défairait le
+   contraste qu'on vient de donner à sa couleur. */
+.tache-ligne[data-priorite="1"] { --prio: var(--prio-1); --prio-trait: 4px; }
+.tache-ligne[data-priorite="2"] { --prio: var(--prio-2); --prio-trait: 3px; }
+.tache-ligne[data-priorite="3"] { --prio: var(--prio-3); --prio-trait: 2px; }
+.tache-ligne[data-priorite="4"] { --prio: var(--prio-4); --prio-trait: 1.5px; }
 
 /* Une tâche faite garde sa place et le dit : cercle plein, titre barré. Le hub
    ne fait pas disparaître ce qui a été accompli — et c'est aussi ce qui permet
@@ -1320,7 +1335,26 @@ body.fond-fige {
 }
 
 .capture-titre::placeholder { color: var(--texte-discret); }
-.capture-titre:focus { outline: none; }
+/* Le champ doit dire qu'il a la main. Il ne le disait plus du tout : `:focus`
+   avec `outline: none` a une spécificité de 0,2,0 et l'emportait sur la règle
+   commune `input:focus-visible` (0,1,1) — le contour disparaissait donc AUSSI
+   au clavier, ce que le hub s'interdit (et WCAG 2.4.7 avec lui).
+
+   Un trait sous le champ plutôt que le contour commun : dans une tuile qui
+   n'existe que pour lui, un cadre dans un cadre ne dit rien de plus — c'est la
+   raison pour laquelle ce champ n'a ni bordure ni fond, et elle vaut toujours.
+   Un indicateur doit être visible, pas être un rectangle.
+
+   `:focus` et non `:focus-visible` : un champ texte correspond au second dès
+   qu'il a le focus, quelle que soit la façon dont on y est arrivé. Il n'y a pas
+   deux cas à distinguer ici, et faire semblant en donnerait un troisième.
+
+   En ombre intérieure et non en `border-bottom` : une bordure qui apparaît
+   décalerait le texte de deux pixels à chaque ouverture de la tuile. */
+.capture-titre:focus {
+  outline: none;
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
 
 /* Une seule ligne, toujours. Le bouton d'envoi prime : il garde sa taille quoi
    qu'il arrive, et ce sont les pastilles qui cèdent — elles défilent

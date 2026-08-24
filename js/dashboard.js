@@ -124,6 +124,12 @@ export function construireHumeur(humeur) {
       Noté, merci.
       <button type="button" class="lien-discret" data-action="rouvrir-humeur">changer</button>
     </p>
+    <!-- L'étiquette est hors écran, pas absente : le champ n'a qu'un texte
+         d'invite, et une invite disparaît dès qu'on écrit. Elle ne dit donc
+         rien à qui revient dessus au lecteur d'écran (WCAG 1.3.1 et 3.3.2).
+         À l'œil, rien ne change : la tuile de l'humeur garde sa ligne nue. -->
+    <label class="hors-ecran" for="note-humeur">Un mot sur ta journée
+      (facultatif)</label>
     <input type="text" id="note-humeur" class="note-humeur" maxlength="140"
       placeholder="un mot sur ta journée ? (facultatif)"
       value="${echapper(humeur.note ?? '')}">

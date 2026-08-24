@@ -122,13 +122,25 @@ function ligneTache(tache, { ouvrable = true, supprimable = true } = {}) {
   const faite = tache.statut === 'fait';
   const quand = quandLisible(tache);
 
+  // La priorité se dit par la COULEUR du cercle, et Noé l'a voulue ainsi (13 août
+  // 2026) : l'écrire dans la ligne redisait deux fois la même chose. Mais une
+  // information portée par la seule couleur n'existe pas pour qui ne la
+  // distingue pas (WCAG 1.4.1) : elle rejoint donc le nom du bouton et son
+  // infobulle, où elle ne prend aucune place à l'écran.
+  //
+  // Rien pour une priorité 4 : c'est le cas ordinaire, et la tuile l'écrit déjà
+  // « Priorité » et non « Priorité 4 ». Ne rien dire, c'est dire l'ordinaire.
+  const rang = tache.priorite && tache.priorite < 4 ? ` · ${PRIORITES[tache.priorite]}` : '';
+
   return `
     <li class="tache-ligne${faite ? ' tache-faite' : ''}"
       data-projet="${echapper(tache.projet)}" data-priorite="${tache.priorite ?? 4}">
       <button type="button" class="tache-cercle" data-cocher="${echapper(tache.id)}"
         aria-pressed="${faite}"
-        aria-label="${faite ? 'Rouvrir' : 'Marquer comme faite'} « ${echapper(tache.titre)} »"
-        title="${faite ? 'Rouvrir' : 'Marquer comme faite'}"></button>
+        aria-label="${faite ? 'Rouvrir' : 'Marquer comme faite'} « ${echapper(
+          tache.titre,
+        )} »${rang}"
+        title="${faite ? 'Rouvrir' : 'Marquer comme faite'}${rang}"></button>
 
       <!-- Toute la ligne rouvre la tuile pour corriger (demande de Noé,
            13 août 2026). C'est un vrai bouton, pas une ligne qui écoute les
