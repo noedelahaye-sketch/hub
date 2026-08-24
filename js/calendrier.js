@@ -35,6 +35,8 @@ import {
   toutesLesNatures,
   natureParDefaut,
   centrerActif,
+  cyclePublication,
+  fermerLesChoix,
 } from './calendrier-commun.js';
 
 const CLE_CACHE = 'calendrier';
@@ -110,7 +112,11 @@ export default {
         ${etat.creation ? fenetreCreation({ ...etat.creation, projets: PROJETS }) : ''}
         ${
           etat.detail
-            ? fenetreDetail(etat.detail, { montrerProjet: true, edition: etat.edition })
+            ? fenetreDetail(etat.detail, {
+                montrerProjet: true,
+                edition: etat.edition,
+                statutModifiable: true,
+              })
             : ''
         }
         ${
@@ -292,6 +298,37 @@ export default {
         return;
       }
 
+      // Le rond d'une publication avance d'un cran, ici comme sur l'accueil
+      // (demande de Noé, 25 août 2026) — sans ouvrir la tuile.
+      const rondPublication = evenement.target.closest('[data-avancer-pub]');
+      if (rondPublication) {
+        evenement.stopPropagation();
+        const pub = etat.sources.publications.find(
+          (candidate) => candidate.id === rondPublication.dataset.avancerPub,
+        );
+        const cycle = pub ? cyclePublication(pub.projet) : [];
+        const suivant = pub ? cycle[cycle.indexOf(pub.statut) + 1] : null;
+        if (suivant) await poserLeStatut(pub, suivant);
+        return;
+      }
+
+      // L'état d'une publication se règle depuis sa tuile, ici comme sur
+      // l'accueil (demande de Noé, 25 août 2026). La tuile reste ouverte : on
+      // vient souvent corriger deux choses de suite, et la refermer à chaque
+      // appui obligerait à la rouvrir.
+      const reglerStatut = evenement.target.closest('[data-statut-pub]');
+      if (reglerStatut) {
+        // Le menu se referme dans tous les cas, même si l'état choisi est celui
+        // qui était déjà posé.
+        fermerLesChoix(section);
+        const pub = etat.detail?.source;
+        const statut = reglerStatut.dataset.statutPub;
+        if (etat.detail?.type !== 'publication' || !pub || pub.statut === statut) return;
+
+        await poserLeStatut(pub, statut);
+        return;
+      }
+
       if (evenement.target.closest('[data-modifier-element]')) {
         etat.edition = true;
         rendre();
@@ -391,6 +428,25 @@ export default {
         bouton.disabled = false;
       }
     });
+
+    // L'écran d'abord : l'état change tout de suite, et revient si le serveur
+    // refuse. La tuile reste ouverte — on vient souvent corriger deux choses de
+    // suite, et la refermer à chaque appui obligerait à la rouvrir.
+    async function poserLeStatut(pub, statut) {
+      const avant = pub.statut;
+      pub.statut = statut;
+      assembler();
+      rendre();
+
+      try {
+        await api.modifierPublication(pub.id, { statut });
+      } catch (souci) {
+        console.error('Changement de statut impossible', souci);
+        pub.statut = avant;
+        assembler();
+        rendre();
+      }
+    }
 
     // Où écrire, par nature. Le formulaire de modification et le glissement
     // passent tous deux par ici — seuls les champs changent.

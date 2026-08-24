@@ -38,3 +38,8 @@ fonts/Canela_Collection/
 # des charges, écrit pour cet outil. Ce sont les documents d'origine qui font
 # autorité et qui sont versionnés — pas ce résumé, qui se périmerait à côté.
 PRODUCT.md
+
+# Ce que l'outil écrit en travaillant : instantanés de critique, réglages,
+# état de son mode « live ». Ce sont ses notes, pas celles du hub — l'état des
+# lieux et les cahiers des charges disent ce qui compte, et eux sont versionnés.
+.impeccable/

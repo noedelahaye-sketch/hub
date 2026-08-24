@@ -10,22 +10,30 @@
 
 import { construireFormulaire } from './espace-projet.js';
 import { depuisDateISO, echeanceLisible, echapper } from './format.js';
-import { RESEAUX, FORMATS } from './calendrier-commun.js';
+import {
+  RESEAUX,
+  FORMATS,
+  CYCLES_PUBLICATION,
+  NOMS_STATUTS_BASE,
+  cyclePublication,
+  nomDuStatut,
+} from './calendrier-commun.js';
 
 // L'ordre du cycle. Chaque statut connaît son suivant ; « publié » n'en a pas.
 // Le cycle est un paramètre, parce qu'il n'est pas le même partout : Yuno pose
 // une étape « à développer » entre l'idée et le brouillon (une idée qui mérite
-// du travail avant d'être écrite), le FC Hermitage n'en a pas demandé.
-export const STATUTS = ['idee', 'brouillon', 'pret', 'publie'];
-export const STATUTS_YUNO = ['idee', 'a_developper', 'brouillon', 'pret', 'publie'];
+// du travail avant d'être écrite), et le FC Hermitage n'a que trois états
+// depuis le 25 août 2026 — à préparer, à programmer, publié.
+//
+// Les cycles eux-mêmes vivent dans `calendrier-commun.js`, avec les réseaux et
+// les formats : la tuile du calendrier en a besoin, et c'est ce fichier-ci qui
+// importe l'autre. Ils sont réexportés ici pour qui parle d'éditorial.
+export const STATUTS = CYCLES_PUBLICATION.formation;
+export const STATUTS_YUNO = CYCLES_PUBLICATION.photo;
+export const STATUTS_FCH = CYCLES_PUBLICATION.fch;
 
-export const NOMS_STATUTS = {
-  idee: 'idée',
-  a_developper: 'à développer',
-  brouillon: 'brouillon',
-  pret: 'prêt',
-  publie: 'publié',
-};
+export const NOMS_STATUTS = NOMS_STATUTS_BASE;
+export { nomDuStatut };
 
 // Le rappel de ce qui fait tenir un carrousel. Sans IA : c'est un aide-mémoire
 // qui ferme un débat mental, pas un outil qui écrit à la place de Noé.
@@ -95,7 +103,8 @@ export function construireApercuPublication(pub, options = {}) {
       aria-label="Ouvrir « ${echapper(pub.titre)} »">
       ${entetePublication(pub, piliers)}
       <span class="pub-titre">${echapper(pub.titre)}</span>
-      <span class="pub-statut">statut : <strong>${NOMS_STATUTS[pub.statut]}</strong></span>
+      <span class="pub-statut">statut :
+        <strong>${nomDuStatut(pub.projet, pub.statut)}</strong></span>
     </li>`;
 }
 
@@ -104,7 +113,8 @@ export function construireApercuPublication(pub, options = {}) {
 // `options` porte ce qui change d'un projet à l'autre : le cycle des statuts,
 // et l'aide à la création (les piliers et la checklist sont à Yuno).
 export function corpsPublication(pub, options = {}) {
-  const { cycle = STATUTS, checklist = false, piliers = null, fenetre = false } = options;
+  const { cycle = cyclePublication(pub.projet), checklist = false, piliers = null, fenetre = false } =
+    options;
   const suivant = cycle[cycle.indexOf(pub.statut) + 1];
   const datee = Boolean(pub.date_prevue);
 
@@ -134,11 +144,15 @@ export function corpsPublication(pub, options = {}) {
         checklist && ['carrousel', 'post'].includes(pub.format) ? checklistCarrousel() : ''
       }
       <span class="pub-actions">
-        <span class="pub-statut">statut : <strong>${NOMS_STATUTS[pub.statut]}</strong></span>
+        <span class="pub-statut">statut :
+          <strong>${nomDuStatut(pub.projet, pub.statut)}</strong></span>
         ${
           suivant
             ? `<button type="button" class="bouton-secondaire bouton-mini"
-                 data-avancer="${echapper(pub.id)}">Passer en ${NOMS_STATUTS[suivant]}</button>`
+                 data-avancer="${echapper(pub.id)}">Passer en ${nomDuStatut(
+                   pub.projet,
+                   suivant,
+                 )}</button>`
             : pub.lien_publie
               ? `<a class="discret" href="${echapper(pub.lien_publie)}" target="_blank" rel="noopener">voir ↗</a>`
               : ''

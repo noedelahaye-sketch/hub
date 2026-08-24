@@ -27,7 +27,7 @@ import {
   construireVictoires,
 } from './espace-projet.js';
 import {
-  STATUTS,
+  STATUTS_FCH,
   construireAVenir,
   construireBanque,
   construirePubliees,
@@ -2109,7 +2109,9 @@ export default {
       const avancer = evenement.target.closest('[data-avancer]');
       if (avancer) {
         const pub = trouverPub(avancer.dataset.avancer);
-        const suivant = STATUTS[STATUTS.indexOf(pub.statut) + 1];
+        // Trois états au club depuis le 25 août 2026 : à préparer, à
+        // programmer, publié.
+        const suivant = STATUTS_FCH[STATUTS_FCH.indexOf(pub.statut) + 1];
         if (!suivant || estProvisoire(pub.id)) return;
         await modifierAussitot(
           pub,

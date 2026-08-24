@@ -115,8 +115,28 @@ de la salle. La pastille « Réunion » y est toujours offerte.
 ### `#hermitage/creer` — l'outil phare
 
 Le calendrier éditorial du club, **le même outil que chez Yuno** : une idée
-est une publication sans date, le cycle `idée → brouillon → prêt → publié`,
-la banque d'idées, les rubriques récurrentes.
+est une publication sans date, la banque d'idées, les rubriques récurrentes.
+
+**TROIS états, et non quatre** (demande de Noé, 25 août 2026) :
+`à préparer → à programmer → publié`. « Brouillon » et « prêt » disaient deux
+fois la même chose pour le club, et aucun des deux ne disait ce qu'il restait à
+faire. Les trois réutilisent des valeurs que la base connaît déjà — `idee`,
+`pret`, `publie` : le CHECK ne bouge pas, ce sont les mots affichés qui
+changent (`nomDuStatut`, js/calendrier-commun.js). La seule ligne du club qui
+portait `brouillon` est passée en « à préparer »
+(migration `20260825090000`). Yuno garde ses cinq étapes.
+
+**L'état se règle aussi depuis le calendrier du hub** — accueil et
+`#calendrier` — de deux façons : le **rond de la barre avance d'un cran** à
+l'appui, et la **tuile porte une pastille d'état**, à la suite de celles de la
+nature et du projet, qui ouvre un menu déroulant — pour sauter un état ou
+revenir en arrière. La couleur de la pastille dit l'étape : **rouge** tant que
+rien n'est fait, **ambre** quand c'est prêt à programmer, **vert** une fois
+publié.
+
+Pas de case à cocher : elle aurait fait sauter « à programmer » — le seul état
+qui distingue un visuel qui attend sa date d'un visuel qui n'existe pas encore,
+et c'est justement ce qu'on vient voir le matin.
 
 **Une publication s'ouvre au clic et se modifie en fenêtre volante** (demande
 de Noé, 24 août 2026) : titre, réseau, format, rubrique (les rubriques déjà

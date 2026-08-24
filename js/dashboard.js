@@ -11,6 +11,7 @@ import * as api from './api.js';
 import {
   versDateISO,
   depuisDateISO,
+  ajouterJours,
   dateLongue,
   echeanceLisible,
   echapper,
@@ -23,6 +24,9 @@ import {
   fenetreCreation,
   fenetreDetail,
   fenetreJour,
+  colonnesDeLaSemaine,
+  cyclePublication,
+  fermerLesChoix,
   elementsDuJour,
   finDeLEvenement,
   brancherCapture,
@@ -229,9 +233,20 @@ function construireObjectif(objectif) {
 // « semaine » : une seule façon de dessiner une semaine dans tout le hub.
 //
 // `montrerProjet` colore les barres par projet, puisque tout s'y mélange ici.
-export function construireSemaine(elements, ancre = new Date()) {
+// `jourSeul` : la semaine reste entière, mais une seule colonne a de la largeur
+// — la journée ouverte (demande de Noé, 24 août 2026).
+export function construireSemaine(elements, ancre = new Date(), jourSeul = null) {
   return construireGrille(elements, toutesLesNatures(), 'semaine', ancre, {
     montrerProjet: true,
+    jourSeul,
+    // Le titre de chaque jour ouvre sa journée, et le referme (demande de Noé,
+    // 24 août 2026). Ailleurs le titre reste un titre : au calendrier, toucher
+    // un jour sert déjà à y poser quelque chose.
+    titresOuvrants: true,
+    // Pas de phrase d'aide sous la grille ici (demande de Noé, 24 août 2026) :
+    // l'accueil se lit en cinq minutes, et les gestes s'apprennent une fois,
+    // dans l'espace Calendrier où la légende reste.
+    aide: false,
   });
 }
 
@@ -400,6 +415,10 @@ export default {
       detail: null,
       edition: false,
       jourOuvert: null,
+      // Le jour ouvert À LA PLACE de la grille (demande de Noé, 24 août 2026).
+      // `null` = la semaine entière. C'est de l'état d'interface : il ne va pas
+      // au cache, et revenir sur l'accueil retrouve la semaine.
+      jourDeLaSemaine: null,
     };
     let minuteurAnnulation = null;
     let rafraichirLaCapture = null;
@@ -486,7 +505,11 @@ export default {
     // propre bloc — ouvrir un détail ne redessine rien d'autre.
     function rendreDetail() {
       cible('bloc-detail').innerHTML = etat.detail
-        ? fenetreDetail(etat.detail, { montrerProjet: true, edition: etat.edition })
+        ? fenetreDetail(etat.detail, {
+            montrerProjet: true,
+            edition: etat.edition,
+            statutModifiable: true,
+          })
         : etat.jourOuvert
           ? fenetreJour(etat.jourOuvert, elementsDuJour(elementsDeLaSemaine, etat.jourOuvert), {
               montrerProjet: true,
@@ -581,7 +604,38 @@ export default {
         ),
         relances: etat.contacts.filter((contact) => contact.prochaine_action_date),
       });
-      cible('bloc-semaine').innerHTML = construireSemaine(elementsDeLaSemaine);
+      cible('bloc-semaine').innerHTML = construireSemaine(
+        elementsDeLaSemaine,
+        new Date(),
+        etat.jourDeLaSemaine,
+      );
+      // Le HTML redessiné porte déjà ses colonnes ; restent les flèches, qui
+      // savent seules aux deux bouts de la semaine qu'elles sont éteintes.
+      viserLeJour(etat.jourDeLaSemaine);
+    }
+
+    // Ouvrir ou refermer une journée ne REDESSINE rien : la grille est déjà la
+    // bonne, on ne fait qu'y changer la largeur des colonnes — et c'est le
+    // navigateur qui fait glisser les traits d'une largeur à l'autre. Un
+    // `innerHTML` couperait l'animation net, faute d'un état de départ.
+    function viserLeJour(cle) {
+      etat.jourDeLaSemaine = cle;
+      const grille = cible('bloc-semaine').querySelector('.cal-semaine');
+      if (!grille) return;
+      grille.classList.toggle('cal-un-jour', Boolean(cle));
+      grille.style.setProperty('--cal-colonnes', colonnesDeLaSemaine(new Date(), cle));
+
+      // Les flèches restent DANS la semaine affichée : au-delà du dimanche il
+      // faudrait changer de semaine, et « Ta semaine » ne serait plus la
+      // semaine. Aux deux bouts, la flèche s'éteint plutôt que de ne rien
+      // faire — un bouton qui ne répond pas ressemble à une panne.
+      const jours = [...grille.querySelectorAll('[data-ouvrir-jour]')].map(
+        (bouton) => bouton.dataset.ouvrirJour,
+      );
+      const rang = cle ? jours.indexOf(cle) : -1;
+      const fleche = (pas) => grille.querySelector(`[data-jour-pas="${pas}"]`);
+      if (fleche(-1)) fleche(-1).disabled = rang <= 0;
+      if (fleche(1)) fleche(1).disabled = rang < 0 || rang >= jours.length - 1;
     }
 
     function rendreEchec() {
@@ -651,8 +705,13 @@ export default {
     }
 
     // Revenir sur l'accueil le relit : une tâche posée depuis le calendrier ou
-    // cochée dans l'espace Tâches doit s'y voir sans recharger la page.
-    this.rafraichir = charger;
+    // cochée dans l'espace Tâches doit s'y voir sans recharger la page. Et il
+    // s'y rouvre sur la semaine : un jour laissé ouvert hier soir n'est pas ce
+    // qu'on vient chercher au check-in du matin.
+    this.rafraichir = () => {
+      etat.jourDeLaSemaine = null;
+      return charger();
+    };
 
     // --- Interactions, par délégation sur la section entière ---
 
@@ -693,6 +752,7 @@ export default {
       if (evenement.key !== 'Escape') return;
       if (etat.creation) fermerLaCreation();
       if (etat.detail || etat.jourOuvert) fermerLeDetail();
+      else if (etat.jourDeLaSemaine) viserLeJour(null);
     });
 
     // Corriger sur place ce qui a une date, depuis la fenêtre de détail de la
@@ -925,6 +985,42 @@ export default {
         return;
       }
 
+      // Le rond d'une PUBLICATION dans la semaine : il avance d'un cran, sans
+      // ouvrir la tuile (demande de Noé, 25 août 2026). Le chemin est celui du
+      // cercle d'une tâche, et il s'arrête pareil — au dernier état, le rond
+      // ne bouge plus ; c'est la tuile qui sait revenir en arrière.
+      const rondPublication = evenement.target.closest('[data-avancer-pub]');
+      if (rondPublication) {
+        evenement.stopPropagation();
+        const pub = etat.publications.find(
+          (candidate) => candidate.id === rondPublication.dataset.avancerPub,
+        );
+        if (!pub || ecrituresEnVol.has(pub.id)) return;
+
+        const cycle = cyclePublication(pub.projet);
+        const suivant = cycle[cycle.indexOf(pub.statut) + 1];
+        if (!suivant) return;
+
+        ecrituresEnVol.add(pub.id);
+        try {
+          await modifierAussitot(
+            pub,
+            { statut: suivant },
+            () => api.modifierPublication(pub.id, { statut: suivant }),
+            {
+              rendre: () => {
+                rendreSemaine();
+                rendreDetail();
+              },
+              echouer: signalerEcriture,
+            },
+          );
+        } finally {
+          ecrituresEnVol.delete(pub.id);
+        }
+        return;
+      }
+
       // Toucher une barre de la semaine ouvre son détail — la même fenêtre que
       // l'espace Calendrier, d'où l'on modifie et supprime (demande de Noé,
       // 14 août 2026).
@@ -941,11 +1037,62 @@ export default {
         return;
       }
 
+      // La journée ouverte en place : le titre ramène à la semaine, les
+      // flèches passent au jour voisin. Ces deux-là avant le jour touché —
+      // ils sont dans la barre de la journée, pas dans la grille, mais l'ordre
+      // dit lequel gagne si un jour les rapproche.
+      const pasDeJour = evenement.target.closest('[data-jour-pas]');
+      if (pasDeJour && etat.jourDeLaSemaine) {
+        const vise = versDateISO(
+          ajouterJours(depuisDateISO(etat.jourDeLaSemaine), Number(pasDeJour.dataset.jourPas)),
+        );
+        if (cible('bloc-semaine').querySelector(`[data-ouvrir-jour="${vise}"]`)) {
+          viserLeJour(vise);
+        }
+        return;
+      }
+
+      // Le titre d'un jour de la semaine l'ouvre en grand, et le referme si
+      // c'est déjà lui qui est ouvert (demande de Noé, 24 août 2026) : on sort
+      // par où on est entré, sans avoir à chercher une autre commande. La
+      // case, elle, ne bouge pas : elle reste le fond qu'on glisse et sur
+      // lequel on dépose une barre.
+      const titreDuJour = evenement.target.closest('[data-ouvrir-jour]');
+      if (titreDuJour) {
+        const cle = titreDuJour.dataset.ouvrirJour;
+        viserLeJour(cle === etat.jourDeLaSemaine ? null : cle);
+        return;
+      }
+
       const journeeComplete = evenement.target.closest('[data-jour-complet]');
       if (journeeComplete) {
         etat.detail = null;
         etat.jourOuvert = journeeComplete.dataset.jourComplet;
         rendreDetail();
+        return;
+      }
+
+      // L'état d'une publication, réglé depuis sa tuile (demande de Noé,
+      // 25 août 2026). L'écriture est optimiste comme le reste : la pastille
+      // change tout de suite, la grille aussi — le losange se remplit, et une
+      // publiée se barre —, et tout revient si le serveur refuse.
+      const reglerStatut = evenement.target.closest('[data-statut-pub]');
+      if (reglerStatut) {
+        // Le menu se referme dans tous les cas — y compris quand l'état choisi
+        // est celui qui était déjà posé. Un menu qui reste ouvert après un
+        // choix donne l'impression que le geste n'a pas été reçu.
+        fermerLesChoix(section);
+        const pub = etat.detail?.source;
+        const statut = reglerStatut.dataset.statutPub;
+        if (etat.detail?.type !== 'publication' || !pub || pub.statut === statut) return;
+
+        await modifierAussitot(pub, { statut }, () => api.modifierPublication(pub.id, { statut }), {
+          rendre: () => {
+            rendreSemaine();
+            rendreDetail();
+          },
+          echouer: signalerEcriture,
+        });
         return;
       }
 

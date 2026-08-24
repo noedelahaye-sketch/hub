@@ -15,6 +15,7 @@ import {
   construireFenetre,
   poserLeChoix,
   basculerChoixDeFormulaire,
+  fermerLesChoix,
 } from './espace-projet.js';
 import {
   depuisDateISO,
@@ -25,6 +26,11 @@ import {
   echapper,
   NOMS_PROJETS,
 } from './format.js';
+
+// Réexporté pour les espaces : refermer le menu d'une pastille d'état est le
+// seul geste qu'ils empruntent aux formulaires, et ils n'importent que ce
+// fichier-ci.
+export { fermerLesChoix };
 
 export const RESEAUX = {
   instagram: 'Instagram',
@@ -40,6 +46,50 @@ export const RESEAUX = {
 // publications qui le portaient sont passées en `carrousel`
 // (migration 20260815100000).
 export const FORMATS = { carrousel: 'Carrousel', reel: 'Réel', story: 'Story' };
+
+// --- Le cycle éditorial ------------------------------------------------------
+//
+// Il vit ICI, avec les réseaux et les formats, pour la même raison qu'eux : la
+// tuile du calendrier en a besoin, `publications.js` aussi — et c'est lui qui
+// importe ce fichier, jamais l'inverse. Une constante posée là-bas et lue
+// ici croiserait les deux imports.
+//
+// Le cycle n'est pas le même partout. Yuno pose cinq étapes (une idée peut
+// mériter du travail avant d'être écrite) ; le FC HERMITAGE en a TROIS depuis
+// le 25 août 2026 (demande de Noé) : à préparer, à programmer, publié.
+//
+// Ces trois-là réutilisent des valeurs que la base connaît déjà — `idee`,
+// `pret`, `publie` — plutôt que d'en inventer : le CHECK de la colonne les
+// accepte, aucune migration de schéma n'est nécessaire, et ce sont les mots
+// affichés qui changent. `brouillon` sort du cycle du club ; la seule ligne
+// qui le portait est passée en `idee` (migration 20260825090000).
+export const CYCLES_PUBLICATION = {
+  photo: ['idee', 'a_developper', 'brouillon', 'pret', 'publie'],
+  fch: ['idee', 'pret', 'publie'],
+  formation: ['idee', 'brouillon', 'pret', 'publie'],
+};
+
+const NOMS_STATUTS_BASE = {
+  idee: 'idée',
+  a_developper: 'à développer',
+  brouillon: 'brouillon',
+  pret: 'prêt',
+  publie: 'publié',
+};
+
+// Le club dit les mêmes valeurs avec ses mots : « prêt » ne disait pas ce qui
+// restait à faire — le programmer.
+const NOMS_STATUTS_PAR_PROJET = {
+  fch: { idee: 'à préparer', pret: 'à programmer', publie: 'publié' },
+};
+
+export const cyclePublication = (projet) =>
+  CYCLES_PUBLICATION[projet] ?? CYCLES_PUBLICATION.formation;
+
+export const nomDuStatut = (projet, statut) =>
+  NOMS_STATUTS_PAR_PROJET[projet]?.[statut] ?? NOMS_STATUTS_BASE[statut] ?? statut;
+
+export { NOMS_STATUTS_BASE };
 
 // Les types d'éléments datés.
 const TYPES = {
@@ -210,6 +260,13 @@ export function assemblerCalendrier({
         : depuisDateISO(pub.date_prevue),
       projet: pub.projet ?? 'photo',
       titre: pub.titre,
+      // Publiée = partie. Elle se barre comme une tâche faite, et pour la même
+      // raison : ce qui a eu lieu reste à sa place dans la semaine.
+      faite: pub.statut === 'publie',
+      // L'état n'est PAS écrit ici : la tuile le montre en toutes lettres avec
+      // ses trois pastilles, et lui, il se relit à la source à chaque rendu.
+      // Recopié dans cette ligne, il serait vrai à l'assemblage et faux dès le
+      // premier appui.
       detail: `${RESEAUX[pub.reseau] ?? pub.reseau} · ${FORMATS[pub.format] ?? pub.format}`,
     });
   }
@@ -403,7 +460,8 @@ function retenu(element, natures) {
 
 function segmentsDeLaSemaine(jours, elements) {
   const bordGauche = versDateISO(jours[0]);
-  const bordDroit = versDateISO(jours[6]);
+  // Le dernier jour de la ligne, quelle qu'en soit la longueur.
+  const bordDroit = versDateISO(jours[jours.length - 1]);
   const colonne = new Map(jours.map((jour, index) => [versDateISO(jour), index]));
 
   const segments = elements
@@ -489,6 +547,50 @@ function hauteurSelonLaDuree(element) {
   return (minutes / 60) * HAUTEUR_PAR_HEURE;
 }
 
+// L'état suivant d'une publication, s'il y en a un. C'est ce que son rond
+// avance d'un appui — et ce qui décide de son dessin.
+function suivantDe(element) {
+  if (element.type !== 'publication' || !element.source) return null;
+  const cycle = cyclePublication(element.projet);
+  return cycle[cycle.indexOf(element.source.statut) + 1] ?? null;
+}
+
+// Le ROND d'une publication dit où elle en est (demande de Noé, 25 août 2026 —
+// un rond, comme une tâche : c'est une chose à faire partir, et elle se lit
+// comme les autres choses à faire). Creux tant qu'elle est à préparer, à
+// moitié plein quand elle est prête à partir, coché une fois publiée. C'est la
+// seule chose que la grille peut dire sans qu'on ouvre la tuile, et c'est celle
+// qu'on vient y chercher.
+function signeDe(element) {
+  if (element.type === 'publication') {
+    const cycle = cyclePublication(element.projet);
+    const rang = cycle.indexOf(element.source?.statut);
+    if (rang >= cycle.length - 1) return '◉';
+    return rang === cycle.length - 2 ? '◐' : '○';
+  }
+  return element.faite ? '◉' : SIGNES[element.type];
+}
+
+function signeEnHtml(element, signe) {
+  const suivant = suivantDe(element);
+  const cochable = element.type === 'tache' || element.type === 'publication';
+
+  const titre =
+    element.type === 'tache'
+      ? element.faite
+        ? 'Faite'
+        : 'Marquer comme faite'
+      : suivant
+        ? `Passer en ${nomDuStatut(element.projet, suivant)}`
+        : nomDuStatut(element.projet, element.source?.statut);
+
+  return `<span class="cal-signe${cochable ? ' cal-signe-cochable' : ''}"
+    ${element.type === 'tache' ? `data-cocher-tache="${echapper(element.id)}"` : ''}
+    ${suivant ? `data-avancer-pub="${echapper(element.id)}"` : ''}
+    ${cochable ? `title="${echapper(titre)}"` : ''}
+    aria-hidden="true">${signe}</span>`;
+}
+
 function barre(segment, { montrerProjet = false, proportionnel = false, empile = false } = {}) {
   const { element, deborde } = segment;
   const projet = montrerProjet ? ` data-projet="${echapper(element.projet)}"` : '';
@@ -505,7 +607,7 @@ function barre(segment, { montrerProjet = false, proportionnel = false, empile =
   // Une tâche faite garde sa place et le dit : cercle coché, titre barré. La
   // faire disparaître effacerait ce qu'on a accompli, ce que ce site ne fait
   // jamais.
-  const signe = element.faite ? '◉' : SIGNES[element.type];
+  const signe = signeDe(element);
   const classes = [
     'cal-barre-element',
     `cal-type-${element.type}`,
@@ -544,16 +646,14 @@ function barre(segment, { montrerProjet = false, proportionnel = false, empile =
     title="${echapper(`${TYPES[element.type]} · ${element.titre}`)}">${
       // Le signe est décoratif : le titre de l'infobulle dit déjà la nature en
       // toutes lettres, pour qui n'y voit rien.
-      // Sauf pour une tâche : son cercle se coche. On ne peut pas y mettre un
-      // vrai <button> — la barre en est déjà un, et deux boutons ne s'imbriquent
-      // pas —, alors c'est le gestionnaire de clics qui reconnaît la cible.
-      // Au clavier, la barre s'ouvre et la fenêtre de détail porte le geste.
-      signe
-        ? `<span class="cal-signe${element.type === 'tache' ? ' cal-signe-cochable' : ''}"
-             ${element.type === 'tache' ? `data-cocher-tache="${echapper(element.id)}"` : ''}
-             ${element.type === 'tache' ? `title="${element.faite ? 'Faite' : 'Marquer comme faite'}"` : ''}
-             aria-hidden="true">${signe}</span>`
-        : ''
+      // Sauf pour une tâche, dont le cercle se coche — et pour une publication,
+      // dont le rond AVANCE D'UN CRAN (demande de Noé, 25 août 2026) : le
+      // dernier état atteint, il ne bouge plus, comme le cercle d'une tâche
+      // faite. On ne peut pas y mettre un vrai <button> — la barre en est déjà
+      // un, et deux boutons ne s'imbriquent pas —, alors c'est le gestionnaire
+      // de clics qui reconnaît la cible. Au clavier, la barre s'ouvre et la
+      // fenêtre de détail porte le geste, avec ses trois pastilles.
+      signe ? signeEnHtml(element, signe) : ''
     }${
       // L'heure devant le titre, en chiffres et en retrait : c'est ce qui
       // remplace la grille horaire. Elle est déjà dans l'étiquette lue à voix
@@ -569,7 +669,7 @@ function ligneDeSemaine(jours, elements, options) {
   const caches = maximum ? segments.filter((segment) => segment.couloir >= maximum) : [];
 
   // Ce qui ne tient pas se compte par jour : « +2 » sous la dernière barre.
-  const reste = new Array(7).fill(0);
+  const reste = new Array(jours.length).fill(0);
   for (const segment of caches) {
     for (let index = segment.depuis; index <= segment.jusqua; index += 1) reste[index] += 1;
   }
@@ -691,12 +791,64 @@ function ligneDeSemaine(jours, elements, options) {
     </div>`;
 }
 
+// La largeur des sept colonnes. Toutes égales d'ordinaire ; une seule pleine
+// quand un jour est ouvert (demande de Noé, 24 août 2026).
+//
+// Les sept valeurs sont écrites en toutes lettres plutôt qu'en `repeat(7, 1fr)`
+// : c'est ce qui permet au navigateur de passer de l'une à l'autre en glissant.
+// Le passage de la semaine au jour n'est pas un changement d'écran — ce sont
+// les traits entre les jours qui s'écartent, jusqu'à ce qu'un seul jour occupe
+// la grille. Deux grilles différentes n'auraient rien eu à interpoler.
+export function colonnesDeLaSemaine(ancre, jourSeul = null) {
+  return grilleDeLaSemaine(ancre)
+    .map((jour) => (!jourSeul || versDateISO(jour) === jourSeul ? '1fr' : '0fr'))
+    .join(' ');
+}
+
+const FLECHES_JOUR = `
+  <button type="button" class="cal-fleche-jour cal-fleche-avant" data-jour-pas="-1"
+    title="Jour précédent" aria-label="Jour précédent">‹</button>
+  <button type="button" class="cal-fleche-jour cal-fleche-apres" data-jour-pas="1"
+    title="Jour suivant" aria-label="Jour suivant">›</button>`;
+
+// L'en-tête d'un jour dans la grille de la semaine. Muet par défaut — la date
+// est déjà écrite, un lecteur d'écran n'a pas à la relire sept fois. Sur
+// l'accueil, il devient le BOUTON qui ouvre la journée (demande de Noé,
+// 24 août 2026) : c'est le mot qu'on lit pour choisir son jour, c'est donc lui
+// qu'on presse pour l'ouvrir.
+function enteteDeJour(jour, ouvrant) {
+  const texte = `${JOURS_COURTS[(jour.getDay() + 6) % 7]} ${jour.getDate()}`;
+  if (!ouvrant) return `<span>${texte}</span>`;
+
+  const complet = jour.toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
+  return `<button type="button" class="cal-entete-jour"
+    data-ouvrir-jour="${versDateISO(jour)}"
+    aria-label="${echapper(complet)} — voir la journée">${texte}</button>`;
+}
+
+// La phrase d'aide se dit là où on vient POUR le calendrier. L'accueil affiche
+// la même grille, mais on y vient pour son check-in : `aide: false` l'y tait
+// (demande de Noé, 24 août 2026) — les gestes sont les mêmes, seule la légende
+// disparaît.
+const AIDE = `<p class="discret cal-aide">Touche un jour — ou glisse sur une série de jours —
+  pour y poser quelque chose. Clique une barre pour la voir en détail.</p>`;
+
 export function construireGrille(
   elements,
   natures,
   vue,
   ancre,
-  { montrerProjet = false, selection = null } = {},
+  {
+    montrerProjet = false,
+    selection = null,
+    aide = true,
+    titresOuvrants = false,
+    jourSeul = null,
+  } = {},
 ) {
   const retenus = elements.filter((element) => retenu(element, natures));
   const jours = vue === 'semaine' ? grilleDeLaSemaine(ancre) : grilleDuMois(ancre);
@@ -724,20 +876,16 @@ export function construireGrille(
   // se lit d'un coup d'œil.
   if (vue === 'semaine') {
     return `
-      <div class="cal-grille cal-semaine" role="group"
+      <div class="cal-grille cal-semaine${jourSeul ? ' cal-un-jour' : ''}" role="group"
+        style="--cal-colonnes: ${colonnesDeLaSemaine(ancre, jourSeul)};"
         aria-label="${echapper(`Calendrier, semaine du ${titreDePeriode(ancre, 'semaine')}`)}">
-        <div class="cal-entetes" aria-hidden="true">
-          ${jours
-            .map(
-              (jour) =>
-                `<span>${JOURS_COURTS[(jour.getDay() + 6) % 7]} ${jour.getDate()}</span>`,
-            )
-            .join('')}
+        <div class="cal-entetes"${titresOuvrants ? '' : ' aria-hidden="true"'}>
+          ${jours.map((jour) => enteteDeJour(jour, titresOuvrants)).join('')}
         </div>
         ${ligneDeSemaine(jours, retenus, options)}
+        ${titresOuvrants ? FLECHES_JOUR : ''}
       </div>
-      <p class="discret cal-aide">Touche un jour — ou glisse sur une série de jours —
-        pour y poser quelque chose. Clique une barre pour la voir en détail.</p>`;
+      ${aide ? AIDE : ''}`;
   }
 
   const lignes = [];
@@ -753,8 +901,7 @@ export function construireGrille(
       </div>
       ${lignes.join('')}
     </div>
-    <p class="discret cal-aide">Touche un jour — ou glisse sur une série de jours —
-      pour y poser quelque chose. Clique une barre pour la voir en détail.</p>`;
+    ${aide ? AIDE : ''}`;
 }
 
 // Quand un événement finit, selon ce que le formulaire a reçu. Trois cas :
@@ -2113,8 +2260,33 @@ export function elementsDuJour(elements, cle) {
   });
 }
 
-// La journée dépliée, quand le « +N » est ouvert. Chaque ligne mène au détail
-// de son élément — c'est le chemin qu'on cherchait en cliquant.
+// Ce qu'un jour contient, ligne à ligne. Chaque ligne mène au détail de son
+// élément — c'est le chemin qu'on cherchait en cliquant. Deux écrans s'en
+// servent : la fenêtre du « +N » et la journée de l'accueil.
+function lignesDuJour(elements, montrerProjet) {
+  if (!elements.length) return `<p class="vide">Rien ce jour-là.</p>`;
+
+  return `<ul class="cal-journee">${elements
+    .map(
+      (element) => `
+    <li>
+      <button type="button" class="cal-journee-ligne"
+        data-element="${echapper(element.type)}:${echapper(element.id)}"
+        ${montrerProjet ? `data-projet="${echapper(element.projet)}"` : ''}>
+        <span class="etiquette">${TYPES[element.type]}</span>
+        <span class="cal-journee-titre">${echapper(element.titre)}</span>
+        ${
+          element.quand
+            ? `<span class="discret cal-journee-quand">${echapper(element.quand)}</span>`
+            : ''
+        }
+      </button>
+    </li>`,
+    )
+    .join('')}</ul>`;
+}
+
+// La journée dépliée, quand le « +N » est ouvert.
 export function fenetreJour(cle, elements, { montrerProjet = false } = {}) {
   const jour = depuisDateISO(cle);
   const lisible = jour.toLocaleDateString('fr-FR', {
@@ -2123,29 +2295,100 @@ export function fenetreJour(cle, elements, { montrerProjet = false } = {}) {
     month: 'long',
   });
 
-  const lignes = elements.length
-    ? `<ul class="cal-journee">${elements
-        .map(
-          (element) => `
-        <li>
-          <button type="button" class="cal-journee-ligne"
-            data-element="${echapper(element.type)}:${echapper(element.id)}"
-            ${montrerProjet ? `data-projet="${echapper(element.projet)}"` : ''}>
-            <span class="etiquette">${TYPES[element.type]}</span>
-            <span class="cal-journee-titre">${echapper(element.titre)}</span>
-            ${
-              element.quand
-                ? `<span class="discret cal-journee-quand">${echapper(element.quand)}</span>`
-                : ''
-            }
-          </button>
-        </li>`,
-        )
-        .join('')}</ul>`
-    : `<p class="vide">Rien ce jour-là.</p>`;
-
-  return construireFenetre(lisible, `<h3 class="fenetre-titre">${echapper(lisible)}</h3>${lignes}`);
+  return construireFenetre(
+    lisible,
+    `<h3 class="fenetre-titre">${echapper(lisible)}</h3>${lignesDuJour(elements, montrerProjet)}`,
+  );
 }
+
+// L'état d'une publication se règle DEPUIS LA TUILE (demande de Noé, 25 août
+// 2026) : le calendrier de l'accueil montre ce qui part cette semaine, c'est là
+// qu'on constate qu'un visuel est prêt ou qu'un post est sorti.
+//
+// C'est une PASTILLE, à la suite de celles de l'en-tête — nature, projet, état
+// (Noé, le même jour) : les trois disent ce QU'EST la publication, elles se
+// lisent ensemble. Celle-ci s'ouvre en menu déroulant, dessiné comme tous les
+// choix du hub depuis le 14 août 2026 (jamais le `<select>` du système), et le
+// même écouteur l'ouvre (`data-ouvrir-choix`, brancherCapture).
+//
+// Pas de case à cocher : elle ne dit que fait/pas fait, et le club a trois
+// états. Cocher ferait sauter « à programmer », le seul qui distingue un visuel
+// qui attend sa date d'un visuel qui n'existe pas encore. Le rond de la barre,
+// lui, avance d'un cran : c'est le geste rapide ; celui-ci est le geste complet
+// — n'importe quel état, y compris en arrière.
+
+// La couleur de l'étape. Trois arrêts — rouge, ambre, vert — et ce qu'il y a
+// entre eux si le cycle compte plus de trois pas (Yuno en a cinq). Seule la
+// TEINTE voyage jusqu'au CSS : la saturation et la clarté y sont réglées une
+// fois par thème, sinon la même pastille serait illisible en clair ou en
+// sombre.
+//
+// Rouge et vert dans un hub qui refuse les couleurs d'alerte : ce n'est pas
+// une contradiction. Ces couleurs ne jugent pas une échéance et ne bougent pas
+// toutes seules — elles disent une étape de fabrication, celle que Noé a posée
+// lui-même. Aucune date, aucun compteur ne les porte.
+const TEINTES_ETAPE = [8, 38, 145];
+
+function teinteDeLEtape(rang, total) {
+  if (total <= 1) return TEINTES_ETAPE[TEINTES_ETAPE.length - 1];
+
+  const place = (rang / (total - 1)) * (TEINTES_ETAPE.length - 1);
+  const bas = Math.floor(place);
+  const haut = Math.min(bas + 1, TEINTES_ETAPE.length - 1);
+  return Math.round(TEINTES_ETAPE[bas] + (TEINTES_ETAPE[haut] - TEINTES_ETAPE[bas]) * (place - bas));
+}
+
+function reglageStatut(element) {
+  const pub = element.source;
+  if (element.type !== 'publication' || !pub) return '';
+
+  const cycle = cyclePublication(element.projet);
+  const rang = Math.max(cycle.indexOf(pub.statut), 0);
+  const nom = (statut) => echapper(nomDuStatut(element.projet, statut));
+  const teinte = (etape) => teinteDeLEtape(etape, cycle.length);
+
+  return `
+    <span class="choix-champ cal-statut" data-choix-champ="statut-publication">
+      <button type="button" class="etiquette cal-statut-pastille" data-ouvrir-choix
+        style="--teinte: ${teinte(rang)};"
+        aria-expanded="false" aria-haspopup="listbox"
+        aria-label="État : ${nom(pub.statut)} — changer"
+        >${nom(pub.statut)}</button>
+      <div class="choix-panneau" hidden>
+        <ul class="choix-capture">
+          ${cycle
+            .map(
+              (statut, etape) => `
+            <li><button type="button" data-statut-pub="${echapper(statut)}"
+              class="${statut === pub.statut ? 'actif' : ''}"
+              aria-pressed="${statut === pub.statut}"
+              ><span class="cal-statut-point" style="--teinte: ${teinte(etape)};"
+                aria-hidden="true"></span>${nom(statut)}</button></li>`,
+            )
+            .join('')}
+        </ul>
+      </div>
+    </span>`;
+}
+
+// Les deux gestes de la fenêtre de détail sont des DESSINS depuis le 24 août
+// 2026 (demande de Noé) : « Modifier » et « Supprimer l'événement » écrits en
+// toutes lettres pesaient plus lourd que ce qu'ils faisaient, dans une fenêtre
+// dont le sujet est le titre. Le mot n'est pas perdu — il reste dans `title` au
+// survol et dans `aria-label` pour qui écoute.
+const CRAYON_DETAIL = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round"
+  stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <path d="M12 20h9"></path>
+  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
+</svg>`;
+
+const CORBEILLE = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round"
+  stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <path d="M4 7h16M10 4h4M9 7v12M15 7v12"></path>
+  <path d="M6 7l1 13a1.5 1.5 0 0 0 1.5 1.5h7A1.5 1.5 0 0 0 17 20l1-13"></path>
+</svg>`;
 
 // `actions` : du HTML ajouté en tête des boutons du détail. C'est ainsi que le
 // site Yuno pose « Préparer » sur un événement — la fenêtre reste commune, et
@@ -2157,7 +2400,17 @@ export function fenetreJour(cle, elements, { montrerProjet = false } = {}) {
 // les voit pas.
 export function fenetreDetail(
   element,
-  { montrerProjet = false, edition = false, actions = '', champsEnPlus = [] } = {},
+  {
+    montrerProjet = false,
+    edition = false,
+    actions = '',
+    champsEnPlus = [],
+    // Le réglage d'état ne se dessine QUE là où un espace l'écoute — le hub,
+    // pour l'instant (accueil et Calendrier). Les deux sites gèrent leur
+    // éditorial sur leur propre page ; un bouton sans effet vaut moins que pas
+    // de bouton du tout.
+    statutModifiable = false,
+  } = {},
 ) {
   const enTete = `
     <span class="tuile-entete">
@@ -2169,6 +2422,7 @@ export function fenetreDetail(
             )}</span>`
           : ''
       }
+      ${statutModifiable ? reglageStatut(element) : ''}
     </span>`;
 
   if (edition) {
@@ -2220,11 +2474,14 @@ export function fenetreDetail(
     ${element.notes ? `<p class="discret cal-detail-ligne">${echapper(element.notes)}</p>` : ''}
     <div class="cal-detail-actions">
       ${actions}
-      <button type="button" class="bouton-secondaire bouton-mini" data-modifier-element>Modifier</button>
-      <button type="button" class="lien-discret bouton-mini"
-        data-supprimer-element="${echapper(element.type)}:${echapper(element.id)}">${
-          VERBE_SUPPRESSION[element.type] ?? 'Supprimer'
-        }</button>
+      <button type="button" class="bouton-icone" data-modifier-element
+        title="Modifier" aria-label="Modifier">${CRAYON_DETAIL}</button>
+      <button type="button" class="bouton-icone"
+        data-supprimer-element="${echapper(element.type)}:${echapper(element.id)}"
+        title="${echapper(VERBE_SUPPRESSION[element.type] ?? 'Supprimer')}"
+        aria-label="${echapper(
+          VERBE_SUPPRESSION[element.type] ?? 'Supprimer',
+        )}">${CORBEILLE}</button>
     </div>`;
 
   return construireFenetre(element.titre, contenu);

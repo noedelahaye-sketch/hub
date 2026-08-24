@@ -1,4 +1,4 @@
-# État des lieux — 21 août 2026
+# État des lieux — 24 août 2026
 
 > **Reprise : § 4 bis, « Par où reprendre ».**
 >
@@ -6,12 +6,106 @@
 > les deux cahiers des charges (`yuno-spec.md`, `fch-spec.md`) font autorité sur
 > leurs sites. À relire au début d'une session, à mettre à jour à la fin.
 >
-> **§ 0 raconte la dernière session** (21 août : les photos allégées, la
-> semaine qui tourne, la loupe, et les réunions du FCH), **§ 0 ante celle
-> d'avant** (15 août : la Passerelle), **§ 0 ante bis** les 14–15 août. Les
-> § 1 et suivants décrivent l'état stable et les chantiers antérieurs.
+> **§ 0 raconte la dernière session** (24 août : les réunions du FCH trouvent
+> leur forme, et l'aller-retour qui l'a produite), **§ 0 ante celle d'avant**
+> (21 août : l'egress, la semaine qui tourne, la loupe, le Réseau de Yuno
+> refondu), **§ 0 ante bis** le 15 août, **§ 0 ante ter** les 14–15. Les § 1 et
+> suivants décrivent l'état stable et les chantiers antérieurs.
 
-## 0. La session du 21 août — l'egress, la semaine, et les réunions du FCH
+## 0. La session du 24 août — les réunions trouvent leur forme
+
+**Cinq commits, tous poussés** : `d99062e` (tuiles de préparation), `bac89a8`
+(habillage FCH), `0e3fdf3` (modèle depuis la feuille Yuno), `b15af2b` (fiche
+selon le rôle, modèles, logo dans l'onglet), `d990410` (modèles échangeables,
+idées FCH modifiables). Plus `087bd4f`, qui écarte `.claude/` et `PRODUCT.md`
+du dépôt — un skill tiers installé ce jour-là pesait des centaines de fichiers
+qui seraient partis sur GitHub Pages avec le site.
+
+`fch-spec.md` fait autorité sur le détail des réunions ; il a été tenu à jour
+au fil de l'eau, y compris pour les revirements.
+
+### L'aller-retour de la journée — à lire avant de toucher aux réunions
+
+**La préparation des réunions a changé de forme quatre fois dans la journée.**
+L'ordre compte, parce que chaque étape a une raison, et qu'une session future
+risquerait de « réparer » ce qui a été retiré exprès :
+
+1. **Le matin — la fiche s'adapte au RÔLE.** Quand Noé anime, le contrat
+   complet du guide (type, objectif collectif, participants, envois, ordre du
+   jour, présentation, kit). Quand il **y assiste**, la fiche se réduit à ce
+   qui lui appartient : *son* objectif, les participants, **ses questions et
+   points à aborder** — « sans que ce soit moi qui décide du type de réunion,
+   des docs à envoyer, de l'ordre du jour, la présentation ». Plus le
+   compte-rendu, entier dans les deux cas. Garde-fou posé au passage :
+   l'enregistrement n'écrit que les champs que le formulaire portait, donc une
+   fiche de participant n'efface pas un type déjà en base.
+2. **Puis les six modèles semés reviennent** en checklist Avant · Pendant ·
+   Après sur la fiche (« le modèle par défaut peut ne pas être le bon »).
+3. **Puis un modèle par TYPE** dans la liste : « CA · j'anime » et « CA · j'y
+   assiste » sont deux **versions** du même modèle, pas deux entrées — et une
+   **case « J'anime la réunion »**, sous la date de la fiche, décide de la
+   version. Elle écrit `reunion_animee` sur l'ÉVÉNEMENT : la cocher bascule la
+   fiche entière.
+4. **Le soir — les checklists partent.** D'abord l'avant et l'après (doublons
+   de « Ta préparation » et de « Conclure »), puis le pendant, puis « ce
+   principe » entier. **Les feuilles de réunion ont été supprimées de la
+   base** ; les feuilles à cases restent l'outil des SORTIES Yuno.
+5. **Mais les modèles survivent** sous une autre forme (« on a perdu la
+   possibilité de changer de modèle ») : un **menu dépliant « Modèles » en
+   haut à droite de la fiche**. Choisir un modèle **verse ses lignes en TEXTE**
+   dans « Les questions et points / Tes notes » — de la matière à
+   retravailler, pas des cases. Et **changer de modèle ÉCHANGE ces lignes** :
+   toute ligne correspondant mot pour mot à une ligne d'un des modèles cède la
+   place ; une ligne écrite ou retouchée par Noé n'y correspond plus, elle
+   reste, en tête. Rien ne se redessine — une frappe en cours n'est jamais
+   perdue.
+
+**Ne pas ramener les checklists de réunion sans une demande explicite.**
+
+### Le reste de la journée
+
+| Chantier | Où |
+|---|---|
+| **Le logo EST l'onglet Accueil** — plus de logo en tête de page, un pochoir teinté par `currentColor` : blanc plein quand actif, bleu-gris sinon | `hermitage.js`, `fch.css`, `img/fch-logo-pochoir.png` |
+| **Une idée de « Créer » s'ouvre au clic et se modifie** — fenêtre volante : titre, réseau, format, rubrique, date, notes ; vider la date la renvoie à la banque | `#hermitage/creer` |
+| **Le modèle se change depuis la feuille** — un pli sur la feuille Yuno : les lignes manquantes s'ajoutent, rien de coché ne bouge | `#yuno/preparations/<id>` |
+| **Les feuilles en tuiles compactes**, plus hautes que larges, côte à côte | `#yuno/preparations` |
+| **Le fond du site FCH en dégradé radial** depuis le coin haut droit, l'onglet actif en blanc | `fch.css` |
+
+**Le pochoir du logo** est un fichier à part : le PNG d'origine porte un épais
+contour blanc de sticker qui, en masque direct, rendait une tache pleine. Il a
+été fabriqué depuis le logo **sans Pillow** (absent de la machine), en
+réutilisant le lecteur PNG maison de `tools/generer-icones.py` — 37 Ko.
+
+**Le dégradé du FCH a demandé six essais** (linéaire haut→bas, inversé, deux
+couches, radial, plus large, moins large). Valeur finale : radial depuis le
+coin haut droit, `#0039a6 → #16337d (58 %) → #0a102c`, avec
+`min-height: 100vh` sur le body — sans quoi une page courte arrêtait la pente
+et laissait une bande unie dessous. **Le 58 % a été réglé à l'œil** (50 trop
+serré, 65 trop large) : ne pas « arrondir ».
+
+### Ce qui a été corrigé en passant
+
+- **Une idée de la banque du FCH ne s'ouvrait pas** — ouvert depuis le 13 août,
+  clos aujourd'hui : les tuiles portaient `data-ouvrir-pub` sans que
+  `hermitage.js` n'écoute jamais l'attribut. Le clic ouvre désormais une
+  fenêtre d'édition (et « À venir » a gagné la même porte).
+- **La lisibilité du logo sur le bleu** — question ouverte depuis le 7 août,
+  close par le pochoir : le logo est monochrome dans l'onglet, il ne peut plus
+  se perdre dans le fond.
+
+### Vérifié comment
+
+Au navigateur à chaque étape, et en base pour tout ce qui écrit. Deux
+précautions qui ont servi :
+
+- **la fiche du CA était en cours de remplissage par Noé pendant la session** —
+  le champ a été sauvegardé avant tout test de versement, l'échange de modèles
+  éprouvé (45 lignes → CA → Autre → CA), puis l'état voulu remis ;
+- **la déduplication a été prouvée en base** : appliquer à une feuille son
+  propre modèle n'ajoute rien (11 lignes → 11).
+
+## 0 ante. La session du 21 août — l'egress, la semaine, et les réunions du FCH
 
 **Cinq commits, tous poussés** (`ee372bf` et `c1dc1ad` ferment la soirée du
 15 ; `1dd9bda`, `60f17d6` et `8762577` sont du 21). Les cahiers des charges
@@ -168,6 +262,17 @@ déjà. Les six modèles de préparation du matin restent en base sans servir.
    Le dégradé, lui, reste partout où un fond l'accepte (pastilles, trait de
    l'agenda) : les deux couleurs du club continuent de s'y voir.
 
+   **AMENDÉ le 25 août 2026 : dans le calendrier du hub, le FCH est BLEU**
+   (demande de Noé, en trois temps — « tout ce qui concerne le FCH en bleu »,
+   puis « uniquement dans le calendrier », puis « le calendrier du hub »). La
+   règle vit dans `#bloc-semaine [data-projet="fch"]` et
+   `#espace-calendrier [data-projet="fch"]` : là, et là seulement, les deux
+   variables prennent `--club-fch-bleu`. Partout ailleurs — l'espace Tâches,
+   les pastilles, les fiches, les deux sites — la couleur double et son rouge
+   ne bougent pas. La mesure ci-dessus reste vraie (le bleu du club est la
+   couleur la plus proche du perso) ; dans une grille, la colonne et
+   l'étiquette disent le projet avant la couleur.
+
 5. **La refonte du Réseau chez Yuno**, en deux passes le même soir : proposée
    dans le chat, validée, construite avec une sous-navigation en pastilles —
    puis **corrigée sur les retours de Noé** (« pas trop fan des pastilles »).
@@ -239,7 +344,7 @@ déjà. Les six modèles de préparation du matin restent en base sans servir.
    courtes, et **l'onglet actif écrit en blanc** (la pastille jaune est
    partie). `fch-spec.md` porte le détail.
 
-## 0 ante. La session du 15 août — Yuno passe au réseau
+## 0 ante bis. La session du 15 août — Yuno passe au réseau
 
 **Vingt-trois commits, tous poussés.** Toute la session a porté sur **la
 Passerelle et ce qu'elle a fait naître** : un vivier de clubs, leurs
@@ -334,7 +439,7 @@ incluses), `20260815230000` (statut `a_relancer`), `20260815240000`
 
 ---
 
-## 0 ante bis. La session des 14–15 août, en un coup d'œil
+## 0 ante ter. La session des 14–15 août, en un coup d'œil
 
 **Vingt-quatre commits, tous poussés.** Le site Yuno a été refondu en
 profondeur ; le hub n'a été touché qu'aux endroits qu'il partage.
@@ -2243,24 +2348,29 @@ La méthode qui a tenu toute la journée — exercer, relire en SQL, défaire, r
   site. Noé ne les a pas demandés — à proposer s'il repasse par le réseau.
 
 
-**FC Hermitage — mis de côté** (Noé, 13 août : « on met de côté encore »). Les
-quatre questions restent ouvertes et attendent que ce chantier s'ouvre ; aucune
-ne gêne le reste du hub :
+**FC Hermitage — le chantier s'est rouvert** les 21 et 24 août (réunions,
+calendrier, habillage, idées modifiables) ; « mis de côté » n'est plus vrai.
+Trois des quatre questions du 13 août restent néanmoins sans réponse, et
+aucune ne gêne le reste du hub :
 1. Les rubriques éditoriales proposées (avant-match, résultats, portrait,
    coulisses, partenaire, vie du club) correspondent-elles à ce qu'il publie ?
 2. Ses 4 objectifs de fin d'alternance — nommés nulle part.
-3. Des statuts de relation pour les partenaires, ou trop tôt ?
-4. Le contenu de l'écran « Club ». (Plus l'idée de la banque qui ne s'ouvre
-   pas, et la lisibilité du logo sur le bleu : tout part avec ce chantier.)
+3. Le contenu de l'écran « Club » — toujours volontairement vide, il dit ce
+   qu'il attend.
+
+(La quatrième, les statuts de relation des partenaires, s'est réglée d'
+elle-même : les partenaires sont des contacts, ils ont l'échelle du CRM.)
 
 **Yuno** — deux lectures de captures, **confirmées justes par Noé le 13 août** :
 le type des deux agences (« Agence ») et la fiche de « Nouhou Tolo »
 (`@salvadorebanouh`, club « Sounders »). Rien à corriger.
 
-**Yuno / la Passerelle** : **l'outil sera revu dans son ensemble** (Noé,
-13 août). Ne pas y toucher par petites touches en attendant — et donc ne pas
-chercher à combler les deux cartes qui manquent (salles de concert, clubs à
-cibler à froid) : elles feront partie de la refonte.
+**Yuno / la Passerelle** : la refonte annoncée le 13 août **a eu lieu** — le
+vivier de 97 clubs le 15, le Réseau réorganisé le 21 (l'onglet ouvre le
+rituel, tuiles de fin de page, bandeau cliquable). Restent sans réponse les
+deux cartes qui manquaient déjà : les **salles de concert** visées (objectif :
+une première accréditation) et les **clubs à cibler à froid**. Elles
+attendent des noms réels, pas du code.
 
 **Le mot « carnet » ne désigne plus qu'une chose** (tranché le 13 août) : le
 Carnet de terrain. La base de contacts s'appelle **le réseau** (§ 2 nonies).
@@ -2269,18 +2379,6 @@ Carnet de terrain. La base de contacts s'appelle **le réseau** (§ 2 nonies).
 2026). Il double la porte « Moment » de la tuile sur l'Accueil et le Journal,
 et c'est assumé : sur les deux pages du carnet, le geste le plus fréquent
 mérite d'être nommé en toutes lettres plutôt que caché derrière une pastille.
-
-**Sur le site du FCH, une idée de la banque ne s'ouvre pas** (trouvé le 13 août
-en exerçant les écritures, § 2 ter ter). Les tuiles se présentent comme des
-boutons et portent `data-ouvrir-pub`, mais `hermitage.js` n'écoute jamais cet
-attribut — Yuno, si. Une idée sans date n'a donc aucun moyen d'être avancée ni
-supprimée depuis le FCH. Deux sorties : ouvrir la même fenêtre que Yuno, ou
-assumer que l'écran « Créer » du FCH ne sert qu'à noter. **Repoussé
-volontairement** (Noé, 13 août) : le site du FCH sera repris à part.
-
-**Sur le fond bleu du FCH** : le logo y perd en lisibilité (traits noirs et
-bleus). Noé a demandé de retirer la plaque blanche qui corrigeait cela ; c'est
-assumé, mais à rouvrir s'il le trouve gênant à l'usage.
 
 **Ouvertes par la session du 13 août** — aucune ne bloque, toutes attendent
 l'usage :
@@ -2327,60 +2425,95 @@ Rien d'ouvert dans les cahiers des charges. Restent des conforts :
 
 ---
 
-## 4 bis. Par où reprendre (fin de session du 21 août 2026)
+## 4 bis. Par où reprendre (fin de session du 24 août 2026)
 
 Dans cet ordre, du plus pressé au moins pressé.
 
-**D'abord, deux choses périssables :**
+**⚠ D'abord : il y a du travail NON COMMITÉ dans l'arbre.**
 
-1. **La sauvegarde des 26 photos originales** (43 Mo) vit dans le dossier
-   temporaire de la session du 21 août
-   (`/private/tmp/claude-501/…/scratchpad/photos-originales/`). Le système
-   peut le nettoyer. Si Noé veut garder les pleines tailles, **les copier
-   maintenant** ; sinon, rien à faire — les versions recompressées sont en
-   ligne et vérifiées, et ses fichiers de boîtier restent chez lui.
-2. **Vérifier l'egress dans quelques jours** (tableau de bord Supabase,
-   Settings → Usage) : la courbe doit s'aplatir nettement. Si elle ne
-   s'aplatit pas, le diagnostic était incomplet — revenir au § 0.
+Une session antérieure du 24 août (avec le skill *Impeccable*, installé ce
+jour-là) a laissé des corrections d'**accessibilité** en attente dans
+`css/styles.css`, `js/dashboard.js` et `js/taches.js` — relues, elles sont
+bonnes et documentées ligne à ligne :
 
-**Ensuite, écouter avant d'ajouter :**
+- le cercle de **priorité 4** passait sous le seuil de contraste de 3:1
+  (2,53 sur carte) : il est assombri à `#8c867d` ;
+- la priorité était dite par la **seule couleur** : elle l'est maintenant
+  aussi par l'**épaisseur du trait** (4 / 3 / 2 / 1,5 px, écarts vérifiés en
+  niveaux de gris) et par le nom accessible du bouton ;
+- le champ de la tuile ne montrait **plus aucun focus** (`:focus { outline:
+  none }` l'emportait en spécificité sur `input:focus-visible`) ;
+- l'étiquette du mot d'humeur est **hors écran, pas absente**.
 
-3. **La fiche de réunion n'a jamais servi en vrai — le CA du 24 août est le
-   premier test.** Sa fiche attend déjà, vide. Ce qu'il faudra regarder : le
-   contrat se remplit-il vraiment avant (ou seulement le soir même) ; l'ordre
-   du jour minuté tient-il face au réel ; le compte-rendu part-il sous 48 h ;
-   et le tableau des actions est-il relu à la réunion suivante — c'est
-   l'habitude que le guide place en priorité absolue, et la seule qui dira si
-   l'outil sert. Écouter ça avant d'ajouter quoi que ce soit (modèles de
-   points récurrents, export du compte-rendu, rappels).
-4. **La Passerelle après une vraie semaine de rituel** — et maintenant que la
-   fournée se vide toute seule au lundi, regarder si ce vidage tombe bien pour
-   Noé ou s'il voudrait un rappel des clubs non contactés de la semaine
-   passée.
-5. **Poser les objectifs.** Toujours d'actualité : la table `objectifs` reste
-   quasi vide alors que décembre approche (4 dossiers Studi + la vidéo, fin de
-   l'alternance FCH). Le cap long terme est la priorité n° 2 du produit.
-6. **Le premier vrai bilan de préparation Yuno** (bilan → moment au carnet,
+**À faire en premier : les relire, les essayer, et les commiter** — ou les
+défaire si Noé n'en veut pas. Tant qu'elles traînent, chaque `git status` est
+bruyant et le prochain commit risque de les emporter sans les nommer. Le
+dossier `.impeccable/` (une critique de l'accueil, 8 Ko, non suivi) est à
+ignorer ou à ranger : `.claude/` et `PRODUCT.md` l'ont été le 24 août pour
+que rien de cet outil ne parte sur GitHub Pages.
+
+**Ensuite, ce qui est périssable :**
+
+1. **Le CA du 24 août au soir A EU LIEU — demander comment ça s'est passé.**
+   C'était le premier vrai test de la fiche de réunion, et Noé l'a préparée
+   pour de bon : participants nommés, une quinzaine de questions et points
+   écrits, le modèle « CA · j'y assiste » versé dessous. Ce qu'il faut
+   regarder maintenant, dans l'ordre du guide : le compte-rendu est-il parti
+   (le champ « Conclure » de la fiche est-il rempli) ; les actions décidées
+   sont-elles entrées au **tableau des actions** ; et à la prochaine réunion,
+   ce tableau sera-t-il relu en ouverture — c'est l'habitude que le guide
+   place en priorité absolue, et la seule qui dira si l'outil sert.
+   **Écouter avant d'ajouter quoi que ce soit.**
+2. **Vérifier l'egress Supabase** (Settings → Usage) : les corrections du
+   21 août (photos recompressées, liens signés un mois) devaient diviser la
+   courbe par ~80. Trois jours ont passé, le verdict est lisible maintenant.
+   Si la courbe ne s'aplatit pas, le diagnostic était incomplet — § 0 ante.
+3. **La sauvegarde des 26 photos originales** (43 Mo) vivait dans le dossier
+   temporaire de la session du 21 août : **il a très probablement été nettoyé
+   depuis**. Ne pas s'en inquiéter — les versions recompressées sont en ligne
+   et vérifiées, et les fichiers de boîtier restent chez Noé.
+
+**Ensuite, écouter l'usage :**
+
+4. **Les réunions, après une ou deux vraies.** Le menu « Modèles » verse du
+   texte : est-ce que Noé retravaille vraiment ces lignes, ou est-ce qu'elles
+   restent telles quelles ? Si elles restent telles quelles, le modèle est à
+   corriger, pas l'outil. Et la case « J'anime » n'a jamais servi en vrai — le
+   premier CA qu'il anime dira si la bascule tombe juste.
+5. **La Passerelle après une vraie semaine de rituel** — la fournée se vide
+   toute seule au lundi depuis le 21 : regarder si ce vidage tombe bien, ou
+   s'il faudrait un rappel des clubs non contactés de la semaine passée.
+6. **Les Missions, jamais exercées en vrai.** Le tableau de bord existe
+   (« À préparer » sur 30 jours, pipeline des commandes, commande liée à un
+   événement) mais aucune commande n'y est passée. À regarder dès qu'une
+   vraie commande arrive : le lien commande → événement se pose-t-il
+   naturellement ?
+7. **Poser les objectifs.** Toujours d'actualité, et de plus en plus pressé :
+   la table `objectifs` reste quasi vide alors que **décembre approche** (4
+   dossiers Studi + la vidéo, fin de l'alternance FCH). C'est la priorité n° 2
+   du produit, et le seul chantier de cette liste qui ne dépend d'aucun usage.
+8. **Le premier vrai bilan de préparation Yuno** (bilan → moment au carnet,
    photo et rencontres) n'a toujours pas eu lieu après une vraie sortie.
-7. **Vérifier sur le vrai iPhone** : la tuile avec un clavier réel, le service
-   worker en application d'écran d'accueil, Canela, et maintenant **le poids
-   d'une visite du Journal** (les photos doivent venir du cache à la deuxième
-   visite).
-8. **Les chantiers de fond inchangés** : conversion des espaces projet à
-   `js/ecriture.js`, démarrage par morceaux à porter aux petits espaces. Rien
-   de pressé.
+9. **Vérifier sur le vrai iPhone** : la tuile avec un clavier réel, le service
+   worker en application d'écran d'accueil, Canela, le poids d'une visite du
+   Journal (les photos doivent venir du cache à la deuxième visite) — et
+   maintenant **le dégradé du FCH** et **la loupe sticky** sur un écran
+   étroit.
+10. **Les chantiers de fond inchangés** : conversion des espaces projet à
+    `js/ecriture.js`, démarrage par morceaux à porter aux petits espaces. Rien
+    de pressé.
 
 **En veille, sans suite pour l'instant** : une erreur console
-`JWT issued at future` (PGRST303) vue les 15 et 21 août au chargement — un
+`JWT issued at future` (PGRST303) vue les 15, 21 et 24 août au chargement — un
 décalage d'horloge entre la machine et Supabase, sans effet visible à l'usage.
 Si des chargements se mettent à échouer pour de vrai, commencer par là.
 
-**Ce qui est clos et n'a plus à figurer ici** : le cochage d'une tâche depuis le
-calendrier, les onze requêtes de Yuno tombées à six, l'alignement des menus
+**Ce qui est clos et n'a plus à figurer ici** : le cochage d'une tâche depuis
+le calendrier, les onze requêtes de Yuno tombées à six, l'alignement des menus
 déroulants, le mot « carnet » qui ne désigne plus deux choses, la table
-`moments` qui n'existe plus — et, depuis le 15 août au soir, **les 47 menus
-« Niveau » du CRM**, partis avec la file qu'ils rangeaient (c'étaient les
-derniers `select` natifs du site).
+`moments` qui n'existe plus, les 47 menus « Niveau » du CRM — et, depuis le
+24 août, **l'idée de la banque du FCH qui ne s'ouvrait pas** (ouverte depuis le
+13) et **la lisibilité du logo sur le bleu** (ouverte depuis le 7).
 
 ### Les outils du dépôt, à connaître
 
@@ -2482,6 +2615,47 @@ natifs se dessinent en clair.
 doré de Yuno, les statuts du carnet sont des couleurs d'identité ou d'état,
 jamais des signaux de retard. C'est la ligne la plus facile à franchir par
 inadvertance.
+
+**Une publication se lit comme une TÂCHE au calendrier, pas comme un
+événement** (demande de Noé, 25 août 2026) : plus d'aplat de couleur, un trait
+à gauche et c'est tout — l'aplat reste aux seules choses qui *arrivent*. Elle a
+même le ROND d'une tâche, et il dit où elle en est : creux tant qu'elle est à
+préparer, à moitié plein quand elle est prête à partir, coché une fois publiée
+— et le titre barré, comme une tâche faite. C'est la seule chose que la grille
+dit sans qu'on ouvre la tuile.
+
+**Et le rond s'appuie : il avance d'un cran** (`data-avancer-pub`). Les deux
+gestes cohabitent pour la même raison que chez les tâches : le rond fait le pas
+suivant sans quitter la grille, la tuile fait tout le reste — sauter un état,
+revenir en arrière. Au dernier état, le rond ne bouge plus. Écouté par
+l'accueil et par l'espace Calendrier ; ailleurs (les deux sites), l'appui ouvre
+la tuile, comme avant.
+
+**Dans la tuile, l'état est une PASTILLE**, à la suite de celles de la nature
+et du projet, et elle ouvre un menu déroulant dessiné (`reglageStatut`,
+js/calendrier-commun.js). La forme a bougé trois fois le 25 août avant de se
+poser là : trois boutons alignés, puis un menu déroulant à droite de la ligne
+des gestes, puis cette pastille — c'est celle qui se lit avec les deux autres
+mentions plutôt que de peser comme un contrôle.
+
+**Sa couleur change de TEINTE, pas d'intensité** : rouge → ambre → vert
+(`TEINTES_ETAPE`, interpolées si le cycle compte plus de trois pas — Yuno en a
+cinq). Seule la teinte part du JS ; saturation et clarté sont réglées dans le
+CSS, une fois par thème. Ce rouge et ce vert ne contredisent pas la règle
+ci-dessus : ils ne jugent aucune échéance et ne bougent pas tout seuls, ils
+disent une étape de fabrication que Noé a posée.
+
+Conséquence assumée : **le calendrier du hub garde les publiées** —
+`api.publicationsDatees()` ne les écarte plus. Sans ça, le troisième état
+n'aurait été ni lisible ni réversible depuis la tuile, et une publication
+partie aurait disparu du planning là où une tâche faite y reste barrée. Les
+deux sites, eux, continuent de ranger les publiées sous leur pli.
+
+*Une seule exception, posée le 25 août 2026 :* la **corbeille** de la fenêtre
+de détail est rouge (`--erreur`), à la demande de Noé. Elle ne dit pas un
+retard ni un jugement — elle dit ce que fait le bouton : il efface, et ça ne
+se défait pas. Aucune date, aucun compteur, aucune ligne de liste ne prend
+cette couleur.
 
 ---
 

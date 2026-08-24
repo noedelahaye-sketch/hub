@@ -765,6 +765,21 @@ a { color: var(--accent); }
   --couleur-projet-pleine: var(--club-fch-rouge);
 }
 
+/* SAUF DANS LE CALENDRIER DU HUB, où le FCH est bleu (demande de Noé, 25 août
+   2026) : l'espace Calendrier, et « Ta semaine » de l'accueil qui en est
+   l'aperçu — pas le reste de l'accueil, où « Aujourd'hui » est une liste de
+   tâches et doit se lire comme celle de l'espace Tâches. Là, les barres sont
+   pleines et larges — le rouge y pesait plus que les autres projets, et une
+   semaine de club virait au rouge entier. Ailleurs (pastilles, listes de
+   tâches, fiches, les deux sites), la couleur double du club ne bouge pas.
+   La proximité mesurée avec le perso reste vraie : dans une grille, la
+   colonne et l'étiquette disent le projet avant la couleur. */
+#bloc-semaine [data-projet="fch"],
+#espace-calendrier [data-projet="fch"] {
+  --couleur-projet: var(--club-fch-bleu);
+  --couleur-projet-pleine: var(--club-fch-bleu);
+}
+
 @media (prefers-color-scheme: dark) {
   [data-projet="formation"] { --couleur-projet: #56b8ad; --couleur-projet-pleine: #56b8ad; }
   [data-projet="photo"]     { --couleur-projet: #e8b000; --couleur-projet-pleine: #e8b000; }
@@ -1734,6 +1749,46 @@ body.fond-fige {
 .liste-taches li { gap: var(--espace-8); }
 .liste-taches label { flex: 1; }
 
+/* Un bouton qui ne porte qu'un dessin : la cible tactile garde les 44 px
+   réglementaires même si l'icône fait 16 px. En px et non en rem — la racine
+   des sites est à 15 px, et 2,75 rem n'y feraient que 41.
+   Venu de yuno.css le 24 août 2026, quand la fenêtre de détail du calendrier —
+   commune au hub et aux deux sites — a passé ses deux gestes en icônes. */
+.bouton-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: var(--texte-discret);
+  background: none;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  cursor: pointer;
+}
+
+.bouton-icone:hover { color: var(--texte); border-color: var(--accent); }
+
+/* Plus petits dans la fenêtre de détail (demande de Noé, 25 août 2026) : ce
+   sont deux gestes de service au bas d'une fiche, pas les boutons d'un
+   formulaire. 32 px restent au-dessus du seuil d'une cible isolée (24 px,
+   WCAG 2.2 — 2.5.8), et l'écart de 12 px les sépare franchement. */
+.cal-detail-actions .bouton-icone { width: 32px; height: 32px; }
+
+/* La corbeille est ROUGE (demande de Noé, 25 août 2026). Ce n'est pas la
+   couleur d'alerte que le hub s'interdit — celle-là dirait un retard, et
+   jugerait. Ici elle dit une chose vraie sur le geste lui-même : il efface, et
+   il ne se défait pas. C'est le seul rouge de l'interface, et il ne se pose
+   que sur ce bouton-là. */
+.cal-detail-actions [data-supprimer-element] { color: var(--erreur); }
+
+.cal-detail-actions [data-supprimer-element]:hover {
+  color: var(--erreur);
+  border-color: var(--erreur);
+  background: color-mix(in srgb, var(--erreur) 12%, transparent);
+}
+
 .bouton-mini {
   flex: none;
   padding: var(--espace-4) var(--espace-8);
@@ -2596,6 +2651,8 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   overflow: hidden;
   border: 1px solid var(--trait-cal);
   border-radius: var(--rayon-carte);
+  /* Le repère des deux flèches de la journée (voir plus bas). */
+  position: relative;
 }
 
 .cal-entetes {
@@ -2603,7 +2660,8 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   grid-template-columns: repeat(7, 1fr);
 }
 
-.cal-entetes span {
+.cal-entetes span,
+.cal-entete-jour {
   padding: var(--espace-4);
   font-size: 0.6875rem;
   font-weight: 600;
@@ -2742,7 +2800,20 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 /* Le cadre porte déjà les bords : pas de double trait au bout des lignes. */
 .cal-jour:nth-child(7) { border-right: none; }
 .cal-grille > .cal-ligne:last-child .cal-jour { border-bottom: none; }
-.cal-entetes span:last-child { border-right: none; }
+.cal-entetes > :last-child { border-right: none; }
+
+/* Le titre d'un jour est un bouton sur l'accueil : il ouvre sa journée. Il en
+   garde l'aspect exact — c'est une date qu'on lit, pas une commande à peser. */
+.cal-entete-jour {
+  font-family: inherit;
+  background: none;
+  border: none;
+  border-right: 1px solid var(--trait-cal);
+  min-height: 2rem;
+  cursor: pointer;
+}
+
+.cal-entete-jour:hover { color: var(--texte); }
 
 /* Les jours du mois voisin ne s'effacent pas : leur numéro le dit, la case
    reste une case. */
@@ -2831,6 +2902,75 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 .cal-barre-element.deborde-apres { border-radius: 3px 0 0 3px; margin-right: 0; }
 .cal-barre-element.deborde-avant.deborde-apres { border-radius: 0; }
 
+/* L'état d'une publication, dans la tuile : une PASTILLE à la suite de celles
+   de l'en-tête — nature, projet, état (demande de Noé, 25 août 2026). Elle
+   s'ouvre en menu déroulant : c'est un choix, pas une mention.
+
+   La COULEUR dit l'étape, et elle change de teinte, pas seulement d'intensité
+   (Noé, le même jour) : rouge tant que rien n'est fait, ambre quand c'est prêt
+   à programmer, vert une fois publié. Seule la teinte arrive du JS
+   (`--teinte`) ; la saturation et la clarté sont réglées ici, une fois par
+   thème — la même pastille doit se lire sur fond clair comme sur fond sombre.
+
+   Ce rouge et ce vert ne contredisent pas la règle « pas de couleur d'alerte » :
+   ils ne jugent aucune échéance et ne bougent pas tout seuls. Ils disent une
+   étape de fabrication, posée par Noé. */
+.cal-statut {
+  display: inline-flex;
+  position: relative;
+  margin: 0;
+}
+
+/* Deux classes, et non une : `.etiquette` est déclarée dans yuno.css, chargée
+   APRÈS celle-ci — à égalité de poids, c'est le dernier fichier qui gagne, et
+   la pastille repartait en gris. */
+.etiquette.cal-statut-pastille {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-4);
+  min-height: 1.5rem;
+  font-family: inherit;
+  cursor: pointer;
+  color: hsl(var(--teinte) 55% 30%);
+  background: hsl(var(--teinte) 65% 93%);
+  border-color: hsl(var(--teinte) 45% 78%);
+}
+
+/* Pas de chevron sur la pastille (demande de Noé, 25 août 2026) : à cette
+   taille il pesait autant que le mot. La pastille dit son état ; qu'elle
+   s'ouvre s'apprend au premier appui. */
+
+/* Le point d'une ligne du menu : la même teinte que la pastille qu'elle
+   posera. On voit où l'on va avant d'y aller. */
+.cal-statut-point {
+  flex: none;
+  width: 0.625rem;
+  height: 0.625rem;
+  margin-right: var(--espace-8);
+  border-radius: var(--rayon-pastille);
+  background: hsl(var(--teinte) 60% 45%);
+}
+
+.cal-statut .choix-capture button { display: flex; align-items: center; }
+
+/* Le menu s'ouvre sous la pastille, calé sur son bord gauche, et assez large
+   pour que « à programmer » ne se coupe pas. */
+.cal-statut .choix-panneau {
+  left: 0;
+  right: auto;
+  min-width: 11rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .etiquette.cal-statut-pastille {
+    color: hsl(var(--teinte) 70% 72%);
+    background: hsl(var(--teinte) 35% 16%);
+    border-color: hsl(var(--teinte) 30% 34%);
+  }
+
+  .cal-statut-point { background: hsl(var(--teinte) 60% 60%); }
+}
+
 /* Le signe de nature : une tâche n'est pas un événement, et la couleur du
    projet ne le dit pas. Il précède le titre, en retrait. */
 .cal-signe {
@@ -2871,15 +3011,21 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    l'événement est un aplat, elle n'est qu'un trait de couleur à gauche
    (demande de Noé, 13 août 2026). Le cadre complet en faisait une étiquette de
    plus dans une grille déjà pleine de traits ; le trait seul suffit à dire le
-   projet, et la ligne respire. */
-.cal-type-tache {
+   projet, et la ligne respire.
+
+   UNE PUBLICATION EST DU MÊME BORD depuis le 25 août 2026 (demande de Noé) :
+   c'est quelque chose à faire partir, pas un rendez-vous. Son aplat la faisait
+   lire comme un événement — l'aplat reste aux seules choses qui ARRIVENT. */
+.cal-type-tache,
+.cal-type-publication {
   background: transparent;
   border: none;
   border-left: 3px solid var(--couleur-projet-pleine, var(--accent));
   border-radius: 0 3px 3px 0;
 }
 
-.cal-type-tache:hover {
+.cal-type-tache:hover,
+.cal-type-publication:hover {
   background: color-mix(in srgb, var(--couleur-projet-pleine, var(--accent)) 18%, var(--fond-carte));
 }
 
@@ -2951,8 +3097,77 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 }
 
 .cal-journee-ligne:hover { border-color: var(--accent); }
-.cal-journee-titre { flex: 1 1 10rem; min-width: 0; font-weight: 600; }
-.cal-journee-quand { font-size: 0.8125rem; }
+
+/* --- La semaine qui se resserre sur un jour ---------------------------------
+   Sur l'accueil, presser le titre d'un jour lui donne toute la largeur : les
+   six autres colonnes tombent à zéro, et ce sont les traits entre les jours
+   qu'on voit glisser jusqu'aux bords (demande de Noé, 24 août 2026). D'où sept
+   largeurs déclarées une à une plus haut, dans le style de la grille : entre
+   `repeat(7, 1fr)` et sept valeurs, le navigateur n'aurait rien à interpoler. */
+.cal-semaine .cal-entetes,
+.cal-semaine .cal-ligne {
+  grid-template-columns: var(--cal-colonnes, repeat(7, 1fr));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .cal-semaine .cal-entetes,
+  .cal-semaine .cal-ligne {
+    transition: grid-template-columns 320ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Une colonne à zéro garde son contenu — il rétrécit avec elle, c'est ce qui
+   rend le mouvement lisible — mais rien ne doit en dépasser. */
+.cal-semaine .cal-pile,
+.cal-semaine .cal-barre-element { overflow: hidden; }
+
+/* Sauf le titre du jour visé : il reste lisible pendant tout le trajet, alors
+   que sa colonne s'élargit sous lui. */
+.cal-entete-jour { overflow: hidden; white-space: nowrap; }
+
+/* Un jour réduit à rien ne replie plus ses titres sur trois lignes : sans ça,
+   la ligne entière grandirait pendant qu'on la resserre — une colonne de 0 px
+   étire son texte en hauteur. */
+.cal-un-jour .cal-pile .cal-barre-titre { white-space: nowrap; }
+
+/* Une colonne à zéro l'est vraiment : sans ce retrait, les 4 px de marge de
+   chaque en-tête l'empêchaient de descendre sous 9 px, et il restait six
+   initiales serrées contre les bords. */
+.cal-un-jour .cal-entete-jour { padding-left: 0; padding-right: 0; }
+
+/* Les traits arrivés au bord s'effacent, une fois le mouvement fini : six
+   traits empilés contre le cadre auraient l'air d'une bordure épaisse. Au
+   retour vers la semaine, ils reviennent sans attendre, pendant que les
+   colonnes se rouvrent. */
+.cal-semaine .cal-jour { transition: border-right-color 180ms ease; }
+.cal-un-jour .cal-jour { border-right-color: transparent; transition-delay: 300ms; }
+
+/* Les deux flèches vivent dans la bande d'en-tête, aux deux bouts. Elles
+   n'existent que pour la journée ouverte : le reste du temps elles ne sont ni
+   visibles, ni tabulables. */
+.cal-fleche-jour {
+  position: absolute;
+  top: 0;
+  z-index: 2;
+  min-width: 2.75rem;
+  padding: 0 var(--espace-8);
+  font-size: 1.125rem;
+  line-height: 1;
+  color: var(--texte-discret);
+  background: none;
+  border: none;
+  opacity: 0;
+  visibility: hidden;
+  cursor: pointer;
+  transition: opacity 200ms ease, visibility 200ms;
+}
+
+.cal-fleche-avant { left: 0; }
+.cal-fleche-apres { right: 0; }
+
+.cal-un-jour .cal-fleche-jour { opacity: 1; visibility: visible; }
+.cal-fleche-jour:hover { color: var(--texte); }
+.cal-fleche-jour[disabled] { opacity: 0.25; cursor: default; }
 
 .cal-aide { margin: var(--espace-8) 0 0; font-size: 0.8125rem; }
 

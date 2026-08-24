@@ -204,7 +204,7 @@ Le calendrier éditorial. **Une idée est une publication sans date** (`date_pre
 - `titre` text NOT NULL — l'idée, en une phrase
 - `reseau` text default 'instagram' CHECK (instagram, tiktok, linkedin, facebook, youtube)
 - `format` text default 'post' CHECK (post, carrousel, reel, story) — **seuls `carrousel`, `reel` et `story` sont offerts depuis le 15 août 2026** : « post et carrousel, c'est la même chose » (Noé), et c'est carrousel qui reste. `post` demeure accepté par le CHECK — un CHECK s'élargit, il ne se resserre jamais — mais plus rien ne l'écrit.
-- `statut` text default 'idee' CHECK (idee, brouillon, pret, publie)
+- `statut` text default 'idee' CHECK (idee, brouillon, pret, publie) — **le cycle n'est pas le même d'un projet à l'autre**, et il vit dans `CYCLES_PUBLICATION` (js/calendrier-commun.js, avec les réseaux et les formats — la tuile du calendrier en a besoin). Yuno en pose cinq (`a_developper` en plus) ; le **FC Hermitage en a TROIS depuis le 25 août 2026** (demande de Noé) : **à préparer** (`idee`) · **à programmer** (`pret`) · **publié** (`publie`). Ce sont les mots qui changent, pas les valeurs : `nomDuStatut(projet, statut)` les traduit, le CHECK ne bouge pas, et `brouillon` sert toujours à Yuno. L'état se règle **depuis le calendrier du hub**, de deux façons : le **rond de la barre avance d'un cran** à l'appui (comme le cercle d'une tâche se coche), et la **tuile porte une pastille d'état** — à la suite de celles de la nature et du projet, ouvrant un menu déroulant dessiné, pour sauter un état ou revenir en arrière. Sa couleur dit l'étape : **rouge → ambre → vert** (`--teinte`, interpolée sur le cycle ; le CSS règle saturation et clarté par thème). Ce rouge et ce vert ne sont pas des couleurs d'alerte : ils ne jugent aucune échéance et ne bougent pas tout seuls. Pas de case à cocher : elle aurait sauté « à programmer ».
 - `date_prevue` date (nullable — NULL = banque d'idées)
 - `rubrique` text — la série récurrente, libre
 - `notes` text · `lien_publie` text
@@ -248,6 +248,16 @@ Livrer une commande insère une victoire, comme une tâche terminée.
 3. **Progression des objectifs** : chaque objectif actif avec sa barre de progression et son échéance. Clic → le pourquoi + les jalons. **En BAS de page depuis le 13 août 2026** (décision de Noé) : ils disent le cap, pas la journée — on les relit quand on lève la tête, pas en ouvrant l'application.
 4. **Aujourd'hui** : les tâches à faire aujourd'hui (ou qui l'étaient déjà — pas de borne basse, le hub ne compte pas les retards mais ne les efface pas), max 9, **dans la forme exacte de l'espace Tâches**. Cochables directement, et **ouvrables** : appuyer sur une tâche la rouvre dans la tuile, pré-remplie (14 août 2026). Elle ne s'y supprime pas — ce geste vit dans l'espace Tâches.
 5. **Ta semaine** : un **aperçu du calendrier hebdomadaire**, tous projets et toutes natures confondus — la même grille que `#calendrier` en vue semaine.
+   **Un jour s'y ouvre en grand** (demande de Noé, 24 août 2026) : presser le
+   titre d'un jour (« lun. 24 ») lui donne toute la largeur, deux flèches
+   passent au jour voisin dans la semaine, et represser ce même titre rouvre la
+   semaine. Ce n'est pas un autre écran : c'est la MÊME grille dont les sept
+   colonnes changent de largeur, pour que les traits entre les jours se voient
+   glisser (`--cal-colonnes`, sept valeurs déclarées une à une — `repeat(7, 1fr)`
+   n'aurait rien à interpoler). Ouvrir ou fermer une journée ne redessine donc
+   rien : `viserLeJour` ne touche qu'au style, sans quoi l'animation serait
+   coupée. La phrase d'aide sous la grille, elle, ne se dit qu'au calendrier
+   (`aide: false` sur l'accueil).
 
 Ordre 4 avant 5 depuis le 13 août 2026 (demande de Noé) : ce qui se fait dans la journée vient avant ce qui se prépare. « Aujourd'hui » n'est donc plus le bloc discret du bas.
 

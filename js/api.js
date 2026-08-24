@@ -1288,12 +1288,17 @@ export async function tachesDatees({ projet = null } = {}) {
   return verifier(await requete);
 }
 
+// Le calendrier DU HUB — accueil et espace Calendrier. Il garde les publiées
+// (25 août 2026) : leur état se règle depuis la tuile, il faut donc pouvoir le
+// lire et y revenir. Et une publication partie ne s'efface pas du planning
+// plus qu'une tâche faite ne s'efface de sa journée — elle se barre, comme
+// elle. Les deux sites, eux, continuent d'écarter les publiées de leur
+// calendrier : ils les rangent sous leur propre pli.
 export async function publicationsDatees({ projet = null } = {}) {
   let requete = client
     .from('publications')
     .select('*')
     .not('date_prevue', 'is', null)
-    .neq('statut', 'publie')
     .order('date_prevue');
 
   if (projet) requete = requete.eq('projet', projet);

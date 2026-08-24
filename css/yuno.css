@@ -1195,24 +1195,14 @@ body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accen
 .tableau .ligne-ouvrable button,
 .tableau .ligne-ouvrable select { cursor: auto; }
 
-/* Un bouton qui ne porte qu'un dessin : la cible tactile garde les 44 px
-   réglementaires même si l'icône fait 16 px. En px et non en rem — la racine
-   du site est à 15 px, et 2,75 rem n'y feraient que 41. */
-.bouton-icone {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  color: var(--texte-discret);
-  background: none;
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-controle);
-  cursor: pointer;
+/* `.bouton-icone` est parti dans styles.css le 24 août 2026 : la fenêtre de
+   détail du calendrier s'en sert, et elle est commune au hub et aux deux
+   sites. Ne reste ici que la teinte de survol de Yuno — cadrée, sinon elle
+   repeindrait les mêmes boutons dans le hub. */
+body[data-espace="yuno"] .bouton-icone:hover {
+  color: var(--gris-chaud);
+  border-color: var(--gris-chaud-trait);
 }
-
-.bouton-icone:hover { color: var(--gris-chaud); border-color: var(--gris-chaud-trait); }
 
 /* Deux portes côte à côte quand il y a la place, l'une sous l'autre sinon. */
 .portes { display: grid; gap: var(--espace-8); }
