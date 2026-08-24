@@ -170,8 +170,12 @@ export function corpsPublication(pub, options = {}) {
 }
 
 // La tuile complète, telle qu'elle sert encore à « À venir » et au site du FCH.
+// `ouvrable` : la tuile s'ouvre au clic (le site FCH édite ses publications en
+// fenêtre volante, 24 août 2026) — sauf sur ses propres contrôles, c'est le
+// gestionnaire de l'espace qui fait le tri.
 export function construirePublication(pub, options = {}) {
-  return `<li>${corpsPublication(pub, options)}</li>`;
+  const porte = options.ouvrable ? ` data-ouvrir-pub="${echapper(pub.id)}"` : '';
+  return `<li${porte}>${corpsPublication(pub, options)}</li>`;
 }
 
 export function construireAVenir(publications, options = {}) {

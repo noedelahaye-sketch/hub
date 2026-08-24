@@ -230,3 +230,67 @@ button.action-statut {
   align-items: flex-start;
   gap: 2px;
 }
+
+/* La case « J'anime la réunion », sous la date de la fiche : c'est elle qui
+   commande le rôle — et donc la version de la fiche et du modèle. */
+.fiche-anime {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  margin: 0 0 var(--espace-16);
+  cursor: pointer;
+}
+
+.fiche-anime input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* Le menu « Modèles », en haut à droite de la fiche (demande de Noé, 24 août
+   2026 au soir) : un pli discret dont le panneau tombe sous lui, à droite.
+   Choisir un modèle verse ses lignes dans les notes — pas de checklist. */
+.fiche-tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espace-8);
+}
+
+.fiche-menu {
+  position: relative;
+  flex: none;
+}
+
+.fiche-menu summary {
+  list-style: none;
+  cursor: pointer;
+  padding: var(--espace-8) var(--espace-12);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--texte-discret);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+}
+
+.fiche-menu summary::-webkit-details-marker { display: none; }
+
+.fiche-menu[open] summary { color: var(--texte); }
+
+.fiche-menu-panneau {
+  position: absolute;
+  top: calc(100% + var(--espace-8));
+  right: 0;
+  z-index: 5;
+  width: min(20rem, 80vw);
+  padding: var(--espace-12);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
+}
+
+/* Une publication ouvrable le dit au survol — la fenêtre d'édition est à un
+   clic (24 août 2026). */
+.bloc li[data-ouvrir-pub] { cursor: pointer; }

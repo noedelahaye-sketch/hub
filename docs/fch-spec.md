@@ -118,6 +118,16 @@ Le calendrier éditorial du club, **le même outil que chez Yuno** : une idée
 est une publication sans date, le cycle `idée → brouillon → prêt → publié`,
 la banque d'idées, les rubriques récurrentes.
 
+**Une publication s'ouvre au clic et se modifie en fenêtre volante** (demande
+de Noé, 24 août 2026) : titre, réseau, format, rubrique (les rubriques déjà
+posées en suggestions), date et notes — **vider la date renvoie l'idée à la
+banque**, comme « Repasser en idée ». La fenêtre porte aussi **« Supprimer
+l'idée »**, écrit en toutes lettres (pas une croix : la fenêtre en a déjà une
+pour se fermer, deux « × » superposés dont l'un est irréversible, c'est le
+piège que Yuno évite déjà). Le clic n'ouvre PAS depuis un contrôle de la
+tuile — avancer un statut ou poser une date garde son geste, la règle de la
+fiche du CRM.
+
 Ce qui change du côté FCH :
 
 - **Les réseaux** : Instagram, Facebook (le réseau des clubs amateurs et des
@@ -205,20 +215,37 @@ bouton met dans le presse-papiers le nom attendu par la convention du dossier
 (« Réunion CA - 08/06/26 »), et le lien du document créé se colle sur la
 fiche : elle devient le point d'entrée unique.
 
-**Les six modèles de préparation sont REVENUS sur la fiche le 24 août 2026**
-(demande de Noé — la refonte du 21 les avait écartés, « le modèle par défaut
-peut ne pas être le bon, et je veux pouvoir ajouter des détails ») : un pli
-discret « Appliquer un modèle » (ou « Modèle : X — changer ou compléter »)
-liste les modèles fch, **le bon proposé d'office** (même objet et même rôle,
-puis même objet, puis « autre »). Appliquer fait naître la **checklist
-Avant · Pendant · Après** — la feuille à cases des tables de Yuno, rattachée
-à l'événement — ou **ajoute les lignes manquantes** à celle qui existe (même
-phase et même texte = déjà là, on ne double pas) : rien de coché ne bouge,
-une ligne en trop se retire de sa croix, et la feuille retient le modèle
-appliqué. La boucle « aussi au modèle » vaut ici comme chez Yuno, et chaque
-site ne charge que ses feuilles (le projet de l'événement lié tranche). La
-vieille feuille de la Réunion CA du 24 août est ainsi revenue d'elle-même
-sur sa fiche.
+**PAS de checklist sur les fiches de réunion** — tranché par Noé le 24 août
+2026 au soir, après un aller-retour complet dans la journée : les modèles
+étaient revenus le matin à sa demande (« le modèle par défaut peut ne pas
+être le bon »), regroupés à midi en un modèle par type ; le soir il a retiré
+l'avant et l'après — doublons de « Ta préparation » et de « Conclure » —
+puis le pendant, puis « ce principe » entier. Les feuilles à cases restent
+l'outil des SORTIES Yuno, et les feuilles de réunion ont été supprimées de
+la base. **Ne pas ramener les checklists de réunion sans une demande
+explicite.**
+
+Ce qui SURVIT de cette journée, et sous quelle forme :
+
+- La **case « J'anime la réunion »**, sous la date de la fiche. Elle écrit
+  `reunion_animee` sur l'ÉVÉNEMENT, et la cocher bascule la fiche entière
+  dans l'autre version — contrat complet ou préparation de participant, kit,
+  Drive.
+- Les **modèles, en menu dépliant « Modèles » en haut à droite de la fiche**
+  (dernier mot de Noé, le même soir : « on a perdu la possibilité de changer
+  de modèle »). Un modèle par type, la version selon « J'anime »,
+  « conseillé » sur celui de l'objet de la réunion. Choisir un modèle **verse
+  ses lignes en TEXTE dans « Les questions et points / Tes notes »** — pas
+  des cases, de la matière à retravailler — et **changer de modèle ÉCHANGE
+  ces lignes** (correction de Noé, le soir même : le simple ajout ne
+  permettait pas d'en changer, les modèles s'empilaient) : toute ligne du
+  champ qui correspond mot pour mot à une ligne d'un des modèles est tenue
+  pour « du modèle » et cède la place à celles du modèle choisi ; une ligne
+  écrite ou retouchée par Noé n'y correspond plus — elle est à lui, elle
+  reste, toujours en tête. Le versement part du contenu ACTUEL du champ
+  (brouillon en cours compris), s'enregistre derrière, et **ne redessine
+  rien** — une frappe en cours n'est jamais perdue ; si l'écriture échoue,
+  le texte reste dans le champ et « Enregistrer » le garde.
 
 ### `#hermitage/calendrier` — tout ce qui porte une date
 

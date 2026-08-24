@@ -22,6 +22,7 @@ import {
 } from './ecriture.js';
 import {
   construireFormulaire,
+  construireFenetre,
   construireObjectifs,
   construireVictoires,
 } from './espace-projet.js';
@@ -32,9 +33,10 @@ import {
   construirePubliees,
   construireApercuCreation,
   formulaireIdee,
+  rubriquesProposees,
 } from './publications.js';
 import { depuisDateISO, echeanceLisible, momentLisible, echapper, versDateISO } from './format.js';
-import { blocPhase, finDeLaSortie, phaseDeLaSortie } from './preparations-commun.js';
+import { finDeLaSortie, phaseDeLaSortie } from './preparations-commun.js';
 
 import {
   assemblerCalendrier,
@@ -59,6 +61,7 @@ import {
   brancherCapture,
   poserAuCalendrier,
   REUNION_OBJETS,
+  FORMATS,
 } from './calendrier-commun.js';
 
 const PROJET = 'fch';
@@ -261,22 +264,81 @@ function ficheDeLaReunion(fiches, evenementId) {
   return fiches.find((fiche) => fiche.evenement_id === evenementId) ?? null;
 }
 
-// Le modèle qui correspond le mieux à la réunion : même objet et même rôle
-// d'abord, puis même objet peu importe le rôle, puis l'objet « autre ».
-// Revenu le 24 août 2026 (demande de Noé — la refonte l'avait retiré) : les
-// six modèles semés portent un vrai savoir-faire, la fiche le propose sans
-// l'imposer.
-function modelePourReunion(modeles, evenement) {
-  const memeObjet = modeles.filter((modele) => modele.objet === evenement?.reunion_objet);
+// PAS de checklist sur les fiches de réunion (24 août 2026 au soir, après un
+// aller-retour complet le jour même) : l'avant et l'après doublonnaient « Ta
+// préparation » et « Conclure », le pendant a suivi, puis « ce principe »
+// entier. Les feuilles à cases restent l'outil des SORTIES Yuno. Ne pas
+// ramener les checklists de réunion sans une demande explicite.
+//
+// Les MODÈLES, eux, ont survécu sous une autre forme (dernier mot de Noé, le
+// même soir) : un menu dépliant en haut à droite de la fiche. Choisir un
+// modèle VERSE ses lignes en TEXTE dans « Les questions et points / Tes
+// notes » — pas des cases, de la matière à retravailler. Un modèle par type
+// (la case « J'anime » choisit la version), les lignes déjà présentes ne se
+// doublent pas, et rien ne se redessine : le champ se complète sous les yeux,
+// une frappe en cours n'est jamais perdue.
 
+function versionDuModele(modeles, objet, animee) {
+  const memeObjet = modeles.filter((modele) => modele.objet === objet);
   return (
-    memeObjet.find((modele) => modele.anime === Boolean(evenement?.reunion_animee)) ??
+    memeObjet.find((modele) => modele.anime === animee) ??
     memeObjet.find((modele) => modele.anime === null) ??
     memeObjet[0] ??
-    modeles.find((modele) => modele.objet === 'autre') ??
-    modeles[0] ??
     null
   );
+}
+
+// Une entrée par type de réunion, nommée comme lui (« CA », « Alternance »…),
+// portant la version qui suit le rôle. Un modèle sans objet garde son entrée.
+function modelesParType(modeles, animee) {
+  const entrees = [];
+  const objetsVus = new Set();
+
+  for (const modele of modeles) {
+    if (modele.objet === null) {
+      entrees.push({ nom: modele.nom, version: modele });
+      continue;
+    }
+    if (objetsVus.has(modele.objet)) continue;
+    objetsVus.add(modele.objet);
+    const version = versionDuModele(modeles, modele.objet, animee);
+    if (version) {
+      entrees.push({ nom: REUNION_OBJETS[modele.objet] ?? version.nom, version });
+    }
+  }
+  return entrees;
+}
+
+function menuModeles(etat, evenement, animee) {
+  if (!etat.modelesPrepa.length) return '';
+
+  const entrees = modelesParType(etat.modelesPrepa, animee);
+
+  return `
+    <details class="fiche-menu">
+      <summary title="Verser un modèle dans tes notes">Modèles</summary>
+      <div class="fiche-menu-panneau">
+        <p class="discret">Verse ses lignes dans « ${
+          animee ? 'Tes notes' : 'Les questions et points'
+        } » — ce qui y est déjà ne se double pas.</p>
+        <ul class="liste-choix-modeles">
+          ${entrees
+            .map(
+              ({ nom, version }) => `
+            <li><button type="button" class="choix-modele"
+              data-appliquer-modele="${echapper(version.id)}">
+              <span>${echapper(nom)}${
+                version.objet !== null && version.objet === evenement?.reunion_objet
+                  ? ' · conseillé'
+                  : ''
+              }</span>
+              <span class="discret"><span class="chiffre">${version.items.length}</span> lignes</span>
+            </button></li>`,
+            )
+            .join('')}
+        </ul>
+      </div>
+    </details>`;
 }
 
 function boutonFiche(fiche, evenement) {
@@ -544,63 +606,6 @@ function blocOrdreDuJour(fiche) {
 // appliquer fait naître la feuille à cases — les tables de Yuno, rattachées à
 // l'événement — ou AJOUTE les lignes manquantes à celle qui existe : rien de
 // coché ne bouge, une ligne en trop se retire de sa croix.
-function blocChecklist(etat, fiche) {
-  if (!fiche.evenement_id) return '';
-
-  const feuille =
-    etat.preparations.find((f) => f.evenement_id === fiche.evenement_id) ?? null;
-  if (!feuille && !etat.modelesPrepa.length) return '';
-
-  const evenement = etat.evenements.find((e) => e.id === fiche.evenement_id) ?? null;
-  const actuel = feuille
-    ? etat.modelesPrepa.find((modele) => modele.id === feuille.modele_id) ?? null
-    : null;
-  const conseille = feuille ? null : modelePourReunion(etat.modelesPrepa, evenement);
-  const auModele = Boolean(actuel);
-
-  return `
-    <section class="bloc">
-      <details class="ajout prepa-changer-modele">
-        <summary>${
-          feuille
-            ? actuel
-              ? `Modèle : ${echapper(actuel.nom)} — changer ou compléter`
-              : 'Compléter d\'un modèle'
-            : 'Appliquer un modèle — la checklist de ce type de réunion'
-        }</summary>
-        <p class="discret">Appliquer un modèle ajoute ses lignes manquantes — rien de
-          coché ne bouge, et une ligne en trop se retire de sa croix.</p>
-        <ul class="liste-choix-modeles">
-          ${etat.modelesPrepa
-            .map(
-              (modele) => `
-            <li><button type="button" class="choix-modele"
-              data-appliquer-modele="${echapper(modele.id)}">
-              <span>${echapper(modele.nom)}${
-                actuel?.id === modele.id
-                  ? ' · le modèle de la fiche'
-                  : conseille?.id === modele.id
-                    ? ' · conseillé pour cette réunion'
-                    : ''
-              }</span>
-              <span class="discret"><span class="chiffre">${modele.items.length}</span> lignes</span>
-            </button></li>`,
-            )
-            .join('')}
-        </ul>
-      </details>
-    </section>
-    ${
-      feuille
-        ? `<div class="prepa-phases">
-             ${blocPhase(feuille, 'avant', { auModele })}
-             ${blocPhase(feuille, 'pendant', { auModele })}
-             ${blocPhase(feuille, 'apres', { auModele })}
-           </div>`
-        : ''
-    }`;
-}
-
 // Le suivi : la réunion s'ouvre en relisant ce qui était prévu. « Qu'est-ce qui
 // était prévu ? Qu'est-ce qui a été fait ? Qu'est-ce qui bloque ? »
 function blocSuivi(actionsOuvertes) {
@@ -827,13 +832,26 @@ function vueFicheReunion(etat, fiche) {
 
   return `
     ${enTete('reunions')}
-    <h2 class="titre-page">${echapper(fiche.titre)}</h2>
+    <div class="fiche-tete">
+      <h2 class="titre-page">${echapper(fiche.titre)}</h2>
+      ${menuModeles(etat, evenement, animee)}
+    </div>
     <p class="discret prepa-date">
       ${fiche.date ? echapper(echeanceLisible(depuisDateISO(fiche.date))) : ''}
-      ${evenement ? `· ${echapper(REUNION_OBJETS[evenement.reunion_objet] ?? 'Réunion')}${
-        animee ? " · j'anime" : ''
-      }` : ''}
+      ${evenement ? `· ${echapper(REUNION_OBJETS[evenement.reunion_objet] ?? 'Réunion')}` : ''}
     </p>
+    ${
+      // La case qui commande TOUT le rôle (demande de Noé, 24 août 2026) :
+      // elle écrit `reunion_animee` sur l'événement, et la fiche bascule dans
+      // l'autre version — contrat complet ou préparation de participant, et
+      // la version du modèle qui va avec.
+      evenement
+        ? `<label class="champ-case fiche-anime">
+             <input type="checkbox" data-fiche-anime ${animee ? 'checked' : ''}>
+             <span>J'anime la réunion</span>
+           </label>`
+        : ''
+    }
     ${
       precedent
         ? `<p class="discret prepa-rappel">Ton dernier regard sur l'animation —
@@ -848,7 +866,6 @@ function vueFicheReunion(etat, fiche) {
       animee ? blocOrdreDuJour(fiche) : ''
     }
     ${animee ? blocPresentation(fiche) : ''}
-    ${blocChecklist(etat, fiche)}
     ${blocSuivi(suivi)}
     ${animee ? blocKitAnimation() : ''}
     ${blocConclure(fiche, animee, actionsDeLaFiche)}
@@ -1035,7 +1052,7 @@ function vueCreer(etat) {
 
     <section class="bloc">
       <h2>À venir</h2>
-      <div data-bloc="a-venir">${construireAVenir(etat.publications)}</div>
+      <div data-bloc="a-venir">${construireAVenir(etat.publications, { ouvrable: true })}</div>
     </section>
 
     <section class="bloc">
@@ -1043,7 +1060,51 @@ function vueCreer(etat) {
       <div data-bloc="banque">${construireBanque(etat.publications)}</div>
       <div data-bloc="publiees">${construirePubliees(etat.publications)}</div>
     </section>
+    ${fenetreIdee(etat)}
     ${pied()}`;
+}
+
+// Une publication s'ouvre au clic et se MODIFIE en fenêtre volante (demande de
+// Noé, 24 août 2026) : la banque et les publiées portaient déjà la porte sans
+// que rien ne l'écoute, « À venir » l'a gagnée. Tout s'y corrige — titre,
+// réseau, format, rubrique, date, notes ; vider la date renvoie l'idée à la
+// banque, comme « Repasser en idée ».
+function fenetreIdee(etat) {
+  if (!etat.ideeOuverte) return '';
+
+  const pub = etat.publications.find((candidat) => candidat.id === etat.ideeOuverte);
+  if (!pub) return '';
+
+  return construireFenetre(
+    pub.titre,
+    `<h3 class="fenetre-titre">Modifier</h3>
+     ${construireFormulaire({
+       id: 'idee-edition',
+       libelle: 'Modifier',
+       action: 'modifier-idee',
+       bouton: 'Enregistrer',
+       avecPli: false,
+       extra: `<input type="hidden" name="id" value="${echapper(pub.id)}">`,
+       champs: [
+         { nom: 'titre', libelle: "L'idée, en une phrase", type: 'text', requis: true,
+           valeur: pub.titre },
+         { nom: 'reseau', libelle: 'Réseau', type: 'choix', options: RESEAUX_FCH,
+           valeur: pub.reseau },
+         // `post` a fusionné dans carrousel le 15 août : une vieille ligne se
+         // présente sous le format qui reste.
+         { nom: 'format', libelle: 'Format', type: 'choix', options: FORMATS,
+           valeur: pub.format === 'post' ? 'carrousel' : pub.format },
+         { nom: 'rubrique', libelle: 'Rubrique (facultative)', type: 'text',
+           valeur: pub.rubrique ?? '',
+           suggestions: rubriquesProposees(etat.publications, RUBRIQUES_DEPART) },
+         { nom: 'date_prevue', libelle: "Prévue le (vide = banque d'idées)", type: 'date',
+           valeur: pub.date_prevue ?? '' },
+         { nom: 'notes', libelle: 'Notes', type: 'textarea', valeur: pub.notes ?? '' },
+       ],
+     })}
+     <p><button type="button" class="lien-discret bouton-mini bouton-retirer"
+       data-supprimer-pub="${echapper(pub.id)}">Supprimer l'idée</button></p>`,
+  );
 }
 
 // Tout ce que le calendrier du site assemble. Pas de commande ni de relance :
@@ -1211,10 +1272,9 @@ export default {
       partenaires: [],
       fiches: [],
       actionsClub: [],
-      // La checklist des fiches (24 août 2026) : les feuilles à cases des
-      // réunions du club, et les modèles fch qui les sèment.
-      preparations: [],
       modelesPrepa: [],
+      // La publication ouverte en fenêtre d'édition, sur Créer.
+      ideeOuverte: null,
       vue: 'accueil',
       // La fiche de réunion ouverte : son id vient de l'adresse
       // (#hermitage/reunions/<id>), jamais d'un état d'interface.
@@ -1330,7 +1390,7 @@ export default {
     const charger = async () => {
       const [
         objectifs, victoires, publications, taches, evenements, contacts,
-        fiches, actionsClub, feuilles, modeles,
+        fiches, actionsClub, modeles,
       ] = await Promise.all([
         api.objectifsActifs({ projet: PROJET }),
         api.victoiresDuProjet(PROJET),
@@ -1343,7 +1403,6 @@ export default {
         api.contactsTous(),
         api.fichesReunionToutes(),
         api.actionsClubToutes(),
-        api.preparationsToutes(),
         api.modelesPreparationTous(),
       ]);
 
@@ -1356,9 +1415,7 @@ export default {
         partenaires: contacts.filter((contact) => contact.type === TYPE_PARTENAIRE),
         fiches,
         actionsClub,
-        // Chaque site ne garde que les siennes — le miroir exact du filtre de
-        // Yuno : ici les feuilles d'événements fch, et les modèles du club.
-        preparations: feuilles.filter((feuille) => feuille.evenement?.projet === PROJET),
+        // Le menu « Modèles » de la fiche ne montre que ceux du club.
         modelesPrepa: modeles.filter((modele) => modele.projet === PROJET),
       });
     };
@@ -1396,6 +1453,7 @@ export default {
       etat.detailCal = null;
       etat.editionCal = false;
       etat.jourOuvertCal = null;
+      etat.ideeOuverte = null;
       rendre();
     };
 
@@ -1440,7 +1498,7 @@ export default {
     document.addEventListener('keydown', (evenement) => {
       if (
         evenement.key === 'Escape' &&
-        (etat.creationCal || etat.detailCal || etat.jourOuvertCal)
+        (etat.creationCal || etat.detailCal || etat.jourOuvertCal || etat.ideeOuverte)
       ) {
         fermerFenetres();
       }
@@ -1495,28 +1553,6 @@ export default {
         etat.detailCal = null;
         etat.editionCal = false;
         await charger();
-        rendre();
-        return;
-      }
-
-      // Une ligne ajoutée à la checklist — et, si la case est cochée, au
-      // modèle d'origine : la boucle d'apprentissage, comme chez Yuno.
-      if (action === 'ajouter-item-prepa') {
-        const feuille = etat.preparations.find((f) => f.id === champs.preparation_id);
-        if (!feuille) return;
-        const item = await api.ajouterItemPreparation({
-          preparation_id: champs.preparation_id,
-          phase: champs.phase,
-          texte: champs.texte.trim(),
-        });
-        feuille.items.push(item);
-        if (champs.au_modele === 'oui' && feuille.modele_id) {
-          await api.ajouterItemModele({
-            modele_id: feuille.modele_id,
-            phase: champs.phase,
-            texte: champs.texte.trim(),
-          });
-        }
         rendre();
         return;
       }
@@ -1615,6 +1651,26 @@ export default {
           [colonne]: champs.lien?.trim() || null,
         });
         Object.assign(fiche, misAJour);
+        rendre();
+        return;
+      }
+
+      if (action === 'modifier-idee') {
+        const pub = etat.publications.find((candidat) => candidat.id === champs.id);
+        if (!pub) return;
+        Object.assign(
+          pub,
+          await api.modifierPublication(champs.id, {
+            titre: champs.titre.trim(),
+            reseau: champs.reseau,
+            format: champs.format,
+            rubrique: champs.rubrique?.trim() || null,
+            notes: champs.notes?.trim() || null,
+            // Vider la date renvoie l'idée à la banque.
+            date_prevue: champs.date_prevue || null,
+          }),
+        );
+        etat.ideeOuverte = null;
         rendre();
         return;
       }
@@ -1890,96 +1946,50 @@ export default {
         return;
       }
 
-      // Appliquer un modèle à la fiche ouverte (24 août 2026) : la feuille à
-      // cases naît du modèle choisi, ou gagne ses lignes manquantes — même
-      // phase et même texte, c'est déjà là, on ne double pas. Pas d'écriture
-      // optimiste : plusieurs insertions, une liste à moitié appliquée serait
-      // pire qu'une attente.
+      // Verser un modèle dans les notes de la fiche (24 août 2026 au soir) :
+      // ses lignes arrivent en TEXTE dans le champ — brouillon en cours
+      // compris, c'est lui qui sert de base — sans doubler ce qui s'y trouve,
+      // et SANS redessin : le champ se complète sous les yeux, puis
+      // s'enregistre derrière.
       const appliquerModele = evenement.target.closest('[data-appliquer-modele]');
       if (appliquerModele) {
         const fiche = etat.fiches.find((f) => f.id === etat.reunionOuverte);
         const modele = etat.modelesPrepa.find(
           (candidat) => candidat.id === appliquerModele.dataset.appliquerModele,
         );
-        if (!fiche?.evenement_id || !modele) return;
-        appliquerModele.disabled = true;
+        const champ = section.querySelector('#fiche-contrat-notes_avant');
+        if (!fiche || !modele || !champ) return;
+        section.querySelector('.fiche-menu')?.removeAttribute('open');
 
+        // Changer de modèle ÉCHANGE les lignes de modèle (correction de Noé,
+        // 24 août au soir — le simple ajout ne permettait pas d'en changer) :
+        // toute ligne du champ qui correspond mot pour mot à une ligne d'UN
+        // des modèles est tenue pour « du modèle » et cède la place ; une
+        // ligne écrite ou retouchée par Noé n'y correspond plus — elle est à
+        // lui, elle reste.
+        const normalise = (texte) => texte.replace(/^[-•]\s*/, '').trim().toLowerCase();
+        const lignesDesModeles = new Set(
+          etat.modelesPrepa.flatMap((m) => m.items.map((item) => normalise(item.texte))),
+        );
+        const gardees = champ.value
+          .split('\n')
+          .filter((ligne) => ligne.trim() && !lignesDesModeles.has(normalise(ligne)));
+        const dejaLa = new Set(gardees.map(normalise));
+        const versees = modele.items
+          .map((item) => item.texte.trim())
+          .filter((texte) => !dejaLa.has(texte.toLowerCase()))
+          .map((texte) => `- ${texte}`);
+
+        const nouveau = [...gardees, ...versees].join('\n');
+        if (nouveau === champ.value) return;
+        champ.value = nouveau;
         try {
-          const feuille = etat.preparations.find(
-            (f) => f.evenement_id === fiche.evenement_id,
-          );
-          if (!feuille) {
-            etat.preparations.unshift(
-              await api.creerPreparation({
-                modele,
-                evenement_id: fiche.evenement_id,
-                titre: fiche.titre,
-                date: fiche.date,
-              }),
-            );
-          } else {
-            const cle = (item) => `${item.phase}|${item.texte.trim().toLowerCase()}`;
-            const dejaLa = new Set(feuille.items.map(cle));
-            for (const item of modele.items.filter((candidat) => !dejaLa.has(cle(candidat)))) {
-              feuille.items.push(
-                await api.ajouterItemPreparation({
-                  preparation_id: feuille.id,
-                  phase: item.phase,
-                  texte: item.texte,
-                  ordre: item.ordre,
-                }),
-              );
-            }
-            if (feuille.modele_id !== modele.id) {
-              // La réponse ne porte que les colonnes de la table : les items
-              // ne sont pas écrasés par l'assignation.
-              Object.assign(
-                feuille,
-                await api.modifierPreparation(feuille.id, { modele_id: modele.id }),
-              );
-            }
-          }
-          rendre();
+          await api.modifierFicheReunion(fiche.id, { notes_avant: nouveau });
+          fiche.notes_avant = nouveau;
         } catch (souci) {
-          console.error('Application du modèle impossible', souci);
-          appliquerModele.disabled = false;
-          dire("Le modèle n'a pas pu être appliqué.");
-        }
-        return;
-      }
-
-      // Cocher une ligne de la checklist. L'écran d'abord, l'écriture
-      // derrière, le retour en arrière si elle échoue.
-      const cocherPrepa = evenement.target.closest('[data-cocher-prepa]');
-      if (cocherPrepa) {
-        const id = cocherPrepa.dataset.cocherPrepa;
-        for (const feuille of etat.preparations) {
-          const item = feuille.items.find((candidat) => candidat.id === id);
-          if (!item) continue;
-          await modifierAussitot(
-            item,
-            { fait: !item.fait },
-            () => api.modifierItemPreparation(id, { fait: !item.fait }),
-            { rendre, echouer: dire },
-          );
-          return;
-        }
-        return;
-      }
-
-      const retirerPrepa = evenement.target.closest('[data-retirer-prepa]');
-      if (retirerPrepa) {
-        const id = retirerPrepa.dataset.retirerPrepa;
-        for (const feuille of etat.preparations) {
-          const rang = feuille.items.findIndex((candidat) => candidat.id === id);
-          if (rang === -1) continue;
-          await retirerAussitot(
-            feuille.items,
-            feuille.items[rang],
-            () => api.supprimerItemPreparation(id),
-            { rendre, echouer: dire },
-          );
-          return;
+          console.error('Versement du modèle impossible', souci);
+          // Le texte reste dans le champ : « Enregistrer » le gardera.
+          dire("Le modèle est dans le champ mais n'a pas pu s'enregistrer — touche Enregistrer.");
         }
         return;
       }
@@ -2082,6 +2092,20 @@ export default {
         return;
       }
 
+      // Une publication s'ouvre au clic — sauf sur ses propres contrôles :
+      // avancer un statut ou programmer une date ne doit pas ouvrir une
+      // fenêtre par-dessus (la règle de la fiche du CRM, reprise ici).
+      const ouvrirIdee = evenement.target.closest('[data-ouvrir-pub]');
+      if (
+        ouvrirIdee &&
+        !evenement.target.closest('a, button, input, select, textarea, label')
+      ) {
+        etat.ideeOuverte = ouvrirIdee.dataset.ouvrirPub;
+        rendre();
+        section.querySelector('.fenetre-fermer')?.focus();
+        return;
+      }
+
       const avancer = evenement.target.closest('[data-avancer]');
       if (avancer) {
         const pub = trouverPub(avancer.dataset.avancer);
@@ -2113,6 +2137,10 @@ export default {
       if (supprimerPub) {
         const pub = trouverPub(supprimerPub.dataset.supprimerPub);
         if (!pub || estProvisoire(pub.id)) return;
+        // Depuis la fenêtre d'édition, le geste est écrit en toutes lettres
+        // (« Supprimer l'idée ») : on referme d'abord, sinon la fenêtre
+        // resterait ouverte sur une ligne qui n'existe plus.
+        if (etat.ideeOuverte === pub.id) etat.ideeOuverte = null;
         await retirerAussitot(etat.publications, pub, () => api.supprimerPublication(pub.id), {
           rendre,
           echouer: dire,
@@ -2207,6 +2235,23 @@ export default {
     });
 
     section.addEventListener('change', async (evenement) => {
+      // « J'anime la réunion » : la case écrit le rôle sur l'ÉVÉNEMENT — la
+      // fiche entière bascule dans l'autre version au redessin.
+      const ficheAnime = evenement.target.closest('[data-fiche-anime]');
+      if (ficheAnime) {
+        const coche = ficheAnime.checked;
+        const fiche = etat.fiches.find((f) => f.id === etat.reunionOuverte);
+        const reunion = etat.evenements.find((e) => e.id === fiche?.evenement_id);
+        if (!reunion) return;
+        await modifierAussitot(
+          reunion,
+          { reunion_animee: coche },
+          () => api.modifierEvenement(reunion.id, { reunion_animee: coche }),
+          { rendre, echouer: dire },
+        );
+        return;
+      }
+
       const programmer = evenement.target.closest('[data-programmer]');
       if (programmer && programmer.value) {
         const pub = trouverPub(programmer.dataset.programmer);
