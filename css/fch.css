@@ -26,26 +26,27 @@ body[data-espace="hermitage"] {
 }
 
 /* --- L'en-tête du site ------------------------------------------------------
-   Le logo entier, centré, en PNG transparent à même le fond bleu (choix de
-   Noé, 7 août 2026). */
+   Plus de logo au-dessus de la barre (demande de Noé, 24 août 2026) : il est
+   DEVENU l'onglet Accueil. Le PNG sert de POCHOIR (`mask`), et l'encre vient
+   de `currentColor` : le dessin entier en blanc plein quand l'onglet est
+   actif, dans le bleu-gris des autres onglets sinon — mêmes règles de couleur
+   que ses voisins, sans second fichier. */
 
-.fch-tete {
-  display: flex;
-  justify-content: center;
-  margin: 0 0 var(--espace-8);
-}
-
-/* Le fichier garde ~9 % de marges transparentes en haut et en bas : les marges
-   négatives les résorbent sans toucher à l'image. */
-.fch-logo {
+/* Le pochoir est un fichier À PART (`fch-logo-pochoir.png`, alpha = l'encre,
+   fabriqué depuis le logo — voir l'état des lieux du 24 août) : le PNG du
+   logo porte son épais contour blanc de sticker, et en masque direct il
+   rendait une tache pleine. */
+.fch-logo-onglet {
   display: block;
-  width: 150px;
-  max-width: 45vw;
-  margin: -12px 0 -8px;
+  width: 2.75rem;
+  height: 2.25rem;
+  background: currentColor;
+  -webkit-mask: url("../img/fch-logo-pochoir.png") no-repeat center / contain;
+  mask: url("../img/fch-logo-pochoir.png") no-repeat center / contain;
 }
 
-.fch-tete + .fch-nav > a:first-child { margin-left: auto; }
-.fch-tete + .fch-nav > a:last-child { margin-right: auto; }
+.fch-nav > a:first-child { margin-left: auto; }
+.fch-nav > a:last-child { margin-right: auto; }
 
 /* --- La navigation du site --------------------------------------------------
    Même forme que celle de Yuno et du hub : des pastilles, l'active pleine. */

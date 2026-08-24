@@ -67,10 +67,13 @@ site Yuno est toujours sombre. Deux conséquences assumées :
   (demande de Noé — la pastille jaune est partie) : les autres onglets
   restent dans le bleu-gris adapté au fond, et un voile blanc très léger
   garde à l'actif sa forme de pastille.
-- **Le logo reste en PNG transparent**, à même le fond bleu, sans plaque
-  (choix de Noé du 7 août : la plaque blanche a été essayée puis retirée).
-  Ses traits noirs et bleus se lisent moins qu'ils ne le feraient sur clair —
-  c'est assumé.
+- **Le logo n'est plus en tête de page : il EST l'onglet Accueil** (demande
+  de Noé, 24 août 2026). Le dessin entier en une seule encre, par un masque
+  CSS teinté par `currentColor` — blanc plein quand l'onglet est actif, le
+  bleu-gris des autres onglets sinon. Le pochoir est un fichier à part
+  (`img/fch-logo-pochoir.png`, alpha = l'encre, fabriqué depuis le logo sans
+  Pillow — le PNG d'origine porte son épais contour blanc de sticker, qui en
+  masque direct rendait une tache pleine).
 
 Le liseré sous la navigation est rouge, plein et fin (2 px), sur toute la
 largeur de la barre.
@@ -148,7 +151,19 @@ son Drive), et c'est lui qui commande désormais l'outil. Sa thèse, en une
 ligne : *une réunion se prépare par un objectif clair, s'anime avec une
 méthode adaptée, et se termine par un plan d'action suivi.*
 
-La fiche suit ce déroulé, dans cet ordre :
+**Deux fiches selon le rôle** (précision de Noé, 24 août 2026) : la fiche
+complète ci-dessous vaut quand il ANIME. Quand il **y assiste**, « la
+préparation est davantage sur les questions et points que je souhaite aborder
+ou régler » — le type de réunion, les envois, l'ordre du jour et la
+présentation ne sont pas ses décisions, la fiche ne les demande pas. Elle se
+réduit à : **« Ta préparation »** (son objectif de fin de réunion, les
+participants, ses questions et points), le suivi des actions, et **Conclure**
+au complet — avec, côté Drive, le collage du lien du compte-rendu reçu mais
+pas le bouton d'en créer un (« le compte-rendu officiel n'est pas le tien
+ici »). L'enregistrement n'écrit que les champs que le formulaire portait :
+une fiche de participant n'efface pas un type ou des envois déjà posés.
+
+La fiche complète (j'anime) suit le déroulé du guide, dans cet ordre :
 
 1. **Le contrat** — le **type** de réunion (information · décision ·
    coordination · problème · idées · bilan · gouvernance : le type commande la
@@ -190,9 +205,20 @@ bouton met dans le presse-papiers le nom attendu par la convention du dossier
 (« Réunion CA - 08/06/26 »), et le lien du document créé se colle sur la
 fiche : elle devient le point d'entrée unique.
 
-Les six modèles de préparation semés le 21 août au matin restent en base mais
-ne servent plus au site : le savoir-faire vit désormais dans la structure de
-la fiche, pas dans des listes à copier.
+**Les six modèles de préparation sont REVENUS sur la fiche le 24 août 2026**
+(demande de Noé — la refonte du 21 les avait écartés, « le modèle par défaut
+peut ne pas être le bon, et je veux pouvoir ajouter des détails ») : un pli
+discret « Appliquer un modèle » (ou « Modèle : X — changer ou compléter »)
+liste les modèles fch, **le bon proposé d'office** (même objet et même rôle,
+puis même objet, puis « autre »). Appliquer fait naître la **checklist
+Avant · Pendant · Après** — la feuille à cases des tables de Yuno, rattachée
+à l'événement — ou **ajoute les lignes manquantes** à celle qui existe (même
+phase et même texte = déjà là, on ne double pas) : rien de coché ne bouge,
+une ligne en trop se retire de sa croix, et la feuille retient le modèle
+appliqué. La boucle « aussi au modèle » vaut ici comme chez Yuno, et chaque
+site ne charge que ses feuilles (le projet de l'événement lié tranche). La
+vieille feuille de la Réunion CA du 24 août est ainsi revenue d'elle-même
+sur sa fiche.
 
 ### `#hermitage/calendrier` — tout ce qui porte une date
 

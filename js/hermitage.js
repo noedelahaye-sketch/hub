@@ -34,7 +34,7 @@ import {
   formulaireIdee,
 } from './publications.js';
 import { depuisDateISO, echeanceLisible, momentLisible, echapper, versDateISO } from './format.js';
-import { finDeLaSortie, phaseDeLaSortie } from './preparations-commun.js';
+import { blocPhase, finDeLaSortie, phaseDeLaSortie } from './preparations-commun.js';
 
 import {
   assemblerCalendrier,
@@ -101,8 +101,12 @@ function enTete(vueActive) {
   // Le calendrier n'est plus dans cette liste : il va en bout de barre, en
   // icône (voir `ongletCalendrier`). « Partenaires » y gagne la place qui lui
   // manquait sur 375 px.
+  //
+  // Plus de logo en tête de page (demande de Noé, 24 août 2026) : il DEVIENT
+  // l'onglet Accueil — le dessin entier en une seule encre, par un masque CSS
+  // teinté par `currentColor`, qui suit donc les couleurs des autres onglets :
+  // blanc plein quand il est actif, bleu-gris adapté sinon.
   const liens = [
-    ['accueil', 'Accueil', '#hermitage'],
     ['creer', 'Créer', '#hermitage/creer'],
     ['reunions', 'Réunions', '#hermitage/reunions'],
     ['partenaires', 'Partenaires', '#hermitage/partenaires'],
@@ -110,10 +114,12 @@ function enTete(vueActive) {
   ];
 
   return `
-    <header class="fch-tete">
-      <img class="fch-logo" src="img/fch-logo.png" alt="FC Hermitage">
-    </header>
     <nav class="fch-nav" aria-label="Le site FC Hermitage">
+      <a href="#hermitage" class="${vueActive === 'accueil' ? 'actif' : ''}"
+        ${vueActive === 'accueil' ? 'aria-current="page"' : ''}
+        title="Accueil" aria-label="Accueil">
+        <span class="fch-logo-onglet" aria-hidden="true"></span>
+      </a>
       ${liens
         .map(
           ([vue, libelle, adresse]) => `
@@ -255,6 +261,24 @@ function ficheDeLaReunion(fiches, evenementId) {
   return fiches.find((fiche) => fiche.evenement_id === evenementId) ?? null;
 }
 
+// Le modèle qui correspond le mieux à la réunion : même objet et même rôle
+// d'abord, puis même objet peu importe le rôle, puis l'objet « autre ».
+// Revenu le 24 août 2026 (demande de Noé — la refonte l'avait retiré) : les
+// six modèles semés portent un vrai savoir-faire, la fiche le propose sans
+// l'imposer.
+function modelePourReunion(modeles, evenement) {
+  const memeObjet = modeles.filter((modele) => modele.objet === evenement?.reunion_objet);
+
+  return (
+    memeObjet.find((modele) => modele.anime === Boolean(evenement?.reunion_animee)) ??
+    memeObjet.find((modele) => modele.anime === null) ??
+    memeObjet[0] ??
+    modeles.find((modele) => modele.objet === 'autre') ??
+    modeles[0] ??
+    null
+  );
+}
+
 function boutonFiche(fiche, evenement) {
   return fiche
     ? `<button type="button" class="bouton-secondaire bouton-mini"
@@ -336,9 +360,52 @@ function ligneAction(action) {
 
 // --- Les blocs de la fiche ---------------------------------------------------
 
-// AVANT — le contrat de réunion : ce qui se définit avant de convoquer, pour
-// que personne n'arrive en pensant débattre quand d'autres viennent décider.
+// AVANT — deux préparations selon le rôle (précision de Noé, 24 août 2026) :
+//
+//   J'ANIME : le contrat complet du guide — le type de réunion, l'objectif
+//   collectif, les participants, ce qui s'envoie avant. C'est moi qui tiens
+//   le cadre, ces décisions m'appartiennent.
+//
+//   J'Y ASSISTE : « la préparation est davantage sur les questions et points
+//   que je souhaite aborder ou régler » — le type, les envois, l'ordre du
+//   jour et la présentation ne sont PAS mes décisions. Restent : mon objectif
+//   de fin de réunion, les participants, et mes notes.
 function blocContrat(fiche, animee) {
+  if (!animee) {
+    return `
+    <section class="bloc">
+      <h2>Ta préparation</h2>
+      ${construireFormulaire({
+        id: 'fiche-contrat',
+        libelle: 'Ta préparation',
+        action: 'preparer-reunion',
+        bouton: 'Enregistrer',
+        avecPli: false,
+        extra: `<input type="hidden" name="id" value="${echapper(fiche.id)}">`,
+        champs: [
+          {
+            nom: 'objectif',
+            libelle: 'Ton objectif — à la fin de la réunion, tu dois avoir…',
+            type: 'textarea',
+            valeur: fiche.objectif ?? '',
+          },
+          {
+            nom: 'participants',
+            libelle: 'Les participants',
+            type: 'text',
+            valeur: fiche.participants ?? '',
+          },
+          {
+            nom: 'notes_avant',
+            libelle: 'Les questions et points que tu veux aborder ou régler',
+            type: 'textarea',
+            valeur: fiche.notes_avant ?? '',
+          },
+        ],
+      })}
+    </section>`;
+  }
+
   return `
     <section class="bloc">
       <h2>Le contrat</h2>
@@ -379,9 +446,7 @@ function blocContrat(fiche, animee) {
           },
           {
             nom: 'notes_avant',
-            libelle: animee
-              ? 'Tes notes : points sensibles, et qui les portera'
-              : 'Tes notes : questions, ce que tu dois présenter ou défendre',
+            libelle: 'Tes notes : points sensibles, et qui les portera',
             type: 'textarea',
             valeur: fiche.notes_avant ?? '',
           },
@@ -468,6 +533,72 @@ function blocOrdreDuJour(fiche) {
         ],
       })}
     </section>`;
+}
+
+// La CHECKLIST de la fiche (demande de Noé, 24 août 2026) : les modèles de
+// préparation — CA j'anime / j'y assiste, point alternance, réunion
+// communication, rendez-vous partenaire, les essentiels — reviennent sur la
+// fiche. La refonte les avait écartés ; or « le modèle par défaut peut ne pas
+// être le bon », et une checklist ajoute les détails que la structure ne dit
+// pas. Un pli propose les modèles (le bon d'office, selon objet et rôle) ;
+// appliquer fait naître la feuille à cases — les tables de Yuno, rattachées à
+// l'événement — ou AJOUTE les lignes manquantes à celle qui existe : rien de
+// coché ne bouge, une ligne en trop se retire de sa croix.
+function blocChecklist(etat, fiche) {
+  if (!fiche.evenement_id) return '';
+
+  const feuille =
+    etat.preparations.find((f) => f.evenement_id === fiche.evenement_id) ?? null;
+  if (!feuille && !etat.modelesPrepa.length) return '';
+
+  const evenement = etat.evenements.find((e) => e.id === fiche.evenement_id) ?? null;
+  const actuel = feuille
+    ? etat.modelesPrepa.find((modele) => modele.id === feuille.modele_id) ?? null
+    : null;
+  const conseille = feuille ? null : modelePourReunion(etat.modelesPrepa, evenement);
+  const auModele = Boolean(actuel);
+
+  return `
+    <section class="bloc">
+      <details class="ajout prepa-changer-modele">
+        <summary>${
+          feuille
+            ? actuel
+              ? `Modèle : ${echapper(actuel.nom)} — changer ou compléter`
+              : 'Compléter d\'un modèle'
+            : 'Appliquer un modèle — la checklist de ce type de réunion'
+        }</summary>
+        <p class="discret">Appliquer un modèle ajoute ses lignes manquantes — rien de
+          coché ne bouge, et une ligne en trop se retire de sa croix.</p>
+        <ul class="liste-choix-modeles">
+          ${etat.modelesPrepa
+            .map(
+              (modele) => `
+            <li><button type="button" class="choix-modele"
+              data-appliquer-modele="${echapper(modele.id)}">
+              <span>${echapper(modele.nom)}${
+                actuel?.id === modele.id
+                  ? ' · le modèle de la fiche'
+                  : conseille?.id === modele.id
+                    ? ' · conseillé pour cette réunion'
+                    : ''
+              }</span>
+              <span class="discret"><span class="chiffre">${modele.items.length}</span> lignes</span>
+            </button></li>`,
+            )
+            .join('')}
+        </ul>
+      </details>
+    </section>
+    ${
+      feuille
+        ? `<div class="prepa-phases">
+             ${blocPhase(feuille, 'avant', { auModele })}
+             ${blocPhase(feuille, 'pendant', { auModele })}
+             ${blocPhase(feuille, 'apres', { auModele })}
+           </div>`
+        : ''
+    }`;
 }
 
 // Le suivi : la réunion s'ouvre en relisant ce qui était prévu. « Qu'est-ce qui
@@ -647,10 +778,13 @@ function blocConclure(fiche, animee, actionsDeLaFiche) {
                </span>
                <span class="lien-externe-fleche" aria-hidden="true">→</span>
              </a>`
-          : `<p class="reunion-portes">
+          : animee
+            ? `<p class="reunion-portes">
                <a class="bouton-secondaire bouton-mini" href="${DRIVE_REUNIONS.modeleCompteRendu}"
                  target="_blank" rel="noopener">Créer le compte-rendu (copie du dernier)</a>
              </p>`
+            : `<p class="discret">Le compte-rendu officiel n'est pas le tien ici —
+                 colle son lien quand il arrive.</p>`
       }
       ${construireFormulaire({
         id: 'fiche-lien-cr',
@@ -707,8 +841,14 @@ function vueFicheReunion(etat, fiche) {
         : ''
     }
     ${blocContrat(fiche, animee)}
-    ${blocOrdreDuJour(fiche)}
-    ${blocPresentation(fiche)}
+    ${
+      // L'ordre du jour et la présentation appartiennent à qui TIENT la
+      // réunion (précision de Noé, 24 août 2026) : quand il y assiste, ce ne
+      // sont pas ses décisions — la fiche ne les lui demande pas.
+      animee ? blocOrdreDuJour(fiche) : ''
+    }
+    ${animee ? blocPresentation(fiche) : ''}
+    ${blocChecklist(etat, fiche)}
     ${blocSuivi(suivi)}
     ${animee ? blocKitAnimation() : ''}
     ${blocConclure(fiche, animee, actionsDeLaFiche)}
@@ -1071,6 +1211,10 @@ export default {
       partenaires: [],
       fiches: [],
       actionsClub: [],
+      // La checklist des fiches (24 août 2026) : les feuilles à cases des
+      // réunions du club, et les modèles fch qui les sèment.
+      preparations: [],
+      modelesPrepa: [],
       vue: 'accueil',
       // La fiche de réunion ouverte : son id vient de l'adresse
       // (#hermitage/reunions/<id>), jamais d'un état d'interface.
@@ -1184,20 +1328,24 @@ export default {
     };
 
     const charger = async () => {
-      const [objectifs, victoires, publications, taches, evenements, contacts, fiches, actionsClub] =
-        await Promise.all([
-          api.objectifsActifs({ projet: PROJET }),
-          api.victoiresDuProjet(PROJET),
-          api.publicationsToutes(PROJET),
-          api.tachesDatees({ projet: PROJET }),
-          // TOUS les événements depuis le 21 août 2026, plus seulement ceux à
-          // venir : les réunions passées portent leurs fiches. Le calendrier,
-          // lui, refiltre l'avenir — son affichage n'a pas bougé.
-          api.evenementsTous({ projet: PROJET }),
-          api.contactsTous(),
-          api.fichesReunionToutes(),
-          api.actionsClubToutes(),
-        ]);
+      const [
+        objectifs, victoires, publications, taches, evenements, contacts,
+        fiches, actionsClub, feuilles, modeles,
+      ] = await Promise.all([
+        api.objectifsActifs({ projet: PROJET }),
+        api.victoiresDuProjet(PROJET),
+        api.publicationsToutes(PROJET),
+        api.tachesDatees({ projet: PROJET }),
+        // TOUS les événements depuis le 21 août 2026, plus seulement ceux à
+        // venir : les réunions passées portent leurs fiches. Le calendrier,
+        // lui, refiltre l'avenir — son affichage n'a pas bougé.
+        api.evenementsTous({ projet: PROJET }),
+        api.contactsTous(),
+        api.fichesReunionToutes(),
+        api.actionsClubToutes(),
+        api.preparationsToutes(),
+        api.modelesPreparationTous(),
+      ]);
 
       Object.assign(etat, {
         objectifs,
@@ -1208,6 +1356,10 @@ export default {
         partenaires: contacts.filter((contact) => contact.type === TYPE_PARTENAIRE),
         fiches,
         actionsClub,
+        // Chaque site ne garde que les siennes — le miroir exact du filtre de
+        // Yuno : ici les feuilles d'événements fch, et les modèles du club.
+        preparations: feuilles.filter((feuille) => feuille.evenement?.projet === PROJET),
+        modelesPrepa: modeles.filter((modele) => modele.projet === PROJET),
       });
     };
 
@@ -1347,16 +1499,45 @@ export default {
         return;
       }
 
+      // Une ligne ajoutée à la checklist — et, si la case est cochée, au
+      // modèle d'origine : la boucle d'apprentissage, comme chez Yuno.
+      if (action === 'ajouter-item-prepa') {
+        const feuille = etat.preparations.find((f) => f.id === champs.preparation_id);
+        if (!feuille) return;
+        const item = await api.ajouterItemPreparation({
+          preparation_id: champs.preparation_id,
+          phase: champs.phase,
+          texte: champs.texte.trim(),
+        });
+        feuille.items.push(item);
+        if (champs.au_modele === 'oui' && feuille.modele_id) {
+          await api.ajouterItemModele({
+            modele_id: feuille.modele_id,
+            phase: champs.phase,
+            texte: champs.texte.trim(),
+          });
+        }
+        rendre();
+        return;
+      }
+
       // Le contrat de la fiche : type, objectif, participants, envois, notes.
       if (action === 'preparer-reunion') {
         const fiche = etat.fiches.find((f) => f.id === champs.id);
         if (!fiche) return;
         const misAJour = await api.modifierFicheReunion(champs.id, {
-          type_reunion: champs.type_reunion || null,
           objectif: champs.objectif?.trim() || null,
           participants: champs.participants?.trim() || null,
-          infos_avant: champs.infos_avant?.trim() || null,
           notes_avant: champs.notes_avant?.trim() || null,
+          // Absents de la fiche d'un participant (24 août 2026) : on n'écrit
+          // que ce que le formulaire portait — un champ qui n'existe pas à
+          // l'écran ne doit pas effacer ce qui est en base.
+          ...(champs.type_reunion !== undefined
+            ? { type_reunion: champs.type_reunion || null }
+            : {}),
+          ...(champs.infos_avant !== undefined
+            ? { infos_avant: champs.infos_avant?.trim() || null }
+            : {}),
         });
         Object.assign(fiche, misAJour);
         rendre();
@@ -1702,6 +1883,100 @@ export default {
             fiche.points,
             fiche.points[rang],
             () => api.supprimerPointReunion(id),
+            { rendre, echouer: dire },
+          );
+          return;
+        }
+        return;
+      }
+
+      // Appliquer un modèle à la fiche ouverte (24 août 2026) : la feuille à
+      // cases naît du modèle choisi, ou gagne ses lignes manquantes — même
+      // phase et même texte, c'est déjà là, on ne double pas. Pas d'écriture
+      // optimiste : plusieurs insertions, une liste à moitié appliquée serait
+      // pire qu'une attente.
+      const appliquerModele = evenement.target.closest('[data-appliquer-modele]');
+      if (appliquerModele) {
+        const fiche = etat.fiches.find((f) => f.id === etat.reunionOuverte);
+        const modele = etat.modelesPrepa.find(
+          (candidat) => candidat.id === appliquerModele.dataset.appliquerModele,
+        );
+        if (!fiche?.evenement_id || !modele) return;
+        appliquerModele.disabled = true;
+
+        try {
+          const feuille = etat.preparations.find(
+            (f) => f.evenement_id === fiche.evenement_id,
+          );
+          if (!feuille) {
+            etat.preparations.unshift(
+              await api.creerPreparation({
+                modele,
+                evenement_id: fiche.evenement_id,
+                titre: fiche.titre,
+                date: fiche.date,
+              }),
+            );
+          } else {
+            const cle = (item) => `${item.phase}|${item.texte.trim().toLowerCase()}`;
+            const dejaLa = new Set(feuille.items.map(cle));
+            for (const item of modele.items.filter((candidat) => !dejaLa.has(cle(candidat)))) {
+              feuille.items.push(
+                await api.ajouterItemPreparation({
+                  preparation_id: feuille.id,
+                  phase: item.phase,
+                  texte: item.texte,
+                  ordre: item.ordre,
+                }),
+              );
+            }
+            if (feuille.modele_id !== modele.id) {
+              // La réponse ne porte que les colonnes de la table : les items
+              // ne sont pas écrasés par l'assignation.
+              Object.assign(
+                feuille,
+                await api.modifierPreparation(feuille.id, { modele_id: modele.id }),
+              );
+            }
+          }
+          rendre();
+        } catch (souci) {
+          console.error('Application du modèle impossible', souci);
+          appliquerModele.disabled = false;
+          dire("Le modèle n'a pas pu être appliqué.");
+        }
+        return;
+      }
+
+      // Cocher une ligne de la checklist. L'écran d'abord, l'écriture
+      // derrière, le retour en arrière si elle échoue.
+      const cocherPrepa = evenement.target.closest('[data-cocher-prepa]');
+      if (cocherPrepa) {
+        const id = cocherPrepa.dataset.cocherPrepa;
+        for (const feuille of etat.preparations) {
+          const item = feuille.items.find((candidat) => candidat.id === id);
+          if (!item) continue;
+          await modifierAussitot(
+            item,
+            { fait: !item.fait },
+            () => api.modifierItemPreparation(id, { fait: !item.fait }),
+            { rendre, echouer: dire },
+          );
+          return;
+        }
+        return;
+      }
+
+      const retirerPrepa = evenement.target.closest('[data-retirer-prepa]');
+      if (retirerPrepa) {
+        const id = retirerPrepa.dataset.retirerPrepa;
+        for (const feuille of etat.preparations) {
+          const rang = feuille.items.findIndex((candidat) => candidat.id === id);
+          if (rang === -1) continue;
+          await retirerAussitot(
+            feuille.items,
+            feuille.items[rang],
+            () => api.supprimerItemPreparation(id),
             { rendre, echouer: dire },
           );
           return;
