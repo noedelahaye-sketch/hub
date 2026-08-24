@@ -28,6 +28,13 @@ fonts/Canela_Collection/
 .vscode/
 .idea/
 
-# Claude Code — réglages locaux à cette machine
-.claude/settings.local.json
-.claude/launch.json
+# Claude Code — réglages, agents et skills installés sur cette machine.
+# Tout le dossier, et pas seulement les réglages : un skill tiers (Impeccable,
+# installé le 24 août 2026) pèse plusieurs centaines de fichiers qui partiraient
+# sinon sur GitHub Pages avec le site.
+.claude/
+
+# Le contexte produit d'Impeccable : un condensé de CLAUDE.md et des cahiers
+# des charges, écrit pour cet outil. Ce sont les documents d'origine qui font
+# autorité et qui sont versionnés — pas ce résumé, qui se périmerait à côté.
+PRODUCT.md
