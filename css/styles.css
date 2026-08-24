@@ -440,6 +440,25 @@ a { color: var(--accent); }
 
 .lien-discret:hover { color: var(--texte); }
 
+/* Un lien discret reste petit à l'œil, jamais au doigt. Son texte fait 13 px de
+   haut : « Annuler » — celui qui rattrape une tâche cochée par erreur, et qui
+   ne reste que six secondes — se visait donc plus mal que le cercle qui venait
+   de la cocher. La zone sensible déborde au-dessus et en dessous jusqu'à 24 px
+   (WCAG 2.2, 2.5.8) sans que rien ne bouge dans la phrase : c'est une boîte
+   transparente, pas du remplissage.
+   `.bouton-mini` en est exclu — il porte déjà ses 2 rem. */
+.lien-discret:not(.bouton-mini) { position: relative; }
+
+.lien-discret:not(.bouton-mini)::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 24px;
+  transform: translateY(-50%);
+}
+
 #vue {
   max-width: var(--colonne-max);
   margin: 0 auto;
@@ -2583,6 +2602,12 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    plutôt que de se couper. En vue mois il reste sur une ligne — six semaines
    de titres repliés feraient une page sans forme.
 
+   AMENDÉ le 24 août 2026 : « passe à la ligne » a maintenant une fin, à trois
+   lignes. Le principe tenait tant que le texte était minuscule ; à 10,3 px, un
+   titre de douze mots repliait une colonne de 47 px sur sept lignes et poussait
+   la semaine entière de 137 px. Trois lignes disent assez pour reconnaître ce
+   qu'on cherche — le détail s'ouvre d'un appui.
+
    Le bloc flex n'est pas un caprice : une barre haute comme sa durée doit
    écrire son texte EN HAUT, là où l'événement commence. Un <button> centre son
    contenu, et ni `display: block`, ni `flow-root`, ni `align-content: start`
@@ -2597,6 +2622,29 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   justify-content: flex-start;
   white-space: normal;
   line-height: 1.35;
+  /* 24 px de haut au minimum, quel que soit l'écran. Une barre de semaine est
+     un bouton — on l'ouvre, on la glisse d'un jour à l'autre — et elle tombait
+     à 18,75 px sur ordinateur, 15 px sur téléphone. Sous 24 px, une cible
+     empilée à 2 px de sa voisine ne se vise plus au doigt (WCAG 2.2, 2.5.8), et
+     c'est le bloc du matin sur le téléphone du matin.
+     La semaine peut se le permettre, le mois non : sa ligne réserve 16 rem là
+     où un mois n'en donne que 5,5 aux siennes. D'où cette règle ici, et non sur
+     toutes les barres du calendrier. */
+  min-height: max(var(--duree, 0rem), 24px); /* en px : la racine est à 15 px,
+     1,5 rem n'aurait fait que 22,5 — et le seuil, lui, est absolu. */
+}
+
+/* Trois lignes au plus (demande de Noé, 24 août 2026). Le titre est un élément
+   depuis ce jour-là, et pour cette seule raison : on ne limite pas du texte nu.
+
+   Sauf quand la barre tient sa hauteur de sa DURÉE : un match de deux heures a
+   déjà cinq lignes de place, les lui refuser couperait un titre devant du vide.
+   La règle d'origine y reste entière. */
+.cal-semaine .cal-barre-element:not(.cal-barre-duree) .cal-barre-titre {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
 }
 
 .cal-semaine .cal-barre-heure { margin-right: 0; }
@@ -2710,7 +2758,11 @@ body[data-espace="hermitage"] .choix-statut-neutre {
      que lui. */
   align-self: start;
   overflow: hidden;
-  min-height: 1.25rem;
+  /* La durée arrive en `--duree` (posée en style par `barre`, dans
+     calendrier-commun.js). `max()` la confronte au minimum de la vue : c'est
+     le plus grand des deux qui gagne, et un événement d'une demi-heure ne peut
+     plus passer sous la taille de cible. */
+  min-height: max(var(--duree, 0rem), 1.25rem);
   margin: 0 3px 2px;
   padding: 1px var(--espace-8);
   font-family: inherit;
@@ -2996,6 +3048,16 @@ body[data-espace="hermitage"] .choix-statut-neutre {
     font-size: 0.5625rem;
     min-height: 1rem;
     border-left-width: 2px;
+  }
+  /* La semaine garde des barres qui se lisent et se visent : ni la hauteur ni
+     le corps du mois ne s'y appliquent. À 0,5625 rem son titre tombait à
+     8,4 px — un texte qu'on devine plutôt qu'on ne le lit. La marge basse
+     revient aussi : à 24 px, deux barres collées se liraient comme une seule. */
+  .cal-semaine .cal-barre-element {
+    margin: 0 1px 2px;
+    padding: 1px 4px;
+    font-size: 0.6875rem;
+    min-height: max(var(--duree, 0rem), 24px);
   }
   .cal-reste { padding-left: 3px; font-size: 0.5625rem; }
   .cal-nav { margin-left: 0; width: 100%; }

@@ -493,9 +493,14 @@ function barre(segment, { montrerProjet = false, proportionnel = false, empile =
   const { element, deborde } = segment;
   const projet = montrerProjet ? ` data-projet="${echapper(element.projet)}"` : '';
   const heure = heureDe(element);
-  // `min-height` et non `height` : la durée pose un plancher, un titre qui
-  // passe à la ligne peut le dépasser. Une barre ne coupe jamais son texte
-  // pour tenir dans sa durée.
+  // La durée pose un PLANCHER, jamais un plafond : un titre qui passe à la
+  // ligne peut le dépasser. Une barre ne coupe jamais son texte pour tenir dans
+  // sa durée.
+  //
+  // Elle voyage en `--duree` et non en `min-height` : un style en ligne
+  // l'emporte sur la feuille, et la hauteur minimale de cible imposée en vue
+  // semaine était donc écrasée par un événement court — une demi-heure valait
+  // 18,75 px. C'est le CSS qui arbitre entre les deux, avec `max()`.
   const hauteur = proportionnel && heure ? hauteurSelonLaDuree(element) : null;
   // Une tâche faite garde sa place et le dit : cercle coché, titre barré. La
   // faire disparaître effacerait ce qu'on a accompli, ce que ce site ne fait
@@ -504,6 +509,9 @@ function barre(segment, { montrerProjet = false, proportionnel = false, empile =
   const classes = [
     'cal-barre-element',
     `cal-type-${element.type}`,
+    // Sa hauteur vient de sa durée : son titre ne se limite donc pas à trois
+    // lignes, il a la place que l'événement lui donne (voir styles.css).
+    hauteur ? 'cal-barre-duree' : '',
     element.faite ? 'cal-faite' : '',
     deborde.avant ? 'deborde-avant' : '',
     deborde.apres ? 'deborde-apres' : '',
@@ -518,7 +526,7 @@ function barre(segment, { montrerProjet = false, proportionnel = false, empile =
         : `grid-column: ${segment.depuis + 1} / ${segment.jusqua + 2}; grid-row: ${
             segment.couloir + 2
           };`
-    }${hauteur ? ` min-height: ${hauteur.toFixed(2)}rem;` : ''}"
+    }${hauteur ? ` --duree: ${hauteur.toFixed(2)}rem;` : ''}"
     ${element.recurrent ? 'data-recurrent' : ''}
     data-element="${echapper(element.type)}:${echapper(element.id)}"
     aria-label="${echapper(
@@ -551,7 +559,7 @@ function barre(segment, { montrerProjet = false, proportionnel = false, empile =
       // remplace la grille horaire. Elle est déjà dans l'étiquette lue à voix
       // haute, d'où l'`aria-hidden`.
       heure ? `<span class="cal-barre-heure" aria-hidden="true">${echapper(heure)}</span>` : ''
-    }${echapper(element.titre)}</button>`;
+    }<span class="cal-barre-titre">${echapper(element.titre)}</span></button>`;
 }
 
 function ligneDeSemaine(jours, elements, options) {
