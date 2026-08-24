@@ -1568,6 +1568,16 @@ questions : « Ce qui a marché » et « À refaire autrement ».
   case à côté du champ d'ajout, décochée à chaque fois — entrer au modèle est
   une décision par item, pas un réglage. C'est la boucle d'apprentissage : le
   modèle s'enrichit du terrain.
+- **Le modèle se choisit aussi DEPUIS la feuille** (demande de Noé, 24 août
+  2026) : avec un seul modèle, « Préparer » l'applique d'office — il faut
+  pouvoir corriger le tir ou compléter. Un pli discret sous le rappel du
+  bilan (« Modèle : Match — changer ou compléter ») liste les modèles ;
+  **appliquer AJOUTE les lignes manquantes** (même phase et même texte = déjà
+  là, on ne double pas), rien de coché ne bouge, une ligne en trop se retire
+  de sa croix, et la feuille retient le modèle appliqué (`modele_id` — le
+  rappel du dernier bilan et « aussi au modèle » suivent). Pas d'écriture
+  optimiste ici : plusieurs insertions, une liste à moitié appliquée serait
+  pire qu'une attente.
 - **Un item non coché n'est JAMAIS un raté.** Aucun compteur de manqués, aucun
   pourcentage de complétion, nulle part. Le bilan dit d'abord l'obtenu.
 - **Le bilan attend la date de la sortie**, puis s'écrit et se réécrit. À la

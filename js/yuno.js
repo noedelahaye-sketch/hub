@@ -1992,6 +1992,45 @@ function blocBilan(etat, feuille) {
     </section>`;
 }
 
+// Le modèle se choisit AUSSI depuis la feuille (demande de Noé, 24 août
+// 2026) : avec un seul modèle, « Préparer » l'applique d'office — il faut
+// pouvoir corriger le tir, ou compléter la feuille d'un autre modèle.
+// Appliquer AJOUTE les lignes manquantes (même phase et même texte = déjà
+// là) : rien de coché ne bouge — la feuille ne perd jamais ce qui est fait —
+// et une ligne en trop se retire d'une croix, comme n'importe laquelle. La
+// feuille retient le modèle appliqué : c'est lui qui sert au rappel du
+// dernier bilan et à « aussi au modèle ».
+function blocModeleFeuille(etat, feuille) {
+  if (!etat.modelesPrepa.length) return '';
+
+  const actuel = etat.modelesPrepa.find((modele) => modele.id === feuille.modele_id) ?? null;
+
+  return `
+    <details class="ajout prepa-changer-modele">
+      <summary>${
+        actuel
+          ? `Modèle : ${echapper(actuel.nom)} — changer ou compléter`
+          : 'Appliquer un modèle'
+      }</summary>
+      <p class="discret">Appliquer un modèle ajoute ses lignes manquantes — rien de
+        coché ne bouge, et une ligne en trop se retire de sa croix.</p>
+      <ul class="liste-choix-modeles">
+        ${etat.modelesPrepa
+          .map(
+            (modele) => `
+          <li><button type="button" class="choix-modele"
+            data-appliquer-modele="${echapper(modele.id)}">
+            <span>${echapper(modele.nom)}${
+              modele.id === feuille.modele_id ? ' · le modèle de la feuille' : ''
+            }</span>
+            <span class="discret"><span class="chiffre">${modele.items.length}</span> lignes</span>
+          </button></li>`,
+          )
+          .join('')}
+      </ul>
+    </details>`;
+}
+
 function vueFeuille(etat, feuille) {
   const precedent = feuille.bilan_date ? null : dernierBilan(etat.preparations, feuille);
   const auModele = etat.modelesPrepa.some((modele) => modele.id === feuille.modele_id);
@@ -2012,6 +2051,7 @@ function vueFeuille(etat, feuille) {
              « ${echapper(precedent.bilan_mieux)} »</p>`
         : ''
     }
+    ${blocModeleFeuille(etat, feuille)}
     <div class="prepa-phases">
       ${blocPhase(feuille, 'avant', { auModele })}
       ${blocPhase(feuille, 'pendant', { auModele, invitePendant: 'Ajouter un plan…' })}
@@ -6957,6 +6997,52 @@ export default {
           { rendre, echouer: dire },
         );
         if (retire) location.hash = '#yuno/preparations';
+        return;
+      }
+
+      // Appliquer un modèle à la feuille OUVERTE (demande de Noé, 24 août
+      // 2026) : ses lignes manquantes s'ajoutent — même phase et même texte,
+      // c'est déjà là, on ne double pas — et la feuille retient ce modèle.
+      // Pas d'écriture optimiste : plusieurs insertions, et une liste à
+      // moitié appliquée serait pire qu'une attente d'une seconde.
+      const appliquerModele = evenement.target.closest('[data-appliquer-modele]');
+      if (appliquerModele) {
+        const feuille = etat.preparations.find((f) => f.id === etat.feuilleOuverte);
+        const modele = etat.modelesPrepa.find(
+          (candidat) => candidat.id === appliquerModele.dataset.appliquerModele,
+        );
+        if (!feuille || !modele) return;
+        appliquerModele.disabled = true;
+
+        try {
+          const cle = (item) => `${item.phase}|${item.texte.trim().toLowerCase()}`;
+          const dejaLa = new Set(feuille.items.map(cle));
+          const nouveaux = [];
+          for (const item of modele.items.filter((candidat) => !dejaLa.has(cle(candidat)))) {
+            nouveaux.push(
+              await api.ajouterItemPreparation({
+                preparation_id: feuille.id,
+                phase: item.phase,
+                texte: item.texte,
+                ordre: item.ordre,
+              }),
+            );
+          }
+          if (feuille.modele_id !== modele.id) {
+            // La réponse ne porte que les colonnes de la table : les items de
+            // la feuille ne sont pas écrasés par l'assignation.
+            Object.assign(
+              feuille,
+              await api.modifierPreparation(feuille.id, { modele_id: modele.id }),
+            );
+          }
+          feuille.items.push(...nouveaux);
+          rendre();
+        } catch (souci) {
+          console.error('Application du modèle impossible', souci);
+          appliquerModele.disabled = false;
+          dire("Le modèle n'a pas pu être appliqué en entier — rouvre la feuille pour voir où il en est.");
+        }
         return;
       }
 

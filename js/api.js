@@ -1027,6 +1027,14 @@ export async function creerPreparation({
   return { ...feuille, items: trierItemsPreparation(items) };
 }
 
+// La feuille se corrige — aujourd'hui, son modèle de référence : « Changer ou
+// compléter » depuis la feuille (demande de Noé, 24 août 2026).
+export async function modifierPreparation(id, champs) {
+  return verifier(
+    await client.from('preparations').update(champs).eq('id', id).select().single(),
+  );
+}
+
 export async function modifierItemPreparation(id, champs) {
   return verifier(
     await client.from('preparations_items').update(champs).eq('id', id).select().single(),
