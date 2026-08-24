@@ -1350,25 +1350,24 @@ body.fond-fige {
 }
 
 .capture-titre::placeholder { color: var(--texte-discret); }
-/* Le champ doit dire qu'il a la main. Il ne le disait plus du tout : `:focus`
-   avec `outline: none` a une spécificité de 0,2,0 et l'emportait sur la règle
-   commune `input:focus-visible` (0,1,1) — le contour disparaissait donc AUSSI
-   au clavier, ce que le hub s'interdit (et WCAG 2.4.7 avec lui).
+/* Le champ n'a AUCUNE décoration de focus (demande de Noé, 25 août 2026, en
+   deux temps : d'abord la couleur, puis le trait lui-même). Il a porté un trait
+   d'accent sous le texte, puis un trait gris ; les deux pesaient plus que ce
+   qu'ils signalaient.
 
-   Un trait sous le champ plutôt que le contour commun : dans une tuile qui
-   n'existe que pour lui, un cadre dans un cadre ne dit rien de plus — c'est la
-   raison pour laquelle ce champ n'a ni bordure ni fond, et elle vaut toujours.
-   Un indicateur doit être visible, pas être un rectangle.
+   Ce qui le rend acceptable ici, et NULLE PART AILLEURS dans le hub : la tuile
+   n'existe que pour ce champ, elle s'ouvre avec le curseur dedans et le clavier
+   levé. Le curseur qui clignote dit où l'on écrit ; un trait de plus ne
+   l'apprend à personne. Le hub ne supprime jamais l'indicateur de focus
+   (WCAG 2.4.7) — cette ligne est la seule exception, et elle est écrite ici
+   pour qu'on la voie avant de la « corriger ».
 
-   `:focus` et non `:focus-visible` : un champ texte correspond au second dès
-   qu'il a le focus, quelle que soit la façon dont on y est arrivé. Il n'y a pas
-   deux cas à distinguer ici, et faire semblant en donnerait un troisième.
-
-   En ombre intérieure et non en `border-bottom` : une bordure qui apparaît
-   décalerait le texte de deux pixels à chaque ouverture de la tuile. */
+   `outline: none` reste, sinon la règle commune `input:focus-visible` (0,1,1)
+   redessinerait le cadre que cette règle-ci (0,2,0) est là pour retirer. Les
+   pastilles de la tuile, elles, gardent le leur : on y arrive au clavier, et
+   rien d'autre ne dit laquelle a la main. */
 .capture-titre:focus {
   outline: none;
-  box-shadow: inset 0 -2px 0 var(--accent);
 }
 
 /* Une seule ligne, toujours. Le bouton d'envoi prime : il garde sa taille quoi
