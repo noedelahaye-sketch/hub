@@ -36,6 +36,7 @@ import {
   champsApresDeplacement,
 } from './calendrier-commun.js';
 import { construireLignesTaches, trierTaches } from './taches.js';
+import { construireProgression } from './objectifs-commun.js';
 import { lireCache, ecrireCache } from './cache-session.js';
 import { marquerLesEntrantes, animerLaCoche } from './mouvements.js';
 import { modifierAussitot } from './ecriture.js';
@@ -170,21 +171,11 @@ export function construireObjectifs(objectifs) {
     return `<p class="vide">Aucun objectif actif pour l'instant.</p>`;
   }
 
-  return objectifs.map(construireObjectif).join('');
+  return `<div class="grille-objectifs">${objectifs.map(construireObjectif).join('')}</div>`;
 }
 
 function construireObjectif(objectif) {
-  const jalons = objectif.jalons ?? [];
-  const atteints = jalons.filter((jalon) => jalon.atteint).length;
-  const pourcentage = jalons.length ? Math.round((atteints / jalons.length) * 100) : 0;
-
-  const barre = jalons.length
-    ? `<div class="barre" role="img"
-         aria-label="${atteints} jalon${atteints > 1 ? 's' : ''} sur ${jalons.length}">
-         <span style="width: ${pourcentage}%"></span>
-       </div>
-       <p class="discret progression-legende"><span class="chiffre">${atteints}/${jalons.length}</span> jalons · <span class="chiffre">${pourcentage}</span>&nbsp;%</p>`
-    : `<p class="discret progression-legende">Pas encore de jalons.</p>`;
+  const jalons = [...(objectif.jalons ?? [])].sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
 
   const listeJalons = jalons.length
     ? `<ul class="liste-jalons">${jalons
@@ -215,7 +206,7 @@ function construireObjectif(objectif) {
         <span class="objectif-tete">
           <span class="objectif-titre">${echapper(objectif.titre)}</span>
         </span>
-        ${barre}
+        ${construireProgression(jalons)}
       </summary>
       <div class="objectif-detail">
         ${objectif.pourquoi ? `<p class="pourquoi">${echapper(objectif.pourquoi)}</p>` : ''}

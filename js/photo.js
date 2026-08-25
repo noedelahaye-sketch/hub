@@ -10,6 +10,7 @@ import { construireFormulaire, construireVictoires } from './espace-projet.js';
 import { construireApercuCreation, rubriquesProposees } from './publications.js';
 import { RUBRIQUES_DEPART } from './yuno.js';
 import { depuisDateISO, echeanceLisible, echapper } from './format.js';
+import { construireProgression } from './objectifs-commun.js';
 
 const MAX_VICTOIRES = 3;
 
@@ -21,12 +22,8 @@ export function construireCap(objectifs) {
     return `<p class="vide">Tes objectifs Yuno s'afficheront ici. Ils se créent sur le site.</p>`;
   }
 
-  return objectifs
+  const tuiles = objectifs
     .map((objectif) => {
-      const jalons = objectif.jalons ?? [];
-      const atteints = jalons.filter((jalon) => jalon.atteint).length;
-      const pourcentage = jalons.length ? Math.round((atteints / jalons.length) * 100) : 0;
-
       return `
         <details class="objectif">
           <summary>
@@ -40,14 +37,7 @@ export function construireCap(objectifs) {
                   : ''
               }
             </span>
-            ${
-              jalons.length
-                ? `<div class="barre" role="img" aria-label="${atteints} jalons sur ${jalons.length}">
-                     <span style="width: ${pourcentage}%"></span>
-                   </div>
-                   <p class="discret progression-legende"><span class="chiffre">${atteints}/${jalons.length}</span> jalons · <span class="chiffre">${pourcentage}</span>&nbsp;%</p>`
-                : `<p class="discret progression-legende">Pas encore de jalons.</p>`
-            }
+            ${construireProgression(objectif.jalons ?? [])}
           </summary>
           <div class="objectif-detail">
             ${objectif.pourquoi ? `<p class="pourquoi">${echapper(objectif.pourquoi)}</p>` : ''}
@@ -55,6 +45,8 @@ export function construireCap(objectifs) {
         </details>`;
     })
     .join('');
+
+  return `<div class="grille-objectifs">${tuiles}</div>`;
 }
 
 function squelette(etat) {

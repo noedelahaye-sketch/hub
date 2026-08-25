@@ -14,6 +14,7 @@
 
 import * as api from './api.js';
 import { depuisDateISO, echeanceLisible, momentLisible, echapper } from './format.js';
+import { construireProgression } from './objectifs-commun.js';
 
 // Fenêtre pendant laquelle une tâche cochée par erreur peut être décochée.
 // Assez longue pour voir son erreur, assez courte pour ne pas encombrer.
@@ -25,21 +26,12 @@ export function construireObjectifs(objectifs) {
   if (!objectifs.length) {
     return `<p class="vide">Aucun objectif pour l'instant. Le premier donne le cap.</p>`;
   }
-  return objectifs.map(construireObjectif).join('');
+  return `<div class="grille-objectifs">${objectifs.map(construireObjectif).join('')}</div>`;
 }
 
 function construireObjectif(objectif) {
   const jalons = [...(objectif.jalons ?? [])].sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
-  const atteints = jalons.filter((jalon) => jalon.atteint).length;
-  const pourcentage = jalons.length ? Math.round((atteints / jalons.length) * 100) : 0;
-
-  const progression = jalons.length
-    ? `<div class="barre" role="img"
-         aria-label="${atteints} jalon${atteints > 1 ? 's' : ''} sur ${jalons.length}">
-         <span style="width: ${pourcentage}%"></span>
-       </div>
-       <p class="discret progression-legende"><span class="chiffre">${atteints}/${jalons.length}</span> jalons · <span class="chiffre">${pourcentage}</span>&nbsp;%</p>`
-    : `<p class="discret progression-legende">Pas encore de jalons.</p>`;
+  const progression = construireProgression(jalons);
 
   return `
     <details class="objectif" data-objectif="${echapper(objectif.id)}">

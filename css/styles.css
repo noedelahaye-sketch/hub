@@ -652,9 +652,6 @@ a { color: var(--accent); }
     align-items: start;
   }
 
-  /* Les objectifs gardent toute la largeur : ce sont eux le cap, et leur
-     détail déplié a besoin de place. */
-  .objectif { grid-column: 1 / -1; }
 }
 
 /* Le projet n'est pas dit que par la couleur : son nom est écrit. Il se
@@ -853,6 +850,43 @@ a { color: var(--accent); }
 
 /* --- Objectifs ------------------------------------------------------------- */
 
+/* Les objectifs se rangent côte à côte dès que l'écran le permet (demande de
+   Noé, 25 août 2026) : le cap se lit d'un regard, en rangées, pas en colonne à
+   dérouler. `auto-fit` : un objectif seul prend toute la largeur, six se
+   partagent en trois ou quatre colonnes. Sur téléphone, une seule colonne. */
+.grille-objectifs {
+  display: grid;
+  gap: var(--espace-8);
+  align-items: start;
+}
+
+@media (min-width: 60rem) {
+  .grille-objectifs {
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+  }
+
+  /* Dans la grille, chaque tuile fait la même taille (demande de Noé, 25 août
+     2026) : titre et légende réservent leurs lignes — deux chacun — qu'ils les
+     remplissent ou non, et se coupent au-delà. L'égalité vient du texte, pas
+     d'un étirement : une tuile dépliée ne doit pas gonfler ses voisines. */
+  .grille-objectifs .objectif-titre {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    min-height: 2.5em; /* 2 lignes × line-height 1.25 */
+  }
+
+  .grille-objectifs .progression-legende {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    line-height: 1.4;
+    min-height: 2.8em; /* 2 lignes × line-height 1.4 */
+  }
+}
+
 /* Un objectif est une tuile, comme le reste. */
 .objectif {
   position: relative;
@@ -862,6 +896,9 @@ a { color: var(--accent); }
   border: 1px solid var(--bordure);
   border-radius: var(--rayon-carte);
 }
+
+/* Dans la grille, l'écart est porté par `gap` : la marge basse doublerait. */
+.grille-objectifs .objectif { margin-bottom: 0; }
 
 .objectif[data-projet] { padding-left: calc(var(--espace-16) + 3px); }
 
@@ -890,7 +927,15 @@ a { color: var(--accent); }
   margin-bottom: 0.5rem;
 }
 
-.objectif-titre { font-weight: 600; }
+/* Le titre d'un objectif porte la police des titres : c'est la seule tuile du
+   hub qui parle en mois — le cap se distingue de la journée au premier regard. */
+.objectif-titre {
+  font-family: var(--police-titre);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+}
 
 .echeance {
   margin-left: auto;
@@ -914,10 +959,35 @@ a { color: var(--accent); }
   transition: width 300ms ease;
 }
 
+/* Le chemin des jalons : une case par jalon, qui s'allume à la couleur du
+   projet quand il est atteint. Un objectif n'avance pas au pourcentage, il
+   avance au jalon franchi — la barre continue (.barre) reste aux compteurs
+   qui, eux, mesurent un flux (les livrables de révision, par exemple). */
+.jalons-chemin {
+  display: flex;
+  gap: 4px;
+  height: 9px;
+  margin-top: var(--espace-8);
+}
+
+.jalons-chemin i {
+  flex: 1;
+  border-radius: var(--rayon-pastille);
+  background: color-mix(in srgb, var(--couleur-projet-pleine, var(--accent)) 16%, transparent);
+}
+
+.jalons-chemin i.atteint {
+  background: var(--couleur-projet-pleine, var(--accent));
+}
+
 .progression-legende {
   margin: 0.375rem 0 0;
   font-size: 0.8125rem;
 }
+
+/* Dans la légende, le prochain jalon reprend l'encre pleine : c'est lui,
+   l'invitation — le reste de la ligne n'est que son cadre. */
+.prochain-jalon { color: var(--texte); }
 
 .objectif-detail {
   padding: 0.75rem 0 0.25rem;
@@ -2475,14 +2545,29 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 /* --- Espace perso ----------------------------------------------------------
    Doux et apaisé : rien ici ne se coche, ne se mesure, ni ne presse. */
 
+/* Une intention n'est pas une tuile comme les autres : rien ne s'y coche, rien
+   ne s'y mesure. Elle se relit. D'où une carte lavée de la couleur de l'espace,
+   sans bordure — plus proche d'une page de carnet que d'une ligne de liste. */
 .liste-intentions li {
   flex-direction: column;
   align-items: flex-start;
   gap: var(--espace-4);
+  padding: var(--espace-16);
+  background: var(--accent-doux);
+  border-color: transparent;
 }
 
-.intention-titre { font-weight: 600; }
-.intention-pourquoi { font-size: 0.875rem; }
+.intention-titre {
+  font-family: var(--police-titre);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  line-height: 1.3;
+}
+
+.intention-pourquoi {
+  font-size: 0.9375rem;
+  color: color-mix(in srgb, var(--accent) 30%, var(--texte-discret));
+}
 
 .liste-intentions .bouton-retirer {
   position: absolute;
