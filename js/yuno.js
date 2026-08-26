@@ -51,6 +51,7 @@ import {
   fenetreJour,
   elementsDuJour,
   finDeLEvenement,
+  passageDePublication,
   brancherSelection,
   brancherClavier,
   brancherDeplacement,
@@ -5680,6 +5681,8 @@ export default {
             date_prevue: champs.debut,
             reseau: champs.reseau,
             format: champs.format,
+            recurrence: champs.recurrence || null,
+            recurrence_fin: (champs.recurrence && champs.recurrence_fin) || null,
           });
         } else if (type === 'objectif') {
           await api.modifierObjectif(id, {
@@ -5725,7 +5728,16 @@ export default {
               statut: 'actif',
               echeance: champs.debut,
               heure: champs.heure || null,
+              // Une durée sans heure ne mesure rien : la tâche tient la
+              // journée sans occuper de créneau.
+              duree: (champs.heure && Number(champs.duree)) || null,
               priorite: Number(champs.priorite) || 4,
+              // La répétition, offerte par la tuile depuis le 26 août : elle
+              // manquait ici, et une tâche hebdomadaire posée depuis le site
+              // Yuno naissait unique en silence.
+              recurrence: (champs.debut && champs.recurrence) || null,
+              recurrence_fin:
+                (champs.debut && champs.recurrence && champs.recurrence_fin) || null,
             }),
           );
         } else if (champs.nature === 'publication') {
@@ -5739,6 +5751,11 @@ export default {
               // sans date ne veut rien dire, elle part avec.
               date_prevue: champs.debut || null,
               heure: (champs.debut && champs.heure) || null,
+              // Sans date non plus, rien à répéter : une idée n'a pas de jour
+              // qui revienne.
+              recurrence: (champs.debut && champs.recurrence) || null,
+              recurrence_fin:
+                (champs.debut && champs.recurrence && champs.recurrence_fin) || null,
               // Depuis que « Noter une idée » a disparu, la tuile est le seul
               // endroit où l'on écrit une idée : elle porte le pilier et les
               // notes, et ils doivent donc arriver jusqu'ici.
@@ -6945,10 +6962,13 @@ export default {
         // Poster, c'est déposer l'œuvre et repartir : le site le dit, puis se
         // tait. Le mot de clôture part avec le geste, pas avec la réponse.
         etat.cloture = suivant === 'publie';
+        // Une rubrique qui revient ne se termine pas : elle repart sur son
+        // prochain jour, à l'état d'idée (`passageDePublication`).
+        const champsStatut = passageDePublication(pub, suivant);
         await modifierAussitot(
           pub,
-          { statut: suivant },
-          () => api.modifierPublication(pub.id, { statut: suivant }),
+          champsStatut,
+          () => api.modifierPublication(pub.id, champsStatut),
           { rendre, echouer: dire },
         );
         return;
@@ -6958,12 +6978,13 @@ export default {
       if (deprogrammer) {
         const pub = trouverPub(deprogrammer.dataset.deprogrammer);
         if (estProvisoire(pub.id)) return;
-        await modifierAussitot(
-          pub,
-          { date_prevue: null },
-          () => api.modifierPublication(pub.id, { date_prevue: null }),
-          { rendre, echouer: dire },
-        );
+        // La date s'en va, la répétition avec : une idée sans jour n'a rien
+        // qui revienne, et la colonne resterait seule en base.
+        const retour = { date_prevue: null, recurrence: null, recurrence_fin: null };
+        await modifierAussitot(pub, retour, () => api.modifierPublication(pub.id, retour), {
+          rendre,
+          echouer: dire,
+        });
         return;
       }
 

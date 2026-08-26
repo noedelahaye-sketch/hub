@@ -7,7 +7,14 @@
 // deux colonnes comme Yuno et le FCH, et chacune monte désormais la sienne.
 // Restent ici les morceaux que tout le monde emprunte.
 
-import { depuisDateISO, echeanceLisible, momentLisible, echapper } from './format.js';
+import {
+  depuisDateISO,
+  echeanceLisible,
+  momentLisible,
+  echapper,
+  DUREES_PROPOSEES,
+  dureeLisible,
+} from './format.js';
 import { construireProgression } from './objectifs-commun.js';
 
 // --- Fabrication du HTML ----------------------------------------------------
@@ -428,3 +435,61 @@ export function construireFormulaire({
 
 // --- Fabrique d'espace ------------------------------------------------------
 
+// --- Combien de temps ça prend -----------------------------------------------
+//
+// La durée d'une TÂCHE se tape en minutes (demande de Noé, 26 août 2026) : une
+// liste fermée ne peut pas dire « vingt minutes » ni « une heure et quart », et
+// une tâche dure ce qu'elle dure. Les propositions — de 1 h à 3 h — ne sont
+// qu'un raccourci pour les cas fréquents ; elles écrivent dans le même champ.
+//
+// Un seul endroit pour ce morceau, parce qu'il sert dans DEUX tuiles qui n'ont
+// rien d'autre en commun : celle de l'espace Tâches et celle du calendrier.
+// Deux copies, et l'une des deux finirait par ne plus proposer les mêmes pas.
+//
+// Le champ porte `data-format-duree` : c'est ce qui dit à la tuile du
+// calendrier d'écrire « 1 h 30 » sur sa pastille plutôt que « 90 ».
+//
+// `step="1"` et non 5 : un pas de 5 rendrait « 7 minutes » invalide aux yeux
+// du navigateur, qui refuserait alors d'envoyer tout le formulaire pour une
+// durée. Les bornes, elles, sont celles de la colonne (5 à 1440).
+export function champDuree({
+  id = 'champ-duree',
+  nom = 'duree',
+  valeur = null,
+  libelle = 'Combien de temps (avec une heure)',
+} = {}) {
+  const minutes = Number(valeur) > 0 ? String(Number(valeur)) : '';
+
+  return `
+    <label class="champ-capture" for="${echapper(id)}">${echapper(libelle)}</label>
+    <div class="duree-champ">
+      <span class="duree-propositions">
+        ${DUREES_PROPOSEES.map(
+          (pas) => `<button type="button" data-poser-duree="${pas}"
+            aria-pressed="${String(pas) === minutes}"
+            class="${String(pas) === minutes ? 'actif' : ''}">${echapper(
+              dureeLisible(pas),
+            )}</button>`,
+        ).join('')}
+      </span>
+      <span class="duree-libre">
+        <input type="number" id="${echapper(id)}" name="${echapper(nom)}"
+          data-champ-duree data-format-duree
+          min="5" max="1440" step="1" inputmode="numeric"
+          value="${echapper(minutes)}"
+          aria-label="Durée en minutes">
+        <span aria-hidden="true">min</span>
+      </span>
+    </div>`;
+}
+
+// La proposition qui correspond à la valeur courante se marque, les autres se
+// démarquent. Les deux tuiles s'en servent après un appui ou une frappe : le
+// bouton « 1 h 30 » doit s'éteindre dès qu'on tape 95 à la main.
+export function marquerLaDuree(racine, minutes) {
+  for (const bouton of racine.querySelectorAll('[data-poser-duree]')) {
+    const actif = bouton.dataset.poserDuree === String(minutes ?? '');
+    bouton.classList.toggle('actif', actif);
+    bouton.setAttribute('aria-pressed', String(actif));
+  }
+}

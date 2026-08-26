@@ -1608,7 +1608,7 @@ et ce paragraphe ne fait que dire à quoi sert chaque table.
 
 | Table | Ce qu'elle porte |
 |---|---|
-| `publications` | le calendrier éditorial. `date_prevue` NULL = banque d'idées. Colonnes Yuno : `pilier`, `preuve`, `pourquoi_moi` (NULL pour le FCH) |
+| `publications` | le calendrier éditorial. `date_prevue` NULL = banque d'idées. `recurrence` / `recurrence_fin` : la rubrique qui revient (26 août 2026) — une publication répétée ne se termine pas, elle repart sur son prochain jour à l'état d'idée. Colonnes Yuno : `pilier`, `preuve`, `pourquoi_moi` (NULL pour le FCH) |
 | `contacts` | le carnet réseau, et la couche Passerelle (`objectif`, `date_dernier_envoi`, `prochaine_action`, `prochaine_action_date`). `niveau` reste en base mais plus rien ne l'écrit ni ne le lit depuis le 15 août 2026 |
 | `commandes` | le suivi, du devis au paiement. `client_id` relie au carnet, `evenement_id` à l'événement visé (21 août 2026, migration `20260821220000`) |
 | `evenements` | **une sortie, deux faces** — prévue (date, lieu, `type_moment`) et vécue (`vecu`, `photo_chemin`, `note`, `oeuvre_finie`). C'est le Carnet de terrain depuis la fusion du 14 août 2026 ; la table `moments` a disparu |
@@ -1642,12 +1642,38 @@ dans Supabase en SQL. Seul le schéma est versionné.
 
 ## 6. Ce que le hub montre de Yuno
 
-Le rappel quotidien vit sur le dashboard, pas ici :
+Deux surfaces, et une division qui tient en une phrase : **le site est
+l'atelier, la page `#photo` du hub est le bilan** (refonte du 26 août 2026).
+Le site répond à « qu'est-ce que je fais maintenant », la page à « où j'en
+suis ». Elle ne recopie donc rien du site — elle dit ce que le site ne dit pas.
 
-- les tâches actives et la progression des objectifs photo — déjà en place ;
-- les victoires Yuno — déjà en place ;
-- **les publications datées de la semaine**, dans « Ta semaine », au même rang
-  que les événements — à brancher quand la table `publications` existera.
+Ce qu'elle porte, de haut en bas :
+
+1. **Une bande de photos**, le tirage du jour du Carnet (`construireMurPhotos`,
+   réutilisée telle quelle). Elle ouvre la page **à la place du titre et du
+   logo, retirés** : les images disent « Yuno » mieux qu'un mot. Presser une
+   vignette mène au Carnet.
+2. **Le cap** — les objectifs gravés, en tuile-bouton vers `#objectifs`.
+   L'objectif du matériel y porte ses euros.
+3. **À faire** — les tâches Yuno, cochables.
+4. **Le rythme** — trois chiffres nus (sorties vécues, ce mois-ci, bons
+   contacts), le compte des victoires qu'on déplie, et **l'histogramme des
+   sorties sur douze mois**. Aucune ligne d'objectif, aucune couleur d'alerte :
+   c'est un miroir, pas un juge.
+5. **Le réseau** — une barre d'entonnoir en quatre crans d'or.
+6. **Les raccourcis en pied de page** — tâche, sortie, publication, prestation,
+   matériel — puis la porte vers le site.
+
+**Aucune métrique sociale, sans exception** : la règle du 15 août (§ 4, « Le
+rendez-vous stats — retiré ») vaut aussi pour cette page.
+
+**L'argent de Yuno vit dans `commandes`** — `montant` et `frais` — et se
+saisit depuis deux endroits qui écrivent la même ligne : la fiche d'une sortie
+(ici, sur le site) et le détail de l'objectif dans `#objectifs`.
+
+Sur le dashboard du hub, Yuno garde ce qu'il avait : ses tâches dans
+« Aujourd'hui », ses publications datées dans « Ta semaine », et une colonne
+dans le cap gravé.
 
 ---
 

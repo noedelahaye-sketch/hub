@@ -25,7 +25,9 @@ import {
   echapper,
   NOMS_PROJETS,
   RECURRENCES,
+  dureeLisible,
 } from './format.js';
+import { champDuree, marquerLaDuree } from './espace-projet.js';
 import { marquerLesEntrantes, animerLaCoche } from './mouvements.js';
 import { ajouterAussitot, retirerAussitot, modifierAussitot } from './ecriture.js';
 
@@ -119,7 +121,13 @@ export function filtrerParProjet(taches, projet) {
 function quandLisible(tache) {
   if (!tache.echeance) return '';
   const jour = echeanceLisible(depuisDateISO(tache.echeance));
-  return tache.heure ? `${jour}, ${tache.heure.slice(0, 5)}` : jour;
+  if (!tache.heure) return jour;
+
+  // La durée ne se dit qu'avec une heure, et derrière elle : « jeu., 14:00 ·
+  // 1 h 30 » se lit d'un trait. Sans heure elle n'existe pas — une tâche qui
+  // arrive dans la journée n'occupe pas de créneau.
+  const combien = dureeLisible(tache.duree);
+  return `${jour}, ${tache.heure.slice(0, 5)}${combien ? ` · ${combien}` : ''}`;
 }
 
 // `ouvrable` et `supprimable` sont à faux quand la ligne est empruntée par le
@@ -392,6 +400,15 @@ function panneauDate(capture) {
           <input type="time" id="capture-heure" data-champ-heure value="${echapper(capture.heure ?? '')}">
         </span>
       </div>
+      <!-- Combien de temps la tâche prend (26 août 2026). Dans le panneau de
+           la date et non dans une pastille à elle : c'est la même question que
+           « quand » — un créneau, c'est un début et une longueur — et la bande
+           de pastilles a sa réserve, pas son confort. Elle ne vaut qu'avec une
+           heure, et le libellé le dit plutôt qu'un champ qui se grise.
+           Le champ lui-même vient des gabarits communs : la tuile du calendrier
+           pose exactement le même, et deux copies finiraient par ne plus
+           proposer les mêmes pas. -->
+      ${champDuree({ id: 'capture-duree', valeur: capture.duree })}
       ${
         capture.echeance
           ? `<button type="button" class="lien-discret" data-poser-date="">Retirer la date</button>`
@@ -468,7 +485,10 @@ function panneauProjet(valeurCourante) {
 function dateLisible(capture) {
   if (!capture.echeance) return 'Date';
   const jour = echeanceLisible(depuisDateISO(capture.echeance));
-  return capture.heure ? `${jour}, ${capture.heure.slice(0, 5)}` : jour;
+  if (!capture.heure) return jour;
+
+  const combien = dureeLisible(capture.duree);
+  return `${jour}, ${capture.heure.slice(0, 5)}${combien ? ` · ${combien}` : ''}`;
 }
 
 export function construireCapture(capture) {
@@ -565,6 +585,10 @@ export default {
       titre: '',
       echeance: null,
       heure: null,
+      // Combien de temps elle prend, en minutes. `null` = sans durée, et c'est
+      // le cas ordinaire : la plupart des tâches arrivent à un moment sans
+      // occuper de créneau. Elle ne s'écrit qu'avec une heure.
+      duree: null,
       // Le projet suit le filtre courant : sur « Formation », la tâche qu'on
       // note est presque toujours une tâche de formation. Sur « Tous », le FCH
       // par défaut — c'est là que le travail quotidien de Noé se passe.
@@ -721,7 +745,7 @@ export default {
     // dans la liste.
     section.addEventListener('pointerdown', (evenement) => {
       const garderLeClavier = evenement.target.closest(
-        '[data-pastille], [data-poser-date], [data-poser-projet], [data-poser-priorite],\n         [data-poser-repetition], .capture-envoyer',
+        '[data-pastille], [data-poser-date], [data-poser-projet], [data-poser-priorite],\n         [data-poser-repetition], [data-poser-duree], .capture-envoyer',
       );
       if (garderLeClavier) evenement.preventDefault();
     });
@@ -866,6 +890,9 @@ export default {
         titre,
         echeance: etat.capture.echeance,
         heure: etat.capture.heure,
+        // Une durée sans heure ne mesure rien : `creerTache` l'écarte de son
+        // côté, on ne la lui envoie pas non plus.
+        duree: etat.capture.heure ? etat.capture.duree : null,
         priorite: etat.capture.priorite,
         // Sans date, rien à répéter : `creerTache` l'écarte de son côté, on ne
         // la lui envoie pas non plus.
@@ -901,12 +928,22 @@ export default {
       // est tout ce qu'on cherche à éviter.
       const champ = formulaire.querySelector('#capture-titre');
       champ.value = '';
-      etat.capture = { ...etat.capture, titre: '', echeance: null, heure: null, recurrence: null };
+      etat.capture = {
+        ...etat.capture,
+        titre: '',
+        echeance: null,
+        heure: null,
+        duree: null,
+        recurrence: null,
+      };
 
       const champDate = section.querySelector('[data-champ-date]');
       if (champDate) champDate.value = '';
       const champHeure = section.querySelector('[data-champ-heure]');
       if (champHeure) champHeure.value = '';
+      const champDuree = section.querySelector('[data-champ-duree]');
+      if (champDuree) champDuree.value = '';
+      marquerLaDuree(section, '');
 
       fermerLesPanneaux();
       majPastilles();
@@ -937,6 +974,17 @@ export default {
     // La flèche s'allume dès qu'il y a un titre. Elle se règle ici plutôt qu'au
     // redessin : redessiner à chaque lettre ferait perdre le curseur.
     section.addEventListener('input', (evenement) => {
+      // La durée tapée à la main : elle se relit à la frappe, pas au relâchement
+      // du champ — la pastille dit « 1 h 45 » pendant qu'on tape, et la
+      // proposition allumée s'éteint dès que le nombre ne lui correspond plus.
+      const duree = evenement.target.closest('[data-champ-duree]');
+      if (duree) {
+        etat.capture.duree = Number(duree.value) || null;
+        marquerLaDuree(section, etat.capture.duree ?? '');
+        majPastilles();
+        return;
+      }
+
       const champ = evenement.target.closest('#capture-titre');
       if (!champ) return;
       const envoyer = section.querySelector('.capture-envoyer');
@@ -951,16 +999,25 @@ export default {
       // la pastille est réécrite.
       const champDate = evenement.target.closest('[data-champ-date]');
       const champHeure = evenement.target.closest('[data-champ-heure]');
-      if (champDate || champHeure) {
+      // Et la durée, qui vit dans le même panneau : c'est la même question que
+      // « quand », et elle se règle sans le refermer non plus.
+      const champDuree = evenement.target.closest('[data-champ-duree]');
+      if (champDate || champHeure || champDuree) {
         if (champDate) {
           etat.capture.echeance = champDate.value || null;
           if (!etat.capture.echeance) {
             etat.capture.heure = null;
+            etat.capture.duree = null;
             const heure = section.querySelector('[data-champ-heure]');
             if (heure) heure.value = '';
+            const duree = section.querySelector('[data-champ-duree]');
+            if (duree) duree.value = '0';
           }
-        } else {
+        } else if (champHeure) {
           etat.capture.heure = champHeure.value || null;
+        } else {
+          etat.capture.duree = Number(champDuree.value) || null;
+          marquerLaDuree(section, etat.capture.duree ?? '');
         }
 
         majPastilles();
@@ -1003,8 +1060,13 @@ export default {
           // La base rend « 18:00:00 » ; le champ n'en veut que les heures et
           // les minutes, sans quoi il refuse la valeur et s'affiche vide.
           heure: tache.heure ? tache.heure.slice(0, 5) : null,
+          duree: tache.duree ?? null,
           projet: tache.projet,
           priorite: tache.priorite ?? 4,
+          // La répétition était oubliée à la réouverture : la tuile est le seul
+          // écran où elle se corrige, et elle y revenait vide — enregistrer
+          // sans y toucher effaçait la série.
+          recurrence: tache.recurrence ?? null,
         };
         rendreCapture({ focus: true });
         mesurerLeClavier();
@@ -1052,12 +1114,28 @@ export default {
         // veut rien dire, et la colonne resterait seule en base.
         if (!etat.capture.echeance) {
           etat.capture.heure = null;
+          etat.capture.duree = null;
           const champHeure = section.querySelector('[data-champ-heure]');
           if (champHeure) champHeure.value = '';
+          const champDuree = section.querySelector('[data-champ-duree]');
+          if (champDuree) champDuree.value = '';
+          marquerLaDuree(section, '');
         }
         const champDate = section.querySelector('[data-champ-date]');
         if (champDate) champDate.value = etat.capture.echeance ?? '';
         fermerLesPanneaux();
+        majPastilles();
+        return;
+      }
+
+      // Une proposition de durée écrit dans le champ en minutes. Le panneau
+      // RESTE ouvert : on choisit souvent « 2 h » puis on corrige à 105.
+      const poserDuree = evenement.target.closest('[data-poser-duree]');
+      if (poserDuree) {
+        etat.capture.duree = Number(poserDuree.dataset.poserDuree) || null;
+        const champ = section.querySelector('[data-champ-duree]');
+        if (champ) champ.value = etat.capture.duree ?? '';
+        marquerLaDuree(section, etat.capture.duree ?? '');
         majPastilles();
         return;
       }

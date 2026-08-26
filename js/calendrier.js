@@ -30,6 +30,7 @@ import {
   appliquerAuCalendrier,
   brancherCapture,
   poserAuCalendrier,
+  passageDePublication,
   champsApresDeplacement,
   deplacerAncre,
   toutesLesNatures,
@@ -285,6 +286,26 @@ export default {
         return;
       }
 
+      // Le rond d'une publication avance d'un cran, ici comme sur l'accueil
+      // (demande de Noé, 25 août 2026) — sans ouvrir la tuile.
+      //
+      // AVANT la branche qui ouvre le détail, et c'est la condition pour qu'il
+      // serve à quelque chose : le rond est DANS la barre, donc `[data-element]`
+      // l'attrape aussi. Placé après, il n'était jamais atteint — appuyer sur
+      // le rond ouvrait la tuile au lieu de faire avancer l'état (défaut trouvé
+      // le 26 août 2026 ; l'accueil, lui, avait le bon ordre).
+      const rondPublication = evenement.target.closest('[data-avancer-pub]');
+      if (rondPublication) {
+        evenement.stopPropagation();
+        const pub = etat.sources.publications.find(
+          (candidate) => candidate.id === rondPublication.dataset.avancerPub,
+        );
+        const cycle = pub ? cyclePublication(pub.projet) : [];
+        const suivant = pub ? cycle[cycle.indexOf(pub.statut) + 1] : null;
+        if (suivant) await poserLeStatut(pub, suivant);
+        return;
+      }
+
       const ouvrir = evenement.target.closest('[data-element]');
       if (ouvrir) {
         const [type, id] = ouvrir.dataset.element.split(':');
@@ -295,20 +316,6 @@ export default {
           (element) => element.type === type && String(element.id) === id,
         );
         rendre();
-        return;
-      }
-
-      // Le rond d'une publication avance d'un cran, ici comme sur l'accueil
-      // (demande de Noé, 25 août 2026) — sans ouvrir la tuile.
-      const rondPublication = evenement.target.closest('[data-avancer-pub]');
-      if (rondPublication) {
-        evenement.stopPropagation();
-        const pub = etat.sources.publications.find(
-          (candidate) => candidate.id === rondPublication.dataset.avancerPub,
-        );
-        const cycle = pub ? cyclePublication(pub.projet) : [];
-        const suivant = pub ? cycle[cycle.indexOf(pub.statut) + 1] : null;
-        if (suivant) await poserLeStatut(pub, suivant);
         return;
       }
 
@@ -432,17 +439,22 @@ export default {
     // L'écran d'abord : l'état change tout de suite, et revient si le serveur
     // refuse. La tuile reste ouverte — on vient souvent corriger deux choses de
     // suite, et la refermer à chaque appui obligerait à la rouvrir.
+    // Une publication RÉCURRENTE ne se termine pas : la faire partir avance sa
+    // date d'une occurrence et la ramène au premier état de son cycle. La
+    // règle est écrite une seule fois, dans `passageDePublication` — quatre
+    // écrans la suivent.
     async function poserLeStatut(pub, statut) {
-      const avant = pub.statut;
-      pub.statut = statut;
+      const champs = passageDePublication(pub, statut);
+      const avant = { statut: pub.statut, date_prevue: pub.date_prevue };
+      Object.assign(pub, champs);
       assembler();
       rendre();
 
       try {
-        await api.modifierPublication(pub.id, { statut });
+        await api.modifierPublication(pub.id, champs);
       } catch (souci) {
         console.error('Changement de statut impossible', souci);
-        pub.statut = avant;
+        Object.assign(pub, avant);
         assembler();
         rendre();
       }
@@ -491,6 +503,8 @@ export default {
           date_prevue: champs.debut,
           reseau: champs.reseau,
           format: champs.format,
+          recurrence: champs.recurrence || null,
+          recurrence_fin: (champs.recurrence && champs.recurrence_fin) || null,
         });
       }
 

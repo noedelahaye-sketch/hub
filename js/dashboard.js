@@ -31,6 +31,7 @@ import {
   finDeLEvenement,
   brancherCapture,
   poserAuCalendrier,
+  passageDePublication,
   brancherDeplacement,
   appliquerAuCalendrier,
   champsApresDeplacement,
@@ -456,7 +457,17 @@ export default {
         // La base rend « 18:00:00 » ; le champ n'en veut que les heures et les
         // minutes, sans quoi il refuse la valeur et s'affiche vide.
         heure: tache.heure ? tache.heure.slice(0, 5) : '',
-        valeurs: { titre: tache.titre, projet: tache.projet, priorite: tache.priorite },
+        // La durée et la répétition voyagent avec le reste : la tuile les
+        // offre, et une tuile qui les rouvre vides les effacerait à
+        // l'enregistrement sans qu'on y ait touché.
+        valeurs: {
+          titre: tache.titre,
+          projet: tache.projet,
+          priorite: tache.priorite,
+          duree: tache.duree ?? 0,
+          recurrence: tache.recurrence ?? '',
+          recurrence_fin: tache.recurrence_fin ?? '',
+        },
       };
       rendreCreation();
       cible('bloc-creation').querySelector('#cal-titre')?.focus();
@@ -759,6 +770,8 @@ export default {
           date_prevue: champs.debut,
           reseau: champs.reseau,
           format: champs.format,
+          recurrence: champs.recurrence || null,
+          recurrence_fin: (champs.recurrence && champs.recurrence_fin) || null,
         });
       }
 
@@ -852,7 +865,13 @@ export default {
           projet: champs.projet,
           echeance: champs.debut,
           heure: champs.heure || null,
+          // Une durée sans heure ne mesure rien ; une répétition sans date n'a
+          // rien à répéter. Mêmes réserves qu'à la création.
+          duree: (champs.heure && Number(champs.duree)) || null,
           priorite: Number(champs.priorite) || 4,
+          recurrence: (champs.debut && champs.recurrence) || null,
+          recurrence_fin:
+            (champs.debut && champs.recurrence && champs.recurrence_fin) || null,
         };
         await modifierAussitot(corrige, modifs, () => api.modifierTache(corrige.id, modifs), {
           rendre: () => {
@@ -963,12 +982,17 @@ export default {
         const suivant = cycle[cycle.indexOf(pub.statut) + 1];
         if (!suivant) return;
 
+        // Une publication récurrente ne se termine pas : la faire partir
+        // avance sa date d'une occurrence et la ramène au premier état de son
+        // cycle. La règle vit dans `passageDePublication`, une seule fois.
+        const champs = passageDePublication(pub, suivant);
+
         ecrituresEnVol.add(pub.id);
         try {
           await modifierAussitot(
             pub,
-            { statut: suivant },
-            () => api.modifierPublication(pub.id, { statut: suivant }),
+            champs,
+            () => api.modifierPublication(pub.id, champs),
             {
               rendre: () => {
                 rendreSemaine();
@@ -1048,7 +1072,8 @@ export default {
         const statut = reglerStatut.dataset.statutPub;
         if (etat.detail?.type !== 'publication' || !pub || pub.statut === statut) return;
 
-        await modifierAussitot(pub, { statut }, () => api.modifierPublication(pub.id, { statut }), {
+        const champs = passageDePublication(pub, statut);
+        await modifierAussitot(pub, champs, () => api.modifierPublication(pub.id, champs), {
           rendre: () => {
             rendreSemaine();
             rendreDetail();

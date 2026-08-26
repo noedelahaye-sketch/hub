@@ -23,9 +23,20 @@ connexion.
 
 **Il vit dans le hub**, en deux surfaces, comme Yuno :
 
-- **`#fch` — la page FCH du hub.** Tableau de bord réduit : le cap en lecture,
-  l'aperçu de la communication à venir, une capture d'idée au vol, les
-  victoires, et la porte vers le site. Habillage du hub conservé.
+- **`#fch` — la page FCH du hub.** **Un bilan**, refait le 26 août 2026 sur le
+  même principe que celle de Yuno mais avec la matière du club : deux colonnes
+  de panneaux — *Le cap* (tuile-bouton vers `#objectifs`) et *À faire* (les
+  tâches, plus la prochaine réunion) d'abord, puis *La com'* (le calendrier
+  éditorial en chaîne — à préparer, à programmer, publié — et les prochaines
+  publications) et *Le bilan* (publications sorties, tâches faites, victoires
+  qu'on déplie). Les raccourcis — tâche, publication, réunion — et la porte
+  vers le site ferment la page. **Ni titre ni écusson** : la barre le dit déjà.
+  Habillage du hub conservé.
+
+  **Pas de bloc partenaires** : il n'y en a aucun en base, ils vivent dans le
+  tableur du club, et un panneau toujours vide vaut moins que pas de panneau.
+  Pas d'histogramme non plus — trois publications sorties ne font pas une
+  courbe de douze mois.
 - **`#hermitage` — le site.** L'habillage du hub disparaît : ni « Hub », ni
   onglets, ni autres projets. Chrome propre, identité du club, une seule
   sortie discrète en pied de page.
@@ -116,6 +127,15 @@ de la salle. La pastille « Réunion » y est toujours offerte.
 
 Le calendrier éditorial du club, **le même outil que chez Yuno** : une idée
 est une publication sans date, la banque d'idées, les rubriques récurrentes.
+
+**Une rubrique peut se répéter pour de vrai** depuis le 26 août 2026 : la fiche
+d'une idée porte « Se répète » et sa fin facultative, comme une tâche ou un
+événement. La règle qui en découle vient de la tâche répétée et ne se
+« corrige » pas : une publication n'a qu'un `statut`, donc **une publication
+répétée ne se termine pas** — la passer en **publié** avance sa date d'une
+occurrence et la ramène à **à préparer**. Le lundi suivant attend déjà sur son
+jour. Conséquence assumée : elle ne reste jamais en « publié », donc le
+compteur « publications sorties » du bilan ne la voit pas passer.
 
 **TROIS états, et non quatre** (demande de Noé, 25 août 2026) :
 `à préparer → à programmer → publié`. « Brouillon » et « prêt » disaient deux

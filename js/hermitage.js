@@ -35,7 +35,14 @@ import {
   formulaireIdee,
   rubriquesProposees,
 } from './publications.js';
-import { depuisDateISO, echeanceLisible, momentLisible, echapper, versDateISO } from './format.js';
+import {
+  depuisDateISO,
+  echeanceLisible,
+  momentLisible,
+  echapper,
+  versDateISO,
+  RECURRENCES,
+} from './format.js';
 import { finDeLaSortie, phaseDeLaSortie } from './preparations-commun.js';
 
 import {
@@ -48,6 +55,7 @@ import {
   fenetreJour,
   elementsDuJour,
   finDeLEvenement,
+  passageDePublication,
   brancherSelection,
   brancherClavier,
   brancherDeplacement,
@@ -1099,6 +1107,13 @@ function fenetreIdee(etat) {
            suggestions: rubriquesProposees(etat.publications, RUBRIQUES_DEPART) },
          { nom: 'date_prevue', libelle: "Prévue le (vide = banque d'idées)", type: 'date',
            valeur: pub.date_prevue ?? '' },
+         // La répétition, pour la rubrique qui revient chaque semaine (demande
+         // de Noé, 26 août 2026). Elle ne vaut qu'avec une date : sans jour,
+         // l'idée retourne à la banque et la répétition part avec elle.
+         { nom: 'recurrence', libelle: 'Se répète', type: 'choix', options: RECURRENCES,
+           valeur: pub.recurrence ?? '' },
+         { nom: 'recurrence_fin', libelle: "Se répète jusqu'au (facultatif)", type: 'date',
+           valeur: pub.recurrence_fin ?? '' },
          { nom: 'notes', libelle: 'Notes', type: 'textarea', valeur: pub.notes ?? '' },
        ],
      })}
@@ -1192,6 +1207,8 @@ async function corrigerDepuisCalendrier(champs) {
       date_prevue: champs.debut,
       reseau: champs.reseau,
       format: champs.format,
+      recurrence: champs.recurrence || null,
+      recurrence_fin: (champs.recurrence && champs.recurrence_fin) || null,
     });
   }
 
@@ -1666,8 +1683,12 @@ export default {
             format: champs.format,
             rubrique: champs.rubrique?.trim() || null,
             notes: champs.notes?.trim() || null,
-            // Vider la date renvoie l'idée à la banque.
+            // Vider la date renvoie l'idée à la banque — et emmène la
+            // répétition avec elle : sans jour, il n'y a rien qui revienne.
             date_prevue: champs.date_prevue || null,
+            recurrence: (champs.date_prevue && champs.recurrence) || null,
+            recurrence_fin:
+              (champs.date_prevue && champs.recurrence && champs.recurrence_fin) || null,
           }),
         );
         etat.ideeOuverte = null;
@@ -2113,10 +2134,13 @@ export default {
         // programmer, publié.
         const suivant = STATUTS_FCH[STATUTS_FCH.indexOf(pub.statut) + 1];
         if (!suivant || estProvisoire(pub.id)) return;
+        // Une rubrique qui revient ne se termine pas : la publier la repose
+        // sur son prochain jour, à préparer (`passageDePublication`).
+        const champsStatut = passageDePublication(pub, suivant);
         await modifierAussitot(
           pub,
-          { statut: suivant },
-          () => api.modifierPublication(pub.id, { statut: suivant }),
+          champsStatut,
+          () => api.modifierPublication(pub.id, champsStatut),
           { rendre, echouer: dire },
         );
         return;
@@ -2126,12 +2150,13 @@ export default {
       if (deprogrammer) {
         const pub = trouverPub(deprogrammer.dataset.deprogrammer);
         if (!pub || estProvisoire(pub.id)) return;
-        await modifierAussitot(
-          pub,
-          { date_prevue: null },
-          () => api.modifierPublication(pub.id, { date_prevue: null }),
-          { rendre, echouer: dire },
-        );
+        // La date s'en va, la répétition avec : une idée sans jour n'a rien
+        // qui revienne.
+        const retour = { date_prevue: null, recurrence: null, recurrence_fin: null };
+        await modifierAussitot(pub, retour, () => api.modifierPublication(pub.id, retour), {
+          rendre,
+          echouer: dire,
+        });
         return;
       }
 

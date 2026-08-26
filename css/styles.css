@@ -2326,6 +2326,60 @@ body.fond-fige {
 
 .capture-popover .lien-discret { margin: var(--espace-12) 0 0 var(--espace-8); }
 
+/* Combien de temps ça prend : des propositions qu'on touche, et un nombre qu'on
+   tape (demande de Noé, 26 août 2026). Les deux sur la même ligne, qui passe à
+   la ligne d'elle-même sur un écran étroit — empilés, ils auraient chassé les
+   raccourcis de date hors de l'écran, ce que ce panneau a déjà appris. */
+.duree-champ {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-8);
+  padding: 0 var(--espace-8);
+}
+
+.duree-propositions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-4);
+}
+
+.duree-propositions button {
+  padding: var(--espace-8) var(--espace-12);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+  background: none;
+  color: var(--texte-discret);
+  font-family: var(--police-texte);
+  font-size: 0.8125rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.duree-propositions button.actif {
+  border-color: var(--accent);
+  color: var(--texte);
+}
+
+/* Le nombre et son unité forment un seul contrôle à l'œil : le « min » est
+   dedans, pas à côté — sinon on lit deux champs là où il n'y en a qu'un. */
+.duree-libre {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-4);
+  color: var(--texte-discret);
+  font-size: 0.8125rem;
+}
+
+/* La règle large du panneau met tous les contrôles à 100 % : ici il faut la
+   reprendre, un champ de trois chiffres n'a pas besoin de toute la largeur. */
+.capture-popover .duree-libre input,
+.duree-libre input {
+  width: 4.5rem;
+  min-width: 4.5rem;
+  text-align: right;
+}
+
 /* La croix de retrait ne se cache pas derrière le survol. Ailleurs dans le hub
    elle est en `opacity: 0` et se révèle au passage de la souris ; sur un
    téléphone il n'y a pas de survol, et supprimer une tâche deviendrait

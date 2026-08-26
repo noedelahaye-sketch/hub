@@ -16,6 +16,8 @@ import {
   poserLeChoix,
   basculerChoixDeFormulaire,
   fermerLesChoix,
+  champDuree,
+  marquerLaDuree,
 } from './espace-projet.js';
 import {
   depuisDateISO,
@@ -26,6 +28,9 @@ import {
   echapper,
   NOMS_PROJETS,
   RECURRENCES,
+  decalerOccurrence,
+  DUREES,
+  dureeLisible,
   occurrencesEntre,
 } from './format.js';
 
@@ -93,6 +98,47 @@ export const nomDuStatut = (projet, statut) =>
 
 export { NOMS_STATUTS_BASE };
 
+// --- Faire partir une publication --------------------------------------------
+//
+// Ce qu'un changement d'état écrit, en un seul endroit. Quatre écrans font
+// avancer une publication — la grille de l'accueil, celle de l'espace
+// Calendrier, la banque de Yuno, la chaîne éditoriale du club — et la règle
+// qui suit ne peut pas vivre en quatre copies.
+//
+// LA RÈGLE (26 août 2026) : une publication RÉCURRENTE ne se termine pas. Elle
+// n'a qu'un `statut`, et le poser à « publié » marquerait toute la série pour
+// toujours — « Le portrait du lundi » serait publié à jamais après un seul
+// lundi. La faire partir avance donc sa date d'une occurrence et la ramène au
+// PREMIER état de son cycle : la rubrique suivante attend déjà sur son jour,
+// à préparer. C'est mot pour mot ce que fait une tâche répétée qu'on coche
+// (`terminerTache`, js/api.js).
+//
+// Passé la fin déclarée, la série s'arrête et la publication se termine pour
+// de bon — sinon elle reviendrait après sa propre échéance. Et rien ne compte
+// les parutions manquées : c'est la règle du hub partout ailleurs.
+//
+// Renvoie les champs à écrire, pas une promesse : les écrans écrivent tout de
+// suite à l'écran et envoient derrière (js/ecriture.js), il leur faut l'objet.
+export function passageDePublication(pub, statut) {
+  if (statut !== 'publie' || !pub.recurrence || !pub.date_prevue) return { statut };
+
+  const suite = prochaineParution(pub);
+  if (!suite) return { statut };
+
+  return { statut: cyclePublication(pub.projet ?? 'photo')[0], date_prevue: suite };
+}
+
+// La parution suivante d'une série, ou `null` quand elle est finie. Le sens
+// négatif ramène à celle d'avant : c'est ce qui permet à un écran d'annuler
+// un départ, comme une coche de tâche s'annule.
+export function prochaineParution(pub, sens = 1) {
+  if (!pub.recurrence || !pub.date_prevue) return null;
+
+  const suite = decalerOccurrence(depuisDateISO(pub.date_prevue), pub.recurrence, sens);
+  if (sens > 0 && pub.recurrence_fin && suite > depuisDateISO(pub.recurrence_fin)) return null;
+  return versDateISO(suite);
+}
+
 // Les types d'éléments datés.
 const TYPES = {
   evenement: 'Événement',
@@ -135,6 +181,11 @@ export function toutesLesNatures() {
 // à ce module avant qu'ils ne déménagent.
 export { RECURRENCES };
 
+// Les durées voyagent de la même façon, et pour la même raison : la tuile les
+// offre, l'espace Tâches aussi, et aucun des deux ne doit aller les chercher
+// dans l'autre.
+export { DUREES, dureeLisible };
+
 // La fenêtre d'expansion est large mais bornée : un an en arrière, trois ans
 // devant. Les dates elles-mêmes se calculent dans `format.js` — événements et
 // tâches se répètent de la même façon, et ce serait deux fois le même pas.
@@ -168,6 +219,19 @@ function occurrencesDeLaTache(tache) {
 
   const { plancher, plafond } = fenetreDExpansion();
   return occurrencesEntre(ancre, tache.recurrence, tache.recurrence_fin, plancher, plafond);
+}
+
+// Une publication se déplie comme une tâche, et pour la même raison : sa
+// `date_prevue` est toujours l'occurrence COURANTE — la faire partir l'avance
+// d'un cran (voir `passageDePublication`). Le calendrier ne montre donc jamais
+// une parution passée d'une série : elle a été franchie.
+function occurrencesDeLaPublication(pub) {
+  const ancre = pub.heure
+    ? new Date(`${pub.date_prevue}T${pub.heure}`)
+    : depuisDateISO(pub.date_prevue);
+
+  const { plancher, plafond } = fenetreDExpansion();
+  return occurrencesEntre(ancre, pub.recurrence, pub.recurrence_fin, plancher, plafond);
 }
 
 // --- Assemblage --------------------------------------------------------------
@@ -258,26 +322,32 @@ export function assemblerCalendrier({
   }
 
   for (const pub of publications) {
-    elements.push({
-      id: pub.id,
-      type: 'publication',
-      source: pub,
-      // Comme une tâche : avec une heure, elle l'affiche. L'heure de parution
-      // est une décision éditoriale, pas un détail.
-      date: pub.heure
-        ? new Date(`${pub.date_prevue}T${pub.heure}`)
-        : depuisDateISO(pub.date_prevue),
-      projet: pub.projet ?? 'photo',
-      titre: pub.titre,
-      // Publiée = partie. Elle se barre comme une tâche faite, et pour la même
-      // raison : ce qui a eu lieu reste à sa place dans la semaine.
-      faite: pub.statut === 'publie',
-      // L'état n'est PAS écrit ici : la tuile le montre en toutes lettres avec
-      // ses trois pastilles, et lui, il se relit à la source à chaque rendu.
-      // Recopié dans cette ligne, il serait vrai à l'assemblage et faux dès le
-      // premier appui.
-      detail: `${RESEAUX[pub.reseau] ?? pub.reseau} · ${FORMATS[pub.format] ?? pub.format}`,
-    });
+    // Comme une tâche : avec une heure, elle l'affiche. L'heure de parution est
+    // une décision éditoriale, pas un détail.
+    for (const date of occurrencesDeLaPublication(pub)) {
+      elements.push({
+        id: pub.id,
+        type: 'publication',
+        source: pub,
+        date,
+        recurrent: Boolean(pub.recurrence),
+        // Publiée = partie. Elle se barre comme une tâche faite, et pour la
+        // même raison : ce qui a eu lieu reste à sa place dans la semaine.
+        //
+        // Une série, elle, ne se barre jamais : seule l'occurrence courante
+        // porte l'état, les suivantes sont à venir. Sans cette réserve, une
+        // rubrique hebdomadaire qui vient de partir s'afficherait barrée
+        // jusqu'en 2029 — c'est la règle de la tâche récurrente, mot pour mot.
+        faite: pub.statut === 'publie' && !pub.recurrence,
+        // L'état n'est PAS écrit ici : la tuile le montre en toutes lettres
+        // avec ses trois pastilles, et lui, il se relit à la source à chaque
+        // rendu. Recopié dans cette ligne, il serait vrai à l'assemblage et
+        // faux dès le premier appui.
+        projet: pub.projet ?? 'photo',
+        titre: pub.titre,
+        detail: `${RESEAUX[pub.reseau] ?? pub.reseau} · ${FORMATS[pub.format] ?? pub.format}`,
+      });
+    }
   }
 
   for (const commande of commandes) {
@@ -543,15 +613,26 @@ function heureDe(element) {
 // heure. C'est ce qui reste de la grille horaire — non plus une échelle de 24 h
 // où tout se place, mais une simple proportion : un match de deux heures est
 // deux fois plus haut qu'un rendez-vous d'une heure, et ça se voit sans compter.
-// Seul un événement a une fin déclarée ; une tâche arrive à un moment, elle
-// garde donc sa hauteur de ligne.
+//
+// Deux natures savent dire combien de temps elles prennent, et elles le disent
+// dans deux colonnes différentes : un ÉVÉNEMENT a une fin déclarée
+// (`date_fin`), une TÂCHE a des minutes (`duree`, depuis le 26 août 2026 —
+// « de 15 h à 16 h » n'est pas la façon dont on pense une tâche). Les deux
+// arrivent ici en minutes, et la suite est la même. Ce qui n'a ni l'une ni
+// l'autre garde sa hauteur de ligne : ça arrive à un moment, ça n'occupe pas
+// de créneau.
 const HAUTEUR_PAR_HEURE = 2.5;
 
-function hauteurSelonLaDuree(element) {
-  const fin = element.source?.date_fin ? new Date(element.source.date_fin) : null;
-  if (!fin) return null;
+function minutesDeLElement(element) {
+  const ligne = element.source;
+  if (!ligne) return null;
 
-  const minutes = (fin - element.date) / 60000;
+  if (ligne.date_fin) return (new Date(ligne.date_fin) - element.date) / 60000;
+  return element.type === 'tache' ? (ligne.duree ?? null) : null;
+}
+
+function hauteurSelonLaDuree(element) {
+  const minutes = minutesDeLElement(element);
   if (!(minutes > 0)) return null;
   return (minutes / 60) * HAUTEUR_PAR_HEURE;
 }
@@ -1303,18 +1384,6 @@ export function champsApresDeplacement(element, ecart) {
 // INTENTION : sans mesure ni date, donc rien qu'on pose sur un calendrier.
 export const NATURES_PERSO = new Set(['evenement', 'tache']);
 
-// Une durée en minutes plutôt que deux sélecteurs d'heure : on pense « un match
-// dure deux heures », pas « de 15 h à 17 h ». Elle ne sert que si une heure est
-// donnée — sans heure, l'événement tient la journée.
-export const DUREES = {
-  30: '30 minutes',
-  60: '1 heure',
-  90: '1 h 30',
-  120: '2 heures',
-  180: '3 heures',
-  240: '4 heures',
-};
-
 const NATURES_CREABLES = {
   evenement: 'Événement',
   tache: 'Tâche',
@@ -1654,7 +1723,11 @@ export function fenetreCreation({
         ? champCapture({ nom: 'debut', libelle: 'Échéance', type: 'date', valeur: debut, requis: dateRequise })
         : `<div class="capture-deux-champs">
              <span>${champCapture({ nom: 'debut', libelle: 'Quand', type: 'date', valeur: debut, requis: dateRequise })}</span>
-             <span>${champCapture({ nom: 'heure', libelle: 'Heure', type: 'time' })}</span>
+             <!-- L'heure était le seul champ de la tuile à ne pas être
+                  pré-rempli : rouvrir une tâche de 18 h et l'enregistrer sans
+                  y toucher lui retirait son heure — et depuis le 26 août, sa
+                  durée avec. -->
+             <span>${champCapture({ nom: 'heure', libelle: 'Heure', type: 'time', valeur: heure })}</span>
            </div>`;
 
   pastilles.push(
@@ -1834,6 +1907,23 @@ export function fenetreCreation({
           decor: 'priorite',
         }),
       }),
+      // Combien de temps elle prend (demande de Noé, 26 août 2026). La même
+      // question que pour un événement, avec deux différences : elle peut
+      // rester sans réponse — c'est même le cas ordinaire —, et elle n'a de
+      // sens qu'avec une heure. Sans heure, la tâche arrive dans la journée
+      // sans occuper de créneau, et l'écriture écarte la durée d'elle-même.
+      pastilleCapture({
+        nom: 'duree',
+        icone: ICONE.duree,
+        defaut: 'Durée',
+        source: 'duree',
+        neutre: '',
+        contenu: champDuree({
+          id: 'cal-duree-tache',
+          valeur: valeurs.duree ?? null,
+          libelle: 'Combien de temps (avec une heure)',
+        }),
+      }),
       // La répétition, la MÊME que celle d'un événement (demande de Noé,
       // 26 août 2026) : mêmes mots, même pastille, même colonne en base. Ce qui
       // diffère est ailleurs — une tâche récurrente ne se termine pas, elle
@@ -1878,6 +1968,27 @@ export function fenetreCreation({
         source: 'format',
         rempli: true,
         contenu: champChoix({ nom: 'format', options: FORMATS, valeur: 'carrousel' }),
+      }),
+      // La répétition, la même que partout (demande de Noé, 26 août 2026) :
+      // une rubrique qui revient chaque lundi se pose une fois. Elle n'a de
+      // sens qu'avec une date — une idée sans jour reste dans la banque —, et
+      // l'écriture l'écarte d'elle-même le cas échéant.
+      pastilleCapture({
+        nom: 'repetition',
+        icone: ICONE.repetition,
+        defaut: 'Une seule fois',
+        source: 'recurrence',
+        contenu: `${champChoix({
+          nom: 'recurrence',
+          options: RECURRENCES,
+          valeur: valeurs.recurrence ?? '',
+        })}
+          ${champCapture({
+            nom: 'recurrence_fin',
+            libelle: "Jusqu'au (facultatif)",
+            type: 'date',
+            valeur: valeurs.recurrence_fin ?? '',
+          })}`,
       }),
     );
 
@@ -2007,6 +2118,10 @@ export function brancherCapture(section) {
           : '';
       } else if (champ.type === 'date') {
         texte = champ.value ? echeanceLisible(depuisDateISO(champ.value)) : '';
+      } else if (champ.dataset.formatDuree !== undefined) {
+        // Un nombre de minutes se relit en heures : la pastille dit « 1 h 30 »,
+        // pas « 90 ».
+        texte = dureeLisible(champ.value);
       } else {
         texte = champ.value.trim();
       }
@@ -2042,7 +2157,7 @@ export function brancherCapture(section) {
   // ont besoin du focus.
   section.addEventListener('pointerdown', (evenement) => {
     const garderLeClavier = evenement.target.closest(
-      '.capture [data-pastille], .capture [data-choix], .capture [data-nature-creation], .capture-envoyer',
+      '.capture [data-pastille], .capture [data-choix], .capture [data-nature-creation],\n       .capture [data-poser-duree], .capture-envoyer',
     );
     if (garderLeClavier) evenement.preventDefault();
   });
@@ -2055,6 +2170,21 @@ export function brancherCapture(section) {
     const declencheurChoix = evenement.target.closest('[data-ouvrir-choix]');
     if (declencheurChoix) {
       basculerChoixDeFormulaire(declencheurChoix, section);
+      return;
+    }
+
+    // Une proposition de durée écrit dans le champ en minutes, et rien de plus :
+    // le panneau RESTE ouvert, parce qu'on vient souvent d'un raccourci qu'on
+    // corrige ensuite à la main (« 2 h » puis 105). C'est l'inverse d'un choix
+    // dans une liste, qui referme parce qu'il n'y a plus rien à dire.
+    const proposition = evenement.target.closest('[data-poser-duree]');
+    if (proposition) {
+      const champ = section.querySelector('.capture [data-champ-duree]');
+      if (champ) {
+        champ.value = proposition.dataset.poserDuree;
+        marquerLaDuree(section, champ.value);
+        rafraichirLesLibelles();
+      }
       return;
     }
 
@@ -2118,8 +2248,17 @@ export function brancherCapture(section) {
     }
   });
 
-  section.addEventListener('input', rafraichirLesLibelles);
-  section.addEventListener('change', rafraichirLesLibelles);
+  // Taper une durée à la main éteint la proposition qui était allumée : le
+  // bouton « 2 h » ne doit pas rester marqué quand le champ dit 105.
+  const suivreLaDuree = (evenement) => {
+    if (evenement.target.closest?.('[data-champ-duree]')) {
+      marquerLaDuree(section, evenement.target.value);
+    }
+    rafraichirLesLibelles();
+  };
+
+  section.addEventListener('input', suivreLaDuree);
+  section.addEventListener('change', suivreLaDuree);
   section.addEventListener(
     'scroll',
     (evenement) => {
@@ -2240,6 +2379,19 @@ function champsDeModification(element) {
       { nom: 'debut', libelle: 'Prévue le', type: 'date', requis: true, valeur: ligne.date_prevue },
       { nom: 'reseau', libelle: 'Réseau', type: 'choix', options: RESEAUX, valeur: ligne.reseau },
       { nom: 'format', libelle: 'Format', type: 'choix', options: FORMATS, valeur: ligne.format },
+      {
+        nom: 'recurrence',
+        libelle: 'Se répète',
+        type: 'choix',
+        options: RECURRENCES,
+        valeur: ligne.recurrence ?? '',
+      },
+      {
+        nom: 'recurrence_fin',
+        libelle: "Se répète jusqu'au (facultatif)",
+        type: 'date',
+        valeur: ligne.recurrence_fin ?? '',
+      },
     ];
   }
 
@@ -2543,6 +2695,8 @@ export async function poserAuCalendrier(champs, { projetParDefaut = 'photo' } = 
       statut: 'actif',
       echeance: champs.debut,
       heure: champs.heure || null,
+      // Une durée sans heure ne mesure rien : la tâche tient la journée.
+      duree: (champs.heure && Number(champs.duree)) || null,
       priorite: Number(champs.priorite) || 4,
     });
   }
@@ -2557,6 +2711,10 @@ export async function poserAuCalendrier(champs, { projetParDefaut = 'photo' } = 
       // date ne veut rien dire, elle part avec.
       date_prevue: champs.debut || null,
       heure: (champs.debut && champs.heure) || null,
+      // Sans date non plus, rien à répéter — et une fin de répétition sans
+      // répétition ne veut rien dire.
+      recurrence: (champs.debut && champs.recurrence) || null,
+      recurrence_fin: (champs.debut && champs.recurrence && champs.recurrence_fin) || null,
       // Les deux pastilles de Yuno. Le hub ne les offre pas : `champs` ne les
       // porte alors pas, et les colonnes restent nulles.
       pilier: champs.pilier ? Number(champs.pilier) : null,

@@ -92,7 +92,8 @@ export const NOMS_PROJETS = {
 };
 
 // --- Les répétitions ---------------------------------------------------------
-// Événements et tâches se répètent avec les mêmes mots et le même pas. Le
+// Événements, tâches et publications se répètent avec les mêmes mots et le
+// même pas (les publications depuis le 26 août 2026). Le
 // vocabulaire et l'arithmétique vivent ICI, dans le module sans dépendance :
 // `js/api.js` en a besoin pour faire glisser une tâche récurrente, et
 // `js/calendrier-commun.js` pour déplier une série — or celui-ci importe
@@ -134,4 +135,56 @@ export function occurrencesEntre(depart, recurrence, finISO, plancher, plafondPa
   }
 
   return dates;
+}
+
+// --- Les durées --------------------------------------------------------------
+// Une durée en minutes plutôt que deux sélecteurs d'heure : on pense « un match
+// dure deux heures », pas « de 15 h à 17 h ». Elle ne vaut qu'avec une heure —
+// sans heure, la chose tient la journée et il n'y a pas de créneau à mesurer.
+//
+// Ici plutôt que dans la tuile du calendrier, pour la même raison que les
+// répétitions juste au-dessus : l'espace Tâches a besoin de ces mots et
+// n'importe pas le calendrier.
+// Ce qu'un ÉVÉNEMENT sait durer : de 1 h à 4 h, plus la journée entière
+// (demande de Noé, 26 août 2026). La demi-heure est partie — rien de ce que
+// Noé pose au calendrier ne dure trente minutes : un match, un entraînement,
+// une réunion, un rendez-vous, c'est une heure au moins.
+//
+// « Toute la journée » vaut NEUF HEURES, et c'est un choix : il faut un
+// nombre, parce que la hauteur de la barre en vue semaine se calcule. Neuf
+// heures, c'est une journée telle qu'on l'occupe, pas les vingt-quatre du
+// cadran. À ne pas confondre avec un événement SANS heure, qui tient le jour
+// sans occuper de créneau — c'est le cas d'à côté, et il ne passe pas par ici.
+export const DUREES = {
+  60: '1 heure',
+  90: '1 h 30',
+  120: '2 heures',
+  150: '2 h 30',
+  180: '3 heures',
+  240: '4 heures',
+  540: 'Toute la journée',
+};
+
+// Une TÂCHE ne répond pas à cette question de la même façon (26 août 2026).
+// Un événement dure ce que dure un match : une liste fermée suffit. Une tâche
+// dure ce qu'elle dure — vingt minutes, une heure et quart, une matinée —, et
+// Noé l'a demandé explicitement : **on la tape en minutes**, et les
+// propositions ne sont qu'un raccourci pour les cas fréquents, de 1 h à 3 h.
+//
+// Une liste, donc, et non une table : ce ne sont pas les seules valeurs
+// possibles, seulement celles qui s'offrent en un appui.
+export const DUREES_PROPOSEES = [60, 90, 120, 150, 180];
+
+// La durée en toutes lettres, à partir des minutes. Court, parce que ça
+// s'écrit dans une pastille et dans la ligne de service d'une tâche :
+// « 1 h 30 », pas « 1 heure et 30 minutes ». Zéro et nul ne disent rien —
+// une tâche sans durée n'a pas de durée à annoncer.
+export function dureeLisible(minutes) {
+  const total = Number(minutes);
+  if (!Number.isFinite(total) || total <= 0) return '';
+
+  const heures = Math.floor(total / 60);
+  const reste = total % 60;
+  if (!heures) return `${reste} min`;
+  return reste ? `${heures} h ${String(reste).padStart(2, '0')}` : `${heures} h`;
 }

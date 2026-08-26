@@ -88,9 +88,10 @@ qui relie le nom exact d'un club à son fichier.
 
 ## Structure du site
 
-Neuf espaces, servis par un routeur à deux niveaux (`#espace/vue/id`) :
+Dix espaces, servis par un routeur à deux niveaux (`#espace/vue/id`) :
 - `/` ou `#dashboard` — tableau de bord global (tous projets)
 - `#taches` — **toutes** les tâches, tous projets : datées ou non, faites ou non. La seule page du hub qui ne cache rien. On y crée une tâche, on y change sa priorité (1 à 4) et son statut. Ailleurs le hub trie pour Noé ; ici on vient voir l'ensemble et ranger.
+- `#objectifs` — **tous** les objectifs, groupés par projet, et le seul endroit du hub où le cap se règle : modifier un objectif, poser ou retirer un jalon, le marquer atteint. Sans entrée dans la barre de navigation (26 août 2026) : on y vient en pressant la tuile « Le cap » d'un tableau de bord, et rarement.
 - `#calendrier` — tout ce qui porte une date, tous projets confondus, filtres par nature (tâches, événements, publications, objectifs)
 - `#formation` — espace formation (thème : teal)
 - `#photo` — la page Yuno du hub (thème : doré) — tableau de bord réduit et porte vers le site
@@ -99,9 +100,25 @@ Neuf espaces, servis par un routeur à deux niveaux (`#espace/vue/id`) :
 - `#hermitage` — le SITE FC Hermitage : l'habillage du hub disparaît, chrome et identité propres, fond bleu du club (voir docs/fch-spec.md)
 - `#perso` — espace perso (thème : doux, apaisé, distinct des espaces projet)
 
-**Deux formes de projet cohabitent, et c'est voulu :**
-- **formation** est un espace projet complet, dans le hub : objectifs avec progression, jalons, tâches (3 actives max + backlog repliable), événements à venir, victoires. C'est `js/espace-projet.js`, une fabrique.
-- **photo (Yuno)** et **fch** ont chacun une *page du hub* réduite (le cap en lecture, un aperçu, une capture rapide, les victoires, et la porte) plus un *site* à part entière où toute la gestion vit. Les sites ne réutilisent pas la fabrique : leur structure leur est propre.
+**Les trois pages projet du hub sont des BILANS** (refonte du 26 août 2026), et
+elles ont la même forme sans avoir le même contenu :
+
+- Le **site** est l'atelier — il répond à « qu'est-ce que je fais maintenant » ;
+  la **page du hub** est le bilan — elle répond à « où j'en suis ». C'est la
+  seule division qui justifie deux écrans.
+- Chacune se lit en **deux colonnes de panneaux** sur grand écran : *Le cap*
+  (tuile-bouton vers `#objectifs`) et *À faire* d'abord, la matière propre du
+  projet et le bilan ensuite, **les raccourcis en pied de page** — des pastilles
+  colorées qui ouvrent la tuile de capture du hub, jamais un formulaire déplié.
+- **Aucune ne porte plus son titre ni son logo** : la barre de navigation le dit
+  déjà. Le `<h1>` reste hors écran pour les lecteurs d'écran.
+- Ce qui les distingue : Yuno ouvre sur une **bande de photos** (le tirage du
+  jour du Carnet) et porte l'**argent** ; le FCH montre sa **chaîne éditoriale**
+  à trois états et sa prochaine **réunion** ; la formation montre la
+  **progression des révisions** lue dans le gist Bac-3.
+- **`js/espace-projet.js` n'est plus une fabrique** : elle n'avait plus que la
+  formation, qui a sa propre page depuis. Il n'en reste que les gabarits que
+  tout le monde emprunte — tuiles d'objectif, listes, fenêtres, formulaires.
 
 L'espace perso affiche uniquement : ses intentions, ses prochains rendez-vous avec soi-même, ses victoires, et la courbe d'humeur des 30 derniers jours.
 
@@ -114,7 +131,7 @@ Ces deux valeurs peuvent figurer dans le code public. Le token d'accès personne
 
 ## Schéma de base de données
 
-**9 tables.** Les six premières sont celles du hub ; les trois dernières sont nées avec les sites (voir plus bas). Les tables concernées portent une colonne `projet` de type text avec contrainte CHECK (projet IN ('formation', 'photo', 'fch', 'perso')), sauf `jalons` qui hérite du projet via son objectif, et `contacts` / `commandes` qui n'en ont pas.
+**Onze tables décrites ici** (la base en compte davantage : les sites en ont ajouté, voir leurs cahiers des charges). Les six premières sont celles du hub ; les suivantes sont nées avec les sites. Les tables concernées portent une colonne `projet` de type text avec contrainte CHECK (projet IN ('formation', 'photo', 'fch', 'perso')), sauf `jalons` qui hérite du projet via son objectif, et `contacts` / `commandes` qui n'en ont pas.
 
 Usage de la valeur 'perso' : autorisée dans `objectifs` (= intentions : champs cible et echeance laissés vides, aucune progression affichée), `evenements`, `victoires` et — depuis le 13 août 2026 — `taches`. Jamais dans `jalons` : un jalon mesure une progression, et l'espace perso n'en affiche aucune. Jamais dans `publications` non plus : l'espace perso ne publie pas.
 
@@ -149,9 +166,13 @@ La progression d'un objectif = jalons atteints / jalons totaux (calculée côté
 - `titre` text NOT NULL — toujours une action concrète commençant par un verbe
 - `statut` text default 'backlog' CHECK (statut IN ('backlog', 'actif', 'fait'))
 - `echeance` date (nullable) · `heure` time (nullable — minuit n'existe pas : sans heure, la colonne est NULL)
+- `duree` int (nullable) CHECK (5 à 1440) — **combien de temps la tâche prend, en minutes** (26 août 2026). Facultative, et elle ne vaut qu'**avec une heure** : sans heure, une tâche arrive dans la journée sans occuper de créneau, et l'écriture l'écarte d'elle-même. Elle se **tape à la main** (demande de Noé) ; les propositions de 1 h à 3 h ne sont qu'un raccourci. Ce qu'elle change : en vue semaine, la barre de la tâche prend la hauteur de sa durée, comme celle d'un événement.
 - `priorite` int NOT NULL default 4 CHECK (priorite BETWEEN 1 AND 4) — 1 le plus urgent, 4 le cas ordinaire
 - `date_fait` timestamptz
+- `recurrence` text CHECK (hebdo, quinzaine, mensuel) · `recurrence_fin` date — **la répétition, comme pour un événement** (26 août 2026). Mêmes mots, même pas, même code de dépliage au calendrier (`occurrencesEntre`, js/format.js).
 - `created_at` timestamptz default now()
+
+**Une tâche répétée ne se termine pas.** Elle n'a qu'un `statut` : le passer à 'fait' marquerait toute la série pour toujours — « Courir » serait fait à jamais après une seule course. La cocher fait donc **glisser son échéance** à l'occurrence suivante et écrit sa victoire au passage (`terminerTache`, js/api.js) ; l'annuler la ramène à l'occurrence d'avant. Passé `recurrence_fin`, la série s'arrête et la tâche se termine pour de bon. Le hub ne compte jamais les fois manquées — c'est la même règle que partout.
 
 Règle métier : maximum 3 tâches en statut 'actif' par projet. L'UI doit empêcher d'en activer une 4ème (proposer d'en terminer ou repasser une en backlog).
 
@@ -164,7 +185,7 @@ Règle métier : maximum 3 tâches en statut 'actif' par projet. L'UI doit empê
 - `projet` text NOT NULL
 - `titre` text NOT NULL
 - `date_debut` timestamptz NOT NULL
-- `date_fin` timestamptz
+- `date_fin` timestamptz — la durée de l'événement, portée par sa fin. Ce que la tuile propose va de **1 h à 4 h, plus « Toute la journée » qui vaut 9 h** (demande de Noé, 26 août 2026 : rien de ce qu'on pose au calendrier ne dure trente minutes). À ne pas confondre avec un événement **sans heure**, qui tient le jour sans occuper de créneau — celui-là ne passe pas par les durées (`DUREES`, js/format.js).
 - `lieu` text
 - `notes` text
 - `type_moment` text (nullable) CHECK (match, concert, sortie, autre) — Yuno seulement : le type de la sortie (pastille à la création quand le projet est photo).
@@ -206,6 +227,11 @@ Le calendrier éditorial. **Une idée est une publication sans date** (`date_pre
 - `format` text default 'post' CHECK (post, carrousel, reel, story) — **seuls `carrousel`, `reel` et `story` sont offerts depuis le 15 août 2026** : « post et carrousel, c'est la même chose » (Noé), et c'est carrousel qui reste. `post` demeure accepté par le CHECK — un CHECK s'élargit, il ne se resserre jamais — mais plus rien ne l'écrit.
 - `statut` text default 'idee' CHECK (idee, brouillon, pret, publie) — **le cycle n'est pas le même d'un projet à l'autre**, et il vit dans `CYCLES_PUBLICATION` (js/calendrier-commun.js, avec les réseaux et les formats — la tuile du calendrier en a besoin). Yuno en pose cinq (`a_developper` en plus) ; le **FC Hermitage en a TROIS depuis le 25 août 2026** (demande de Noé) : **à préparer** (`idee`) · **à programmer** (`pret`) · **publié** (`publie`). Ce sont les mots qui changent, pas les valeurs : `nomDuStatut(projet, statut)` les traduit, le CHECK ne bouge pas, et `brouillon` sert toujours à Yuno. L'état se règle **depuis le calendrier du hub**, de deux façons : le **rond de la barre avance d'un cran** à l'appui (comme le cercle d'une tâche se coche), et la **tuile porte une pastille d'état** — à la suite de celles de la nature et du projet, ouvrant un menu déroulant dessiné, pour sauter un état ou revenir en arrière. Sa couleur dit l'étape : **rouge → ambre → vert** (`--teinte`, interpolée sur le cycle ; le CSS règle saturation et clarté par thème). Ce rouge et ce vert ne sont pas des couleurs d'alerte : ils ne jugent aucune échéance et ne bougent pas tout seuls. Pas de case à cocher : elle aurait sauté « à programmer ».
 - `date_prevue` date (nullable — NULL = banque d'idées)
+- `recurrence` text CHECK (hebdo, quinzaine, mensuel) · `recurrence_fin` date — **la répétition, comme pour une tâche et un événement** (26 août 2026). Mêmes mots, même pas, même code de dépliage (`occurrencesEntre`, js/format.js). Elle n'a de sens qu'avec une date : sans jour, l'idée est dans la banque et il n'y a rien qui revienne.
+
+**Une publication répétée ne se termine pas** — c'est la règle de la tâche répétée, mot pour mot. Elle n'a qu'un `statut` : le poser à 'publie' marquerait toute la série pour toujours. La faire partir avance donc sa `date_prevue` d'une occurrence et la ramène au **premier état de son cycle** — « à préparer » au club, « idée » chez Yuno : la rubrique suivante attend déjà sur son jour. Passé `recurrence_fin`, la série s'arrête et la publication se termine pour de bon. La règle vit **une seule fois**, dans `passageDePublication` (js/calendrier-commun.js) — quatre écrans font avancer une publication.
+
+Conséquence assumée : une publication récurrente ne reste jamais en 'publie', donc les compteurs qui comptent les publiées (le bilan du FCH) ne la voient pas passer. Le hub ne garde pas la trace des parutions d'une série, comme il ne garde pas celle des occurrences d'une tâche répétée.
 - `rubrique` text — la série récurrente, libre
 - `notes` text · `lien_publie` text
 - `created_at` timestamptz default now()
@@ -226,12 +252,38 @@ Carnet unique : le réseau de Yuno **et** les partenaires du FCH. Pas de colonne
 ### commandes
 
 - `id` uuid PK
-- `titre` text NOT NULL · `client` text
+- `titre` text NOT NULL · `client` text · `client_id` uuid (fiche du réseau)
 - `statut` text default 'en_cours' CHECK (en_cours, livree)
+- `montant` numeric(10,2) — ce que la prestation rapporte
+- `frais` numeric(10,2) — ce que le déplacement a coûté (26 août 2026)
+- `evenement_id` uuid — la sortie à laquelle elle se rattache
 - `echeance` date · `lien_livrable` text · `notes` text
 - `created_at` timestamptz default now()
 
 Livrer une commande insère une victoire, comme une tâche terminée.
+
+**C'est ici que vit l'argent de Yuno**, et nulle part ailleurs. Une prestation
+se saisit depuis deux écrans — la fiche d'une sortie sur le site Yuno, le détail
+de l'objectif dans `#objectifs` — mais elle n'existe qu'une fois : deux tables
+en feraient deux comptes différents.
+
+### materiel
+
+- `id` uuid PK · `nom` text NOT NULL
+- `prix` numeric(10,2) NOT NULL CHECK (prix >= 0) — en euros
+- `date_achat` date · `notes` text · `created_at` timestamptz default now()
+
+Pas de colonne `projet` : le matériel est celui de Yuno, comme `commandes` et
+pour la même raison — une colonne qui n'aurait jamais qu'une valeur ne
+documente rien.
+
+**Elle donne sa cible à l'objectif « Rembourser mon matériel »** (26 août
+2026) : cible = somme des prix **plus** somme des `frais` des prestations,
+progression = somme des `montant`. Acheter un objectif relève donc la barre au
+lieu de la remplir, et c'est voulu — l'objectif suit l'activité, il ne la
+précède pas. Les frais s'ajoutent à la cible **au lieu de se retrancher des
+revenus** (choix de Noé) : même arithmétique, meilleure lecture — ce qu'on a
+gagné reste ce qu'on a gagné, c'est la dette qui grossit de l'essence.
 
 ## Sécurité (à faire dès la création des tables)
 
@@ -245,7 +297,7 @@ Livrer une commande insère une victoire, comme une tâche terminée.
 1. **En-tête du jour** : « Bonjour Noé », date, et la question du matin (« Comment tu te sens ? », 5 boutons, réponse en un clic) — remplacée par un remerciement discret une fois répondue.
 2. **Victoires récentes** : les 5 dernières, tous projets perso inclus, avec pastille couleur du projet.
    **Masquées depuis le 13 août 2026** (décision de Noé, « pour le moment ») : le drapeau `VICTOIRES_VISIBLES` de `js/dashboard.js` commande le bloc, sa source et son rendu. Cocher une tâche crée toujours sa victoire en base, et l'espace perso comme le site du FCH continuent de les afficher — seul l'accueil se tait.
-3. **Progression des objectifs** : chaque objectif actif avec sa barre de progression et son échéance. Clic → le pourquoi + les jalons. **En BAS de page depuis le 13 août 2026** (décision de Noé) : ils disent le cap, pas la journée — on les relit quand on lève la tête, pas en ouvrant l'application.
+3. **Le cap** : **gravé, et non en tuiles** (26 août 2026). Du texte posé sur la page — ni carte, ni bordure, ni dépliage — **une colonne par projet**, qui ne dit que l'objectif à l'échéance la plus proche : son nom, son titre, une rangée de points (un par jalon, pleins quand ils sont atteints), son échéance. **Rien ne s'y modifie** : presser la zone mène à `#objectifs`, où le cap se règle. Un lien unique, pas un par objectif — le geste est le même partout : aller voir. **En BAS de page depuis le 13 août 2026** (décision de Noé) : ils disent le cap, pas la journée — on les relit quand on lève la tête, pas en ouvrant l'application.
 4. **Aujourd'hui** : les tâches à faire aujourd'hui (ou qui l'étaient déjà — pas de borne basse, le hub ne compte pas les retards mais ne les efface pas), max 9, **dans la forme exacte de l'espace Tâches**. Cochables directement, et **ouvrables** : appuyer sur une tâche la rouvre dans la tuile, pré-remplie (14 août 2026). Elle ne s'y supprime pas — ce geste vit dans l'espace Tâches.
 5. **Ta semaine** : un **aperçu du calendrier hebdomadaire**, tous projets et toutes natures confondus — la même grille que `#calendrier` en vue semaine.
    **Un jour s'y ouvre en grand** (demande de Noé, 24 août 2026) : presser le

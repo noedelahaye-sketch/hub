@@ -368,6 +368,7 @@ export async function creerTache({
   statut = 'backlog',
   echeance = null,
   heure = null,
+  duree = null,
   priorite = 4,
   objectif_id = null,
   recurrence = null,
@@ -382,6 +383,9 @@ export async function creerTache({
         statut,
         echeance,
         heure,
+        // Une durée sans heure ne mesure rien : la tâche arrive dans la
+        // journée sans occuper de créneau (26 août 2026).
+        duree: heure ? duree || null : null,
         priorite,
         objectif_id,
         // Une répétition sans échéance n'a rien à répéter : la colonne reste
@@ -470,6 +474,8 @@ export async function creerPublication({
   notes = null,
   date_prevue = null,
   heure = null,
+  recurrence = null,
+  recurrence_fin = null,
   pilier = null,
   preuve = null,
   pourquoi_moi = null,
@@ -480,6 +486,10 @@ export async function creerPublication({
       .insert({
         projet, titre, reseau, format, rubrique, notes,
         date_prevue, heure, pilier, preuve, pourquoi_moi,
+        // Sans date, c'est une idée dans la banque : il n'y a rien à répéter,
+        // et une fin de répétition sans répétition ne veut rien dire.
+        recurrence: date_prevue ? recurrence : null,
+        recurrence_fin: (date_prevue && recurrence && recurrence_fin) || null,
       })
       .select()
       .single(),
