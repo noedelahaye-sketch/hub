@@ -952,6 +952,37 @@ export async function avancerCommande(commande, suivant) {
   return { commande: misAJour, victoire };
 }
 
+// --- Le matériel (Yuno) ------------------------------------------------------
+// Ce que l'équipement a coûté. Une seule raison d'être : donner sa CIBLE à
+// l'objectif « Rembourser mon matériel », qui n'en avait pas de mesurable.
+// La somme des prix est la cible, la somme des prestations encaissées est la
+// progression — d'où le fait qu'acheter relève la barre au lieu de la remplir.
+
+export async function materielTout() {
+  return verifier(
+    await client
+      .from('materiel')
+      .select('*')
+      .order('date_achat', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false }),
+  );
+}
+
+export async function creerMateriel(champs) {
+  return verifier(await client.from('materiel').insert(champs).select().single());
+}
+
+export async function modifierMateriel(id, champs) {
+  return verifier(
+    await client.from('materiel').update(champs).eq('id', id).select().single(),
+  );
+}
+
+export async function supprimerMateriel(id) {
+  const { error } = await client.from('materiel').delete().eq('id', id);
+  if (error) throw error;
+}
+
 // --- Les préparations (Yuno) -------------------------------------------------
 // La feuille d'une sortie : trois phases de cases à cocher (avant, pendant,
 // après), copiées d'un modèle à la création — modifier le modèle ensuite ne

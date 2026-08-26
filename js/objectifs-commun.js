@@ -50,17 +50,27 @@ export function construireProgression(jalons = []) {
 // `montrerProjet` : l'accueil mélange les projets et doit les nommer ; une page
 // projet dit déjà le sien dans son titre.
 
-export function construireCapGrave(objectifs, { montrerProjet = false } = {}) {
-  const colonnes = objectifs.map((objectif) => colonne(objectif, montrerProjet)).join('');
-  return `<div class="cap-grave">${colonnes}</div>`;
+// C'est le CAP ENTIER qui mène au détail des objectifs, pas chaque titre
+// (demande de Noé, 26 août 2026) : un lien par objectif faisait autant de
+// cibles que de colonnes, là où le geste est le même partout — aller voir. Un
+// seul lien, donc, qui enveloppe les colonnes.
+//
+// Ce qui suit le cap dans un panneau — le compteur d'euros de Yuno — reste
+// DEHORS : il se presse pour s'ouvrir, il n'emmène nulle part.
+// `mesures` : ce qu'un objectif se mesure EN PLUS de ses jalons, par
+// identifiant. Yuno s'en sert pour dire les euros de « Rembourser mon
+// matériel » — les jalons y disent le chemin, les euros disent l'argent, et les
+// deux se lisent au même endroit (demande de Noé, 26 août 2026).
+export function construireCapGrave(objectifs, { montrerProjet = false, mesures = {} } = {}) {
+  const colonnes = objectifs
+    .map((objectif) => colonne(objectif, montrerProjet, mesures[objectif.id]))
+    .join('');
+  return `<a class="cap-grave" href="#objectifs" aria-label="Voir tous tes objectifs">${colonnes}</a>`;
 }
 
-// La porte est SÉPARÉE du cap : un écran vide n'a pas de colonnes à montrer,
-// mais il a toujours un endroit où aller.
-export const PORTE_OBJECTIFS =
-  '<a class="lien-discret porte-objectifs" href="#objectifs">Tous tes objectifs</a>';
-
-function colonne(objectif, montrerProjet) {
+// Aller voir ses objectifs ne contredit pas le « rien ne s'y touche » du cap
+// gravé : y aller n'est pas le modifier. Rien ici ne coche ni n'enregistre.
+function colonne(objectif, montrerProjet, mesure) {
   const jalons = [...(objectif.jalons ?? [])].sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
   const atteints = jalons.filter((jalon) => jalon.atteint).length;
 
@@ -84,6 +94,7 @@ function colonne(objectif, montrerProjet) {
       }
       <p class="cap-titre">${echapper(objectif.titre)}</p>
       ${points}
+      ${mesure ? `<span class="cap-mesure">${mesure}</span>` : ''}
       ${
         objectif.echeance
           ? `<span class="discret cap-echeance">${echapper(

@@ -17,11 +17,85 @@
 
 import * as api from './api.js';
 import { construireObjectifs, construireFormulaire } from './espace-projet.js';
+// Le modèle de l'argent de Yuno vit avec la page qui l'a fait naître ; il
+// n'est pas recopié ici.
+import { argentDeYuno, enEuros } from './photo.js';
 import { NOMS_PROJETS, echapper } from './format.js';
 
 // L'espace perso n'a pas d'objectifs : il a des INTENTIONS, sans mesure ni
 // date, et elles se relisent dans #perso. Cette page ne les touche jamais.
 const PROJETS = ['formation', 'fch', 'photo'];
+
+// L'objectif dont les prestations et le matériel disent la mesure. Reconnu par
+// son titre, comme sur la page Yuno : c'est le seul lien entre une ligne
+// d'objectif et une mécanique, et l'inscrire en dur vaut mieux qu'une colonne
+// « type » que rien d'autre n'utiliserait.
+const OBJECTIF_MATERIEL = 'Rembourser mon matériel';
+
+// --- L'argent de « Rembourser mon matériel » --------------------------------
+// La cible de cet objectif est la somme du matériel, sa progression la somme
+// des prestations encaissées. Les deux listes se corrigent ICI, à côté de
+// l'objectif qu'elles mesurent (demande de Noé, 26 août 2026) — la page Yuno,
+// elle, se contente d'en afficher le total.
+
+export function construireArgent(commandes, materiel) {
+  const { encaisse, cible, reste } = argentDeYuno(commandes, materiel);
+  const chiffrees = commandes.filter((commande) => commande.montant != null);
+
+  const lignes = (entrees, cle, action) =>
+    entrees.length
+      ? `<ul class="liste-argent">${entrees
+          .map(
+            (entree) => `
+          <li>
+            <span class="argent-nom">${echapper(entree.titre ?? entree.nom)}</span>
+            <span class="chiffre argent-somme">${enEuros(entree[cle])}</span>
+            <button type="button" class="lien-discret bouton-mini bouton-retirer"
+              data-${action}="${echapper(entree.id)}"
+              title="Retirer" aria-label="Retirer « ${echapper(
+                entree.titre ?? entree.nom,
+              )} »">×</button>
+          </li>`,
+          )
+          .join('')}</ul>`
+      : `<p class="vide">Rien encore.</p>`;
+
+  return `
+    <div class="panneau-argent">
+      <p class="argent-total">
+        <span class="chiffre">${enEuros(encaisse)}</span>
+        <span class="discret">encaissés sur ${enEuros(cible)} de matériel${
+          reste ? ` · ${enEuros(reste)} à rembourser` : ''
+        }</span>
+      </p>
+
+      <h3>Prestations encaissées</h3>
+      ${lignes(chiffrees, 'montant', 'retirer-commande')}
+      ${construireFormulaire({
+        id: 'obj-prestation',
+        libelle: 'Noter une prestation',
+        action: 'creer-prestation',
+        champs: [
+          { nom: 'titre', libelle: 'La prestation', type: 'text', requis: true },
+          { nom: 'client', libelle: 'Pour qui (facultatif)', type: 'text' },
+          { nom: 'montant', libelle: 'Montant en euros', type: 'number', requis: true },
+        ],
+      })}
+
+      <h3>Matériel</h3>
+      ${lignes(materiel, 'prix', 'retirer-materiel')}
+      ${construireFormulaire({
+        id: 'obj-materiel',
+        libelle: 'Ajouter du matériel',
+        action: 'creer-materiel',
+        champs: [
+          { nom: 'nom', libelle: "L'appareil, l'objectif…", type: 'text', requis: true },
+          { nom: 'prix', libelle: 'Prix payé en euros', type: 'number', requis: true },
+          { nom: 'date_achat', libelle: "Date d'achat (facultative)", type: 'date' },
+        ],
+      })}
+    </div>`;
+}
 
 // --- Fabrication du HTML ----------------------------------------------------
 
@@ -67,13 +141,24 @@ export default {
   async monter(section) {
     section.innerHTML = squelette();
 
-    const etat = { objectifs: [] };
+    const etat = { objectifs: [], commandes: [], materiel: [] };
     const bloc = (projet) => section.querySelector(`[data-bloc="${projet}"]`);
 
     const duProjet = (projet) => etat.objectifs.filter((o) => o.projet === projet);
 
+    // Le complément de l'objectif du matériel : ses deux listes, posées dans
+    // son détail. Les autres objectifs n'en ont pas.
+    const complements = () => {
+      const objectif = etat.objectifs.find((o) => o.titre === OBJECTIF_MATERIEL);
+      if (!objectif) return {};
+      return { [objectif.id]: construireArgent(etat.commandes, etat.materiel) };
+    };
+
     const rendreProjet = (projet) => {
-      bloc(projet).innerHTML = construireObjectifs(duProjet(projet), { retraitJalon: true });
+      bloc(projet).innerHTML = construireObjectifs(duProjet(projet), {
+        retraitJalon: true,
+        complements: complements(),
+      });
     };
     const rendreTout = () => PROJETS.forEach(rendreProjet);
 
@@ -85,8 +170,14 @@ export default {
     };
 
     const charger = async () => {
-      const objectifs = await api.objectifsActifs();
+      const [objectifs, commandes, materiel] = await Promise.all([
+        api.objectifsActifs(),
+        api.commandesToutes(),
+        api.materielTout(),
+      ]);
       etat.objectifs = objectifs.filter((objectif) => PROJETS.includes(objectif.projet));
+      etat.commandes = commandes;
+      etat.materiel = materiel;
       rendreTout();
     };
 
@@ -165,6 +256,30 @@ export default {
         return;
       }
 
+      if (action === 'creer-prestation') {
+        // Livrée d'emblée : on note ce qu'on a ENCAISSÉ, pas ce qu'on espère.
+        const commande = await api.creerCommande({
+          titre: champs.titre.trim(),
+          client: champs.client?.trim() || null,
+          montant: Number(champs.montant),
+          statut: 'livree',
+        });
+        etat.commandes = [commande, ...etat.commandes];
+        rendreArgent();
+        return;
+      }
+
+      if (action === 'creer-materiel') {
+        const achat = await api.creerMateriel({
+          nom: champs.nom.trim(),
+          prix: Number(champs.prix),
+          date_achat: champs.date_achat || null,
+        });
+        etat.materiel = [achat, ...etat.materiel];
+        rendreArgent();
+        return;
+      }
+
       if (action === 'creer-jalon') {
         const objectif = etat.objectifs.find((o) => o.id === champs.objectif_id);
         const jalon = await api.creerJalon({
@@ -193,7 +308,38 @@ export default {
 
       const supprObjectif = evenement.target.closest('[data-supprimer-objectif]');
       if (supprObjectif) return supprimerObjectif(supprObjectif);
+
+      const commande = evenement.target.closest('[data-retirer-commande]');
+      if (commande) {
+        return retirerArgent(commande, commande.dataset.retirerCommande, 'commandes', api.supprimerCommande);
+      }
+
+      const achat = evenement.target.closest('[data-retirer-materiel]');
+      if (achat) {
+        return retirerArgent(achat, achat.dataset.retirerMateriel, 'materiel', api.supprimerMateriel);
+      }
     });
+
+    async function retirerArgent(bouton, id, liste, supprimer) {
+      bouton.disabled = true;
+      try {
+        await supprimer(id);
+        etat[liste] = etat[liste].filter((entree) => entree.id !== id);
+        rendreArgent();
+      } catch (souci) {
+        console.error('Retrait impossible', souci);
+        bouton.disabled = false;
+      }
+    }
+
+    // Redessiner le projet photo referme sa tuile : on la rouvre, sinon noter
+    // une deuxième prestation obligerait à tout redéplier.
+    const rendreArgent = () => {
+      const objectif = etat.objectifs.find((o) => o.titre === OBJECTIF_MATERIEL);
+      if (!objectif) return;
+      rendreProjet(objectif.projet);
+      ouvrirObjectif(objectif.id);
+    };
 
     const objectifPortant = (idJalon) =>
       etat.objectifs.find((candidat) => candidat.jalons?.some((j) => j.id === idJalon));

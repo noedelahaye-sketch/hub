@@ -1102,8 +1102,9 @@ function construireInvite(etat) {
 // faire. Exportée pour être vérifiable seule, avec des sorties factices.
 //
 // Ce qu'il montre dépend de l'heure — avant on prépare, pendant on photographie,
-// après on trie. C'est le seul endroit du site où le temps qui passe change ce
-// qui s'affiche, et c'est justement ce qu'on lui demande.
+// après on trie —, et il peut ne rien montrer du tout : une sortie ne monte ici
+// qu'à deux jours de son début. C'est le seul endroit du site où le temps qui
+// passe change ce qui s'affiche, et c'est justement ce qu'on lui demande.
 export function construireSortieDuMoment(
   evenements,
   preparations,
@@ -2194,18 +2195,38 @@ function vueModele(etat) {
 // qu'il reste à faire avant de partir, puis sur place, puis au retour. L'accueil
 // montre donc la phase courante de la feuille et ouvre la porte vers elle.
 
+// Combien de temps À L'AVANCE une sortie monte sur l'accueil (demande de Noé,
+// 26 août 2026). Sans cette borne, un match posé trois semaines plus tôt
+// occupait le haut de l'accueil pendant trois semaines — et une préparation
+// qu'on ne peut pas encore faire n'est pas un rappel, c'est du décor. Deux
+// jours, c'est le moment où charger les batteries et vider les cartes devient
+// une vraie tâche.
+//
+// La feuille, elle, n'attend pas : elle se crée et se remplit quand on veut,
+// depuis le calendrier ou l'espace des missions. C'est l'ACCUEIL qui se tait.
+const AVANT_MONTE_A = 48 * 60 * 60 * 1000;
+
 // La sortie dont on parle sur l'accueil : celle qui est en cours, celle qui
-// vient de finir (moins de 24 h), ou la prochaine — dans cet ordre, qui est
-// simplement l'ordre du temps. Une sortie commencée passe donc devant une
-// sortie à venir, y compris le lendemain d'un match : pendant ces 24 h, ce
-// qu'on a à faire, c'est trier et retoucher.
+// vient de finir (moins de 24 h), ou la prochaine si elle est à moins de deux
+// jours — dans cet ordre, qui est simplement l'ordre du temps. Une sortie
+// commencée passe donc devant une sortie à venir, y compris le lendemain d'un
+// match : pendant ces 24 h, ce qu'on a à faire, c'est trier et retoucher.
 //
 // Les répétitions ne sont pas dépliées : une feuille de préparation appartient
 // à un événement, pas à une occurrence, et chez Yuno un match ne se répète pas.
 export function sortieDuMoment(evenements, reference = new Date()) {
+  const assezProche = (sortie) =>
+    new Date(sortie.date_debut) - reference <= AVANT_MONTE_A;
+
   return (
     evenements
-      .filter((sortie) => phaseDeLaSortie(sortie, reference) !== null)
+      .filter((sortie) => {
+        const phase = phaseDeLaSortie(sortie, reference);
+        if (phase === null) return false;
+        // Seul « avant » attend son tour : une sortie en cours ou qui vient de
+        // finir est là, quelle que soit la date à laquelle on l'avait posée.
+        return phase === 'avant' ? assezProche(sortie) : true;
+      })
       .sort((a, b) => new Date(a.date_debut) - new Date(b.date_debut))[0] ?? null
   );
 }

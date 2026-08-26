@@ -1083,6 +1083,11 @@ a { color: var(--accent); }
 
 .cap-echeance { font-size: 0.8125rem; }
 
+/* Les euros d'un objectif, posés sous ses jalons : les jalons disent le
+   chemin, le chiffre dit l'argent, et les deux se lisent d'un seul regard. */
+.cap-mesure { font-size: 0.9375rem; }
+.cap-mesure .chiffre { color: var(--couleur-projet-pleine, var(--accent)); }
+
 /* La seule porte du bloc : elle mène là où le cap se règle. */
 .porte-objectifs {
   display: inline-block;
@@ -1110,6 +1115,401 @@ a { color: var(--accent); }
     border-left: none;
   }
 }
+
+/* --- La page Yuno du hub ----------------------------------------------------
+   Refonte du 26 août 2026. Le site est l'atelier, cette page est le bilan :
+   elle dit où l'on en est, en chiffres et en formes, sans rien de ce qui se
+   règle. D'où l'alternance voulue — une bande d'images, des chiffres nus, un
+   histogramme, du texte gravé, des lignes de tâches, une barre d'entonnoir.
+   Pas une pile de tuiles : sept fois la même carte, c'est un tableau qu'on
+   cesse d'ouvrir. */
+
+/* La page se lit en DEUX COLONNES sur grand écran (demande de Noé, 26 août
+   2026) : empilée, elle donnait ses informations une par une, laissait des
+   vides sur les côtés et ne montrait jamais l'ensemble. Les aires sont
+   nommées — la mise en page se lit ici comme un plan, et l'ordre du balisage
+   reste celui du téléphone.
+
+   `align-items: start` : un panneau court ne s'étire pas à la hauteur de son
+   voisin. Ce serait du vide encadré, ce qui est pire que du vide. */
+.grille-yuno {
+  display: grid;
+  gap: var(--espace-16);
+}
+
+@media (min-width: 60rem) {
+  .grille-yuno {
+    grid-template-columns: 1.35fr 1fr;
+    grid-template-areas:
+      "cap    faire"
+      "rythme reseau";
+    gap: var(--espace-24);
+    align-items: start;
+  }
+
+  .panneau { grid-area: var(--place); }
+}
+
+/* Le cap DANS un panneau s'empile, quelle que soit la largeur de la fenêtre.
+   Sa bascule à trois colonnes regarde le viewport, or ici c'est le panneau qui
+   décide : à 490 px, trois colonnes de 130 px hachaient les titres en trois
+   lignes. Il reprend donc la forme empilée, filets à l'horizontale. */
+.panneau .cap-grave { grid-template-columns: 1fr; }
+
+.panneau .cap-projet {
+  padding: var(--espace-16) 0 0;
+  border-top: 1px solid var(--bordure);
+  border-left: none;
+}
+
+.panneau .cap-projet:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+/* Ce qui SÉPARE les blocs, enfin : une surface. Le fond de carte suffit — deux
+   crans au-dessus du fond de page en sombre, blanc sur crème en clair — plus
+   un filet et de l'air. Ce n'est pas un retour aux tuiles : la tuile était la
+   forme du CONTENU, répétée ligne après ligne ; ici c'est le contenant d'une
+   section, et ce qu'il porte reste varié — des chiffres, un histogramme, du
+   texte gravé, des lignes, une barre. */
+.panneau {
+  margin-bottom: 0;
+  padding: var(--espace-24);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+}
+
+/* La bande ouvre la page : elle n'a ni titre ni marge haute — c'est elle qui
+   dit « Yuno », à la place du logo retiré. */
+.mur-accueil { margin-top: calc(var(--espace-8) * -1); }
+
+/* Des chiffres POSÉS, séparés par des filets — la forme du cap gravé, reprise
+   ici pour la même raison : ce sont des faits, rien ne s'y touche. */
+.chiffres-nus {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--espace-16);
+}
+
+.chiffre-nu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: var(--espace-16);
+  border-left: 1px solid var(--bordure);
+}
+
+.chiffre-nu:first-child {
+  padding-left: 0;
+  border-left: none;
+}
+
+.chiffre-nu .chiffre {
+  font-size: 1.75rem;
+  line-height: 1.1;
+  color: var(--accent);
+}
+
+.chiffre-nu .discret { font-size: 0.8125rem; }
+
+/* Le compte des victoires s'interroge : on l'ouvre pour voir lesquelles
+   (demande de Noé, 26 août 2026). Un chiffre qu'on presse, pas une liste qui
+   occupe le haut de l'écran. */
+.depli-victoires { margin-top: var(--espace-16); }
+
+.depli-victoires > summary {
+  cursor: pointer;
+  list-style: none;
+  /* La cible du doigt : une ligne de 44 px, pas la hauteur du texte. */
+  min-height: 44px;
+  display: flex;
+  justify-content: center;
+  gap: var(--espace-8);
+}
+
+/* Le compte des victoires tient sur une ligne — « 31 victoires » est une
+   phrase. */
+.depli-victoires > summary {
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: flex-start;
+}
+
+.depli-victoires > summary::-webkit-details-marker { display: none; }
+
+.depli-victoires > summary { font-size: 0.9375rem; }
+.depli-victoires > summary .chiffre { color: var(--accent); }
+
+.liste-victoires-pliee {
+  margin: var(--espace-8) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Ces trois listes ne sont PAS des listes de tuiles : `.bloc li` leur poserait
+   un fond, une bordure et un rayon — et la légende du réseau se lisait comme
+   quatre cartes empilées. Elles redeviennent des lignes. */
+.liste-victoires-pliee li,
+.entonnoir-legende li {
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+}
+
+.liste-victoires-pliee li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espace-8);
+  padding: var(--espace-8) 0;
+  border-top: 1px solid var(--bordure);
+  font-size: 0.9375rem;
+}
+
+.liste-victoires-pliee .quand { margin-left: auto; }
+
+/* L'histogramme du rythme. Des barres en CSS et non un dessin : la hauteur est
+   une proportion, et une proportion s'écrit en pourcentage. Aucune ligne
+   d'objectif, aucune couleur d'alerte — c'est un miroir, pas un juge. */
+.histogramme {
+  display: flex;
+  gap: var(--espace-4);
+  margin-top: var(--espace-24);
+}
+
+/* Deux rangées, et la ZONE DE TRACÉ a sa hauteur à elle. Sans ça, le
+   pourcentage d'une barre se comptait sur la colonne entière, étiquette
+   comprise : la barre à 100 % débordait, le flex la rabotait, et 75 % rendait
+   62 px contre 64 — deux valeurs qu'on ne distinguait plus. */
+.histo-colonne {
+  display: grid;
+  grid-template-rows: 7rem auto;
+  flex: 1;
+  gap: var(--espace-4);
+  justify-items: center;
+}
+
+.histo-colonne .histo-barre { align-self: end; }
+
+.histo-barre {
+  width: 100%;
+  /* Un mois vide garde un trait : sans lui, la colonne disparaîtrait et le
+     creux se lirait comme une absence de données. */
+  min-height: 2px;
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 3px 3px 0 0;
+}
+
+.histo-courant .histo-barre { background: var(--accent); }
+
+.histo-mois {
+  font-size: 0.625rem;
+  letter-spacing: 0.04em;
+  color: var(--texte-discret);
+}
+
+.histo-courant .histo-mois { color: var(--texte); }
+
+/* Les prestations et le matériel, dans le détail de l'objectif qu'ils mesurent
+   (espace Objectifs). La page Yuno n'en montre que le total ; c'est ici qu'on
+   corrige une somme ou qu'on retire une ligne. */
+.panneau-argent { margin: var(--espace-12) 0; }
+
+.argent-total { margin: 0 0 var(--espace-8); }
+.argent-total .chiffre { font-size: 1.25rem; color: var(--accent); }
+
+.panneau-argent h3 {
+  margin: var(--espace-16) 0 var(--espace-4);
+  font-family: var(--police-texte);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--texte-discret);
+}
+
+ul.liste-argent {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.liste-argent li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espace-8);
+  padding: var(--espace-8) 0;
+  background: none;
+  border: none;
+  border-top: 1px solid var(--bordure);
+  border-radius: 0;
+}
+
+.argent-nom { flex: 1; min-width: 0; }
+.argent-somme { color: var(--accent); }
+
+/* Le réseau en UNE barre : une forme qu'on ne trouve nulle part ailleurs dans
+   le hub. La pente se lit d'un coup d'œil, le détail vit sur le site. */
+.entonnoir {
+  display: flex;
+  gap: 2px;
+  height: 12px;
+  margin-bottom: var(--espace-12);
+}
+
+.entonnoir-part {
+  border-radius: var(--rayon-pastille);
+  background: var(--teinte-etat);
+}
+
+/* Quatre crans d'une même encre, du plus pâle au plus franc : la relation se
+   construit, elle ne change pas de nature en chemin. */
+[data-etat="pas_de_contact"] { --teinte-etat: color-mix(in srgb, var(--accent) 18%, transparent); }
+[data-etat="message_envoye"] { --teinte-etat: color-mix(in srgb, var(--accent) 40%, transparent); }
+[data-etat="contact_etabli"] { --teinte-etat: color-mix(in srgb, var(--accent) 65%, transparent); }
+[data-etat="bon_contact"]    { --teinte-etat: var(--accent); }
+
+/* Trois listes de cette page ne suivent PAS la règle des colonnes du hub.
+   Au-delà de 60 rem, `.bloc ul:not(.liste-jalons)` passe toute liste en grille
+   de colonnes de 21 rem — utile pour des tuiles étirées sur 1240 px, faux ici :
+   dans un panneau de 440 px la grille ne trouvait qu'une colonne, et `flex`
+   n'avait plus prise sur des éléments de grille. D'où le `ul` dans le
+   sélecteur : il faut la même spécificité pour gagner, et venir après. */
+ul.liste-victoires-pliee {
+  display: flex;
+  flex-direction: column;
+}
+
+.bloc ul.entonnoir-legende {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--espace-8) var(--espace-16);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+}
+
+.entonnoir-legende li {
+  display: flex;
+  flex: 1 1 40%;
+  align-items: center;
+  gap: var(--espace-4);
+}
+
+.entonnoir-puce {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--rayon-pastille);
+  background: var(--teinte-etat);
+}
+
+/* Le pied de page : les raccourcis, et la porte du site poussée au bout. Hors
+   panneau (demande de Noé, 26 août 2026) — ce sont des commandes, pas une
+   section à lire, et elles n'ont donc rien à encadrer. */
+.pied-yuno {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-8);
+  margin-top: var(--espace-24);
+}
+
+.pied-yuno .pastille-porte { margin-left: auto; }
+
+/* Des pastilles, franchement arrondies et COLORÉES (demande de Noé, 26 août
+   2026). Ce qui les faisait rater le premier essai n'était pas la couleur mais
+   le fond sur lequel elles se posaient : dans un panneau, une pastille teintée
+   se fondait dans la carte. En pied de page, sur le fond nu, l'encre du projet
+   les détache — et le rayon plein leur rend la forme d'une commande qu'on
+   presse plutôt que d'un champ qu'on remplit.
+
+   `color-mix` sur `--accent` et non deux couleurs écrites : chaque espace du
+   hub a la sienne, et ces boutons doivent suivre celle de leur page. */
+.bouton-noter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-4);
+  padding: var(--espace-8) var(--espace-16);
+  font-family: var(--police-texte);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: var(--rayon-pastille);
+  cursor: pointer;
+}
+
+.bouton-noter:hover {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  border-color: var(--accent);
+}
+
+.bouton-noter > span { opacity: 0.65; }
+
+/* Le cap est un lien depuis le 26 août 2026 : il mène au détail des objectifs.
+   Aucun soulignement, aucune couleur de lien — c'est une inscription, pas un
+   lien dans une phrase. */
+a.cap-grave {
+  color: inherit;
+  text-decoration: none;
+}
+
+a.cap-grave:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 6px;
+  border-radius: var(--rayon-controle);
+}
+
+/* Dans un panneau, c'est la TUILE ENTIÈRE qu'on presse (demande de Noé,
+   26 août 2026) : le libellé, les objectifs, et le vide entre eux. Le lien
+   s'étend par un calque invisible plutôt que d'envelopper la section — un
+   `<a>` autour d'un panneau interdirait d'y remettre un jour le moindre
+   contrôle, et un calque se retire en une ligne.
+   C'est aussi pourquoi la tuile ne peut porter aucun autre bouton : il
+   passerait sous le calque. */
+.panneau-lien { position: relative; }
+
+.panneau-lien a.cap-grave::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+/* Ce qui dit qu'elle se presse : son CONTOUR prend l'encre du projet, et rien
+   d'autre — pas de fond qui se relève, pas de soulignement sous les titres, qui
+   ferait croire à des liens séparés. */
+.panneau-lien:hover { border-color: var(--accent); }
+
+.panneau-lien:has(a.cap-grave:focus-visible) { border-color: var(--accent); }
+
+/* La porte, en bas et en pastille (demande de Noé, 26 août 2026) : on ne vient
+   pas ici pour entrer sur le site, mais il faut pouvoir y aller sans repasser
+   par la barre. Une pastille, donc — ni la grosse carte d'avant, ni un lien
+   souligné perdu en pied de page. */
+.pastille-porte {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-8);
+  min-height: 44px;
+  padding: var(--espace-8) var(--espace-16);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--texte);
+  text-decoration: none;
+  background: var(--accent-doux);
+  border: 1px solid transparent;
+  border-radius: var(--rayon-pastille);
+}
+
+.pastille-porte:hover { border-color: var(--accent); }
 
 /* --- Tâches ---------------------------------------------------------------- */
 

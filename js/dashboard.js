@@ -36,7 +36,7 @@ import {
   champsApresDeplacement,
 } from './calendrier-commun.js';
 import { construireLignesTaches, trierTaches } from './taches.js';
-import { construireCapGrave, PORTE_OBJECTIFS } from './objectifs-commun.js';
+import { construireCapGrave } from './objectifs-commun.js';
 import { lireCache, ecrireCache } from './cache-session.js';
 import { marquerLesEntrantes, animerLaCoche } from './mouvements.js';
 import { modifierAussitot } from './ecriture.js';
@@ -182,10 +182,10 @@ export function construireObjectifs(objectifs) {
   }).filter(Boolean);
 
   if (!prochains.length) {
-    return `<p class="vide">Ton cap s'écrira ici.</p>${PORTE_OBJECTIFS}`;
+    return `<p class="vide">Ton cap s'écrira ici.</p>`;
   }
 
-  return construireCapGrave(prochains, { montrerProjet: true }) + PORTE_OBJECTIFS;
+  return construireCapGrave(prochains, { montrerProjet: true });
 }
 
 // La semaine est un APERÇU DU CALENDRIER, plus une liste (demande de Noé,

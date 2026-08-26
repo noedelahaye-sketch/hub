@@ -19,11 +19,7 @@
 
 import * as api from './api.js';
 import { depuisDateISO, echeanceLisible, momentLisible, echapper } from './format.js';
-import {
-  construireProgression,
-  construireCapGrave,
-  PORTE_OBJECTIFS,
-} from './objectifs-commun.js';
+import { construireProgression, construireCapGrave } from './objectifs-commun.js';
 
 // Fenêtre pendant laquelle une tâche cochée par erreur peut être décochée.
 // Assez longue pour voir son erreur, assez courte pour ne pas encombrer.
@@ -35,16 +31,22 @@ const DUREE_ANNULATION = 6000;
 // que tout le monde n'a pas. Les deux sites retirent un jalon par leur propre
 // chemin (la fenêtre de détail) ; leur poser cette croix ferait un bouton mort.
 // Elle est donc demandée, jamais offerte d'office.
-export function construireObjectifs(objectifs, { retraitJalon = false } = {}) {
+// `complements` : du HTML propre à un objectif, glissé dans son détail, par
+// identifiant. L'espace Objectifs s'en sert pour poser les prestations et le
+// matériel à côté de « Rembourser mon matériel » — ce qui mesure un objectif se
+// corrige là où l'objectif se règle (demande de Noé, 26 août 2026).
+export function construireObjectifs(objectifs, { retraitJalon = false, complements = {} } = {}) {
   if (!objectifs.length) {
     return `<p class="vide">Aucun objectif pour l'instant. Le premier donne le cap.</p>`;
   }
   return `<div class="grille-objectifs">${objectifs
-    .map((objectif) => construireObjectif(objectif, { retraitJalon }))
+    .map((objectif) =>
+      construireObjectif(objectif, { retraitJalon, complement: complements[objectif.id] }),
+    )
     .join('')}</div>`;
 }
 
-function construireObjectif(objectif, { retraitJalon = false } = {}) {
+function construireObjectif(objectif, { retraitJalon = false, complement = '' } = {}) {
   const jalons = [...(objectif.jalons ?? [])].sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
   const progression = construireProgression(jalons);
 
@@ -67,6 +69,7 @@ function construireObjectif(objectif, { retraitJalon = false } = {}) {
       <div class="objectif-detail">
         ${objectif.pourquoi ? `<p class="pourquoi">${echapper(objectif.pourquoi)}</p>` : ''}
         ${objectif.cible ? `<p class="discret cible">Réussite : ${echapper(objectif.cible)}</p>` : ''}
+        ${complement}
 
         <ul class="liste-jalons">${jalons
           .map((jalon) => construireJalon(jalon, { retraitJalon }))
@@ -584,8 +587,8 @@ export function creerEspaceProjet({ projet, titre, sousTitre, blocEnTete = null 
 
       const rendreObjectifs = () => {
         bloc('objectifs').innerHTML = etat.objectifs.length
-          ? construireCapGrave(etat.objectifs) + PORTE_OBJECTIFS
-          : `<p class="vide">Ton cap s'écrira ici.</p>${PORTE_OBJECTIFS}`;
+          ? construireCapGrave(etat.objectifs)
+          : `<p class="vide">Ton cap s'écrira ici.</p>`;
       };
       const rendreTaches = () => {
         bloc('taches').innerHTML = construireTaches(etat.taches, etat.annulation);
