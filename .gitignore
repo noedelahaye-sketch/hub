@@ -43,3 +43,10 @@ PRODUCT.md
 # état de son mode « live ». Ce sont ses notes, pas celles du hub — l'état des
 # lieux et les cahiers des charges disent ce qui compte, et eux sont versionnés.
 .impeccable/
+
+# Le graphe de connaissance produit par graphify (25 août 2026) : 2,2 Mo dont
+# un graph.html d'un mégaoctet, régénérables à la demande depuis le code. Même
+# règle que le contexte d'Impeccable — ce sont les notes d'un outil, pas celles
+# du hub, et elles se périmeraient à côté des sources qu'elles décrivent. Rien
+# de tout ça n'a à partir sur GitHub Pages avec le site.
+graphify-out/
