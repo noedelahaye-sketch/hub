@@ -118,7 +118,11 @@ function quandLisible(tache) {
 // dashboard : là-bas il n'y a pas de tuile pour corriger, et supprimer une
 // tâche n'a rien à faire dans un check-in du matin. Le cercle, lui, se coche
 // partout — c'est le geste de la page.
-function ligneTache(tache, { ouvrable = true, supprimable = true } = {}) {
+// `projet` à false : le nom du projet ne s'écrit pas. Sur la page d'un projet,
+// il serait dit à chaque ligne alors que toute la page ne parle que de lui
+// (demande de Noé, 26 août 2026). Ailleurs — l'espace Tâches, l'accueil — les
+// projets se mêlent, et le nom reste indispensable.
+function ligneTache(tache, { ouvrable = true, supprimable = true, projet = true } = {}) {
   const faite = tache.statut === 'fait';
   const quand = quandLisible(tache);
 
@@ -154,7 +158,13 @@ function ligneTache(tache, { ouvrable = true, supprimable = true } = {}) {
         <span class="tache-titre">${echapper(tache.titre)}</span>
         <span class="tache-service">
           ${quand ? `<span class="tache-quand">${DATE_ICONE}${echapper(quand)}</span>` : ''}
-          <span class="tache-projet">${echapper(NOMS_PROJETS[tache.projet] ?? tache.projet)}</span>
+          ${
+            projet
+              ? `<span class="tache-projet">${echapper(
+                  NOMS_PROJETS[tache.projet] ?? tache.projet,
+                )}</span>`
+              : ''
+          }
         </span>
       </${ouvrable ? 'button' : 'span'}>
 

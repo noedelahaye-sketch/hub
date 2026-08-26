@@ -215,7 +215,7 @@ export function construireTaches(taches) {
   // Ni ouvrable ni supprimable : corriger et supprimer une tâche vivent dans
   // l'espace Tâches. Ici on la coche, et c'est tout — offrir les deux autres
   // gestes sans les traiter ferait des boutons morts.
-  return construireLignesTaches(aFaire, { ouvrable: false, supprimable: false });
+  return construireLignesTaches(aFaire, { ouvrable: false, supprimable: false, projet: false });
 }
 
 // Les raccourcis du bloc « Noter ». Tâche, événement et publication passent par

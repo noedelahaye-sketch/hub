@@ -573,9 +573,9 @@ a { color: var(--accent); }
 /* Un libellé de section n'est pas un titre : il reste en police de texte, en
    petit corps espacé. Le display est réservé à ce qui porte du sens. */
 .bloc h2 {
-  margin: 0 0 0.75rem;
+  margin: 0 0 var(--espace-8);
   font-family: var(--police-texte);
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -1056,7 +1056,7 @@ a { color: var(--accent); }
   margin: 0;
   font-family: var(--police-titre);
   font-weight: 600;
-  font-size: 1.0625rem;
+  font-size: 0.9375rem;
   line-height: 1.3;
   letter-spacing: 0.01em;
 }
@@ -1081,11 +1081,11 @@ a { color: var(--accent); }
 
 .cap-jalons i.atteint { background: var(--couleur-projet-pleine); }
 
-.cap-echeance { font-size: 0.8125rem; }
+.cap-echeance { font-size: 0.75rem; }
 
 /* Les euros d'un objectif, posés sous ses jalons : les jalons disent le
    chemin, le chiffre dit l'argent, et les deux se lisent d'un seul regard. */
-.cap-mesure { font-size: 0.9375rem; }
+.cap-mesure { font-size: 0.875rem; }
 .cap-mesure .chiffre { color: var(--couleur-projet-pleine, var(--accent)); }
 
 /* La seule porte du bloc : elle mène là où le cap se règle. */
@@ -1143,7 +1143,7 @@ a { color: var(--accent); }
     grid-template-areas:
       "cap    faire"
       "rythme reseau";
-    gap: var(--espace-24);
+    gap: var(--espace-16);
     align-items: start;
   }
 
@@ -1175,7 +1175,7 @@ a { color: var(--accent); }
    texte gravé, des lignes, une barre. */
 .panneau {
   margin-bottom: 0;
-  padding: var(--espace-24);
+  padding: var(--espace-16);
   background: var(--fond-carte);
   border: 1px solid var(--bordure);
   border-radius: var(--rayon-carte);
@@ -1207,12 +1207,12 @@ a { color: var(--accent); }
 }
 
 .chiffre-nu .chiffre {
-  font-size: 1.75rem;
+  font-size: 1.375rem;
   line-height: 1.1;
   color: var(--accent);
 }
 
-.chiffre-nu .discret { font-size: 0.8125rem; }
+.chiffre-nu .discret { font-size: 0.75rem; }
 
 /* Le compte des victoires s'interroge : on l'ouvre pour voir lesquelles
    (demande de Noé, 26 août 2026). Un chiffre qu'on presse, pas une liste qui
@@ -1239,7 +1239,7 @@ a { color: var(--accent); }
 
 .depli-victoires > summary::-webkit-details-marker { display: none; }
 
-.depli-victoires > summary { font-size: 0.9375rem; }
+.depli-victoires > summary { font-size: 0.875rem; }
 .depli-victoires > summary .chiffre { color: var(--accent); }
 
 .liste-victoires-pliee {
@@ -1263,9 +1263,9 @@ a { color: var(--accent); }
   display: flex;
   align-items: baseline;
   gap: var(--espace-8);
-  padding: var(--espace-8) 0;
+  padding: var(--espace-4) 0;
   border-top: 1px solid var(--bordure);
-  font-size: 0.9375rem;
+  font-size: 0.8125rem;
 }
 
 .liste-victoires-pliee .quand { margin-left: auto; }
@@ -1285,7 +1285,7 @@ a { color: var(--accent); }
    62 px contre 64 — deux valeurs qu'on ne distinguait plus. */
 .histo-colonne {
   display: grid;
-  grid-template-rows: 7rem auto;
+  grid-template-rows: 6rem auto;
   flex: 1;
   gap: var(--espace-4);
   justify-items: center;
@@ -1392,7 +1392,7 @@ ul.liste-victoires-pliee {
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
 }
 
 .entonnoir-legende li {
@@ -1433,7 +1433,7 @@ ul.liste-victoires-pliee {
   margin: var(--espace-16) 0 0;
   padding-top: var(--espace-12);
   border-top: 1px solid var(--bordure);
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
 }
 
 .prochaine-reunion .quand { margin-left: auto; }
@@ -1464,9 +1464,12 @@ ul.liste-victoires-pliee {
   display: inline-flex;
   align-items: center;
   gap: var(--espace-4);
-  padding: var(--espace-8) var(--espace-16);
+  /* 44 px de haut sur téléphone, moins sur ordinateur (voir plus bas) : la
+     règle des 44 px protège un doigt, pas un curseur. */
+  min-height: 44px;
+  padding: var(--espace-4) var(--espace-12);
   font-family: var(--police-texte);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   line-height: 1.4;
   color: var(--accent);
@@ -1528,8 +1531,8 @@ a.cap-grave:focus-visible {
   align-items: center;
   gap: var(--espace-8);
   min-height: 44px;
-  padding: var(--espace-8) var(--espace-16);
-  font-size: 0.9375rem;
+  padding: var(--espace-4) var(--espace-16);
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--texte);
   text-decoration: none;
@@ -1539,6 +1542,24 @@ a.cap-grave:focus-visible {
 }
 
 .pastille-porte:hover { border-color: var(--accent); }
+
+/* Sur grand écran, les commandes se resserrent. Les 44 px de la règle du hub
+   protègent un doigt sur un téléphone ; sous une souris, ils ne font que
+   pousser le reste vers le bas (demande de Noé, 26 août 2026 — « plus
+   d'informations sur moins d'espace »). Le clavier n'y perd rien : le cadre de
+   focus suit la boîte, quelle que soit sa hauteur. */
+@media (min-width: 60rem) and (pointer: fine) {
+  .bouton-noter,
+  .pastille-porte { min-height: 32px; }
+
+  .depli-victoires > summary { min-height: 32px; }
+
+  /* Les lignes de tâches d'un panneau : le tableau de bord en montre peu, et
+     elles n'ont pas à peser autant que dans l'espace Tâches, où l'on range. */
+  .panneau .tache-ligne { font-size: 0.9375rem; }
+  .panneau .liste-taches-pleine > .tache-ligne { padding: var(--espace-8) 0; }
+}
+
 
 /* --- Tâches ---------------------------------------------------------------- */
 
@@ -2319,7 +2340,7 @@ body.fond-fige {
   display: block;
   font-family: var(--police-titre);
   font-weight: 700;
-  font-size: 1.75rem;
+  font-size: 1.375rem;
   line-height: 1;
   color: var(--accent);
 }

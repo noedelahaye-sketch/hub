@@ -161,7 +161,7 @@ export function construireTaches(taches, evenements) {
   // l'espace Tâches. Ici on la coche, et c'est tout — offrir les deux autres
   // gestes sans les traiter ferait des boutons morts.
   const lignes = aFaire.length
-    ? construireLignesTaches(aFaire, { ouvrable: false, supprimable: false })
+    ? construireLignesTaches(aFaire, { ouvrable: false, supprimable: false, projet: false })
     : `<p class="vide">Rien à faire pour le club. Note ta prochaine tâche au-dessous.</p>`;
 
   // La réunion qui vient, sur une ligne. Sa préparation vit sur le site — ici
