@@ -9,7 +9,7 @@
 // matin sans que personne n'ait rien poussé. La version est écrite dans
 // `js/vendor/VERSION` ; on en change en relançant l'outil.
 import { createClient } from './vendor/supabase-js.js';
-import { versDateISO } from './format.js';
+import { versDateISO, depuisDateISO, decalerOccurrence } from './format.js';
 
 // URL du projet et clé publique (anon) : ces deux valeurs sont publiques par
 // conception. Sans session, elles ne donnent accès à rien — les politiques RLS
@@ -257,15 +257,25 @@ export const MAX_TACHES_ACTIVES = 3;
 // Terminer une tâche crée sa victoire. Si l'insertion de la victoire échoue, la
 // tâche reste faite : on ne la rouvre pas, mais l'erreur remonte pour être vue.
 export async function terminerTache(tache) {
+  // UNE TÂCHE RÉCURRENTE NE SE TERMINE PAS (26 août 2026) : elle n'a qu'un
+  // `statut`, et le passer à « fait » marquerait toute la série pour toujours —
+  // « Courir » serait fait à jamais après une seule course. On fait donc
+  // glisser son échéance à l'occurrence suivante. Elle revient d'elle-même, et
+  // rien ne compte les fois manquées : c'est la règle du hub partout ailleurs.
+  //
+  // Passé la fin déclarée, la série s'arrête et la tâche se termine pour de
+  // bon — sinon elle reviendrait après sa propre échéance.
+  const suite = tache.recurrence ? prochaineEcheance(tache) : null;
+
+  const champs = suite
+    ? { echeance: suite }
+    : { statut: 'fait', date_fait: new Date().toISOString() };
+
   const faite = verifier(
-    await client
-      .from('taches')
-      .update({ statut: 'fait', date_fait: new Date().toISOString() })
-      .eq('id', tache.id)
-      .select()
-      .single(),
+    await client.from('taches').update(champs).eq('id', tache.id).select().single(),
   );
 
+  // La victoire est écrite dans les deux cas : la course a bien eu lieu.
   const victoire = await ajouterVictoire({
     projet: faite.projet,
     titre: faite.titre,
@@ -276,17 +286,33 @@ export async function terminerTache(tache) {
   return { tache: faite, victoire };
 }
 
+// L'échéance suivante d'une tâche récurrente, ou `null` quand la série est
+// finie. Exportée pour que l'annulation d'une coche sache revenir en arrière.
+export function prochaineEcheance(tache, sens = 1) {
+  if (!tache.recurrence || !tache.echeance) return null;
+
+  const suite = decalerOccurrence(depuisDateISO(tache.echeance), tache.recurrence, sens);
+  if (sens > 0 && tache.recurrence_fin && suite > depuisDateISO(tache.recurrence_fin)) {
+    return null;
+  }
+  return versDateISO(suite);
+}
+
 // Défaire une tâche terminée : elle redevient active et perd sa date. La règle
 // des 3 actives n'est pas revérifiée ici, volontairement — la tâche était active
 // il y a quelques secondes, on la remet exactement où elle était.
 export async function rouvrirTache(tache) {
+  // Une tâche récurrente n'avait pas été terminée mais DÉPLACÉE : la rouvrir,
+  // c'est la ramener à l'occurrence d'avant. Sans ça, annuler une coche
+  // laisserait la série avancée d'un cran, en silence.
+  const retour = tache.recurrence ? prochaineEcheance(tache, -1) : null;
+
+  const champs = retour
+    ? { echeance: retour, statut: 'actif', date_fait: null }
+    : { statut: 'actif', date_fait: null };
+
   return verifier(
-    await client
-      .from('taches')
-      .update({ statut: 'actif', date_fait: null })
-      .eq('id', tache.id)
-      .select()
-      .single(),
+    await client.from('taches').update(champs).eq('id', tache.id).select().single(),
   );
 }
 
@@ -344,11 +370,25 @@ export async function creerTache({
   heure = null,
   priorite = 4,
   objectif_id = null,
+  recurrence = null,
+  recurrence_fin = null,
 }) {
   return verifier(
     await client
       .from('taches')
-      .insert({ projet, titre, statut, echeance, heure, priorite, objectif_id })
+      .insert({
+        projet,
+        titre,
+        statut,
+        echeance,
+        heure,
+        priorite,
+        objectif_id,
+        // Une répétition sans échéance n'a rien à répéter : la colonne reste
+        // nulle, et la tâche est une tâche ordinaire.
+        recurrence: echeance ? recurrence : null,
+        recurrence_fin: (echeance && recurrence && recurrence_fin) || null,
+      })
       .select()
       .single(),
   );

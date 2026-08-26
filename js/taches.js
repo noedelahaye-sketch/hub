@@ -17,7 +17,15 @@
 // jalons, ni retard. Le sélecteur de projet n'en propose pas.
 
 import * as api from './api.js';
-import { depuisDateISO, echeanceLisible, versDateISO, ajouterJours, echapper, NOMS_PROJETS } from './format.js';
+import {
+  depuisDateISO,
+  echeanceLisible,
+  versDateISO,
+  ajouterJours,
+  echapper,
+  NOMS_PROJETS,
+  RECURRENCES,
+} from './format.js';
 import { marquerLesEntrantes, animerLaCoche } from './mouvements.js';
 import { ajouterAussitot, retirerAussitot, modifierAussitot } from './ecriture.js';
 
@@ -204,12 +212,17 @@ export async function cocherDepuisTableauDeBord(cercle, taches, rendre) {
   await animerLaCoche(cercle);
 
   const avant = { ...tache };
-  await modifierAussitot(
-    tache,
-    { statut: 'fait', date_fait: new Date().toISOString() },
-    async () => (await api.terminerTache(avant)).tache,
-    { rendre },
-  );
+
+  // Une tâche répétée glisse à l'occurrence suivante au lieu de se terminer :
+  // l'écran l'annonce ainsi dès le premier instant, comme le serveur le fera.
+  const suite = api.prochaineEcheance(tache);
+  const optimiste = suite
+    ? { echeance: suite }
+    : { statut: 'fait', date_fait: new Date().toISOString() };
+
+  await modifierAussitot(tache, optimiste, async () => (await api.terminerTache(avant)).tache, {
+    rendre,
+  });
 }
 
 // Exportée pour être vérifiable seule, avec des tâches factices.
@@ -334,6 +347,15 @@ const PASTILLE_PROJET = `<svg viewBox="0 0 24 24" width="14" height="14" fill="n
   <path d="M10 3 8 21M16 3l-2 18M3.5 8.5h17M3 15.5h17"></path>
 </svg>`;
 
+// La flèche qui tourne : le signe de la répétition partout, y compris dans la
+// tuile du calendrier — un même geste, un même dessin.
+const PASTILLE_REPETITION = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+  aria-hidden="true" focusable="false">
+  <path d="M17 2l4 4-4 4"></path><path d="M3 11v-1a4 4 0 0 1 4-4h14"></path>
+  <path d="M7 22l-4-4 4-4"></path><path d="M21 13v1a4 4 0 0 1-4 4H3"></path>
+</svg>`;
+
 // `data-pastille` sur le bouton, `data-panneau` sur le panneau : les deux
 // portaient le même nom d'attribut, et un sélecteur ne savait plus lequel il
 // visait depuis que les panneaux vivent en permanence dans le DOM.
@@ -401,6 +423,27 @@ function panneauPriorite(valeurCourante) {
     </div>`;
 }
 
+// La répétition d'une tâche (26 août 2026) — mêmes mots que pour un événement.
+// Elle n'a de sens qu'avec une date : sans échéance, il n'y a rien à répéter.
+// La pastille reste offerte, et c'est l'écriture qui l'ignore le cas échéant.
+function panneauRepetition(valeurCourante) {
+  return `
+    <div class="capture-popover capture-popover-etroit" data-panneau="repetition" hidden>
+      <ul class="choix-capture">
+        ${Object.entries(RECURRENCES)
+          .map(
+            ([valeur, libelle]) => `
+          <li><button type="button" data-poser-repetition="${valeur}"
+            aria-pressed="${valeur === (valeurCourante ?? '')}"
+            class="${valeur === (valeurCourante ?? '') ? 'actif' : ''}">
+            <span>${echapper(libelle)}</span>
+          </button></li>`,
+          )
+          .join('')}
+      </ul>
+    </div>`;
+}
+
 function panneauProjet(valeurCourante) {
   return `
     <div class="capture-popover capture-popover-etroit" data-panneau="projet" hidden>
@@ -461,6 +504,9 @@ export function construireCapture(capture) {
             rempli: capture.priorite !== 4,
             priorite: capture.priorite,
           })}
+          ${pastille('repetition', PASTILLE_REPETITION, RECURRENCES[capture.recurrence ?? ''], {
+            rempli: Boolean(capture.recurrence),
+          })}
         </div>
         <!-- Une flèche dans un rond plutôt qu'un mot (demande de Noé, sur le
              modèle) : la tuile n'a qu'une action, elle n'a pas besoin d'être
@@ -478,6 +524,7 @@ export function construireCapture(capture) {
       ${panneauDate(capture)}
       ${panneauProjet(capture.projet)}
       ${panneauPriorite(capture.priorite)}
+      ${panneauRepetition(capture.recurrence)}
 
       ${
         capture.confirmationSortie
@@ -523,6 +570,9 @@ export default {
       // par défaut — c'est là que le travail quotidien de Noé se passe.
       projet: PROJETS[projet] ? projet : 'fch',
       priorite: 4,
+      // Nulle = une seule fois. Voir `terminerTache` (js/api.js) : une tâche
+      // répétée ne se termine pas, elle glisse à l'occurrence suivante.
+      recurrence: null,
       panneau: null,
       confirmationSortie: false,
     });
@@ -653,6 +703,11 @@ export default {
         etat.capture.priorite === 4 ? 'Priorité' : `P${etat.capture.priorite}`,
         etat.capture.priorite !== 4,
       );
+      ecrire(
+        'repetition',
+        RECURRENCES[etat.capture.recurrence ?? ''],
+        Boolean(etat.capture.recurrence),
+      );
       section
         .querySelector('[data-pastille="priorite"]')
         ?.setAttribute('data-priorite', String(etat.capture.priorite));
@@ -666,7 +721,7 @@ export default {
     // dans la liste.
     section.addEventListener('pointerdown', (evenement) => {
       const garderLeClavier = evenement.target.closest(
-        '[data-pastille], [data-poser-date], [data-poser-projet], [data-poser-priorite], .capture-envoyer',
+        '[data-pastille], [data-poser-date], [data-poser-projet], [data-poser-priorite],\n         [data-poser-repetition], .capture-envoyer',
       );
       if (garderLeClavier) evenement.preventDefault();
     });
@@ -812,6 +867,9 @@ export default {
         echeance: etat.capture.echeance,
         heure: etat.capture.heure,
         priorite: etat.capture.priorite,
+        // Sans date, rien à répéter : `creerTache` l'écarte de son côté, on ne
+        // la lui envoie pas non plus.
+        recurrence: etat.capture.echeance ? etat.capture.recurrence : null,
       };
 
       // Corriger une tâche existante : la tuile se referme, le travail est
@@ -843,7 +901,7 @@ export default {
       // est tout ce qu'on cherche à éviter.
       const champ = formulaire.querySelector('#capture-titre');
       champ.value = '';
-      etat.capture = { ...etat.capture, titre: '', echeance: null, heure: null };
+      etat.capture = { ...etat.capture, titre: '', echeance: null, heure: null, recurrence: null };
 
       const champDate = section.querySelector('[data-champ-date]');
       if (champDate) champDate.value = '';
@@ -1013,6 +1071,15 @@ export default {
         return;
       }
 
+      const poserRepetition = evenement.target.closest('[data-poser-repetition]');
+      if (poserRepetition) {
+        etat.capture.recurrence = poserRepetition.dataset.poserRepetition || null;
+        marquerLeChoix('poser-repetition', etat.capture.recurrence ?? '');
+        fermerLesPanneaux();
+        majPastilles();
+        return;
+      }
+
       const poserPriorite = evenement.target.closest('[data-poser-priorite]');
       if (poserPriorite) {
         etat.capture.priorite = Number(poserPriorite.dataset.poserPriorite);
@@ -1065,10 +1132,19 @@ export default {
         // n'attend pas : elle part juste après, pendant que l'œil finit.
         if (versFait) await animerLaCoche(cercle);
 
+        // UNE TÂCHE RÉPÉTÉE NE SE TERMINE PAS : elle glisse à l'occurrence
+        // suivante (voir `terminerTache`, js/api.js). L'écran doit dire ça tout
+        // de suite — annoncer « faite » puis se faire corriger par le serveur
+        // ferait passer la ligne dans « Faites » et l'y laisserait, faute de
+        // second rendu.
+        const suite = versFait ? api.prochaineEcheance(tache) : null;
+
         Object.assign(
           tache,
           versFait
-            ? { statut: 'fait', date_fait: new Date().toISOString() }
+            ? suite
+              ? { echeance: suite }
+              : { statut: 'fait', date_fait: new Date().toISOString() }
             : { statut: 'actif', date_fait: null },
         );
         rendreListe();

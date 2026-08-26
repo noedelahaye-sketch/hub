@@ -90,3 +90,48 @@ export const NOMS_PROJETS = {
   fch: 'FC Hermitage',
   perso: 'Perso',
 };
+
+// --- Les répétitions ---------------------------------------------------------
+// Événements et tâches se répètent avec les mêmes mots et le même pas. Le
+// vocabulaire et l'arithmétique vivent ICI, dans le module sans dépendance :
+// `js/api.js` en a besoin pour faire glisser une tâche récurrente, et
+// `js/calendrier-commun.js` pour déplier une série — or celui-ci importe
+// l'API, et l'inverse ferait un cycle.
+
+export const RECURRENCES = {
+  '': 'Une seule fois',
+  hebdo: 'Chaque semaine',
+  quinzaine: 'Toutes les deux semaines',
+  mensuel: 'Chaque mois',
+};
+
+const PAS_EN_JOURS = { hebdo: 7, quinzaine: 14 };
+
+// L'occurrence suivante (ou précédente, avec un sens négatif — c'est ce qui
+// permet d'annuler une coche). Le mensuel avance de mois en mois et non de
+// 30 jours : un rendez-vous du 15 reste le 15.
+export function decalerOccurrence(date, recurrence, sens = 1) {
+  const suite = new Date(date);
+  const pas = PAS_EN_JOURS[recurrence];
+  if (pas) suite.setDate(suite.getDate() + pas * sens);
+  else suite.setMonth(suite.getMonth() + sens);
+  return suite;
+}
+
+// Les dates d'une série, dans une fenêtre bornée. Sans borne, une répétition
+// sans fin déclarée produirait une liste infinie ; la borne de tours est une
+// ceinture, pour qu'une date de fin aberrante ne fasse pas tourner sans fin.
+export function occurrencesEntre(depart, recurrence, finISO, plancher, plafondParDefaut) {
+  if (!recurrence) return [new Date(depart)];
+
+  const plafond = finISO ? depuisDateISO(finISO) : plafondParDefaut;
+  const dates = [];
+  let curseur = new Date(depart);
+
+  for (let tour = 0; tour < 400 && curseur <= plafond; tour += 1) {
+    if (curseur >= plancher) dates.push(new Date(curseur));
+    curseur = decalerOccurrence(curseur, recurrence);
+  }
+
+  return dates;
+}

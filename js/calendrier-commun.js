@@ -25,6 +25,8 @@ import {
   echeanceLisible,
   echapper,
   NOMS_PROJETS,
+  RECURRENCES,
+  occurrencesEntre,
 } from './format.js';
 
 // Réexporté pour les espaces : refermer le menu d'une pastille d'état est le
@@ -128,41 +130,44 @@ export function toutesLesNatures() {
 // le calendrier en montre. C'est ce qui permet de changer l'heure d'un
 // entraînement hebdomadaire d'un seul geste.
 
-export const RECURRENCES = {
-  '': 'Une seule fois',
-  hebdo: 'Chaque semaine',
-  quinzaine: 'Toutes les deux semaines',
-  mensuel: 'Chaque mois',
-};
-
-const PAS_EN_JOURS = { hebdo: 7, quinzaine: 14 };
+// Les mots de la répétition viennent de `format.js`, où ils voisinent avec
+// l'arithmétique des dates. Réexportés d'ici : plusieurs écrans les demandaient
+// à ce module avant qu'ils ne déménagent.
+export { RECURRENCES };
 
 // La fenêtre d'expansion est large mais bornée : un an en arrière, trois ans
-// devant. Sans borne, un événement hebdomadaire sans fin déclarée produirait
-// une liste infinie.
-function occurrencesDe(evenement) {
-  const debut = new Date(evenement.date_debut);
-  if (!evenement.recurrence) return [debut];
-
+// devant. Les dates elles-mêmes se calculent dans `format.js` — événements et
+// tâches se répètent de la même façon, et ce serait deux fois le même pas.
+function fenetreDExpansion() {
   const aujourdhui = new Date();
-  const plancher = ajouterJours(aujourdhui, -365);
-  const plafond = evenement.recurrence_fin
-    ? depuisDateISO(evenement.recurrence_fin)
-    : ajouterJours(aujourdhui, 365 * 3);
+  return {
+    plancher: ajouterJours(aujourdhui, -365),
+    plafond: ajouterJours(aujourdhui, 365 * 3),
+  };
+}
 
-  const pas = PAS_EN_JOURS[evenement.recurrence];
-  const dates = [];
-  const curseur = new Date(debut);
+function occurrencesDe(evenement) {
+  const { plancher, plafond } = fenetreDExpansion();
+  return occurrencesEntre(
+    new Date(evenement.date_debut),
+    evenement.recurrence,
+    evenement.recurrence_fin,
+    plancher,
+    plafond,
+  );
+}
 
-  // La borne de tours est une ceinture : une date de fin aberrante ne doit pas
-  // faire tourner la boucle sans fin.
-  for (let tour = 0; tour < 400 && curseur <= plafond; tour += 1) {
-    if (curseur >= plancher) dates.push(new Date(curseur));
-    if (pas) curseur.setDate(curseur.getDate() + pas);
-    else curseur.setMonth(curseur.getMonth() + 1);
-  }
+// Une tâche se déplie à partir de son ÉCHÉANCE, qui est toujours l'occurrence
+// courante : cocher une tâche récurrente la fait glisser à la suivante (voir
+// `terminerTache`). Le calendrier ne montre donc jamais une occurrence passée
+// d'une série — elle n'existe plus, elle a été franchie.
+function occurrencesDeLaTache(tache) {
+  const ancre = tache.heure
+    ? new Date(`${tache.echeance}T${tache.heure}`)
+    : depuisDateISO(tache.echeance);
 
-  return dates;
+  const { plancher, plafond } = fenetreDExpansion();
+  return occurrencesEntre(ancre, tache.recurrence, tache.recurrence_fin, plancher, plafond);
 }
 
 // --- Assemblage --------------------------------------------------------------
@@ -204,21 +209,25 @@ export function assemblerCalendrier({
   }
 
   for (const tache of taches) {
-    elements.push({
-      id: tache.id,
-      type: 'tache',
-      source: tache,
-      // Avec une heure, la barre du calendrier l'écrit devant le titre ; sans,
-      // elle ne dit que le jour. C'est `heureDe` qui tranche, et il ne regarde
-      // que ça : minuit = pas d'heure.
-      date: tache.heure
-        ? new Date(`${tache.echeance}T${tache.heure}`)
-        : depuisDateISO(tache.echeance),
-      faite: tache.statut === 'fait',
-      projet: tache.projet,
-      titre: tache.titre,
-      detail: tache.statut === 'backlog' ? 'backlog' : null,
-    });
+    for (const date of occurrencesDeLaTache(tache)) {
+      elements.push({
+        id: tache.id,
+        type: 'tache',
+        source: tache,
+        // Avec une heure, la barre du calendrier l'écrit devant le titre ; sans,
+        // elle ne dit que le jour. C'est `heureDe` qui tranche, et il ne regarde
+        // que ça : minuit = pas d'heure.
+        date,
+        recurrent: Boolean(tache.recurrence),
+        // Seule l'occurrence COURANTE porte l'état : les suivantes sont à
+        // venir, et cocher se fait sur celle du jour. Sans ça, une série
+        // cochée s'afficherait barrée jusqu'en 2029.
+        faite: tache.statut === 'fait' && !tache.recurrence,
+        projet: tache.projet,
+        titre: tache.titre,
+        detail: tache.statut === 'backlog' ? 'backlog' : null,
+      });
+    }
   }
 
   for (const objectif of objectifs) {
@@ -1825,6 +1834,27 @@ export function fenetreCreation({
           decor: 'priorite',
         }),
       }),
+      // La répétition, la MÊME que celle d'un événement (demande de Noé,
+      // 26 août 2026) : mêmes mots, même pastille, même colonne en base. Ce qui
+      // diffère est ailleurs — une tâche récurrente ne se termine pas, elle
+      // glisse à l'occurrence suivante (voir `terminerTache`, js/api.js).
+      pastilleCapture({
+        nom: 'repetition',
+        icone: ICONE.repetition,
+        defaut: 'Une seule fois',
+        source: 'recurrence',
+        contenu: `${champChoix({
+          nom: 'recurrence',
+          options: RECURRENCES,
+          valeur: valeurs.recurrence ?? '',
+        })}
+          ${champCapture({
+            nom: 'recurrence_fin',
+            libelle: "Jusqu'au (facultatif)",
+            type: 'date',
+            valeur: valeurs.recurrence_fin ?? '',
+          })}`,
+      }),
     );
   }
 
@@ -2505,6 +2535,9 @@ export async function poserAuCalendrier(champs, { projetParDefaut = 'photo' } = 
     return api.creerTache({
       projet,
       titre,
+      recurrence: champs.recurrence || null,
+      // Une fin de répétition sans répétition ne veut rien dire.
+      recurrence_fin: (champs.recurrence && champs.recurrence_fin) || null,
       // Active d'emblée : le réglage backlog / active est masqué depuis le
       // 13 août, une tâche notée est une tâche à faire.
       statut: 'actif',

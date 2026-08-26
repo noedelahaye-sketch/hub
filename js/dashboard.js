@@ -1152,7 +1152,14 @@ export default {
         await animerLaCoche(cercle);
 
         const avant = { ...tache };
-        const faite = { ...tache, statut: 'fait', date_fait: new Date().toISOString() };
+        // Une tâche RÉPÉTÉE ne se termine pas : elle glisse à l'occurrence
+        // suivante (voir `terminerTache`, js/api.js). L'écran doit le dire tout
+        // de suite — sinon elle quitterait « Aujourd'hui » comme faite, puis
+        // reviendrait au prochain chargement sans qu'on comprenne pourquoi.
+        const suite = api.prochaineEcheance(tache);
+        const faite = suite
+          ? { ...tache, echeance: suite }
+          : { ...tache, statut: 'fait', date_fait: new Date().toISOString() };
         // La victoire n'a pas encore d'identifiant serveur : celui-ci est
         // provisoire, remplacé par le vrai dès que l'écriture répond.
         const provisoire = {
