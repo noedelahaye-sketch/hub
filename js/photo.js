@@ -72,13 +72,22 @@ export function rythmeMensuel(evenements, reference = new Date(), mois = MOIS_HI
 
 // Ce qui est encaissé, et ce qu'il reste à rembourser. Une commande sans
 // montant ne compte pas : elle existe, elle n'est simplement pas chiffrée.
+//
+// LES FRAIS S'AJOUTENT À LA CIBLE, ils ne se retranchent pas des revenus
+// (demande de Noé, 26 août 2026). L'arithmétique est la même — le point
+// d'équilibre ne bouge pas —, la lecture non : ce que Noé a gagné reste ce
+// qu'il a gagné, et c'est la dette qui grossit de l'essence. Un match à 150 €
+// avec 40 € de route se lit « 150 € encaissés, 40 € de plus à rembourser »,
+// et non « 110 € gagnés ».
 export function argentDeYuno(commandes, materiel) {
-  const encaisse = commandes
-    .filter((commande) => commande.statut === 'livree')
-    .reduce((total, commande) => total + Number(commande.montant ?? 0), 0);
-  const cible = materiel.reduce((total, achat) => total + Number(achat.prix ?? 0), 0);
+  const livrees = commandes.filter((commande) => commande.statut === 'livree');
 
-  return { encaisse, cible, reste: Math.max(0, cible - encaisse) };
+  const encaisse = livrees.reduce((total, c) => total + Number(c.montant ?? 0), 0);
+  const frais = livrees.reduce((total, c) => total + Number(c.frais ?? 0), 0);
+  const achats = materiel.reduce((total, achat) => total + Number(achat.prix ?? 0), 0);
+  const cible = achats + frais;
+
+  return { encaisse, frais, achats, cible, reste: Math.max(0, cible - encaisse) };
 }
 
 const EUROS = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
@@ -320,7 +329,12 @@ function fenetreSaisie(quoi) {
          champs: [
            { nom: 'titre', libelle: 'La prestation', type: 'text', requis: true },
            { nom: 'client', libelle: 'Pour qui (facultatif)', type: 'text' },
-           { nom: 'montant', libelle: 'Montant en euros', type: 'number', requis: true },
+           { nom: 'montant', libelle: 'Ce que ça rapporte, en euros', type: 'number', requis: true },
+           {
+             nom: 'frais',
+             libelle: 'Ce que le déplacement a coûté (facultatif)',
+             type: 'number',
+           },
          ],
        })}`,
     );
@@ -546,6 +560,9 @@ export default {
           titre: champs.titre.trim(),
           client: champs.client?.trim() || null,
           montant: Number(champs.montant),
+          // Vide = pas de frais, et non zéro : la colonne dit alors « on n'a
+          // rien noté », pas « ça n'a rien coûté ».
+          frais: champs.frais ? Number(champs.frais) : null,
           statut: 'livree',
         });
         etat.commandes = [commande, ...etat.commandes];

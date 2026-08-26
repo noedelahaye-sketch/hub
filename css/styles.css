@@ -1349,7 +1349,47 @@ ul.liste-argent {
   border-radius: 0;
 }
 
-.argent-nom { flex: 1; min-width: 0; }
+.argent-nom {
+  flex: 1;
+  min-width: 0;
+}
+
+/* D'où sort la dette : matériel, déplacements, et ce qui a été encaissé. Un
+   petit tableau de comptes, lisible d'un regard — deux lignes de somme se
+   distinguent par un filet, comme dans un relevé. */
+ul.argent-composition {
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 var(--espace-16);
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+}
+
+.argent-composition li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--espace-16);
+  padding: var(--espace-4) 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+}
+
+.argent-composition .chiffre { color: var(--texte); }
+
+.argent-composition .argent-somme-ligne {
+  border-top: 1px solid var(--bordure);
+  font-weight: 600;
+}
+
+.argent-composition .argent-somme-ligne .chiffre { color: var(--accent); }
+
+/* Ce qu'un déplacement a coûté, sous le nom de sa prestation. */
+.argent-detail {
+  display: block;
+  font-size: 0.75rem;
+}
 .argent-somme { color: var(--accent); }
 
 /* Le réseau en UNE barre : une forme qu'on ne trouve nulle part ailleurs dans

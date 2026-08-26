@@ -39,38 +39,70 @@ const OBJECTIF_MATERIEL = 'Rembourser mon matériel';
 // elle, se contente d'en afficher le total.
 
 export function construireArgent(commandes, materiel) {
-  const { encaisse, cible, reste } = argentDeYuno(commandes, materiel);
+  const { encaisse, frais, achats, cible, reste } = argentDeYuno(commandes, materiel);
   const chiffrees = commandes.filter((commande) => commande.montant != null);
 
-  const lignes = (entrees, cle, action) =>
-    entrees.length
-      ? `<ul class="liste-argent">${entrees
-          .map(
-            (entree) => `
-          <li>
-            <span class="argent-nom">${echapper(entree.titre ?? entree.nom)}</span>
-            <span class="chiffre argent-somme">${enEuros(entree[cle])}</span>
-            <button type="button" class="lien-discret bouton-mini bouton-retirer"
-              data-${action}="${echapper(entree.id)}"
-              title="Retirer" aria-label="Retirer « ${echapper(
-                entree.titre ?? entree.nom,
-              )} »">×</button>
-          </li>`,
-          )
-          .join('')}</ul>`
-      : `<p class="vide">Rien encore.</p>`;
+  // Une prestation affiche son NET, et le détail dessous quand il y a des frais :
+  // c'est le net qui rembourse le matériel, mais on doit pouvoir vérifier d'où
+  // il sort.
+  const ligne = (entree, somme, detail, action) => `
+    <li>
+      <span class="argent-nom">
+        ${echapper(entree.titre ?? entree.nom)}
+        ${detail ? `<span class="discret argent-detail">${detail}</span>` : ''}
+      </span>
+      <span class="chiffre argent-somme">${enEuros(somme)}</span>
+      <button type="button" class="lien-discret bouton-mini bouton-retirer"
+        data-${action}="${echapper(entree.id)}"
+        title="Retirer" aria-label="Retirer « ${echapper(entree.titre ?? entree.nom)} »">×</button>
+    </li>`;
+
+  const listePrestations = chiffrees.length
+    ? `<ul class="liste-argent">${chiffrees
+        .map((commande) =>
+          ligne(
+            commande,
+            commande.montant,
+            // Les frais se disent ici mais comptent en face : ils grossissent
+            // ce qu'il reste à rembourser, ils n'entament pas la recette.
+            commande.frais ? `${enEuros(commande.frais)} de déplacement` : '',
+            'retirer-commande',
+          ),
+        )
+        .join('')}</ul>`
+    : `<p class="vide">Rien encore.</p>`;
+
+  const listeMateriel = materiel.length
+    ? `<ul class="liste-argent">${materiel
+        .map((achat) => ligne(achat, achat.prix, '', 'retirer-materiel'))
+        .join('')}</ul>`
+    : `<p class="vide">Rien encore.</p>`;
 
   return `
     <div class="panneau-argent">
       <p class="argent-total">
         <span class="chiffre">${enEuros(encaisse)}</span>
-        <span class="discret">encaissés sur ${enEuros(cible)} de matériel${
-          reste ? ` · ${enEuros(reste)} à rembourser` : ''
-        }</span>
+        <span class="discret">encaissés sur ${enEuros(cible)} à rembourser</span>
       </p>
 
+      <!-- Le détail de ce qu'il reste à rembourser, ici et nulle part ailleurs
+           (demande de Noé, 26 août 2026) : la page Yuno n'en dit que le total,
+           c'est en ouvrant l'objectif qu'on voit d'où il sort. -->
+      <ul class="argent-composition">
+        <li><span>Matériel</span> <span class="chiffre">${enEuros(achats)}</span></li>
+        <li><span>Déplacements</span> <span class="chiffre">${enEuros(frais)}</span></li>
+        <li class="argent-somme-ligne">
+          <span>À rembourser</span> <span class="chiffre">${enEuros(cible)}</span>
+        </li>
+        <li><span>Encaissé</span> <span class="chiffre">${enEuros(encaisse)}</span></li>
+        <li class="argent-somme-ligne">
+          <span>${reste ? 'Il reste' : 'Remboursé'}</span>
+          <span class="chiffre">${enEuros(reste)}</span>
+        </li>
+      </ul>
+
       <h3>Prestations encaissées</h3>
-      ${lignes(chiffrees, 'montant', 'retirer-commande')}
+      ${listePrestations}
       ${construireFormulaire({
         id: 'obj-prestation',
         libelle: 'Noter une prestation',
@@ -78,12 +110,17 @@ export function construireArgent(commandes, materiel) {
         champs: [
           { nom: 'titre', libelle: 'La prestation', type: 'text', requis: true },
           { nom: 'client', libelle: 'Pour qui (facultatif)', type: 'text' },
-          { nom: 'montant', libelle: 'Montant en euros', type: 'number', requis: true },
+          { nom: 'montant', libelle: 'Ce que ça rapporte, en euros', type: 'number', requis: true },
+          {
+            nom: 'frais',
+            libelle: 'Ce que le déplacement a coûté (facultatif)',
+            type: 'number',
+          },
         ],
       })}
 
       <h3>Matériel</h3>
-      ${lignes(materiel, 'prix', 'retirer-materiel')}
+      ${listeMateriel}
       ${construireFormulaire({
         id: 'obj-materiel',
         libelle: 'Ajouter du matériel',
@@ -262,6 +299,9 @@ export default {
           titre: champs.titre.trim(),
           client: champs.client?.trim() || null,
           montant: Number(champs.montant),
+          // Vide = pas de frais, et non zéro : la colonne dit alors « on n'a
+          // rien noté », pas « ça n'a rien coûté ».
+          frais: champs.frais ? Number(champs.frais) : null,
           statut: 'livree',
         });
         etat.commandes = [commande, ...etat.commandes];
