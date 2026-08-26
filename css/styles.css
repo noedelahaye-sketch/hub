@@ -3921,6 +3921,97 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   box-shadow: 0 12px 48px rgb(0 0 0 / 35%);
 }
 
+/* Une fiche de détails : des paires nom-valeur, en deux colonnes sur grand
+   écran. Une ligne par champ, séparées d'un filet — on la parcourt du regard
+   pour vérifier, on n'y lit pas un récit. */
+.fiche-details {
+  display: grid;
+  gap: 0 var(--espace-24);
+  margin: 0 0 var(--espace-16);
+}
+
+@media (min-width: 40rem) {
+  .fiche-details { grid-template-columns: 1fr 1fr; }
+}
+
+.fiche-ligne {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espace-16);
+  padding: var(--espace-8) 0;
+  border-bottom: 1px solid var(--bordure);
+}
+
+.fiche-ligne dt {
+  flex: none;
+  font-size: 0.75rem;
+  color: var(--texte-discret);
+}
+
+.fiche-ligne dd {
+  margin: 0;
+  text-align: right;
+  font-size: 0.875rem;
+}
+
+/* La fenêtre large : pour les fiches à beaucoup de champs. Sa hauteur monte
+   aussi — à 38 rem, une fiche de sortie défilait encore. */
+.fenetre-large {
+  width: min(48rem, calc(100vw - 2rem));
+  max-height: min(46rem, calc(100vh - 2rem));
+}
+
+/* Dans une fenêtre large, les champs se rangent en DEUX COLONNES : douze
+   champs empilés font un formulaire qu'on remplit à l'aveugle, en défilant.
+   Un champ qui a besoin de largeur — un titre, une note — reprend la ligne
+   entière par `.champ-large`. */
+@media (min-width: 40rem) {
+  .fenetre-large .ajout form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 var(--espace-16);
+    align-items: start;
+  }
+
+  /* Chaque champ est enveloppé : sans quoi l'étiquette occuperait une colonne
+     et son champ l'autre. Le bouton, les erreurs, les intertitres et les
+     champs marqués larges tiennent la ligne entière. */
+  .fenetre-large .ajout form > button[type="submit"],
+  .fenetre-large .ajout form > .message-erreur,
+  .fenetre-large .ajout form > .champ-large,
+  .fenetre-large .ajout form > .separateur-champs {
+    grid-column: 1 / -1;
+  }
+
+  .fenetre-large .ajout form > .champ { min-width: 0; }
+}
+
+/* Un intertitre dans un formulaire : il annonce un groupe de champs. Le même
+   corps que les libellés de section, pour ne pas inventer une quatrième
+   graisse. */
+.separateur-champs {
+  margin: var(--espace-16) 0 var(--espace-4);
+  padding-top: var(--espace-12);
+  border-top: 1px solid var(--bordure);
+  font-family: var(--police-texte);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--texte-discret);
+}
+
+/* Le PREMIER intertitre n'a rien à séparer : ni filet, ni marge haute. Pas
+   `:first-child` — les champs cachés du formulaire le précèdent, et il n'est
+   jamais le premier enfant. `:first-of-type` compte parmi les paragraphes, et
+   il est bien le premier. */
+.separateur-champs:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
 .fenetre-fermer {
   position: absolute;
   top: var(--espace-8);

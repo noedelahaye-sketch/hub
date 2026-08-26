@@ -553,6 +553,8 @@ function corpsMoment(sortie, photos = {}, { fenetre = false, preparations = [] }
         // milieu du reste.
         fenetre
           ? `<span class="moment-actions">
+               <button type="button" class="lien-discret bouton-mini"
+                 data-details-moment="${echapper(sortie.id)}">Tous les détails</button>
                <button type="button" class="bouton-icone"
                  data-modifier-moment="${echapper(sortie.id)}"
                  title="Modifier cette sortie"
@@ -597,14 +599,85 @@ function champsClubsDeLaSortie(sortie, pistes) {
 // ni à la photo ni aux rencontres : l'une vit dans le stockage, les autres dans
 // leur table, et chacune demande son propre geste. Corriger une date ou un lieu
 // mal tapé est le besoin courant ; le reste attend d'être demandé.
-function formulaireModifierMoment(sortie, pistes = []) {
+// La fiche complète d'une sortie, en fenêtre large et en deux colonnes
+// (demande de Noé, 26 août 2026). Les champs sont groupés par ce qu'on vient y
+// faire : LA SORTIE (quand, quoi, où, les deux clubs), CE QU'ELLE A RAPPORTÉ
+// (la prestation et sa route), CE QU'IL EN RESTE (la note, la photo). Douze
+// champs empilés dans une colonne de 28 rem se remplissaient à l'aveugle.
+//
+// L'argent ne vit pas sur l'événement mais sur sa COMMANDE (`evenement_id`) :
+// c'est la même prestation que celle des objectifs, et deux endroits pour la
+// noter en feraient deux comptes différents.
+// La fiche COMPLÈTE d'une sortie, en lecture seule (demande de Noé, 26 août
+// 2026). L'aperçu qui s'ouvre sur la photo raconte — la date, l'image, le nom,
+// les rencontres, la note ; celle-ci récapitule, champ par champ, y compris ce
+// que l'aperçu tait : les deux clubs, l'heure, l'argent.
+//
+// Une liste de définitions et non un tableau : ce sont des paires nom-valeur,
+// et `dl` est ce que les lecteurs d'écran annoncent comme telles.
+export function ficheCompleteMoment(sortie, { pistes = [], commande = null } = {}) {
+  const nomDuClub = (id) => pistes.find((piste) => piste.id === id)?.nom ?? null;
+  const debut = new Date(sortie.date_debut);
+  const aUneHeure = debut.getHours() || debut.getMinutes();
+
+  const lignes = [
+    ['Quand', echeanceLisible(depuisDateISO(jourDeLaSortie(sortie)))],
+    ['À quelle heure', aUneHeure ? momentLisible(debut).split(', ').pop() : null],
+    ['Quoi', TYPES_MOMENT[sortie.type_moment] ?? TYPES_MOMENT.autre],
+    ['Son nom', sortie.titre],
+    ['Où', sortie.lieu],
+    ['Club qui reçoit', nomDuClub(sortie.club_recevant)],
+    ['Club qui se déplace', nomDuClub(sortie.club_visiteur)],
+    ['La prestation', commande?.montant != null ? `${commande.montant} €` : null],
+    ['Le déplacement', commande?.frais != null ? `${commande.frais} €` : null],
+    [
+      'Rencontres',
+      sortie.rencontres?.length
+        ? sortie.rencontres.map((r) => r.nom ?? r.contact?.nom).filter(Boolean).join(', ')
+        : null,
+    ],
+    ['Photo', sortie.photo_chemin ? 'Jointe' : null],
+    ...(OEUVRE_VISIBLE ? [['Œuvre finie', sortie.oeuvre_finie ? 'Oui' : null]] : []),
+    ['Note', sortie.note],
+  ].filter(([, valeur]) => valeur);
+
+  return `
+    <h3 class="fenetre-titre">${echapper(titreDuMoment(sortie))}</h3>
+    <dl class="fiche-details">
+      ${lignes
+        .map(
+          ([mot, valeur]) => `
+        <div class="fiche-ligne">
+          <dt>${echapper(mot)}</dt>
+          <dd>${echapper(String(valeur))}</dd>
+        </div>`,
+        )
+        .join('')}
+    </dl>
+    <span class="moment-actions">
+      <button type="button" class="bouton-secondaire bouton-mini"
+        data-modifier-moment="${echapper(sortie.id)}">Modifier</button>
+    </span>`;
+}
+
+// La prestation attachée à une sortie, s'il y en a une. `commandes` porte
+// `evenement_id` depuis le 21 août 2026 : c'est ce lien qui permet de noter
+// l'argent depuis la sortie plutôt que depuis un écran séparé.
+export function commandeDeLaSortie(commandes = [], idSortie) {
+  return commandes.find((commande) => commande.evenement_id === idSortie) ?? null;
+}
+
+function formulaireModifierMoment(sortie, pistes = [], commande = null) {
   return construireFormulaire({
     id: 'moment-edition',
     action: 'modifier-moment',
     bouton: 'Enregistrer',
     avecPli: false,
-    extra: `<input type="hidden" name="id" value="${echapper(sortie.id)}">`,
+    grille: true,
+    extra: `<input type="hidden" name="id" value="${echapper(sortie.id)}">
+      ${commande ? `<input type="hidden" name="commande_id" value="${echapper(commande.id)}">` : ''}`,
     champs: [
+      { type: 'titre', libelle: 'La sortie' },
       { nom: 'date', libelle: 'Quand', type: 'date', valeur: jourDeLaSortie(sortie), requis: true },
       {
         nom: 'type_moment',
@@ -613,10 +686,33 @@ function formulaireModifierMoment(sortie, pistes = []) {
         options: TYPES_MOMENT,
         valeur: sortie.type_moment ?? 'match',
       },
-      { nom: 'titre', libelle: 'La sortie', type: 'text', valeur: sortie.titre ?? '', requis: true },
+      {
+        nom: 'titre',
+        libelle: 'Son nom',
+        type: 'text',
+        valeur: sortie.titre ?? '',
+        requis: true,
+        large: true,
+      },
       { nom: 'lieu', libelle: 'Où (facultatif)', type: 'text', valeur: sortie.lieu ?? '' },
       ...champsClubsDeLaSortie(sortie, pistes),
-      { nom: 'note', libelle: 'Note', type: 'textarea', valeur: sortie.note ?? '' },
+
+      { type: 'titre', libelle: 'Ce qu\'elle a rapporté' },
+      {
+        nom: 'montant',
+        libelle: 'La prestation, en euros',
+        type: 'number',
+        valeur: commande?.montant ?? '',
+      },
+      {
+        nom: 'frais',
+        libelle: 'Le déplacement, en euros',
+        type: 'number',
+        valeur: commande?.frais ?? '',
+      },
+
+      { type: 'titre', libelle: 'Ce qu\'il en reste' },
+      { nom: 'note', libelle: 'Note', type: 'textarea', valeur: sortie.note ?? '', large: true },
       {
         nom: 'photo',
         // Un champ fichier ne peut pas afficher son contenu actuel : le libellé
@@ -626,6 +722,7 @@ function formulaireModifierMoment(sortie, pistes = []) {
           : 'Ajouter une photo',
         type: 'file',
         accepte: 'image/*',
+        large: true,
       },
       ...(OEUVRE_VISIBLE
         ? [{ nom: 'oeuvre_finie', libelle: 'Œuvre finie', type: 'checkbox', valeur: sortie.oeuvre_finie }]
@@ -817,17 +914,29 @@ function fenetreMoment(etat) {
   const sortie = etat.evenements.find((candidat) => candidat.id === etat.momentOuvert);
   if (!sortie) return '';
 
+  // Trois états pour la même fenêtre : l'APERÇU qu'on ouvre sur la photo — il
+  // raconte —, les DÉTAILS qui récapitulent champ par champ, et l'ÉDITION qui
+  // les reprend. Les deux derniers sont larges ; l'aperçu garde sa taille, il
+  // se lit d'un trait.
   const contenu = etat.editionMoment
     ? `<h3 class="fenetre-titre">Modifier la sortie</h3>${formulaireModifierMoment(
         sortie,
         etat.pistes,
+        commandeDeLaSortie(etat.commandes, sortie.id),
       )}`
-    : `<div class="moment moment-complet">${corpsMoment(sortie, etat.photos, {
-        fenetre: true,
-        preparations: etat.preparations,
-      })}</div>`;
+    : etat.detailsMoment
+      ? ficheCompleteMoment(sortie, {
+          pistes: etat.pistes,
+          commande: commandeDeLaSortie(etat.commandes, sortie.id),
+        })
+      : `<div class="moment moment-complet">${corpsMoment(sortie, etat.photos, {
+          fenetre: true,
+          preparations: etat.preparations,
+        })}</div>`;
 
-  return construireFenetre(titreDuMoment(sortie), contenu);
+  return construireFenetre(titreDuMoment(sortie), contenu, {
+    large: etat.editionMoment || etat.detailsMoment,
+  });
 }
 
 // Le plus récent d'abord — le Journal est l'archive, on y descend dans le temps.
@@ -4657,8 +4766,11 @@ const BESOINS = {
   // `modelesPrepa` sert au bloc de la sortie du moment : quand elle n'a pas
   // encore sa feuille, il porte le bouton « Préparer », qui doit savoir combien
   // de modèles offrir. Sans cette lecture, il créerait une feuille vierge.
-  accueil: ['evenements', 'objectifs', 'publications', 'contacts', 'preparations', 'modelesPrepa'],
-  journal: ['evenements', 'contacts', 'preparations'],
+  // `commandes` vient avec : la fiche d'une sortie porte désormais sa
+  // prestation, et sans cette lecture les deux champs d'argent seraient
+  // toujours vides — puis les écraseraient à l'enregistrement.
+  accueil: ['evenements', 'objectifs', 'publications', 'contacts', 'preparations', 'modelesPrepa', 'commandes'],
+  journal: ['evenements', 'contacts', 'preparations', 'commandes'],
   creer: ['publications'],
   banque: ['publications'],
   editorial: ['publications'],
@@ -4777,6 +4889,8 @@ export default {
       ideeOuverte: null,
       momentOuvert: null,
       editionMoment: false,
+      // La fiche récapitulative, entre l'aperçu et l'édition.
+      detailsMoment: false,
       contactOuvert: null,
       editionContact: false,
       photos: {},
@@ -5305,6 +5419,44 @@ export default {
       if (element) element.open = true;
     };
 
+    // L'argent d'une sortie vit sur sa COMMANDE, reliée par `evenement_id`.
+    // Trois cas, et le troisième compte autant que les deux autres : vider les
+    // deux champs RETIRE la prestation. Sans ça, une prestation notée par
+    // erreur resterait à zéro dans le compte de l'objectif, sans moyen de la
+    // reprendre depuis cette fenêtre.
+    const enregistrerLaPrestation = async (champs, titre) => {
+      const montant = champs.montant === '' ? null : Number(champs.montant);
+      const frais = champs.frais === '' ? null : Number(champs.frais);
+      const existante = champs.commande_id
+        ? etat.commandes.find((c) => c.id === champs.commande_id)
+        : null;
+
+      if (montant === null && frais === null) {
+        if (!existante) return;
+        await api.supprimerCommande(existante.id);
+        etat.commandes = etat.commandes.filter((c) => c.id !== existante.id);
+        return;
+      }
+
+      // Le titre suit celui de la sortie : la prestation d'un match s'appelle
+      // comme le match, et le renommer ne doit pas laisser deux noms.
+      const valeurs = { titre, montant, frais };
+
+      if (existante) {
+        const misAJour = await api.modifierCommande(existante.id, valeurs);
+        Object.assign(existante, misAJour);
+        return;
+      }
+
+      const creee = await api.creerCommande({
+        ...valeurs,
+        // Livrée d'emblée : on note ce qui a EU LIEU, pas ce qu'on espère.
+        statut: 'livree',
+        evenement_id: champs.id,
+      });
+      etat.commandes = [creee, ...etat.commandes];
+    };
+
     // --- Formulaires ---
 
     section.addEventListener('submit', async (evenement) => {
@@ -5392,6 +5544,12 @@ export default {
           champs.date,
         );
 
+        // L'ARGENT DE LA SORTIE, sur sa commande. Trois cas : on en crée une,
+        // on la corrige, ou on la retire quand les deux champs sont vidés —
+        // effacer un montant doit effacer la prestation, sinon elle resterait
+        // à zéro dans le compte de l'objectif.
+        await enregistrerLaPrestation(champs, modifs.titre);
+
         // Les rencontres ne sont pas renvoyées par la mise à jour : on garde
         // celles qu'on avait, sans quoi la ligne « Rencontré » disparaîtrait.
         etat.evenements = etat.evenements.map((candidat) =>
@@ -5408,6 +5566,7 @@ export default {
 
         // On revient à la fiche, dans la même fenêtre : la correction se voit.
         etat.editionMoment = false;
+        etat.detailsMoment = false;
         rendre();
         return;
       }
@@ -6008,6 +6167,7 @@ export default {
         etat.ideeOuverte = null;
         etat.momentOuvert = null;
         etat.editionMoment = false;
+        etat.detailsMoment = false;
         etat.contactOuvert = null;
         etat.editionContact = false;
         etat.choixPrepa = null;
@@ -6062,8 +6222,17 @@ export default {
 
       // Le crayon retourne la fenêtre : la fiche laisse la place au formulaire,
       // sans changer de fenêtre ni de contexte.
+      if (evenement.target.closest('[data-details-moment]')) {
+        etat.detailsMoment = true;
+        rendre();
+        return;
+      }
+
       if (evenement.target.closest('[data-modifier-moment]')) {
         etat.editionMoment = true;
+        // On peut arriver ici depuis l'aperçu ou depuis les détails : dans les
+        // deux cas c'est l'édition qui prend la fenêtre.
+        etat.detailsMoment = false;
         rendre();
         section.querySelector('#moment-edition-lieu')?.focus();
         return;
@@ -6082,6 +6251,7 @@ export default {
         if (!interne || interne === ficheSortie) {
           etat.momentOuvert = ficheSortie.dataset.ouvrirSortie;
           etat.editionMoment = false;
+        etat.detailsMoment = false;
           rendre();
           section.querySelector('.fenetre-fermer')?.focus();
           return;
@@ -6094,6 +6264,7 @@ export default {
       if (vignette) {
         etat.momentOuvert = vignette.dataset.ouvrirMoment;
         etat.editionMoment = false;
+        etat.detailsMoment = false;
         rendre();
         section.querySelector('.fenetre-fermer')?.focus();
         return;

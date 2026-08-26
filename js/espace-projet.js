@@ -189,10 +189,15 @@ export function construireVictoires(victoires) {
 // Une fenêtre par-dessus la page : on pose une chose sans quitter la vue
 // d'ensemble, et on la referme d'un geste. `data-fermer-fenetre` est le seul
 // crochet à brancher — le fond comme la croix le portent.
-export function construireFenetre(titre, contenu) {
+// `large` : une fenêtre de 48 rem au lieu de 28. Réservée aux formulaires qui
+// ont beaucoup à dire — la fiche d'une sortie Yuno en a douze champs, et à
+// 28 rem ils s'empilaient sur deux écrans de défilement (demande de Noé,
+// 26 août 2026).
+export function construireFenetre(titre, contenu, { large = false } = {}) {
   return `
     <div class="fenetre-fond" data-fermer-fenetre></div>
-    <div class="fenetre" role="dialog" aria-modal="true" aria-label="${echapper(titre)}">
+    <div class="fenetre${large ? ' fenetre-large' : ''}"
+      role="dialog" aria-modal="true" aria-label="${echapper(titre)}">
       <button type="button" class="fenetre-fermer" data-fermer-fenetre
         aria-label="Fermer">×</button>
       ${contenu}
@@ -281,6 +286,12 @@ export function construireFormulaire({
   bouton = 'Ajouter',
   ouvert = false,
   avecPli = true,
+  // `grille` : chaque champ est enveloppé, ce qui permet de les ranger en
+  // colonnes dans une fenêtre large. Sans enveloppe, l'étiquette et son champ
+  // sont deux éléments de grille et se retrouvent dans deux colonnes
+  // différentes. Réservé aux formulaires qui le demandent : l'envelopper
+  // partout changerait la mise en page de tous les autres.
+  grille = false,
 }) {
   const rendreChamp = (champ) => {
     const idChamp = `${id}-${champ.nom}`;
@@ -378,15 +389,25 @@ export function construireFormulaire({
 
   // Une case à cocher porte son libellé à côté d'elle, pas au-dessus : c'est
   // toute la ligne qui devient la cible tactile, une case seule fait 16 px.
-  const rendreLigne = (champ) =>
-    champ.type === 'checkbox'
-      ? `<label class="champ-case" for="${id}-${champ.nom}">
-           <input id="${id}-${champ.nom}" name="${champ.nom}" type="checkbox" value="oui"
-             ${champ.valeur ? 'checked' : ''}>
-           <span>${champ.libelle}</span>
-         </label>`
-      : `<label for="${id}-${champ.nom}">${champ.libelle}</label>
-         ${rendreChamp(champ)}`;
+  const rendreLigne = (champ) => {
+    // Un intertitre, pas un champ : il annonce un groupe et n'a rien à envoyer.
+    if (champ.type === 'titre') {
+      return `<p class="separateur-champs">${echapper(champ.libelle)}</p>`;
+    }
+
+    const corps =
+      champ.type === 'checkbox'
+        ? `<label class="champ-case" for="${id}-${champ.nom}">
+             <input id="${id}-${champ.nom}" name="${champ.nom}" type="checkbox" value="oui"
+               ${champ.valeur ? 'checked' : ''}>
+             <span>${champ.libelle}</span>
+           </label>`
+        : `<label for="${id}-${champ.nom}">${champ.libelle}</label>
+           ${rendreChamp(champ)}`;
+
+    if (!grille) return corps;
+    return `<div class="champ${champ.large ? ' champ-large' : ''}">${corps}</div>`;
+  };
 
   const corps = `
     <form data-action="${action}">
