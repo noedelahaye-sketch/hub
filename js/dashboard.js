@@ -36,7 +36,7 @@ import {
   champsApresDeplacement,
 } from './calendrier-commun.js';
 import { construireLignesTaches, trierTaches } from './taches.js';
-import { construireProgression } from './objectifs-commun.js';
+import { construireCapGrave, PORTE_OBJECTIFS } from './objectifs-commun.js';
 import { lireCache, ecrireCache } from './cache-session.js';
 import { marquerLesEntrantes, animerLaCoche } from './mouvements.js';
 import { modifierAussitot } from './ecriture.js';
@@ -166,55 +166,26 @@ export function construireVictoires(victoires) {
   return `<ul class="liste-victoires">${lignes}</ul>`;
 }
 
+// Sur l'accueil, le cap est une INSCRIPTION, pas des tuiles (demande de Noé,
+// 25 août 2026), et il ne dit qu'UNE colonne par projet : l'objectif à
+// l'échéance la plus proche. Le cap entier d'un projet se lit sur sa page, et
+// se règle dans #objectifs.
+const ORDRE_CAP = ['formation', 'fch', 'photo'];
+
 export function construireObjectifs(objectifs) {
-  if (!objectifs.length) {
-    return `<p class="vide">Aucun objectif actif pour l'instant.</p>`;
+  const prochains = ORDRE_CAP.map((projet) => {
+    const duProjet = objectifs.filter((objectif) => objectif.projet === projet);
+    // L'échéance la plus proche d'abord ; sans échéance, on passe derrière.
+    return [...duProjet].sort((a, b) =>
+      (a.echeance ?? '9999-12-31') < (b.echeance ?? '9999-12-31') ? -1 : 1,
+    )[0];
+  }).filter(Boolean);
+
+  if (!prochains.length) {
+    return `<p class="vide">Ton cap s'écrira ici.</p>${PORTE_OBJECTIFS}`;
   }
 
-  return `<div class="grille-objectifs">${objectifs.map(construireObjectif).join('')}</div>`;
-}
-
-function construireObjectif(objectif) {
-  const jalons = [...(objectif.jalons ?? [])].sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
-
-  const listeJalons = jalons.length
-    ? `<ul class="liste-jalons">${jalons
-        .map(
-          (jalon) => `
-          <li class="${jalon.atteint ? 'jalon-atteint' : ''}">
-            <span class="marque-jalon" aria-hidden="true">${jalon.atteint ? '✓' : '○'}</span>
-            <span>${echapper(jalon.titre)}</span>
-            ${
-              jalon.echeance && !jalon.atteint
-                ? `<span class="discret quand">${echapper(
-                    echeanceLisible(depuisDateISO(jalon.echeance)),
-                  )}</span>`
-                : ''
-            }
-          </li>`,
-        )
-        .join('')}</ul>`
-    : '';
-
-  return `
-    <details class="objectif" data-projet="${echapper(objectif.projet)}">
-      <summary>
-        ${enTeteTuile(
-          objectif.projet,
-          objectif.echeance ? echeanceLisible(depuisDateISO(objectif.echeance)) : '',
-        )}
-        <span class="objectif-tete">
-          <span class="objectif-titre">${echapper(objectif.titre)}</span>
-        </span>
-        ${construireProgression(jalons)}
-      </summary>
-      <div class="objectif-detail">
-        ${objectif.pourquoi ? `<p class="pourquoi">${echapper(objectif.pourquoi)}</p>` : ''}
-        ${objectif.cible ? `<p class="discret cible">Réussite : ${echapper(objectif.cible)}</p>` : ''}
-        ${listeJalons}
-      </div>
-    </details>
-  `;
+  return construireCapGrave(prochains, { montrerProjet: true }) + PORTE_OBJECTIFS;
 }
 
 // La semaine est un APERÇU DU CALENDRIER, plus une liste (demande de Noé,

@@ -87,6 +87,9 @@ body[data-espace="dashboard"] { --accent: #6b7f8c; --accent-doux: #eceff1; }
    et les pastilles de projet font la distinction dans la liste. */
 body[data-espace="calendrier"] { --accent: #6b7f8c; --accent-doux: #eceff1; }
 body[data-espace="taches"] { --accent: #6b7f8c; --accent-doux: #eceff1; }
+/* Objectifs regarde tous les projets, comme les tâches et le calendrier : il
+   n'en porte donc aucune couleur. Ce sont les blocs qui disent le projet. */
+body[data-espace="objectifs"] { --accent: #6b7f8c; --accent-doux: #eceff1; }
 body[data-espace="formation"] { --accent: #17786f; --accent-doux: #e3f1ef; }
 /* Yuno : le doré du logo (#e8b000, relevé sur le fichier). En clair il
    s'assombrit en ocre — un doré clair sur fond blanc ne se lit pas
@@ -240,6 +243,7 @@ body[data-espace="hermitage"] {
   body[data-espace="dashboard"] { --accent: #9db3c0; --accent-doux: #262a2e; }
   body[data-espace="calendrier"] { --accent: #9db3c0; --accent-doux: #262a2e; }
   body[data-espace="taches"] { --accent: #9db3c0; --accent-doux: #262a2e; }
+  body[data-espace="objectifs"] { --accent: #9db3c0; --accent-doux: #262a2e; }
   body[data-espace="formation"] { --accent: #56b8ad; --accent-doux: #1b2e2c; }
   body[data-espace="photo"]     { --accent: #e8b000; --accent-doux: #2f2708; }
   body[data-espace="fch"]       { --accent: #7ba5dc; --accent-doux: #1d2733; }
@@ -865,25 +869,16 @@ a { color: var(--accent); }
     grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
   }
 
-  /* Dans la grille, chaque tuile fait la même taille (demande de Noé, 25 août
-     2026) : titre et légende réservent leurs lignes — deux chacun — qu'ils les
-     remplissent ou non, et se coupent au-delà. L'égalité vient du texte, pas
-     d'un étirement : une tuile dépliée ne doit pas gonfler ses voisines. */
-  .grille-objectifs .objectif-titre {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
-    min-height: 2.5em; /* 2 lignes × line-height 1.25 */
-  }
+  /* Dans la grille, les tuiles d'une rangée s'alignent : titre et légende
+     RÉSERVENT deux lignes chacun, qu'ils les remplissent ou non. Rien n'est
+     coupé — ces grilles servent les pages où l'on règle le cap, et un titre
+     tronqué y serait un piège. L'égalité vient du texte, pas d'un étirement :
+     une tuile dépliée ne doit pas gonfler ses voisines. */
+  .grille-objectifs .objectif-titre { min-height: 2.5em; }
 
   .grille-objectifs .progression-legende {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    overflow: hidden;
     line-height: 1.4;
-    min-height: 2.8em; /* 2 lignes × line-height 1.4 */
+    min-height: 2.8em;
   }
 }
 
@@ -1017,6 +1012,104 @@ a { color: var(--accent); }
 .marque-jalon { color: var(--accent); }
 .jalon-atteint { color: var(--texte-discret); }
 .jalon-atteint span:not(.marque-jalon) { text-decoration: line-through; }
+
+/* --- Le cap gravé (accueil et pages projet) ---------------------------------
+   Sur un tableau de bord, le cap est INSCRIT dans la page (demande de Noé,
+   25 août 2026) : ni carte, ni bordure, ni dépliage, aucun geste qui le
+   modifie. Une colonne par projet, séparées par un filet — la forme d'un
+   colophon, pas d'une liste d'outils. Ce qui se règle vit dans #objectifs. */
+
+.cap-grave {
+  display: grid;
+  gap: var(--espace-16);
+}
+
+.cap-projet {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espace-8);
+  /* Sur téléphone les colonnes s'empilent : le filet passe au-dessus. */
+  padding-top: var(--espace-16);
+  border-top: 1px solid var(--bordure);
+}
+
+.cap-projet:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.cap-nom {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--couleur-projet-pleine);
+}
+
+/* Le titre absorbe la hauteur en trop : les colonnes d'une même rangée étant
+   étirées par la grille, points et échéances tombent alors sur une seule ligne
+   de base, quel que soit le nombre de lignes des titres. Un colophon s'aligne ;
+   trois colonnes en escalier auraient l'air d'un accident. */
+.cap-titre {
+  flex: 1;
+  margin: 0;
+  font-family: var(--police-titre);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+}
+
+/* Les jalons se réduisent à leur compte : des points, pleins ou vides. Le
+   détail — leurs titres, leurs dates — appartient à #objectifs. */
+.cap-jalons {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  /* La rangée garde sa place même sur un objectif sans jalon : les colonnes
+     restent alignées entre elles. */
+  min-height: 7px;
+}
+
+.cap-jalons i {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--rayon-pastille);
+  background: color-mix(in srgb, var(--couleur-projet-pleine) 22%, transparent);
+}
+
+.cap-jalons i.atteint { background: var(--couleur-projet-pleine); }
+
+.cap-echeance { font-size: 0.8125rem; }
+
+/* La seule porte du bloc : elle mène là où le cap se règle. */
+.porte-objectifs {
+  display: inline-block;
+  margin-top: var(--espace-16);
+  font-size: 0.875rem;
+}
+
+@media (min-width: 45rem) {
+  .cap-grave {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--espace-24);
+  }
+
+  /* Côte à côte, le filet redevient vertical — et disparaît devant la
+     première colonne, où il n'y a rien à séparer. */
+  .cap-projet {
+    padding-top: 0;
+    padding-left: var(--espace-24);
+    border-top: none;
+    border-left: 1px solid var(--bordure);
+  }
+
+  .cap-projet:first-child {
+    padding-left: 0;
+    border-left: none;
+  }
+}
 
 /* --- Tâches ---------------------------------------------------------------- */
 
@@ -2788,9 +2881,13 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    écrire son texte EN HAUT, là où l'événement commence. Un <button> centre son
    contenu, et ni `display: block`, ni `flow-root`, ni `align-content: start`
    ne le défont — mesuré, les trois laissent le texte à 58 px du haut d'une
-   barre de 150. Seul un flex explicite reprend la main. En colonne, l'heure
-   passe alors au-dessus du titre, ce qui est aussi la bonne lecture : quand,
-   puis quoi. */
+   barre de 150. Seul un flex explicite reprend la main.
+
+   En colonne, l'heure passe au-dessus du titre, ce qui est aussi la bonne
+   lecture : quand, puis quoi. C'est la mise en page des ÉVÉNEMENTS — Noé l'a
+   redemandée telle quelle le 26 août 2026. Les barres ordinaires, elles, s'en
+   écartent plus bas : elles n'ont pas d'heure, et leur rond se lit mieux à
+   côté du titre qu'au-dessus. */
 .cal-semaine .cal-barre-element {
   display: flex;
   flex-direction: column;
@@ -2824,6 +2921,41 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 }
 
 .cal-semaine .cal-barre-heure { margin-right: 0; }
+
+/* LE CAS ORDINAIRE — une tâche, une publication, un objectif : le titre
+   commence à la suite du rond, et au retour à la ligne il repasse SOUS lui
+   (demande de Noé, 26 août 2026).
+
+   Le rond sort donc du flux et le titre s'indente d'une première ligne. C'est
+   la seule façon de garder les deux : un titre coupé à trois lignes est un
+   bloc `-webkit-box`, or un tel bloc établit son propre contexte et REFUSE de
+   contourner un flottant — mesuré, il se rangeait sagement à droite du rond.
+   Avec `text-indent`, la coupe et ses points de suspension restent entiers.
+
+   Le rond garde ses marges négatives : posé à `left` = le padding de la barre,
+   elles ramènent le glyphe exactement là où le texte commence, et la cible
+   tactile reste celle d'avant. */
+.cal-semaine .cal-barre-element:not(.cal-barre-duree, :has(.cal-barre-heure)) {
+  display: block;
+}
+
+.cal-semaine .cal-barre-element:not(.cal-barre-duree, :has(.cal-barre-heure)) .cal-signe {
+  position: absolute;
+  left: var(--espace-8);
+  top: 1px;
+}
+
+.cal-semaine .cal-barre-element:not(.cal-barre-duree, :has(.cal-barre-heure)) .cal-barre-titre {
+  /* La largeur du rond (13,4 px, mesurée) plus son air : ce que la première
+     ligne lui cède. */
+  text-indent: 18px;
+}
+
+/* Deux barres restent en colonne, et pour deux raisons distinctes : une barre
+   à HEURE est un événement, et son heure se lit au-dessus de son titre ; une
+   barre haute comme sa DURÉE doit écrire en haut, or un bloc y retombe au
+   milieu — mesuré à 62 px du haut d'une barre de 150. Aucune des deux ne porte
+   de rond : le calendrier n'en donne qu'aux tâches et aux publications. */
 
 /* La pile d'un jour, en vue semaine : ce qui n'appartient qu'à lui s'y empile,
    hors des couloirs de la grille. C'est ce qui rend la hauteur d'une barre
@@ -3392,6 +3524,28 @@ body[data-espace="hermitage"] .choix-statut-neutre {
     font-size: 0.6875rem;
     min-height: max(var(--duree, 0rem), 24px);
   }
+  /* Sept colonnes à 375 px, c'est 40 px par jour : à côté du rond il ne reste
+     pas de quoi écrire un mot, et le titre se replierait lettre par lettre. Les
+     barres ordinaires reprennent donc la colonne commune — le rond revient dans
+     le flux, il prend sa ligne, et le titre perd son retrait. SAUF dans un jour
+     ouvert en grand, qui a enfin la largeur.
+
+     Les deux sélecteurs reprennent la forme exacte de la règle du dessus : à
+     spécificité égale, c'est la dernière écrite qui l'emporte, et une annulation
+     plus courte se ferait ignorer — le retrait restait, et la première ligne
+     partait seule à droite d'un rond qui n'était plus là. */
+  .cal-semaine:not(.cal-un-jour) .cal-barre-element:not(.cal-barre-duree, :has(.cal-barre-heure)) .cal-signe {
+    position: static;
+  }
+
+  .cal-semaine:not(.cal-un-jour) .cal-barre-element:not(.cal-barre-duree, :has(.cal-barre-heure)) .cal-barre-titre {
+    text-indent: 0;
+  }
+
+  /* Le jour ouvert garde tout, à ceci près que la barre y est moins rembourrée
+     que sur grand écran : le rond suit. */
+  .cal-un-jour .cal-barre-element .cal-signe { left: 4px; }
+
   .cal-reste { padding-left: 3px; font-size: 0.5625rem; }
   .cal-nav { margin-left: 0; width: 100%; }
   .cal-titre { flex: 1; min-width: 0; }

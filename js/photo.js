@@ -9,44 +9,25 @@ import * as api from './api.js';
 import { construireFormulaire, construireVictoires } from './espace-projet.js';
 import { construireApercuCreation, rubriquesProposees } from './publications.js';
 import { RUBRIQUES_DEPART } from './yuno.js';
-import { depuisDateISO, echeanceLisible, echapper } from './format.js';
-import { construireProgression } from './objectifs-commun.js';
+import { echapper } from './format.js';
+import { construireCapGrave, PORTE_OBJECTIFS } from './objectifs-commun.js';
 
 const MAX_VICTOIRES = 3;
 
 // --- Fabrication du HTML ----------------------------------------------------
 
-// Le cap, en lecture : la progression et le pourquoi, sans aucune gestion.
+// Le cap, GRAVÉ : la page Yuno du hub et celle du FCH sont des tableaux de
+// bord, et un tableau de bord ne règle pas le cap (demande de Noé, 25 août
+// 2026). Tous les objectifs du projet, posés sans carte, sans dépliage et sans
+// un geste qui les modifie — plus la porte vers #objectifs.
+//
+// La même fonction sert les deux pages : `js/fch.js` l'importe telle quelle.
 export function construireCap(objectifs) {
   if (!objectifs.length) {
-    return `<p class="vide">Tes objectifs Yuno s'afficheront ici. Ils se créent sur le site.</p>`;
+    return `<p class="vide">Ton cap s'écrira ici.</p>${PORTE_OBJECTIFS}`;
   }
 
-  const tuiles = objectifs
-    .map((objectif) => {
-      return `
-        <details class="objectif">
-          <summary>
-            <span class="objectif-tete">
-              <span class="objectif-titre">${echapper(objectif.titre)}</span>
-              ${
-                objectif.echeance
-                  ? `<span class="discret echeance">${echapper(
-                      echeanceLisible(depuisDateISO(objectif.echeance)),
-                    )}</span>`
-                  : ''
-              }
-            </span>
-            ${construireProgression(objectif.jalons ?? [])}
-          </summary>
-          <div class="objectif-detail">
-            ${objectif.pourquoi ? `<p class="pourquoi">${echapper(objectif.pourquoi)}</p>` : ''}
-          </div>
-        </details>`;
-    })
-    .join('');
-
-  return `<div class="grille-objectifs">${tuiles}</div>`;
+  return construireCapGrave(objectifs) + PORTE_OBJECTIFS;
 }
 
 function squelette(etat) {

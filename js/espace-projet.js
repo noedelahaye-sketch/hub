@@ -1,9 +1,14 @@
 // Un espace projet — la structure commune à formation, yuno et fch.
 //
 // Construite d'abord pour la formation, puis extraite ici une fois validée à
-// l'usage. Les trois projets partagent exactement les mêmes blocs : objectifs
-// avec progression, victoires, événements à venir, tâches. Seuls le titre, le
-// sous-titre et un éventuel bloc d'en-tête changent.
+// l'usage. Les blocs : le cap, les victoires, les événements à venir, les
+// tâches. Seuls le titre, le sous-titre et un éventuel bloc d'en-tête changent.
+//
+// Le cap y est GRAVÉ (25 août 2026) : un espace projet est un tableau de bord,
+// il montre où l'on va sans jamais le régler. Cette fabrique n'écrit donc plus
+// ni objectif ni jalon — c'est #objectifs qui les tient, pour tous les projets
+// à la fois. Elle garde en revanche `construireObjectifs`, la tuile complète
+// avec sa gestion : #objectifs et les deux sites la dessinent.
 //
 // L'espace perso n'utilise PAS ce module : il n'a ni tâches, ni jalons, ni
 // progression, et aucune mécanique de productivité ne s'y applique.
@@ -14,7 +19,11 @@
 
 import * as api from './api.js';
 import { depuisDateISO, echeanceLisible, momentLisible, echapper } from './format.js';
-import { construireProgression } from './objectifs-commun.js';
+import {
+  construireProgression,
+  construireCapGrave,
+  PORTE_OBJECTIFS,
+} from './objectifs-commun.js';
 
 // Fenêtre pendant laquelle une tâche cochée par erreur peut être décochée.
 // Assez longue pour voir son erreur, assez courte pour ne pas encombrer.
@@ -22,14 +31,20 @@ const DUREE_ANNULATION = 6000;
 
 // --- Fabrication du HTML ----------------------------------------------------
 
-export function construireObjectifs(objectifs) {
+// `retraitJalon` n'est pas un réglage de goût : la croix appelle un gestionnaire
+// que tout le monde n'a pas. Les deux sites retirent un jalon par leur propre
+// chemin (la fenêtre de détail) ; leur poser cette croix ferait un bouton mort.
+// Elle est donc demandée, jamais offerte d'office.
+export function construireObjectifs(objectifs, { retraitJalon = false } = {}) {
   if (!objectifs.length) {
     return `<p class="vide">Aucun objectif pour l'instant. Le premier donne le cap.</p>`;
   }
-  return `<div class="grille-objectifs">${objectifs.map(construireObjectif).join('')}</div>`;
+  return `<div class="grille-objectifs">${objectifs
+    .map((objectif) => construireObjectif(objectif, { retraitJalon }))
+    .join('')}</div>`;
 }
 
-function construireObjectif(objectif) {
+function construireObjectif(objectif, { retraitJalon = false } = {}) {
   const jalons = [...(objectif.jalons ?? [])].sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
   const progression = construireProgression(jalons);
 
@@ -53,7 +68,9 @@ function construireObjectif(objectif) {
         ${objectif.pourquoi ? `<p class="pourquoi">${echapper(objectif.pourquoi)}</p>` : ''}
         ${objectif.cible ? `<p class="discret cible">Réussite : ${echapper(objectif.cible)}</p>` : ''}
 
-        <ul class="liste-jalons">${jalons.map(construireJalon).join('')}</ul>
+        <ul class="liste-jalons">${jalons
+          .map((jalon) => construireJalon(jalon, { retraitJalon }))
+          .join('')}</ul>
 
         ${construireFormulaire({
           id: `jalon-${objectif.id}`,
@@ -90,12 +107,22 @@ function construireObjectif(objectif) {
     </details>`;
 }
 
-function construireJalon(jalon) {
+function construireJalon(jalon, { retraitJalon = false } = {}) {
+  // Le retrait vaut pour tous les jalons, atteints compris : un jalon mal
+  // découpé se corrige, même après coup.
+  const retirer = retraitJalon
+    ? `<button type="button" class="lien-discret bouton-mini bouton-retirer"
+        data-supprimer-jalon="${echapper(jalon.id)}"
+        title="Retirer ce jalon"
+        aria-label="Retirer « ${echapper(jalon.titre)} »">×</button>`
+    : '';
+
   if (jalon.atteint) {
     return `
       <li class="jalon-atteint">
         <span class="marque-jalon" aria-hidden="true">✓</span>
         <span>${echapper(jalon.titre)}</span>
+        ${retirer}
       </li>`;
   }
 
@@ -113,6 +140,7 @@ function construireJalon(jalon) {
             )}</span>`
           : ''
       }
+      ${retirer}
     </li>`;
 }
 
@@ -492,20 +520,13 @@ export function creerEspaceProjet({ projet, titre, sousTitre, blocEnTete = null 
           : ''
       }
 
+      <!-- Le cap est GRAVÉ ici, comme sur l'accueil et les deux autres pages
+           du hub (demande de Noé, 25 août 2026) : un espace projet est un
+           tableau de bord, on y relit le cap sans jamais le régler. Tout ce
+           qui l'écrit — objectifs, jalons — vit dans #objectifs. -->
       <section class="bloc">
-        <h2>Objectifs</h2>
+        <h2>Le cap</h2>
         <div data-bloc="objectifs"><p class="vide">…</p></div>
-        ${construireFormulaire({
-          id: `${projet}-objectif`,
-          libelle: 'Ajouter un objectif',
-          action: 'creer-objectif',
-          champs: [
-            { nom: 'titre', libelle: 'Objectif', type: 'text', requis: true },
-            { nom: 'pourquoi', libelle: 'Pourquoi ? (relu les jours sans motivation)', type: 'textarea' },
-            { nom: 'cible', libelle: "À quoi tu sauras que c'est réussi", type: 'text' },
-            { nom: 'echeance', libelle: 'Échéance (facultative)', type: 'date' },
-          ],
-        })}
       </section>
 
       <section class="bloc">
@@ -562,7 +583,9 @@ export function creerEspaceProjet({ projet, titre, sousTitre, blocEnTete = null 
       const bloc = (nom) => section.querySelector(`[data-bloc="${nom}"]`);
 
       const rendreObjectifs = () => {
-        bloc('objectifs').innerHTML = construireObjectifs(etat.objectifs);
+        bloc('objectifs').innerHTML = etat.objectifs.length
+          ? construireCapGrave(etat.objectifs) + PORTE_OBJECTIFS
+          : `<p class="vide">Ton cap s'écrira ici.</p>${PORTE_OBJECTIFS}`;
       };
       const rendreTaches = () => {
         bloc('taches').innerHTML = construireTaches(etat.taches, etat.annulation);
@@ -572,11 +595,6 @@ export function creerEspaceProjet({ projet, titre, sousTitre, blocEnTete = null 
       };
       const rendreEvenements = () => {
         bloc('evenements').innerHTML = construireEvenements(etat.evenements);
-      };
-
-      const ouvrirObjectif = (id) => {
-        const element = section.querySelector(`[data-objectif="${CSS.escape(id)}"]`);
-        if (element) element.open = true;
       };
 
       const charger = async () => {
@@ -643,50 +661,6 @@ export function creerEspaceProjet({ projet, titre, sousTitre, blocEnTete = null 
       });
 
       async function appliquerAjout(action, champs) {
-        if (action === 'modifier-objectif') {
-          const objectif = etat.objectifs.find((o) => o.id === champs.objectif_id);
-          const misAJour = await api.modifierObjectif(champs.objectif_id, {
-            titre: champs.titre.trim(),
-            pourquoi: champs.pourquoi?.trim() || null,
-            cible: champs.cible?.trim() || null,
-            echeance: champs.echeance || null,
-          });
-          // La mise à jour ne renvoie que les colonnes : les jalons déjà
-          // chargés restent en place.
-          Object.assign(objectif, misAJour);
-          rendreObjectifs();
-          ouvrirObjectif(objectif.id);
-          return;
-        }
-
-        if (action === 'creer-objectif') {
-          const objectif = await api.creerObjectif({
-            projet,
-            titre: champs.titre.trim(),
-            pourquoi: champs.pourquoi?.trim() || null,
-            cible: champs.cible?.trim() || null,
-            echeance: champs.echeance || null,
-          });
-          etat.objectifs = [...etat.objectifs, { ...objectif, jalons: objectif.jalons ?? [] }];
-          rendreObjectifs();
-          return;
-        }
-
-        if (action === 'creer-jalon') {
-          const objectif = etat.objectifs.find((o) => o.id === champs.objectif_id);
-          const jalon = await api.creerJalon({
-            objectif_id: champs.objectif_id,
-            titre: champs.titre.trim(),
-            echeance: champs.echeance || null,
-            ordre: (objectif?.jalons?.length ?? 0) + 1,
-          });
-          objectif.jalons = [...(objectif.jalons ?? []), jalon];
-          rendreObjectifs();
-          // Le formulaire vient d'être remplacé : on rouvre l'objectif concerné.
-          ouvrirObjectif(champs.objectif_id);
-          return;
-        }
-
         if (action === 'creer-tache') {
           // Active d'emblée, comme partout depuis le 13 août : le réglage
           // backlog / active est masqué, une tâche notée est une tâche à faire.
@@ -722,19 +696,10 @@ export function creerEspaceProjet({ projet, titre, sousTitre, blocEnTete = null 
       // --- Clics ---
 
       section.addEventListener('click', async (evenement) => {
-        const jalon = evenement.target.closest('[data-jalon]');
-        if (jalon) return marquerJalon(jalon);
-
         if (evenement.target.closest('[data-annuler]')) return annulerDerniereTache();
 
         const victoire = evenement.target.closest('[data-victoire]');
         if (victoire) return retirerVictoire(victoire);
-
-        const atteindre = evenement.target.closest('[data-atteindre]');
-        if (atteindre) return atteindreObjectif(atteindre);
-
-        const supprObjectif = evenement.target.closest('[data-supprimer-objectif]');
-        if (supprObjectif) return supprimerObjectif(supprObjectif);
 
         const supprTache = evenement.target.closest('[data-supprimer-tache]');
         if (supprTache) return supprimerTache(supprTache);
@@ -762,64 +727,6 @@ export function creerEspaceProjet({ projet, titre, sousTitre, blocEnTete = null 
           alert(souci.message);
         }
       });
-
-      async function marquerJalon(bouton) {
-        bouton.disabled = true;
-        try {
-          const objectif = etat.objectifs.find((candidat) =>
-            candidat.jalons?.some((j) => j.id === bouton.dataset.jalon),
-          );
-          const jalon = objectif.jalons.find((j) => j.id === bouton.dataset.jalon);
-          const { jalon: atteint, victoire } = await api.atteindreJalon(jalon, projet);
-          Object.assign(jalon, atteint);
-          etat.victoires = [victoire, ...etat.victoires];
-          rendreObjectifs();
-          rendreVictoires();
-          ouvrirObjectif(objectif.id);
-        } catch (souci) {
-          console.error('Impossible de marquer le jalon', souci);
-          bouton.disabled = false;
-        }
-      }
-
-      // Atteindre un objectif est rare et engageant : on demande une fois.
-      // Cocher une tâche, geste quotidien, n'a pas cette friction — lui a
-      // l'annulation de six secondes à la place.
-      async function atteindreObjectif(bouton) {
-        const objectif = etat.objectifs.find((o) => o.id === bouton.dataset.atteindre);
-        if (!objectif) return;
-        if (!confirm(`Marquer « ${objectif.titre} » comme atteint ?`)) return;
-
-        bouton.disabled = true;
-        try {
-          const { victoire } = await api.atteindreObjectif(objectif);
-          etat.objectifs = etat.objectifs.filter((o) => o.id !== objectif.id);
-          etat.victoires = [victoire, ...etat.victoires];
-          rendreObjectifs();
-          rendreVictoires();
-        } catch (souci) {
-          console.error("Impossible de marquer l'objectif atteint", souci);
-          bouton.disabled = false;
-        }
-      }
-
-      async function supprimerObjectif(bouton) {
-        const objectif = etat.objectifs.find((o) => o.id === bouton.dataset.supprimerObjectif);
-        if (!objectif) return;
-        if (!confirm(`Supprimer « ${objectif.titre} » et ses jalons ? Les tâches liées sont conservées.`)) {
-          return;
-        }
-
-        bouton.disabled = true;
-        try {
-          await api.supprimerObjectif(objectif.id);
-          etat.objectifs = etat.objectifs.filter((o) => o.id !== objectif.id);
-          rendreObjectifs();
-        } catch (souci) {
-          console.error("Suppression de l'objectif impossible", souci);
-          bouton.disabled = false;
-        }
-      }
 
       async function supprimerTache(bouton) {
         const id = bouton.dataset.supprimerTache;

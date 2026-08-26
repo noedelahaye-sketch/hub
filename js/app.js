@@ -5,6 +5,7 @@ import { centrerActif, ongletCalendrier } from './calendrier-commun.js';
 import { viderLesCaches } from './cache-session.js';
 import dashboard from './dashboard.js';
 import taches from './taches.js';
+import objectifs from './objectifs.js';
 import calendrier from './calendrier.js';
 import formation from './formation.js';
 import photo from './photo.js';
@@ -15,7 +16,11 @@ import perso from './perso.js';
 
 // `photo` est la page Yuno du hub ; `yuno` est le site Yuno, qui masque tout
 // l'habillage du hub. Deux adresses, deux sensations, une seule application.
-const espaces = { dashboard, taches, calendrier, formation, photo, yuno, fch, hermitage, perso };
+// `objectifs` n'a pas d'entrée dans la barre (demande de Noé, 25 août 2026) :
+// on y vient par la porte du bloc « Tes objectifs », et rarement.
+const espaces = {
+  dashboard, taches, objectifs, calendrier, formation, photo, yuno, fch, hermitage, perso,
+};
 
 // Trois pages d'entrée pour trois applications sur l'écran d'accueil :
 // index.html (le hub), yuno.html, hermitage.html. Chacune a son manifeste, son
@@ -92,6 +97,7 @@ document.body.insertAdjacentHTML(
 const TITRES = {
   dashboard: 'Accueil',
   taches: 'Tâches',
+  objectifs: 'Objectifs',
   calendrier: 'Calendrier',
   formation: 'Formation',
   photo: 'Yuno',
