@@ -376,6 +376,15 @@ manifeste PWA, `tools/static-server.js`.
 | Instrument Sans | `--police-texte` | Tout le corps de texte, les libellés de section, les boutons. |
 | Geist Mono | `--police-chiffre` | Compteurs et pourcentages, via la classe `.chiffre`. Pas les dates en toutes lettres (« dans 4 jours » est une phrase, pas un code). |
 
+**Une quatrième dans le calendrier : Gilroy** (demande de Noé, 27 août 2026).
+Le **titre d'une barre** — et lui seul — est en Gilroy 700, dans les trois
+calendriers. La règle est posée sur `.cal-barre-titre` et non sur la barre :
+les signes (○ ◐ ◉ ▲ ↗) sont dans le même conteneur et Gilroy ne les dessine
+pas — ils retomberaient, glyphe par glyphe, sur une police choisie par le
+navigateur. L'heure reste en Geist Mono. Gilroy est déclarée dans `css/yuno.css`
+(chargée sur les trois pages) et son Bold est déjà en cache : aucun fichier de
+plus.
+
 **Non repris, volontairement : le ton.** Bac-3 est un outil de pression, et
 c'est justifié — 44 livrables, une date de dépôt. Il a une couleur `--flag`
 dédiée au retard, un « verdict » en tête d'accueil, et affiche « 3 livrables de

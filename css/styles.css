@@ -3739,6 +3739,26 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   cursor: pointer;
 }
 
+/* Le TITRE d'une barre est en Gilroy (demande de Noé, 27 août 2026) — et lui
+   seul. La règle est posée sur le titre et non sur la barre, pour deux raisons
+   qui tiennent toutes les deux :
+
+   — les SIGNES de la barre (○ ◐ ◉ ▲ △ ▸ ↗) sont dans le même conteneur, et
+     Gilroy ne les dessine pas. Les y faire passer aurait fait retomber chaque
+     glyphe, un par un, sur une police de secours choisie par le navigateur —
+     avec sa taille et son aplomb à elle. Le rond d'une tâche aurait changé de
+     forme selon la machine.
+   — l'HEURE est en Geist Mono et le restera : elle situe, elle ne se lit pas
+     comme un texte.
+
+   Gilroy est déjà déclaré (css/yuno.css, chargé sur les trois pages) et son
+   Bold est déjà mis en cache par le service worker : aucun fichier de plus.
+   La famille de secours ajustée vient avec, pour que la bascule au chargement
+   ne fasse pas sauter la ligne. */
+.cal-barre-titre {
+  font-family: "Gilroy", "Gilroy secours", var(--police-texte);
+}
+
 .cal-barre-element:hover {
   background: color-mix(in srgb, var(--couleur-projet-pleine, var(--accent)) 34%, var(--fond-carte));
 }
