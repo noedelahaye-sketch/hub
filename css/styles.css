@@ -1409,6 +1409,35 @@ ul.liste-victoires-pliee {
   background: var(--teinte-etat);
 }
 
+/* La chaîne éditoriale du FCH : les mêmes formes que l'entonnoir du réseau
+   Yuno, mais trois états au lieu de quatre — et l'encre du club. Un état plus
+   avancé est plus franc : ce qui est sorti se voit plus que ce qui se prépare.
+   Ce n'est pas un jugement, c'est une lecture. */
+[data-chaine="idee"] { --teinte-etat: color-mix(in srgb, var(--accent) 20%, transparent); }
+[data-chaine="pret"] { --teinte-etat: color-mix(in srgb, var(--accent) 50%, transparent); }
+[data-chaine="publie"] { --teinte-etat: var(--accent); }
+
+/* La banque d'idées n'est pas un état de la chaîne : elle est à côté, sans
+   date. Sa puce se creuse au lieu de se remplir. */
+.entonnoir-puce.entonnoir-vide {
+  background: none;
+  border: 1px solid var(--texte-discret);
+}
+
+/* La réunion qui vient, sous les tâches du club : une ligne, pas une tuile. */
+.prochaine-reunion {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--espace-8);
+  margin: var(--espace-16) 0 0;
+  padding-top: var(--espace-12);
+  border-top: 1px solid var(--bordure);
+  font-size: 0.9375rem;
+}
+
+.prochaine-reunion .quand { margin-left: auto; }
+
 /* Le pied de page : les raccourcis, et la porte du site poussée au bout. Hors
    panneau (demande de Noé, 26 août 2026) — ce sont des commandes, pas une
    section à lire, et elles n'ont donc rien à encadrer. */

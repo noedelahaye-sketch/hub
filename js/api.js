@@ -225,6 +225,20 @@ export async function tachesToutes() {
 
 // Toutes les tâches en cours d'un projet, actives et backlog confondus. L'ordre
 // met les actives d'abord, puis les plus anciennes du backlog.
+// Toutes les tâches d'un projet, faites comprises : une page qui compte ce qui
+// a été accompli a besoin des faites, que `tachesEnCours` écarte par nature.
+export async function tachesDuProjet(projet) {
+  return verifier(
+    await client
+      .from('taches')
+      .select('*')
+      .eq('projet', projet)
+      .order('statut')
+      .order('echeance', { nullsFirst: false })
+      .order('created_at'),
+  );
+}
+
 export async function tachesEnCours(projet) {
   return verifier(
     await client
