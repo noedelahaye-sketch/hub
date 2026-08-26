@@ -14,7 +14,11 @@
 
 import * as api from './api.js';
 import { construireApercuCreation } from './publications.js';
-import { construireLignesTaches, trierTaches } from './taches.js';
+import {
+  construireLignesTaches,
+  trierTaches,
+  cocherDepuisTableauDeBord,
+} from './taches.js';
 import { construireCapGrave } from './objectifs-commun.js';
 import {
   fenetreCreation,
@@ -153,8 +157,11 @@ export function construireTaches(taches, evenements) {
   const aFaire = trierTaches(taches.filter((tache) => tache.statut !== 'fait'));
   const reunion = prochaineReunion(evenements);
 
+  // Ni ouvrable ni supprimable : corriger et supprimer une tâche vivent dans
+  // l'espace Tâches. Ici on la coche, et c'est tout — offrir les deux autres
+  // gestes sans les traiter ferait des boutons morts.
   const lignes = aFaire.length
-    ? construireLignesTaches(aFaire)
+    ? construireLignesTaches(aFaire, { ouvrable: false, supprimable: false })
     : `<p class="vide">Rien à faire pour le club. Note ta prochaine tâche au-dessous.</p>`;
 
   // La réunion qui vient, sur une ligne. Sa préparation vit sur le site — ici
@@ -340,6 +347,13 @@ export default {
         };
         rendreCreation();
         return;
+      }
+
+      const cercle = evenement.target.closest('[data-cocher]');
+      if (cercle) {
+        return cocherDepuisTableauDeBord(cercle, etat.taches, () => {
+          bloc('taches').innerHTML = construireTaches(etat.taches, etat.evenements);
+        });
       }
 
       if (evenement.target.closest('[data-fermer-fenetre]')) return fermerLaCreation();

@@ -19,7 +19,7 @@
 import * as api from './api.js';
 import { depuisDateISO, echeanceLisible, versDateISO, ajouterJours, echapper, NOMS_PROJETS } from './format.js';
 import { marquerLesEntrantes, animerLaCoche } from './mouvements.js';
-import { ajouterAussitot, retirerAussitot } from './ecriture.js';
+import { ajouterAussitot, retirerAussitot, modifierAussitot } from './ecriture.js';
 
 // Perso en fait partie depuis le 13 août 2026 (demande de Noé). C'est la seule
 // entorse à la règle « pas de tâche perso » de CLAUDE.md, et elle est bornée :
@@ -176,6 +176,30 @@ export function construireLignesTaches(taches, options = {}) {
   return `<ul class="liste-taches-pleine">${taches
     .map((tache) => ligneTache(tache, options))
     .join('')}</ul>`;
+}
+
+// Cocher une tâche depuis une liste de tableau de bord — la page Yuno, celle du
+// FCH, celle de la formation. Le geste est posé ICI, une fois : trois copies du
+// même clic finiraient par se contredire, et la première version de ces pages
+// avait justement oublié de le poser du tout — les cercles y étaient des
+// boutons morts (défaut trouvé et corrigé le 26 août 2026).
+//
+// L'espace Tâches et l'accueil gardent le leur : ils offrent en plus la fenêtre
+// d'annulation de six secondes, que ces pages n'ont pas.
+export async function cocherDepuisTableauDeBord(cercle, taches, rendre) {
+  const tache = taches.find((candidate) => candidate.id === cercle.dataset.cocher);
+  if (!tache || tache.statut === 'fait') return;
+
+  // On voit la coche se poser, PUIS la ligne s'en va.
+  await animerLaCoche(cercle);
+
+  const avant = { ...tache };
+  await modifierAussitot(
+    tache,
+    { statut: 'fait', date_fait: new Date().toISOString() },
+    async () => (await api.terminerTache(avant)).tache,
+    { rendre },
+  );
 }
 
 // Exportée pour être vérifiable seule, avec des tâches factices.

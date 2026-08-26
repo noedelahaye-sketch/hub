@@ -2295,15 +2295,19 @@ body.fond-fige {
 
 /* Chiffres qui disent ce qui a été fait, pas ce qui manque. Une tuile chacun,
    en grille : quatre nombres alignés se lisent d'un coup d'œil. */
-.chiffres-cles {
-  display: grid !important;
+/* Les quatre chiffres des révisions, en 2 × 2. Le `ul` dans le sélecteur n'est
+   pas décoratif : au-delà de 60 rem, `.bloc ul:not(.liste-jalons)` passe toute
+   liste en colonnes de 21 rem, et dans un panneau de 490 px elle n'en trouvait
+   qu'une — les quatre cartes s'empilaient. Il faut la même spécificité pour
+   gagner, et venir après.
+
+   Deux colonnes et non quatre : ces chiffres vivent désormais dans un panneau
+   étroit, où quatre colonnes de 110 px replieraient chaque libellé. */
+.bloc ul.chiffres-cles {
+  display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--espace-8);
   margin: var(--espace-16) 0 0;
-}
-
-@media (min-width: 30rem) {
-  .chiffres-cles { grid-template-columns: repeat(4, 1fr); }
 }
 
 .chiffres-cles li {

@@ -17,7 +17,11 @@
 import * as api from './api.js';
 import { construireFormulaire, construireFenetre } from './espace-projet.js';
 import { construireMurPhotos } from './yuno.js';
-import { construireLignesTaches, trierTaches } from './taches.js';
+import {
+  construireLignesTaches,
+  trierTaches,
+  cocherDepuisTableauDeBord,
+} from './taches.js';
 import { construireCapGrave } from './objectifs-commun.js';
 import {
   fenetreCreation,
@@ -208,7 +212,10 @@ export function construireTaches(taches) {
   if (!aFaire.length) {
     return `<p class="vide">Rien à faire pour Yuno. Note ta prochaine tâche au-dessous.</p>`;
   }
-  return construireLignesTaches(aFaire);
+  // Ni ouvrable ni supprimable : corriger et supprimer une tâche vivent dans
+  // l'espace Tâches. Ici on la coche, et c'est tout — offrir les deux autres
+  // gestes sans les traiter ferait des boutons morts.
+  return construireLignesTaches(aFaire, { ouvrable: false, supprimable: false });
 }
 
 // Les raccourcis du bloc « Noter ». Tâche, événement et publication passent par
@@ -593,6 +600,13 @@ export default {
       // SITE, qui ouvre la fiche du moment. Ici cette fenêtre n'existe pas —
       // sans cette ligne, la photo serait un bouton mort. Elle mène donc au
       // Carnet de terrain, l'endroit où ce moment se lit vraiment.
+      const cercle = evenement.target.closest('[data-cocher]');
+      if (cercle) {
+        return cocherDepuisTableauDeBord(cercle, etat.taches, () => {
+          bloc('taches').innerHTML = construireTaches(etat.taches);
+        });
+      }
+
       if (evenement.target.closest('[data-ouvrir-moment]')) {
         location.hash = '#yuno/journal';
         return;
