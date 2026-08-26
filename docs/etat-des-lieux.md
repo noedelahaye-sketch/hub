@@ -8,7 +8,8 @@
 >
 > **§ 0 raconte la dernière session** (26 août : les objectifs enfin posés, le
 > cap gravé, les trois pages projet refaites, l'argent de Yuno, les tâches
-> répétées, puis les publications répétées et la durée des tâches),
+> répétées, puis les publications répétées, la durée des tâches, et
+> « Aujourd'hui » qui porte la journée entière),
 > **§ 0 ante celle d'avant** (24–25 août : la journée dans la
 > semaine, le FCH à trois états), **§ 0 ante bis** le 24 août, **§ 0 ante ter**
 > le 21, **§ 0 ante quater** le 15, **§ 0 ante quinquies** les 14–15. Les § 1 et
@@ -20,8 +21,9 @@
 (cap gravé + espace `#objectifs`), `e8aca73` (page Yuno), `0fffce4` (page FCH),
 `d11dca7` (page formation + tâches cochables), `c0fb4f5` (densité), `a5e1340`
 (tâches répétées), `b5fe4bc` (frais de déplacement), `ca1fe94` (fiche de sortie
-Yuno), plus la **fin de journée** décrite au § 8 (publications répétées, durée
-des tâches), non encore commitée à l'écriture de ces lignes. **Cinq migrations**
+Yuno), `d069884` (publications répétées, durée des tâches), `bde6e7a`
+(graphify-out ignoré), plus les §§ 9 et 10 — « Aujourd'hui » qui porte la
+journée entière, et la durée remise là où on la cherche. **Cinq migrations**
 appliquées : `materiel`, `taches_recurrentes`, `commandes_frais`,
 `publications_recurrentes`, `taches_duree`. `CLAUDE.md`, `yuno-spec.md` et
 `fch-spec.md` ont été mis à jour en fin de session.
@@ -275,6 +277,53 @@ passe pas par les durées.
    propre tuile : la pastille était offerte, la colonne restait nulle. C'est
    exactement la copie oubliée dont `poserAuCalendrier` met en garde — Yuno est
    le seul espace qui garde sa propre version de la création.
+
+### 9. « Aujourd'hui » porte la journée entière
+
+Le bloc ne montrait que les tâches ; il montre aussi ce qui doit **partir** et
+les **rendez-vous** (demande de Noé). Trois allers-retours pour trouver la
+forme, et c'est la troisième qui tient — les deux premières sont écrites ici
+pour qu'on ne les repropose pas :
+
+1. une seule liste dans l'ordre des heures → écartée ;
+2. trois groupes empilés → écartée ;
+3. **deux colonnes** : les tâches à gauche, seules ; **à publier** puis
+   **rendez-vous** à droite. Sur téléphone tout s'empile dans le même ordre.
+
+Ce que chaque groupe retient, et pourquoi les bornes diffèrent : une
+**publication** compte si elle est prévue aujourd'hui **ou l'était déjà** et
+n'est pas partie — c'est la règle des tâches, mot pour mot. Un **rendez-vous**
+ne compte que s'il **couvre** aujourd'hui : un événement passé n'est pas en
+attente, il a eu lieu, et le traîner en tête de page serait le reproche que ce
+hub ne fait jamais.
+
+Les gestes suivent la nature : le rond d'une publication **avance d'un cran**
+(le même attribut qu'au calendrier, donc rien à rebrancher), un rendez-vous
+porte son **heure** à la place de la marque et **ne se coche pas**. Un groupe
+vide disparaît en entier, titre compris ; une colonne vide aussi, et l'autre
+prend toute la largeur.
+
+**Le recoupement avec « Ta semaine » est volontaire** : la journée en cours
+figure aux deux endroits. Le bloc dit *ce qu'on fait* et porte les gestes ; la
+grille dit *la forme de la semaine* et se glisse. Ce n'est pas un doublon à
+corriger.
+
+Un détail qui a demandé un second endroit : une publication **en retard** est
+dans le bloc du jour mais **pas** dans la grille de la semaine — l'ouverture de
+sa tuile cherche donc dans les deux listes, sinon elle ne s'ouvrait pas.
+
+### 10. La durée d'une tâche, là où on la cherche
+
+Noé ne la trouvait que dans l'espace Tâches. Elle était pourtant offerte
+partout — mais **sixième pastille sur six**, dans une bande qui DÉFILE : hors
+de l'écran, donc inexistante. Elle est descendue dans le panneau « Quand », sous
+l'heure, comme dans l'espace Tâches : même question, même endroit, et la
+dépendance devient évidente puisqu'une durée ne vaut qu'avec une heure. La
+pastille dit désormais le créneau entier — « aujourd'hui, 14:30 · 1 h 30 ».
+
+Leçon générale, pour la prochaine pastille : **une bande qui défile n'est pas
+une liste, c'est une file d'attente.** Ce qui compte se met dans un panneau
+qu'on ouvre déjà, pas au bout de la bande.
 
 ### Ce qui a été vérifié, et comment
 

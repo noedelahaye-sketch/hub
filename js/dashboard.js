@@ -26,6 +26,7 @@ import {
   fenetreJour,
   colonnesDeLaSemaine,
   cyclePublication,
+  nomDuStatut,
   fermerLesChoix,
   elementsDuJour,
   finDeLEvenement,
@@ -213,12 +214,120 @@ export function construireSemaine(elements, ancre = new Date(), jourSeul = null)
   });
 }
 
-// Les tâches du jour, dans la forme EXACTE de l'espace Tâches (demande de Noé,
-// 13 août 2026) : cercle coloré par priorité, titre, puis la date et le projet.
-// Une tâche se lit pareil partout, c'est ce qui fait qu'on la reconnaît sans
-// réfléchir. Deux réglages en moins ici : pas de tuile pour corriger sur cette
-// page, et supprimer une tâche n'a rien à faire dans un check-in du matin.
-export function construireTaches(taches, annulation = null) {
+// --- « Aujourd'hui » ---------------------------------------------------------
+//
+// Le bloc ne portait que les tâches ; il porte aussi ce qui doit PARTIR et les
+// RENDEZ-VOUS (demande de Noé, 27 août 2026), en groupes nommés — son choix,
+// contre une liste unique mêlée. La raison tient : « Rendez-vous » ne se lit
+// pas comme « À faire ». L'un dit où il faut être, l'autre ce qu'il faut faire,
+// et un entraînement de 17 h n'a rien à faire intercalé entre deux tâches sans
+// presse.
+//
+// DEUX COLONNES sur grand écran, et Noé les a placées lui-même : les tâches
+// tiennent la gauche à elles seules — c'est la colonne où l'on travaille, et la
+// plus longue —, les publications et les rendez-vous se partagent la droite,
+// les publications au-dessus. Sur téléphone tout s'empile dans le même ordre.
+//
+// Un groupe vide DISPARAÎT en entier, titre compris — un titre sans contenu se
+// lit comme une panne, c'est déjà la règle du bloc des victoires. Une colonne
+// entièrement vide disparaît de même, et l'autre prend toute la largeur.
+//
+// Sur le mot « À faire » : le vocabulaire du hub l'interdit comme nom du BLOC
+// (le bloc s'appelle « Aujourd'hui », et rien d'autre). Il ne l'interdit pas
+// comme nom de ce qu'il contient — l'espace Tâches coiffe déjà la même liste
+// du même mot, et deux noms pour une même chose coûteraient plus cher.
+
+// Ce qui tient sans que le bloc devienne une liste. Les tâches gardent leur
+// plafond d'origine ; les deux autres groupes sont plus courts par nature — une
+// journée compte un ou deux rendez-vous, rarement cinq.
+const MAX_PAR_GROUPE = 5;
+
+// L'heure d'un élément, ou rien. Même convention que le calendrier : minuit
+// n'est pas une heure, c'est l'absence d'heure — une sortie « toute la
+// journée » ne s'annonce pas à 00:00.
+function heureCourte(date) {
+  if (date.getHours() === 0 && date.getMinutes() === 0) return '';
+  return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+
+// La ligne d'un rendez-vous ou d'une publication. Elle se tient EXACTEMENT
+// comme une ligne de tâche — même gouttière, même filet, même ligne de service
+// — parce que les trois groupes se lisent l'un sous l'autre : trois listes qui
+// ne s'alignent pas, ce sont trois listes étrangères posées sous un même titre.
+// Seule la marque de gauche change, et c'est elle qui dit la nature.
+function ligneDuJour(element, marque, service) {
+  return `
+    <li class="jour-ligne" data-projet="${echapper(element.projet)}">
+      ${marque}
+      <button type="button" class="jour-corps"
+        data-element="${echapper(element.type)}:${echapper(element.id)}"
+        aria-label="Ouvrir « ${echapper(element.titre)} »">
+        <span class="jour-titre">${echapper(element.titre)}</span>
+        <span class="jour-service">
+          ${service}
+          <span class="jour-projet">${echapper(
+            NOMS_PROJETS[element.projet] ?? element.projet,
+          )}</span>
+        </span>
+      </button>
+    </li>`;
+}
+
+// Un rendez-vous : son heure tient la place de la marque, en chiffres. C'est
+// l'information qu'on vient chercher — à quelle heure faut-il y être — et rien
+// ne s'y coche : un rendez-vous n'est pas une chose à faire, c'est un point
+// fixe autour duquel le reste se range.
+function ligneRendezVous(element) {
+  const heure = heureCourte(element.date);
+  return ligneDuJour(
+    element,
+    `<span class="jour-heure chiffre">${echapper(heure)}</span>`,
+    element.detail ? `<span>${echapper(element.detail)}</span>` : '',
+  );
+}
+
+// Une publication : son rond avance d'un cran à l'appui, comme dans la grille
+// de la semaine et au calendrier. Le même attribut, donc le même geste déjà
+// branché — il n'y a rien à rebrancher ici.
+function lignePublication(element) {
+  const cycle = cyclePublication(element.projet);
+  const rang = cycle.indexOf(element.source?.statut);
+  const suivant = cycle[rang + 1] ?? null;
+  const signe = rang >= cycle.length - 1 ? '◉' : rang === cycle.length - 2 ? '◐' : '○';
+
+  const marque = `<span class="jour-marque jour-rond${suivant ? ' jour-rond-cochable' : ''}"
+    ${suivant ? `data-avancer-pub="${echapper(element.id)}"` : ''}
+    ${
+      suivant
+        ? `title="Passer en ${echapper(nomDuStatut(element.projet, suivant))}"`
+        : `title="${echapper(nomDuStatut(element.projet, element.source?.statut))}"`
+    }
+    aria-hidden="true">${signe}</span>`;
+
+  const heure = heureCourte(element.date);
+  const service = [heure, element.detail].filter(Boolean).join(' · ');
+
+  return ligneDuJour(element, marque, service ? `<span>${echapper(service)}</span>` : '');
+}
+
+function groupeDuJour(titre, contenu) {
+  return contenu ? `<h3 class="jour-groupe">${titre}</h3>${contenu}` : '';
+}
+
+// Une colonne ne s'écrit que si elle a quelque chose à montrer : deux colonnes
+// dont une vide, c'est une page qui boite.
+function colonneDuJour(groupes) {
+  const contenu = groupes.filter(Boolean).join('');
+  return contenu ? `<div class="jour-colonne">${contenu}</div>` : '';
+}
+
+// `taches` est déjà triée et filtrée par l'appelant ; `rendezVous` et
+// `publications` arrivent de l'assemblage du calendrier, donc déjà dans
+// l'ordre des dates.
+export function construireAujourdhui(
+  { rendezVous = [], taches = [], publications = [] } = {},
+  annulation = null,
+) {
   // Une tâche vient d'être cochée : on laisse une porte de sortie quelques
   // secondes, sans rien demander à qui ne s'est pas trompé.
   const ligneAnnulation = annulation
@@ -228,18 +337,38 @@ export function construireTaches(taches, annulation = null) {
        </p>`
     : '';
 
-  if (!taches.length) {
+  if (!rendezVous.length && !taches.length && !publications.length) {
     return `${ligneAnnulation}<p class="vide">Rien à faire aujourd'hui.</p>`;
   }
 
-  // Ouvrables depuis le 14 août 2026 (demande de Noé) : appuyer sur une tâche
-  // la rouvre dans la tuile, ici comme dans l'espace Tâches. Elle ne se
-  // supprime toujours pas d'ici — effacer n'a rien à faire dans un check-in du
-  // matin, et le geste existe deux onglets plus loin.
-  return `${ligneAnnulation}${construireLignesTaches(taches.slice(0, MAX_TACHES), {
-    ouvrable: true,
-    supprimable: false,
-  })}`;
+  const listeJour = (elements, dessiner) =>
+    elements.length
+      ? `<ul class="liste-jour">${elements
+          .slice(0, MAX_PAR_GROUPE)
+          .map(dessiner)
+          .join('')}</ul>`
+      : '';
+
+  // Les tâches gardent la forme EXACTE de l'espace Tâches (demande de Noé,
+  // 13 août 2026) : cercle coloré par priorité, titre, puis la date et le
+  // projet. Ouvrables depuis le 14 août ; jamais supprimables ici — effacer n'a
+  // rien à faire dans un check-in du matin, et le geste existe deux onglets
+  // plus loin.
+  const listeTaches = taches.length
+    ? construireLignesTaches(taches.slice(0, MAX_TACHES), {
+        ouvrable: true,
+        supprimable: false,
+      })
+    : '';
+
+  return `${ligneAnnulation}
+    <div class="jour-colonnes">
+      ${colonneDuJour([groupeDuJour('À faire', listeTaches)])}
+      ${colonneDuJour([
+        groupeDuJour('À publier', listeJour(publications, lignePublication)),
+        groupeDuJour('Rendez-vous', listeJour(rendezVous, ligneRendezVous)),
+      ])}
+    </div>`;
 }
 
 // --- Le démarrage ------------------------------------------------------------
@@ -324,7 +453,7 @@ function squelette() {
          tâches, pas un pense-bête. -->
     <section class="bloc">
       <h2>Aujourd'hui</h2>
-      <div id="bloc-taches"><p class="vide">…</p></div>
+      <div id="bloc-aujourdhui"><p class="vide">…</p></div>
     </section>
 
     <section class="bloc">
@@ -545,10 +674,57 @@ export default {
         ),
       );
 
-    function rendreTaches() {
+    // Les rendez-vous du jour et ce qui doit partir, dépliés comme au calendrier
+    // — une série n'existe qu'à travers ses occurrences, et `assemblerCalendrier`
+    // est le seul endroit du hub qui sache les produire.
+    //
+    // Deux bornes différentes, et la différence est voulue :
+    //
+    // — un ÉVÉNEMENT ne compte que s'il couvre aujourd'hui. Un rendez-vous
+    //   passé n'est pas en attente, il a eu lieu ; le traîner en tête de page
+    //   serait le reproche que ce hub ne fait jamais. (Un événement de
+    //   plusieurs jours compte chacun de ses jours : d'où `elementsDuJour`.)
+    // — une PUBLICATION compte si elle est prévue aujourd'hui OU l'était déjà
+    //   et n'est pas partie. C'est la règle des tâches, mot pour mot : le hub
+    //   ne compte pas les retards, mais il ne les efface pas non plus.
+    let elementsDuJourAffiches = [];
+
+    function journeeDeNoe() {
+      const tout = assemblerCalendrier({
+        evenements: etat.evenements,
+        publications: etat.publications,
+      });
+
+      const rendezVous = elementsDuJour(
+        tout.filter((element) => element.type === 'evenement'),
+        aujourdhui,
+      );
+      const publications = tout.filter(
+        (element) =>
+          element.type === 'publication' &&
+          versDateISO(element.date) <= aujourdhui &&
+          element.source?.statut !== 'publie',
+      );
+
+      // Gardés sous la main : ouvrir la fenêtre de détail cherche l'élément
+      // pressé, et une publication en retard de date n'est PAS dans la semaine
+      // affichée — sans cette liste, sa tuile ne s'ouvrirait pas.
+      elementsDuJourAffiches = [...rendezVous, ...publications];
+
+      return { rendezVous, taches: tachesDuJour(), publications };
+    }
+
+    function rendreAujourdhui() {
       if (!pret('taches')) return;
-      const bloc = cible('bloc-taches');
-      bloc.innerHTML = construireTaches(tachesDuJour(), etat.annulation);
+      const bloc = cible('bloc-aujourdhui');
+      // Les rendez-vous et les publications viennent de la source « semaine ».
+      // Tant qu'elle n'est pas là, le bloc montre déjà ses tâches plutôt que
+      // d'attendre : c'est la partie qu'on vient lire en premier.
+      const journee = pret('semaine')
+        ? journeeDeNoe()
+        : { rendezVous: [], taches: tachesDuJour(), publications: [] };
+
+      bloc.innerHTML = construireAujourdhui(journee, etat.annulation);
       marquerLesEntrantes(bloc, tachesVues, {
         selecteur: '.tache-ligne',
         cle: (ligne) => ligne.querySelector('[data-cocher]')?.dataset.cocher,
@@ -643,10 +819,16 @@ export default {
         rendreSemaine();
       },
       taches: () => {
-        rendreTaches();
+        rendreAujourdhui();
         rendreSemaine();
       },
-      semaine: rendreSemaine,
+      // La semaine apporte les événements et les publications — donc AUSSI les
+      // deux tiers de « Aujourd'hui ». Sans ce rendu-là, le bloc restait sur ses
+      // seules tâches jusqu'au geste suivant.
+      semaine: () => {
+        rendreAujourdhui();
+        rendreSemaine();
+      },
     };
 
     const lancer = (cle) => {
@@ -709,7 +891,7 @@ export default {
       await modifierAussitot(element.source, champs, () => appliquerAuCalendrier(type, id, champs), {
         rendre: () => {
           rendreSemaine();
-          rendreTaches();
+          rendreAujourdhui();
         },
         echouer: signalerEcriture,
       });
@@ -875,7 +1057,7 @@ export default {
         };
         await modifierAussitot(corrige, modifs, () => api.modifierTache(corrige.id, modifs), {
           rendre: () => {
-            rendreTaches();
+            rendreAujourdhui();
             rendreSemaine();
           },
           echouer: signalerEcriture,
@@ -885,7 +1067,7 @@ export default {
 
       try {
         rangerLaCreation(champs.nature, await poserAuCalendrier(champs));
-        rendreTaches();
+        rendreAujourdhui();
         rendreObjectifs();
         rendreSemaine();
       } catch (souci) {
@@ -954,7 +1136,7 @@ export default {
             async () => (await api.terminerTache(avant)).tache,
             {
               rendre: () => {
-                rendreTaches();
+                rendreAujourdhui();
                 rendreSemaine();
               },
               echouer: signalerEcriture,
@@ -966,10 +1148,12 @@ export default {
         return;
       }
 
-      // Le rond d'une PUBLICATION dans la semaine : il avance d'un cran, sans
-      // ouvrir la tuile (demande de Noé, 25 août 2026). Le chemin est celui du
-      // cercle d'une tâche, et il s'arrête pareil — au dernier état, le rond
-      // ne bouge plus ; c'est la tuile qui sait revenir en arrière.
+      // Le rond d'une PUBLICATION, dans la semaine COMME dans « Aujourd'hui » :
+      // il avance d'un cran, sans ouvrir la tuile (demande de Noé, 25 août
+      // 2026). Le geste est branché une seule fois pour les deux — c'est le
+      // même attribut, donc le même chemin. Il s'arrête comme le cercle d'une
+      // tâche : au dernier état, le rond ne bouge plus ; c'est la tuile qui
+      // sait revenir en arrière.
       const rondPublication = evenement.target.closest('[data-avancer-pub]');
       if (rondPublication) {
         evenement.stopPropagation();
@@ -995,6 +1179,7 @@ export default {
             () => api.modifierPublication(pub.id, champs),
             {
               rendre: () => {
+                rendreAujourdhui();
                 rendreSemaine();
                 rendreDetail();
               },
@@ -1013,10 +1198,12 @@ export default {
       const ouvrirElement = evenement.target.closest('[data-element]');
       if (ouvrirElement) {
         const [type, id] = ouvrirElement.dataset.element.split(':');
-        etat.detail =
-          elementsDeLaSemaine.find(
-            (candidat) => candidat.type === type && String(candidat.id) === id,
-          ) ?? null;
+        // La semaine d'abord, « Aujourd'hui » ensuite : une publication dont la
+        // date est passée figure dans le bloc du jour mais PAS dans la grille
+        // de la semaine — sans ce second endroit, sa tuile ne s'ouvrirait pas.
+        const trouver = (liste) =>
+          liste.find((candidat) => candidat.type === type && String(candidat.id) === id);
+        etat.detail = trouver(elementsDeLaSemaine) ?? trouver(elementsDuJourAffiches) ?? null;
         etat.edition = false;
         etat.jourOuvert = null;
         rendreDetail();
@@ -1207,7 +1394,7 @@ export default {
         etat.victoires = [provisoire, ...etat.victoires];
         ouvrirAnnulation(annulation);
         rendreVictoires();
-        rendreTaches();
+        rendreAujourdhui();
         // La tâche est datée : elle est aussi dans la semaine, où elle devient
         // barrée. Sans ce rendu, la même tâche s'y afficherait encore à faire
         // deux blocs plus bas.
@@ -1237,7 +1424,7 @@ export default {
               etat.annulation = null;
             }
             rendreVictoires();
-            rendreTaches();
+            rendreAujourdhui();
             rendreSemaine();
             // Sauf si Noé avait déjà annulé : l'écran montre alors exactement
             // ce qu'il voulait — une tâche active — et il n'y a rien à signaler.
@@ -1320,7 +1507,7 @@ export default {
       etat.annulation = annulation;
       minuteurAnnulation = setTimeout(() => {
         etat.annulation = null;
-        rendreTaches();
+        rendreAujourdhui();
       }, DUREE_ANNULATION);
     }
 
@@ -1344,7 +1531,7 @@ export default {
       // L'écran revient tout de suite ; le serveur suit.
       remplacerTache({ ...annulation.tache, statut: 'actif', date_fait: null });
       etat.victoires = etat.victoires.filter((v) => v.id !== annulation.victoire.id);
-      rendreTaches();
+      rendreAujourdhui();
       rendreVictoires();
       rendreSemaine();
 
@@ -1366,7 +1553,7 @@ export default {
           annulation.victoire,
           ...etat.victoires.filter((v) => v.id !== annulation.victoire.id),
         ];
-        rendreTaches();
+        rendreAujourdhui();
         rendreVictoires();
         rendreSemaine();
         signalerEcriture();
@@ -1390,7 +1577,7 @@ export default {
     rendreHumeur();
     rendreVictoires();
     rendreObjectifs();
-    rendreTaches();
+    rendreAujourdhui();
     rendreSemaine();
 
     await charger();

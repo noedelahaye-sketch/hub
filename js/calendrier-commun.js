@@ -1592,6 +1592,9 @@ function pastilleCapture({
   defaut,
   source = null,
   sourceHeure = null,
+  // Le champ dont la valeur s'ajoute au libellé en toutes lettres, derrière
+  // l'heure : « jeudi, 14:30 · 1 h 30 ».
+  sourceDuree = null,
   // La valeur qui ne compte pas pour renseignée. Une priorité 4 est le cas
   // ordinaire : la pastille doit dire « Priorité », pas « Priorité 4 ».
   neutre = null,
@@ -1608,6 +1611,7 @@ function pastilleCapture({
       data-pastille="${nom}" aria-expanded="false"
       ${source ? `data-source="${source}"` : ''}
       ${sourceHeure ? `data-source-heure="${sourceHeure}"` : ''}
+      ${sourceDuree ? `data-source-duree="${sourceDuree}"` : ''}
       ${neutre !== null ? `data-neutre="${echapper(String(neutre))}"` : ''}
       ${siProjet ? `data-si-projet="${echapper(siProjet)}"` : ''}
       ${cachee ? 'hidden' : ''}
@@ -1728,7 +1732,19 @@ export function fenetreCreation({
                   y toucher lui retirait son heure — et depuis le 26 août, sa
                   durée avec. -->
              <span>${champCapture({ nom: 'heure', libelle: 'Heure', type: 'time', valeur: heure })}</span>
-           </div>`;
+           </div>
+           ${
+             // La durée d'une TÂCHE est ICI, sous son heure, et non dans une
+             // pastille à elle (27 août 2026). Deux raisons, et la seconde est
+             // celle qui a décidé : une durée n'a de sens qu'avec une heure —
+             // les deux se règlent donc du même geste ; et la bande de
+             // pastilles DÉFILE — sixième sur six, « Durée » vivait hors de
+             // l'écran, donc n'existait pas. C'est aussi la place qu'elle a
+             // dans l'espace Tâches : la même question au même endroit.
+             nature === 'tache'
+               ? champDuree({ id: 'cal-duree-tache', valeur: valeurs.duree ?? null })
+               : ''
+           }`;
 
   pastilles.push(
     pastilleCapture({
@@ -1739,6 +1755,9 @@ export function fenetreCreation({
       defaut: dateFournie ? jourLisible(debut) : 'Quand',
       source: 'debut',
       sourceHeure: nature === 'objectif' ? null : 'heure',
+      // « jeudi, 14:30 · 1 h 30 » : la pastille dit le créneau entier, sans
+      // qu'on ait à rouvrir le panneau pour vérifier.
+      sourceDuree: nature === 'tache' ? 'duree' : null,
       rempli: dateFournie,
       contenu: `${champsQuand}${
         surLePremierJour
@@ -1905,23 +1924,6 @@ export function fenetreCreation({
           options: PRIORITES_CAL,
           valeur: String(valeurs.priorite ?? '4'),
           decor: 'priorite',
-        }),
-      }),
-      // Combien de temps elle prend (demande de Noé, 26 août 2026). La même
-      // question que pour un événement, avec deux différences : elle peut
-      // rester sans réponse — c'est même le cas ordinaire —, et elle n'a de
-      // sens qu'avec une heure. Sans heure, la tâche arrive dans la journée
-      // sans occuper de créneau, et l'écriture écarte la durée d'elle-même.
-      pastilleCapture({
-        nom: 'duree',
-        icone: ICONE.duree,
-        defaut: 'Durée',
-        source: 'duree',
-        neutre: '',
-        contenu: champDuree({
-          id: 'cal-duree-tache',
-          valeur: valeurs.duree ?? null,
-          libelle: 'Combien de temps (avec une heure)',
         }),
       }),
       // La répétition, la MÊME que celle d'un événement (demande de Noé,
@@ -2130,6 +2132,15 @@ export function brancherCapture(section) {
         ? section.querySelector(`.capture [name="${pastille.dataset.sourceHeure}"]`)?.value
         : '';
       if (texte && heure) texte = `${texte}, ${heure}`;
+
+      // La durée se dit derrière l'heure, et seulement derrière elle : sans
+      // heure, il n'y a pas de créneau, et l'écriture l'écarte de toute façon.
+      const combien = pastille.dataset.sourceDuree
+        ? dureeLisible(
+            section.querySelector(`.capture [name="${pastille.dataset.sourceDuree}"]`)?.value,
+          )
+        : '';
+      if (texte && heure && combien) texte = `${texte} · ${combien}`;
 
       libelle.textContent = texte || pastille.dataset.defaut;
       pastille.classList.toggle('remplie', Boolean(texte));

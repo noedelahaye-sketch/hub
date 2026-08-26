@@ -298,7 +298,10 @@ gagné reste ce qu'on a gagné, c'est la dette qui grossit de l'essence.
 2. **Victoires récentes** : les 5 dernières, tous projets perso inclus, avec pastille couleur du projet.
    **Masquées depuis le 13 août 2026** (décision de Noé, « pour le moment ») : le drapeau `VICTOIRES_VISIBLES` de `js/dashboard.js` commande le bloc, sa source et son rendu. Cocher une tâche crée toujours sa victoire en base, et l'espace perso comme le site du FCH continuent de les afficher — seul l'accueil se tait.
 3. **Le cap** : **gravé, et non en tuiles** (26 août 2026). Du texte posé sur la page — ni carte, ni bordure, ni dépliage — **une colonne par projet**, qui ne dit que l'objectif à l'échéance la plus proche : son nom, son titre, une rangée de points (un par jalon, pleins quand ils sont atteints), son échéance. **Rien ne s'y modifie** : presser la zone mène à `#objectifs`, où le cap se règle. Un lien unique, pas un par objectif — le geste est le même partout : aller voir. **En BAS de page depuis le 13 août 2026** (décision de Noé) : ils disent le cap, pas la journée — on les relit quand on lève la tête, pas en ouvrant l'application.
-4. **Aujourd'hui** : les tâches à faire aujourd'hui (ou qui l'étaient déjà — pas de borne basse, le hub ne compte pas les retards mais ne les efface pas), max 9, **dans la forme exacte de l'espace Tâches**. Cochables directement, et **ouvrables** : appuyer sur une tâche la rouvre dans la tuile, pré-remplie (14 août 2026). Elle ne s'y supprime pas — ce geste vit dans l'espace Tâches.
+4. **Aujourd'hui** : la journée entière, et plus seulement les tâches (27 août 2026). **Deux colonnes** sur grand écran, empilées sur téléphone dans le même ordre :
+   - à gauche, **À faire** — les tâches à faire aujourd'hui (ou qui l'étaient déjà : pas de borne basse, le hub ne compte pas les retards mais ne les efface pas), max 9, **dans la forme exacte de l'espace Tâches**. Cochables directement, et **ouvrables** : appuyer sur une tâche la rouvre dans la tuile, pré-remplie (14 août 2026). Elle ne s'y supprime pas — ce geste vit dans l'espace Tâches.
+   - à droite, **À publier** puis **Rendez-vous**. Une publication compte si elle est prévue aujourd'hui ou l'était déjà et n'est pas partie — la règle des tâches, mot pour mot. Un **rendez-vous ne compte que s'il couvre aujourd'hui** : un événement passé n'est pas en attente, il a eu lieu, et le traîner en tête de page serait le reproche que ce hub ne fait jamais.
+   - Le rond d'une publication **avance d'un cran** ici comme partout ; un rendez-vous porte son **heure** à la place de la marque et ne se coche pas — c'est un point fixe, pas une chose à faire. Un groupe vide disparaît en entier, titre compris ; une colonne vide aussi, et l'autre prend toute la largeur.
 5. **Ta semaine** : un **aperçu du calendrier hebdomadaire**, tous projets et toutes natures confondus — la même grille que `#calendrier` en vue semaine.
    **Un jour s'y ouvre en grand** (demande de Noé, 24 août 2026) : presser le
    titre d'un jour (« lun. 24 ») lui donne toute la largeur, deux flèches
@@ -314,6 +317,8 @@ gagné reste ce qu'on a gagné, c'est la dette qui grossit de l'essence.
 Ordre 4 avant 5 depuis le 13 août 2026 (demande de Noé) : ce qui se fait dans la journée vient avant ce qui se prépare. « Aujourd'hui » n'est donc plus le bloc discret du bas.
 
 **L'ordre réellement affiché aujourd'hui**, après les deux décisions du 13 août : en-tête et humeur, « Aujourd'hui », « Ta semaine », « Tes objectifs ». Les victoires sont masquées.
+
+« Aujourd'hui » et « Ta semaine » se recoupent volontairement sur la journée en cours, et ce n'est pas un doublon à corriger : le premier dit **ce qu'on fait**, avec les gestes qui vont avec ; la seconde dit **la forme de la semaine**, et on y glisse des barres.
 
 Un **bouton « + » flottant en bas à droite** ouvre la tuile du calendrier — donc n'importe quelle nature datée — **par défaut sur une tâche**.
 
