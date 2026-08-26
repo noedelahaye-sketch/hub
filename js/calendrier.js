@@ -12,6 +12,7 @@
 // — un calendrier dit quand, pas comment.
 
 import * as api from './api.js';
+import { echapper } from './format.js';
 import { lireCache, ecrireCache } from './cache-session.js';
 import {
   assemblerCalendrier,
@@ -30,14 +31,12 @@ import {
   appliquerAuCalendrier,
   brancherCapture,
   poserAuCalendrier,
-  passageDePublication,
+  brancherEtatPublication,
   champsApresDeplacement,
   deplacerAncre,
   toutesLesNatures,
   natureParDefaut,
   centrerActif,
-  cyclePublication,
-  fermerLesChoix,
 } from './calendrier-commun.js';
 
 const CLE_CACHE = 'calendrier';
@@ -70,6 +69,10 @@ export default {
       sources: { ...SOURCES_VIDES, ...(lireCache(CLE_CACHE) ?? {}) },
       elements: [],
       echec: false,
+      // Ce qu'une écriture ratée a laissé comme mot. L'échec de CHARGEMENT a le
+      // sien (`echec`) et ne dit pas la même chose : l'un annonce une page
+      // vide, l'autre un geste revenu en arrière.
+      message: null,
       natures: toutesLesNatures(),
       vue: 'mois',
       ancre: new Date(),
@@ -97,6 +100,11 @@ export default {
                  <button type="button" class="lien-discret"
                    data-action="reessayer">Réessayer</button></p>`
             : ''
+        }
+        ${
+          // Un geste revenu en arrière le DIT : sans cette ligne, l'affichage
+          // optimiste serait un mensonge (js/ecriture.js).
+          etat.message ? `<p class="discret message-regle">${echapper(etat.message)}</p>` : ''
         }
         ${construireBarrePeriode(etat.vue, etat.ancre)}
         ${construireFiltres(etat.natures)}
@@ -242,6 +250,24 @@ export default {
       }
     });
 
+    // L'état d'une publication, par son rond ou par la pastille de sa tuile.
+    // Le geste vit dans `calendrier-commun.js` — il est le même ici, sur
+    // l'accueil, sur le site Yuno et sur celui du club (demande de Noé,
+    // 27 août 2026). Posé APRÈS le glissement, pour que le clic avalé après un
+    // report reste avalé.
+    brancherEtatPublication(section, {
+      publications: () => etat.sources.publications,
+      ouverte: () => (etat.detail?.type === 'publication' ? etat.detail.source : null),
+      rendre: () => {
+        assembler();
+        rendre();
+      },
+      echouer: (message) => {
+        etat.message = message;
+        rendre();
+      },
+    });
+
     // Échap ferme la fenêtre — c'est le geste attendu partout ailleurs.
     document.addEventListener('keydown', (evenement) => {
       if (evenement.key === 'Escape' && (etat.creation || etat.detail || etat.jourOuvert)) {
@@ -286,26 +312,6 @@ export default {
         return;
       }
 
-      // Le rond d'une publication avance d'un cran, ici comme sur l'accueil
-      // (demande de Noé, 25 août 2026) — sans ouvrir la tuile.
-      //
-      // AVANT la branche qui ouvre le détail, et c'est la condition pour qu'il
-      // serve à quelque chose : le rond est DANS la barre, donc `[data-element]`
-      // l'attrape aussi. Placé après, il n'était jamais atteint — appuyer sur
-      // le rond ouvrait la tuile au lieu de faire avancer l'état (défaut trouvé
-      // le 26 août 2026 ; l'accueil, lui, avait le bon ordre).
-      const rondPublication = evenement.target.closest('[data-avancer-pub]');
-      if (rondPublication) {
-        evenement.stopPropagation();
-        const pub = etat.sources.publications.find(
-          (candidate) => candidate.id === rondPublication.dataset.avancerPub,
-        );
-        const cycle = pub ? cyclePublication(pub.projet) : [];
-        const suivant = pub ? cycle[cycle.indexOf(pub.statut) + 1] : null;
-        if (suivant) await poserLeStatut(pub, suivant);
-        return;
-      }
-
       const ouvrir = evenement.target.closest('[data-element]');
       if (ouvrir) {
         const [type, id] = ouvrir.dataset.element.split(':');
@@ -316,23 +322,6 @@ export default {
           (element) => element.type === type && String(element.id) === id,
         );
         rendre();
-        return;
-      }
-
-      // L'état d'une publication se règle depuis sa tuile, ici comme sur
-      // l'accueil (demande de Noé, 25 août 2026). La tuile reste ouverte : on
-      // vient souvent corriger deux choses de suite, et la refermer à chaque
-      // appui obligerait à la rouvrir.
-      const reglerStatut = evenement.target.closest('[data-statut-pub]');
-      if (reglerStatut) {
-        // Le menu se referme dans tous les cas, même si l'état choisi est celui
-        // qui était déjà posé.
-        fermerLesChoix(section);
-        const pub = etat.detail?.source;
-        const statut = reglerStatut.dataset.statutPub;
-        if (etat.detail?.type !== 'publication' || !pub || pub.statut === statut) return;
-
-        await poserLeStatut(pub, statut);
         return;
       }
 
@@ -435,30 +424,6 @@ export default {
         bouton.disabled = false;
       }
     });
-
-    // L'écran d'abord : l'état change tout de suite, et revient si le serveur
-    // refuse. La tuile reste ouverte — on vient souvent corriger deux choses de
-    // suite, et la refermer à chaque appui obligerait à la rouvrir.
-    // Une publication RÉCURRENTE ne se termine pas : la faire partir avance sa
-    // date d'une occurrence et la ramène au premier état de son cycle. La
-    // règle est écrite une seule fois, dans `passageDePublication` — quatre
-    // écrans la suivent.
-    async function poserLeStatut(pub, statut) {
-      const champs = passageDePublication(pub, statut);
-      const avant = { statut: pub.statut, date_prevue: pub.date_prevue };
-      Object.assign(pub, champs);
-      assembler();
-      rendre();
-
-      try {
-        await api.modifierPublication(pub.id, champs);
-      } catch (souci) {
-        console.error('Changement de statut impossible', souci);
-        Object.assign(pub, avant);
-        assembler();
-        rendre();
-      }
-    }
 
     // Où écrire, par nature. Le formulaire de modification et le glissement
     // passent tous deux par ici — seuls les champs changent.

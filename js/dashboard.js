@@ -27,12 +27,11 @@ import {
   colonnesDeLaSemaine,
   cyclePublication,
   nomDuStatut,
-  fermerLesChoix,
   elementsDuJour,
   finDeLEvenement,
   brancherCapture,
   poserAuCalendrier,
-  passageDePublication,
+  brancherEtatPublication,
   brancherDeplacement,
   appliquerAuCalendrier,
   champsApresDeplacement,
@@ -897,6 +896,23 @@ export default {
       });
     });
 
+    // L'état d'une publication, par son rond ou par la pastille de sa tuile.
+    // Le geste vit dans `calendrier-commun.js` — il est le même ici, dans
+    // l'espace Calendrier, sur le site Yuno et sur celui du club (demande de
+    // Noé, 27 août 2026). Ici il sert DEUX endroits d'un coup : la grille de la
+    // semaine et le bloc « Aujourd'hui », qui portent le même attribut.
+    brancherEtatPublication(section, {
+      publications: () => etat.publications,
+      ouverte: () => (etat.detail?.type === 'publication' ? etat.detail.source : null),
+      rendre: () => {
+        rendreAujourdhui();
+        rendreSemaine();
+        rendreDetail();
+      },
+      echouer: signalerEcriture,
+      bloque: (pub) => ecrituresEnVol.has(pub.id),
+    });
+
     const fermerLaCreation = () => {
       etat.creation = null;
       rendreCreation();
@@ -1148,50 +1164,6 @@ export default {
         return;
       }
 
-      // Le rond d'une PUBLICATION, dans la semaine COMME dans « Aujourd'hui » :
-      // il avance d'un cran, sans ouvrir la tuile (demande de Noé, 25 août
-      // 2026). Le geste est branché une seule fois pour les deux — c'est le
-      // même attribut, donc le même chemin. Il s'arrête comme le cercle d'une
-      // tâche : au dernier état, le rond ne bouge plus ; c'est la tuile qui
-      // sait revenir en arrière.
-      const rondPublication = evenement.target.closest('[data-avancer-pub]');
-      if (rondPublication) {
-        evenement.stopPropagation();
-        const pub = etat.publications.find(
-          (candidate) => candidate.id === rondPublication.dataset.avancerPub,
-        );
-        if (!pub || ecrituresEnVol.has(pub.id)) return;
-
-        const cycle = cyclePublication(pub.projet);
-        const suivant = cycle[cycle.indexOf(pub.statut) + 1];
-        if (!suivant) return;
-
-        // Une publication récurrente ne se termine pas : la faire partir
-        // avance sa date d'une occurrence et la ramène au premier état de son
-        // cycle. La règle vit dans `passageDePublication`, une seule fois.
-        const champs = passageDePublication(pub, suivant);
-
-        ecrituresEnVol.add(pub.id);
-        try {
-          await modifierAussitot(
-            pub,
-            champs,
-            () => api.modifierPublication(pub.id, champs),
-            {
-              rendre: () => {
-                rendreAujourdhui();
-                rendreSemaine();
-                rendreDetail();
-              },
-              echouer: signalerEcriture,
-            },
-          );
-        } finally {
-          ecrituresEnVol.delete(pub.id);
-        }
-        return;
-      }
-
       // Toucher une barre de la semaine ouvre son détail — la même fenêtre que
       // l'espace Calendrier, d'où l'on modifie et supprime (demande de Noé,
       // 14 août 2026).
@@ -1242,31 +1214,6 @@ export default {
         etat.detail = null;
         etat.jourOuvert = journeeComplete.dataset.jourComplet;
         rendreDetail();
-        return;
-      }
-
-      // L'état d'une publication, réglé depuis sa tuile (demande de Noé,
-      // 25 août 2026). L'écriture est optimiste comme le reste : la pastille
-      // change tout de suite, la grille aussi — le losange se remplit, et une
-      // publiée se barre —, et tout revient si le serveur refuse.
-      const reglerStatut = evenement.target.closest('[data-statut-pub]');
-      if (reglerStatut) {
-        // Le menu se referme dans tous les cas — y compris quand l'état choisi
-        // est celui qui était déjà posé. Un menu qui reste ouvert après un
-        // choix donne l'impression que le geste n'a pas été reçu.
-        fermerLesChoix(section);
-        const pub = etat.detail?.source;
-        const statut = reglerStatut.dataset.statutPub;
-        if (etat.detail?.type !== 'publication' || !pub || pub.statut === statut) return;
-
-        const champs = passageDePublication(pub, statut);
-        await modifierAussitot(pub, champs, () => api.modifierPublication(pub.id, champs), {
-          rendre: () => {
-            rendreSemaine();
-            rendreDetail();
-          },
-          echouer: signalerEcriture,
-        });
         return;
       }
 

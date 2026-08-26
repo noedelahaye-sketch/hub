@@ -128,6 +128,13 @@ de la salle. La pastille « Réunion » y est toujours offerte.
 Le calendrier éditorial du club, **le même outil que chez Yuno** : une idée
 est une publication sans date, la banque d'idées, les rubriques récurrentes.
 
+**L'état d'une publication se règle depuis le calendrier du site** (27 août
+2026), exactement comme sur le hub : le rond de la barre avance d'un cran à
+l'appui, la tuile porte sa pastille d'état pour sauter un cran ou revenir en
+arrière. En vue mois comme en vue semaine. Le rond était dessiné depuis le
+25 août mais n'écoutait rien — le geste est maintenant branché une seule fois
+pour les trois calendriers (`brancherEtatPublication`).
+
 **Une rubrique peut se répéter pour de vrai** depuis le 26 août 2026 : la fiche
 d'une idée porte « Se répète » et sa fin facultative, comme une tâche ou un
 événement. La règle qui en découle vient de la tâche répétée et ne se

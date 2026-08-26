@@ -56,6 +56,7 @@ import {
   elementsDuJour,
   finDeLEvenement,
   passageDePublication,
+  brancherEtatPublication,
   brancherSelection,
   brancherClavier,
   brancherDeplacement,
@@ -1161,7 +1162,17 @@ function vueCalendrier(etat) {
             })
       }
     </div>
-    ${etat.detailCal ? fenetreDetail(etat.detailCal, { edition: etat.editionCal }) : ''}
+    ${
+      etat.detailCal
+        ? fenetreDetail(etat.detailCal, {
+            edition: etat.editionCal,
+            // L'état d'une publication se règle depuis sa tuile, ici comme sur
+            // le hub (27 août 2026) : c'est le calendrier qu'on regarde en se
+            // demandant si le visuel est prêt.
+            statutModifiable: true,
+          })
+        : ''
+    }
     ${
       etat.jourOuvertCal
         ? fenetreJour(etat.jourOuvertCal, elementsDuJour(elements, etat.jourOuvertCal))
@@ -1509,6 +1520,21 @@ export default {
         console.error('Déplacement impossible', souci);
         dire("Le report n'a pas pu être enregistré.");
       }
+    });
+
+    // L'état d'une publication depuis le calendrier : son rond avance d'un cran,
+    // sa tuile règle l'état au doigt. Le geste est le MÊME que sur le hub et
+    // chez Yuno (demande de Noé, 27 août 2026) — jusqu'ici le rond était bien
+    // dessiné par la barre commune mais n'écoutait personne, et l'appui ouvrait
+    // la tuile. Il vit dans `calendrier-commun.js`, une seule fois.
+    brancherEtatPublication(section, {
+      publications: () => etat.publications,
+      ouverte: () => (etat.detailCal?.type === 'publication' ? etat.detailCal.source : null),
+      rendre,
+      echouer: dire,
+      // Une idée notée à l'instant porte un identifiant provisoire : le serveur
+      // ne la connaît pas encore, rien ne peut la faire avancer.
+      bloque: (pub) => estProvisoire(pub.id),
     });
 
     // Échap ferme la fenêtre — c'est le geste attendu partout ailleurs.

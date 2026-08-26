@@ -810,6 +810,11 @@ débordent pas sur le club.
 La page où l'on programme (décision de Noé, 12 août 2026). Elle garde l'onglet
 Créer allumé : c'est une pièce de l'atelier, pas un lieu de plus.
 
+**L'état d'une publication se règle aussi depuis le CALENDRIER du site**
+(27 août 2026) : le rond de la barre avance d'un cran, la tuile porte sa
+pastille d'état. Même geste que sur le hub et au club, en vue mois comme en vue
+semaine — il est branché une seule fois, dans `brancherEtatPublication`.
+
 **La grille ne porte QUE des publications.** Ni tâche, ni objectif, ni relance,
 et donc **pas de barre de filtres** : il n'y a rien à filtrer, la page est son
 propre filtre. Poser un mois demande de voir les trous, et un trou ne se voit

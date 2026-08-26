@@ -10,6 +10,7 @@
 // et il ne fait que poser des écouteurs.
 
 import * as api from './api.js';
+import { modifierAussitot } from './ecriture.js';
 import {
   construireFormulaire,
   construireFenetre,
@@ -137,6 +138,91 @@ export function prochaineParution(pub, sens = 1) {
   const suite = decalerOccurrence(depuisDateISO(pub.date_prevue), pub.recurrence, sens);
   if (sens > 0 && pub.recurrence_fin && suite > depuisDateISO(pub.recurrence_fin)) return null;
   return versDateISO(suite);
+}
+
+// --- Le geste, branché une seule fois ----------------------------------------
+//
+// Faire avancer l'état d'une publication depuis un calendrier, c'est LE MÊME
+// geste sur le hub, sur le site Yuno et sur celui du FC Hermitage, en vue
+// semaine comme en vue mois (demande de Noé, 27 août 2026). Il est donc écrit
+// ici, une fois, et les quatre écrans l'empruntent.
+//
+// Avant, seul le hub le branchait. Sur les deux sites, le rond était DESSINÉ
+// par la barre commune — `signeEnHtml` ne demande à personne s'il sera
+// écouté — mais n'écoutait rien : l'appui traversait jusqu'à la barre et
+// ouvrait la tuile. Un bouton mort, et qui avait l'air vivant.
+//
+// EN PHASE DE CAPTURE, et c'est la condition pour que ça tienne : le rond vit
+// DANS la barre, qui porte `data-element` et ouvre le détail. En bulle, lequel
+// des deux gagne dépend de qui a posé son écouteur en premier — quatre espaces,
+// quatre occasions de se tromper, et c'est exactement l'erreur qui a laissé le
+// rond inerte dans l'espace Calendrier du hub pendant deux jours. En capture,
+// celui-ci passe d'abord partout, et `stopPropagation` garde le clic pour lui.
+//
+// Ce qu'attend l'appelant :
+// — `publications()` : la liste VIVANTE de l'espace (celle que le rendu relit).
+// — `rendre()` : appelé après le changement, et de nouveau si le serveur refuse.
+// — `ouverte()` : la publication affichée dans la tuile de détail, ou rien.
+//   C'est elle que règle la pastille d'état ; le rond, lui, se retrouve par son
+//   identifiant.
+// — `bloque(pub)` : facultatif — un espace qui pose des lignes provisoires y
+//   refuse le geste tant que le serveur ne connaît pas la ligne.
+export function brancherEtatPublication(
+  section,
+  { publications, rendre, ouverte = () => null, echouer, bloque = () => false },
+) {
+  // Un identifiant y reste le temps de l'aller-retour : un second appui ne doit
+  // pas envoyer un ordre contraire par-dessus le premier.
+  const enVol = new Set();
+
+  const poser = async (pub, statut) => {
+    if (!pub || !statut || pub.statut === statut) return;
+    if (enVol.has(pub.id) || bloque(pub)) return;
+
+    // Une publication récurrente ne se termine pas : la faire partir avance sa
+    // date d'une occurrence et la ramène au premier état de son cycle.
+    const champs = passageDePublication(pub, statut);
+
+    enVol.add(pub.id);
+    try {
+      await modifierAussitot(pub, champs, () => api.modifierPublication(pub.id, champs), {
+        rendre,
+        echouer,
+      });
+    } finally {
+      enVol.delete(pub.id);
+    }
+  };
+
+  section.addEventListener(
+    'click',
+    async (evenement) => {
+      // Le rond de la barre : il avance d'un cran, sans ouvrir la tuile.
+      const rond = evenement.target.closest('[data-avancer-pub]');
+      if (rond) {
+        evenement.stopPropagation();
+        const pub = publications().find(
+          (candidate) => candidate.id === rond.dataset.avancerPub,
+        );
+        const cycle = pub ? cyclePublication(pub.projet) : [];
+        await poser(pub, pub ? cycle[cycle.indexOf(pub.statut) + 1] : null);
+        return;
+      }
+
+      // La pastille d'état de la tuile : elle sait sauter un cran et revenir en
+      // arrière, ce que le rond ne fait pas. Le menu se referme dans tous les
+      // cas — même sur l'état déjà posé : un menu qui reste ouvert après un
+      // choix donne l'impression que le geste n'a pas été reçu. La tuile, elle,
+      // reste ouverte : on vient souvent corriger deux choses de suite.
+      const choix = evenement.target.closest('[data-statut-pub]');
+      if (choix) {
+        evenement.stopPropagation();
+        fermerLesChoix(section);
+        await poser(ouverte(), choix.dataset.statutPub);
+      }
+    },
+    true,
+  );
 }
 
 // Les types d'éléments datés.

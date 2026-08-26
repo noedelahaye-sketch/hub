@@ -52,6 +52,7 @@ import {
   elementsDuJour,
   finDeLEvenement,
   passageDePublication,
+  brancherEtatPublication,
   brancherSelection,
   brancherClavier,
   brancherDeplacement,
@@ -1808,7 +1809,16 @@ function vueEditorial(etat) {
     </div>
 
 
-    ${etat.detailCal ? fenetreDetail(etat.detailCal, { edition: etat.editionCal }) : ''}
+    ${
+      etat.detailCal
+        ? fenetreDetail(etat.detailCal, {
+            edition: etat.editionCal,
+            // L'état d'une publication se règle depuis sa tuile, ici comme sur
+            // le hub (27 août 2026).
+            statutModifiable: true,
+          })
+        : ''
+    }
     ${
       etat.jourOuvertCal
         ? fenetreJour(etat.jourOuvertCal, elementsDuJour(programmees, etat.jourOuvertCal))
@@ -2009,6 +2019,7 @@ function vueCalendrier(etat) {
             edition: etat.editionCal,
             actions: actionsPreparation(etat),
             champsEnPlus: champsDesClubs(etat.detailCal, etat.pistes),
+            statutModifiable: true,
           })
         : ''
     }
@@ -7354,6 +7365,21 @@ export default {
       } catch (souci) {
         console.error('Déplacement impossible', souci);
       }
+    });
+
+    // L'état d'une publication depuis le calendrier : son rond avance d'un cran,
+    // sa tuile règle l'état au doigt. Le geste est le MÊME que sur le hub et
+    // au FC Hermitage (demande de Noé, 27 août 2026) — jusqu'ici le rond était
+    // bien dessiné par la barre commune mais n'écoutait personne, et l'appui
+    // ouvrait la tuile. Il vit dans `calendrier-commun.js`, une seule fois.
+    brancherEtatPublication(section, {
+      publications: () => etat.publications,
+      ouverte: () => (etat.detailCal?.type === 'publication' ? etat.detailCal.source : null),
+      rendre,
+      echouer: dire,
+      // Une idée notée à l'instant porte un identifiant provisoire : le serveur
+      // ne la connaît pas encore, rien ne peut la faire avancer.
+      bloque: (pub) => estProvisoire(pub.id),
     });
 
     // Glisser une idée de la colonne sur un jour la programme. Même mécanique

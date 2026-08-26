@@ -325,6 +325,31 @@ Leçon générale, pour la prochaine pastille : **une bande qui défile n'est pa
 une liste, c'est une file d'attente.** Ce qui compte se met dans un panneau
 qu'on ouvre déjà, pas au bout de la bande.
 
+### 11. L'état d'une publication : le même geste sur les trois calendriers
+
+Le rond et la pastille d'état ne marchaient que sur le hub. Sur les deux
+**sites**, le rond était pourtant DESSINÉ — la barre est commune, et
+`signeEnHtml` ne demande à personne s'il sera écouté — mais rien ne l'écoutait :
+l'appui traversait jusqu'à la barre et ouvrait la tuile. Un bouton mort qui
+avait l'air vivant. La pastille d'état, elle, n'était même pas offerte
+(`statutModifiable` restait à faux).
+
+Le geste est désormais écrit **une seule fois**, dans `brancherEtatPublication`
+(js/calendrier-commun.js), et les quatre écrans l'empruntent : accueil, espace
+Calendrier, site Yuno, site du club. Deux copies ont disparu au passage.
+
+**En phase de CAPTURE, et c'est la condition pour que ça tienne.** Le rond vit
+dans la barre, qui porte `data-element` et ouvre le détail. En bulle, lequel des
+deux gagne dépend de qui a posé son écouteur en premier — c'est exactement
+l'erreur qui avait laissé le rond inerte dans l'espace Calendrier du hub. En
+capture, celui-ci passe d'abord partout, quel que soit l'ordre de montage.
+
+Au passage : l'espace Calendrier n'avait **aucun moyen de dire qu'une écriture
+avait échoué** — le retour en arrière se faisait en silence, ce qui fait de
+l'affichage optimiste un mensonge (js/ecriture.js). Il a maintenant sa ligne,
+distincte de celle de l'échec de chargement : l'une annonce une page vide,
+l'autre un geste revenu en arrière.
+
 ### Ce qui a été vérifié, et comment
 
 **Tout au navigateur, sur les vraies données** — il n'y a pas de base de bac à
