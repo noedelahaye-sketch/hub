@@ -35,6 +35,69 @@ const espaces = {
 const ENTREE = document.body.dataset.entree ?? 'hub';
 const ESPACE_PAR_DEFAUT = ENTREE === 'hub' ? 'dashboard' : ENTREE;
 
+// --- La barre : trois mots, puis des signes (demande de Noé, 27 août 2026)
+//
+// Les trois premiers onglets gardent leur MOT — ce sont les vues où Noé va
+// tous les jours, et un mot se vise mieux qu'un signe qu'il faut reconnaître.
+// Le reste passe en signe : ce qui a une image propre la prend (les deux
+// marques, en pochoir), le reste reçoit un dessin du même trait.
+//
+// Un logo en POCHOIR et non en vignette : le PNG ne sert que d'alpha, l'encre
+// vient de `currentColor`. Le logo suit donc la couleur de l'onglet — discret
+// au repos, inversé quand il est actif — comme il le fait déjà dans la barre du
+// site FCH. Une vignette carrée, elle, garderait son fond et son cadre.
+//
+// Chaque signe garde son nom en `title` et en `aria-label` : muet pour l'œil ne
+// doit pas vouloir dire muet pour un lecteur d'écran.
+const SIGNES_NAV = {
+  // Une boussole : « Le cap ». C'est l'écran où l'on lève la tête.
+  objectifs: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="9"></circle>
+    <path d="M15.5 8.5 13.6 13.6 8.5 15.5l1.9-5.1z"></path></svg>`,
+  // Le chapeau de diplôme : la formation est le seul espace qui se valide.
+  formation: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M12 4 2.5 8.5 12 13l9.5-4.5z"></path>
+    <path d="M6.5 10.7V16c0 1.7 2.5 3 5.5 3s5.5-1.3 5.5-3v-5.3"></path>
+    <path d="M21.5 8.5v5"></path></svg>`,
+};
+
+// Les deux marques, en pochoir : le fichier donne le dessin, l'onglet donne
+// l'encre. La classe porte le nom de la MARQUE et non celui de l'espace — la
+// clé de Yuno est `photo` en base, et une feuille de style qui parlerait de
+// `photo` pour dessiner un « Yuno » ferait perdre dix minutes à qui la relit.
+const MARQUES_NAV = {
+  fch: 'fch',
+  photo: 'yuno',
+};
+
+const NOMS_NAV = {
+  dashboard: 'Accueil',
+  taches: 'Tâches',
+  perso: 'Perso',
+  objectifs: 'Le cap',
+  formation: 'Formation',
+  fch: 'FC Hermitage',
+  photo: 'Yuno',
+};
+
+// Les trois premiers gardent leur mot.
+function ongletMot(espace) {
+  return `<a href="#${espace}" data-nav="${espace}">${NOMS_NAV[espace]}</a>`;
+}
+
+function ongletSigne(espace) {
+  const nom = NOMS_NAV[espace];
+  const marque = MARQUES_NAV[espace];
+  const dedans = marque
+    ? `<span class="nav-marque nav-marque-${marque}" aria-hidden="true"></span>`
+    : SIGNES_NAV[espace];
+
+  return `<a href="#${espace}" class="nav-icone" data-nav="${espace}"
+    title="${nom}" aria-label="${nom}">${dedans}</a>`;
+}
+
 // --- La coquille -------------------------------------------------------------
 // Écrite ici et non dans les trois pages d'entrée : trois copies du même
 // balisage finiraient par diverger. Les pages ne portent que ce qui les
@@ -73,16 +136,13 @@ document.body.insertAdjacentHTML(
            check-in, il n'a pas à se gagner au bout de la rangée.
            Perso suit : le hub existe pour servir Noé, la vie hors espaces ne
            passe pas après les espaces.
-           Le calendrier, lui, reste tout à droite et en icône : ce n'est pas un
-           espace de plus, c'est la vue qui les traverse tous. -->
-      <nav class="navigation" aria-label="Espaces">
-        <a href="#dashboard" data-nav="dashboard">Accueil</a>
-        <a href="#taches" data-nav="taches">Tâches</a>
-        <a href="#perso" data-nav="perso">Perso</a>
-        <a href="#fch" data-nav="fch">FCH</a>
-        <a href="#formation" data-nav="formation">Formation</a>
-        <a href="#photo" data-nav="photo">Yuno</a>
+           Le calendrier, lui, reste tout à droite : ce n'est pas un espace de
+           plus, c'est la vue qui les traverse tous. -->
+      <nav class="navigation navigation-signes" aria-label="Espaces">
+        ${['dashboard', 'taches', 'perso'].map(ongletMot).join('\n        ')}
+        ${ongletSigne('objectifs')}
         ${ongletCalendrier('#calendrier', false)}
+        ${['fch', 'formation', 'photo'].map(ongletSigne).join('\n        ')}
       </nav>
     </div>
 

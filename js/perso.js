@@ -17,7 +17,13 @@ import {
   construireVictoires,
   construireEvenements,
 } from './gabarits.js';
-import { versDateISO, ajouterJours, depuisDateISO, echapper } from './format.js';
+import {
+  versDateISO,
+  ajouterJours,
+  depuisDateISO,
+  echapper,
+  FAMILLES_PERSO_CHOIX,
+} from './format.js';
 
 const ESPACE = 'perso';
 const JOURS_COURBE = 30;
@@ -155,6 +161,16 @@ function squelette() {
         champs: [
           { nom: 'titre', libelle: 'Rendez-vous', type: 'text', requis: true },
           { nom: 'date_debut', libelle: 'Quand', type: 'datetime-local', requis: true },
+          // Ce que ce moment sert. La même question que la pastille « Famille »
+          // de la tuile de capture : un rendez-vous pris ici ne doit pas rester
+          // muet là où tous les autres parlent.
+          {
+            nom: 'famille',
+            libelle: 'Famille (facultatif)',
+            type: 'choix',
+            options: FAMILLES_PERSO_CHOIX,
+            valeur: '',
+          },
           { nom: 'lieu', libelle: 'Lieu (facultatif)', type: 'text' },
         ],
       })}
@@ -275,6 +291,7 @@ export default {
           espace: ESPACE,
           titre: champs.titre.trim(),
           date_debut: new Date(champs.date_debut).toISOString(),
+          famille: champs.famille || null,
           lieu: champs.lieu?.trim() || null,
         });
         etat.evenements = [...etat.evenements, rdv].sort(

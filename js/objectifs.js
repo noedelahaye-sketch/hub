@@ -1,44 +1,173 @@
-// L'espace Objectifs — tout le cap, et le seul endroit du hub où il se règle.
+// L'espace « Le cap » — la galerie des objectifs, et le seul endroit du hub où
+// le cap se règle.
 //
-// Le pendant de l'espace Tâches : transverse, il montre TOUS les objectifs de
-// tous les espaces, groupés par espace, avec leur pourquoi, leur cible et leurs
-// jalons. Ailleurs le hub GRAVE le cap, en lecture seule — l'accueil et les
-// pages espace le posent dans la page, sans un geste qui le modifie. Ici on
-// l'écrit : on ajoute un objectif, on le modifie, on pose ou on retire un
-// jalon, on marque atteint.
+// Il remplace la page Objectifs empilée (27 août 2026, demande de Noé, après un
+// échantillon monté sur deux caps réels et validé — l'échantillon a été retiré
+// une fois généralisé : deux copies de la même forme finissent par diverger, et
+// git garde la trace. L'adresse n'a pas bougé, `#objectifs`, parce qu'un favori
+// se casse et pas un nom.
 //
-// Aucune entrée dans la barre de navigation (demande de Noé, 25 août 2026) :
-// on y vient par la porte du bloc « Tes objectifs », et rarement.
+// Ce que la forme défend, en quatre décisions :
 //
-// Comme l'espace perso, cet espace n'utilise pas la fabrique `creerEspace`
-// — elle ne sait bâtir qu'un seul espace, avec ses tâches, ses événements et
-// ses victoires. Il en reprend en revanche tous les gabarits : une tuile
-// d'objectif se dessine d'une seule façon dans tout le hub.
+// 1. LA GALERIE NE DIT QUE CE QUI SE COMPARE. Un cap, dans la grille, c'est son
+//    espace, son titre, son avancée en jalons et sa date. Le pourquoi, la
+//    cible, les projets, les tâches n'existent qu'une fois qu'on est entré.
+//    L'écran d'avant montrait tout, tout le temps, sur une seule colonne :
+//    c'est ce qui le rendait illisible, pas le nombre d'objectifs.
+//
+// 2. ON N'OUVRE PAS UNE AUTRE PAGE. La tuile pressée prend toute la largeur et
+//    se déplie sur place — le geste que le hub fait déjà quand un jour de
+//    « Ta semaine » s'ouvre en grand. On referme par le même appui.
+//
+// 3. LES SÉRIES SE REPLIENT. « Programmation de la semaine » porte quinze fois
+//    « Visuels de la semaine » : quinze lignes identiques, c'est le mur que
+//    l'espace Tâches a déjà appris à ne pas dresser. Une ligne par série, son
+//    rythme, ce qui reste, et la prochaine date.
+//
+// 4. AJOUTER ET MODIFIER OUVRENT LA TUILE VOLANTE, AVEC TOUS LES DÉTAILS
+//    (demande de Noé) : « à l'œil ça doit paraître simple, mais si je fais la
+//    démarche d'ajouter ou de modifier, je dois avoir accès à tous les
+//    détails ». C'est la page qui cache le plus ; la tuile est la porte qui
+//    donne accès à ce qu'elle cache.
+//
+// Les PÉRIODES FERMENT la page, en DEUX LIGNES et en encre discrète (28 août
+// 2026, demande de Noé). Elles ouvraient l'écran ; elles le cadrent mieux d'en
+// bas — comme « Le cap » du tableau de bord, passé sous la journée le 13 août
+// pour la même raison : on relit ce qui cadre quand on lève la tête, pas en
+// ouvrant l'application. Et elles ne préviennent de rien : voir `tuilePeriode`.
 
 import * as api from './api.js';
-import {
-  REGIMES,
-  chargeViseeDeLaPeriode,
-  tensionDeLaPeriode,
-  periodeDuJour,
-  cleDArbitrage,
-} from './orientation.js';
-import { construireObjectifs, construireFormulaire, brancherChoix } from './gabarits.js';
+// `tensionDeLaPeriode` n'est plus appelée ici : le hub ne prévient plus d'un
+// dépassement voulu (28 août 2026). Elle reste entière dans orientation.js —
+// c'est la règle du jeu, et le diagnostic s'en sert.
+import { REGIMES, chargeViseeDeLaPeriode, periodeDuJour } from './orientation.js';
+import { construireFormulaire, brancherChoix, demanderLaDuree } from './gabarits.js';
 import { modifierAussitot, retirerAussitot } from './ecriture.js';
 // Le modèle de l'argent de Yuno vit avec la page qui l'a fait naître ; il
 // n'est pas recopié ici.
 import { argentDeYuno, enEuros } from './photo.js';
 import {
   NOMS_ESPACES,
+  RECURRENCES,
   echapper,
   dureeLisible,
   echeanceLisible,
   depuisDateISO,
 } from './format.js';
 
-// L'espace perso n'a pas d'objectifs : il a des INTENTIONS, sans mesure ni
-// date, et elles se relisent dans #perso. Cette page ne les touche jamais.
-const ESPACES = ['formation', 'fch', 'photo'];
+// L'ORDRE DES ESPACES, et il n'est pas alphabétique : le club, la formation,
+// Yuno (demande de Noé, 28 août 2026). C'est l'ordre de ses journées — le FCH
+// occupe ses heures ouvrées, la formation ce qui reste, Yuno le bonus. Une
+// seule liste le porte : elle range les tuiles, les choix du formulaire et les
+// régimes d'une période, et il n'y a donc rien à tenir d'accord.
+//
+// L'espace perso n'y est pas : il n'a pas d'objectifs, il a des INTENTIONS,
+// sans mesure ni date, et elles se relisent dans #perso.
+const ESPACES = ['fch', 'formation', 'photo'];
+
+const NOMS_REGIMES = Object.fromEntries(
+  Object.entries(REGIMES).map(([cle, { libelle }]) => [cle, libelle]),
+);
+
+// L'ÉTAT D'UN PROJET, en trois mots (demande de Noé, 28 août 2026) : pas
+// commencé, en cours, terminé. Ce sont les trois seuls qu'on offre — la base en
+// accepte cinq, et elle continue : un CHECK s'élargit, il ne se resserre jamais
+// (c'est déjà la règle du format `post` d'une publication). `en_pause` et
+// `abandonne` se lisent donc toujours si une ligne en porte un ; rien ne les
+// écrit plus.
+const ETATS_PROJET = {
+  actif: 'En cours',
+  // « À l'année » est un SECOND ÉTAT D'EN COURS (28 août 2026, demande de Noé).
+  // Certains projets ne finissent pas — « Programmation de la semaine »,
+  // « Anniversaires du mois » sont des rythmes, pas des chantiers, et la table
+  // le savait déjà : ils portent une charge hebdomadaire et non un total. Il
+  // leur manquait le mot. Chercher ce qui est en cours les prend donc tous les
+  // deux : même rang au tri, même bleu, seul le mot change.
+  annuel: "À l'année",
+  idee: 'Pas commencé',
+  termine: 'Terminé',
+};
+
+const ETATS_PROJET_LUS = {
+  ...ETATS_PROJET,
+  en_pause: 'En pause',
+  abandonne: 'Abandonné',
+};
+
+// L'ordre de lecture : ce qui vit d'abord, ce qui attend ensuite, ce qui est
+// fini à la fin. Un projet terminé ne disparaît pas — le hub montre ce qui est
+// accompli —, il descend.
+const RANG_ETAT = { actif: 0, annuel: 0, idee: 1, en_pause: 2, termine: 3, abandonne: 4 };
+
+// L'ordre de FABRICATION, qui n'est pas celui de lecture : on n'a pas commencé,
+// puis on est en cours, puis c'est fini.
+const CYCLE_ETAT = ['idee', 'actif', 'annuel', 'termine'];
+
+// LEURS TROIS COULEURS (demande de Noé, 28 août 2026) : gris, bleu, vert.
+//
+// Pas le rouge → ambre → vert de la pastille d'une publication, essayé d'abord
+// et écarté : une publication traverse un cycle de FABRICATION, où le rouge dit
+// « rien n'est encore fait » ; un projet pas commencé n'est pas en défaut, il
+// attend son tour. Le gris le dit sans rien reprocher — et c'est aussi ce qui
+// fait ressortir le vert quand c'est fini.
+//
+// Le bleu est pris plus saturé que celui du club (#7ba5dc) pour qu'on ne
+// confonde pas, sur une tuile du FCH, la pastille de l'espace et le point de
+// l'état — deux ronds de sept pixels sur la même ligne.
+const COULEURS_ETAT = {
+  idee: 'var(--texte-discret)',
+  actif: 'hsl(222 75% 68%)',
+  // Le MÊME bleu qu'« en cours », et c'est tout le propos : ce sont deux façons
+  // d'être en cours. Si la couleur les séparait, l'œil en ferait deux familles.
+  annuel: 'hsl(222 75% 68%)',
+  termine: 'hsl(145 55% 55%)',
+};
+
+// L'ÉTAT SE LIT ET SE CHANGE SUR LA TUILE (demande de Noé, 28 août 2026), sans
+// ouvrir la fenêtre de modification : c'est le réglage qu'on touche le plus
+// souvent, et le seul qui ne demande aucune saisie.
+//
+// À CÔTÉ DU NOM DE L'ESPACE, ET TRÈS DISCRET : un point de couleur et un mot en
+// encre grise, pas l'étiquette pleine de la pastille d'une publication — douze
+// tuiles portant chacune un aplat ambre, c'était douze fois plus de couleur que
+// de titres. Le point garde la teinte (rouge, ambre, vert), et elle suffit : on
+// balaie la galerie et on voit où en est chaque projet sans lire un mot.
+//
+// Sa place a coûté deux essais : dans le pied d'abord, en haut à droite
+// ensuite, et enfin ici — sur la ligne de service, contre l'espace. Les deux
+// signes qui CLASSENT un projet se lisent donc d'un même regard, et le titre
+// garde sa ligne pour lui seul.
+//
+// Le menu qui s'ouvre dessous, lui, reste celui de tout le hub.
+function pastilleEtat(projet) {
+  const courant = projet.statut ?? 'actif';
+  const nom = (etat) => echapper(ETATS_PROJET_LUS[etat] ?? etat);
+  const couleur = (etat) => COULEURS_ETAT[etat] ?? 'var(--texte-discret)';
+
+  return `
+    <span class="choix-champ cap-etat" data-choix-champ="etat-${echapper(projet.id)}">
+      <button type="button" class="cap-etat-mot" data-ouvrir-choix
+        style="--etat: ${couleur(courant)};" aria-expanded="false" aria-haspopup="listbox"
+        aria-label="État : ${nom(courant)} — changer"><span class="cap-etat-point"
+        aria-hidden="true"></span>${nom(courant)}</button>
+      <div class="choix-panneau" hidden>
+        <ul class="choix-capture">
+          ${CYCLE_ETAT.map(
+            (etat) => `
+            <li><button type="button" data-etat-projet="${echapper(etat)}"
+              data-projet="${echapper(projet.id)}"
+              class="${etat === courant ? 'actif' : ''}"
+              aria-pressed="${etat === courant}"><span class="cap-etat-point"
+                style="--etat: ${couleur(etat)};" aria-hidden="true"></span>${nom(
+                  etat,
+                )}</button></li>`,
+          ).join('')}
+        </ul>
+      </div>
+    </span>`;
+}
+
+const PRIORITES = { 1: 'Priorité 1', 2: 'Priorité 2', 3: 'Priorité 3', 4: 'Priorité 4' };
 
 // L'objectif dont les prestations et le matériel disent la mesure. Reconnu par
 // son titre, comme sur la page Yuno : c'est le seul lien entre une ligne
@@ -46,19 +175,615 @@ const ESPACES = ['formation', 'fch', 'photo'];
 // « type » que rien d'autre n'utiliserait.
 const OBJECTIF_MATERIEL = 'Rembourser mon matériel';
 
-// --- L'argent de « Rembourser mon matériel » --------------------------------
-// La cible de cet objectif est la somme du matériel, sa progression la somme
-// des prestations encaissées. Les deux listes se corrigent ICI, à côté de
-// l'objectif qu'elles mesurent (demande de Noé, 26 août 2026) — la page Yuno,
-// elle, se contente d'en afficher le total.
+// --- Les signes ---------------------------------------------------------------
+// Dessinés, jamais des caractères : ils gardent leur épaisseur quelle que soit
+// la police, et ils suivent le trait du reste du hub.
+
+const SIGNE = {
+  plus: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`,
+  points: `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"
+    aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/>
+    <circle cx="19" cy="12" r="1.6"/></svg>`,
+  chevron: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M9 6l6 6-6 6"/></svg>`,
+  repetition: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/>
+    <path d="M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>`,
+};
+
+// --- Les mots -----------------------------------------------------------------
+
+function jourLisible(iso) {
+  return iso ? echeanceLisible(depuisDateISO(iso)) : '';
+}
+
+function heuresLisibles(minutes) {
+  const heures = minutes / 60;
+  // Virgule et non point : on écrit « 39,5 h » en français, et le point se
+  // lisait comme une ponctuation au milieu du chiffre.
+  const dit = Number.isInteger(heures) ? String(heures) : heures.toFixed(1).replace('.', ',');
+  return `${dit} h`;
+}
+
+function chargeDuProjet(projet) {
+  if (projet.charge_hebdo) return `${dureeLisible(projet.charge_hebdo)} par semaine`;
+  if (projet.charge_minutes) return `${dureeLisible(projet.charge_minutes)} en tout`;
+  return '';
+}
+
+function pluriel(nombre, singulier, plurielMot = `${singulier}s`) {
+  return `${nombre} ${nombre > 1 ? plurielMot : singulier}`;
+}
+
+// Les heures se saisissent en heures — c'est ainsi qu'on pense un projet — et
+// se rangent en minutes : c'est l'unité de `taches.duree` et des événements, et
+// deux unités dans une même somme finissent toujours par se croiser.
+function enMinutes(valeur) {
+  const heures = Number(valeur);
+  return Number.isFinite(heures) && heures > 0 ? Math.round(heures * 60) : null;
+}
+
+// --- L'état -------------------------------------------------------------------
+
+const etat = {
+  objectifs: [],
+  projets: [],
+  taches: [],
+  periodes: [],
+  commandes: [],
+  materiel: [],
+  ouvert: null, // le cap déplié
+  projetOuvert: null, // le projet déplié, dans le cap ouvert
+  projetGalerie: null, // le projet déplié, dans la galerie des projets
+  menu: null, // `${forme}:${id}` — le menu discret ouvert
+  confirme: null, // la suppression (ou l'atteinte) en attente de confirmation
+  edition: null, // { forme, id, parent } — ce que la tuile volante corrige
+  message: null,
+};
+
+// --- Le menu discret ----------------------------------------------------------
+// Trois points qui ne se voient qu'au survol et au clavier, mais qui gardent
+// leurs 44 px de cible au doigt. Ce qui est irréversible demande confirmation
+// SUR PLACE — pas de fenêtre pour ça : deux appuis suffisent, et un objectif
+// qui emporte ses jalons mérite le second.
+
+function menuDiscret(forme, id, { atteindre = false, sansModifier = false } = {}) {
+  const cle = `${forme}:${id}`;
+  const confirmation = etat.confirme === cle;
+  const attendrait = etat.confirme === `atteindre:${id}`;
+
+  const choix = confirmation
+    ? `<button type="button" class="cap-menu-danger" data-confirmer="${cle}">Supprimer vraiment</button>
+       <button type="button" data-annuler-confirmation>Annuler</button>`
+    : attendrait
+      ? `<button type="button" data-confirmer="atteindre:${id}">C'est atteint</button>
+         <button type="button" data-annuler-confirmation>Pas encore</button>`
+      : `${sansModifier ? '' : `<button type="button" data-modifier="${cle}">Modifier</button>`}
+         ${
+           atteindre
+             ? `<button type="button" data-atteindre="${id}">Marquer atteint</button>`
+             : ''
+         }
+         <button type="button" data-supprimer="${cle}">Supprimer</button>`;
+
+  return `
+    <span class="cap-menu${etat.menu === cle ? ' ouvert' : ''}">
+      <button type="button" class="cap-menu-bouton" data-menu="${cle}"
+        aria-expanded="${etat.menu === cle}" aria-label="Modifier ou supprimer">${
+        SIGNE.points
+      }</button>
+      <span class="cap-menu-choix" ${etat.menu === cle ? '' : 'hidden'}>${choix}</span>
+    </span>`;
+}
+
+// --- Les périodes -------------------------------------------------------------
+
+// UNE PÉRIODE TIENT EN DEUX LIGNES (demande de Noé, 28 août 2026) : son nom et
+// son intervalle, puis ce qu'elle attend. Rien d'autre.
+//
+// ET AUCUN MESSAGE DE PRÉVENTION. Le hub disait « 41 h pour 35 h — qu'est-ce
+// qui cède ? » ; Noé a tranché : « ça ne me sert à rien, c'est LE BUT d'une
+// période d'intensité, j'en fais plus que d'habitude ». Un dépassement voulu
+// n'est pas un déséquilibre à signaler, et un outil qui prévient de ce qu'on a
+// décidé exprès finit par se faire ignorer.
+//
+// Le calcul, lui, reste entier dans `tensionDeLaPeriode` (js/orientation.js) :
+// c'est la règle du jeu de l'orientation, éprouvable hors écran, et le
+// diagnostic s'en sert. Ce qui a disparu, c'est le REPROCHE, pas la mesure.
+//
+// La ligne entière ouvre la tuile de modification — « je dois juste pouvoir
+// modifier la période en cliquant quelque part ». Le menu à trois points ne
+// garde que la suppression.
+function tuilePeriode(periode, courante) {
+  const visees = chargeViseeDeLaPeriode(periode);
+  const attendus = ESPACES.filter((espace) => periode.regimes?.[espace])
+    .map(
+      (espace) => `<span data-espace="${espace}">${echapper(NOMS_ESPACES[espace] ?? espace)}
+        ${echapper((NOMS_REGIMES[periode.regimes[espace]] ?? '').toLowerCase())}</span>`,
+    )
+    .join('');
+
+  return `
+    <article class="cap-periode${periode.id === courante?.id ? ' courante' : ''}"
+      data-periode="${echapper(periode.id)}">
+      <button type="button" class="cap-periode-ouvrir" data-modifier="periode:${echapper(
+        periode.id,
+      )}">
+        <span class="cap-periode-tete">
+          <span class="cap-periode-nom">${echapper(periode.nom)}</span>
+          <span class="chiffre cap-periode-quand">${echapper(periode.debut)} → ${echapper(
+            periode.fin,
+          )}</span>
+        </span>
+        <span class="cap-periode-attendu">${attendus}<span class="cap-periode-charge">club ${echapper(heuresLisibles(visees.fch))} · formation ${echapper(heuresLisibles(visees.formation))}</span></span>
+      </button>
+      ${menuDiscret('periode', periode.id, { sansModifier: true })}
+    </article>`;
+}
+
+function bandePeriodes() {
+  const courante = periodeDuJour(etat.periodes, new Date());
+  const tuiles = etat.periodes.map((periode) => tuilePeriode(periode, courante)).join('');
+
+  return `
+    <section class="cap-bande">
+      <h2 class="cap-etage-titre">Ce que tu attends des mois qui viennent</h2>
+      <div class="cap-periodes">
+        ${tuiles}
+        <button type="button" class="cap-tuile-ajout cap-periode-ajout"
+          data-ajout="periode:rien">${SIGNE.plus}<span>Déclarer une période</span></button>
+      </div>
+      ${
+        etat.periodes.length
+          ? ''
+          : `<p class="cap-vide">Aucune période déclarée. La première dira ce que tu
+             attends du mois qui vient — et le hub posera sa question tout de suite,
+             pendant qu'une réponse coûte encore peu.</p>`
+      }
+    </section>`;
+}
+
+// --- La galerie des caps ------------------------------------------------------
+
+// L'avancée d'un cap : un segment par jalon, pleins jusqu'à celui qu'on tient.
+// Pas de pourcentage — un cap ne se lit pas en chiffres, il se lit en marches
+// franchies. Et pas de barre continue : quatre jalons font quatre segments, on
+// compte du regard sans lire.
+function marches(jalons = []) {
+  if (!jalons.length) return '<span class="cap-marches cap-marches-vide"></span>';
+  const atteints = jalons.filter((jalon) => jalon.atteint).length;
+  return `<span class="cap-marches" role="img"
+    aria-label="${atteints} jalon(s) atteint(s) sur ${jalons.length}">${jalons
+    .map((jalon) => `<span class="cap-marche${jalon.atteint ? ' atteint' : ''}"></span>`)
+    .join('')}</span>`;
+}
+
+function projetsDuCap(objectif) {
+  return etat.projets.filter((projet) =>
+    (projet.cibles ?? []).some((cible) => cible.objectif_id === objectif.id),
+  );
+}
+
+function tachesDuProjet(projet) {
+  return etat.taches.filter((tache) => tache.projet_id === projet.id);
+}
+
+// Les tâches rattachées au cap lui-même, sans passer par un projet. Le cas
+// ordinaire aujourd'hui, et il doit rester lisible — sinon on force un projet
+// pour une seule action.
+function tachesDuCap(objectif) {
+  return etat.taches.filter(
+    (tache) => tache.objectif_id === objectif.id && !tache.projet_id,
+  );
+}
+
+function comptesDuCap(objectif) {
+  const projets = projetsDuCap(objectif);
+  const taches =
+    tachesDuCap(objectif).length +
+    projets.reduce((total, projet) => total + tachesDuProjet(projet).length, 0);
+
+  const morceaux = [];
+  if (projets.length) morceaux.push(pluriel(projets.length, 'projet'));
+  if (taches) morceaux.push(pluriel(taches, 'tâche'));
+  // Un cap que rien ne sert le dit lui-même : c'est l'information la plus utile
+  // de la tuile, et la seule qui appelle un geste.
+  return morceaux.length ? morceaux.join(' · ') : 'Rien ne le sert encore';
+}
+
+function tuileObjectif(objectif) {
+  return `
+    <article class="cap-tuile" data-espace="${objectif.espace}"
+      data-objectif="${echapper(objectif.id)}">
+      <button type="button" class="cap-tuile-ouvrir" data-ouvrir="${echapper(objectif.id)}">
+        <span class="cap-tuile-espace"><span class="pastille"></span>${echapper(
+          NOMS_ESPACES[objectif.espace] ?? objectif.espace,
+        )}</span>
+        <h3 class="cap-tuile-titre">${echapper(objectif.titre)}</h3>
+        ${marches(objectif.jalons)}
+        <span class="cap-tuile-pied">
+          <span>${echapper(comptesDuCap(objectif))}</span>
+          <span class="cap-tuile-date">${echapper(jourLisible(objectif.echeance))}</span>
+        </span>
+      </button>
+      ${menuDiscret('objectif', objectif.id, { atteindre: true })}
+    </article>`;
+}
+
+// --- Le détail d'un cap -------------------------------------------------------
+
+function frise(objectif) {
+  const jalons = objectif.jalons ?? [];
+  const prochain = jalons.find((jalon) => !jalon.atteint);
+
+  const lignes = jalons
+    .map(
+      (jalon) => `
+      <li class="cap-jalon${jalon.atteint ? ' atteint' : ''}${
+        jalon === prochain ? ' prochain' : ''
+      }">
+        <button type="button" class="cap-jalon-point" data-jalon="${echapper(jalon.id)}"
+          aria-pressed="${Boolean(jalon.atteint)}"
+          aria-label="${
+            jalon.atteint ? 'Revenir sur ce jalon' : 'Marquer ce jalon atteint'
+          }"></button>
+        <span class="cap-jalon-corps">
+          <span class="cap-jalon-titre">${echapper(jalon.titre)}</span>
+          ${
+            jalon.echeance
+              ? `<span class="cap-jalon-date">${echapper(jourLisible(jalon.echeance))}</span>`
+              : ''
+          }
+        </span>
+        ${menuDiscret('jalon', jalon.id)}
+      </li>`,
+    )
+    .join('');
+
+  return `
+    ${jalons.length ? `<ol class="cap-frise">${lignes}</ol>` : ''}
+    <button type="button" class="cap-ajout-discret" data-ajout="jalon:${echapper(objectif.id)}">
+      ${SIGNE.plus}<span>Poser un jalon</span></button>`;
+}
+
+// Une série ne s'écrit qu'une fois. Quinze « Visuels de la semaine » alignés,
+// c'est le mur que l'espace Tâches a appris à ne pas dresser : on montre la
+// prochaine, son rythme, et combien il en reste.
+function grouperLesTaches(taches) {
+  const restantes = taches.filter((tache) => tache.statut !== 'fait');
+  const faites = taches.length - restantes.length;
+  const parSerie = new Map();
+  const seules = [];
+
+  for (const tache of restantes) {
+    if (!tache.serie_id) {
+      seules.push(tache);
+      continue;
+    }
+    const groupe = parSerie.get(tache.serie_id) ?? [];
+    groupe.push(tache);
+    parSerie.set(tache.serie_id, groupe);
+  }
+
+  const lignes = seules.map((tache) => ({ tache, serie: null }));
+  for (const groupe of parSerie.values()) {
+    const triees = [...groupe].sort((a, b) =>
+      String(a.echeance ?? '').localeCompare(String(b.echeance ?? '')),
+    );
+    lignes.push({
+      tache: triees[0],
+      serie: { restantes: triees.length, prochaine: triees[0].echeance },
+    });
+  }
+
+  lignes.sort((a, b) =>
+    String(a.tache.echeance ?? '9999').localeCompare(String(b.tache.echeance ?? '9999')),
+  );
+  return { lignes, faites };
+}
+
+function ligneTache({ tache, serie }) {
+  const service = serie
+    ? `<span class="cap-tache-serie">${SIGNE.repetition}${echapper(
+        (RECURRENCES[tache.recurrence] ?? 'Se répète').toLowerCase(),
+      )} · ${echapper(`${serie.restantes} fois à venir`)}</span>
+       <span class="cap-tache-date">${echapper(jourLisible(serie.prochaine))}</span>`
+    : `<span class="cap-tache-date">${echapper(jourLisible(tache.echeance))}</span>`;
+
+  return `
+    <li class="cap-tache tache-ligne${tache.statut === 'fait' ? ' tache-faite' : ''}"
+      data-priorite="${tache.priorite ?? 4}">
+      <button type="button" class="tache-cercle" data-tache="${echapper(tache.id)}"
+        aria-pressed="${tache.statut === 'fait'}" aria-label="Terminer"></button>
+      <span class="cap-tache-corps">
+        <span class="cap-tache-titre tache-titre">${echapper(tache.titre)}</span>
+        <span class="cap-tache-service">${service}</span>
+      </span>
+      ${menuDiscret('tache', tache.id)}
+    </li>`;
+}
+
+function tuileProjet(projet) {
+  const ouvert = etat.projetOuvert === projet.id;
+  const taches = tachesDuProjet(projet);
+  const { lignes, faites } = grouperLesTaches(taches);
+  const charge = chargeDuProjet(projet);
+
+  // Les orphelines de son espace se rattachent d'un bouton : c'est la seule
+  // façon raisonnable de rattraper les dizaines de tâches écrites avant qu'il
+  // existe un étage projet.
+  const orphelines = etat.taches.filter(
+    (tache) => tache.espace === projet.espace && !tache.projet_id && tache.statut !== 'fait',
+  );
+
+  return `
+    <article class="cap-projet${ouvert ? ' ouvert' : ''}" data-projet="${echapper(projet.id)}">
+      <button type="button" class="cap-projet-ouvrir" data-ouvrir-projet="${echapper(projet.id)}"
+        aria-expanded="${ouvert}">
+        <span class="cap-projet-chevron">${SIGNE.chevron}</span>
+        <span class="cap-projet-corps">
+          <span class="cap-projet-nom">${echapper(projet.nom)}</span>
+          ${
+            projet.resultat
+              ? `<span class="cap-projet-resultat">${echapper(projet.resultat)}</span>`
+              : ''
+          }
+          <span class="cap-projet-pied">
+            <span>${
+              taches.length ? echapper(pluriel(taches.length, 'tâche')) : 'Aucune tâche'
+            }</span>
+            ${charge ? `<span class="cap-projet-charge">${echapper(charge)}</span>` : ''}
+            ${
+              projet.echeance
+                ? `<span class="cap-projet-charge">${echapper(jourLisible(projet.echeance))}</span>`
+                : ''
+            }
+            ${
+              projet.statut && projet.statut !== 'actif'
+                ? `<span class="cap-projet-charge">${echapper(
+                    ETATS_PROJET_LUS[projet.statut] ?? projet.statut,
+                  )}</span>`
+                : ''
+            }
+          </span>
+        </span>
+      </button>
+      ${menuDiscret('projet', projet.id)}
+      <div class="cap-projet-taches">
+        <div class="cap-projet-taches-dedans">
+          <ul class="cap-taches">${lignes.map(ligneTache).join('')}</ul>
+          ${faites ? `<p class="cap-taches-faites">${echapper(pluriel(faites, 'faite'))}.</p>` : ''}
+          <span class="cap-projet-gestes">
+            <button type="button" class="cap-ajout-discret"
+              data-ajout="tache:${echapper(projet.id)}">
+              ${SIGNE.plus}<span>Ajouter une tâche</span></button>
+            ${
+              orphelines.length
+                ? `<button type="button" class="cap-ajout-discret"
+                     data-rattacher-vers="${echapper(projet.id)}">
+                     <span>Rattacher une tâche</span>
+                     <span class="chiffre">${orphelines.length}</span></button>`
+                : ''
+            }
+          </span>
+          ${
+            etat.rattache === projet.id
+              ? `<ul class="cap-orphelines">${orphelines
+                  .map(
+                    (tache) => `
+                  <li>
+                    <span>${echapper(tache.titre)}</span>
+                    <button type="button" class="lien-discret bouton-mini"
+                      data-rattacher="${echapper(tache.id)}"
+                      data-vers="${echapper(projet.id)}">Rattacher</button>
+                  </li>`,
+                  )
+                  .join('')}</ul>`
+              : ''
+          }
+        </div>
+      </div>
+    </article>`;
+}
+
+// --- La galerie des projets ---------------------------------------------------
+//
+// LA MÊME FORME QUE LES CAPS, un étage plus bas (demande de Noé, 28 août 2026).
+// Un projet se compare à un projet comme un cap se compare à un cap : son
+// espace, son nom, son avancée, ce qu'il porte. Et on y entre du même geste.
+//
+// Ce que cette galerie montre et que le dépliage d'un cap ne montrait PAS : les
+// projets qui ne servent aucun cap. Ils existent — « Album du club », « Suivi
+// de l'alternance » — et ils étaient invisibles, donc oubliés.
+//
+// L'avancée n'a pas la même forme que celle d'un cap, et c'est voulu : un cap
+// franchit des MARCHES (un segment par jalon, on les compte du regard) ; un
+// projet avance de façon continue, tâche après tâche, et quinze segments
+// seraient du bruit. D'où une barre unique, remplie à la proportion faite.
+function avanceeDuProjet(projet) {
+  const taches = tachesDuProjet(projet);
+
+  // Un projet DÉCLARÉ terminé a sa barre pleine, même si des tâches traînent :
+  // c'est l'état que Noé a posé qui dit la vérité, pas le décompte. L'inverse —
+  // une barre à 80 % sur un projet fini — donnerait tort à sa décision.
+  if (projet.statut === 'termine') {
+    return `<span class="cap-avancee" role="img" aria-label="Terminé"><span
+      style="width: 100%"></span></span>`;
+  }
+
+  // Un projet À L'ANNÉE n'a pas de fin à atteindre : une barre qui se remplit
+  // lui promettrait une ligne d'arrivée qui n'existe pas. Il porte donc le même
+  // trait pointillé que celui qui n'a encore aucune tâche — « rien ne se mesure
+  // ici », et c'est vrai des deux.
+  if (projet.statut === 'annuel' || !taches.length) {
+    return '<span class="cap-avancee cap-marches-vide"></span>';
+  }
+
+  const faites = taches.filter((tache) => tache.statut === 'fait').length;
+  const part = Math.round((faites / taches.length) * 100);
+  return `<span class="cap-avancee" role="img"
+    aria-label="${faites} tâche(s) faite(s) sur ${taches.length}"><span
+    style="width: ${part}%"></span></span>`;
+}
+
+function capsServis(projet) {
+  return (projet.cibles ?? [])
+    .map((cible) => etat.objectifs.find((objectif) => objectif.id === cible.objectif_id)?.titre)
+    .filter(Boolean);
+}
+
+function tuileProjetGalerie(projet) {
+  const taches = tachesDuProjet(projet);
+  const faites = taches.filter((tache) => tache.statut === 'fait').length;
+  const porte = [
+    taches.length ? pluriel(taches.length, 'tâche') : 'Aucune tâche',
+    faites ? pluriel(faites, 'faite') : '',
+    chargeDuProjet(projet),
+  ].filter(Boolean);
+
+  return `
+    <article class="cap-tuile cap-tuile-projet" data-espace="${projet.espace}"
+      data-projet-tuile="${echapper(projet.id)}">
+      <span class="cap-tuile-tete">
+        <span class="cap-tuile-espace"><span class="pastille"></span>${echapper(
+          NOMS_ESPACES[projet.espace] ?? projet.espace,
+        )}</span>
+        ${pastilleEtat(projet)}
+      </span>
+      <button type="button" class="cap-tuile-ouvrir"
+        data-ouvrir-projet-galerie="${echapper(projet.id)}">
+        <h3 class="cap-tuile-titre">${echapper(projet.nom)}</h3>
+        ${avanceeDuProjet(projet)}
+        <span class="cap-tuile-pied">
+          <span>${echapper(porte.join(' · '))}</span>
+          <span class="cap-tuile-date">${echapper(jourLisible(projet.echeance))}</span>
+        </span>
+      </button>
+      ${menuDiscret('projet', projet.id)}
+    </article>`;
+}
+
+function detailProjet(projet) {
+  const { lignes, faites } = grouperLesTaches(tachesDuProjet(projet));
+  const caps = capsServis(projet);
+  const charge = chargeDuProjet(projet);
+  const orphelines = etat.taches.filter(
+    (tache) => tache.espace === projet.espace && !tache.projet_id && tache.statut !== 'fait',
+  );
+
+  return `
+    <div class="cap-detail">
+      <div class="cap-detail-tete">
+        <span class="cap-tuile-espace"><span class="pastille"></span>${echapper(
+          NOMS_ESPACES[projet.espace] ?? projet.espace,
+        )}</span>
+        <h3 class="cap-detail-titre">${echapper(projet.nom)}</h3>
+        <p class="cap-detail-date">${pastilleEtat(projet)}<span>${echapper(
+          [charge, projet.echeance ? jourLisible(projet.echeance) : ''].filter(Boolean).join(' · '),
+        )}</span></p>
+        ${menuDiscret('projet', projet.id)}
+        <button type="button" class="cap-refermer" data-refermer-projet
+          aria-label="Refermer ce projet">Refermer</button>
+      </div>
+
+      ${projet.resultat ? `<p class="cap-pourquoi">${echapper(projet.resultat)}</p>` : ''}
+      <p class="cap-cible"><span>Ce qu'il sert</span>${
+        caps.length
+          ? echapper(caps.join(' · '))
+          : "Aucun cap déclaré — c'est de l'intendance, et c'est légitime."
+      }</p>
+
+      <div class="cap-etages">
+        <section class="cap-etage cap-etage-large">
+          <h4 class="cap-etage-titre">Ses tâches</h4>
+          ${
+            lignes.length
+              ? `<ul class="cap-taches">${lignes.map(ligneTache).join('')}</ul>`
+              : `<p class="cap-vide">Rien encore. La première dira par où ça commence.</p>`
+          }
+          ${faites ? `<p class="cap-taches-faites">${echapper(pluriel(faites, 'faite'))}.</p>` : ''}
+          <span class="cap-projet-gestes">
+            <button type="button" class="cap-ajout-discret"
+              data-ajout="tache:${echapper(projet.id)}">
+              ${SIGNE.plus}<span>Ajouter une tâche</span></button>
+            ${
+              orphelines.length
+                ? `<button type="button" class="cap-ajout-discret"
+                     data-rattacher-vers="${echapper(projet.id)}">
+                     <span>Rattacher une tâche</span>
+                     <span class="chiffre">${orphelines.length}</span></button>`
+                : ''
+            }
+          </span>
+          ${
+            etat.rattache === projet.id
+              ? `<ul class="cap-orphelines">${orphelines
+                  .map(
+                    (tache) => `
+                  <li>
+                    <span>${echapper(tache.titre)}</span>
+                    <button type="button" class="lien-discret bouton-mini"
+                      data-rattacher="${echapper(tache.id)}"
+                      data-vers="${echapper(projet.id)}">Rattacher</button>
+                  </li>`,
+                  )
+                  .join('')}</ul>`
+              : ''
+          }
+        </section>
+      </div>
+    </div>`;
+}
+
+// Par espace d'abord, comme les caps ; PUIS PAR ÉTAT — ce qui est en cours, ce
+// qui n'a pas commencé, ce qui est fini. C'est le tri que Noé a demandé, et il
+// tient sans filtre : les trois familles se suivent, on ne cherche pas.
+function projetsAffiches() {
+  const rangEspace = (projet) => ESPACES.indexOf(projet.espace);
+  const rangEtat = (projet) => RANG_ETAT[projet.statut] ?? 0;
+  return [...etat.projets].sort(
+    (a, b) =>
+      rangEspace(a) - rangEspace(b) ||
+      rangEtat(a) - rangEtat(b) ||
+      String(a.echeance ?? '9999-99-99').localeCompare(String(b.echeance ?? '9999-99-99')) ||
+      a.nom.localeCompare(b.nom),
+  );
+}
+
+function galerieProjets() {
+  const projets = projetsAffiches();
+
+  return `
+    <section class="cap-bande">
+      <h2 class="cap-etage-titre">Les projets — le comment</h2>
+      <div class="cap-galerie">
+        ${projets
+          .map((projet) =>
+            etat.projetGalerie === projet.id
+              ? `<article class="cap-tuile cap-tuile-ouverte" data-espace="${projet.espace}"
+                   data-projet-tuile="${echapper(projet.id)}">${detailProjet(projet)}</article>`
+              : tuileProjetGalerie(projet),
+          )
+          .join('')}
+        <button type="button" class="cap-tuile cap-tuile-ajout" data-ajout="projet:rien">
+          ${SIGNE.plus}<span>Poser un projet</span></button>
+      </div>
+    </section>`;
+}
+
+// --- L'argent de « Rembourser mon matériel » ----------------------------------
+// La cible de cet objectif est la somme du matériel et des frais, sa
+// progression la somme des prestations encaissées. Les deux listes se corrigent
+// ICI, à côté de l'objectif qu'elles mesurent (demande de Noé, 26 août 2026) —
+// la page Yuno, elle, se contente d'en afficher le total.
 
 export function construireArgent(commandes, materiel) {
   const { encaisse, frais, achats, cible, reste } = argentDeYuno(commandes, materiel);
   const chiffrees = commandes.filter((commande) => commande.montant != null);
 
-  // Une prestation affiche son NET, et le détail dessous quand il y a des frais :
-  // c'est le net qui rembourse le matériel, mais on doit pouvoir vérifier d'où
-  // il sort.
   const ligne = (entree, somme, detail, action) => `
     <li>
       <span class="argent-nom">
@@ -71,427 +796,460 @@ export function construireArgent(commandes, materiel) {
         title="Retirer" aria-label="Retirer « ${echapper(entree.titre ?? entree.nom)} »">×</button>
     </li>`;
 
-  const listePrestations = chiffrees.length
-    ? `<ul class="liste-argent">${chiffrees
-        .map((commande) =>
-          ligne(
-            commande,
-            commande.montant,
-            // Les frais se disent ici mais comptent en face : ils grossissent
-            // ce qu'il reste à rembourser, ils n'entament pas la recette.
-            commande.frais ? `${enEuros(commande.frais)} de déplacement` : '',
-            'retirer-commande',
-          ),
-        )
-        .join('')}</ul>`
-    : `<p class="vide">Rien encore.</p>`;
-
-  const listeMateriel = materiel.length
-    ? `<ul class="liste-argent">${materiel
-        .map((achat) => ligne(achat, achat.prix, '', 'retirer-materiel'))
-        .join('')}</ul>`
-    : `<p class="vide">Rien encore.</p>`;
-
   return `
-    <div class="panneau-argent">
-      <p class="argent-total">
-        <span class="chiffre">${enEuros(encaisse)}</span>
-        <span class="discret">encaissés sur ${enEuros(cible)} à rembourser</span>
+    <div class="cap-argent">
+      <p class="cap-argent-total">
+        <span class="chiffre">${enEuros(encaisse)}</span> encaissés sur
+        <span class="chiffre">${enEuros(cible)}</span> —
+        il reste <span class="chiffre">${enEuros(reste)}</span>.
+        ${
+          frais
+            ? `<span class="discret">Dont ${enEuros(
+                achats,
+              )} de matériel et ${enEuros(frais)} de déplacements.</span>`
+            : ''
+        }
       </p>
 
-      <!-- Le détail de ce qu'il reste à rembourser, ici et nulle part ailleurs
-           (demande de Noé, 26 août 2026) : la page Yuno n'en dit que le total,
-           c'est en ouvrant l'objectif qu'on voit d'où il sort. -->
-      <ul class="argent-composition">
-        <li><span>Matériel</span> <span class="chiffre">${enEuros(achats)}</span></li>
-        <li><span>Déplacements</span> <span class="chiffre">${enEuros(frais)}</span></li>
-        <li class="argent-somme-ligne">
-          <span>À rembourser</span> <span class="chiffre">${enEuros(cible)}</span>
-        </li>
-        <li><span>Encaissé</span> <span class="chiffre">${enEuros(encaisse)}</span></li>
-        <li class="argent-somme-ligne">
-          <span>${reste ? 'Il reste' : 'Remboursé'}</span>
-          <span class="chiffre">${enEuros(reste)}</span>
-        </li>
-      </ul>
+      <h5 class="cap-argent-titre">Les prestations</h5>
+      ${
+        chiffrees.length
+          ? `<ul class="liste-argent">${chiffrees
+              .map((commande) =>
+                ligne(
+                  commande,
+                  commande.montant,
+                  // Les frais se disent ici mais comptent en face : ils
+                  // grossissent ce qu'il reste à rembourser, ils n'entament pas
+                  // la recette.
+                  commande.frais ? `${enEuros(commande.frais)} de déplacement` : '',
+                  'retirer-commande',
+                ),
+              )
+              .join('')}</ul>`
+          : '<p class="vide">Rien encore.</p>'
+      }
+      <button type="button" class="cap-ajout-discret" data-ajout="prestation:rien">
+        ${SIGNE.plus}<span>Noter une prestation</span></button>
 
-      <h3>Prestations encaissées</h3>
-      ${listePrestations}
-      ${construireFormulaire({
-        id: 'obj-prestation',
-        libelle: 'Noter une prestation',
-        action: 'creer-prestation',
-        champs: [
-          { nom: 'titre', libelle: 'La prestation', type: 'text', requis: true },
-          { nom: 'client', libelle: 'Pour qui (facultatif)', type: 'text' },
-          { nom: 'montant', libelle: 'Ce que ça rapporte, en euros', type: 'number', requis: true },
-          {
-            nom: 'frais',
-            libelle: 'Ce que le déplacement a coûté (facultatif)',
-            type: 'number',
-          },
-        ],
-      })}
-
-      <h3>Matériel</h3>
-      ${listeMateriel}
-      ${construireFormulaire({
-        id: 'obj-materiel',
-        libelle: 'Ajouter du matériel',
-        action: 'creer-materiel',
-        champs: [
-          { nom: 'nom', libelle: "L'appareil, l'objectif…", type: 'text', requis: true },
-          { nom: 'prix', libelle: 'Prix payé en euros', type: 'number', requis: true },
-          { nom: 'date_achat', libelle: "Date d'achat (facultative)", type: 'date' },
-        ],
-      })}
+      <h5 class="cap-argent-titre">Le matériel</h5>
+      ${
+        materiel.length
+          ? `<ul class="liste-argent">${materiel
+              .map((achat) =>
+                ligne(
+                  achat,
+                  achat.prix,
+                  achat.date_achat ? jourLisible(achat.date_achat) : '',
+                  'retirer-materiel',
+                ),
+              )
+              .join('')}</ul>`
+          : '<p class="vide">Rien encore.</p>'
+      }
+      <button type="button" class="cap-ajout-discret" data-ajout="materiel:rien">
+        ${SIGNE.plus}<span>Noter un achat</span></button>
     </div>`;
 }
 
-// --- Fabrication du HTML ----------------------------------------------------
+function detail(objectif) {
+  const projets = projetsDuCap(objectif);
+  const directes = grouperLesTaches(tachesDuCap(objectif));
+  const argent = objectif.titre === OBJECTIF_MATERIEL;
 
-// L'espace est porté par la SECTION, et non par chaque tuile : il n'y sert
-// qu'à poser les couleurs (`--couleur-espace-pleine`), dont héritent les
-// chemins de jalons. Sur une tuile, `data-espace` dessinerait en plus le
-// filet coloré des listes de l'accueil — ici le titre du bloc dit déjà le
-// espace, et six filets alignés seraient du bruit.
-// LES PROJETS d'un espace : le comment des caps qui sont juste au-dessus
-// (27 août 2026). Ils vivent ici et pas ailleurs pour une raison simple —
-// c'est la page où l'on décide, et un projet est une décision : ce qu'on va
-// faire pour y arriver, et combien de temps on est prêt à y mettre.
+  return `
+    <div class="cap-detail">
+      <div class="cap-detail-tete">
+        <span class="cap-tuile-espace"><span class="pastille"></span>${echapper(
+          NOMS_ESPACES[objectif.espace] ?? objectif.espace,
+        )}</span>
+        <h3 class="cap-detail-titre">${echapper(objectif.titre)}</h3>
+        ${
+          objectif.echeance
+            ? `<p class="cap-detail-date">${echapper(jourLisible(objectif.echeance))}</p>`
+            : ''
+        }
+        ${menuDiscret('objectif', objectif.id, { atteindre: true })}
+        <button type="button" class="cap-refermer" data-refermer aria-label="Refermer ce cap">
+          Refermer
+        </button>
+      </div>
+
+      ${objectif.pourquoi ? `<p class="cap-pourquoi">${echapper(objectif.pourquoi)}</p>` : ''}
+      ${
+        objectif.cible
+          ? `<p class="cap-cible"><span>À quoi je saurai</span>${echapper(objectif.cible)}</p>`
+          : ''
+      }
+
+      <div class="cap-etages">
+        <section class="cap-etage">
+          <h4 class="cap-etage-titre">Les jalons</h4>
+          ${frise(objectif)}
+        </section>
+
+        <section class="cap-etage">
+          <h4 class="cap-etage-titre">Les projets</h4>
+          <div class="cap-projets">
+            ${
+              projets.length
+                ? projets.map(tuileProjet).join('')
+                : `<p class="cap-vide">Aucun projet ne le sert encore. Un projet, c'est le
+                   <em>comment</em> : l'album, la rubrique, le dossier — ce qui porte les
+                   tâches et la charge.</p>`
+            }
+          </div>
+          <button type="button" class="cap-ajout-discret"
+            data-ajout="projet:${echapper(objectif.id)}">
+            ${SIGNE.plus}<span>Poser un projet</span></button>
+        </section>
+
+        ${
+          directes.lignes.length
+            ? `<section class="cap-etage">
+                 <h4 class="cap-etage-titre">Rattachées au cap, sans projet</h4>
+                 <ul class="cap-taches">${directes.lignes.map(ligneTache).join('')}</ul>
+               </section>`
+            : ''
+        }
+
+        ${
+          argent
+            ? `<section class="cap-etage">
+                 <h4 class="cap-etage-titre">Ce qui le mesure</h4>
+                 ${construireArgent(etat.commandes, etat.materiel)}
+               </section>`
+            : ''
+        }
+      </div>
+    </div>`;
+}
+
+// --- Les formulaires de la tuile volante --------------------------------------
 //
-// Ils n'affichent AUCUNE progression, volontairement. Celle d'un objectif
-// reste jalons atteints / jalons totaux ; deux caps servis par un même projet
-// ne doivent pas le compter deux fois. Un projet porte la charge, pas le score.
-export function construireProjets(projets, objectifs = [], taches = []) {
-  if (!projets.length) {
-    return `<p class="vide">Aucun projet ici. Le premier dira comment tu comptes
-      t'y prendre.</p>`;
-  }
+// Un formulaire par étage, dans la forme exacte du hub : `construireFormulaire`
+// pose la tuile, le fond assombri, la croix et le menu dessiné ; `app.js` la
+// referme du fond, de la croix ou d'Échap. Rien à réapprendre, rien à recopier.
 
-  const nomDuCap = (cible) =>
-    objectifs.find((objectif) => objectif.id === cible.objectif_id)?.titre ?? null;
+const FORMULAIRES = {
+  objectif: {
+    ajouter: 'Poser un objectif',
+    modifier: "Modifier l'objectif",
+    champs: (v) => [
+      {
+        nom: 'espace',
+        libelle: 'Espace',
+        type: 'choix',
+        options: Object.fromEntries(ESPACES.map((espace) => [espace, NOMS_ESPACES[espace]])),
+        valeur: v.espace ?? ESPACES[0],
+      },
+      {
+        nom: 'titre',
+        libelle: 'Objectif, formulé de façon mesurable',
+        type: 'text',
+        requis: true,
+        valeur: v.titre,
+      },
+      {
+        nom: 'pourquoi',
+        libelle: 'Pourquoi ? (relu les jours sans motivation)',
+        type: 'textarea',
+        valeur: v.pourquoi,
+      },
+      { nom: 'cible', libelle: "À quoi tu sauras que c'est réussi", type: 'text', valeur: v.cible },
+      { nom: 'echeance', libelle: 'Échéance (facultative)', type: 'date', valeur: v.echeance },
+    ],
+  },
+  jalon: {
+    ajouter: 'Poser un jalon',
+    modifier: 'Modifier le jalon',
+    champs: (v) => [
+      { nom: 'titre', libelle: 'Jalon', type: 'text', requis: true, valeur: v.titre },
+      { nom: 'echeance', libelle: 'Échéance (facultative)', type: 'date', valeur: v.echeance },
+    ],
+  },
+  projet: {
+    ajouter: 'Poser un projet',
+    modifier: 'Modifier le projet',
+    champs: (v) => [
+      // L'espace est demandé MÊME quand le projet naît sous un cap : il arrive
+      // alors pré-rempli avec celui du cap, et il reste corrigeable. Un projet
+      // posé depuis la galerie, lui, n'a que ce champ pour dire d'où il vient.
+      {
+        nom: 'espace',
+        libelle: 'Espace',
+        type: 'choix',
+        options: Object.fromEntries(ESPACES.map((espace) => [espace, NOMS_ESPACES[espace]])),
+        valeur: v.espace ?? ESPACES[0],
+      },
+      { nom: 'nom', libelle: 'Projet', type: 'text', requis: true, valeur: v.nom },
+      {
+        nom: 'resultat',
+        libelle: "À quoi tu sauras qu'il est fini",
+        type: 'text',
+        valeur: v.resultat,
+      },
+      // Deux charges, deux natures de projet : celui qui finit porte un total,
+      // celui qui ne finit pas porte un rythme.
+      {
+        nom: 'charge_heures',
+        libelle: "Combien d'heures en tout (s'il finit)",
+        type: 'number',
+        valeur: v.charge_minutes ? v.charge_minutes / 60 : '',
+      },
+      {
+        nom: 'charge_hebdo_heures',
+        libelle: "Ou combien d'heures par semaine",
+        type: 'number',
+        valeur: v.charge_hebdo ? v.charge_hebdo / 60 : '',
+      },
+      { nom: 'echeance', libelle: 'Échéance (facultative)', type: 'date', valeur: v.echeance },
+      {
+        nom: 'statut',
+        libelle: 'Où il en est',
+        type: 'choix',
+        options: ETATS_PROJET,
+        valeur: v.statut ?? 'actif',
+      },
+    ],
+  },
+  tache: {
+    ajouter: 'Ajouter une tâche',
+    modifier: 'Modifier la tâche',
+    champs: (v) => [
+      { nom: 'titre', libelle: 'Nom de la tâche', type: 'text', requis: true, valeur: v.titre },
+      { nom: 'echeance', libelle: 'Quand', type: 'date', valeur: v.echeance },
+      {
+        nom: 'heure',
+        libelle: 'Heure (facultative)',
+        type: 'time',
+        valeur: v.heure ? String(v.heure).slice(0, 5) : '',
+      },
+      {
+        nom: 'duree',
+        libelle: 'Combien de temps, en minutes',
+        type: 'number',
+        valeur: v.duree ?? '',
+      },
+      {
+        nom: 'priorite',
+        libelle: 'Priorité',
+        type: 'choix',
+        options: PRIORITES,
+        valeur: String(v.priorite ?? 4),
+      },
+      {
+        nom: 'recurrence',
+        libelle: 'Se répète',
+        type: 'choix',
+        options: RECURRENCES,
+        valeur: v.recurrence ?? '',
+      },
+    ],
+  },
+  periode: {
+    ajouter: 'Déclarer une période',
+    modifier: 'Modifier la période',
+    champs: (v) => [
+      { nom: 'nom', libelle: 'Période', type: 'text', requis: true, valeur: v.nom },
+      { nom: 'debut', libelle: 'Du', type: 'date', requis: true, valeur: v.debut },
+      { nom: 'fin', libelle: 'Au', type: 'date', requis: true, valeur: v.fin },
+      {
+        nom: 'regime_fch',
+        libelle: 'FC Hermitage',
+        type: 'choix',
+        options: NOMS_REGIMES,
+        valeur: v.regimes?.fch ?? 'normal',
+      },
+      {
+        nom: 'regime_formation',
+        libelle: 'Formation',
+        type: 'choix',
+        options: NOMS_REGIMES,
+        valeur: v.regimes?.formation ?? 'normal',
+      },
+      {
+        nom: 'regime_photo',
+        libelle: 'Yuno',
+        type: 'choix',
+        options: NOMS_REGIMES,
+        valeur: v.regimes?.photo ?? 'normal',
+      },
+    ],
+  },
+  prestation: {
+    ajouter: 'Noter une prestation',
+    modifier: 'Modifier la prestation',
+    champs: () => [
+      { nom: 'titre', libelle: 'Prestation', type: 'text', requis: true },
+      { nom: 'client', libelle: 'Client (facultatif)', type: 'text' },
+      { nom: 'montant', libelle: 'Encaissé, en euros', type: 'number', requis: true },
+      { nom: 'frais', libelle: 'Frais de déplacement (facultatif)', type: 'number' },
+    ],
+  },
+  materiel: {
+    ajouter: 'Noter un achat',
+    modifier: "Modifier l'achat",
+    champs: () => [
+      { nom: 'nom', libelle: 'Matériel', type: 'text', requis: true },
+      { nom: 'prix', libelle: 'Prix, en euros', type: 'number', requis: true },
+      { nom: 'date_achat', libelle: "Date d'achat (facultative)", type: 'date' },
+    ],
+  },
+};
 
-  return `<ul class="liste-projets">${projets
-    .map((projet) => {
-      const caps = (projet.cibles ?? []).map(nomDuCap).filter(Boolean);
-      const charge = projet.charge_hebdo
-        ? `${dureeLisible(projet.charge_hebdo)} par semaine`
-        : dureeLisible(projet.charge_minutes);
+function laFenetre() {
+  if (!etat.edition) return '';
+  const { forme, id, parent } = etat.edition;
+  const modele = FORMULAIRES[forme];
+  // Ce que la tuile porte déjà : la ligne qu'on corrige, ou — pour un projet posé
+  // depuis un cap — l'espace de ce cap, pour que le champ arrive juste.
+  const valeurs = id
+    ? (trouver(`${forme}:${id}`).cible ?? {})
+    : forme === 'projet' && parent
+      ? { espace: trouver(`objectif:${parent}`).cible?.espace }
+      : {};
 
-      // CE QU'IL PORTE, et ce qui pourrait le porter. Sans ce compte, un projet
-      // reste une intention : on ne voit pas s'il a commencé. Et les orphelines
-      // de son espace se rattachent d'un bouton — c'est la seule façon
-      // raisonnable de rattraper quarante-huit tâches écrites avant qu'il
-      // existe un étage projet.
-      const portees = taches.filter((tache) => tache.projet_id === projet.id);
-      const orphelines = taches.filter(
-        (tache) => tache.espace === projet.espace && !tache.projet_id && tache.statut !== 'fait',
-      );
-
-      return `
-        <li class="projet-ligne" data-projet="${echapper(projet.id)}">
-          <span class="projet-nom">${echapper(projet.nom)}</span>
-          <span class="projet-service">
-            ${charge ? `<span class="chiffre">${echapper(charge)}</span>` : ''}
-            ${
-              projet.echeance
-                ? `<span>${echapper(echeanceLisible(depuisDateISO(projet.echeance)))}</span>`
-                : ''
-            }
-          </span>
-          ${
-            caps.length
-              ? `<span class="projet-caps">sert ${caps.map(echapper).join(' · ')}</span>`
-              : `<span class="projet-caps discret">ne sert aucun cap déclaré</span>`
-          }
-          ${projet.resultat ? `<span class="projet-resultat">${echapper(projet.resultat)}</span>` : ''}
-          <span class="projet-porte">
-            ${
-              portees.length
-                ? `${portees.length} tâche${portees.length > 1 ? 's' : ''} rattachée${
-                    portees.length > 1 ? 's' : ''
-                  }`
-                : 'Aucune tâche rattachée'
-            }
-          </span>
-          ${
-            orphelines.length
-              ? `<details class="backlog projet-rattacher">
-                   <summary>Rattacher une tâche <span class="chiffre">${
-                     orphelines.length
-                   }</span></summary>
-                   <ul class="liste-orphelines">
-                     ${orphelines
-                       .map(
-                         (tache) => `
-                       <li>
-                         <span>${echapper(tache.titre)}</span>
-                         <button type="button" class="lien-discret bouton-mini"
-                           data-rattacher="${echapper(tache.id)}"
-                           data-vers="${echapper(projet.id)}">Rattacher</button>
-                       </li>`,
-                       )
-                       .join('')}
-                   </ul>
-                 </details>`
-              : ''
-          }
-        </li>`;
-    })
-    .join('')}</ul>`;
+  return construireFormulaire({
+    id: `cap-${forme}`,
+    libelle: id ? modele.modifier : modele.ajouter,
+    action: 'enregistrer-cap',
+    bouton: id ? 'Enregistrer' : 'Ajouter',
+    champs: modele.champs(valeurs),
+    extra: `<input type="hidden" name="forme" value="${echapper(forme)}">
+            <input type="hidden" name="id" value="${echapper(id ?? '')}">
+            <input type="hidden" name="parent" value="${echapper(parent ?? '')}">`,
+  });
 }
 
-// LES PÉRIODES. Elles ouvrent la page, avant les caps : on ne règle pas un cap
-// sans savoir quelle forme a le mois où il tombe. Et surtout, c'est ici que
-// l'arbitrage a lieu — pendant qu'on écrit « septembre est intense », pas un
-// dimanche soir où il ne reste que de mauvaises options.
-const NOMS_REGIMES = Object.fromEntries(
-  Object.entries(REGIMES).map(([cle, { libelle }]) => [cle, libelle]),
-);
+// --- Trouver ------------------------------------------------------------------
 
-const ESPACES_REGLES = ['fch', 'formation', 'photo'];
-
-function heuresLisibles(minutes) {
-  const heures = minutes / 60;
-  // Virgule et non point : on écrit « 39,5 h » en français, et le point se
-  // lisait comme une ponctuation au milieu du chiffre.
-  const dit = Number.isInteger(heures) ? String(heures) : heures.toFixed(1).replace('.', ',');
-  return `${dit} h`;
+function trouver(cle) {
+  const [forme, id] = cle.split(':');
+  if (forme === 'objectif') return { cible: etat.objectifs.find((o) => o.id === id) };
+  if (forme === 'periode') return { cible: etat.periodes.find((p) => p.id === id) };
+  if (forme === 'projet') return { cible: etat.projets.find((p) => p.id === id) };
+  if (forme === 'tache') return { cible: etat.taches.find((t) => t.id === id) };
+  if (forme === 'jalon') {
+    for (const objectif of etat.objectifs) {
+      const jalon = (objectif.jalons ?? []).find((j) => j.id === id);
+      if (jalon) return { cible: jalon, objectif };
+    }
+  }
+  return {};
 }
 
-export function construirePeriodes(periodes, aujourdhui = new Date(), arbitrages = []) {
-  if (!periodes.length) {
-    return `<p class="vide">Aucune période déclarée. La première dira ce que tu
-      attends du mois qui vient.</p>`;
-  }
+// --- La page ------------------------------------------------------------------
 
-  const courante = periodeDuJour(periodes, aujourdhui);
-
-  return `<ul class="liste-periodes">${periodes
-    .map((periode) => {
-      const tension = tensionDeLaPeriode(periode, arbitrages, aujourdhui);
-      const visees = chargeViseeDeLaPeriode(periode);
-      const regimes = ESPACES_REGLES.filter((espace) => periode.regimes?.[espace])
-        .map(
-          (espace) =>
-            `<span data-espace="${espace}">${echapper(NOMS_ESPACES[espace] ?? espace)}
-              ${echapper((NOMS_REGIMES[periode.regimes[espace]] ?? '').toLowerCase())}</span>`,
-        )
-        .join('');
-
-      return `
-        <li class="periode-ligne${periode.id === courante?.id ? ' periode-courante' : ''}"
-          data-periode="${echapper(periode.id)}">
-          <span class="periode-nom">${echapper(periode.nom)}</span>
-          <span class="periode-quand chiffre">${echapper(periode.debut)} → ${echapper(periode.fin)}</span>
-          ${regimes ? `<span class="periode-regimes">${regimes}</span>` : ''}
-          <span class="periode-charge">club ${echapper(
-            heuresLisibles(visees.fch),
-          )} · formation ${echapper(heuresLisibles(visees.formation))} · <span
-            class="chiffre">${echapper(heuresLisibles(visees.total))}</span> pour ${echapper(
-              heuresLisibles(tension.capacite),
-            )}</span>
-          ${
-            // TRANCHÉ. La question ne revient pas ; ce que Noé a décidé, si.
-            // Une décision qu'on ne peut pas relire est une décision qu'on
-            // reprend sans le savoir — et « revenir dessus » est le seul geste
-            // qui la rende révisable en connaissance de cause.
-            tension.tranche
-              ? `<span class="periode-tranche">
-                   <span>${echapper(tension.tranche.reponse)}</span>
-                   <button type="button" class="lien-discret bouton-mini"
-                     data-rouvrir-arbitrage="${echapper(tension.tranche.id)}"
-                     >Revenir dessus</button>
-                 </span>`
-              : ''
-          }
-          ${
-            tension.tendue
-              ? `<span class="periode-question">
-                   ${echapper(tension.question)}
-                   ${tension.issues
-                     .map(
-                       (issue) => `<button type="button" class="bouton-secondaire bouton-mini"
-                         data-detendre="${echapper(periode.id)}"
-                         data-espace-cible="${echapper(issue.espace)}"
-                         data-regime-cible="${echapper(issue.regime)}">${echapper(
-                           issue.phrase,
-                         )}</button>`,
-                     )
-                     .join('')}
-                 </span>`
-              : ''
-          }
-          <button type="button" class="lien-discret bouton-mini bouton-retirer"
-            data-retirer-periode="${echapper(periode.id)}"
-            title="Retirer cette période"
-            aria-label="Retirer « ${echapper(periode.nom)} »">×</button>
-        </li>`;
-    })
-    .join('')}</ul>`;
+// PAR ESPACE D'ABORD, dans l'ordre des journées de Noé ; à l'intérieur, le plus
+// proche en tête. Ce qui n'a pas de date ferme la marche — un cap sans échéance
+// n'est pas en retard, il n'est simplement pas daté.
+//
+// Il n'y a PLUS DE FILTRE par espace (28 août 2026, demande de Noé) : depuis
+// que les caps arrivent groupés, il ne cachait rien qu'on ne voyait déjà. Six
+// tuiles tiennent sur un écran — un filtre au-dessus d'une liste qu'on embrasse
+// du regard est un contrôle qui coûte sans rien rendre.
+function capsAffiches() {
+  const rang = (objectif) => ESPACES.indexOf(objectif.espace);
+  return [...etat.objectifs].sort(
+    (a, b) =>
+      rang(a) - rang(b) ||
+      String(a.echeance ?? '9999-99-99').localeCompare(String(b.echeance ?? '9999-99-99')),
+  );
 }
 
 function squelette() {
-  const blocs = ESPACES.map(
-    (espace) => `
-      <section class="bloc" data-espace="${espace}">
-        <h2>${echapper(NOMS_ESPACES[espace] ?? espace)}</h2>
-        <div data-bloc="${espace}"><p class="vide">…</p></div>
-
-        ${construireFormulaire({
-          id: `objectif-${espace}`,
-          libelle: 'Ajouter un objectif',
-          action: 'creer-objectif',
-          champs: [
-            { nom: 'titre', libelle: 'Objectif', type: 'text', requis: true },
-            {
-              nom: 'pourquoi',
-              libelle: 'Pourquoi ? (relu les jours sans motivation)',
-              type: 'textarea',
-            },
-            { nom: 'cible', libelle: "À quoi tu sauras que c'est réussi", type: 'text' },
-            { nom: 'echeance', libelle: 'Échéance (facultative)', type: 'date' },
-          ],
-          extra: `<input type="hidden" name="espace" value="${espace}">`,
-        })}
-
-        <h3 class="titre-projets">Projets</h3>
-        <p class="discret sous-titre">Le comment. Ce qu'on va faire pour y arriver.</p>
-        <div data-projets="${espace}"><p class="vide">…</p></div>
-        ${construireFormulaire({
-          id: `projet-${espace}`,
-          libelle: 'Ajouter un projet',
-          action: 'creer-projet',
-          champs: [
-            { nom: 'nom', libelle: 'Projet', type: 'text', requis: true },
-            { nom: 'resultat', libelle: "À quoi tu sauras qu'il est fini", type: 'text' },
-            { nom: 'charge_heures', libelle: 'Combien d\'heures en tout (facultatif)', type: 'number' },
-            { nom: 'charge_hebdo_heures', libelle: "Ou combien d'heures par semaine", type: 'number' },
-            { nom: 'echeance', libelle: 'Échéance (facultative)', type: 'date' },
-          ],
-          extra: `<input type="hidden" name="espace" value="${espace}">`,
-        })}
-      </section>`,
-  ).join('');
+  const caps = capsAffiches();
 
   return `
-    <h1>Objectifs</h1>
-    <p class="discret sous-titre">Le cap de chaque espace. C'est ici qu'il se règle.</p>
+    <h1>Le cap</h1>
 
-    <section class="bloc">
-      <h2>Les périodes</h2>
-      <p class="discret sous-titre">Ce que tu attends d'un mois, espace par espace.
-        Le régler ici, c'est arbitrer avant le mur plutôt qu'un dimanche soir.</p>
-      <div data-bloc="periodes"><p class="vide">…</p></div>
-      ${construireFormulaire({
-        id: 'periode',
-        libelle: 'Déclarer une période',
-        action: 'creer-periode',
-        champs: [
-          { nom: 'nom', libelle: 'Période', type: 'text', requis: true },
-          { nom: 'debut', libelle: 'Du', type: 'date', requis: true },
-          { nom: 'fin', libelle: 'Au', type: 'date', requis: true },
-          { nom: 'regime_fch', libelle: 'FC Hermitage', type: 'choix',
-            options: NOMS_REGIMES, valeur: 'normal' },
-          { nom: 'regime_formation', libelle: 'Formation', type: 'choix',
-            options: NOMS_REGIMES, valeur: 'normal' },
-          { nom: 'regime_photo', libelle: 'Yuno', type: 'choix',
-            options: NOMS_REGIMES, valeur: 'normal' },
-        ],
-      })}
-    </section>
+    <div class="cap-galerie">
+      ${caps
+        .map((objectif) =>
+          etat.ouvert === objectif.id
+            ? `<article class="cap-tuile cap-tuile-ouverte" data-espace="${objectif.espace}"
+                 data-objectif="${echapper(objectif.id)}">${detail(objectif)}</article>`
+            : tuileObjectif(objectif),
+        )
+        .join('')}
+      <button type="button" class="cap-tuile cap-tuile-ajout" data-ajout="objectif:rien">
+        ${SIGNE.plus}<span>Poser un objectif</span></button>
+    </div>
 
-    ${blocs}`;
+    ${
+      caps.length
+        ? ''
+        : `<p class="cap-vide">Aucun cap encore. Le premier dira où tu vas.</p>`
+    }
+
+    ${galerieProjets()}
+
+    ${bandePeriodes()}
+
+    ${etat.message ? `<p class="message-erreur">${echapper(etat.message)}</p>` : ''}
+
+    <div class="cap-fenetre-hote">${laFenetre()}</div>`;
 }
 
-// --- L'espace ---------------------------------------------------------------
+// --- L'espace -----------------------------------------------------------------
 
 export default {
   async monter(section) {
-    section.innerHTML = squelette();
-
-    // Les menus dessinés des formulaires (les régimes d'une période) n'étaient
-    // branchés nulle part ici : les boutons existaient et ne répondaient pas.
-    // Cet espace n'a pas de tuile de capture, il pose donc son propre écouteur —
+    // Les menus dessinés des formulaires ne sont branchés nulle part ailleurs :
+    // cet espace n'a pas de tuile de capture, il pose donc son propre écouteur —
     // comme le site du FCH, et pour la même raison.
     brancherChoix(section);
 
-    const etat = {
-      objectifs: [],
-      commandes: [],
-      materiel: [],
-      projets: [],
-      periodes: [],
-      arbitrages: [],
-      taches: [],
-    };
-    const bloc = (espace) => section.querySelector(`[data-bloc="${espace}"]`);
-    const blocProjets = (espace) => section.querySelector(`[data-projets="${espace}"]`);
-    const blocPeriodes = () => section.querySelector('[data-bloc="periodes"]');
-
-    const deLEspace = (espace) => etat.objectifs.filter((o) => o.espace === espace);
-
-    // Le complément de l'objectif du matériel : ses deux listes, posées dans
-    // son détail. Les autres objectifs n'en ont pas.
-    const complements = () => {
-      const objectif = etat.objectifs.find((o) => o.titre === OBJECTIF_MATERIEL);
-      if (!objectif) return {};
-      return { [objectif.id]: construireArgent(etat.commandes, etat.materiel) };
+    const rendre = () => {
+      section.innerHTML = squelette();
+      // La tuile volante n'a pas de sommaire à presser ici : c'est une pastille
+      // ou un menu qui l'ouvre. On la déplie donc à la main, juste après le
+      // rendu — `app.js` la referme comme toutes les autres.
+      const fenetre = section.querySelector('.cap-fenetre-hote .ajout-volant');
+      if (fenetre) {
+        fenetre.open = true;
+        fenetre.querySelector('input, textarea')?.focus();
+      }
     };
 
-    const rendreEspace = (espace) => {
-      bloc(espace).innerHTML = construireObjectifs(deLEspace(espace), {
-        retraitJalon: true,
-        complements: complements(),
-      });
-    };
-    const rendreProjets = (espace) => {
-      blocProjets(espace).innerHTML = construireProjets(
-        etat.projets.filter((projet) => projet.espace === espace),
-        etat.objectifs,
-        etat.taches,
-      );
-    };
+    // Le seul moment animé de l'écran : la tuile devient le détail, et le détail
+    // redevient la tuile. Les navigateurs qui ne savent pas le faire changent
+    // simplement de contenu — rien ne dépend de l'animation.
+    const rendreAnime = () => {
+      const bouge =
+        document.startViewTransition &&
+        !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!bouge) return rendre();
 
-    const rendrePeriodes = () => {
-      blocPeriodes().innerHTML = construirePeriodes(etat.periodes, new Date(), etat.arbitrages);
-    };
-
-    const rendreTout = () => {
-      rendrePeriodes();
-      ESPACES.forEach((espace) => {
-        rendreEspace(espace);
-        rendreProjets(espace);
-      });
-    };
-
-    // Redessiner remplace les tuiles : celle qu'on venait d'ouvrir se
-    // refermerait sans ça, en pleine saisie de son jalon suivant.
-    const ouvrirObjectif = (id) => {
-      const element = section.querySelector(`[data-objectif="${CSS.escape(id)}"]`);
-      if (element) element.open = true;
+      // Les TROIS promesses d'une transition peuvent échouer — deux gestes trop
+      // rapprochés, et la précédente est abandonnée. Ce n'est pas une erreur :
+      // l'écran est déjà juste. Sans ces `catch`, la console en garde la trace
+      // comme d'un défaut, et `finished` seule ne suffit pas (`ready` rejette
+      // de son côté quand la transition est sautée).
+      const passage = document.startViewTransition(() => rendre());
+      passage.finished.catch(() => {});
+      passage.ready.catch(() => {});
+      passage.updateCallbackDone.catch(() => {});
     };
 
     const charger = async () => {
-      const [objectifs, commandes, materiel, projets, periodes, arbitrages, taches] =
-        await Promise.all([
+      const [objectifs, projets, taches, periodes, commandes, materiel] = await Promise.all([
         api.objectifsActifs(),
+        api.projetsTous(),
+        api.tachesToutes(),
+        api.periodesToutes(),
         api.commandesToutes(),
         api.materielTout(),
-        api.projetsTous(),
-        api.periodesToutes(),
-        api.arbitragesTous(),
-        api.tachesToutes(),
       ]);
-      etat.projets = projets;
-      etat.periodes = periodes;
-      etat.arbitrages = arbitrages;
-      etat.taches = taches;
+
       etat.objectifs = objectifs.filter((objectif) => ESPACES.includes(objectif.espace));
+      etat.projets = projets;
+      etat.taches = taches;
+      etat.periodes = periodes;
       etat.commandes = commandes;
       etat.materiel = materiel;
-      rendreTout();
+      rendre();
     };
 
     this.rafraichir = charger;
@@ -499,9 +1257,9 @@ export default {
     try {
       await charger();
     } catch (erreur) {
-      console.error("Chargement de l'espace Objectifs impossible", erreur);
+      console.error("Chargement de l'espace Le cap impossible", erreur);
       section.innerHTML = `
-        <h1>Objectifs</h1>
+        <h1>Le cap</h1>
         <p class="vide">Les données n'ont pas pu être chargées.</p>
         <button type="button" class="bouton-secondaire" data-action="reessayer">Réessayer</button>`;
       section
@@ -510,13 +1268,13 @@ export default {
       return;
     }
 
-    // --- Ajouts et modifications ---
+    // --- Enregistrer, depuis la tuile volante ---
     //
-    // Un formulaire garde sa saisie quand l'écriture échoue et a un endroit
-    // pour le dire : c'est l'une des deux exceptions à l'affichage optimiste.
+    // Un formulaire garde sa saisie quand l'écriture échoue et a un endroit pour
+    // le dire : c'est l'une des deux exceptions à l'affichage optimiste.
 
     section.addEventListener('submit', async (evenement) => {
-      const formulaire = evenement.target.closest('form[data-action]');
+      const formulaire = evenement.target.closest('form[data-action="enregistrer-cap"]');
       if (!formulaire) return;
       evenement.preventDefault();
 
@@ -527,123 +1285,109 @@ export default {
       bouton.disabled = true;
 
       try {
-        await appliquer(formulaire.dataset.action, champs);
-        formulaire.reset();
-        formulaire.closest('.ajout').open = false;
+        await enregistrer(champs);
+        etat.edition = null;
+        rendre();
       } catch (souci) {
         console.error('Enregistrement impossible', souci);
         erreur.textContent = souci.message ?? "L'enregistrement a échoué.";
         erreur.hidden = false;
-      } finally {
         bouton.disabled = false;
       }
     });
 
-    // Répondre à la question d'une période : un geste, et le régime redescend.
-    // C'est Noé qui tranche — le hub n'a fait que poser les deux portes.
-    section.addEventListener('click', async (evenement) => {
-      const detendre = evenement.target.closest('[data-detendre]');
-      if (detendre) {
-        const periode = etat.periodes.find((p) => p.id === detendre.dataset.detendre);
-        if (!periode) return;
-        const cible = detendre.dataset.espaceCible;
-        const regimes = { ...periode.regimes, [cible]: detendre.dataset.regimeCible };
-        if (regimes[cible] === 'normal') delete regimes[cible];
+    async function enregistrer(champs) {
+      const { forme, id, parent } = champs;
 
-        // PRENDRE UNE PORTE, C'EST TRANCHER. On garde la question AVEC la
-        // réponse : relire « le club cède, la formation porte septembre » six
-        // semaines plus tard ne vaut que si l'on se rappelle ce qui était en
-        // balance. Et tant que cette trace couvre le jour, le hub ne repose
-        // pas la question.
-        const tension = tensionDeLaPeriode(periode, etat.arbitrages, new Date());
-        const autre = ['fch', 'formation'].find((espace) => espace !== cible);
-        const nom = (espace) => (espace === 'fch' ? 'le club' : 'la formation');
-
-        await modifierAussitot(periode, { regimes }, () =>
-          api.modifierPeriode(periode.id, { regimes }), { rendre: rendrePeriodes });
-
-        try {
-          const trace = await api.trancher({
-            cle: cleDArbitrage(periode),
-            question: tension.question ?? 'Le club et la formation demandaient plus que 35 h.',
-            portee_debut: periode.debut,
-            portee_fin: periode.fin,
-            reponse: `${nom(autre)[0].toUpperCase()}${nom(autre).slice(1)} porte « ${periode.nom} » ;`
-              + ` ${nom(cible)} passe ${detendre.dataset.regimeCible === 'normal' ? 'au normal' : 'au ralenti'}.`,
-            espace_retenu: autre,
-            espace_cede: cible,
-          });
-          etat.arbitrages = [trace, ...etat.arbitrages];
-        } catch (erreur) {
-          // La trace a manqué, le réglage est passé : le hub reposera la
-          // question, ce qui est le moindre mal — l'inverse serait d'appliquer
-          // en silence une décision dont il ne reste rien.
-          console.error('Arbitrage non enregistré', erreur);
-        }
-        rendrePeriodes();
-        return;
-      }
-
-      // Revenir sur un arbitrage : la question redevient posable. C'est la
-      // seule façon de changer d'avis sans que le hub fasse comme si de rien
-      // n'était.
-      // Rattacher une tâche orpheline : l'écran d'abord, l'écriture derrière.
-      const rattacher = evenement.target.closest('[data-rattacher]');
-      if (rattacher) {
-        const tache = etat.taches.find((candidate) => candidate.id === rattacher.dataset.rattacher);
-        if (!tache) return;
-        const espace = tache.espace;
-        await modifierAussitot(
-          tache,
-          { projet_id: rattacher.dataset.vers },
-          () => api.modifierTache(tache.id, { projet_id: rattacher.dataset.vers }),
-          { rendre: () => rendreProjets(espace) },
-        );
-        return;
-      }
-
-      const rouvrir = evenement.target.closest('[data-rouvrir-arbitrage]');
-      if (rouvrir) {
-        const id = rouvrir.dataset.rouvrirArbitrage;
-        const avant = etat.arbitrages;
-        etat.arbitrages = etat.arbitrages.filter((a) => a.id !== id);
-        rendrePeriodes();
-        try {
-          await api.rouvrirArbitrage(id);
-        } catch (erreur) {
-          console.error('Arbitrage non rouvert', erreur);
-          etat.arbitrages = avant;
-          rendrePeriodes();
-        }
-        return;
-      }
-
-      const retirer = evenement.target.closest('[data-retirer-periode]');
-      if (retirer) {
-        const periode = etat.periodes.find((p) => p.id === retirer.dataset.retirerPeriode);
-        if (!periode || !confirm(`Retirer la période « ${periode.nom} » ?`)) return;
-        await retirerAussitot(etat.periodes, periode, () => api.supprimerPeriode(periode.id), {
-          rendre: rendrePeriodes,
-        });
-      }
-    });
-
-    async function appliquer(action, champs) {
-      if (action === 'creer-objectif') {
-        const objectif = await api.creerObjectif({
+      if (forme === 'objectif') {
+        const valeurs = {
           espace: champs.espace,
           titre: champs.titre.trim(),
           pourquoi: champs.pourquoi?.trim() || null,
           cible: champs.cible?.trim() || null,
           echeance: champs.echeance || null,
-        });
-        etat.objectifs = [...etat.objectifs, { ...objectif, jalons: objectif.jalons ?? [] }];
-        rendreEspace(champs.espace);
+        };
+        if (id) {
+          const objectif = trouver(`objectif:${id}`).cible;
+          Object.assign(objectif, await api.modifierObjectif(id, valeurs));
+        } else {
+          const objectif = await api.creerObjectif(valeurs);
+          etat.objectifs = [...etat.objectifs, { ...objectif, jalons: objectif.jalons ?? [] }];
+        }
         return;
       }
 
-      if (action === 'creer-periode') {
-        const periode = await api.creerPeriode({
+      if (forme === 'jalon') {
+        const valeurs = { titre: champs.titre.trim(), echeance: champs.echeance || null };
+        if (id) {
+          const jalon = trouver(`jalon:${id}`).cible;
+          Object.assign(jalon, await api.modifierJalon(id, valeurs));
+        } else {
+          const objectif = trouver(`objectif:${parent}`).cible;
+          const jalon = await api.creerJalon({
+            objectif_id: parent,
+            ...valeurs,
+            ordre: (objectif?.jalons?.length ?? 0) + 1,
+          });
+          objectif.jalons = [...(objectif.jalons ?? []), jalon];
+        }
+        return;
+      }
+
+      if (forme === 'projet') {
+        const valeurs = {
+          espace: champs.espace,
+          nom: champs.nom.trim(),
+          resultat: champs.resultat?.trim() || null,
+          charge_minutes: enMinutes(champs.charge_heures),
+          charge_hebdo: enMinutes(champs.charge_hebdo_heures),
+          echeance: champs.echeance || null,
+          statut: champs.statut,
+        };
+        if (id) {
+          const projet = trouver(`projet:${id}`).cible;
+          Object.assign(projet, await api.modifierProjet(id, valeurs));
+        } else {
+          const projet = await api.creerProjet(valeurs);
+          // Un projet posé DEPUIS un cap sert ce cap : le lien se fait tout
+          // seul, sinon il faudrait le refaire à la main juste après. Posé
+          // depuis la galerie, il ne sert rien pour l'instant — et c'est
+          // légitime : de l'intendance, ça existe.
+          const cible = parent ? await api.lierProjet(projet.id, { objectif_id: parent }) : null;
+          etat.projets = [...etat.projets, { ...projet, cibles: cible ? [cible] : [] }];
+        }
+        return;
+      }
+
+      if (forme === 'tache') {
+        const valeurs = {
+          titre: champs.titre.trim(),
+          echeance: champs.echeance || null,
+          heure: champs.heure || null,
+          // Une durée sans heure ne mesure rien ; une répétition sans date n'a
+          // rien à répéter. Mêmes réserves que partout ailleurs dans le hub.
+          duree: (champs.heure && Number(champs.duree)) || null,
+          priorite: Number(champs.priorite) || 4,
+          recurrence: (champs.echeance && champs.recurrence) || null,
+        };
+        if (id) {
+          const tache = trouver(`tache:${id}`).cible;
+          Object.assign(tache, await api.modifierTache(id, valeurs));
+        } else {
+          const projet = trouver(`projet:${parent}`).cible;
+          const tache = await api.creerTache({
+            espace: projet.espace,
+            projet_id: projet.id,
+            statut: 'actif',
+            ...valeurs,
+          });
+          etat.taches = [...etat.taches, tache];
+        }
+        return;
+      }
+
+      if (forme === 'periode') {
+        const valeurs = {
           nom: champs.nom.trim(),
           debut: champs.debut,
           fin: champs.fin,
@@ -651,58 +1395,23 @@ export default {
           // période qui ne dit rien d'un espace ne doit pas donner l'illusion
           // d'en avoir décidé quelque chose.
           regimes: Object.fromEntries(
-            ESPACES_REGLES.map((espace) => [espace, champs[`regime_${espace}`]]).filter(
+            ESPACES.map((espace) => [espace, champs[`regime_${espace}`]]).filter(
               ([, regime]) => regime && regime !== 'normal',
             ),
           ),
-        });
-        etat.periodes = [...etat.periodes, periode].sort((a, b) =>
-          String(a.debut).localeCompare(String(b.debut)),
-        );
-        rendrePeriodes();
-        return;
-      }
-
-      if (action === 'creer-projet') {
-        // Les heures se saisissent en heures — c'est ainsi qu'on pense un
-        // projet —, et se rangent en minutes : c'est l'unité de `taches.duree`
-        // et des événements, et deux unités dans une même somme finissent
-        // toujours par se croiser.
-        const enMinutes = (valeur) => {
-          const heures = Number(valeur);
-          return Number.isFinite(heures) && heures > 0 ? Math.round(heures * 60) : null;
         };
-
-        const projet = await api.creerProjet({
-          espace: champs.espace,
-          nom: champs.nom.trim(),
-          resultat: champs.resultat?.trim() || null,
-          charge_minutes: enMinutes(champs.charge_heures),
-          charge_hebdo: enMinutes(champs.charge_hebdo_heures),
-          echeance: champs.echeance || null,
-        });
-        etat.projets = [...etat.projets, { ...projet, cibles: projet.cibles ?? [] }];
-        rendreProjets(champs.espace);
+        if (id) {
+          const periode = trouver(`periode:${id}`).cible;
+          Object.assign(periode, await api.modifierPeriode(id, valeurs));
+        } else {
+          etat.periodes = [...etat.periodes, await api.creerPeriode(valeurs)].sort((a, b) =>
+            String(a.debut).localeCompare(String(b.debut)),
+          );
+        }
         return;
       }
 
-      if (action === 'modifier-objectif') {
-        const objectif = etat.objectifs.find((o) => o.id === champs.objectif_id);
-        const misAJour = await api.modifierObjectif(champs.objectif_id, {
-          titre: champs.titre.trim(),
-          pourquoi: champs.pourquoi?.trim() || null,
-          cible: champs.cible?.trim() || null,
-          echeance: champs.echeance || null,
-        });
-        // La mise à jour ne renvoie que les colonnes : les jalons déjà chargés
-        // restent en place.
-        Object.assign(objectif, misAJour);
-        rendreEspace(objectif.espace);
-        ouvrirObjectif(objectif.id);
-        return;
-      }
-
-      if (action === 'creer-prestation') {
+      if (forme === 'prestation') {
         // Livrée d'emblée : on note ce qu'on a ENCAISSÉ, pas ce qu'on espère.
         const commande = await api.creerCommande({
           titre: champs.titre.trim(),
@@ -714,156 +1423,356 @@ export default {
           statut: 'livree',
         });
         etat.commandes = [commande, ...etat.commandes];
-        rendreArgent();
         return;
       }
 
-      if (action === 'creer-materiel') {
+      if (forme === 'materiel') {
         const achat = await api.creerMateriel({
           nom: champs.nom.trim(),
           prix: Number(champs.prix),
           date_achat: champs.date_achat || null,
         });
         etat.materiel = [achat, ...etat.materiel];
-        rendreArgent();
-        return;
-      }
-
-      if (action === 'creer-jalon') {
-        const objectif = etat.objectifs.find((o) => o.id === champs.objectif_id);
-        const jalon = await api.creerJalon({
-          objectif_id: champs.objectif_id,
-          titre: champs.titre.trim(),
-          echeance: champs.echeance || null,
-          ordre: (objectif?.jalons?.length ?? 0) + 1,
-        });
-        objectif.jalons = [...(objectif.jalons ?? []), jalon];
-        rendreEspace(objectif.espace);
-        ouvrirObjectif(objectif.id);
       }
     }
 
-    // --- Clics ---
+    // --- Les gestes ---
 
     section.addEventListener('click', async (evenement) => {
-      const jalon = evenement.target.closest('[data-jalon]');
-      if (jalon) return marquerJalon(jalon);
+      const dans = (nom) => evenement.target.closest(`[data-${nom}]`);
 
-      const supprJalon = evenement.target.closest('[data-supprimer-jalon]');
-      if (supprJalon) return supprimerJalon(supprJalon);
-
-      const atteindre = evenement.target.closest('[data-atteindre]');
-      if (atteindre) return atteindreObjectif(atteindre);
-
-      const supprObjectif = evenement.target.closest('[data-supprimer-objectif]');
-      if (supprObjectif) return supprimerObjectif(supprObjectif);
-
-      const commande = evenement.target.closest('[data-retirer-commande]');
-      if (commande) {
-        return retirerArgent(commande, commande.dataset.retirerCommande, 'commandes', api.supprimerCommande);
+      // REFERMER LA TUILE VOLANTE EFFACE AUSSI SON ÉTAT. `app.js` retire
+      // l'attribut `open` — cela suffit aux dix-sept formulaires qui vivent
+      // dans la page, pas à celui-ci : il est REDESSINÉ à chaque rendu, et
+      // reviendrait donc ouvert au premier geste suivant. C'est ce qui s'est
+      // produit la première fois : la tuile refermée réapparaissait par-dessus
+      // le cap qu'on venait d'ouvrir.
+      if (evenement.target.closest('[data-fermer-ajout]')) {
+        etat.edition = null;
+        rendre();
+        return;
       }
 
-      const achat = evenement.target.closest('[data-retirer-materiel]');
+      // Le reste de la tuile volante est géré par `brancherChoix` et par
+      // `app.js` : on ne fait que l'ignorer ici.
+      if (evenement.target.closest('.ajout-volant')) return;
+
+      // CHANGER L'ÉTAT D'UN PROJET depuis sa tuile. L'écran d'abord : la
+      // pastille change de mot et de couleur, le projet reprend sa place dans
+      // le tri, et l'écriture part derrière.
+      const etatChoisi = dans('etat-projet');
+      if (etatChoisi) {
+        const projet = trouver(`projet:${etatChoisi.dataset.projet}`).cible;
+        if (!projet) return;
+        const modifs = { statut: etatChoisi.dataset.etatProjet };
+        await modifierAussitot(projet, modifs, () => api.modifierProjet(projet.id, modifs), {
+          rendre,
+          echouer: () => signaler("Ça n'a pas pu être enregistré — l'état est revenu."),
+        });
+        return;
+      }
+
+      // Ouvrir un menu dessiné : `brancherChoix` s'en charge, et surtout il ne
+      // faut RIEN redessiner ici — le rendu emporterait le panneau qui vient de
+      // s'ouvrir.
+      if (evenement.target.closest('[data-ouvrir-choix], .choix-panneau')) return;
+
+      const ouvrir = dans('ouvrir');
+      if (ouvrir) {
+        const id = ouvrir.dataset.ouvrir;
+        etat.ouvert = etat.ouvert === id ? null : id;
+        etat.projetOuvert = null;
+        etat.menu = null;
+        rendreAnime();
+        return;
+      }
+
+      if (dans('refermer')) {
+        etat.ouvert = null;
+        etat.menu = null;
+        rendreAnime();
+        return;
+      }
+
+      const galerie = dans('ouvrir-projet-galerie');
+      if (galerie) {
+        const id = galerie.dataset.ouvrirProjetGalerie;
+        etat.projetGalerie = etat.projetGalerie === id ? null : id;
+        etat.rattache = null;
+        etat.menu = null;
+        rendreAnime();
+        return;
+      }
+
+      if (dans('refermer-projet')) {
+        etat.projetGalerie = null;
+        etat.menu = null;
+        rendreAnime();
+        return;
+      }
+
+      const projet = dans('ouvrir-projet');
+      if (projet) {
+        const id = projet.dataset.ouvrirProjet;
+        etat.projetOuvert = etat.projetOuvert === id ? null : id;
+        etat.rattache = null;
+        etat.menu = null;
+        rendre();
+        return;
+      }
+
+      // --- Ce qui s'écrit d'un doigt ---
+
+      const jalon = dans('jalon');
+      if (jalon) return basculerJalon(jalon.dataset.jalon);
+
+      const tache = dans('tache');
+      if (tache) return basculerTache(tache.dataset.tache);
+
+      const rattacherVers = dans('rattacher-vers');
+      if (rattacherVers) {
+        const id = rattacherVers.dataset.rattacherVers;
+        etat.rattache = etat.rattache === id ? null : id;
+        rendre();
+        return;
+      }
+
+      const rattacher = dans('rattacher');
+      if (rattacher) {
+        const cible = etat.taches.find((t) => t.id === rattacher.dataset.rattacher);
+        if (!cible) return;
+        const modifs = { projet_id: rattacher.dataset.vers };
+        await modifierAussitot(cible, modifs, () => api.modifierTache(cible.id, modifs), {
+          rendre,
+          echouer: () => signaler("Ça n'a pas pu être rattaché."),
+        });
+        return;
+      }
+
+      // --- Les périodes ---
+
+      // --- L'argent ---
+
+      const commande = dans('retirer-commande');
+      if (commande) {
+        const id = commande.dataset.retirerCommande;
+        const cible = etat.commandes.find((c) => c.id === id);
+        return retirerAussitot(etat.commandes, cible, () => api.supprimerCommande(id), {
+          rendre,
+          echouer: () => signaler("Ça n'a pas pu être retiré."),
+        });
+      }
+
+      const achat = dans('retirer-materiel');
       if (achat) {
-        return retirerArgent(achat, achat.dataset.retirerMateriel, 'materiel', api.supprimerMateriel);
+        const id = achat.dataset.retirerMateriel;
+        const cible = etat.materiel.find((m) => m.id === id);
+        return retirerAussitot(etat.materiel, cible, () => api.supprimerMateriel(id), {
+          rendre,
+          echouer: () => signaler("Ça n'a pas pu être retiré."),
+        });
+      }
+
+      // --- Le menu discret ---
+
+      const menu = dans('menu');
+      if (menu) {
+        etat.menu = etat.menu === menu.dataset.menu ? null : menu.dataset.menu;
+        etat.confirme = null;
+        rendre();
+        return;
+      }
+
+      const modifier = dans('modifier');
+      if (modifier) {
+        const [forme, id] = modifier.dataset.modifier.split(':');
+        etat.edition = { forme, id };
+        etat.menu = null;
+        rendre();
+        return;
+      }
+
+      const supprimer = dans('supprimer');
+      if (supprimer) {
+        etat.confirme = supprimer.dataset.supprimer;
+        rendre();
+        return;
+      }
+
+      const atteindre = dans('atteindre');
+      if (atteindre) {
+        etat.confirme = `atteindre:${atteindre.dataset.atteindre}`;
+        rendre();
+        return;
+      }
+
+      const confirmer = dans('confirmer');
+      if (confirmer) return executer(confirmer.dataset.confirmer);
+
+      if (dans('annuler-confirmation')) {
+        etat.confirme = null;
+        rendre();
+        return;
+      }
+
+      const ajout = dans('ajout');
+      if (ajout) {
+        const [forme, parent] = ajout.dataset.ajout.split(':');
+        etat.edition = { forme, parent: parent === 'rien' ? null : parent };
+        etat.menu = null;
+        rendre();
+        return;
+      }
+
+      // Un appui ailleurs referme ce qui traîne.
+      if (etat.menu || etat.confirme) {
+        etat.menu = null;
+        etat.confirme = null;
+        rendre();
       }
     });
 
-    async function retirerArgent(bouton, id, liste, supprimer) {
-      bouton.disabled = true;
-      try {
-        await supprimer(id);
-        etat[liste] = etat[liste].filter((entree) => entree.id !== id);
-        rendreArgent();
-      } catch (souci) {
-        console.error('Retrait impossible', souci);
-        bouton.disabled = false;
+    // Échap referme la tuile volante — et efface son état, pour la même raison
+    // que la croix et le fond assombri.
+    section.addEventListener('keydown', (evenement) => {
+      if (evenement.key === 'Escape' && etat.edition) {
+        etat.edition = null;
+        rendre();
       }
+    });
+
+    function signaler(mot) {
+      etat.message = mot;
+      rendre();
     }
 
-    // Redessiner l'espace photo referme sa tuile : on la rouvre, sinon noter
-    // une deuxième prestation obligerait à tout redéplier.
-    const rendreArgent = () => {
-      const objectif = etat.objectifs.find((o) => o.titre === OBJECTIF_MATERIEL);
-      if (!objectif) return;
-      rendreEspace(objectif.espace);
-      ouvrirObjectif(objectif.id);
-    };
-
-    const objectifPortant = (idJalon) =>
-      etat.objectifs.find((candidat) => candidat.jalons?.some((j) => j.id === idJalon));
-
-    async function marquerJalon(bouton) {
-      bouton.disabled = true;
-      try {
-        const objectif = objectifPortant(bouton.dataset.jalon);
-        const jalon = objectif.jalons.find((j) => j.id === bouton.dataset.jalon);
-        // Un jalon atteint écrit sa victoire : elle s'affichera dans l'espace
-        // de l'espace, cette page-ci ne montre que le cap.
-        const { jalon: atteint } = await api.atteindreJalon(jalon, objectif.espace);
-        Object.assign(jalon, atteint);
-        rendreEspace(objectif.espace);
-        ouvrirObjectif(objectif.id);
-      } catch (souci) {
-        console.error('Impossible de marquer le jalon', souci);
-        bouton.disabled = false;
-      }
-    }
-
-    async function supprimerJalon(bouton) {
-      const objectif = objectifPortant(bouton.dataset.supprimerJalon);
-      const jalon = objectif?.jalons.find((j) => j.id === bouton.dataset.supprimerJalon);
+    // Marquer un jalon atteint écrit sa victoire ; revenir dessus la retire —
+    // sinon le hub garderait la trace d'un travail défait.
+    async function basculerJalon(id) {
+      const { cible: jalon, objectif } = trouver(`jalon:${id}`);
       if (!jalon) return;
-      if (!confirm(`Retirer le jalon « ${jalon.titre} » ?`)) return;
 
-      bouton.disabled = true;
+      const avant = { ...jalon };
+      Object.assign(jalon, {
+        atteint: !jalon.atteint,
+        date_atteint: jalon.atteint ? null : new Date().toISOString().slice(0, 10),
+      });
+      rendre();
+
       try {
-        await api.supprimerJalon(jalon.id);
-        objectif.jalons = objectif.jalons.filter((j) => j.id !== jalon.id);
-        rendreEspace(objectif.espace);
-        ouvrirObjectif(objectif.id);
+        if (avant.atteint) {
+          Object.assign(jalon, await api.modifierJalon(id, { atteint: false, date_atteint: null }));
+          await api.supprimerVictoireDuJalon(id);
+        } else {
+          const { jalon: atteint } = await api.atteindreJalon(avant, objectif.espace);
+          Object.assign(jalon, atteint);
+        }
       } catch (souci) {
-        console.error('Retrait du jalon impossible', souci);
-        bouton.disabled = false;
+        console.error('Jalon non modifié', souci);
+        Object.assign(jalon, avant);
+        signaler("Ça n'a pas pu être enregistré — le jalon est revenu.");
       }
     }
 
-    // Atteindre un objectif est rare et engageant : on demande une fois.
-    async function atteindreObjectif(bouton) {
-      const objectif = etat.objectifs.find((o) => o.id === bouton.dataset.atteindre);
-      if (!objectif) return;
-      if (!confirm(`Marquer « ${objectif.titre} » comme atteint ?`)) return;
+    // Cocher est une intention, pas un fait acquis : la fenêtre demande combien
+    // de temps ça a pris, et rien n'est écrit tant qu'on n'a pas confirmé.
+    async function basculerTache(id) {
+      const tache = etat.taches.find((t) => t.id === id);
+      if (!tache) return;
 
-      bouton.disabled = true;
+      if (tache.statut === 'fait') return terminerTache(tache, false, null);
+      demanderLaDuree(tache, (minutes) => terminerTache(tache, true, minutes));
+    }
+
+    async function terminerTache(tache, versFait, minutes) {
+      const avant = { ...tache };
+      Object.assign(tache, {
+        statut: versFait ? 'fait' : 'actif',
+        date_fait: versFait ? new Date().toISOString() : null,
+        duree: minutes ?? tache.duree,
+      });
+      rendre();
+
       try {
-        await api.atteindreObjectif(objectif);
-        etat.objectifs = etat.objectifs.filter((o) => o.id !== objectif.id);
-        rendreEspace(objectif.espace);
+        if (versFait) {
+          if (minutes !== null) await api.modifierTache(tache.id, { duree: minutes });
+          const { tache: faite } = await api.terminerTache(avant);
+          Object.assign(tache, faite);
+        } else {
+          Object.assign(tache, await api.rouvrirTache(avant));
+          await api.supprimerVictoireDeLaTache(tache.id);
+        }
       } catch (souci) {
-        console.error("Impossible de marquer l'objectif atteint", souci);
-        bouton.disabled = false;
+        console.error('Tâche non mise à jour', souci);
+        Object.assign(tache, avant);
+        signaler("Ça n'a pas pu être enregistré — la tâche est revenue.");
       }
     }
 
-    async function supprimerObjectif(bouton) {
-      const objectif = etat.objectifs.find((o) => o.id === bouton.dataset.supprimerObjectif);
-      if (!objectif) return;
-      if (
-        !confirm(
-          `Supprimer « ${objectif.titre} » et ses jalons ? Les tâches liées sont conservées.`,
-        )
-      ) {
+    // Ce qui est irréversible passe par ici, et seulement après confirmation.
+    async function executer(cle) {
+      const [forme, id] = cle.split(':');
+      etat.menu = null;
+      etat.confirme = null;
+
+      if (forme === 'atteindre') {
+        const objectif = trouver(`objectif:${id}`).cible;
+        if (!objectif) return;
+        etat.objectifs = etat.objectifs.filter((o) => o.id !== id);
+        etat.ouvert = null;
+        rendre();
+        try {
+          await api.atteindreObjectif(objectif);
+        } catch (souci) {
+          console.error("Objectif non marqué atteint", souci);
+          etat.objectifs = [...etat.objectifs, objectif];
+          signaler("Ça n'a pas pu être enregistré — l'objectif est revenu.");
+        }
         return;
       }
 
-      bouton.disabled = true;
-      try {
-        await api.supprimerObjectif(objectif.id);
-        etat.objectifs = etat.objectifs.filter((o) => o.id !== objectif.id);
-        rendreEspace(objectif.espace);
-      } catch (souci) {
-        console.error("Suppression de l'objectif impossible", souci);
-        bouton.disabled = false;
+      if (forme === 'objectif') {
+        const objectif = trouver('objectif:' + id).cible;
+        etat.ouvert = null;
+        return retirerAussitot(etat.objectifs, objectif, () => api.supprimerObjectif(id), {
+          rendre,
+          echouer: () => signaler("Ça n'a pas pu être supprimé."),
+        });
+      }
+
+      if (forme === 'jalon') {
+        const { cible: jalon, objectif } = trouver(cle);
+        if (!jalon) return;
+        return retirerAussitot(objectif.jalons, jalon, () => api.supprimerJalon(id), {
+          rendre,
+          echouer: () => signaler("Ça n'a pas pu être supprimé."),
+        });
+      }
+
+      if (forme === 'projet') {
+        const projet = trouver(cle).cible;
+        etat.projetOuvert = null;
+        etat.projetGalerie = null;
+        return retirerAussitot(etat.projets, projet, () => api.supprimerProjet(id), {
+          rendre,
+          echouer: () => signaler("Ça n'a pas pu être supprimé."),
+        });
+      }
+
+      if (forme === 'tache') {
+        const tache = trouver(cle).cible;
+        return retirerAussitot(etat.taches, tache, () => api.supprimerTache(id), {
+          rendre,
+          echouer: () => signaler("Ça n'a pas pu être supprimé."),
+        });
+      }
+
+      if (forme === 'periode') {
+        const periode = trouver(cle).cible;
+        return retirerAussitot(etat.periodes, periode, () => api.supprimerPeriode(id), {
+          rendre,
+          echouer: () => signaler("Ça n'a pas pu être supprimé."),
+        });
       }
     }
   },

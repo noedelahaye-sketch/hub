@@ -26,6 +26,7 @@ import {
   NOMS_ESPACES,
   RECURRENCES,
   dureeLisible,
+  FAMILLES_PERSO_CHOIX,
 } from './format.js';
 import { champDuree, marquerLaDuree, demanderLaDuree, fermerLaDuree } from './gabarits.js';
 import { marquerLesEntrantes, animerLaCoche } from './mouvements.js';
@@ -475,9 +476,12 @@ const PASTILLE_REPETITION = `<svg viewBox="0 0 24 24" width="14" height="14" fil
 // `data-pastille` sur le bouton, `data-panneau` sur le panneau : les deux
 // portaient le même nom d'attribut, et un sélecteur ne savait plus lequel il
 // visait depuis que les panneaux vivent en permanence dans le DOM.
-function pastille(nom, icone, texte, { rempli = false, priorite = null } = {}) {
+// `cachee` : une pastille qui n'a de sens que pour UN espace. Elle reste dans
+// le DOM et suit le choix de l'espace (voir `majPastilles`) — la retirer et la
+// remettre redessinerait la tuile, donc refermerait le clavier.
+function pastille(nom, icone, texte, { rempli = false, priorite = null, cachee = false } = {}) {
   return `<button type="button" class="pastille-capture${rempli ? ' remplie' : ''}"
-    data-pastille="${nom}" aria-expanded="false"
+    data-pastille="${nom}" aria-expanded="false" ${cachee ? 'hidden' : ''}
     ${priorite ? `data-priorite="${priorite}"` : ''}>${icone}<span>${echapper(texte)}</span></button>`;
 }
 
@@ -579,6 +583,37 @@ const PASTILLE_PROJET = `<svg viewBox="0 0 24 24" width="14" height="14" fill="n
   aria-hidden="true"><path d="M3 7l9-4 9 4-9 4-9-4Z"/><path d="M3 12l9 4 9-4"/>
   <path d="M3 17l9 4 9-4"/></svg>`;
 
+// La famille d'un moment perso : ce que ce moment sert — le corps, le calme,
+// le lien, ou rien de tout ça (l'intendance). Une feuille pour signe : ce n'est
+// pas du travail qu'on range là.
+const PASTILLE_FAMILLE = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+  aria-hidden="true" focusable="false">
+  <path d="M4 21c0-9 5.5-14.5 16-15 .7 9.5-4.5 15-13 15z"></path>
+  <path d="M4 21c1.5-5 4.5-8.5 9-10.5"></path>
+</svg>`;
+
+function panneauFamille(valeurCourante) {
+  return `
+    <div class="capture-popover capture-popover-etroit" data-panneau="famille" hidden>
+      <ul class="choix-capture">
+        ${Object.entries(FAMILLES_PERSO_CHOIX)
+          .map(
+            ([valeur, libelle]) => `
+          <li><button type="button" data-poser-famille="${valeur}"
+            aria-pressed="${valeur === (valeurCourante ?? '')}"
+            class="${valeur === (valeurCourante ?? '') ? 'actif' : ''}">
+            <span>${echapper(libelle)}</span>
+          </button></li>`,
+          )
+          .join('')}
+      </ul>
+      <p class="discret cal-note-nature">L'intendance ne repose de rien : elle se
+        fait, elle ne remplace ni une séance, ni un moment de calme, ni
+        quelqu'un de vu.</p>
+    </div>`;
+}
+
 function panneauProjet(projets, valeurCourante) {
   const offerts = projets.filter((projet) => projet.statut === 'actif' || projet.id === valeurCourante);
 
@@ -668,6 +703,17 @@ export function construireCapture(capture, projets = []) {
         <div class="capture-pastilles-liste">
           ${pastille('date', PASTILLE_DATE, dateLisible(capture), { rempli: Boolean(capture.echeance) })}
           ${pastille('espace', PASTILLE_ESPACE, ESPACES[capture.espace], { rempli: true })}
+          <!-- La famille ne se demande QUE dans l'espace perso : ailleurs, la
+               question n'a pas de sens. Elle apparaît et disparaît avec le
+               choix de l'espace, sans que la tuile se redessine.
+               Juste derrière l'espace, et non en queue : la bande DÉFILE,
+               une pastille sixième sur six vit hors de l'écran. -->
+          ${pastille(
+            'famille',
+            PASTILLE_FAMILLE,
+            capture.famille ? FAMILLES_PERSO_CHOIX[capture.famille] : 'Famille',
+            { rempli: Boolean(capture.famille), cachee: capture.espace !== 'perso' },
+          )}
           ${pastille('priorite', PASTILLE_PRIORITE, capture.priorite === 4 ? 'Priorité' : `P${capture.priorite}`, {
             rempli: capture.priorite !== 4,
             priorite: capture.priorite,
@@ -700,6 +746,7 @@ export function construireCapture(capture, projets = []) {
       ${panneauPriorite(capture.priorite)}
       ${panneauRepetition(capture.recurrence)}
       ${panneauProjet(projets.filter((projet) => projet.espace === capture.espace), capture.projet_id)}
+      ${panneauFamille(capture.famille)}
 
       ${
         capture.confirmationSortie
@@ -751,6 +798,9 @@ export default {
       priorite: 4,
       // Le projet servi, ou rien. Voir `panneauProjet`.
       projet_id: null,
+      // La famille d'un moment perso — corps, calme, lien, intendance. Nulle
+      // partout ailleurs : l'écriture l'écarte quand l'espace n'est pas perso.
+      famille: null,
       // Nulle = une seule fois. Voir `terminerTache` (js/api.js) : une tâche
       // répétée ne se termine pas, elle glisse à l'occurrence suivante.
       recurrence: null,
@@ -944,6 +994,15 @@ export default {
         etat.projets.find((projet) => projet.id === etat.capture.projet_id)?.nom ?? 'Projet',
         Boolean(etat.capture.projet_id),
       );
+      ecrire(
+        'famille',
+        etat.capture.famille ? FAMILLES_PERSO_CHOIX[etat.capture.famille] : 'Famille',
+        Boolean(etat.capture.famille),
+      );
+      // Elle n'existe que dans l'espace perso, et suit donc le choix de
+      // l'espace sans que la tuile se redessine.
+      const familleOfferte = section.querySelector('[data-pastille="famille"]');
+      if (familleOfferte) familleOfferte.hidden = etat.capture.espace !== 'perso';
       section
         .querySelector('[data-pastille="priorite"]')
         ?.setAttribute('data-priorite', String(etat.capture.priorite));
@@ -957,7 +1016,7 @@ export default {
     // dans la liste.
     section.addEventListener('pointerdown', (evenement) => {
       const garderLeClavier = evenement.target.closest(
-        '[data-pastille], [data-poser-date], [data-poser-espace], [data-poser-priorite],\n         [data-poser-repetition], [data-poser-duree], .capture-envoyer',
+        '[data-pastille], [data-poser-date], [data-poser-espace], [data-poser-priorite],\n         [data-poser-repetition], [data-poser-duree], [data-poser-famille],\n         .capture-envoyer',
       );
       if (garderLeClavier) evenement.preventDefault();
     });
@@ -1115,6 +1174,10 @@ export default {
         // la lui envoie pas non plus.
         recurrence: etat.capture.echeance ? etat.capture.recurrence : null,
         projet_id: etat.capture.projet_id,
+        // La famille ne veut rien dire hors de l'espace perso : la pastille y
+        // est cachée, et l'écriture l'écarte pour de bon — sans quoi une tâche
+        // passée de perso au club emporterait son classement avec elle.
+        famille: etat.capture.espace === 'perso' ? etat.capture.famille : null,
       };
 
       // Corriger une tâche existante : la tuile se referme, le travail est
@@ -1153,6 +1216,10 @@ export default {
         heure: null,
         duree: null,
         recurrence: null,
+        // L'espace et la priorité restent — ils valent pour la note suivante.
+        // La famille, non : « Courses » écrite après « Courir » hériterait du
+        // corps sans qu'on l'ait dit, et fausserait le plancher en silence.
+        famille: null,
       };
 
       const champDate = section.querySelector('[data-champ-date]');
@@ -1286,6 +1353,7 @@ export default {
           // sans y toucher effaçait la série.
           recurrence: tache.recurrence ?? null,
           projet_id: tache.projet_id ?? null,
+          famille: tache.famille ?? null,
         };
         rendreCapture({ focus: true });
         mesurerLeClavier();
@@ -1395,6 +1463,15 @@ export default {
       if (poserProjet) {
         etat.capture.projet_id = poserProjet.dataset.poserProjet || null;
         marquerLeChoix('poser-projet', etat.capture.projet_id ?? '');
+        fermerLesPanneaux();
+        majPastilles();
+        return;
+      }
+
+      const poserFamille = evenement.target.closest('[data-poser-famille]');
+      if (poserFamille) {
+        etat.capture.famille = poserFamille.dataset.poserFamille || null;
+        marquerLeChoix('poser-famille', etat.capture.famille ?? '');
         fermerLesPanneaux();
         majPastilles();
         return;

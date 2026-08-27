@@ -16,7 +16,7 @@
 // Sans ça, chaque session de travail verrait une fois ses modifications
 // ignorées — le piège classique du service worker en développement.
 
-const CACHE = 'hub-coquille-v2';
+const CACHE = 'hub-coquille-v3';
 
 const EN_LOCAL = ['localhost', '127.0.0.1'].includes(self.location.hostname);
 
@@ -57,6 +57,10 @@ const COQUILLE = [
   'js/preparations-commun.js',
   'js/photo.js',
   'js/publications.js',
+  'js/objectifs.js',
+  'js/objectifs-commun.js',
+  'js/orientation.js',
+  'js/rendez-vous.js',
   'js/revisions.js',
   'js/taches.js',
   'js/yuno.js',
@@ -88,6 +92,9 @@ const COQUILLE = [
   'img/yuno-signature.png',
   'img/yuno-logo.jpg',
   'img/fch-logo.png',
+  // Le pochoir de l'écusson : depuis que la barre du hub porte des signes, il
+  // n'est plus seulement au site du club (27 août 2026).
+  'img/fch-logo-pochoir.png',
 ];
 
 self.addEventListener('install', (evenement) => {

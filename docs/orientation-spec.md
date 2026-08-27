@@ -131,15 +131,43 @@ Les **événements** portent déjà leur durée (`date_fin`) : une séance de 2 
 > **Rentrée du club** — 1er → 30 septembre
 > FCH *intense* · formation *normale* · Yuno *au ralenti* · perso *plancher tenu*
 
-**Déclarer une période, c'est déjà arbitrer.** Deux espaces *intenses* sur le
-même mois font 45 h par semaine : le hub pose sa question **trois semaines
-avant le mur**, à froid, quand la réponse coûte encore peu. C'est le meilleur
-usage possible de son droit d'arbitrage.
+**LE HUB NE POSE PLUS LA QUESTION** (28 août 2026, décision de Noé). Il la
+posait au moment où l'on déclarait la période — deux espaces *intenses* sur le
+même mois font 45 h par semaine — et proposait deux portes. Noé l'a retirée :
+*« ça ne me sert à rien, c'est LE BUT d'une période d'intensité, j'en fais plus
+que d'habitude ».*
+
+Le raisonnement d'origine tenait — dire « ça ne tient pas » trois semaines avant
+vaut mieux qu'un dimanche soir. Ce qui ne tenait pas, c'est la prémisse : un
+dépassement **voulu** n'est pas un déséquilibre à signaler. Une troisième porte
+(« C'est voulu ») a été essayée le lendemain pour permettre de l'assumer, puis
+retirée avec le reste : si la réponse est toujours la même, la question ne valait
+pas d'être posée. **Ne pas la remettre**, ni dans `#objectifs`, ni dans le
+rendez-vous du dimanche — elle vivait aux deux endroits, elle a quitté les deux.
+
+`tensionDeLaPeriode` **reste entière** : elle calcule les charges visées, l'écart
+et l'arbitrage rendu, et le diagnostic s'en sert. Ce qui a disparu, c'est
+l'affichage. La table `arbitrages` et son API restent en place : plus aucun écran
+ne les écrit aujourd'hui, et c'est à trancher — les garder pour le jour où une
+autre question mérite une trace, ou les retirer.
 
 ### 2.6 La famille d'un moment perso
 
 Colonne `famille` sur les événements et tâches d'espace perso :
-*corps · calme · lien*. Voir § 5.4.
+*corps · calme · lien · intendance*. Voir § 5.4.
+
+**Elle se saisit à la pastille « Famille »** (27 août 2026), qui n'apparaît dans
+la tuile de capture que lorsque l'espace choisi est perso — ailleurs, la
+question n'a pas de sens. Elle vient **juste derrière la pastille d'espace** :
+la bande défile, et une pastille en queue vit hors de l'écran, donc n'existe
+pas. Trois autres portes la posent ou la corrigent : le formulaire « Ajouter un
+rendez-vous » de `#perso`, le formulaire de modification du calendrier, et la
+réouverture d'une tâche dans l'espace Tâches ou dans « Aujourd'hui ».
+
+**Facultative, et elle le restera.** Une soirée notée en trois secondes ne doit
+pas s'arrêter pour être classée : ce qui n'est pas rangé se range plus tard, ou
+jamais. Le hub sait dire combien de moments ne disent rien (ligne du rendez-vous
+du dimanche) ; il ne retient la main de personne.
 
 ## 3. Les deux budgets
 
@@ -562,7 +590,6 @@ harcèlement hebdomadaire.
   qui répondra, pas le calendrier.
 - **`publications.rubrique` et les projets** se recouvrent partiellement. À
   trancher : une rubrique devient-elle un projet, ou restent-elles distinctes ?
-- **Comment se saisit la famille d'un moment perso** sans alourdir la capture.
 - **La mesure du temps des publications** : la durée se demande au passage du
   rond, mais seulement une fois les occurrences réelles en place (§ 2.3).
 

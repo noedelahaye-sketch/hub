@@ -82,13 +82,16 @@ export function chargeViseeDeLaPeriode(periode = null) {
 
 // --- L'arbitrage, au moment où on écrit la période ----------------------------
 //
-// LE MOMENT COMPTE AUTANT QUE LE CALCUL. Dire « ça ne tient pas » un dimanche
-// soir, c'est l'annoncer quand il ne reste que de mauvaises options. Le dire
-// pendant qu'on déclare un mois, c'est le dire trois semaines avant, à froid.
+// LE MOMENT COMPTAIT AUTANT QUE LE CALCUL — et pourtant AUCUN ÉCRAN N'AFFICHE
+// PLUS CETTE QUESTION depuis le 28 août 2026 (décision de Noé) : « ça ne me
+// sert à rien, c'est LE BUT d'une période d'intensité, j'en fais plus que
+// d'habitude ». Un dépassement voulu n'est pas un déséquilibre à signaler.
 //
-// Le hub POSE LA QUESTION, il ne tranche pas : c'est le choix de Noé (27 août
-// 2026), et il vaut pour tout le système. Les deux issues proposées sont des
-// portes, pas des recommandations.
+// Ce qui suit reste donc VRAI et vérifiable — `ecart`, `tendue`, `issues` se
+// calculent toujours, et `tranche` avec — mais plus rien ne les montre. C'est
+// la mesure qu'on garde, c'est le reproche qu'on a retiré. Avant de rebrancher
+// quoi que ce soit ici, relire docs/orientation-spec.md § 2.5 : la question a
+// déjà été posée, essayée avec une troisième porte, puis retirée.
 // LA CLÉ D'UNE QUESTION : ce qui la reconnaît d'une fois sur l'autre. Sans
 // elle, le hub ne saurait pas qu'il repose la même — et une question qu'on
 // repose après y avoir répondu n'est plus une question.

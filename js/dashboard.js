@@ -647,6 +647,10 @@ export default {
           duree: tache.duree ?? 0,
           recurrence: tache.recurrence ?? '',
           recurrence_fin: tache.recurrence_fin ?? '',
+          projet_id: tache.projet_id ?? '',
+          // La famille d'une tâche perso : elle se corrige ici, et la tuile ne
+          // la montre que si l'espace est perso.
+          famille: tache.famille ?? '',
         },
       };
       rendreCreation();
@@ -1118,6 +1122,8 @@ export default {
                   : false,
               }
             : {}),
+          // Et celui-ci que sur un événement perso : la famille du moment.
+          ...(champs.famille !== undefined ? { famille: champs.famille || null } : {}),
         });
       }
 
@@ -1229,6 +1235,17 @@ export default {
           recurrence: (champs.debut && champs.recurrence) || null,
           recurrence_fin:
             (champs.debut && champs.recurrence && champs.recurrence_fin) || null,
+          // Le projet et la famille sont offerts par la tuile : les oublier ici
+          // les rendait invisibles à l'enregistrement — choisis à l'écran,
+          // jetés à l'écriture, sans que rien ne le dise.
+          //
+          // `!== undefined` et non `|| null` : la pastille du projet n'existe
+          // que si l'écran a chargé des projets. Absente, son champ l'est
+          // aussi — et écrire `null` effacerait un lien qu'on n'a jamais vu.
+          ...(champs.projet_id !== undefined ? { projet_id: champs.projet_id || null } : {}),
+          ...(champs.famille !== undefined
+            ? { famille: champs.espace === 'perso' ? champs.famille || null : null }
+            : {}),
         };
         await modifierAussitot(corrige, modifs, () => api.modifierTache(corrige.id, modifs), {
           rendre: () => {
@@ -1350,6 +1367,9 @@ export default {
             duree: 0,
             recurrence: '',
             recurrence_fin: '',
+            // « Caler une séance » sait déjà de quelle famille elle relève :
+            // c'est le manque qui l'a proposée. Accepter doit coûter UN geste.
+            famille: voulu.famille ?? '',
           },
         };
         rendreCreation();

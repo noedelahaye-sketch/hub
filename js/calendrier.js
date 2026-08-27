@@ -463,6 +463,8 @@ export default {
                   : false,
               }
             : {}),
+          // Et celui-ci que sur un événement perso : la famille du moment.
+          ...(champs.famille !== undefined ? { famille: champs.famille || null } : {}),
         });
       }
 

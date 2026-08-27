@@ -147,6 +147,19 @@ export async function supprimerVictoireDeLaTache(tacheId) {
   if (error) throw error;
 }
 
+// Même règle pour un jalon sur lequel on revient : la galerie du cap permet de
+// le décocher, et une victoire pour une marche qu'on n'a pas franchie serait
+// fausse. (Le geste n'existait pas avant le 27 août 2026 : la page d'avant ne
+// savait que marquer atteint.)
+export async function supprimerVictoireDuJalon(jalonId) {
+  const { error } = await client
+    .from('victoires')
+    .delete()
+    .eq('source', 'jalon')
+    .eq('source_id', jalonId);
+  if (error) throw error;
+}
+
 export async function ajouterVictoire({ espace, titre, source = 'manuel', source_id = null }) {
   return verifier(
     await client
@@ -761,6 +774,11 @@ export async function creerTache({
   priorite = 4,
   objectif_id = null,
   projet_id = null,
+  // Espace perso seulement : ce que ce moment sert (corps, calme, lien,
+  // intendance). Cette liste est une LISTE BLANCHE — un champ absent d'ici
+  // tombe en silence, c'est le piège déjà raconté plus bas pour l'heure et la
+  // priorité d'un événement.
+  famille = null,
   recurrence = null,
   recurrence_fin = null,
 }) {
@@ -775,6 +793,7 @@ export async function creerTache({
     priorite,
     objectif_id,
     projet_id,
+    famille: espace === 'perso' ? famille : null,
   };
 
   // Une répétition sans échéance n'a rien à répéter : sans jour, il n'y a pas
@@ -792,6 +811,7 @@ export async function creerTache({
         priorite,
         objectif_id,
         projet_id,
+        famille: espace === 'perso' ? famille : null,
       },
     });
     if (occurrences.length) return garnirUne(occurrences[0]);
@@ -825,10 +845,14 @@ export async function creerEvenement({
   reunion_objet = null,
   reunion_animee = false,
   projet_id = null,
+  // Espace perso seulement : la famille du moment. Même liste blanche, même
+  // piège — un champ oublié ici s'écrit à l'écran et jamais en base.
+  famille = null,
 }) {
   const champs = {
     espace, titre, date_debut, date_fin, lieu, notes,
     type_moment, club_recevant, club_visiteur, reunion_objet, reunion_animee, projet_id,
+    famille: espace === 'perso' ? famille : null,
   };
 
   if (recurrence) {
@@ -841,6 +865,7 @@ export async function creerEvenement({
       modele: {
         titre, lieu, notes, type_moment, club_recevant, club_visiteur,
         reunion_objet, reunion_animee, projet_id,
+        famille: espace === 'perso' ? famille : null,
         heure: `${String(debut.getHours()).padStart(2, '0')}:${String(debut.getMinutes()).padStart(2, '0')}`,
         duree_minutes: date_fin ? Math.round((new Date(date_fin) - debut) / 60000) : null,
       },

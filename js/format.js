@@ -91,6 +91,30 @@ export const NOMS_ESPACES = {
   perso: 'Perso',
 };
 
+// --- Les familles d'un moment perso ------------------------------------------
+// Ce que sert un moment de l'espace perso — la seule chose qu'on lui demande de
+// dire. Elle se saisit à la pastille « Famille », qui n'apparaît que lorsque
+// l'espace choisi est perso : ailleurs, la question n'a pas de sens.
+//
+// La quatrième n'est pas un oubli. Sans « l'intendance », les planchers se
+// rempliraient de corvées — courses, machine, rangement — et le hub croirait la
+// semaine reposante. Elle se fait, elle ne repose de rien : elle ne compte donc
+// dans aucun plancher (voir PLANCHER_PERSO, js/orientation.js).
+//
+// Rien de tout cela ne s'affiche jamais : le compte change ce que le hub
+// propose, il n'entre pas dans `#perso` sous forme de barre ou de score.
+export const FAMILLES_PERSO = {
+  corps: 'Le corps',
+  calme: 'Le calme',
+  lien: 'Le lien',
+  intendance: "L'intendance",
+};
+
+// Ce que le menu propose en tête : ne pas ranger reste une réponse. La valeur
+// vide est le cas ordinaire — la pastille garde alors son mot et son encre
+// discrète.
+export const FAMILLES_PERSO_CHOIX = { '': 'Sans famille', ...FAMILLES_PERSO };
+
 // --- Les répétitions ---------------------------------------------------------
 // Événements, tâches et publications se répètent avec les mêmes mots et le
 // même pas (les publications depuis le 26 août 2026). Le

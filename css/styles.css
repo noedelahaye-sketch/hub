@@ -29,22 +29,30 @@
 
 /* --- Jetons ---------------------------------------------------------------- */
 
+/* LE HUB EST SOMBRE, TOUJOURS (décision de Noé, 27 août 2026). Il n'a plus de
+   thème clair : ni réglage, ni media query, ni deux jeux de valeurs à tenir
+   d'accord. Les deux sites l'étaient déjà par identité — le hub les rejoint par
+   choix. Les gris viennent du site Bac-3, pour que les écrans de Noé se
+   ressemblent le soir, qui est l'heure où il ouvre. */
 :root {
-  --fond: #fbfaf8;
-  --fond-carte: #ffffff;
-  --texte: #23201d;
-  --texte-discret: #6d6862;
-  --bordure: #e7e3dd;
-  --ombre: 0 1px 2px rgb(35 32 29 / 6%), 0 4px 12px rgb(35 32 29 / 4%);
+  color-scheme: dark;
+
+  --fond: #17191a;
+  --fond-carte: #212426;
+  --texte: #eceeea;
+  --texte-discret: #8b928b;
+  --bordure: #34383a;
+  --ombre: none;
   /* La surbrillance d'un bouton qu'on touche. Une encre par-dessus, jamais une
      couleur à la place : c'est ce qui lui permet de passer sur un aplat
      d'accent comme sur un bouton transparent. */
-  --surbrillance: rgb(35 32 29 / 13%);
-  --erreur: #a4453a;
+  --surbrillance: rgb(255 255 255 / 15%);
+  --erreur: #e0857a;
 
-  /* Accent par espace. La valeur courante est posée par [data-espace]. */
-  --accent: #6b7f8c;
-  --accent-doux: #eef1f3;
+  /* Accent par espace. La valeur courante est posée par [data-espace]. Celle-ci
+     ne sert qu'à l'écran de connexion, avant qu'un espace soit choisi. */
+  --accent: #9db3c0;
+  --accent-doux: #262a2e;
 
   /* Échelle d'espacement en multiples de 4, reprise du site Bac-3. Rien
      d'intermédiaire : on choisit dans cette liste, on n'invente pas de valeur. */
@@ -81,20 +89,20 @@
 }
 
 /* Thèmes des espaces. */
-body[data-espace="dashboard"] { --accent: #6b7f8c; --accent-doux: #eceff1; }
+body[data-espace="dashboard"] { --accent: #9db3c0; --accent-doux: #262a2e; }
 /* Le calendrier et les tâches sont transverses : ils regardent tous les espaces
    et n'en portent donc aucune couleur. Ils gardent le gris neutre de l'accueil,
    et les pastilles d'espace font la distinction dans la liste. */
-body[data-espace="calendrier"] { --accent: #6b7f8c; --accent-doux: #eceff1; }
-body[data-espace="taches"] { --accent: #6b7f8c; --accent-doux: #eceff1; }
+body[data-espace="calendrier"] { --accent: #9db3c0; --accent-doux: #262a2e; }
+body[data-espace="taches"] { --accent: #9db3c0; --accent-doux: #262a2e; }
 /* Objectifs regarde tous les espaces, comme les tâches et le calendrier : il
    n'en porte donc aucune couleur. Ce sont les blocs qui disent l'espace. */
-body[data-espace="objectifs"] { --accent: #6b7f8c; --accent-doux: #eceff1; }
-body[data-espace="formation"] { --accent: #17786f; --accent-doux: #e3f1ef; }
+body[data-espace="objectifs"] { --accent: #9db3c0; --accent-doux: #262a2e; }
+body[data-espace="formation"] { --accent: #56b8ad; --accent-doux: #1b2e2c; }
 /* Yuno : le doré du logo (#e8b000, relevé sur le fichier). En clair il
    s'assombrit en ocre — un doré clair sur fond blanc ne se lit pas
    (docs/yuno-spec.md, §3). */
-body[data-espace="photo"]     { --accent: #8f6c00; --accent-doux: #f7efcf; }
+body[data-espace="photo"]     { --accent: #e8b000; --accent-doux: #2f2708; }
 /* Le SITE Yuno est toujours sombre, quel que soit le réglage du téléphone :
    c'est l'identité de la marque (la signature blanche et or ne vit que sur
    fond sombre), et ça dit « on a quitté le hub ». Le fond est celui du logo. */
@@ -188,10 +196,10 @@ body[data-espace="yuno"] [data-pilier="4"] { --pilier: var(--pilier-4); --pilier
    états actifs) parce qu'il reste lisible en aplat ; le rouge est la seconde
    couleur d'identité, réservée à la pastille de l'espace. Il ne signale jamais
    une alerte ni un retard — voir la philosophie du produit. */
-body[data-espace="fch"]       { --accent: #1e4b8f; --accent-doux: #e6edf7; }
-body[data-espace="perso"]     { --accent: #8878b4; --accent-doux: #efebf7; }
+body[data-espace="fch"]       { --accent: #7ba5dc; --accent-doux: #1d2733; }
+body[data-espace="perso"]     { --accent: #b3a3d9; --accent-doux: #272335; }
 
-:root { --club-fch-bleu: #1e4b8f; --club-fch-rouge: #c4362f; }
+:root { --club-fch-bleu: #7ba5dc; --club-fch-rouge: #ec8079; }
 
 /* Couleurs exactes du logo du club (img/fch-logo.png), plus le jaune ajouté à
    la demande de Noé. Elles ne servent que sur le site FCH — la pastille de
@@ -222,34 +230,6 @@ body[data-espace="hermitage"] {
   --erreur: #ffb0a8;
   --accent: #f2b705;
   --accent-doux: #23499f;
-}
-
-@media (prefers-color-scheme: dark) {
-  /* Gris neutres repris du site Bac-3, pour que les deux sites de Noé aient le
-     même fond le soir. */
-  :root {
-    --fond: #17191a;
-    --fond-carte: #212426;
-    --texte: #eceeea;
-    --texte-discret: #8b928b;
-    --bordure: #34383a;
-    --ombre: none;
-    --surbrillance: rgb(255 255 255 / 15%);
-    --erreur: #e0857a;
-
-    --club-fch-rouge: #ec8079;
-  }
-
-  body[data-espace="dashboard"] { --accent: #9db3c0; --accent-doux: #262a2e; }
-  body[data-espace="calendrier"] { --accent: #9db3c0; --accent-doux: #262a2e; }
-  body[data-espace="taches"] { --accent: #9db3c0; --accent-doux: #262a2e; }
-  body[data-espace="objectifs"] { --accent: #9db3c0; --accent-doux: #262a2e; }
-  body[data-espace="formation"] { --accent: #56b8ad; --accent-doux: #1b2e2c; }
-  body[data-espace="photo"]     { --accent: #e8b000; --accent-doux: #2f2708; }
-  body[data-espace="fch"]       { --accent: #7ba5dc; --accent-doux: #1d2733; }
-  body[data-espace="perso"]     { --accent: #b3a3d9; --accent-doux: #272335; }
-
-  :root { --club-fch-bleu: #7ba5dc; }
 }
 
 /* Points de rupture de Bac-3 : 720 px et 1080 px. */
@@ -376,7 +356,9 @@ button:active { transform: scale(0.97); }
   width: 100%;
   padding: 0.75rem;
   font-weight: 500;
-  color: #fff;
+  /* Encre SOMBRE sur l'accent, comme l'onglet actif : depuis que le hub est
+     sombre, l'accent est clair — du blanc dessus ne se lirait plus. */
+  color: var(--fond);
   background: var(--accent);
   border: none;
   border-radius: var(--rayon-controle);
@@ -552,14 +534,61 @@ a { color: var(--accent); }
    plutôt qu'un sélecteur de position.
    Carré et non allongé : sans texte, le rembourrage horizontal d'un onglet
    laisserait l'icône flotter au milieu d'une pastille de mot. */
-.nav-calendrier {
+.nav-calendrier,
+.nav-icone {
   justify-content: center;
   padding: 0 var(--espace-8);
   aspect-ratio: 1;
 }
 
 /* Rien à couper ni à faire défiler dans une icône. */
-.nav-calendrier svg { display: block; flex: 0 0 auto; }
+.nav-calendrier svg,
+.nav-icone svg { display: block; flex: 0 0 auto; }
+
+/* LES ONGLETS SONT DES SIGNES (demande de Noé, 27 août 2026) : un mot coûte
+   trois fois la place, et la barre en portait sept. Ce qui a une image propre
+   la prend — les deux sites ont leur logo —, le reste reçoit un dessin.
+   Le logo est un jeton rond, pas une vignette carrée : à 22 px, un carré dans
+   une pastille arrondie fait deux formes qui se contredisent. */
+/* LES DEUX MARQUES EN POCHOIR (demande de Noé, 27 août 2026), comme dans la
+   barre du site FCH : le PNG ne donne que son alpha, l'encre vient de
+   `currentColor`. Le logo prend donc la couleur de son onglet — discret au
+   repos, inversé quand il est actif — au lieu de traîner un fond et un cadre
+   qui ne sont à personne. C'est aussi ce qui les fait tenir à côté des dessins
+   sans qu'on voie la différence de nature.
+
+   Deux fichiers à part, et c'est voulu : les icônes d'application portent leur
+   fond de sticker et rendraient une tache pleine en masque direct. */
+.nav-marque {
+  display: block;
+  flex: 0 0 auto;
+  background: currentColor;
+}
+
+.nav-marque-fch {
+  width: 2rem;
+  height: 1.75rem;
+  -webkit-mask: url("../img/fch-logo-pochoir.png") no-repeat center / contain;
+  mask: url("../img/fch-logo-pochoir.png") no-repeat center / contain;
+}
+
+/* La signature de Yuno occupe le centre de son carré : on zoome pour que le mot
+   se lise à cette taille, plutôt que de laisser respirer une marge vide. */
+.nav-marque-yuno {
+  width: 2.75rem;
+  height: 1.75rem;
+  -webkit-mask: url("../img/yuno-signature.png") no-repeat center / auto 175%;
+  mask: url("../img/yuno-signature.png") no-repeat center / auto 175%;
+}
+
+/* Une marque n'est pas carrée : son onglet se règle sur le dessin. */
+.nav-icone:has(.nav-marque) { aspect-ratio: auto; }
+
+/* La barre respire davantage : sept signes tiennent là où six mots
+   débordaient, l'écart peut donc grandir sans que rien ne glisse. */
+@media (min-width: 45rem) {
+  .navigation-signes { gap: var(--espace-12); }
+}
 
 /* --- Blocs de contenu ------------------------------------------------------ */
 
@@ -816,9 +845,9 @@ a { color: var(--accent); }
    déclaration entière sans un mot — les éléments du FCH s'affichaient donc
    sans bordure ET sans fond, seuls de tous les espaces à n'avoir aucune
    couleur. Un nom qui ment finit toujours par coûter une soirée. */
-[data-espace="formation"] { --couleur-espace: #17786f; --couleur-espace-pleine: #17786f; }
-[data-espace="photo"]     { --couleur-espace: #8f6c00; --couleur-espace-pleine: #8f6c00; }
-[data-espace="perso"]     { --couleur-espace: #8878b4; --couleur-espace-pleine: #8878b4; }
+[data-espace="formation"] { --couleur-espace: #56b8ad; --couleur-espace-pleine: #56b8ad; }
+[data-espace="photo"]     { --couleur-espace: #e8b000; --couleur-espace-pleine: #e8b000; }
+[data-espace="perso"]     { --couleur-espace: #b3a3d9; --couleur-espace-pleine: #b3a3d9; }
 /* Le FCH est le seul espace à porter DEUX couleurs : le dégradé les montre
    toutes les deux là où un fond l'accepte, et la couleur pleine doit en
    choisir une. C'est le ROUGE (décision de Noé, 21 août 2026, après mesure).
@@ -851,12 +880,6 @@ a { color: var(--accent); }
 #espace-calendrier [data-espace="fch"] {
   --couleur-espace: var(--club-fch-bleu);
   --couleur-espace-pleine: var(--club-fch-bleu);
-}
-
-@media (prefers-color-scheme: dark) {
-  [data-espace="formation"] { --couleur-espace: #56b8ad; --couleur-espace-pleine: #56b8ad; }
-  [data-espace="photo"]     { --couleur-espace: #e8b000; --couleur-espace-pleine: #e8b000; }
-  [data-espace="perso"]     { --couleur-espace: #b3a3d9; --couleur-espace-pleine: #b3a3d9; }
 }
 
 /* Pastille — encore utilisée là où une tuile serait trop lourde. */
@@ -1715,23 +1738,13 @@ a.cap-grave:focus-visible {
    se ressemblent pas, parce qu'elles ne disent pas la même chose. */
 
 :root {
-  --prio-1: #b4543f;
-  --prio-2: #c08329;
-  --prio-3: #6b7f8c;
-  /* Assombri le 24 août 2026 : à #a8a29a le cercle du cas ordinaire — donc le
-     plus fréquent — ne faisait que 2,53:1 sur une carte, sous le seuil de 3:1
-     d'un élément non textuel (WCAG 1.4.11). Il est à 3,61 sur carte et 3,46 sur
-     le fond, et reste le plus discret des quatre : la priorité 3 est à 4,17. */
-  --prio-4: #8c867d;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --prio-1: #d98570;
-    --prio-2: #d8a758;
-    --prio-3: #9db3c0;
-    --prio-4: #7d7871;
-  }
+  --prio-1: #d98570;
+  --prio-2: #d8a758;
+  --prio-3: #9db3c0;
+  /* La 4 reste la plus discrète des quatre — c'est le cas ordinaire, il ne doit
+     rien colorer. (Le réglage de contraste du 24 août 2026 portait sur le thème
+     clair, retiré depuis : ces quatre valeurs sont celles du soir.) */
+  --prio-4: #7d7871;
 }
 
 /* Une liste, pas des tuiles. Partout ailleurs le hub pose ses `.bloc li` en
@@ -3216,25 +3229,13 @@ body.fond-fige {
   font-weight: 600;
   white-space: nowrap;
   border-radius: var(--rayon-controle);
-  color: hsl(var(--h) 55% 32%);
-  background: hsl(var(--h) 55% 45% / 14%);
+  color: hsl(var(--h) 60% 72%);
+  background: hsl(var(--h) 60% 65% / 16%);
 }
 
 .tag-neutre {
   color: var(--texte-discret);
   background: color-mix(in srgb, var(--texte-discret) 14%, transparent);
-}
-
-@media (prefers-color-scheme: dark) {
-  .tag { color: hsl(var(--h) 60% 72%); background: hsl(var(--h) 60% 65% / 16%); }
-}
-
-/* Les deux sites sont sombres quel que soit le réglage du téléphone : ils ne
-   peuvent pas s'en remettre à la media query. */
-body[data-espace="yuno"] .tag,
-body[data-espace="hermitage"] .tag {
-  color: hsl(var(--h) 60% 72%);
-  background: hsl(var(--h) 60% 65% / 16%);
 }
 
 /* Le statut se change dans la cellule : une liste déroulante déguisée en
@@ -3248,16 +3249,6 @@ body[data-espace="hermitage"] .tag {
   font-weight: 600;
   border: 0;
   border-radius: var(--rayon-controle);
-  color: hsl(var(--h) 55% 32%);
-  background: hsl(var(--h) 55% 45% / 14%);
-}
-
-@media (prefers-color-scheme: dark) {
-  .choix-statut { color: hsl(var(--h) 60% 72%); background: hsl(var(--h) 60% 65% / 16%); }
-}
-
-body[data-espace="yuno"] .choix-statut,
-body[data-espace="hermitage"] .choix-statut {
   color: hsl(var(--h) 60% 72%);
   background: hsl(var(--h) 60% 65% / 16%);
 }
@@ -3823,9 +3814,9 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   min-height: 1.5rem;
   font-family: inherit;
   cursor: pointer;
-  color: hsl(var(--teinte) 55% 30%);
-  background: hsl(var(--teinte) 65% 93%);
-  border-color: hsl(var(--teinte) 45% 78%);
+  color: hsl(var(--teinte) 70% 72%);
+  background: hsl(var(--teinte) 35% 16%);
+  border-color: hsl(var(--teinte) 30% 34%);
 }
 
 /* Pas de chevron sur la pastille (demande de Noé, 25 août 2026) : à cette
@@ -3840,7 +3831,7 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   height: 0.625rem;
   margin-right: var(--espace-8);
   border-radius: var(--rayon-pastille);
-  background: hsl(var(--teinte) 60% 45%);
+  background: hsl(var(--teinte) 60% 60%);
 }
 
 .cal-statut .choix-capture button { display: flex; align-items: center; }
@@ -3851,16 +3842,6 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   left: 0;
   right: auto;
   min-width: 11rem;
-}
-
-@media (prefers-color-scheme: dark) {
-  .etiquette.cal-statut-pastille {
-    color: hsl(var(--teinte) 70% 72%);
-    background: hsl(var(--teinte) 35% 16%);
-    border-color: hsl(var(--teinte) 30% 34%);
-  }
-
-  .cal-statut-point { background: hsl(var(--teinte) 60% 60%); }
 }
 
 /* Le signe de nature : une tâche n'est pas un événement, et la couleur du
@@ -4948,3 +4929,957 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 /* Le bouton reste lisible sans survol : au toucher il n'y a pas de survol, et
    c'est le geste qu'on vient chercher dans ce dépliant. */
 .liste-orphelines [data-rattacher] { flex: none; opacity: 1; color: var(--accent); }
+
+/* --- L'ESPACE « LE CAP » : la galerie des objectifs -------------------------
+   Née d'un échantillon validé le 27 août 2026. Rien ici n'invente de jeton : les couleurs, les espacements, les
+   rayons et les polices sont ceux d'au-dessus. Ces règles ne décrivent que
+   des FORMES nouvelles — la tuile de cap, la frise des jalons, le projet qui
+   se déplie.
+
+   Une règle tient tout le reste : la galerie ne montre que ce qui se compare.
+   Tout ce qui ne se compare pas d'un cap à l'autre vit dans le dépliage.
+
+   Attention en relisant : les `.cap-*` DU TABLEAU DE BORD (`.cap-grave`,
+   `.cap-jalons`, `.cap-nom`…) sont une autre famille, plus haut dans ce
+   fichier. Elles gravent le cap en lecture seule ; celles-ci le règlent. */
+
+/* Le FCH est BLEU ici (demande de Noé, 27 août 2026), comme dans le calendrier
+   du hub, et pour la même raison : posé sur des marches et sur le jalon en
+   cours, le rouge du club se lisait comme une alerte — or le hub n'en a pas.
+   Le précédent existe déjà, `#espace-calendrier [data-espace="fch"]`. */
+#espace-objectifs [data-espace="fch"] {
+  --couleur-espace: var(--club-fch-bleu);
+  --couleur-espace-pleine: var(--club-fch-bleu);
+}
+
+/* --- Le corps de l'écran ---------------------------------------------------
+   Un cran plus bas que le reste du hub, partout (demande de Noé, 27 août
+   2026) : « ça prend trop de place, ça m'angoisse ». C'est l'écran qui porte le
+   plus d'informations cachées ; il doit se parcourir sans peser. Rien ne
+   descend sous 0,6875 rem, et jamais pour du texte courant. */
+#espace-objectifs h1 {
+  font-size: clamp(1.375rem, 1.2rem + 0.9vw, 1.75rem);
+}
+
+#espace-objectifs .sous-titre { font-size: 0.875rem; }
+
+/* --- La galerie ------------------------------------------------------------ */
+
+.cap-galerie {
+  display: grid;
+  /* `auto-fill` et non `auto-fit` : à deux caps, on veut deux tuiles de taille
+     normale et de la place à droite, pas deux tuiles étirées sur 1240 px. */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  gap: var(--espace-16);
+  margin-top: var(--espace-24);
+}
+
+/* LE FOND DIT L'ESPACE (demande de Noé, 28 août 2026). Six tuiles de la même
+   silhouette ne se distinguaient plus que par un point de sept pixels ; la
+   couleur revient donc, mais par le FOND et non par l'encre — elle range la
+   galerie d'un coup d'œil sans jamais reprendre l'œil au titre. CINQ pour cent
+   (Noé a regardé 11, puis 7, puis choisi 5) : à cette dose la teinte ne se
+   nomme pas, elle se sent — deux tuiles voisines ne se ressemblent plus tout à
+   fait, et rien n'a l'air coloré. Le texte, lui, ne perd rien.
+
+   `--couleur-espace-pleine` et non `--couleur-espace` : le FCH porte un dégradé
+   en second, et `color-mix` jette la déclaration entière s'il en reçoit un —
+   les tuiles du club seraient les seules sans fond. Le piège a déjà coûté une
+   soirée au calendrier le 21 août ; il est écrit plus haut, à sa définition. */
+.cap-tuile {
+  position: relative;
+  display: flex;
+  background: color-mix(in srgb, var(--couleur-espace-pleine, transparent) 5%, var(--fond-carte));
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+  box-shadow: var(--ombre);
+  transition: border-color 180ms ease-out, transform 180ms ease-out,
+    box-shadow 180ms ease-out;
+}
+
+/* Toute la tuile est le bouton : on ne vise pas un titre, on vise un objet. */
+.cap-tuile-ouvrir {
+  display: grid;
+  gap: var(--espace-12);
+  width: 100%;
+  padding: var(--espace-12) var(--espace-16);
+  background: none;
+  border: 0;
+  border-radius: inherit;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.cap-tuile:has(.cap-tuile-ouvrir:hover) {
+  border-color: color-mix(in srgb, var(--couleur-espace-pleine, var(--texte-discret)) 45%, var(--bordure));
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgb(0 0 0 / 24%), 0 10px 24px rgb(0 0 0 / 28%);
+}
+
+/* L'ESPACE SE DIT, IL NE CRIE PAS (demande de Noé, 28 août 2026). Écrit dans la
+   couleur de son espace, en gras, il ramassait l'œil avant le titre : on lisait
+   « FC Hermitage » trois fois avant de lire ce que ces trois caps visent. La
+   couleur reste — c'est elle qui range la galerie d'un coup d'œil — mais elle
+   se retire dans la PASTILLE, un point de six pixels ; le mot passe en encre
+   discrète et perd son gras. Le titre reste seul à porter du poids. */
+.cap-tuile-espace {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  color: var(--texte-discret);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.cap-tuile-espace .pastille {
+  width: 0.4375rem;
+  height: 0.4375rem;
+}
+
+.cap-tuile-titre {
+  margin: 0;
+  font-family: var(--police-titre);
+  /* La graisse haute de Clash Display, et la seule de la tuile : c'est le titre
+     qu'on vient lire, tout le reste est du service. */
+  font-weight: 700;
+  font-size: 1.125rem;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  /* Deux lignes au plus : au-delà, une tuile cesse d'être comparable à sa
+     voisine, et la galerie redevient une liste. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+/* Les marches : un segment par jalon. Pas de pourcentage, pas de barre
+   continue — on compte les marches franchies d'un coup d'œil. */
+.cap-marches {
+  display: flex;
+  gap: 3px;
+}
+
+.cap-marche {
+  flex: 1;
+  height: 4px;
+  border-radius: var(--rayon-pastille);
+  background: var(--bordure);
+}
+
+.cap-marche.atteint {
+  background: var(--couleur-espace-pleine, var(--accent));
+}
+
+/* L'AVANCÉE D'UN PROJET : une barre unique, remplie à la proportion faite.
+   Pas des marches — un cap FRANCHIT des jalons, on les compte du regard ; un
+   projet avance tâche après tâche, et quinze segments seraient du bruit. Deux
+   formes différentes parce que ce sont deux progressions différentes. */
+.cap-avancee {
+  height: 4px;
+  border-radius: var(--rayon-pastille);
+  background: var(--bordure);
+  overflow: hidden;
+}
+
+.cap-avancee > span {
+  display: block;
+  height: 100%;
+  background: var(--couleur-espace-pleine, var(--accent));
+}
+
+.cap-marches-vide {
+  height: 4px;
+  border-radius: var(--rayon-pastille);
+  background: repeating-linear-gradient(90deg,
+    var(--bordure) 0 6px, transparent 6px 12px);
+}
+
+.cap-tuile-pied {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--espace-8);
+  color: var(--texte-discret);
+  font-size: 0.75rem;
+}
+
+.cap-tuile-date { flex: none; }
+
+/* LA TÊTE D'UNE TUILE DE PROJET : l'espace, puis l'état, sur la même ligne.
+   Elle vit HORS du bouton d'ouverture — un contrôle dans un bouton n'est ni
+   valide ni cliquable —, et le bouton garde tout le reste : titre, avancée,
+   ligne de service. La cible reste large.
+
+   Les deux signes qui CLASSENT un projet se lisent ainsi d'un même regard, et
+   le titre garde sa ligne pour lui seul. */
+.cap-tuile-projet { display: block; }
+
+.cap-tuile-tete {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-12);
+  /* Le rembourrage haut tient compte de la hauteur du bouton d'état : c'est lui
+     qui donne sa hauteur à la ligne, l'espace n'est que du texte. */
+  padding: var(--espace-8) 2.25rem 0 var(--espace-16);
+}
+
+.cap-tuile-projet .cap-tuile-ouvrir { padding-top: var(--espace-8); }
+
+/* L'ÉTAT, EN ENCRE GRISE ET UN POINT DE COULEUR (demande de Noé, 28 août 2026).
+   Douze tuiles portant chacune une étiquette ambre pleine, c'était douze fois
+   plus de couleur que de titres. Le point garde la teinte de l'étape — rouge,
+   ambre, vert — et elle suffit : on balaie la galerie et on voit où en est
+   chaque projet sans lire un mot. */
+/* `.choix-champ` porte la marge basse des FORMULAIRES : dans une tête de tuile
+   elle décalait l'état de douze pixels vers le haut, et les deux signes ne
+   partageaient plus leur ligne. */
+.cap-etat {
+  position: relative;
+  margin: 0;
+}
+
+.cap-etat-mot {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  /* La même hauteur que le menu à trois points, l'autre contrôle discret de la
+     tuile — et de quoi viser au doigt sans déborder sur le titre en dessous. */
+  min-height: 2rem;
+  padding: 0 var(--espace-4);
+  background: none;
+  border: 0;
+  color: var(--texte-discret);
+  font: inherit;
+  font-size: 0.6875rem;
+  cursor: pointer;
+}
+
+.cap-etat-mot:hover { color: var(--texte); }
+
+.cap-etat-point {
+  flex: none;
+  width: 0.4375rem;
+  height: 0.4375rem;
+  border-radius: var(--rayon-pastille);
+  background: var(--etat, var(--texte-discret));
+}
+
+/* Dans le menu, le point garde sa couleur et le mot reste lisible : on voit où
+   l'on va avant d'y aller. */
+.cap-etat .choix-capture button { display: flex; align-items: center; gap: var(--espace-8); }
+
+/* Le menu s'ouvre sous le mot, calé à droite : il déborderait de la tuile
+   autrement. */
+.cap-etat .choix-panneau {
+  left: auto;
+  right: 0;
+  min-width: 10rem;
+}
+
+/* Dans l'en-tête d'un projet déplié, l'état précède la ligne de service. */
+.cap-detail-date {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-8) var(--espace-12);
+}
+
+/* --- Ajouter, modifier, supprimer ------------------------------------------
+   Trois gestes qui ne prennent la parole que lorsqu'on les cherche. Rien
+   n'ouvre de fenêtre : on écrit là où la chose va vivre. */
+
+.cap-tuile-ajout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espace-8);
+  min-height: 6rem;
+  padding: var(--espace-16);
+  /* Elle n'appartient à aucun espace : elle ne prend donc aucune teinte. */
+  background: none;
+  border: 1px dashed var(--bordure);
+  border-radius: var(--rayon-carte);
+  box-shadow: none;
+  color: var(--texte-discret);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: border-color 160ms ease-out, color 160ms ease-out;
+}
+
+.cap-tuile-ajout:hover {
+  border-color: var(--texte-discret);
+  color: var(--texte);
+  transform: none;
+}
+
+/* Au téléphone, la galerie est une colonne : une tuile d'ajout haute de 120 px
+   y devient l'objet le plus imposant de l'écran, pour le geste le plus rare. */
+@media (max-width: 44.99rem) {
+  .cap-tuile-ajout { min-height: 3.5rem; }
+}
+
+.cap-tuile-ajout.ouverte {
+  display: block;
+  border-style: solid;
+  cursor: default;
+}
+
+.cap-ajout-discret {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-8);
+  margin-top: var(--espace-4);
+  padding: var(--espace-8) 0;
+  background: none;
+  border: 0;
+  color: var(--texte-discret);
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.cap-ajout-discret:hover { color: var(--texte); }
+.cap-ajout-discret svg { opacity: 0.75; }
+
+.cap-ajout-ligne { margin-top: var(--espace-8); }
+
+.cap-champ {
+  display: grid;
+  gap: var(--espace-8);
+}
+
+.cap-champ input {
+  width: 100%;
+  padding: var(--espace-8) var(--espace-12);
+  background: var(--fond);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  color: var(--texte);
+  font: inherit;
+  font-size: 0.9375rem;
+}
+
+.cap-champ input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.cap-champ-gestes {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-12);
+}
+
+.cap-tuile-corriger { width: 100%; padding: var(--espace-16); }
+
+/* Le menu discret : trois points qui ne se voient qu'au survol, au clavier, ou
+   quand ils sont ouverts. Ils gardent leur cible tactile en toutes
+   circonstances — invisible ne veut pas dire absent. */
+.cap-menu {
+  position: absolute;
+  top: var(--espace-8);
+  right: var(--espace-8);
+  z-index: 2;
+}
+
+.cap-menu-bouton {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  background: none;
+  border: 0;
+  border-radius: var(--rayon-pastille);
+  color: var(--texte-discret);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 160ms ease-out, background-color 160ms ease-out;
+}
+
+.cap-tuile:hover .cap-menu-bouton,
+.cap-jalon:hover .cap-menu-bouton,
+.cap-projet:hover .cap-menu-bouton,
+.cap-tache:hover .cap-menu-bouton,
+.cap-menu-bouton:focus-visible,
+.cap-menu.ouvert .cap-menu-bouton {
+  opacity: 1;
+}
+
+.cap-menu-bouton:hover { background: var(--surbrillance); }
+
+/* Au doigt, il n'y a pas de survol : le menu reste visible en permanence, mais
+   très discret. Une main ne cherche pas un bouton qu'elle ne voit pas. */
+@media (hover: none) {
+  .cap-menu-bouton { opacity: 0.55; }
+}
+
+.cap-menu-choix {
+  position: absolute;
+  top: calc(100% + var(--espace-4));
+  right: 0;
+  display: grid;
+  min-width: 9rem;
+  padding: var(--espace-4);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 30%), 0 12px 28px rgb(0 0 0 / 35%);
+}
+
+.cap-menu-choix button {
+  padding: var(--espace-8) var(--espace-12);
+  background: none;
+  border: 0;
+  border-radius: calc(var(--rayon-controle) - 4px);
+  color: var(--texte);
+  font: inherit;
+  font-size: 0.875rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cap-menu-choix button:hover { background: var(--accent-doux); }
+
+/* La seule couleur d'alerte de l'écran, et elle ne juge aucune échéance : elle
+   qualifie un GESTE irréversible, au moment où on le confirme. Le hub n'a pas
+   de couleur de retard ; il a le droit d'avoir une couleur de danger. */
+.cap-menu-danger { color: var(--erreur); }
+
+/* --- Le cap ouvert ---------------------------------------------------------
+   La tuile pressée prend toute la largeur et se déplie SUR PLACE. Ce n'est pas
+   un autre écran : c'est la même case de la grille, agrandie — le geste que le
+   hub fait déjà quand un jour de « Ta semaine » s'ouvre en grand. */
+
+.cap-tuile-ouverte {
+  grid-column: 1 / -1;
+  display: block;
+}
+
+.cap-detail { padding: var(--espace-16); }
+
+@media (min-width: 45rem) {
+  .cap-detail { padding: var(--espace-24); }
+}
+
+.cap-detail-tete {
+  position: relative;
+  display: grid;
+  gap: var(--espace-8);
+  padding-right: 6rem;
+}
+
+.cap-detail-titre {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-weight: 700;
+  font-size: clamp(1.375rem, 1.1rem + 1.4vw, 1.875rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  max-width: 24ch;
+}
+
+.cap-detail-date {
+  margin: 0;
+  color: var(--texte-discret);
+  font-size: 0.8125rem;
+}
+
+.cap-detail-tete .cap-menu { top: 2.75rem; right: 0; }
+
+.cap-refermer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: var(--espace-8) var(--espace-12);
+  background: none;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+  color: var(--texte-discret);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.cap-refermer:hover { color: var(--texte); border-color: var(--texte-discret); }
+
+/* Le pourquoi : la seule phrase de l'écran qu'on relit les jours sans envie.
+   Elle a droit à sa taille et à son air. */
+.cap-pourquoi {
+  max-width: 66ch;
+  margin: var(--espace-16) 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--texte);
+}
+
+.cap-cible {
+  max-width: 66ch;
+  margin: var(--espace-8) 0 0;
+  color: var(--texte-discret);
+  font-size: 0.875rem;
+}
+
+.cap-cible span {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--texte-discret) 80%, transparent);
+}
+
+.cap-etages {
+  display: grid;
+  gap: var(--espace-24);
+  margin-top: var(--espace-24);
+}
+
+/* Deux colonnes seulement quand il y a de quoi : les jalons sont courts, les
+   projets respirent. En dessous, tout s'empile dans l'ordre de lecture —
+   jalons, projets, tâches. */
+@media (min-width: 67.5rem) {
+  .cap-etages {
+    grid-template-columns: 0.85fr 1.15fr;
+    gap: var(--espace-32);
+  }
+  .cap-etage:nth-child(3) { grid-column: 1 / -1; }
+  /* Le dépliage d'un PROJET n'a qu'un étage — ses tâches — et rien à mettre en
+     face : il prend la largeur au lieu de laisser une colonne vide. */
+  .cap-etage-large { grid-column: 1 / -1; }
+}
+
+.cap-etage-titre {
+  margin: 0 0 var(--espace-12);
+  font-family: var(--police-texte);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texte-discret);
+}
+
+/* --- Les jalons ------------------------------------------------------------
+   Une frise, pas une liste à puces : un jalon vient APRÈS le précédent, et le
+   trait vertical est ce qui le dit. */
+
+.cap-frise {
+  position: relative;
+  margin: 0;
+  padding: 0 0 0 var(--espace-24);
+  list-style: none;
+}
+
+.cap-frise::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 0.75rem;
+  bottom: 0.75rem;
+  width: 1px;
+  background: var(--bordure);
+}
+
+.cap-jalon {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: var(--espace-12);
+  padding: var(--espace-8) 0;
+  min-height: 2.25rem;
+}
+
+.cap-jalon-point {
+  position: absolute;
+  left: calc(var(--espace-24) * -1);
+  top: 0.6rem;
+  width: 11px;
+  height: 11px;
+  padding: 0;
+  background: var(--fond-carte);
+  border: 2px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+  cursor: pointer;
+  transition: background-color 160ms ease-out, border-color 160ms ease-out,
+    box-shadow 160ms ease-out;
+}
+
+/* La cible tactile de 44 px sans grossir le point : un pseudo-élément
+   transparent par-dessus. */
+.cap-jalon-point::after {
+  content: "";
+  position: absolute;
+  inset: -16px;
+}
+
+.cap-jalon.prochain .cap-jalon-point {
+  border-color: var(--couleur-espace-pleine, var(--accent));
+  box-shadow: 0 0 0 3px color-mix(in srgb,
+    var(--couleur-espace-pleine, var(--accent)) 18%, transparent);
+}
+
+.cap-jalon.atteint .cap-jalon-point {
+  background: var(--couleur-espace-pleine, var(--accent));
+  border-color: var(--couleur-espace-pleine, var(--accent));
+}
+
+.cap-jalon-corps {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--espace-4) var(--espace-12);
+}
+
+.cap-jalon-titre { font-size: 0.875rem; }
+
+.cap-jalon.atteint .cap-jalon-titre { color: var(--texte-discret); }
+
+.cap-jalon-date {
+  color: var(--texte-discret);
+  font-size: 0.75rem;
+}
+
+.cap-jalon .cap-menu { position: static; margin-left: auto; }
+.cap-jalon .cap-menu-choix { position: absolute; right: 0; top: 2.25rem; }
+
+/* --- Les projets -----------------------------------------------------------
+   Un projet est une tuile tant qu'il est fermé ; ouvert, il prend la largeur et
+   montre ses tâches. Le troisième niveau, et le dernier : au-delà, on se perd. */
+
+.cap-projets {
+  display: grid;
+  gap: var(--espace-12);
+}
+
+/* Les projets sont une galerie eux aussi — le même geste un étage plus bas.
+   Celui qu'on ouvre prend la largeur ; les autres se rangent à côté. */
+@media (min-width: 45rem) {
+  .cap-projets { grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr)); }
+  .cap-projet.ouvert { grid-column: 1 / -1; }
+}
+
+.cap-projet {
+  position: relative;
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+  transition: border-color 180ms ease-out;
+}
+
+.cap-projet:hover { border-color: color-mix(in srgb, var(--texte-discret) 40%, var(--bordure)); }
+
+/* Le projet ouvert s'enfonce d'un ton au lieu de se colorer : la couleur de
+   l'espace est déjà dite trois fois sur cet écran, une quatrième la userait. */
+.cap-projet.ouvert {
+  border-color: color-mix(in srgb,
+    var(--couleur-espace-pleine, var(--accent)) 22%, var(--bordure));
+  background: var(--fond);
+}
+
+.cap-projet-ouvrir {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espace-12);
+  width: 100%;
+  padding: var(--espace-12) var(--espace-16);
+  padding-right: 2.75rem;
+  background: none;
+  border: 0;
+  border-radius: inherit;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cap-projet-chevron {
+  flex: none;
+  display: grid;
+  place-items: center;
+  height: 1.375rem;
+  color: var(--texte-discret);
+  transition: transform 200ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.cap-projet.ouvert .cap-projet-chevron { transform: rotate(90deg); }
+
+.cap-projet-corps { display: grid; gap: var(--espace-4); }
+
+.cap-projet-nom {
+  font-family: var(--police-titre);
+  font-weight: 600;
+  font-size: 0.875rem;
+  line-height: 1.3;
+}
+
+.cap-projet-resultat {
+  color: var(--texte-discret);
+  font-size: 0.8125rem;
+}
+
+.cap-projet-pied {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-4) var(--espace-16);
+  margin-top: var(--espace-4);
+  color: var(--texte-discret);
+  font-size: 0.75rem;
+}
+
+/* Pas de séparateur écrit entre les éléments du pied : à la ligne suivante, un
+   « · » orphelin ouvre la ligne. C'est l'écart qui sépare. */
+.cap-projet-charge { color: var(--texte-discret); }
+
+/* Le dépliage : la hauteur s'interpole entre 0fr et 1fr, sans hauteur écrite
+   nulle part — donc sans valeur à corriger quand le contenu change. */
+.cap-projet-taches {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 240ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.cap-projet.ouvert .cap-projet-taches { grid-template-rows: 1fr; }
+
+.cap-projet-taches-dedans {
+  overflow: hidden;
+  padding: 0 var(--espace-16);
+}
+
+.cap-projet.ouvert .cap-projet-taches-dedans {
+  padding-bottom: var(--espace-12);
+}
+
+/* --- Les tâches ------------------------------------------------------------
+   La forme de l'espace Tâches, à la lettre : le cercle coloré par priorité, le
+   titre, la ligne de service. On ne réinvente pas une tâche parce qu'elle est
+   vue d'ailleurs. */
+
+.cap-taches {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cap-tache {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espace-12);
+  padding: var(--espace-8) 2.5rem var(--espace-8) 0;
+  border-top: 1px solid color-mix(in srgb, var(--bordure) 60%, transparent);
+}
+
+.cap-taches > .cap-tache:first-child { border-top: 0; }
+
+.cap-tache-corps { flex: 1; display: grid; gap: 2px; min-width: 0; }
+
+.cap-tache-titre { font-size: 0.875rem; line-height: 1.35; }
+
+.cap-tache.tache-faite .cap-tache-titre { color: var(--texte-discret); }
+
+.cap-tache-service {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-4) var(--espace-12);
+  color: var(--texte-discret);
+  font-size: 0.75rem;
+}
+
+.cap-tache-serie {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-4);
+}
+
+.cap-tache-serie svg { opacity: 0.8; }
+
+.cap-tache .cap-menu { top: 50%; transform: translateY(-50%); right: 0; }
+.cap-tache .cap-menu-choix { transform: none; }
+
+/* --- Les vides et la note --------------------------------------------------- */
+
+.cap-vide {
+  grid-column: 1 / -1;
+  max-width: 52ch;
+  margin: 0;
+  padding: var(--espace-12) var(--espace-16);
+  border: 1px dashed var(--bordure);
+  border-radius: var(--rayon-carte);
+  color: var(--texte-discret);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+
+/* --- Le seul moment animé --------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .cap-tuile,
+  .cap-projet-chevron,
+  .cap-projet-taches { transition: none; }
+}
+
+::view-transition-group(*) {
+  animation-duration: 260ms;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+/* --- Les périodes, en tête de la page --------------------------------------
+   Elles ouvrent l'écran parce qu'on ne règle pas un cap sans savoir quelle
+   forme a le mois où il tombe — et surtout parce que c'est là que l'arbitrage a
+   lieu, pendant qu'on écrit « septembre est intense » et non un dimanche soir.
+
+   En tuiles, comme les caps : la page n'a qu'une forme, et une période est un
+   objet du même ordre — quelque chose qu'on pose, qu'on relit et qu'on change.
+   Plus étroites, en revanche : elles cadrent les caps, elles ne les valent
+   pas. */
+
+/* La bande FERME la page, sous les caps : elle prend donc l'air d'un bloc qui
+   suit, pas d'un en-tête. */
+.cap-bande { margin-top: var(--espace-48); }
+
+.cap-periodes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  gap: var(--espace-8) var(--espace-32);
+  /* Chaque ligne prend sa hauteur : une période qui pose une question est plus
+     haute que les autres, et il n'y a aucune raison d'étirer ses voisines. */
+  align-items: start;
+}
+
+/* PAS UNE CARTE, ET DEUX LIGNES (demande de Noé, 28 août 2026) : une période
+   CADRE les caps, elle ne les vaut pas. Du texte posé sur la page, en encre
+   discrète — ni fond, ni bordure, ni ombre, et rien qui prévienne de quoi que
+   ce soit. Toute la ligne ouvre la tuile de modification. */
+.cap-periode { position: relative; }
+
+.cap-periode-ouvrir {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: var(--espace-8) 2.25rem var(--espace-8) 0;
+  background: none;
+  border: 0;
+  color: var(--texte-discret);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cap-periode-ouvrir:hover .cap-periode-nom { color: var(--texte); }
+
+/* Celle qui couvre aujourd'hui porte son nom en pleine encre. C'est toute la
+   différence, et elle suffit : on cherche « où j'en suis », pas une vignette. */
+.cap-periode.courante .cap-periode-nom { color: var(--texte); }
+
+.cap-periode-tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espace-4) var(--espace-12);
+}
+
+.cap-periode-nom {
+  font-family: var(--police-titre);
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--texte-discret);
+}
+
+.cap-periode-quand { font-size: 0.6875rem; color: var(--texte-discret); }
+
+/* La seconde ligne, et la dernière : ce que la période attend, et ce que ça
+   pèse. Sans comparaison à une capacité — dépasser est le but. */
+.cap-periode-attendu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-4) var(--espace-12);
+  font-size: 0.75rem;
+}
+
+.cap-periode-attendu > span[data-espace] { color: var(--couleur-espace-pleine, var(--texte-discret)); }
+
+.cap-periode-charge { color: var(--texte-discret); }
+
+/* Le menu d'une période se cale sur sa première ligne. */
+.cap-periode .cap-menu { top: var(--espace-4); right: 0; }
+
+/* « Déclarer une période » : la MÊME FORME que « Poser un objectif » — une
+   tuile pointillée —, à côté de la période et non sous elle (demandes de Noé,
+   28 août 2026). Le même geste porte le même dessin d'un bout à l'autre de la
+   page ; seule sa taille change, réglée sur les deux lignes de sa voisine
+   plutôt que sur la hauteur d'un cap. */
+.cap-periode-ajout {
+  align-self: stretch;
+  min-height: 0;
+  padding: var(--espace-8) var(--espace-16);
+}
+
+/* --- Ce qui mesure « Rembourser mon matériel » ------------------------------
+   Le seul cap dont la cible est une somme. Ses deux listes vivent dans son
+   dépliage, à côté de ce qu'elles mesurent. */
+
+.cap-argent { display: grid; gap: var(--espace-8); }
+
+.cap-argent-total {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.cap-argent-total .discret { display: block; font-size: 0.8125rem; }
+
+.cap-argent-titre {
+  margin: var(--espace-12) 0 0;
+  font-family: var(--police-texte);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texte-discret);
+}
+
+/* --- Rattacher une tâche orpheline ------------------------------------------
+   La seule façon raisonnable de rattraper les dizaines de tâches écrites avant
+   qu'il existe un étage projet. La liste ne s'ouvre que sur demande : elle est
+   longue, et elle ne sert qu'une fois par tâche. */
+
+.cap-projet-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-16);
+}
+
+.cap-projet-gestes .chiffre { font-size: 0.75rem; opacity: 0.75; }
+
+.cap-orphelines {
+  margin: var(--espace-8) 0 0;
+  padding: 0;
+  list-style: none;
+  max-height: 14rem;
+  overflow-y: auto;
+}
+
+.cap-orphelines li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espace-12);
+  padding: var(--espace-8) 0;
+  border-top: 1px solid color-mix(in srgb, var(--bordure) 60%, transparent);
+  font-size: 0.8125rem;
+}
+
+.cap-taches-faites {
+  margin: var(--espace-8) 0 0;
+  color: var(--texte-discret);
+  font-size: 0.75rem;
+}
+

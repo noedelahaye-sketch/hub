@@ -99,7 +99,14 @@ regarde tous et n'en porte aucune.
 - `/` ou `#dashboard` — tableau de bord global (tous espaces)
 - `#taches` — **toutes** les tâches, tous espaces : datées ou non, faites ou non. La seule page du hub qui ne cache rien — mais elle range. On y crée une tâche, on y change sa priorité (1 à 4) et son statut. Ailleurs le hub trie pour Noé ; ici on vient voir l'ensemble.
   - **« À faire » ne montre qu'UNE occurrence par série** (27 août 2026, demande de Noé) : la plus proche, retard compris. Les suivantes descendent dans **« Ce qui revient »**, repliées par série, avec leur rythme et leur nombre. Sans cette coupe, trois rubriques hebdomadaires noyaient les quatre choses qu'il y avait vraiment à faire — 44 lignes au lieu de 8. Rien n'est caché : tout se déplie.
-- `#objectifs` — **tous** les objectifs, groupés par espace, et le seul endroit du hub où le cap se règle : modifier un objectif, poser ou retirer un jalon, le marquer atteint. Sans entrée dans la barre de navigation (26 août 2026) : on y vient en pressant la tuile « Le cap » d'un tableau de bord, et rarement.
+- `#objectifs` — **« Le cap » : la GALERIE des objectifs** (27 août 2026, demande de Noé, après un échantillon validé). C'est le seul endroit du hub où le cap se règle, et la page qui cache le plus. Elle tient en trois niveaux, jamais quatre :
+  - **la galerie ne dit que ce qui se compare** — une tuile compacte par objectif : son espace, son titre, une rangée de marches (un segment par jalon, plein quand il est atteint), « 3 projets · 23 tâches » et son échéance. **Le titre porte seul le poids** (Clash Display 700) ; le nom de l'espace passe en encre discrète, et sa couleur se dit deux fois sans jamais reprendre l'œil : la pastille, et **le fond de la tuile teinté à 5 %** de la couleur de son espace (Noé a regardé 11 %, puis 7, puis choisi 5). À cette dose la teinte ne se nomme pas, elle se sent : deux tuiles voisines ne se ressemblent plus tout à fait, et rien n'a l'air coloré. Le texte garde son contraste (18:1 sur le titre, 6,6:1 sur le service). Ni pourcentage, ni barre continue : un cap se lit en marches franchies. Le tri suit **l'ordre des journées de Noé — FCH, formation, Yuno** (demande du 28 août 2026) ; à l'intérieur d'un espace, le plus proche d'abord, et ce qui n'a pas de date ferme la marche. Une seule liste (`ESPACES`, js/objectifs.js) porte cet ordre : elle range les tuiles, les choix du formulaire et les régimes d'une période. **Pas de filtre par espace** : il a existé une heure, entre le groupement de l'ancienne page et le tri — depuis que les caps arrivent groupés, il ne cachait rien qu'on ne voyait déjà, et six tuiles s'embrassent du regard.
+  - **on n'ouvre pas une autre page** : la tuile pressée prend toute la largeur et se déplie sur place, comme un jour de « Ta semaine » s'ouvre en grand. Elle montre le pourquoi, la cible, la frise des jalons, les projets (qui se déplient à leur tour sur leurs tâches), les tâches rattachées au cap sans projet, et — pour « Rembourser mon matériel » seulement — les prestations et le matériel qui le mesurent.
+  - **les séries se replient** : quinze « Visuels de la semaine » font UNE ligne, avec leur rythme, ce qu'il en reste et la prochaine date. Sans cette coupe, un projet récurrent redressait le mur que l'espace Tâches a appris à ne pas dresser.
+  - **ajouter et modifier ouvrent la tuile volante**, avec tous les détails (`construireFormulaire`) ; la galerie ne garde que les gestes d'un doigt — cocher un jalon, terminer une tâche, ouvrir un cap. Ce qui est irréversible (supprimer, marquer atteint) demande confirmation **sur place**, dans le menu à trois points : pas de fenêtre pour ça, mais un objectif qui emporte ses jalons mérite le second appui.
+  - **une SECONDE GALERIE sous la première : les projets** (28 août 2026, demande de Noé). Même forme, un étage plus bas — un projet se compare à un projet comme un cap se compare à un cap, et on y entre du même geste. Ce qu'elle montre et que le dépliage d'un cap ne montrait pas : **les projets qui ne servent aucun cap** (« Album du club », « Suivi de l'alternance ») — ils existaient et étaient invisibles, donc oubliés. Un projet posé ici n'a pas de cap et c'est légitime : de l'intendance, ça existe. **L'avancée n'y a pas la même forme** : un cap franchit des marches (un segment par jalon, on les compte du regard) ; un projet avance tâche après tâche, d'où une barre unique remplie à la proportion faite — quinze segments seraient du bruit.
+  - **les périodes ferment la page**, en deux lignes et en encre discrète, avec leur tuile d'ajout à côté d'elles. Voir « les périodes » plus bas.
+  - **Il a son onglet — une boussole, « Le cap »** : c'est la page qui regroupe le plus d'informations cachées, elle doit s'atteindre d'un geste. Cela renverse la décision du 26 août, qui l'avait laissée sans entrée dans la barre ; la tuile « Le cap » du tableau de bord y mène toujours.
 - `#calendrier` — tout ce qui porte une date, tous espaces confondus, filtres par nature (tâches, événements, publications, objectifs)
 - `#formation` — espace formation (thème : teal)
 - `#photo` — la page Yuno du hub (thème : doré) — tableau de bord réduit et porte vers le site
@@ -179,6 +186,7 @@ La progression d'un objectif = jalons atteints / jalons totaux (calculée côté
   - **À la création**, elle ne vaut qu'avec une heure : elle réserve un créneau, et en vue semaine la barre prend sa hauteur. Sans heure, l'écriture l'écarte d'elle-même.
   - **Après coup**, elle vaut sans heure : « ça m'a pris 45 minutes » est vrai d'une tâche qui n'occupait aucun créneau. C'est la question posée **au moment où on coche**, dans la fenêtre de `demanderLaDuree` (js/gabarits.js) — la seule source d'heures du hub. Passer sans répondre ne l'efface pas : ne rien dire n'est pas effacer.
 - `priorite` int NOT NULL default 4 CHECK (priorite BETWEEN 1 AND 4) — 1 le plus urgent, 4 le cas ordinaire
+- `famille` text (nullable) CHECK (corps, calme, lien, intendance) — **espace perso seulement** : ce que ce moment sert. Elle se saisit à la **pastille « Famille »**, qui n'apparaît dans la tuile de capture — celle de l'espace Tâches comme celle du calendrier — que lorsque l'espace choisi est perso, juste derrière la pastille d'espace (la bande défile : une pastille en queue n'existe pas). Facultative, et elle le restera : une soirée notée en trois secondes ne s'arrête pas pour être classée. Écrite `null` dès que l'espace n'est plus perso. Les planchers qu'elle alimente sont **comptés en interne, jamais affichés** (voir `PLANCHER_PERSO`, js/orientation.js).
 - `date_fait` timestamptz
 - `serie_id` uuid REFERENCES series(id) ON DELETE SET NULL — **l'occurrence d'une série répétée** (27 août 2026). La règle (`recurrence`, `recurrence_fin`) vit dans `series`, plus sur la tâche : voir la table `series` plus bas.
 - `created_at` timestamptz default now()
@@ -204,6 +212,7 @@ Règle métier : maximum 3 tâches en statut 'actif' par espace. L'UI doit empê
 - `type_moment` text (nullable) CHECK (match, concert, sortie, autre) — Yuno seulement : le type de la sortie (pastille à la création quand l'espace est photo).
 - `vecu` boolean NOT NULL default false — **la face vécue** : cette sortie a eu lieu et elle est au Carnet de terrain. Posée par un geste (bilan d'une préparation, invite du carnet, capture d'une sortie) — **jamais** par le temps qui passe : un match où Noé n'est pas allé ne doit pas compter.
 - `photo_chemin` text · `note` text · `oeuvre_finie` boolean NOT NULL default false — le reste de la face vécue.
+- `famille` text (nullable) CHECK (corps, calme, lien, intendance) — espace perso seulement, même colonne et mêmes mots que sur `taches`. Elle se pose à la tuile de capture, au formulaire « Ajouter un rendez-vous » de `#perso`, et se corrige au formulaire de modification du calendrier.
 - `reunion_objet` text (nullable) CHECK (ca, alternance, communication, partenariat, autre) — FCH seulement : non nul = cet événement est une réunion (21 août 2026). `reunion_animee` boolean NOT NULL default false — Noé anime ou participe. La préparation et le bilan vivent dans les tables `preparations`/`modeles_preparation` (voir docs/fch-spec.md).
 - `created_at` timestamptz default now()
 
@@ -281,7 +290,13 @@ La trace du **rendez-vous du dimanche**. Une ligne par semaine validée, identif
 
 **L'espace perso n'y figure pas, et c'est toute sa raison d'être** : son plancher ne se négocie jamais. Quand la semaine déborde, on rogne le club ou on décale un livrable — jamais lui.
 
-**Sa vraie fonction n'est pas de régler des chiffres : déclarer une période, c'est déjà arbitrer.** Poser « FCH intense » et « formation intense » sur le même mois, c'est 45 h 30 par semaine pour 35 disponibles — et le hub le dit **au moment où on l'écrit**, trois semaines avant le mur, quand la réponse coûte encore peu. Il **pose la question et propose deux portes** ; c'est Noé qui tranche (`tensionDeLaPeriode`, js/orientation.js). Les périodes se déclarent en tête de `#objectifs`.
+**LE HUB NE PRÉVIENT PLUS D'UN DÉPASSEMENT** (28 août 2026, décision de Noé). Il posait la question au moment où l'on déclarait la période — « 41 h pour 35, qu'est-ce qui cède ? » — et proposait deux portes. Noé l'a retirée : *« ça ne me sert à rien, c'est LE BUT d'une période d'intensité, j'en fais plus que d'habitude »*. Un dépassement voulu n'est pas un déséquilibre à signaler, et un outil qui prévient de ce qu'on a décidé exprès finit par se faire ignorer. La question a disparu des **deux** endroits où elle se posait : `#objectifs` et le rendez-vous du dimanche — la laisser à l'un des deux, c'eût été la déplacer et non la retirer.
+
+> *Ce que cette décision a remplacé, et pourquoi elle a tenu une journée.* La question était née le 27 août avec les périodes, sur un raisonnement juste — dire « ça ne tient pas » trois semaines avant vaut mieux qu'un dimanche soir. Une troisième porte, « C'est voulu », a été essayée le lendemain pour permettre d'assumer, puis retirée avec le reste : si la réponse est toujours « c'est voulu », la question ne valait pas d'être posée. Ne pas la remettre.
+
+**Le calcul, lui, reste entier** — `tensionDeLaPeriode` (js/orientation.js), la table `arbitrages` et son API. C'est la règle du jeu de l'orientation, éprouvable hors écran, et le diagnostic de la semaine s'en sert. **Ce qui a disparu, c'est le reproche, pas la mesure** ; plus aucun écran ne l'affiche aujourd'hui.
+
+**Les périodes FERMENT `#objectifs`, en DEUX LIGNES et en encre discrète** : nom et intervalle, puis ce qu'elles attendent (« FC Hermitage intense · club 26 h · formation 15 h ») — ni carte, ni bordure, ni comparaison à une capacité. Une période *cadre* les caps, elle ne les vaut pas. Toute la ligne ouvre la tuile de modification ; le menu à trois points ne garde que la suppression, et « Déclarer une période » est une tuile pointillée posée **à côté** d'elles, jamais dessous. Elles ouvraient la page le matin du 28 août ; elles la ferment depuis le soir — comme « Le cap » du tableau de bord est passé sous la journée le 13 août, et pour la même raison : on relit ce qui cadre quand on lève la tête, pas en ouvrant l'application.
 
 ### projets
 
@@ -292,7 +307,7 @@ La trace du **rendez-vous du dimanche**. Une ligne par semaine validée, identif
 - `resultat` text — **à quoi on reconnaît qu'il est fini.** Sans ce champ, un projet ne se termine jamais et pourrit dans la liste.
 - `charge_minutes` int — la charge **totale**, pour un projet qui finit.
 - `charge_hebdo` int — la charge **par semaine**, pour un projet qui ne finit pas (une rubrique, un rythme). Une heure par quinzaine s'y écrit `30` : c'est une moyenne hebdomadaire, faite pour être additionnée.
-- `echeance` date · `statut` text CHECK (idee, actif, en_pause, termine, abandonne)
+- `echeance` date · `statut` text CHECK (idee, actif, annuel, en_pause, termine, abandonne) — **quatre états sont offerts** depuis le 28 août 2026 (demande de Noé) : **Pas commencé** (`idee`) · **En cours** (`actif`) · **À l'année** (`annuel`) · **Terminé** (`termine`). **« À l'année » est un SECOND ÉTAT D'EN COURS** : certains projets ne finissent pas — « Programmation de la semaine », « Anniversaires du mois » sont des rythmes, pas des chantiers, et la table le savait déjà (ils portent `charge_hebdo` et non `charge_minutes`) ; il leur manquait le mot. Chercher ce qui est en cours les prend donc tous les deux : **même rang au tri, même bleu**, seul le mot change — une couleur qui les séparerait en ferait deux familles. Leur barre d'avancée reste en pointillé : une barre qui se remplit promettrait une ligne d'arrivée qui n'existe pas. Les deux autres restent acceptés par le CHECK — un CHECK s'élargit, il ne se resserre jamais, comme le format `post` d'une publication — et se lisent encore si une ligne en porte un ; rien ne les écrit plus. C'est cet état qui **trie la galerie des projets**, après l'espace : ce qui est en cours, ce qui n'a pas commencé, ce qui est fini. Il **se lit et se change sur la tuile**, sans ouvrir la fenêtre de modification : un point de couleur et un mot en encre grise, **à côté du nom de l'espace** — les deux signes qui classent un projet se lisent d'un même regard, et le titre garde sa ligne pour lui seul. Presser ouvre le menu dessiné du hub. **Gris, bleu, vert** (demande de Noé) : pas le rouge → ambre → vert d'une publication, essayé d'abord et écarté — une publication traverse un cycle de fabrication où le rouge dit « rien n'est encore fait », tandis qu'un projet pas commencé n'est pas en défaut, il attend son tour. Le bleu est pris plus saturé que celui du club pour qu'on ne confonde pas, sur une tuile FCH, la pastille de l'espace et le point de l'état. La tête de la tuile vit HORS du bouton d'ouverture : un contrôle dans un bouton n'est ni valide ni cliquable. Un projet déclaré terminé a sa barre pleine même s'il reste des tâches — c'est l'état posé qui dit la vérité, pas le décompte.
 
 **En minutes, et non en heures.** C'est l'unité de `taches.duree` et des événements ; deux unités dans une même somme finissent toujours par se croiser. La saisie, elle, se fait en heures — c'est ainsi qu'on pense un projet.
 
@@ -491,6 +506,24 @@ manifeste PWA, `tools/static-server.js`.
 | Clash Display | `--police-titre` | Titres (`h1`, `h2`), « Hub » dans l'en-tête. Graisses 600 et 700 **seulement** — il n'y a pas d'autre fichier. |
 | Instrument Sans | `--police-texte` | Tout le corps de texte, les libellés de section, les boutons. |
 | Geist Mono | `--police-chiffre` | Compteurs et pourcentages, via la classe `.chiffre`. Pas les dates en toutes lettres (« dans 4 jours » est une phrase, pas un code). |
+
+**Le hub est SOMBRE, toujours** (décision de Noé, 27 août 2026). Il n'a plus de
+thème clair : ni réglage à suivre, ni `prefers-color-scheme`, ni deux jeux de
+valeurs à tenir d'accord — une seule palette, celle du soir, qui est l'heure où
+le hub s'ouvre. Les deux sites l'étaient déjà par identité ; le hub les rejoint
+par choix. Conséquence pour qui écrit du CSS : **plus une seule media query de
+thème**, et l'encre posée sur un aplat d'accent est SOMBRE (`var(--fond)` ou
+`var(--fond-carte)`), jamais blanche — l'accent est clair désormais.
+
+**La barre de navigation : trois mots, puis des signes** (demande de Noé,
+27 août 2026). Accueil, Tâches et Perso gardent leur mot — ce sont les vues du
+quotidien, et un mot se vise mieux qu'un signe à reconnaître. Les cinq autres
+sont des signes : la boussole du cap, le calendrier, le chapeau de la formation,
+et **les deux marques en POCHOIR** — `fch-logo-pochoir.png` et
+`yuno-signature.png` posés en `mask`, l'encre venant de `currentColor`. Un logo
+prend donc la couleur de son onglet, discret au repos et inversé quand il est
+actif, au lieu de traîner un fond de sticker et un cadre qui ne sont à personne.
+C'est la mécanique que le site FCH utilise déjà pour son onglet d'accueil.
 
 **Une quatrième dans le calendrier : Gilroy** (demande de Noé, 27 août 2026).
 Le **titre d'une barre** — et lui seul — est en Gilroy 700, dans les trois

@@ -32,6 +32,7 @@ import {
   RECURRENCES,
   DUREES,
   dureeLisible,
+  FAMILLES_PERSO_CHOIX,
 } from './format.js';
 
 // Réexporté pour les espaces : refermer le menu d'une pastille d'état est le
@@ -1484,6 +1485,12 @@ const ICONE = {
     <path d="M3.5 19c.7-3 2.7-4.5 5.5-4.5s4.8 1.5 5.5 4.5"></path>
     <circle cx="17" cy="9" r="2.6"></circle>
     <path d="M15.5 14.6c2.4.2 4.1 1.6 4.9 4"></path></svg>`,
+  // Une feuille : ce qui pousse quand on lui laisse de la place. La famille
+  // d'un moment perso ne se range pas sous le même signe que le travail.
+  famille: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M4 21c0-9 5.5-14.5 16-15 .7 9.5-4.5 15-13 15z"></path>
+    <path d="M4 21c1.5-5 4.5-8.5 9-10.5"></path></svg>`,
   // Quatre colonnes : les quatre piliers éditoriaux de Yuno.
   pilier: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1820,7 +1827,42 @@ export function fenetreCreation({
     );
   }
 
-  // 3 bis. LE PROJET SERVI. Facultatif partout et toujours : une tâche sans
+  // 3 bis. LA FAMILLE D'UN MOMENT PERSO (27 août 2026). Elle ne se montre que
+  // lorsque l'espace choisi est perso — ailleurs la question n'a pas de sens —,
+  // et seulement sur une tâche ou un événement : ce sont les deux seules
+  // natures que perso reçoit, et les deux seules tables qui portent la colonne.
+  //
+  // Elle vient juste derrière l'espace, et non en queue de bande : celle-ci
+  // DÉFILE, et une pastille sixième sur six vit hors de l'écran — donc
+  // n'existe pas. La leçon est celle de la durée d'une tâche, déjà apprise.
+  //
+  // Facultative, et elle le restera : une soirée notée en trois secondes ne
+  // doit pas s'arrêter pour être classée. Ce qui n'est pas rangé se range plus
+  // tard, ou jamais — le hub sait dire combien de moments ne disent rien, il ne
+  // retient la main de personne.
+  if (espacesOfferts?.perso && ['tache', 'evenement'].includes(nature)) {
+    pastilles.push(
+      pastilleCapture({
+        nom: 'famille',
+        icone: ICONE.famille,
+        defaut: 'Famille',
+        source: 'famille',
+        neutre: '',
+        siEspace: 'perso',
+        cachee: espaceInitial !== 'perso',
+        contenu: `${champChoix({
+          nom: 'famille',
+          options: FAMILLES_PERSO_CHOIX,
+          valeur: valeurs.famille ?? '',
+        })}
+          <p class="discret cal-note-nature">L'intendance ne repose de rien :
+            elle se fait, elle ne remplace ni une séance, ni un moment de calme,
+            ni quelqu'un de vu.</p>`,
+      }),
+    );
+  }
+
+  // 3 ter. LE PROJET SERVI. Facultatif partout et toujours : une tâche sans
   // projet reste légitime — c'est de l'intendance —, et retenir la capture
   // pour ça coûterait plus cher que le lien ne rapporte.
   //
@@ -2439,6 +2481,19 @@ function champsDeModification(element) {
             },
           ]
         : []),
+      // Un moment perso dit à quelle famille il appartient — la même question
+      // que la pastille de la tuile, au même endroit que le type de moment
+      // chez Yuno. Sans elle, une famille posée de travers ne se corrigerait
+      // nulle part.
+      ...(element.espace === 'perso'
+        ? [{
+            nom: 'famille',
+            libelle: 'Famille',
+            type: 'choix',
+            options: FAMILLES_PERSO_CHOIX,
+            valeur: ligne.famille ?? '',
+          }]
+        : []),
       { nom: 'lieu', libelle: 'Où', type: 'text', valeur: ligne.lieu ?? '' },
       { nom: 'notes', libelle: 'Notes', type: 'textarea', valeur: ligne.notes ?? '' },
     ];
@@ -2770,6 +2825,10 @@ export async function poserAuCalendrier(champs, { espaceParDefaut = 'photo' } = 
       duree: (champs.heure && Number(champs.duree)) || null,
       priorite: Number(champs.priorite) || 4,
       projet_id: champs.projet_id || null,
+      // La famille ne vaut que dans l'espace perso. Le champ existe même quand
+      // sa pastille est cachée — c'est l'écriture qui l'écarte, comme pour le
+      // type de moment et la réunion.
+      famille: espace === 'perso' ? champs.famille || null : null,
     });
   }
 
@@ -2828,5 +2887,7 @@ export async function poserAuCalendrier(champs, { espaceParDefaut = 'photo' } = 
     reunion_objet: espace === 'fch' ? champs.reunion_objet || null : null,
     reunion_animee:
       espace === 'fch' && champs.reunion_objet ? champs.reunion_animee === 'oui' : false,
+    // Et la famille, qui n'existe que dans l'espace perso.
+    famille: espace === 'perso' ? champs.famille || null : null,
   });
 }

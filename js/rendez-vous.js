@@ -49,7 +49,7 @@ const NOMS = { fch: 'le club', formation: 'la formation', photo: 'Yuno', perso: 
 // sans l'un ou l'autre n'a rien à faire ici.
 export function lignesDuRendezVous(diagnostic) {
   const lignes = [];
-  const { charge, formation, perso, tension, inferences = [] } = diagnostic;
+  const { charge, formation, perso, inferences = [] } = diagnostic;
 
   // 1. LA FORME DE LA SEMAINE. Le club d'abord : c'est lui qui déborde.
   const club = charge.fch;
@@ -166,17 +166,15 @@ export function lignesDuRendezVous(diagnostic) {
     });
   }
 
-  // 5. L'ARBITRAGE, s'il y en a un. Il ferme la liste : c'est la seule question
-  //    à laquelle le hub attend vraiment une réponse.
-  if (tension?.tendue) {
-    lignes.push({
-      cle: 'arbitrage',
-      constat: tension.question,
-      precision: `${enHeures(tension.total)} demandées pour ${enHeures(tension.capacite)}.`,
-      ton: 'tendu',
-      proposition: { libelle: 'Régler la période', lien: '#objectifs' },
-    });
-  }
+  // 5. PLUS D'ARBITRAGE ICI (28 août 2026). Le rendez-vous fermait sa liste sur
+  //    « le club et la formation demandent plus que tes 35 h — lequel cède ? ».
+  //    Noé a tranché : « ça ne me sert à rien, c'est LE BUT d'une période
+  //    d'intensité, j'en fais plus que d'habitude ». La question disparaissait
+  //    de `#objectifs` le même jour ; la laisser revenir le dimanche soir
+  //    aurait été la déplacer, pas la retirer.
+  //
+  //    Le calcul reste entier (`tensionDeLaPeriode`, js/orientation.js) : c'est
+  //    la mesure qu'on garde, c'est le reproche qu'on enlève.
 
   return lignes;
 }
