@@ -4829,46 +4829,87 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    tâche du jour se coche, une proposition se prend ou se refuse. Deux gestes
    différents ne doivent pas porter la même forme, sinon on coche par réflexe
    ce qu'on n'avait pas décidé. */
-.propositions { margin: 0; padding: 0; list-style: none; }
+/* LES TROIS PISTES DU MATIN — UNE LIGNE CHACUNE (28 août 2026, demande de Noé).
+   Elles ont été des lignes à barre de couleur, puis des tuiles ; les tuiles
+   disaient juste mais coûtaient trois cents pixels avant le calendrier. Une
+   piste se prend ou s'écarte en un geste : elle n'a pas besoin d'une carte.
 
-.propositions .proposition {
-  display: grid;
-  grid-template-columns: 1fr auto;
+   La forme est celle d'une ligne de tâche — pastille de l'espace, titre, ligne
+   de service — parce que c'est la forme que Noé lit le plus dans ce hub. */
+.pistes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* `.bloc li` pose une carte et sa barre de couleur à gauche sur toute liste du
+   hub : c'est la forme des tuiles d'espace, et elle rendait ici trois cartes
+   pour trois lignes. On la défait ; la pastille dit l'espace, comme dans une
+   liste de tâches. */
+.pistes .piste {
+  display: flex;
   align-items: baseline;
-  gap: var(--espace-4) var(--espace-12);
-  padding: var(--espace-16) 0;
-  border-top: 1px solid var(--bordure);
+  gap: var(--espace-12);
+  padding: var(--espace-8) 0;
+  background: none;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--bordure) 60%, transparent);
+  border-radius: 0;
 }
 
-.propositions .proposition-titre { font-weight: 500; }
+.pistes .piste[data-espace] { padding-left: 0; }
+.pistes .piste[data-espace]::before { content: none; }
 
-.propositions .proposition-espace {
-  font-size: 0.8125rem;
-  color: var(--couleur-espace-pleine);
-}
+.pistes .piste:first-child { border-top: 0; }
 
-/* La ligne de POURQUOI. Elle n'est pas un ornement : sans elle, une proposition
-   est un ordre déguisé — on l'exécute ou on l'ignore, mais on ne la juge pas. */
-.propositions .proposition-pourquoi {
-  grid-column: 1 / -1;
-  font-size: 0.875rem;
-  color: var(--texte-discret);
-}
+.pistes .pastille { align-self: center; }
 
-.propositions .proposition-gestes {
-  grid-column: 1 / -1;
+.pistes .piste-corps {
+  flex: 1;
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: var(--espace-12);
-  margin-top: var(--espace-8);
+  align-items: baseline;
+  gap: var(--espace-4) var(--espace-8);
+  min-width: 0;
 }
 
-/* « Pas aujourd'hui » reste en retrait : refuser doit être facile, jamais mis
-   en avant. Ce n'est pas l'action qu'on vient chercher, c'est celle qui doit
-   toujours rester possible. */
-.propositions [data-refuser] { color: var(--texte-discret); }
-.propositions [data-refuser]:hover { color: var(--texte); }
+.pistes .piste-titre { font-size: 0.9375rem; }
+
+/* LA RAISON, à la suite du titre et en encre discrète. Elle n'est pas un
+   ornement : sans elle, une proposition est un ordre déguisé — on l'exécute ou
+   on l'ignore, mais on ne peut pas la juger. */
+.pistes .piste-pourquoi {
+  margin: 0;
+  color: var(--texte-discret);
+  font-size: 0.75rem;
+}
+
+/* Les deux gestes ont le MÊME poids : écarter doit rester aussi facile que
+   prendre. Ce sont des signes, et leur phrase vit dans `title` — un bouton dit
+   ce qui va se passer, même quand il ne l'écrit plus. */
+.pistes .piste-gestes {
+  flex: none;
+  align-self: center;
+  display: flex;
+  gap: var(--espace-4);
+}
+
+.pistes .piste-geste {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  background: none;
+  border: 0;
+  border-radius: var(--rayon-pastille);
+  color: var(--texte-discret);
+  cursor: pointer;
+}
+
+.pistes .piste-geste:hover {
+  color: var(--texte);
+  background: var(--surbrillance);
+}
 
 /* Ce que Noé a tranché. La ligne remplace la question — elle ne s'ajoute pas à
    elle : une décision prise et une question ouverte ne peuvent pas cohabiter

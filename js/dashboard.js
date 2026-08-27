@@ -331,34 +331,66 @@ function colonneDuJour(groupes) {
 // proposition sans raison est un ordre déguisé : on l'exécute ou on l'ignore,
 // mais on ne peut pas la juger. Avec sa raison, on peut la contredire, et c'est
 // ce qui laisse la décision à Noé.
+// LES TROIS PISTES DU MATIN — UNE LIGNE CHACUNE (28 août 2026, demande de Noé).
+//
+// Elles ont été des lignes de liste à barre de couleur, puis des tuiles ; les
+// tuiles disaient juste mais coûtaient trois cent pixels avant le calendrier,
+// et « on met trop de temps à arriver au calendrier ». Une piste n'est pas un
+// cap : c'est une suggestion qu'on prend ou qu'on écarte en un geste, et elle
+// n'a pas besoin d'une carte pour ça.
+//
+// Ne restent donc que l'essentiel et les deux gestes : la pastille de l'espace,
+// le titre, la raison à sa suite, et deux signes. Les MOTS des boutons sont
+// passés en icônes — un « + » ou un calendrier pour prendre, une croix pour
+// écarter — et ils gardent leur phrase en `title` et en `aria-label` : un bouton
+// dit toujours ce qui va se passer, même quand il ne l'écrit plus.
+//
+// Ce qui ne bouge pas, parce que c'est le contrat : chacune porte SA RAISON —
+// une proposition sans raison est un ordre déguisé, on l'exécute ou on l'ignore
+// mais on ne peut pas la juger. Et écarter reste aussi facile que prendre : les
+// deux signes ont le même poids, côte à côte.
+
+const SIGNE_PRENDRE = {
+  // Poser la première tâche d'un projet : le « + » de tout le hub.
+  projet: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`,
+  // Passer une tâche à aujourd'hui : le calendrier, comme l'onglet.
+  tache: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+    <path d="M3 10h18M8 3v4M16 3v4"></path></svg>`,
+};
+
+const SIGNE_ECARTER = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+  <path d="M6 6l12 12M18 6L6 18"/></svg>`;
+
 export function construirePropositions(propositions) {
   if (!propositions.length) return '';
 
   return `
     <h2>Ce que je te proposerais</h2>
-    <p class="discret sous-titre">Trois pistes au plus, prises dans ce qui n'a pas de date.
-      Rien n'oblige à en prendre une.</p>
-    <ul class="propositions">
+    <ul class="pistes">
       ${propositions
-        .map(
-          (proposition) => `
-        <li class="proposition" data-espace="${echapper(proposition.espace)}">
-          <span class="proposition-titre">${echapper(proposition.titre)}</span>
-          <span class="proposition-espace">${echapper(
-            NOMS_ESPACES[proposition.espace] ?? proposition.espace,
-          )}</span>
-          <span class="proposition-pourquoi">${echapper(proposition.pourquoi)}</span>
-          <span class="proposition-gestes">
-            <button type="button" class="rdv-geste"
-              data-prendre="${echapper(proposition.forme)}:${echapper(proposition.id)}">${
-                proposition.forme === 'projet' ? 'Poser la première tâche' : 'Aujourd’hui'
-              }</button>
-            <button type="button" class="lien-discret bouton-mini"
-              data-refuser="${echapper(proposition.forme)}:${echapper(proposition.id)}"
-              >Pas aujourd’hui</button>
+        .map((proposition) => {
+          const geste = proposition.forme === 'projet' ? 'Poser une tâche' : 'Mettre à aujourd’hui';
+          return `
+        <li class="piste" data-espace="${echapper(proposition.espace)}">
+          <span class="pastille"></span>
+          <span class="piste-corps">
+            <span class="piste-titre">${echapper(proposition.titre)}</span>
+            <span class="piste-pourquoi">${echapper(proposition.pourquoi)}</span>
           </span>
-        </li>`,
-        )
+          <span class="piste-gestes">
+            <button type="button" class="piste-geste"
+              data-prendre="${echapper(proposition.forme)}:${echapper(proposition.id)}"
+              title="${geste}" aria-label="${geste}">${SIGNE_PRENDRE[proposition.forme]}</button>
+            <button type="button" class="piste-geste"
+              data-refuser="${echapper(proposition.forme)}:${echapper(proposition.id)}"
+              title="Pas aujourd’hui" aria-label="Pas aujourd’hui">${SIGNE_ECARTER}</button>
+          </span>
+        </li>`;
+        })
         .join('')}
     </ul>`;
 }
