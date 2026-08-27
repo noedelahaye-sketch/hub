@@ -221,12 +221,9 @@ export async function cocherDepuisTableauDeBord(cercle, taches, rendre) {
 
   const avant = { ...tache };
 
-  // Une tâche répétée glisse à l'occurrence suivante au lieu de se terminer :
-  // l'écran l'annonce ainsi dès le premier instant, comme le serveur le fera.
-  const suite = api.prochaineEcheance(tache);
-  const optimiste = suite
-    ? { echeance: suite }
-    : { statut: 'fait', date_fait: new Date().toISOString() };
+  // Chaque occurrence d'une série est une ligne à elle : celle-ci se termine
+  // comme n'importe quelle tâche, et celle de la semaine prochaine attend.
+  const optimiste = { statut: 'fait', date_fait: new Date().toISOString() };
 
   await modifierAussitot(tache, optimiste, async () => (await api.terminerTache(avant)).tache, {
     rendre,
@@ -1210,19 +1207,10 @@ export default {
         // n'attend pas : elle part juste après, pendant que l'œil finit.
         if (versFait) await animerLaCoche(cercle);
 
-        // UNE TÂCHE RÉPÉTÉE NE SE TERMINE PAS : elle glisse à l'occurrence
-        // suivante (voir `terminerTache`, js/api.js). L'écran doit dire ça tout
-        // de suite — annoncer « faite » puis se faire corriger par le serveur
-        // ferait passer la ligne dans « Faites » et l'y laisserait, faute de
-        // second rendu.
-        const suite = versFait ? api.prochaineEcheance(tache) : null;
-
         Object.assign(
           tache,
           versFait
-            ? suite
-              ? { echeance: suite }
-              : { statut: 'fait', date_fait: new Date().toISOString() }
+            ? { statut: 'fait', date_fait: new Date().toISOString() }
             : { statut: 'actif', date_fait: null },
         );
         rendreListe();

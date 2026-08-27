@@ -176,10 +176,12 @@ La progression d'un objectif = jalons atteints / jalons totaux (calculée côté
 - `duree` int (nullable) CHECK (5 à 1440) — **combien de temps la tâche prend, en minutes** (26 août 2026). Facultative, et elle ne vaut qu'**avec une heure** : sans heure, une tâche arrive dans la journée sans occuper de créneau, et l'écriture l'écarte d'elle-même. Elle se **tape à la main** (demande de Noé) ; les propositions de 1 h à 3 h ne sont qu'un raccourci. Ce qu'elle change : en vue semaine, la barre de la tâche prend la hauteur de sa durée, comme celle d'un événement.
 - `priorite` int NOT NULL default 4 CHECK (priorite BETWEEN 1 AND 4) — 1 le plus urgent, 4 le cas ordinaire
 - `date_fait` timestamptz
-- `recurrence` text CHECK (hebdo, quinzaine, mensuel) · `recurrence_fin` date — **la répétition, comme pour un événement** (26 août 2026). Mêmes mots, même pas, même code de dépliage au calendrier (`occurrencesEntre`, js/format.js).
+- `serie_id` uuid REFERENCES series(id) ON DELETE SET NULL — **l'occurrence d'une série répétée** (27 août 2026). La règle (`recurrence`, `recurrence_fin`) vit dans `series`, plus sur la tâche : voir la table `series` plus bas.
 - `created_at` timestamptz default now()
 
-**Une tâche répétée ne se termine pas.** Elle n'a qu'un `statut` : le passer à 'fait' marquerait toute la série pour toujours — « Courir » serait fait à jamais après une seule course. La cocher fait donc **glisser son échéance** à l'occurrence suivante et écrit sa victoire au passage (`terminerTache`, js/api.js) ; l'annuler la ramène à l'occurrence d'avant. Passé `recurrence_fin`, la série s'arrête et la tâche se termine pour de bon. Le hub ne compte jamais les fois manquées — c'est la même règle que partout.
+**Une tâche répétée se termine comme les autres** (27 août 2026, demande de Noé). Chaque occurrence est une ligne à elle : celle du jour se coche et écrit sa victoire, celle de la semaine prochaine attend son tour. On en supprime une sans toucher aux autres, on en modifie une sans changer la série.
+
+> *Ce que cette règle a remplacé.* Jusqu'au 26 août, une tâche répétée était **une ligne unique** dont la coche faisait glisser l'échéance — faute de quoi « Courir » aurait été fait à jamais après une seule course. La règle était juste dans son modèle ; c'est le modèle qui ne l'était pas : rien ne gardait la trace de ce qui avait été fait, donc aucun rythme n'était mesurable.
 
 Règle métier : maximum 3 tâches en statut 'actif' par espace. L'UI doit empêcher d'en activer une 4ème (proposer d'en terminer ou repasser une en backlog).
 
@@ -234,14 +236,31 @@ Le calendrier éditorial. **Une idée est une publication sans date** (`date_pre
 - `format` text default 'post' CHECK (post, carrousel, reel, story) — **seuls `carrousel`, `reel` et `story` sont offerts depuis le 15 août 2026** : « post et carrousel, c'est la même chose » (Noé), et c'est carrousel qui reste. `post` demeure accepté par le CHECK — un CHECK s'élargit, il ne se resserre jamais — mais plus rien ne l'écrit.
 - `statut` text default 'idee' CHECK (idee, brouillon, pret, publie) — **le cycle n'est pas le même d'un espace à l'autre**, et il vit dans `CYCLES_PUBLICATION` (js/calendrier-commun.js, avec les réseaux et les formats — la tuile du calendrier en a besoin). Yuno en pose cinq (`a_developper` en plus) ; le **FC Hermitage en a TROIS depuis le 25 août 2026** (demande de Noé) : **à préparer** (`idee`) · **à programmer** (`pret`) · **publié** (`publie`). Ce sont les mots qui changent, pas les valeurs : `nomDuStatut(espace, statut)` les traduit, le CHECK ne bouge pas, et `brouillon` sert toujours à Yuno. L'état se règle **depuis n'importe quel calendrier** — le hub, le site Yuno, celui du FC Hermitage, en vue mois comme en vue semaine (27 août 2026) : c'est le même geste partout, et il est branché **une seule fois**, par `brancherEtatPublication` (js/calendrier-commun.js). En **phase de capture**, et ce n'est pas un détail : le rond vit DANS la barre qui ouvre le détail, et en bulle c'est l'ordre des écouteurs qui déciderait — quatre espaces, quatre occasions de se tromper. Deux façons de régler l'état : le **rond de la barre avance d'un cran** à l'appui (comme le cercle d'une tâche se coche), et la **tuile porte une pastille d'état** — à la suite de celles de la nature et de l'espace, ouvrant un menu déroulant dessiné, pour sauter un état ou revenir en arrière. Sa couleur dit l'étape : **rouge → ambre → vert** (`--teinte`, interpolée sur le cycle ; le CSS règle saturation et clarté par thème). Ce rouge et ce vert ne sont pas des couleurs d'alerte : ils ne jugent aucune échéance et ne bougent pas tout seuls. Pas de case à cocher : elle aurait sauté « à programmer ».
 - `date_prevue` date (nullable — NULL = banque d'idées)
-- `recurrence` text CHECK (hebdo, quinzaine, mensuel) · `recurrence_fin` date — **la répétition, comme pour une tâche et un événement** (26 août 2026). Mêmes mots, même pas, même code de dépliage (`occurrencesEntre`, js/format.js). Elle n'a de sens qu'avec une date : sans jour, l'idée est dans la banque et il n'y a rien qui revienne.
+- `serie_id` uuid REFERENCES series(id) ON DELETE SET NULL — **la parution d'une série répétée** (27 août 2026). La répétition n'a de sens qu'avec une date : sans jour, l'idée est dans la banque et il n'y a rien qui revienne.
 
-**Une publication répétée ne se termine pas** — c'est la règle de la tâche répétée, mot pour mot. Elle n'a qu'un `statut` : le poser à 'publie' marquerait toute la série pour toujours. La faire partir avance donc sa `date_prevue` d'une occurrence et la ramène au **premier état de son cycle** — « à préparer » au club, « idée » chez Yuno : la rubrique suivante attend déjà sur son jour. Passé `recurrence_fin`, la série s'arrête et la publication se termine pour de bon. La règle vit **une seule fois**, dans `passageDePublication` (js/calendrier-commun.js) — quatre écrans font avancer une publication.
+**Une publication répétée se termine comme les autres** — c'est la règle de la tâche répétée, mot pour mot (27 août 2026). Chaque parution est une ligne à elle : celle de lundi part, celle du lundi suivant attend déjà sur son jour. `passageDePublication` (js/calendrier-commun.js) reste le seul endroit qui dit ce qu'un changement d'état écrit — quatre écrans font avancer une publication.
 
-Conséquence assumée : une publication récurrente ne reste jamais en 'publie', donc les compteurs qui comptent les publiées (le bilan du FCH) ne la voient pas passer. Le hub ne garde pas la trace des parutions d'une série, comme il ne garde pas celle des occurrences d'une tâche répétée.
+**Le bilan du FCH voit enfin passer les séries.** Avant, une publication récurrente ne restait jamais en 'publie' : elle avançait sa date et revenait au premier état de son cycle, donc le compteur « publications sorties » l'ignorait. Ce n'est plus le cas.
 - `rubrique` text — la série récurrente, libre
 - `notes` text · `lien_publie` text
 - `created_at` timestamptz default now()
+
+### series
+
+La règle de répétition et son modèle. **Les occurrences sont de vraies lignes** dans `taches`, `evenements` et `publications`, reliées par `serie_id` (27 août 2026, demande de Noé).
+
+- `id` uuid PK
+- `nature` text NOT NULL CHECK (tache, evenement, publication)
+- `espace` text NOT NULL (même CHECK que partout)
+- `recurrence` text NOT NULL CHECK (hebdo, quinzaine, mensuel) · `recurrence_fin` date
+- `depart` date NOT NULL — la première occurrence
+- `genere_jusqu_au` date NOT NULL — **la pièce qui fait tenir l'ensemble** : on ne génère qu'APRÈS ce curseur, donc une occurrence supprimée ne repousse jamais. C'est la version simple des EXDATE d'iCalendar, et elle suffit ici.
+- `modele` jsonb NOT NULL — les champs recopiés dans chaque occurrence. Le modifier change les occurrences **à venir**, jamais celles déjà posées, que Noé a pu changer une à une.
+- `arretee` boolean NOT NULL default false — une série arrêtée garde ses occurrences passées et ne dit plus aucune répétition.
+
+**L'horizon est de seize semaines** (`HORIZON_SERIE_JOURS`, js/api.js) : il couvre tout ce qui a une échéance ce trimestre, jusqu'au QCM du 8 décembre. Plus loin serait payé au mauvais endroit — l'espace Tâches ne cache rien, et un an devant il afficherait cinquante « Contacter les clubs » d'affilée. Les séries **rattrapent leur retard à l'ouverture** (`rafraichirLesSeries`, appelée par `js/app.js` avant le premier affichage) : la fenêtre se repousse donc toute seule, un jour à la fois.
+
+**Ce que les écrans voient ne change pas** : les lignes portent toujours `recurrence` et `recurrence_fin`, que `verifier` recopie depuis la série au passage. C'est le stockage qui a changé, pas la forme — sans quoi il aurait fallu habiller trente lectures une par une.
 
 ### contacts
 

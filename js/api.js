@@ -9,7 +9,7 @@
 // matin sans que personne n'ait rien poussé. La version est écrite dans
 // `js/vendor/VERSION` ; on en change en relançant l'outil.
 import { createClient } from './vendor/supabase-js.js';
-import { versDateISO, depuisDateISO, decalerOccurrence } from './format.js';
+import { versDateISO, depuisDateISO, occurrencesEntre } from './format.js';
 
 // URL de l'espace et clé publique (anon) : ces deux valeurs sont publiques par
 // conception. Sans session, elles ne donnent accès à rien — les politiques RLS
@@ -62,9 +62,14 @@ export function surChangementSession(callback) {
 // --- Données ----------------------------------------------------------------
 // Une fonction par usage. `data` est renvoyé tel quel, les erreurs remontent.
 
+// Toute ligne qui appartient à une série repart avec la règle de celle-ci : les
+// écrans continuent de lire `tache.recurrence` sans savoir que la règle vit
+// désormais dans `series`. Une seule porte, plutôt que trente lectures à
+// habiller une par une. Voir « Les séries », plus bas.
 function verifier({ data, error }) {
   if (error) throw error;
-  return data;
+  if (Array.isArray(data)) return data.map(garnirUne);
+  return data && typeof data === 'object' ? garnirUne(data) : data;
 }
 
 // Humeur — une entrée par jour, la contrainte UNIQUE sur `date` fait le reste.
@@ -257,25 +262,21 @@ export const MAX_TACHES_ACTIVES = 3;
 // Terminer une tâche crée sa victoire. Si l'insertion de la victoire échoue, la
 // tâche reste faite : on ne la rouvre pas, mais l'erreur remonte pour être vue.
 export async function terminerTache(tache) {
-  // UNE TÂCHE RÉCURRENTE NE SE TERMINE PAS (26 août 2026) : elle n'a qu'un
-  // `statut`, et le passer à « fait » marquerait toute la série pour toujours —
-  // « Courir » serait fait à jamais après une seule course. On fait donc
-  // glisser son échéance à l'occurrence suivante. Elle revient d'elle-même, et
-  // rien ne compte les fois manquées : c'est la règle du hub partout ailleurs.
-  //
-  // Passé la fin déclarée, la série s'arrête et la tâche se termine pour de
-  // bon — sinon elle reviendrait après sa propre échéance.
-  const suite = tache.recurrence ? prochaineEcheance(tache) : null;
-
-  const champs = suite
-    ? { echeance: suite }
-    : { statut: 'fait', date_fait: new Date().toISOString() };
-
+  // Une tâche répétée se termine désormais comme les autres (27 août 2026).
+  // Avant, elle n'avait qu'une ligne : la cocher faisait GLISSER son échéance,
+  // faute de quoi « Courir » aurait été fait à jamais après une seule course.
+  // Chaque occurrence est maintenant une ligne à elle — celle du jour se coche,
+  // celle de la semaine prochaine attend son tour, et la série garde la trace
+  // de ce qui a été fait.
   const faite = verifier(
-    await client.from('taches').update(champs).eq('id', tache.id).select().single(),
+    await client
+      .from('taches')
+      .update({ statut: 'fait', date_fait: new Date().toISOString() })
+      .eq('id', tache.id)
+      .select()
+      .single(),
   );
 
-  // La victoire est écrite dans les deux cas : la course a bien eu lieu.
   const victoire = await ajouterVictoire({
     espace: faite.espace,
     titre: faite.titre,
@@ -283,36 +284,24 @@ export async function terminerTache(tache) {
     source_id: faite.id,
   });
 
-  return { tache: faite, victoire };
-}
-
-// L'échéance suivante d'une tâche récurrente, ou `null` quand la série est
-// finie. Exportée pour que l'annulation d'une coche sache revenir en arrière.
-export function prochaineEcheance(tache, sens = 1) {
-  if (!tache.recurrence || !tache.echeance) return null;
-
-  const suite = decalerOccurrence(depuisDateISO(tache.echeance), tache.recurrence, sens);
-  if (sens > 0 && tache.recurrence_fin && suite > depuisDateISO(tache.recurrence_fin)) {
-    return null;
-  }
-  return versDateISO(suite);
+  return { tache: garnirUne(faite), victoire };
 }
 
 // Défaire une tâche terminée : elle redevient active et perd sa date. La règle
 // des 3 actives n'est pas revérifiée ici, volontairement — la tâche était active
 // il y a quelques secondes, on la remet exactement où elle était.
 export async function rouvrirTache(tache) {
-  // Une tâche récurrente n'avait pas été terminée mais DÉPLACÉE : la rouvrir,
-  // c'est la ramener à l'occurrence d'avant. Sans ça, annuler une coche
-  // laisserait la série avancée d'un cran, en silence.
-  const retour = tache.recurrence ? prochaineEcheance(tache, -1) : null;
-
-  const champs = retour
-    ? { echeance: retour, statut: 'actif', date_fait: null }
-    : { statut: 'actif', date_fait: null };
-
-  return verifier(
-    await client.from('taches').update(champs).eq('id', tache.id).select().single(),
+  // Rien de particulier pour une occurrence de série : elle se rouvre comme
+  // n'importe quelle tâche, à sa place dans la semaine.
+  return garnirUne(
+    verifier(
+      await client
+        .from('taches')
+        .update({ statut: 'actif', date_fait: null })
+        .eq('id', tache.id)
+        .select()
+        .single(),
+    ),
   );
 }
 
@@ -362,6 +351,245 @@ export async function creerJalon({ objectif_id, titre, echeance = null, ordre = 
 
 // `priorite` vaut 4 par défaut, comme en base : une tâche n'est pas prioritaire
 // parce qu'elle existe.
+// --- Les séries : la répétition fabrique de vraies lignes ---------------------
+//
+// Une série porte LA RÈGLE et LE MODÈLE ; chaque occurrence est une ligne à
+// part, qu'on supprime et qu'on modifie seule (demande de Noé, 27 août 2026).
+// Avant, une tâche répétée était une ligne unique dont on déplaçait l'échéance :
+// on ne pouvait ni en retirer une occurrence, ni en changer une seule, ni
+// savoir ce qui avait réellement été fait — la ligne ne gardait aucune trace.
+//
+// Ce que les ÉCRANS voient ne change pas : les lignes portent toujours
+// `recurrence` et `recurrence_fin`, que `garnirUne` recopie depuis la série.
+// C'est le stockage qui a changé, pas la forme.
+
+const TABLE_DE_LA_NATURE = {
+  tache: 'taches',
+  evenement: 'evenements',
+  publication: 'publications',
+};
+
+// Seize semaines devant. Le chiffre n'est pas rond par hasard : il couvre tout
+// ce qui a une échéance ce trimestre, jusqu'au QCM du 8 décembre, et c'est aussi
+// la fenêtre que regarde la courbe d'atterrissage (docs/orientation-spec.md).
+//
+// Plus loin serait payé cher au mauvais endroit : une série hebdomadaire pose
+// une ligne par semaine, et l'espace Tâches ne cache rien — un an devant, il
+// afficherait cinquante « Contacter les clubs » d'affilée. Seize semaines en
+// posent seize, et le rattrapage du démarrage repousse la fenêtre chaque jour.
+const HORIZON_SERIE_JOURS = 16 * 7;
+
+let seriesEnCache = new Map();
+
+export async function chargerLesSeries() {
+  const series = verifier(await client.from('series').select('*'));
+  seriesEnCache = new Map(series.map((serie) => [serie.id, serie]));
+  return series;
+}
+
+// La règle de la série, recopiée sur son occurrence. Une série ARRÊTÉE n'en
+// dit rien : ses occurrences déjà posées restent, mais plus rien ne se répète.
+function garnirUne(ligne) {
+  const serie = ligne?.serie_id ? seriesEnCache.get(ligne.serie_id) : null;
+  if (!serie || serie.arretee) return ligne;
+  return { ...ligne, recurrence: serie.recurrence, recurrence_fin: serie.recurrence_fin };
+}
+
+function decalerDUnJour(date, sens = 1) {
+  const suite = new Date(date);
+  suite.setDate(suite.getDate() + sens);
+  return suite;
+}
+
+function horizonDeSerie() {
+  return decalerDUnJour(new Date(), HORIZON_SERIE_JOURS);
+}
+
+// Les champs d'une occurrence, tirés du modèle. C'est le seul endroit qui sait
+// traduire une DATE en colonnes : échéance pour une tâche, date prévue pour une
+// publication, début et fin pour un événement.
+// Exportée pour être vérifiable seule : elle ne touche ni au réseau ni à la
+// session, elle ne fait que traduire une DATE en colonnes.
+export function occurrenceDepuisModele(serie, date) {
+  const modele = { ...(serie.modele ?? {}) };
+  const jour = versDateISO(date);
+  const commun = { espace: serie.espace, serie_id: serie.id };
+
+  if (serie.nature === 'tache') {
+    return { ...modele, ...commun, echeance: jour, statut: 'actif' };
+  }
+  if (serie.nature === 'publication') {
+    return { ...modele, ...commun, date_prevue: jour };
+  }
+
+  // Un événement ne porte pas de durée : elle est dans sa fin. Le modèle garde
+  // donc l'heure et le nombre de minutes, et on reconstruit les deux bouts.
+  const { duree_minutes: minutes, heure, ...reste } = modele;
+  const debut = new Date(`${jour}T${heure || '00:00'}:00`);
+  return {
+    ...reste,
+    ...commun,
+    date_debut: debut.toISOString(),
+    date_fin: minutes ? new Date(debut.getTime() + minutes * 60000).toISOString() : null,
+  };
+}
+
+// Poser les occurrences manquantes, jusqu'à l'horizon. On ne génère QU'APRÈS
+// `genere_jusqu_au` : c'est ce curseur qui fait qu'une occurrence supprimée ne
+// repousse jamais.
+export async function genererOccurrences(serie) {
+  if (serie.arretee) return [];
+
+  const dates = occurrencesEntre(
+    depuisDateISO(serie.depart),
+    serie.recurrence,
+    serie.recurrence_fin,
+    decalerDUnJour(depuisDateISO(serie.genere_jusqu_au)),
+    horizonDeSerie(),
+  );
+  if (!dates.length) return [];
+
+  const posees = verifier(
+    await client
+      .from(TABLE_DE_LA_NATURE[serie.nature])
+      .insert(dates.map((date) => occurrenceDepuisModele(serie, date)))
+      .select(),
+  );
+
+  const majee = verifier(
+    await client
+      .from('series')
+      .update({ genere_jusqu_au: versDateISO(dates[dates.length - 1]) })
+      .eq('id', serie.id)
+      .select()
+      .single(),
+  );
+  seriesEnCache.set(majee.id, majee);
+  return posees;
+}
+
+// Au démarrage : chaque série vivante rattrape son retard. Une seule lecture et,
+// la plupart du temps, aucune écriture — les occurrences de l'année sont déjà là.
+export async function rafraichirLesSeries() {
+  const series = await chargerLesSeries();
+  for (const serie of series) {
+    if (!serie.arretee) await genererOccurrences(serie);
+  }
+  return series;
+}
+
+// `premierePosee` : la ligne du jour de départ existe déjà (on répète une chose
+// déjà écrite). Le curseur part alors DU départ, et la génération reprend au pas
+// suivant — sans quoi on poserait un doublon sur le premier jour.
+export async function creerSerie(
+  nature,
+  { espace, recurrence, depart, recurrence_fin = null, modele = {}, premierePosee = false },
+) {
+  const depuis = depuisDateISO(depart);
+  const serie = verifier(
+    await client
+      .from('series')
+      .insert({
+        nature,
+        espace,
+        recurrence,
+        depart,
+        recurrence_fin: recurrence_fin || null,
+        genere_jusqu_au: versDateISO(premierePosee ? depuis : decalerDUnJour(depuis, -1)),
+        modele,
+      })
+      .select()
+      .single(),
+  );
+  seriesEnCache.set(serie.id, serie);
+  return { serie, occurrences: await genererOccurrences(serie) };
+}
+
+// Arrêter une série : les occurrences déjà passées restent — elles ont eu lieu —
+// mais celles d'APRÈS le jour donné s'en vont, et plus rien ne se génère.
+const COLONNE_DU_JOUR = {
+  tache: 'echeance',
+  publication: 'date_prevue',
+  evenement: 'date_debut',
+};
+
+export async function arreterSerie(serie, jourISO = null) {
+  // Sans jour donné — une publication qu'on renvoie à la banque d'idées, par
+  // exemple — on coupe à partir d'aujourd'hui : ce qui est passé a eu lieu.
+  const borne = jourISO || versDateISO(new Date());
+  const { error } = await client
+    .from(TABLE_DE_LA_NATURE[serie.nature])
+    .delete()
+    .eq('serie_id', serie.id)
+    .gt(COLONNE_DU_JOUR[serie.nature], borne);
+  if (error) throw error;
+
+  const arretee = verifier(
+    await client.from('series').update({ arretee: true }).eq('id', serie.id).select().single(),
+  );
+  seriesEnCache.set(arretee.id, arretee);
+  return arretee;
+}
+
+// Le modèle d'une série née d'une ligne déjà écrite : on reprend ses champs, en
+// laissant dehors ce qui appartient à l'occurrence (son identité, sa date, son
+// état) et non à la série.
+const HORS_MODELE = new Set([
+  'id', 'created_at', 'serie_id', 'statut', 'date_fait', 'echeance',
+  'date_prevue', 'lien_publie', 'date_debut', 'date_fin',
+  'vecu', 'photo_chemin', 'note', 'oeuvre_finie', 'recurrence', 'recurrence_fin',
+]);
+
+function modeleDepuisLaLigne(nature, ligne) {
+  const modele = {};
+  for (const [nom, valeur] of Object.entries(ligne)) {
+    if (!HORS_MODELE.has(nom)) modele[nom] = valeur;
+  }
+  if (nature === 'evenement') {
+    const debut = new Date(ligne.date_debut);
+    modele.heure = `${String(debut.getHours()).padStart(2, '0')}:${String(debut.getMinutes()).padStart(2, '0')}`;
+    modele.duree_minutes = ligne.date_fin
+      ? Math.round((new Date(ligne.date_fin) - debut) / 60000)
+      : null;
+  }
+  return modele;
+}
+
+// Poser, changer ou retirer la répétition d'une ligne existante. Trois cas, et
+// un seul geste possible sur une série en cours : l'arrêter à partir de cette
+// ligne, puis en repartir une neuve. Modifier la règle d'une série en place
+// reviendrait à déplacer des occurrences déjà posées, que Noé a peut-être déjà
+// changées une à une.
+async function reglerLaRepetition(nature, ligne, jourISO, recurrence, recurrence_fin) {
+  const table = TABLE_DE_LA_NATURE[nature];
+  const ancienne = ligne.serie_id ? seriesEnCache.get(ligne.serie_id) : null;
+  const vivante = ancienne && !ancienne.arretee;
+
+  if (
+    vivante &&
+    ancienne.recurrence === (recurrence || null) &&
+    (ancienne.recurrence_fin ?? null) === (recurrence_fin || null)
+  ) {
+    return ligne;
+  }
+
+  if (vivante) await arreterSerie(ancienne, jourISO);
+  if (!recurrence || !jourISO) return ligne;
+
+  const { serie } = await creerSerie(nature, {
+    espace: ligne.espace,
+    recurrence,
+    depart: jourISO,
+    recurrence_fin: recurrence_fin || null,
+    modele: modeleDepuisLaLigne(nature, ligne),
+    premierePosee: true,
+  });
+
+  return verifier(
+    await client.from(table).update({ serie_id: serie.id }).eq('id', ligne.id).select().single(),
+  );
+}
+
 export async function creerTache({
   espace,
   titre,
@@ -374,27 +602,33 @@ export async function creerTache({
   recurrence = null,
   recurrence_fin = null,
 }) {
+  const champs = {
+    espace,
+    titre,
+    echeance,
+    heure,
+    // Une durée sans heure ne mesure rien : la tâche arrive dans la journée
+    // sans occuper de créneau (26 août 2026).
+    duree: heure ? duree || null : null,
+    priorite,
+    objectif_id,
+  };
+
+  // Une répétition sans échéance n'a rien à répéter : sans jour, il n'y a pas
+  // de série, seulement une tâche ordinaire.
+  if (echeance && recurrence) {
+    const { occurrences } = await creerSerie('tache', {
+      espace,
+      recurrence,
+      depart: echeance,
+      recurrence_fin: recurrence_fin || null,
+      modele: { titre, heure, duree: heure ? duree || null : null, priorite, objectif_id },
+    });
+    if (occurrences.length) return garnirUne(occurrences[0]);
+  }
+
   return verifier(
-    await client
-      .from('taches')
-      .insert({
-        espace,
-        titre,
-        statut,
-        echeance,
-        heure,
-        // Une durée sans heure ne mesure rien : la tâche arrive dans la
-        // journée sans occuper de créneau (26 août 2026).
-        duree: heure ? duree || null : null,
-        priorite,
-        objectif_id,
-        // Une répétition sans échéance n'a rien à répéter : la colonne reste
-        // nulle, et la tâche est une tâche ordinaire.
-        recurrence: echeance ? recurrence : null,
-        recurrence_fin: (echeance && recurrence && recurrence_fin) || null,
-      })
-      .select()
-      .single(),
+    await client.from('taches').insert({ ...champs, statut }).select().single(),
   );
 }
 
@@ -421,17 +655,29 @@ export async function creerEvenement({
   reunion_objet = null,
   reunion_animee = false,
 }) {
-  return verifier(
-    await client
-      .from('evenements')
-      .insert({
-        espace, titre, date_debut, date_fin, lieu, notes,
-        recurrence, recurrence_fin, type_moment, club_recevant, club_visiteur,
+  const champs = {
+    espace, titre, date_debut, date_fin, lieu, notes,
+    type_moment, club_recevant, club_visiteur, reunion_objet, reunion_animee,
+  };
+
+  if (recurrence) {
+    const debut = new Date(date_debut);
+    const { occurrences } = await creerSerie('evenement', {
+      espace,
+      recurrence,
+      depart: versDateISO(debut),
+      recurrence_fin: recurrence_fin || null,
+      modele: {
+        titre, lieu, notes, type_moment, club_recevant, club_visiteur,
         reunion_objet, reunion_animee,
-      })
-      .select()
-      .single(),
-  );
+        heure: `${String(debut.getHours()).padStart(2, '0')}:${String(debut.getMinutes()).padStart(2, '0')}`,
+        duree_minutes: date_fin ? Math.round((new Date(date_fin) - debut) / 60000) : null,
+      },
+    });
+    if (occurrences.length) return garnirUne(occurrences[0]);
+  }
+
+  return verifier(await client.from('evenements').insert(champs).select().single());
 }
 
 // --- Publications (calendrier éditorial Yuno) --------------------------------
@@ -480,26 +726,33 @@ export async function creerPublication({
   preuve = null,
   pourquoi_moi = null,
 }) {
-  return verifier(
-    await client
-      .from('publications')
-      .insert({
-        espace, titre, reseau, format, rubrique, notes,
-        date_prevue, heure, pilier, preuve, pourquoi_moi,
-        // Sans date, c'est une idée dans la banque : il n'y a rien à répéter,
-        // et une fin de répétition sans répétition ne veut rien dire.
-        recurrence: date_prevue ? recurrence : null,
-        recurrence_fin: (date_prevue && recurrence && recurrence_fin) || null,
-      })
-      .select()
-      .single(),
-  );
+  const champs = {
+    espace, titre, reseau, format, rubrique, notes,
+    date_prevue, heure, pilier, preuve, pourquoi_moi,
+  };
+
+  // Sans date, c'est une idée dans la banque : il n'y a rien à répéter.
+  if (date_prevue && recurrence) {
+    const { occurrences } = await creerSerie('publication', {
+      espace,
+      recurrence,
+      depart: date_prevue,
+      recurrence_fin: recurrence_fin || null,
+      modele: { titre, reseau, format, rubrique, notes, heure, pilier, preuve, pourquoi_moi },
+    });
+    if (occurrences.length) return garnirUne(occurrences[0]);
+  }
+
+  return verifier(await client.from('publications').insert(champs).select().single());
 }
 
 export async function modifierPublication(id, champs) {
-  return verifier(
-    await client.from('publications').update(champs).eq('id', id).select().single(),
+  const { recurrence, recurrence_fin, ...reste } = champs;
+  const ligne = verifier(
+    await client.from('publications').update(reste).eq('id', id).select().single(),
   );
+  if (!('recurrence' in champs)) return ligne;
+  return reglerLaRepetition('publication', ligne, ligne.date_prevue, recurrence, recurrence_fin);
 }
 
 export async function supprimerPublication(id) {
@@ -1438,13 +1691,22 @@ export async function supprimerJalon(id) {
 // date mal posée se répare, elle ne se supprime pas pour se recréer.
 
 export async function modifierEvenement(id, champs) {
-  return verifier(
-    await client.from('evenements').update(champs).eq('id', id).select().single(),
+  const { recurrence, recurrence_fin, ...reste } = champs;
+  const ligne = verifier(
+    await client.from('evenements').update(reste).eq('id', id).select().single(),
   );
+  if (!('recurrence' in champs)) return ligne;
+  const jour = ligne.date_debut ? versDateISO(new Date(ligne.date_debut)) : null;
+  return reglerLaRepetition('evenement', ligne, jour, recurrence, recurrence_fin);
 }
 
 export async function modifierTache(id, champs) {
-  return verifier(await client.from('taches').update(champs).eq('id', id).select().single());
+  const { recurrence, recurrence_fin, ...reste } = champs;
+  const ligne = verifier(
+    await client.from('taches').update(reste).eq('id', id).select().single(),
+  );
+  if (!('recurrence' in champs)) return ligne;
+  return reglerLaRepetition('tache', ligne, ligne.echeance, recurrence, recurrence_fin);
 }
 
 export async function modifierJalon(id, champs) {

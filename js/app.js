@@ -1,6 +1,12 @@
 // Point d'entrée : garde la session, montre le bon écran, route vers les espaces.
 
-import { sessionCourante, connexion, deconnexion, surChangementSession } from './api.js';
+import {
+  sessionCourante,
+  connexion,
+  deconnexion,
+  surChangementSession,
+  rafraichirLesSeries,
+} from './api.js';
 import { centrerActif, ongletCalendrier } from './calendrier-commun.js';
 import { viderLesCaches } from './cache-session.js';
 import dashboard from './dashboard.js';
@@ -392,8 +398,17 @@ boutonDeconnexion.addEventListener('click', async () => {
 
 // --- Démarrage --------------------------------------------------------------
 
-function appliquerSession(session) {
+async function appliquerSession(session) {
   if (session) {
+    // Les séries rattrapent leur retard AVANT le premier affichage : une
+    // rubrique hebdomadaire dont l'occurrence du jour n'existe pas encore
+    // manquerait à l'appel, et « Aujourd'hui » mentirait. La lecture est d'une
+    // ligne ; l'écriture n'a lieu que si des occurrences manquent vraiment.
+    try {
+      await rafraichirLesSeries();
+    } catch (erreur) {
+      console.error('Génération des occurrences impossible', erreur);
+    }
     afficherEcran('app');
     afficherEspace();
   } else {
@@ -422,7 +437,7 @@ window.addEventListener('hashchange', () => {
 // La session en localStorage est relue au démarrage : rester connecté d'une
 // visite à l'autre ne demande rien de plus.
 try {
-  appliquerSession(await sessionCourante());
+  await appliquerSession(await sessionCourante());
 } catch (erreur) {
   console.error('Lecture de la session impossible', erreur);
   appliquerSession(null);

@@ -84,7 +84,7 @@ jamais être bloquée — c'est le geste le plus utilisé du hub.
 Une tâche sans projet reste légitime : c'est de l'intendance. Le hub la
 propose, elle ne compte dans aucune charge.
 
-### 2.3 Les récurrences deviennent des occurrences réelles
+### 2.3 Les récurrences deviennent des occurrences réelles — **fait le 27 août 2026**
 
 **Changement de modèle.** Aujourd'hui une tâche répétée est *une ligne unique*
 qui déplace son échéance ; demain, une **règle de répétition** fabrique des
@@ -99,6 +99,17 @@ Ce que ça règle, au-delà de la demande de Noé :
 
 Ce que ça supprime : la règle « une tâche répétée ne se termine pas ». Chaque
 occurrence se termine normalement.
+
+**En place depuis le 27 août 2026.** Table `series` (la règle et le modèle),
+`serie_id` sur les trois tables, et un curseur `genere_jusqu_au` qui garantit
+qu'une occurrence supprimée ne repousse pas. Horizon de seize semaines,
+rattrapé à chaque ouverture. Les cinq séries qui existaient ont été converties :
+67 occurrences posées.
+
+**Ce qui manque encore** — et c'est un geste d'interface, plus un modèle :
+« appliquer ce changement à toute la série ». Aujourd'hui on peut supprimer une
+occurrence, en modifier une seule, et arrêter la répétition ; changer le titre
+de toutes d'un coup demande encore de le faire une par une.
 
 ### 2.4 La durée
 
@@ -562,8 +573,8 @@ suivante pour valoir quelque chose.
 
 | # | Travail | Pourquoi à cette place |
 |---|---|---|
-| 0 | **Renommer `projet` → `espace`** | Préalable absolu : 413 occurrences en JS, 8 tables. Introduire `projets` avant créerait une confusion permanente. |
-| 1 | **Occurrences réelles des récurrences** | Sans elles, aucun rythme n'est mesurable et aucune durée de série n'est saisissable. |
+| 0 | ~~**Renommer `projet` → `espace`**~~ **fait** | Préalable absolu : 413 occurrences en JS, 8 tables. Introduire `projets` avant créerait une confusion permanente. |
+| 1 | ~~**Occurrences réelles des récurrences**~~ **fait** | Sans elles, aucun rythme n'est mesurable et aucune durée de série n'est saisissable. |
 | 2 | **La durée au moment de cocher** | Le système entier compte des heures ; aujourd'hui 0 tâche sur 36 en porte une. |
 | 3 | **La table `projets` et les rattachements** | Le fil tâche → projet → jalon → objectif. Rien ne se calcule avant. |
 | 4 | **Les périodes** | Le premier arbitrage a lieu ici, en amont. |

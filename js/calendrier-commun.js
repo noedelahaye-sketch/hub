@@ -29,10 +29,8 @@ import {
   echapper,
   NOMS_ESPACES,
   RECURRENCES,
-  decalerOccurrence,
   DUREES,
   dureeLisible,
-  occurrencesEntre,
 } from './format.js';
 
 // Réexporté pour les espaces : refermer le menu d'une pastille d'état est le
@@ -106,38 +104,21 @@ export { NOMS_STATUTS_BASE };
 // Calendrier, la banque de Yuno, la chaîne éditoriale du club — et la règle
 // qui suit ne peut pas vivre en quatre copies.
 //
-// LA RÈGLE (26 août 2026) : une publication RÉCURRENTE ne se termine pas. Elle
-// n'a qu'un `statut`, et le poser à « publié » marquerait toute la série pour
-// toujours — « Le portrait du lundi » serait publié à jamais après un seul
-// lundi. La faire partir avance donc sa date d'une occurrence et la ramène au
-// PREMIER état de son cycle : la rubrique suivante attend déjà sur son jour,
-// à préparer. C'est mot pour mot ce que fait une tâche répétée qu'on coche
-// (`terminerTache`, js/api.js).
+// Une publication répétée se termine désormais comme les autres (27 août 2026).
+// Avant, la série n'avait qu'UNE ligne : la faire partir avançait sa date et la
+// ramenait au premier état de son cycle, faute de quoi « Le portrait du lundi »
+// aurait été publié à jamais après un seul lundi. Chaque parution est maintenant
+// une ligne à elle — celle de lundi part, celle de la semaine suivante attend
+// déjà sur son jour, et le bilan du club voit enfin passer les séries.
 //
-// Passé la fin déclarée, la série s'arrête et la publication se termine pour
-// de bon — sinon elle reviendrait après sa propre échéance. Et rien ne compte
-// les parutions manquées : c'est la règle du hub partout ailleurs.
+// La fonction reste, et elle reste le seul endroit qui dit ce qu'un changement
+// d'état écrit : quatre écrans font avancer une publication, et cette phrase-là
+// ne peut pas vivre en quatre copies.
 //
 // Renvoie les champs à écrire, pas une promesse : les écrans écrivent tout de
 // suite à l'écran et envoient derrière (js/ecriture.js), il leur faut l'objet.
 export function passageDePublication(pub, statut) {
-  if (statut !== 'publie' || !pub.recurrence || !pub.date_prevue) return { statut };
-
-  const suite = prochaineParution(pub);
-  if (!suite) return { statut };
-
-  return { statut: cyclePublication(pub.espace ?? 'photo')[0], date_prevue: suite };
-}
-
-// La parution suivante d'une série, ou `null` quand elle est finie. Le sens
-// négatif ramène à celle d'avant : c'est ce qui permet à un écran d'annuler
-// un départ, comme une coche de tâche s'annule.
-export function prochaineParution(pub, sens = 1) {
-  if (!pub.recurrence || !pub.date_prevue) return null;
-
-  const suite = decalerOccurrence(depuisDateISO(pub.date_prevue), pub.recurrence, sens);
-  if (sens > 0 && pub.recurrence_fin && suite > depuisDateISO(pub.recurrence_fin)) return null;
-  return versDateISO(suite);
+  return { statut };
 }
 
 // --- Le geste, branché une seule fois ----------------------------------------
@@ -272,52 +253,15 @@ export { RECURRENCES };
 // dans l'autre.
 export { DUREES, dureeLisible };
 
-// La fenêtre d'expansion est large mais bornée : un an en arrière, trois ans
-// devant. Les dates elles-mêmes se calculent dans `format.js` — événements et
-// tâches se répètent de la même façon, et ce serait deux fois le même pas.
-function fenetreDExpansion() {
-  const aujourdhui = new Date();
-  return {
-    plancher: ajouterJours(aujourdhui, -365),
-    plafond: ajouterJours(aujourdhui, 365 * 3),
-  };
-}
-
-function occurrencesDe(evenement) {
-  const { plancher, plafond } = fenetreDExpansion();
-  return occurrencesEntre(
-    new Date(evenement.date_debut),
-    evenement.recurrence,
-    evenement.recurrence_fin,
-    plancher,
-    plafond,
-  );
-}
-
-// Une tâche se déplie à partir de son ÉCHÉANCE, qui est toujours l'occurrence
-// courante : cocher une tâche récurrente la fait glisser à la suivante (voir
-// `terminerTache`). Le calendrier ne montre donc jamais une occurrence passée
-// d'une série — elle n'existe plus, elle a été franchie.
-function occurrencesDeLaTache(tache) {
-  const ancre = tache.heure
-    ? new Date(`${tache.echeance}T${tache.heure}`)
-    : depuisDateISO(tache.echeance);
-
-  const { plancher, plafond } = fenetreDExpansion();
-  return occurrencesEntre(ancre, tache.recurrence, tache.recurrence_fin, plancher, plafond);
-}
-
-// Une publication se déplie comme une tâche, et pour la même raison : sa
-// `date_prevue` est toujours l'occurrence COURANTE — la faire partir l'avance
-// d'un cran (voir `passageDePublication`). Le calendrier ne montre donc jamais
-// une parution passée d'une série : elle a été franchie.
-function occurrencesDeLaPublication(pub) {
-  const ancre = pub.heure
-    ? new Date(`${pub.date_prevue}T${pub.heure}`)
-    : depuisDateISO(pub.date_prevue);
-
-  const { plancher, plafond } = fenetreDExpansion();
-  return occurrencesEntre(ancre, pub.recurrence, pub.recurrence_fin, plancher, plafond);
+// PLUS DE DÉPLIAGE (27 août 2026). Chaque occurrence d'une série est une vraie
+// ligne en base, posée à l'avance par `genererOccurrences` (js/api.js) : le
+// calendrier n'a plus rien à déduire, il assemble ce qu'on lui donne. Déplier
+// ici en plus reviendrait à tout afficher deux fois.
+//
+// Ce que ces trois fonctions calculaient encore — le jour d'une tâche ou d'une
+// publication, heure comprise — tient maintenant en une ligne, au bon endroit.
+function jourDe(jourISO, heure) {
+  return heure ? new Date(`${jourISO}T${heure}`) : depuisDateISO(jourISO);
 }
 
 // --- Assemblage --------------------------------------------------------------
@@ -333,51 +277,42 @@ export function assemblerCalendrier({
   const elements = [];
 
   for (const evenement of evenements) {
-    const origine = new Date(evenement.date_debut);
-    // La durée est portée par la série, pas par chaque occurrence : on la
-    // mesure une fois et on la reporte.
-    const duree = evenement.date_fin ? new Date(evenement.date_fin) - origine : null;
-
-    for (const date of occurrencesDe(evenement)) {
-      elements.push({
-        id: evenement.id,
-        type: 'evenement',
-        source: evenement,
-        date,
-        recurrent: Boolean(evenement.recurrence),
-        // Le dernier jour occupé, s'il y en a plusieurs. L'agenda n'en fait
-        // rien — il dirait trois fois la même chose ; la grille s'en sert pour
-        // tirer une barre continue sur toute la durée.
-        jusqua: duree === null ? null : versDateISO(new Date(date.getTime() + duree)),
-        espace: evenement.espace,
-        titre: evenement.titre,
-        detail: evenement.lieu,
-        notes: evenement.notes,
-        quand: momentLisible(date),
-      });
-    }
+    const date = new Date(evenement.date_debut);
+    elements.push({
+      id: evenement.id,
+      type: 'evenement',
+      source: evenement,
+      date,
+      recurrent: Boolean(evenement.serie_id),
+      // Le dernier jour occupé, s'il y en a plusieurs. L'agenda n'en fait
+      // rien — il dirait trois fois la même chose ; la grille s'en sert pour
+      // tirer une barre continue sur toute la durée.
+      jusqua: evenement.date_fin ? versDateISO(new Date(evenement.date_fin)) : null,
+      espace: evenement.espace,
+      titre: evenement.titre,
+      detail: evenement.lieu,
+      notes: evenement.notes,
+      quand: momentLisible(date),
+    });
   }
 
   for (const tache of taches) {
-    for (const date of occurrencesDeLaTache(tache)) {
-      elements.push({
-        id: tache.id,
-        type: 'tache',
-        source: tache,
-        // Avec une heure, la barre du calendrier l'écrit devant le titre ; sans,
-        // elle ne dit que le jour. C'est `heureDe` qui tranche, et il ne regarde
-        // que ça : minuit = pas d'heure.
-        date,
-        recurrent: Boolean(tache.recurrence),
-        // Seule l'occurrence COURANTE porte l'état : les suivantes sont à
-        // venir, et cocher se fait sur celle du jour. Sans ça, une série
-        // cochée s'afficherait barrée jusqu'en 2029.
-        faite: tache.statut === 'fait' && !tache.recurrence,
-        espace: tache.espace,
-        titre: tache.titre,
-        detail: tache.statut === 'backlog' ? 'backlog' : null,
-      });
-    }
+    elements.push({
+      id: tache.id,
+      type: 'tache',
+      source: tache,
+      // Avec une heure, la barre du calendrier l'écrit devant le titre ; sans,
+      // elle ne dit que le jour. C'est `heureDe` qui tranche, et il ne regarde
+      // que ça : minuit = pas d'heure.
+      date: jourDe(tache.echeance, tache.heure),
+      recurrent: Boolean(tache.serie_id),
+      // Chaque occurrence porte son propre état : celle de lundi peut être
+      // faite pendant que celle de la semaine suivante attend son tour.
+      faite: tache.statut === 'fait',
+      espace: tache.espace,
+      titre: tache.titre,
+      detail: tache.statut === 'backlog' ? 'backlog' : null,
+    });
   }
 
   for (const objectif of objectifs) {
@@ -410,30 +345,24 @@ export function assemblerCalendrier({
   for (const pub of publications) {
     // Comme une tâche : avec une heure, elle l'affiche. L'heure de parution est
     // une décision éditoriale, pas un détail.
-    for (const date of occurrencesDeLaPublication(pub)) {
-      elements.push({
-        id: pub.id,
-        type: 'publication',
-        source: pub,
-        date,
-        recurrent: Boolean(pub.recurrence),
-        // Publiée = partie. Elle se barre comme une tâche faite, et pour la
-        // même raison : ce qui a eu lieu reste à sa place dans la semaine.
-        //
-        // Une série, elle, ne se barre jamais : seule l'occurrence courante
-        // porte l'état, les suivantes sont à venir. Sans cette réserve, une
-        // rubrique hebdomadaire qui vient de partir s'afficherait barrée
-        // jusqu'en 2029 — c'est la règle de la tâche récurrente, mot pour mot.
-        faite: pub.statut === 'publie' && !pub.recurrence,
-        // L'état n'est PAS écrit ici : la tuile le montre en toutes lettres
-        // avec ses trois pastilles, et lui, il se relit à la source à chaque
-        // rendu. Recopié dans cette ligne, il serait vrai à l'assemblage et
-        // faux dès le premier appui.
-        espace: pub.espace ?? 'photo',
-        titre: pub.titre,
-        detail: `${RESEAUX[pub.reseau] ?? pub.reseau} · ${FORMATS[pub.format] ?? pub.format}`,
-      });
-    }
+    elements.push({
+      id: pub.id,
+      type: 'publication',
+      source: pub,
+      date: jourDe(pub.date_prevue, pub.heure),
+      recurrent: Boolean(pub.serie_id),
+      // Publiée = partie. Elle se barre comme une tâche faite, et pour la même
+      // raison : ce qui a eu lieu reste à sa place dans la semaine. Chaque
+      // parution d'une série a désormais sa ligne, donc son propre état.
+      faite: pub.statut === 'publie',
+      // L'état n'est PAS écrit ici : la tuile le montre en toutes lettres
+      // avec ses trois pastilles, et lui, il se relit à la source à chaque
+      // rendu. Recopié dans cette ligne, il serait vrai à l'assemblage et
+      // faux dès le premier appui.
+      espace: pub.espace ?? 'photo',
+      titre: pub.titre,
+      detail: `${RESEAUX[pub.reseau] ?? pub.reseau} · ${FORMATS[pub.format] ?? pub.format}`,
+    });
   }
 
   for (const commande of commandes) {
