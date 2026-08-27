@@ -352,6 +352,22 @@ export async function creerJalon({ objectif_id, titre, echeance = null, ordre = 
 // `priorite` vaut 4 par défaut, comme en base : une tâche n'est pas prioritaire
 // parce qu'elle existe.
 
+// --- Le rendez-vous du dimanche -----------------------------------------------
+//
+// Une ligne par semaine validée, identifiée par son lundi. Sans cette trace, le
+// rendez-vous reviendrait à chaque ouverture — et un rituel qui redemande ce
+// qu'on vient de lui donner cesse très vite d'être un rituel.
+
+export async function semainesValidees() {
+  return verifier(await client.from('semaines').select('*').order('debut', { ascending: false }));
+}
+
+export async function validerLaSemaine(debut, notes = null) {
+  return verifier(
+    await client.from('semaines').upsert({ debut, notes }, { onConflict: 'debut' }).select().single(),
+  );
+}
+
 // --- Les périodes : l'arbitrage en amont --------------------------------------
 //
 // Une période dit ce qu'on attend d'un mois, espace par espace. Sa vraie

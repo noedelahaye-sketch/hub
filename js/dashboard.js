@@ -38,6 +38,8 @@ import {
 } from './calendrier-commun.js';
 import { construireLignesTaches, trierTaches } from './taches.js';
 import { demanderLaDuree, fermerLaDuree } from './gabarits.js';
+import { diagnosticDeLaSemaine, semaineDe } from './orientation.js';
+import { fenetreOuverte, construireRendezVous } from './rendez-vous.js';
 import { construireCapGrave } from './objectifs-commun.js';
 import { lireCache, ecrireCache } from './cache-session.js';
 import { marquerLesEntrantes, animerLaCoche } from './mouvements.js';
@@ -434,6 +436,12 @@ function squelette() {
     <div id="bloc-erreur"></div>
 
     <section class="bloc" id="bloc-humeur"></section>
+
+    <!-- LE RENDEZ-VOUS DU DIMANCHE. Après l'accueil et l'humeur, avant tout le
+         reste : c'est la raison pour laquelle Noé a ouvert le hub ce soir-là.
+         Masqué le reste du temps — il n'apparaît que dans sa fenêtre, et
+         disparaît dès qu'il est validé. Le hub ne relance pas. -->
+    <section class="bloc" id="bloc-rdv" hidden></section>
 
     ${
       // Masqué pour le moment (demande de Noé, 13 août 2026) — voir
@@ -857,6 +865,56 @@ export default {
       }
       rendreEchec();
       ecrireCache(CLE_CACHE, aGarder());
+      chargerLeRendezVous();
+    }
+
+    // LE RENDEZ-VOUS DU DIMANCHE. Il charge SES données à lui, et seulement
+    // dans sa fenêtre : le diagnostic demande les projets, les périodes, les
+    // séries et toutes les tâches — six requêtes qu'un check-in de mardi matin
+    // n'a aucune raison de payer. Il n'est jamais mis en cache non plus : ce
+    // qu'il dit vaut pour ce soir.
+    async function chargerLeRendezVous() {
+      const bloc = section.querySelector('#bloc-rdv');
+      if (!bloc) return;
+
+      const maintenant = new Date();
+      if (!fenetreOuverte(maintenant)) {
+        bloc.hidden = true;
+        return;
+      }
+
+      try {
+        const semaine = semaineDe(maintenant);
+        const [validees, projets, periodes, series, taches, publications, objectifs] =
+          await Promise.all([
+            api.semainesValidees(),
+            api.projetsTous(),
+            api.periodesToutes(),
+            api.chargerLesSeries(),
+            api.tachesToutes(),
+            api.publicationsDatees(),
+            api.objectifsActifs(),
+          ]);
+
+        // Déjà validée : le rendez-vous s'est tenu, il n'a plus rien à dire.
+        if (validees.some((ligne) => ligne.debut === semaine.debut)) {
+          bloc.hidden = true;
+          return;
+        }
+
+        etat.diagnostic = diagnosticDeLaSemaine(
+          { evenements: etat.evenements, taches, publications, objectifs, projets, periodes, series },
+          maintenant,
+        );
+
+        bloc.innerHTML = `<h2>Ta semaine qui vient</h2>${construireRendezVous(etat.diagnostic)}`;
+        bloc.hidden = false;
+      } catch (erreur) {
+        // Un rendez-vous qui ne peut pas se calculer se tait : il ne doit pas
+        // empêcher l'accueil de servir à ce pour quoi on l'ouvre d'habitude.
+        console.error('Rendez-vous de la semaine indisponible', erreur);
+        bloc.hidden = true;
+      }
     }
 
     // Revenir sur l'accueil le relit : une tâche posée depuis le calendrier ou
@@ -1105,6 +1163,44 @@ export default {
     }
 
     section.addEventListener('click', async (evenement) => {
+      // Valider la semaine : le rendez-vous s'en va, et ne revient pas.
+      if (evenement.target.closest('[data-valider-semaine]')) {
+        const bloc = section.querySelector('#bloc-rdv');
+        bloc.hidden = true;
+        try {
+          await api.validerLaSemaine(semaineDe(new Date()).debut);
+        } catch (erreur) {
+          console.error('Semaine non validée', erreur);
+          bloc.hidden = false;
+          signalerEcriture();
+        }
+        return;
+      }
+
+      // Une proposition du rendez-vous ouvre la tuile de création, déjà
+      // remplie : accepter doit coûter UN geste, sinon ce n'est pas une
+      // proposition, c'est encore un constat.
+      const proposition = evenement.target.closest('[data-rdv-creer]');
+      if (proposition) {
+        const voulu = JSON.parse(proposition.dataset.rdvCreer);
+        etat.creation = {
+          nature: voulu.nature ?? 'tache',
+          debut: aujourdhui,
+          fin: aujourdhui,
+          heure: '',
+          valeurs: {
+            titre: voulu.titre ?? '',
+            espace: voulu.espace ?? 'fch',
+            priorite: 4,
+            duree: 0,
+            recurrence: '',
+            recurrence_fin: '',
+          },
+        };
+        rendreCreation();
+        return;
+      }
+
       if (evenement.target.closest('[data-ouvrir-creation]')) {
         etat.creation = { debut: aujourdhui, fin: aujourdhui, nature: NATURE_PAR_DEFAUT };
         rendreCreation();

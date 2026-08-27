@@ -4773,3 +4773,71 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 @media (max-width: 720px) {
   .ajout-volant .ajout-tuile { padding: var(--espace-16); }
 }
+
+/* --- Le rendez-vous du dimanche ---------------------------------------------
+
+   Il ouvre le dimanche à 20 h et s'en va dès qu'il est validé. Sa forme dit
+   son intention : une liste de constats dont CHACUN porte sa porte de sortie.
+   Un constat sans geste est un reproche déguisé, et ce hub n'en fait pas. */
+.rdv-intro { margin: 0 0 var(--espace-16); color: var(--texte-discret); font-size: 0.875rem; }
+
+.rdv-lignes { margin: 0; padding: 0; list-style: none; }
+
+/* `.rdv-lignes` dans le sélecteur : `.bloc li` pose déjà une mise en page sur
+   l'accueil, et à spécificité égale c'est elle qui gagnait — le geste se
+   retrouvait à droite de sa précision au lieu d'être dessous. Même piège que
+   les projets, même parade. */
+.rdv-lignes .rdv-ligne {
+  display: grid;
+  gap: var(--espace-4);
+  padding: var(--espace-16) 0;
+  border-top: 1px solid var(--bordure);
+}
+
+.rdv-lignes .rdv-constat { font-size: 0.9375rem; }
+.rdv-lignes .rdv-precision { font-size: 0.875rem; color: var(--texte-discret); }
+
+/* D'où sort l'inférence, en tout petit : c'est ce qui permet de la contredire
+   d'un coup d'œil, et une inférence qu'on ne peut pas contredire n'a pas sa
+   place ici. */
+.rdv-lignes .rdv-dou { font-size: 0.75rem; color: var(--texte-discret); opacity: 0.75; }
+
+/* Le geste se pose à gauche, sous son constat, et ne s'en détache jamais : il
+   est la réponse à CETTE ligne, pas une action de la page. */
+.rdv-lignes .rdv-geste {
+  justify-self: start;
+  margin-top: var(--espace-8);
+  padding: var(--espace-8) var(--espace-12);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  background: none;
+  color: var(--texte);
+  font-family: var(--police-texte);
+  font-size: 0.8125rem;
+  text-decoration: none;
+  cursor: pointer;
+  min-height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+.rdv-lignes .rdv-geste:hover { border-color: var(--accent); color: var(--accent); }
+
+/* La ligne tendue — l'arbitrage — porte un fond doux, JAMAIS une couleur
+   d'alerte : le hub n'en a pas et n'en aura pas. C'est une question posée, pas
+   un avertissement. */
+.rdv-lignes .rdv-tendu {
+  padding: var(--espace-16);
+  margin-top: var(--espace-8);
+  border-top: 0;
+  background: var(--accent-doux);
+  border-radius: var(--rayon-controle);
+}
+
+/* « C'est ma semaine » ferme le rendez-vous. Pleine largeur : c'est la seule
+   action de fin, et elle doit se toucher sans la chercher. */
+.rdv-valider {
+  width: 100%;
+  margin-top: var(--espace-24);
+  min-height: 2.75rem;
+}

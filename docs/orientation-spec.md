@@ -579,7 +579,7 @@ suivante pour valoir quelque chose.
 | 3 | ~~**La table `projets` et les rattachements**~~ **fait** | Le fil tâche → projet → jalon → objectif. Rien ne se calcule avant. |
 | 4 | ~~**Les périodes**~~ **fait** | Le premier arbitrage a lieu ici, en amont. |
 | 5 | ~~**Le calcul, sans écran**~~ **fait** | Une fonction qui produit un diagnostic vérifiable seul, sans session ni réseau. |
-| 6 | **Le rendez-vous du dimanche** | Le premier écran, une fois que le calcul dit vrai. |
+| 6 | ~~**Le rendez-vous du dimanche**~~ **fait** | Le premier écran, une fois que le calcul dit vrai. |
 | 7 | **Le vivier et les trois propositions du matin** | |
 | 7 bis | **Les inférences** (§ 8) | Elles se posent une par une, chacune vérifiable seule. Aucune n'est nécessaire aux autres. |
 | 8 | **L'arbitrage et sa trace** | Le plus délicat, donc le dernier. |

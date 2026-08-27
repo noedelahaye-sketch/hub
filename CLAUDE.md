@@ -250,6 +250,16 @@ Le calendrier éditorial. **Une idée est une publication sans date** (`date_pre
 - `notes` text · `lien_publie` text
 - `created_at` timestamptz default now()
 
+### semaines
+
+La trace du **rendez-vous du dimanche**. Une ligne par semaine validée, identifiée par son **lundi** — sans elle, le rendez-vous reviendrait à chaque ouverture, et un rituel qui redemande ce qu'on vient de lui donner cesse très vite d'en être un.
+
+- `debut` date PK (le lundi) · `validee_le` timestamptz · `notes` text
+
+**Il ouvre le dimanche à 20 h et reste jusqu'à la fin du lundi**, ou jusqu'à ce qu'il soit validé (choix de Noé). Passé ce délai il se tait : le hub ne relance pas et ne compte pas les rendez-vous manqués. Il s'affiche en tête de l'accueil, **après l'humeur et avant « Aujourd'hui »** — c'est la raison pour laquelle Noé a ouvert le hub ce soir-là, mais sa page s'ouvre toujours sur lui.
+
+**Aucun constat sans proposition, sans exception** (`js/rendez-vous.js`) : chaque ligne porte son geste, et accepter coûte **un** geste — une proposition ouvre la tuile de capture déjà remplie, ou mène à l'écran où le réglage se fait. Une ligne sans porte de sortie est un reproche déguisé.
+
 ### periodes
 
 **L'arbitrage en amont** (27 août 2026). Une période dit ce qu'on attend d'un mois, espace par espace, et multiplie les quotas de base sur son intervalle.
