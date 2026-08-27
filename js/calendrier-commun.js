@@ -638,33 +638,17 @@ function heureDe(element) {
   return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 }
 
-// La hauteur d'une barre en vue semaine : sa durée, à raison de 2,5 rem par
-// heure. C'est ce qui reste de la grille horaire — non plus une échelle de 24 h
-// où tout se place, mais une simple proportion : un match de deux heures est
-// deux fois plus haut qu'un rendez-vous d'une heure, et ça se voit sans compter.
+// PLUS DE HAUTEUR PROPORTIONNELLE (demande de Noé, 27 août 2026 : « supprime
+// l'affichage de la durée dans le calendrier, il faut pas qu'il y ait trop
+// d'info »). C'était la seule façon dont le calendrier montrait une durée — pas
+// un texte, une hauteur — et c'est justement ce qui pesait : en vue semaine, un
+// entraînement de quatre heures mangeait la colonne et repoussait tout le reste
+// hors de vue. Une semaine se lit d'abord comme ce qu'il y a à faire chaque
+// jour, pas comme un emploi du temps à l'échelle.
 //
-// Deux natures savent dire combien de temps elles prennent, et elles le disent
-// dans deux colonnes différentes : un ÉVÉNEMENT a une fin déclarée
-// (`date_fin`), une TÂCHE a des minutes (`duree`, depuis le 26 août 2026 —
-// « de 15 h à 16 h » n'est pas la façon dont on pense une tâche). Les deux
-// arrivent ici en minutes, et la suite est la même. Ce qui n'a ni l'une ni
-// l'autre garde sa hauteur de ligne : ça arrive à un moment, ça n'occupe pas
-// de créneau.
-const HAUTEUR_PAR_HEURE = 2.5;
-
-function minutesDeLElement(element) {
-  const ligne = element.source;
-  if (!ligne) return null;
-
-  if (ligne.date_fin) return (new Date(ligne.date_fin) - element.date) / 60000;
-  return element.type === 'tache' ? (ligne.duree ?? null) : null;
-}
-
-function hauteurSelonLaDuree(element) {
-  const minutes = minutesDeLElement(element);
-  if (!(minutes > 0)) return null;
-  return (minutes / 60) * HAUTEUR_PAR_HEURE;
-}
+// La durée n'est pas perdue pour autant : elle reste sur la ligne, et c'est
+// elle qui alimente le compte des heures (js/orientation.js). Elle ne se
+// dessine simplement plus.
 
 // L'état suivant d'une publication, s'il y en a un. C'est ce que son rond
 // avance d'un appui — et ce qui décide de son dessin.
@@ -714,15 +698,6 @@ function barre(segment, { montrerEspace = false, proportionnel = false, empile =
   const { element, deborde } = segment;
   const espace = montrerEspace ? ` data-espace="${echapper(element.espace)}"` : '';
   const heure = heureDe(element);
-  // La durée pose un PLANCHER, jamais un plafond : un titre qui passe à la
-  // ligne peut le dépasser. Une barre ne coupe jamais son texte pour tenir dans
-  // sa durée.
-  //
-  // Elle voyage en `--duree` et non en `min-height` : un style en ligne
-  // l'emporte sur la feuille, et la hauteur minimale de cible imposée en vue
-  // semaine était donc écrasée par un événement court — une demi-heure valait
-  // 18,75 px. C'est le CSS qui arbitre entre les deux, avec `max()`.
-  const hauteur = proportionnel && heure ? hauteurSelonLaDuree(element) : null;
   // Une tâche faite garde sa place et le dit : cercle coché, titre barré. La
   // faire disparaître effacerait ce qu'on a accompli, ce que ce site ne fait
   // jamais.
@@ -730,9 +705,6 @@ function barre(segment, { montrerEspace = false, proportionnel = false, empile =
   const classes = [
     'cal-barre-element',
     `cal-type-${element.type}`,
-    // Sa hauteur vient de sa durée : son titre ne se limite donc pas à trois
-    // lignes, il a la place que l'événement lui donne (voir styles.css).
-    hauteur ? 'cal-barre-duree' : '',
     element.faite ? 'cal-faite' : '',
     deborde.avant ? 'deborde-avant' : '',
     deborde.apres ? 'deborde-apres' : '',
@@ -747,7 +719,7 @@ function barre(segment, { montrerEspace = false, proportionnel = false, empile =
         : `grid-column: ${segment.depuis + 1} / ${segment.jusqua + 2}; grid-row: ${
             segment.couloir + 2
           };`
-    }${hauteur ? ` --duree: ${hauteur.toFixed(2)}rem;` : ''}"
+    }"
     ${element.recurrent ? 'data-recurrent' : ''}
     data-element="${echapper(element.type)}:${echapper(element.id)}"
     aria-label="${echapper(

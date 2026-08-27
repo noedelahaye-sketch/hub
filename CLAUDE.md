@@ -198,7 +198,7 @@ Règle métier : maximum 3 tâches en statut 'actif' par espace. L'UI doit empê
 - `espace` text NOT NULL
 - `titre` text NOT NULL
 - `date_debut` timestamptz NOT NULL
-- `date_fin` timestamptz — la durée de l'événement, portée par sa fin. Ce que la tuile propose va de **1 h à 4 h, plus « Toute la journée » qui vaut 9 h** (demande de Noé, 26 août 2026 : rien de ce qu'on pose au calendrier ne dure trente minutes). À ne pas confondre avec un événement **sans heure**, qui tient le jour sans occuper de créneau — celui-là ne passe pas par les durées (`DUREES`, js/format.js).
+- `date_fin` timestamptz — la durée de l'événement, portée par sa fin. Ce que la tuile propose va de **1 h à 4 h, plus « Toute la journée » qui vaut 9 h** (demande de Noé, 26 août 2026 : rien de ce qu'on pose au calendrier ne dure trente minutes). À ne pas confondre avec un événement **sans heure**, qui tient le jour sans occuper de créneau — celui-là ne passe pas par les durées (`DUREES`, js/format.js). Depuis le 27 août, la durée d'un événement ne décide plus non plus de la hauteur de sa barre : toutes les barres du calendrier ont la même.
 - `lieu` text
 - `notes` text
 - `type_moment` text (nullable) CHECK (match, concert, sortie, autre) — Yuno seulement : le type de la sortie (pastille à la création quand l'espace est photo).
