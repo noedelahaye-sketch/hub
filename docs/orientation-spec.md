@@ -287,11 +287,11 @@ ailleurs.
 | Projet | Moteur | Ce qu'on sait |
 |---|---|---|
 | **Présentation des catégories** | éditorial, ponctuel | 7 publications, ~2 h chacune → **≈ 14 h**, septembre-octobre |
-| **Programmation de la semaine** | éditorial, hebdo | regroupe la programmation foot à 5, 8 et entente **et** les visuels de la semaine |
-| **Anniversaires du mois** | éditorial, quinzaine | |
+| **Programmation de la semaine** | éditorial, hebdo | regroupe la programmation foot à 5, 8 et entente **et** les visuels de la semaine — **4 h/semaine** |
+| **Anniversaires du mois** | éditorial, quinzaine | **1 h** |
 | **Album du club** | développement | prises de vue dans toutes les catégories, 13 → 25 septembre, plus le traitement |
 | **Équipe com avec Lina** | développement | sert l'objectif « une com qui tourne sans moi », 6 jalons, échéance 15 décembre |
-| **Suivi de l'alternance** | développement | les réunions et rendus liés au contrat |
+| **Suivi de l'alternance** | développement | les réunions et rendus liés au contrat. **Espace FCH**, pas formation : ces heures pèsent donc sur le quota de 20 h, pas sur la courbe des dossiers |
 
 Deux décisions à retenir, moins évidentes qu'elles n'en ont l'air :
 
