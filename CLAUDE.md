@@ -304,9 +304,16 @@ Un projet peut viser tout, rien, un jalon, un objectif ou plusieurs (décision d
 
 **Règle anti-double-comptage** : la progression d'un objectif reste *jalons atteints / jalons totaux*, inchangée. **Un projet ne calcule aucune progression** — il porte la charge et il oriente. Deux caps servis par un même projet ne le comptent donc pas deux fois.
 
-`projet_id` est posé sur `taches`, `evenements` et `publications`, **toujours facultatif** : une tâche sans projet reste légitime, c'est de l'intendance, et bloquer la capture pour ça coûterait plus cher que le lien ne rapporte. Il se règle par une pastille de la tuile, qui ne propose que les projets de l'espace choisi.
+`projet_id` est posé sur `taches`, `evenements` et `publications`, **toujours facultatif** : une tâche sans projet reste légitime, c'est de l'intendance, et bloquer la capture pour ça coûterait plus cher que le lien ne rapporte.
 
-Les projets se lisent et se créent dans `#objectifs` — c'est la page où l'on décide, et un projet est une décision.
+**Trois chemins pour rattacher** (27 août 2026) :
+- la **pastille « Projet »** de la tuile de capture — celle de l'espace Tâches **et** celle du calendrier, donc aussi le « + » de l'accueil et les deux sites. Elle ne propose que les projets de l'espace choisi, et se redessine quand cet espace change ; un projet devenu incohérent s'efface.
+- **rouvrir une tâche** dans l'espace Tâches : la tuile revient avec son projet.
+- dans `#objectifs`, sous chaque projet, **« Rattacher une tâche »** liste les orphelines de son espace. C'est la seule façon raisonnable de rattraper des dizaines de tâches écrites avant qu'il existe un étage projet.
+
+**La ligne d'une tâche écrit le projet qu'elle sert**, à la suite de son espace, en encre discrète : sans ça, on ne voit pas d'un coup d'œil ce qui est rattaché de ce qui ne l'est pas. Son absence est une information aussi.
+
+Les projets se lisent et se créent dans `#objectifs` — c'est la page où l'on décide, et un projet est une décision. Chacun dit **ce qu'il porte** (« 8 tâches rattachées ») : sans ce compte, un projet reste une intention, on ne voit pas s'il a commencé.
 
 ### series
 

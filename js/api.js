@@ -824,10 +824,11 @@ export async function creerEvenement({
   // piège de l'heure et de la priorité, déjà raconté plus haut.
   reunion_objet = null,
   reunion_animee = false,
+  projet_id = null,
 }) {
   const champs = {
     espace, titre, date_debut, date_fin, lieu, notes,
-    type_moment, club_recevant, club_visiteur, reunion_objet, reunion_animee,
+    type_moment, club_recevant, club_visiteur, reunion_objet, reunion_animee, projet_id,
   };
 
   if (recurrence) {
@@ -839,7 +840,7 @@ export async function creerEvenement({
       recurrence_fin: recurrence_fin || null,
       modele: {
         titre, lieu, notes, type_moment, club_recevant, club_visiteur,
-        reunion_objet, reunion_animee,
+        reunion_objet, reunion_animee, projet_id,
         heure: `${String(debut.getHours()).padStart(2, '0')}:${String(debut.getMinutes()).padStart(2, '0')}`,
         duree_minutes: date_fin ? Math.round((new Date(date_fin) - debut) / 60000) : null,
       },
@@ -895,10 +896,11 @@ export async function creerPublication({
   pilier = null,
   preuve = null,
   pourquoi_moi = null,
+  projet_id = null,
 }) {
   const champs = {
     espace, titre, reseau, format, rubrique, notes,
-    date_prevue, heure, pilier, preuve, pourquoi_moi,
+    date_prevue, heure, pilier, preuve, pourquoi_moi, projet_id,
   };
 
   // Sans date, c'est une idée dans la banque : il n'y a rien à répéter.
@@ -908,7 +910,9 @@ export async function creerPublication({
       recurrence,
       depart: date_prevue,
       recurrence_fin: recurrence_fin || null,
-      modele: { titre, reseau, format, rubrique, notes, heure, pilier, preuve, pourquoi_moi },
+      modele: {
+        titre, reseau, format, rubrique, notes, heure, pilier, preuve, pourquoi_moi, projet_id,
+      },
     });
     if (occurrences.length) return garnirUne(occurrences[0]);
   }

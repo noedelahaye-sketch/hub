@@ -1470,6 +1470,10 @@ const ICONE = {
     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <rect x="3" y="3" width="18" height="18" rx="2"></rect>
     <path d="M3 15l5-5 4 4 3-3 6 6"></path></svg>`,
+  projet: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+    stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+    aria-hidden="true"><path d="M3 7l9-4 9 4-9 4-9-4Z"/><path d="M3 12l9 4 9-4"/>
+    <path d="M3 17l9 4 9-4"/></svg>`,
   moment: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <path d="M4 8h3l2-3h6l2 3h3v12H4z"></path>
@@ -1557,6 +1561,20 @@ const DRAPEAU_CAL = (rempli) => `<svg viewBox="0 0 24 24" width="18" height="18"
 //
 // La valeur voyage dans un champ caché : les espaces lisent toujours le
 // formulaire avec `FormData`, ils n'ont pas à savoir comment on l'a saisie.
+// Les projets d'un espace, en options de menu. Exportée parce que le panneau
+// se redessine quand l'espace change : le même HTML doit se refabriquer sans
+// refaire toute la tuile — la refaire fermerait le clavier sur téléphone.
+export function choixDeProjet(projets, espace, valeur = '') {
+  const offerts = projets.filter(
+    (projet) => projet.espace === espace && (projet.statut === 'actif' || projet.id === valeur),
+  );
+  const options = { '': 'Aucun projet' };
+  for (const projet of offerts) options[projet.id] = projet.nom;
+
+  const retenu = offerts.some((projet) => projet.id === valeur) ? valeur : '';
+  return champChoix({ nom: 'projet_id', options, valeur: retenu });
+}
+
 function champChoix({ nom, options, valeur, decor = null }) {
   const ligne = ([cle, texte]) => {
     const choisi = String(cle) === String(valeur);
@@ -1627,6 +1645,10 @@ export function fenetreCreation({
   nature = 'evenement',
   heure = '',
   espaces = null,
+  // LES PROJETS DE NOÉ, pour rattacher ce qu'on note à ce qu'il sert
+  // (27 août 2026). La pastille n'existe que si l'appelant en fournit : un
+  // écran qui ne les charge pas ne montre pas une liste vide.
+  projets = [],
   // Une nature que SEUL l'appelant connaît, ajoutée en fin de liste. Le site
   // Yuno s'en sert pour son « moment » : il n'a rien à faire dans le calendrier
   // du hub — un moment n'est pas une date qu'on pose, c'est un vécu qu'on
@@ -1794,6 +1816,29 @@ export function fenetreCreation({
           valeur: espaceInitial,
           decor: 'espace',
         }),
+      }),
+    );
+  }
+
+  // 3 bis. LE PROJET SERVI. Facultatif partout et toujours : une tâche sans
+  // projet reste légitime — c'est de l'intendance —, et retenir la capture
+  // pour ça coûterait plus cher que le lien ne rapporte.
+  //
+  // Le panneau ne montre que les projets de l'ESPACE choisi, et se redessine
+  // quand cet espace change (`brancherCapture`). Une tâche du club dans un
+  // projet de Yuno n'aurait aucun sens, et le lien serait invisible à l'écran.
+  if (projets.length && ['tache', 'evenement', 'publication'].includes(nature)) {
+    pastilles.push(
+      pastilleCapture({
+        nom: 'projet',
+        icone: ICONE.projet,
+        defaut: 'Projet',
+        source: 'projet_id',
+        contenu: `<div data-panneau-projet>${choixDeProjet(
+          projets,
+          espaceInitial ?? valeurs.espace,
+          valeurs.projet_id ?? '',
+        )}</div>`,
       }),
     );
   }
@@ -2079,7 +2124,10 @@ export function fenetreCreation({
 // Le comportement des pastilles, branché une fois par espace. Il ne touche
 // qu'au DOM : ouvrir un panneau n'écrit rien dans l'état de l'espace, donc rien
 // ne se redessine et aucune saisie ne se perd.
-export function brancherCapture(section) {
+// `projets` : une FONCTION qui rend la liste chargée par l'écran, et non la
+// liste elle-même. La capture se branche au montage, avant que les données
+// arrivent : une référence prise à cet instant resterait vide pour toujours.
+export function brancherCapture(section, { projets = () => [] } = {}) {
   const panneaux = () => [...section.querySelectorAll('.capture-popover')];
 
   const fermerLesPanneaux = () => {
@@ -2231,6 +2279,17 @@ export function brancherCapture(section) {
       if (nom === 'espace') {
         for (const conditionnelle of section.querySelectorAll('.capture [data-si-espace]')) {
           conditionnelle.hidden = valeur !== conditionnelle.dataset.siEspace;
+        }
+
+        // Le panneau des projets ne montre que ceux de l'espace choisi : il se
+        // refabrique ici, et le projet retenu s'efface s'il appartenait à
+        // l'espace d'avant. On ne redessine QUE ce panneau — refaire la tuile
+        // entière fermerait le clavier sur téléphone.
+        const panneauProjet = section.querySelector('.capture [data-panneau-projet]');
+        const connus = projets();
+        if (panneauProjet && connus.length) {
+          const retenu = section.querySelector('.capture [name="projet_id"]')?.value ?? '';
+          panneauProjet.innerHTML = choixDeProjet(connus, valeur, retenu);
         }
       }
 
@@ -2710,6 +2769,7 @@ export async function poserAuCalendrier(champs, { espaceParDefaut = 'photo' } = 
       // Une durée sans heure ne mesure rien : la tâche tient la journée.
       duree: (champs.heure && Number(champs.duree)) || null,
       priorite: Number(champs.priorite) || 4,
+      projet_id: champs.projet_id || null,
     });
   }
 
@@ -2727,6 +2787,7 @@ export async function poserAuCalendrier(champs, { espaceParDefaut = 'photo' } = 
       // répétition ne veut rien dire.
       recurrence: (champs.debut && champs.recurrence) || null,
       recurrence_fin: (champs.debut && champs.recurrence && champs.recurrence_fin) || null,
+      projet_id: champs.projet_id || null,
       // Les deux pastilles de Yuno. Le hub ne les offre pas : `champs` ne les
       // porte alors pas, et les colonnes restent nulles.
       pilier: champs.pilier ? Number(champs.pilier) : null,
@@ -2758,6 +2819,7 @@ export async function poserAuCalendrier(champs, { espaceParDefaut = 'photo' } = 
     recurrence_fin: champs.recurrence_fin || null,
     lieu: champs.lieu?.trim() || null,
     notes: champs.notes?.trim() || null,
+    projet_id: champs.projet_id || null,
     // Le champ existe même quand sa pastille est cachée : seul un événement
     // photo le garde — ailleurs, un type de moment ne veut rien dire.
     type_moment: espace === 'photo' ? champs.type_moment || null : null,

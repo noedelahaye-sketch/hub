@@ -163,7 +163,7 @@ export function construireArgent(commandes, materiel) {
 // Ils n'affichent AUCUNE progression, volontairement. Celle d'un objectif
 // reste jalons atteints / jalons totaux ; deux caps servis par un même projet
 // ne doivent pas le compter deux fois. Un projet porte la charge, pas le score.
-export function construireProjets(projets, objectifs = []) {
+export function construireProjets(projets, objectifs = [], taches = []) {
   if (!projets.length) {
     return `<p class="vide">Aucun projet ici. Le premier dira comment tu comptes
       t'y prendre.</p>`;
@@ -178,6 +178,16 @@ export function construireProjets(projets, objectifs = []) {
       const charge = projet.charge_hebdo
         ? `${dureeLisible(projet.charge_hebdo)} par semaine`
         : dureeLisible(projet.charge_minutes);
+
+      // CE QU'IL PORTE, et ce qui pourrait le porter. Sans ce compte, un projet
+      // reste une intention : on ne voit pas s'il a commencé. Et les orphelines
+      // de son espace se rattachent d'un bouton — c'est la seule façon
+      // raisonnable de rattraper quarante-huit tâches écrites avant qu'il
+      // existe un étage projet.
+      const portees = taches.filter((tache) => tache.projet_id === projet.id);
+      const orphelines = taches.filter(
+        (tache) => tache.espace === projet.espace && !tache.projet_id && tache.statut !== 'fait',
+      );
 
       return `
         <li class="projet-ligne" data-projet="${echapper(projet.id)}">
@@ -196,6 +206,37 @@ export function construireProjets(projets, objectifs = []) {
               : `<span class="projet-caps discret">ne sert aucun cap déclaré</span>`
           }
           ${projet.resultat ? `<span class="projet-resultat">${echapper(projet.resultat)}</span>` : ''}
+          <span class="projet-porte">
+            ${
+              portees.length
+                ? `${portees.length} tâche${portees.length > 1 ? 's' : ''} rattachée${
+                    portees.length > 1 ? 's' : ''
+                  }`
+                : 'Aucune tâche rattachée'
+            }
+          </span>
+          ${
+            orphelines.length
+              ? `<details class="backlog projet-rattacher">
+                   <summary>Rattacher une tâche <span class="chiffre">${
+                     orphelines.length
+                   }</span></summary>
+                   <ul class="liste-orphelines">
+                     ${orphelines
+                       .map(
+                         (tache) => `
+                       <li>
+                         <span>${echapper(tache.titre)}</span>
+                         <button type="button" class="lien-discret bouton-mini"
+                           data-rattacher="${echapper(tache.id)}"
+                           data-vers="${echapper(projet.id)}">Rattacher</button>
+                       </li>`,
+                       )
+                       .join('')}
+                   </ul>
+                 </details>`
+              : ''
+          }
         </li>`;
     })
     .join('')}</ul>`;
@@ -383,6 +424,7 @@ export default {
       projets: [],
       periodes: [],
       arbitrages: [],
+      taches: [],
     };
     const bloc = (espace) => section.querySelector(`[data-bloc="${espace}"]`);
     const blocProjets = (espace) => section.querySelector(`[data-projets="${espace}"]`);
@@ -408,6 +450,7 @@ export default {
       blocProjets(espace).innerHTML = construireProjets(
         etat.projets.filter((projet) => projet.espace === espace),
         etat.objectifs,
+        etat.taches,
       );
     };
 
@@ -431,17 +474,20 @@ export default {
     };
 
     const charger = async () => {
-      const [objectifs, commandes, materiel, projets, periodes, arbitrages] = await Promise.all([
+      const [objectifs, commandes, materiel, projets, periodes, arbitrages, taches] =
+        await Promise.all([
         api.objectifsActifs(),
         api.commandesToutes(),
         api.materielTout(),
         api.projetsTous(),
         api.periodesToutes(),
         api.arbitragesTous(),
+        api.tachesToutes(),
       ]);
       etat.projets = projets;
       etat.periodes = periodes;
       etat.arbitrages = arbitrages;
+      etat.taches = taches;
       etat.objectifs = objectifs.filter((objectif) => ESPACES.includes(objectif.espace));
       etat.commandes = commandes;
       etat.materiel = materiel;
@@ -541,6 +587,21 @@ export default {
       // Revenir sur un arbitrage : la question redevient posable. C'est la
       // seule façon de changer d'avis sans que le hub fasse comme si de rien
       // n'était.
+      // Rattacher une tâche orpheline : l'écran d'abord, l'écriture derrière.
+      const rattacher = evenement.target.closest('[data-rattacher]');
+      if (rattacher) {
+        const tache = etat.taches.find((candidate) => candidate.id === rattacher.dataset.rattacher);
+        if (!tache) return;
+        const espace = tache.espace;
+        await modifierAussitot(
+          tache,
+          { projet_id: rattacher.dataset.vers },
+          () => api.modifierTache(tache.id, { projet_id: rattacher.dataset.vers }),
+          { rendre: () => rendreProjets(espace) },
+        );
+        return;
+      }
+
       const rouvrir = evenement.target.closest('[data-rouvrir-arbitrage]');
       if (rouvrir) {
         const id = rouvrir.dataset.rouvrirArbitrage;

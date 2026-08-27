@@ -616,7 +616,7 @@ export default {
     // ne bouge pas quand on ouvre le « + ».
     function rendreCreation() {
       cible('bloc-creation').innerHTML = etat.creation
-        ? fenetreCreation({ ...etat.creation, espaces: ESPACES })
+        ? fenetreCreation({ ...etat.creation, espaces: ESPACES, projets: etat.projets ?? [] })
         : '';
       if (etat.creation) rafraichirLaCapture?.();
     }
@@ -944,6 +944,9 @@ export default {
           };
         }
 
+        // La pastille de rattachement de la tuile s'en sert aussi : les
+        // projets sont déjà là, on ne les redemande pas.
+        etat.projets = etat.donneesOrientation.projets;
         etat.propositions = propositionsDuMatin(etat.donneesOrientation, new Date());
         bloc.innerHTML = construirePropositions(etat.propositions);
         bloc.hidden = !etat.propositions.length;
@@ -1026,7 +1029,7 @@ export default {
     // --- Interactions, par délégation sur la section entière ---
 
     // Les pastilles de la tuile, comme dans l'espace Calendrier.
-    rafraichirLaCapture = brancherCapture(section);
+    rafraichirLaCapture = brancherCapture(section, { projets: () => etat.projets ?? [] });
 
     // Glisser une barre de la semaine la reporte, sans quitter l'accueil
     // (demande de Noé, 14 août 2026). C'est la même grille que l'espace

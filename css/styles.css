@@ -4907,3 +4907,44 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 }
 
 .liste-periodes .periode-tranche > span { flex: 1; min-width: 12rem; }
+
+/* Le projet servi par une tâche, à la suite de son espace. En encre discrète et
+   sans couleur propre : c'est l'espace qui porte l'identité, le projet ne fait
+   que dire à quoi cette tâche-là sert. Son absence est une information aussi —
+   une tâche sans projet est de l'intendance, et elle a le droit d'exister. */
+.tache-projet {
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+}
+
+.tache-projet::before {
+  content: "·";
+  margin: 0 var(--espace-4) 0 0;
+  opacity: 0.6;
+}
+
+/* Ce qu'un projet porte, et ce qui pourrait le porter. Sans ce compte, un projet
+   reste une intention : on ne voit pas s'il a commencé. */
+.liste-projets .projet-porte {
+  grid-column: 1 / -1;
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+}
+
+.liste-projets .projet-rattacher { grid-column: 1 / -1; margin-top: var(--espace-4); }
+
+.liste-orphelines { margin: 0; padding: 0 0 0 var(--espace-24); list-style: none; }
+
+.liste-orphelines li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-12);
+  padding: var(--espace-8) 0;
+  font-size: 0.875rem;
+  border-top: 1px solid var(--bordure);
+}
+
+/* Le bouton reste lisible sans survol : au toucher il n'y a pas de survol, et
+   c'est le geste qu'on vient chercher dans ce dépliant. */
+.liste-orphelines [data-rattacher] { flex: none; opacity: 1; color: var(--accent); }

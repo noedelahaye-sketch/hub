@@ -1364,7 +1364,7 @@ export default {
       if (etat.creationCal) {
         section.insertAdjacentHTML(
           'beforeend',
-          fenetreCreation({ ...etat.creationCal, reunion: true }),
+          fenetreCreation({ ...etat.creationCal, reunion: true, projets: etat.projets ?? [] }),
         );
       }
 
@@ -1418,7 +1418,7 @@ export default {
     const charger = async () => {
       const [
         objectifs, victoires, publications, taches, evenements, contacts,
-        fiches, actionsClub, modeles,
+        fiches, actionsClub, modeles, projets,
       ] = await Promise.all([
         api.objectifsActifs({ espace: ESPACE }),
         api.victoiresDeLEspace(ESPACE),
@@ -1432,7 +1432,10 @@ export default {
         api.fichesReunionToutes(),
         api.actionsClubToutes(),
         api.modelesPreparationTous(),
+        api.projetsTous(),
       ]);
+      // Les projets du club, pour la pastille de rattachement de la tuile.
+      etat.projets = projets.filter((projet) => projet.espace === ESPACE);
 
       Object.assign(etat, {
         objectifs,
@@ -1474,7 +1477,7 @@ export default {
     // des formulaires — `brancherChoix`, qui servait quand ce site n'avait pas
     // de tuile, est parti avec : les deux ensemble traitaient chaque clic deux
     // fois, et un panneau basculé deux fois reste fermé.
-    rafraichirLaCapture = brancherCapture(section);
+    rafraichirLaCapture = brancherCapture(section, { projets: () => etat.projets ?? [] });
 
     const fermerFenetres = () => {
       etat.creationCal = null;

@@ -62,6 +62,8 @@ const ESPACES = {
 export default {
   async monter(section) {
     const etat = {
+      // Les projets de Noé, pour la pastille de rattachement de la tuile.
+      projets: [],
       // Le dernier état de l'onglet, s'il y en a un : la grille se dessine
       // pleine dès le premier rendu, et les données fraîches la réécrivent une
       // fraction de seconde plus tard. Papier peint, jamais source — les six
@@ -118,7 +120,7 @@ export default {
                 })
           }
         </div>
-        ${etat.creation ? fenetreCreation({ ...etat.creation, espaces: ESPACES }) : ''}
+        ${etat.creation ? fenetreCreation({ ...etat.creation, espaces: ESPACES, projets: etat.projets }) : ''}
         ${
           etat.detail
             ? fenetreDetail(etat.detail, {
@@ -166,7 +168,7 @@ export default {
 
     async function charger() {
       try {
-        const [evenements, taches, objectifs, publications, commandes, contacts] =
+        const [evenements, taches, objectifs, publications, commandes, contacts, projets] =
           await Promise.all([
             // Tous les événements, pas seulement l'à-venir : une grille se
             // promène dans le passé, et un événement posé sur aujourd'hui à
@@ -177,9 +179,11 @@ export default {
             api.publicationsDatees(),
             api.commandesToutes(),
             api.contactsTous(),
+            api.projetsTous(),
           ]);
 
         etat.sources = { evenements, taches, objectifs, publications, commandes, contacts };
+        etat.projets = projets;
         etat.echec = false;
         ecrireCache(CLE_CACHE, etat.sources);
       } catch (erreur) {
@@ -214,7 +218,7 @@ export default {
     // Les pastilles de la tuile : ouverture, fermeture, libellés. Tout se joue
     // dans le DOM — ouvrir un panneau ne redessine rien, donc rien de saisi ne
     // se perd.
-    rafraichirLaCapture = brancherCapture(section);
+    rafraichirLaCapture = brancherCapture(section, { projets: () => etat.projets });
 
     // Entrée ou Espace sur une case posée au clavier ouvre la même fenêtre
     // qu'un clic.

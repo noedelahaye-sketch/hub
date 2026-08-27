@@ -142,10 +142,16 @@ function quandLisible(tache) {
 // rangée sous sa série (« Ce qui revient ») — le sommaire vient d'écrire le
 // titre, et le redire quinze fois de suite ne dit rien de plus. Le nom complet
 // reste dans le nom accessible du bouton, où il ne prend aucune place.
+// `projets` : la liste de l'écran, pour écrire le nom du projet servi à côté de
+// l'espace. Sans elle, la ligne ne dit pas ce qu'elle sert — et on ne voit pas
+// d'un coup d'œil ce qui est rattaché de ce qui ne l'est pas.
 function ligneTache(
   tache,
-  { ouvrable = true, supprimable = true, espace = true, titre = true } = {},
+  { ouvrable = true, supprimable = true, espace = true, titre = true, projets = [] } = {},
 ) {
+  const projetServi = tache.projet_id
+    ? projets.find((candidat) => candidat.id === tache.projet_id)
+    : null;
   const faite = tache.statut === 'fait';
   const quand = quandLisible(tache);
 
@@ -190,6 +196,11 @@ function ligneTache(
               ? `<span class="tache-espace">${echapper(
                   NOMS_ESPACES[tache.espace] ?? tache.espace,
                 )}</span>`
+              : ''
+          }
+          ${
+            projetServi
+              ? `<span class="tache-projet">${echapper(projetServi.nom)}</span>`
               : ''
           }
         </span>
@@ -321,7 +332,7 @@ function blocDUneSerie(occurrences) {
     </details>`;
 }
 
-export function construireListe(taches, message = null) {
+export function construireListe(taches, message = null, projets = []) {
   const { aFaire: candidates, series } = separerLesSeries(
     taches.filter((tache) => tache.statut !== 'fait'),
   );
@@ -329,7 +340,7 @@ export function construireListe(taches, message = null) {
   const faites = trierFaites(taches.filter((tache) => tache.statut === 'fait'));
   const aVenir = series.reduce((total, occurrences) => total + occurrences.length, 0);
 
-  const bloc = (liste) => construireLignesTaches(liste);
+  const bloc = (liste) => construireLignesTaches(liste, { projets });
 
   return `
     ${construireMessage(message)}
@@ -797,6 +808,7 @@ export default {
         cible.innerHTML = construireListe(
           filtrerParEspace(etat.taches, etat.espace),
           etat.message,
+          etat.projets,
         );
         marquerLesEntrantes(cible, lignesVues, {
           selecteur: '.tache-ligne',

@@ -5100,6 +5100,7 @@ export default {
             'beforeend',
             fenetreCreation({
               ...etat.creationCal,
+              projets: etat.projets ?? [],
               naturesEnPlus: NATURE_MOMENT,
               natureEnDernier: reglagesDuPlus(etat.vue).natureEnDernier ?? false,
               // Chez Yuno tout est photo : un événement porte toujours sa
@@ -5313,15 +5314,19 @@ export default {
     // Tout ce que le calendrier peut montrer se recharge d'un coup : la grille
     // se promène dans le passé, et une suppression peut toucher n'importe quoi.
     const rechargerCalendrier = async () => {
-      const [evenements, taches, objectifs, publications, contacts, commandes] = await Promise.all([
-        api.evenementsTous({ espace: 'photo' }),
-        api.tachesDatees({ espace: 'photo' }),
-        api.objectifsActifs({ espace: 'photo' }),
-        api.publicationsToutes('photo'),
-        api.contactsTous(),
-        api.commandesToutes(),
-      ]);
+      const [evenements, taches, objectifs, publications, contacts, commandes, projets] =
+        await Promise.all([
+          api.evenementsTous({ espace: 'photo' }),
+          api.tachesDatees({ espace: 'photo' }),
+          api.objectifsActifs({ espace: 'photo' }),
+          api.publicationsToutes('photo'),
+          api.contactsTous(),
+          api.commandesToutes(),
+          api.projetsTous(),
+        ]);
       Object.assign(etat, { evenements, taches, objectifs, publications, contacts, commandes });
+      // Les projets de Yuno, pour la pastille de rattachement de la tuile.
+      etat.projets = projets.filter((projet) => projet.espace === 'photo');
       // Ces six-là viennent d'être relues : elles sont fraîches, et affichables
       // même si la vue courante ne les avait pas demandées.
       for (const cle of ['evenements', 'taches', 'objectifs', 'publications', 'contacts', 'commandes']) {
@@ -7334,7 +7339,7 @@ export default {
     // plage choisie.
     // Les pastilles de la tuile « Poser au calendrier », comme dans l'espace
     // Calendrier du hub : tout se joue dans le DOM, rien ne se redessine.
-    rafraichirLaCapture = brancherCapture(section);
+    rafraichirLaCapture = brancherCapture(section, { projets: () => etat.projets ?? [] });
 
     // Ce qu'on pose par défaut. Le calendrier éditorial ne montre QUE des
     // publications : y poser un événement par défaut serait absurde, la page
