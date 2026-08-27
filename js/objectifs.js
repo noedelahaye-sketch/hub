@@ -22,7 +22,7 @@ import {
   tensionDeLaPeriode,
   periodeDuJour,
 } from './orientation.js';
-import { construireObjectifs, construireFormulaire } from './gabarits.js';
+import { construireObjectifs, construireFormulaire, brancherChoix } from './gabarits.js';
 import { modifierAussitot, retirerAussitot } from './ecriture.js';
 // Le modèle de l'argent de Yuno vit avec la page qui l'a fait naître ; il
 // n'est pas recopié ici.
@@ -351,6 +351,12 @@ function squelette() {
 export default {
   async monter(section) {
     section.innerHTML = squelette();
+
+    // Les menus dessinés des formulaires (les régimes d'une période) n'étaient
+    // branchés nulle part ici : les boutons existaient et ne répondaient pas.
+    // Cet espace n'a pas de tuile de capture, il pose donc son propre écouteur —
+    // comme le site du FCH, et pour la même raison.
+    brancherChoix(section);
 
     const etat = { objectifs: [], commandes: [], materiel: [], projets: [], periodes: [] };
     const bloc = (espace) => section.querySelector(`[data-bloc="${espace}"]`);

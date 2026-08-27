@@ -4701,3 +4701,75 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   border-radius: var(--rayon-controle);
   font-size: 0.875rem;
 }
+
+/* --- Les formulaires d'ajout volent au-dessus de la page --------------------
+
+   Demande de Noé, 27 août 2026 : tout ce qui ajoute du contenu — un objectif,
+   un projet, une période, un jalon, une idée — s'ouvre en tuile, comme la
+   capture d'une tâche. Déplié sur place, un formulaire de six champs poussait
+   la page vers le bas et faisait perdre de vue ce qu'on regardait.
+
+   C'est toujours un `<details>` : il porte l'état, et le sommaire est déjà un
+   bouton. Seule sa mise en forme change quand il s'ouvre. */
+.ajout-volant[open] > summary { color: var(--accent); }
+
+.ajout-volant .ajout-fond {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgb(0 0 0 / 65%);
+}
+
+/* Centrée et défilante, et non collée au bas comme la capture : celle-ci n'a
+   qu'un champ, un formulaire d'ajout en a six. Une tuile qui monte du bas et
+   qu'il faut faire défiler à l'aveugle serait pire que le dépliage qu'elle
+   remplace. */
+.ajout-volant .ajout-tuile {
+  position: fixed;
+  z-index: 41;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(34rem, calc(100vw - 2 * var(--espace-16)));
+  max-height: min(42rem, calc(100vh - 2 * var(--espace-24)));
+  overflow-y: auto;
+  padding: var(--espace-24);
+  background: var(--fond-carte);
+  border-radius: var(--rayon-tuile);
+  box-shadow: 0 12px 48px rgb(0 0 0 / 45%);
+}
+
+/* Le titre est repris du sommaire, qui est maintenant derrière le fond : sans
+   lui, la tuile ne dirait pas ce qu'on est en train d'ajouter. */
+.ajout-volant .ajout-titre {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espace-12);
+  margin: 0 0 var(--espace-16);
+  font-family: var(--police-titre);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+/* La croix hérite de `.bouton-retirer`, invisible jusqu'au survol dans les
+   listes — c'est juste là où il ne faut pas : au toucher il n'y a pas de
+   survol, et une tuile doit toujours montrer par où en sortir. */
+.ajout-volant .ajout-titre [data-fermer-ajout] {
+  opacity: 1;
+  flex: none;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+/* Dans la tuile, le bouton d'envoi prend toute la largeur : c'est la seule
+   action, et sur téléphone le pouce ne doit pas la chercher. */
+.ajout-volant .ajout-tuile form > button[type="submit"] {
+  width: 100%;
+  margin-top: var(--espace-16);
+  min-height: 2.75rem;
+}
+
+@media (max-width: 720px) {
+  .ajout-volant .ajout-tuile { padding: var(--espace-16); }
+}

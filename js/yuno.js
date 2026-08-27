@@ -5484,6 +5484,14 @@ export default {
 
       try {
         await appliquer(formulaire.dataset.action, champs);
+        // La tuile d'ajout se referme quand ce qu'elle portait est enregistré.
+        // Seulement la volante : les formulaires posés dans une fenêtre ou dans
+        // la page vivent leur vie, et les vider sous les doigts serait brutal.
+        const volante = formulaire.closest('.ajout-volant');
+        if (volante) {
+          formulaire.reset();
+          volante.removeAttribute('open');
+        }
       } catch (souci) {
         console.error('Action impossible', souci);
         erreur.textContent = souci.message ?? "L'action a échoué.";

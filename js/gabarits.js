@@ -427,10 +427,41 @@ export function construireFormulaire({
 
   if (!avecPli) return `<div class="ajout" data-ajout="${id}">${corps}</div>`;
 
+  // AJOUTER DU CONTENU OUVRE UNE TUILE VOLANTE (demande de Noé, 27 août 2026).
+  // C'est le geste de la capture des tâches, étendu à tout ce qui ajoute
+  // quelque chose : un objectif, un projet, une période, un jalon, une idée.
+  // Déplié sur place, un formulaire de six champs poussait la page entière vers
+  // le bas et faisait perdre ce qu'on était en train de regarder.
+  //
+  // Le `<details>` RESTE, et ce n'est pas un vestige : c'est lui qui porte
+  // l'état ouvert/fermé, il donne au sommaire un rôle de bouton sans qu'on ait
+  // rien à brancher, et les écrans qui referment le formulaire après coup
+  // écrivent déjà `.closest('.ajout').open = false`. Le rendre volant ne change
+  // donc que sa mise en forme — dix-sept formulaires basculent sans qu'aucun
+  // écran ne bouge.
+  //
+  // `ouvert: true` reste INLINE : ce sont les formulaires déjà dépliés dans une
+  // fenêtre (la modification depuis le calendrier). Une tuile par-dessus une
+  // fenêtre serait une fenêtre de trop.
+  const volant = !ouvert;
+
   return `
-    <details class="ajout" data-ajout="${id}" ${ouvert ? 'open' : ''}>
+    <details class="ajout${volant ? ' ajout-volant' : ''}" data-ajout="${id}"
+      ${ouvert ? 'open' : ''}>
       <summary>${libelle}</summary>
-      ${corps}
+      ${
+        volant
+          ? `<div class="ajout-fond" data-fermer-ajout></div>
+             <div class="ajout-tuile">
+               <p class="ajout-titre">
+                 <span>${echapper(libelle)}</span>
+                 <button type="button" class="lien-discret bouton-mini bouton-retirer"
+                   data-fermer-ajout title="Fermer" aria-label="Fermer">×</button>
+               </p>
+               ${corps}
+             </div>`
+          : corps
+      }
     </details>`;
 }
 

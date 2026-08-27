@@ -430,6 +430,22 @@ async function appliquerSession(session) {
   }
 }
 
+// Refermer une tuile d'ajout : le fond, la croix, ou Échap. Posé UNE FOIS pour
+// tout le site — dix-sept formulaires sur cinq écrans s'ouvrent en tuile, et
+// dix-sept copies du même geste finiraient par se contredire. Le `<details>`
+// porte l'état : le refermer suffit, il n'y a rien d'autre à défaire.
+document.addEventListener('click', (evenement) => {
+  const fermeture = evenement.target.closest('[data-fermer-ajout]');
+  if (fermeture) fermeture.closest('.ajout-volant')?.removeAttribute('open');
+});
+
+document.addEventListener('keydown', (evenement) => {
+  if (evenement.key !== 'Escape') return;
+  for (const tuile of document.querySelectorAll('.ajout-volant[open]')) {
+    tuile.removeAttribute('open');
+  }
+});
+
 window.addEventListener('hashchange', () => {
   if (!app.hidden) afficherEspace();
 });
