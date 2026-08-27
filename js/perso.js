@@ -1,6 +1,7 @@
 // Espace perso — la vie hors espaces.
 //
-// Ce n'est PAS un espacet espace, et il n'utilise pas leur fabrique : aucune
+// Ce n'est PAS un espace comme les trois autres, et il n'utilise pas leur
+// fabrique : aucune
 // mécanique de productivité ne s'applique ici. Ni tâches, ni jalons, ni
 // échéances, ni barres de progression, ni backlog, ni notion de retard. Jamais.
 //

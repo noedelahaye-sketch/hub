@@ -1681,7 +1681,7 @@ Todoist (capture à l'appui) : `#taches`, migration `taches_priorite`.
 
 - **Il ne cache rien** — datées ou non, faites ou non, tous espaces. C'est sa
   raison d'être : ailleurs le hub trie (le dashboard ne montre que les actives,
-  un espacet espace replie son backlog), ici on vient voir l'ensemble et ranger.
+  un espace replie son backlog), ici on vient voir l'ensemble et ranger.
 - **`priorite` int 1–4, défaut 4.** Convention de Todoist : 1 le plus urgent, 4
   le cas ordinaire. Le défaut n'est pas 1, et c'est le point — une tâche n'est
   pas prioritaire parce qu'elle existe, et une liste où tout est en 1 ne classe
@@ -1860,7 +1860,7 @@ disparu.
   (13 août 2026, décision de Noé — « pour le moment »). La pastille de statut a
   disparu des lignes, et le « ↓ » qui renvoyait au backlog a disparu des espaces
   espace. Les quatre endroits qui créent une tâche posent `statut: 'actif'` :
-  la capture des Tâches, les deux calendriers, l'espacet espace.
+  la capture des Tâches, les deux calendriers, les pages d'espace.
 
   **Ce que ça coûte, et c'est assumé** : le plafond de **3 actives par espace**
   n'est plus jamais exercé — rien n'appelle `changerStatutTache`, et `creerTache`
@@ -3512,7 +3512,7 @@ restaurée par le routeur. Ne pas « simplifier » ces id.
 | `js/vendor/` | supabase-js figé, rapatrié par `tools/telecharger-supabase.py`. Aucun CDN |
 | `tools/verifier-coquille.js` | La liste de `sw.js` contient-elle tout ce qui est référencé ? |
 | `js/api.js` | **Tous** les appels Supabase, une fonction par usage |
-| `js/gabarits.js` | La fabrique d'espacet espace (formation) + gabarits partagés |
+| `js/gabarits.js` | Les gabarits partagés (fut la fabrique des pages d'espace) |
 | `js/publications.js` | Le calendrier éditorial, partagé Yuno/FCH — ce qui diffère passe en paramètre (cycle, checklist, piliers) |
 | `js/calendrier-commun.js` | L'assemblage de tout ce qui porte une date, les trois vues, le glissement et le clavier — **et la tuile « Poser au calendrier » avec `poserAuCalendrier` / `brancherCapture`, partagées par le hub, l'accueil et les deux sites** |
 | `js/yuno.js` | Le site Yuno : le Carnet de terrain, le réseau, la Passerelle, le rendez-vous stats |

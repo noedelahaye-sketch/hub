@@ -2,7 +2,7 @@
 // d'événements et de victoires, fenêtres volantes, et le formulaire commun avec
 // ses menus dessinés.
 //
-// Ce module était une FABRIQUE d'espacet espace jusqu'au 26 août 2026. Elle n'a
+// Ce module était une FABRIQUE de pages d'espace jusqu'au 26 août 2026. Elle n'a
 // plus d'utilisateur : la formation, sa dernière page, est devenue un bilan à
 // deux colonnes comme Yuno et le FCH, et chacune monte désormais la sienne.
 // Restent ici les morceaux que tout le monde emprunte.
@@ -13,6 +13,7 @@ import {
   momentLisible,
   echapper,
   DUREES_PROPOSEES,
+  DUREES_FAITES,
   dureeLisible,
 } from './format.js';
 import { construireProgression } from './objectifs-commun.js';
@@ -492,4 +493,128 @@ export function marquerLaDuree(racine, minutes) {
     bouton.classList.toggle('actif', actif);
     bouton.setAttribute('aria-pressed', String(actif));
   }
+}
+
+
+// --- « Combien de temps ça a pris ? » ----------------------------------------
+//
+// La question se pose APRÈS coup, au moment où on coche (demande de Noé,
+// 27 août 2026), et elle est la seule source d'heures du hub : sans elle, le
+// compte courant du club et la courbe de la formation n'ont rien à compter.
+//
+// Trois règles la gouvernent, et elles tiennent au fait qu'elle arrive dans le
+// dos de quelqu'un qui vient de finir quelque chose :
+//
+// 1. Elle ne bloque rien. La page reste vivante derrière, on peut cocher la
+//    suivante sans avoir répondu.
+// 2. Elle part toute seule au bout de dix secondes. Une question qui attend
+//    indéfiniment devient une corvée, et ce hub n'en ajoute pas.
+// 3. Elle ne vole jamais le focus. Sur téléphone, ouvrir le clavier par
+//    surprise, c'est perdre le fil de ce qu'on faisait.
+//
+// La durée existante est reprise : Noé l'a demandé ainsi — « j'ajuste en
+// fonction du temps réel que ça m'a pris si j'avais déjà noté un temps prévu ».
+// Une seule colonne, corrigée, et non deux qui se contrediraient.
+
+const DELAI_TUILE_DUREE = 10000;
+
+export function tuileDureeFaite({ titre, duree = null }) {
+  const minutes = Number(duree) > 0 ? String(Number(duree)) : '';
+
+  return `
+    <div class="tuile-duree" role="group" aria-label="Combien de temps ça a pris ?">
+      <p class="tuile-duree-quoi">
+        <span>Combien de temps&nbsp;?</span>
+        <span class="discret">${echapper(titre)}</span>
+        <button type="button" class="lien-discret" data-duree-passer>Passer</button>
+      </p>
+      <div class="duree-champ">
+        <span class="duree-propositions">
+          ${DUREES_FAITES.map(
+            (pas) => `<button type="button" data-poser-duree="${pas}"
+              class="${String(pas) === minutes ? 'actif' : ''}"
+              aria-pressed="${String(pas) === minutes}">${echapper(dureeLisible(pas))}</button>`,
+          ).join('')}
+        </span>
+        <span class="duree-libre">
+          <input type="number" data-duree-libre min="5" max="1440" step="1"
+            inputmode="numeric" value="${echapper(minutes)}"
+            aria-label="Durée en minutes">
+          <span aria-hidden="true">min</span>
+        </span>
+      </div>
+    </div>`;
+}
+
+// Poser la question et rendre la main. `noter` reçoit les minutes ; il n'est
+// appelé que si Noé répond. Renvoie de quoi refermer la tuile — un écran qui
+// se redessine doit pouvoir la retirer lui-même.
+// Elle se pose sur `document.body`, et pas dans l'écran qui l'ouvre : une tuile
+// flottante enfermée dans une section hérite du contexte d'empilement de
+// celle-ci, et se retrouve DERRIÈRE le bouton « + » — vu à l'écran, corrigé
+// ici. Rien ne la rattache donc à un espace ; c'est son minuteur qui la ferme.
+export function demanderLaDuree(tache, noter) {
+  fermerLaDuree();
+
+  const enveloppe = document.createElement('div');
+  enveloppe.className = 'tuile-duree-hote';
+  enveloppe.innerHTML = tuileDureeFaite({ titre: tache.titre, duree: tache.duree });
+  document.body.append(enveloppe);
+  // Le bouton « + » s'efface le temps de la question : il occupe le même coin,
+  // et on n'ajoute pas une tâche pendant qu'on répond sur celle qu'on vient de
+  // finir. Même raisonnement que la tuile de capture, qui lui passe devant.
+  document.body.classList.add('duree-demandee');
+
+  let minuteur = null;
+  const fermer = () => {
+    clearTimeout(minuteur);
+    enveloppe.remove();
+    document.body.classList.remove('duree-demandee');
+    document.removeEventListener('keydown', surTouche);
+  };
+
+  // Toute marque d'intérêt suspend le compte à rebours : personne ne doit voir
+  // la tuile disparaître pendant qu'il tape ses minutes.
+  const retenir = () => clearTimeout(minuteur);
+  const relancer = () => {
+    clearTimeout(minuteur);
+    minuteur = setTimeout(fermer, DELAI_TUILE_DUREE);
+  };
+
+  function surTouche(evenement) {
+    if (evenement.key === 'Escape') fermer();
+  }
+
+  const poser = (minutes) => {
+    const valeur = Number(minutes);
+    if (Number.isFinite(valeur) && valeur >= 5 && valeur <= 1440) noter(Math.round(valeur));
+    fermer();
+  };
+
+  enveloppe.addEventListener('pointerdown', retenir);
+  enveloppe.addEventListener('focusin', retenir);
+
+  enveloppe.addEventListener('click', (evenement) => {
+    const raccourci = evenement.target.closest('[data-poser-duree]');
+    if (raccourci) return poser(raccourci.dataset.poserDuree);
+    if (evenement.target.closest('[data-duree-passer]')) fermer();
+  });
+
+  const libre = enveloppe.querySelector('[data-duree-libre]');
+  libre.addEventListener('keydown', (evenement) => {
+    if (evenement.key === 'Enter') {
+      evenement.preventDefault();
+      poser(libre.value);
+    }
+  });
+  libre.addEventListener('change', () => poser(libre.value));
+
+  document.addEventListener('keydown', surTouche);
+  relancer();
+  return fermer;
+}
+
+export function fermerLaDuree() {
+  for (const ancienne of document.querySelectorAll('.tuile-duree-hote')) ancienne.remove();
+  document.body.classList.remove('duree-demandee');
 }

@@ -175,6 +175,12 @@ export const DUREES = {
 // possibles, seulement celles qui s'offrent en un appui.
 export const DUREES_PROPOSEES = [60, 90, 120, 150, 180];
 
+// Les raccourcis de la question posée APRÈS coup — « combien de temps ça a
+// pris ? ». Ils commencent plus bas que ceux d'une tâche qu'on planifie : on
+// ne se réserve pas un créneau de trente minutes, mais un appel passé en
+// trente minutes, ça arrive tous les jours. Au-delà, on tape les minutes.
+export const DUREES_FAITES = [30, 60, 90, 120, 180];
+
 // La durée en toutes lettres, à partir des minutes. Court, parce que ça
 // s'écrit dans une pastille et dans la ligne de service d'une tâche :
 // « 1 h 30 », pas « 1 heure et 30 minutes ». Zéro et nul ne disent rien —

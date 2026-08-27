@@ -2,7 +2,7 @@
 //
 // C'est la seule page du hub qui ne cache rien : datées ou non, faites ou non,
 // tous espaces. Ailleurs le hub trie pour Noé — le dashboard ne montre que les
-// actives du jour, un espacet espace garde son backlog replié. Ici on vient
+// actives du jour, un espace garde son backlog replié. Ici on vient
 // justement pour voir l'ensemble, ranger, et repartir.
 //
 // La forme vient de Todoist (capture de Noé, 13 août 2026) : un cercle coloré
@@ -27,7 +27,7 @@ import {
   RECURRENCES,
   dureeLisible,
 } from './format.js';
-import { champDuree, marquerLaDuree } from './gabarits.js';
+import { champDuree, marquerLaDuree, demanderLaDuree, fermerLaDuree } from './gabarits.js';
 import { marquerLesEntrantes, animerLaCoche } from './mouvements.js';
 import { ajouterAussitot, retirerAussitot, modifierAussitot } from './ecriture.js';
 
@@ -223,6 +223,14 @@ export function construireLignesTaches(taches, options = {}) {
 //
 // L'espace Tâches et l'accueil gardent le leur : ils offrent en plus la fenêtre
 // d'annulation de six secondes, que ces pages n'ont pas.
+// Écrire la durée que Noé vient de donner. L'écran a déjà raison : la valeur
+// est posée tout de suite et revient en arrière si le serveur refuse — c'est la
+// règle d'écriture du hub, et une durée ne mérite pas d'exception.
+export function noterLaDuree(tache, minutes, rendre) {
+  return modifierAussitot(tache, { duree: minutes }, () =>
+    api.modifierTache(tache.id, { duree: minutes }), { rendre });
+}
+
 export async function cocherDepuisTableauDeBord(cercle, taches, rendre) {
   const tache = taches.find((candidate) => candidate.id === cercle.dataset.cocher);
   if (!tache || tache.statut === 'fait') return;
@@ -239,6 +247,11 @@ export async function cocherDepuisTableauDeBord(cercle, taches, rendre) {
   await modifierAussitot(tache, optimiste, async () => (await api.terminerTache(avant)).tache, {
     rendre,
   });
+
+  // « Combien de temps ça a pris ? » — la seule source d'heures du hub. Elle
+  // arrive APRÈS l'écriture : la tâche est déjà faite, la question ne retient
+  // rien.
+  demanderLaDuree(tache, (minutes) => noterLaDuree(tache, minutes, rendre));
 }
 
 // Exportée pour être vérifiable seule, avec des tâches factices.
@@ -1322,6 +1335,14 @@ export default {
           rendreListe();
         } finally {
           ecrituresEnVol.delete(tache.id);
+        }
+
+        // La question de la durée ne se pose qu'en cochant. Décocher la retire :
+        // une tâche qu'on vient de rouvrir n'a pas de temps passé à déclarer.
+        if (versFait) {
+          demanderLaDuree(tache, (minutes) => noterLaDuree(tache, minutes, rendreListe));
+        } else {
+          fermerLaDuree();
         }
         return;
       }

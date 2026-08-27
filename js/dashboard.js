@@ -37,6 +37,7 @@ import {
   champsApresDeplacement,
 } from './calendrier-commun.js';
 import { construireLignesTaches, trierTaches } from './taches.js';
+import { demanderLaDuree, fermerLaDuree } from './gabarits.js';
 import { construireCapGrave } from './objectifs-commun.js';
 import { lireCache, ecrireCache } from './cache-session.js';
 import { marquerLesEntrantes, animerLaCoche } from './mouvements.js';
@@ -75,7 +76,7 @@ const VICTOIRES_VISIBLES = false;
 const MAX_TACHES = 9; // ce qui tient sans que « Aujourd'hui » devienne une liste
 
 // Fenêtre pendant laquelle une tâche cochée par erreur peut être décochée.
-// Même durée que dans les espaces espace.
+// Même durée que dans les espaces.
 const DUREE_ANNULATION = 6000;
 
 const NIVEAUX_HUMEUR = [
@@ -1333,6 +1334,26 @@ export default {
         remplacerTache(faite);
         etat.victoires = [provisoire, ...etat.victoires];
         ouvrirAnnulation(annulation);
+
+        // « Combien de temps ça a pris ? » — même tuile qu'à l'espace Tâches,
+        // même geste. Elle vise la tâche PAR SON IDENTIFIANT : l'écriture qui
+        // suit remplace l'objet dans l'état, et garder la référence d'ici
+        // écrirait dans une tâche que plus personne ne regarde.
+        demanderLaDuree(faite, (minutes) => {
+          const vivante = etat.tachesDatees.find((candidate) => candidate.id === tache.id);
+          if (!vivante) return;
+          remplacerTache({ ...vivante, duree: minutes });
+          rendreAujourdhui();
+          rendreSemaine();
+          api.modifierTache(tache.id, { duree: minutes }).catch((erreur) => {
+            console.error('Durée non enregistrée', erreur);
+            remplacerTache({ ...vivante });
+            rendreAujourdhui();
+            rendreSemaine();
+            signalerEcriture();
+          });
+        });
+
         rendreVictoires();
         rendreAujourdhui();
         // La tâche est datée : elle est aussi dans la semaine, où elle devient

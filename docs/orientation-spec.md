@@ -111,7 +111,7 @@ rattrapé à chaque ouverture. Les cinq séries qui existaient ont été convert
 occurrence, en modifier une seule, et arrêter la répétition ; changer le titre
 de toutes d'un coup demande encore de le faire une par une.
 
-### 2.4 La durée
+### 2.4 La durée — **fait le 27 août 2026**
 
 **Une seule durée**, celle qui existe (`taches.duree`, en minutes), ajustée
 après coup. Au moment de cocher, une tuile propose des raccourcis (30 min, 1 h,
@@ -575,7 +575,7 @@ suivante pour valoir quelque chose.
 |---|---|---|
 | 0 | ~~**Renommer `projet` → `espace`**~~ **fait** | Préalable absolu : 413 occurrences en JS, 8 tables. Introduire `projets` avant créerait une confusion permanente. |
 | 1 | ~~**Occurrences réelles des récurrences**~~ **fait** | Sans elles, aucun rythme n'est mesurable et aucune durée de série n'est saisissable. |
-| 2 | **La durée au moment de cocher** | Le système entier compte des heures ; aujourd'hui 0 tâche sur 36 en porte une. |
+| 2 | ~~**La durée au moment de cocher**~~ **fait** | Le système entier compte des heures ; aujourd'hui 0 tâche sur 36 en porte une. |
 | 3 | **La table `projets` et les rattachements** | Le fil tâche → projet → jalon → objectif. Rien ne se calcule avant. |
 | 4 | **Les périodes** | Le premier arbitrage a lieu ici, en amont. |
 | 5 | **Le calcul, sans écran** | Une fonction qui produit un diagnostic vérifiable seul, sans session ni réseau. |

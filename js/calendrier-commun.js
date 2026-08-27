@@ -19,6 +19,7 @@ import {
   fermerLesChoix,
   champDuree,
   marquerLaDuree,
+  demanderLaDuree,
 } from './gabarits.js';
 import {
   depuisDateISO,
@@ -160,8 +161,6 @@ export function brancherEtatPublication(
     if (!pub || !statut || pub.statut === statut) return;
     if (enVol.has(pub.id) || bloque(pub)) return;
 
-    // Une publication récurrente ne se termine pas : la faire partir avance sa
-    // date d'une occurrence et la ramène au premier état de son cycle.
     const champs = passageDePublication(pub, statut);
 
     enVol.add(pub.id);
@@ -172,6 +171,17 @@ export function brancherEtatPublication(
       });
     } finally {
       enVol.delete(pub.id);
+    }
+
+    // Une publication qui PART a coûté du temps, et c'est la charge éditoriale
+    // du club — celle que le terrain n'explique pas. La question se pose au
+    // même moment et sous la même forme qu'en cochant une tâche ; aux autres
+    // états, il n'y a encore rien à compter.
+    if (statut === 'publie') {
+      demanderLaDuree(pub, (minutes) =>
+        modifierAussitot(pub, { duree: minutes }, () =>
+          api.modifierPublication(pub.id, { duree: minutes }), { rendre, echouer }),
+      );
     }
   };
 

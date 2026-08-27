@@ -4524,3 +4524,68 @@ body[data-espace="hermitage"] .choix-statut-neutre {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* --- « Combien de temps ça a pris ? » ---------------------------------------
+
+   La tuile qui suit une coche. Elle emprunte la place et la forme de la tuile
+   de capture — bas de l'écran, centrée, même rayon — parce que c'est là que le
+   pouce est déjà, et qu'une seconde grammaire de tuile n'apprendrait rien.
+
+   Elle passe SOUS la capture (z-index 40 contre 41) : si les deux se trouvent
+   là en même temps, c'est la capture qu'on est en train de remplir qui prime. */
+.tuile-duree {
+  position: fixed;
+  z-index: 40;
+  left: 50%;
+  bottom: max(var(--espace-16), env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  width: min(34rem, calc(100vw - 2 * var(--espace-16)));
+  padding: var(--espace-12) var(--espace-16);
+  background: var(--fond-carte);
+  border-radius: var(--rayon-tuile);
+  box-shadow: 0 12px 48px rgb(0 0 0 / 45%);
+  animation: tuile-duree-monte 180ms ease-out;
+}
+
+@keyframes tuile-duree-monte {
+  from { opacity: 0; transform: translate(-50%, var(--espace-12)); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* La question tient sur une ligne, le titre de la tâche derrière elle et
+   tronqué : on sait déjà ce qu'on vient de cocher, il ne sert qu'à confirmer. */
+.tuile-duree-quoi {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espace-8);
+  margin: 0 0 var(--espace-8);
+  font-size: 0.875rem;
+}
+
+.tuile-duree-quoi > span:first-child { font-weight: 500; flex: none; }
+
+/* « Passer » vit sur la ligne de la question, jamais en bas à droite : là-bas
+   c'est la place du bouton « + » flottant, et les deux se recouvraient. */
+.tuile-duree-quoi [data-duree-passer] { margin-left: auto; flex: none; }
+
+.tuile-duree-quoi .discret {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tuile-duree .duree-champ { padding: 0; }
+
+/* Le bouton « + » s'efface pendant la question : il occupe le même coin de
+   l'écran, et sa présence sous la tuile faisait une superposition sans raison.
+   Il revient dès qu'on a répondu ou passé. */
+body.duree-demandee .ouvrir-capture {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tuile-duree { animation: none; }
+}
