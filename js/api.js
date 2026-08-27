@@ -351,6 +351,33 @@ export async function creerJalon({ objectif_id, titre, echeance = null, ordre = 
 
 // `priorite` vaut 4 par défaut, comme en base : une tâche n'est pas prioritaire
 // parce qu'elle existe.
+
+// --- Les périodes : l'arbitrage en amont --------------------------------------
+//
+// Une période dit ce qu'on attend d'un mois, espace par espace. Sa vraie
+// fonction n'est pas de régler des chiffres : déclarer une période, c'est déjà
+// arbitrer — et le hub le dit AU MOMENT OÙ ON L'ÉCRIT, trois semaines avant le
+// mur. Le calcul vit dans js/orientation.js, qui ne touche à rien.
+
+export async function periodesToutes() {
+  return verifier(await client.from('periodes').select('*').order('debut'));
+}
+
+export async function creerPeriode({ nom, debut, fin, regimes = {}, notes = null }) {
+  return verifier(
+    await client.from('periodes').insert({ nom, debut, fin, regimes, notes }).select().single(),
+  );
+}
+
+export async function modifierPeriode(id, champs) {
+  return verifier(await client.from('periodes').update(champs).eq('id', id).select().single());
+}
+
+export async function supprimerPeriode(id) {
+  const { error } = await client.from('periodes').delete().eq('id', id);
+  if (error) throw error;
+}
+
 // --- Les projets : le comment d'un cap ---------------------------------------
 //
 // L'étage entre le jalon et la tâche (27 août 2026). Il existe parce qu'UNE

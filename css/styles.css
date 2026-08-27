@@ -4644,3 +4644,60 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 }
 
 .liste-projets .projet-resultat { font-style: italic; }
+
+/* --- Les périodes ------------------------------------------------------------
+
+   Elles ouvrent « Le cap ». Une liste sobre : ce sont des intentions posées sur
+   des mois, pas des mesures — et c'est la QUESTION qu'elles font naître qui
+   compte, pas les chiffres qui l'amènent. */
+.liste-periodes { margin: 0; padding: 0; list-style: none; }
+
+.liste-periodes .periode-ligne {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: baseline;
+  gap: var(--espace-4) var(--espace-12);
+}
+
+.liste-periodes .periode-nom { font-weight: 500; }
+.liste-periodes .periode-quand { font-size: 0.8125rem; color: var(--texte-discret); }
+
+/* La période en cours se signale par un filet d'accent à gauche, jamais par une
+   couleur de fond : le hub ne met en avant que ce qui se passe maintenant. */
+.liste-periodes .periode-courante {
+  border-left: 2px solid var(--accent);
+  padding-left: var(--espace-12);
+}
+
+/* Les régimes portent la couleur de leur espace, comme partout ailleurs. */
+.liste-periodes .periode-regimes {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-8);
+  font-size: 0.8125rem;
+}
+
+.liste-periodes .periode-regimes [data-espace] { color: var(--couleur-espace-pleine); }
+
+.liste-periodes .periode-charge {
+  grid-column: 1 / -1;
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+}
+
+/* LA QUESTION. Elle ne porte aucune couleur d'alerte — le hub n'en a pas et
+   n'en aura pas. Un fond doux, le ton d'une proposition, et les deux portes
+   juste dessous : « il pose la question, tu tranches » (Noé, 27 août 2026). */
+.liste-periodes .periode-question {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-8);
+  margin-top: var(--espace-8);
+  padding: var(--espace-12);
+  background: var(--accent-doux);
+  border-radius: var(--rayon-controle);
+  font-size: 0.875rem;
+}

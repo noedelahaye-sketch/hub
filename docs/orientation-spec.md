@@ -577,7 +577,7 @@ suivante pour valoir quelque chose.
 | 1 | ~~**Occurrences réelles des récurrences**~~ **fait** | Sans elles, aucun rythme n'est mesurable et aucune durée de série n'est saisissable. |
 | 2 | ~~**La durée au moment de cocher**~~ **fait** | Le système entier compte des heures ; aujourd'hui 0 tâche sur 36 en porte une. |
 | 3 | ~~**La table `projets` et les rattachements**~~ **fait** | Le fil tâche → projet → jalon → objectif. Rien ne se calcule avant. |
-| 4 | **Les périodes** | Le premier arbitrage a lieu ici, en amont. |
+| 4 | ~~**Les périodes**~~ **fait** | Le premier arbitrage a lieu ici, en amont. |
 | 5 | **Le calcul, sans écran** | Une fonction qui produit un diagnostic vérifiable seul, sans session ni réseau. |
 | 6 | **Le rendez-vous du dimanche** | Le premier écran, une fois que le calcul dit vrai. |
 | 7 | **Le vivier et les trois propositions du matin** | |

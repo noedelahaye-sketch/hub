@@ -16,7 +16,14 @@
 // d'objectif se dessine d'une seule façon dans tout le hub.
 
 import * as api from './api.js';
+import {
+  REGIMES,
+  chargeViseeDeLaPeriode,
+  tensionDeLaPeriode,
+  periodeDuJour,
+} from './orientation.js';
 import { construireObjectifs, construireFormulaire } from './gabarits.js';
+import { modifierAussitot, retirerAussitot } from './ecriture.js';
 // Le modèle de l'argent de Yuno vit avec la page qui l'a fait naître ; il
 // n'est pas recopié ici.
 import { argentDeYuno, enEuros } from './photo.js';
@@ -193,6 +200,79 @@ export function construireProjets(projets, objectifs = []) {
     .join('')}</ul>`;
 }
 
+// LES PÉRIODES. Elles ouvrent la page, avant les caps : on ne règle pas un cap
+// sans savoir quelle forme a le mois où il tombe. Et surtout, c'est ici que
+// l'arbitrage a lieu — pendant qu'on écrit « septembre est intense », pas un
+// dimanche soir où il ne reste que de mauvaises options.
+const NOMS_REGIMES = Object.fromEntries(
+  Object.entries(REGIMES).map(([cle, { libelle }]) => [cle, libelle]),
+);
+
+const ESPACES_REGLES = ['fch', 'formation', 'photo'];
+
+function heuresLisibles(minutes) {
+  const heures = minutes / 60;
+  return `${Number.isInteger(heures) ? heures : heures.toFixed(1).replace('.0', '')} h`;
+}
+
+export function construirePeriodes(periodes, aujourdhui = new Date()) {
+  if (!periodes.length) {
+    return `<p class="vide">Aucune période déclarée. La première dira ce que tu
+      attends du mois qui vient.</p>`;
+  }
+
+  const courante = periodeDuJour(periodes, aujourdhui);
+
+  return `<ul class="liste-periodes">${periodes
+    .map((periode) => {
+      const tension = tensionDeLaPeriode(periode);
+      const visees = chargeViseeDeLaPeriode(periode);
+      const regimes = ESPACES_REGLES.filter((espace) => periode.regimes?.[espace])
+        .map(
+          (espace) =>
+            `<span data-espace="${espace}">${echapper(NOMS_ESPACES[espace] ?? espace)}
+              ${echapper((NOMS_REGIMES[periode.regimes[espace]] ?? '').toLowerCase())}</span>`,
+        )
+        .join('');
+
+      return `
+        <li class="periode-ligne${periode.id === courante?.id ? ' periode-courante' : ''}"
+          data-periode="${echapper(periode.id)}">
+          <span class="periode-nom">${echapper(periode.nom)}</span>
+          <span class="periode-quand chiffre">${echapper(periode.debut)} → ${echapper(periode.fin)}</span>
+          ${regimes ? `<span class="periode-regimes">${regimes}</span>` : ''}
+          <span class="periode-charge">club ${echapper(
+            heuresLisibles(visees.fch),
+          )} · formation ${echapper(heuresLisibles(visees.formation))} · <span
+            class="chiffre">${echapper(heuresLisibles(visees.total))}</span> pour ${echapper(
+              heuresLisibles(tension.capacite),
+            )}</span>
+          ${
+            tension.tendue
+              ? `<span class="periode-question">
+                   ${echapper(tension.question)}
+                   ${tension.issues
+                     .map(
+                       (issue) => `<button type="button" class="bouton-secondaire bouton-mini"
+                         data-detendre="${echapper(periode.id)}"
+                         data-espace-cible="${echapper(issue.espace)}"
+                         data-regime-cible="${echapper(issue.regime)}">${echapper(
+                           issue.phrase,
+                         )}</button>`,
+                     )
+                     .join('')}
+                 </span>`
+              : ''
+          }
+          <button type="button" class="lien-discret bouton-mini bouton-retirer"
+            data-retirer-periode="${echapper(periode.id)}"
+            title="Retirer cette période"
+            aria-label="Retirer « ${echapper(periode.nom)} »">×</button>
+        </li>`;
+    })
+    .join('')}</ul>`;
+}
+
 function squelette() {
   const blocs = ESPACES.map(
     (espace) => `
@@ -239,6 +319,30 @@ function squelette() {
   return `
     <h1>Objectifs</h1>
     <p class="discret sous-titre">Le cap de chaque espace. C'est ici qu'il se règle.</p>
+
+    <section class="bloc">
+      <h2>Les périodes</h2>
+      <p class="discret sous-titre">Ce que tu attends d'un mois, espace par espace.
+        Le régler ici, c'est arbitrer avant le mur plutôt qu'un dimanche soir.</p>
+      <div data-bloc="periodes"><p class="vide">…</p></div>
+      ${construireFormulaire({
+        id: 'periode',
+        libelle: 'Déclarer une période',
+        action: 'creer-periode',
+        champs: [
+          { nom: 'nom', libelle: 'Période', type: 'text', requis: true },
+          { nom: 'debut', libelle: 'Du', type: 'date', requis: true },
+          { nom: 'fin', libelle: 'Au', type: 'date', requis: true },
+          { nom: 'regime_fch', libelle: 'FC Hermitage', type: 'choix',
+            options: NOMS_REGIMES, valeur: 'normal' },
+          { nom: 'regime_formation', libelle: 'Formation', type: 'choix',
+            options: NOMS_REGIMES, valeur: 'normal' },
+          { nom: 'regime_photo', libelle: 'Yuno', type: 'choix',
+            options: NOMS_REGIMES, valeur: 'normal' },
+        ],
+      })}
+    </section>
+
     ${blocs}`;
 }
 
@@ -248,9 +352,10 @@ export default {
   async monter(section) {
     section.innerHTML = squelette();
 
-    const etat = { objectifs: [], commandes: [], materiel: [], projets: [] };
+    const etat = { objectifs: [], commandes: [], materiel: [], projets: [], periodes: [] };
     const bloc = (espace) => section.querySelector(`[data-bloc="${espace}"]`);
     const blocProjets = (espace) => section.querySelector(`[data-projets="${espace}"]`);
+    const blocPeriodes = () => section.querySelector('[data-bloc="periodes"]');
 
     const deLEspace = (espace) => etat.objectifs.filter((o) => o.espace === espace);
 
@@ -275,10 +380,17 @@ export default {
       );
     };
 
-    const rendreTout = () => ESPACES.forEach((espace) => {
-      rendreEspace(espace);
-      rendreProjets(espace);
-    });
+    const rendrePeriodes = () => {
+      blocPeriodes().innerHTML = construirePeriodes(etat.periodes);
+    };
+
+    const rendreTout = () => {
+      rendrePeriodes();
+      ESPACES.forEach((espace) => {
+        rendreEspace(espace);
+        rendreProjets(espace);
+      });
+    };
 
     // Redessiner remplace les tuiles : celle qu'on venait d'ouvrir se
     // refermerait sans ça, en pleine saisie de son jalon suivant.
@@ -288,13 +400,15 @@ export default {
     };
 
     const charger = async () => {
-      const [objectifs, commandes, materiel, projets] = await Promise.all([
+      const [objectifs, commandes, materiel, projets, periodes] = await Promise.all([
         api.objectifsActifs(),
         api.commandesToutes(),
         api.materielTout(),
         api.projetsTous(),
+        api.periodesToutes(),
       ]);
       etat.projets = projets;
+      etat.periodes = periodes;
       etat.objectifs = objectifs.filter((objectif) => ESPACES.includes(objectif.espace));
       etat.commandes = commandes;
       etat.materiel = materiel;
@@ -346,6 +460,32 @@ export default {
       }
     });
 
+    // Répondre à la question d'une période : un geste, et le régime redescend.
+    // C'est Noé qui tranche — le hub n'a fait que poser les deux portes.
+    section.addEventListener('click', async (evenement) => {
+      const detendre = evenement.target.closest('[data-detendre]');
+      if (detendre) {
+        const periode = etat.periodes.find((p) => p.id === detendre.dataset.detendre);
+        if (!periode) return;
+        const regimes = { ...periode.regimes, [detendre.dataset.espaceCible]: detendre.dataset.regimeCible };
+        if (regimes[detendre.dataset.espaceCible] === 'normal') {
+          delete regimes[detendre.dataset.espaceCible];
+        }
+        await modifierAussitot(periode, { regimes }, () =>
+          api.modifierPeriode(periode.id, { regimes }), { rendre: rendrePeriodes });
+        return;
+      }
+
+      const retirer = evenement.target.closest('[data-retirer-periode]');
+      if (retirer) {
+        const periode = etat.periodes.find((p) => p.id === retirer.dataset.retirerPeriode);
+        if (!periode || !confirm(`Retirer la période « ${periode.nom} » ?`)) return;
+        await retirerAussitot(etat.periodes, periode, () => api.supprimerPeriode(periode.id), {
+          rendre: rendrePeriodes,
+        });
+      }
+    });
+
     async function appliquer(action, champs) {
       if (action === 'creer-objectif') {
         const objectif = await api.creerObjectif({
@@ -357,6 +497,27 @@ export default {
         });
         etat.objectifs = [...etat.objectifs, { ...objectif, jalons: objectif.jalons ?? [] }];
         rendreEspace(champs.espace);
+        return;
+      }
+
+      if (action === 'creer-periode') {
+        const periode = await api.creerPeriode({
+          nom: champs.nom.trim(),
+          debut: champs.debut,
+          fin: champs.fin,
+          // Seuls les régimes qui s'écartent du normal sont retenus : une
+          // période qui ne dit rien d'un espace ne doit pas donner l'illusion
+          // d'en avoir décidé quelque chose.
+          regimes: Object.fromEntries(
+            ESPACES_REGLES.map((espace) => [espace, champs[`regime_${espace}`]]).filter(
+              ([, regime]) => regime && regime !== 'normal',
+            ),
+          ),
+        });
+        etat.periodes = [...etat.periodes, periode].sort((a, b) =>
+          String(a.debut).localeCompare(String(b.debut)),
+        );
+        rendrePeriodes();
         return;
       }
 
