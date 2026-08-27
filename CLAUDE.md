@@ -97,7 +97,8 @@ deux niveaux (`#espace/vue/id`). La distinction compte : un **espace** est un
 domaine de la vie de Noé et porte une couleur ; une **vue transverse** les
 regarde tous et n'en porte aucune.
 - `/` ou `#dashboard` — tableau de bord global (tous espaces)
-- `#taches` — **toutes** les tâches, tous espaces : datées ou non, faites ou non. La seule page du hub qui ne cache rien. On y crée une tâche, on y change sa priorité (1 à 4) et son statut. Ailleurs le hub trie pour Noé ; ici on vient voir l'ensemble et ranger.
+- `#taches` — **toutes** les tâches, tous espaces : datées ou non, faites ou non. La seule page du hub qui ne cache rien — mais elle range. On y crée une tâche, on y change sa priorité (1 à 4) et son statut. Ailleurs le hub trie pour Noé ; ici on vient voir l'ensemble.
+  - **« À faire » ne montre qu'UNE occurrence par série** (27 août 2026, demande de Noé) : la plus proche, retard compris. Les suivantes descendent dans **« Ce qui revient »**, repliées par série, avec leur rythme et leur nombre. Sans cette coupe, trois rubriques hebdomadaires noyaient les quatre choses qu'il y avait vraiment à faire — 44 lignes au lieu de 8. Rien n'est caché : tout se déplie.
 - `#objectifs` — **tous** les objectifs, groupés par espace, et le seul endroit du hub où le cap se règle : modifier un objectif, poser ou retirer un jalon, le marquer atteint. Sans entrée dans la barre de navigation (26 août 2026) : on y vient en pressant la tuile « Le cap » d'un tableau de bord, et rarement.
 - `#calendrier` — tout ce qui porte une date, tous espaces confondus, filtres par nature (tâches, événements, publications, objectifs)
 - `#formation` — espace formation (thème : teal)

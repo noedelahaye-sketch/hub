@@ -138,7 +138,14 @@ function quandLisible(tache) {
 // il serait dit à chaque ligne alors que toute la page ne parle que de lui
 // (demande de Noé, 26 août 2026). Ailleurs — l'espace Tâches, l'accueil — les
 // espaces se mêlent, et le nom reste indispensable.
-function ligneTache(tache, { ouvrable = true, supprimable = true, espace = true } = {}) {
+// `titre` à false : la ligne ne dit que sa date. C'est le cas d'une occurrence
+// rangée sous sa série (« Ce qui revient ») — le sommaire vient d'écrire le
+// titre, et le redire quinze fois de suite ne dit rien de plus. Le nom complet
+// reste dans le nom accessible du bouton, où il ne prend aucune place.
+function ligneTache(
+  tache,
+  { ouvrable = true, supprimable = true, espace = true, titre = true } = {},
+) {
   const faite = tache.statut === 'fait';
   const quand = quandLisible(tache);
 
@@ -171,9 +178,13 @@ function ligneTache(tache, { ouvrable = true, supprimable = true, espace = true 
       <${ouvrable ? 'button' : 'span'} class="tache-corps"
         ${ouvrable ? `type="button" data-ouvrir="${echapper(tache.id)}"` : ''}
         ${ouvrable ? `aria-label="Modifier « ${echapper(tache.titre)} »"` : ''}>
-        <span class="tache-titre">${echapper(tache.titre)}</span>
+        <span class="tache-titre">${
+          titre ? echapper(tache.titre) : `${DATE_ICONE}${echapper(quand || 'sans date')}`
+        }</span>
         <span class="tache-service">
-          ${quand ? `<span class="tache-quand">${DATE_ICONE}${echapper(quand)}</span>` : ''}
+          ${
+            titre && quand ? `<span class="tache-quand">${DATE_ICONE}${echapper(quand)}</span>` : ''
+          }
           ${
             espace
               ? `<span class="tache-espace">${echapper(
@@ -239,9 +250,71 @@ function construireMessage(message) {
   return message ? `<p class="discret message-regle">${echapper(message)}</p>` : '';
 }
 
+// Une série ne se montre pas seize fois dans « À faire » (demande de Noé,
+// 27 août 2026). Depuis que la répétition fabrique de vraies lignes, une
+// rubrique hebdomadaire pose une occurrence par semaine sur seize semaines :
+// toutes dans la même liste, elles noieraient les quatre choses qu'il y a
+// vraiment à faire aujourd'hui.
+//
+// Seule la PROCHAINE occurrence de chaque série reste dans « À faire ». Les
+// suivantes ne sont pas à faire, elles sont à venir : elles se relisent en
+// dessous, rangées par série, dans un bloc qui ne s'impose pas au regard.
+//
+// « Prochaine » veut dire la plus proche, pas la première à venir : une
+// occurrence dont le jour est passé reste devant. Le hub ne compte pas les
+// retards, mais il ne les efface pas non plus — c'est la règle d'« Aujourd'hui ».
+//
+// Exportée pour être vérifiable seule, avec des tâches factices.
+export function separerLesSeries(taches) {
+  const seules = [];
+  const parSerie = new Map();
+
+  for (const tache of taches) {
+    if (!tache.serie_id) {
+      seules.push(tache);
+      continue;
+    }
+    const deja = parSerie.get(tache.serie_id);
+    if (deja) deja.push(tache);
+    else parSerie.set(tache.serie_id, [tache]);
+  }
+
+  const prochaines = [];
+  const series = [];
+
+  for (const occurrences of parSerie.values()) {
+    const triees = [...occurrences].sort((a, b) =>
+      String(a.echeance ?? '').localeCompare(String(b.echeance ?? '')),
+    );
+    prochaines.push(triees[0]);
+    if (triees.length > 1) series.push(triees.slice(1));
+  }
+
+  return { aFaire: [...seules, ...prochaines], series };
+}
+
+function blocDUneSerie(occurrences) {
+  const [premiere] = occurrences;
+  const rythme = RECURRENCES[premiere.recurrence];
+
+  return `
+    <details class="backlog serie-repliee">
+      <summary>
+        <span class="serie-titre">${echapper(premiere.titre)}</span>
+        ${rythme ? `<span class="serie-rythme">${echapper(rythme.toLowerCase())}</span>` : ''}
+        <span class="chiffre">${occurrences.length}</span>
+      </summary>
+      ${construireLignesTaches(occurrences, { titre: false, espace: false })}
+    </details>`;
+}
+
 export function construireListe(taches, message = null) {
-  const aFaire = trierTaches(taches.filter((tache) => tache.statut !== 'fait'));
+  const { aFaire: candidates, series } = separerLesSeries(
+    taches.filter((tache) => tache.statut !== 'fait'),
+  );
+  const aFaire = trierTaches(candidates);
   const faites = trierFaites(taches.filter((tache) => tache.statut === 'fait'));
+  const aVenir = series.reduce((total, occurrences) => total + occurrences.length, 0);
 
   const bloc = (liste) => construireLignesTaches(liste);
 
@@ -255,6 +328,20 @@ export function construireListe(taches, message = null) {
           : `<p class="vide">Rien à faire ici. Note ta prochaine tâche au-dessus.</p>`
       }
     </section>
+
+    ${
+      series.length
+        ? `<section class="bloc bloc-discret">
+             <h2>Ce qui revient <span class="chiffre">${aVenir}</span></h2>
+             <p class="discret sous-titre">La prochaine fois de chaque série est restée
+               au-dessus. Voici ce qui suit.</p>
+             ${series
+               .sort((a, b) => String(a[0].echeance).localeCompare(String(b[0].echeance)))
+               .map(blocDUneSerie)
+               .join('')}
+           </section>`
+        : ''
+    }
 
     ${
       faites.length

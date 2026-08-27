@@ -2589,6 +2589,33 @@ body.fond-fige {
 
 .backlog { margin-top: var(--espace-12); }
 
+/* Une série repliée dans « Ce qui revient » : le titre porte, le rythme
+   accompagne, le compte ferme la ligne. Le titre reprend la couleur du texte —
+   c'est lui qu'on cherche du regard, alors que le « + » et le rythme restent
+   dans le gris des sommaires. */
+.serie-repliee { margin-top: var(--espace-4); }
+.serie-repliee + .serie-repliee { border-top: 1px solid var(--bordure); }
+
+.serie-repliee > summary .serie-titre {
+  color: var(--texte);
+  font-weight: 500;
+}
+
+/* Le rythme pousse le compte à droite : c'est lui qui prend la place libre. */
+.serie-repliee > summary .serie-rythme { flex: 1; }
+
+/* Sous le sommaire, la ligne ne porte que sa date : la série a dit le titre une
+   fois pour toutes. Le retrait la rattache visuellement à son sommaire. */
+.serie-repliee .liste-taches-pleine { padding-left: var(--espace-24); }
+
+.serie-repliee .tache-titre {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-8);
+  color: var(--texte-discret);
+  font-size: 0.9375rem;
+}
+
 .backlog > summary,
 .ajout > summary {
   cursor: pointer;
