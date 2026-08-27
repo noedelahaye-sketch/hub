@@ -4841,3 +4841,50 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   margin-top: var(--espace-24);
   min-height: 2.75rem;
 }
+
+/* --- Les trois propositions du matin ----------------------------------------
+
+   Elles ne ressemblent PAS aux tâches d'« Aujourd'hui », et c'est voulu : une
+   tâche du jour se coche, une proposition se prend ou se refuse. Deux gestes
+   différents ne doivent pas porter la même forme, sinon on coche par réflexe
+   ce qu'on n'avait pas décidé. */
+.propositions { margin: 0; padding: 0; list-style: none; }
+
+.propositions .proposition {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: var(--espace-4) var(--espace-12);
+  padding: var(--espace-16) 0;
+  border-top: 1px solid var(--bordure);
+}
+
+.propositions .proposition-titre { font-weight: 500; }
+
+.propositions .proposition-espace {
+  font-size: 0.8125rem;
+  color: var(--couleur-espace-pleine);
+}
+
+/* La ligne de POURQUOI. Elle n'est pas un ornement : sans elle, une proposition
+   est un ordre déguisé — on l'exécute ou on l'ignore, mais on ne la juge pas. */
+.propositions .proposition-pourquoi {
+  grid-column: 1 / -1;
+  font-size: 0.875rem;
+  color: var(--texte-discret);
+}
+
+.propositions .proposition-gestes {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-12);
+  margin-top: var(--espace-8);
+}
+
+/* « Pas aujourd'hui » reste en retrait : refuser doit être facile, jamais mis
+   en avant. Ce n'est pas l'action qu'on vient chercher, c'est celle qui doit
+   toujours rester possible. */
+.propositions [data-refuser] { color: var(--texte-discret); }
+.propositions [data-refuser]:hover { color: var(--texte); }

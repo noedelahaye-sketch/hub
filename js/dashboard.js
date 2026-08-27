@@ -38,7 +38,7 @@ import {
 } from './calendrier-commun.js';
 import { construireLignesTaches, trierTaches } from './taches.js';
 import { demanderLaDuree, fermerLaDuree } from './gabarits.js';
-import { diagnosticDeLaSemaine, semaineDe } from './orientation.js';
+import { diagnosticDeLaSemaine, semaineDe, propositionsDuMatin } from './orientation.js';
 import { fenetreOuverte, construireRendezVous } from './rendez-vous.js';
 import { construireCapGrave } from './objectifs-commun.js';
 import { lireCache, ecrireCache } from './cache-session.js';
@@ -326,6 +326,43 @@ function colonneDuJour(groupes) {
 // `taches` est déjà triée et filtrée par l'appelant ; `rendezVous` et
 // `publications` arrivent de l'assemblage du calendrier, donc déjà dans
 // l'ordre des dates.
+// Une proposition dit TROIS choses : ce que c'est, pourquoi elle est là, et ce
+// qu'on peut en faire. La ligne de pourquoi n'est pas un ornement — une
+// proposition sans raison est un ordre déguisé : on l'exécute ou on l'ignore,
+// mais on ne peut pas la juger. Avec sa raison, on peut la contredire, et c'est
+// ce qui laisse la décision à Noé.
+export function construirePropositions(propositions) {
+  if (!propositions.length) return '';
+
+  return `
+    <h2>Ce que je te proposerais</h2>
+    <p class="discret sous-titre">Trois pistes au plus, prises dans ce qui n'a pas de date.
+      Rien n'oblige à en prendre une.</p>
+    <ul class="propositions">
+      ${propositions
+        .map(
+          (proposition) => `
+        <li class="proposition" data-espace="${echapper(proposition.espace)}">
+          <span class="proposition-titre">${echapper(proposition.titre)}</span>
+          <span class="proposition-espace">${echapper(
+            NOMS_ESPACES[proposition.espace] ?? proposition.espace,
+          )}</span>
+          <span class="proposition-pourquoi">${echapper(proposition.pourquoi)}</span>
+          <span class="proposition-gestes">
+            <button type="button" class="rdv-geste"
+              data-prendre="${echapper(proposition.forme)}:${echapper(proposition.id)}">${
+                proposition.forme === 'projet' ? 'Poser la première tâche' : 'Aujourd’hui'
+              }</button>
+            <button type="button" class="lien-discret bouton-mini"
+              data-refuser="${echapper(proposition.forme)}:${echapper(proposition.id)}"
+              >Pas aujourd’hui</button>
+          </span>
+        </li>`,
+        )
+        .join('')}
+    </ul>`;
+}
+
 export function construireAujourdhui(
   { rendezVous = [], taches = [], publications = [] } = {},
   annulation = null,
@@ -463,6 +500,12 @@ function squelette() {
       <h2>Aujourd'hui</h2>
       <div id="bloc-aujourdhui"><p class="vide">…</p></div>
     </section>
+
+    <!-- CE QUE JE TE PROPOSERAIS. Trois candidates au plus, jamais deux du
+         même espace, tirées de ce qui n'a PAS de date — ce qui, faute d'être
+         jamais planifié, n'est jamais fait. Ce n'est pas un programme : on en
+         prend une, aucune, ou on va piocher ailleurs. -->
+    <section class="bloc" id="bloc-propositions" hidden></section>
 
     <section class="bloc">
       <h2>Ta semaine</h2>
@@ -866,6 +909,47 @@ export default {
       rendreEchec();
       ecrireCache(CLE_CACHE, aGarder());
       chargerLeRendezVous();
+      chargerLesPropositions();
+    }
+
+    // LES TROIS PROPOSITIONS DU MATIN. Elles se posent tous les jours, pas
+    // seulement le dimanche : ce sont elles qui empêchent un cap de dormir six
+    // semaines. Leurs données sont celles du rendez-vous — on ne les redemande
+    // pas s'il vient de les charger.
+    async function chargerLesPropositions() {
+      const bloc = section.querySelector('#bloc-propositions');
+      if (!bloc) return;
+
+      try {
+        if (!etat.donneesOrientation) {
+          const [taches, publications, objectifs, projets, periodes, series] = await Promise.all([
+            api.tachesToutes(),
+            api.publicationsDatees(),
+            api.objectifsActifs(),
+            api.projetsTous(),
+            api.periodesToutes(),
+            api.chargerLesSeries(),
+          ]);
+          etat.donneesOrientation = {
+            evenements: etat.evenements,
+            taches,
+            publications,
+            objectifs,
+            projets,
+            periodes,
+            series,
+          };
+        }
+
+        etat.propositions = propositionsDuMatin(etat.donneesOrientation, new Date());
+        bloc.innerHTML = construirePropositions(etat.propositions);
+        bloc.hidden = !etat.propositions.length;
+      } catch (erreur) {
+        // Une proposition qui ne se calcule pas se tait : l'accueil doit servir
+        // à ce pour quoi on l'ouvre d'habitude, même quand l'orientation cale.
+        console.error('Propositions du matin indisponibles', erreur);
+        bloc.hidden = true;
+      }
     }
 
     // LE RENDEZ-VOUS DU DIMANCHE. Il charge SES données à lui, et seulement
@@ -902,10 +986,16 @@ export default {
           return;
         }
 
-        etat.diagnostic = diagnosticDeLaSemaine(
-          { evenements: etat.evenements, taches, publications, objectifs, projets, periodes, series },
-          maintenant,
-        );
+        etat.donneesOrientation = {
+          evenements: etat.evenements,
+          taches,
+          publications,
+          objectifs,
+          projets,
+          periodes,
+          series,
+        };
+        etat.diagnostic = diagnosticDeLaSemaine(etat.donneesOrientation, maintenant);
 
         bloc.innerHTML = `<h2>Ta semaine qui vient</h2>${construireRendezVous(etat.diagnostic)}`;
         bloc.hidden = false;
@@ -1163,6 +1253,61 @@ export default {
     }
 
     section.addEventListener('click', async (evenement) => {
+      // Prendre une proposition, ou l'écarter. Deux gestes, deux sens : l'un
+      // pose une date, l'autre dit « pas aujourd'hui » — et ce refus est une
+      // DONNÉE, pas un échec. Puisque l'humeur n'est qu'observée, c'est le seul
+      // signal qui reste au hub sur l'état du jour.
+      const prendre = evenement.target.closest('[data-prendre]');
+      const refuser = evenement.target.closest('[data-refuser]');
+      if (prendre || refuser) {
+        const [forme, id] = (prendre ?? refuser).dataset[prendre ? 'prendre' : 'refuser'].split(':');
+        const proposition = etat.propositions?.find((p) => p.id === id);
+        if (!proposition) return;
+
+        if (prendre && forme === 'projet') {
+          // Un projet n'a pas de date : ce qu'on prend, c'est sa première
+          // tâche. La tuile s'ouvre avec son nom et son espace déjà posés.
+          etat.creation = {
+            nature: 'tache',
+            debut: aujourdhui,
+            fin: aujourdhui,
+            heure: '',
+            valeurs: {
+              titre: proposition.titre,
+              espace: proposition.espace,
+              priorite: 4,
+              duree: 0,
+              recurrence: '',
+              recurrence_fin: '',
+            },
+          };
+          rendreCreation();
+          return;
+        }
+
+        // L'écran d'abord : la ligne s'en va tout de suite, l'écriture suit.
+        etat.propositions = etat.propositions.filter((p) => p.id !== id);
+        const bloc = section.querySelector('#bloc-propositions');
+        bloc.innerHTML = construirePropositions(etat.propositions);
+        bloc.hidden = !etat.propositions.length;
+
+        try {
+          if (prendre) await api.modifierTache(id, { echeance: aujourdhui });
+          else if (forme === 'projet') await api.modifierProjet(id, { refusee_le: aujourdhui });
+          else await api.modifierTache(id, { refusee_le: aujourdhui });
+
+          // L'instantané d'orientation est périmé : il porte encore la ligne
+          // qu'on vient d'écarter, et le rechargement la ferait revenir. Le
+          // jeter ici est ce qui rend le refus effectif.
+          etat.donneesOrientation = null;
+          await charger();
+        } catch (erreur) {
+          console.error('Proposition non enregistrée', erreur);
+          signalerEcriture();
+        }
+        return;
+      }
+
       // Valider la semaine : le rendez-vous s'en va, et ne revient pas.
       if (evenement.target.closest('[data-valider-semaine]')) {
         const bloc = section.querySelector('#bloc-rdv');

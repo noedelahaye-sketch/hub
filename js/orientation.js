@@ -496,3 +496,177 @@ export function diagnosticDeLaSemaine(donnees = {}, jour = new Date()) {
     inferences: inferences(donnees, jour),
   };
 }
+
+// --- Le vivier et les trois propositions du matin -----------------------------
+//
+// Le piège que Noé a nommé lui-même : « que l'IA me fasse tout mon programme de
+// tâches et que je sois un simple exécutant, j'en perdrais le plaisir ». La
+// parade n'est pas de proposer moins, c'est de proposer À UN AUTRE ÉTAGE — le
+// hub décide des proportions, Noé décide du contenu. Ces trois propositions
+// sont donc des CANDIDATES, jamais un programme : on en prend une, aucune, ou
+// on va piocher ailleurs.
+//
+// Elles ne redisent pas « Aujourd'hui », qui montre déjà ce qui est daté pour
+// le jour. Elles vont chercher ce qui n'a PAS de date — ce qui, faute d'être
+// jamais planifié, n'est jamais fait : l'album du club, le partenariat, l'offre
+// de Yuno. C'est là que dorment les caps.
+
+export const MAX_PROPOSITIONS = 3;
+
+// Au-delà d'un mois sans rien, la négligence ne grandit plus : un projet oublié
+// depuis six mois n'est pas six fois plus urgent qu'un projet oublié depuis un.
+const NEGLIGENCE_MAX = 30;
+
+// Ce qui pèse dans le score. Les poids sont des intentions, pas des mesures :
+// l'urgence d'un cap passe devant le reste, la négligence rattrape ce que
+// personne ne réclame, la dette d'équilibre penche vers l'espace qui a été
+// délaissé cette semaine.
+const POIDS = { urgence: 3, negligence: 2, dette: 1.5, priorite: 1 };
+
+function joursEntre(aISO, bISO) {
+  return (depuisDateISO(bISO) - depuisDateISO(aISO)) / 86400000;
+}
+
+// Le dernier signe de vie d'un projet : la dernière chose faite ou posée qui
+// s'y rattache. C'est le meilleur détecteur d'un chantier qui coule — mieux
+// qu'une échéance, qui ne dit rien tant qu'elle est loin.
+function dernierGeste(projet, { taches = [], publications = [], evenements = [] }) {
+  const dates = [
+    ...taches.filter((t) => t.projet_id === projet.id).map((t) => t.date_fait ?? t.echeance),
+    ...publications.filter((p) => p.projet_id === projet.id).map((p) => p.date_prevue),
+    ...evenements.filter((e) => e.projet_id === projet.id).map((e) => e.date_debut),
+  ]
+    .filter(Boolean)
+    .map((date) => String(date).slice(0, 10))
+    .sort();
+
+  return dates.length ? dates[dates.length - 1] : null;
+}
+
+// Le vivier : ce qui attend sans date. Deux formes, parce qu'il y a deux façons
+// de ne pas avancer — une tâche écrite que personne ne date, et un projet dont
+// la première tâche n'a jamais été écrite.
+export function vivier(donnees = {}, jour = new Date()) {
+  const { taches = [], projets = [] } = donnees;
+  const aujourdhui = versDateISO(jour);
+  const semaine = semaineDe(jour);
+
+  // La dette d'équilibre : un espace loin de sa charge visée penche la balance.
+  const dettes = {};
+  for (const espace of ['fch', 'formation', 'photo', 'perso']) {
+    const charge = chargeDeLaSemaine(donnees, semaine, espace);
+    const vise = chargeViseeDeLaPeriode(periodeDuJour(donnees.periodes ?? [], jour))[espace];
+    dettes[espace] = vise ? Math.max(0, Math.min(1, (vise - charge.total) / vise)) : 0;
+  }
+
+  const candidates = [];
+
+  for (const tache of taches) {
+    if (tache.statut === 'fait' || tache.echeance || tache.serie_id) continue;
+    if (tache.refusee_le === aujourdhui) continue;
+    const projet = projets.find((p) => p.id === tache.projet_id) ?? null;
+    candidates.push({
+      forme: 'tache',
+      id: tache.id,
+      titre: tache.titre,
+      espace: tache.espace,
+      projet,
+      priorite: tache.priorite ?? 4,
+      echeance: projet?.echeance ?? null,
+      dernier: projet ? dernierGeste(projet, donnees) : null,
+    });
+  }
+
+  for (const projet of projets) {
+    if (projet.statut !== 'actif' || projet.charge_hebdo) continue;
+    if (projet.refusee_le === aujourdhui) continue;
+    const ouverte = taches.some((t) => t.projet_id === projet.id && t.statut !== 'fait');
+    if (ouverte) continue;
+    candidates.push({
+      forme: 'projet',
+      id: projet.id,
+      titre: projet.nom,
+      espace: projet.espace,
+      projet,
+      priorite: 4,
+      echeance: projet.echeance ?? null,
+      dernier: dernierGeste(projet, donnees),
+    });
+  }
+
+  return candidates
+    .map((candidate) => {
+      // Une échéance à moins de deux semaines vaut 1, à trois mois presque 0.
+      const jours = candidate.echeance ? joursEntre(aujourdhui, candidate.echeance) : null;
+      const urgence = jours === null ? 0.2 : Math.max(0, Math.min(1, (90 - jours) / 76));
+      const silence = candidate.dernier ? joursEntre(candidate.dernier, aujourdhui) : NEGLIGENCE_MAX;
+      const negligence = Math.max(0, Math.min(1, silence / NEGLIGENCE_MAX));
+      const dette = dettes[candidate.espace] ?? 0;
+      const priorite = (4 - candidate.priorite) / 3;
+
+      const parts = {
+        urgence: urgence * POIDS.urgence,
+        negligence: negligence * POIDS.negligence,
+        dette: dette * POIDS.dette,
+        priorite: priorite * POIDS.priorite,
+      };
+      const dominante = Object.entries(parts).sort((a, b) => b[1] - a[1])[0][0];
+
+      return {
+        ...candidate,
+        score: Object.values(parts).reduce((somme, valeur) => somme + valeur, 0),
+        dominante,
+        jours,
+        silence: Math.round(silence),
+        pourquoi: pourquoiDeLaCandidate(candidate, dominante, jours, silence),
+        jamais: !candidate.dernier,
+      };
+    })
+    .sort((a, b) => b.score - a.score);
+}
+
+// LA LIGNE DE POURQUOI. Une proposition sans raison est un ordre déguisé : on
+// l'exécute ou on l'ignore, mais on ne la juge pas. Avec sa raison, on peut la
+// contredire — et c'est ce qui laisse la décision à Noé.
+function pourquoiDeLaCandidate(candidate, dominante, jours, silence) {
+  // Le projet ne se nomme QUE s'il est autre chose que la candidate elle-même :
+  // « Dossier du bloc 4 — Dossier du bloc 4 tombe dans 19 jours » se lit deux
+  // fois pour ne rien dire de plus.
+  const cap = candidate.forme === 'projet' ? null : candidate.projet?.nom;
+
+  if (dominante === 'urgence' && jours !== null) {
+    const quoi = cap ? `« ${cap} »` : 'Son échéance';
+    return jours <= 0 ? `${quoi} est passée.` : `${quoi} tombe dans ${Math.round(jours)} jours.`;
+  }
+  if (dominante === 'negligence') {
+    // Jamais rien posé n'est pas la même chose que plus rien depuis un mois :
+    // l'un est un chantier qui n'a pas commencé, l'autre un chantier qui coule.
+    if (!candidate.dernier) {
+      return candidate.forme === 'projet'
+        ? `Rien n'a encore été posé dessus.`
+        : `Elle attend depuis qu'elle a été notée.`;
+    }
+    return cap
+      ? `Rien n'a bougé sur « ${cap} » depuis ${Math.round(silence)} jours.`
+      : `Rien n'a bougé dessus depuis ${Math.round(silence)} jours.`;
+  }
+  if (dominante === 'dette') return `Cet espace a été peu servi cette semaine.`;
+  return `Tu l'as marquée urgente.`;
+}
+
+// Trois au plus, et JAMAIS deux du même espace : trois tâches du club d'affilée
+// un lundi matin, c'est un programme, pas une proposition. La variété est ce
+// qui distingue les deux.
+export function propositionsDuMatin(donnees = {}, jour = new Date()) {
+  const retenues = [];
+  const espacesPris = new Set();
+
+  for (const candidate of vivier(donnees, jour)) {
+    if (retenues.length >= MAX_PROPOSITIONS) break;
+    if (espacesPris.has(candidate.espace)) continue;
+    espacesPris.add(candidate.espace);
+    retenues.push(candidate);
+  }
+
+  return retenues;
+}
