@@ -250,6 +250,31 @@ Le calendrier éditorial. **Une idée est une publication sans date** (`date_pre
 - `notes` text · `lien_publie` text
 - `created_at` timestamptz default now()
 
+### projets
+
+**L'étage entre le jalon et la tâche** (27 août 2026) — le *comment* on atteint un cap. Il existe parce qu'une tâche sur trente-six seulement était rattachée à un objectif : on demandait un lien impossible à faire.
+
+- `id` uuid PK · `espace` text NOT NULL (même CHECK que partout)
+- `nom` text NOT NULL
+- `resultat` text — **à quoi on reconnaît qu'il est fini.** Sans ce champ, un projet ne se termine jamais et pourrit dans la liste.
+- `charge_minutes` int — la charge **totale**, pour un projet qui finit.
+- `charge_hebdo` int — la charge **par semaine**, pour un projet qui ne finit pas (une rubrique, un rythme). Une heure par quinzaine s'y écrit `30` : c'est une moyenne hebdomadaire, faite pour être additionnée.
+- `echeance` date · `statut` text CHECK (idee, actif, en_pause, termine, abandonne)
+
+**En minutes, et non en heures.** C'est l'unité de `taches.duree` et des événements ; deux unités dans une même somme finissent toujours par se croiser. La saisie, elle, se fait en heures — c'est ainsi qu'on pense un projet.
+
+### projets_cibles
+
+Un projet peut viser tout, rien, un jalon, un objectif ou plusieurs (décision de Noé) : d'où une table de liens plutôt qu'une colonne.
+
+- `projet_id` uuid NOT NULL · `objectif_id` uuid (nullable) · `jalon_id` uuid (nullable), avec un CHECK exigeant au moins l'un des deux.
+
+**Règle anti-double-comptage** : la progression d'un objectif reste *jalons atteints / jalons totaux*, inchangée. **Un projet ne calcule aucune progression** — il porte la charge et il oriente. Deux caps servis par un même projet ne le comptent donc pas deux fois.
+
+`projet_id` est posé sur `taches`, `evenements` et `publications`, **toujours facultatif** : une tâche sans projet reste légitime, c'est de l'intendance, et bloquer la capture pour ça coûterait plus cher que le lien ne rapporte. Il se règle par une pastille de la tuile, qui ne propose que les projets de l'espace choisi.
+
+Les projets se lisent et se créent dans `#objectifs` — c'est la page où l'on décide, et un projet est une décision.
+
 ### series
 
 La règle de répétition et son modèle. **Les occurrences sont de vraies lignes** dans `taches`, `evenements` et `publications`, reliées par `serie_id` (27 août 2026, demande de Noé).
@@ -367,8 +392,9 @@ tâche sur trente-six seulement était rattachée à un objectif. On demandait u
 lien impossible à faire — « trier les photos U15 » ne sert pas *directement*
 « 1 000 abonnés », elle sert *l'album du club*, qui sert l'objectif.
 
-La hiérarchie complète, la table `projets` et ce qui s'y rattache :
-[docs/orientation-spec.md](docs/orientation-spec.md).
+La hiérarchie complète : **mission → objectif → jalon → projet → tâche**. La
+mission attendra ; les quatre autres étages existent depuis le 27 août 2026.
+Voir [docs/orientation-spec.md](docs/orientation-spec.md).
 
 ## Vocabulaire d'interface
 

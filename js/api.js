@@ -351,6 +351,87 @@ export async function creerJalon({ objectif_id, titre, echeance = null, ordre = 
 
 // `priorite` vaut 4 par défaut, comme en base : une tâche n'est pas prioritaire
 // parce qu'elle existe.
+// --- Les projets : le comment d'un cap ---------------------------------------
+//
+// L'étage entre le jalon et la tâche (27 août 2026). Il existe parce qu'UNE
+// tâche sur trente-six était rattachée à un objectif : « trier les photos U15 »
+// ne sert pas directement « 1 000 abonnés », elle sert l'album du club.
+//
+// Un projet ne calcule AUCUNE progression — celle d'un objectif reste
+// « jalons atteints / jalons totaux ». Il porte la CHARGE, et il oriente.
+
+export async function projetsTous() {
+  return verifier(
+    await client
+      .from('projets')
+      .select('*, cibles:projets_cibles(id, objectif_id, jalon_id)')
+      .order('espace')
+      .order('nom'),
+  );
+}
+
+export async function projetsDeLEspace(espace) {
+  return verifier(
+    await client
+      .from('projets')
+      .select('*, cibles:projets_cibles(id, objectif_id, jalon_id)')
+      .eq('espace', espace)
+      .order('nom'),
+  );
+}
+
+export async function creerProjet({
+  espace,
+  nom,
+  resultat = null,
+  charge_minutes = null,
+  charge_hebdo = null,
+  echeance = null,
+  statut = 'actif',
+}) {
+  return verifier(
+    await client
+      .from('projets')
+      .insert({ espace, nom, resultat, charge_minutes, charge_hebdo, echeance, statut })
+      .select('*, cibles:projets_cibles(id, objectif_id, jalon_id)')
+      .single(),
+  );
+}
+
+export async function modifierProjet(id, champs) {
+  return verifier(
+    await client
+      .from('projets')
+      .update(champs)
+      .eq('id', id)
+      .select('*, cibles:projets_cibles(id, objectif_id, jalon_id)')
+      .single(),
+  );
+}
+
+// Supprimer un projet ne supprime rien d'autre : ses tâches perdent leur
+// rattachement (ON DELETE SET NULL) et restent à faire. Un projet abandonné
+// n'annule pas le travail déjà écrit.
+export async function supprimerProjet(id) {
+  const { error } = await client.from('projets').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function lierProjet(projet_id, { objectif_id = null, jalon_id = null }) {
+  return verifier(
+    await client
+      .from('projets_cibles')
+      .insert({ projet_id, objectif_id, jalon_id })
+      .select()
+      .single(),
+  );
+}
+
+export async function delierProjet(id) {
+  const { error } = await client.from('projets_cibles').delete().eq('id', id);
+  if (error) throw error;
+}
+
 // --- Les séries : la répétition fabrique de vraies lignes ---------------------
 //
 // Une série porte LA RÈGLE et LE MODÈLE ; chaque occurrence est une ligne à
@@ -599,6 +680,7 @@ export async function creerTache({
   duree = null,
   priorite = 4,
   objectif_id = null,
+  projet_id = null,
   recurrence = null,
   recurrence_fin = null,
 }) {
@@ -612,6 +694,7 @@ export async function creerTache({
     duree: heure ? duree || null : null,
     priorite,
     objectif_id,
+    projet_id,
   };
 
   // Une répétition sans échéance n'a rien à répéter : sans jour, il n'y a pas
@@ -622,7 +705,14 @@ export async function creerTache({
       recurrence,
       depart: echeance,
       recurrence_fin: recurrence_fin || null,
-      modele: { titre, heure, duree: heure ? duree || null : null, priorite, objectif_id },
+      modele: {
+        titre,
+        heure,
+        duree: heure ? duree || null : null,
+        priorite,
+        objectif_id,
+        projet_id,
+      },
     });
     if (occurrences.length) return garnirUne(occurrences[0]);
   }

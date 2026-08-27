@@ -558,6 +558,46 @@ function panneauRepetition(valeurCourante) {
     </div>`;
 }
 
+// Le PROJET d'une tâche : l'étage entre le jalon et l'action (27 août 2026).
+// Il n'est jamais obligatoire — une tâche sans projet reste légitime, c'est de
+// l'intendance, et bloquer la capture pour ça serait payer très cher un lien
+// qu'on peut poser après. Seuls les projets de l'espace choisi sont proposés :
+// une tâche du club n'a rien à faire dans un projet de Yuno.
+const PASTILLE_PROJET = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+  stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+  aria-hidden="true"><path d="M3 7l9-4 9 4-9 4-9-4Z"/><path d="M3 12l9 4 9-4"/>
+  <path d="M3 17l9 4 9-4"/></svg>`;
+
+function panneauProjet(projets, valeurCourante) {
+  const offerts = projets.filter((projet) => projet.statut === 'actif' || projet.id === valeurCourante);
+
+  return `
+    <div class="capture-popover capture-popover-etroit" data-panneau="projet" hidden>
+      <ul class="choix-capture">
+        <li><button type="button" data-poser-projet=""
+          aria-pressed="${!valeurCourante}" class="${!valeurCourante ? 'actif' : ''}">
+          <span>Aucun projet</span>
+        </button></li>
+        ${offerts
+          .map(
+            (projet) => `
+          <li><button type="button" data-poser-projet="${echapper(projet.id)}"
+            aria-pressed="${projet.id === valeurCourante}"
+            class="${projet.id === valeurCourante ? 'actif' : ''}">
+            <span>${echapper(projet.nom)}</span>
+          </button></li>`,
+          )
+          .join('')}
+        ${
+          offerts.length
+            ? ''
+            : `<li><p class="vide">Aucun projet dans cet espace. Ils se créent
+                 dans « Le cap ».</p></li>`
+        }
+      </ul>
+    </div>`;
+}
+
 function panneauEspace(valeurCourante) {
   return `
     <div class="capture-popover capture-popover-etroit" data-panneau="espace" hidden>
@@ -588,7 +628,7 @@ function dateLisible(capture) {
   return `${jour}, ${capture.heure.slice(0, 5)}${combien ? ` · ${combien}` : ''}`;
 }
 
-export function construireCapture(capture) {
+export function construireCapture(capture, projets = []) {
   // Le « + » reste en place quand la tuile s'ouvre : elle vole au-dessus de la
   // page, elle ne la remplace pas. Sans lui, la liste remonterait d'un cran à
   // chaque ouverture et redescendrait à la fermeture.
@@ -624,6 +664,12 @@ export function construireCapture(capture) {
           ${pastille('repetition', PASTILLE_REPETITION, RECURRENCES[capture.recurrence ?? ''], {
             rempli: Boolean(capture.recurrence),
           })}
+          ${pastille(
+            'projet',
+            PASTILLE_PROJET,
+            projets.find((projet) => projet.id === capture.projet_id)?.nom ?? 'Projet',
+            { rempli: Boolean(capture.projet_id) },
+          )}
         </div>
         <!-- Une flèche dans un rond plutôt qu'un mot (demande de Noé, sur le
              modèle) : la tuile n'a qu'une action, elle n'a pas besoin d'être
@@ -642,6 +688,7 @@ export function construireCapture(capture) {
       ${panneauEspace(capture.espace)}
       ${panneauPriorite(capture.priorite)}
       ${panneauRepetition(capture.recurrence)}
+      ${panneauProjet(projets.filter((projet) => projet.espace === capture.espace), capture.projet_id)}
 
       ${
         capture.confirmationSortie
@@ -664,7 +711,7 @@ function squelette(etat) {
   return `
     <h1>Tâches</h1>
     <p class="discret sous-titre">Tout ce qu'il y a à faire, tous espaces — daté ou non.</p>
-    <div data-bloc="capture">${construireCapture(etat.capture)}</div>
+    <div data-bloc="capture">${construireCapture(etat.capture, etat.projets)}</div>
     ${construireFiltres(etat.espace)}
     <div data-bloc="liste"><p class="vide">…</p></div>`;
 }
@@ -691,6 +738,8 @@ export default {
       // par défaut — c'est là que le travail quotidien de Noé se passe.
       espace: ESPACES[espace] ? espace : 'fch',
       priorite: 4,
+      // Le projet servi, ou rien. Voir `panneauProjet`.
+      projet_id: null,
       // Nulle = une seule fois. Voir `terminerTache` (js/api.js) : une tâche
       // répétée ne se termine pas, elle glisse à l'occurrence suivante.
       recurrence: null,
@@ -723,7 +772,13 @@ export default {
       rendreCapture();
     };
 
-    const etat = { taches: [], espace: 'tout', message: null, capture: captureVierge('tout') };
+    const etat = {
+      taches: [],
+      projets: [],
+      espace: 'tout',
+      message: null,
+      capture: captureVierge('tout'),
+    };
 
     // Les tâches dont une écriture optimiste est en vol : l'écran a déjà
     // changé, le serveur pas encore. Un identifiant y reste le temps de
@@ -829,6 +884,11 @@ export default {
         RECURRENCES[etat.capture.recurrence ?? ''],
         Boolean(etat.capture.recurrence),
       );
+      ecrire(
+        'projet',
+        etat.projets.find((projet) => projet.id === etat.capture.projet_id)?.nom ?? 'Projet',
+        Boolean(etat.capture.projet_id),
+      );
       section
         .querySelector('[data-pastille="priorite"]')
         ?.setAttribute('data-priorite', String(etat.capture.priorite));
@@ -855,7 +915,10 @@ export default {
       const champ = section.querySelector('#capture-titre');
       if (champ) etat.capture.titre = champ.value;
 
-      section.querySelector('[data-bloc="capture"]').innerHTML = construireCapture(etat.capture);
+      section.querySelector('[data-bloc="capture"]').innerHTML = construireCapture(
+        etat.capture,
+        etat.projets,
+      );
       marquerLeDebordement();
 
       if (focus) {
@@ -876,7 +939,9 @@ export default {
     };
 
     const charger = async () => {
-      etat.taches = await api.tachesToutes();
+      const [taches, projets] = await Promise.all([api.tachesToutes(), api.projetsTous()]);
+      etat.taches = taches;
+      etat.projets = projets;
       rendreListe();
     };
 
@@ -994,6 +1059,7 @@ export default {
         // Sans date, rien à répéter : `creerTache` l'écarte de son côté, on ne
         // la lui envoie pas non plus.
         recurrence: etat.capture.echeance ? etat.capture.recurrence : null,
+        projet_id: etat.capture.projet_id,
       };
 
       // Corriger une tâche existante : la tuile se referme, le travail est
@@ -1164,6 +1230,7 @@ export default {
           // écran où elle se corrige, et elle y revenait vide — enregistrer
           // sans y toucher effaçait la série.
           recurrence: tache.recurrence ?? null,
+          projet_id: tache.projet_id ?? null,
         };
         rendreCapture({ focus: true });
         mesurerLeClavier();
@@ -1241,6 +1308,20 @@ export default {
       if (poserEspace) {
         etat.capture.espace = poserEspace.dataset.poserEspace;
         marquerLeChoix('poser-espace', etat.capture.espace);
+        // Le panneau des projets ne montre que ceux de l'espace choisi : il se
+        // redessine ici, et le projet retenu s'efface s'il appartenait à
+        // l'espace d'avant. Une tâche du club dans un projet de Yuno n'aurait
+        // aucun sens, et le lien serait invisible à l'écran.
+        const projetsDIci = etat.projets.filter(
+          (projet) => projet.espace === etat.capture.espace,
+        );
+        if (!projetsDIci.some((projet) => projet.id === etat.capture.projet_id)) {
+          etat.capture.projet_id = null;
+        }
+        const panneau = section.querySelector('[data-panneau="projet"]');
+        if (panneau) {
+          panneau.outerHTML = panneauProjet(projetsDIci, etat.capture.projet_id);
+        }
         fermerLesPanneaux();
         majPastilles();
         return;
@@ -1250,6 +1331,15 @@ export default {
       if (poserRepetition) {
         etat.capture.recurrence = poserRepetition.dataset.poserRepetition || null;
         marquerLeChoix('poser-repetition', etat.capture.recurrence ?? '');
+        fermerLesPanneaux();
+        majPastilles();
+        return;
+      }
+
+      const poserProjet = evenement.target.closest('[data-poser-projet]');
+      if (poserProjet) {
+        etat.capture.projet_id = poserProjet.dataset.poserProjet || null;
+        marquerLeChoix('poser-projet', etat.capture.projet_id ?? '');
         fermerLesPanneaux();
         majPastilles();
         return;

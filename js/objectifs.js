@@ -20,7 +20,13 @@ import { construireObjectifs, construireFormulaire } from './gabarits.js';
 // Le modèle de l'argent de Yuno vit avec la page qui l'a fait naître ; il
 // n'est pas recopié ici.
 import { argentDeYuno, enEuros } from './photo.js';
-import { NOMS_ESPACES, echapper } from './format.js';
+import {
+  NOMS_ESPACES,
+  echapper,
+  dureeLisible,
+  echeanceLisible,
+  depuisDateISO,
+} from './format.js';
 
 // L'espace perso n'a pas d'objectifs : il a des INTENTIONS, sans mesure ni
 // date, et elles se relisent dans #perso. Cette page ne les touche jamais.
@@ -141,12 +147,59 @@ export function construireArgent(commandes, materiel) {
 // chemins de jalons. Sur une tuile, `data-espace` dessinerait en plus le
 // filet coloré des listes de l'accueil — ici le titre du bloc dit déjà le
 // espace, et six filets alignés seraient du bruit.
+// LES PROJETS d'un espace : le comment des caps qui sont juste au-dessus
+// (27 août 2026). Ils vivent ici et pas ailleurs pour une raison simple —
+// c'est la page où l'on décide, et un projet est une décision : ce qu'on va
+// faire pour y arriver, et combien de temps on est prêt à y mettre.
+//
+// Ils n'affichent AUCUNE progression, volontairement. Celle d'un objectif
+// reste jalons atteints / jalons totaux ; deux caps servis par un même projet
+// ne doivent pas le compter deux fois. Un projet porte la charge, pas le score.
+export function construireProjets(projets, objectifs = []) {
+  if (!projets.length) {
+    return `<p class="vide">Aucun projet ici. Le premier dira comment tu comptes
+      t'y prendre.</p>`;
+  }
+
+  const nomDuCap = (cible) =>
+    objectifs.find((objectif) => objectif.id === cible.objectif_id)?.titre ?? null;
+
+  return `<ul class="liste-projets">${projets
+    .map((projet) => {
+      const caps = (projet.cibles ?? []).map(nomDuCap).filter(Boolean);
+      const charge = projet.charge_hebdo
+        ? `${dureeLisible(projet.charge_hebdo)} par semaine`
+        : dureeLisible(projet.charge_minutes);
+
+      return `
+        <li class="projet-ligne" data-projet="${echapper(projet.id)}">
+          <span class="projet-nom">${echapper(projet.nom)}</span>
+          <span class="projet-service">
+            ${charge ? `<span class="chiffre">${echapper(charge)}</span>` : ''}
+            ${
+              projet.echeance
+                ? `<span>${echapper(echeanceLisible(depuisDateISO(projet.echeance)))}</span>`
+                : ''
+            }
+          </span>
+          ${
+            caps.length
+              ? `<span class="projet-caps">sert ${caps.map(echapper).join(' · ')}</span>`
+              : `<span class="projet-caps discret">ne sert aucun cap déclaré</span>`
+          }
+          ${projet.resultat ? `<span class="projet-resultat">${echapper(projet.resultat)}</span>` : ''}
+        </li>`;
+    })
+    .join('')}</ul>`;
+}
+
 function squelette() {
   const blocs = ESPACES.map(
     (espace) => `
       <section class="bloc" data-espace="${espace}">
         <h2>${echapper(NOMS_ESPACES[espace] ?? espace)}</h2>
         <div data-bloc="${espace}"><p class="vide">…</p></div>
+
         ${construireFormulaire({
           id: `objectif-${espace}`,
           libelle: 'Ajouter un objectif',
@@ -159,6 +212,23 @@ function squelette() {
               type: 'textarea',
             },
             { nom: 'cible', libelle: "À quoi tu sauras que c'est réussi", type: 'text' },
+            { nom: 'echeance', libelle: 'Échéance (facultative)', type: 'date' },
+          ],
+          extra: `<input type="hidden" name="espace" value="${espace}">`,
+        })}
+
+        <h3 class="titre-projets">Projets</h3>
+        <p class="discret sous-titre">Le comment. Ce qu'on va faire pour y arriver.</p>
+        <div data-projets="${espace}"><p class="vide">…</p></div>
+        ${construireFormulaire({
+          id: `projet-${espace}`,
+          libelle: 'Ajouter un projet',
+          action: 'creer-projet',
+          champs: [
+            { nom: 'nom', libelle: 'Projet', type: 'text', requis: true },
+            { nom: 'resultat', libelle: "À quoi tu sauras qu'il est fini", type: 'text' },
+            { nom: 'charge_heures', libelle: 'Combien d\'heures en tout (facultatif)', type: 'number' },
+            { nom: 'charge_hebdo_heures', libelle: "Ou combien d'heures par semaine", type: 'number' },
             { nom: 'echeance', libelle: 'Échéance (facultative)', type: 'date' },
           ],
           extra: `<input type="hidden" name="espace" value="${espace}">`,
@@ -178,8 +248,9 @@ export default {
   async monter(section) {
     section.innerHTML = squelette();
 
-    const etat = { objectifs: [], commandes: [], materiel: [] };
+    const etat = { objectifs: [], commandes: [], materiel: [], projets: [] };
     const bloc = (espace) => section.querySelector(`[data-bloc="${espace}"]`);
+    const blocProjets = (espace) => section.querySelector(`[data-projets="${espace}"]`);
 
     const deLEspace = (espace) => etat.objectifs.filter((o) => o.espace === espace);
 
@@ -197,7 +268,17 @@ export default {
         complements: complements(),
       });
     };
-    const rendreTout = () => ESPACES.forEach(rendreEspace);
+    const rendreProjets = (espace) => {
+      blocProjets(espace).innerHTML = construireProjets(
+        etat.projets.filter((projet) => projet.espace === espace),
+        etat.objectifs,
+      );
+    };
+
+    const rendreTout = () => ESPACES.forEach((espace) => {
+      rendreEspace(espace);
+      rendreProjets(espace);
+    });
 
     // Redessiner remplace les tuiles : celle qu'on venait d'ouvrir se
     // refermerait sans ça, en pleine saisie de son jalon suivant.
@@ -207,11 +288,13 @@ export default {
     };
 
     const charger = async () => {
-      const [objectifs, commandes, materiel] = await Promise.all([
+      const [objectifs, commandes, materiel, projets] = await Promise.all([
         api.objectifsActifs(),
         api.commandesToutes(),
         api.materielTout(),
+        api.projetsTous(),
       ]);
+      etat.projets = projets;
       etat.objectifs = objectifs.filter((objectif) => ESPACES.includes(objectif.espace));
       etat.commandes = commandes;
       etat.materiel = materiel;
@@ -274,6 +357,29 @@ export default {
         });
         etat.objectifs = [...etat.objectifs, { ...objectif, jalons: objectif.jalons ?? [] }];
         rendreEspace(champs.espace);
+        return;
+      }
+
+      if (action === 'creer-projet') {
+        // Les heures se saisissent en heures — c'est ainsi qu'on pense un
+        // projet —, et se rangent en minutes : c'est l'unité de `taches.duree`
+        // et des événements, et deux unités dans une même somme finissent
+        // toujours par se croiser.
+        const enMinutes = (valeur) => {
+          const heures = Number(valeur);
+          return Number.isFinite(heures) && heures > 0 ? Math.round(heures * 60) : null;
+        };
+
+        const projet = await api.creerProjet({
+          espace: champs.espace,
+          nom: champs.nom.trim(),
+          resultat: champs.resultat?.trim() || null,
+          charge_minutes: enMinutes(champs.charge_heures),
+          charge_hebdo: enMinutes(champs.charge_hebdo_heures),
+          echeance: champs.echeance || null,
+        });
+        etat.projets = [...etat.projets, { ...projet, cibles: projet.cibles ?? [] }];
+        rendreProjets(champs.espace);
         return;
       }
 

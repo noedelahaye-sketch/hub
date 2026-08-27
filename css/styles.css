@@ -4589,3 +4589,48 @@ body.duree-demandee .ouvrir-capture {
 @media (prefers-reduced-motion: reduce) {
   .tuile-duree { animation: none; }
 }
+
+/* --- Les projets d'un espace, dans « Le cap » -------------------------------
+
+   Une liste, pas des tuiles : un projet ne se déplie pas, il se lit. Ce sont
+   les objectifs, juste au-dessus, qui portent les tuiles et les jalons — leur
+   donner la même forme reviendrait à dire qu'ils pèsent pareil. */
+.titre-projets {
+  margin: var(--espace-32) 0 var(--espace-4);
+  font-size: 1rem;
+}
+
+.liste-projets { margin: 0; padding: 0; list-style: none; }
+
+/* `.liste-projets` dans le sélecteur, et pas `.projet-ligne` seul : `.bloc li`
+   pose déjà une mise en page dans cette page, et à spécificité égale c'est elle
+   qui gagnait — les trois lignes du projet se retrouvaient sur une seule. */
+.liste-projets .projet-ligne {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: var(--espace-4) var(--espace-12);
+}
+
+.liste-projets .projet-nom { font-weight: 500; }
+
+/* La charge et l'échéance se rangent à droite du nom, sur la même ligne : ce
+   sont les deux chiffres qu'on vient chercher. */
+.liste-projets .projet-service {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espace-8);
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+}
+
+/* Le cap servi et le résultat attendu passent en dessous, sur toute la
+   largeur : ce sont des phrases, pas des valeurs. */
+.liste-projets .projet-caps,
+.liste-projets .projet-resultat {
+  grid-column: 1 / -1;
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+}
+
+.liste-projets .projet-resultat { font-style: italic; }

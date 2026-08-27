@@ -50,13 +50,13 @@ transverses** (accueil, tâches, objectifs, calendrier), **2 sites**.
 
 ## 2. Ce que le schéma doit gagner
 
-### 2.1 `projets` — la nouvelle table
+### 2.1 `projets` — la nouvelle table — **faite le 27 août 2026**
 
 - `id` uuid PK · `espace` text NOT NULL (même CHECK que l'ancien `projet`)
 - `nom` text NOT NULL
 - `resultat` text — **à quoi on reconnaît qu'il est fini.** Sans ce champ, un
   projet ne se termine jamais et pourrit dans la liste.
-- `charge_estimee` int — en heures. **La seule maille qui se chiffre** : un
+- `charge_minutes` int (la charge totale) et `charge_hebdo` int (la charge par semaine d'un projet qui ne finit pas) — **en minutes**, comme `taches.duree` : deux unités dans une même somme finissent toujours par se croiser. **La seule maille qui se chiffre** : un
   objectif ne s'estime pas (« 1 000 abonnés », c'est combien d'heures ?), une
   tâche est trop petite pour compter.
 - `echeance` date (nullable)
@@ -576,7 +576,7 @@ suivante pour valoir quelque chose.
 | 0 | ~~**Renommer `projet` → `espace`**~~ **fait** | Préalable absolu : 413 occurrences en JS, 8 tables. Introduire `projets` avant créerait une confusion permanente. |
 | 1 | ~~**Occurrences réelles des récurrences**~~ **fait** | Sans elles, aucun rythme n'est mesurable et aucune durée de série n'est saisissable. |
 | 2 | ~~**La durée au moment de cocher**~~ **fait** | Le système entier compte des heures ; aujourd'hui 0 tâche sur 36 en porte une. |
-| 3 | **La table `projets` et les rattachements** | Le fil tâche → projet → jalon → objectif. Rien ne se calcule avant. |
+| 3 | ~~**La table `projets` et les rattachements**~~ **fait** | Le fil tâche → projet → jalon → objectif. Rien ne se calcule avant. |
 | 4 | **Les périodes** | Le premier arbitrage a lieu ici, en amont. |
 | 5 | **Le calcul, sans écran** | Une fonction qui produit un diagnostic vérifiable seul, sans session ni réseau. |
 | 6 | **Le rendez-vous du dimanche** | Le premier écran, une fois que le calcul dit vrai. |
