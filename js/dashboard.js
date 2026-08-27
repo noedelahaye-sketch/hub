@@ -1308,11 +1308,17 @@ export default {
         const tache = tachesDuJour().find((candidate) => candidate.id === cercle.dataset.cocher);
         if (!tache || ecrituresEnVol.has(tache.id)) return;
 
+        // COCHER EST UNE INTENTION (demande de Noé, 27 août 2026) : la fenêtre
+        // de durée s'ouvre d'abord, et rien — ni la coche, ni la victoire, ni
+        // la fenêtre d'annulation — ne se produit tant qu'elle n'est pas
+        // confirmée. La refermer laisse la journée exactement comme elle était.
+        demanderLaDuree(tache, async (minutes) => {
         // On voit la coche se poser, PUIS la tâche quitte « Aujourd'hui ».
         await animerLaCoche(cercle);
 
         const avant = { ...tache };
         const faite = { ...tache, statut: 'fait', date_fait: new Date().toISOString() };
+        if (minutes !== null) faite.duree = minutes;
         // La victoire n'a pas encore d'identifiant serveur : celui-ci est
         // provisoire, remplacé par le vrai dès que l'écriture répond.
         const provisoire = {
@@ -1334,26 +1340,6 @@ export default {
         remplacerTache(faite);
         etat.victoires = [provisoire, ...etat.victoires];
         ouvrirAnnulation(annulation);
-
-        // « Combien de temps ça a pris ? » — même tuile qu'à l'espace Tâches,
-        // même geste. Elle vise la tâche PAR SON IDENTIFIANT : l'écriture qui
-        // suit remplace l'objet dans l'état, et garder la référence d'ici
-        // écrirait dans une tâche que plus personne ne regarde.
-        demanderLaDuree(faite, (minutes) => {
-          const vivante = etat.tachesDatees.find((candidate) => candidate.id === tache.id);
-          if (!vivante) return;
-          remplacerTache({ ...vivante, duree: minutes });
-          rendreAujourdhui();
-          rendreSemaine();
-          api.modifierTache(tache.id, { duree: minutes }).catch((erreur) => {
-            console.error('Durée non enregistrée', erreur);
-            remplacerTache({ ...vivante });
-            rendreAujourdhui();
-            rendreSemaine();
-            signalerEcriture();
-          });
-        });
-
         rendreVictoires();
         rendreAujourdhui();
         // La tâche est datée : elle est aussi dans la semaine, où elle devient
@@ -1364,6 +1350,9 @@ export default {
         ecrituresEnVol.add(tache.id);
         annulation.ecriture = (async () => {
           try {
+            // La durée d'abord : `terminerTache` relit la ligne après coup,
+            // elle repart donc complète.
+            if (minutes !== null) await api.modifierTache(tache.id, { duree: minutes });
             // `avant` et pas `faite` : l'API doit recevoir la tâche telle
             // qu'elle était, pas l'état que l'écran a pris de l'avance.
             const { tache: confirmee, victoire } = await api.terminerTache(avant);
@@ -1394,6 +1383,8 @@ export default {
             ecrituresEnVol.delete(tache.id);
           }
         })();
+        });
+
         return;
       }
 

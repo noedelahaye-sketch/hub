@@ -223,35 +223,35 @@ export function construireLignesTaches(taches, options = {}) {
 //
 // L'espace Tâches et l'accueil gardent le leur : ils offrent en plus la fenêtre
 // d'annulation de six secondes, que ces pages n'ont pas.
-// Écrire la durée que Noé vient de donner. L'écran a déjà raison : la valeur
-// est posée tout de suite et revient en arrière si le serveur refuse — c'est la
-// règle d'écriture du hub, et une durée ne mérite pas d'exception.
-export function noterLaDuree(tache, minutes, rendre) {
-  return modifierAussitot(tache, { duree: minutes }, () =>
-    api.modifierTache(tache.id, { duree: minutes }), { rendre });
-}
-
 export async function cocherDepuisTableauDeBord(cercle, taches, rendre) {
   const tache = taches.find((candidate) => candidate.id === cercle.dataset.cocher);
   if (!tache || tache.statut === 'fait') return;
 
-  // On voit la coche se poser, PUIS la ligne s'en va.
-  await animerLaCoche(cercle);
+  // COCHER EST UNE INTENTION, pas un fait acquis (demande de Noé, 27 août
+  // 2026) : la fenêtre de durée s'ouvre d'abord, et rien n'est écrit tant
+  // qu'elle n'est pas confirmée. La refermer laisse la tâche à faire.
+  demanderLaDuree(tache, async (minutes) => {
+    // On voit la coche se poser, PUIS la ligne s'en va.
+    await animerLaCoche(cercle);
 
-  const avant = { ...tache };
+    const avant = { ...tache };
+    const champs = { statut: 'fait', date_fait: new Date().toISOString() };
+    if (minutes !== null) champs.duree = minutes;
 
-  // Chaque occurrence d'une série est une ligne à elle : celle-ci se termine
-  // comme n'importe quelle tâche, et celle de la semaine prochaine attend.
-  const optimiste = { statut: 'fait', date_fait: new Date().toISOString() };
-
-  await modifierAussitot(tache, optimiste, async () => (await api.terminerTache(avant)).tache, {
-    rendre,
+    // Chaque occurrence d'une série est une ligne à elle : celle-ci se termine
+    // comme n'importe quelle tâche, et celle de la semaine prochaine attend.
+    await modifierAussitot(
+      tache,
+      champs,
+      async () => {
+        // La durée d'abord : `terminerTache` relit la ligne après coup, elle
+        // repart donc complète, et un seul rendu suffit.
+        if (minutes !== null) await api.modifierTache(tache.id, { duree: minutes });
+        return (await api.terminerTache(avant)).tache;
+      },
+      { rendre },
+    );
   });
-
-  // « Combien de temps ça a pris ? » — la seule source d'heures du hub. Elle
-  // arrive APRÈS l'écriture : la tâche est déjà faite, la question ne retient
-  // rien.
-  demanderLaDuree(tache, (minutes) => noterLaDuree(tache, minutes, rendre));
 }
 
 // Exportée pour être vérifiable seule, avec des tâches factices.
@@ -864,6 +864,49 @@ export default {
     };
 
     // Les libellés des trois pastilles, relus depuis l'état.
+    // Terminer une tâche ou la rouvrir. Écrit ici pour les deux chemins, parce
+    // que la seule différence entre eux est le SENS — et la durée, que seule la
+    // coche apporte.
+    async function basculer(tache, cercle, versFait, minutes) {
+      if (ecrituresEnVol.has(tache.id)) return;
+      const avant = { ...tache };
+
+      // On voit la coche se poser, PUIS la ligne s'en va. L'écriture, elle,
+      // n'attend pas : elle part juste après, pendant que l'œil finit.
+      if (versFait) await animerLaCoche(cercle);
+
+      const champs = versFait
+        ? { statut: 'fait', date_fait: new Date().toISOString() }
+        : { statut: 'actif', date_fait: null };
+      if (versFait && minutes !== null) champs.duree = minutes;
+
+      Object.assign(tache, champs);
+      rendreListe();
+
+      ecrituresEnVol.add(tache.id);
+      try {
+        if (versFait) {
+          if (minutes !== null) await api.modifierTache(tache.id, { duree: minutes });
+          // `avant` et pas `tache` : l'API relit le statut pour savoir quoi
+          // faire, elle doit recevoir la tâche telle qu'elle était.
+          const { tache: faite } = await api.terminerTache(avant);
+          Object.assign(tache, faite);
+        } else {
+          Object.assign(tache, await api.rouvrirTache(avant));
+          await api.supprimerVictoireDeLaTache(tache.id);
+        }
+        // Pas de nouveau rendu : l'écran a déjà raison, le serveur n'a fait
+        // que confirmer (à l'horodatage près).
+      } catch (souci) {
+        console.error('Tâche non mise à jour', souci);
+        Object.assign(tache, avant);
+        etat.message = "Ça n'a pas pu être enregistré — la tâche est revenue.";
+        rendreListe();
+      } finally {
+        ecrituresEnVol.delete(tache.id);
+      }
+    }
+
     const majPastilles = () => {
       const ecrire = (nom, texte, rempli) => {
         const pastille = section.querySelector(`[data-pastille="${nom}"]`);
@@ -1390,49 +1433,16 @@ export default {
         // vole ferait se croiser deux ordres contraires sur la même ligne.
         if (!tache || ecrituresEnVol.has(tache.id)) return;
 
-        const avant = { ...tache };
         const versFait = tache.statut !== 'fait';
 
-        // On voit la coche se poser, PUIS la ligne s'en va. L'écriture, elle,
-        // n'attend pas : elle part juste après, pendant que l'œil finit.
-        if (versFait) await animerLaCoche(cercle);
-
-        Object.assign(
-          tache,
-          versFait
-            ? { statut: 'fait', date_fait: new Date().toISOString() }
-            : { statut: 'actif', date_fait: null },
-        );
-        rendreListe();
-
-        ecrituresEnVol.add(tache.id);
-        try {
-          if (versFait) {
-            // `avant` et pas `tache` : l'API relit le statut pour savoir quoi
-            // faire, elle doit recevoir la tâche telle qu'elle était.
-            const { tache: faite } = await api.terminerTache(avant);
-            Object.assign(tache, faite);
-          } else {
-            Object.assign(tache, await api.rouvrirTache(avant));
-            await api.supprimerVictoireDeLaTache(tache.id);
-          }
-          // Pas de nouveau rendu : l'écran a déjà raison, le serveur n'a fait
-          // que confirmer (à l'horodatage près).
-        } catch (souci) {
-          console.error('Tâche non mise à jour', souci);
-          Object.assign(tache, avant);
-          etat.message = "Ça n'a pas pu être enregistré — la tâche est revenue.";
-          rendreListe();
-        } finally {
-          ecrituresEnVol.delete(tache.id);
-        }
-
-        // La question de la durée ne se pose qu'en cochant. Décocher la retire :
-        // une tâche qu'on vient de rouvrir n'a pas de temps passé à déclarer.
+        // Rouvrir ne demande rien : on ne déclare pas le temps passé sur une
+        // tâche qu'on vient de remettre à faire. Cocher, si — et la fenêtre
+        // doit être confirmée avant que quoi que ce soit ne s'écrive.
         if (versFait) {
-          demanderLaDuree(tache, (minutes) => noterLaDuree(tache, minutes, rendreListe));
+          demanderLaDuree(tache, (minutes) => basculer(tache, cercle, true, minutes));
         } else {
           fermerLaDuree();
+          await basculer(tache, cercle, false, null);
         }
         return;
       }

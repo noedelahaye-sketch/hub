@@ -498,35 +498,38 @@ export function marquerLaDuree(racine, minutes) {
 
 // --- « Combien de temps ça a pris ? » ----------------------------------------
 //
-// La question se pose APRÈS coup, au moment où on coche (demande de Noé,
-// 27 août 2026), et elle est la seule source d'heures du hub : sans elle, le
-// compte courant du club et la courbe de la formation n'ont rien à compter.
+// La question se pose au moment où on coche (demande de Noé, 27 août 2026), et
+// elle est la seule source d'heures du hub : sans elle, le compte courant du
+// club et la courbe de la formation n'ont rien à compter.
 //
-// Trois règles la gouvernent, et elles tiennent au fait qu'elle arrive dans le
-// dos de quelqu'un qui vient de finir quelque chose :
+// C'EST UNE FENÊTRE, PAS UNE INCRUSTATION (demande de Noé, même jour). Même
+// mécanique que la tuile du « + » : le fond s'assombrit, et RIEN N'EST ÉCRIT
+// tant qu'on n'a pas confirmé. Cocher devient donc une intention, pas un fait
+// acquis — refermer sans confirmer laisse la tâche exactement où elle était.
 //
-// 1. Elle ne bloque rien. La page reste vivante derrière, on peut cocher la
-//    suivante sans avoir répondu.
-// 2. Elle part toute seule au bout de dix secondes. Une question qui attend
-//    indéfiniment devient une corvée, et ce hub n'en ajoute pas.
-// 3. Elle ne vole jamais le focus. Sur téléphone, ouvrir le clavier par
-//    surprise, c'est perdre le fil de ce qu'on faisait.
+// La première version posait la question APRÈS coup, sans fond ni bouton, et
+// s'effaçait au bout de dix secondes. Elle avait le défaut de sa discrétion :
+// on cochait, on ne répondait pas, et le hub n'apprenait rien.
 //
-// La durée existante est reprise : Noé l'a demandé ainsi — « j'ajuste en
-// fonction du temps réel que ça m'a pris si j'avais déjà noté un temps prévu ».
-// Une seule colonne, corrigée, et non deux qui se contrediraient.
+// La durée déjà connue est reprise et pré-sélectionnée : Noé l'a demandé ainsi —
+// « soit on confirme, soit on modifie si finalement ce ne fut pas cette durée ».
+// Les raccourcis ne valident donc rien, ils CHOISISSENT ; c'est le bouton qui
+// valide. Une seule colonne, corrigée, et non deux qui se contrediraient.
 
-const DELAI_TUILE_DUREE = 10000;
+const COCHE = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none"
+  stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"
+  aria-hidden="true"><path d="M4 12.5l5.5 5.5L20 7"/></svg>`;
 
 export function tuileDureeFaite({ titre, duree = null }) {
   const minutes = Number(duree) > 0 ? String(Number(duree)) : '';
 
   return `
-    <div class="tuile-duree" role="group" aria-label="Combien de temps ça a pris ?">
+    <div class="fenetre-fond capture-fond" data-duree-annuler></div>
+    <div class="tuile-duree" role="dialog" aria-modal="true"
+      aria-label="Combien de temps ça a pris ?">
       <p class="tuile-duree-quoi">
         <span>Combien de temps&nbsp;?</span>
         <span class="discret">${echapper(titre)}</span>
-        <button type="button" class="lien-discret" data-duree-passer>Passer</button>
       </p>
       <div class="duree-champ">
         <span class="duree-propositions">
@@ -537,84 +540,97 @@ export function tuileDureeFaite({ titre, duree = null }) {
           ).join('')}
         </span>
         <span class="duree-libre">
-          <input type="number" data-duree-libre min="5" max="1440" step="1"
+          <input type="number" data-duree-libre data-champ-duree min="5" max="1440" step="1"
             inputmode="numeric" value="${echapper(minutes)}"
             aria-label="Durée en minutes">
           <span aria-hidden="true">min</span>
         </span>
       </div>
+      <!-- Trois issues, et elles ne disent pas la même chose :
+           « Annuler » n'écrit rien du tout — la tâche reste à faire ;
+           « Passer » la termine SANS toucher à sa durée — on n'est jamais
+           obligé d'en donner une (demande de Noé), et une durée inventée vaut
+           moins que pas de durée ;
+           la coche la termine avec la durée affichée. -->
+      <div class="tuile-duree-pied">
+        <button type="button" class="lien-discret" data-duree-annuler>Annuler</button>
+        <span class="tuile-duree-valider">
+          <button type="button" class="lien-discret" data-duree-passer>Passer</button>
+          <button type="button" class="capture-envoyer" data-duree-confirmer
+            aria-label="Marquer comme faite" title="Marquer comme faite">${COCHE}</button>
+        </span>
+      </div>
     </div>`;
 }
 
-// Poser la question et rendre la main. `noter` reçoit les minutes ; il n'est
-// appelé que si Noé répond. Renvoie de quoi refermer la tuile — un écran qui
-// se redessine doit pouvoir la retirer lui-même.
-// Elle se pose sur `document.body`, et pas dans l'écran qui l'ouvre : une tuile
-// flottante enfermée dans une section hérite du contexte d'empilement de
-// celle-ci, et se retrouve DERRIÈRE le bouton « + » — vu à l'écran, corrigé
-// ici. Rien ne la rattache donc à un espace ; c'est son minuteur qui la ferme.
-export function demanderLaDuree(tache, noter) {
+// Poser la question. `confirmer` n'est appelé QUE si Noé confirme ou passe, et
+// reçoit les minutes — ou `null` s'il n'en a pas donné. Une tâche peut se
+// terminer sans qu'on sache combien de temps elle a pris : forcer un chiffre
+// ferait inventer des heures fausses, ce qui vaut moins que pas d'heures.
+// `null` ne remet pas la durée à zéro non plus — passer, c'est ne rien dire,
+// pas effacer ce qui était déjà noté.
+export function demanderLaDuree(cible, confirmer) {
   fermerLaDuree();
 
   const enveloppe = document.createElement('div');
   enveloppe.className = 'tuile-duree-hote';
-  enveloppe.innerHTML = tuileDureeFaite({ titre: tache.titre, duree: tache.duree });
+  enveloppe.innerHTML = tuileDureeFaite({ titre: cible.titre, duree: cible.duree });
   document.body.append(enveloppe);
-  // Le bouton « + » s'efface le temps de la question : il occupe le même coin,
-  // et on n'ajoute pas une tâche pendant qu'on répond sur celle qu'on vient de
-  // finir. Même raisonnement que la tuile de capture, qui lui passe devant.
-  document.body.classList.add('duree-demandee');
 
-  let minuteur = null;
+  const libre = enveloppe.querySelector('[data-duree-libre]');
+
   const fermer = () => {
-    clearTimeout(minuteur);
     enveloppe.remove();
-    document.body.classList.remove('duree-demandee');
     document.removeEventListener('keydown', surTouche);
-  };
-
-  // Toute marque d'intérêt suspend le compte à rebours : personne ne doit voir
-  // la tuile disparaître pendant qu'il tape ses minutes.
-  const retenir = () => clearTimeout(minuteur);
-  const relancer = () => {
-    clearTimeout(minuteur);
-    minuteur = setTimeout(fermer, DELAI_TUILE_DUREE);
   };
 
   function surTouche(evenement) {
     if (evenement.key === 'Escape') fermer();
+    if (evenement.key === 'Enter' && evenement.target === libre) {
+      evenement.preventDefault();
+      valider();
+    }
   }
 
-  const poser = (minutes) => {
-    const valeur = Number(minutes);
-    if (Number.isFinite(valeur) && valeur >= 5 && valeur <= 1440) noter(Math.round(valeur));
+  function valider() {
+    const minutes = Number(libre.value);
+    const retenue = Number.isFinite(minutes) && minutes >= 5 && minutes <= 1440
+      ? Math.round(minutes)
+      : null;
     fermer();
-  };
-
-  enveloppe.addEventListener('pointerdown', retenir);
-  enveloppe.addEventListener('focusin', retenir);
+    confirmer(retenue);
+  }
 
   enveloppe.addEventListener('click', (evenement) => {
+    // Un raccourci CHOISIT une durée, il ne valide pas : on peut se reprendre
+    // avant de confirmer, et c'est tout l'intérêt d'une valeur pré-remplie.
     const raccourci = evenement.target.closest('[data-poser-duree]');
-    if (raccourci) return poser(raccourci.dataset.poserDuree);
-    if (evenement.target.closest('[data-duree-passer]')) fermer();
-  });
-
-  const libre = enveloppe.querySelector('[data-duree-libre]');
-  libre.addEventListener('keydown', (evenement) => {
-    if (evenement.key === 'Enter') {
-      evenement.preventDefault();
-      poser(libre.value);
+    if (raccourci) {
+      libre.value = raccourci.dataset.poserDuree;
+      marquerLaDuree(enveloppe, libre.value);
+      return;
     }
+    if (evenement.target.closest('[data-duree-confirmer]')) return valider();
+    if (evenement.target.closest('[data-duree-passer]')) {
+      fermer();
+      return confirmer(null);
+    }
+    if (evenement.target.closest('[data-duree-annuler]')) fermer();
   });
-  libre.addEventListener('change', () => poser(libre.value));
 
+  // Le champ des minutes reste libre : taper 47 doit éteindre le raccourci qui
+  // était allumé, sinon deux durées s'affichent choisies en même temps.
+  libre.addEventListener('input', () => marquerLaDuree(enveloppe, libre.value));
+
+  // On ne vise PAS le champ : sur téléphone, ouvrir le clavier par surprise
+  // devant une question à laquelle on répond d'un doigt est une gêne pure.
+  // C'est le bouton de confirmation qui prend le focus — au clavier, Entrée
+  // termine donc la tâche.
+  enveloppe.querySelector('[data-duree-confirmer]').focus();
   document.addEventListener('keydown', surTouche);
-  relancer();
   return fermer;
 }
 
 export function fermerLaDuree() {
   for (const ancienne of document.querySelectorAll('.tuile-duree-hote')) ancienne.remove();
-  document.body.classList.remove('duree-demandee');
 }

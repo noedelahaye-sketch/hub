@@ -4527,15 +4527,16 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
 /* --- « Combien de temps ça a pris ? » ---------------------------------------
 
-   La tuile qui suit une coche. Elle emprunte la place et la forme de la tuile
-   de capture — bas de l'écran, centrée, même rayon — parce que c'est là que le
-   pouce est déjà, et qu'une seconde grammaire de tuile n'apprendrait rien.
+   La fenêtre qui suit une coche. Elle emprunte tout à la tuile de capture — la
+   place, le rayon, le fond assombri, le bouton rond de validation — parce que
+   c'est le même geste : une tuile vole au-dessus de la page, on la remplit, on
+   confirme. Une seconde grammaire de tuile n'apprendrait rien à personne.
 
-   Elle passe SOUS la capture (z-index 40 contre 41) : si les deux se trouvent
-   là en même temps, c'est la capture qu'on est en train de remplir qui prime. */
+   Même `z-index` que la capture : les deux ne se rencontrent jamais — on ne
+   note pas une tâche pendant qu'on en termine une autre. */
 .tuile-duree {
   position: fixed;
-  z-index: 40;
+  z-index: 41;
   left: 50%;
   bottom: max(var(--espace-16), env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
@@ -4564,10 +4565,6 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
 .tuile-duree-quoi > span:first-child { font-weight: 500; flex: none; }
 
-/* « Passer » vit sur la ligne de la question, jamais en bas à droite : là-bas
-   c'est la place du bouton « + » flottant, et les deux se recouvraient. */
-.tuile-duree-quoi [data-duree-passer] { margin-left: auto; flex: none; }
-
 .tuile-duree-quoi .discret {
   min-width: 0;
   overflow: hidden;
@@ -4577,13 +4574,26 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
 .tuile-duree .duree-champ { padding: 0; }
 
-/* Le bouton « + » s'efface pendant la question : il occupe le même coin de
-   l'écran, et sa présence sous la tuile faisait une superposition sans raison.
-   Il revient dès qu'on a répondu ou passé. */
-body.duree-demandee .ouvrir-capture {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 140ms ease-out;
+/* Le pied : la sortie à gauche, les deux façons de terminer à droite, comme
+   dans toutes les fenêtres du hub. « Annuler » ferme SANS rien écrire — la
+   tâche reste à faire, et c'est la différence avec la première version, où
+   cocher suffisait. « Passer » la termine sans durée : on n'est jamais obligé
+   d'en donner une. */
+.tuile-duree-pied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-12);
+  margin-top: var(--espace-16);
+}
+
+/* « Passer » se tient contre la coche, pas à l'autre bout : les deux terminent
+   la tâche, seule la durée les sépare. « Annuler », lui, reste seul à gauche —
+   c'est le seul qui ne fasse rien. */
+.tuile-duree-valider {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-16);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -157,11 +157,9 @@ export function brancherEtatPublication(
   // pas envoyer un ordre contraire par-dessus le premier.
   const enVol = new Set();
 
-  const poser = async (pub, statut) => {
-    if (!pub || !statut || pub.statut === statut) return;
-    if (enVol.has(pub.id) || bloque(pub)) return;
-
+  const ecrire = async (pub, statut, minutes) => {
     const champs = passageDePublication(pub, statut);
+    if (minutes !== null) champs.duree = minutes;
 
     enVol.add(pub.id);
     try {
@@ -172,17 +170,23 @@ export function brancherEtatPublication(
     } finally {
       enVol.delete(pub.id);
     }
+  };
 
-    // Une publication qui PART a coûté du temps, et c'est la charge éditoriale
-    // du club — celle que le terrain n'explique pas. La question se pose au
-    // même moment et sous la même forme qu'en cochant une tâche ; aux autres
-    // états, il n'y a encore rien à compter.
+  const poser = async (pub, statut) => {
+    if (!pub || !statut || pub.statut === statut) return;
+    if (enVol.has(pub.id) || bloque(pub)) return;
+
+    // Une publication qui PART se confirme, exactement comme une tâche qu'on
+    // coche : le temps qu'elle a coûté est la charge éditoriale du club, celle
+    // que le terrain n'explique pas — et la même fenêtre ne peut pas vouloir
+    // dire deux choses selon l'écran. Les autres crans passent sans rien
+    // demander : il n'y a encore rien à compter.
     if (statut === 'publie') {
-      demanderLaDuree(pub, (minutes) =>
-        modifierAussitot(pub, { duree: minutes }, () =>
-          api.modifierPublication(pub.id, { duree: minutes }), { rendre, echouer }),
-      );
+      demanderLaDuree(pub, (minutes) => ecrire(pub, statut, minutes));
+      return;
     }
+
+    await ecrire(pub, statut, null);
   };
 
   section.addEventListener(
