@@ -15,7 +15,7 @@ import {
   dateLongue,
   echeanceLisible,
   echapper,
-  NOMS_PROJETS,
+  NOMS_ESPACES,
 } from './format.js';
 import {
   assemblerCalendrier,
@@ -42,9 +42,9 @@ import { lireCache, ecrireCache } from './cache-session.js';
 import { marquerLesEntrantes, animerLaCoche } from './mouvements.js';
 import { modifierAussitot } from './ecriture.js';
 
-// Les projets offerts à la création. Les mêmes que dans l'espace Calendrier :
+// Les espaces offerts à la création. Les mêmes que dans l'espace Calendrier :
 // 'perso' n'accepte qu'un événement, `fenetreCreation` s'en charge.
-const PROJETS = {
+const ESPACES = {
   photo: 'Yuno',
   fch: 'FC Hermitage',
   formation: 'Formation',
@@ -75,7 +75,7 @@ const VICTOIRES_VISIBLES = false;
 const MAX_TACHES = 9; // ce qui tient sans que « Aujourd'hui » devienne une liste
 
 // Fenêtre pendant laquelle une tâche cochée par erreur peut être décochée.
-// Même durée que dans les espaces projet.
+// Même durée que dans les espaces espace.
 const DUREE_ANNULATION = 6000;
 
 const NIVEAUX_HUMEUR = [
@@ -88,14 +88,14 @@ const NIVEAUX_HUMEUR = [
 
 // --- Fabrication du HTML ----------------------------------------------------
 
-// Sur le tableau de bord les projets se mélangent : chaque tuile porte la
+// Sur le tableau de bord les espaces se mélangent : chaque tuile porte la
 // couleur du sien en barre, et son nom écrit — jamais la couleur seule.
-// L'en-tête d'une tuile : le projet à gauche, la date à droite. Les mettre sur
+// L'en-tête d'une tuile : l'espace à gauche, la date à droite. Les mettre sur
 // la même ligne garde les tuiles régulières, quelle que soit la longueur du
 // titre en dessous.
-function enTeteTuile(projet, quand, bouton = '') {
+function enTeteTuile(espace, quand, bouton = '') {
   return `<span class="tuile-entete">
-    <span class="tuile-projet">${echapper(NOMS_PROJETS[projet] ?? projet)}</span>
+    <span class="tuile-espace">${echapper(NOMS_ESPACES[espace] ?? espace)}</span>
     <span class="discret quand">${echapper(quand)}</span>
     ${bouton}
   </span>`;
@@ -150,9 +150,9 @@ export function construireVictoires(victoires) {
   const lignes = victoires
     .map(
       (victoire) => `
-      <li data-projet="${echapper(victoire.projet)}">
+      <li data-espace="${echapper(victoire.espace)}">
         ${enTeteTuile(
-          victoire.projet,
+          victoire.espace,
           echeanceLisible(depuisDateISO(victoire.date)),
           `<button type="button" class="lien-discret bouton-mini bouton-retirer"
              data-victoire="${echapper(victoire.id)}"
@@ -168,16 +168,16 @@ export function construireVictoires(victoires) {
 }
 
 // Sur l'accueil, le cap est une INSCRIPTION, pas des tuiles (demande de Noé,
-// 25 août 2026), et il ne dit qu'UNE colonne par projet : l'objectif à
-// l'échéance la plus proche. Le cap entier d'un projet se lit sur sa page, et
+// 25 août 2026), et il ne dit qu'UNE colonne par espace : l'objectif à
+// l'échéance la plus proche. Le cap entier d'un espace se lit sur sa page, et
 // se règle dans #objectifs.
 const ORDRE_CAP = ['formation', 'fch', 'photo'];
 
 export function construireObjectifs(objectifs) {
-  const prochains = ORDRE_CAP.map((projet) => {
-    const duProjet = objectifs.filter((objectif) => objectif.projet === projet);
+  const prochains = ORDRE_CAP.map((espace) => {
+    const deLEspace = objectifs.filter((objectif) => objectif.espace === espace);
     // L'échéance la plus proche d'abord ; sans échéance, on passe derrière.
-    return [...duProjet].sort((a, b) =>
+    return [...deLEspace].sort((a, b) =>
       (a.echeance ?? '9999-12-31') < (b.echeance ?? '9999-12-31') ? -1 : 1,
     )[0];
   }).filter(Boolean);
@@ -186,21 +186,21 @@ export function construireObjectifs(objectifs) {
     return `<p class="vide">Ton cap s'écrira ici.</p>`;
   }
 
-  return construireCapGrave(prochains, { montrerProjet: true });
+  return construireCapGrave(prochains, { montrerEspace: true });
 }
 
 // La semaine est un APERÇU DU CALENDRIER, plus une liste (demande de Noé,
-// 13 août 2026) : la vraie grille de la semaine, tous projets et toutes natures
+// 13 août 2026) : la vraie grille de la semaine, tous espaces et toutes natures
 // confondus — événements, tâches, publications, objectifs, jalons, commandes,
 // relances. C'est la même fonction que l'espace Calendrier, avec la même vue
 // « semaine » : une seule façon de dessiner une semaine dans tout le hub.
 //
-// `montrerProjet` colore les barres par projet, puisque tout s'y mélange ici.
+// `montrerEspace` colore les barres par espace, puisque tout s'y mélange ici.
 // `jourSeul` : la semaine reste entière, mais une seule colonne a de la largeur
 // — la journée ouverte (demande de Noé, 24 août 2026).
 export function construireSemaine(elements, ancre = new Date(), jourSeul = null) {
   return construireGrille(elements, toutesLesNatures(), 'semaine', ancre, {
-    montrerProjet: true,
+    montrerEspace: true,
     jourSeul,
     // Le titre de chaque jour ouvre sa journée, et le referme (demande de Noé,
     // 24 août 2026). Ailleurs le titre reste un titre : au calendrier, toucher
@@ -256,7 +256,7 @@ function heureCourte(date) {
 // Seule la marque de gauche change, et c'est elle qui dit la nature.
 function ligneDuJour(element, marque, service) {
   return `
-    <li class="jour-ligne" data-projet="${echapper(element.projet)}">
+    <li class="jour-ligne" data-espace="${echapper(element.espace)}">
       ${marque}
       <button type="button" class="jour-corps"
         data-element="${echapper(element.type)}:${echapper(element.id)}"
@@ -264,8 +264,8 @@ function ligneDuJour(element, marque, service) {
         <span class="jour-titre">${echapper(element.titre)}</span>
         <span class="jour-service">
           ${service}
-          <span class="jour-projet">${echapper(
-            NOMS_PROJETS[element.projet] ?? element.projet,
+          <span class="jour-espace">${echapper(
+            NOMS_ESPACES[element.espace] ?? element.espace,
           )}</span>
         </span>
       </button>
@@ -289,7 +289,7 @@ function ligneRendezVous(element) {
 // de la semaine et au calendrier. Le même attribut, donc le même geste déjà
 // branché — il n'y a rien à rebrancher ici.
 function lignePublication(element) {
-  const cycle = cyclePublication(element.projet);
+  const cycle = cyclePublication(element.espace);
   const rang = cycle.indexOf(element.source?.statut);
   const suivant = cycle[rang + 1] ?? null;
   const signe = rang >= cycle.length - 1 ? '◉' : rang === cycle.length - 2 ? '◐' : '○';
@@ -298,8 +298,8 @@ function lignePublication(element) {
     ${suivant ? `data-avancer-pub="${echapper(element.id)}"` : ''}
     ${
       suivant
-        ? `title="Passer en ${echapper(nomDuStatut(element.projet, suivant))}"`
-        : `title="${echapper(nomDuStatut(element.projet, element.source?.statut))}"`
+        ? `title="Passer en ${echapper(nomDuStatut(element.espace, suivant))}"`
+        : `title="${echapper(nomDuStatut(element.espace, element.source?.statut))}"`
     }
     aria-hidden="true">${signe}</span>`;
 
@@ -350,7 +350,7 @@ export function construireAujourdhui(
 
   // Les tâches gardent la forme EXACTE de l'espace Tâches (demande de Noé,
   // 13 août 2026) : cercle coloré par priorité, titre, puis la date et le
-  // projet. Ouvrables depuis le 14 août ; jamais supprimables ici — effacer n'a
+  // espace. Ouvrables depuis le 14 août ; jamais supprimables ici — effacer n'a
   // rien à faire dans un check-in du matin, et le geste existe deux onglets
   // plus loin.
   const listeTaches = taches.length
@@ -564,7 +564,7 @@ export default {
     // ne bouge pas quand on ouvre le « + ».
     function rendreCreation() {
       cible('bloc-creation').innerHTML = etat.creation
-        ? fenetreCreation({ ...etat.creation, projets: PROJETS })
+        ? fenetreCreation({ ...etat.creation, espaces: ESPACES })
         : '';
       if (etat.creation) rafraichirLaCapture?.();
     }
@@ -590,7 +590,7 @@ export default {
         // l'enregistrement sans qu'on y ait touché.
         valeurs: {
           titre: tache.titre,
-          projet: tache.projet,
+          espace: tache.espace,
           priorite: tache.priorite,
           duree: tache.duree ?? 0,
           recurrence: tache.recurrence ?? '',
@@ -607,13 +607,13 @@ export default {
     function rendreDetail() {
       cible('bloc-detail').innerHTML = etat.detail
         ? fenetreDetail(etat.detail, {
-            montrerProjet: true,
+            montrerEspace: true,
             edition: etat.edition,
             statutModifiable: true,
           })
         : etat.jourOuvert
           ? fenetreJour(etat.jourOuvert, elementsDuJour(elementsDeLaSemaine, etat.jourOuvert), {
-              montrerProjet: true,
+              montrerEspace: true,
             })
           : '';
     }
@@ -649,12 +649,12 @@ export default {
 
     // Les intentions perso n'ont ni mesure ni date : elles n'ont donc pas leur
     // place dans un bloc de progression. Elles se relisent dans #perso.
-    const objectifsDesProjets = () =>
-      etat.objectifs.filter((objectif) => objectif.projet !== 'perso');
+    const objectifsDesEspaces = () =>
+      etat.objectifs.filter((objectif) => objectif.espace !== 'perso');
 
     function rendreObjectifs() {
       if (!pret('objectifs')) return;
-      cible('bloc-objectifs').innerHTML = construireObjectifs(objectifsDesProjets());
+      cible('bloc-objectifs').innerHTML = construireObjectifs(objectifsDesEspaces());
     }
 
     // « Aujourd'hui » = ce qui est à faire aujourd'hui ou l'était déjà. Sans
@@ -745,7 +745,7 @@ export default {
       elementsDeLaSemaine = assemblerCalendrier({
         evenements: etat.evenements,
         taches: etat.tachesDatees,
-        objectifs: objectifsDesProjets(),
+        objectifs: objectifsDesEspaces(),
         publications: etat.publications,
         commandes: etat.commandes.filter(
           (commande) => commande.echeance && ['devis', 'en_cours'].includes(commande.statut),
@@ -1060,7 +1060,7 @@ export default {
       if (corrige) {
         const modifs = {
           titre: champs.titre.trim(),
-          projet: champs.projet,
+          espace: champs.espace,
           echeance: champs.debut,
           heure: champs.heure || null,
           // Une durée sans heure ne mesure rien ; une répétition sans date n'a
@@ -1323,7 +1323,7 @@ export default {
         // provisoire, remplacé par le vrai dès que l'écriture répond.
         const provisoire = {
           id: `provisoire-${tache.id}`,
-          projet: tache.projet,
+          espace: tache.espace,
           titre: tache.titre,
           date: aujourdhui,
           source: 'tache',

@@ -1,4 +1,4 @@
-# Hub — Tableau de bord multi-projets de Noé
+# Hub — Tableau de bord multi-espaces de Noé
 
 > **À lire en premier : [docs/etat-des-lieux.md](docs/etat-des-lieux.md).**
 > Ce fichier-ci dit ce que le hub *doit être* ; l'état des lieux dit où il en
@@ -8,23 +8,27 @@
 > Les sites ont leur propre cahier des charges :
 > [docs/yuno-spec.md](docs/yuno-spec.md) et [docs/fch-spec.md](docs/fch-spec.md).
 > L'authentification est décrite dans [supabase/AUTH.md](supabase/AUTH.md).
+>
+> **La façon dont le hub oriente Noé** — ce qu'il propose, sur quoi il se fonde,
+> quand il parle — est décrite dans
+> [docs/orientation-spec.md](docs/orientation-spec.md).
 
 ## Contexte
 
-Application web personnelle centralisant l'organisation de 3 projets professionnels et une dimension personnelle, avec un tableau de bord global recentré sur Noé (pas sur les projets). Utilisateur unique : Noé. Usage quotidien (check-in de 5 min le matin), sur ordinateur et mobile.
+Application web personnelle centralisant l'organisation de 3 espaces professionnels et une dimension personnelle, avec un tableau de bord global recentré sur Noé (pas sur les espaces). Utilisateur unique : Noé. Usage quotidien (check-in de 5 min le matin), sur ordinateur et mobile.
 
-Les 3 projets + l'espace perso :
+Les 3 espaces + l'espace perso :
 - **formation** : validation d'un Bac+3 marketing/communication (Studi) en parallèle d'une alternance. 4 dossiers + 1 vidéo à rendre pour début décembre.
 - **photo** : activité de photographe sportif, affichée « Yuno » dans l'interface (marque yuno_rph). La clé reste `photo` en base : c'est la valeur de la contrainte CHECK. Objectifs long terme : CAN 2027, source de revenus début 2027.
 - **fch** : alternance au FC Hermitage (communication, partenariats) jusqu'à fin décembre. 4 objectifs de fin d'alternance.
-- **perso** : la vie hors projets — sport, sorties, temps pour soi. Ce n'est PAS un projet : aucune mécanique de productivité ne s'y applique (voir philosophie).
+- **perso** : la vie hors espaces — sport, sorties, temps pour soi. Ce n'est PAS un espace : aucune mécanique de productivité ne s'y applique (voir philosophie).
 
 ## Philosophie du produit (IMPORTANT — guide toutes les décisions d'UI)
 
 Priorités de l'utilisateur, dans l'ordre :
 1. **Voir ses progrès et rester motivé** — le dashboard est d'abord un miroir de ce qui a été accompli, pas une liste de ce qui reste.
 2. **Garder la vision long terme** — les objectifs et leur "pourquoi" toujours visibles.
-3. **Réduire la charge mentale** — maximum 3 tâches actives affichées par projet ; le reste vit en backlog, jamais imposé au regard.
+3. **Réduire la charge mentale** — maximum 3 tâches actives affichées par espace ; le reste vit en backlog, jamais imposé au regard.
 4. **Savoir quoi faire maintenant** — présent mais discret, en fin de page.
 
 Conséquences concrètes :
@@ -36,7 +40,7 @@ Conséquences concrètes :
 ### La dimension perso (règles spécifiques)
 
 Le hub existe pour servir Noé, pas l'inverse. Pour éviter que le professionnel n'engloutisse tout :
-- Le dashboard est SA page : il l'accueille par son prénom et s'ouvre sur lui (humeur, victoires), les projets viennent ensuite.
+- Le dashboard est SA page : il l'accueille par son prénom et s'ouvre sur lui (humeur, victoires), les espaces viennent ensuite.
 - L'espace perso n'a NI jalons, NI barres de progression, NI backlog, NI notion de retard. Jamais.
 - **Une TÂCHE peut être perso** (décision de Noé, 13 août 2026), et c'est la seule entorse. Elle se crée et se lit dans l'espace Tâches, au calendrier et dans « Aujourd'hui » — **pas dans `#perso`**, qui continue de n'afficher que des intentions, des rendez-vous et des victoires. Le principe tient : l'espace perso ne mesure rien ; une tâche perso est une chose à faire notée là où on note les choses à faire.
 - Il contient uniquement : des événements (rendez-vous avec soi-même : séances de sport, sorties, temps photo plaisir), des victoires perso, et des intentions (objectifs sans mesure ni date, ex. « prendre soin de mon sommeil », simplement relues).
@@ -47,7 +51,7 @@ Le hub existe pour servir Noé, pas l'inverse. Pour éviter que le professionnel
 
 - **Frontend** : site statique (HTML/CSS/JS vanilla, pas de framework), déployé sur GitHub Pages.
 - **Coquille en cache** : `sw.js` (service worker) sert HTML, CSS, JS, polices et icônes depuis l'appareil, pour que l'ouverture ne dépende pas du réseau. **Il ne met jamais de données en cache** — Supabase et l'API GitHub lui échappent par un test d'origine. Conséquence assumée : après un déploiement, un appareil peut afficher une fois la version précédente.
-- **Données** : Supabase (PostgreSQL), projet `noe-hub-project`.
+- **Données** : Supabase (PostgreSQL), projet Supabase `noe-hub-project`.
 - **Cas particulier formation** : le site de révision Bac+3 existant (https://noedelahaye-sketch.github.io/Bac-3/) reste indépendant. Il sauvegarde son avancée dans un gist GitHub. Le hub LIT ce gist en lecture seule pour afficher la progression des révisions dans l'espace formation. Ne jamais écrire dans ce gist.
   - **URL du gist** : https://gist.github.com/noedelahaye-sketch/9ffae04009423dd49fe42f39d6a75e75
     (id `9ffae04009423dd49fe42f39d6a75e75`, fichier `studi-suivi-sync.json`, description « Suivi Studi — synchronisation »).
@@ -88,19 +92,22 @@ qui relie le nom exact d'un club à son fichier.
 
 ## Structure du site
 
-Dix espaces, servis par un routeur à deux niveaux (`#espace/vue/id`) :
-- `/` ou `#dashboard` — tableau de bord global (tous projets)
-- `#taches` — **toutes** les tâches, tous projets : datées ou non, faites ou non. La seule page du hub qui ne cache rien. On y crée une tâche, on y change sa priorité (1 à 4) et son statut. Ailleurs le hub trie pour Noé ; ici on vient voir l'ensemble et ranger.
-- `#objectifs` — **tous** les objectifs, groupés par projet, et le seul endroit du hub où le cap se règle : modifier un objectif, poser ou retirer un jalon, le marquer atteint. Sans entrée dans la barre de navigation (26 août 2026) : on y vient en pressant la tuile « Le cap » d'un tableau de bord, et rarement.
-- `#calendrier` — tout ce qui porte une date, tous projets confondus, filtres par nature (tâches, événements, publications, objectifs)
+**Quatre espaces, quatre vues transverses, deux sites**, servis par un routeur à
+deux niveaux (`#espace/vue/id`). La distinction compte : un **espace** est un
+domaine de la vie de Noé et porte une couleur ; une **vue transverse** les
+regarde tous et n'en porte aucune.
+- `/` ou `#dashboard` — tableau de bord global (tous espaces)
+- `#taches` — **toutes** les tâches, tous espaces : datées ou non, faites ou non. La seule page du hub qui ne cache rien. On y crée une tâche, on y change sa priorité (1 à 4) et son statut. Ailleurs le hub trie pour Noé ; ici on vient voir l'ensemble et ranger.
+- `#objectifs` — **tous** les objectifs, groupés par espace, et le seul endroit du hub où le cap se règle : modifier un objectif, poser ou retirer un jalon, le marquer atteint. Sans entrée dans la barre de navigation (26 août 2026) : on y vient en pressant la tuile « Le cap » d'un tableau de bord, et rarement.
+- `#calendrier` — tout ce qui porte une date, tous espaces confondus, filtres par nature (tâches, événements, publications, objectifs)
 - `#formation` — espace formation (thème : teal)
 - `#photo` — la page Yuno du hub (thème : doré) — tableau de bord réduit et porte vers le site
 - `#yuno` — le SITE Yuno : l'habillage du hub disparaît entièrement, chrome et identité propres (voir docs/yuno-spec.md)
 - `#fch` — la page FC Hermitage du hub (thème : bleu du club) — tableau de bord réduit et porte vers le site
 - `#hermitage` — le SITE FC Hermitage : l'habillage du hub disparaît, chrome et identité propres, fond bleu du club (voir docs/fch-spec.md)
-- `#perso` — espace perso (thème : doux, apaisé, distinct des espaces projet)
+- `#perso` — espace perso (thème : doux, apaisé, distinct des trois autres)
 
-**Les trois pages projet du hub sont des BILANS** (refonte du 26 août 2026), et
+**Les trois pages espace du hub sont des BILANS** (refonte du 26 août 2026), et
 elles ont la même forme sans avoir le même contenu :
 
 - Le **site** est l'atelier — il répond à « qu'est-ce que je fais maintenant » ;
@@ -108,7 +115,7 @@ elles ont la même forme sans avoir le même contenu :
   seule division qui justifie deux écrans.
 - Chacune se lit en **deux colonnes de panneaux** sur grand écran : *Le cap*
   (tuile-bouton vers `#objectifs`) et *À faire* d'abord, la matière propre du
-  projet et le bilan ensuite, **les raccourcis en pied de page** — des pastilles
+  espace et le bilan ensuite, **les raccourcis en pied de page** — des pastilles
   colorées qui ouvrent la tuile de capture du hub, jamais un formulaire déplié.
 - **Aucune ne porte plus son titre ni son logo** : la barre de navigation le dit
   déjà. Le `<h1>` reste hors écran pour les lecteurs d'écran.
@@ -116,7 +123,7 @@ elles ont la même forme sans avoir le même contenu :
   jour du Carnet) et porte l'**argent** ; le FCH montre sa **chaîne éditoriale**
   à trois états et sa prochaine **réunion** ; la formation montre la
   **progression des révisions** lue dans le gist Bac-3.
-- **`js/espace-projet.js` n'est plus une fabrique** : elle n'avait plus que la
+- **`js/gabarits.js` n'est plus une fabrique** : elle n'avait plus que la
   formation, qui a sa propre page depuis. Il n'en reste que les gabarits que
   tout le monde emprunte — tuiles d'objectif, listes, fenêtres, formulaires.
 
@@ -131,13 +138,13 @@ Ces deux valeurs peuvent figurer dans le code public. Le token d'accès personne
 
 ## Schéma de base de données
 
-**Onze tables décrites ici** (la base en compte davantage : les sites en ont ajouté, voir leurs cahiers des charges). Les six premières sont celles du hub ; les suivantes sont nées avec les sites. Les tables concernées portent une colonne `projet` de type text avec contrainte CHECK (projet IN ('formation', 'photo', 'fch', 'perso')), sauf `jalons` qui hérite du projet via son objectif, et `contacts` / `commandes` qui n'en ont pas.
+**Onze tables décrites ici** (la base en compte davantage : les sites en ont ajouté, voir leurs cahiers des charges). Les six premières sont celles du hub ; les suivantes sont nées avec les sites. Les tables concernées portent une colonne `espace` de type text avec contrainte CHECK (espace IN ('formation', 'photo', 'fch', 'perso')), sauf `jalons` qui hérite de l'espace via son objectif, et `contacts` / `commandes` qui n'en ont pas.
 
 Usage de la valeur 'perso' : autorisée dans `objectifs` (= intentions : champs cible et echeance laissés vides, aucune progression affichée), `evenements`, `victoires` et — depuis le 13 août 2026 — `taches`. Jamais dans `jalons` : un jalon mesure une progression, et l'espace perso n'en affiche aucune. Jamais dans `publications` non plus : l'espace perso ne publie pas.
 
 ### objectifs
 - `id` uuid PK default gen_random_uuid()
-- `projet` text NOT NULL (check ci-dessus)
+- `espace` text NOT NULL (check ci-dessus)
 - `titre` text NOT NULL — formulation mesurable (ex. "Atteindre 1k abonnés Instagram FCH")
 - `pourquoi` text — le sens, relu les jours sans motivation
 - `cible` text — la mesure de réussite
@@ -160,7 +167,7 @@ La progression d'un objectif = jalons atteints / jalons totaux (calculée côté
 
 ### taches
 - `id` uuid PK
-- `projet` text NOT NULL
+- `espace` text NOT NULL
 - `objectif_id` uuid REFERENCES objectifs(id) ON DELETE SET NULL (nullable)
 - `jalon_id` uuid REFERENCES jalons(id) ON DELETE SET NULL (nullable)
 - `titre` text NOT NULL — toujours une action concrète commençant par un verbe
@@ -174,7 +181,7 @@ La progression d'un objectif = jalons atteints / jalons totaux (calculée côté
 
 **Une tâche répétée ne se termine pas.** Elle n'a qu'un `statut` : le passer à 'fait' marquerait toute la série pour toujours — « Courir » serait fait à jamais après une seule course. La cocher fait donc **glisser son échéance** à l'occurrence suivante et écrit sa victoire au passage (`terminerTache`, js/api.js) ; l'annuler la ramène à l'occurrence d'avant. Passé `recurrence_fin`, la série s'arrête et la tâche se termine pour de bon. Le hub ne compte jamais les fois manquées — c'est la même règle que partout.
 
-Règle métier : maximum 3 tâches en statut 'actif' par projet. L'UI doit empêcher d'en activer une 4ème (proposer d'en terminer ou repasser une en backlog).
+Règle métier : maximum 3 tâches en statut 'actif' par espace. L'UI doit empêcher d'en activer une 4ème (proposer d'en terminer ou repasser une en backlog).
 
 > **En sommeil depuis le 13 août 2026.** Noé a demandé de masquer le réglage backlog/active « pour le moment » : toute tâche naît `actif`, et le plafond de 3 n'est donc plus exercé. La règle et son code (`MAX_TACHES_ACTIVES`, `changerStatutTache`) restent en place — réafficher la pastille de statut suffit à tout rallumer. Voir `docs/etat-des-lieux.md`.
 
@@ -182,13 +189,13 @@ Règle métier : maximum 3 tâches en statut 'actif' par projet. L'UI doit empê
 
 ### evenements
 - `id` uuid PK
-- `projet` text NOT NULL
+- `espace` text NOT NULL
 - `titre` text NOT NULL
 - `date_debut` timestamptz NOT NULL
 - `date_fin` timestamptz — la durée de l'événement, portée par sa fin. Ce que la tuile propose va de **1 h à 4 h, plus « Toute la journée » qui vaut 9 h** (demande de Noé, 26 août 2026 : rien de ce qu'on pose au calendrier ne dure trente minutes). À ne pas confondre avec un événement **sans heure**, qui tient le jour sans occuper de créneau — celui-là ne passe pas par les durées (`DUREES`, js/format.js).
 - `lieu` text
 - `notes` text
-- `type_moment` text (nullable) CHECK (match, concert, sortie, autre) — Yuno seulement : le type de la sortie (pastille à la création quand le projet est photo).
+- `type_moment` text (nullable) CHECK (match, concert, sortie, autre) — Yuno seulement : le type de la sortie (pastille à la création quand l'espace est photo).
 - `vecu` boolean NOT NULL default false — **la face vécue** : cette sortie a eu lieu et elle est au Carnet de terrain. Posée par un geste (bilan d'une préparation, invite du carnet, capture d'une sortie) — **jamais** par le temps qui passe : un match où Noé n'est pas allé ne doit pas compter.
 - `photo_chemin` text · `note` text · `oeuvre_finie` boolean NOT NULL default false — le reste de la face vécue.
 - `reunion_objet` text (nullable) CHECK (ca, alternance, communication, partenariat, autre) — FCH seulement : non nul = cet événement est une réunion (21 août 2026). `reunion_animee` boolean NOT NULL default false — Noé anime ou participe. La préparation et le bilan vivent dans les tables `preparations`/`modeles_preparation` (voir docs/fch-spec.md).
@@ -198,7 +205,7 @@ Règle métier : maximum 3 tâches en statut 'actif' par projet. L'UI doit empê
 
 ### victoires
 - `id` uuid PK
-- `projet` text NOT NULL
+- `espace` text NOT NULL
 - `titre` text NOT NULL
 - `date` date default current_date
 - `source` text default 'manuel' CHECK (source IN ('tache', 'jalon', 'objectif', 'manuel'))
@@ -221,11 +228,11 @@ Une seule entrée par jour (contrainte UNIQUE sur date). Si le jour est déjà r
 Le calendrier éditorial. **Une idée est une publication sans date** (`date_prevue` NULL) : même table, deux vues.
 
 - `id` uuid PK
-- `projet` text NOT NULL default 'photo' CHECK (projet IN ('formation', 'photo', 'fch')) — pas de 'perso' : l'espace perso ne publie pas
+- `espace` text NOT NULL default 'photo' CHECK (espace IN ('formation', 'photo', 'fch')) — pas de 'perso' : l'espace perso ne publie pas
 - `titre` text NOT NULL — l'idée, en une phrase
 - `reseau` text default 'instagram' CHECK (instagram, tiktok, linkedin, facebook, youtube)
 - `format` text default 'post' CHECK (post, carrousel, reel, story) — **seuls `carrousel`, `reel` et `story` sont offerts depuis le 15 août 2026** : « post et carrousel, c'est la même chose » (Noé), et c'est carrousel qui reste. `post` demeure accepté par le CHECK — un CHECK s'élargit, il ne se resserre jamais — mais plus rien ne l'écrit.
-- `statut` text default 'idee' CHECK (idee, brouillon, pret, publie) — **le cycle n'est pas le même d'un projet à l'autre**, et il vit dans `CYCLES_PUBLICATION` (js/calendrier-commun.js, avec les réseaux et les formats — la tuile du calendrier en a besoin). Yuno en pose cinq (`a_developper` en plus) ; le **FC Hermitage en a TROIS depuis le 25 août 2026** (demande de Noé) : **à préparer** (`idee`) · **à programmer** (`pret`) · **publié** (`publie`). Ce sont les mots qui changent, pas les valeurs : `nomDuStatut(projet, statut)` les traduit, le CHECK ne bouge pas, et `brouillon` sert toujours à Yuno. L'état se règle **depuis n'importe quel calendrier** — le hub, le site Yuno, celui du FC Hermitage, en vue mois comme en vue semaine (27 août 2026) : c'est le même geste partout, et il est branché **une seule fois**, par `brancherEtatPublication` (js/calendrier-commun.js). En **phase de capture**, et ce n'est pas un détail : le rond vit DANS la barre qui ouvre le détail, et en bulle c'est l'ordre des écouteurs qui déciderait — quatre espaces, quatre occasions de se tromper. Deux façons de régler l'état : le **rond de la barre avance d'un cran** à l'appui (comme le cercle d'une tâche se coche), et la **tuile porte une pastille d'état** — à la suite de celles de la nature et du projet, ouvrant un menu déroulant dessiné, pour sauter un état ou revenir en arrière. Sa couleur dit l'étape : **rouge → ambre → vert** (`--teinte`, interpolée sur le cycle ; le CSS règle saturation et clarté par thème). Ce rouge et ce vert ne sont pas des couleurs d'alerte : ils ne jugent aucune échéance et ne bougent pas tout seuls. Pas de case à cocher : elle aurait sauté « à programmer ».
+- `statut` text default 'idee' CHECK (idee, brouillon, pret, publie) — **le cycle n'est pas le même d'un espace à l'autre**, et il vit dans `CYCLES_PUBLICATION` (js/calendrier-commun.js, avec les réseaux et les formats — la tuile du calendrier en a besoin). Yuno en pose cinq (`a_developper` en plus) ; le **FC Hermitage en a TROIS depuis le 25 août 2026** (demande de Noé) : **à préparer** (`idee`) · **à programmer** (`pret`) · **publié** (`publie`). Ce sont les mots qui changent, pas les valeurs : `nomDuStatut(espace, statut)` les traduit, le CHECK ne bouge pas, et `brouillon` sert toujours à Yuno. L'état se règle **depuis n'importe quel calendrier** — le hub, le site Yuno, celui du FC Hermitage, en vue mois comme en vue semaine (27 août 2026) : c'est le même geste partout, et il est branché **une seule fois**, par `brancherEtatPublication` (js/calendrier-commun.js). En **phase de capture**, et ce n'est pas un détail : le rond vit DANS la barre qui ouvre le détail, et en bulle c'est l'ordre des écouteurs qui déciderait — quatre espaces, quatre occasions de se tromper. Deux façons de régler l'état : le **rond de la barre avance d'un cran** à l'appui (comme le cercle d'une tâche se coche), et la **tuile porte une pastille d'état** — à la suite de celles de la nature et de l'espace, ouvrant un menu déroulant dessiné, pour sauter un état ou revenir en arrière. Sa couleur dit l'étape : **rouge → ambre → vert** (`--teinte`, interpolée sur le cycle ; le CSS règle saturation et clarté par thème). Ce rouge et ce vert ne sont pas des couleurs d'alerte : ils ne jugent aucune échéance et ne bougent pas tout seuls. Pas de case à cocher : elle aurait sauté « à programmer ».
 - `date_prevue` date (nullable — NULL = banque d'idées)
 - `recurrence` text CHECK (hebdo, quinzaine, mensuel) · `recurrence_fin` date — **la répétition, comme pour une tâche et un événement** (26 août 2026). Mêmes mots, même pas, même code de dépliage (`occurrencesEntre`, js/format.js). Elle n'a de sens qu'avec une date : sans jour, l'idée est dans la banque et il n'y a rien qui revienne.
 
@@ -238,7 +245,7 @@ Conséquence assumée : une publication récurrente ne reste jamais en 'publie',
 
 ### contacts
 
-Carnet unique : le réseau de Yuno **et** les partenaires du FCH. Pas de colonne `projet` — le `type` et la `structure` disent l'usage.
+Carnet unique : le réseau de Yuno **et** les partenaires du FCH. Pas de colonne `espace` — le `type` et la `structure` disent l'usage.
 
 - `id` uuid PK
 - `nom` text NOT NULL
@@ -273,7 +280,7 @@ en feraient deux comptes différents.
 - `prix` numeric(10,2) NOT NULL CHECK (prix >= 0) — en euros
 - `date_achat` date · `notes` text · `created_at` timestamptz default now()
 
-Pas de colonne `projet` : le matériel est celui de Yuno, comme `commandes` et
+Pas de colonne `espace` : le matériel est celui de Yuno, comme `commandes` et
 pour la même raison — une colonne qui n'aurait jamais qu'une valeur ne
 documente rien.
 
@@ -295,14 +302,14 @@ gagné reste ce qu'on a gagné, c'est la dette qui grossit de l'essence.
 ## Dashboard — contenu et ordre
 
 1. **En-tête du jour** : « Bonjour Noé », date, et la question du matin (« Comment tu te sens ? », 5 boutons, réponse en un clic) — remplacée par un remerciement discret une fois répondue.
-2. **Victoires récentes** : les 5 dernières, tous projets perso inclus, avec pastille couleur du projet.
+2. **Victoires récentes** : les 5 dernières, tous espaces perso inclus, avec pastille couleur de l'espace.
    **Masquées depuis le 13 août 2026** (décision de Noé, « pour le moment ») : le drapeau `VICTOIRES_VISIBLES` de `js/dashboard.js` commande le bloc, sa source et son rendu. Cocher une tâche crée toujours sa victoire en base, et l'espace perso comme le site du FCH continuent de les afficher — seul l'accueil se tait.
-3. **Le cap** : **gravé, et non en tuiles** (26 août 2026). Du texte posé sur la page — ni carte, ni bordure, ni dépliage — **une colonne par projet**, qui ne dit que l'objectif à l'échéance la plus proche : son nom, son titre, une rangée de points (un par jalon, pleins quand ils sont atteints), son échéance. **Rien ne s'y modifie** : presser la zone mène à `#objectifs`, où le cap se règle. Un lien unique, pas un par objectif — le geste est le même partout : aller voir. **En BAS de page depuis le 13 août 2026** (décision de Noé) : ils disent le cap, pas la journée — on les relit quand on lève la tête, pas en ouvrant l'application.
+3. **Le cap** : **gravé, et non en tuiles** (26 août 2026). Du texte posé sur la page — ni carte, ni bordure, ni dépliage — **une colonne par espace**, qui ne dit que l'objectif à l'échéance la plus proche : son nom, son titre, une rangée de points (un par jalon, pleins quand ils sont atteints), son échéance. **Rien ne s'y modifie** : presser la zone mène à `#objectifs`, où le cap se règle. Un lien unique, pas un par objectif — le geste est le même partout : aller voir. **En BAS de page depuis le 13 août 2026** (décision de Noé) : ils disent le cap, pas la journée — on les relit quand on lève la tête, pas en ouvrant l'application.
 4. **Aujourd'hui** : la journée entière, et plus seulement les tâches (27 août 2026). **Deux colonnes** sur grand écran, empilées sur téléphone dans le même ordre :
    - à gauche, **À faire** — les tâches à faire aujourd'hui (ou qui l'étaient déjà : pas de borne basse, le hub ne compte pas les retards mais ne les efface pas), max 9, **dans la forme exacte de l'espace Tâches**. Cochables directement, et **ouvrables** : appuyer sur une tâche la rouvre dans la tuile, pré-remplie (14 août 2026). Elle ne s'y supprime pas — ce geste vit dans l'espace Tâches.
    - à droite, **À publier** puis **Rendez-vous**. Une publication compte si elle est prévue aujourd'hui ou l'était déjà et n'est pas partie — la règle des tâches, mot pour mot. Un **rendez-vous ne compte que s'il couvre aujourd'hui** : un événement passé n'est pas en attente, il a eu lieu, et le traîner en tête de page serait le reproche que ce hub ne fait jamais.
    - Le rond d'une publication **avance d'un cran** ici comme partout ; un rendez-vous porte son **heure** à la place de la marque et ne se coche pas — c'est un point fixe, pas une chose à faire. Un groupe vide disparaît en entier, titre compris ; une colonne vide aussi, et l'autre prend toute la largeur.
-5. **Ta semaine** : un **aperçu du calendrier hebdomadaire**, tous projets et toutes natures confondus — la même grille que `#calendrier` en vue semaine.
+5. **Ta semaine** : un **aperçu du calendrier hebdomadaire**, tous espaces et toutes natures confondus — la même grille que `#calendrier` en vue semaine.
    **Un jour s'y ouvre en grand** (demande de Noé, 24 août 2026) : presser le
    titre d'un jour (« lun. 24 ») lui donne toute la largeur, deux flèches
    passent au jour voisin dans la semaine, et represser ce même titre rouvre la
@@ -324,6 +331,21 @@ Un **bouton « + » flottant en bas à droite** ouvre la tuile du calendrier —
 
 Check-in matinal : le dashboard doit se lire en moins de 5 minutes, sans scroll excessif sur mobile.
 
+## Le mot « projet » a changé de sens (27 août 2026)
+
+Il désignait les quatre domaines. Ceux-ci s'appellent désormais des **espaces**,
+et la colonne `projet` s'appelle `espace` dans les six tables qui la portaient.
+
+**« Projet » nomme maintenant l'étage entre le jalon et la tâche** — le *comment*
+on atteint un cap : l'album du club, l'équipe com avec Lina, le deuxième dossier.
+C'est le maillon qui manquait, et son absence expliquait un fait mesuré : une
+tâche sur trente-six seulement était rattachée à un objectif. On demandait un
+lien impossible à faire — « trier les photos U15 » ne sert pas *directement*
+« 1 000 abonnés », elle sert *l'album du club*, qui sert l'objectif.
+
+La hiérarchie complète, la table `projets` et ce qui s'y rattache :
+[docs/orientation-spec.md](docs/orientation-spec.md).
+
 ## Vocabulaire d'interface
 
 Les mots font partie de la forme. Ils restent identiques d'un bout à l'autre du
@@ -338,6 +360,8 @@ site. (Principe repris du site Bac-3, où la table équivalente est respectée.)
 | Aujourd'hui | À faire, Todo, Tâches du jour |
 | Backlog | Plus tard, Icebox |
 | Le réseau (les fiches de Yuno) | Le carnet, le carnet réseau, le CRM en texte courant |
+| Espace (formation, Yuno, FCH, perso) | Projet — le mot a changé de sens |
+| Projet (l'album du club, le deuxième dossier) | Chantier, lot, campagne |
 
 Le mot **carnet** ne désigne qu'une chose : le **Carnet de terrain** de Yuno,
 celui des moments. La base de contacts, elle, s'appelle **le réseau** (décision

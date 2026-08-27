@@ -161,7 +161,7 @@ export function construireTaches(taches, evenements) {
   // l'espace Tâches. Ici on la coche, et c'est tout — offrir les deux autres
   // gestes sans les traiter ferait des boutons morts.
   const lignes = aFaire.length
-    ? construireLignesTaches(aFaire, { ouvrable: false, supprimable: false, projet: false })
+    ? construireLignesTaches(aFaire, { ouvrable: false, supprimable: false, espace: false })
     : `<p class="vide">Rien à faire pour le club. Note ta prochaine tâche au-dessous.</p>`;
 
   // La réunion qui vient, sur une ligne. Sa préparation vit sur le site — ici
@@ -256,7 +256,7 @@ export default {
 
     const charger = async () => {
       // Les tâches FAITES comptent dans le bilan : `tachesEnCours` ne les
-      // rendrait pas. On prend tout le projet, la page trie ensuite.
+      // rendrait pas. On prend tout l'espace, la page trie ensuite.
       // Depuis le DÉBUT du jour, pas depuis maintenant : une réunion notée pour
       // aujourd'hui sans heure tombe à minuit, et une borne à l'heure courante
       // l'aurait laissée hors de la requête — elle n'aurait jamais atteint le
@@ -268,11 +268,11 @@ export default {
       horizon.setMonth(horizon.getMonth() + 6);
 
       const [objectifs, taches, publications, evenements, victoires] = await Promise.all([
-        api.objectifsActifs({ projet: 'fch' }),
-        api.tachesDuProjet('fch'),
+        api.objectifsActifs({ espace: 'fch' }),
+        api.tachesDeLEspace('fch'),
         api.publicationsToutes('fch'),
-        api.evenementsEntre(debut.toISOString(), horizon.toISOString(), { projet: 'fch' }),
-        api.victoiresDuProjet('fch', MAX_VICTOIRES),
+        api.evenementsEntre(debut.toISOString(), horizon.toISOString(), { espace: 'fch' }),
+        api.victoiresDeLEspace('fch', MAX_VICTOIRES),
       ]);
 
       Object.assign(etat, { objectifs, taches, publications, evenements, victoires });
@@ -369,7 +369,7 @@ export default {
       erreur.hidden = true;
 
       try {
-        const pose = await poserAuCalendrier(champs, { projetParDefaut: 'fch' });
+        const pose = await poserAuCalendrier(champs, { espaceParDefaut: 'fch' });
         fermerLaCreation();
 
         if (champs.nature === 'tache') etat.taches = [...etat.taches, pose];

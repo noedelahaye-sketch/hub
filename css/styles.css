@@ -82,13 +82,13 @@
 
 /* Thèmes des espaces. */
 body[data-espace="dashboard"] { --accent: #6b7f8c; --accent-doux: #eceff1; }
-/* Le calendrier et les tâches sont transverses : ils regardent tous les projets
+/* Le calendrier et les tâches sont transverses : ils regardent tous les espaces
    et n'en portent donc aucune couleur. Ils gardent le gris neutre de l'accueil,
-   et les pastilles de projet font la distinction dans la liste. */
+   et les pastilles d'espace font la distinction dans la liste. */
 body[data-espace="calendrier"] { --accent: #6b7f8c; --accent-doux: #eceff1; }
 body[data-espace="taches"] { --accent: #6b7f8c; --accent-doux: #eceff1; }
-/* Objectifs regarde tous les projets, comme les tâches et le calendrier : il
-   n'en porte donc aucune couleur. Ce sont les blocs qui disent le projet. */
+/* Objectifs regarde tous les espaces, comme les tâches et le calendrier : il
+   n'en porte donc aucune couleur. Ce sont les blocs qui disent l'espace. */
 body[data-espace="objectifs"] { --accent: #6b7f8c; --accent-doux: #eceff1; }
 body[data-espace="formation"] { --accent: #17786f; --accent-doux: #e3f1ef; }
 /* Yuno : le doré du logo (#e8b000, relevé sur le fichier). En clair il
@@ -186,7 +186,7 @@ body[data-espace="yuno"] [data-pilier="3"] { --pilier: var(--pilier-3); --pilier
 body[data-espace="yuno"] [data-pilier="4"] { --pilier: var(--pilier-4); --pilier-encre: var(--pilier-4-encre); }
 /* FCH : le club joue en bleu et rouge. Le bleu porte l'accent (barres, liens,
    états actifs) parce qu'il reste lisible en aplat ; le rouge est la seconde
-   couleur d'identité, réservée à la pastille du projet. Il ne signale jamais
+   couleur d'identité, réservée à la pastille de l'espace. Il ne signale jamais
    une alerte ni un retard — voir la philosophie du produit. */
 body[data-espace="fch"]       { --accent: #1e4b8f; --accent-doux: #e6edf7; }
 body[data-espace="perso"]     { --accent: #8878b4; --accent-doux: #efebf7; }
@@ -195,7 +195,7 @@ body[data-espace="perso"]     { --accent: #8878b4; --accent-doux: #efebf7; }
 
 /* Couleurs exactes du logo du club (img/fch-logo.png), plus le jaune ajouté à
    la demande de Noé. Elles ne servent que sur le site FCH — la pastille de
-   projet du hub garde ses valeurs adoucies, plus lisibles en petit. */
+   espace du hub garde ses valeurs adoucies, plus lisibles en petit. */
 :root { --club-bleu: #003799; --club-rouge: #df0000; --club-jaune: #f2b705; }
 
 /* Le SITE FC Hermitage est bleu, quel que soit le réglage du téléphone :
@@ -396,7 +396,7 @@ button:active { transform: scale(0.97); }
 .haut { padding-top: env(safe-area-inset-top); }
 
 /* Sur les sites Yuno et FC Hermitage, tout l'habillage du hub disparaît : ni
-   « Hub », ni onglets, ni autres projets. On est ailleurs. */
+   « Hub », ni onglets, ni autres espaces. On est ailleurs. */
 body[data-espace="yuno"] .haut,
 body[data-espace="hermitage"] .haut { display: none; }
 
@@ -681,7 +681,7 @@ a { color: var(--accent); }
   position: relative;
   display: flex;
   align-items: baseline;
-  /* Le nom du projet occupe toute la largeur : il pousse le reste à la ligne. */
+  /* Le nom de l'espace occupe toute la largeur : il pousse le reste à la ligne. */
   flex-wrap: wrap;
   gap: var(--espace-8);
   padding: var(--espace-12) var(--espace-16);
@@ -690,22 +690,22 @@ a { color: var(--accent); }
   border-radius: var(--rayon-carte);
 }
 
-/* Une tuile de projet porte sa couleur en barre, à gauche. Plus lisible qu'une
-   pastille, et ça laisse la place d'écrire le nom du projet au-dessus. */
-.bloc li[data-projet] { padding-left: calc(var(--espace-16) + 3px); }
+/* Une tuile d'espace porte sa couleur en barre, à gauche. Plus lisible qu'une
+   pastille, et ça laisse la place d'écrire le nom de l'espace au-dessus. */
+.bloc li[data-espace] { padding-left: calc(var(--espace-16) + 3px); }
 
-.bloc li[data-projet]::before {
+.bloc li[data-espace]::before {
   content: "";
   position: absolute;
   left: 0;
   top: -1px;
   bottom: -1px;
   width: 3px;
-  background: var(--couleur-projet);
+  background: var(--couleur-espace);
   border-radius: var(--rayon-carte) 0 0 var(--rayon-carte);
 }
 
-/* L'en-tête d'une tuile : le projet à gauche, la date poussée à droite, et un
+/* L'en-tête d'une tuile : l'espace à gauche, la date poussée à droite, et un
    éventuel bouton discret tout au bout. */
 .tuile-entete {
   display: flex;
@@ -730,9 +730,9 @@ a { color: var(--accent); }
 
 }
 
-/* Le projet n'est pas dit que par la couleur : son nom est écrit. Il se
+/* L'espace n'est pas dit que par la couleur : son nom est écrit. Il se
    tronque plutôt que de se replier sur deux lignes. */
-.tuile-projet {
+.tuile-espace {
   flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
@@ -742,7 +742,7 @@ a { color: var(--accent); }
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--couleur-projet-pleine);
+  color: var(--couleur-espace-pleine);
 }
 
 
@@ -802,61 +802,61 @@ a { color: var(--accent); }
 
 .bouton-secondaire:disabled:active { transform: none; }
 
-/* Couleurs de projet : fixes, indépendantes de l'espace affiché. Deux variables
-   par projet, et la différence n'est PAS « fond » contre « texte » — c'est
+/* Couleurs d'espace : fixes, indépendantes de l'espace affiché. Deux variables
+   par espace, et la différence n'est PAS « fond » contre « texte » — c'est
    dégradé contre couleur pleine :
-     --couleur-projet        peut être un dégradé (le FCH porte ses deux
+     --couleur-espace        peut être un dégradé (le FCH porte ses deux
                              couleurs). Elle ne vaut donc QUE là où une image
                              de fond est acceptée : `background`, et rien d'autre.
-     --couleur-projet-pleine toujours une vraie couleur. Partout ailleurs —
+     --couleur-espace-pleine toujours une vraie couleur. Partout ailleurs —
                              `color`, une bordure, un `color-mix()`.
    Le nom de la seconde disait « texte », et c'est ce qui a piégé le calendrier
    (21 août 2026) : ses barres prenaient le dégradé pour leur bordure et leur
    mélange de fond, deux endroits qui exigent une couleur. CSS jette la
    déclaration entière sans un mot — les éléments du FCH s'affichaient donc
-   sans bordure ET sans fond, seuls de tous les projets à n'avoir aucune
+   sans bordure ET sans fond, seuls de tous les espaces à n'avoir aucune
    couleur. Un nom qui ment finit toujours par coûter une soirée. */
-[data-projet="formation"] { --couleur-projet: #17786f; --couleur-projet-pleine: #17786f; }
-[data-projet="photo"]     { --couleur-projet: #8f6c00; --couleur-projet-pleine: #8f6c00; }
-[data-projet="perso"]     { --couleur-projet: #8878b4; --couleur-projet-pleine: #8878b4; }
-/* Le FCH est le seul projet à porter DEUX couleurs : le dégradé les montre
+[data-espace="formation"] { --couleur-espace: #17786f; --couleur-espace-pleine: #17786f; }
+[data-espace="photo"]     { --couleur-espace: #8f6c00; --couleur-espace-pleine: #8f6c00; }
+[data-espace="perso"]     { --couleur-espace: #8878b4; --couleur-espace-pleine: #8878b4; }
+/* Le FCH est le seul espace à porter DEUX couleurs : le dégradé les montre
    toutes les deux là où un fond l'accepte, et la couleur pleine doit en
    choisir une. C'est le ROUGE (décision de Noé, 21 août 2026, après mesure).
    Le bleu du club tombait trop près du perso — écart perceptuel de 26 en
-   clair et de 18 en sombre, quand les deux projets les plus proches du hub
+   clair et de 18 en sombre, quand les deux espaces les plus proches du hub
    sont déjà à 55 et 53. Le rouge se pose à 53 et 54 : l'écart de tout le
    monde. Rien d'autre n'est rouge dans la palette, un coup d'œil suffit.
 
    Ce rouge n'est PAS une couleur d'alerte, et le hub n'en a toujours pas : il
    est posé sur TOUT ce qui vient du club, quel que soit l'état de la ligne.
    Une couleur qui ne bouge jamais ne peut rien signaler — elle nomme un
-   projet, elle ne juge pas une échéance. Le site du club dit déjà la même
+   espace, elle ne juge pas une échéance. Le site du club dit déjà la même
    chose avec son liseré rouge sous la navigation. */
-[data-projet="fch"] {
-  --couleur-projet: linear-gradient(180deg,
+[data-espace="fch"] {
+  --couleur-espace: linear-gradient(180deg,
     var(--club-fch-bleu) 50%, var(--club-fch-rouge) 50%);
-  --couleur-projet-pleine: var(--club-fch-rouge);
+  --couleur-espace-pleine: var(--club-fch-rouge);
 }
 
 /* SAUF DANS LE CALENDRIER DU HUB, où le FCH est bleu (demande de Noé, 25 août
    2026) : l'espace Calendrier, et « Ta semaine » de l'accueil qui en est
    l'aperçu — pas le reste de l'accueil, où « Aujourd'hui » est une liste de
    tâches et doit se lire comme celle de l'espace Tâches. Là, les barres sont
-   pleines et larges — le rouge y pesait plus que les autres projets, et une
+   pleines et larges — le rouge y pesait plus que les autres espaces, et une
    semaine de club virait au rouge entier. Ailleurs (pastilles, listes de
    tâches, fiches, les deux sites), la couleur double du club ne bouge pas.
    La proximité mesurée avec le perso reste vraie : dans une grille, la
-   colonne et l'étiquette disent le projet avant la couleur. */
-#bloc-semaine [data-projet="fch"],
-#espace-calendrier [data-projet="fch"] {
-  --couleur-projet: var(--club-fch-bleu);
-  --couleur-projet-pleine: var(--club-fch-bleu);
+   colonne et l'étiquette disent l'espace avant la couleur. */
+#bloc-semaine [data-espace="fch"],
+#espace-calendrier [data-espace="fch"] {
+  --couleur-espace: var(--club-fch-bleu);
+  --couleur-espace-pleine: var(--club-fch-bleu);
 }
 
 @media (prefers-color-scheme: dark) {
-  [data-projet="formation"] { --couleur-projet: #56b8ad; --couleur-projet-pleine: #56b8ad; }
-  [data-projet="photo"]     { --couleur-projet: #e8b000; --couleur-projet-pleine: #e8b000; }
-  [data-projet="perso"]     { --couleur-projet: #b3a3d9; --couleur-projet-pleine: #b3a3d9; }
+  [data-espace="formation"] { --couleur-espace: #56b8ad; --couleur-espace-pleine: #56b8ad; }
+  [data-espace="photo"]     { --couleur-espace: #e8b000; --couleur-espace-pleine: #e8b000; }
+  [data-espace="perso"]     { --couleur-espace: #b3a3d9; --couleur-espace-pleine: #b3a3d9; }
 }
 
 /* Pastille — encore utilisée là où une tuile serait trop lourde. */
@@ -866,7 +866,7 @@ a { color: var(--accent); }
   height: 0.5rem;
   border-radius: var(--rayon-pastille);
   align-self: center;
-  background: var(--couleur-projet, var(--texte-discret));
+  background: var(--couleur-espace, var(--texte-discret));
 }
 
 /* --- Humeur ---------------------------------------------------------------- */
@@ -967,16 +967,16 @@ a { color: var(--accent); }
 /* Dans la grille, l'écart est porté par `gap` : la marge basse doublerait. */
 .grille-objectifs .objectif { margin-bottom: 0; }
 
-.objectif[data-projet] { padding-left: calc(var(--espace-16) + 3px); }
+.objectif[data-espace] { padding-left: calc(var(--espace-16) + 3px); }
 
-.objectif[data-projet]::before {
+.objectif[data-espace]::before {
   content: "";
   position: absolute;
   left: 0;
   top: -1px;
   bottom: -1px;
   width: 3px;
-  background: var(--couleur-projet);
+  background: var(--couleur-espace);
   border-radius: var(--rayon-carte) 0 0 var(--rayon-carte);
 }
 
@@ -1027,7 +1027,7 @@ a { color: var(--accent); }
 }
 
 /* Le chemin des jalons : une case par jalon, qui s'allume à la couleur du
-   projet quand il est atteint. Un objectif n'avance pas au pourcentage, il
+   espace quand il est atteint. Un objectif n'avance pas au pourcentage, il
    avance au jalon franchi — la barre continue (.barre) reste aux compteurs
    qui, eux, mesurent un flux (les livrables de révision, par exemple). */
 .jalons-chemin {
@@ -1040,11 +1040,11 @@ a { color: var(--accent); }
 .jalons-chemin i {
   flex: 1;
   border-radius: var(--rayon-pastille);
-  background: color-mix(in srgb, var(--couleur-projet-pleine, var(--accent)) 16%, transparent);
+  background: color-mix(in srgb, var(--couleur-espace-pleine, var(--accent)) 16%, transparent);
 }
 
 .jalons-chemin i.atteint {
-  background: var(--couleur-projet-pleine, var(--accent));
+  background: var(--couleur-espace-pleine, var(--accent));
 }
 
 .progression-legende {
@@ -1085,10 +1085,10 @@ a { color: var(--accent); }
 .jalon-atteint { color: var(--texte-discret); }
 .jalon-atteint span:not(.marque-jalon) { text-decoration: line-through; }
 
-/* --- Le cap gravé (accueil et pages projet) ---------------------------------
+/* --- Le cap gravé (accueil et pages espace) ---------------------------------
    Sur un tableau de bord, le cap est INSCRIT dans la page (demande de Noé,
    25 août 2026) : ni carte, ni bordure, ni dépliage, aucun geste qui le
-   modifie. Une colonne par projet, séparées par un filet — la forme d'un
+   modifie. Une colonne par espace, séparées par un filet — la forme d'un
    colophon, pas d'une liste d'outils. Ce qui se règle vit dans #objectifs. */
 
 .cap-grave {
@@ -1096,7 +1096,7 @@ a { color: var(--accent); }
   gap: var(--espace-16);
 }
 
-.cap-projet {
+.cap-espace {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -1106,7 +1106,7 @@ a { color: var(--accent); }
   border-top: 1px solid var(--bordure);
 }
 
-.cap-projet:first-child {
+.cap-espace:first-child {
   padding-top: 0;
   border-top: none;
 }
@@ -1116,7 +1116,7 @@ a { color: var(--accent); }
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--couleur-projet-pleine);
+  color: var(--couleur-espace-pleine);
 }
 
 /* Le titre absorbe la hauteur en trop : les colonnes d'une même rangée étant
@@ -1148,17 +1148,17 @@ a { color: var(--accent); }
   width: 7px;
   height: 7px;
   border-radius: var(--rayon-pastille);
-  background: color-mix(in srgb, var(--couleur-projet-pleine) 22%, transparent);
+  background: color-mix(in srgb, var(--couleur-espace-pleine) 22%, transparent);
 }
 
-.cap-jalons i.atteint { background: var(--couleur-projet-pleine); }
+.cap-jalons i.atteint { background: var(--couleur-espace-pleine); }
 
 .cap-echeance { font-size: 0.75rem; }
 
 /* Les euros d'un objectif, posés sous ses jalons : les jalons disent le
    chemin, le chiffre dit l'argent, et les deux se lisent d'un seul regard. */
 .cap-mesure { font-size: 0.875rem; }
-.cap-mesure .chiffre { color: var(--couleur-projet-pleine, var(--accent)); }
+.cap-mesure .chiffre { color: var(--couleur-espace-pleine, var(--accent)); }
 
 /* La seule porte du bloc : elle mène là où le cap se règle. */
 .porte-objectifs {
@@ -1175,14 +1175,14 @@ a { color: var(--accent); }
 
   /* Côte à côte, le filet redevient vertical — et disparaît devant la
      première colonne, où il n'y a rien à séparer. */
-  .cap-projet {
+  .cap-espace {
     padding-top: 0;
     padding-left: var(--espace-24);
     border-top: none;
     border-left: 1px solid var(--bordure);
   }
 
-  .cap-projet:first-child {
+  .cap-espace:first-child {
     padding-left: 0;
     border-left: none;
   }
@@ -1228,13 +1228,13 @@ a { color: var(--accent); }
    lignes. Il reprend donc la forme empilée, filets à l'horizontale. */
 .panneau .cap-grave { grid-template-columns: 1fr; }
 
-.panneau .cap-projet {
+.panneau .cap-espace {
   padding: var(--espace-16) 0 0;
   border-top: 1px solid var(--bordure);
   border-left: none;
 }
 
-.panneau .cap-projet:first-child {
+.panneau .cap-espace:first-child {
   padding-top: 0;
   border-top: none;
 }
@@ -1566,7 +1566,7 @@ ul.liste-victoires-pliee {
 /* Des pastilles, franchement arrondies et COLORÉES (demande de Noé, 26 août
    2026). Ce qui les faisait rater le premier essai n'était pas la couleur mais
    le fond sur lequel elles se posaient : dans un panneau, une pastille teintée
-   se fondait dans la carte. En pied de page, sur le fond nu, l'encre du projet
+   se fondait dans la carte. En pied de page, sur le fond nu, l'encre de l'espace
    les détache — et le rayon plein leur rend la forme d'une commande qu'on
    presse plutôt que d'un champ qu'on remplit.
 
@@ -1627,7 +1627,7 @@ a.cap-grave:focus-visible {
   inset: 0;
 }
 
-/* Ce qui dit qu'elle se presse : son CONTOUR prend l'encre du projet, et rien
+/* Ce qui dit qu'elle se presse : son CONTOUR prend l'encre de l'espace, et rien
    d'autre — pas de fond qui se relève, pas de soulignement sous les titres, qui
    ferait croire à des liens séparés. */
 .panneau-lien:hover { border-color: var(--accent); }
@@ -1701,7 +1701,7 @@ a.cap-grave:focus-visible {
 /* --- L'espace Tâches -------------------------------------------------------
    La forme vient de Todoist (capture de Noé, 13 août 2026) : un cercle coloré
    par priorité qui coche, le titre, puis une ligne de service — la date à
-   gauche, le projet à droite.
+   gauche, l'espace à droite.
 
    Ce qui n'en vient PAS : la date passée n'y est pas rouge. Todoist écrit
    « Hier » en rouge ; le hub n'a pas de couleur d'alerte et n'en aura pas. Une
@@ -1735,10 +1735,10 @@ a.cap-grave:focus-visible {
 }
 
 /* Une liste, pas des tuiles. Partout ailleurs le hub pose ses `.bloc li` en
-   cartes, avec la barre de couleur du projet à gauche ; ici on suit la forme
+   cartes, avec la barre de couleur de l'espace à gauche ; ici on suit la forme
    demandée (la capture) : des lignes séparées d'un filet, et rien d'autre.
    Une liste de vingt tâches en vingt cartes deviendrait un mur — et la barre de
-   projet ferait double emploi avec le nom du projet, déjà coloré à droite.
+   espace ferait double emploi avec le nom de l'espace, déjà coloré à droite.
    D'où l'annulation explicite de `.bloc li` et de sa barre. */
 .bloc .liste-taches-pleine,
 .bloc .liste-jour {
@@ -1912,7 +1912,7 @@ a.cap-grave:focus-visible {
 }
 
 /* La ligne de service : tout ce qui n'est pas le titre. Elle passe à la ligne
-   plutôt que de se couper — sur 375 px, une date, deux réglages et un projet
+   plutôt que de se couper — sur 375 px, une date, deux réglages et un espace
    ne tiennent pas côte à côte. */
 .tache-service,
 .jour-service {
@@ -1932,15 +1932,15 @@ a.cap-grave:focus-visible {
 
 .tache-quand svg { flex: none; }
 
-/* Le projet se lit À CÔTÉ de la date (demande de Noé, 13 août 2026), et non
+/* L'espace se lit À CÔTÉ de la date (demande de Noé, 13 août 2026), et non
    poussé au bout de la ligne : les deux disent où et quand se situe la tâche,
    ils vont ensemble. Il porte sa couleur — celle des tuiles du dashboard, pas
    une nouvelle. Deux codes couleur sur une même ligne, mais sur deux objets
-   différents : le cercle dit la priorité, le nom dit le projet. */
-.tache-projet,
-.jour-projet {
+   différents : le cercle dit la priorité, le nom dit l'espace. */
+.tache-espace,
+.jour-espace {
   font-weight: 600;
-  color: var(--couleur-projet-pleine, var(--texte-discret));
+  color: var(--couleur-espace-pleine, var(--texte-discret));
 }
 
 /* Les deux réglages de ligne — priorité et statut. Ils se changent là où ils se
@@ -1966,7 +1966,7 @@ a.cap-grave:focus-visible {
 
 /* --- La capture d'une tâche -------------------------------------------------
    Un « + » qui ouvre une tuile, le nom qu'on écrit directement, et dessous une
-   rangée de pastilles — date, projet, priorité — dont chacune ouvre son choix.
+   rangée de pastilles — date, espace, priorité — dont chacune ouvre son choix.
    Forme demandée par Noé (captures du 13 août).
 
    Ce que ça change par rapport à un formulaire à six champs empilés : une tâche
@@ -2354,13 +2354,13 @@ body.fond-fige {
 .choix-capture button[data-priorite="3"] .choix-drapeau { color: var(--prio-3); }
 .choix-capture button[data-priorite="4"] .choix-drapeau { color: var(--texte-discret); }
 
-/* Le projet, lui, se dit par une pastille de sa couleur — celle des tuiles. */
+/* L'espace, lui, se dit par une pastille de sa couleur — celle des tuiles. */
 .choix-pastille {
   flex: none;
   width: 1.125rem;
   height: 1.125rem;
   border-radius: var(--rayon-pastille);
-  background: var(--couleur-projet, var(--texte-discret));
+  background: var(--couleur-espace, var(--texte-discret));
 }
 
 /* Les deux champs sur une ligne : empilés, ils ajoutaient 70 px au panneau et
@@ -2483,7 +2483,7 @@ body.fond-fige {
   border-radius: 0 var(--rayon-controle) var(--rayon-controle) 0;
 }
 
-/* --- Espace projet --------------------------------------------------------- */
+/* --- Espacet espace --------------------------------------------------------- */
 
 .sous-titre { margin: 0 0 var(--espace-24); }
 
@@ -3729,12 +3729,12 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--texte);
-  /* La couleur PLEINE, jamais `--couleur-projet` : un `color-mix()` et une
+  /* La couleur PLEINE, jamais `--couleur-espace` : un `color-mix()` et une
      bordure exigent une couleur, et le dégradé du FCH y était rejeté en
      silence — ses barres n'avaient donc ni fond ni trait (21 août 2026). */
-  background: color-mix(in srgb, var(--couleur-projet-pleine, var(--accent)) 22%, var(--fond-carte));
+  background: color-mix(in srgb, var(--couleur-espace-pleine, var(--accent)) 22%, var(--fond-carte));
   border: none;
-  border-left: 3px solid var(--couleur-projet-pleine, var(--accent));
+  border-left: 3px solid var(--couleur-espace-pleine, var(--accent));
   border-radius: 3px;
   cursor: pointer;
 }
@@ -3760,7 +3760,7 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 }
 
 .cal-barre-element:hover {
-  background: color-mix(in srgb, var(--couleur-projet-pleine, var(--accent)) 34%, var(--fond-carte));
+  background: color-mix(in srgb, var(--couleur-espace-pleine, var(--accent)) 34%, var(--fond-carte));
 }
 
 .cal-barre-element.deborde-avant { border-left: none; border-radius: 0 3px 3px 0; margin-left: 0; }
@@ -3768,7 +3768,7 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 .cal-barre-element.deborde-avant.deborde-apres { border-radius: 0; }
 
 /* L'état d'une publication, dans la tuile : une PASTILLE à la suite de celles
-   de l'en-tête — nature, projet, état (demande de Noé, 25 août 2026). Elle
+   de l'en-tête — nature, espace, état (demande de Noé, 25 août 2026). Elle
    s'ouvre en menu déroulant : c'est un choix, pas une mention.
 
    La COULEUR dit l'étape, et elle change de teinte, pas seulement d'intensité
@@ -3837,7 +3837,7 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 }
 
 /* Le signe de nature : une tâche n'est pas un événement, et la couleur du
-   projet ne le dit pas. Il précède le titre, en retrait. */
+   espace ne le dit pas. Il précède le titre, en retrait. */
 .cal-signe {
   margin-right: 0.35em;
   font-size: 0.9em;
@@ -3876,7 +3876,7 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    l'événement est un aplat, elle n'est qu'un trait de couleur à gauche
    (demande de Noé, 13 août 2026). Le cadre complet en faisait une étiquette de
    plus dans une grille déjà pleine de traits ; le trait seul suffit à dire le
-   projet, et la ligne respire.
+   espace, et la ligne respire.
 
    UNE PUBLICATION EST DU MÊME BORD depuis le 25 août 2026 (demande de Noé) :
    c'est quelque chose à faire partir, pas un rendez-vous. Son aplat la faisait
@@ -3885,13 +3885,13 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 .cal-type-publication {
   background: transparent;
   border: none;
-  border-left: 3px solid var(--couleur-projet-pleine, var(--accent));
+  border-left: 3px solid var(--couleur-espace-pleine, var(--accent));
   border-radius: 0 3px 3px 0;
 }
 
 .cal-type-tache:hover,
 .cal-type-publication:hover {
-  background: color-mix(in srgb, var(--couleur-projet-pleine, var(--accent)) 18%, var(--fond-carte));
+  background: color-mix(in srgb, var(--couleur-espace-pleine, var(--accent)) 18%, var(--fond-carte));
 }
 
 /* Le « +N » s'ouvre : c'est un bouton, il en a l'air. */
@@ -3956,7 +3956,7 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   color: var(--texte);
   background: var(--fond);
   border: 1px solid var(--bordure);
-  border-left: 3px solid var(--couleur-projet-pleine, var(--accent));
+  border-left: 3px solid var(--couleur-espace-pleine, var(--accent));
   border-radius: var(--rayon-controle);
   cursor: pointer;
 }

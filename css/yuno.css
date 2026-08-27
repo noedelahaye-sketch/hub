@@ -2418,7 +2418,7 @@ body[data-espace="yuno"] .weekend-jour .contact-nom {
    fait pour s'allonger, et cinquante sorties en cinquante cartes deviennent un
    mur qu'on ne parcourt plus. Chaque ligne dit quand, quoi, et trois marques ;
    le clic ouvre la fiche entière — le même geste que la banque d'idées et le
-   réseau. `.bloc li` est donc annulé, barre de projet comprise. */
+   réseau. `.bloc li` est donc annulé, barre d'espace comprise. */
 /* `row-gap` à zéro pour que les filets se suivent sans trou — mais SURTOUT PAS
    `gap`, qui vaut pour les deux axes : sur grand écran la liste passe en trois
    colonnes (règle du hub), et les lignes se touchaient alors bord à bord. Le
@@ -2807,7 +2807,7 @@ body[data-espace="yuno"] .weekend-jour .contact-nom {
 .vide-icone svg { width: 40px; height: 40px; }
 
 /* La tuile de la banque porte la couleur de son pilier en barre, à gauche —
-   comme les tuiles de projet du hub. D'un regard : la répartition des idées
+   comme les tuiles d'espace du hub. D'un regard : la répartition des idées
    entre les quatre axes. La cascade [data-pilier] pose déjà --pilier dessus. */
 .bloc li.tuile-apercu[data-pilier] {
   border-left: 3px solid var(--pilier);

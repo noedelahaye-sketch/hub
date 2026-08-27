@@ -25,7 +25,7 @@ import {
   construireFenetre,
   construireObjectifs,
   construireVictoires,
-} from './espace-projet.js';
+} from './gabarits.js';
 import {
   STATUTS_FCH,
   construireAVenir,
@@ -73,7 +73,7 @@ import {
   FORMATS,
 } from './calendrier-commun.js';
 
-const PROJET = 'fch';
+const ESPACE = 'fch';
 
 // Les réseaux du club. Facebook d'abord : c'est celui des clubs amateurs, des
 // parents et des bénévoles, avant Instagram.
@@ -1388,7 +1388,7 @@ export default {
     // donc jamais garder un accomplissement qui n'a pas eu lieu.
     const victoireProvisoire = (titre) => ({
       id: identifiantProvisoire(),
-      projet: PROJET,
+      espace: ESPACE,
       titre,
       date: versDateISO(),
     });
@@ -1420,14 +1420,14 @@ export default {
         objectifs, victoires, publications, taches, evenements, contacts,
         fiches, actionsClub, modeles,
       ] = await Promise.all([
-        api.objectifsActifs({ projet: PROJET }),
-        api.victoiresDuProjet(PROJET),
-        api.publicationsToutes(PROJET),
-        api.tachesDatees({ projet: PROJET }),
+        api.objectifsActifs({ espace: ESPACE }),
+        api.victoiresDeLEspace(ESPACE),
+        api.publicationsToutes(ESPACE),
+        api.tachesDatees({ espace: ESPACE }),
         // TOUS les événements depuis le 21 août 2026, plus seulement ceux à
         // venir : les réunions passées portent leurs fiches. Le calendrier,
         // lui, refiltre l'avenir — son affichage n'a pas bougé.
-        api.evenementsTous({ projet: PROJET }),
+        api.evenementsTous({ espace: ESPACE }),
         api.contactsTous(),
         api.fichesReunionToutes(),
         api.actionsClubToutes(),
@@ -1444,7 +1444,7 @@ export default {
         fiches,
         actionsClub,
         // Le menu « Modèles » de la fiche ne montre que ceux du club.
-        modelesPrepa: modeles.filter((modele) => modele.projet === PROJET),
+        modelesPrepa: modeles.filter((modele) => modele.espace === ESPACE),
       });
     };
 
@@ -1580,9 +1580,9 @@ export default {
     });
 
     async function appliquer(action, champs) {
-      // La tuile du « + » : tout passe par le circuit commun, projet fch.
+      // La tuile du « + » : tout passe par le circuit commun, espace fch.
       if (action === 'creer-depuis-calendrier') {
-        await poserAuCalendrier(champs, { projetParDefaut: PROJET });
+        await poserAuCalendrier(champs, { espaceParDefaut: ESPACE });
         etat.creationCal = null;
         await charger();
         rendre();
@@ -1645,7 +1645,7 @@ export default {
         let tache_id = null;
         if (champs.pour_moi === 'oui') {
           const tache = await api.creerTache({
-            projet: PROJET,
+            espace: ESPACE,
             titre: champs.texte.trim(),
             statut: 'actif',
             priorite: 4,
@@ -1724,7 +1724,7 @@ export default {
 
       if (action === 'noter-idee') {
         const publication = await api.creerPublication({
-          projet: PROJET,
+          espace: ESPACE,
           titre: champs.titre.trim(),
           reseau: champs.reseau,
           format: champs.format,
@@ -1755,7 +1755,7 @@ export default {
 
       if (action === 'creer-objectif') {
         const objectif = await api.creerObjectif({
-          projet: PROJET,
+          espace: ESPACE,
           titre: champs.titre.trim(),
           pourquoi: champs.pourquoi?.trim() || null,
           cible: champs.cible?.trim() || null,
@@ -2221,7 +2221,7 @@ export default {
           cible,
           { atteint: true, date_atteint: versDateISO() },
           async () => {
-            const { jalon: fait, victoire } = await api.atteindreJalon(avantJalon, PROJET);
+            const { jalon: fait, victoire } = await api.atteindreJalon(avantJalon, ESPACE);
             remplacerVictoire(provisoire, victoire);
             return fait;
           },

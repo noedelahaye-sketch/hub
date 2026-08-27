@@ -41,7 +41,7 @@ document.body.insertAdjacentHTML(
   <div id="ecran-connexion" class="ecran-plein" hidden>
     <form id="form-connexion" class="carte carte-connexion">
       <h1>Hub</h1>
-      <p class="discret">Connecte-toi pour retrouver tes projets.</p>
+      <p class="discret">Connecte-toi pour retrouver tes espaces.</p>
 
       <label for="email">E-mail</label>
       <input type="email" id="email" name="email" autocomplete="username" required>
@@ -65,8 +65,8 @@ document.body.insertAdjacentHTML(
       <!-- Tâches en deuxième position, juste après l'accueil (demande de Noé,
            13 août 2026) : c'est l'écran où l'on va le plus souvent après le
            check-in, il n'a pas à se gagner au bout de la rangée.
-           Perso suit : le hub existe pour servir Noé, la vie hors projets ne
-           passe pas après les projets.
+           Perso suit : le hub existe pour servir Noé, la vie hors espaces ne
+           passe pas après les espaces.
            Le calendrier, lui, reste tout à droite et en icône : ce n'est pas un
            espace de plus, c'est la vue qui les traverse tous. -->
       <nav class="navigation" aria-label="Espaces">

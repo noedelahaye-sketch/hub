@@ -2,7 +2,7 @@
 // d'événements et de victoires, fenêtres volantes, et le formulaire commun avec
 // ses menus dessinés.
 //
-// Ce module était une FABRIQUE d'espace projet jusqu'au 26 août 2026. Elle n'a
+// Ce module était une FABRIQUE d'espacet espace jusqu'au 26 août 2026. Elle n'a
 // plus d'utilisateur : la formation, sa dernière page, est devenue un bilan à
 // deux colonnes comme Yuno et le FCH, et chacune monte désormais la sienne.
 // Restent ici les morceaux que tout le monde emprunte.

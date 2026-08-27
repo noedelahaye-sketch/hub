@@ -38,7 +38,7 @@ connexion.
   Pas d'histogramme non plus — trois publications sorties ne font pas une
   courbe de douze mois.
 - **`#hermitage` — le site.** L'habillage du hub disparaît : ni « Hub », ni
-  onglets, ni autres projets. Chrome propre, identité du club, une seule
+  onglets, ni autres espaces. Chrome propre, identité du club, une seule
   sortie discrète en pied de page.
 
 ---
@@ -156,7 +156,7 @@ portait `brouillon` est passée en « à préparer »
 **L'état se règle aussi depuis le calendrier du hub** — accueil et
 `#calendrier` — de deux façons : le **rond de la barre avance d'un cran** à
 l'appui, et la **tuile porte une pastille d'état**, à la suite de celles de la
-nature et du projet, qui ouvre un menu déroulant — pour sauter un état ou
+nature et de l'espace, qui ouvre un menu déroulant — pour sauter un état ou
 revenir en arrière. La couleur de la pastille dit l'étape : **rouge** tant que
 rien n'est fait, **ambre** quand c'est prêt à programmer, **vert** une fois
 publié.
@@ -183,7 +183,7 @@ Ce qui change du côté FCH :
   coulisses, partenaire à l'honneur, vie du club. À corriger par Noé dès qu'il
   aura son idée du rythme réel.
 
-Techniquement : la table `publications` a reçu une colonne `projet` — c'est le
+Techniquement : la table `publications` a reçu une colonne `espace` — c'est le
 même outil et la même table, filtrés. Un second tableau identique aurait été
 une duplication sans raison.
 
@@ -193,7 +193,7 @@ une duplication sans raison.
 un événement `fch` dont `reunion_objet` est posé — l'objet EST le marqueur,
 comme une publication sans date est une idée. Elle se note au calendrier (le
 « + », nature Événement, pastille Réunion : objet + « j'anime »), depuis le
-site comme depuis le hub — la pastille s'y révèle quand le projet choisi est
+site comme depuis le hub — la pastille s'y révèle quand l'espace choisi est
 fch, exactement comme le type de moment avec photo.
 
 Les objets : **CA, alternance, communication, partenariat, autre** — la liste
@@ -296,7 +296,7 @@ Ce qui SURVIT de cette journée, et sous quelle forme :
 
 ### `#hermitage/calendrier` — tout ce qui porte une date
 
-Publications, tâches, événements, objectifs et jalons du projet `fch`, groupés
+Publications, tâches, événements, objectifs et jalons de l'espace `fch`, groupés
 par mois, filtrables par nature. Même module que le hub et Yuno.
 
 ### `#hermitage/partenaires` — les partenaires
@@ -321,7 +321,7 @@ L'écran existe, dit ce qu'il attend, et se remplira quand l'usage aura parlé.
 Les réunions n'ont d'abord rien créé (21 août 2026, matin) : `evenements` a
 gagné `reunion_objet` (CHECK ca · alternance · communication · partenariat ·
 autre, non nul = réunion) et `reunion_animee` ; `modeles_preparation` a gagné
-`projet`, `objet` et `anime` ; `preparations` a gagné `bilan_animation`.
+`espace`, `objet` et `anime` ; `preparations` a gagné `bilan_animation`.
 
 **Trois tables sont nées le soir même**, avec la fiche de réunion
 (`20260821200000_fiches_reunion.sql`) :
@@ -343,13 +343,13 @@ autre, non nul = réunion) et `reunion_animee` ; `modeles_preparation` a gagné
 La limite de trois points par réunion vit à l'écran, **pas en contrainte** :
 un quatrième sujet est un choix assumé, pas une faute que la base refuse.
 
-Le projet `fch` utilise :
+L'espace `fch` utilise :
 
 - `objectifs`, `jalons`, `taches`, `evenements`, `victoires` — les tables du
-  hub, filtrées sur `projet = 'fch'` ;
-- `publications` — avec la colonne `projet` ajoutée le 7 août 2026, et le
+  hub, filtrées sur `espace = 'fch'` ;
+- `publications` — avec la colonne `espace` ajoutée le 7 août 2026, et le
   CHECK `reseau` élargi à Facebook et YouTube ;
-- `contacts` — pour les partenaires ; la table n'a pas de colonne `projet`,
+- `contacts` — pour les partenaires ; la table n'a pas de colonne `espace`,
   c'est un carnet unique dont le `type` et la `structure` disent l'usage.
 
 Si un besoin réclame plus tard une table propre au club (effectifs, plannings

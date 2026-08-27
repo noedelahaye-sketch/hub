@@ -1,11 +1,11 @@
 // La progression d'un objectif — la même partout : tableau de bord, espace
-// projet, caps des pages Yuno et FCH, sites. Un objectif n'avance pas au
+// espace, caps des pages Yuno et FCH, sites. Un objectif n'avance pas au
 // pourcentage mais au jalon franchi : la barre est donc un CHEMIN de cases,
-// une par jalon, qui s'allument à la couleur du projet. Sous le chemin, une
+// une par jalon, qui s'allument à la couleur de l'espace. Sous le chemin, une
 // ligne dit où on en est et surtout ce qui vient — le prochain jalon se lit
 // sans déplier la tuile.
 
-import { depuisDateISO, echeanceLisible, echapper, NOMS_PROJETS } from './format.js';
+import { depuisDateISO, echeanceLisible, echapper, NOMS_ESPACES } from './format.js';
 
 export function construireProgression(jalons = []) {
   const tries = [...jalons].sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
@@ -41,14 +41,14 @@ export function construireProgression(jalons = []) {
 
 // --- Le cap gravé -----------------------------------------------------------
 //
-// Sur un TABLEAU DE BORD — l'accueil, les pages projet du hub — le cap est
+// Sur un TABLEAU DE BORD — l'accueil, les pages espace du hub — le cap est
 // inscrit dans la page (demande de Noé, 25 août 2026) : ni carte, ni bordure,
 // ni dépliage, aucun geste qui le modifie. On le relit, on ne le règle pas.
 // Une colonne par objectif, séparées par un filet, et une porte au bas du bloc
 // vers #objectifs, seul endroit du hub où il s'écrit.
 //
-// `montrerProjet` : l'accueil mélange les projets et doit les nommer ; une page
-// projet dit déjà le sien dans son titre.
+// `montrerEspace` : l'accueil mélange les espaces et doit les nommer ; une page
+// espace dit déjà le sien dans son titre.
 
 // C'est le CAP ENTIER qui mène au détail des objectifs, pas chaque titre
 // (demande de Noé, 26 août 2026) : un lien par objectif faisait autant de
@@ -61,16 +61,16 @@ export function construireProgression(jalons = []) {
 // identifiant. Yuno s'en sert pour dire les euros de « Rembourser mon
 // matériel » — les jalons y disent le chemin, les euros disent l'argent, et les
 // deux se lisent au même endroit (demande de Noé, 26 août 2026).
-export function construireCapGrave(objectifs, { montrerProjet = false, mesures = {} } = {}) {
+export function construireCapGrave(objectifs, { montrerEspace = false, mesures = {} } = {}) {
   const colonnes = objectifs
-    .map((objectif) => colonne(objectif, montrerProjet, mesures[objectif.id]))
+    .map((objectif) => colonne(objectif, montrerEspace, mesures[objectif.id]))
     .join('');
   return `<a class="cap-grave" href="#objectifs" aria-label="Voir tous tes objectifs">${colonnes}</a>`;
 }
 
 // Aller voir ses objectifs ne contredit pas le « rien ne s'y touche » du cap
 // gravé : y aller n'est pas le modifier. Rien ici ne coche ni n'enregistre.
-function colonne(objectif, montrerProjet, mesure) {
+function colonne(objectif, montrerEspace, mesure) {
   const jalons = [...(objectif.jalons ?? [])].sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
   const atteints = jalons.filter((jalon) => jalon.atteint).length;
 
@@ -84,11 +84,11 @@ function colonne(objectif, montrerProjet, mesure) {
     : '';
 
   return `
-    <div class="cap-projet" data-projet="${echapper(objectif.projet)}">
+    <div class="cap-espace" data-espace="${echapper(objectif.espace)}">
       ${
-        montrerProjet
+        montrerEspace
           ? `<span class="cap-nom">${echapper(
-              NOMS_PROJETS[objectif.projet] ?? objectif.projet,
+              NOMS_ESPACES[objectif.espace] ?? objectif.espace,
             )}</span>`
           : ''
       }

@@ -10,7 +10,7 @@
 > répètent, la durée d'une tâche, « Aujourd'hui » qui porte la journée entière,
 > l'état d'une publication réglable depuis les trois calendriers, Gilroy dans
 > la grille), **§ 0 ante celle d'avant** (26 août : les objectifs enfin posés,
-> le cap gravé, les trois pages projet refaites, l'argent de Yuno, les tâches
+> le cap gravé, les trois pages espace refaites, l'argent de Yuno, les tâches
 > répétées), **§ 0 ante bis** les 24–25 août, **§ 0 ante ter** le 24,
 > **§ 0 ante quater** le 21, **§ 0 ante quinquies** le 15, **§ 0 ante sexies**
 > les 14–15. Les § 1 et suivants décrivent l'état stable et les chantiers
@@ -71,7 +71,7 @@ faudra une trace — pas un changement de la règle.
 **La durée d'une tâche.** Colonne `duree` en **minutes**, facultative, et qui ne
 vaut qu'avec une heure. Noé a explicitement demandé de **la taper à la main** :
 les propositions (1 h → 3 h) ne sont qu'un raccourci, pas la liste des valeurs
-possibles. Le champ est bâti **une fois**, dans `champDuree` (`js/espace-projet.js`),
+possibles. Le champ est bâti **une fois**, dans `champDuree` (`js/gabarits.js`),
 et les deux tuiles qui le posent — l'espace Tâches et le calendrier — s'en
 servent telles quelles. Ce qu'elle change à l'écran : en vue semaine, la barre
 d'une tâche prend la hauteur de sa durée, comme celle d'un événement.
@@ -241,7 +241,7 @@ légèrement plus maigres que le reste de la page, partout. Une ligne de CSS suf
 
 ---
 
-## 0 ante. La session du 26 août — les objectifs posés, et les pages projet refaites
+## 0 ante. La session du 26 août — les objectifs posés, et les pages espace refaites
 
 **Neuf commits, tous poussés** : `e4bcca3` (forme des objectifs), `850a637`
 (cap gravé + espace `#objectifs`), `e8aca73` (page Yuno), `0fffce4` (page FCH),
@@ -252,7 +252,7 @@ Yuno). **Trois migrations** appliquées : `materiel`, `taches_recurrentes`,
 
 La journée a commencé par une **conversation**, pas par du code : Noé voulait
 clarifier ses objectifs. Elle s'est terminée par une refonte des trois pages
-projet. Entre les deux, **une quinzaine de redirections** — c'est son mode de
+espace. Entre les deux, **une quinzaine de redirections** — c'est son mode de
 travail : il regarde, il essaie, il change d'avis. Ce qui suit dit où l'on est
 arrivé, et surtout **ce qui a été essayé puis abandonné**, pour qu'une session
 future ne le remette pas en croyant améliorer.
@@ -263,7 +263,7 @@ future ne le remette pas en croyant améliorer.
 conversation. La table `objectifs` était vide depuis la création du hub ; c'était
 la priorité n° 11 du dernier état des lieux, elle est close.
 
-| Projet | Objectif | Échéance |
+| Espace | Objectif | Échéance |
 |---|---|---|
 | formation | Valider le Bac+3 | 8 déc. |
 | fch | Laisser une com qui tourne sans moi | 15 déc. |
@@ -281,7 +281,7 @@ cours de conversation, à sa demande et pour une raison qui tient :
 - **« le socle documentaire »** — il existe aussi, et n'est pas utilisé.
 
 Le problème du FCH n'est pas la production, c'est l'adoption. Or Noé refuse
-explicitement d'en être responsable : il part fin décembre, il a porté le projet
+explicitement d'en être responsable : il part fin décembre, il a porté l'espace
 club seul l'an dernier et en est sorti éprouvé. Un objectif « accompagner la
 mise en place » aurait affiché une barre de progression sur quelque chose dont
 il refuse d'être le moteur — et la lui aurait redonnée chaque matin.
@@ -310,7 +310,7 @@ compte :
 2. « On doit y accéder en cliquant » → chaque titre devint un lien.
 3. **« C'est la TUILE qui doit mener au détail, pas les titres, et les titres ne
    doivent pas être soulignés »** → un seul lien, étendu à tout le panneau par
-   un calque invisible ; au survol, **seul le contour prend l'encre du projet**.
+   un calque invisible ; au survol, **seul le contour prend l'encre de l'espace**.
 
 **Conséquence structurelle, à ne pas défaire** : une tuile-bouton ne peut
 contenir aucun autre contrôle — il passerait sous le calque. C'est pour ça que
@@ -318,17 +318,17 @@ le compteur d'euros a été sorti du panneau « Le cap ». Le calque est délib�
 plutôt qu'un `<a>` autour de la section : un lien enveloppant interdirait d'y
 remettre un jour le moindre bouton.
 
-**L'espace `#objectifs` est né** : tous les objectifs groupés par projet, avec
+**L'espace `#objectifs` est né** : tous les objectifs groupés par espace, avec
 pourquoi, cible, jalons **et la gestion complète** — dont le *retrait d'un
 jalon*, qui n'existait nulle part. Pas d'entrée dans la barre de navigation
 (demande de Noé) : on y vient par la tuile.
 
-### 3. Les trois pages projet, refaites
+### 3. Les trois pages espace, refaites
 
 Noé a ouvert le sujet ainsi : « elles ne me sont pas utiles, je n'y vais
 jamais ». Le diagnostic était simple — **elles étaient une copie maigre du
 site**, sans rien que le site n'ait déjà, et elles ne montraient même pas les
-tâches du projet.
+tâches de l'espace.
 
 Le principe posé : **le site est l'atelier, la page du hub est le bilan.**
 Détail de chaque page dans les deux cahiers des charges ; ce qui compte ici,
@@ -344,7 +344,7 @@ c'est ce qui a été **écarté volontairement** :
 - **Pas de bloc « À venir » en formation** : elle n'a aucun événement en base,
   ses échéances sont ses jalons et ils vivent dans le cap.
 
-**`js/espace-projet.js` n'est plus une fabrique** : `creerEspaceProjet` a été
+**`js/gabarits.js` n'est plus une fabrique** : `creerEspaceEspace` a été
 supprimée (350 lignes) — la formation était sa dernière utilisatrice. Il ne
 reste que les gabarits partagés.
 
@@ -363,15 +363,15 @@ défait par erreur :
    pied de page, hors panneau.
 4. *« Des pastilles plus arrondies, et de couleur »* → et **c'était le fond, pas
    la couleur** : dans un panneau, une pastille teintée se fondait dans la
-   carte ; sur le fond nu de la page, l'encre du projet la détache.
+   carte ; sur le fond nu de la page, l'encre de l'espace la détache.
 
 Puis **une passe de densité** (« j'ai une bonne vision, je préfère plus
 d'informations sur moins d'espace ») : textes d'un ou deux crans plus petits,
 panneaux resserrés de 24 à 16 px, et **les cibles tactiles scindées — 44 px sur
 téléphone, 32 px sur grand écran avec un pointeur fin**. La règle des 44 px
 protège un doigt ; sous une souris elle ne fait que pousser le reste vers le
-bas. Le nom du projet a aussi quitté les lignes de tâches **des pages projet
-seulement** : ailleurs les projets se mêlent, il y reste indispensable.
+bas. Le nom de l'espace a aussi quitté les lignes de tâches **des pages espace
+seulement** : ailleurs les espaces se mêlent, il y reste indispensable.
 
 ### 4. L'argent de Yuno
 
@@ -572,7 +572,7 @@ c'est justement ce qu'on vient voir le matin.
 
 **La forme de ce réglage a bougé trois fois dans la tuile** : trois boutons
 alignés, puis un menu déroulant à droite de la ligne des gestes, puis **une
-pastille dans l'en-tête**, à la suite de la nature et du projet — les trois
+pastille dans l'en-tête**, à la suite de la nature et de l'espace — les trois
 disent ce qu'EST la publication, elles se lisent ensemble. Le menu est dessiné,
 jamais le `<select>` du système (règle du 14 août), **et sans chevron** : à
 cette taille il pesait autant que le mot.
@@ -609,9 +609,9 @@ continuent de ranger les publiées sous leur pli.
   « uniquement dans le calendrier », puis « le calendrier du hub ». Ailleurs
   (espace Tâches, pastilles, fiches, les deux sites), la couleur double du club
   et son rouge ne bougent pas. La mesure du 21 août qui avait fait choisir le
-  rouge reste vraie et reste écrite : le bleu du club est la couleur de projet
+  rouge reste vraie et reste écrite : le bleu du club est la couleur d'espace
   la plus proche du perso. Dans une grille, la colonne et l'étiquette disent le
-  projet avant la couleur.
+  espace avant la couleur.
 - **Le champ de la tuile de capture n'a plus AUCUNE décoration de focus**
   (demande en deux temps : d'abord la couleur, puis le trait lui-même). C'est
   la seule exception du hub à « le focus clavier jamais supprimé », et elle est
@@ -811,7 +811,7 @@ Le gros morceau (commit `60f17d6`), spécifié avec Noé avant d'être construit
   alternance · communication · partenariat · autre — libellé « CA » tel quel,
   demande de Noé) en est le marqueur, plus `reunion_animee`. Pastille
   « Réunion » sur la tuile : toujours offerte sur le site FCH, révélée au hub
-  quand le projet choisi est fch — le motif exact de `type_moment`/photo ;
+  quand l'espace choisi est fch — le motif exact de `type_moment`/photo ;
 - **le site FCH a gagné le « + » flottant** (tuile commune, nature Événement
   d'abord) et un onglet **Réunions** ; son accueil ouvre sur **la réunion du
   moment** (phase + 3 lignes cochables) ;
@@ -870,15 +870,15 @@ déjà. Les six modèles de préparation du matin restent en base sans servir.
 
 4. **Le FCH n'avait aucune couleur dans le calendrier du hub** — signalé par
    Noé, et c'était un vrai bug, pas un oubli de goût. Le FCH est le seul
-   projet dont `--couleur-projet` est un **dégradé** (ses deux couleurs) ; or
+   espace dont `--couleur-espace` est un **dégradé** (ses deux couleurs) ; or
    le calendrier s'en servait pour des **bordures** et des `color-mix()`, qui
    exigent une couleur. CSS jette la déclaration entière sans un mot : les
    barres du club sortaient sans fond ET sans bordure (`border-left-width: 0`,
-   vérifié au navigateur), seules de tous les projets.
+   vérifié au navigateur), seules de tous les espaces.
 
    Deux corrections. La variable de couleur pleine s'appelait
-   `--couleur-projet-texte` — **un nom qui mentait**, et c'est lui qui a piégé
-   le calendrier : elle est renommée **`--couleur-projet-pleine`**, avec la
+   `--couleur-espace-texte` — **un nom qui mentait**, et c'est lui qui a piégé
+   le calendrier : elle est renommée **`--couleur-espace-pleine`**, avec la
    vraie règle écrite au-dessus des définitions (dégradé = `background` et
    rien d'autre ; pleine = partout où une couleur est exigée). Les trois
    règles fautives (`.cal-barre-element`, `.cal-type-tache`,
@@ -887,7 +887,7 @@ déjà. Les six modèles de préparation du matin restent en base sans servir.
    **La couleur pleine du FCH est le ROUGE, pas le bleu** (choix de Noé, qui a
    demandé de trancher selon la ressemblance — mesuré plutôt qu'estimé à
    l'œil). Écart perceptuel du bleu du club au perso : **26 en clair, 18 en
-   sombre**, quand les deux projets les plus proches du hub sont déjà à 55 et
+   sombre**, quand les deux espaces les plus proches du hub sont déjà à 55 et
    53 — le bleu était deux à trois fois trop près. Le rouge se pose à 53 et
    54, l'écart de tout le monde, et rien d'autre n'est rouge dans la palette.
 
@@ -901,13 +901,13 @@ déjà. Les six modèles de préparation du matin restent en base sans servir.
    **AMENDÉ le 25 août 2026 : dans le calendrier du hub, le FCH est BLEU**
    (demande de Noé, en trois temps — « tout ce qui concerne le FCH en bleu »,
    puis « uniquement dans le calendrier », puis « le calendrier du hub »). La
-   règle vit dans `#bloc-semaine [data-projet="fch"]` et
-   `#espace-calendrier [data-projet="fch"]` : là, et là seulement, les deux
+   règle vit dans `#bloc-semaine [data-espace="fch"]` et
+   `#espace-calendrier [data-espace="fch"]` : là, et là seulement, les deux
    variables prennent `--club-fch-bleu`. Partout ailleurs — l'espace Tâches,
    les pastilles, les fiches, les deux sites — la couleur double et son rouge
    ne bougent pas. La mesure ci-dessus reste vraie (le bleu du club est la
    couleur la plus proche du perso) ; dans une grille, la colonne et
-   l'étiquette disent le projet avant la couleur.
+   l'étiquette disent l'espace avant la couleur.
 
 5. **La refonte du Réseau chez Yuno**, en deux passes le même soir : proposée
    dans le chat, validée, construite avec une sous-navigation en pastilles —
@@ -933,9 +933,9 @@ déjà. Les six modèles de préparation du matin restent en base sans servir.
    - **les modèles de messages sont une arrière-boutique** : plus d'entrée de
      navigation, un lien discret en bas de la Passerelle et du CRM ;
    - **les feuilles et modèles du FCH n'entrent plus dans Yuno** (demande de
-     Noé) : `preparationsToutes` embarque le projet de l'événement lié, Yuno
+     Noé) : `preparationsToutes` embarque l'espace de l'événement lié, Yuno
      filtre photo (une feuille sans événement est à lui), et les modèles sur
-     `projet = 'photo'`.
+     `espace = 'photo'`.
 
    Vérifié au navigateur : arrivée par l'onglet, alias, chiffres-portes,
    Missions (liste sans le FCH), Commandes, fiche → Nouvelle commande ; rien
@@ -1051,7 +1051,7 @@ incluses), `20260815230000` (statut `a_relancer`), `20260815240000`
   besoin d'un outil qui s'en souvienne.
 - **La Passerelle n'a servi qu'une fois.** Noé a fait son premier envoi le
   15 août. Avant d'ajouter quoi que ce soit, la laisser tourner une semaine ou
-  deux : c'est la méthode du projet, et elle vaut ici plus qu'ailleurs.
+  deux : c'est la méthode de l'espace, et elle vaut ici plus qu'ailleurs.
 
 ### Pièges rencontrés cette session
 
@@ -1251,8 +1251,8 @@ Toujours sur décision de Noé, et **jamais en détruisant des données** :
 
 > **Mis à jour le 26 août 2026.** Ce qui a changé ce jour-là et qui touche la
 > structure : l'espace **`#objectifs`** est né (dixième espace, sans entrée
-> dans la barre) ; les **trois pages projet** sont des bilans à deux colonnes et
-> ne sont plus des « tableaux de bord réduits » ; **`creerEspaceProjet` n'existe
+> dans la barre) ; les **trois pages espace** sont des bilans à deux colonnes et
+> ne sont plus des « tableaux de bord réduits » ; **`creerEspaceEspace` n'existe
 > plus** ; les tables **`materiel`** et les colonnes **`taches.recurrence`**,
 > **`commandes.frais`** sont apparues. `CLAUDE.md` porte le détail à jour.
 
@@ -1372,10 +1372,10 @@ hub, site Yuno et calendrier éditorial compris.
 
 | Nature | Pastilles |
 |---|---|
-| Événement | Nature · Quand (heure, jusqu'au) · Projet · Durée · Répétition · Lieu et notes |
-| Tâche | Nature · Quand (heure) · Projet · **Priorité** |
-| Publication | Nature · Quand (heure) · Projet · Réseau · Format |
-| Objectif | Nature · Quand (échéance seule) · Projet · Le pourquoi |
+| Événement | Nature · Quand (heure, jusqu'au) · Espace · Durée · Répétition · Lieu et notes |
+| Tâche | Nature · Quand (heure) · Espace · **Priorité** |
+| Publication | Nature · Quand (heure) · Espace · Réseau · Format |
+| Objectif | Nature · Quand (échéance seule) · Espace · Le pourquoi |
 
 **Un choix se fait dans une LISTE, jamais dans un `<select>` natif.** C'était
 l'erreur de la première version, et Noé l'a dite sans détour : « le rectangle
@@ -1383,10 +1383,10 @@ bleu avec un menu déroulant, c'est très laid et pas agréable ». Un menu du
 système, avec son cadre bleu et son chevron, au milieu d'une tuile dessinée — et
 surtout pénible au doigt : viser un contrôle de 30 px, puis une ligne dans une
 roue. Chaque option est maintenant une ligne pleine largeur, avec son drapeau de
-priorité ou sa pastille de projet, **exactement comme dans l'espace Tâches**.
+priorité ou sa pastille d'espace, **exactement comme dans l'espace Tâches**.
 La valeur voyage dans un champ caché : les espaces lisent toujours le formulaire
 avec `FormData`, ils n'ont pas à savoir comment on l'a saisie. Vérifié en posant
-une tâche dont le projet et la priorité viennent des listes : les deux sont en
+une tâche dont l'espace et la priorité viennent des listes : les deux sont en
 base.
 
 Conséquence sur le découpage : la **durée** sort du panneau « Quand » et le
@@ -1645,7 +1645,7 @@ visite**, largement devant tout le reste — les 11 requêtes Supabase du démar
 ne pèsent rien à côté.
 
 **Les transformations d'image de Supabase ne sont pas disponibles** sur ce
-projet (fonction payante). Piège vérifié : `createSignedUrls(..., { transform:
+espace (fonction payante). Piège vérifié : `createSignedUrls(..., { transform:
 { width: 400 } })` **ne renvoie aucune erreur** — le SDK accepte l'option, rend
 une URL `/object/sign/` ordinaire au lieu de `/render/image/sign/`, et sert
 l'original. Poids mesuré avec et sans : identique, 5 452 Ko. Ne pas conclure
@@ -1679,16 +1679,16 @@ lieu de 113 × 150.
 **L'espace Tâches est né le 13 août**, à la demande de Noé, sur la forme de
 Todoist (capture à l'appui) : `#taches`, migration `taches_priorite`.
 
-- **Il ne cache rien** — datées ou non, faites ou non, tous projets. C'est sa
+- **Il ne cache rien** — datées ou non, faites ou non, tous espaces. C'est sa
   raison d'être : ailleurs le hub trie (le dashboard ne montre que les actives,
-  un espace projet replie son backlog), ici on vient voir l'ensemble et ranger.
+  un espacet espace replie son backlog), ici on vient voir l'ensemble et ranger.
 - **`priorite` int 1–4, défaut 4.** Convention de Todoist : 1 le plus urgent, 4
   le cas ordinaire. Le défaut n'est pas 1, et c'est le point — une tâche n'est
   pas prioritaire parce qu'elle existe, et une liste où tout est en 1 ne classe
   plus rien. Entier borné par un CHECK plutôt qu'un texte : une priorité se
   trie, et l'ordre alphabétique de « haute » et « basse » ne veut rien dire.
 - **`priorite` ne remplace pas `statut`** : l'un dit combien la tâche compte,
-  l'autre où elle en est. La règle des 3 actives par projet reste entière, et
+  l'autre où elle en est. La règle des 3 actives par espace reste entière, et
   `api.changerStatutTache` la tient toujours.
 - **Le tri** : priorité, puis date, puis ancienneté — et **à priorité égale, une
   tâche datée passe avant une tâche sans date**. C'est le seul endroit du hub où
@@ -1714,8 +1714,8 @@ Todoist (capture à l'appui) : `#taches`, migration `taches_priorite`.
   est en `opacity: 0` et se révèle à la souris ; sur un téléphone il n'y a pas
   de survol, et supprimer une tâche deviendrait impossible.
 - **Une liste, pas des tuiles.** `.bloc li` est annulé pour cette liste, barre de
-  projet comprise : vingt tâches en vingt cartes feraient un mur, et la barre
-  ferait double emploi avec le nom du projet.
+  espace comprise : vingt tâches en vingt cartes feraient un mur, et la barre
+  ferait double emploi avec le nom de l'espace.
 - **Une ligne s'ouvre pour se corriger** (13 août, demande de Noé) : appuyer sur
   la tâche rouvre la tuile, remplie de ce qu'elle contient, et la flèche
   enregistre au lieu de créer. C'est un vrai `<button>`, pas une ligne qui écoute
@@ -1723,7 +1723,7 @@ Todoist (capture à l'appui) : `#taches`, migration `taches_priorite`.
   correction la tuile se referme : on n'enchaîne pas des corrections comme on
   enchaîne des notes.
 - **La ligne de service ne dit plus la priorité**, seulement la date **et le
-  projet, juste à côté d'elle** : le cercle dit déjà la priorité par sa couleur,
+  espace, juste à côté d'elle** : le cercle dit déjà la priorité par sa couleur,
   et les deux autres disent où et quand se situe la tâche — ils vont ensemble.
   Les sélecteurs en ligne ont disparu avec elle : tout se corrige dans la tuile.
 - **Le bouton « nouvelle tâche » flotte en bas à droite**, dans un rond plein.
@@ -1735,7 +1735,7 @@ Todoist (capture à l'appui) : `#taches`, migration `taches_priorite`.
 
 **La capture a été refaite le même jour**, sur un deuxième puis un troisième jeu
 de captures de Noé : un « + » ouvre une **tuile volante**, on écrit le nom
-directement, et **une rangée de pastilles** — date, projet, priorité — ouvre
+directement, et **une rangée de pastilles** — date, espace, priorité — ouvre
 chacune son choix en menu flottant. Le formulaire à six champs empilés a
 disparu.
 
@@ -1830,7 +1830,7 @@ disparu.
   c'est le hub qui parle, du même ton que partout.
   **Elle ne se pose que s'il y a quelque chose à perdre** — un titre commencé,
   une date, une priorité. Sur une tuile intacte, l'appui dehors ferme tout de
-  suite : confirmer l'abandon de rien serait une question pour rien. Le projet
+  suite : confirmer l'abandon de rien serait une question pour rien. L'espace
   ne compte pas dans ce calcul : il a un défaut, le laisser tel quel n'est pas
   un travail commencé.
 - **Échap referme en trois temps** : d'abord le menu ouvert, puis — s'il y a de
@@ -1859,22 +1859,22 @@ disparu.
 - **Le réglage backlog / active est masqué, et toute tâche naît active**
   (13 août 2026, décision de Noé — « pour le moment »). La pastille de statut a
   disparu des lignes, et le « ↓ » qui renvoyait au backlog a disparu des espaces
-  projet. Les quatre endroits qui créent une tâche posent `statut: 'actif'` :
-  la capture des Tâches, les deux calendriers, l'espace projet.
+  espace. Les quatre endroits qui créent une tâche posent `statut: 'actif'` :
+  la capture des Tâches, les deux calendriers, l'espacet espace.
 
-  **Ce que ça coûte, et c'est assumé** : le plafond de **3 actives par projet**
+  **Ce que ça coûte, et c'est assumé** : le plafond de **3 actives par espace**
   n'est plus jamais exercé — rien n'appelle `changerStatutTache`, et `creerTache`
   ne l'a jamais vérifié. Le bloc « Aujourd'hui » du dashboard ne filtre donc
   plus : il montre les 9 premières tâches, plus « les 3 chantiers de chaque
-  projet ». C'était le mécanisme central de la règle « réduire la charge
+  espace ». C'était le mécanisme central de la règle « réduire la charge
   mentale » de `CLAUDE.md` ; il est en sommeil, pas supprimé.
 
   **Rien n'a été jeté** : la colonne, `MAX_TACHES_ACTIVES`, `changerStatutTache`
   et son message de refus sont tous en place. Réafficher la pastille suffit à
-  tout rallumer. Le backlog reste lisible dans les espaces projet s'il contient
+  tout rallumer. Le backlog reste lisible dans les espaces s'il contient
   encore quelque chose d'ancien — il se replie tout seul quand il est vide,
   c'est-à-dire toujours désormais.
-- **La capture reste ouverte après l'envoi**, vidée, projet et priorité gardés :
+- **La capture reste ouverte après l'envoi**, vidée, espace et priorité gardés :
   on en note rarement une seule.
 - **Trois pièges de redessin, tous rencontrés :**
   1. Le titre vit dans le champ, pas dans l'état, tant qu'on tape. `rendreCapture`
@@ -1895,7 +1895,7 @@ disparu.
 
 **Vérifié en conditions réelles** (13 août), la table `taches` étant vide au
 départ : le dessin d'abord avec six tâches factices (ordre du tri, section
-« Faites » repliée et à l'envers, filtre par projet, couleur des cercles), puis
+« Faites » repliée et à l'envers, filtre par espace, couleur des cercles), puis
 **le vrai chemin d'écriture** — créer, changer la priorité en ligne, renvoyer au
 backlog, cocher (victoire créée en base, relue en SQL), décocher (victoire
 retirée), supprimer. Puis quatre tâches pour éprouver le refus des 3 actives.
@@ -1907,14 +1907,14 @@ de débordement horizontal à 375 px, cercles à 43 px de cible tactile.
 **Le dashboard a été refondu sur trois points** (13 août, demande de Noé) :
 
 - **« Ta semaine » est devenu un aperçu du calendrier hebdomadaire**, à la place
-  de sa liste : la vraie grille, tous projets ET toutes natures confondus —
+  de sa liste : la vraie grille, tous espaces ET toutes natures confondus —
   événements, tâches, publications, objectifs, jalons, commandes, relances.
   C'est `construireGrille` en vue semaine, la même fonction que l'espace
   Calendrier : **une seule façon de dessiner une semaine dans tout le hub**.
   `assemblerSemaine`, qui fusionnait trois sources à la main pour ce seul bloc,
   a disparu — la grille assemble elle-même.
 - **« Aujourd'hui » a pris la forme exacte de l'espace Tâches** : cercle coloré
-  par priorité, titre, date et projet. `ligneTache` est devenue empruntable
+  par priorité, titre, date et espace. `ligneTache` est devenue empruntable
   (`construireLignesTaches`), avec deux réglages en moins ici — pas de tuile
   pour corriger sur cette page, et supprimer une tâche n'a rien à faire dans un
   check-in du matin. Le cercle est un bouton et non plus une case : le
@@ -2105,7 +2105,7 @@ moindre `await`**, le comptage des requêtes au `fetch` intercepté, le parcours
 des neuf vues avec relevé des écrans vides et des repères (45 contacts, 15
 idées, 42 cases de calendrier, 5 lignes de carnet), et zéro erreur en console.
 
-**Ce qu'il reste à faire** : `perso.js`, `espace-projet.js`, `fch.js`,
+**Ce qu'il reste à faire** : `perso.js`, `gabarits.js`, `fch.js`,
 `photo.js` font le chrome d'abord, mais **n'ont ni cache ni chargement par
 morceaux**. `hermitage.js` et `calendrier.js` n'ont même pas le squelette. Ce
 sont les moins pressés : ce ne sont pas eux qu'on ouvre le matin.
@@ -2467,7 +2467,7 @@ rouvre depuis le 13 ; sur l'accueil, elle ne répondait pas — `construireLigne
 y était appelée avec `ouvrable: false`, faute de tuile pour corriger.
 
 **C'est la tuile du « + » qui sert**, pré-remplie. `fenetreCreation` a gagné un
-paramètre `valeurs` — le titre dans le champ, le projet et la priorité sur leurs
+paramètre `valeurs` — le titre dans le champ, l'espace et la priorité sur leurs
 pastilles. La tuile ne sait toujours pas si elle crée ou si elle corrige : c'est
 l'espace qui le sait, à l'envoi, en regardant si `etat.creation` porte un `id`.
 
@@ -2479,7 +2479,7 @@ refermée, liste à jour.
 pas depuis l'accueil. Effacer n'a rien à faire dans un check-in du matin, et le
 geste existe deux onglets plus loin.
 
-**Vérifié** : la tuile s'ouvre remplie (titre, date, projet, priorité) ; un
+**Vérifié** : la tuile s'ouvre remplie (titre, date, espace, priorité) ; un
 titre et une priorité changés, relus en base, le reste intact ; le « + » crée
 toujours (il s'ouvre vide) ; le cercle coche toujours sans ouvrir la tuile ;
 réseau coupé, la correction ne reste pas à l'écran et la ligne d'excuse
@@ -2630,7 +2630,7 @@ réseau / le format / le pilier d'une idée.
 
 1. **Le site du FCH n'a pas de tuile de capture** — donc personne ne branchait
    ses menus. La mécanique (`poserLeChoix`, `basculerChoixDeFormulaire`,
-   `fermerLesChoix`) vit dans `espace-projet.js`, à côté du constructeur de
+   `fermerLesChoix`) vit dans `gabarits.js`, à côté du constructeur de
    formulaires qui produit ces menus, et `brancherChoix(section)` s'appelle une
    fois par espace qui en a besoin. `brancherCapture` s'en charge pour les
    autres — c'est le même écouteur de clics qui reçoit les deux sortes.
@@ -2880,15 +2880,15 @@ refermant.
 
 ## 2 quinquies. La tâche perso — une entorse, bornée
 
-Demandé par Noé le 13 août 2026. Jusque-là, `taches.projet` n'acceptait que les
-trois projets professionnels — au niveau de la BASE, pas seulement de l'écran :
+Demandé par Noé le 13 août 2026. Jusque-là, `taches.espace` n'acceptait que les
+trois espaces professionnels — au niveau de la BASE, pas seulement de l'écran :
 la contrainte CHECK les listait un par un. Migration
 `20260813010000_taches_perso.sql`.
 
 **Ce qui change** : `perso` apparaît dans le filtre de l'espace Tâches, dans la
-pastille de projet de la tuile, et pour la nature « tâche » de la tuile du
+pastille d'espace de la tuile, et pour la nature « tâche » de la tuile du
 calendrier. Une tâche perso porte la couleur mauve de l'espace, comme partout
-ailleurs — `[data-projet="perso"]` existait déjà en CSS.
+ailleurs — `[data-espace="perso"]` existait déjà en CSS.
 
 **Ce qui ne change pas, et il faut le savoir avant d'y toucher** :
 
@@ -2906,9 +2906,9 @@ ailleurs — `[data-projet="perso"]` existait déjà en CSS.
   écrite une fois, dans `NATURES_PERSO`.
 
 **Vérifié** : les quatre choix dans le filtre et dans la pastille ; une tâche
-perso créée depuis l'espace Tâches (relue en base : `projet = 'perso'`), une
+perso créée depuis l'espace Tâches (relue en base : `espace = 'perso'`), une
 autre depuis le « + » de l'accueil — elle arrive dans « Aujourd'hui » et dans la
-semaine, en mauve ; les listes de projets relevées pour les quatre natures de la
+semaine, en mauve ; les listes d'espaces relevées pour les quatre natures de la
 tuile (perso présent pour tâche et événement, absent pour publication et
 objectif). Les deux tâches d'essai supprimées, base relue : son état exact.
 
@@ -2932,7 +2932,7 @@ formulations successives de Noé, chacune corrigeant la précédente à l'usage.
 Ce qui suit est l'état d'arrivée.
 
 **L'espace `#taches` ne cache rien** : datées ou non, faites ou non, tous
-projets. C'est sa raison d'être — ailleurs le hub trie, ici on vient voir
+espaces. C'est sa raison d'être — ailleurs le hub trie, ici on vient voir
 l'ensemble et ranger. Le détail (priorité, tri, couleurs, victoires) est plus
 haut, dans la section qui l'a vu naître.
 
@@ -3115,7 +3115,7 @@ qu'`origin/main`. Rien n'attend d'être commité sauf cet état des lieux lui-m�
 
 **Ensuite, écouter l'usage :**
 
-6. **Les pages projet, après quelques jours.** Elles viennent d'être refaites de
+6. **Les pages espace, après quelques jours.** Elles viennent d'être refaites de
    fond en comble et **n'ont jamais servi en vrai**. La question n'est pas la
    forme — elle a été reprise quatre fois avec Noé — mais l'usage : y va-t-il
    maintenant ? Si la réponse est non, ce n'est pas la mise en page qu'il faut
@@ -3153,7 +3153,7 @@ qu'`origin/main`. Rien n'attend d'être commité sauf cet état des lieux lui-m�
 13. **Vérifier sur le vrai iPhone** ce qui ne l'a jamais été : la tuile avec un
     clavier réel, le service worker en application d'écran d'accueil, Canela, le
     poids d'une visite du Journal, le dégradé du FCH.
-14. **Les chantiers de fond inchangés** : conversion des espaces projet à
+14. **Les chantiers de fond inchangés** : conversion des espaces à
     `js/ecriture.js`, démarrage par morceaux à porter aux petits espaces.
 15. **La densité a touché des styles partagés** (libellé de section, cibles
     tactiles, ligne de tâche) : l'accueil, l'espace Tâches, le Calendrier et
@@ -3181,7 +3181,7 @@ PostgREST). Sans effet durable, mais ce n'est plus purement théorique.
 **Ce qui est clos et n'a plus à figurer ici** : **poser les objectifs** — c'était
 le point 11 du 25 août, il est fait ; la **cible non mesurable** de « Rembourser
 mon matériel » ; l'absence de **retrait d'un jalon** ; « Résultat CDF » en
-publié (Noé n'y est pas revenu) ; et la **fabrique `creerEspaceProjet`**, qui
+publié (Noé n'y est pas revenu) ; et la **fabrique `creerEspaceEspace`**, qui
 n'existe plus.
 
 **Clos par la session du 27 août** : la **répétition des publications** (elle
@@ -3308,7 +3308,7 @@ l'accueil et par l'espace Calendrier ; ailleurs (les deux sites), l'appui ouvre
 la tuile, comme avant.
 
 **Dans la tuile, l'état est une PASTILLE**, à la suite de celles de la nature
-et du projet, et elle ouvre un menu déroulant dessiné (`reglageStatut`,
+et de l'espace, et elle ouvre un menu déroulant dessiné (`reglageStatut`,
 js/calendrier-commun.js). La forme a bougé trois fois le 25 août avant de se
 poser là : trois boutons alignés, puis un menu déroulant à droite de la ligne
 des gestes, puis cette pastille — c'est celle qui se lit avec les deux autres
@@ -3512,7 +3512,7 @@ restaurée par le routeur. Ne pas « simplifier » ces id.
 | `js/vendor/` | supabase-js figé, rapatrié par `tools/telecharger-supabase.py`. Aucun CDN |
 | `tools/verifier-coquille.js` | La liste de `sw.js` contient-elle tout ce qui est référencé ? |
 | `js/api.js` | **Tous** les appels Supabase, une fonction par usage |
-| `js/espace-projet.js` | La fabrique d'espace projet (formation) + gabarits partagés |
+| `js/gabarits.js` | La fabrique d'espacet espace (formation) + gabarits partagés |
 | `js/publications.js` | Le calendrier éditorial, partagé Yuno/FCH — ce qui diffère passe en paramètre (cycle, checklist, piliers) |
 | `js/calendrier-commun.js` | L'assemblage de tout ce qui porte une date, les trois vues, le glissement et le clavier — **et la tuile « Poser au calendrier » avec `poserAuCalendrier` / `brancherCapture`, partagées par le hub, l'accueil et les deux sites** |
 | `js/yuno.js` | Le site Yuno : le Carnet de terrain, le réseau, la Passerelle, le rendez-vous stats |

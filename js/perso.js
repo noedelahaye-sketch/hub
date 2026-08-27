@@ -1,6 +1,6 @@
-// Espace perso — la vie hors projets.
+// Espace perso — la vie hors espaces.
 //
-// Ce n'est PAS un espace projet, et il n'utilise pas leur fabrique : aucune
+// Ce n'est PAS un espacet espace, et il n'utilise pas leur fabrique : aucune
 // mécanique de productivité ne s'applique ici. Ni tâches, ni jalons, ni
 // échéances, ni barres de progression, ni backlog, ni notion de retard. Jamais.
 //
@@ -9,16 +9,16 @@
 // des 30 derniers jours.
 
 import * as api from './api.js';
-// Ces fonctions ne portent aucune mécanique de projet : ce sont des gabarits
+// Ces fonctions ne portent aucune mécanique d'espace : ce sont des gabarits
 // de tuiles et de formulaires, réutilisés tels quels.
 import {
   construireFormulaire,
   construireVictoires,
   construireEvenements,
-} from './espace-projet.js';
+} from './gabarits.js';
 import { versDateISO, ajouterJours, depuisDateISO, echapper } from './format.js';
 
-const PROJET = 'perso';
+const ESPACE = 'perso';
 const JOURS_COURBE = 30;
 
 const FRIMOUSSES = { 1: '😔', 2: '😕', 3: '😐', 4: '🙂', 5: '😄' };
@@ -117,7 +117,7 @@ export function construireCourbeHumeur(entrees, maintenant = new Date()) {
 function squelette() {
   return `
     <h1>Perso</h1>
-    <p class="discret sous-titre">La vie hors projets — sport, sorties, temps pour toi.</p>
+    <p class="discret sous-titre">La vie hors espaces — sport, sorties, temps pour toi.</p>
 
     <section class="bloc">
       <h2>Intentions</h2>
@@ -188,9 +188,9 @@ export default {
     const charger = async () => {
       const depuis = versDateISO(ajouterJours(new Date(), -(JOURS_COURBE - 1)));
       const [intentions, evenements, victoires, humeur] = await Promise.all([
-        api.objectifsActifs({ projet: PROJET }),
-        api.evenementsEntre(new Date().toISOString(), horizon(), { projet: PROJET }),
-        api.victoiresDuProjet(PROJET),
+        api.objectifsActifs({ espace: ESPACE }),
+        api.evenementsEntre(new Date().toISOString(), horizon(), { espace: ESPACE }),
+        api.victoiresDeLEspace(ESPACE),
         api.humeurDepuis(depuis),
       ]);
 
@@ -250,7 +250,7 @@ export default {
         // Une intention est un objectif sans cible ni échéance — et le restera :
         // le formulaire ne propose ni l'une ni l'autre.
         const intention = await api.creerObjectif({
-          projet: PROJET,
+          espace: ESPACE,
           titre: champs.titre.trim(),
           pourquoi: champs.pourquoi?.trim() || null,
         });
@@ -261,7 +261,7 @@ export default {
 
       if (action === 'creer-victoire') {
         const victoire = await api.ajouterVictoire({
-          projet: PROJET,
+          espace: ESPACE,
           titre: champs.titre.trim(),
         });
         etat.victoires = [victoire, ...etat.victoires];
@@ -271,7 +271,7 @@ export default {
 
       if (action === 'creer-evenement') {
         const rdv = await api.creerEvenement({
-          projet: PROJET,
+          espace: ESPACE,
           titre: champs.titre.trim(),
           date_debut: new Date(champs.date_debut).toISOString(),
           lieu: champs.lieu?.trim() || null,

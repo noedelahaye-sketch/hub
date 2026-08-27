@@ -1,14 +1,14 @@
-// Le calendrier éditorial — la matière et son rendu, partagés par les projets.
+// Le calendrier éditorial — la matière et son rendu, partagés par les espaces.
 //
 // Construit d'abord pour Yuno, puis extrait ici quand le FC Hermitage a eu le
 // même besoin : c'est le même outil, la même table (`publications`, colonne
-// `projet`), les mêmes gestes. Seuls changent les réseaux proposés et les
+// `espace`), les mêmes gestes. Seuls changent les réseaux proposés et les
 // rubriques de départ, passés en paramètres.
 //
 // Le principe qui tient tout : **une idée est une publication sans date**.
 // Noter une idée prend cinq secondes ; la programmer, c'est lui donner une date.
 
-import { construireFormulaire } from './espace-projet.js';
+import { construireFormulaire } from './gabarits.js';
 import { depuisDateISO, echeanceLisible, echapper } from './format.js';
 import {
   RESEAUX,
@@ -104,16 +104,16 @@ export function construireApercuPublication(pub, options = {}) {
       ${entetePublication(pub, piliers)}
       <span class="pub-titre">${echapper(pub.titre)}</span>
       <span class="pub-statut">statut :
-        <strong>${nomDuStatut(pub.projet, pub.statut)}</strong></span>
+        <strong>${nomDuStatut(pub.espace, pub.statut)}</strong></span>
     </li>`;
 }
 
 // Le contenu complet, sans son enveloppe : la tuile de « À venir » l'enferme
 // dans un <li>, la fenêtre d'une idée le pose tel quel.
-// `options` porte ce qui change d'un projet à l'autre : le cycle des statuts,
+// `options` porte ce qui change d'un espace à l'autre : le cycle des statuts,
 // et l'aide à la création (les piliers et la checklist sont à Yuno).
 export function corpsPublication(pub, options = {}) {
-  const { cycle = cyclePublication(pub.projet), checklist = false, piliers = null, fenetre = false } =
+  const { cycle = cyclePublication(pub.espace), checklist = false, piliers = null, fenetre = false } =
     options;
   const suivant = cycle[cycle.indexOf(pub.statut) + 1];
   const datee = Boolean(pub.date_prevue);
@@ -145,12 +145,12 @@ export function corpsPublication(pub, options = {}) {
       }
       <span class="pub-actions">
         <span class="pub-statut">statut :
-          <strong>${nomDuStatut(pub.projet, pub.statut)}</strong></span>
+          <strong>${nomDuStatut(pub.espace, pub.statut)}</strong></span>
         ${
           suivant
             ? `<button type="button" class="bouton-secondaire bouton-mini"
                  data-avancer="${echapper(pub.id)}">Passer en ${nomDuStatut(
-                   pub.projet,
+                   pub.espace,
                    suivant,
                  )}</button>`
             : pub.lien_publie
@@ -271,7 +271,7 @@ export function construireApercuCreation(publications, { idees: avecIdees = true
     .join('')}</ul>`;
 }
 
-// Les rubriques proposées : celles du projet, plus celles déjà écrites. La
+// Les rubriques proposées : celles de l'espace, plus celles déjà écrites. La
 // saisie reste libre — la liste n'est qu'un appui.
 export function rubriquesProposees(publications, rubriquesDepart) {
   return [
@@ -282,7 +282,7 @@ export function rubriquesProposees(publications, rubriquesDepart) {
   ];
 }
 
-// `champsEnPlus` laisse un projet ajouter ce qui lui est propre — chez Yuno le
+// `champsEnPlus` laisse un espace ajouter ce qui lui est propre — chez Yuno le
 // pilier, la preuve et le « pourquoi chez moi ». Le titre suffit toujours :
 // noter une idée doit rester une affaire de cinq secondes.
 // `avecPli: false` sort le formulaire de son dépliant : c'est ce qu'il faut

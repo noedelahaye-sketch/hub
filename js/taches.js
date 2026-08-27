@@ -1,20 +1,20 @@
 // Espace Tâches du hub — TOUT ce qu'il y a à faire, en un seul endroit.
 //
 // C'est la seule page du hub qui ne cache rien : datées ou non, faites ou non,
-// tous projets. Ailleurs le hub trie pour Noé — le dashboard ne montre que les
-// actives du jour, un espace projet garde son backlog replié. Ici on vient
+// tous espaces. Ailleurs le hub trie pour Noé — le dashboard ne montre que les
+// actives du jour, un espacet espace garde son backlog replié. Ici on vient
 // justement pour voir l'ensemble, ranger, et repartir.
 //
 // La forme vient de Todoist (capture de Noé, 13 août 2026) : un cercle coloré
 // par priorité qui coche la tâche, le titre, puis une ligne de service — la
-// date à gauche, le projet à droite.
+// date à gauche, l'espace à droite.
 //
 // Ce qui NE vient pas de Todoist : la date passée n'est pas rouge. Todoist
 // écrit « Hier » en rouge ; le hub n'a pas de couleur d'alerte et n'en aura pas
 // (CLAUDE.md). Une échéance dépassée se dit du même gris que les autres.
 //
 // Pas de tâche perso, ici comme partout : l'espace perso n'a ni tâches, ni
-// jalons, ni retard. Le sélecteur de projet n'en propose pas.
+// jalons, ni retard. Le sélecteur d'espace n'en propose pas.
 
 import * as api from './api.js';
 import {
@@ -23,20 +23,20 @@ import {
   versDateISO,
   ajouterJours,
   echapper,
-  NOMS_PROJETS,
+  NOMS_ESPACES,
   RECURRENCES,
   dureeLisible,
 } from './format.js';
-import { champDuree, marquerLaDuree } from './espace-projet.js';
+import { champDuree, marquerLaDuree } from './gabarits.js';
 import { marquerLesEntrantes, animerLaCoche } from './mouvements.js';
 import { ajouterAussitot, retirerAussitot, modifierAussitot } from './ecriture.js';
 
 // Perso en fait partie depuis le 13 août 2026 (demande de Noé). C'est la seule
 // entorse à la règle « pas de tâche perso » de CLAUDE.md, et elle est bornée :
-// une tâche peut appartenir à la vie hors projets, mais l'espace #perso, lui,
+// une tâche peut appartenir à la vie hors espaces, mais l'espace #perso, lui,
 // n'affiche toujours ni tâche, ni jalon, ni progression. Une tâche perso se lit
 // dans cette page, au calendrier et dans « Aujourd'hui ».
-const PROJETS = {
+const ESPACES = {
   formation: 'Formation',
   photo: 'Yuno',
   fch: 'FC Hermitage',
@@ -57,7 +57,7 @@ const PRIORITES = {
 // (décision de Noé, 13 août 2026 — « pour le moment »).
 //
 // Ce que ça change : `statut` ne distingue plus que « à faire » et « fait ».
-// Le plafond de 3 actives par projet n'est donc plus jamais exercé — rien dans
+// Le plafond de 3 actives par espace n'est donc plus jamais exercé — rien dans
 // l'interface n'appelle `changerStatutTache`, et `creerTache` n'a jamais
 // vérifié le plafond. Conséquence directe et assumée : le bloc « Aujourd'hui »
 // du dashboard ne filtre plus, il montre les 9 premières tâches de la liste.
@@ -72,7 +72,7 @@ const STATUTS = {
 
 const STATUT_A_LA_CREATION = 'actif';
 
-const FILTRES = { tout: 'Tous les projets', ...PROJETS };
+const FILTRES = { tout: 'Tous les espaces', ...ESPACES };
 
 // Le glyphe de date, celui du calendrier commun — un dessin, pas un émoji.
 const DATE_ICONE = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none"
@@ -110,8 +110,8 @@ export function trierFaites(taches) {
   );
 }
 
-export function filtrerParProjet(taches, projet) {
-  return projet === 'tout' ? taches : taches.filter((tache) => tache.projet === projet);
+export function filtrerParEspace(taches, espace) {
+  return espace === 'tout' ? taches : taches.filter((tache) => tache.espace === espace);
 }
 
 // --- Le dessin ---------------------------------------------------------------
@@ -134,11 +134,11 @@ function quandLisible(tache) {
 // dashboard : là-bas il n'y a pas de tuile pour corriger, et supprimer une
 // tâche n'a rien à faire dans un check-in du matin. Le cercle, lui, se coche
 // partout — c'est le geste de la page.
-// `projet` à false : le nom du projet ne s'écrit pas. Sur la page d'un projet,
+// `espace` à false : le nom de l'espace ne s'écrit pas. Sur la page d'un espace,
 // il serait dit à chaque ligne alors que toute la page ne parle que de lui
 // (demande de Noé, 26 août 2026). Ailleurs — l'espace Tâches, l'accueil — les
-// projets se mêlent, et le nom reste indispensable.
-function ligneTache(tache, { ouvrable = true, supprimable = true, projet = true } = {}) {
+// espaces se mêlent, et le nom reste indispensable.
+function ligneTache(tache, { ouvrable = true, supprimable = true, espace = true } = {}) {
   const faite = tache.statut === 'fait';
   const quand = quandLisible(tache);
 
@@ -154,7 +154,7 @@ function ligneTache(tache, { ouvrable = true, supprimable = true, projet = true 
 
   return `
     <li class="tache-ligne${faite ? ' tache-faite' : ''}"
-      data-projet="${echapper(tache.projet)}" data-priorite="${tache.priorite ?? 4}">
+      data-espace="${echapper(tache.espace)}" data-priorite="${tache.priorite ?? 4}">
       <button type="button" class="tache-cercle" data-cocher="${echapper(tache.id)}"
         aria-pressed="${faite}"
         aria-label="${faite ? 'Rouvrir' : 'Marquer comme faite'} « ${echapper(
@@ -175,9 +175,9 @@ function ligneTache(tache, { ouvrable = true, supprimable = true, projet = true 
         <span class="tache-service">
           ${quand ? `<span class="tache-quand">${DATE_ICONE}${echapper(quand)}</span>` : ''}
           ${
-            projet
-              ? `<span class="tache-projet">${echapper(
-                  NOMS_PROJETS[tache.projet] ?? tache.projet,
+            espace
+              ? `<span class="tache-espace">${echapper(
+                  NOMS_ESPACES[tache.espace] ?? tache.espace,
                 )}</span>`
               : ''
           }
@@ -234,7 +234,7 @@ export async function cocherDepuisTableauDeBord(cercle, taches, rendre) {
 }
 
 // Exportée pour être vérifiable seule, avec des tâches factices.
-// Le refus des 3 tâches actives par projet n'est pas une erreur : c'est la
+// Le refus des 3 tâches actives par espace n'est pas une erreur : c'est la
 // règle du hub qui parle, et elle propose une sortie. Elle se dit donc en
 // ligne, du même ton que le reste — pas dans une boîte native qui bloque la
 // page pour annoncer quelque chose de prévu.
@@ -273,11 +273,11 @@ export function construireListe(taches, message = null) {
 
 function construireFiltres(actif) {
   return `
-    <div class="filtres" role="group" aria-label="Filtrer par projet">
+    <div class="filtres" role="group" aria-label="Filtrer par espace">
       ${Object.entries(FILTRES)
         .map(
           ([valeur, libelle]) => `
-        <button type="button" data-filtre-projet="${valeur}"
+        <button type="button" data-filtre-espace="${valeur}"
           aria-pressed="${valeur === actif}"
           class="${valeur === actif ? 'actif' : ''}">${echapper(libelle)}</button>`,
         )
@@ -288,7 +288,7 @@ function construireFiltres(actif) {
 // --- La capture --------------------------------------------------------------
 // La forme vient du deuxième jeu de captures de Noé (13 août) : un « + » qui
 // ouvre une tuile, le nom de la tâche qu'on écrit directement, et en dessous
-// une rangée de pastilles — date, projet, priorité — dont chacune ouvre son
+// une rangée de pastilles — date, espace, priorité — dont chacune ouvre son
 // choix.
 //
 // Pourquoi ça vaut mieux qu'un formulaire à six champs empilés : une tâche se
@@ -349,7 +349,7 @@ const FLECHE = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"
   <path d="M12 19V5M5 12l7-7 7 7"></path>
 </svg>`;
 
-const PASTILLE_PROJET = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+const PASTILLE_ESPACE = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none"
   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
   aria-hidden="true" focusable="false">
   <path d="M10 3 8 21M16 3l-2 18M3.5 8.5h17M3 15.5h17"></path>
@@ -461,14 +461,14 @@ function panneauRepetition(valeurCourante) {
     </div>`;
 }
 
-function panneauProjet(valeurCourante) {
+function panneauEspace(valeurCourante) {
   return `
-    <div class="capture-popover capture-popover-etroit" data-panneau="projet" hidden>
+    <div class="capture-popover capture-popover-etroit" data-panneau="espace" hidden>
       <ul class="choix-capture">
-        ${Object.entries(PROJETS)
+        ${Object.entries(ESPACES)
           .map(
             ([valeur, libelle]) => `
-          <li><button type="button" data-poser-projet="${valeur}" data-projet="${valeur}"
+          <li><button type="button" data-poser-espace="${valeur}" data-espace="${valeur}"
             aria-pressed="${valeur === valeurCourante}"
             class="${valeur === valeurCourante ? 'actif' : ''}">
             <span class="choix-pastille" aria-hidden="true"></span>
@@ -519,7 +519,7 @@ export function construireCapture(capture) {
              pas d'un pixel quelle que soit leur nombre ou leur longueur. -->
         <div class="capture-pastilles-liste">
           ${pastille('date', PASTILLE_DATE, dateLisible(capture), { rempli: Boolean(capture.echeance) })}
-          ${pastille('projet', PASTILLE_PROJET, PROJETS[capture.projet], { rempli: true })}
+          ${pastille('espace', PASTILLE_ESPACE, ESPACES[capture.espace], { rempli: true })}
           ${pastille('priorite', PASTILLE_PRIORITE, capture.priorite === 4 ? 'Priorité' : `P${capture.priorite}`, {
             rempli: capture.priorite !== 4,
             priorite: capture.priorite,
@@ -542,7 +542,7 @@ export function construireCapture(capture) {
            le clavier : la tuile se replaçait alors au milieu d'un écran soudain
            plus grand, et sautait à chaque pastille touchée. -->
       ${panneauDate(capture)}
-      ${panneauProjet(capture.projet)}
+      ${panneauEspace(capture.espace)}
       ${panneauPriorite(capture.priorite)}
       ${panneauRepetition(capture.recurrence)}
 
@@ -566,9 +566,9 @@ export function construireCapture(capture) {
 function squelette(etat) {
   return `
     <h1>Tâches</h1>
-    <p class="discret sous-titre">Tout ce qu'il y a à faire, tous projets — daté ou non.</p>
+    <p class="discret sous-titre">Tout ce qu'il y a à faire, tous espaces — daté ou non.</p>
     <div data-bloc="capture">${construireCapture(etat.capture)}</div>
-    ${construireFiltres(etat.projet)}
+    ${construireFiltres(etat.espace)}
     <div data-bloc="liste"><p class="vide">…</p></div>`;
 }
 
@@ -576,7 +576,7 @@ function squelette(etat) {
 
 export default {
   async monter(section) {
-    const captureVierge = (projet) => ({
+    const captureVierge = (espace) => ({
       ouverte: false,
       // L'identifiant de la tâche qu'on corrige. `null` = on en crée une.
       // La tuile est la même dans les deux cas : c'est le seul écran où une
@@ -589,10 +589,10 @@ export default {
       // le cas ordinaire : la plupart des tâches arrivent à un moment sans
       // occuper de créneau. Elle ne s'écrit qu'avec une heure.
       duree: null,
-      // Le projet suit le filtre courant : sur « Formation », la tâche qu'on
+      // L'espace suit le filtre courant : sur « Formation », la tâche qu'on
       // note est presque toujours une tâche de formation. Sur « Tous », le FCH
       // par défaut — c'est là que le travail quotidien de Noé se passe.
-      projet: PROJETS[projet] ? projet : 'fch',
+      espace: ESPACES[espace] ? espace : 'fch',
       priorite: 4,
       // Nulle = une seule fois. Voir `terminerTache` (js/api.js) : une tâche
       // répétée ne se termine pas, elle glisse à l'occurrence suivante.
@@ -602,7 +602,7 @@ export default {
     });
 
     // Y a-t-il quelque chose à perdre ? Le titre vit dans le champ tant qu'on
-    // tape, d'où la lecture du DOM. Le projet ne compte pas : il a un défaut,
+    // tape, d'où la lecture du DOM. L'espace ne compte pas : il a un défaut,
     // le laisser tel quel n'est pas un travail commencé.
     const captureRemplie = () =>
       Boolean(
@@ -615,7 +615,7 @@ export default {
     // l'abandon d'une tuile vide serait une question pour rien.
     const quitterLaCapture = () => {
       if (!captureRemplie()) {
-        etat.capture = captureVierge(etat.projet);
+        etat.capture = captureVierge(etat.espace);
         rendreCapture();
         oublierLeClavier();
         return;
@@ -626,7 +626,7 @@ export default {
       rendreCapture();
     };
 
-    const etat = { taches: [], projet: 'tout', message: null, capture: captureVierge('tout') };
+    const etat = { taches: [], espace: 'tout', message: null, capture: captureVierge('tout') };
 
     // Les tâches dont une écriture optimiste est en vol : l'écran a déjà
     // changé, le serveur pas encore. Un identifiant y reste le temps de
@@ -643,7 +643,7 @@ export default {
       const cible = section.querySelector('[data-bloc="liste"]');
       if (cible) {
         cible.innerHTML = construireListe(
-          filtrerParProjet(etat.taches, etat.projet),
+          filtrerParEspace(etat.taches, etat.espace),
           etat.message,
         );
         marquerLesEntrantes(cible, lignesVues, {
@@ -721,7 +721,7 @@ export default {
       };
 
       ecrire('date', dateLisible(etat.capture), Boolean(etat.capture.echeance));
-      ecrire('projet', PROJETS[etat.capture.projet], true);
+      ecrire('espace', ESPACES[etat.capture.espace], true);
       ecrire(
         'priorite',
         etat.capture.priorite === 4 ? 'Priorité' : `P${etat.capture.priorite}`,
@@ -745,7 +745,7 @@ export default {
     // dans la liste.
     section.addEventListener('pointerdown', (evenement) => {
       const garderLeClavier = evenement.target.closest(
-        '[data-pastille], [data-poser-date], [data-poser-projet], [data-poser-priorite],\n         [data-poser-repetition], [data-poser-duree], .capture-envoyer',
+        '[data-pastille], [data-poser-date], [data-poser-espace], [data-poser-priorite],\n         [data-poser-repetition], [data-poser-duree], .capture-envoyer',
       );
       if (garderLeClavier) evenement.preventDefault();
     });
@@ -772,7 +772,7 @@ export default {
     // refermerait la capture à chaque case cochée.
     const rendre = () => {
       section.querySelector('.filtres')?.replaceWith(
-        document.createRange().createContextualFragment(construireFiltres(etat.projet))
+        document.createRange().createContextualFragment(construireFiltres(etat.espace))
           .firstElementChild,
       );
       rendreListe();
@@ -886,7 +886,7 @@ export default {
       // enchaîne — on note rarement une seule tâche —, donc celui où attendre
       // se paie le plus cher.
       const champs = {
-        projet: etat.capture.projet,
+        espace: etat.capture.espace,
         titre,
         echeance: etat.capture.echeance,
         heure: etat.capture.heure,
@@ -905,7 +905,7 @@ export default {
         const tache = trouver(etat.capture.id);
         const avant = { ...tache };
         Object.assign(tache, champs);
-        etat.capture = captureVierge(etat.projet);
+        etat.capture = captureVierge(etat.espace);
         etat.message = null;
         rendreCapture();
         oublierLeClavier();
@@ -922,7 +922,7 @@ export default {
         return;
       }
 
-      // La capture reste ouverte, vidée, avec le projet et la priorité qu'on
+      // La capture reste ouverte, vidée, avec l'espace et la priorité qu'on
       // vient de choisir. Elle se vide EN PLACE, sans redessin — sinon le champ
       // serait détruit et le clavier se refermerait entre deux notes, ce qui
       // est tout ce qu'on cherche à éviter.
@@ -1040,7 +1040,7 @@ export default {
       // --- La capture ---
 
       if (evenement.target.closest('[data-ouvrir-capture]')) {
-        etat.capture = { ...captureVierge(etat.projet), ouverte: true };
+        etat.capture = { ...captureVierge(etat.espace), ouverte: true };
         rendreCapture({ focus: true });
         mesurerLeClavier();
         return;
@@ -1052,7 +1052,7 @@ export default {
         const tache = trouver(ouvrirTache.dataset.ouvrir);
         if (!tache) return;
         etat.capture = {
-          ...captureVierge(tache.projet),
+          ...captureVierge(tache.espace),
           ouverte: true,
           id: tache.id,
           titre: tache.titre,
@@ -1061,7 +1061,7 @@ export default {
           // les minutes, sans quoi il refuse la valeur et s'affiche vide.
           heure: tache.heure ? tache.heure.slice(0, 5) : null,
           duree: tache.duree ?? null,
-          projet: tache.projet,
+          espace: tache.espace,
           priorite: tache.priorite ?? 4,
           // La répétition était oubliée à la réouverture : la tuile est le seul
           // écran où elle se corrige, et elle y revenait vide — enregistrer
@@ -1081,7 +1081,7 @@ export default {
       }
 
       if (evenement.target.closest('[data-abandonner-capture]')) {
-        etat.capture = captureVierge(etat.projet);
+        etat.capture = captureVierge(etat.espace);
         rendreCapture();
         oublierLeClavier();
         return;
@@ -1140,10 +1140,10 @@ export default {
         return;
       }
 
-      const poserProjet = evenement.target.closest('[data-poser-projet]');
-      if (poserProjet) {
-        etat.capture.projet = poserProjet.dataset.poserProjet;
-        marquerLeChoix('poser-projet', etat.capture.projet);
+      const poserEspace = evenement.target.closest('[data-poser-espace]');
+      if (poserEspace) {
+        etat.capture.espace = poserEspace.dataset.poserEspace;
+        marquerLeChoix('poser-espace', etat.capture.espace);
         fermerLesPanneaux();
         majPastilles();
         return;
@@ -1174,14 +1174,14 @@ export default {
         fermerLesPanneaux();
       }
 
-      const filtre = evenement.target.closest('[data-filtre-projet]');
+      const filtre = evenement.target.closest('[data-filtre-espace]');
       if (filtre) {
-        etat.projet = filtre.dataset.filtreProjet;
-        // Le projet de la capture suit le filtre, tant qu'on n'a pas commencé
+        etat.espace = filtre.dataset.filtreEspace;
+        // L'espace de la capture suit le filtre, tant qu'on n'a pas commencé
         // à écrire : changer de filtre après avoir tapé un titre ne doit pas
         // déplacer la tâche sous le nez de Noé.
         if (etat.capture.ouverte && !section.querySelector('#capture-titre')?.value) {
-          etat.capture.projet = captureVierge(etat.projet).projet;
+          etat.capture.espace = captureVierge(etat.espace).espace;
           rendreCapture();
         }
         rendre();

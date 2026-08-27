@@ -1,7 +1,7 @@
 // Le SITE Yuno — le quartier général du photographe (docs/yuno-spec.md).
 //
 // À l'adresse #yuno, tout l'habillage du hub disparaît (voir styles.css) : ni
-// « Hub », ni onglets, ni autres projets. On est chez Yuno, avec son chrome à
+// « Hub », ni onglets, ni autres espaces. On est chez Yuno, avec son chrome à
 // lui. La page Yuno DU hub, elle, vit dans js/photo.js (#photo).
 //
 //   #yuno              l'accueil : l'invite, les compteurs, le mur de photos
@@ -21,7 +21,7 @@ import {
   construireFenetre,
   construireObjectifs,
   CHEVRON,
-} from './espace-projet.js';
+} from './gabarits.js';
 import {
   STATUTS_YUNO,
   NOMS_STATUTS,
@@ -2401,7 +2401,7 @@ function fenetreChoixModele(etat) {
 // système (les filtres et la relation d'un contact), que Noé a fait passer à la
 // liste le 15 août 2026.
 //
-// La différence avec les choix de formulaire (`espace-projet.js`) : ici rien
+// La différence avec les choix de formulaire (`gabarits.js`) : ici rien
 // n'est saisi pour être envoyé plus tard — choisir AGIT tout de suite. Il n'y a
 // donc pas de champ caché, et les options portent l'attribut de leur geste
 // (`data-filtre-colonne`, `data-statut`) que l'espace écoute déjà.
@@ -4695,15 +4695,15 @@ export function construireCommandes(commandes, preparations = [], evenements = [
 // dans l'état, pas une liste nue : les moments ramènent leurs photos avec eux,
 // et le reste du code n'a pas à savoir que ces deux-là voyagent ensemble.
 const SOURCES = {
-  objectifs: async () => ({ objectifs: await api.objectifsActifs({ projet: 'photo' }) }),
+  objectifs: async () => ({ objectifs: await api.objectifsActifs({ espace: 'photo' }) }),
   publications: async () => ({ publications: await api.publicationsToutes('photo') }),
-  taches: async () => ({ taches: await api.tachesDatees({ projet: 'photo' }) }),
+  taches: async () => ({ taches: await api.tachesDatees({ espace: 'photo' }) }),
   // Tous les événements, avec leur face vécue : la grille se promène dans le
   // passé, l'invite du Carnet y puise la semaine écoulée, et le carnet lui-même
   // n'a plus d'autre source depuis la fusion — les sorties vécues SONT des
   // événements. D'où les rencontres et les photos qui voyagent avec.
   evenements: async () => {
-    const evenements = await api.evenementsTous({ projet: 'photo', avecRencontres: true });
+    const evenements = await api.evenementsTous({ espace: 'photo', avecRencontres: true });
     // Les photos vivent dans un bucket privé : leurs adresses se signent à la
     // lecture, toutes ensemble.
     const chemins = evenements.map((evenement) => evenement.photo_chemin).filter(Boolean);
@@ -4755,12 +4755,12 @@ const SOURCES = {
   // crée plus depuis que ses réunions ont leur fiche.
   preparations: async () => ({
     preparations: (await api.preparationsToutes()).filter(
-      (feuille) => !feuille.evenement || feuille.evenement.projet === 'photo',
+      (feuille) => !feuille.evenement || feuille.evenement.espace === 'photo',
     ),
   }),
   modelesPrepa: async () => ({
     modelesPrepa: (await api.modelesPreparationTous()).filter(
-      (modele) => modele.projet === 'photo',
+      (modele) => modele.espace === 'photo',
     ),
   }),
 };
@@ -5314,9 +5314,9 @@ export default {
     // se promène dans le passé, et une suppression peut toucher n'importe quoi.
     const rechargerCalendrier = async () => {
       const [evenements, taches, objectifs, publications, contacts, commandes] = await Promise.all([
-        api.evenementsTous({ projet: 'photo' }),
-        api.tachesDatees({ projet: 'photo' }),
-        api.objectifsActifs({ projet: 'photo' }),
+        api.evenementsTous({ espace: 'photo' }),
+        api.tachesDatees({ espace: 'photo' }),
+        api.objectifsActifs({ espace: 'photo' }),
         api.publicationsToutes('photo'),
         api.contactsTous(),
         api.commandesToutes(),
@@ -5734,7 +5734,7 @@ export default {
           // backlog / active est masqué, une tâche notée est une tâche à faire.
           etat.taches.push(
             await api.creerTache({
-              projet: 'photo',
+              espace: 'photo',
               titre,
               statut: 'actif',
               echeance: champs.debut,
@@ -5754,7 +5754,7 @@ export default {
         } else if (champs.nature === 'publication') {
           etat.publications.unshift(
             await api.creerPublication({
-              projet: 'photo',
+              espace: 'photo',
               titre,
               reseau: champs.reseau,
               format: champs.format,
@@ -5776,7 +5776,7 @@ export default {
           );
         } else if (champs.nature === 'objectif') {
           const objectif = await api.creerObjectif({
-            projet: 'photo',
+            espace: 'photo',
             titre,
             pourquoi: champs.pourquoi?.trim() || null,
             cible: champs.cible?.trim() || null,
@@ -5791,7 +5791,7 @@ export default {
 
           etat.evenements.push(
             await api.creerEvenement({
-              projet: 'photo',
+              espace: 'photo',
               titre,
               date_debut: debut.toISOString(),
               date_fin: fin ? fin.toISOString() : null,
@@ -5821,7 +5821,7 @@ export default {
 
       if (action === 'noter-idee') {
         const publication = await api.creerPublication({
-          projet: 'photo',
+          espace: 'photo',
           titre: champs.titre.trim(),
           reseau: champs.reseau,
           format: champs.format,
@@ -6098,7 +6098,7 @@ export default {
 
       if (action === 'creer-objectif') {
         const objectif = await api.creerObjectif({
-          projet: 'photo',
+          espace: 'photo',
           titre: champs.titre.trim(),
           pourquoi: champs.pourquoi?.trim() || null,
           cible: champs.cible?.trim() || null,

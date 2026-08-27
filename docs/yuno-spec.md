@@ -266,7 +266,7 @@ pour le jaune et l'orange, qui le supportent.
 
 **L'or reste à part.** Il ne dit ni une catégorie ni un thème : l'état actif et
 les chiffres. Le jaune du pilier 1 (`#ebb201`) lui ressemble beaucoup, et c'est
-voulu — ce pilier *est* le cœur doré du projet.
+voulu — ce pilier *est* le cœur doré de l'espace.
 
 **Non utilisé pour l'instant** : le bronze `#967D32` et ses déclinaisons
 (`#EDC54E`, `#C4A341`, `#736026`, `#4A3E18`). C'est le neutre chaud de la
@@ -333,7 +333,7 @@ de *sortir du hub* en entrant chez Yuno :
   porte « Entrer sur le site Yuno ». Habillage du hub conservé. Rien ne s'y
   gère.
 - **`#yuno` — le site Yuno.** Tout l'habillage du hub disparaît : ni logo Hub,
-  ni onglets, ni autres projets. **Plus d'en-tête du tout depuis le 14 août
+  ni onglets, ni autres espaces. **Plus d'en-tête du tout depuis le 14 août
   2026** (demande de Noé) : la signature (`img/yuno-signature.png`) occupait le
   haut de chaque page pour redire ce qu'on sait déjà — le site s'ouvre sur sa
   barre, le titre de l'onglet dit « Yuno · yuno_rph », et la signature reste à
@@ -360,7 +360,7 @@ doit pas grandir à chaque écran qu'on ajoute. `ONGLET_DE_LA_VUE`, dans
 « Créer » regroupe le calendrier éditorial et les futurs outils d'aide à la
 création. « Calendrier » recense tout ce qui porte une date chez Yuno —
 publications, tâches, événements, objectifs et jalons — avec des filtres par
-nature. Le hub a le même espace Calendrier, tous projets confondus
+nature. Le hub a le même espace Calendrier, tous espaces confondus
 (`#calendrier`).
 
 ### `#yuno` — l'accueil du site
@@ -464,7 +464,7 @@ nature Moment.
 
    **On n'y retire plus rien** (même jour) : la fiche se lit et se corrige, le
    **carnet** est l'écran où l'on range.
-4. **Objectifs** — ceux du projet photo, avec pourquoi et jalons.
+4. **Objectifs** — ceux de l'espace photo, avec pourquoi et jalons.
 5. **En création** — seulement ce qui est programmé. Ni banque d'idées, ni
    porte vers Créer, ni porte vers le Journal (décision de Noé, 12 août) : ces
    deux lieux sont dans la barre, et la banque a sa page. L'accueil ne porte
@@ -1158,7 +1158,7 @@ et le bandeau la compte dans « entrés au réseau ».
 **La feuille de préparation est devenue un module commun** (21 août 2026,
 `js/preparations-commun.js`) : les réunions du FC Hermitage s'en servent aussi.
 Rien ne change à l'écran chez Yuno — phases, items, bilan, boucle « aussi au
-modèle » — et ses modèles portent désormais `projet = 'photo'` : chaque site ne
+modèle » — et ses modèles portent désormais `espace = 'photo'` : chaque site ne
 voit que les siens. Le CSS a suivi dans `styles.css`, le site du club ne
 chargeant pas `yuno.css`.
 
@@ -1495,7 +1495,7 @@ uniquement dans Supabase, derrière la connexion. Seul le schéma est versionné
 
 **L'option A, validée par Noé le 21 août 2026 au soir : l'ÉVÉNEMENT est le
 pivot.** Une commande le vise (`commandes.evenement_id` — « ce sera souvent
-lié à des matchs ou des événements concrets, pas des projets sur de longs
+lié à des matchs ou des événements concrets, pas des espaces sur de longs
 mois »), une préparation le précède, le Journal en garde le vécu. L'onglet
 **Missions** (nom validé) ouvre ce tableau de bord :
 
@@ -1554,9 +1554,9 @@ questions : « Ce qui a marché » et « À refaire autrement ».
   d'un coup d'œil. Les modèles restent en lignes.
 - **Les feuilles et modèles du FCH n'apparaissent pas ici** (demande de Noé,
   21 août au soir) : les réunions du club ont leurs propres fiches sur leur
-  site. Yuno filtre par le projet de l'événement lié — une feuille sans
+  site. Yuno filtre par l'espace de l'événement lié — une feuille sans
   événement (une commande) est de Yuno par nature — et ne garde que les
-  modèles `projet = 'photo'`.
+  modèles `espace = 'photo'`.
 - **Créer une feuille COPIE le modèle.** Modifier le modèle ensuite ne réécrit
   pas les feuilles passées : le bilan d'octobre doit refléter ce qui était
   prévu en octobre.
@@ -1597,7 +1597,7 @@ questions : « Ce qui a marché » et « À refaire autrement ».
   feuille, et son **type hérité de l'événement** : un événement photo porte sa
   pastille « type de moment » (match · concert · sortie · autre) à la création
   — dans la tuile du site, et dans celle du hub où elle n'apparaît que si le
-  projet choisi est photo. Jamais de doublon : si le moment de la sortie existe
+  espace choisi est photo. Jamais de doublon : si le moment de la sortie existe
   déjà, la proposition disparaît (« Ce moment est au carnet »), et l'invite du
   Journal se tait par le même lien. Ensuite, le moment se corrige au Journal,
   pas depuis le bilan.
@@ -1607,7 +1607,7 @@ questions : « Ce qui a marché » et « À refaire autrement ».
 ## 5. Les données
 
 Les tables du hub servent déjà : `objectifs`, `taches`, `evenements`,
-`victoires` (projet `photo`). Le schéma complet, colonne par colonne, vit dans
+`victoires` (espace `photo`). Le schéma complet, colonne par colonne, vit dans
 `supabase/migrations/` — **ce dépôt est le gardien unique du schéma Supabase**,
 et ce paragraphe ne fait que dire à quoi sert chaque table.
 

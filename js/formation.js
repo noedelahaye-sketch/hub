@@ -4,7 +4,7 @@
 // et ce qu'il y a à faire d'abord, les révisions et le bilan ensuite, les
 // raccourcis en pied de page.
 //
-// C'est la dernière page à quitter la fabrique `creerEspaceProjet`, qui n'avait
+// C'est la dernière page à quitter la fabrique `creerEspace`, qui n'avait
 // plus qu'elle : la fabrique est partie avec. Ce que la formation a en propre
 // et que les deux autres n'ont pas — la progression des révisions, lue dans le
 // gist public du site Bac-3 — occupe le panneau que Yuno donne à son rythme.
@@ -94,7 +94,7 @@ export function construireTaches(taches) {
   }
   // Ni ouvrable ni supprimable : corriger et supprimer une tâche vivent dans
   // l'espace Tâches. Ici on la coche, et c'est tout.
-  return construireLignesTaches(aFaire, { ouvrable: false, supprimable: false, projet: false });
+  return construireLignesTaches(aFaire, { ouvrable: false, supprimable: false, espace: false });
 }
 
 export function construireBilan(taches, victoires) {
@@ -188,9 +188,9 @@ export default {
 
     const charger = async () => {
       const [objectifs, taches, victoires] = await Promise.all([
-        api.objectifsActifs({ projet: 'formation' }),
-        api.tachesDuProjet('formation'),
-        api.victoiresDuProjet('formation', 20),
+        api.objectifsActifs({ espace: 'formation' }),
+        api.tachesDeLEspace('formation'),
+        api.victoiresDeLEspace('formation', 20),
       ]);
       Object.assign(etat, { objectifs, taches, victoires });
     };
@@ -290,7 +290,7 @@ export default {
       erreur.hidden = true;
 
       try {
-        const pose = await poserAuCalendrier(champs, { projetParDefaut: 'formation' });
+        const pose = await poserAuCalendrier(champs, { espaceParDefaut: 'formation' });
         fermerLaCreation();
         if (champs.nature === 'tache') {
           etat.taches = [...etat.taches, pose];

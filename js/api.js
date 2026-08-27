@@ -11,7 +11,7 @@
 import { createClient } from './vendor/supabase-js.js';
 import { versDateISO, depuisDateISO, decalerOccurrence } from './format.js';
 
-// URL du projet et clé publique (anon) : ces deux valeurs sont publiques par
+// URL de l'espace et clé publique (anon) : ces deux valeurs sont publiques par
 // conception. Sans session, elles ne donnent accès à rien — les politiques RLS
 // réservent toutes les opérations au rôle `authenticated`.
 const SUPABASE_URL = 'https://dpkyealzuabwchccdqcv.supabase.co';
@@ -95,7 +95,7 @@ export async function humeurDepuis(dateISO) {
   );
 }
 
-// Victoires — tous projets confondus, perso au même rang que le reste.
+// Victoires — tous espaces confondus, perso au même rang que le reste.
 
 export async function dernieresVictoires(limite = 5) {
   return verifier(
@@ -111,8 +111,8 @@ export async function dernieresVictoires(limite = 5) {
 // `sauf` écarte une source. Le Carnet de terrain s'en sert : ses moments sont
 // déjà dans la liste, leurs victoires n'ont pas à occuper la limite et à
 // repousser hors du fil les victoires d'avant le carnet.
-export async function victoiresDuProjet(projet, limite = 10, { sauf = null } = {}) {
-  let requete = client.from('victoires').select('*').eq('projet', projet);
+export async function victoiresDeLEspace(espace, limite = 10, { sauf = null } = {}) {
+  let requete = client.from('victoires').select('*').eq('espace', espace);
   if (sauf) requete = requete.neq('source', sauf);
 
   return verifier(
@@ -142,11 +142,11 @@ export async function supprimerVictoireDeLaTache(tacheId) {
   if (error) throw error;
 }
 
-export async function ajouterVictoire({ projet, titre, source = 'manuel', source_id = null }) {
+export async function ajouterVictoire({ espace, titre, source = 'manuel', source_id = null }) {
   return verifier(
     await client
       .from('victoires')
-      .insert({ projet, titre, source, source_id })
+      .insert({ espace, titre, source, source_id })
       .select()
       .single(),
   );
@@ -154,7 +154,7 @@ export async function ajouterVictoire({ projet, titre, source = 'manuel', source
 
 // Objectifs — avec leurs jalons, la progression se calcule côté client.
 
-export async function objectifsActifs({ projet = null } = {}) {
+export async function objectifsActifs({ espace = null } = {}) {
   let requete = client
     .from('objectifs')
     .select('*, jalons(id, titre, echeance, atteint, date_atteint, ordre)')
@@ -162,13 +162,13 @@ export async function objectifsActifs({ projet = null } = {}) {
     .order('echeance', { nullsFirst: false })
     .order('ordre', { referencedTable: 'jalons' });
 
-  if (projet) requete = requete.eq('projet', projet);
+  if (espace) requete = requete.eq('espace', espace);
   return verifier(await requete);
 }
 
 // Événements — bornes en ISO complet, `date_debut` étant un timestamptz.
 
-export async function evenementsEntre(debutISO, finISO, { projet = null } = {}) {
+export async function evenementsEntre(debutISO, finISO, { espace = null } = {}) {
   let requete = client
     .from('evenements')
     .select('*')
@@ -176,13 +176,13 @@ export async function evenementsEntre(debutISO, finISO, { projet = null } = {}) 
     .lte('date_debut', finISO)
     .order('date_debut');
 
-  if (projet) requete = requete.eq('projet', projet);
+  if (espace) requete = requete.eq('espace', espace);
   return verifier(await requete);
 }
 
 // Tâches.
 
-export async function tachesActives({ projet = null } = {}) {
+export async function tachesActives({ espace = null } = {}) {
   let requete = client
     .from('taches')
     .select('*')
@@ -190,13 +190,13 @@ export async function tachesActives({ projet = null } = {}) {
     .order('echeance', { nullsFirst: false })
     .order('created_at');
 
-  if (projet) requete = requete.eq('projet', projet);
+  if (espace) requete = requete.eq('espace', espace);
   return verifier(await requete);
 }
 
 // Les tâches datées jusqu'à `finISO`, celles déjà faites mises de côté. Sans
 // borne basse : une échéance passée reste visible plutôt que de disparaître.
-export async function tachesEcheanceJusqua(finISO, { projet = null } = {}) {
+export async function tachesEcheanceJusqua(finISO, { espace = null } = {}) {
   let requete = client
     .from('taches')
     .select('*')
@@ -205,12 +205,12 @@ export async function tachesEcheanceJusqua(finISO, { projet = null } = {}) {
     .lte('echeance', finISO)
     .order('echeance');
 
-  if (projet) requete = requete.eq('projet', projet);
+  if (espace) requete = requete.eq('espace', espace);
   return verifier(await requete);
 }
 
 // TOUTES les tâches, sans exception : datées ou non, faites ou non, tous
-// projets. C'est la seule lecture du hub qui ne cache rien — l'espace Tâches
+// espaces. C'est la seule lecture du hub qui ne cache rien — l'espace Tâches
 // est fait pour ça, et le tri se décide à l'affichage plutôt qu'ici.
 export async function tachesToutes() {
   return verifier(
@@ -223,28 +223,28 @@ export async function tachesToutes() {
   );
 }
 
-// Toutes les tâches en cours d'un projet, actives et backlog confondus. L'ordre
+// Toutes les tâches en cours d'un espace, actives et backlog confondus. L'ordre
 // met les actives d'abord, puis les plus anciennes du backlog.
-// Toutes les tâches d'un projet, faites comprises : une page qui compte ce qui
+// Toutes les tâches d'un espace, faites comprises : une page qui compte ce qui
 // a été accompli a besoin des faites, que `tachesEnCours` écarte par nature.
-export async function tachesDuProjet(projet) {
+export async function tachesDeLEspace(espace) {
   return verifier(
     await client
       .from('taches')
       .select('*')
-      .eq('projet', projet)
+      .eq('espace', espace)
       .order('statut')
       .order('echeance', { nullsFirst: false })
       .order('created_at'),
   );
 }
 
-export async function tachesEnCours(projet) {
+export async function tachesEnCours(espace) {
   return verifier(
     await client
       .from('taches')
       .select('*')
-      .eq('projet', projet)
+      .eq('espace', espace)
       .neq('statut', 'fait')
       .order('statut')
       .order('echeance', { nullsFirst: false })
@@ -277,7 +277,7 @@ export async function terminerTache(tache) {
 
   // La victoire est écrite dans les deux cas : la course a bien eu lieu.
   const victoire = await ajouterVictoire({
-    projet: faite.projet,
+    espace: faite.espace,
     titre: faite.titre,
     source: 'tache',
     source_id: faite.id,
@@ -321,11 +321,11 @@ export async function rouvrirTache(tache) {
 // le seul écran pour tenir une règle métier.
 export async function changerStatutTache(tache, statut) {
   if (statut === 'actif') {
-    const actives = await tachesActives({ projet: tache.projet });
+    const actives = await tachesActives({ espace: tache.espace });
     const dejaActive = actives.some((candidate) => candidate.id === tache.id);
     if (!dejaActive && actives.length >= MAX_TACHES_ACTIVES) {
       throw new Error(
-        `Déjà ${MAX_TACHES_ACTIVES} tâches actives sur ce projet. ` +
+        `Déjà ${MAX_TACHES_ACTIVES} tâches actives sur cet espace. ` +
           'Termines-en une, ou renvoie-la au backlog.',
       );
     }
@@ -340,11 +340,11 @@ export async function changerStatutTache(tache, statut) {
 // 'perso' n'apparaît volontairement pas dans les tâches ni les jalons : l'espace
 // perso n'en a pas, et l'interface ne doit pas permettre d'en créer.
 
-export async function creerObjectif({ projet, titre, pourquoi = null, cible = null, echeance = null }) {
+export async function creerObjectif({ espace, titre, pourquoi = null, cible = null, echeance = null }) {
   return verifier(
     await client
       .from('objectifs')
-      .insert({ projet, titre, pourquoi, cible, echeance })
+      .insert({ espace, titre, pourquoi, cible, echeance })
       .select('*, jalons(id, titre, echeance, atteint, date_atteint, ordre)')
       .single(),
   );
@@ -363,7 +363,7 @@ export async function creerJalon({ objectif_id, titre, echeance = null, ordre = 
 // `priorite` vaut 4 par défaut, comme en base : une tâche n'est pas prioritaire
 // parce qu'elle existe.
 export async function creerTache({
-  projet,
+  espace,
   titre,
   statut = 'backlog',
   echeance = null,
@@ -378,7 +378,7 @@ export async function creerTache({
     await client
       .from('taches')
       .insert({
-        projet,
+        espace,
         titre,
         statut,
         echeance,
@@ -399,7 +399,7 @@ export async function creerTache({
 }
 
 export async function creerEvenement({
-  projet,
+  espace,
   titre,
   date_debut,
   date_fin = null,
@@ -425,7 +425,7 @@ export async function creerEvenement({
     await client
       .from('evenements')
       .insert({
-        projet, titre, date_debut, date_fin, lieu, notes,
+        espace, titre, date_debut, date_fin, lieu, notes,
         recurrence, recurrence_fin, type_moment, club_recevant, club_visiteur,
         reunion_objet, reunion_animee,
       })
@@ -437,20 +437,20 @@ export async function creerEvenement({
 // --- Publications (calendrier éditorial Yuno) --------------------------------
 // Une idée est une publication sans date : même table, deux vues.
 
-export async function publicationsToutes(projet) {
+export async function publicationsToutes(espace) {
   let requete = client
     .from('publications')
     .select('*')
     .order('date_prevue', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false });
 
-  if (projet) requete = requete.eq('projet', projet);
+  if (espace) requete = requete.eq('espace', espace);
   return verifier(await requete);
 }
 
 // Les publications planifiées d'une période, pour « Ta semaine » du dashboard.
 // Les publiées n'y figurent plus : c'est fait, le dashboard montre l'à-venir.
-export async function publicationsEntre(debutISO, finISO, { projet = null } = {}) {
+export async function publicationsEntre(debutISO, finISO, { espace = null } = {}) {
   let requete = client
     .from('publications')
     .select('*')
@@ -460,13 +460,13 @@ export async function publicationsEntre(debutISO, finISO, { projet = null } = {}
     .neq('statut', 'publie')
     .order('date_prevue');
 
-  if (projet) requete = requete.eq('projet', projet);
+  if (espace) requete = requete.eq('espace', espace);
   return verifier(await requete);
 }
 
 // pilier, preuve et pourquoi_moi sont propres à Yuno : le FCH les laisse vides.
 export async function creerPublication({
-  projet,
+  espace,
   titre,
   reseau = 'instagram',
   format = 'carrousel',
@@ -484,7 +484,7 @@ export async function creerPublication({
     await client
       .from('publications')
       .insert({
-        projet, titre, reseau, format, rubrique, notes,
+        espace, titre, reseau, format, rubrique, notes,
         date_prevue, heure, pilier, preuve, pourquoi_moi,
         // Sans date, c'est une idée dans la banque : il n'y a rien à répéter,
         // et une fin de répétition sans répétition ne veut rien dire.
@@ -539,14 +539,14 @@ export async function creerSortieVecue({ evenement, rencontres = [], titre }) {
   const cree = verifier(
     await client
       .from('evenements')
-      .insert({ ...evenement, projet: 'photo', vecu: true })
+      .insert({ ...evenement, espace: 'photo', vecu: true })
       .select()
       .single(),
   );
 
   const lignes = await poserLesRencontres(cree.id, rencontres);
   const victoire = await ajouterVictoire({
-    projet: 'photo',
+    espace: 'photo',
     titre,
     source: 'moment',
     source_id: cree.id,
@@ -570,7 +570,7 @@ export async function marquerSortieVecue(id, champs, { rencontres = [], titre })
 
   const lignes = await poserLesRencontres(id, rencontres);
   const victoire = await ajouterVictoire({
-    projet: 'photo',
+    espace: 'photo',
     titre,
     source: 'moment',
     source_id: id,
@@ -1007,7 +1007,7 @@ export async function avancerCommande(commande, suivant) {
   const victoire =
     suivant === 'livree'
       ? await ajouterVictoire({
-          projet: 'photo',
+          espace: 'photo',
           titre: `Commande livrée — ${misAJour.titre}`,
           source: 'manuel',
         })
@@ -1079,11 +1079,11 @@ export async function preparationsToutes() {
   const feuilles = verifier(
     await client
       .from('preparations')
-      // Le projet de l'événement voyage avec la feuille : c'est lui qui
+      // L'espace de l'événement voyage avec la feuille : c'est lui qui
       // permet au site Yuno d'écarter les feuilles de réunion du FCH —
-      // la table n'a pas de colonne projet à elle.
+      // la table n'a pas de colonne espace à elle.
       .select(
-        '*, items:preparations_items(id, phase, texte, fait, ordre, created_at), evenement:evenements(projet)',
+        '*, items:preparations_items(id, phase, texte, fait, ordre, created_at), evenement:evenements(espace)',
       )
       .order('date', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: false }),
@@ -1349,37 +1349,37 @@ export async function supprimerActionClub(id) {
 // `avecRencontres` : le site Yuno lit ses événements avec leur face vécue
 // complète — une sortie vécue EST un événement depuis la fusion, et le carnet
 // n'a donc plus de table à lui. Les autres espaces s'en passent.
-export async function evenementsTous({ projet = null, avecRencontres = false } = {}) {
+export async function evenementsTous({ espace = null, avecRencontres = false } = {}) {
   let requete = client
     .from('evenements')
     .select(avecRencontres ? '*, rencontres(id, nom, contact_id)' : '*')
     .order('date_debut');
-  if (projet) requete = requete.eq('projet', projet);
+  if (espace) requete = requete.eq('espace', espace);
   return verifier(await requete);
 }
 
-export async function evenementsDepuis(debutISO, { projet = null } = {}) {
+export async function evenementsDepuis(debutISO, { espace = null } = {}) {
   let requete = client
     .from('evenements')
     .select('*')
     .gte('date_debut', debutISO)
     .order('date_debut');
 
-  if (projet) requete = requete.eq('projet', projet);
+  if (espace) requete = requete.eq('espace', espace);
   return verifier(await requete);
 }
 
 // Les tâches faites RESTENT au calendrier, barrées : ce site ne fait jamais
 // disparaître ce qui a été accompli. C'est aussi ce qui permet de décocher une
 // tâche cochée par erreur.
-export async function tachesDatees({ projet = null } = {}) {
+export async function tachesDatees({ espace = null } = {}) {
   let requete = client
     .from('taches')
     .select('*')
     .not('echeance', 'is', null)
     .order('echeance');
 
-  if (projet) requete = requete.eq('projet', projet);
+  if (espace) requete = requete.eq('espace', espace);
   return verifier(await requete);
 }
 
@@ -1389,14 +1389,14 @@ export async function tachesDatees({ projet = null } = {}) {
 // plus qu'une tâche faite ne s'efface de sa journée — elle se barre, comme
 // elle. Les deux sites, eux, continuent d'écarter les publiées de leur
 // calendrier : ils les rangent sous leur propre pli.
-export async function publicationsDatees({ projet = null } = {}) {
+export async function publicationsDatees({ espace = null } = {}) {
   let requete = client
     .from('publications')
     .select('*')
     .not('date_prevue', 'is', null)
     .order('date_prevue');
 
-  if (projet) requete = requete.eq('projet', projet);
+  if (espace) requete = requete.eq('espace', espace);
   return verifier(await requete);
 }
 
@@ -1464,7 +1464,7 @@ export async function atteindreObjectif(objectif) {
   );
 
   const victoire = await ajouterVictoire({
-    projet: atteint.projet,
+    espace: atteint.espace,
     titre: atteint.titre,
     source: 'objectif',
     source_id: atteint.id,
@@ -1474,7 +1474,7 @@ export async function atteindreObjectif(objectif) {
 }
 
 // Atteindre un jalon crée sa victoire, comme pour une tâche terminée.
-export async function atteindreJalon(jalon, projet) {
+export async function atteindreJalon(jalon, espace) {
   const atteint = verifier(
     await client
       .from('jalons')
@@ -1485,7 +1485,7 @@ export async function atteindreJalon(jalon, projet) {
   );
 
   const victoire = await ajouterVictoire({
-    projet,
+    espace,
     titre: atteint.titre,
     source: 'jalon',
     source_id: atteint.id,

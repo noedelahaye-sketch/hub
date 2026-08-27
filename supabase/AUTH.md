@@ -12,7 +12,7 @@ Le hub a un seul utilisateur : Noé. Aucune inscription publique.
 Vérifié le 6 août 2026 : une requête REST avec la clé publique et sans session
 renvoie `401 permission denied` en lecture comme en écriture, sur toutes les tables.
 
-## Configuration Auth du projet
+## Configuration Auth de l'espace
 
 Ces réglages relèvent de la configuration Auth et non du schéma SQL : ils ne
 peuvent pas être écrits dans une migration. Faits à la main dans le dashboard le

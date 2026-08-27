@@ -15,7 +15,7 @@
 // 15 août 2026 et la règle vaut sans exception (docs/yuno-spec.md, §4).
 
 import * as api from './api.js';
-import { construireFormulaire, construireFenetre } from './espace-projet.js';
+import { construireFormulaire, construireFenetre } from './gabarits.js';
 import { construireMurPhotos } from './yuno.js';
 import {
   construireLignesTaches,
@@ -224,7 +224,7 @@ export function construireTaches(taches) {
   // Ni ouvrable ni supprimable : corriger et supprimer une tâche vivent dans
   // l'espace Tâches. Ici on la coche, et c'est tout — offrir les deux autres
   // gestes sans les traiter ferait des boutons morts.
-  return construireLignesTaches(aFaire, { ouvrable: false, supprimable: false, projet: false });
+  return construireLignesTaches(aFaire, { ouvrable: false, supprimable: false, espace: false });
 }
 
 // Les raccourcis du bloc « Noter ». Tâche, événement et publication passent par
@@ -417,9 +417,9 @@ export default {
 
       const [objectifs, victoires, evenements, taches, contacts, commandes, materiel] =
         await Promise.all([
-          api.objectifsActifs({ projet: 'photo' }),
-          api.victoiresDuProjet('photo', 50),
-          api.evenementsEntre(debut.toISOString(), new Date().toISOString(), { projet: 'photo' }),
+          api.objectifsActifs({ espace: 'photo' }),
+          api.victoiresDeLEspace('photo', 50),
+          api.evenementsEntre(debut.toISOString(), new Date().toISOString(), { espace: 'photo' }),
           api.tachesEnCours('photo'),
           api.contactsTous(),
           api.commandesToutes(),
@@ -478,8 +478,8 @@ export default {
 
     // --- La tuile de capture ---
     // Celle du « + » de l'accueil, à l'identique : on ne note pas d'une façon
-    // ici et d'une autre là. `projets` n'est pas passé — sur cette page tout
-    // est Yuno, et une pastille de projet à une seule valeur ne sert à rien.
+    // ici et d'une autre là. `espaces` n'est pas passé — sur cette page tout
+    // est Yuno, et une pastille d'espace à une seule valeur ne sert à rien.
 
     const rendreCreation = () => {
       const hote = section.querySelector('#bloc-creation-yuno');
@@ -643,7 +643,7 @@ export default {
       erreur.hidden = true;
 
       try {
-        const pose = await poserAuCalendrier(champs, { projetParDefaut: 'photo' });
+        const pose = await poserAuCalendrier(champs, { espaceParDefaut: 'photo' });
         fermerLaCreation();
 
         // Seule une tâche se voit sur cette page ; une publication rejoint la

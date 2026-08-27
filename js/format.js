@@ -84,7 +84,7 @@ export function echapper(texte) {
     .replaceAll("'", '&#39;');
 }
 
-export const NOMS_PROJETS = {
+export const NOMS_ESPACES = {
   formation: 'Formation',
   photo: 'Yuno',
   fch: 'FC Hermitage',

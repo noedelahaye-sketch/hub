@@ -189,14 +189,14 @@ l'est.
 
 **La couleur ne doit jamais porter seule une information.** C'est la règle
 d'accessibilité la plus citée pour les calendriers, parce qu'ils codent
-massivement par couleur. Une barre porte la couleur de son projet — mais rien
+massivement par couleur. Une barre porte la couleur de son espace — mais rien
 n'écrit lequel, et un daltonien ne distinguerait pas Yuno du FCH.
 
 ✅ **La nature, elle, se lit depuis le 12 août** : un signe précède le titre
 (○ tâche, ◆ publication, ▲ objectif, △ jalon, ▸ commande, ↗ relance), et une
 tâche a une barre creuse là où un événement a une barre pleine — une chose à
 faire n'est pas une chose qui arrive. L'événement n'a pas de signe : c'est le
-cas ordinaire, la barre pleine le dit déjà. **Reste le projet**, toujours porté
+cas ordinaire, la barre pleine le dit déjà. **Reste l'espace**, toujours porté
 par la seule couleur.
 
 ---
@@ -271,8 +271,8 @@ qu'au-delà d'un certain volume de saisie. Pas maintenant.
   seul geste, mais ça interdit l'exception. Le glissement est donc refusé sur
   une barre récurrente, et le détail dit que modifier agit sur toute la série.
   Le jour où ce besoin se présente, il faudra une table d'exceptions.
-- **Le projet reste porté par la seule couleur.** La nature se lit maintenant à
-  l'œil, le projet non.
+- **L'espace reste porté par la seule couleur.** La nature se lit maintenant à
+  l'œil, l'espace non.
 - **Déplacer un bloc dans la grille horaire.** Le glissement ne marche que sur
   les barres du bandeau et de la vue mois.
 

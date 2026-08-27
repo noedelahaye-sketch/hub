@@ -1,30 +1,30 @@
 // L'espace Objectifs — tout le cap, et le seul endroit du hub où il se règle.
 //
 // Le pendant de l'espace Tâches : transverse, il montre TOUS les objectifs de
-// tous les projets, groupés par projet, avec leur pourquoi, leur cible et leurs
+// tous les espaces, groupés par espace, avec leur pourquoi, leur cible et leurs
 // jalons. Ailleurs le hub GRAVE le cap, en lecture seule — l'accueil et les
-// pages projet le posent dans la page, sans un geste qui le modifie. Ici on
+// pages espace le posent dans la page, sans un geste qui le modifie. Ici on
 // l'écrit : on ajoute un objectif, on le modifie, on pose ou on retire un
 // jalon, on marque atteint.
 //
 // Aucune entrée dans la barre de navigation (demande de Noé, 25 août 2026) :
 // on y vient par la porte du bloc « Tes objectifs », et rarement.
 //
-// Comme l'espace perso, cet espace n'utilise pas la fabrique `creerEspaceProjet`
-// — elle ne sait bâtir qu'un seul projet, avec ses tâches, ses événements et
+// Comme l'espace perso, cet espace n'utilise pas la fabrique `creerEspace`
+// — elle ne sait bâtir qu'un seul espace, avec ses tâches, ses événements et
 // ses victoires. Il en reprend en revanche tous les gabarits : une tuile
 // d'objectif se dessine d'une seule façon dans tout le hub.
 
 import * as api from './api.js';
-import { construireObjectifs, construireFormulaire } from './espace-projet.js';
+import { construireObjectifs, construireFormulaire } from './gabarits.js';
 // Le modèle de l'argent de Yuno vit avec la page qui l'a fait naître ; il
 // n'est pas recopié ici.
 import { argentDeYuno, enEuros } from './photo.js';
-import { NOMS_PROJETS, echapper } from './format.js';
+import { NOMS_ESPACES, echapper } from './format.js';
 
 // L'espace perso n'a pas d'objectifs : il a des INTENTIONS, sans mesure ni
 // date, et elles se relisent dans #perso. Cette page ne les touche jamais.
-const PROJETS = ['formation', 'fch', 'photo'];
+const ESPACES = ['formation', 'fch', 'photo'];
 
 // L'objectif dont les prestations et le matériel disent la mesure. Reconnu par
 // son titre, comme sur la page Yuno : c'est le seul lien entre une ligne
@@ -136,19 +136,19 @@ export function construireArgent(commandes, materiel) {
 
 // --- Fabrication du HTML ----------------------------------------------------
 
-// Le projet est porté par la SECTION, et non par chaque tuile : il n'y sert
-// qu'à poser les couleurs (`--couleur-projet-pleine`), dont héritent les
-// chemins de jalons. Sur une tuile, `data-projet` dessinerait en plus le
+// L'espace est porté par la SECTION, et non par chaque tuile : il n'y sert
+// qu'à poser les couleurs (`--couleur-espace-pleine`), dont héritent les
+// chemins de jalons. Sur une tuile, `data-espace` dessinerait en plus le
 // filet coloré des listes de l'accueil — ici le titre du bloc dit déjà le
-// projet, et six filets alignés seraient du bruit.
+// espace, et six filets alignés seraient du bruit.
 function squelette() {
-  const blocs = PROJETS.map(
-    (projet) => `
-      <section class="bloc" data-projet="${projet}">
-        <h2>${echapper(NOMS_PROJETS[projet] ?? projet)}</h2>
-        <div data-bloc="${projet}"><p class="vide">…</p></div>
+  const blocs = ESPACES.map(
+    (espace) => `
+      <section class="bloc" data-espace="${espace}">
+        <h2>${echapper(NOMS_ESPACES[espace] ?? espace)}</h2>
+        <div data-bloc="${espace}"><p class="vide">…</p></div>
         ${construireFormulaire({
-          id: `objectif-${projet}`,
+          id: `objectif-${espace}`,
           libelle: 'Ajouter un objectif',
           action: 'creer-objectif',
           champs: [
@@ -161,14 +161,14 @@ function squelette() {
             { nom: 'cible', libelle: "À quoi tu sauras que c'est réussi", type: 'text' },
             { nom: 'echeance', libelle: 'Échéance (facultative)', type: 'date' },
           ],
-          extra: `<input type="hidden" name="projet" value="${projet}">`,
+          extra: `<input type="hidden" name="espace" value="${espace}">`,
         })}
       </section>`,
   ).join('');
 
   return `
     <h1>Objectifs</h1>
-    <p class="discret sous-titre">Le cap de chaque projet. C'est ici qu'il se règle.</p>
+    <p class="discret sous-titre">Le cap de chaque espace. C'est ici qu'il se règle.</p>
     ${blocs}`;
 }
 
@@ -179,9 +179,9 @@ export default {
     section.innerHTML = squelette();
 
     const etat = { objectifs: [], commandes: [], materiel: [] };
-    const bloc = (projet) => section.querySelector(`[data-bloc="${projet}"]`);
+    const bloc = (espace) => section.querySelector(`[data-bloc="${espace}"]`);
 
-    const duProjet = (projet) => etat.objectifs.filter((o) => o.projet === projet);
+    const deLEspace = (espace) => etat.objectifs.filter((o) => o.espace === espace);
 
     // Le complément de l'objectif du matériel : ses deux listes, posées dans
     // son détail. Les autres objectifs n'en ont pas.
@@ -191,13 +191,13 @@ export default {
       return { [objectif.id]: construireArgent(etat.commandes, etat.materiel) };
     };
 
-    const rendreProjet = (projet) => {
-      bloc(projet).innerHTML = construireObjectifs(duProjet(projet), {
+    const rendreEspace = (espace) => {
+      bloc(espace).innerHTML = construireObjectifs(deLEspace(espace), {
         retraitJalon: true,
         complements: complements(),
       });
     };
-    const rendreTout = () => PROJETS.forEach(rendreProjet);
+    const rendreTout = () => ESPACES.forEach(rendreEspace);
 
     // Redessiner remplace les tuiles : celle qu'on venait d'ouvrir se
     // refermerait sans ça, en pleine saisie de son jalon suivant.
@@ -212,7 +212,7 @@ export default {
         api.commandesToutes(),
         api.materielTout(),
       ]);
-      etat.objectifs = objectifs.filter((objectif) => PROJETS.includes(objectif.projet));
+      etat.objectifs = objectifs.filter((objectif) => ESPACES.includes(objectif.espace));
       etat.commandes = commandes;
       etat.materiel = materiel;
       rendreTout();
@@ -266,14 +266,14 @@ export default {
     async function appliquer(action, champs) {
       if (action === 'creer-objectif') {
         const objectif = await api.creerObjectif({
-          projet: champs.projet,
+          espace: champs.espace,
           titre: champs.titre.trim(),
           pourquoi: champs.pourquoi?.trim() || null,
           cible: champs.cible?.trim() || null,
           echeance: champs.echeance || null,
         });
         etat.objectifs = [...etat.objectifs, { ...objectif, jalons: objectif.jalons ?? [] }];
-        rendreProjet(champs.projet);
+        rendreEspace(champs.espace);
         return;
       }
 
@@ -288,7 +288,7 @@ export default {
         // La mise à jour ne renvoie que les colonnes : les jalons déjà chargés
         // restent en place.
         Object.assign(objectif, misAJour);
-        rendreProjet(objectif.projet);
+        rendreEspace(objectif.espace);
         ouvrirObjectif(objectif.id);
         return;
       }
@@ -329,7 +329,7 @@ export default {
           ordre: (objectif?.jalons?.length ?? 0) + 1,
         });
         objectif.jalons = [...(objectif.jalons ?? []), jalon];
-        rendreProjet(objectif.projet);
+        rendreEspace(objectif.espace);
         ouvrirObjectif(objectif.id);
       }
     }
@@ -372,12 +372,12 @@ export default {
       }
     }
 
-    // Redessiner le projet photo referme sa tuile : on la rouvre, sinon noter
+    // Redessiner l'espace photo referme sa tuile : on la rouvre, sinon noter
     // une deuxième prestation obligerait à tout redéplier.
     const rendreArgent = () => {
       const objectif = etat.objectifs.find((o) => o.titre === OBJECTIF_MATERIEL);
       if (!objectif) return;
-      rendreProjet(objectif.projet);
+      rendreEspace(objectif.espace);
       ouvrirObjectif(objectif.id);
     };
 
@@ -390,10 +390,10 @@ export default {
         const objectif = objectifPortant(bouton.dataset.jalon);
         const jalon = objectif.jalons.find((j) => j.id === bouton.dataset.jalon);
         // Un jalon atteint écrit sa victoire : elle s'affichera dans l'espace
-        // du projet, cette page-ci ne montre que le cap.
-        const { jalon: atteint } = await api.atteindreJalon(jalon, objectif.projet);
+        // de l'espace, cette page-ci ne montre que le cap.
+        const { jalon: atteint } = await api.atteindreJalon(jalon, objectif.espace);
         Object.assign(jalon, atteint);
-        rendreProjet(objectif.projet);
+        rendreEspace(objectif.espace);
         ouvrirObjectif(objectif.id);
       } catch (souci) {
         console.error('Impossible de marquer le jalon', souci);
@@ -411,7 +411,7 @@ export default {
       try {
         await api.supprimerJalon(jalon.id);
         objectif.jalons = objectif.jalons.filter((j) => j.id !== jalon.id);
-        rendreProjet(objectif.projet);
+        rendreEspace(objectif.espace);
         ouvrirObjectif(objectif.id);
       } catch (souci) {
         console.error('Retrait du jalon impossible', souci);
@@ -429,7 +429,7 @@ export default {
       try {
         await api.atteindreObjectif(objectif);
         etat.objectifs = etat.objectifs.filter((o) => o.id !== objectif.id);
-        rendreProjet(objectif.projet);
+        rendreEspace(objectif.espace);
       } catch (souci) {
         console.error("Impossible de marquer l'objectif atteint", souci);
         bouton.disabled = false;
@@ -451,7 +451,7 @@ export default {
       try {
         await api.supprimerObjectif(objectif.id);
         etat.objectifs = etat.objectifs.filter((o) => o.id !== objectif.id);
-        rendreProjet(objectif.projet);
+        rendreEspace(objectif.espace);
       } catch (souci) {
         console.error("Suppression de l'objectif impossible", souci);
         bouton.disabled = false;

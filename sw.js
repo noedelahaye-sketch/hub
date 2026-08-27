@@ -41,7 +41,7 @@ const COQUILLE = [
   'js/calendrier.js',
   'js/dashboard.js',
   'js/ecriture.js',
-  'js/espace-projet.js',
+  'js/gabarits.js',
   'js/fch.js',
   'js/format.js',
   'js/formation.js',

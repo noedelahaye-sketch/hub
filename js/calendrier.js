@@ -1,4 +1,4 @@
-// Espace Calendrier du hub — tout ce qui porte une date, tous projets
+// Espace Calendrier du hub — tout ce qui porte une date, tous espaces
 // confondus : événements, tâches à échéance, publications programmées,
 // objectifs et jalons datés, relances et commandes.
 //
@@ -52,7 +52,7 @@ const SOURCES_VIDES = {
   contacts: [],
 };
 
-const PROJETS = {
+const ESPACES = {
   photo: 'Yuno',
   fch: 'FC Hermitage',
   formation: 'Formation',
@@ -90,7 +90,7 @@ export default {
     function rendre() {
       section.innerHTML = `
         <h1>Calendrier</h1>
-        <p class="discret sous-titre">Tout ce qui a une date, tous projets confondus.</p>
+        <p class="discret sous-titre">Tout ce qui a une date, tous espaces confondus.</p>
         ${
           // L'échec se dit sur une ligne, sous le titre : la grille reste, et
           // ce qui venait du cache reste affiché. Une page remplacée par un
@@ -111,18 +111,18 @@ export default {
         <div data-bloc="liste">
           ${
             etat.vue === 'agenda'
-              ? construireCalendrier(etat.elements, etat.natures, { montrerProjet: true })
+              ? construireCalendrier(etat.elements, etat.natures, { montrerEspace: true })
               : construireGrille(etat.elements, etat.natures, etat.vue, etat.ancre, {
-                  montrerProjet: true,
+                  montrerEspace: true,
                   selection: etat.creation,
                 })
           }
         </div>
-        ${etat.creation ? fenetreCreation({ ...etat.creation, projets: PROJETS }) : ''}
+        ${etat.creation ? fenetreCreation({ ...etat.creation, espaces: ESPACES }) : ''}
         ${
           etat.detail
             ? fenetreDetail(etat.detail, {
-                montrerProjet: true,
+                montrerEspace: true,
                 edition: etat.edition,
                 statutModifiable: true,
               })
@@ -131,7 +131,7 @@ export default {
         ${
           etat.jourOuvert
             ? fenetreJour(etat.jourOuvert, elementsDuJour(etat.elements, etat.jourOuvert), {
-                montrerProjet: true,
+                montrerEspace: true,
               })
             : ''
         }`;
@@ -155,7 +155,7 @@ export default {
         taches,
         // Les intentions perso n'ont pas de date par principe ; le filtre est
         // une ceinture de plus au cas où l'une en recevrait une un jour.
-        objectifs: objectifs.filter((objectif) => objectif.projet !== 'perso'),
+        objectifs: objectifs.filter((objectif) => objectif.espace !== 'perso'),
         publications,
         commandes: commandes.filter(
           (commande) => commande.echeance && ['devis', 'en_cours'].includes(commande.statut),

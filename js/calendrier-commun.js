@@ -1,8 +1,8 @@
 // Le calendrier — tout ce qui porte une date, assemblé en une seule liste, puis
 // dessiné de trois façons : en mois, en semaine, ou en agenda.
 //
-// Deux consommateurs : l'espace Calendrier du hub (tous projets) et l'écran
-// Calendrier du site Yuno (projet photo seul). Même assemblage, même rendu,
+// Deux consommateurs : l'espace Calendrier du hub (tous espaces) et l'écran
+// Calendrier du site Yuno (espace photo seul). Même assemblage, même rendu,
 // mêmes filtres — seules les données passées changent.
 //
 // Les fonctions ne font que fabriquer du HTML à partir de données déjà
@@ -19,7 +19,7 @@ import {
   fermerLesChoix,
   champDuree,
   marquerLaDuree,
-} from './espace-projet.js';
+} from './gabarits.js';
 import {
   depuisDateISO,
   versDateISO,
@@ -27,7 +27,7 @@ import {
   momentLisible,
   echeanceLisible,
   echapper,
-  NOMS_PROJETS,
+  NOMS_ESPACES,
   RECURRENCES,
   decalerOccurrence,
   DUREES,
@@ -87,15 +87,15 @@ const NOMS_STATUTS_BASE = {
 
 // Le club dit les mêmes valeurs avec ses mots : « prêt » ne disait pas ce qui
 // restait à faire — le programmer.
-const NOMS_STATUTS_PAR_PROJET = {
+const NOMS_STATUTS_PAR_ESPACE = {
   fch: { idee: 'à préparer', pret: 'à programmer', publie: 'publié' },
 };
 
-export const cyclePublication = (projet) =>
-  CYCLES_PUBLICATION[projet] ?? CYCLES_PUBLICATION.formation;
+export const cyclePublication = (espace) =>
+  CYCLES_PUBLICATION[espace] ?? CYCLES_PUBLICATION.formation;
 
-export const nomDuStatut = (projet, statut) =>
-  NOMS_STATUTS_PAR_PROJET[projet]?.[statut] ?? NOMS_STATUTS_BASE[statut] ?? statut;
+export const nomDuStatut = (espace, statut) =>
+  NOMS_STATUTS_PAR_ESPACE[espace]?.[statut] ?? NOMS_STATUTS_BASE[statut] ?? statut;
 
 export { NOMS_STATUTS_BASE };
 
@@ -126,7 +126,7 @@ export function passageDePublication(pub, statut) {
   const suite = prochaineParution(pub);
   if (!suite) return { statut };
 
-  return { statut: cyclePublication(pub.projet ?? 'photo')[0], date_prevue: suite };
+  return { statut: cyclePublication(pub.espace ?? 'photo')[0], date_prevue: suite };
 }
 
 // La parution suivante d'une série, ou `null` quand elle est finie. Le sens
@@ -204,7 +204,7 @@ export function brancherEtatPublication(
         const pub = publications().find(
           (candidate) => candidate.id === rond.dataset.avancerPub,
         );
-        const cycle = pub ? cyclePublication(pub.projet) : [];
+        const cycle = pub ? cyclePublication(pub.espace) : [];
         await poser(pub, pub ? cycle[cycle.indexOf(pub.statut) + 1] : null);
         return;
       }
@@ -349,7 +349,7 @@ export function assemblerCalendrier({
         // rien — il dirait trois fois la même chose ; la grille s'en sert pour
         // tirer une barre continue sur toute la durée.
         jusqua: duree === null ? null : versDateISO(new Date(date.getTime() + duree)),
-        projet: evenement.projet,
+        espace: evenement.espace,
         titre: evenement.titre,
         detail: evenement.lieu,
         notes: evenement.notes,
@@ -373,7 +373,7 @@ export function assemblerCalendrier({
         // venir, et cocher se fait sur celle du jour. Sans ça, une série
         // cochée s'afficherait barrée jusqu'en 2029.
         faite: tache.statut === 'fait' && !tache.recurrence,
-        projet: tache.projet,
+        espace: tache.espace,
         titre: tache.titre,
         detail: tache.statut === 'backlog' ? 'backlog' : null,
       });
@@ -387,7 +387,7 @@ export function assemblerCalendrier({
         type: 'objectif',
         source: objectif,
         date: depuisDateISO(objectif.echeance),
-        projet: objectif.projet,
+        espace: objectif.espace,
         titre: objectif.titre,
         detail: objectif.cible,
       });
@@ -399,7 +399,7 @@ export function assemblerCalendrier({
           type: 'jalon',
           source: jalon,
           date: depuisDateISO(jalon.echeance),
-          projet: objectif.projet,
+          espace: objectif.espace,
           titre: jalon.titre,
           detail: objectif.titre,
         });
@@ -429,7 +429,7 @@ export function assemblerCalendrier({
         // avec ses trois pastilles, et lui, il se relit à la source à chaque
         // rendu. Recopié dans cette ligne, il serait vrai à l'assemblage et
         // faux dès le premier appui.
-        projet: pub.projet ?? 'photo',
+        espace: pub.espace ?? 'photo',
         titre: pub.titre,
         detail: `${RESEAUX[pub.reseau] ?? pub.reseau} · ${FORMATS[pub.format] ?? pub.format}`,
       });
@@ -442,7 +442,7 @@ export function assemblerCalendrier({
       type: 'commande',
       source: commande,
       date: depuisDateISO(commande.echeance),
-      projet: 'photo',
+      espace: 'photo',
       titre: commande.titre,
       detail: commande.client ? `à livrer à ${commande.client}` : 'à livrer',
     });
@@ -454,7 +454,7 @@ export function assemblerCalendrier({
       type: 'relance',
       source: contact,
       date: depuisDateISO(contact.prochaine_action_date),
-      projet: 'photo',
+      espace: 'photo',
       titre: contact.prochaine_action || `Reprendre contact avec ${contact.nom}`,
       detail: contact.nom,
     });
@@ -671,7 +671,7 @@ function segmentsDeLaSemaine(jours, elements) {
   return segments;
 }
 
-// La nature se lit à l'œil, pas seulement à la couleur — un projet et une
+// La nature se lit à l'œil, pas seulement à la couleur — un espace et une
 // nature sont deux informations, et la couleur n'en porte qu'une. Un événement
 // n'a pas de signe : c'est le cas ordinaire, la barre pleine le dit déjà.
 const SIGNES = {
@@ -727,7 +727,7 @@ function hauteurSelonLaDuree(element) {
 // avance d'un appui — et ce qui décide de son dessin.
 function suivantDe(element) {
   if (element.type !== 'publication' || !element.source) return null;
-  const cycle = cyclePublication(element.projet);
+  const cycle = cyclePublication(element.espace);
   return cycle[cycle.indexOf(element.source.statut) + 1] ?? null;
 }
 
@@ -739,7 +739,7 @@ function suivantDe(element) {
 // qu'on vient y chercher.
 function signeDe(element) {
   if (element.type === 'publication') {
-    const cycle = cyclePublication(element.projet);
+    const cycle = cyclePublication(element.espace);
     const rang = cycle.indexOf(element.source?.statut);
     if (rang >= cycle.length - 1) return '◉';
     return rang === cycle.length - 2 ? '◐' : '○';
@@ -757,8 +757,8 @@ function signeEnHtml(element, signe) {
         ? 'Faite'
         : 'Marquer comme faite'
       : suivant
-        ? `Passer en ${nomDuStatut(element.projet, suivant)}`
-        : nomDuStatut(element.projet, element.source?.statut);
+        ? `Passer en ${nomDuStatut(element.espace, suivant)}`
+        : nomDuStatut(element.espace, element.source?.statut);
 
   return `<span class="cal-signe${cochable ? ' cal-signe-cochable' : ''}"
     ${element.type === 'tache' ? `data-cocher-tache="${echapper(element.id)}"` : ''}
@@ -767,9 +767,9 @@ function signeEnHtml(element, signe) {
     aria-hidden="true">${signe}</span>`;
 }
 
-function barre(segment, { montrerProjet = false, proportionnel = false, empile = false } = {}) {
+function barre(segment, { montrerEspace = false, proportionnel = false, empile = false } = {}) {
   const { element, deborde } = segment;
-  const projet = montrerProjet ? ` data-projet="${echapper(element.projet)}"` : '';
+  const espace = montrerEspace ? ` data-espace="${echapper(element.espace)}"` : '';
   const heure = heureDe(element);
   // La durée pose un PLANCHER, jamais un plafond : un titre qui passe à la
   // ligne peut le dépasser. Une barre ne coupe jamais son texte pour tenir dans
@@ -797,7 +797,7 @@ function barre(segment, { montrerProjet = false, proportionnel = false, empile =
     .filter(Boolean)
     .join(' ');
 
-  return `<button type="button" class="${classes}"${projet}
+  return `<button type="button" class="${classes}"${espace}
     style="${
       empile
         ? ''
@@ -839,7 +839,7 @@ function barre(segment, { montrerProjet = false, proportionnel = false, empile =
 }
 
 function ligneDeSemaine(jours, elements, options) {
-  const { montrerProjet, proportionnel, maximum, mois, aujourdhui, selection } = options;
+  const { montrerEspace, proportionnel, maximum, mois, aujourdhui, selection } = options;
   const segments = segmentsDeLaSemaine(jours, elements);
   const visibles = maximum ? segments.filter((segment) => segment.couloir < maximum) : segments;
   const caches = maximum ? segments.filter((segment) => segment.couloir >= maximum) : [];
@@ -899,7 +899,7 @@ function ligneDeSemaine(jours, elements, options) {
           if (!dedans.length) return '';
           return `<div class="cal-pile" aria-hidden="false"
             style="grid-column: ${index + 1}; grid-row: ${couloirs + 2};">${dedans
-              .map((segment) => barre(segment, { montrerProjet, proportionnel, empile: true }))
+              .map((segment) => barre(segment, { montrerEspace, proportionnel, empile: true }))
               .join('')}</div>`;
         })
         .join('')
@@ -961,7 +961,7 @@ function ligneDeSemaine(jours, elements, options) {
   return `
     <div class="cal-ligne" style="grid-template-rows: auto repeat(${rangs}, auto) 1fr;">
       ${fonds}${numeros}
-      ${longs.map((segment) => barre(segment, { montrerProjet, proportionnel })).join('')}
+      ${longs.map((segment) => barre(segment, { montrerEspace, proportionnel })).join('')}
       ${piles}
       ${restes}
     </div>`;
@@ -1019,7 +1019,7 @@ export function construireGrille(
   vue,
   ancre,
   {
-    montrerProjet = false,
+    montrerEspace = false,
     selection = null,
     aide = true,
     titresOuvrants = false,
@@ -1030,7 +1030,7 @@ export function construireGrille(
   const jours = vue === 'semaine' ? grilleDeLaSemaine(ancre) : grilleDuMois(ancre);
 
   const options = {
-    montrerProjet,
+    montrerEspace,
     // Une barre haute comme sa durée : seulement en semaine. En mois, une case
     // fait 7 rem — un match de deux heures y prendrait les trois quarts de sa
     // journée et écraserait tout le reste.
@@ -1095,7 +1095,7 @@ export function finDeLEvenement(debut, champs) {
 
 // --- L'agenda ----------------------------------------------------------------
 
-export function construireCalendrier(elements, natures, { montrerProjet = false } = {}) {
+export function construireCalendrier(elements, natures, { montrerEspace = false } = {}) {
   const retenus = elements.filter((element) => retenu(element, natures));
 
   if (!retenus.length) {
@@ -1118,13 +1118,13 @@ export function construireCalendrier(elements, natures, { montrerProjet = false 
           ${liste
             .map(
               (element) => `
-            <li ${montrerProjet ? `data-projet="${echapper(element.projet)}"` : ''}>
+            <li ${montrerEspace ? `data-espace="${echapper(element.espace)}"` : ''}>
               <span class="tuile-entete">
                 <span class="etiquette">${TYPES[element.type]}</span>
                 ${
-                  montrerProjet
-                    ? `<span class="tuile-projet">${echapper(
-                        NOMS_PROJETS[element.projet] ?? element.projet,
+                  montrerEspace
+                    ? `<span class="tuile-espace">${echapper(
+                        NOMS_ESPACES[element.espace] ?? element.espace,
                       )}</span>`
                     : ''
                 }
@@ -1532,7 +1532,7 @@ const ICONE = {
   quand: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>`,
-  projet: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+  espace: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <path d="M10 3 8 21M16 3l-2 18M3.5 8.5h17M3 15.5h17"></path></svg>`,
   priorite: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
@@ -1638,7 +1638,7 @@ const DRAPEAU_CAL = (rempli) => `<svg viewBox="0 0 24 24" width="18" height="18"
 // son cadre bleu et son chevron, au milieu d'une tuile dessinée. Laid, et
 // surtout pénible — au doigt il faut viser un contrôle de 30 px puis une ligne
 // dans une roue. Ici chaque option est une ligne pleine largeur, avec son
-// drapeau ou sa pastille de projet, exactement comme dans l'espace Tâches.
+// drapeau ou sa pastille d'espace, exactement comme dans l'espace Tâches.
 //
 // La valeur voyage dans un champ caché : les espaces lisent toujours le
 // formulaire avec `FormData`, ils n'ont pas à savoir comment on l'a saisie.
@@ -1648,7 +1648,7 @@ function champChoix({ nom, options, valeur, decor = null }) {
     const signe =
       decor === 'priorite'
         ? `<span class="choix-drapeau">${DRAPEAU_CAL(String(cle) !== '4')}</span>`
-        : decor === 'projet'
+        : decor === 'espace'
           ? '<span class="choix-pastille" aria-hidden="true"></span>'
           : '';
 
@@ -1656,7 +1656,7 @@ function champChoix({ nom, options, valeur, decor = null }) {
       <li><button type="button" data-choix="${nom}" data-valeur="${echapper(String(cle))}"
         aria-pressed="${choisi}"
         ${decor === 'priorite' ? `data-priorite="${echapper(String(cle))}"` : ''}
-        ${decor === 'projet' ? `data-projet="${echapper(String(cle))}"` : ''}
+        ${decor === 'espace' ? `data-espace="${echapper(String(cle))}"` : ''}
         class="${choisi ? 'actif' : ''}">${signe}<span>${echapper(texte)}</span></button></li>`;
   };
 
@@ -1686,10 +1686,10 @@ function pastilleCapture({
   neutre = null,
   contenu,
   rempli = false,
-  // Une pastille qui n'existe que pour UN projet : elle porte le sien, et
-  // `brancherCapture` la montre ou la masque quand le choix du projet change.
+  // Une pastille qui n'existe que pour UN espace : elle porte le sien, et
+  // `brancherCapture` la montre ou la masque quand le choix de l'espace change.
   // `cachee` dit son état au premier rendu.
-  siProjet = null,
+  siEspace = null,
   cachee = false,
 }) {
   return {
@@ -1699,7 +1699,7 @@ function pastilleCapture({
       ${sourceHeure ? `data-source-heure="${sourceHeure}"` : ''}
       ${sourceDuree ? `data-source-duree="${sourceDuree}"` : ''}
       ${neutre !== null ? `data-neutre="${echapper(String(neutre))}"` : ''}
-      ${siProjet ? `data-si-projet="${echapper(siProjet)}"` : ''}
+      ${siEspace ? `data-si-espace="${echapper(siEspace)}"` : ''}
       ${cachee ? 'hidden' : ''}
       data-defaut="${echapper(defaut)}">${icone}<span data-libelle>${echapper(defaut)}</span></button>`,
     panneau: `<div class="capture-popover" data-panneau="${nom}" hidden>${contenu}</div>`,
@@ -1711,7 +1711,7 @@ export function fenetreCreation({
   fin,
   nature = 'evenement',
   heure = '',
-  projets = null,
+  espaces = null,
   // Une nature que SEUL l'appelant connaît, ajoutée en fin de liste. Le site
   // Yuno s'en sert pour son « moment » : il n'a rien à faire dans le calendrier
   // du hub — un moment n'est pas une date qu'on pose, c'est un vécu qu'on
@@ -1725,12 +1725,12 @@ export function fenetreCreation({
   natureEnDernier = false,
   // Le type du moment (match · concert…) sur un événement. Le site Yuno le
   // passe à vrai — chez lui tout est photo. Le hub n'a pas besoin de l'écrire :
-  // dès que ses projets offrent 'photo', la pastille existe, révélée quand le
-  // projet choisi est photo (demande de Noé, 14 août 2026).
+  // dès que ses espaces offrent 'photo', la pastille existe, révélée quand le
+  // espace choisi est photo (demande de Noé, 14 août 2026).
   typeMoment = false,
-  // La pastille « Réunion » sur un événement, offerte quand le projet est fch
+  // La pastille « Réunion » sur un événement, offerte quand l'espace est fch
   // (demande de Noé, 21 août 2026). Le site FCH la passe à vrai — chez lui
-  // tout est club ; dans le hub elle se révèle quand le projet choisi est fch,
+  // tout est club ; dans le hub elle se révèle quand l'espace choisi est fch,
   // exactement comme `type_moment` avec photo.
   reunion = false,
   // Les noms des clubs du vivier, pour relier un événement à son affiche. Yuno
@@ -1747,7 +1747,7 @@ export function fenetreCreation({
   notes = false,
   // Ce que la tuile porte DÉJÀ. Vide à la création — c'est le cas ordinaire —,
   // rempli quand on rouvre une ligne pour la corriger : le titre dans le champ,
-  // le projet et la priorité sur leurs pastilles. La tuile ne sait pas si elle
+  // l'espace et la priorité sur leurs pastilles. La tuile ne sait pas si elle
   // crée ou si elle corrige ; c'est l'espace qui le sait, à l'envoi.
   valeurs = {},
 }) {
@@ -1759,10 +1759,10 @@ export function fenetreCreation({
   // une date unique : on prend le premier jour, et on le dit.
   const surLePremierJour = !memeJour && nature !== 'evenement';
 
-  const projetsOfferts =
-    projets &&
+  const espacesOfferts =
+    espaces &&
     Object.fromEntries(
-      Object.entries(projets).filter(([cle]) => cle !== 'perso' || NATURES_PERSO.has(nature)),
+      Object.entries(espaces).filter(([cle]) => cle !== 'perso' || NATURES_PERSO.has(nature)),
     );
 
   const pastilles = [];
@@ -1855,29 +1855,29 @@ export function fenetreCreation({
     }),
   );
 
-  // 3. Le projet, quand l'espace en offre le choix. Le site Yuno n'en propose
+  // 3. L'espace, quand l'espace en offre le choix. Le site Yuno n'en propose
   // pas : on y est déjà chez Yuno.
-  const projetInitial = projetsOfferts
-    ? valeurs.projet && valeurs.projet in projetsOfferts
-      ? valeurs.projet
-      : 'photo' in projetsOfferts
+  const espaceInitial = espacesOfferts
+    ? valeurs.espace && valeurs.espace in espacesOfferts
+      ? valeurs.espace
+      : 'photo' in espacesOfferts
         ? 'photo'
-        : Object.keys(projetsOfferts)[0]
+        : Object.keys(espacesOfferts)[0]
     : null;
 
-  if (projetsOfferts) {
+  if (espacesOfferts) {
     pastilles.push(
       pastilleCapture({
-        nom: 'projet',
-        icone: ICONE.projet,
-        defaut: projetsOfferts.photo ?? Object.values(projetsOfferts)[0],
-        source: 'projet',
+        nom: 'espace',
+        icone: ICONE.espace,
+        defaut: espacesOfferts.photo ?? Object.values(espacesOfferts)[0],
+        source: 'espace',
         rempli: true,
         contenu: champChoix({
-          nom: 'projet',
-          options: projetsOfferts,
-          valeur: projetInitial,
-          decor: 'projet',
+          nom: 'espace',
+          options: espacesOfferts,
+          valeur: espaceInitial,
+          decor: 'espace',
         }),
       }),
     );
@@ -1913,9 +1913,9 @@ export function fenetreCreation({
 
     // Le type du moment qui naîtra de cette sortie — c'est le bilan de la
     // préparation qui s'en servira pour inscrire le vécu au carnet. Yuno
-    // seulement : dans le hub, la pastille attend que le projet choisi soit
-    // photo (elle porte data-si-projet, brancherCapture la révèle et la cache).
-    if (typeMoment || projetsOfferts?.photo) {
+    // seulement : dans le hub, la pastille attend que l'espace choisi soit
+    // photo (elle porte data-si-espace, brancherCapture la révèle et la cache).
+    if (typeMoment || espacesOfferts?.photo) {
       pastilles.push(
         pastilleCapture({
           nom: 'type_moment',
@@ -1923,8 +1923,8 @@ export function fenetreCreation({
           defaut: TYPES_MOMENT_CAL.match,
           source: 'type_moment',
           rempli: true,
-          siProjet: projetsOfferts ? 'photo' : null,
-          cachee: Boolean(projetsOfferts) && projetInitial !== 'photo',
+          siEspace: espacesOfferts ? 'photo' : null,
+          cachee: Boolean(espacesOfferts) && espaceInitial !== 'photo',
           contenu: champChoix({
             nom: 'type_moment',
             options: TYPES_MOMENT_CAL,
@@ -1937,7 +1937,7 @@ export function fenetreCreation({
     // La réunion : son objet — qui est le marqueur — et « j'anime ». Une seule
     // pastille pour les deux réglages : ils se décident ensemble, en posant la
     // réunion, pas en deux visites de panneaux.
-    if (reunion || projetsOfferts?.fch) {
+    if (reunion || espacesOfferts?.fch) {
       pastilles.push(
         pastilleCapture({
           nom: 'reunion',
@@ -1945,8 +1945,8 @@ export function fenetreCreation({
           defaut: 'Réunion',
           source: 'reunion_objet',
           neutre: '',
-          siProjet: projetsOfferts ? 'fch' : null,
-          cachee: Boolean(projetsOfferts) && projetInitial !== 'fch',
+          siEspace: espacesOfferts ? 'fch' : null,
+          cachee: Boolean(espacesOfferts) && espaceInitial !== 'fch',
           contenu: `${champChoix({
             nom: 'reunion_objet',
             options: { '': 'Pas une réunion', ...REUNION_OBJETS },
@@ -2309,13 +2309,13 @@ export function brancherCapture(section) {
         frere.setAttribute('aria-pressed', String(actif));
       }
 
-      // Les pastilles qui n'existent que pour un projet suivent le choix : le
+      // Les pastilles qui n'existent que pour un espace suivent le choix : le
       // type de moment apparaît quand on pose l'événement chez Yuno, et
       // disparaît sinon. Sa valeur reste dans son champ caché — les lecteurs
-      // du formulaire l'ignorent quand le projet n'est pas le sien.
-      if (nom === 'projet') {
-        for (const conditionnelle of section.querySelectorAll('.capture [data-si-projet]')) {
-          conditionnelle.hidden = valeur !== conditionnelle.dataset.siProjet;
+      // du formulaire l'ignorent quand l'espace n'est pas le sien.
+      if (nom === 'espace') {
+        for (const conditionnelle of section.querySelectorAll('.capture [data-si-espace]')) {
+          conditionnelle.hidden = valeur !== conditionnelle.dataset.siEspace;
         }
       }
 
@@ -2436,8 +2436,8 @@ function champsDeModification(element) {
         valeur: ligne.recurrence_fin ?? '',
       },
       // Un événement photo porte le type du moment qui en naîtra ; les autres
-      // projets n'ont pas ce champ, et le corriger n'a de sens que chez Yuno.
-      ...(element.projet === 'photo'
+      // espaces n'ont pas ce champ, et le corriger n'a de sens que chez Yuno.
+      ...(element.espace === 'photo'
         ? [{
             nom: 'type_moment',
             libelle: 'Type de moment',
@@ -2448,7 +2448,7 @@ function champsDeModification(element) {
         : []),
       // Et un événement fch porte sa face réunion : l'objet — vide = pas une
       // réunion — et qui l'anime (demande de Noé, 21 août 2026).
-      ...(element.projet === 'fch'
+      ...(element.espace === 'fch'
         ? [
             {
               nom: 'reunion_objet',
@@ -2542,7 +2542,7 @@ export function elementsDuJour(elements, cle) {
 // Ce qu'un jour contient, ligne à ligne. Chaque ligne mène au détail de son
 // élément — c'est le chemin qu'on cherchait en cliquant. Deux écrans s'en
 // servent : la fenêtre du « +N » et la journée de l'accueil.
-function lignesDuJour(elements, montrerProjet) {
+function lignesDuJour(elements, montrerEspace) {
   if (!elements.length) return `<p class="vide">Rien ce jour-là.</p>`;
 
   return `<ul class="cal-journee">${elements
@@ -2551,7 +2551,7 @@ function lignesDuJour(elements, montrerProjet) {
     <li>
       <button type="button" class="cal-journee-ligne"
         data-element="${echapper(element.type)}:${echapper(element.id)}"
-        ${montrerProjet ? `data-projet="${echapper(element.projet)}"` : ''}>
+        ${montrerEspace ? `data-espace="${echapper(element.espace)}"` : ''}>
         <span class="etiquette">${TYPES[element.type]}</span>
         <span class="cal-journee-titre">${echapper(element.titre)}</span>
         ${
@@ -2566,7 +2566,7 @@ function lignesDuJour(elements, montrerProjet) {
 }
 
 // La journée dépliée, quand le « +N » est ouvert.
-export function fenetreJour(cle, elements, { montrerProjet = false } = {}) {
+export function fenetreJour(cle, elements, { montrerEspace = false } = {}) {
   const jour = depuisDateISO(cle);
   const lisible = jour.toLocaleDateString('fr-FR', {
     weekday: 'long',
@@ -2576,7 +2576,7 @@ export function fenetreJour(cle, elements, { montrerProjet = false } = {}) {
 
   return construireFenetre(
     lisible,
-    `<h3 class="fenetre-titre">${echapper(lisible)}</h3>${lignesDuJour(elements, montrerProjet)}`,
+    `<h3 class="fenetre-titre">${echapper(lisible)}</h3>${lignesDuJour(elements, montrerEspace)}`,
   );
 }
 
@@ -2584,7 +2584,7 @@ export function fenetreJour(cle, elements, { montrerProjet = false } = {}) {
 // 2026) : le calendrier de l'accueil montre ce qui part cette semaine, c'est là
 // qu'on constate qu'un visuel est prêt ou qu'un post est sorti.
 //
-// C'est une PASTILLE, à la suite de celles de l'en-tête — nature, projet, état
+// C'est une PASTILLE, à la suite de celles de l'en-tête — nature, espace, état
 // (Noé, le même jour) : les trois disent ce QU'EST la publication, elles se
 // lisent ensemble. Celle-ci s'ouvre en menu déroulant, dessiné comme tous les
 // choix du hub depuis le 14 août 2026 (jamais le `<select>` du système), et le
@@ -2621,9 +2621,9 @@ function reglageStatut(element) {
   const pub = element.source;
   if (element.type !== 'publication' || !pub) return '';
 
-  const cycle = cyclePublication(element.projet);
+  const cycle = cyclePublication(element.espace);
   const rang = Math.max(cycle.indexOf(pub.statut), 0);
-  const nom = (statut) => echapper(nomDuStatut(element.projet, statut));
+  const nom = (statut) => echapper(nomDuStatut(element.espace, statut));
   const teinte = (etape) => teinteDeLEtape(etape, cycle.length);
 
   return `
@@ -2680,7 +2680,7 @@ const CORBEILLE = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none"
 export function fenetreDetail(
   element,
   {
-    montrerProjet = false,
+    montrerEspace = false,
     edition = false,
     actions = '',
     champsEnPlus = [],
@@ -2695,9 +2695,9 @@ export function fenetreDetail(
     <span class="tuile-entete">
       <span class="etiquette">${TYPES[element.type]}</span>
       ${
-        montrerProjet
-          ? `<span class="tuile-projet">${echapper(
-              NOMS_PROJETS[element.projet] ?? element.projet,
+        montrerEspace
+          ? `<span class="tuile-espace">${echapper(
+              NOMS_ESPACES[element.espace] ?? element.espace,
             )}</span>`
           : ''
       }
@@ -2774,15 +2774,15 @@ export function fenetreDetail(
 // suivre un champ. (C'est exactement ce qui s'était produit avec l'heure et la
 // priorité d'une tâche : offertes à l'écran, jetées à l'écriture.)
 //
-// `projetParDefaut` sert aux espaces qui ne demandent pas le projet : le site
+// `espaceParDefaut` sert aux espaces qui ne demandent pas l'espace : le site
 // Yuno sait qu'il est chez lui.
-export async function poserAuCalendrier(champs, { projetParDefaut = 'photo' } = {}) {
+export async function poserAuCalendrier(champs, { espaceParDefaut = 'photo' } = {}) {
   const titre = champs.titre.trim();
-  const projet = champs.projet ?? projetParDefaut;
+  const espace = champs.espace ?? espaceParDefaut;
 
   if (champs.nature === 'tache') {
     return api.creerTache({
-      projet,
+      espace,
       titre,
       recurrence: champs.recurrence || null,
       // Une fin de répétition sans répétition ne veut rien dire.
@@ -2800,7 +2800,7 @@ export async function poserAuCalendrier(champs, { projetParDefaut = 'photo' } = 
 
   if (champs.nature === 'publication') {
     return api.creerPublication({
-      projet,
+      espace,
       titre,
       reseau: champs.reseau,
       format: champs.format,
@@ -2821,7 +2821,7 @@ export async function poserAuCalendrier(champs, { projetParDefaut = 'photo' } = 
 
   if (champs.nature === 'objectif') {
     return api.creerObjectif({
-      projet,
+      espace,
       titre,
       pourquoi: champs.pourquoi?.trim() || null,
       cible: champs.cible?.trim() || null,
@@ -2835,7 +2835,7 @@ export async function poserAuCalendrier(champs, { projetParDefaut = 'photo' } = 
   const fin = finDeLEvenement(debut, champs);
 
   return api.creerEvenement({
-    projet,
+    espace,
     titre,
     date_debut: debut.toISOString(),
     date_fin: fin ? fin.toISOString() : null,
@@ -2845,11 +2845,11 @@ export async function poserAuCalendrier(champs, { projetParDefaut = 'photo' } = 
     notes: champs.notes?.trim() || null,
     // Le champ existe même quand sa pastille est cachée : seul un événement
     // photo le garde — ailleurs, un type de moment ne veut rien dire.
-    type_moment: projet === 'photo' ? champs.type_moment || null : null,
+    type_moment: espace === 'photo' ? champs.type_moment || null : null,
     // Même règle pour la réunion : elle n'existe qu'au FCH. L'objet vide dit
     // « pas une réunion », et l'animation ne survit pas sans objet.
-    reunion_objet: projet === 'fch' ? champs.reunion_objet || null : null,
+    reunion_objet: espace === 'fch' ? champs.reunion_objet || null : null,
     reunion_animee:
-      projet === 'fch' && champs.reunion_objet ? champs.reunion_animee === 'oui' : false,
+      espace === 'fch' && champs.reunion_objet ? champs.reunion_animee === 'oui' : false,
   });
 }
