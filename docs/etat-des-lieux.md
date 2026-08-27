@@ -1,4 +1,4 @@
-# État des lieux — 26 août 2026
+# État des lieux — 27 août 2026
 
 > **Reprise : § 4 bis, « Par où reprendre ».**
 >
@@ -6,27 +6,249 @@
 > les deux cahiers des charges (`yuno-spec.md`, `fch-spec.md`) font autorité sur
 > leurs sites. À relire au début d'une session, à mettre à jour à la fin.
 >
-> **§ 0 raconte la dernière session** (26 août : les objectifs enfin posés, le
-> cap gravé, les trois pages projet refaites, l'argent de Yuno, les tâches
-> répétées, puis les publications répétées, la durée des tâches, et
-> « Aujourd'hui » qui porte la journée entière),
-> **§ 0 ante celle d'avant** (24–25 août : la journée dans la
-> semaine, le FCH à trois états), **§ 0 ante bis** le 24 août, **§ 0 ante ter**
-> le 21, **§ 0 ante quater** le 15, **§ 0 ante quinquies** les 14–15. Les § 1 et
-> suivants décrivent l'état stable et les chantiers antérieurs.
+> **§ 0 raconte la dernière session** (27 août : les publications qui se
+> répètent, la durée d'une tâche, « Aujourd'hui » qui porte la journée entière,
+> l'état d'une publication réglable depuis les trois calendriers, Gilroy dans
+> la grille), **§ 0 ante celle d'avant** (26 août : les objectifs enfin posés,
+> le cap gravé, les trois pages projet refaites, l'argent de Yuno, les tâches
+> répétées), **§ 0 ante bis** les 24–25 août, **§ 0 ante ter** le 24,
+> **§ 0 ante quater** le 21, **§ 0 ante quinquies** le 15, **§ 0 ante sexies**
+> les 14–15. Les § 1 et suivants décrivent l'état stable et les chantiers
+> antérieurs.
 
-## 0. La session du 26 août — les objectifs posés, et les pages projet refaites
+## 0. La session du 27 août — la répétition partout, la journée entière, un geste unique
 
-**Sept commits, tous poussés** : `e4bcca3` (forme des objectifs), `850a637`
+**Quatre commits, tous poussés** : `d069884` (publications répétées + durée des
+tâches), `bde6e7a` (`graphify-out` ignoré), `3c4591d` (« Aujourd'hui » porte la
+journée + la durée sous l'heure), `c821aad` (Gilroy dans la grille). **Deux
+migrations** appliquées : `publications_recurrentes`, `taches_duree`.
+`CLAUDE.md`, `yuno-spec.md` et `fch-spec.md` mis à jour en fin de session.
+L'arbre est propre, `main` est au même point qu'`origin/main`.
+
+La session a commencé sur une demande simple — « la répétition pour les
+publications aussi » — et **sept demandes de plus** l'ont conduite ailleurs,
+chacune venue après avoir vu la précédente à l'écran. C'est son mode de travail :
+il regarde, il essaie, il change d'avis. Ce qui suit dit où l'on est arrivé,
+**et par où l'on est passé** — trois formes de « Aujourd'hui » ont été proposées
+avant la bonne, et une session future qui reproposerait les deux premières
+referait un chemin déjà fait.
+
+**Les huit demandes, dans l'ordre où elles sont venues** — l'écart entre la
+première et la dernière dit tout de la méthode :
+
+| # | Demande | Ce qu'elle a donné |
+|---|---|---|
+| 1 | « la répétition pour les publications » | § 1 |
+| 2 | « et la durée pour les tâches » | § 1 |
+| 3 | « la durée à la main en minutes, propositions de 1 h à 3 h » | § 1 |
+| 4 | « pour les événements : pas de 30 min, 1 h à 4 h, ou toute la journée » | § 1 |
+| 5 | « Aujourd'hui : aussi les événements et les publications » | § 2 |
+| 6 | « la durée doit être disponible partout » | § 3 |
+| 7 | « l'état d'une publication : pareil sur les trois calendriers » | § 4 |
+| 8 | « les titres des barres en Gilroy » | § 5 |
+
+### 1. Les publications se répètent, et les tâches ont une durée
+
+Quatre demandes enchaînées (1 à 4 du tableau), la troisième et la quatrième
+venues APRÈS avoir vu les deux premières à l'écran.
+
+**La répétition des publications.** Mêmes colonnes que la tâche et l'événement,
+même dépliage. La règle importante est celle qui vient de la tâche, et elle vaut
+qu'on ne la « corrige » pas : une publication porte **un seul** `statut`, donc
+**une publication répétée ne se termine pas** — la faire partir avance sa
+`date_prevue` d'une occurrence et la ramène au **premier état de son cycle**
+(« à préparer » au club, « idée » chez Yuno). La rubrique du lundi suivant
+attend déjà sur son jour. Écrite **une seule fois**, dans `passageDePublication`
+(`js/calendrier-commun.js`) : quatre écrans font avancer une publication, et
+quatre copies de la règle se seraient contredites.
+
+*Conséquence assumée* : une publication récurrente ne reste jamais en « publié »,
+donc **le compteur « publications sorties » du bilan FCH ne la voit pas passer**.
+Le hub ne garde pas la trace des parutions d'une série, comme il ne garde pas
+celle des occurrences d'une tâche répétée. Si Noé veut ce compte un jour, il
+faudra une trace — pas un changement de la règle.
+
+**La durée d'une tâche.** Colonne `duree` en **minutes**, facultative, et qui ne
+vaut qu'avec une heure. Noé a explicitement demandé de **la taper à la main** :
+les propositions (1 h → 3 h) ne sont qu'un raccourci, pas la liste des valeurs
+possibles. Le champ est bâti **une fois**, dans `champDuree` (`js/espace-projet.js`),
+et les deux tuiles qui le posent — l'espace Tâches et le calendrier — s'en
+servent telles quelles. Ce qu'elle change à l'écran : en vue semaine, la barre
+d'une tâche prend la hauteur de sa durée, comme celle d'un événement.
+
+**Les durées d'un événement ont changé** (demande de Noé) : plus de 30 minutes,
+de **1 h à 4 h**, plus **« Toute la journée » qui vaut 9 h**. Neuf heures parce
+qu'il faut un nombre — c'est la hauteur de la barre. À ne pas confondre avec un
+événement **sans heure**, qui tient le jour sans occuper de créneau : celui-là ne
+passe pas par les durées.
+
+Les défauts trouvés en chemin sont rassemblés en fin de section.
+
+### 2. « Aujourd'hui » porte la journée entière
+
+Le bloc ne montrait que les tâches ; il montre aussi ce qui doit **partir** et
+les **rendez-vous** (demande de Noé). Trois allers-retours pour trouver la
+forme, et c'est la troisième qui tient — les deux premières sont écrites ici
+pour qu'on ne les repropose pas :
+
+1. une seule liste dans l'ordre des heures → écartée ;
+2. trois groupes empilés → écartée ;
+3. **deux colonnes** : les tâches à gauche, seules ; **à publier** puis
+   **rendez-vous** à droite. Sur téléphone tout s'empile dans le même ordre.
+
+Ce que chaque groupe retient, et pourquoi les bornes diffèrent : une
+**publication** compte si elle est prévue aujourd'hui **ou l'était déjà** et
+n'est pas partie — c'est la règle des tâches, mot pour mot. Un **rendez-vous**
+ne compte que s'il **couvre** aujourd'hui : un événement passé n'est pas en
+attente, il a eu lieu, et le traîner en tête de page serait le reproche que ce
+hub ne fait jamais.
+
+Les gestes suivent la nature : le rond d'une publication **avance d'un cran**
+(le même attribut qu'au calendrier, donc rien à rebrancher), un rendez-vous
+porte son **heure** à la place de la marque et **ne se coche pas**. Un groupe
+vide disparaît en entier, titre compris ; une colonne vide aussi, et l'autre
+prend toute la largeur.
+
+**Le recoupement avec « Ta semaine » est volontaire** : la journée en cours
+figure aux deux endroits. Le bloc dit *ce qu'on fait* et porte les gestes ; la
+grille dit *la forme de la semaine* et se glisse. Ce n'est pas un doublon à
+corriger.
+
+Un détail qui a demandé un second endroit : une publication **en retard** est
+dans le bloc du jour mais **pas** dans la grille de la semaine — l'ouverture de
+sa tuile cherche donc dans les deux listes, sinon elle ne s'ouvrait pas.
+
+### 3. La durée d'une tâche, là où on la cherche
+
+Noé ne la trouvait que dans l'espace Tâches. Elle était pourtant offerte
+partout — mais **sixième pastille sur six**, dans une bande qui DÉFILE : hors
+de l'écran, donc inexistante. Elle est descendue dans le panneau « Quand », sous
+l'heure, comme dans l'espace Tâches : même question, même endroit, et la
+dépendance devient évidente puisqu'une durée ne vaut qu'avec une heure. La
+pastille dit désormais le créneau entier — « aujourd'hui, 14:30 · 1 h 30 ».
+
+Leçon générale, pour la prochaine pastille : **une bande qui défile n'est pas
+une liste, c'est une file d'attente.** Ce qui compte se met dans un panneau
+qu'on ouvre déjà, pas au bout de la bande.
+
+### 4. L'état d'une publication : le même geste sur les trois calendriers
+
+Le rond et la pastille d'état ne marchaient que sur le hub. Sur les deux
+**sites**, le rond était pourtant DESSINÉ — la barre est commune, et
+`signeEnHtml` ne demande à personne s'il sera écouté — mais rien ne l'écoutait :
+l'appui traversait jusqu'à la barre et ouvrait la tuile. Un bouton mort qui
+avait l'air vivant. La pastille d'état, elle, n'était même pas offerte
+(`statutModifiable` restait à faux).
+
+Le geste est désormais écrit **une seule fois**, dans `brancherEtatPublication`
+(js/calendrier-commun.js), et les quatre écrans l'empruntent : accueil, espace
+Calendrier, site Yuno, site du club. Deux copies ont disparu au passage.
+
+**En phase de CAPTURE, et c'est la condition pour que ça tienne.** Le rond vit
+dans la barre, qui porte `data-element` et ouvre le détail. En bulle, lequel des
+deux gagne dépend de qui a posé son écouteur en premier — c'est exactement
+l'erreur qui avait laissé le rond inerte dans l'espace Calendrier du hub. En
+capture, celui-ci passe d'abord partout, quel que soit l'ordre de montage.
+
+Au passage : l'espace Calendrier n'avait **aucun moyen de dire qu'une écriture
+avait échoué** — le retour en arrière se faisait en silence, ce qui fait de
+l'affichage optimiste un mensonge (js/ecriture.js). Il a maintenant sa ligne,
+distincte de celle de l'échec de chargement : l'une annonce une page vide,
+l'autre un geste revenu en arrière.
+
+### 5. Gilroy dans la grille du calendrier
+
+Le **titre d'une barre** — et lui seul — est en Gilroy 700, dans les trois
+calendriers. Ce qui a décidé de la portée exacte : **les signes** (○ ◐ ◉ ▲ △ ▸
+↗) vivent dans le même conteneur que le titre, et **Gilroy ne les dessine pas**.
+Les y faire passer aurait fait retomber chaque glyphe, un par un, sur une police
+de secours choisie par le navigateur — avec sa taille et son aplomb : le rond
+d'une tâche aurait changé de forme selon la machine. La règle est donc posée sur
+`.cal-barre-titre`, jamais sur `.cal-barre-element`. **Ne pas la remonter.**
+L'heure reste en Geist Mono ; elle situe, elle ne se lit pas comme un texte.
+
+Aucun fichier de plus : Gilroy est déclarée dans `css/yuno.css` — chargée par
+les trois pages d'entrée — et son Bold est déjà dans la liste du service worker.
+Mesuré : seul le poids 700 se charge, les quatre autres restent `unloaded`.
+
+**Le site du club suit, et c'est voulu** : `css/fch.css` dit explicitement qu'il
+« reprend les polices du hub ». Il change donc par sa propre règle, pas par
+débordement. Yuno ne bouge pas — son corps de texte est déjà Gilroy, ses barres
+l'étaient par héritage ; la règle ne fait que l'écrire.
+
+### Ce qui a été vérifié, et comment
+
+**Tout au navigateur, sur les vraies données** — il n'y a pas de base de bac à
+sable. Chaque écriture d'essai a été relue en SQL puis supprimée, et la base
+recomptée à zéro à la fin (`taches`, `publications`, `victoires`). Aucune ligne
+de Noé n'a été touchée cette session.
+
+Vérifiés de bout en bout :
+
+- **La série d'une publication** : posée hebdomadaire depuis la tuile, dépliée
+  cinq fois au mois suivant, avancée d'un cran par son rond, puis publiée — sa
+  date a glissé du 26 août au 2 puis au 9 septembre, et son état est revenu à
+  « à préparer » à chaque fois.
+- **La durée d'une tâche** par ses deux chemins : la proposition (2 h) et la
+  saisie libre (105 min, qui éteint la proposition allumée), relue en base, dans
+  la pastille, dans la ligne de service, et en hauteur de barre en vue semaine
+  (`--duree: 3.75rem` pour 1 h 30, à côté d'un événement de 2 h à 5 rem).
+- **La durée offerte partout** : accueil, espace Calendrier (ouvert au pointeur,
+  la case ne répond pas à un `.click()`), pages FCH / Yuno / formation, et les
+  deux sites. Tous montrent le champ dans le panneau « Quand ».
+- **L'état d'une publication sur les quatre écrans**, en vue mois ET semaine :
+  le rond avance sans ouvrir la tuile, la pastille sait revenir en arrière, le
+  menu se referme à chaque choix.
+- **« Aujourd'hui »** avec une publication du jour et une en retard : les deux
+  colonnes, l'ordre des groupes, la disparition d'un groupe vide, l'ouverture de
+  la tuile d'une publication en retard (celle qui n'est PAS dans la semaine), et
+  l'empilement sur 375 px.
+- Les huit espaces du hub et les deux sites montent sans erreur console.
+
+**Le piège d'outillage de la session, à connaître** : le service worker et le
+cache de session servent l'**ancien JavaScript** après une modification. On
+accuse alors le code d'un défaut qui n'existe plus — c'est arrivé deux fois,
+dont une qui a coûté de longues minutes à chercher un bug inexistant dans
+l'ordre des branches d'un écouteur. Avant de conclure qu'un geste ne marche
+pas : désinscrire les service workers, vider `caches` et `sessionStorage`, puis
+recharger **avec une adresse différente** (`index.html?v=…`) — sans la query, le
+module reste en mémoire malgré tout le reste.
+
+### Quatre défauts trouvés en chemin, tous antérieurs à la session
+
+Aucun n'a été introduit ici ; tous dormaient depuis un ou deux jours.
+
+1. **Le rond d'une publication n'avançait pas dans l'espace Calendrier.** Sa
+   branche était écrite **après** celle qui ouvre le détail, et le rond est
+   *dans* la barre : `[data-element]` l'attrapait le premier. Corrigé d'abord
+   par un déplacement de branche, puis proprement par la phase de capture (§ 4).
+2. **La tuile ne pré-remplissait pas le champ « Heure ».** Rouvrir une tâche de
+   18 h et l'enregistrer sans y toucher lui **retirait son heure**.
+3. **La répétition d'une tâche disparaissait à la réouverture**, dans l'espace
+   Tâches comme sur l'accueil : la tuile revenait vide, et enregistrer effaçait
+   la série.
+4. **Le site Yuno n'écrivait pas la répétition d'une tâche** créée depuis sa
+   propre tuile : la pastille était offerte, la colonne restait nulle. C'est
+   exactement la copie oubliée dont `poserAuCalendrier` met en garde — Yuno est
+   le seul espace qui garde sa propre version de la création.
+
+**Un cinquième, non corrigé et laissé à Noé** : le titre d'une tâche sort en
+graisse **400** alors que le corps du hub est en **500**. `.tache-corps` est un
+`<button>` : il reprend `font-family: inherit` mais pas la graisse, et le
+navigateur lui remet son 400 par défaut. Les titres de tâches sont donc
+légèrement plus maigres que le reste de la page, partout. Une ligne de CSS suffit
+— Noé n'a pas dit s'il le voulait.
+
+---
+
+## 0 ante. La session du 26 août — les objectifs posés, et les pages projet refaites
+
+**Neuf commits, tous poussés** : `e4bcca3` (forme des objectifs), `850a637`
 (cap gravé + espace `#objectifs`), `e8aca73` (page Yuno), `0fffce4` (page FCH),
 `d11dca7` (page formation + tâches cochables), `c0fb4f5` (densité), `a5e1340`
 (tâches répétées), `b5fe4bc` (frais de déplacement), `ca1fe94` (fiche de sortie
-Yuno), `d069884` (publications répétées, durée des tâches), `bde6e7a`
-(graphify-out ignoré), plus les §§ 9 et 10 — « Aujourd'hui » qui porte la
-journée entière, et la durée remise là où on la cherche. **Cinq migrations**
-appliquées : `materiel`, `taches_recurrentes`, `commandes_frais`,
-`publications_recurrentes`, `taches_duree`. `CLAUDE.md`, `yuno-spec.md` et
-`fch-spec.md` ont été mis à jour en fin de session.
+Yuno). **Trois migrations** appliquées : `materiel`, `taches_recurrentes`,
+`commandes_frais`.
 
 La journée a commencé par une **conversation**, pas par du code : Noé voulait
 clarifier ses objectifs. Elle s'est terminée par une refonte des trois pages
@@ -226,130 +448,6 @@ faire n'est pas un rappel, c'est du décor. **La feuille, elle, n'attend pas** :
 elle se crée et se remplit quand on veut. C'est l'accueil qui se tait. Une
 sortie en cours ou qui vient de finir n'est pas soumise à la borne.
 
-### 8. Les publications se répètent, et les tâches ont une durée
-
-Deux demandes de fin de journée, plus quelques réglages venus en cours de route.
-
-**La répétition des publications.** Mêmes colonnes que la tâche et l'événement,
-même dépliage. La règle importante est celle qui vient de la tâche, et elle vaut
-qu'on ne la « corrige » pas : une publication porte **un seul** `statut`, donc
-**une publication répétée ne se termine pas** — la faire partir avance sa
-`date_prevue` d'une occurrence et la ramène au **premier état de son cycle**
-(« à préparer » au club, « idée » chez Yuno). La rubrique du lundi suivant
-attend déjà sur son jour. Écrite **une seule fois**, dans `passageDePublication`
-(`js/calendrier-commun.js`) : quatre écrans font avancer une publication, et
-quatre copies de la règle se seraient contredites.
-
-*Conséquence assumée* : une publication récurrente ne reste jamais en « publié »,
-donc **le compteur « publications sorties » du bilan FCH ne la voit pas passer**.
-Le hub ne garde pas la trace des parutions d'une série, comme il ne garde pas
-celle des occurrences d'une tâche répétée. Si Noé veut ce compte un jour, il
-faudra une trace — pas un changement de la règle.
-
-**La durée d'une tâche.** Colonne `duree` en **minutes**, facultative, et qui ne
-vaut qu'avec une heure. Noé a explicitement demandé de **la taper à la main** :
-les propositions (1 h → 3 h) ne sont qu'un raccourci, pas la liste des valeurs
-possibles. Le champ est bâti **une fois**, dans `champDuree` (`js/espace-projet.js`),
-et les deux tuiles qui le posent — l'espace Tâches et le calendrier — s'en
-servent telles quelles. Ce qu'elle change à l'écran : en vue semaine, la barre
-d'une tâche prend la hauteur de sa durée, comme celle d'un événement.
-
-**Les durées d'un événement ont changé** (demande de Noé) : plus de 30 minutes,
-de **1 h à 4 h**, plus **« Toute la journée » qui vaut 9 h**. Neuf heures parce
-qu'il faut un nombre — c'est la hauteur de la barre. À ne pas confondre avec un
-événement **sans heure**, qui tient le jour sans occuper de créneau : celui-là ne
-passe pas par les durées.
-
-**Quatre défauts trouvés en chemin, tous antérieurs à la session** :
-
-1. **Le rond d'une publication n'avançait pas dans l'espace Calendrier.** Sa
-   branche était écrite **après** celle qui ouvre le détail, et le rond est
-   *dans* la barre : `[data-element]` l'attrapait le premier. Le geste ouvrait
-   la tuile au lieu de faire avancer l'état, depuis le 25 août. L'accueil, lui,
-   avait le bon ordre. La branche est remontée.
-2. **La tuile ne pré-remplissait pas le champ « Heure ».** Rouvrir une tâche de
-   18 h et l'enregistrer sans y toucher lui **retirait son heure** — et, depuis
-   aujourd'hui, sa durée avec.
-3. **La répétition d'une tâche disparaissait à la réouverture**, dans l'espace
-   Tâches comme sur l'accueil : la tuile revenait vide, et enregistrer effaçait
-   la série.
-4. **Le site Yuno n'écrivait pas la répétition d'une tâche** créée depuis sa
-   propre tuile : la pastille était offerte, la colonne restait nulle. C'est
-   exactement la copie oubliée dont `poserAuCalendrier` met en garde — Yuno est
-   le seul espace qui garde sa propre version de la création.
-
-### 9. « Aujourd'hui » porte la journée entière
-
-Le bloc ne montrait que les tâches ; il montre aussi ce qui doit **partir** et
-les **rendez-vous** (demande de Noé). Trois allers-retours pour trouver la
-forme, et c'est la troisième qui tient — les deux premières sont écrites ici
-pour qu'on ne les repropose pas :
-
-1. une seule liste dans l'ordre des heures → écartée ;
-2. trois groupes empilés → écartée ;
-3. **deux colonnes** : les tâches à gauche, seules ; **à publier** puis
-   **rendez-vous** à droite. Sur téléphone tout s'empile dans le même ordre.
-
-Ce que chaque groupe retient, et pourquoi les bornes diffèrent : une
-**publication** compte si elle est prévue aujourd'hui **ou l'était déjà** et
-n'est pas partie — c'est la règle des tâches, mot pour mot. Un **rendez-vous**
-ne compte que s'il **couvre** aujourd'hui : un événement passé n'est pas en
-attente, il a eu lieu, et le traîner en tête de page serait le reproche que ce
-hub ne fait jamais.
-
-Les gestes suivent la nature : le rond d'une publication **avance d'un cran**
-(le même attribut qu'au calendrier, donc rien à rebrancher), un rendez-vous
-porte son **heure** à la place de la marque et **ne se coche pas**. Un groupe
-vide disparaît en entier, titre compris ; une colonne vide aussi, et l'autre
-prend toute la largeur.
-
-**Le recoupement avec « Ta semaine » est volontaire** : la journée en cours
-figure aux deux endroits. Le bloc dit *ce qu'on fait* et porte les gestes ; la
-grille dit *la forme de la semaine* et se glisse. Ce n'est pas un doublon à
-corriger.
-
-Un détail qui a demandé un second endroit : une publication **en retard** est
-dans le bloc du jour mais **pas** dans la grille de la semaine — l'ouverture de
-sa tuile cherche donc dans les deux listes, sinon elle ne s'ouvrait pas.
-
-### 10. La durée d'une tâche, là où on la cherche
-
-Noé ne la trouvait que dans l'espace Tâches. Elle était pourtant offerte
-partout — mais **sixième pastille sur six**, dans une bande qui DÉFILE : hors
-de l'écran, donc inexistante. Elle est descendue dans le panneau « Quand », sous
-l'heure, comme dans l'espace Tâches : même question, même endroit, et la
-dépendance devient évidente puisqu'une durée ne vaut qu'avec une heure. La
-pastille dit désormais le créneau entier — « aujourd'hui, 14:30 · 1 h 30 ».
-
-Leçon générale, pour la prochaine pastille : **une bande qui défile n'est pas
-une liste, c'est une file d'attente.** Ce qui compte se met dans un panneau
-qu'on ouvre déjà, pas au bout de la bande.
-
-### 11. L'état d'une publication : le même geste sur les trois calendriers
-
-Le rond et la pastille d'état ne marchaient que sur le hub. Sur les deux
-**sites**, le rond était pourtant DESSINÉ — la barre est commune, et
-`signeEnHtml` ne demande à personne s'il sera écouté — mais rien ne l'écoutait :
-l'appui traversait jusqu'à la barre et ouvrait la tuile. Un bouton mort qui
-avait l'air vivant. La pastille d'état, elle, n'était même pas offerte
-(`statutModifiable` restait à faux).
-
-Le geste est désormais écrit **une seule fois**, dans `brancherEtatPublication`
-(js/calendrier-commun.js), et les quatre écrans l'empruntent : accueil, espace
-Calendrier, site Yuno, site du club. Deux copies ont disparu au passage.
-
-**En phase de CAPTURE, et c'est la condition pour que ça tienne.** Le rond vit
-dans la barre, qui porte `data-element` et ouvre le détail. En bulle, lequel des
-deux gagne dépend de qui a posé son écouteur en premier — c'est exactement
-l'erreur qui avait laissé le rond inerte dans l'espace Calendrier du hub. En
-capture, celui-ci passe d'abord partout, quel que soit l'ordre de montage.
-
-Au passage : l'espace Calendrier n'avait **aucun moyen de dire qu'une écriture
-avait échoué** — le retour en arrière se faisait en silence, ce qui fait de
-l'affichage optimiste un mensonge (js/ecriture.js). Il a maintenant sa ligne,
-distincte de celle de l'échec de chargement : l'une annonce une page vide,
-l'autre un geste revenu en arrière.
-
 ### Ce qui a été vérifié, et comment
 
 **Tout au navigateur, sur les vraies données** — il n'y a pas de base de bac à
@@ -361,22 +459,6 @@ Vérifiés : les huit espaces du hub montent sans erreur, dans les deux thèmes 
 en mobile ; l'aller-retour complet de chaque écriture (objectif, jalon,
 matériel, prestation, tâche répétée cochée puis annulée, réunion FCH) ; les
 sept cas de la borne des 48 h ; les trois états de la fiche de sortie.
-
-En fin de journée, la **série d'une publication** de bout en bout : posée
-hebdomadaire depuis la tuile, dépliée cinq fois au mois suivant, avancée d'un
-cran par son rond, puis publiée — sa date a glissé du 26 août au 2 puis au
-9 septembre, et son état est revenu à « à préparer » à chaque fois. Et la
-**durée d'une tâche** par ses deux chemins : la proposition (2 h) et la saisie
-libre (105 min, qui éteint la proposition allumée), relue en base, dans la
-pastille, dans la ligne, et en hauteur de barre en vue semaine (`--duree:
-3.75rem` pour 1 h 30, à côté d'un événement de 2 h à 5 rem).
-
-**Piège d'outillage, à savoir pour la prochaine fois** : le service worker et le
-cache de session servent l'ancien JavaScript après une modification, et on
-accuse alors le code d'un défaut qui n'existe plus — c'est arrivé deux fois
-aujourd'hui, dont une longue. Avant de conclure qu'un geste ne marche pas :
-désinscrire le service worker, vider `caches` et `sessionStorage`, et recharger
-avec une adresse différente (`index.html?v=…`), sinon le module reste en mémoire.
 
 **Cinq défauts que seul le navigateur a révélés**, tous corrigés :
 
@@ -403,7 +485,7 @@ passée).
 
 ---
 
-## 0 ante. La session du 24–25 août — la journée dans la semaine, et le FCH à trois états
+## 0 ante bis. La session du 24–25 août — la journée dans la semaine, et le FCH à trois états
 
 **Deux commits, poussés** : `03c8a9a` (la journée, les icônes de la tuile, le
 bleu du FCH au calendrier, les trois états des publications) et `cf4db78` (le
@@ -566,7 +648,7 @@ cache forcés. `sw.js` n'a pas été touché et se sert correctement (200,
 
 ---
 
-## 0 ante bis. La session du 24 août — les réunions trouvent leur forme
+## 0 ante ter. La session du 24 août — les réunions trouvent leur forme
 
 **Cinq commits, tous poussés** : `d99062e` (tuiles de préparation), `bac89a8`
 (habillage FCH), `0e3fdf3` (modèle depuis la feuille Yuno), `b15af2b` (fiche
@@ -659,7 +741,7 @@ précautions qui ont servi :
 - **la déduplication a été prouvée en base** : appliquer à une feuille son
   propre modèle n'ajoute rien (11 lignes → 11).
 
-## 0 ante ter. La session du 21 août — l'egress, la semaine, et les réunions du FCH
+## 0 ante quater. La session du 21 août — l'egress, la semaine, et les réunions du FCH
 
 **Cinq commits, tous poussés** (`ee372bf` et `c1dc1ad` ferment la soirée du
 15 ; `1dd9bda`, `60f17d6` et `8762577` sont du 21). Les cahiers des charges
@@ -898,7 +980,7 @@ déjà. Les six modèles de préparation du matin restent en base sans servir.
    courtes, et **l'onglet actif écrit en blanc** (la pastille jaune est
    partie). `fch-spec.md` porte le détail.
 
-## 0 ante quater. La session du 15 août — Yuno passe au réseau
+## 0 ante quinquies. La session du 15 août — Yuno passe au réseau
 
 **Vingt-trois commits, tous poussés.** Toute la session a porté sur **la
 Passerelle et ce qu'elle a fait naître** : un vivier de clubs, leurs
@@ -993,7 +1075,7 @@ incluses), `20260815230000` (statut `a_relancer`), `20260815240000`
 
 ---
 
-## 0 ante quinquies. La session des 14–15 août, en un coup d'œil
+## 0 ante sexies. La session des 14–15 août, en un coup d'œil
 
 **Vingt-quatre commits, tous poussés.** Le site Yuno a été refondu en
 profondeur ; le hub n'a été touché qu'aux endroits qu'il partage.
@@ -1024,7 +1106,7 @@ profondeur ; le hub n'a été touché qu'aux endroits qu'il partage.
 4. **L'écran passe devant le réseau** partout où le geste tient en un clic
    (`js/ecriture.js` — ne pas la recopier). Les formulaires font exception.
 5. **Le FCH reste mis de côté** par Noé — ne pas l'entamer par petites touches
-   (§ 3). Yuno, lui, a occupé toute la session du 15 (§ 0 ante ter).
+   (§ 3). Yuno, lui, a occupé toute la session du 15 (§ 0 ante quinquies).
 
 ### L'état de la base, au soir du 15 août
 
@@ -2996,14 +3078,15 @@ Rien d'ouvert dans les cahiers des charges. Restent des conforts :
 
 ---
 
-## 4 bis. Par où reprendre (fin de session du 26 août 2026)
+## 4 bis. Par où reprendre (fin de session du 27 août 2026)
 
 Dans cet ordre, du plus pressé au moins pressé.
 
-**L'arbre est propre.** Neuf commits poussés sur `main`, trois migrations
-appliquées. Deux choses restent non commitées et c'est volontaire : le dossier
-`graphify-out/` (non suivi) et rien d'autre — cet état des lieux part avec la
-session si Noé le demande.
+**L'arbre est propre.** Quatre commits poussés sur `main` cette session
+(`c821aad` en tête), deux migrations appliquées, `main` au même point
+qu'`origin/main`. Rien n'attend d'être commité sauf cet état des lieux lui-même.
+`graphify-out/` n'apparaît plus dans `git status` : il est passé au `.gitignore`
+(`bde6e7a`).
 
 **Ce qui est périssable, d'abord :**
 
@@ -3028,7 +3111,7 @@ session si Noé le demande.
 5. **Vérifier l'egress Supabase** (Settings → Usage) : les corrections du
    21 août devaient diviser la courbe par ~80. Cinq jours ont passé, le verdict
    est lisible. Si elle ne s'aplatit pas, le diagnostic était incomplet
-   (§ 0 ante ter).
+   (§ 0 ante quater).
 
 **Ensuite, écouter l'usage :**
 
@@ -3037,10 +3120,15 @@ session si Noé le demande.
    forme — elle a été reprise quatre fois avec Noé — mais l'usage : y va-t-il
    maintenant ? Si la réponse est non, ce n'est pas la mise en page qu'il faut
    reprendre, c'est le contenu.
-7. **Les tâches répétées, après une vraie semaine.** Deux choses à regarder :
-   est-ce que la tâche qui glisse au lieu de se terminer se comprend
-   d'elle-même, et est-ce que l'absence de « décochage » dans l'espace Tâches
-   gêne. Aucune tâche répétée n'existe encore en base.
+7. **Les répétitions, après une vraie semaine** — tâches ET publications
+   désormais. Trois choses à regarder : est-ce que la chose qui *glisse* au lieu
+   de se terminer se comprend d'elle-même ; est-ce que l'absence de
+   « décochage » dans l'espace Tâches gêne ; et surtout, **une publication
+   récurrente ne repasse jamais par « publié »**, donc le compteur
+   « publications sorties » du bilan FCH ne la compte pas. Si ça manque à Noé,
+   il faudra une **trace** des parutions — pas un changement de la règle.
+   **Aucune tâche ni publication répétée n'existe encore en base** : rien de
+   tout cela n'a été éprouvé en usage réel.
 8. **La borne des 48 h de la préparation Yuno.** Le prochain match visible
    ré-apparaîtra deux jours avant : vérifier que c'est bien le bon moment, ni
    trop tôt ni trop tard.
@@ -3048,37 +3136,60 @@ session si Noé le demande.
    depuis le 25 : « à programmer » sert-il, ou Noé va-t-il directement de « à
    préparer » à « publié » ? S'il saute l'étape, c'est le cycle qu'il faut
    réduire à deux.
-10. **La journée de l'accueil, sur un vrai téléphone** — jamais essayée au
+10. **« Aujourd'hui » et ses deux colonnes, à l'usage.** Le bloc vient d'être
+    refait et sa forme a demandé **trois propositions** (§ 0.2) : ne pas
+    reproposer la liste unique ni les trois groupes empilés, ils ont été écartés
+    par Noé. Ce qui reste à voir : les deux colonnes tiennent-elles quand la
+    journée est chargée, et le recoupement volontaire avec « Ta semaine » juste
+    en dessous gêne-t-il ou rassure-t-il.
+11. **La journée de l'accueil, sur un vrai téléphone** — jamais essayée au
     doigt. Regarder le mouvement des colonnes sur Safari iOS ; s'il ne joue pas,
     le passage est net, c'est dégradé et pas cassé.
-11. **Les réunions, la Passerelle, les Missions, le premier bilan de
+12. **Les réunions, la Passerelle, les Missions, le premier bilan de
     préparation Yuno** — tous inchangés, tous en attente d'un vrai usage.
 
 **Sans urgence :**
 
-12. **Vérifier sur le vrai iPhone** ce qui ne l'a jamais été : la tuile avec un
+13. **Vérifier sur le vrai iPhone** ce qui ne l'a jamais été : la tuile avec un
     clavier réel, le service worker en application d'écran d'accueil, Canela, le
     poids d'une visite du Journal, le dégradé du FCH.
-13. **Les chantiers de fond inchangés** : conversion des espaces projet à
+14. **Les chantiers de fond inchangés** : conversion des espaces projet à
     `js/ecriture.js`, démarrage par morceaux à porter aux petits espaces.
-14. **La densité a touché des styles partagés** (libellé de section, cibles
+15. **La densité a touché des styles partagés** (libellé de section, cibles
     tactiles, ligne de tâche) : l'accueil, l'espace Tâches, le Calendrier et
     Perso ont bougé dans le même sens. Ils montent sans erreur mais n'ont pas
     été regardés un par un. Si l'un paraît trop serré, c'est là qu'il faut
     revenir.
 
 **En veille** : l'erreur console `JWT issued at future` (PGRST303) s'est
-manifestée **pour de vrai** cette session — deux chargements du tableau de bord
+manifestée **pour de vrai** le 26 août — deux chargements du tableau de bord
 ont échoué avec un 401 avant de repasser tout seuls. Les horloges de la machine
 et de Supabase étaient pourtant d'accord à la seconde près : le décalage est
 interne à Supabase (le jeton émis par l'authentification est refusé par
 PostgREST). Sans effet durable, mais ce n'est plus purement théorique.
+
+**Deux décisions en attente de Noé, sans urgence** — posées, pas oubliées :
+
+- **La graisse du titre d'une tâche.** Il sort en 400 quand le corps du hub est
+  en 500, parce que `.tache-corps` est un `<button>` (§ 0, défauts). Une ligne
+  de CSS le corrige ; Noé n'a pas dit s'il le voulait.
+- **Gilroy sur le site du club.** Le titre des barres y est passé en Gilroy avec
+  le reste, parce que `css/fch.css` déclare reprendre les polices du hub. Si
+  Noé préfère lui garder Instrument Sans, c'est une règle à ajouter dans
+  `fch.css`, pas à retirer de `styles.css`.
 
 **Ce qui est clos et n'a plus à figurer ici** : **poser les objectifs** — c'était
 le point 11 du 25 août, il est fait ; la **cible non mesurable** de « Rembourser
 mon matériel » ; l'absence de **retrait d'un jalon** ; « Résultat CDF » en
 publié (Noé n'y est pas revenu) ; et la **fabrique `creerEspaceProjet`**, qui
 n'existe plus.
+
+**Clos par la session du 27 août** : la **répétition des publications** (elle
+existe) ; la **durée d'une tâche** et sa disponibilité **partout** (elle est
+dans le panneau « Quand », vérifiée sur les sept points de création) ;
+« Aujourd'hui » qui **ne montrait que les tâches** ; et l'**état d'une
+publication injoignable depuis les deux sites** — le rond y était un bouton
+mort, il ne l'est plus.
 
 ### Les outils du dépôt, à connaître
 
