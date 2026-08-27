@@ -1,22 +1,252 @@
-# État des lieux — 27 août 2026
+# État des lieux — 27 août 2026 (seconde session)
 
 > **Reprise : § 4 bis, « Par où reprendre ».**
 >
 > Ce document dit **où en est le hub** — `CLAUDE.md` dit ce qu'il doit être, et
 > les deux cahiers des charges (`yuno-spec.md`, `fch-spec.md`) font autorité sur
-> leurs sites. À relire au début d'une session, à mettre à jour à la fin.
+> leurs sites. La façon dont le hub **oriente** Noé a le sien :
+> [orientation-spec.md](orientation-spec.md), né cette session. À relire au
+> début d'une session, à mettre à jour à la fin.
 >
-> **§ 0 raconte la dernière session** (27 août : les publications qui se
-> répètent, la durée d'une tâche, « Aujourd'hui » qui porte la journée entière,
-> l'état d'une publication réglable depuis les trois calendriers, Gilroy dans
-> la grille), **§ 0 ante celle d'avant** (26 août : les objectifs enfin posés,
-> le cap gravé, les trois pages espace refaites, l'argent de Yuno, les tâches
-> répétées), **§ 0 ante bis** les 24–25 août, **§ 0 ante ter** le 24,
-> **§ 0 ante quater** le 21, **§ 0 ante quinquies** le 15, **§ 0 ante sexies**
-> les 14–15. Les § 1 et suivants décrivent l'état stable et les chantiers
-> antérieurs.
+> **§ 0 raconte la dernière session** (27 août, après-midi et soir :
+> l'orientation, de bout en bout — le mot « projet » change de sens, la
+> répétition fabrique de vraies lignes, le hub compte les heures, il connaît
+> les périodes, il diagnostique la semaine, il tient un rendez-vous le dimanche
+> et propose trois choses le matin). **§ 0 ante** celle du même jour au matin
+> (les publications qui se répètent, la durée d'une tâche, « Aujourd'hui » qui
+> porte la journée entière), **§ 0 ante bis** le 26 août, **§ 0 ante ter** les
+> 24–25, **§ 0 ante quater** le 24, **§ 0 ante quinquies** le 21,
+> **§ 0 ante sexies** le 15, **§ 0 ante septies** les 14–15. Les § 1 et
+> suivants décrivent l'état stable et les chantiers antérieurs.
 
-## 0. La session du 27 août — la répétition partout, la journée entière, un geste unique
+## 0. La session du 27 août (après-midi et soir) — l'orientation, de bout en bout
+
+**Onze commits, tous poussés** — de `a98a9c2` à `df51a4f`. **Huit migrations**
+appliquées : `renommage_projet_espace`, `series_occurrences`, `projets`,
+`periodes`, `famille_perso`, `semaines`, `refus_propositions`, `arbitrages`
+(plus `publications_duree`, appliquée sans fichier puis reprise dans
+`taches_duree`). `CLAUDE.md` mis à jour, **`docs/orientation-spec.md` créé** —
+il fait désormais autorité sur la façon dont le hub oriente Noé, comme les deux
+cahiers des charges sur leurs sites. L'arbre est propre, `main` est au même
+point qu'`origin/main`.
+
+**La session a commencé par une conversation, pas par du code.** Noé voulait
+que le hub l'oriente chaque jour et chaque semaine vers ce qui sert ses
+objectifs, en équilibrant le professionnel et le personnel, et en disant si un
+objectif est trop ambitieux — **sans le transformer en exécutant** : « le piège
+serait que l'IA me fasse tout mon programme de tâches et que je sois un simple
+exécutant, j'en perdrais le plaisir ». Trois tours de questions ont produit la
+spec ; les huit étapes de son § 12 ont ensuite été faites dans l'ordre.
+
+| # | Étape | Ce qu'elle a donné |
+|---|---|---|
+| 0 | Renommer `projet` → `espace` | 477 lignes, 6 tables, `js/espace-projet.js` devient `js/gabarits.js` |
+| 1 | Occurrences réelles des récurrences | table `series`, `serie_id`, curseur `genere_jusqu_au`, 67 occurrences posées |
+| 2 | La durée au moment de cocher | fenêtre à confirmer, `publications.duree` |
+| 3 | La table `projets` | `projets`, `projets_cibles`, `projet_id` sur trois tables |
+| 4 | Les périodes | `periodes`, régimes, et l'arbitrage **au moment où on déclare** |
+| 5 | Le calcul, sans écran | `js/orientation.js` — ne touche ni au réseau, ni à la session, ni au DOM |
+| 6 | Le rendez-vous du dimanche | `js/rendez-vous.js`, table `semaines` |
+| 7 | Le vivier et les trois propositions | `propositionsDuMatin`, `refusee_le` |
+| 8 | L'arbitrage et sa trace | table `arbitrages`, portée, « Revenir dessus » |
+
+Plus, en fin de session : le calendrier qui **cesse de dessiner les durées**, et
+les **trois chemins de rattachement** d'une tâche à un projet.
+
+### 0.1 Les décisions qui ont fait un ALLER-RETOUR
+
+**Ces trois-là ont été posées puis renversées dans la même journée.** Une
+session future qui les « corrigerait » en croyant bien faire referait un chemin
+déjà parcouru.
+
+**1. La répétition : la ligne qui avance est morte.** Le matin même, une tâche
+répétée était *une ligne unique* dont la coche faisait glisser l'échéance — et
+c'était juste dans son modèle, sinon « Courir » aurait été fait à jamais après
+une seule course. Noé a demandé l'inverse l'après-midi : « il faut qu'ils soient
+indépendants les uns des autres, pas avancé lorsque l'une est faite, je dois
+pouvoir en supprimer un sans que ça supprime les autres ». **Chaque occurrence
+est maintenant une vraie ligne.** Ne pas remettre l'avancement : ce n'était pas
+la règle qui était fausse, c'était le modèle — rien ne gardait la trace de ce
+qui avait été fait, donc aucun rythme n'était mesurable.
+
+**2. La durée : de l'incrustation discrète à la fenêtre à confirmer.** Première
+version : une bande sans fond, sans bouton, qui s'effaçait au bout de dix
+secondes. Noé : « la tuile doit avoir le même mécanisme que lorsque l'on ouvre
+une tuile en appuyant sur le plus. Le fond s'assombrit et on doit confirmer pour
+que la tâche soit considérée comme faite ». **Cocher est devenu une intention**,
+pas un fait acquis. Puis, dans le même mouvement : « on doit garder l'option
+passer quand même, ne pas avoir l'obligation d'ajouter une durée » — d'où trois
+issues et non deux. Ne pas revenir à l'incrustation, ne pas retirer « Passer ».
+
+**3. Le calendrier ne dessine plus les durées.** La hauteur proportionnelle des
+barres avait été posée le matin même (« la barre de la tâche prend la hauteur de
+sa durée »). Le soir : « supprime l'affichage de la durée dans le calendrier, il
+faut pas qu'il y ait trop d'info ». C'était **la seule façon** dont le calendrier
+montrait un temps — pas un texte, une hauteur — et en vue semaine un
+entraînement de quatre heures mangeait la colonne. **Ne pas la remettre.** La
+durée reste sur la ligne et alimente le compte des heures.
+
+### 0.2 Les décisions qui posent une règle
+
+- **Le mot « projet » a changé de sens.** Les quatre domaines s'appellent des
+  **espaces** ; « projet » nomme l'étage entre le jalon et la tâche. La raison
+  est un fait mesuré : **une tâche sur trente-six** était rattachée à un
+  objectif — on demandait un lien impossible à faire, « trier les photos U15 »
+  ne sert pas *directement* « 1 000 abonnés ».
+- **Une seule colonne de durée**, prévue et réalisée confondues, ajustée après
+  coup (« j'ajuste en fonction du temps réel que ça m'a pris si j'avais déjà
+  noté un temps prévu »). **Ne pas en ajouter une seconde.** Contrepartie
+  assumée : sans trace de l'estimation d'origine, le hub ne saura jamais que
+  Noé sous-estime.
+- **L'humeur reste seulement observée.** Elle ne module aucune charge — Noé l'a
+  choisi contre trois autres options. **Ne pas la brancher sur le calcul** : le
+  jour où répondre « 2 » allège la journée, la réponse cesse d'être honnête.
+  Conséquence : le seul signal qui reste sur l'état du jour est **le refus**,
+  d'où « Pas aujourd'hui » et la colonne `refusee_le`.
+- **Il pose la question, Noé tranche.** Choisi contre « il peut décaler », « il
+  signale sans proposer » et « il peut mettre en pause ». Le hub propose **deux
+  portes**, jamais une décision.
+- **Quotas + vivier à piocher**, contre une semaine pré-remplie : « le hub
+  décide des proportions, Noé décide du contenu ». C'est la parade au piège de
+  l'exécutant, et elle explique la forme de tout le reste.
+- **Le suivi de l'alternance est en espace FCH**, pas formation : ses heures
+  pèsent donc sur le quota de 20 h du club, pas sur la courbe des dossiers.
+- **Le terrain est PÉRISSABLE, pas contraint** (correction de Noé : « le terrain
+  FCH est modifiable également, je n'ai pas d'obligations »). Un visuel non fait
+  mardi se fait mercredi ; un entraînement non couvert mardi n'existera jamais.
+- **Et le terrain FABRIQUE l'atelier.** Sa précision sur septembre a démoli une
+  règle que j'avais posée à l'envers : une soirée d'entraînement, ce sont des
+  photos à trier et des gens à relancer. **Le terrain se paie deux fois**, la
+  seconde avec quelques jours de décalage. C'est la règle la plus prédictive du
+  système.
+- **La charge du club se SOMME PAR PROJET**, pas par une formule. Sa remarque
+  — « je n'aime pas la vision trop simpliste du FCH » — a montré que « terrain +
+  traitement + tâches » traitait tout ce qui n'est pas du terrain comme sa
+  conséquence. Faux : la programmation, les présentations, les appels ont leur
+  propre moteur.
+- **Ajouter du contenu ouvre une tuile volante** — les dix-sept formulaires du
+  site d'un coup, écrit dans `construireFormulaire`.
+
+### 0.3 Les chiffres de Noé
+
+Tous donnés par lui, tous inscrits dans `js/orientation.js` ou en base. **Ce ne
+sont pas des estimations à recalculer.**
+
+| Ce que c'est | Valeur |
+|---|---|
+| Quota FCH | **20 h/semaine**, avec compte courant (le surplus se rend, pas forcément la semaine d'après) |
+| Quota formation | **~15 h/semaine** — pour remplir les 35 h d'alternance |
+| Capacité d'alternance | **35 h** — la seule enveloppe fermée : club et formation y jouent à somme nulle |
+| Yuno | **aucun quota** — « surtout du bonus », mais « quelque chose qui me fait du bien » |
+| Perso | **3 séances de corps**, 1 de calme, 1 de lien par semaine — un **plancher**, jamais un quota |
+| Traitement d'une séance terrain | **1 h 30, par séance** et non au prorata des heures — le tri dépend du volume de photos |
+| Dossier de formation | **25 h** (×4) · vidéo **6 h** · QCM **6 h** — soit 112 h sur 14 semaines |
+| Programmation de la semaine (FCH) | **4 h/semaine** |
+| Anniversaires du mois (FCH) | **1 h par quinzaine** (stocké 30 min/semaine, moyenne hebdomadaire) |
+| Présentation d'une catégorie | **2 h** (×7 = 14 h) |
+| Tri d'une séance | **1 h 30, en une fois** — « tout dépend du volume » |
+
+**Ce que ces chiffres disent**, et que le hub sait maintenant dire tout seul :
+le volume de la formation ne fait pas peur — **112 h sur 14 semaines, soit 8 h
+par semaine**. C'est la *forme* du calendrier qui coince : deux dossiers dos à
+dos du 15 octobre au 15 novembre. **Toute heure de formation non faite en
+septembre se retrouve à la mi-novembre.**
+
+### 0.4 Les six projets du FCH, arrêtés avec Noé
+
+Inventaire fait avec lui, à partir d'une liste déduite des données qu'il a
+corrigée : **Présentation des catégories · Programmation de la semaine**
+(regroupe la programmation foot à 5/8/entente **et** les visuels de la semaine)
+**· Anniversaires du mois · Album du club · Équipe com avec Lina · Suivi de
+l'alternance.**
+
+Deux décisions moins évidentes qu'elles n'en ont l'air :
+- **pas de projet « couverture des entraînements »** — le terrain est une
+  *source*, pas un travail : chaque séance se rattache au projet qu'elle sert ;
+- **les réunions ne forment pas un projet** — elles se dispersent dans ceux
+  qu'elles servent. Seul le suivi de l'alternance en fait un, parce que là les
+  réunions **sont** le travail.
+
+*Partenariats et autres réunions : à définir plus tard, décision de Noé.*
+
+### 0.5 Ce qui a été vérifié, et comment
+
+**Hors ligne, sur ses vraies données** — c'est la règle posée pour tout ce qui
+oriente : un diagnostic qu'on ne peut pas éprouver hors écran est un diagnostic
+qu'on croit sur parole.
+
+- `node tools/essai-diagnostic.mjs <fixture.json> [date]` fait tourner le
+  diagnostic d'une semaine sur un instantané. **Pour la semaine du 31 août il
+  sort 17 h de club et 11 h 42 de formation — exactement les chiffres établis à
+  la main avec Noé en début de session.** C'était le seul test qui comptait.
+- la génération des séries (cadences, aucun doublon sur le jour de départ), la
+  traduction d'une occurrence en colonnes, la tension d'une période sur cinq
+  régimes, la trace d'arbitrage sur quatre cas (avant, dans la portée, hors
+  portée, autre question), la coupe du vivier, la séparation des séries dans
+  « À faire ».
+
+**À l'écran, dans son hub**, et à chaque fois remis en état après :
+- cocher l'occurrence du 14 décembre laisse les quinze autres intactes ;
+- annuler la fenêtre de durée n'écrit rien, confirmer écrit statut + durée +
+  victoire, **passer termine en laissant la durée déjà notée** ;
+- déclarer une période intense fait apparaître la question, prendre la porte
+  fait redescendre le régime **et écrit la trace**, « Revenir dessus » rend la
+  question posable ;
+- le rendez-vous du dimanche (soir simulé) : sept lignes, sept gestes,
+  « Caler une séance » ouvre la tuile remplie, « C'est ma semaine » le referme ;
+- « Pas aujourd'hui » écarte la proposition et la suivante prend sa place.
+
+### 0.6 Les défauts trouvés et réparés en passant
+
+- **La substitution `projet → espace` a mordu à l'intérieur d'un mot** : la
+  règle « ce projet → cet espace » transformait « espa**ce projet** » en
+  « espacet espace ». Sept commentaires, tous corrigés.
+- **Deux inférences fausses** : le hub annonçait « 850 abonnés » comme un
+  maillon à l'abandon alors que **trois projets le servaient** — il ne regardait
+  que les projets visant le *jalon*, pas ceux visant l'*objectif*. Une
+  inférence fausse coûte plus cher qu'une inférence manquante.
+- **Le filtre du refus s'était posé dans la mauvaise boucle** — celle des
+  inférences au lieu du vivier, deux boucles identiques dans le même fichier.
+  Le refus n'avait aucun effet, et ça ne se voyait qu'en cliquant.
+- **Les menus dessinés de l'espace Objectifs n'étaient branchés nulle part** :
+  `brancherChoix` n'y était pas appelé, les boutons d'intensité existaient et
+  n'écoutaient rien. Même défaut que les ronds de publication en août, même
+  cause : un composant qui se dessine sans demander s'il sera écouté.
+- **`.bloc li` a repris la main sur trois grilles** (projets, rendez-vous,
+  périodes) : à spécificité égale c'est elle qui gagne, et les gestes se
+  retrouvaient à droite de leur texte. Parade : préfixer par la liste.
+- **L'instantané d'orientation restait périmé après un refus**, ce qui faisait
+  revenir la proposition écartée.
+
+### 0.7 Ce qui a été écrit dans SES données
+
+Tout ce qui suit est réel, pas du test. Ce qui était du test a été retiré
+(périodes d'essai, arbitrages d'essai, semaine validée d'essai, refus d'essai,
+durées d'essai, tâche « ESSAI »).
+
+- **67 occurrences de séries** posées par la conversion des cinq séries qui
+  existaient. L'espace Tâches est passé de 36 à 72 lignes — c'est le coût
+  visible du modèle, et il a fallu la coupe de « À faire » pour le rendre
+  supportable.
+- **Six projets FCH**, quatre cibles (les trois éditoriaux vers « 1 000
+  abonnés », l'équipe com vers « une com qui tourne sans moi ») et **62 lignes
+  rattachées par correspondance de nom**. Ce sont des **propositions**, pas des
+  faits : *Album du club* et *Suivi de l'alternance* ne servent aucun cap
+  déclaré, faute d'avoir voulu deviner.
+- **Six projets formation** chiffrés (25 h par dossier, 6 h la vidéo, 6 h le
+  QCM), chacun relié à son jalon. Sans charge, la courbe d'atterrissage n'avait
+  rien à calculer.
+- **Un rattachement laissé en démonstration** : « Trier les photos U15 et
+  seniors » → **Album du club**. Il est juste, mais il vient de moi.
+
+**Un fait non attribué, à lui demander** : la tâche « Contacter l'entreprise de
+Cedric Facebook » porte une **durée de 5 minutes**, statut actif, sans heure.
+Elle n'a pas été écrite volontairement et Noé pilotait le hub en parallèle —
+il a d'ailleurs terminé « Terminer résumé 4 et faire mind-map » en cours de
+session, ce qui a un moment fait croire à un défaut.
+
+
+## 0 ante. La session du 27 août (matin) — la répétition partout, la journée entière, un geste unique
 
 **Quatre commits, tous poussés** : `d069884` (publications répétées + durée des
 tâches), `bde6e7a` (`graphify-out` ignoré), `3c4591d` (« Aujourd'hui » porte la
@@ -241,7 +471,7 @@ légèrement plus maigres que le reste de la page, partout. Une ligne de CSS suf
 
 ---
 
-## 0 ante. La session du 26 août — les objectifs posés, et les pages espace refaites
+## 0 ante bis. La session du 26 août — les objectifs posés, et les pages espace refaites
 
 **Neuf commits, tous poussés** : `e4bcca3` (forme des objectifs), `850a637`
 (cap gravé + espace `#objectifs`), `e8aca73` (page Yuno), `0fffce4` (page FCH),
@@ -485,7 +715,7 @@ passée).
 
 ---
 
-## 0 ante bis. La session du 24–25 août — la journée dans la semaine, et le FCH à trois états
+## 0 ante ter. La session du 24–25 août — la journée dans la semaine, et le FCH à trois états
 
 **Deux commits, poussés** : `03c8a9a` (la journée, les icônes de la tuile, le
 bleu du FCH au calendrier, les trois états des publications) et `cf4db78` (le
@@ -648,7 +878,7 @@ cache forcés. `sw.js` n'a pas été touché et se sert correctement (200,
 
 ---
 
-## 0 ante ter. La session du 24 août — les réunions trouvent leur forme
+## 0 ante quater. La session du 24 août — les réunions trouvent leur forme
 
 **Cinq commits, tous poussés** : `d99062e` (tuiles de préparation), `bac89a8`
 (habillage FCH), `0e3fdf3` (modèle depuis la feuille Yuno), `b15af2b` (fiche
@@ -741,7 +971,7 @@ précautions qui ont servi :
 - **la déduplication a été prouvée en base** : appliquer à une feuille son
   propre modèle n'ajoute rien (11 lignes → 11).
 
-## 0 ante quater. La session du 21 août — l'egress, la semaine, et les réunions du FCH
+## 0 ante quinquies. La session du 21 août — l'egress, la semaine, et les réunions du FCH
 
 **Cinq commits, tous poussés** (`ee372bf` et `c1dc1ad` ferment la soirée du
 15 ; `1dd9bda`, `60f17d6` et `8762577` sont du 21). Les cahiers des charges
@@ -980,7 +1210,7 @@ déjà. Les six modèles de préparation du matin restent en base sans servir.
    courtes, et **l'onglet actif écrit en blanc** (la pastille jaune est
    partie). `fch-spec.md` porte le détail.
 
-## 0 ante quinquies. La session du 15 août — Yuno passe au réseau
+## 0 ante sexies. La session du 15 août — Yuno passe au réseau
 
 **Vingt-trois commits, tous poussés.** Toute la session a porté sur **la
 Passerelle et ce qu'elle a fait naître** : un vivier de clubs, leurs
@@ -1075,7 +1305,7 @@ incluses), `20260815230000` (statut `a_relancer`), `20260815240000`
 
 ---
 
-## 0 ante sexies. La session des 14–15 août, en un coup d'œil
+## 0 ante septies. La session des 14–15 août, en un coup d'œil
 
 **Vingt-quatre commits, tous poussés.** Le site Yuno a été refondu en
 profondeur ; le hub n'a été touché qu'aux endroits qu'il partage.
@@ -1249,12 +1479,21 @@ Toujours sur décision de Noé, et **jamais en détruisant des données** :
 
 ## 1. Ce qui existe
 
-> **Mis à jour le 26 août 2026.** Ce qui a changé ce jour-là et qui touche la
-> structure : l'espace **`#objectifs`** est né (dixième espace, sans entrée
-> dans la barre) ; les **trois pages espace** sont des bilans à deux colonnes et
-> ne sont plus des « tableaux de bord réduits » ; **`creerEspaceEspace` n'existe
-> plus** ; les tables **`materiel`** et les colonnes **`taches.recurrence`**,
-> **`commandes.frais`** sont apparues. `CLAUDE.md` porte le détail à jour.
+> **Mis à jour le 27 août 2026 (seconde session).** Ce qui a changé ce jour-là
+> et qui touche la structure : la colonne `projet` s'appelle **`espace`** dans
+> les six tables qui la portaient, et **`js/espace-projet.js` est devenu
+> `js/gabarits.js`** ; six tables sont nées — **`series`** (la répétition
+> fabrique de vraies lignes), **`projets`** et **`projets_cibles`** (l'étage
+> entre le jalon et la tâche), **`periodes`**, **`semaines`**, **`arbitrages`** ;
+> et trois modules purs sont apparus — **`js/orientation.js`** (le calcul, qui
+> ne touche ni au réseau ni au DOM) et **`js/rendez-vous.js`**.
+>
+> *Rappel du 26 août :* l'espace `#objectifs` est né (sans entrée dans la
+> barre), les trois pages espace sont des bilans à deux colonnes, la table
+> `materiel` et la colonne `commandes.frais` sont apparues.
+>
+> `CLAUDE.md` porte le détail à jour, et `docs/orientation-spec.md` la règle du
+> jeu de l'orientation.
 
 Le hub est **déployé et fonctionnel** :
 https://noedelahaye-sketch.github.io/hub/
@@ -2983,6 +3222,25 @@ La méthode qui a tenu toute la journée — exercer, relire en SQL, défaire, r
 
 ## 3. Ce qui attend une réponse de Noé
 
+**Ce que la seconde session du 27 août a CLOS ici** — ne plus le reposer :
+la demande de fond « le hub doit m'orienter » (elle a sa spec et ses huit
+étapes) ; le fil tâche → objectif rompu (il passe par l'étage projet) ; la
+règle « une tâche répétée ne se termine pas » (supprimée) ; le compteur
+« publications sorties » aveugle aux séries (réglé) ; et les menus déroulants
+morts de l'espace Objectifs. Le détail est en § 4 bis, dernière rubrique.
+
+**Nées de cette session, et sans réponse** :
+- **D'où vient la durée de 5 minutes** sur « Contacter l'entreprise de Cedric
+  Facebook » ? Elle n'a pas été écrite volontairement (§ 0.7).
+- **Les trois lots écrits dans ses données** sont-ils justes : les cibles des
+  projets FCH, les 62 rattachements par nom, les six livrables formation
+  chiffrés 25/6/6 h ? Ce sont des propositions.
+- **Les projets de Yuno** — trois ont été nommés en conversation (tester un
+  événement de basket, lancer les presets, publier l'offre) mais aucun n'existe
+  en base. Sans eux, l'orientation ne peut jamais proposer Yuno.
+- **L'horizon de seize semaines** des séries convient-il, maintenant que
+  l'espace Tâches porte 72 lignes ?
+
 **Un point né le 15 août, encore ouvert :**
 - **Les 47 menus « Niveau » du CRM** restent les derniers `select` natifs du
   site. Noé ne les a pas demandés — à proposer s'il repasse par le réseau.
@@ -2994,7 +3252,8 @@ depuis, et carrousel, réel et story ont suffi. Le CHECK accepte toujours
 **Le cycle éditorial du club est tranché** (25 août) : trois états — à
 préparer, à programmer, publié — sur les valeurs que la base connaissait déjà.
 Ce qui reste à observer n'est pas une question ouverte mais un usage à
-regarder : l'étape du milieu sert-elle ? Voir § 4 bis, point 5.
+regarder : l'étape du milieu sert-elle ? Voir § 4 bis, « Ensuite, écouter
+l'usage ».
 
 
 **FC Hermitage — le chantier s'est rouvert** les 21, 24, 25 et 26 août
@@ -3044,6 +3303,10 @@ l'usage :
 10. **« Aujourd'hui » ignore les tâches sans date — confirmé** (Noé, 13 août :
     « laisse tel quel »). Une tâche notée sans échéance n'y apparaît jamais, et
     c'est voulu : sinon le bloc du matin se remplirait de tout ce qui traîne.
+    **Depuis le 27 août, ces tâches-là ont trouvé leur porte ailleurs** : ce sont
+    elles que « Ce que je te proposerais » va chercher, précisément parce que ce
+    qui n'est jamais daté n'est jamais fait. La règle ne bouge pas ; ce qu'elle
+    laissait dehors n'est plus perdu.
 11. **Plus un seul menu déroulant natif dans le hub** (13 août, § 2 nonies) :
     le formulaire de modification du calendrier d'abord, puis les quatre autres
     à la demande de Noé — le moment, la fiche réseau, la commande et l'idée.
@@ -3052,7 +3315,9 @@ l'usage :
 
 ## 4. Ce qui manque encore
 
-Rien d'ouvert dans les cahiers des charges. Restent des conforts :
+Rien d'ouvert dans les deux cahiers des charges des sites. **`orientation-spec.md`
+a ses huit étapes faites** ; ce qui lui manque est de la matière, pas du code —
+voir § 4 bis, « Les quatre manques ». Restent des conforts :
 
 - **Le site FCH grandira** : Noé annonce « beaucoup d'usages » et ne sait pas
   encore ce que contiendront marketing et organisation club. Ne rien inventer
@@ -3078,118 +3343,140 @@ Rien d'ouvert dans les cahiers des charges. Restent des conforts :
 
 ---
 
-## 4 bis. Par où reprendre (fin de session du 27 août 2026)
+## 4 bis. Par où reprendre (fin de la seconde session du 27 août 2026)
 
 Dans cet ordre, du plus pressé au moins pressé.
 
-**L'arbre est propre.** Quatre commits poussés sur `main` cette session
-(`c821aad` en tête), deux migrations appliquées, `main` au même point
-qu'`origin/main`. Rien n'attend d'être commité sauf cet état des lieux lui-même.
-`graphify-out/` n'apparaît plus dans `git status` : il est passé au `.gitignore`
-(`bde6e7a`).
+**L'arbre est propre.** Onze commits poussés sur `main` (`df51a4f` en tête),
+huit migrations appliquées, `main` au même point qu'`origin/main`. Rien n'attend
+d'être commité sauf cet état des lieux lui-même.
 
-**Ce qui est périssable, d'abord :**
+**L'orientation est bâtie de bout en bout, et elle attend de la MATIÈRE, pas du
+code.** Les huit étapes de `orientation-spec.md` sont faites. Ce qui l'empêche
+de servir vraiment tient en quatre manques de données, listés ci-dessous.
 
-1. **Saisir les prestations passées de Yuno.** Le matériel est entré (10 pièces,
-   4 612 €) mais **aucune prestation** : l'objectif affiche `0 € sur 4 612 €`.
-   Noé a dit avoir déjà encaissé « entre 70 et 150 € par match » auprès de
-   joueurs. Tant qu'elles ne sont pas saisies, le compteur ment par défaut. Le
-   chemin le plus naturel : ouvrir chaque match du Carnet et noter ce qu'il a
-   rapporté et ce que la route a coûté.
-2. **Les dates de la CAN 2027.** Les deux objectifs Yuno portent une échéance
-   **provisoire au 30 juin 2027**. À corriger dès qu'elles sont officielles —
-   une pastille suffit, dans `#objectifs`.
-3. **La première tâche de Yuno a une date : le 30 août.** « Envoyer le message
+### Ce qui est périssable, d'abord
+
+1. **Demander à Noé d'où vient la durée de 5 minutes** sur « Contacter
+   l'entreprise de Cedric Facebook » (§ 0.7). Si elle vient d'une fausse
+   manœuvre de la fenêtre de durée, c'est un défaut à trouver **avant** que les
+   heures servent à quelque chose.
+2. **Faire valider les trois lots écrits dans ses données** (§ 0.7) : les cibles
+   des projets FCH, les 62 rattachements par nom, les six livrables formation à
+   25/6/6 h. Ce sont des propositions ; s'il en corrige une, tout le calcul
+   change avec.
+3. **Déclarer la période de septembre.** Rien n'existe dans `periodes`, donc le
+   hub raisonne sur les quotas de base et **ne peut rien anticiper de la
+   rentrée** — alors que Noé l'a décrite comme « une grosse période globale ».
+   C'est le geste qui déclenche l'arbitrage à froid, trois semaines avant le
+   mur : tout le sens de l'étape 4.
+4. **La première tâche de Yuno a une date : le 30 août.** « Envoyer le message
    aux deux médias congolais » — c'est le geste qui débloque tout l'objectif
-   CAN. Demander si c'est parti.
-4. **Le CA du 24 août au soir a eu lieu — demander comment ça s'est passé.**
-   Toujours pas fait, reporté pour la troisième session. C'était le premier vrai
-   test de la fiche de réunion. Regarder, dans l'ordre du guide : le
-   compte-rendu est-il parti ; les actions décidées sont-elles au tableau des
-   actions ; ce tableau sera-t-il relu en ouverture de la prochaine. **Écouter
-   avant d'ajouter quoi que ce soit.**
-5. **Vérifier l'egress Supabase** (Settings → Usage) : les corrections du
-   21 août devaient diviser la courbe par ~80. Cinq jours ont passé, le verdict
-   est lisible. Si elle ne s'aplatit pas, le diagnostic était incomplet
-   (§ 0 ante quater).
+   CAN. Demander si c'est parti. *(Inchangé depuis la session précédente.)*
+5. **Saisir les prestations passées de Yuno.** Le matériel est entré (10 pièces,
+   4 612 €) mais **aucune prestation** : l'objectif affiche `0 € sur 4 612 €`.
+   *(Inchangé.)*
+6. **Le CA du 24 août au soir — demander comment ça s'est passé.** Reporté pour
+   la quatrième session. **Écouter avant d'ajouter quoi que ce soit.**
+7. **Vérifier l'egress Supabase** (Settings → Usage). *(Inchangé.)*
 
-**Ensuite, écouter l'usage :**
+### Les quatre manques qui empêchent l'orientation de dire vrai
 
-6. **Les pages espace, après quelques jours.** Elles viennent d'être refaites de
-   fond en comble et **n'ont jamais servi en vrai**. La question n'est pas la
-   forme — elle a été reprise quatre fois avec Noé — mais l'usage : y va-t-il
-   maintenant ? Si la réponse est non, ce n'est pas la mise en page qu'il faut
-   reprendre, c'est le contenu.
-7. **Les répétitions, après une vraie semaine** — tâches ET publications
-   désormais. Trois choses à regarder : est-ce que la chose qui *glisse* au lieu
-   de se terminer se comprend d'elle-même ; est-ce que l'absence de
-   « décochage » dans l'espace Tâches gêne ; et surtout, **une publication
-   récurrente ne repasse jamais par « publié »**, donc le compteur
-   « publications sorties » du bilan FCH ne la compte pas. Si ça manque à Noé,
-   il faudra une **trace** des parutions — pas un changement de la règle.
-   **Aucune tâche ni publication répétée n'existe encore en base** : rien de
-   tout cela n'a été éprouvé en usage réel.
-8. **La borne des 48 h de la préparation Yuno.** Le prochain match visible
-   ré-apparaîtra deux jours avant : vérifier que c'est bien le bon moment, ni
-   trop tôt ni trop tard.
-9. **Les trois états du FCH, après une vraie semaine éditoriale.** Inchangé
-   depuis le 25 : « à programmer » sert-il, ou Noé va-t-il directement de « à
-   préparer » à « publié » ? S'il saute l'étape, c'est le cycle qu'il faut
-   réduire à deux.
-10. **« Aujourd'hui » et ses deux colonnes, à l'usage.** Le bloc vient d'être
-    refait et sa forme a demandé **trois propositions** (§ 0.2) : ne pas
-    reproposer la liste unique ni les trois groupes empilés, ils ont été écartés
-    par Noé. Ce qui reste à voir : les deux colonnes tiennent-elles quand la
-    journée est chargée, et le recoupement volontaire avec « Ta semaine » juste
-    en dessous gêne-t-il ou rassure-t-il.
-11. **La journée de l'accueil, sur un vrai téléphone** — jamais essayée au
-    doigt. Regarder le mouvement des colonnes sur Safari iOS ; s'il ne joue pas,
-    le passage est net, c'est dégradé et pas cassé.
-12. **Les réunions, la Passerelle, les Missions, le premier bilan de
-    préparation Yuno** — tous inchangés, tous en attente d'un vrai usage.
+8. **Aucune durée saisie.** La fenêtre existe, rien n'est passé par elle : tous
+   les totaux du diagnostic sont des **planchers**, et il le dit lui-même
+   (« 10 lignes sans durée : ce total est un plancher, pas un compte »). Il faut
+   une vraie semaine de coches pour que le compte courant du club veuille dire
+   quelque chose.
+9. **La colonne `famille` du perso est vide, et la tuile n'a pas ce champ.**
+   Le plancher se calcule par famille (corps · calme · lien, l'intendance ne
+   comptant nulle part) — donc il compte **zéro partout**, et le rendez-vous
+   dit « Rien pour toi cette semaine » même quand c'est faux. **C'est le
+   premier trou à boucher** : ajouter la pastille « Famille » à la tuile quand
+   l'espace choisi est perso, sur le modèle de `data-si-espace`.
+10. **Yuno n'a aucun projet.** Ses deux caps n'ont donc rien qui y mène, et les
+    propositions du matin ne peuvent jamais lui donner sa place — la variété
+    exige un candidat par espace. Trois candidats évidents ont été nommés par
+    Noé en conversation : *tester un événement de basket*, *lancer mes presets*,
+    l'*offre publiée*.
+11. **48 tâches n'ont pas de projet.** Le rattrapage existe (§ 0, « Rattacher une
+    tâche » sous chaque projet) mais n'a servi qu'une fois. Tant que le fil est
+    lâche, le score du vivier s'appuie surtout sur la négligence.
 
-**Sans urgence :**
+### Ensuite, écouter l'usage
 
-13. **Vérifier sur le vrai iPhone** ce qui ne l'a jamais été : la tuile avec un
-    clavier réel, le service worker en application d'écran d'accueil, Canela, le
-    poids d'une visite du Journal, le dégradé du FCH.
-14. **Les chantiers de fond inchangés** : conversion des espaces à
+12. **Le rendez-vous du dimanche, un vrai dimanche soir.** Il n'a été vu qu'avec
+    une date simulée. Trois choses à regarder : arrive-t-il au bon moment ; les
+    sept lignes sont-elles trop nombreuses (la règle des trois inférences ne
+    borne que les inférences, pas la charge ni le plancher) ; et « C'est ma
+    semaine » suffit-il, ou manque-t-il d'y noter quelque chose.
+13. **Les trois propositions du matin, sur plusieurs jours.** La question
+    n'est pas si elles sont justes, c'est si elles **agacent**. Le refus est la
+    mesure : trois « pas aujourd'hui » de suite sur le même espace veut dire que
+    le score se trompe de poids.
+14. **L'horizon de seize semaines des séries** (`HORIZON_SERIE_JOURS`,
+    js/api.js). Choisi pour couvrir le trimestre jusqu'au QCM du 8 décembre sans
+    noyer l'espace Tâches. Si les 72 lignes pèsent encore, c'est la constante à
+    baisser — pas la coupe de « À faire » à défaire.
+15. **La tuile volante des formulaires**, sur téléphone. Dix-sept formulaires ont
+    basculé d'un coup ; seuls trois écrans ont été regardés (Objectifs, Perso,
+    site FCH). Les formulaires longs de Yuno n'ont pas été vus dans leur
+    nouvelle boîte.
+16. **Les répétitions, après une vraie semaine.** La règle a changé le jour même
+    (§ 0.1) : chaque occurrence se termine seule. Reste à voir si « Ce qui
+    revient » se déplie assez, et si supprimer une occupation isolée se
+    comprend.
+17. **Les pages espace, les réunions, la Passerelle, les Missions, le premier
+    bilan de préparation Yuno** — tous inchangés, tous en attente d'un vrai
+    usage. *(Inchangé.)*
+
+### Sans urgence
+
+18. **Vérifier sur le vrai iPhone** ce qui ne l'a jamais été : la tuile avec un
+    clavier réel, le service worker en application d'écran d'accueil, le poids
+    d'une visite du Journal, le dégradé du FCH.
+19. **Les chantiers de fond inchangés** : conversion des espaces à
     `js/ecriture.js`, démarrage par morceaux à porter aux petits espaces.
-15. **La densité a touché des styles partagés** (libellé de section, cibles
-    tactiles, ligne de tâche) : l'accueil, l'espace Tâches, le Calendrier et
-    Perso ont bougé dans le même sens. Ils montent sans erreur mais n'ont pas
-    été regardés un par un. Si l'un paraît trop serré, c'est là qu'il faut
-    revenir.
-
-**En veille** : l'erreur console `JWT issued at future` (PGRST303) s'est
-manifestée **pour de vrai** le 26 août — deux chargements du tableau de bord
-ont échoué avec un 401 avant de repasser tout seuls. Les horloges de la machine
-et de Supabase étaient pourtant d'accord à la seconde près : le décalage est
-interne à Supabase (le jeton émis par l'authentification est refusé par
-PostgREST). Sans effet durable, mais ce n'est plus purement théorique.
+20. **Ce qui manque encore à l'étape 3**, dit par Noé lui-même : « il y aura
+    encore du travail pour bien tout lier et pouvoir tout lier facilement depuis
+    le site directement, et une bonne mise en forme ». Trois chemins de
+    rattachement existent depuis la fin de session ; il n'y a **pas de geste
+    « détacher »** depuis « Le cap » (il faut rouvrir la tâche), et les projets
+    ne se **modifient pas** une fois créés.
+21. **Les inférences, une par une.** Cinq sont écrites (§ 8 de la spec), le hub
+    n'en sort que trois. Les familles 8.1 à 8.4 en suggèrent d'autres —
+    notamment **la symétrie** (« sept catégories ont leur présentation, en
+    manque-t-il ? »), qui n'est pas implémentée.
 
 **Deux décisions en attente de Noé, sans urgence** — posées, pas oubliées :
 
-- **La graisse du titre d'une tâche.** Il sort en 400 quand le corps du hub est
-  en 500, parce que `.tache-corps` est un `<button>` (§ 0, défauts). Une ligne
-  de CSS le corrige ; Noé n'a pas dit s'il le voulait.
-- **Gilroy sur le site du club.** Le titre des barres y est passé en Gilroy avec
-  le reste, parce que `css/fch.css` déclare reprendre les polices du hub. Si
-  Noé préfère lui garder Instrument Sans, c'est une règle à ajouter dans
-  `fch.css`, pas à retirer de `styles.css`.
+- **La graisse du titre d'une tâche** : il sort en 400 quand le corps du hub est
+  en 500, parce que `.tache-corps` est un `<button>`. Une ligne de CSS le
+  corrige ; Noé n'a pas dit s'il le voulait.
+- **Gilroy sur le site du club.** Si Noé préfère lui garder Instrument Sans,
+  c'est une règle à ajouter dans `fch.css`, pas à retirer de `styles.css`.
 
-**Ce qui est clos et n'a plus à figurer ici** : **poser les objectifs** — c'était
-le point 11 du 25 août, il est fait ; la **cible non mesurable** de « Rembourser
-mon matériel » ; l'absence de **retrait d'un jalon** ; « Résultat CDF » en
-publié (Noé n'y est pas revenu) ; et la **fabrique `creerEspaceEspace`**, qui
-n'existe plus.
+**En veille** : l'erreur console `JWT issued at future` (PGRST303) s'est
+manifestée pour de vrai le 26 août. Sans effet durable, mais ce n'est plus
+purement théorique.
 
-**Clos par la session du 27 août** : la **répétition des publications** (elle
-existe) ; la **durée d'une tâche** et sa disponibilité **partout** (elle est
-dans le panneau « Quand », vérifiée sur les sept points de création) ;
-« Aujourd'hui » qui **ne montrait que les tâches** ; et l'**état d'une
-publication injoignable depuis les deux sites** — le rond y était un bouton
-mort, il ne l'est plus.
+### Ce qui est CLOS par cette session, et n'a plus à figurer ailleurs
+
+- **« Le hub doit m'orienter »** — la demande de fond de Noé. Elle a une spec
+  (`orientation-spec.md`), huit étapes faites, et un module de calcul éprouvé
+  hors ligne.
+- **Le fil tâche → objectif était rompu** (1 sur 36). Il passe désormais par
+  l'étage **projet**, et 24 tâches y sont reliées.
+- **La règle « une tâche répétée ne se termine pas »** — supprimée, et son
+  remplacement est expliqué en § 0.1. Ne pas la ressusciter.
+- **« Une publication récurrente ne repasse jamais par publié »**, et donc le
+  compteur du bilan FCH qui ne la voyait pas — réglé par les occurrences
+  réelles. C'était le point 7 de la reprise précédente.
+- **La hauteur proportionnelle des barres du calendrier** — retirée (§ 0.1).
+- **Le renommage `projet` → `espace`** : 8 tables, 477 lignes de code, les trois
+  documents. Plus une seule occurrence de l'ancien mot hors migrations
+  historiques et « projet Supabase ».
+- **Les menus déroulants dessinés de l'espace Objectifs** ne répondaient pas —
+  `brancherChoix` n'y était pas branché.
 
 ### Les outils du dépôt, à connaître
 
