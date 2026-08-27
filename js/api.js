@@ -368,6 +368,43 @@ export async function validerLaSemaine(debut, notes = null) {
   );
 }
 
+// --- Les arbitrages : ce que Noé a tranché ------------------------------------
+//
+// Le hub pose la question, Noé tranche. Sans trace, il la reposerait le
+// dimanche suivant — et une question qu'on repose après y avoir répondu n'est
+// plus une question.
+
+export async function arbitragesTous() {
+  return verifier(
+    await client.from('arbitrages').select('*').order('created_at', { ascending: false }),
+  );
+}
+
+export async function trancher({
+  cle,
+  question,
+  portee_debut,
+  portee_fin,
+  reponse,
+  espace_retenu = null,
+  espace_cede = null,
+}) {
+  return verifier(
+    await client
+      .from('arbitrages')
+      .insert({ cle, question, portee_debut, portee_fin, reponse, espace_retenu, espace_cede })
+      .select()
+      .single(),
+  );
+}
+
+// Revenir sur un arbitrage : la question redevient posable. C'est la seule
+// façon de changer d'avis sans que le hub fasse comme si de rien n'était.
+export async function rouvrirArbitrage(id) {
+  const { error } = await client.from('arbitrages').delete().eq('id', id);
+  if (error) throw error;
+}
+
 // --- Les périodes : l'arbitrage en amont --------------------------------------
 //
 // Une période dit ce qu'on attend d'un mois, espace par espace. Sa vraie

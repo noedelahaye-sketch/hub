@@ -21,6 +21,7 @@ import {
   chargeViseeDeLaPeriode,
   tensionDeLaPeriode,
   periodeDuJour,
+  cleDArbitrage,
 } from './orientation.js';
 import { construireObjectifs, construireFormulaire, brancherChoix } from './gabarits.js';
 import { modifierAussitot, retirerAussitot } from './ecriture.js';
@@ -212,10 +213,13 @@ const ESPACES_REGLES = ['fch', 'formation', 'photo'];
 
 function heuresLisibles(minutes) {
   const heures = minutes / 60;
-  return `${Number.isInteger(heures) ? heures : heures.toFixed(1).replace('.0', '')} h`;
+  // Virgule et non point : on écrit « 39,5 h » en français, et le point se
+  // lisait comme une ponctuation au milieu du chiffre.
+  const dit = Number.isInteger(heures) ? String(heures) : heures.toFixed(1).replace('.', ',');
+  return `${dit} h`;
 }
 
-export function construirePeriodes(periodes, aujourdhui = new Date()) {
+export function construirePeriodes(periodes, aujourdhui = new Date(), arbitrages = []) {
   if (!periodes.length) {
     return `<p class="vide">Aucune période déclarée. La première dira ce que tu
       attends du mois qui vient.</p>`;
@@ -225,7 +229,7 @@ export function construirePeriodes(periodes, aujourdhui = new Date()) {
 
   return `<ul class="liste-periodes">${periodes
     .map((periode) => {
-      const tension = tensionDeLaPeriode(periode);
+      const tension = tensionDeLaPeriode(periode, arbitrages, aujourdhui);
       const visees = chargeViseeDeLaPeriode(periode);
       const regimes = ESPACES_REGLES.filter((espace) => periode.regimes?.[espace])
         .map(
@@ -247,6 +251,20 @@ export function construirePeriodes(periodes, aujourdhui = new Date()) {
             class="chiffre">${echapper(heuresLisibles(visees.total))}</span> pour ${echapper(
               heuresLisibles(tension.capacite),
             )}</span>
+          ${
+            // TRANCHÉ. La question ne revient pas ; ce que Noé a décidé, si.
+            // Une décision qu'on ne peut pas relire est une décision qu'on
+            // reprend sans le savoir — et « revenir dessus » est le seul geste
+            // qui la rende révisable en connaissance de cause.
+            tension.tranche
+              ? `<span class="periode-tranche">
+                   <span>${echapper(tension.tranche.reponse)}</span>
+                   <button type="button" class="lien-discret bouton-mini"
+                     data-rouvrir-arbitrage="${echapper(tension.tranche.id)}"
+                     >Revenir dessus</button>
+                 </span>`
+              : ''
+          }
           ${
             tension.tendue
               ? `<span class="periode-question">
@@ -358,7 +376,14 @@ export default {
     // comme le site du FCH, et pour la même raison.
     brancherChoix(section);
 
-    const etat = { objectifs: [], commandes: [], materiel: [], projets: [], periodes: [] };
+    const etat = {
+      objectifs: [],
+      commandes: [],
+      materiel: [],
+      projets: [],
+      periodes: [],
+      arbitrages: [],
+    };
     const bloc = (espace) => section.querySelector(`[data-bloc="${espace}"]`);
     const blocProjets = (espace) => section.querySelector(`[data-projets="${espace}"]`);
     const blocPeriodes = () => section.querySelector('[data-bloc="periodes"]');
@@ -387,7 +412,7 @@ export default {
     };
 
     const rendrePeriodes = () => {
-      blocPeriodes().innerHTML = construirePeriodes(etat.periodes);
+      blocPeriodes().innerHTML = construirePeriodes(etat.periodes, new Date(), etat.arbitrages);
     };
 
     const rendreTout = () => {
@@ -406,15 +431,17 @@ export default {
     };
 
     const charger = async () => {
-      const [objectifs, commandes, materiel, projets, periodes] = await Promise.all([
+      const [objectifs, commandes, materiel, projets, periodes, arbitrages] = await Promise.all([
         api.objectifsActifs(),
         api.commandesToutes(),
         api.materielTout(),
         api.projetsTous(),
         api.periodesToutes(),
+        api.arbitragesTous(),
       ]);
       etat.projets = projets;
       etat.periodes = periodes;
+      etat.arbitrages = arbitrages;
       etat.objectifs = objectifs.filter((objectif) => ESPACES.includes(objectif.espace));
       etat.commandes = commandes;
       etat.materiel = materiel;
@@ -473,12 +500,60 @@ export default {
       if (detendre) {
         const periode = etat.periodes.find((p) => p.id === detendre.dataset.detendre);
         if (!periode) return;
-        const regimes = { ...periode.regimes, [detendre.dataset.espaceCible]: detendre.dataset.regimeCible };
-        if (regimes[detendre.dataset.espaceCible] === 'normal') {
-          delete regimes[detendre.dataset.espaceCible];
-        }
+        const cible = detendre.dataset.espaceCible;
+        const regimes = { ...periode.regimes, [cible]: detendre.dataset.regimeCible };
+        if (regimes[cible] === 'normal') delete regimes[cible];
+
+        // PRENDRE UNE PORTE, C'EST TRANCHER. On garde la question AVEC la
+        // réponse : relire « le club cède, la formation porte septembre » six
+        // semaines plus tard ne vaut que si l'on se rappelle ce qui était en
+        // balance. Et tant que cette trace couvre le jour, le hub ne repose
+        // pas la question.
+        const tension = tensionDeLaPeriode(periode, etat.arbitrages, new Date());
+        const autre = ['fch', 'formation'].find((espace) => espace !== cible);
+        const nom = (espace) => (espace === 'fch' ? 'le club' : 'la formation');
+
         await modifierAussitot(periode, { regimes }, () =>
           api.modifierPeriode(periode.id, { regimes }), { rendre: rendrePeriodes });
+
+        try {
+          const trace = await api.trancher({
+            cle: cleDArbitrage(periode),
+            question: tension.question ?? 'Le club et la formation demandaient plus que 35 h.',
+            portee_debut: periode.debut,
+            portee_fin: periode.fin,
+            reponse: `${nom(autre)[0].toUpperCase()}${nom(autre).slice(1)} porte « ${periode.nom} » ;`
+              + ` ${nom(cible)} passe ${detendre.dataset.regimeCible === 'normal' ? 'au normal' : 'au ralenti'}.`,
+            espace_retenu: autre,
+            espace_cede: cible,
+          });
+          etat.arbitrages = [trace, ...etat.arbitrages];
+        } catch (erreur) {
+          // La trace a manqué, le réglage est passé : le hub reposera la
+          // question, ce qui est le moindre mal — l'inverse serait d'appliquer
+          // en silence une décision dont il ne reste rien.
+          console.error('Arbitrage non enregistré', erreur);
+        }
+        rendrePeriodes();
+        return;
+      }
+
+      // Revenir sur un arbitrage : la question redevient posable. C'est la
+      // seule façon de changer d'avis sans que le hub fasse comme si de rien
+      // n'était.
+      const rouvrir = evenement.target.closest('[data-rouvrir-arbitrage]');
+      if (rouvrir) {
+        const id = rouvrir.dataset.rouvrirArbitrage;
+        const avant = etat.arbitrages;
+        etat.arbitrages = etat.arbitrages.filter((a) => a.id !== id);
+        rendrePeriodes();
+        try {
+          await api.rouvrirArbitrage(id);
+        } catch (erreur) {
+          console.error('Arbitrage non rouvert', erreur);
+          etat.arbitrages = avant;
+          rendrePeriodes();
+        }
         return;
       }
 

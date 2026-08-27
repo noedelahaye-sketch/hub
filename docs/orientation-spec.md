@@ -582,4 +582,4 @@ suivante pour valoir quelque chose.
 | 6 | ~~**Le rendez-vous du dimanche**~~ **fait** | Le premier écran, une fois que le calcul dit vrai. |
 | 7 | ~~**Le vivier et les trois propositions du matin**~~ **fait** | |
 | 7 bis | **Les inférences** (§ 8) | Elles se posent une par une, chacune vérifiable seule. Aucune n'est nécessaire aux autres. |
-| 8 | **L'arbitrage et sa trace** | Le plus délicat, donc le dernier. |
+| 8 | ~~**L'arbitrage et sa trace**~~ **fait** | Le plus délicat, donc le dernier. |

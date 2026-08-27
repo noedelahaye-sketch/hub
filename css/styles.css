@@ -4888,3 +4888,22 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    toujours rester possible. */
 .propositions [data-refuser] { color: var(--texte-discret); }
 .propositions [data-refuser]:hover { color: var(--texte); }
+
+/* Ce que Noé a tranché. La ligne remplace la question — elle ne s'ajoute pas à
+   elle : une décision prise et une question ouverte ne peuvent pas cohabiter
+   sur le même sujet. Fond doux, comme la question qu'elle a close, mais sans
+   ses boutons : il n'y a plus rien à choisir, seulement à relire. */
+.liste-periodes .periode-tranche {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-12);
+  margin-top: var(--espace-8);
+  padding: var(--espace-12);
+  background: var(--accent-doux);
+  border-radius: var(--rayon-controle);
+  font-size: 0.875rem;
+}
+
+.liste-periodes .periode-tranche > span { flex: 1; min-width: 12rem; }

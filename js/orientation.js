@@ -89,9 +89,44 @@ export function chargeViseeDeLaPeriode(periode = null) {
 // Le hub POSE LA QUESTION, il ne tranche pas : c'est le choix de Noé (27 août
 // 2026), et il vaut pour tout le système. Les deux issues proposées sont des
 // portes, pas des recommandations.
-export function tensionDeLaPeriode(periode) {
+// LA CLÉ D'UNE QUESTION : ce qui la reconnaît d'une fois sur l'autre. Sans
+// elle, le hub ne saurait pas qu'il repose la même — et une question qu'on
+// repose après y avoir répondu n'est plus une question.
+export function cleDArbitrage(periode) {
+  return periode ? `periode:${periode.id}` : 'periode:aucune';
+}
+
+// L'arbitrage déjà rendu sur cette question, s'il couvre le jour. Une réponse a
+// une PORTÉE, pas une durée de vie : passé l'intervalle où la question se
+// posait, elle n'empêche plus rien — une décision prise pour septembre
+// n'engage pas décembre.
+export function arbitrageRendu(arbitrages = [], cle, jour = new Date()) {
+  const aujourdhui = versDateISO(jour);
+  return (
+    arbitrages.find(
+      (a) => a.cle === cle && a.portee_debut <= aujourdhui && aujourdhui <= a.portee_fin,
+    ) ?? null
+  );
+}
+
+export function tensionDeLaPeriode(periode, arbitrages = [], jour = new Date()) {
   const visees = chargeViseeDeLaPeriode(periode);
   const ecart = visees.total - CAPACITE_ALTERNANCE;
+  const tranche = arbitrageRendu(arbitrages, cleDArbitrage(periode), jour);
+
+  // TRANCHÉ : la question ne se repose pas. Le déséquilibre, lui, reste vrai et
+  // reste lisible — ce n'est pas parce qu'on a choisi que les heures rentrent.
+  if (tranche) {
+    return {
+      ...visees,
+      capacite: CAPACITE_ALTERNANCE,
+      ecart,
+      tendue: false,
+      tranche,
+      question: null,
+      issues: [],
+    };
+  }
 
   if (ecart <= 0) {
     return {
@@ -99,6 +134,7 @@ export function tensionDeLaPeriode(periode) {
       capacite: CAPACITE_ALTERNANCE,
       ecart,
       tendue: false,
+      tranche: null,
       question: null,
       issues: [],
     };
@@ -118,6 +154,7 @@ export function tensionDeLaPeriode(periode) {
     capacite: CAPACITE_ALTERNANCE,
     ecart,
     tendue: true,
+    tranche: null,
     question:
       candidats.length > 1
         ? `Le club et la formation demandent ensemble plus que tes 35 h. Lequel des deux porte cette période ?`
@@ -489,7 +526,7 @@ export function diagnosticDeLaSemaine(donnees = {}, jour = new Date()) {
   return {
     semaine,
     periode,
-    tension: tensionDeLaPeriode(periode),
+    tension: tensionDeLaPeriode(periode, donnees.arbitrages ?? [], jour),
     charge,
     formation: courbeFormation(donnees.projets ?? [], donnees.taches ?? [], jour),
     perso: plancherDeLaSemaine(donnees, semaine),

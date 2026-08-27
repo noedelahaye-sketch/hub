@@ -260,6 +260,17 @@ La trace du **rendez-vous du dimanche**. Une ligne par semaine validée, identif
 
 **Aucun constat sans proposition, sans exception** (`js/rendez-vous.js`) : chaque ligne porte son geste, et accepter coûte **un** geste — une proposition ouvre la tuile de capture déjà remplie, ou mène à l'écran où le réglage se fait. Une ligne sans porte de sortie est un reproche déguisé.
 
+### arbitrages
+
+**La trace de ce que Noé a tranché** (27 août 2026). Le hub pose la question, Noé décide — mais sans trace il la reposerait le dimanche suivant, et une question qu'on repose après y avoir répondu n'est plus une question.
+
+- `cle` text NOT NULL — ce qui identifie **la même** question d'une fois sur l'autre (`periode:<id>`)
+- `question` text NOT NULL — **gardée avec la réponse** : relire « la formation porte novembre » six semaines plus tard ne vaut que si l'on se rappelle ce qui était en balance
+- `portee_debut` / `portee_fin` date — une réponse a une **portée**, pas une durée de vie : passé l'intervalle où la question se posait, elle n'empêche plus rien. Une décision prise pour septembre n'engage pas décembre.
+- `espace_retenu` / `espace_cede` text · `reponse` text NOT NULL (en toutes lettres, c'est ce qui se relit)
+
+**Trancher n'efface pas le déséquilibre** : la charge reste affichée telle quelle (« 39,5 h pour 35 h »). Décider ne fait pas rentrer les heures — le hub cesse seulement de redemander. Et **« Revenir dessus »** rend la question posable : c'est la seule façon de changer d'avis sans que le hub fasse comme si de rien n'était.
+
 ### periodes
 
 **L'arbitrage en amont** (27 août 2026). Une période dit ce qu'on attend d'un mois, espace par espace, et multiplie les quotas de base sur son intervalle.

@@ -922,14 +922,16 @@ export default {
 
       try {
         if (!etat.donneesOrientation) {
-          const [taches, publications, objectifs, projets, periodes, series] = await Promise.all([
-            api.tachesToutes(),
-            api.publicationsDatees(),
-            api.objectifsActifs(),
-            api.projetsTous(),
-            api.periodesToutes(),
-            api.chargerLesSeries(),
-          ]);
+          const [taches, publications, objectifs, projets, periodes, series, arbitrages] =
+            await Promise.all([
+              api.tachesToutes(),
+              api.publicationsDatees(),
+              api.objectifsActifs(),
+              api.projetsTous(),
+              api.periodesToutes(),
+              api.chargerLesSeries(),
+              api.arbitragesTous(),
+            ]);
           etat.donneesOrientation = {
             evenements: etat.evenements,
             taches,
@@ -938,6 +940,7 @@ export default {
             projets,
             periodes,
             series,
+            arbitrages,
           };
         }
 
@@ -969,7 +972,7 @@ export default {
 
       try {
         const semaine = semaineDe(maintenant);
-        const [validees, projets, periodes, series, taches, publications, objectifs] =
+        const [validees, projets, periodes, series, taches, publications, objectifs, arbitrages] =
           await Promise.all([
             api.semainesValidees(),
             api.projetsTous(),
@@ -978,6 +981,7 @@ export default {
             api.tachesToutes(),
             api.publicationsDatees(),
             api.objectifsActifs(),
+            api.arbitragesTous(),
           ]);
 
         // Déjà validée : le rendez-vous s'est tenu, il n'a plus rien à dire.
@@ -994,6 +998,9 @@ export default {
           projets,
           periodes,
           series,
+          // Ce que Noé a déjà tranché : le rendez-vous ne repose pas une
+          // question à laquelle il a répondu.
+          arbitrages,
         };
         etat.diagnostic = diagnosticDeLaSemaine(etat.donneesOrientation, maintenant);
 
