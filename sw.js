@@ -16,7 +16,7 @@
 // Sans ça, chaque session de travail verrait une fois ses modifications
 // ignorées — le piège classique du service worker en développement.
 
-const CACHE = 'hub-coquille-v3';
+const CACHE = 'hub-coquille-v5';
 
 const EN_LOCAL = ['localhost', '127.0.0.1'].includes(self.location.hostname);
 
@@ -52,8 +52,11 @@ const COQUILLE = [
   // l'installation de 800 Ko — et un seul fichier manquant ferait échouer le
   // `addAll` en entier, donc l'installation.
   'js/logos-clubs.js',
+  'js/chemin.js',
+  'js/menu.js',
   'js/mouvements.js',
   'js/perso.js',
+  'js/temps.js',
   'js/preparations-commun.js',
   'js/photo.js',
   'js/publications.js',

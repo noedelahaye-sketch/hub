@@ -777,7 +777,7 @@ function squelette(etat) {
 // --- Montage -----------------------------------------------------------------
 
 export default {
-  async monter(section) {
+  async monter(section, route) {
     const captureVierge = (espace) => ({
       ouverte: false,
       // L'identifiant de la tâche qu'on corrige. `null` = on en crée une.
@@ -836,9 +836,12 @@ export default {
     const etat = {
       taches: [],
       projets: [],
-      espace: 'tout',
+      // Le filtre vient de l'adresse : `#taches/fch` (28 août 2026). C'est
+      // ainsi que le menu offre « ses tâches » à chaque espace — la même page,
+      // son filtre déjà posé, et non un cinquième écran de liste.
+      espace: ESPACES[route?.vue] ? route.vue : 'tout',
       message: null,
-      capture: captureVierge('tout'),
+      capture: captureVierge(ESPACES[route?.vue] ? route.vue : 'tout'),
     };
 
     // Les tâches dont une écriture optimiste est en vol : l'écran a déjà
@@ -1063,6 +1066,16 @@ export default {
     // cochée sur l'accueil doit s'y voir sans recharger la page. La tuile
     // ouverte n'est pas touchée — elle vit dans son propre bloc.
     this.rafraichir = charger;
+
+    // Revenir sur l'espace avec une autre adresse repose le filtre. Rien n'est
+    // relu : la page a déjà toutes les tâches, c'est la part montrée qui change.
+    this.naviguer = (nouvelle) => {
+      const voulu = ESPACES[nouvelle?.vue] ? nouvelle.vue : 'tout';
+      if (voulu === etat.espace) return;
+      etat.espace = voulu;
+      if (!etat.capture.ouverte) etat.capture = captureVierge(voulu);
+      rendre();
+    };
 
     try {
       await charger();

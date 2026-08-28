@@ -23,7 +23,11 @@ connexion.
 
 **Il vit dans le hub**, en deux surfaces, comme Yuno :
 
-- **`#fch` — la page FCH du hub.** **Un bilan**, refait le 26 août 2026 sur le
+- **`#fch` — la page FCH du hub.** *(Elle n'a plus d'onglet depuis le 28 août
+  2026 : on y entre par le grand titre « FC Hermitage » du menu, qui donne aussi
+  ses objectifs, ses projets, ses tâches et la porte du site. Voir
+  `CLAUDE.md`, « La navigation a deux rangs ».)*
+  **Un bilan**, refait le 26 août 2026 sur le
   même principe que celle de Yuno mais avec la matière du club : deux colonnes
   de panneaux — *Le cap* (tuile-bouton vers `#objectifs`) et *À faire* (les
   tâches, plus la prochaine réunion) d'abord, puis *La com'* (le calendrier

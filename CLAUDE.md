@@ -92,31 +92,93 @@ qui relie le nom exact d'un club à son fichier.
 
 ## Structure du site
 
-**Quatre espaces, quatre vues transverses, deux sites**, servis par un routeur à
+**Quatre espaces, six vues transverses, deux sites**, servis par un routeur à
 deux niveaux (`#espace/vue/id`). La distinction compte : un **espace** est un
 domaine de la vie de Noé et porte une couleur ; une **vue transverse** les
 regarde tous et n'en porte aucune.
+
+### LA NAVIGATION A DEUX RANGS (28 août 2026, règle posée par Noé)
+
+**Le coût d'accès d'une page est proportionnel à l'intention qu'il faut pour la
+vouloir.** C'est la règle qui commande toute la structure, et elle est de Noé :
+
+> *« L'objectif n'est pas de réduire au maximum le nombre de pages, au
+> contraire. Je veux continuer d'être riche en page, avec beaucoup de détails.
+> Mais ces pages-là doivent être plus difficiles d'accès car elles sont le fruit
+> d'une envie, d'un besoin ressenti, tandis que ce qui doit se voir tout de
+> suite est le fruit de rien. »*
+
+| Coût | Ce qu'on y met |
+|---|---|
+| **0 geste** | l'accueil — la journée, les pistes, la semaine, le cap gravé |
+| **1 geste** | les onglets — `Accueil · Perso · ▦` |
+| **2 gestes** | le menu — six grands titres |
+| **3 gestes** | la flèche du menu — les sous-pages, en accès direct |
+
+**Ce que ça débloque n'est pas une économie, c'est de la place** : l'accueil
+portait tout parce qu'il n'y avait nulle part où poser le reste. Une page riche
+n'est plus un problème dès qu'elle est au bon rang.
+
+**Le menu ne perce PAS les deux sites** (décision de Noé) : *« si je clique sur
+le hub ce n'est pas pour atteindre le site Yuno et tout ce qu'il contient »*.
+Chaque espace n'offre que **sa porte**, jamais les écrans derrière — d'où
+l'absence d'une entrée « son éditorial », qui vit sur les sites.
+
+**Les rubriques** (`RUBRIQUES`, js/menu.js) — le mot mène à la page, la flèche
+déplie ses sous-pages ; une rubrique sans sous-page n'a pas de flèche, car une
+flèche qui ne s'ouvre sur rien est un mensonge de forme :
+
+| **Général** | Objectifs · Projets · Tâches · Périodes · Le chemin |
+| **FC Hermitage** | Ses objectifs · Ses projets · Ses tâches · Le site |
+| **Formation** | Ses objectifs · Ses projets · Ses tâches |
+| **Yuno** | Ses objectifs · Ses projets · Ses tâches · Le site |
+| **Perso** | Les intentions · Les rendez-vous · L'humeur · Les victoires |
+| **Le temps** | *(pas de sous-page)* |
+
+**« Ses objectifs », « ses projets », « ses tâches » ne sont pas de nouveaux
+écrans** : c'est la page transverse **avec son filtre porté par l'adresse**
+(`#objectifs/projets/fch`, `#taches/photo`). Un seul écran à tenir, plusieurs
+portes pour y entrer — cinq listes de tâches finiraient par ne plus dire la même
+chose. **Perso n'a ni objectifs ni projets, et n'en aura pas** : l'espace perso
+ne mesure rien, jamais.
+
+Le menu **vole au-dessus d'un fond assombri**, avec `--rayon-tuile` : c'est la
+grammaire de la tuile de capture, donc le même geste pour le refermer. Il tombe
+**à gauche, sous son bouton**, et son bord haut se cale sur la hauteur RÉELLE de
+la barre (`--sous-la-barre`, posée par `monterLeMenu`) — un nombre écrit en dur
+vieillit au premier changement de taille d'onglet. La rubrique de l'espace où
+l'on est **se déplie d'elle-même**.
+
+### Les adresses
+
 - `/` ou `#dashboard` — tableau de bord global (tous espaces)
 - `#taches` — **toutes** les tâches, tous espaces : datées ou non, faites ou non. La seule page du hub qui ne cache rien — mais elle range. On y crée une tâche, on y change sa priorité (1 à 4) et son statut. Ailleurs le hub trie pour Noé ; ici on vient voir l'ensemble.
   - **« À faire » ne montre qu'UNE occurrence par série** (27 août 2026, demande de Noé) : la plus proche, retard compris. Les suivantes descendent dans **« Ce qui revient »**, repliées par série, avec leur rythme et leur nombre. Sans cette coupe, trois rubriques hebdomadaires noyaient les quatre choses qu'il y avait vraiment à faire — 44 lignes au lieu de 8. Rien n'est caché : tout se déplie.
-- `#objectifs` — **« Le cap » : la GALERIE des objectifs** (27 août 2026, demande de Noé, après un échantillon validé). C'est le seul endroit du hub où le cap se règle, et la page qui cache le plus. Elle tient en trois niveaux, jamais quatre :
+- `#objectifs` — **« Général » : les trois étages du cap**, en une page ou en trois vues. C'est le seul endroit du hub où le cap se règle, et la page qui cache le plus. Elle tient en trois niveaux, jamais quatre :
+  - **Elle s'appelle « Général »** (28 août 2026, mot choisi par Noé pour le grand titre du menu), `<h1>` et titre du navigateur compris. Elle disait « Le cap » dans son `<h1>`, « Objectifs » dans l'onglet et « Général » dans le menu : trois noms pour une page est un défaut, pas un choix. **« Le cap » reste le nom de l'ÉTAGE des objectifs**, qui a sa page à lui. L'adresse ne bouge pas — un favori se casse, pas un nom.
+  - **Trois vues, plus un espace en troisième niveau** : `#objectifs/caps`, `/projets`, `/periodes`, chacune ne montrant qu'un étage avec son propre titre ; `#objectifs` seul les garde tous les trois avec leurs titres d'étage. Sans ce découpage, « Objectifs », « Projets » et « Périodes » auraient été **trois liens vers le même écran**, et trois liens identiques ne sont pas un menu. Changer de vue ne relit rien : les trois étages viennent du même chargement, seule change la part qu'on en montre.
   - **la galerie ne dit que ce qui se compare** — une tuile compacte par objectif : son espace, son titre, une rangée de marches (un segment par jalon, plein quand il est atteint), « 3 projets · 23 tâches » et son échéance. **Le titre porte seul le poids** (Clash Display 700) ; le nom de l'espace passe en encre discrète, et sa couleur se dit deux fois sans jamais reprendre l'œil : la pastille, et **le fond de la tuile teinté à 5 %** de la couleur de son espace (Noé a regardé 11 %, puis 7, puis choisi 5). À cette dose la teinte ne se nomme pas, elle se sent : deux tuiles voisines ne se ressemblent plus tout à fait, et rien n'a l'air coloré. Le texte garde son contraste (18:1 sur le titre, 6,6:1 sur le service). Ni pourcentage, ni barre continue : un cap se lit en marches franchies. Le tri suit **l'ordre des journées de Noé — FCH, formation, Yuno** (demande du 28 août 2026) ; à l'intérieur d'un espace, le plus proche d'abord, et ce qui n'a pas de date ferme la marche. Une seule liste (`ESPACES`, js/objectifs.js) porte cet ordre : elle range les tuiles, les choix du formulaire et les régimes d'une période. **Pas de filtre par espace** : il a existé une heure, entre le groupement de l'ancienne page et le tri — depuis que les caps arrivent groupés, il ne cachait rien qu'on ne voyait déjà, et six tuiles s'embrassent du regard.
   - **on n'ouvre pas une autre page** : la tuile pressée prend toute la largeur et se déplie sur place, comme un jour de « Ta semaine » s'ouvre en grand. Elle montre le pourquoi, la cible, la frise des jalons, les projets (qui se déplient à leur tour sur leurs tâches), les tâches rattachées au cap sans projet, et — pour « Rembourser mon matériel » seulement — les prestations et le matériel qui le mesurent.
   - **les séries se replient** : quinze « Visuels de la semaine » font UNE ligne, avec leur rythme, ce qu'il en reste et la prochaine date. Sans cette coupe, un projet récurrent redressait le mur que l'espace Tâches a appris à ne pas dresser.
   - **ajouter et modifier ouvrent la tuile volante**, avec tous les détails (`construireFormulaire`) ; la galerie ne garde que les gestes d'un doigt — cocher un jalon, terminer une tâche, ouvrir un cap. Ce qui est irréversible (supprimer, marquer atteint) demande confirmation **sur place**, dans le menu à trois points : pas de fenêtre pour ça, mais un objectif qui emporte ses jalons mérite le second appui.
   - **une SECONDE GALERIE sous la première : les projets** (28 août 2026, demande de Noé). Même forme, un étage plus bas — un projet se compare à un projet comme un cap se compare à un cap, et on y entre du même geste. Ce qu'elle montre et que le dépliage d'un cap ne montrait pas : **les projets qui ne servent aucun cap** (« Album du club », « Suivi de l'alternance ») — ils existaient et étaient invisibles, donc oubliés. Un projet posé ici n'a pas de cap et c'est légitime : de l'intendance, ça existe. **L'avancée n'y a pas la même forme** : un cap franchit des marches (un segment par jalon, on les compte du regard) ; un projet avance tâche après tâche, d'où une barre unique remplie à la proportion faite — quinze segments seraient du bruit.
   - **les périodes ferment la page**, en deux lignes et en encre discrète, avec leur tuile d'ajout à côté d'elles. Voir « les périodes » plus bas.
-  - **Il a son onglet — une boussole, « Le cap »** : c'est la page qui regroupe le plus d'informations cachées, elle doit s'atteindre d'un geste. Cela renverse la décision du 26 août, qui l'avait laissée sans entrée dans la barre ; la tuile « Le cap » du tableau de bord y mène toujours.
+  - **Elle n'a plus d'onglet** : elle est au second rang, dans le menu, sous « Général » et ses trois vues. Elle en a eu un (une boussole, du 27 au 28 août) — ce qui avait déjà renversé la décision du 26. La règle des deux rangs tranche : ouvrir le cap, c'est déjà avoir décidé quelque chose. La tuile « Le cap » du tableau de bord y mène toujours.
 - `#calendrier` — tout ce qui porte une date, tous espaces confondus, filtres par nature (tâches, événements, publications, objectifs)
+- `#chemin` — **« Le chemin » : le miroir de ce qui a été accompli** (28 août 2026). Les victoires groupées par mois, tous espaces, le perso au même rang que le pro. **La source est UNIQUE — la table `victoires`** : terminer une tâche, franchir un jalon, vivre une sortie y écrivent déjà, et recompter les tâches faites à côté donnerait deux chiffres pour un seul fait. **Rien ne s'y modifie** : la page ne fait que regarder en arrière, et sa forme le dit — aucun bouton, aucune coche. Elle existe parce que la philosophie n° 1 dit que le hub est *d'abord un miroir de ce qui a été accompli*, et que ce miroir avait quitté l'accueil le 13 août sans être remplacé.
+- `#temps` — **« Le temps » : où partent les heures** (28 août 2026, demande de Noé). La semaine par espace (sur place · traitement · rythmes · ligne à ligne, contre l'attendu de la période), puis projet par projet l'annoncé contre le mesuré. **Il ne calcule rien lui-même** : tout vient de `js/orientation.js`, qui reste éprouvable hors écran. **Sa première ligne est la plus importante** — « 3 des 35 choses terminées portent une durée » : sans elle, un total bas se lirait comme une semaine légère alors qu'il ne dit que le silence des durées. **Sa raison d'être** : la fenêtre « combien de temps ça a pris ? » existe depuis le 27 août et rien n'a jamais rien fait de la réponse ; une question dont la réponse ne sert à rien finit par ne plus recevoir de réponse. **Aucun rouge, aucun seuil, aucun « trop »** : un écart entre l'annoncé et le mesuré est une information, pas une faute.
 - `#formation` — espace formation (thème : teal)
 - `#photo` — la page Yuno du hub (thème : doré) — tableau de bord réduit et porte vers le site
 - `#yuno` — le SITE Yuno : l'habillage du hub disparaît entièrement, chrome et identité propres (voir docs/yuno-spec.md)
 - `#fch` — la page FC Hermitage du hub (thème : bleu du club) — tableau de bord réduit et porte vers le site
 - `#hermitage` — le SITE FC Hermitage : l'habillage du hub disparaît, chrome et identité propres, fond bleu du club (voir docs/fch-spec.md)
-- `#perso` — espace perso (thème : doux, apaisé, distinct des trois autres)
+- `#perso` — espace perso (thème : doux, apaisé, distinct des trois autres). **Quatre vues** depuis le 28 août 2026 — `#perso/intentions`, `/rendez-vous`, `/humeur`, `/victoires` — offertes une à une par le menu : c'est la MÊME page dont on cache trois blocs sur quatre. Ni second écran, ni second chargement, et les écouteurs, posés sur la section, survivent.
 
 **Les trois pages espace du hub sont des BILANS** (refonte du 26 août 2026), et
-elles ont la même forme sans avoir le même contenu :
+elles ont la même forme sans avoir le même contenu. **Elles n'ont plus d'onglet
+depuis le 28 août au soir** : on y entre par le grand titre de leur espace dans
+le menu, qui donne aussi leurs pages filtrées et la porte de leur site. Un bilan
+répond à « où j'en suis » — c'est une question qu'on se pose, pas un réflexe.
 
 - Le **site** est l'atelier — il répond à « qu'est-ce que je fais maintenant » ;
   la **page du hub** est le bilan — elle répond à « où j'en suis ». C'est la
@@ -294,7 +356,7 @@ La trace du **rendez-vous du dimanche**. Une ligne par semaine validée, identif
 
 > *Ce que cette décision a remplacé, et pourquoi elle a tenu une journée.* La question était née le 27 août avec les périodes, sur un raisonnement juste — dire « ça ne tient pas » trois semaines avant vaut mieux qu'un dimanche soir. Une troisième porte, « C'est voulu », a été essayée le lendemain pour permettre d'assumer, puis retirée avec le reste : si la réponse est toujours « c'est voulu », la question ne valait pas d'être posée. Ne pas la remettre.
 
-**Le calcul, lui, reste entier** — `tensionDeLaPeriode` (js/orientation.js), la table `arbitrages` et son API. C'est la règle du jeu de l'orientation, éprouvable hors écran, et le diagnostic de la semaine s'en sert. **Ce qui a disparu, c'est le reproche, pas la mesure** ; plus aucun écran ne l'affiche aujourd'hui.
+**Le calcul, lui, reste entier** — `tensionDeLaPeriode` (js/orientation.js), la table `arbitrages` et son API. C'est la règle du jeu de l'orientation, éprouvable hors écran, et le diagnostic de la semaine s'en sert. **Ce qui a disparu, c'est le reproche, pas la mesure.** Et la mesure a retrouvé un écran le 28 août au soir : **`#temps`** l'affiche — la charge visée d'une période y figure comme un « attendu », à côté de ce que la semaine pèse vraiment. Sans seuil, sans couleur, sans question. C'est exactement la nuance : on montre l'écart, on ne demande pas ce qui cède.
 
 **Les périodes FERMENT `#objectifs`, en DEUX LIGNES et en encre discrète** : nom et intervalle, puis ce qu'elles attendent (« FC Hermitage intense · club 26 h · formation 15 h ») — ni carte, ni bordure, ni comparaison à une capacité. Une période *cadre* les caps, elle ne les vaut pas. Toute la ligne ouvre la tuile de modification ; le menu à trois points ne garde que la suppression, et « Déclarer une période » est une tuile pointillée posée **à côté** d'elles, jamais dessous. Elles ouvraient la page le matin du 28 août ; elles la ferment depuis le soir — comme « Le cap » du tableau de bord est passé sous la journée le 13 août, et pour la même raison : on relit ce qui cadre quand on lève la tête, pas en ouvrant l'application.
 
@@ -517,24 +579,65 @@ par choix. Conséquence pour qui écrit du CSS : **plus une seule media query de
 thème**, et l'encre posée sur un aplat d'accent est SOMBRE (`var(--fond)` ou
 `var(--fond-carte)`), jamais blanche — l'accent est clair désormais.
 
-**La barre de navigation : trois mots, puis des signes** (demande de Noé,
-27 août 2026). Accueil, Tâches et Perso gardent leur mot — ce sont les vues du
-quotidien, et un mot se vise mieux qu'un signe à reconnaître. Les cinq autres
-sont des signes : la boussole du cap, le calendrier, le chapeau de la formation,
-et **les deux marques en POCHOIR** — `fch-logo-pochoir.png` et
-`yuno-signature.png` posés en `mask`, l'encre venant de `currentColor`. Un logo
-prend donc la couleur de son onglet, discret au repos et inversé quand il est
-actif, au lieu de traîner un fond de sticker et un cadre qui ne sont à personne.
-C'est la mécanique que le site FCH utilise déjà pour son onglet d'accueil.
+**LA BARRE DE NAVIGATION : trois onglets centrés, le menu à gauche** (28 août
+2026). `Accueil · Perso · ▦` au milieu, les **trois barres horizontales** tout à
+gauche — aucun mot pour elles. Perso est à la fois onglet et grand titre du
+menu, et c'est voulu : on l'ouvre sans y avoir pensé, mais ses pages doivent
+s'atteindre comme celles des autres espaces.
 
-**Une quatrième dans le calendrier : Gilroy** (demande de Noé, 27 août 2026).
-Le **titre d'une barre** — et lui seul — est en Gilroy 700, dans les trois
-calendriers. La règle est posée sur `.cal-barre-titre` et non sur la barre :
-les signes (○ ◐ ◉ ▲ ↗) sont dans le même conteneur et Gilroy ne les dessine
-pas — ils retomberaient, glyphe par glyphe, sur une police choisie par le
-navigateur. L'heure reste en Geist Mono. Gilroy est déclarée dans `css/yuno.css`
-(chargée sur les trois pages) et son Bold est déjà en cache : aucun fichier de
-plus.
+- **C'est une GRILLE À TROIS COLONNES**, `.barre-onglets`, pas un rang. La
+  troisième est vide et fait exactement la largeur de la première : sans ce
+  contrepoids, les onglets seraient centrés dans la place qui *reste*, donc
+  décalés vers la droite de la largeur du bouton. Un centrage optique se paie en
+  grille.
+- **`.barre-onglets` et non `.barre`** : ce nom était pris par la barre de
+  PROGRESSION de la formation, déclarée plus bas dans la feuille donc gagnante.
+  La barre d'onglets héritait de `height: 6px` et d'un fond `--accent-doux`, et
+  `.barre span` peignait les trois traits du menu en un seul bloc d'accent.
+  Deux défauts pour une collision de nom.
+- **Le bouton du menu vit HORS de la bande qui défile** — une chose en queue de
+  bande n'existe pas, c'est la leçon de la pastille famille.
+- **L'onglet actif porte QUATRE signes à la fois** : le fond plein et l'encre
+  inversée, la taille (17 contre 14 px) et la graisse (700 contre 600). Ils
+  glissent ensemble en 180 ms, et comme la rangée est centrée, les voisins
+  s'écartent au lieu de sauter. Cela renverse la règle du 27 août — « même
+  graisse pour tous, sinon la barre déborde » — qui était juste avec HUIT
+  onglets. **C'est le nombre qui a changé, pas le raisonnement : recompter les
+  onglets avant de la rétablir.**
+- **Le texte descend de 0,12 em dans sa pastille**, par un `padding` haut
+  asymétrique. Réglage optique et non erreur : `align-items: center` centre la
+  LIGNE, or une ligne réserve sous elle la place des jambages — et aucun de ces
+  mots n'en a. En em, pour que la correction grandisse avec l'onglet actif. Le
+  palier large doit écrire `padding-inline` et non le raccourci, sinon le mot
+  remonte **sur ordinateur seulement**.
+- **L'onglet du calendrier est carré par une largeur FIXE**, jamais par
+  `aspect-ratio` : le ratio déduisait sa hauteur de sa largeur, donc du
+  rembourrage des autres onglets — passé celui-ci à 24 px, l'icône a pris 66 px
+  de côté et poussé toute la rangée. Son sélecteur est scopé à `.navigation`,
+  donc au hub seul : `ongletCalendrier` sert aussi aux barres des deux sites.
+
+> *Ce que cette barre a remplacé.* Du 27 au 28 août, elle portait **huit
+> onglets — trois mots puis cinq signes**, dont les deux marques en POCHOIR
+> (`fch-logo-pochoir.png`, `yuno-signature.png` en `mask`, l'encre venant de
+> `currentColor`). La mécanique reste celle du site FCH pour son onglet
+> d'accueil, et git garde le code ; dans le menu, chaque espace porte sa
+> pastille ronde.
+
+**Gilroy sert deux endroits, et ce sont les deux où l'on VISE plutôt qu'on ne
+lit** (27 puis 28 août 2026) :
+
+- **le titre d'une barre du calendrier**, en 700, dans les trois calendriers. La
+  règle est posée sur `.cal-barre-titre` et non sur la barre : les signes
+  (○ ◐ ◉ ▲ ↗) sont dans le même conteneur et Gilroy ne les dessine pas — ils
+  retomberaient, glyphe par glyphe, sur une police choisie par le navigateur.
+  L'heure reste en Geist Mono.
+- **les onglets**, 600 au repos et 700 actif. C'est ce qu'Instrument Sans ne
+  pouvait pas donner : déclarée de 400 à 600, demander 700 la faisait clamper, et
+  l'écart plafonnait à 500/600 sans se voir.
+
+Gilroy est déclarée dans `css/yuno.css` (chargée sur les trois pages) en 400,
+500, 600, 700 et 900 ; les quatre premiers sont dans la coquille : aucun fichier
+de plus.
 
 **Non repris, volontairement : le ton.** Bac-3 est un outil de pression, et
 c'est justifié — 44 livrables, une date de dépôt. Il a une couleur `--flag`
@@ -552,6 +655,11 @@ l'ouverture hors ligne ne peut pas garantir.
 ## Conventions de développement
 
 - Code simple et lisible : HTML/CSS/JS vanilla, un fichier js/api.js pour tous les appels Supabase, un fichier par espace.
+- **Avant de nommer une classe CSS, vérifier que le nom est libre.** `.barre`
+  existait déjà (la progression de la formation) et la barre d'onglets l'a repris :
+  déclarée plus bas, l'ancienne gagnait, et la nouvelle héritait de `height: 6px`
+  — plus `.barre span` qui peignait les trois traits du menu en un seul bloc. Un
+  `grep` de trois secondes contre une soirée de forme qu'on croit ratée.
 - **`node tools/essai-diagnostic.mjs <fixture.json> [date]`** fait tourner le diagnostic d'une semaine hors ligne, sur un instantané des données. C'est la seule façon d'éprouver l'orientation sans y croire sur parole : les chiffres qu'il sort doivent pouvoir se recalculer à la main.
 - **`js/orientation.js` ne touche à rien** — ni réseau, ni session, ni DOM. Il ne fait que calculer à partir de données déjà chargées : quotas, régimes, tension d'une période, plancher perso. C'est là que vit la règle du jeu de l'orientation, et elle doit rester éprouvable hors écran — un diagnostic qu'on ne peut pas vérifier seul est un diagnostic qu'on croit sur parole. Tout y est en **minutes**, comme `taches.duree` et `projets.charge_minutes`.
 - Un espace n'est **monté qu'une fois** : ses écouteurs sont posés sur la section, qui survit à `innerHTML`, et un second montage les doublerait. Pour se mettre à jour, un espace pose un **`rafraichir()`** — comme il pose `naviguer()` — que le routeur appelle quand on revient dessus. Il relit les données et redessine, il ne rebranche rien.

@@ -123,10 +123,10 @@ export function construireCourbeHumeur(entrees, maintenant = new Date()) {
 
 function squelette() {
   return `
-    <h1>Perso</h1>
-    <p class="discret sous-titre">La vie hors espaces — sport, sorties, temps pour toi.</p>
+    <h1 data-titre>Perso</h1>
+    <p class="discret sous-titre" data-sous-titre>La vie hors espaces — sport, sorties, temps pour toi.</p>
 
-    <section class="bloc">
+    <section class="bloc" data-vue="intentions">
       <h2>Intentions</h2>
       <div data-bloc="intentions"><p class="vide">…</p></div>
       ${construireFormulaire({
@@ -140,7 +140,7 @@ function squelette() {
       })}
     </section>
 
-    <section class="bloc">
+    <section class="bloc" data-vue="victoires">
       <h2>Victoires</h2>
       <div data-bloc="victoires"><p class="vide">…</p></div>
       ${construireFormulaire({
@@ -151,7 +151,7 @@ function squelette() {
       })}
     </section>
 
-    <section class="bloc">
+    <section class="bloc" data-vue="rendez-vous">
       <h2>Rendez-vous avec toi-même</h2>
       <div data-bloc="evenements"><p class="vide">…</p></div>
       ${construireFormulaire({
@@ -176,18 +176,48 @@ function squelette() {
       })}
     </section>
 
-    <section class="bloc">
+    <section class="bloc" data-vue="humeur">
       <h2>Ton humeur</h2>
       <div data-bloc="humeur"><p class="vide">…</p></div>
     </section>
   `;
 }
 
+// LES QUATRE VUES DE PERSO (28 août 2026) — le menu les offre une à une, et
+// c'est la MÊME page dont on cache trois blocs sur quatre. Ni second écran, ni
+// second chargement : les écouteurs sont posés sur la section et survivent.
+const VUES = {
+  intentions: ['Les intentions', 'Ce que tu veux tenir, sans mesure ni date.'],
+  victoires: ['Les victoires', 'Une belle séance compte autant qu\'un post réussi.'],
+  'rendez-vous': ['Les rendez-vous', 'Les moments que tu te réserves.'],
+  humeur: ['Ton humeur', 'Les 30 derniers jours, sans relance ni reproche.'],
+};
+
+function appliquerLaVue(section, route) {
+  const vue = route?.vue in VUES ? route.vue : null;
+  const [titre, sous] = VUES[vue] ?? [
+    'Perso',
+    'La vie hors espaces — sport, sorties, temps pour toi.',
+  ];
+
+  section.querySelector('[data-titre]').textContent = titre;
+  section.querySelector('[data-sous-titre]').textContent = sous;
+  for (const bloc of section.querySelectorAll('.bloc[data-vue]')) {
+    bloc.hidden = Boolean(vue) && bloc.dataset.vue !== vue;
+  }
+}
+
 // --- Montage ----------------------------------------------------------------
 
 export default {
-  async monter(section) {
+  async monter(section, route) {
     section.innerHTML = squelette();
+    appliquerLaVue(section, route);
+
+    // Changer de vue ne relit rien et ne redessine rien : trois blocs sur
+    // quatre s'effacent, le quatrième reste exactement dans l'état où on l'a
+    // laissé.
+    this.naviguer = (nouvelle) => appliquerLaVue(section, nouvelle);
 
     const etat = { intentions: [], evenements: [], victoires: [] };
     const bloc = (nom) => section.querySelector(`[data-bloc="${nom}"]`);

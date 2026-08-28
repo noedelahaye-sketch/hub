@@ -455,57 +455,102 @@ a { color: var(--accent); }
 /* --- Navigation ------------------------------------------------------------ */
 
 /* En haut, et collée : les onglets restent atteignables sans remonter la page.
-   L'en-tête, lui, défile — il ne sert qu'une fois. */
-.navigation {
+   L'en-tête, lui, défile — il ne sert qu'une fois.
+
+   TROIS COLONNES ET NON UN RANG (28 août 2026, demande de Noé) : le bouton du
+   menu tout à gauche, les onglets CENTRÉS au milieu. La troisième colonne est
+   vide et fait exactement la largeur de la première — sans ce contrepoids, les
+   onglets seraient centrés dans la place qui RESTE, donc décalés vers la droite
+   de la largeur du bouton. C'est un centrage optique, il se paie en grille.
+
+   C'est la BARRE qui colle, pas la bande : le bouton doit rester visible quand
+   la bande défile. Une chose en queue de bande n'existe pas — c'est la leçon de
+   la pastille famille. */
+.barre-onglets {
   position: sticky;
   top: 0;
   z-index: 20;
-  display: flex;
-  gap: var(--espace-4);
+  display: grid;
+  grid-template-columns: 2.75rem 1fr 2.75rem;
+  align-items: center;
+  gap: var(--espace-8);
   max-width: var(--colonne-max);
   margin: 0 auto;
-  /* Marges plus serrées que le contenu sur téléphone : les pastilles ont déjà
-     leur rembourrage, et à ce prix les six onglets tiennent sur 375 px. Dès
-     qu'il y a de la place, elles rejoignent l'alignement du contenu. */
-  padding: var(--espace-8) var(--espace-8);
-  /* Les onglets ne tiennent pas toujours sur 375 px : on laisse glisser plutôt
-     que de rétrécir le texte, et `centrerActif` ramène l'actif dans le champ.
-     Ces deux lignes vivaient dans le `@media` ci-dessous, mais hors de tout
-     sélecteur — elles ne s'appliquaient donc à rien, et c'était la PAGE qui
-     défilait de travers sur téléphone, pas la barre. */
-  overflow-x: auto;
-  scrollbar-width: none;
+  /* La marge du contenu, et non une valeur à elle : le bouton du menu tombe
+     ainsi sur la même verticale que le texte de la page, à tous les paliers.
+     Serrée en hauteur (28 août 2026, demande de Noé) : les onglets portent déjà
+     leur cible de 44 px, la barre n'a pas à en rajouter autour. */
+  padding: var(--espace-4) var(--marge-cote);
   background: var(--fond);
   /* Un filet sépare les onglets du contenu, comme sur Bac-3. */
   border-bottom: 1px solid var(--bordure);
 }
 
-/* Dès qu'il y a de la place, la barre rejoint l'alignement du contenu. */
-@media (min-width: 45rem) {
-  .navigation {
-    padding-left: var(--marge-cote);
-    padding-right: var(--marge-cote);
-    gap: var(--espace-8);
-  }
-  .navigation a { padding: 0 var(--espace-16); font-size: 0.9375rem; }
+.navigation {
+  grid-column: 2;
+  display: flex;
+  /* `safe center` et non `center` : quand le contenu déborde, un centrage
+     ordinaire rend le premier onglet INATTEIGNABLE — il part hors du cadre de
+     défilement, du mauvais côté. `safe` retombe sur un alignement au début
+     dans ce seul cas. */
+  justify-content: safe center;
+  /* Serré (demande de Noé) : les onglets au repos n'ont pas de fond, leur
+     rembourrage se lit donc déjà comme du vide. Un écart de 8 px par-dessus les
+     deux rembourrages faisait trois espaces entre deux mots. */
+  gap: var(--espace-4);
+  /* `min-width: 0` : sans lui, une bande en grille refuse de rétrécir sous la
+     largeur de son contenu et pousse la colonne du bouton hors de l'écran. */
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
-
 .navigation::-webkit-scrollbar { display: none; }
 
 /* Onglets repris du site Bac-3 : pas de contour, un fond seulement, et des
-   angles très arrondis. L'onglet actif est plein et inversé — le contraste
-   fait le travail, sans avoir à souligner ni à grossir le texte. */
+   angles très arrondis. L'onglet actif est plein et inversé — le contraste fait
+   le travail, sans avoir à souligner ni à grossir le texte.
+
+   REFAITS LE 28 AOÛT (demande de Noé). Ils étaient serrés parce que la barre en
+   portait huit et devait tenir sur 375 px ; elle n'en porte plus que trois. */
 .navigation a {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   min-height: 2.75rem;
-  /* Serré : à ce prix les cinq onglets tiennent sur 375 px sans faire glisser
-     la barre, et sans rétrécir le texte. */
-  padding: 0 var(--espace-12);
+  /* SERRÉ AUTOUR DU MOT (demande de Noé). C'est ce rembourrage, et non l'écart
+     entre les onglets, qui faisait la distance : au repos un onglet n'a pas de
+     fond, ses 12 px de chaque côté se lisaient donc comme du vide ajouté aux
+     4 px de la bande — trois espaces entre deux mots. La pastille de l'actif y
+     gagne aussi : elle épouse son mot au lieu de flotter autour.
+
+     LE HAUT PORTE 0,24 em DE PLUS QUE LE BAS, et c'est un réglage optique, pas
+     une erreur : `align-items: center` centre la LIGNE, or la ligne réserve
+     sous elle la place des jambages — et aucun de ces mots n'en a. Le mot
+     paraissait donc haut dans la pastille. Le rembourrage asymétrique décale le
+     contenu de la moitié de l'écart, soit 0,12 em vers le bas. En em et non en
+     pixels : l'onglet actif est plus grand que les autres, la correction doit
+     grandir avec lui. */
+  padding: 0.24em var(--espace-8) 0;
+  /* L'ACTIF EST PLUS GROS, LES AUTRES PLUS PETITS (demande de Noé) — l'inverse
+     exact de la règle d'origine : « même graisse pour tous, sinon la barre
+     change de largeur à chaque changement d'espace et déborde ». Cette crainte
+     était juste quand la barre portait HUIT onglets ; elle n'en porte plus que
+     trois et la place ne manque plus. C'est le NOMBRE qui a changé, pas le
+     raisonnement — ne pas rétablir la règle sans avoir d'abord regardé combien
+     il reste d'onglets.
+     La hauteur, elle, ne bouge pas : `min-height` la tient, seule la largeur
+     respire, et la rangée reste posée sur la même ligne. */
   font-size: 0.875rem;
-  /* Même graisse pour tous : si l'onglet actif grossissait, la barre changerait
-     de largeur à chaque changement d'espace et déborderait. */
+  /* GILROY (demande de Noé), comme les titres de barre du calendrier. Elle est
+     déjà déclarée dans css/yuno.css — chargée sur les trois pages — et mise en
+     cache par le service worker : aucun fichier de plus. La famille de secours
+     ajustée vient avec, pour que la bascule au chargement ne fasse pas sauter
+     la rangée.
+     Elle apporte surtout ce qu'Instrument Sans ne pouvait pas donner : un VRAI
+     700. Instrument Sans est déclarée de 400 à 600, demander 700 la faisait
+     clamper — l'écart entre l'actif et le repos plafonnait à 500/600. Ici il va
+     de 500 à 700, et il se voit. */
+  font-family: "Gilroy", "Gilroy secours", var(--police-texte);
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
@@ -514,7 +559,6 @@ a { color: var(--accent); }
   border: 0;
   border-radius: var(--rayon-pastille);
 }
-
 .navigation a:hover {
   color: var(--texte);
   background: color-mix(in srgb, var(--texte) 8%, transparent);
@@ -523,6 +567,24 @@ a { color: var(--accent); }
 .navigation a.actif {
   color: var(--fond-carte);
   background: var(--accent);
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+
+/* LE PASSAGE D'UN ONGLET À L'AUTRE SE VOIT GLISSER (demande de Noé). Les onglets
+   sont centrés : quand l'actif grandit et l'ancien rétrécit, toute la rangée se
+   recentre — les voisins s'écartent doucement au lieu de sauter d'un coup.
+   `font-size` est animée en connaissance de cause : elle redessine la mise en
+   page à chaque image, ce qui serait un mauvais calcul sur une longue liste.
+   Ils sont trois, et ils ne changent qu'une fois par navigation. */
+@media (prefers-reduced-motion: no-preference) {
+  .navigation a {
+    transition:
+      font-size 180ms ease,
+      font-weight 180ms ease,
+      color 180ms ease,
+      background-color 180ms ease;
+  }
 }
 
 /* --- L'onglet du calendrier -------------------------------------------------
@@ -534,60 +596,206 @@ a { color: var(--accent); }
    plutôt qu'un sélecteur de position.
    Carré et non allongé : sans texte, le rembourrage horizontal d'un onglet
    laisserait l'icône flotter au milieu d'une pastille de mot. */
-.nav-calendrier,
-.nav-icone {
+.navigation a.nav-calendrier,
+.navigation a.nav-icone {
   justify-content: center;
-  padding: 0 var(--espace-8);
-  aspect-ratio: 1;
+  /* CARRÉ À LA HAUTEUR D'UN ONGLET, et non par `aspect-ratio` : le ratio
+     déduisait la hauteur de la LARGEUR, donc du rembourrage horizontal des
+     onglets. Quand celui-ci est passé à 24 px le 28 août, l'icône a pris 66 px
+     de côté et a poussé toute la rangée avec elle. Une largeur fixe ne peut pas
+     faire ça.
+     Sélecteur scopé à `.navigation` — donc au hub seul : les barres des deux
+     sites (`.yuno-nav`, `.fch-nav`) ont leurs propres règles, et le même onglet
+     de calendrier les traverse toutes les trois. */
+  width: 2.75rem;
+  padding: 0;
+  aspect-ratio: auto;
 }
 
 /* Rien à couper ni à faire défiler dans une icône. */
 .nav-calendrier svg,
 .nav-icone svg { display: block; flex: 0 0 auto; }
 
-/* LES ONGLETS SONT DES SIGNES (demande de Noé, 27 août 2026) : un mot coûte
-   trois fois la place, et la barre en portait sept. Ce qui a une image propre
-   la prend — les deux sites ont leur logo —, le reste reçoit un dessin.
-   Le logo est un jeton rond, pas une vignette carrée : à 22 px, un carré dans
-   une pastille arrondie fait deux formes qui se contredisent. */
-/* LES DEUX MARQUES EN POCHOIR (demande de Noé, 27 août 2026), comme dans la
-   barre du site FCH : le PNG ne donne que son alpha, l'encre vient de
-   `currentColor`. Le logo prend donc la couleur de son onglet — discret au
-   repos, inversé quand il est actif — au lieu de traîner un fond et un cadre
-   qui ne sont à personne. C'est aussi ce qui les fait tenir à côté des dessins
-   sans qu'on voie la différence de nature.
+/* --- Le menu — le second rang de navigation --------------------------------
+   (28 août 2026, décision de Noé.) La règle est écrite dans js/menu.js. Ce qui
+   compte ici : le menu VOLE au-dessus d'un fond assombri, comme la tuile de
+   capture — d'où --rayon-tuile et non --rayon-carte. C'est le même objet, ce
+   sont les mêmes coins, et il se referme du même geste. */
 
-   Deux fichiers à part, et c'est voulu : les icônes d'application portent leur
-   fond de sticker et rendraient une tache pleine en masque direct. */
-.nav-marque {
-  display: block;
-  flex: 0 0 auto;
-  background: currentColor;
-}
-
-.nav-marque-fch {
-  width: 2rem;
-  height: 1.75rem;
-  -webkit-mask: url("../img/fch-logo-pochoir.png") no-repeat center / contain;
-  mask: url("../img/fch-logo-pochoir.png") no-repeat center / contain;
-}
-
-/* La signature de Yuno occupe le centre de son carré : on zoome pour que le mot
-   se lise à cette taille, plutôt que de laisser respirer une marge vide. */
-.nav-marque-yuno {
+/* TROIS BARRES HORIZONTALES, aucun mot (demande de Noé), tout à gauche de la
+   barre. Pas de filet : isolé au bord, il n'a plus rien dont se séparer — c'est
+   la distance qui dit qu'il n'est pas un onglet.
+   `grid-column: 1` explicite : le bouton est posé par `monterLeMenu` et non
+   écrit dans le gabarit, autant ne pas dépendre de son rang dans le DOM. */
+.bouton-menu {
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
   width: 2.75rem;
-  height: 1.75rem;
-  -webkit-mask: url("../img/yuno-signature.png") no-repeat center / auto 175%;
-  mask: url("../img/yuno-signature.png") no-repeat center / auto 175%;
+  height: 2.75rem;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: var(--rayon-pastille);
+  cursor: pointer;
+}
+/* Les trois traits. Ils portaient jadis le nom `.barre`, déjà pris par la barre
+   de progression : `.barre span` les peignait en un seul bloc d'accent haut de
+   100 %. D'où `.barre-onglets`, et ce commentaire pour qu'on ne refasse pas le
+   chemin. */
+.bouton-menu span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--texte-discret);
+}
+.bouton-menu:hover { background: color-mix(in srgb, var(--texte) 8%, transparent); }
+.bouton-menu:hover span { background: var(--texte); }
+.bouton-menu.ouvert { background: var(--accent); }
+.bouton-menu.ouvert span { background: var(--fond); }
+
+/* Le voile part SOUS la barre : le menu se lit comme la suite du bouton qu'on
+   vient de presser, pas comme un écran qui remplace tout. Il tombe donc À
+   GAUCHE, sous son bouton — un panneau qui s'ouvre à l'autre bout de l'écran
+   oblige l'œil à retraverser la barre pour retrouver ce qu'il vient de toucher. */
+.menu-voile {
+  position: fixed;
+  inset: 0;
+  z-index: 19;
+  display: flex;
+  justify-content: flex-start;
+  /* `--sous-la-barre` est posée par `monterLeMenu` à l'ouverture, depuis la
+     hauteur RÉELLE de la barre : un nombre écrit ici vieillirait au premier
+     changement de taille d'onglet — c'est exactement ce qui vient d'arriver.
+     La valeur de secours ne sert que si le script n'a pas encore mesuré. */
+  padding-top: var(--sous-la-barre, 7rem);
+  /* Le bord gauche du panneau tombe sur celui du bouton. La barre est centrée
+     dans `--colonne-max`, le voile est plein écran : il faut donc refaire le
+     même calcul de centrage, puis ajouter la marge. */
+  padding-inline: calc(max(0px, (100vw - var(--colonne-max)) / 2) + var(--marge-cote));
+  padding-bottom: var(--espace-16);
+  background: rgb(0 0 0 / 45%);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
-/* Une marque n'est pas carrée : son onglet se règle sur le dessin. */
-.nav-icone:has(.nav-marque) { aspect-ratio: auto; }
+/* UNE colonne (demande de Noé) : six grands titres se lisent d'un regard, deux
+   colonnes obligeraient l'œil à choisir par où commencer. */
+.menu {
+  width: 100%;
+  max-width: 400px;
+  align-self: flex-start;
+  padding: var(--espace-12) var(--espace-8);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-tuile);
+}
 
-/* La barre respire davantage : sept signes tiennent là où six mots
-   débordaient, l'écart peut donc grandir sans que rien ne glisse. */
-@media (min-width: 45rem) {
-  .navigation-signes { gap: var(--espace-12); }
+.menu-rubrique { border-bottom: 1px solid var(--bordure); }
+.menu-rubrique:last-child { border-bottom: 0; }
+
+/* Le mot mène à la page, la flèche déplie ses sous-pages. Deux gestes voisins
+   qui ne disent pas la même chose : la flèche a donc sa propre cible de 44 px,
+   et ne se déclenche pas en visant le titre. */
+.menu-grand {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-4);
+  padding: 0 var(--espace-4);
+}
+.menu-grand > a {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  min-height: 3rem;
+  padding: 0 var(--espace-12);
+  font-family: var(--police-titre);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  color: var(--texte);
+  text-decoration: none;
+  border-radius: var(--rayon-controle);
+}
+.menu-grand > a:hover { background: color-mix(in srgb, var(--texte) 6%, transparent); }
+/* L'espace où l'on est déjà : marqué, mais pas en pastille pleine — le menu
+   n'est pas la barre, et un aplat d'accent y crierait. */
+.menu-grand > a.actif { background: var(--accent-doux); }
+
+.menu-pastille {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  margin-right: var(--espace-12);
+  border-radius: 50%;
+  /* Le dégradé, comme toutes les pastilles du hub (`.pastille`) : le FC
+     Hermitage porte ses deux couleurs, et un 7 px coupé en deux se lit.
+     `--couleur-espace` et non `--couleur-espace-pleine` — c'est une valeur de
+     `background`, pas un `color-mix`, un dégradé y est légitime.
+     Sans espace — « Général » — la variable n'existe pas et la pastille prend
+     l'encre discrète : le titre transverse ne porte aucune couleur, comme la
+     page qu'il ouvre. */
+  background: var(--couleur-espace, var(--texte-discret));
+}
+
+.menu-fleche {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  color: var(--texte-discret);
+  background: none;
+  border: 0;
+  border-radius: var(--rayon-pastille);
+  cursor: pointer;
+}
+.menu-fleche:hover {
+  color: var(--texte);
+  background: color-mix(in srgb, var(--texte) 6%, transparent);
+}
+.menu-fleche svg { display: block; }
+.menu-rubrique.ouverte .menu-fleche svg { transform: rotate(180deg); }
+@media (prefers-reduced-motion: no-preference) {
+  .menu-fleche svg { transition: transform 0.16s ease; }
+}
+
+.menu-sous {
+  display: none;
+  flex-direction: column;
+  padding: 0 var(--espace-4) var(--espace-12) calc(var(--espace-16) + var(--espace-12));
+}
+.menu-rubrique.ouverte .menu-sous { display: flex; }
+/* Un filet continu relie les sous-pages à leur titre : le retrait seul ne dit
+   pas de qui elles dépendent. */
+.menu-sous a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 var(--espace-12);
+  font-size: 0.9375rem;
+  color: var(--texte-discret);
+  text-decoration: none;
+  border-radius: var(--rayon-controle);
+}
+.menu-sous a::before {
+  content: "";
+  position: absolute;
+  left: calc(-1 * var(--espace-12));
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--bordure);
+}
+.menu-sous a:hover {
+  color: var(--texte);
+  background: color-mix(in srgb, var(--texte) 6%, transparent);
 }
 
 /* --- Blocs de contenu ------------------------------------------------------ */
@@ -892,6 +1100,188 @@ a { color: var(--accent); }
   background: var(--couleur-espace, var(--texte-discret));
 }
 
+/* --- Le chemin -------------------------------------------------------------
+   (28 août 2026.) Le miroir de ce qui a été accompli. Rien ne s'y modifie : la
+   page ne fait que regarder en arrière, et sa forme le dit — aucun bouton,
+   aucune coche, aucune poignée. */
+
+.chemin-bilan {
+  margin-bottom: var(--espace-32);
+  padding-bottom: var(--espace-16);
+  border-bottom: 1px solid var(--bordure);
+}
+.chemin-total {
+  margin: 0 0 var(--espace-12);
+  font-family: var(--police-titre);
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+.chemin-total .chiffre { font-size: 1.75rem; }
+
+.chemin-parts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-8) var(--espace-24);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.chemin-parts li {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  font-size: 0.875rem;
+  color: var(--texte-discret);
+}
+.chemin-parts .chiffre { color: var(--texte); }
+
+/* Le mois est un repère de temps, pas un libellé de section : il garde le
+   display et un corps lisible, contrairement aux `h2` de `.bloc`. Sans lui le
+   fil se lirait comme une liste ; avec lui, comme un chemin. */
+.chemin-mois-titre {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espace-8);
+  margin: 0 0 var(--espace-8);
+  font-family: var(--police-titre);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--texte);
+}
+.chemin-mois-titre .chiffre { font-size: 0.75rem; color: var(--texte-discret); }
+.chemin-mois-titre::first-letter { text-transform: uppercase; }
+
+.chemin-liste {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.chemin-liste li {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: var(--espace-12);
+  padding: var(--espace-8) 0 var(--espace-8) calc(var(--espace-12) + 3px);
+  border-bottom: 1px solid var(--bordure);
+}
+.chemin-liste li:last-child { border-bottom: 0; }
+/* Le filet de couleur de l'espace, comme sur toute liste du hub. */
+.chemin-liste li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: var(--espace-8);
+  bottom: var(--espace-8);
+  width: 3px;
+  border-radius: var(--rayon-pastille);
+  background: var(--couleur-espace, var(--texte-discret));
+}
+/* Le jour tient la même gouttière que l'heure d'un rendez-vous : deux listes du
+   hub ne doivent pas commencer leurs titres à deux abscisses différentes. */
+.chemin-jour {
+  flex: none;
+  min-width: 1.5rem;
+  font-size: 0.75rem;
+  text-align: right;
+  color: var(--texte-discret);
+}
+.chemin-titre { flex: 1 1 auto; }
+.chemin-source { flex: none; font-size: 0.75rem; }
+
+/* --- Le temps --------------------------------------------------------------
+   (28 août 2026.) Où partent les heures. AUCUNE COULEUR D'ALERTE, aucun seuil
+   qui s'allume : un écart entre l'annoncé et le mesuré est une information, pas
+   une faute. La page montre, elle ne juge pas. */
+
+.temps-couverture {
+  margin: 0 0 var(--espace-32);
+  padding-left: var(--espace-16);
+  border-left: 2px solid var(--bordure);
+  font-size: 0.9375rem;
+  max-width: 64ch;
+}
+.temps-couverture .chiffre { color: var(--texte); }
+
+.temps-espaces,
+.temps-projets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-16);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.temps-tete {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espace-8);
+}
+.temps-nom { flex: 1 1 auto; font-weight: 600; }
+.temps-total { flex: none; color: var(--texte); }
+
+/* Une seule échelle pour toutes les barres de la page : deux barres de même
+   longueur doivent dire le même nombre, sinon la comparaison ment. */
+.temps-barre {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+  margin: var(--espace-8) 0 var(--espace-4);
+  border-radius: var(--rayon-pastille);
+  background: color-mix(in srgb, var(--texte) 8%, transparent);
+  overflow: hidden;
+}
+.temps-part {
+  display: block;
+  background: var(--couleur-espace-pleine, var(--accent));
+}
+/* Les quatre parts d'une semaine se distinguent par la densité, pas par la
+   teinte : la couleur appartient à l'espace, et quatre couleurs de plus
+   feraient un camaïeu qu'on ne lit pas. */
+.temps-part[data-part="traitement"] { opacity: 0.75; }
+.temps-part[data-part="forfait"] { opacity: 0.5; }
+.temps-part[data-part="declare"] { opacity: 0.3; }
+
+.temps-detail { font-size: 0.8125rem; margin: 0; }
+.temps-detail .chiffre { color: var(--texte-discret); }
+/* Ce que le hub ne sait pas compter. En italique et non en couleur : c'est un
+   silence, pas une alerte. */
+.temps-muet { font-style: italic; }
+
+/* Projet : l'annoncé en creux, le mesuré en plein, superposés — deux barres
+   côte à côte demanderaient de comparer deux longueurs éloignées. */
+.temps-barre-projet { position: relative; display: block; }
+.temps-barre-projet .temps-part {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+}
+.temps-part-annonce {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--couleur-espace-pleine, var(--accent)) 0 3px,
+    transparent 3px 6px
+  );
+  opacity: 0.6;
+}
+.temps-part-fait { background: var(--couleur-espace-pleine, var(--accent)); }
+/* Un projet à l'année n'a pas de ligne d'arrivée : sa barre reste en pointillé
+   sur toute la largeur, comme dans la galerie des projets. Une barre qui se
+   remplit promettrait une fin qui n'existe pas. */
+.temps-part-annuelle {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--couleur-espace-pleine, var(--accent)) 0 3px,
+    transparent 3px 6px
+  );
+  opacity: 0.45;
+}
+
 /* --- Humeur ---------------------------------------------------------------- */
 
 #bloc-humeur:empty { display: none; }
@@ -1188,6 +1578,14 @@ a { color: var(--accent); }
   display: inline-block;
   margin-top: var(--espace-16);
   font-size: 0.875rem;
+}
+
+@media (min-width: 45rem) {
+  /* `padding-inline` et non le raccourci : celui-ci effacerait le réglage
+     optique du haut, et le mot remonterait dans sa pastille sur grand écran
+     seulement — le genre de défaut qu'on ne voit jamais sur le téléphone où
+     l'on teste. */
+  .navigation a { padding-inline: var(--espace-12); }
 }
 
 @media (min-width: 45rem) {

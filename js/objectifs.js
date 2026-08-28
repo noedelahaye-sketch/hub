@@ -229,6 +229,15 @@ function enMinutes(valeur) {
 // --- L'état -------------------------------------------------------------------
 
 const etat = {
+  // La vue demandée par l'adresse : `null` = les trois étages, sinon un seul
+  // (28 août 2026). Le menu offre « Objectifs », « Projets » et « Périodes »
+  // comme trois entrées — sans ce découpage elles mèneraient au même écran, et
+  // trois liens identiques ne sont pas un menu.
+  vue: null,
+  // L'espace demandé par l'adresse — `#objectifs/projets/fch` (28 août 2026).
+  // C'est ainsi que le menu offre « ses objectifs » et « ses projets » sans
+  // qu'aucun écran de plus existe : la même page, son filtre déjà posé.
+  espaceFiltre: null,
   objectifs: [],
   projets: [],
   taches: [],
@@ -324,13 +333,13 @@ function tuilePeriode(periode, courante) {
     </article>`;
 }
 
-function bandePeriodes() {
+function bandePeriodes(seule = false) {
   const courante = periodeDuJour(etat.periodes, new Date());
   const tuiles = etat.periodes.map((periode) => tuilePeriode(periode, courante)).join('');
 
   return `
     <section class="cap-bande">
-      <h2 class="cap-etage-titre">Ce que tu attends des mois qui viennent</h2>
+      ${seule ? '' : '<h2 class="cap-etage-titre">Ce que tu attends des mois qui viennent</h2>'}
       <div class="cap-periodes">
         ${tuiles}
         <button type="button" class="cap-tuile-ajout cap-periode-ajout"
@@ -744,7 +753,9 @@ function detailProjet(projet) {
 function projetsAffiches() {
   const rangEspace = (projet) => ESPACES.indexOf(projet.espace);
   const rangEtat = (projet) => RANG_ETAT[projet.statut] ?? 0;
-  return [...etat.projets].sort(
+  return [...etat.projets]
+    .filter((projet) => !etat.espaceFiltre || projet.espace === etat.espaceFiltre)
+    .sort(
     (a, b) =>
       rangEspace(a) - rangEspace(b) ||
       rangEtat(a) - rangEtat(b) ||
@@ -753,12 +764,13 @@ function projetsAffiches() {
   );
 }
 
-function galerieProjets() {
+function galerieProjets(seule = false) {
   const projets = projetsAffiches();
+  const de = etat.espaceFiltre ? ` pour ${NOMS_ESPACES[etat.espaceFiltre]}` : '';
 
   return `
     <section class="cap-bande">
-      <h2 class="cap-etage-titre">Les projets — le comment</h2>
+      ${seule ? '' : '<h2 class="cap-etage-titre">Les projets — le comment</h2>'}
       <div class="cap-galerie">
         ${projets
           .map((projet) =>
@@ -771,6 +783,14 @@ function galerieProjets() {
         <button type="button" class="cap-tuile cap-tuile-ajout" data-ajout="projet:rien">
           ${SIGNE.plus}<span>Poser un projet</span></button>
       </div>
+
+      ${
+        projets.length
+          ? ''
+          : `<p class="cap-vide">Aucun projet${de}. Un projet dit COMMENT on
+              atteint un cap — et il peut n'en servir aucun : de l'intendance,
+              ça existe.</p>`
+      }
     </section>`;
 }
 
@@ -1151,19 +1171,30 @@ function trouver(cle) {
 // du regard est un contrôle qui coûte sans rien rendre.
 function capsAffiches() {
   const rang = (objectif) => ESPACES.indexOf(objectif.espace);
-  return [...etat.objectifs].sort(
+  return [...etat.objectifs]
+    .filter((objectif) => !etat.espaceFiltre || objectif.espace === etat.espaceFiltre)
+    .sort(
     (a, b) =>
       rang(a) - rang(b) ||
       String(a.echeance ?? '9999-99-99').localeCompare(String(b.echeance ?? '9999-99-99')),
   );
 }
 
-function squelette() {
+function lireLAdresse(route) {
+  etat.vue = route?.vue ?? null;
+  etat.espaceFiltre = ESPACES.includes(route?.id) ? route.id : null;
+}
+
+const VUES = {
+  caps: 'Les objectifs — le cap',
+  projets: 'Les projets — le comment',
+  periodes: 'Ce que tu attends des mois qui viennent',
+};
+
+function etageCaps() {
   const caps = capsAffiches();
 
   return `
-    <h1>Le cap</h1>
-
     <div class="cap-galerie">
       ${caps
         .map((objectif) =>
@@ -1181,11 +1212,26 @@ function squelette() {
       caps.length
         ? ''
         : `<p class="cap-vide">Aucun cap encore. Le premier dira où tu vas.</p>`
-    }
+    }`;
+}
 
-    ${galerieProjets()}
+function squelette() {
+  const vue = etat.vue in VUES ? etat.vue : null;
+  const de = etat.espaceFiltre ? ` — ${NOMS_ESPACES[etat.espaceFiltre]}` : '';
 
-    ${bandePeriodes()}
+  // Une vue seule porte son propre titre : sans lui, « Les projets » ouvrirait
+  // sur une galerie sans nom. Les trois ensemble gardent « Le cap », et ce sont
+  // les titres d'étage qui les séparent.
+  const titre = `<h1>${vue ? VUES[vue] + de : 'Général' + de}</h1>`;
+
+  const etages = vue
+    ? { caps: etageCaps(), projets: galerieProjets(true), periodes: bandePeriodes(true) }[vue]
+    : `${etageCaps()}\n${galerieProjets()}\n${bandePeriodes()}`;
+
+  return `
+    ${titre}
+
+    ${etages}
 
     ${etat.message ? `<p class="message-erreur">${echapper(etat.message)}</p>` : ''}
 
@@ -1195,7 +1241,9 @@ function squelette() {
 // --- L'espace -----------------------------------------------------------------
 
 export default {
-  async monter(section) {
+  async monter(section, route) {
+    lireLAdresse(route);
+
     // Les menus dessinés des formulaires ne sont branchés nulle part ailleurs :
     // cet espace n'a pas de tuile de capture, il pose donc son propre écouteur —
     // comme le site du FCH, et pour la même raison.
@@ -1254,12 +1302,20 @@ export default {
 
     this.rafraichir = charger;
 
+    // Changer de vue ne relit rien : les trois étages viennent du même
+    // chargement, seule change la part qu'on en montre.
+    this.naviguer = (nouvelle) => {
+      const avant = `${etat.vue}/${etat.espaceFiltre}`;
+      lireLAdresse(nouvelle);
+      if (`${etat.vue}/${etat.espaceFiltre}` !== avant) rendre();
+    };
+
     try {
       await charger();
     } catch (erreur) {
       console.error("Chargement de l'espace Le cap impossible", erreur);
       section.innerHTML = `
-        <h1>Le cap</h1>
+        <h1>Général</h1>
         <p class="vide">Les données n'ont pas pu être chargées.</p>
         <button type="button" class="bouton-secondaire" data-action="reessayer">Réessayer</button>`;
       section

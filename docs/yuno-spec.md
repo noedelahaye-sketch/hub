@@ -122,15 +122,15 @@ sous le seuil pour un texte, ce que les numéros d'étape sont.
 
 | Rôle | Valeur | Note |
 |---|---|---|
-| Fond (mode sombre) | `#181818` | Le fond du logo. |
-| Accent (sombre) | `#e8b000` | Le doré du Y, dominant. |
-| Accent (clair) | `#8f6c00` | Le même doré assombri en ocre. |
+| Fond | `#181818` | Le fond du logo. |
+| Accent | `#e8b000` | Le doré du Y, dominant. |
 | Texte fort | `#ffffff` | Le blanc du logotype. |
 
-Règle de contraste : le doré pur vit sur fond sombre ; en mode clair il
-s'assombrit en ocre — un doré clair sur fond blanc ne se lit pas. Le logo
-(avec la Belhanda manuscrite) s'affiche en tête de l'espace, rond, zoomé sur
-le mot.
+Règle de contraste : le doré pur vit sur fond sombre — et il n'a plus besoin
+d'autre chose. **Le hub est sombre en permanence depuis le 28 août 2026**
+(décision de Noé) ; l'ocre `#8f6c00`, qui servait au doré en thème clair, a
+disparu avec lui. Le logo (avec la Belhanda manuscrite) s'affiche en tête de
+l'espace, rond, zoomé sur le mot.
 
 **Typographie** — l'identité Yuno : **Canela Deck** pour les titres, **Gilroy**
 pour le texte, la Belhanda restant dans le logo, en image.
@@ -331,7 +331,12 @@ de *sortir du hub* en entrant chez Yuno :
 - **`#photo` — la page Yuno du hub.** Un tableau de bord réduit : le cap en
   lecture, l'aperçu création, une capture d'idée au vol, les victoires, et la
   porte « Entrer sur le site Yuno ». Habillage du hub conservé. Rien ne s'y
-  gère.
+  gère. *(Elle n'a plus d'onglet depuis le 28 août 2026 : on y entre par le
+  grand titre « Yuno » du menu, qui donne aussi ses objectifs, ses projets, ses
+  tâches et la porte du site. **Le menu ne perce pas le site** — ni le Carnet,
+  ni le Réseau, ni le Vivier n'y figurent : « si je clique sur le hub ce n'est
+  pas pour atteindre le site Yuno et tout ce qu'il contient » (Noé). Voir
+  `CLAUDE.md`, « La navigation a deux rangs ».)*
 - **`#yuno` — le site Yuno.** Tout l'habillage du hub disparaît : ni logo Hub,
   ni onglets, ni autres espaces. **Plus d'en-tête du tout depuis le 14 août
   2026** (demande de Noé) : la signature (`img/yuno-signature.png`) occupait le

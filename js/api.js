@@ -128,6 +128,19 @@ export async function victoiresDeLEspace(espace, limite = 10, { sauf = null } = 
   );
 }
 
+// TOUTES les victoires, pour « Le chemin » (28 août 2026). Sans limite : c'est
+// la seule page dont l'objet est de tout montrer, et le fil s'arrête de lui-même
+// à la première — il n'y en aura jamais des milliers.
+export async function victoiresToutes() {
+  return verifier(
+    await client
+      .from('victoires')
+      .select('*')
+      .order('date', { ascending: false })
+      .order('created_at', { ascending: false }),
+  );
+}
+
 export async function supprimerVictoire(id) {
   const { error } = await client.from('victoires').delete().eq('id', id);
   if (error) throw error;

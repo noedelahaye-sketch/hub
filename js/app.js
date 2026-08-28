@@ -9,6 +9,7 @@ import {
 } from './api.js';
 import { centrerActif, ongletCalendrier } from './calendrier-commun.js';
 import { viderLesCaches } from './cache-session.js';
+import { monterLeMenu } from './menu.js';
 import dashboard from './dashboard.js';
 import taches from './taches.js';
 import objectifs from './objectifs.js';
@@ -19,6 +20,8 @@ import yuno from './yuno.js';
 import fch from './fch.js';
 import hermitage from './hermitage.js';
 import perso from './perso.js';
+import chemin from './chemin.js';
+import temps from './temps.js';
 
 // `photo` est la page Yuno du hub ; `yuno` est le site Yuno, qui masque tout
 // l'habillage du hub. Deux adresses, deux sensations, une seule application.
@@ -26,6 +29,7 @@ import perso from './perso.js';
 // on y vient par la porte du bloc « Tes objectifs », et rarement.
 const espaces = {
   dashboard, taches, objectifs, calendrier, formation, photo, yuno, fch, hermitage, perso,
+  chemin, temps,
 };
 
 // Trois pages d'entrée pour trois applications sur l'écran d'accueil :
@@ -49,53 +53,15 @@ const ESPACE_PAR_DEFAUT = ENTREE === 'hub' ? 'dashboard' : ENTREE;
 //
 // Chaque signe garde son nom en `title` et en `aria-label` : muet pour l'œil ne
 // doit pas vouloir dire muet pour un lecteur d'écran.
-const SIGNES_NAV = {
-  // Une boussole : « Le cap ». C'est l'écran où l'on lève la tête.
-  objectifs: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
-    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <circle cx="12" cy="12" r="9"></circle>
-    <path d="M15.5 8.5 13.6 13.6 8.5 15.5l1.9-5.1z"></path></svg>`,
-  // Le chapeau de diplôme : la formation est le seul espace qui se valide.
-  formation: `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
-    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M12 4 2.5 8.5 12 13l9.5-4.5z"></path>
-    <path d="M6.5 10.7V16c0 1.7 2.5 3 5.5 3s5.5-1.3 5.5-3v-5.3"></path>
-    <path d="M21.5 8.5v5"></path></svg>`,
-};
-
-// Les deux marques, en pochoir : le fichier donne le dessin, l'onglet donne
-// l'encre. La classe porte le nom de la MARQUE et non celui de l'espace — la
-// clé de Yuno est `photo` en base, et une feuille de style qui parlerait de
-// `photo` pour dessiner un « Yuno » ferait perdre dix minutes à qui la relit.
-const MARQUES_NAV = {
-  fch: 'fch',
-  photo: 'yuno',
-};
-
 const NOMS_NAV = {
   dashboard: 'Accueil',
-  taches: 'Tâches',
   perso: 'Perso',
-  objectifs: 'Le cap',
-  formation: 'Formation',
-  fch: 'FC Hermitage',
-  photo: 'Yuno',
 };
 
-// Les trois premiers gardent leur mot.
+// Les deux vues du quotidien gardent leur mot : elles se visent mieux qu'un
+// signe à reconnaître. Le calendrier a le sien (`ongletCalendrier`).
 function ongletMot(espace) {
   return `<a href="#${espace}" data-nav="${espace}">${NOMS_NAV[espace]}</a>`;
-}
-
-function ongletSigne(espace) {
-  const nom = NOMS_NAV[espace];
-  const marque = MARQUES_NAV[espace];
-  const dedans = marque
-    ? `<span class="nav-marque nav-marque-${marque}" aria-hidden="true"></span>`
-    : SIGNES_NAV[espace];
-
-  return `<a href="#${espace}" class="nav-icone" data-nav="${espace}"
-    title="${nom}" aria-label="${nom}">${dedans}</a>`;
 }
 
 // --- La coquille -------------------------------------------------------------
@@ -131,19 +97,23 @@ document.body.insertAdjacentHTML(
         <button type="button" id="bouton-deconnexion" class="lien-discret">Se déconnecter</button>
       </header>
 
-      <!-- Tâches en deuxième position, juste après l'accueil (demande de Noé,
-           13 août 2026) : c'est l'écran où l'on va le plus souvent après le
-           check-in, il n'a pas à se gagner au bout de la rangée.
-           Perso suit : le hub existe pour servir Noé, la vie hors espaces ne
-           passe pas après les espaces.
-           Le calendrier, lui, reste tout à droite : ce n'est pas un espace de
-           plus, c'est la vue qui les traverse tous. -->
-      <nav class="navigation navigation-signes" aria-label="Espaces">
-        ${['dashboard', 'taches', 'perso'].map(ongletMot).join('\n        ')}
-        ${ongletSigne('objectifs')}
-        ${ongletCalendrier('#calendrier', false)}
-        ${['fch', 'formation', 'photo'].map(ongletSigne).join('\n        ')}
-      </nav>
+      <!-- LE PREMIER RANG : ce qu'on regarde tous les jours sans avoir décidé
+           de le regarder (28 août 2026, décision de Noé). Tout le reste — les
+           tâches, le cap, les trois bilans d'espace — descend d'un rang, dans
+           le menu : les ouvrir, c'est déjà avoir décidé quelque chose.
+           Perso reste ici ET dans le menu, et c'est voulu : on l'ouvre sans y
+           avoir pensé, mais ses pages doivent s'atteindre comme celles des
+           autres espaces. Le hub existe pour servir Noé — la vie hors espaces
+           ne passe pas après les espaces.
+           Le bouton du menu est posé par monterLeMenu, à côté de la bande et
+           non dedans : la bande défile, une chose en queue de bande n'existe
+           pas. -->
+      <div class="barre-onglets">
+        <nav class="navigation" aria-label="Espaces">
+          ${['dashboard', 'perso'].map(ongletMot).join('\n          ')}
+          ${ongletCalendrier('#calendrier', false)}
+        </nav>
+      </div>
     </div>
 
     <!-- Les id sont préfixés : sans ça, \`#photo\` dans la barre d'adresse ferait
@@ -160,10 +130,12 @@ document.body.insertAdjacentHTML(
   </div>`,
 );
 
+monterLeMenu(document.querySelector('.barre-onglets'));
+
 const TITRES = {
   dashboard: 'Accueil',
   taches: 'Tâches',
-  objectifs: 'Objectifs',
+  objectifs: 'Général',
   calendrier: 'Calendrier',
   formation: 'Formation',
   photo: 'Yuno',
@@ -171,7 +143,22 @@ const TITRES = {
   fch: 'FC Hermitage',
   hermitage: 'FC Hermitage',
   perso: 'Perso',
+  chemin: 'Le chemin',
+  temps: 'Le temps',
 };
+// Une vue a son propre titre quand elle est une page à elle seule : « Le cap »
+// pour les trois étages ensemble, mais « Projets » quand le menu n'a ouvert que
+// celui-là. Sans ça, l'onglet du navigateur mentirait sur ce qu'on regarde.
+const TITRES_VUES = {
+  objectifs: { caps: 'Objectifs', projets: 'Projets', periodes: 'Périodes' },
+  perso: {
+    intentions: 'Intentions',
+    'rendez-vous': 'Rendez-vous',
+    humeur: 'Humeur',
+    victoires: 'Victoires',
+  },
+};
+
 const TITRE_BASE = document.title;
 
 const ecranChargement = document.getElementById('ecran-chargement');
@@ -282,7 +269,8 @@ new MutationObserver(() => {
   // seule — et son élément survit dans le DOM quand on change d'onglet. Sans
   // ce `:not([hidden])`, la page entière restait figée sur tous les autres
   // espaces : plus moyen de faire défiler l'accueil après avoir noté une tâche.
-  if (document.querySelector('.espace:not([hidden]) .capture')) figerLeFond();
+  if (document.querySelector('.espace:not([hidden]) .capture, .menu-voile:not([hidden])'))
+    figerLeFond();
   else libererLeFond();
   // `attributes` en plus de `childList` : changer d'espace ne crée ni ne
   // détruit de tuile, ça bascule un `hidden` — et c'est justement ce qui doit
@@ -338,7 +326,8 @@ function afficherEspace() {
 
   // Sur les sites Yuno et FCH, le titre ne mentionne pas le hub : on en est sorti.
   const TITRES_SITES = { yuno: 'Yuno · yuno_rph', hermitage: 'FC Hermitage' };
-  document.title = TITRES_SITES[nom] ?? `${TITRES[nom]} — ${TITRE_BASE}`;
+  const titre = TITRES_VUES[nom]?.[route.vue] ?? TITRES[nom];
+  document.title = TITRES_SITES[nom] ?? `${titre} — ${TITRE_BASE}`;
 
   for (const section of document.querySelectorAll('.espace')) {
     section.hidden = section.dataset.espace !== nom;
