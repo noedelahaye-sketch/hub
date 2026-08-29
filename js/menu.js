@@ -87,7 +87,17 @@ export const RUBRIQUES = [
     nav: 'perso',
     espace: 'perso',
     adresse: '#perso',
+    // SEPT SOUS-PAGES depuis le 30 août 2026, contre quatre avant. Les trois
+    // neuves — habitudes, bibliothèque, journées — sont assez grandes pour
+    // avoir leur écran : les laisser dans la page perso en aurait fait une
+    // liste de sept blocs qu'on fait défiler, c'est-à-dire l'inverse d'un lieu
+    // où l'on vient se recentrer.
+    //
+    // L'ordre suit ce qu'on ouvre le plus souvent, pas l'ordre d'arrivée.
     pages: [
+      { nom: 'Les habitudes', adresse: '#perso/habitudes' },
+      { nom: 'La bibliothèque', adresse: '#perso/bibliotheque' },
+      { nom: 'Les journées', adresse: '#perso/journee' },
       { nom: 'Les intentions', adresse: '#perso/intentions' },
       { nom: 'Les rendez-vous', adresse: '#perso/rendez-vous' },
       { nom: "L'humeur", adresse: '#perso/humeur' },

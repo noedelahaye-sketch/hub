@@ -210,13 +210,46 @@ d'intention est une tuile de cap à qui l'on a retiré tout ce qui mesure.** La
 page cesse ainsi d'être la seule du hub à parler une autre langue, sans rien
 céder sur la règle qui la fonde.
 
-**La page se lit en deux temps** : la galerie d'intentions prend **toute la
-largeur** — elles sont le cap de perso, ce qu'on relit quand on ne sait plus
-pourquoi on fait les choses —, puis deux colonnes : **ce qui vient** à gauche
-(les rendez-vous), **ce qui est passé** à droite (l'humeur, les victoires).
-C'est la seule division qui tienne ici : il n'y a rien à faire dans cet espace,
-donc rien à ranger par urgence. Les quatre blocs empilés pleine largeur
-laissaient les deux tiers de l'écran vides.
+### `#perso` EST UN TABLEAU DE BORD, pas une page qu'on fait défiler (30 août 2026)
+
+**La demande de Noé** : « choisir ce qui doit rester dans la page perso et sous
+quelle forme — les critères sont un peu les mêmes que pour la page d'accueil,
+des données qui évoluent sur lesquelles on a une action à faire. »
+
+**Ce critère trie dans les deux sens, et c'est ce qui le rend utile** :
+
+| Restent | Partent, chacune vers sa page |
+|---|---|
+| l'humeur du jour (elle change, elle se répond d'un doigt) | les intentions |
+| les habitudes du jour (elles se cochent) | la bibliothèque entière |
+| le livre en cours (des pages se notent) | l'historique des journées |
+| le prochain rendez-vous · le mot du jour | la courbe des 30 jours, les victoires |
+
+C'est **le même mouvement que l'accueil le 29 août**, quand les objectifs l'ont
+quitté : ils avaient leur page à deux gestes, et l'accueil répond à « qu'est-ce
+que je fais maintenant », pas à « où je vais ». Les intentions sont le cap de
+perso ; elles partent pour la même raison.
+
+**MAIS UNE INTENTION REVIENT, RELUE** — une seule, celle du jour, en pied de
+page. C'est ce qui distingue ce tableau de bord d'un second accueil : on vient
+ici pour se recentrer, et une phrase qu'on relit vaut mieux qu'une liste qu'on
+gère. Elle vient de `relecture` (js/orientation.js), la même qui ferme une
+journée.
+
+**SEPT SOUS-PAGES dans le menu**, contre quatre avant : les habitudes, la
+bibliothèque et les journées sont assez grandes pour avoir leur écran. Les
+laisser dans la page en aurait fait une liste de sept blocs qu'on fait défiler —
+l'inverse d'un lieu où l'on vient se recentrer.
+
+**Ce que `#perso` seul ne montre plus** : les six autres blocs. Ils existent
+toujours dans la même page et se donnent un à un par le menu — ni second écran,
+ni second chargement, et les écouteurs posés sur la section survivent.
+
+> *Ce que cette structure a remplacé.* Du 29 au 30 août, `#perso` montrait tout
+> à la suite : la galerie d'intentions pleine largeur, puis deux colonnes — ce
+> qui vient à gauche, ce qui est passé à droite. C'était juste tant qu'il n'y
+> avait que quatre blocs ; les habitudes, la bibliothèque et les journées l'ont
+> fait passer à sept, et la page est devenue un défilement.
 
 Ce que la refonte a corrigé, et qui n'était pas que de la forme :
 - **une intention se MODIFIE.** Elle ne portait qu'une croix nue : on ne pouvait

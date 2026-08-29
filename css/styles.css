@@ -4571,6 +4571,74 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   border-color: var(--teinte, var(--accent));
 }
 
+/* --- Le tableau de bord perso (30 août 2026) ---------------------------------
+   Demande de Noé : « les critères sont un peu les mêmes que pour la page
+   d'accueil, des données qui évoluent sur lesquelles on a une action à faire ».
+
+   Ce critère trie dans les deux sens. Restent l'humeur, les habitudes du jour,
+   le livre en cours et le mot du jour — tout ce qui se coche, se note ou se
+   répond. Partent les intentions, la bibliothèque entière, l'historique des
+   journées, la courbe des trente jours : elles ont chacune leur page.
+
+   C'est le même mouvement que l'accueil quand les objectifs l'ont quitté. Mais
+   UNE intention revient en pied, relue : c'est ce qui distingue cette page d'un
+   second accueil — on vient ici pour se recentrer. */
+.perso-tableau { display: block; }
+
+.perso-tuile { margin-bottom: var(--espace-24); }
+
+/* L'élan tient dans la pastille, en petit : il dit que l'habitude vit, sans
+   ramener ici le tableau de bord qui vit sur sa propre page. */
+.pastille-elan {
+  margin-left: var(--espace-8);
+  font-size: 0.625rem;
+  opacity: 0.7;
+}
+
+.perso-lecture { margin-bottom: var(--espace-16); }
+
+.perso-lecture-titre {
+  display: block;
+  margin-bottom: var(--espace-8);
+  font-size: 0.9375rem;
+}
+
+/* L'INTENTION RELUE ferme la page, en voix éditoriale : c'est une phrase qu'on
+   relit, pas une donnée qu'on consulte. Elle ne se coche pas, ne se compte pas,
+   et c'est exactement pour ça qu'elle est là. */
+.perso-relue {
+  margin: var(--espace-24) 0 0;
+  padding: var(--espace-16);
+  background: var(--fond-doux);
+  border-radius: var(--rayon-carte);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--texte-discret);
+}
+
+.perso-relue b { font-weight: 600; color: var(--texte); }
+.perso-relue .discret { display: block; margin-top: var(--espace-4); font-size: 0.8125rem; }
+
+/* Les portes vers les quatre pages. En pied, discrètes : on ne les cherche
+   qu'une fois qu'on a fait ce qu'on avait à faire. */
+.perso-portes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-8);
+  margin-top: var(--espace-24);
+}
+
+.perso-porte {
+  padding: var(--espace-8) var(--espace-16);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+  color: var(--texte-discret);
+  font-size: 0.8125rem;
+  text-decoration: none;
+}
+
+.perso-porte:hover { border-color: var(--accent); color: var(--accent); }
+
 /* --- La page du jour ---------------------------------------------------------
    Elle se lit plus qu'elle ne se remplit : le hub connaît déjà tout ce qu'elle
    montre. Une seule chose s'y écrit, « ce qui a compté », parce que c'est la

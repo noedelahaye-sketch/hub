@@ -399,6 +399,156 @@ export function construireBibliotheque(livres, seances) {
     ${ajout}`;
 }
 
+// LE TABLEAU DE BORD PERSO (30 août 2026, demande de Noé) : « choisir ce qui
+// doit rester dans la page perso et sous quelle forme — les critères sont un
+// peu les mêmes que pour la page d'accueil, des données qui évoluent sur
+// lesquelles on a une action à faire ».
+//
+// CE CRITÈRE TRIE TOUT, et il tranche dans les deux sens :
+//
+//   RESTENT   l'humeur (elle change chaque jour, elle se répond d'un doigt),
+//             les habitudes du jour (elles se cochent), le livre en cours (des
+//             pages se notent), le prochain rendez-vous, le mot du jour.
+//   PARTENT   les intentions (rien n'y bouge, rien ne s'y coche — on les relit),
+//             la bibliothèque entière, l'historique des journées, la courbe des
+//             trente jours, la liste des victoires. Toutes ont leur page.
+//
+// C'est le même mouvement que l'accueil le 29 août, quand les objectifs l'ont
+// quitté : ils avaient leur page à deux gestes, et l'accueil répond à « qu'est-ce
+// que je fais maintenant », pas à « où je vais ». Les intentions sont le cap de
+// perso — elles partent pour la même raison.
+//
+// MAIS UNE CHOSE LES SUIT : l'intention RELUE ferme la page, une seule, celle du
+// jour. C'est ce qui distingue ce tableau de bord d'un second accueil — on vient
+// ici pour se recentrer, et une phrase qu'on relit vaut mieux qu'une liste qu'on
+// gère. Elle vient de `relecture` (js/orientation.js), la même qui ferme une
+// journée.
+function porte(adresse, mot) {
+  return `<a class="perso-porte" href="${adresse}">${mot}</a>`;
+}
+
+export function construireTableauPerso(donnees) {
+  const { humeurDuJour, etatsHabitudes = [], livre, seances = [], rendezVous = [], relue, mot, jour } =
+    donnees;
+
+  const avancee = livre ? avanceeDuLivre(livre, seances) : null;
+
+  return `
+    <div class="perso-tableau">
+      ${construireHumeurDuJour(humeurDuJour)}
+
+      <div class="tuile-jour perso-tuile">
+        ${
+          etatsHabitudes.length
+            ? `<h3 class="jour-groupe">Tes habitudes</h3>
+               <div class="habitudes-bande">
+                 ${etatsHabitudes
+                   .map(({ habitude, elan, faitAujourdhui }) => {
+                     const couleur = TEINTES_FAMILLE[habitude.famille] ?? 'var(--accent)';
+                     return `
+                     <button type="button" class="habitude-pastille${faitAujourdhui ? ' faite' : ''}"
+                       data-faire="${echapper(habitude.id)}" aria-pressed="${faitAujourdhui}"
+                       style="--teinte: ${couleur}">${echapper(habitude.nom)}${
+                       // Un élan à zéro ne s'affiche pas : c'est le cas de
+                       // toute habitude neuve, et cinq zéros pour accueillir
+                       // quelqu'un qui commence est le contraire de l'effet
+                       // voulu. Il apparaît au premier point gagné.
+                       elan ? `<span class="pastille-elan">${elan}</span>` : ''
+                     }</button>`;
+                   })
+                   .join('')}
+               </div>`
+            : ''
+        }
+
+        ${
+          livre
+            ? `<h3 class="jour-groupe">Ta lecture</h3>
+               <div class="perso-lecture">
+                 <span class="perso-lecture-titre">${echapper(livre.titre)}</span>
+                 ${
+                   avancee.part === null
+                     ? ''
+                     : `<span class="livre-jauge"><i style="width:${Math.round(
+                         avancee.part * 100,
+                       )}%"></i></span>`
+                 }
+                 <span class="livre-ligne">
+                   <span class="discret">${
+                     livre.pages
+                       ? `${avancee.lues} sur ${livre.pages} pages`
+                       : pluriel(avancee.lues, 'page')
+                   }</span>
+                   <span class="livre-pas">
+                     ${PAS_DE_PAGES.map(
+                       (pas) =>
+                         `<button type="button" class="livre-pas-bouton" data-pages="${pas}"
+                           data-livre-pages="${echapper(livre.id)}">+${pas}</button>`,
+                     ).join('')}
+                   </span>
+                 </span>
+               </div>`
+            : ''
+        }
+
+        <h3 class="jour-groupe">Ce qui a compté aujourd'hui</h3>
+        <textarea class="jour-mot-champ" data-jour-mot="${echapper(jour)}" rows="2"
+          placeholder="une ligne, si tu veux">${echapper(mot ?? '')}</textarea>
+      </div>
+
+      ${
+        rendezVous.length
+          ? `<section class="bloc">
+               <h2>Ce qui vient</h2>
+               <ul class="perso-lignes">
+                 ${rendezVous
+                   .slice(0, 3)
+                   .map(
+                     (rdv) => `
+                   <li class="perso-ligne">
+                     <span class="perso-ligne-corps">
+                       <span class="perso-ligne-titre">${echapper(rdv.titre)}</span>
+                       <span class="perso-ligne-service">${echapper(
+                         [
+                           momentLisible(new Date(rdv.date_debut)),
+                           rdv.lieu ?? '',
+                           FAMILLES_PERSO[rdv.famille] ?? '',
+                         ]
+                           .filter(Boolean)
+                           .join(' · '),
+                       )}</span>
+                     </span>
+                   </li>`,
+                   )
+                   .join('')}
+               </ul>
+             </section>`
+          : ''
+      }
+
+      ${
+        relue
+          ? `<p class="perso-relue">${
+              relue.quoi === 'victoire'
+                ? `${echapper(relue.mot)}, tu notais <b>${echapper(relue.victoire.titre)}</b>.`
+                : `<b>${echapper(relue.intention.titre)}</b>${
+                    relue.intention.pourquoi
+                      ? `<span class="discret"> ${echapper(relue.intention.pourquoi)}</span>`
+                      : ''
+                  }`
+            }</p>`
+          : ''
+      }
+
+      <nav class="perso-portes">
+        ${porte('#perso/habitudes', 'Tes habitudes')}
+        ${porte('#perso/bibliotheque', 'Ta bibliothèque')}
+        ${porte('#perso/journee', 'Tes journées')}
+        ${porte('#perso/intentions', 'Tes intentions')}
+      </nav>
+    </div>`;
+}
+
 // LA PAGE DU JOUR (29 août 2026, demande de Noé) : « un outil qui me permet de
 // faire un bilan quotidien, avec une page par jour qui est construite et sur
 // laquelle on peut revenir ».
@@ -780,6 +930,12 @@ function squelette() {
     <h1 data-titre>Perso</h1>
     <p class="discret sous-titre" data-sous-titre>La vie hors espaces — sport, sorties, temps pour toi.</p>
 
+    <!-- LE TABLEAU DE BORD : ce qu'on voit sans avoir rien demandé. Il ne porte
+         que ce qui évolue et sur quoi on agit — voir construireTableauPerso.
+         Les six autres blocs sont des VUES : le menu les offre une à une, et
+         l'adresse #perso seule ne montre que celui-ci. -->
+    <div data-bloc="tableau" data-vue="tableau"></div>
+
     <section class="bloc" data-vue="intentions">
       <h2>Intentions</h2>
       <div data-bloc="intentions"><p class="vide">…</p></div>
@@ -985,14 +1141,19 @@ function appliquerLaVue(section, route) {
 
   section.querySelector('[data-titre]').textContent = titre;
   section.querySelector('[data-sous-titre]').textContent = sous;
-  for (const bloc of section.querySelectorAll('.bloc[data-vue]')) {
-    bloc.hidden = Boolean(vue) && bloc.dataset.vue !== vue;
+  // `#perso` SEUL NE MONTRE QUE LE TABLEAU DE BORD (30 août 2026). Avant, il
+  // montrait les sept blocs à la suite — une page qu'on faisait défiler, donc
+  // l'inverse d'un lieu où l'on vient se recentrer. Chaque bloc a désormais sa
+  // page dans le menu, et celle-ci ne garde que ce qui bouge.
+  const montre = vue ?? 'tableau';
+  for (const bloc of section.querySelectorAll('[data-vue]')) {
+    bloc.hidden = bloc.dataset.vue !== montre;
     // UNE VUE SEULE NE RÉPÈTE PAS SON NOM. Le grand titre dit déjà « Tes
     // habitudes » ; le libellé du bloc juste dessous le disait une seconde
     // fois. C'est le défaut que `#objectifs` a corrigé le 28 août — trois noms
     // pour une page est un défaut, pas un choix.
     const nom = bloc.querySelector('h2');
-    if (nom) nom.hidden = Boolean(vue) && bloc.dataset.vue === vue;
+    if (nom) nom.hidden = true;
   }
 
   // La colonne de droite se retire quand elle ne porte plus rien : sans ça,
@@ -1000,7 +1161,11 @@ function appliquerLaVue(section, route) {
   // et le bloc restant n'occuperait que la moitié de l'écran pour rien.
   const colonne = section.querySelector('.perso-colonne');
   if (colonne) {
-    colonne.hidden = [...colonne.querySelectorAll('.bloc[data-vue]')].every((b) => b.hidden);
+    colonne.hidden = [...colonne.querySelectorAll('[data-vue]')].every((b) => b.hidden);
+  }
+  const colonnes = section.querySelector('.perso-colonnes');
+  if (colonnes) {
+    colonnes.hidden = [...colonnes.querySelectorAll('[data-vue]')].every((b) => b.hidden);
   }
 }
 
@@ -1080,6 +1245,23 @@ export default {
       }
     }
 
+    const rendreTableau = () => {
+      const jour = versDateISO();
+      bloc('tableau').innerHTML = construireTableauPerso({
+        jour,
+        humeurDuJour: etat.humeurDuJour,
+        etatsHabitudes: etatDesHabitudes({ habitudes: etat.habitudes, faits: etat.faits }),
+        livre: livreEnCours(etat.livres, etat.seances),
+        seances: etat.seances,
+        rendezVous: etat.evenements,
+        mot: journeesVues.get(jour)?.mot ?? null,
+        relue: relecture(
+          { victoires: etat.victoires, intentions: etat.intentions },
+          new Date(),
+        ),
+      });
+    };
+
     const rendreBibliotheque = () => {
       bloc('bibliotheque').innerHTML = construireBibliotheque(etat.livres, etat.seances);
     };
@@ -1096,8 +1278,8 @@ export default {
     // Quelle liste redessiner après un geste : la clé du menu discret porte
     // déjà la forme, il n'y a donc rien à deviner.
     const RENDUS = {
-      habitude: () => rendreHabitudes(),
-      livre: () => rendreBibliotheque(),
+      habitude: () => { rendreHabitudes(); rendreTableau(); },
+      livre: () => { rendreBibliotheque(); rendreTableau(); },
       intention: () => rendreIntentions(),
       'rendez-vous': () => rendreEvenements(),
       victoire: () => rendreVictoires(),
@@ -1128,7 +1310,11 @@ export default {
       });
       rendreHabitudes();
       rendreBibliotheque();
-      ouvrirLaJournee(vueEtat.jour ?? versDateISO());
+      rendreTableau();
+      // La journée d'aujourd'hui nourrit AUSSI le tableau de bord : c'est de là
+      // que vient le mot du jour.
+      await ouvrirLaJournee(vueEtat.jour ?? versDateISO());
+      rendreTableau();
       rendreIntentions();
       rendreVictoires();
       rendreEvenements();
