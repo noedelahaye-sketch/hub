@@ -720,7 +720,7 @@ export function propositionsDuMatin(donnees = {}, jour = new Date()) {
 //
 // La préparation naît d'un modèle qu'il a posé, le tri d'une case qu'il a
 // cochée : ce sont des travaux attendus, donc de vraies tâches (voir
-// `js/api.js`, `poserLesTachesDEvenement`). Personne en revanche ne déclare
+// `js/api.js`, `poserCeQuUnEvenementFaitNaitre`). Personne en revanche ne déclare
 // qu'un match mérite un carnet ni qu'une réunion mérite un bilan — c'est une
 // QUESTION, et une question se pose, elle ne se coche pas.
 //

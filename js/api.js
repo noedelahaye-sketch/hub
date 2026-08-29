@@ -2088,6 +2088,11 @@ export const TRI_TOMBE_A = 1;
 // match d'il y a trois semaines, c'est fabriquer du retard, pas du travail.
 export const TRI_REMONTE_A = 15;
 
+// LE POST QUI SUIT UN MATCH (29 août 2026, demande de Noé). Même jour que le
+// tri, et ce n'est pas un hasard : c'est le lendemain du match que les images
+// existent et que le match intéresse encore quelqu'un.
+export const POST_TOMBE_A = 1;
+
 const SANS_TACHE_AUTO = ['perso', 'formation'];
 
 // Une réunion du club, une sortie de Yuno : les deux natures qui ont une
@@ -2100,7 +2105,21 @@ function seDeclarePreparable(evenement) {
   return evenement.espace === 'fch' && Boolean(evenement.reunion_objet);
 }
 
-export async function poserLesTachesDEvenement(jour = new Date()) {
+// UN MATCH DE YUNO, ET LUI SEUL (29 août 2026, demande de Noé : « après chaque
+// évènement match yuno, il faut programmer un post sur le match à J+1 »).
+//
+// La DÉCLARATION est la pastille « match » de la tuile de capture, comme
+// « photos » déclare le tri : le hub ne devine pas qu'une sortie est un match —
+// un concert et une séance n'appellent pas le même post, et lui seul le sait.
+//
+// Ni le FCH, ni la formation, ni le perso : le club a son propre calendrier
+// éditorial, nourri par sa chaîne à trois états, et rien n'a demandé qu'un
+// entraînement y fasse naître une parution.
+function meriteUnPostDeMatch(evenement) {
+  return evenement.espace === 'photo' && evenement.type_moment === 'match';
+}
+
+export async function poserCeQuUnEvenementFaitNaitre(jour = new Date()) {
   const aujourdhui = versDateISO(jour);
   const horizon = versDateISO(ajouterJours(jour, PREPARATION_MONTE_A));
   const plancher = versDateISO(ajouterJours(jour, -TRI_REMONTE_A));
@@ -2108,7 +2127,7 @@ export async function poserLesTachesDEvenement(jour = new Date()) {
   const evenements = verifier(
     await client
       .from('evenements')
-      .select('id, titre, espace, date_debut, reunion_objet, avec_photos')
+      .select('id, titre, espace, date_debut, reunion_objet, avec_photos, type_moment, projet_id')
       .gte('date_debut', `${plancher}T00:00:00`)
       .lte('date_debut', `${horizon}T23:59:59`),
   );
@@ -2121,9 +2140,24 @@ export async function poserLesTachesDEvenement(jour = new Date()) {
       .in('evenement_id', evenements.map((evenement) => evenement.id))
       .not('origine', 'is', null),
   );
-  const deja = new Set(dejaPosees.map((t) => `${t.evenement_id}:${t.origine}`));
+  // Ce qui est déjà né de ces événements, tables confondues : le rattrapage se
+  // rejoue à chaque ouverture, et c'est l'index unique de chaque table qui le
+  // rend inoffensif. Une seule clé pour les deux — un événement ne peut pas
+  // avoir une tâche et une parution de même origine.
+  const dejaPubliees = verifier(
+    await client
+      .from('publications')
+      .select('evenement_id, origine')
+      .in('evenement_id', evenements.map((evenement) => evenement.id))
+      .not('origine', 'is', null),
+  );
+
+  const dejaNees = new Set(
+    [...dejaPosees, ...dejaPubliees].map((ligne) => `${ligne.evenement_id}:${ligne.origine}`),
+  );
 
   const aPoser = [];
+  const postsAPoser = [];
   for (const evenement of evenements) {
     const jourDe = versDateISO(new Date(evenement.date_debut));
 
@@ -2133,7 +2167,7 @@ export async function poserLesTachesDEvenement(jour = new Date()) {
       seDeclarePreparable(evenement) &&
       jourDe >= aujourdhui &&
       jourDe <= horizon &&
-      !deja.has(`${evenement.id}:preparation`)
+      !dejaNees.has(`${evenement.id}:preparation`)
     ) {
       aPoser.push({
         espace: evenement.espace,
@@ -2156,7 +2190,7 @@ export async function poserLesTachesDEvenement(jour = new Date()) {
       !SANS_TACHE_AUTO.includes(evenement.espace) &&
       jourDe < aujourdhui &&
       jourDe >= plancher &&
-      !deja.has(`${evenement.id}:tri`)
+      !dejaNees.has(`${evenement.id}:tri`)
     ) {
       aPoser.push({
         espace: evenement.espace,
@@ -2168,9 +2202,52 @@ export async function poserLesTachesDEvenement(jour = new Date()) {
         origine: 'tri',
       });
     }
+
+    // LE POST DU MATCH, le lendemain. La troisième chose que le hub pose, et la
+    // première qui ne soit pas une tâche : ce n'est pas du travail à cocher,
+    // c'est une PARUTION, et une parution vit au calendrier éditorial avec son
+    // réseau, son format et son cycle d'états.
+    //
+    // APRÈS COUP, comme le tri et non comme la préparation. Un post posé
+    // d'avance sur un match où Noé n'ira pas est une promesse fausse, et le hub
+    // a déjà tranché ce genre de question — `vecu` ne se pose jamais par le
+    // temps qui passe. Conséquence assumée : la parution naît le jour même où
+    // elle est prévue. Elle naît en « idée », donc rien ne part sans lui.
+    if (
+      meriteUnPostDeMatch(evenement) &&
+      jourDe < aujourdhui &&
+      jourDe >= plancher &&
+      !dejaNees.has(`${evenement.id}:match`)
+    ) {
+      postsAPoser.push({
+        espace: evenement.espace,
+        titre: `Post ${evenement.titre}`,
+        reseau: 'instagram',
+        // Carrousel, et non « post » : c'est le format qui reste depuis le
+        // 15 août, et un match donne plusieurs images par nature.
+        format: 'carrousel',
+        // Le premier état du cycle Yuno : le hub programme la parution, il
+        // n'écrit pas à la place de Noé.
+        statut: 'idee',
+        date_prevue: versDateISO(ajouterJours(new Date(evenement.date_debut), POST_TOMBE_A)),
+        // Le match sert peut-être un projet ; sa parution sert le même.
+        projet_id: evenement.projet_id ?? null,
+        evenement_id: evenement.id,
+        origine: 'match',
+      });
+    }
   }
 
-  if (!aPoser.length) return 0;
+  if (postsAPoser.length) {
+    verifier(
+      await client
+        .from('publications')
+        .upsert(postsAPoser, { onConflict: 'evenement_id,origine', ignoreDuplicates: true })
+        .select('id'),
+    );
+  }
+
+  if (!aPoser.length) return postsAPoser.length;
 
   // `ignoreDuplicates` : deux onglets ouverts le même matin poseraient la même
   // ligne deux fois. L'index unique refuse la seconde, et on ne veut pas que ce
@@ -2182,5 +2259,5 @@ export async function poserLesTachesDEvenement(jour = new Date()) {
       .select('id'),
   );
 
-  return aPoser.length;
+  return aPoser.length + postsAPoser.length;
 }

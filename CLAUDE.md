@@ -199,6 +199,49 @@ répond à « où j'en suis » — c'est une question qu'on se pose, pas un réf
 
 L'espace perso affiche uniquement : ses intentions, ses prochains rendez-vous avec soi-même, ses victoires, et la courbe d'humeur des 30 derniers jours.
 
+### Sa forme, refondue le 29 août 2026
+
+**LE PRINCIPE, et il commande tout le reste** : perso emprunte la **grammaire**
+des écrans récents — la galerie de tuiles comparables, le titre en Clash
+Display, le menu discret à trois points, la tuile volante, l'écriture optimiste
+— et refuse leur **mesure**. Pas de jauge, pas de marches, pas de pointillé, pas
+de pastille d'état, pas de compte, pas de date d'échéance. **Une tuile
+d'intention est une tuile de cap à qui l'on a retiré tout ce qui mesure.** La
+page cesse ainsi d'être la seule du hub à parler une autre langue, sans rien
+céder sur la règle qui la fonde.
+
+**La page se lit en deux temps** : la galerie d'intentions prend **toute la
+largeur** — elles sont le cap de perso, ce qu'on relit quand on ne sait plus
+pourquoi on fait les choses —, puis deux colonnes : **ce qui vient** à gauche
+(les rendez-vous), **ce qui est passé** à droite (l'humeur, les victoires).
+C'est la seule division qui tienne ici : il n'y a rien à faire dans cet espace,
+donc rien à ranger par urgence. Les quatre blocs empilés pleine largeur
+laissaient les deux tiers de l'écran vides.
+
+Ce que la refonte a corrigé, et qui n'était pas que de la forme :
+- **une intention se MODIFIE.** Elle ne portait qu'une croix nue : on ne pouvait
+  que la jeter et la réécrire. Le menu discret lui donne « Modifier », et la
+  confirmation sur place au lieu d'une suppression au premier appui.
+- **la FAMILLE d'un rendez-vous s'affiche** (corps · calme · lien · intendance).
+  Le formulaire la demandait depuis le 27 août et la page ne la rendait jamais :
+  une question dont on ne fait rien finit par ne plus recevoir de réponse. Elle
+  ne compte toujours **rien** ici — les planchers qu'elle alimente restent
+  internes.
+- **l'humeur se répond SUR SA PAGE.** Il fallait passer par l'accueil pour
+  ajouter un point à la courbe qu'on regardait. L'échelle est celle de
+  l'accueil, au glyphe près : une question posée de deux façons selon l'écran
+  deviendrait deux questions.
+- **les victoires tiennent en une ligne**, avec leur date à droite comme partout
+  ailleurs — elles occupaient trois hauteurs de texte pour un mot. Une porte
+  s'ouvre vers **« Le chemin »**, qui n'existait pas quand ce bloc a été écrit.
+- **l'écriture est optimiste** (`js/ecriture.js`) : la page attendait
+  l'aller-retour Supabase en désactivant son bouton.
+
+**Ce qui NE change pas, et ne changera pas** : ni jalon, ni barre de
+progression, ni backlog, ni retard, ni tâche affichée. Une tâche perso continue
+de vivre dans l'espace Tâches, au calendrier et dans « Aujourd'hui » — **jamais
+ici**.
+
 ## Connexion Supabase
 
 - Project URL : https://dpkyealzuabwchccdqcv.supabase.co
@@ -255,12 +298,15 @@ La progression d'un objectif = jalons atteints / jalons totaux (calculée côté
 - `origine` text (nullable) CHECK (preparation, tri) — **ce qui l'a fait naître automatiquement**, et `NULL` pour tout ce que Noé a écrit lui-même, qui est le cas ordinaire. Un index unique sur `(evenement_id, origine)` garantit qu'on ne la pose qu'une fois : c'est ce qui rend le rattrapage rejouable à chaque ouverture, comme celui des séries. La ligne s'en sert pour dire d'où elle vient — « Préparation », « Après l'événement » — sans quoi une tâche apparue toute seule ressemblerait à une erreur.
 - `created_at` timestamptz default now()
 
-**LES DEUX TÂCHES QUE LE HUB POSE LUI-MÊME** (29 août 2026, demande de Noé) — `poserLesTachesDEvenement` (js/api.js), appelée par `js/app.js` avant le premier affichage, au même moment et pour la même raison que le rattrapage des séries :
+**LES TROIS CHOSES QUE LE HUB POSE LUI-MÊME** (29 août 2026, demandes de Noé) — `poserCeQuUnEvenementFaitNaitre` (js/api.js), appelée par `js/app.js` avant le premier affichage, au même moment et pour la même raison que le rattrapage des séries :
 
-| Ce qui naît | D'où ça vient | Quand |
-|---|---|---|
-| « Préparer *l'événement* » | une réunion du FCH ou une sortie de Yuno | **J−2** |
-| « Trier les photos de *l'événement* » | `evenements.avec_photos` est coché | **J+1** |
+| Ce qui naît | D'où ça vient | Quand | Forme |
+|---|---|---|---|
+| « Préparer *l'événement* » | une réunion du FCH ou une sortie de Yuno | **J−2** | tâche |
+| « Trier les photos de *l'événement* » | `evenements.avec_photos` est coché | **J+1** | tâche |
+| « Post *le match* » | `evenements.type_moment` vaut `match`, chez Yuno | **J+1** | **publication** |
+
+**La fonction a changé de nom le jour où la troisième est arrivée** : elle ne pose plus seulement des tâches, et un nom qui ment sur ce qu'il fait est un défaut à part entière.
 
 - **Le seuil de 48 h ne s'invente pas** : il existait déjà chez Yuno (`AVANT_MONTE_A`, js/yuno.js, 26 août) pour révéler la phase « Avant » d'une sortie. Il en sort et devient la règle du hub.
 - **Le tri tombe à J+1 et non le soir même** : on ne trie pas en rentrant d'un match à 22 h.
@@ -268,6 +314,12 @@ La progression d'un objectif = jalons atteints / jalons totaux (calculée côté
 - **JAMAIS pour le perso ni la formation.** L'espace perso ne mesure rien : un rendez-vous avec soi ne se prépare pas et ne se trie pas.
 - **Cocher un tri pose `oeuvre_finie`** sur la sortie, chez Yuno seulement — la tâche est le GESTE, la colonne est l'ÉTAT, comme terminer une tâche écrit sa victoire. Sans ce lien, le Carnet de terrain et l'accueil suivraient la même chose chacun de son côté.
 - **Une préparation non faite reste** après l'événement. Le hub ne supprime pas ce que Noé pourrait vouloir voir, et une préparation non faite dit quelque chose de vrai sur cette semaine-là. Il ne la répète simplement pas.
+
+**LE POST DU MATCH est la seule des trois qui ne soit pas une tâche** (29 août 2026, demande de Noé : « après chaque évènement match yuno, il faut programmer un post sur le match à J+1 »). Ce n'est pas du travail à cocher, c'est une **parution** — elle vit au calendrier éditorial avec son réseau, son format et son cycle d'états. La règle ne bouge pas pour autant : la pastille « match » de la tuile de capture est une DÉCLARATION, exactement comme « photos » déclare le tri. Le hub ne devine pas qu'une sortie est un match — un concert et une séance n'appellent pas le même post.
+- **Yuno seulement.** Le club a son propre calendrier éditorial, nourri par sa chaîne à trois états ; rien n'a demandé qu'un entraînement y fasse naître une parution.
+- **Elle naît en `idee`**, sur Instagram et en carrousel : le hub programme la parution, il n'écrit pas à la place de Noé. Le carrousel parce qu'un match donne plusieurs images, et que c'est le format qui reste depuis le 15 août.
+- **Après coup, comme le tri — pas d'avance comme la préparation.** Un post posé sur un match où Noé n'ira pas est une promesse fausse, et le hub a déjà tranché ce genre de question : `vecu` ne se pose jamais par le temps qui passe. **Conséquence assumée : la parution naît le jour même où elle est prévue.** Elle naît en « idée », donc rien ne part sans lui — mais si l'anticipation manque à l'usage, c'est cette décision-là qu'il faut rouvrir, pas la date.
+- **Supprimer un match ne supprime pas son post** : `evenement_id` est en `ON DELETE SET NULL` là où celui des tâches est en CASCADE. Une préparation n'a aucun sens sans son événement ; une publication en a un — elle peut être partie, porter son lien, compter dans un bilan.
 
 **Une tâche répétée se termine comme les autres** (27 août 2026, demande de Noé). Chaque occurrence est une ligne à elle : celle du jour se coche et écrit sa victoire, celle de la semaine prochaine attend son tour. On en supprime une sans toucher aux autres, on en modifie une sans changer la série.
 
@@ -335,6 +387,7 @@ Le calendrier éditorial. **Une idée est une publication sans date** (`date_pre
 
 **Le bilan du FCH voit enfin passer les séries.** Avant, une publication récurrente ne restait jamais en 'publie' : elle avançait sa date et revenait au premier état de son cycle, donc le compteur « publications sorties » l'ignorait. Ce n'est plus le cas.
 - `duree` int (nullable) CHECK (5 à 1440) — **combien de temps la publication a pris**, demandée au moment où elle part (27 août 2026). C'est la charge éditoriale du club : celle que le terrain n'explique pas, et sans laquelle le quota de 20 h ne compte que les entraînements.
+- `evenement_id` uuid REFERENCES evenements(id) ON DELETE **SET NULL** · `origine` text (nullable) CHECK (match) — **le match qui a fait naître cette parution** (29 août 2026), et `NULL` pour tout ce que Noé a écrit lui-même, qui est le cas ordinaire. Un index unique sur `(evenement_id, origine)` rend le rattrapage rejouable à chaque ouverture. **Il est COMPLET et non partiel** : un index partiel semblait plus propre, mais `ON CONFLICT` ne peut pas s'y appuyer sans en reprendre le prédicat (Postgres répond 42P10), et il n'y avait rien à protéger — dans un index unique, NULL n'entre jamais en conflit avec NULL.
 - `rubrique` text — la série récurrente, libre
 - `notes` text · `lien_publie` text
 - `created_at` timestamptz default now()
@@ -606,7 +659,9 @@ jamais vu.
 
 ### LA RÈGLE QUI RANGE TOUT ÇA (formulée par Noé)
 
-> **Ce qu'il a DÉCLARÉ devient une TÂCHE. Ce que le hub DÉDUIT devient un MESSAGE.**
+> **Ce qu'il a DÉCLARÉ devient une VRAIE LIGNE. Ce que le hub DÉDUIT devient un MESSAGE.**
+
+*La règle disait « une TÂCHE » jusqu'au post du match (29 août 2026) : ce qui naît d'une déclaration prend la forme de ce qu'il est — du travail à cocher devient une tâche, une parution devient une publication. Ce qui n'a pas bougé, c'est le partage : une déclaration donne une ligne qu'on manipule, une déduction donne une phrase à laquelle on répond.*
 
 | Ce qui arrive | D'où ça vient | Forme | Quand |
 |---|---|---|---|

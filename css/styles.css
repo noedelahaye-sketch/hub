@@ -4368,32 +4368,151 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 /* Une intention n'est pas une tuile comme les autres : rien ne s'y coche, rien
    ne s'y mesure. Elle se relit. D'où une carte lavée de la couleur de l'espace,
    sans bordure — plus proche d'une page de carnet que d'une ligne de liste. */
-.liste-intentions li {
+/* --- L'espace perso, refondu le 29 août 2026 --------------------------------
+   Demande de Noé : « la forme qui correspond à comment a évolué le site ».
+
+   LE PRINCIPE, et il vaut pour toute la page : perso emprunte la GRAMMAIRE des
+   écrans récents — la galerie de tuiles comparables, le titre en Clash Display,
+   le menu discret à trois points, la tuile volante, l'affichage optimiste — et
+   refuse leur MESURE. Pas de jauge, pas de marches, pas de pointillé, pas de
+   pastille d'état, pas de compte, pas de date.
+
+   C'est exactement là que la parenté s'arrête, et la forme doit le dire d'elle-
+   même : une tuile d'intention est une tuile de cap à qui l'on a retiré tout ce
+   qui mesure. La page cesse d'être la seule du hub à parler une autre langue,
+   sans rien céder sur la règle qui la fonde. */
+.perso-galerie {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  gap: var(--espace-12);
+}
+
+/* Une tuile d'intention n'emprunte pas `.cap-tuile` : elle lui ressemble, mais
+   celle-là est réglée pour une avancée, un pied et une date, et hériter d'un
+   habillage fait pour autre chose est le piège que `.barre` a coûté au hub. */
+.intention-tuile {
+  position: relative;
+  display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: var(--espace-4);
-  padding: var(--espace-16);
-  background: var(--accent-doux);
-  border-color: transparent;
+  gap: var(--espace-8);
+  padding: var(--espace-16) 2.5rem var(--espace-16) var(--espace-16);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
 }
 
+/* Le titre porte seul le poids, comme sur une tuile de cap : Clash Display 700.
+   L'aplat d'accent qui habillait ces cartes est parti — quatre pavés colorés
+   côte à côte pesaient plus que ce qu'ils portaient, et l'accent du hub est
+   clair depuis que le thème est sombre en permanence. */
 .intention-titre {
+  margin: 0;
   font-family: var(--police-titre);
-  font-weight: 600;
+  font-weight: 700;
   font-size: 1.0625rem;
-  line-height: 1.3;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
 }
 
+/* LE POURQUOI RESTE VISIBLE, il ne se déplie pas. Un cap cache le sien parce
+   qu'on vient y lire une avancée ; une intention n'a que ça à donner, et la
+   philosophie dit qu'elle se relit les jours sans motivation. La cacher
+   derrière un geste serait un contresens. */
 .intention-pourquoi {
-  font-size: 0.9375rem;
-  color: color-mix(in srgb, var(--accent) 30%, var(--texte-discret));
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--texte-discret);
 }
 
-.liste-intentions .bouton-retirer {
-  position: absolute;
-  top: var(--espace-8);
-  right: var(--espace-8);
+/* DEUX COLONNES SOUS LES INTENTIONS (29 août 2026, choix de Noé) : ce qui vient
+   à gauche, ce qui est passé à droite. C'est la seule division qui tienne ici —
+   il n'y a rien à faire dans cet espace, donc rien à ranger par urgence.
+
+   `minmax(0, 1fr)` et non `1fr` : un élément de grille garde `min-width: auto`
+   et refuse de descendre sous la largeur minimale de son contenu. C'est le
+   piège rencontré quatre fois entre le 28 et le 29 août — la bande d'onglets,
+   la colonne des projets, les deux colonnes de la journée. */
+.perso-colonnes {
+  display: grid;
+  gap: var(--espace-24);
 }
+
+.perso-colonne { min-width: 0; }
+
+@media (min-width: 60rem) {
+  .perso-colonnes {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--espace-32);
+    align-items: start;
+  }
+}
+
+/* Les rendez-vous et les victoires en LIGNES, pas en cartes : ce qu'on vient y
+   lire tient en une ligne. Ce sont les intentions qui portent des tuiles, parce
+   qu'elles portent une phrase à relire. */
+.perso-lignes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-8);
+}
+
+/* La carte vient de `.bloc li`, qui habille toutes les listes du hub — on ne
+   lutte pas contre : une exception locale à cet habillage serait un réglage de
+   plus à tenir d'accord. Ce qui change ici est la DENSITÉ, pas le cadre : ces
+   lignes faisaient trois hauteurs de texte pour un mot (« Courir »), avec la
+   date perdue en haut à droite. Elle revient sur la même ligne, comme partout
+   ailleurs. */
+.perso-ligne {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: var(--espace-12);
+  padding: var(--espace-12) 2.5rem var(--espace-12) var(--espace-16);
+}
+
+.perso-ligne-corps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.perso-ligne-titre { font-size: 0.9375rem; line-height: 1.3; }
+
+.perso-ligne-service,
+.perso-ligne-date {
+  font-size: 0.75rem;
+  color: var(--texte-discret);
+}
+
+.perso-ligne-date { flex: none; }
+
+.perso-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-16);
+}
+
+/* La question du jour, posée ICI et plus seulement sur l'accueil : c'est la
+   page de l'humeur. L'échelle est celle de l'accueil, au glyphe près — une
+   question posée de deux façons selon l'écran deviendrait deux questions. */
+.humeur-jour {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-12);
+  margin: 0 0 var(--espace-16);
+  font-size: 0.875rem;
+  color: var(--texte-discret);
+}
+
+.humeur-jour-frimousse { font-size: 1.25rem; }
 
 .courbe-humeur {
   display: block;

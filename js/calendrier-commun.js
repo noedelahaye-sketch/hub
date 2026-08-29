@@ -1977,7 +1977,7 @@ export function fenetreCreation({
     // 2026, demande de Noé). C'est une DÉCLARATION, comme « c'est une réunion »
     // — le hub ne peut pas la deviner : une réunion n'est pas une séance, une
     // sortie n'est pas toujours un shooting. Elle fait naître une tâche de tri
-    // à J+1 (`poserLesTachesDEvenement`, js/api.js).
+    // à J+1 (`poserCeQuUnEvenementFaitNaitre`, js/api.js).
     //
     // FCH et Yuno seulement, jamais le perso ni la formation : l'espace perso
     // ne mesure rien, et une sortie avec des amis n'a pas de tri à rendre.

@@ -12,16 +12,15 @@
 import * as api from './api.js';
 // Ces fonctions ne portent aucune mécanique d'espace : ce sont des gabarits
 // de tuiles et de formulaires, réutilisés tels quels.
-import {
-  construireFormulaire,
-  construireVictoires,
-  construireEvenements,
-} from './gabarits.js';
+import { construireFormulaire } from './gabarits.js';
+import { retirerAussitot } from './ecriture.js';
 import {
   versDateISO,
   ajouterJours,
   depuisDateISO,
   echapper,
+  momentLisible,
+  FAMILLES_PERSO,
   FAMILLES_PERSO_CHOIX,
 } from './format.js';
 
@@ -30,47 +29,262 @@ const JOURS_COURBE = 30;
 
 const FRIMOUSSES = { 1: '😔', 2: '😕', 3: '😐', 4: '🙂', 5: '😄' };
 
+// Les mêmes signes que la galerie du cap, dessinés et non écrits : le hub ne
+// mélange pas les glyphes de police et les icônes.
+const SIGNE = {
+  plus: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`,
+  points: `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"
+    aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/>
+    <circle cx="19" cy="12" r="1.6"/></svg>`,
+};
+
+// L'état de l'écran, hors des données : ce qui est déplié, ce qui attend une
+// confirmation, ce que la tuile volante corrige. Même trio que dans
+// `#objectifs` — un écran du hub se tient de la même façon partout.
+const vueEtat = { menu: null, confirme: null, edition: null };
+
 // --- Fabrication du HTML ----------------------------------------------------
 
+// LE MENU DISCRET, celui de toute la page du cap : trois points qui ne se
+// voient qu'au survol et au clavier, et qui gardent leurs 44 px de cible au
+// doigt. Ce qui est irréversible demande confirmation SUR PLACE.
+//
+// Il remplace une croix nue qui supprimait au premier appui. Une intention est
+// une phrase qu'on a mis du temps à écrire — elle mérite le second appui, et
+// surtout elle mérite de pouvoir se CORRIGER, ce que la croix ne permettait
+// pas : on ne pouvait que la jeter et la réécrire.
+function menuDiscret(forme, id, { sansModifier = false } = {}) {
+  const cle = `${forme}:${id}`;
+  const confirmation = vueEtat.confirme === cle;
+
+  // Un rendez-vous et une victoire ne se corrigent PAS ici : une date mal posée
+  // se répare au calendrier, où toutes les dates du hub se réparent, et une
+  // victoire est un fait — on la retire ou on la garde. Seule l'intention, qui
+  // est une phrase qu'on affine, mérite son « Modifier ».
+  const choix = confirmation
+    ? `<button type="button" class="cap-menu-danger" data-confirmer="${cle}">Retirer vraiment</button>
+       <button type="button" data-annuler-confirmation>Annuler</button>`
+    : `${sansModifier ? '' : `<button type="button" data-modifier="${cle}">Modifier</button>`}
+       <button type="button" data-supprimer="${cle}">Retirer</button>`;
+
+  return `
+    <span class="cap-menu${vueEtat.menu === cle ? ' ouvert' : ''}">
+      <button type="button" class="cap-menu-bouton" data-menu="${cle}"
+        aria-expanded="${vueEtat.menu === cle}" aria-label="Modifier ou retirer">${
+        SIGNE.points
+      }</button>
+      <span class="cap-menu-choix" ${vueEtat.menu === cle ? '' : 'hidden'}>${choix}</span>
+    </span>`;
+}
+
+// LES INTENTIONS EN GALERIE (29 août 2026, refonte demandée par Noé : « la
+// forme qui correspond à comment a évolué le site »).
+//
+// LE PRINCIPE DE TOUTE LA PAGE : perso emprunte la GRAMMAIRE des écrans
+// récents — la galerie de tuiles comparables, le titre en Clash Display, le
+// menu discret, la tuile volante, l'affichage optimiste — et refuse leur
+// MESURE. Pas de jauge, pas de marches, pas de pointillé, pas de pastille
+// d'état, pas de compte, pas de date. C'est exactement là que la parenté
+// s'arrête, et la forme doit le dire d'elle-même : une tuile d'intention est
+// une tuile de cap à qui l'on a retiré tout ce qui mesure.
+//
+// LE POURQUOI RESTE VISIBLE, il ne se déplie pas. Un cap cache le sien parce
+// qu'on vient y lire une avancée ; une intention n'a que ça à donner, et la
+// philosophie dit qu'elle se relit les jours sans motivation. La cacher
+// derrière un geste serait un contresens.
 export function construireIntentions(intentions) {
+  const ajout = `
+    <button type="button" class="cap-tuile cap-tuile-ajout" data-ajout="intention">
+      ${SIGNE.plus}<span>Écrire une intention</span></button>`;
+
   if (!intentions.length) {
-    return `<p class="vide">Tes intentions s'écriront ici. Une phrase suffit.</p>`;
+    return `
+      <p class="vide">Tes intentions s'écriront ici. Une phrase suffit.</p>
+      <div class="perso-galerie">${ajout}</div>`;
   }
 
   // Pas de case à cocher, pas d'état, pas de date : une intention se relit,
   // elle ne se « termine » pas.
-  return `<ul class="liste-intentions">${intentions
-    .map(
-      (intention) => `
-      <li>
-        <span class="intention-titre">${echapper(intention.titre)}</span>
-        ${
-          intention.pourquoi
-            ? `<span class="discret intention-pourquoi">${echapper(intention.pourquoi)}</span>`
-            : ''
-        }
-        <button type="button" class="lien-discret bouton-mini bouton-retirer"
-          data-intention="${echapper(intention.id)}"
-          title="Retirer cette intention"
-          aria-label="Retirer « ${echapper(intention.titre)} »">×</button>
-      </li>`,
-    )
-    .join('')}</ul>`;
+  return `
+    <div class="perso-galerie">
+      ${intentions
+        .map(
+          (intention) => `
+        <article class="intention-tuile">
+          <h3 class="intention-titre">${echapper(intention.titre)}</h3>
+          ${
+            intention.pourquoi
+              ? `<p class="intention-pourquoi">${echapper(intention.pourquoi)}</p>`
+              : ''
+          }
+          ${menuDiscret('intention', intention.id)}
+        </article>`,
+        )
+        .join('')}
+      ${ajout}
+    </div>`;
+}
+
+// LES RENDEZ-VOUS AVEC SOI-MÊME, en lignes et non en cartes. Ils n'ont pas
+// besoin d'une tuile : ce qu'on vient y lire tient en une ligne — quoi, quand,
+// où. Ce sont les intentions qui portent des tuiles, parce qu'elles portent une
+// phrase à relire.
+//
+// LA FAMILLE S'AFFICHE ENFIN (29 août 2026). Le formulaire la demandait depuis
+// le 27 août et la page ne la rendait jamais : on posait une question dont on
+// ne faisait rien, ce qui est la meilleure façon d'obtenir des réponses vides.
+// Elle reste en encre discrète, à côté du lieu — un rendez-vous se lit d'abord
+// par son nom.
+//
+// Elle ne compte RIEN, et ne comptera rien ici : les planchers qu'elle alimente
+// sont calculés en interne et ne s'affichent nulle part. Voir `PLANCHER_PERSO`
+// (js/orientation.js) — l'espace perso ne mesure pas.
+export function construireRendezVous(evenements) {
+  const ajout = `
+    <button type="button" class="cap-ajout-discret" data-ajout="rendez-vous">
+      ${SIGNE.plus}<span>Ajouter un rendez-vous</span></button>`;
+
+  if (!evenements.length) {
+    return `
+      <p class="vide">Rien de prévu. Le premier moment que tu te réserves s'écrira ici.</p>
+      ${ajout}`;
+  }
+
+  return `
+    <ul class="perso-lignes">
+      ${evenements
+        .map((rdv) => {
+          const service = [
+            momentLisible(new Date(rdv.date_debut)),
+            rdv.lieu ?? '',
+            FAMILLES_PERSO[rdv.famille] ?? '',
+          ].filter(Boolean);
+
+          return `
+        <li class="perso-ligne">
+          <span class="perso-ligne-corps">
+            <span class="perso-ligne-titre">${echapper(rdv.titre)}</span>
+            <span class="perso-ligne-service">${echapper(service.join(' · '))}</span>
+          </span>
+          ${menuDiscret('rendez-vous', rdv.id, { sansModifier: true })}
+        </li>`;
+        })
+        .join('')}
+    </ul>
+    ${ajout}`;
+}
+
+// LES VICTOIRES, en lignes elles aussi. Elles tenaient dans des cartes hautes
+// de trois lignes pour un mot — « Courir » —, avec leur date perdue en haut à
+// droite. Une victoire perso est courte par nature ; sa forme doit l'être.
+//
+// La date passe À DROITE SUR LA MÊME LIGNE, comme partout ailleurs dans le hub.
+// Et une porte s'ouvre vers « Le chemin » : cette page-là n'existait pas quand
+// ce bloc a été écrit, et elle montre les mêmes victoires au milieu de toutes
+// les autres — le perso au même rang que le pro, ce que la philosophie demande.
+export function construireVictoiresPerso(victoires) {
+  const ajout = `
+    <button type="button" class="cap-ajout-discret" data-ajout="victoire">
+      ${SIGNE.plus}<span>Ajouter une victoire</span></button>`;
+
+  if (!victoires.length) {
+    return `
+      <p class="vide">Tes premières victoires s'afficheront ici. Une belle séance en est une.</p>
+      ${ajout}`;
+  }
+
+  return `
+    <ul class="perso-lignes">
+      ${victoires
+        .map(
+          (victoire) => `
+        <li class="perso-ligne">
+          <span class="perso-ligne-corps">
+            <span class="perso-ligne-titre">${echapper(victoire.titre)}</span>
+          </span>
+          <span class="perso-ligne-date">${echapper(jourCourt(victoire.date))}</span>
+          ${menuDiscret('victoire', victoire.id, { sansModifier: true })}
+        </li>`,
+        )
+        .join('')}
+    </ul>
+    <span class="perso-gestes">
+      ${ajout}
+      <a class="cap-ajout-discret" href="#chemin"><span>Tout le chemin</span></a>
+    </span>`;
+}
+
+function jourCourt(iso) {
+  if (!iso) return '';
+  const date = depuisDateISO(iso);
+  return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+}
+
+// L'HUMEUR, ET ON PEUT ENFIN Y RÉPONDRE ICI (29 août 2026, choix de Noé). La
+// page montrait la courbe sans permettre d'y ajouter un point : pour répondre,
+// il fallait passer par l'accueil. C'est la page de l'humeur, la question doit
+// s'y poser.
+//
+// L'échelle est celle de l'accueil, au glyphe près — cinq frimousses, puis la
+// seule choisie une fois répondu. Une question posée de deux façons selon
+// l'écran deviendrait deux questions.
+const NIVEAUX_HUMEUR = [
+  { niveau: 1, frimousse: '😔', mot: 'difficile' },
+  { niveau: 2, frimousse: '😕', mot: 'bof' },
+  { niveau: 3, frimousse: '😐', mot: 'ça va' },
+  { niveau: 4, frimousse: '🙂', mot: 'bien' },
+  { niveau: 5, frimousse: '😄', mot: 'super' },
+];
+
+export function construireHumeurDuJour(humeur) {
+  if (humeur) {
+    const choisi = NIVEAUX_HUMEUR.find((n) => n.niveau === humeur.niveau);
+    return `
+      <p class="humeur-jour">
+        <span class="humeur-jour-frimousse">${choisi?.frimousse ?? ''}</span>
+        <span>Aujourd'hui, ${echapper(choisi?.mot ?? '')}${
+          humeur.note ? ` — ${echapper(humeur.note)}` : ''
+        }</span>
+        <button type="button" class="lien-discret" data-rouvrir-humeur>Changer</button>
+      </p>`;
+  }
+
+  return `
+    <p class="humeur-jour">
+      <span>Comment tu te sens ?</span>
+      <span class="echelle-humeur" role="group" aria-label="Comment tu te sens ?">
+        ${NIVEAUX_HUMEUR.map(
+          ({ niveau, frimousse, mot }) => `
+          <button type="button" class="bouton-humeur" data-niveau="${niveau}"
+            title="${mot}" aria-label="${mot}">${frimousse}</button>`,
+        ).join('')}
+      </span>
+    </p>`;
 }
 
 // La courbe des 30 derniers jours. Un trait, des points, deux frimousses en
 // guise d'échelle — pas d'axe chiffré, pas de moyenne, pas de verdict : la
 // courbe se regarde, elle ne se note pas.
+//
+// ELLE OCCUPE VRAIMENT SA PLACE depuis le 29 août : elle tenait dans 320 px de
+// large et 96 de haut, perdue dans une colonne qui en faisait le double. La
+// géométrie est la même, à l'échelle près — un `viewBox` plus grand et une
+// amplitude verticale qui suit, sinon la ligne s'aplatit à mesure qu'on
+// l'agrandit et cesse de dire quoi que ce soit.
 export function construireCourbeHumeur(entrees, maintenant = new Date()) {
   if (!entrees.length) {
     return `<p class="vide">Ta courbe se dessinera au fil des matins.</p>`;
   }
 
-  const largeur = 320;
-  const hauteur = 96;
-  const gauche = 28; // place des frimousses d'échelle
-  const droite = 8;
+  const largeur = 560;
+  const hauteur = 168;
+  const gauche = 34; // place des frimousses d'échelle
+  const droite = 12;
+  const haut = 22;
+  const bas = 146;
   const pas = (largeur - gauche - droite) / (JOURS_COURBE - 1);
+  const marche = (bas - haut) / 4; // quatre intervalles pour cinq niveaux
 
   const debut = ajouterJours(maintenant, -(JOURS_COURBE - 1));
   debut.setHours(0, 0, 0, 0);
@@ -81,7 +295,7 @@ export function construireCourbeHumeur(entrees, maintenant = new Date()) {
       if (jour < 0 || jour >= JOURS_COURBE) return null;
       return {
         x: gauche + jour * pas,
-        y: 84 - (entree.niveau - 1) * 18,
+        y: bas - (entree.niveau - 1) * marche,
         entree,
       };
     })
@@ -101,7 +315,7 @@ export function construireCourbeHumeur(entrees, maintenant = new Date()) {
   const ronds = points
     .map(
       (p) => `
-      <circle cx="${p.x}" cy="${p.y}" r="3.5" fill="currentColor">
+      <circle cx="${p.x}" cy="${p.y}" r="4" fill="currentColor">
         <title>${echapper(p.entree.date)} — ${FRIMOUSSES[p.entree.niveau] ?? ''}${
           p.entree.note ? ` · ${echapper(p.entree.note)}` : ''
         }</title>
@@ -112,8 +326,8 @@ export function construireCourbeHumeur(entrees, maintenant = new Date()) {
   return `
     <svg class="courbe-humeur" viewBox="0 0 ${largeur} ${hauteur}"
       role="img" aria-label="Ton humeur sur les ${JOURS_COURBE} derniers jours">
-      <text x="0" y="20" font-size="12">${FRIMOUSSES[5]}</text>
-      <text x="0" y="90" font-size="12">${FRIMOUSSES[1]}</text>
+      <text x="0" y="${haut + 6}" font-size="16">${FRIMOUSSES[5]}</text>
+      <text x="0" y="${bas + 6}" font-size="16">${FRIMOUSSES[1]}</text>
       ${trait}
       ${ronds}
     </svg>
@@ -121,6 +335,21 @@ export function construireCourbeHumeur(entrees, maintenant = new Date()) {
   `;
 }
 
+// LA PAGE EN DEUX TEMPS (29 août 2026, choix de Noé) : la galerie d'intentions
+// prend toute la largeur, puis deux colonnes.
+//
+// LES INTENTIONS GARDENT LA LARGEUR parce qu'elles sont le cap de perso — ce
+// qu'on relit quand on ne sait plus pourquoi on fait les choses. Les mettre en
+// colonne les aurait rangées au même rang que le reste, or elles ne le sont
+// pas.
+//
+// Dessous : ce qui VIENT à gauche (les rendez-vous), ce qui EST PASSÉ à droite
+// (l'humeur, les victoires). C'est la seule division qui tienne ici — il n'y a
+// rien à faire dans cet espace, donc rien à ranger par urgence.
+//
+// Les quatre blocs empilés pleine largeur laissaient les deux tiers de l'écran
+// vides sur ordinateur, et une courbe de 320 px flottait dans une colonne qui
+// en faisait 750.
 function squelette() {
   return `
     <h1 data-titre>Perso</h1>
@@ -129,58 +358,93 @@ function squelette() {
     <section class="bloc" data-vue="intentions">
       <h2>Intentions</h2>
       <div data-bloc="intentions"><p class="vide">…</p></div>
-      ${construireFormulaire({
-        id: 'perso-intention',
-        libelle: 'Écrire une intention',
-        action: 'creer-intention',
-        champs: [
-          { nom: 'titre', libelle: 'Intention', type: 'text', requis: true },
-          { nom: 'pourquoi', libelle: 'Pourquoi ? (facultatif)', type: 'textarea' },
-        ],
-      })}
     </section>
 
-    <section class="bloc" data-vue="victoires">
-      <h2>Victoires</h2>
-      <div data-bloc="victoires"><p class="vide">…</p></div>
-      ${construireFormulaire({
-        id: 'perso-victoire',
-        libelle: 'Ajouter une victoire',
-        action: 'creer-victoire',
-        champs: [{ nom: 'titre', libelle: 'Victoire', type: 'text', requis: true }],
-      })}
-    </section>
+    <div class="perso-colonnes">
+      <section class="bloc" data-vue="rendez-vous">
+        <h2>Rendez-vous avec toi-même</h2>
+        <div data-bloc="evenements"><p class="vide">…</p></div>
+      </section>
 
-    <section class="bloc" data-vue="rendez-vous">
-      <h2>Rendez-vous avec toi-même</h2>
-      <div data-bloc="evenements"><p class="vide">…</p></div>
-      ${construireFormulaire({
-        id: 'perso-evenement',
-        libelle: 'Ajouter un rendez-vous',
-        action: 'creer-evenement',
-        champs: [
-          { nom: 'titre', libelle: 'Rendez-vous', type: 'text', requis: true },
-          { nom: 'date_debut', libelle: 'Quand', type: 'datetime-local', requis: true },
-          // Ce que ce moment sert. La même question que la pastille « Famille »
-          // de la tuile de capture : un rendez-vous pris ici ne doit pas rester
-          // muet là où tous les autres parlent.
-          {
-            nom: 'famille',
-            libelle: 'Famille (facultatif)',
-            type: 'choix',
-            options: FAMILLES_PERSO_CHOIX,
-            valeur: '',
-          },
-          { nom: 'lieu', libelle: 'Lieu (facultatif)', type: 'text' },
-        ],
-      })}
-    </section>
+      <div class="perso-colonne">
+        <section class="bloc" data-vue="humeur">
+          <h2>Ton humeur</h2>
+          <div data-bloc="humeur-jour"></div>
+          <div data-bloc="humeur"><p class="vide">…</p></div>
+        </section>
 
-    <section class="bloc" data-vue="humeur">
-      <h2>Ton humeur</h2>
-      <div data-bloc="humeur"><p class="vide">…</p></div>
-    </section>
+        <section class="bloc" data-vue="victoires">
+          <h2>Victoires</h2>
+          <div data-bloc="victoires"><p class="vide">…</p></div>
+        </section>
+      </div>
+    </div>
+
+    <!-- La tuile volante vit HORS des blocs : elle survit au filtre des vues,
+         et une fenêtre cachée par un bloc masqué serait un piège. -->
+    <div class="cap-fenetre-hote" data-fenetre></div>
   `;
+}
+
+// LES TROIS FORMULAIRES DE LA PAGE, dans la même tuile volante — celle du
+// hub entier. Ils étaient dépliés dans le flux, sous leur bloc : six champs qui
+// poussaient la page vers le bas et faisaient perdre de vue ce qu'on regardait.
+//
+// La tuile SERT AUSSI À CORRIGER une intention, ce que la page ne savait pas
+// faire : on ne pouvait que la jeter et la réécrire.
+const FORMULAIRES = {
+  intention: {
+    ajouter: 'Écrire une intention',
+    modifier: "Modifier l'intention",
+    champs: (v) => [
+      { nom: 'titre', libelle: 'Intention', type: 'text', requis: true, valeur: v.titre },
+      {
+        nom: 'pourquoi',
+        libelle: 'Pourquoi ? (relu les jours sans motivation)',
+        type: 'textarea',
+        valeur: v.pourquoi,
+      },
+    ],
+  },
+  'rendez-vous': {
+    ajouter: 'Ajouter un rendez-vous',
+    champs: () => [
+      { nom: 'titre', libelle: 'Rendez-vous', type: 'text', requis: true },
+      { nom: 'date_debut', libelle: 'Quand', type: 'datetime-local', requis: true },
+      // Ce que ce moment sert. La même question que la pastille « Famille » de
+      // la tuile de capture : un rendez-vous pris ici ne doit pas rester muet
+      // là où tous les autres parlent.
+      {
+        nom: 'famille',
+        libelle: 'Famille (facultatif)',
+        type: 'choix',
+        options: FAMILLES_PERSO_CHOIX,
+        valeur: '',
+      },
+      { nom: 'lieu', libelle: 'Lieu (facultatif)', type: 'text' },
+    ],
+  },
+  victoire: {
+    ajouter: 'Ajouter une victoire',
+    champs: () => [{ nom: 'titre', libelle: 'Victoire', type: 'text', requis: true }],
+  },
+};
+
+function laFenetre() {
+  if (!vueEtat.edition) return '';
+  const { forme, id } = vueEtat.edition;
+  const modele = FORMULAIRES[forme];
+  if (!modele) return '';
+
+  return construireFormulaire({
+    id: `perso-${forme}`,
+    libelle: id ? modele.modifier : modele.ajouter,
+    action: 'enregistrer-perso',
+    bouton: id ? 'Enregistrer' : 'Ajouter',
+    champs: modele.champs(vueEtat.edition.valeurs ?? {}),
+    extra: `<input type="hidden" name="forme" value="${echapper(forme)}">
+            <input type="hidden" name="id" value="${echapper(id ?? '')}">`,
+  });
 }
 
 // LES QUATRE VUES DE PERSO (28 août 2026) — le menu les offre une à une, et
@@ -205,6 +469,14 @@ function appliquerLaVue(section, route) {
   for (const bloc of section.querySelectorAll('.bloc[data-vue]')) {
     bloc.hidden = Boolean(vue) && bloc.dataset.vue !== vue;
   }
+
+  // La colonne de droite se retire quand elle ne porte plus rien : sans ça,
+  // demander `#perso/rendez-vous` laisserait une piste de grille vide à côté,
+  // et le bloc restant n'occuperait que la moitié de l'écran pour rien.
+  const colonne = section.querySelector('.perso-colonne');
+  if (colonne) {
+    colonne.hidden = [...colonne.querySelectorAll('.bloc[data-vue]')].every((b) => b.hidden);
+  }
 }
 
 // --- Montage ----------------------------------------------------------------
@@ -219,32 +491,71 @@ export default {
     // laissé.
     this.naviguer = (nouvelle) => appliquerLaVue(section, nouvelle);
 
-    const etat = { intentions: [], evenements: [], victoires: [] };
+    const etat = { intentions: [], evenements: [], victoires: [], humeurDuJour: null };
     const bloc = (nom) => section.querySelector(`[data-bloc="${nom}"]`);
 
     const rendreIntentions = () => {
       bloc('intentions').innerHTML = construireIntentions(etat.intentions);
     };
+
+    // La tuile volante est REDESSINÉE à chaque fois, comme dans `#objectifs` :
+    // elle n'a pas de sommaire à presser ici, c'est une tuile ou un menu qui
+    // l'ouvre. On la déplie donc à la main juste après — `app.js` la referme
+    // comme toutes les autres.
+    const rendreFenetre = () => {
+      const hote = section.querySelector('[data-fenetre]');
+      hote.innerHTML = laFenetre();
+      const fenetre = hote.querySelector('.ajout-volant');
+      if (!fenetre) return;
+      fenetre.open = true;
+      fenetre.querySelector('input, textarea')?.focus();
+
+      // REFERMER LA TUILE EFFACE SON ÉTAT, quel que soit le chemin — la croix,
+      // le fond assombri ou Échap, tous trois tenus par `app.js`. On écoute
+      // donc la FERMETURE elle-même plutôt que chacun des trois gestes : c'est
+      // le seul point par où ils passent tous.
+      //
+      // Sans ça, `vueEtat.edition` restait posé et la fenêtre revenait au geste
+      // suivant, par-dessus ce qu'on venait d'ouvrir. C'est le défaut exact que
+      // `#objectifs` a rencontré le premier, et il ne se voit pas au moment où
+      // on referme : il se voit au clic d'après.
+      fenetre.addEventListener('toggle', () => {
+        if (!fenetre.open) vueEtat.edition = null;
+      });
+    };
     const rendreVictoires = () => {
-      bloc('victoires').innerHTML = construireVictoires(etat.victoires);
+      bloc('victoires').innerHTML = construireVictoiresPerso(etat.victoires);
     };
     const rendreEvenements = () => {
-      bloc('evenements').innerHTML = construireEvenements(etat.evenements);
+      bloc('evenements').innerHTML = construireRendezVous(etat.evenements);
+    };
+    const rendreHumeurDuJour = () => {
+      bloc('humeur-jour').innerHTML = construireHumeurDuJour(etat.humeurDuJour);
+    };
+
+    // Quelle liste redessiner après un geste : la clé du menu discret porte
+    // déjà la forme, il n'y a donc rien à deviner.
+    const RENDUS = {
+      intention: () => rendreIntentions(),
+      'rendez-vous': () => rendreEvenements(),
+      victoire: () => rendreVictoires(),
     };
 
     const charger = async () => {
       const depuis = versDateISO(ajouterJours(new Date(), -(JOURS_COURBE - 1)));
-      const [intentions, evenements, victoires, humeur] = await Promise.all([
+      const [intentions, evenements, victoires, humeur, humeurDuJour] = await Promise.all([
         api.objectifsActifs({ espace: ESPACE }),
         api.evenementsEntre(new Date().toISOString(), horizon(), { espace: ESPACE }),
         api.victoiresDeLEspace(ESPACE),
         api.humeurDepuis(depuis),
+        api.humeurDuJour(versDateISO()),
       ]);
 
-      Object.assign(etat, { intentions, evenements, victoires });
+      Object.assign(etat, { intentions, evenements, victoires, humeurDuJour });
       rendreIntentions();
       rendreVictoires();
       rendreEvenements();
+      rendreHumeurDuJour();
       bloc('humeur').innerHTML = construireCourbeHumeur(humeur);
     };
 
@@ -281,8 +592,11 @@ export default {
 
       try {
         await appliquerAjout(formulaire.dataset.action, champs);
+        // Les formulaires encore posés dans la page se referment eux-mêmes ;
+        // la tuile volante, elle, a déjà été redessinée — son `<form>` est
+        // détaché, et `closest` y répondrait `null`.
         formulaire.reset();
-        formulaire.closest('.ajout').open = false;
+        formulaire.closest('.ajout')?.removeAttribute('open');
       } catch (souci) {
         console.error('Ajout impossible', souci);
         erreur.textContent = souci.message ?? "L'ajout a échoué.";
@@ -293,30 +607,38 @@ export default {
     });
 
     async function appliquerAjout(action, champs) {
-      if (action === 'creer-intention') {
+      if (action !== 'enregistrer-perso') return;
+      const { forme, id } = champs;
+
+      if (forme === 'intention') {
         // Une intention est un objectif sans cible ni échéance — et le restera :
         // le formulaire ne propose ni l'une ni l'autre.
-        const intention = await api.creerObjectif({
-          espace: ESPACE,
+        const valeurs = {
           titre: champs.titre.trim(),
           pourquoi: champs.pourquoi?.trim() || null,
-        });
-        etat.intentions = [...etat.intentions, intention];
+        };
+
+        if (id) {
+          const intention = etat.intentions.find((i) => i.id === id);
+          Object.assign(intention, await api.modifierObjectif(id, valeurs));
+        } else {
+          etat.intentions = [
+            ...etat.intentions,
+            await api.creerObjectif({ espace: ESPACE, ...valeurs }),
+          ];
+        }
         rendreIntentions();
-        return;
       }
 
-      if (action === 'creer-victoire') {
-        const victoire = await api.ajouterVictoire({
-          espace: ESPACE,
-          titre: champs.titre.trim(),
-        });
-        etat.victoires = [victoire, ...etat.victoires];
+      if (forme === 'victoire') {
+        etat.victoires = [
+          await api.ajouterVictoire({ espace: ESPACE, titre: champs.titre.trim() }),
+          ...etat.victoires,
+        ];
         rendreVictoires();
-        return;
       }
 
-      if (action === 'creer-evenement') {
+      if (forme === 'rendez-vous') {
         const rdv = await api.creerEvenement({
           espace: ESPACE,
           titre: champs.titre.trim(),
@@ -329,53 +651,129 @@ export default {
         );
         rendreEvenements();
       }
+
+      vueEtat.edition = null;
+      rendreFenetre();
     }
 
     section.addEventListener('click', async (evenement) => {
-      const victoire = evenement.target.closest('[data-victoire]');
-      if (victoire) {
-        victoire.disabled = true;
-        try {
-          await api.supprimerVictoire(victoire.dataset.victoire);
-          etat.victoires = etat.victoires.filter((v) => v.id !== victoire.dataset.victoire);
-          rendreVictoires();
-        } catch (souci) {
-          console.error('Suppression de la victoire impossible', souci);
-          victoire.disabled = false;
-        }
+      const dans = (nom) => evenement.target.closest(`[data-${nom}]`);
+
+      // Refermer la tuile volante efface AUSSI son état : elle est redessinée à
+      // chaque rendu, et reviendrait donc ouverte au premier geste suivant.
+      // C'est le défaut que `#objectifs` a rencontré le premier.
+      if (evenement.target.closest('[data-fermer-ajout]')) {
+        vueEtat.edition = null;
+        rendreFenetre();
+        return;
+      }
+      if (evenement.target.closest('.ajout-volant')) return;
+
+      const ajout = dans('ajout');
+      if (ajout) {
+        vueEtat.edition = { forme: ajout.dataset.ajout, id: null };
+        vueEtat.menu = null;
+        rendreFenetre();
+        RENDUS[ajout.dataset.ajout]?.();
         return;
       }
 
-      // Retirer une intention, c'est juste effacer une phrase : pas de
-      // confirmation, pas de cérémonie.
-      const intention = evenement.target.closest('[data-intention]');
-      if (intention) {
-        intention.disabled = true;
-        try {
-          await api.supprimerObjectif(intention.dataset.intention);
-          etat.intentions = etat.intentions.filter((i) => i.id !== intention.dataset.intention);
-          rendreIntentions();
-        } catch (souci) {
-          console.error("Retrait de l'intention impossible", souci);
-          intention.disabled = false;
-        }
+      const menu = dans('menu');
+      if (menu) {
+        const [forme] = menu.dataset.menu.split(':');
+        vueEtat.menu = vueEtat.menu === menu.dataset.menu ? null : menu.dataset.menu;
+        vueEtat.confirme = null;
+        RENDUS[forme]?.();
         return;
       }
 
-      const rdv = evenement.target.closest('[data-supprimer-evenement]');
-      if (rdv) {
-        rdv.disabled = true;
+      const modifier = dans('modifier');
+      if (modifier) {
+        const [forme, id] = modifier.dataset.modifier.split(':');
+        vueEtat.edition = { forme, id, valeurs: etat.intentions.find((i) => i.id === id) };
+        vueEtat.menu = null;
+        rendreFenetre();
+        RENDUS[forme]?.();
+        return;
+      }
+
+      const supprimer = dans('supprimer');
+      if (supprimer) {
+        const [forme] = supprimer.dataset.supprimer.split(':');
+        vueEtat.confirme = supprimer.dataset.supprimer;
+        RENDUS[forme]?.();
+        return;
+      }
+
+      if (dans('annuler-confirmation')) {
+        const [forme] = (vueEtat.confirme ?? '').split(':');
+        vueEtat.confirme = null;
+        RENDUS[forme]?.();
+        return;
+      }
+
+      // RETIRER, POUR LES TROIS FORMES : l'écran d'abord, l'écriture derrière,
+      // et la ligne revient à sa place si ça n'a pas pu s'enregistrer. C'est la
+      // mécanique du hub (js/ecriture.js) ; la page attendait l'aller-retour
+      // Supabase en désactivant son bouton, ce qui fige le doigt 300 à 800 ms.
+      const confirmer = dans('confirmer');
+      if (confirmer) {
+        const [forme, id] = confirmer.dataset.confirmer.split(':');
+        vueEtat.menu = null;
+        vueEtat.confirme = null;
+
+        const RETRAITS = {
+          intention: [etat.intentions, api.supprimerObjectif],
+          'rendez-vous': [etat.evenements, api.supprimerEvenement],
+          victoire: [etat.victoires, api.supprimerVictoire],
+        };
+        const [liste, effacer] = RETRAITS[forme] ?? [];
+        if (!liste) return;
+
+        return retirerAussitot(liste, liste.find((l) => l.id === id), () => effacer(id), {
+          rendre: RENDUS[forme],
+        });
+      }
+
+      // RÉPONDRE À L'HUMEUR ICI (29 août 2026) : c'est la page de l'humeur, la
+      // question doit pouvoir s'y poser. Elle passait uniquement par l'accueil.
+      const niveau = dans('niveau');
+      if (niveau) {
+        const avant = etat.humeurDuJour;
+        etat.humeurDuJour = { niveau: Number(niveau.dataset.niveau), note: avant?.note ?? null };
+        rendreHumeurDuJour();
         try {
-          await api.supprimerEvenement(rdv.dataset.supprimerEvenement);
-          etat.evenements = etat.evenements.filter(
-            (e) => e.id !== rdv.dataset.supprimerEvenement,
+          etat.humeurDuJour = await api.enregistrerHumeur(
+            versDateISO(),
+            Number(niveau.dataset.niveau),
+            avant?.note ?? null,
           );
-          rendreEvenements();
+          // La courbe gagne son point du jour sans recharger la page.
+          bloc('humeur').innerHTML = construireCourbeHumeur(
+            await api.humeurDepuis(versDateISO(ajouterJours(new Date(), -(JOURS_COURBE - 1)))),
+          );
         } catch (souci) {
-          console.error('Suppression du rendez-vous impossible', souci);
-          rdv.disabled = false;
+          console.error('Humeur non enregistrée', souci);
+          etat.humeurDuJour = avant;
         }
+        rendreHumeurDuJour();
+        return;
       }
+
+      if (dans('rouvrir-humeur')) {
+        etat.humeurDuJour = null;
+        rendreHumeurDuJour();
+        return;
+      }
+
+      // Un appui ailleurs referme ce qui traîne.
+      if (vueEtat.menu || vueEtat.confirme) {
+        const [forme] = (vueEtat.menu ?? vueEtat.confirme).split(':');
+        vueEtat.menu = null;
+        vueEtat.confirme = null;
+        RENDUS[forme]?.();
+      }
+
     });
   },
 };
