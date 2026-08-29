@@ -221,10 +221,33 @@ body[data-espace="perso"]     { --accent: #b3a3d9; --accent-doux: #272335; }
 
 :root { --club-fch-bleu: #7ba5dc; --club-fch-rouge: #ec8079; }
 
-/* Couleurs exactes du logo du club (img/fch-logo.png), plus le jaune ajouté à
-   la demande de Noé. Elles ne servent que sur le site FCH — la pastille de
-   espace du hub garde ses valeurs adoucies, plus lisibles en petit. */
-:root { --club-bleu: #003799; --club-rouge: #df0000; --club-jaune: #f2b705; }
+/* LA CHARTE GRAPHIQUE OFFICIELLE DU CLUB (29 août 2026, demande de Noé :
+   « aligne le bleu et les autres couleurs »). Les valeurs viennent de
+   `CharteGraphiqueFCH.pdf` (FCH/Communication/Ressources/Charte graphique),
+   qui donne TROIS RAMPES DE CINQ — bleu, rouge, or — et non trois couleurs.
+
+   Ce qu'elles remplacent : des valeurs relevées à l'œil sur `img/fch-logo.png`
+   (#003799, #df0000, #f2b705). Elles étaient proches, jamais exactes, et
+   surtout elles ne donnaient AUCUNE rampe — d'où les bleus intermédiaires
+   inventés au fil des écrans (#1e47a8, #16337d, #3a5cba, #23499f). La charte
+   les fournit, et c'est ce qui compte plus que la correction du principal :
+   on ne devine plus un bleu foncé, on prend celui du club.
+
+   Nommées par leur RANG dans la rampe, du clair au foncé, parce que c'est
+   ainsi que la charte les pose et que rien d'autre ne les distingue. */
+:root {
+  --club-bleu-1: #4d75db;  /* le clair */
+  --club-bleu:   #113693;  /* LE bleu du club — inchangé, il était déjà juste */
+  --club-bleu-3: #324c8f;
+  --club-bleu-4: #243666;
+  --club-bleu-5: #15213d;  /* le bleu nuit */
+
+  --club-rouge:   #cc1919;
+  --club-rouge-1: #db4d4d;
+
+  --club-jaune:   #f4c900;
+  --club-jaune-2: #d1ab00;
+}
 
 /* Le SITE FC Hermitage est bleu, quel que soit le réglage du téléphone :
    le bleu du club porte tout le site (choix de Noé, 7 août 2026).
@@ -239,17 +262,42 @@ body[data-espace="hermitage"] {
      déroulantes) se dessineraient en clair — icône noire sur fond bleu. */
   color-scheme: dark;
 
-  --fond: #113693;
-  /* Assez au-dessus du fond pour que la tuile se détache sans cerne appuyé. */
-  --fond-carte: #1e47a8;
+  /* TOUT VIENT DE LA RAMPE DU CLUB depuis le 29 août 2026 : plus un seul bleu
+     inventé sur cet écran. Les valeurs d'avant sont en regard. */
+  --fond: var(--club-bleu);
+  /* Assez au-dessus du fond pour que la tuile se détache sans cerne appuyé.
+     Le 3e barreau de la rampe (#324c8f) tient ce rôle mieux que le #1e47a8
+     d'avant : blanc à 8,2:1 dessus, et il se détache DAVANTAGE du fond
+     (1,30:1 en haut du dégradé contre 1,18:1, 1,95:1 au pied contre 1,66) —
+     la tuile gagne en présence en devenant plus sobre. */
+  --fond-carte: var(--club-bleu-3);
   --texte: #ffffff;
   --texte-discret: #b6c5e6;
-  --bordure: #3a5cba;
+  /* Entre la tuile et le bleu clair, dosé pour garder le filet DISCRET qu'il
+     était : 1,36:1 au-dessus de la tuile, comme le #3a5cba d'avant. Le bleu
+     clair pur (1,86:1) faisait un cerne, exactement ce que la ligne du dessus
+     refuse. */
+  --bordure: color-mix(in srgb, var(--club-bleu-1) 45%, var(--club-bleu-3));
   --ombre: none;
   --surbrillance: rgb(255 255 255 / 15%);
+  /* PAS un jeton d'identité, et la charte n'en dit rien : c'est l'encre d'un
+     message d'erreur de formulaire, qui doit rester claire pour se lire sur la
+     tuile (4,7:1). L'aligner sur le rouge du club l'assombrirait — #db4d4d
+     tombe à 2,0:1. Il ne bouge donc pas, et ce n'est pas un oubli. */
   --erreur: #ffb0a8;
-  --accent: #f2b705;
-  --accent-doux: #23499f;
+  --accent: var(--club-jaune);
+  --accent-doux: var(--club-bleu-4);
+
+  /* GILROY, la police du club (même demande). Elle était déjà chargée par
+     css/yuno.css en 400/500/600/700/900 — soit exactement les cinq graisses de
+     la charte (Thin, Medium, Bold, Heavy), et le fichier Bold VIENT des
+     ressources du FCH depuis le 13 août. Aucun octet de plus à servir.
+     Bellandha, la seconde police de la charte, reste hors du site : c'est une
+     anglaise de logo, illisible en interface. */
+  --police-titre: "Gilroy", "Instrument Sans", system-ui, sans-serif;
+  --police-texte: "Gilroy", "Instrument Sans", system-ui, sans-serif;
+  /* Geist Mono garde les compteurs : la charte ne donne pas de chasse fixe, et
+     Gilroy n'aligne pas ses chiffres en colonne. */
 }
 
 /* Points de rupture de Bac-3 : 720 px et 1080 px. */

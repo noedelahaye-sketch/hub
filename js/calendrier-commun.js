@@ -214,7 +214,14 @@ export function brancherEtatPublication(
       if (choix) {
         evenement.stopPropagation();
         fermerLesChoix(section);
-        await poser(ouverte(), choix.dataset.statutPub);
+        // Hors du calendrier — les tuiles d'idées du site FCH — il n'y a pas
+        // d'élément « ouvert » : la pastille dit elle-même de quelle
+        // publication elle parle. `ouverte()` reste le cas du calendrier.
+        const porteuse = choix.closest('[data-pub]');
+        const pub = porteuse
+          ? publications().find((une) => une.id === porteuse.dataset.pub)
+          : ouverte();
+        await poser(pub, choix.dataset.statutPub);
       }
     },
     true,
@@ -1541,6 +1548,13 @@ const ICONE = {
     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <path d="M4 21c0-9 5.5-14.5 16-15 .7 9.5-4.5 15-13 15z"></path>
     <path d="M4 21c1.5-5 4.5-8.5 9-10.5"></path></svg>`,
+  // Un fanion planté : le temps fort du club, celui qu'on annonce. Distinct de
+  // la pile d'images (ce que l'événement rapporte) et de l'appareil (le moment
+  // vécu) — ici il s'agit de ce qu'on prépare et qu'on fait savoir.
+  tempsFort: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M5 21V4"></path>
+    <path d="M5 4c4-2 8 2 12 0v8c-4 2-8-2-12 0"></path></svg>`,
   // Une pile d'images : ce que l'événement RAPPORTE, et qu'il faudra trier.
   // Distinct du signe « moment » — celui-là est l'appareil, celui-ci le butin.
   photos: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
@@ -1734,6 +1748,13 @@ export function fenetreCreation({
   // tout est club ; dans le hub elle se révèle quand l'espace choisi est fch,
   // exactement comme `type_moment` avec photo.
   reunion = false,
+  // Le temps fort du club, comme `reunion` juste au-dessus : un DRAPEAU de
+  // l'appelant, et non une déduction. Sur un SITE il n'y a qu'un espace, donc
+  // `espacesOfferts` est nul et `espaceInitial` avec lui — tester
+  // `espaceInitial === 'fch'` ne pouvait rien donner, mesuré : la pastille
+  // n'apparaissait jamais sur `#hermitage`. C'est le site qui sait qu'il est
+  // le club.
+  tempsFort = false,
   // Les noms des clubs du vivier, pour relier un événement à son affiche. Yuno
   // les apporte ; le hub n'a pas de vivier et ne voit donc pas la pastille.
   clubs = null,
@@ -2045,6 +2066,41 @@ export function fenetreCreation({
             nom: 'avec_photos',
             options: { '': 'Pas de photos', oui: 'Photos à trier' },
             valeur: valeurs.avec_photos ? 'oui' : '',
+          }),
+        }),
+      );
+    }
+
+    // UN TEMPS FORT DU CLUB (30 août 2026) : tournoi, loto, journée du club —
+    // les huit ou neuf rassemblements qui portent l'essentiel de la
+    // communication événementielle de Noé. L'accueil du site les annonce.
+    //
+    // ENCORE UNE DÉCLARATION, et il a fallu la mesurer pour s'en convaincre :
+    // au 30 août, les sept événements FCH à venir — trois entraînements, une
+    // séance photo, trois temps forts — étaient rigoureusement
+    // indistinguables en base. Ni série, ni photos, ni créneau ne les
+    // séparaient ; ne restait que le titre, et deviner sur un titre libre est
+    // ce que le hub refuse.
+    //
+    // FCH SEULEMENT : Yuno a ses sorties et son Carnet, la formation et le
+    // perso n'ont rien à annoncer.
+    if (tempsFort || espacesOfferts?.fch) {
+      pastilles.push(
+        pastilleCapture({
+          nom: 'temps-fort',
+          icone: ICONE.tempsFort,
+          defaut: 'Temps fort',
+          source: 'temps_fort',
+          neutre: '',
+          siEspace: espacesOfferts ? ['fch'] : null,
+          cachee: Boolean(espacesOfferts) && espaceInitial !== 'fch',
+          // UN CHOIX ET NON UNE CASE — le piège annoncé par la pastille
+          // « Photos » deux blocs plus haut : une case vaut « oui » qu'elle
+          // soit cochée ou non, et le libellé le dirait en permanence.
+          contenu: champChoix({
+            nom: 'temps_fort',
+            options: { '': 'Rendez-vous ordinaire', oui: 'Temps fort du club' },
+            valeur: valeurs.temps_fort ? 'oui' : '',
           }),
         }),
       );
@@ -2737,17 +2793,25 @@ function teinteDeLEtape(rang, total) {
   return Math.round(TEINTES_ETAPE[bas] + (TEINTES_ETAPE[haut] - TEINTES_ETAPE[bas]) * (place - bas));
 }
 
-function reglageStatut(element) {
-  const pub = element.source;
-  if (element.type !== 'publication' || !pub) return '';
-
-  const cycle = cyclePublication(element.espace);
+// LA PASTILLE D'ÉTAT D'UNE PUBLICATION, dessinée une seule fois pour tout le
+// hub (29 août 2026). Elle vivait ici, enfermée dans la tuile du calendrier ;
+// le site du FCH la réclamait aussi pour ses tuiles d'idées — Noé : « l'état
+// doit être un menu déroulant ». Deux copies auraient fini par diverger, et
+// c'est le genre d'écart qu'on ne voit qu'une fois qu'un écran s'est mis à
+// mentir sur l'état d'une parution.
+//
+// `data-pub` porte l'identifiant : hors du calendrier, il n'y a pas d'« élément
+// ouvert » pour dire de quelle publication on parle. `brancherEtatPublication`
+// le lit en priorité et retombe sur la tuile ouverte quand il est absent.
+export function pastilleStatutPublication(pub, espace = pub.espace) {
+  const cycle = cyclePublication(espace);
   const rang = Math.max(cycle.indexOf(pub.statut), 0);
-  const nom = (statut) => echapper(nomDuStatut(element.espace, statut));
+  const nom = (statut) => echapper(nomDuStatut(espace, statut));
   const teinte = (etape) => teinteDeLEtape(etape, cycle.length);
 
   return `
-    <span class="choix-champ cal-statut" data-choix-champ="statut-publication">
+    <span class="choix-champ cal-statut" data-choix-champ="statut-publication"
+      data-pub="${echapper(pub.id)}">
       <button type="button" class="etiquette cal-statut-pastille" data-ouvrir-choix
         style="--teinte: ${teinte(rang)};"
         aria-expanded="false" aria-haspopup="listbox"
@@ -2768,6 +2832,11 @@ function reglageStatut(element) {
         </ul>
       </div>
     </span>`;
+}
+
+function reglageStatut(element) {
+  if (element.type !== 'publication' || !element.source) return '';
+  return pastilleStatutPublication(element.source, element.espace);
 }
 
 // Les deux gestes de la fenêtre de détail sont des DESSINS depuis le 24 août
@@ -2978,6 +3047,9 @@ export async function poserAuCalendrier(champs, { espaceParDefaut = 'photo' } = 
     // Le FCH et Yuno seulement : le champ existe même quand sa pastille est
     // cachée, et un tri de photos ne veut rien dire au perso ni à la formation.
     avec_photos: ['fch', 'photo'].includes(espace) && champs.avec_photos === 'oui',
+    // Le temps fort n'existe qu'au club : le champ subsiste quand sa pastille
+    // est cachée, et il ne veut rien dire ailleurs.
+    temps_fort: espace === 'fch' && champs.temps_fort === 'oui',
     reunion_objet: espace === 'fch' ? champs.reunion_objet || null : null,
     reunion_animee:
       espace === 'fch' && champs.reunion_objet ? champs.reunion_animee === 'oui' : false,

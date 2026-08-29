@@ -17,6 +17,7 @@ import {
   NOMS_STATUTS_BASE,
   cyclePublication,
   nomDuStatut,
+  pastilleStatutPublication,
 } from './calendrier-commun.js';
 
 // L'ordre du cycle. Chaque statut connaît son suivant ; « publié » n'en a pas.
@@ -113,8 +114,13 @@ export function construireApercuPublication(pub, options = {}) {
 // `options` porte ce qui change d'un espace à l'autre : le cycle des statuts,
 // et l'aide à la création (les piliers et la checklist sont à Yuno).
 export function corpsPublication(pub, options = {}) {
-  const { cycle = cyclePublication(pub.espace), checklist = false, piliers = null, fenetre = false } =
-    options;
+  const {
+    cycle = cyclePublication(pub.espace),
+    checklist = false,
+    piliers = null,
+    fenetre = false,
+    pastille = false,
+  } = options;
   const suivant = cycle[cycle.indexOf(pub.statut) + 1];
   const datee = Boolean(pub.date_prevue);
 
@@ -144,22 +150,41 @@ export function corpsPublication(pub, options = {}) {
         checklist && ['carrousel', 'post'].includes(pub.format) ? checklistCarrousel() : ''
       }
       <span class="pub-actions">
-        <span class="pub-statut">statut :
-          <strong>${nomDuStatut(pub.espace, pub.statut)}</strong></span>
         ${
-          suivant
-            ? `<button type="button" class="bouton-secondaire bouton-mini"
-                 data-avancer="${echapper(pub.id)}">Passer en ${nomDuStatut(
-                   pub.espace,
-                   suivant,
-                 )}</button>`
-            : pub.lien_publie
-              ? `<a class="discret" href="${echapper(pub.lien_publie)}" target="_blank" rel="noopener">voir ↗</a>`
-              : ''
+          // L'ÉTAT EST UN MENU DÉROULANT (demande de Noé, 29 août 2026), et
+          // c'est LA MÊME pastille que celle du calendrier — dessinée une seule
+          // fois dans `calendrier-commun.js`. Elle remplace un trio qui pesait
+          // trois lignes : « statut : à préparer », un bouton « Passer en à
+          // programmer » et « Repasser en idée ». Elle sait en plus ce que le
+          // bouton ne savait pas : sauter un cran, et revenir en arrière.
+          //
+          // `pastille: false` par défaut — Yuno garde son bouton, personne ne
+          // l'a demandé là-bas.
+          pastille
+            ? pastilleStatutPublication(pub)
+            : `<span class="pub-statut">statut :
+                 <strong>${nomDuStatut(pub.espace, pub.statut)}</strong></span>
+               ${
+                 suivant
+                   ? `<button type="button" class="bouton-secondaire bouton-mini"
+                        data-avancer="${echapper(pub.id)}">Passer en ${nomDuStatut(
+                          pub.espace,
+                          suivant,
+                        )}</button>`
+                   : ''
+               }`
+        }
+        ${
+          !suivant && pub.lien_publie
+            ? `<a class="discret" href="${echapper(pub.lien_publie)}" target="_blank" rel="noopener">voir ↗</a>`
+            : ''
         }
         ${
           datee
-            ? pub.statut !== 'publie'
+            ? pub.statut !== 'publie' && !pastille
+              // Avec la pastille, le retour en arrière vit DANS le menu : garder
+              // « Repasser en idée » à côté ferait deux gestes pour la même
+              // chose, dont l'un efface la date sans le dire.
               ? `<button type="button" class="lien-discret bouton-mini"
                    data-deprogrammer="${echapper(pub.id)}"
                    title="Retirer la date : la publication redevient une idée">Repasser en idée</button>`
@@ -192,7 +217,66 @@ export function construirePublication(pub, options = {}) {
   return `<li${porte}>${corpsPublication(pub, options)}</li>`;
 }
 
+// UNE SEULE PARUTION PAR SÉRIE DANS « À VENIR » (29 août 2026, demande de Noé :
+// « les publications régulières ne doivent pas toutes être visibles dans à
+// venir, comme pour les tâches récurrentes »).
+//
+// C'est la règle de l'espace Tâches, mot pour mot (`separerLesSeries`,
+// js/taches.js, 27 août) : sans elle, les 28 parutions des deux séries
+// hebdomadaires du club noyaient les quelques publications qu'il y avait
+// vraiment à préparer. Rien n'est caché — tout se déplie.
+//
+// « Prochaine » veut dire la plus proche, pas la première à venir : une
+// parution dont le jour est passé reste devant. Le hub ne compte pas les
+// retards, mais il ne les efface pas non plus.
+//
+// Exportée pour être vérifiable seule, avec des publications factices.
+export function separerLesSeriesPub(publications) {
+  const seules = [];
+  const parSerie = new Map();
+
+  for (const pub of publications) {
+    if (!pub.serie_id) {
+      seules.push(pub);
+      continue;
+    }
+    const deja = parSerie.get(pub.serie_id);
+    if (deja) deja.push(pub);
+    else parSerie.set(pub.serie_id, [pub]);
+  }
+
+  const prochaines = [];
+  const series = [];
+
+  for (const occurrences of parSerie.values()) {
+    const triees = [...occurrences].sort((a, b) =>
+      String(a.date_prevue ?? '').localeCompare(String(b.date_prevue ?? '')),
+    );
+    prochaines.push(triees[0]);
+    if (triees.length > 1) series.push(triees.slice(1));
+  }
+
+  return { aVenir: [...seules, ...prochaines], series };
+}
+
+function blocDUneSeriePub(occurrences, options) {
+  const [premiere] = occurrences;
+  return `
+    <details class="backlog serie-repliee">
+      <summary>
+        <span class="serie-titre">${echapper(premiere.titre)}</span>
+        <span class="serie-rythme">qui revient</span>
+        <span class="chiffre">${occurrences.length}</span>
+      </summary>
+      <ul>${occurrences.map((pub) => construirePublication(pub, options)).join('')}</ul>
+    </details>`;
+}
+
 export function construireAVenir(publications, options = {}) {
+  // `series: false` par défaut — Yuno n'a rien demandé, et sa banque d'idées
+  // se lit autrement. Le FCH l'active.
+  const { series: replier = false } = options;
+
   const datees = publications
     .filter((pub) => pub.date_prevue && pub.statut !== 'publie')
     .sort((a, b) => a.date_prevue.localeCompare(b.date_prevue));
@@ -200,7 +284,27 @@ export function construireAVenir(publications, options = {}) {
   if (!datees.length) {
     return `<p class="vide">Rien de programmé. Une idée de la banque n'attend qu'une date.</p>`;
   }
-  return `<ul>${datees.map((pub) => construirePublication(pub, options)).join('')}</ul>`;
+
+  if (!replier) {
+    return `<ul>${datees.map((pub) => construirePublication(pub, options)).join('')}</ul>`;
+  }
+
+  const { aVenir, series } = separerLesSeriesPub(datees);
+  const triees = aVenir.sort((a, b) => a.date_prevue.localeCompare(b.date_prevue));
+  const repliees = series.reduce((total, lot) => total + lot.length, 0);
+
+  return `
+    <ul>${triees.map((pub) => construirePublication(pub, options)).join('')}</ul>
+    ${
+      series.length
+        ? `<p class="discret sous-titre">La prochaine fois de chaque série est restée
+             au-dessus. Voici ce qui suit — <span class="chiffre">${repliees}</span> parutions.</p>
+           ${series
+             .sort((a, b) => a[0].date_prevue.localeCompare(b[0].date_prevue))
+             .map((lot) => blocDUneSeriePub(lot, options))
+             .join('')}`
+        : ''
+    }`;
 }
 
 export function construireBanque(publications, options = {}) {

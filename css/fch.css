@@ -20,7 +20,24 @@ body[data-espace="hermitage"] {
      une bande unie dessous : la pente doit couvrir au moins l'écran. */
   min-height: 100vh;
   /* Le point médian règle la LARGEUR de la lumière. Réglé à l'œil par Noé :
-     50 trop serré, 65 trop large, 58 le bon — ne pas « arrondir ». */
+     50 trop serré, 65 trop large, 58 le bon — ne pas « arrondir ».
+
+     CES TROIS BLEUS NE SONT PAS CEUX DE LA CHARTE, ET C'EST VOULU (29 août
+     2026). Le 29 au matin, l'alignement sur la charte officielle les a
+     remplacés par la rampe du club (#113693 → #243666 → #15213d) ; Noé a
+     regardé et demandé de **garder le dégradé d'avant**. Il tient, et le reste
+     du site est passé à la charte autour de lui.
+
+     Pourquoi c'est cohérent et non une exception oubliée : le dégradé est le
+     seul endroit du site où la couleur ne DÉSIGNE rien — elle éclaire. Les
+     valeurs de la charte nomment des aplats (une tuile, un accent, un liseré),
+     et ce sont eux qui ont bougé. Une pente réglée à l'œil sur plusieurs
+     allers-retours (linéaire, deux couches, puis ceci) est un dessin, pas un
+     jeton : la refaire avec des valeurs « justes » l'aurait rendue plus
+     conforme et moins bonne.
+
+     NE PAS « corriger » ces trois valeurs au motif qu'elles sont hors charte.
+     C'est la troisième fois que ce dégradé est retouché puis remis. */
   background: radial-gradient(farthest-corner at 100% 0%,
     #0039a6 0%, #16337d 58%, #0a102c 100%);
 }
@@ -294,3 +311,562 @@ button.action-statut {
 /* Une publication ouvrable le dit au survol — la fenêtre d'édition est à un
    clic (24 août 2026). */
 .bloc li[data-ouvrir-pub] { cursor: pointer; }
+
+/* --- La saison ---------------------------------------------------------------
+   Le bloc qui dit si la com du club TOURNE (29 août 2026) — voir
+   `construireLaSaison`, js/hermitage.js.
+
+   IL EMPRUNTE LA GRAMMAIRE DES GALERIES DU HUB (#objectifs) plutôt que d'en
+   inventer une : une tuile compacte par rubrique, le titre qui porte seul le
+   poids, une rangée de marches, le service en encre discrète, le dépliage sur
+   place. Les classes sont préfixées `saison-` et rien n'est repris tel quel :
+   `.projet-tuile` porte des règles de rail horizontal (largeur figée,
+   `scroll-snap`) qui n'ont rien à faire dans une grille, et `.jour-groupe` des
+   marges liées à `.jour-colonne`. Reprendre un de ces noms aurait fait la
+   collision que le hub a déjà payée une fois avec `.barre`. */
+
+.saison-groupe {
+  margin: var(--espace-24) 0 var(--espace-8);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--texte-discret);
+}
+
+/* `.bloc ul` (styles.css) impose `display: flex; flex-direction: column` à
+   toute liste d'un bloc, et pèse (0,1,1) contre (0,1,0) pour une classe seule :
+   sans le préfixe, la GRILLE était purement ignorée et les tuiles restaient
+   l'une sous l'autre, même sur grand écran. C'est la convention déjà suivie
+   par `.bloc ul.chiffres-cles` et `.bloc ul.entonnoir-legende`. */
+.bloc ul.saison-galerie {
+  display: grid;
+  /* `minmax(0, …)` et non `1fr` : un titre long refuserait de rétrécir et
+     déborderait sa piste — le piège des éléments de grille, payé trois fois les
+     28 et 29 août (voir CLAUDE.md, conventions). */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  gap: var(--espace-12);
+}
+
+/* LE SÉLECTEUR PORTE `.bloc li`, ET C'EST OBLIGATOIRE.
+   `.bloc li` (styles.css) habille TOUT élément de liste d'un bloc : c'est
+   l'habit commun des listes du hub — flex, baseline, fond, bordure, rayon —
+   fait pour une ligne qui aligne son rond, son titre et sa date. Il pèse
+   (0,1,1) là où `.saison-tuile` seul pèse (0,1,0) : la classe PERD, et le
+   `display: block` était purement et simplement ignoré.
+
+   On s'appuie donc dessus au lieu de le combattre : le fond, la bordure et le
+   rayon de la tuile VIENNENT de lui, et c'est ce qui garantit qu'une tuile de
+   saison a exactement l'habit des autres cartes du site. On ne reprend la main
+   que sur ce qui diffère — une tuile EMPILE là où une ligne aligne.
+
+   Le défaut ne se voyait QUE sur la tuile sans rythme : celle qui se déplie
+   n'a qu'un seul enfant (`<details>`), et flex ou block ne change rien à un
+   enfant unique. C'est la variante la plus pauvre qui a révélé le bug. */
+.bloc li.saison-tuile {
+  display: block;
+  min-width: 0;
+  padding: var(--espace-16);
+}
+
+/* Le sommaire EST la tuile : tout son contenu vit dedans, et c'est lui qu'on
+   presse. La flèche native part — elle dirait « liste » là où le geste est
+   « déplier une carte ». */
+.saison-tuile summary {
+  display: block;
+  cursor: pointer;
+  list-style: none;
+}
+
+.saison-tuile summary::-webkit-details-marker { display: none; }
+
+.saison-tuile summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: var(--rayon-controle);
+}
+
+/* La tête : l'état, en petites capitales et en encre discrète, au-dessus du
+   nom. Même place que le nom de l'espace sur une tuile de projet du hub. */
+.saison-tete {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  margin-bottom: var(--espace-8);
+}
+
+.saison-etat {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-4);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--texte-discret);
+}
+
+/* DEUX ÉTATS, PAS TROIS. Un projet du hub va de « pas commencé » à « terminé »,
+   donc gris → bleu → vert ; une rubrique ne se termine jamais — elle tourne ou
+   elle ne tourne pas. Un vert promettrait une fin qui n'existe pas. */
+.saison-etat i {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--texte) 25%, transparent);
+}
+
+.saison-etat i.tenue { background: var(--accent); }
+
+/* Le titre porte seul le poids, comme dans la galerie des caps. */
+.saison-nom {
+  display: block;
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.25;
+  /* Deux lignes au plus : au-delà, une tuile pousse ses voisines et la galerie
+     cesse de se comparer d'un coup d'œil. */
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Une marche par semaine devant, pleine si une parution y tombe : le motif des
+   jalons du hub, qui dit ici la CONTINUITÉ du rythme. */
+.saison-marches {
+  display: flex;
+  gap: 3px;
+  margin-top: var(--espace-12);
+}
+
+.saison-marches i {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--texte) 12%, transparent);
+}
+
+.saison-marches i.tenue { background: var(--accent); }
+
+/* Rien de posé : le pointillé le dit, exactement comme la jauge d'un projet qui
+   n'a rien déclaré à mesurer. Une rangée vide aurait dit « ça s'est arrêté »,
+   ce qui est faux — ça n'a jamais commencé. */
+.saison-marches-vide {
+  height: 5px;
+  border-radius: 3px;
+  background: repeating-linear-gradient(90deg,
+    color-mix(in srgb, var(--texte) 12%, transparent) 0 6px, transparent 6px 12px);
+}
+
+.saison-compte {
+  display: block;
+  margin: var(--espace-8) 0 0;
+  font-size: 0.75rem;
+  color: var(--texte-discret);
+}
+
+.saison-compte .chiffre { color: var(--texte); }
+
+/* Les rythmes, une fois la tuile dépliée. */
+/* Même piège : `.bloc ul` remet `margin: 0; padding: 0`, donc le filet venait
+   se coller sous le service. Mesuré : 0 px d'écart au lieu des 28 voulus. */
+.bloc ul.saison-rythmes {
+  display: grid;
+  gap: var(--espace-12);
+  margin: var(--espace-16) 0 0;
+  padding: var(--espace-16) 0 0;
+  border-top: 1px solid var(--bordure);
+}
+
+/* Un rythme est une LIGNE dans la tuile, pas une carte dans une carte : on
+   défait l'habit de `.bloc li` au lieu d'empiler deux fonds et deux bordures. */
+.bloc li.saison-rythme {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+
+.saison-rythme-nom {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.saison-rythme-service {
+  font-size: 0.75rem;
+  color: var(--texte-discret);
+}
+
+.saison-rythme-service .chiffre { color: var(--texte); }
+
+/* À rattacher : la tuile se lit en retrait — c'est une proposition, pas un
+   reproche. Aucun rouge : un rythme sans rubrique tourne très bien, il ne se
+   compte simplement pas. */
+/* Même raison de spécificité : le fond plein de `.bloc li` gagnerait. */
+.bloc li.saison-orpheline {
+  background: none;
+  border-style: dashed;
+}
+
+.saison-rattacher {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  margin-top: var(--espace-12);
+}
+
+.saison-rattacher-mot {
+  font-size: 0.75rem;
+  color: var(--texte-discret);
+}
+
+.saison-rattacher select {
+  flex: 1;
+  min-width: 0;
+  /* La cible tactile du hub : 44 px, jamais moins. */
+  min-height: 44px;
+  padding: 0 var(--espace-8);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  color: var(--texte);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+}
+
+/* --- Les tuiles du calendrier éditorial, compactées ---------------------------
+   Demande de Noé, 29 août 2026 : « les tuiles d'idées sont beaucoup trop
+   grosses ». Mesuré avant : 118 px de haut pour un titre, un état et deux
+   boutons — quatre tuiles remplissaient l'écran d'un téléphone.
+
+   TOUT EST SCOPÉ AU SITE FCH. Les classes `.pub-*` servent aussi à Yuno, dont
+   le calendrier éditorial n'a rien demandé : une demande de forme vise l'écran
+   qu'on regarde, pas la règle commune. */
+
+body[data-espace="hermitage"] .bloc li .pub-titre {
+  /* 17 px → 15 : le titre reste le poids de la tuile sans en faire un panneau.
+     Il garde sa graisse, c'est elle qui le distingue. */
+  font-size: 0.9375rem;
+  line-height: 1.3;
+}
+
+body[data-espace="hermitage"] [data-bloc="a-venir"] li {
+  padding: var(--espace-8) var(--espace-12);
+  gap: var(--espace-4) var(--espace-8);
+}
+
+/* La ligne d'actions remonte contre le titre : son `margin-top` valait 4 px en
+   plus du `gap` de la tuile, soit deux espacements pour une seule respiration. */
+body[data-espace="hermitage"] .pub-actions {
+  margin-top: 0;
+  gap: var(--espace-4) var(--espace-8);
+}
+
+/* L'en-tête (réseau, format, rubrique, date) : des étiquettes plus fines, qui
+   annoncent sans concurrencer le titre. */
+body[data-espace="hermitage"] [data-bloc="a-venir"] .etiquette {
+  padding: 2px var(--espace-8);
+  font-size: 0.6875rem;
+}
+
+/* LE TITRE ET L'ÉTAT SUR LA MÊME LIGNE : c'est ce qui fait passer la tuile de
+   trois lignes à deux. `.pub-titre` et `.pub-actions` sont tous deux en
+   `width: 100%` (css/yuno.css) — fait pour un écran où une publication porte
+   sa preuve, ses notes et une checklist. Ici il n'y a qu'un titre et un état :
+   ils tiennent côte à côte, l'état calé à droite sous la date. */
+body[data-espace="hermitage"] [data-bloc="a-venir"] .pub-titre {
+  width: auto;
+  flex: 1 1 8rem;
+  /* Sans cela un titre long refuse de rétrécir et pousse l'état hors de la
+     tuile — le piège des enfants de flex, comme ailleurs dans le hub. */
+  min-width: 0;
+}
+
+body[data-espace="hermitage"] [data-bloc="a-venir"] .pub-actions {
+  width: auto;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+/* LA PASTILLE PASSE EN CREUX, et c'est une question de NOMBRE, pas de couleur.
+   Sur le calendrier, une pastille se voit à la fois, dans une tuile ouverte :
+   l'aplat teinté y est juste. Dans « À venir », il y en a onze d'affilée — et
+   comme le cycle du club commence à « à préparer », le premier cran, elles
+   sont TOUTES au rouge du début de cycle. Onze aplats rouge sombre sur du bleu
+   se lisent comme onze alertes, alors que rien ne va mal : c'est l'état normal
+   d'une publication qu'on vient de noter.
+
+   Le contour garde l'information — l'étape se lit toujours à la teinte, du
+   rouge au vert — et retire le cri. La règle du hub tient : aucune couleur ne
+   juge ici une échéance. */
+body[data-espace="hermitage"] .pub-actions .cal-statut-pastille {
+  font-size: 0.6875rem;
+  background: none;
+  border-color: hsl(var(--teinte) 45% 46%);
+  color: hsl(var(--teinte) 70% 76%);
+}
+
+/* --- Les séries repliées ------------------------------------------------------
+   Même habit que « Ce qui revient » de l'espace Tâches : le bloc ne s'impose
+   pas au regard, il se déplie quand on le demande. */
+
+body[data-espace="hermitage"] .serie-repliee summary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espace-8);
+  padding: var(--espace-8) var(--espace-12);
+  cursor: pointer;
+}
+
+body[data-espace="hermitage"] .serie-titre {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+body[data-espace="hermitage"] .serie-rythme {
+  font-size: 0.75rem;
+  color: var(--texte-discret);
+}
+
+body[data-espace="hermitage"] .serie-repliee .chiffre { margin-left: auto; }
+
+/* Le geste d'une rubrique qui ne tourne pas encore. Discret : c'est une
+   proposition, et la tuile reste une carte qu'on lit avant d'agir. */
+body[data-espace="hermitage"] .saison-poser {
+  margin: var(--espace-12) 0 0;
+}
+
+/* --- L'écran Club : l'aide-mémoire --------------------------------------------
+   Il ne fait que lire. Sa forme le dit : aucun contrôle, aucune couleur d'état,
+   rien qui ressemble à un geste. Voir `vueClub`, js/hermitage.js.
+
+   Tous les sélecteurs portent `.bloc ul` / `.bloc li` : l'habit commun du hub
+   pèse (0,1,1) et gagnerait sur une classe seule — la leçon du même jour. */
+
+.bloc ul.club-commissions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: var(--espace-8);
+}
+
+.bloc li.club-commission {
+  display: block;
+  min-width: 0;
+  padding: var(--espace-12) var(--espace-16);
+}
+
+/* PAS DE FILET D'ACCENT SUR LE CÔTÉ. Il y en a eu un — 3 px d'accent à gauche —
+   et il est parti le jour même : les commissions de Noé portent DÉJÀ trois
+   signes qui les distinguent, le libellé « ta commission » en accent, la liste
+   de leurs missions (les autres n'en ont aucune) et la hauteur qui en découle.
+   Un quatrième signe ne distinguait plus rien, il décorait.
+
+   La bordure du côté est aussi un tic d'interface : elle simule une hiérarchie
+   que le contenu porte déjà. Quand le contenu suffit, on le laisse suffire.
+
+   Ce n'est PAS la barre de couleur d'une tuile d'espace (`.bloc li[data-espace]`,
+   styles.css) : celle-là dit une information qu'aucun mot ne donne — de quel
+   espace vient la ligne — et c'est pour ça qu'elle reste. */
+
+.club-commission-tete {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--espace-8);
+  margin: 0;
+}
+
+.club-commission-nom {
+  font-family: var(--police-titre);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.club-part {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--texte-discret);
+}
+
+.club-part-mienne { color: var(--accent); }
+
+.club-gens {
+  margin: var(--espace-4) 0 0;
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+}
+
+/* Les missions ne s'affichent que sur les deux commissions de Noé : ailleurs
+   elles seraient du bruit — ce n'est pas son travail. */
+.bloc ul.club-missions {
+  display: grid;
+  gap: var(--espace-4);
+  margin: var(--espace-12) 0 0;
+  padding: 0;
+}
+
+.bloc li.club-missions > li,
+.club-missions li {
+  display: list-item;
+  margin-left: var(--espace-16);
+  padding: 0;
+  background: none;
+  border: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  list-style: disc;
+}
+
+/* --- Le projet --------------------------------------------------------------- */
+
+.club-mission {
+  margin: 0 0 var(--espace-16);
+  font-family: var(--police-titre);
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--accent);
+}
+
+.bloc ul.club-valeurs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: var(--espace-8);
+}
+
+.bloc li.club-valeurs > li,
+.club-valeurs li {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--espace-12);
+}
+
+.club-valeur-nom { font-weight: 600; }
+
+.club-valeur-mot {
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+}
+
+/* --- Les créneaux et les chiffres, repliés ------------------------------------
+   Ils se consultent rarement : ils ferment la page et ne s'imposent pas. */
+
+.bloc ul.club-jours {
+  display: grid;
+  gap: var(--espace-16);
+  margin: var(--espace-12) 0 0;
+  padding: 0;
+}
+
+.bloc li.club-jours > li,
+.club-jours > li {
+  display: block;
+  padding: 0;
+  background: none;
+  border: 0;
+}
+
+.club-jour {
+  margin: 0 0 var(--espace-8);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--texte-discret);
+}
+
+.bloc ul.club-creneaux {
+  display: grid;
+  gap: var(--espace-4);
+  margin: 0;
+  padding: 0;
+}
+
+.club-creneaux li {
+  display: grid;
+  grid-template-columns: 4rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--espace-8);
+  padding: var(--espace-8) var(--espace-12);
+  font-size: 0.8125rem;
+}
+
+.club-categorie { font-weight: 600; }
+.club-lieu { color: var(--texte-discret); }
+.club-heure { color: var(--texte-discret); font-size: 0.75rem; }
+
+.bloc ul.club-reperes {
+  display: grid;
+  gap: var(--espace-4);
+  margin: var(--espace-12) 0 0;
+  padding: 0;
+}
+
+.club-reperes li {
+  display: grid;
+  grid-template-columns: 4rem minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--espace-12);
+  padding: var(--espace-8) var(--espace-12);
+}
+
+.club-chiffre {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  text-align: right;
+}
+
+.club-quoi {
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+}
+
+/* --- Le temps fort qui approche ------------------------------------------------
+   En tête de l'accueil, sous la réunion du moment. Il SITUE, il ne réclame
+   pas : ni compte à rebours, ni couleur d'alerte, ni liste de ce qui manque.
+   Voir `blocTempsFort`, js/hermitage.js. */
+
+/* LE NOM DE L'ÉVÉNEMENT EST CE QU'ON LIT EN PREMIER — il doit donc en avoir
+   le poids. C'est un `<h2>` par sémantique (il titre sa section), et `.bloc h2`
+   habille les titres de SECTION du hub : 10 px, petites capitales, encre
+   discrète. Il pèse (0,1,1) contre (0,1,0) pour une classe seule — « TOURNOI
+   DE PÉTANQUE » se lisait plus petit que les objectifs d'en dessous, alors
+   qu'il est le sujet du bandeau. Le sélecteur porte donc `.bloc`, comme partout
+   ailleurs sur ce site. */
+.bloc h2.tf-titre {
+  margin: var(--espace-8) 0 var(--espace-4);
+  font-family: var(--police-titre);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.2;
+  color: var(--texte);
+}
+
+.tf-service {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--espace-4) var(--espace-12);
+  margin: 0 0 var(--espace-16);
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+}
+
+.tf-posees .chiffre { color: var(--texte); }
+
+/* « Rien de posé » se dit dans la MÊME encre que le reste : cinq semaines
+   avant, c'est un fait ordinaire, pas un manquement. Le distinguer — même
+   en plus pâle — en aurait fait un reproche silencieux. */
+.tf-rien { color: var(--texte-discret); }

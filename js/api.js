@@ -1082,6 +1082,43 @@ export async function arreterSerie(serie, jourISO = null) {
   return arretee;
 }
 
+// RATTACHER UNE SÉRIE À UNE RUBRIQUE (29 août 2026, pour « La saison » du site
+// FCH). Deux séries hebdomadaires du club tournaient depuis le 9 septembre sans
+// qu'aucune ne porte de rubrique : le rythme existait, il n'était rattaché à
+// rien, donc rien n'était comptable par rubrique.
+//
+// ELLE ÉCRIT AUX DEUX ÉTAGES, et c'est tout son objet :
+//   — le MODÈLE de la série, pour que les occurrences À NAÎTRE la portent ;
+//   — les occurrences DÉJÀ POSÉES et encore à venir, sinon les quinze
+//     parutions déjà générées resteraient orphelines et le compte par rubrique
+//     mentirait pendant seize semaines.
+//
+// Ce qui est PASSÉ ne bouge pas : une parution déjà sortie a eu lieu sous le
+// nom qu'elle portait, et la réécrire falsifierait l'histoire. C'est la même
+// borne que `arreterSerie`, et pour la même raison.
+export async function rubriquerSerie(serie, rubrique) {
+  const valeur = (rubrique ?? '').trim() || null;
+  const borne = versDateISO(new Date());
+
+  const { error } = await client
+    .from(TABLE_DE_LA_NATURE[serie.nature])
+    .update({ rubrique: valeur })
+    .eq('serie_id', serie.id)
+    .gte(COLONNE_DU_JOUR[serie.nature], borne);
+  if (error) throw error;
+
+  const rubriquee = verifier(
+    await client
+      .from('series')
+      .update({ modele: { ...(serie.modele ?? {}), rubrique: valeur } })
+      .eq('id', serie.id)
+      .select()
+      .single(),
+  );
+  seriesEnCache.set(rubriquee.id, rubriquee);
+  return rubriquee;
+}
+
 // Le modèle d'une série née d'une ligne déjà écrite : on reprend ses champs, en
 // laissant dehors ce qui appartient à l'occurrence (son identité, sa date, son
 // état) et non à la série.

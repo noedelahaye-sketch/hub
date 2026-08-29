@@ -44,6 +44,14 @@ import {
   RECURRENCES,
 } from './format.js';
 import { finDeLaSortie, phaseDeLaSortie } from './preparations-commun.js';
+import { REPERES, MISSION, VALEURS, COMMISSIONS, CRENEAUX } from './club-fch.js';
+import {
+  trierTaches,
+  construireLignesTaches,
+  cocherDepuisTableauDeBord,
+  separerLesSeries,
+} from './taches.js';
+import { construireCapGrave } from './objectifs-commun.js';
 
 import {
   assemblerCalendrier,
@@ -85,16 +93,43 @@ const RESEAUX_FCH = {
   linkedin: 'LinkedIn',
 };
 
-// Proposées, pas imposées : à corriger dès que Noé connaîtra son rythme réel
-// (docs/fch-spec.md, §7).
+// LES RUBRIQUES RÉELLES DU CLUB (29 août 2026). Elles ne sont plus proposées à
+// l'aveugle : elles viennent de l'arborescence `Communication/Réseaux/` du
+// dossier FCH, éprouvée sur trois saisons, puis corrigée par Noé.
+//
+// Ce qu'elles remplacent, et pourquoi c'est important : six rubriques
+// inventées le 7 août faute de mieux — avant-match, portrait de joueur,
+// coulisses… — dont AUCUNE ne correspondait à ce qu'il publie. Résultat
+// mesuré le 29 août : 42 des 44 publications du club ne portaient aucune
+// rubrique. On ne remplissait pas le champ parce qu'on ne lui proposait pas
+// les bons mots.
+//
+// Trois sorties de la liste, toutes de Noé (29 août) :
+//   — les ANNIVERSAIRES sont des storys, elles ne passent pas au calendrier
+//     éditorial. Elles restent un vrai travail : le projet « Anniversaires du
+//     mois » et sa tâche à la quinzaine ne bougent pas.
+//   — le JOUEUR DE LA SEMAINE désignait autre chose, hors réseaux, et pas
+//     cette saison.
+//   — le MPP (MonPetitProno × FCH) n'est pas décidé pour cette saison.
 const RUBRIQUES_DEPART = [
-  'Avant-match',
-  'Résultats',
-  'Portrait de joueur',
-  'Coulisses',
-  'Partenaire à l’honneur',
-  'Vie du club',
+  'Programmation du week-end',
+  'Résultats du week-end',
+  'Présentation des catégories',
+  'Trombinoscopes',
+  'Reprises',
+  'Licences',
+  'Calendrier',
+  'Saison & plannings',
+  'Bilans de saison',
+  'Recrutement',
+  'Entente',
 ];
+
+// CE QUI REVIENT CHAQUE SEMAINE, et seulement ça. Les autres rubriques
+// ci-dessus reviennent chaque SAISON, à un moment (les licences en été, les
+// bilans en juin) : ce ne sont pas des séries, et leur poser une récurrence
+// hebdomadaire mentirait. Elles restent des suggestions du formulaire.
+const SAISON_HEBDO = ['Programmation du week-end', 'Résultats du week-end'];
 
 // Les partenaires sont des contacts de type 'marque' : même table que le
 // réseau de Yuno, c'est la même matière (docs/fch-spec.md, §5).
@@ -937,6 +972,83 @@ function vueReunions(etat) {
     ${pied()}`;
 }
 
+// LE TEMPS FORT QUI APPROCHE (30 août 2026), sous la réunion du moment.
+//
+// CE QU'IL RÉPOND. Le club tient huit à neuf temps forts par saison — pétanque,
+// Tournoi Rose, goûter de Noël, loto, tournois, journée du club. Ils portent
+// l'essentiel de la communication événementielle, et l'accueil ne les voyait pas
+// venir : ils dormaient au calendrier, à deux gestes de là.
+//
+// IL NE RÉCLAME RIEN, IL SITUE. Pas de compte à rebours, pas de « plus que
+// 3 jours ! », pas de liste de ce qui n'est pas fait — le hub ne compte pas les
+// retards. Il dit ce qui vient et ce qui est déjà posé pour ce jour-là ; s'il
+// n'y a rien de posé, il le dit sans reproche.
+//
+// L'HORIZON EST DE CINQ SEMAINES. Plus loin, un temps fort n'appelle encore
+// aucun geste et le bandeau deviendrait un meuble qu'on ne lit plus ; plus
+// près, on découvrirait la pétanque la veille. Il reste jusqu'au SOIR du jour :
+// la com d'un temps fort se fait aussi pendant.
+const HORIZON_TEMPS_FORT_JOURS = 35;
+
+function blocTempsFort(etat) {
+  const maintenant = new Date();
+  const horizon = new Date(maintenant);
+  horizon.setDate(horizon.getDate() + HORIZON_TEMPS_FORT_JOURS);
+
+  // La fin du jour, et non l'instant : un temps fort sans créneau tombe à
+  // minuit, et une borne à l'heure courante l'aurait fait disparaître le matin
+  // même. C'est la précaution déjà prise dans js/fch.js.
+  const finDuJour = (evenement) => {
+    const jour = new Date(evenement.date_debut);
+    jour.setHours(23, 59, 59, 999);
+    return jour;
+  };
+
+  const evenement = etat.evenements
+    .filter((e) => e.temps_fort && !estReunion(e))
+    .filter((e) => finDuJour(e) >= maintenant && new Date(e.date_debut) <= horizon)
+    .sort((a, b) => new Date(a.date_debut) - new Date(b.date_debut))[0];
+
+  if (!evenement) return '';
+
+  const jour = new Date(evenement.date_debut);
+  const cEstAujourdhui = jour.toDateString() === maintenant.toDateString();
+
+  // CE QUI EST DÉJÀ POSÉ POUR CE JOUR-LÀ : les publications datées du jour de
+  // l'événement. C'est la seule question qui vaille devant un temps fort qui
+  // approche — « est-ce que j'ai prévu quelque chose ? » —, et le hub y répond
+  // sans rien demander de plus.
+  const jourISO = versDateISO(jour);
+  const posees = etat.publications.filter((pub) => pub.date_prevue === jourISO);
+
+  const quoi = posees.length
+    ? `<span class="tf-posees"><span class="chiffre">${posees.length}</span>
+         ${posees.length > 1 ? 'publications posées' : 'publication posée'} ce jour-là</span>`
+    // Un vide ouvre une porte, il ne s'excuse pas — et surtout il n'accuse pas :
+    // rien de posé cinq semaines avant est parfaitement normal.
+    : '<span class="tf-posees tf-rien">Rien de posé ce jour-là pour l’instant</span>';
+
+  return `
+    <section class="bloc">
+      <span class="tuile-entete">
+        <span class="etiquette">${cEstAujourdhui ? "C'est aujourd'hui" : 'Temps fort'}</span>
+        <span class="discret quand">${echapper(echeanceLisible(jour))}</span>
+      </span>
+      <h2 class="tf-titre">${echapper(evenement.titre)}</h2>
+      <p class="tf-service">
+        ${evenement.lieu ? `<span>${echapper(evenement.lieu)}</span>` : ''}
+        ${quoi}
+      </p>
+      <a class="lien-externe" href="#hermitage/creer">
+        <span class="lien-externe-texte">
+          <span class="lien-externe-titre">Préparer sa com</span>
+          <span class="discret">Poser ce qui sortira avant, pendant et après</span>
+        </span>
+        <span class="lien-externe-fleche" aria-hidden="true">→</span>
+      </a>
+    </section>`;
+}
+
 // La réunion du moment, en tête de l'accueil (demande de Noé, 21 août 2026) —
 // le pendant de « la sortie du moment » chez Yuno : le jour d'un conseil, ce
 // qui compte n'est ni la com' ni les objectifs, c'est la fiche.
@@ -1005,26 +1117,100 @@ function blocReunionDuMoment(etat) {
 
 // --- Les vues ----------------------------------------------------------------
 
+// L'ACCUEIL DU SITE : L'ATELIER (restructuré le 30 août 2026, demande de Noé).
+//
+// CE QUI N'ALLAIT PAS, et c'est la spec elle-même qui le dit : « le site est
+// l'ATELIER — il répond à "qu'est-ce que je fais maintenant" ; la page du hub
+// est le BILAN — elle répond à "où j'en suis". C'est la seule division qui
+// justifie deux écrans. »
+//
+// Or les deux rôles étaient inversés sur les deux points qui comptent :
+//   — le site — l'atelier — n'affichait AUCUNE tâche, ouvrait sur trois grosses
+//     tuiles d'objectifs suivies d'un formulaire « Ajouter un objectif », et
+//     fermait sur les victoires. Deux blocs de bilan, zéro travail ;
+//   — la page `#fch` du hub — le bilan — avait, elle, un panneau « À faire ».
+//
+// L'accueil du HUB a tranché la même question le 29 août : « Les objectifs ont
+// quitté l'accueil. Ils ont leur page à deux gestes, et l'accueil répond à
+// "qu'est-ce que j'ai à faire", pas à "où je vais". » Le site suit, avec un
+// retard d'un jour et pour la même raison.
+//
+// L'ORDRE, du plus urgent au plus lointain :
+//   1. ce qui approche — une réunion, un temps fort ;
+//   2. À FAIRE — le travail, qui manquait ;
+//   3. la com à venir ;
+//   4. le cap, en tuile-PORTE : on le relit, on ne le règle pas ici ;
+//   5. les victoires, repliées.
+//
+// AJOUTER UN OBJECTIF A QUITTÉ CET ÉCRAN. Un objectif de fin d'alternance se
+// décide trois fois dans une année : le formulaire pesait tous les jours pour
+// un geste triennal, et il vit dans `#objectifs`, là où l'on décide.
+
+// Ce qu'on montre d'un coup. Au-delà, une colonne d'accueil cesse d'être un
+// atelier et devient un mur — celui que l'espace Tâches a appris à ne pas
+// dresser. Le reste se déplie : rien n'est caché.
+const TACHES_EN_TETE = 7;
+
+function blocAFaire(etat) {
+  // UNE SEULE OCCURRENCE PAR SÉRIE, la règle de l'espace Tâches
+  // (`separerLesSeries`, 27 août) : mesuré, 25 tâches s'affichaient d'affilée
+  // sur cet accueil, dont l'essentiel était la même poignée de rythmes répétés
+  // seize semaines devant. La plus proche suffit à dire qu'il y a à faire.
+  const { aFaire: candidates } = separerLesSeries(
+    etat.taches.filter((tache) => tache.statut !== 'fait'),
+  );
+  const aFaire = trierTaches(candidates);
+
+  // Ni ouvrable ni supprimable : corriger et supprimer une tâche vivent dans
+  // l'espace Tâches. Ici on la coche, et c'est tout — offrir les deux autres
+  // gestes sans les traiter ferait des boutons morts. Même règle que la page
+  // du hub, et le geste est le MÊME (`cocherDepuisTableauDeBord`).
+  const dessiner = (lot) =>
+    construireLignesTaches(lot, { ouvrable: false, supprimable: false, espace: false });
+
+  if (!aFaire.length) {
+    return `
+    <section class="bloc">
+      <h2>À faire</h2>
+      <div data-bloc="taches">
+        <p class="vide">Rien à faire pour le club. Le « + » en bas note la prochaine.</p>
+      </div>
+    </section>`;
+  }
+
+  const tete = aFaire.slice(0, TACHES_EN_TETE);
+  const reste = aFaire.slice(TACHES_EN_TETE);
+
+  return `
+    <section class="bloc">
+      <h2>À faire <span class="chiffre">${aFaire.length}</span></h2>
+      <div data-bloc="taches">
+        ${dessiner(tete)}
+        ${
+          reste.length
+            ? `<details class="backlog">
+                 <summary>Le reste <span class="chiffre">${reste.length}</span></summary>
+                 ${dessiner(reste)}
+               </details>`
+            : ''
+        }
+      </div>
+      <a class="lien-externe" href="#taches/fch">
+        <span class="lien-externe-texte">
+          <span class="lien-externe-titre">Toutes les tâches du club</span>
+          <span class="discret">Créer, régler la priorité, voir ce qui revient</span>
+        </span>
+        <span class="lien-externe-fleche" aria-hidden="true">→</span>
+      </a>
+    </section>`;
+}
+
 function vueAccueil(etat) {
   return `
     ${enTete('accueil')}
     ${blocReunionDuMoment(etat)}
-
-    <section class="bloc">
-      <h2>Objectifs de fin d'alternance</h2>
-      <div data-bloc="objectifs">${construireObjectifs(etat.objectifs)}</div>
-      ${construireFormulaire({
-        id: 'fch-objectif',
-        libelle: 'Ajouter un objectif',
-        action: 'creer-objectif',
-        champs: [
-          { nom: 'titre', libelle: 'Objectif', type: 'text', requis: true },
-          { nom: 'pourquoi', libelle: 'Pourquoi ?', type: 'textarea' },
-          { nom: 'cible', libelle: "À quoi tu sauras que c'est réussi", type: 'text' },
-          { nom: 'echeance', libelle: 'Échéance (facultative)', type: 'date' },
-        ],
-      })}
-    </section>
+    ${blocTempsFort(etat)}
+    ${blocAFaire(etat)}
 
     <section class="bloc">
       <h2>La com' à venir</h2>
@@ -1039,15 +1225,280 @@ function vueAccueil(etat) {
     </section>
 
     <section class="bloc">
-      <h2>Victoires</h2>
-      <div data-bloc="victoires">${construireVictoires(etat.victoires)}</div>
+      <h2>Le cap</h2>
+      <div data-bloc="objectifs">${
+        etat.objectifs.length
+          ? construireCapGrave(etat.objectifs)
+          : '<p class="vide">Ton cap s’écrira ici.</p>'
+      }</div>
+      <a class="lien-externe" href="#objectifs/fch">
+        <span class="lien-externe-texte">
+          <span class="lien-externe-titre">Régler le cap</span>
+          <span class="discret">Objectifs, jalons, projets du club</span>
+        </span>
+        <span class="lien-externe-fleche" aria-hidden="true">→</span>
+      </a>
+    </section>
+
+    <section class="bloc bloc-discret">
+      <details class="backlog">
+        <summary>Victoires <span class="chiffre">${etat.victoires.length}</span></summary>
+        <div data-bloc="victoires">${construireVictoires(etat.victoires)}</div>
+      </details>
+      <a class="lien-externe" href="#chemin">
+        <span class="lien-externe-texte">
+          <span class="lien-externe-titre">Le chemin</span>
+          <span class="discret">Tout ce qui a été accompli, mois par mois</span>
+        </span>
+        <span class="lien-externe-fleche" aria-hidden="true">→</span>
+      </a>
     </section>
     ${pied()}`;
+}
+
+
+// --- La saison --------------------------------------------------------------
+//
+// CE QUE CE BLOC RÉPOND, et qui n'était nulle part : « est-ce que ma com
+// tourne ? ». Le calendrier éditorial montre les parutions une à une ; il ne
+// dit jamais quel RYTHME est posé, ni lequel manque. Or l'essentiel de la
+// charge du club est cyclique — c'est le fait que le dossier FCH a révélé.
+//
+// UNE RUBRIQUE PORTE PLUSIEURS RYTHMES, et c'est Noé qui l'a tranché (29 août
+// 2026) : « Programmation de la semaine » ET « Programmation foot à 5, 8 et
+// entente » sont toutes deux de la « Programmation du week-end ». La première
+// version comptait une série = une rubrique et proposait donc de poser un
+// rythme qui tournait déjà, sous un autre nom. La rubrique est l'étage du
+// dessus ; les séries sont sa mécanique.
+//
+// LA FORME EST CELLE DES GALERIES DU HUB (#objectifs) : une tuile compacte par
+// rubrique, le titre qui porte seul le poids, le service en encre discrète, une
+// rangée de marches, et le dépliage SUR PLACE sur ses rythmes — on n'ouvre pas
+// une autre page. Les classes sont préfixées `saison-` : `.projet-tuile` porte
+// des règles de rail horizontal qui n'ont rien à faire ici.
+
+// Sur combien de semaines on regarde devant. Huit, soit deux mois : assez pour
+// voir un rythme tenir, assez court pour se lire d'un coup d'œil. L'horizon des
+// séries est le double (16 semaines, js/api.js), donc une rubrique qui tourne
+// remplit toujours la rangée — et c'est bien l'information qu'on vient chercher.
+const SEMAINES_DEVANT = 8;
+
+function rubriqueDe(serie) {
+  return (serie.modele?.rubrique ?? '').trim();
+}
+
+// Deux rubriques se comparent sur leur sens, pas sur leur casse ni leurs
+// espaces : « Résultats du week-end » et « resultats du week-end  » sont la
+// même, et en afficher deux serait pire que n'en afficher aucune.
+function memeRubrique(a, b) {
+  const nu = (mot) => (mot ?? '').trim().toLowerCase();
+  return nu(a) !== '' && nu(a) === nu(b);
+}
+
+// Le lundi de la semaine d'une date : c'est la maille des marches, et la
+// semaine du hub commence le lundi partout ailleurs.
+function lundiDe(date) {
+  const lundi = new Date(date);
+  // getDay() rend 0 pour dimanche : il recule de 6, pas de 0.
+  lundi.setDate(lundi.getDate() - ((lundi.getDay() + 6) % 7));
+  return lundi;
+}
+
+// --- Ce que la saison contient, sans une once de HTML -----------------------
+// Séparé du dessin pour rester vérifiable seul, comme le reste du hub.
+
+export function saisonDuClub(series, publications, aujourdhui) {
+  const vivantes = series.filter(
+    (serie) => serie.nature === 'publication' && serie.espace === ESPACE && !serie.arretee,
+  );
+
+  const parutionsDe = (lot) => {
+    const ids = new Set(lot.map((serie) => serie.id));
+    return publications.filter(
+      (pub) => ids.has(pub.serie_id) && pub.date_prevue && pub.date_prevue >= aujourdhui,
+    );
+  };
+
+  // Les rubriques connues : celles qui reviennent chaque semaine, plus celles
+  // qu'une série porte déjà. L'union, pour qu'une rubrique écrite à la main
+  // apparaisse sans avoir à toucher au code.
+  const noms = [];
+  for (const nom of [...SAISON_HEBDO, ...vivantes.map(rubriqueDe).filter(Boolean)]) {
+    if (!noms.some((connu) => memeRubrique(connu, nom))) noms.push(nom);
+  }
+
+  const debutSemaine = lundiDe(depuisDateISO(aujourdhui));
+
+  const rubriques = noms.map((nom) => {
+    const lot = vivantes.filter((serie) => memeRubrique(nom, rubriqueDe(serie)));
+    const parutions = parutionsDe(lot);
+
+    // Une marche par semaine : pleine si une parution y tombe. C'est le motif
+    // des jalons du hub, et il dit ici la CONTINUITÉ du rythme — une série qui
+    // s'arrête dans trois semaines laisse les dernières vides.
+    const semaines = [];
+    for (let i = 0; i < SEMAINES_DEVANT; i += 1) {
+      const debut = new Date(debutSemaine);
+      debut.setDate(debut.getDate() + i * 7);
+      const fin = new Date(debut);
+      fin.setDate(fin.getDate() + 7);
+      const bornDebut = versDateISO(debut);
+      const bornFin = versDateISO(fin);
+      semaines.push(
+        parutions.some((pub) => pub.date_prevue >= bornDebut && pub.date_prevue < bornFin),
+      );
+    }
+
+    return {
+      nom,
+      series: lot,
+      parutions: parutions.length,
+      prochaine: parutions.map((pub) => pub.date_prevue).sort()[0] ?? null,
+      semaines,
+      enPlace: lot.length > 0,
+    };
+  });
+
+  return { rubriques, orphelines: vivantes.filter((serie) => !rubriqueDe(serie)) };
+}
+
+// --- Le dessin ---------------------------------------------------------------
+
+function ligneRythme(serie, publications, aujourdhui) {
+  const restantes = publications.filter(
+    (pub) => pub.serie_id === serie.id && pub.date_prevue && pub.date_prevue >= aujourdhui,
+  ).length;
+  // `RECURRENCES` écrit « Chaque semaine » avec sa capitale — juste quand le
+  // mot ouvre une ligne, faux ici où il ouvre une énumération de service.
+  const cadence = (RECURRENCES[serie.recurrence] ?? serie.recurrence)
+    .replace(/^./, (lettre) => lettre.toLowerCase());
+  return `
+    <li class="saison-rythme">
+      <span class="saison-rythme-nom">${echapper(serie.modele?.titre || 'Sans titre')}</span>
+      <span class="saison-rythme-service">${echapper(cadence)} · <span class="chiffre">${restantes}</span> à venir</span>
+    </li>`;
+}
+
+function tuileRubrique(rubrique, publications, aujourdhui) {
+  const marches = rubrique.enPlace
+    ? `<div class="saison-marches">${rubrique.semaines
+        .map((pleine) => `<i${pleine ? ' class="tenue"' : ''}></i>`)
+        .join('')}</div>`
+    // Rien de posé : le pointillé le dit, comme la jauge d'un projet qui n'a
+    // rien déclaré. Une rangée vide aurait dit « ça s'est arrêté », ce qui est
+    // faux — ça n'a jamais commencé.
+    : '<div class="saison-marches saison-marches-vide"></div>';
+
+  const service = rubrique.enPlace
+    ? [
+        `<span class="chiffre">${rubrique.series.length}</span> rythme${rubrique.series.length > 1 ? 's' : ''}`,
+        `<span class="chiffre">${rubrique.parutions}</span> à venir`,
+        rubrique.prochaine
+          // `echeanceLisible` attend un objet Date, pas la chaîne ISO de la
+          // colonne : sans `depuisDateISO`, le montage entier du site tombe.
+          ? `prochaine ${echapper(echeanceLisible(depuisDateISO(rubrique.prochaine)))}`
+          : null,
+      ].filter(Boolean).join(' · ')
+    : 'chaque semaine · rien de posé';
+
+  const etat = rubrique.enPlace
+    ? '<span class="saison-etat"><i class="tenue"></i>en place</span>'
+    : '<span class="saison-etat"><i></i>rien de posé</span>';
+
+  // Le dépliage n'a de sens que s'il y a quelque chose dessous : une tuile qui
+  // s'ouvre sur rien est un bouton qui ment (la règle des flèches du menu).
+  if (!rubrique.enPlace) {
+    return `
+      <li class="saison-tuile">
+        <div class="saison-tete">${etat}</div>
+        <p class="saison-nom">${echapper(rubrique.nom)}</p>
+        ${marches}
+        <p class="saison-compte">${service}</p>
+        <p class="saison-poser">
+          <button type="button" class="bouton-secondaire bouton-mini"
+            data-poser-rubrique="${echapper(rubrique.nom)}"
+            >Poser ce rythme</button>
+        </p>
+      </li>`;
+  }
+
+  return `
+    <li class="saison-tuile">
+      <details>
+        <summary>
+          <span class="saison-tete">${etat}</span>
+          <span class="saison-nom">${echapper(rubrique.nom)}</span>
+          ${marches}
+          <span class="saison-compte">${service}</span>
+        </summary>
+        <ul class="saison-rythmes">${rubrique.series
+          .map((serie) => ligneRythme(serie, publications, aujourdhui))
+          .join('')}</ul>
+      </details>
+    </li>`;
+}
+
+// Une série sans rubrique : elle tourne, mais rien ne la compte. Le geste tient
+// en un menu déroulant — accepter coûte UN geste, comme les propositions du
+// rendez-vous du dimanche.
+function tuileOrpheline(serie, publications, aujourdhui, rubriques) {
+  const restantes = publications.filter(
+    (pub) => pub.serie_id === serie.id && pub.date_prevue && pub.date_prevue >= aujourdhui,
+  ).length;
+  const cadence = (RECURRENCES[serie.recurrence] ?? serie.recurrence)
+    .replace(/^./, (lettre) => lettre.toLowerCase());
+  const options = rubriques
+    .map((nom) => `<option value="${echapper(nom)}">${echapper(nom)}</option>`)
+    .join('');
+  return `
+    <li class="saison-tuile saison-orpheline">
+      <p class="saison-nom">${echapper(serie.modele?.titre || 'Sans titre')}</p>
+      <p class="saison-compte">${echapper(cadence)} · <span class="chiffre">${restantes}</span> à venir</p>
+      <label class="saison-rattacher">
+        <span class="saison-rattacher-mot">Rattacher à</span>
+        <select data-rubriquer="${echapper(serie.id)}">
+          <option value="">choisir une rubrique…</option>
+          ${options}
+        </select>
+      </label>
+    </li>`;
+}
+
+export function construireLaSaison(series, publications, aujourdhui = versDateISO(new Date())) {
+  const { rubriques, orphelines } = saisonDuClub(series, publications, aujourdhui);
+
+  const galerie = rubriques.length
+    ? `<ul class="saison-galerie">${rubriques
+        .map((rubrique) => tuileRubrique(rubrique, publications, aujourdhui))
+        .join('')}</ul>`
+    // Un écran vide ouvre une porte, il ne s'excuse pas (vocabulaire d'interface).
+    : '<p class="vide">Les rythmes de la saison s’afficheront ici.</p>';
+
+  // Le groupe ne s'affiche QUE s'il y a quelque chose à rattacher : un titre
+  // suivi de « rien » est du bruit.
+  const aRattacher = orphelines.length
+    ? `<p class="saison-groupe">À rattacher</p>
+       <p class="vide">${
+         orphelines.length === 1
+           ? 'Un rythme tourne sans rubrique : rien ne le compte.'
+           : `${orphelines.length} rythmes tournent sans rubrique : rien ne les compte.`
+       }</p>
+       <ul class="saison-galerie">${orphelines
+         .map((serie) => tuileOrpheline(serie, publications, aujourdhui, RUBRIQUES_DEPART))
+         .join('')}</ul>`
+    : '';
+
+  return `${galerie}${aRattacher}`;
 }
 
 function vueCreer(etat) {
   return `
     ${enTete('creer')}
+
+    <section class="bloc">
+      <h2>La saison</h2>
+      <div data-bloc="saison">${construireLaSaison(etat.series, etat.publications)}</div>
+    </section>
 
     <section class="bloc">
       <h2>Calendrier éditorial</h2>
@@ -1056,12 +1507,28 @@ function vueCreer(etat) {
         publications: etat.publications,
         rubriquesDepart: RUBRIQUES_DEPART,
         reseaux: RESEAUX_FCH,
+        // « SE RÉPÈTE » DÈS LA CRÉATION (29 août 2026). Il n'existait qu'à la
+        // MODIFICATION : poser une rubrique hebdomadaire demandait deux gestes
+        // — noter l'idée, puis la rouvrir pour la faire revenir. Sur un site
+        // dont la com est cyclique, c'est le cas ordinaire, pas l'exception.
+        // Il n'est offert qu'ici : Yuno n'a rien demandé.
+        champsEnPlus: [
+          { nom: 'recurrence', libelle: 'Se répète', type: 'choix', options: RECURRENCES },
+          { nom: 'recurrence_fin', libelle: "Se répète jusqu'au (facultatif)", type: 'date' },
+        ],
       })}
     </section>
 
     <section class="bloc">
       <h2>À venir</h2>
-      <div data-bloc="a-venir">${construireAVenir(etat.publications, { ouvrable: true })}</div>
+      <div data-bloc="a-venir">${construireAVenir(etat.publications, {
+        ouvrable: true,
+        // L'état en menu déroulant et les séries repliées : les deux demandes
+        // de Noé du 29 août 2026. Options, et non règle commune — Yuno n'a rien
+        // demandé, et une demande de forme vise l'écran qu'on regarde.
+        pastille: true,
+        series: true,
+      })}</div>
     </section>
 
     <section class="bloc">
@@ -1269,20 +1736,108 @@ function vuePartenaires(etat) {
     ${pied()}`;
 }
 
-// L'écran qui attend son contenu. Il dit ce qu'il attend plutôt que de faire
-// semblant : Noé ne sait pas encore ce qu'il y mettra, et inventer à sa place
-// serait le pire service à lui rendre.
+// L'ÉCRAN CLUB : L'AIDE-MÉMOIRE (29 août 2026).
+//
+// Il attendait son contenu depuis le 7 août — « Noé ne sait pas encore ce qu'il
+// y mettra », et inventer à sa place aurait été le pire service. Le dossier FCH
+// a donné la réponse : le document des responsabilités du club, ses chiffres,
+// son projet, ses créneaux. On ne l'invente donc pas, on le range.
+//
+// IL NE FAIT QUE LIRE, et c'est ce qui le justifie. Il sert l'objectif du
+// 15 décembre — « laisser une com qui tourne sans moi » : celui qui reprend
+// doit savoir à qui s'adresser et sur quoi s'aligner. Rien ne s'y coche, rien
+// ne s'y compte, aucune donnée n'y est saisie.
+//
+// L'ordre va du plus souvent consulté au plus rarement : qui fait quoi d'abord
+// (c'est la question qu'on se pose en semaine), la mission ensuite (on la relit
+// avant d'écrire), les créneaux et les chiffres pour finir.
+
+function blocCommission(commission) {
+  const gens = commission.gens.join(' · ');
+  // La part de Noé se dit, et elle se dit avec NUANCE : la Communication est sa
+  // commission, il ne fait que contribuer aux Partenaires. Sans cette
+  // distinction, l'écran laisserait croire que la prospection est son travail.
+  const marque = commission.noe === 'responsable'
+    ? '<span class="club-part club-part-mienne">ta commission</span>'
+    : commission.noe === 'contribue'
+      ? '<span class="club-part">tu y contribues</span>'
+      : '';
+
+  const missions = commission.missions
+    ? `<ul class="club-missions">${commission.missions
+        .map((mission) => `<li>${echapper(mission)}</li>`)
+        .join('')}</ul>`
+    : '';
+
+  return `
+    <li class="club-commission${commission.noe ? ' club-commission-mienne' : ''}">
+      <p class="club-commission-tete">
+        <span class="club-commission-nom">${echapper(commission.nom)}</span>
+        ${marque}
+      </p>
+      <p class="club-gens">${echapper(gens)}</p>
+      ${missions}
+    </li>`;
+}
+
 function vueClub() {
   return `
     ${enTete('club')}
 
     <section class="bloc">
-      <h2>Organisation du club</h2>
-      <div class="a-venir-bloc">
-        <p>Cet écran attend de savoir à quoi il sert.</p>
-        <p class="discret">Effectifs, plannings, licences, réunions, matériel —
-          dis-moi ce que tu as besoin de retrouver ici, et on le construit.</p>
-      </div>
+      <h2>Qui fait quoi</h2>
+      <p class="discret sous-titre">Les neuf commissions du club, telles que le
+        document des responsabilités les pose.</p>
+      <ul class="club-commissions">${COMMISSIONS.map(blocCommission).join('')}</ul>
+    </section>
+
+    <section class="bloc">
+      <h2>Le projet</h2>
+      <p class="club-mission">${echapper(MISSION)}</p>
+      <ul class="club-valeurs">${VALEURS.map(
+        ([nom, comportement]) => `
+        <li>
+          <span class="club-valeur-nom">${echapper(nom)}</span>
+          <span class="club-valeur-mot">${echapper(comportement)}</span>
+        </li>`,
+      ).join('')}</ul>
+    </section>
+
+    <section class="bloc bloc-discret">
+      <details class="backlog">
+        <summary>Les entraînements de la semaine
+          <span class="chiffre">${CRENEAUX.reduce((total, [, lot]) => total + lot.length, 0)}</span>
+        </summary>
+        <ul class="club-jours">${CRENEAUX.map(
+          ([jour, lot]) => `
+          <li>
+            <p class="club-jour">${echapper(jour)}</p>
+            <ul class="club-creneaux">${lot
+              .map(
+                ([categorie, lieu, heure]) => `
+              <li>
+                <span class="club-categorie">${echapper(categorie)}</span>
+                <span class="club-lieu">${echapper(lieu)}</span>
+                <span class="club-heure chiffre">${echapper(heure)}</span>
+              </li>`,
+              )
+              .join('')}</ul>
+          </li>`,
+        ).join('')}</ul>
+      </details>
+    </section>
+
+    <section class="bloc bloc-discret">
+      <details class="backlog">
+        <summary>Le club en chiffres <span class="chiffre">${REPERES.length}</span></summary>
+        <ul class="club-reperes">${REPERES.map(
+          ([chiffre, quoi]) => `
+          <li>
+            <span class="club-chiffre chiffre">${echapper(chiffre)}</span>
+            <span class="club-quoi">${echapper(quoi)}</span>
+          </li>`,
+        ).join('')}</ul>
+      </details>
     </section>
     ${pied()}`;
 }
@@ -1298,6 +1853,9 @@ export default {
       taches: [],
       evenements: [],
       partenaires: [],
+      // Les séries du club : c'est ce qui permet à « La saison » de dire quels
+      // rythmes tournent. Petite table (4 lignes au 29 août 2026).
+      series: [],
       fiches: [],
       actionsClub: [],
       modelesPrepa: [],
@@ -1364,7 +1922,13 @@ export default {
       if (etat.creationCal) {
         section.insertAdjacentHTML(
           'beforeend',
-          fenetreCreation({ ...etat.creationCal, reunion: true, projets: etat.projets ?? [] }),
+          fenetreCreation({
+          ...etat.creationCal,
+          reunion: true,
+          // Le site EST le club : il offre la pastille qui déclare un temps fort.
+          tempsFort: true,
+          projets: etat.projets ?? [],
+        }),
         );
       }
 
@@ -1429,7 +1993,7 @@ export default {
     const charger = async () => {
       const [
         objectifs, victoires, publications, taches, evenements, contacts,
-        fiches, actionsClub, modeles, projets,
+        fiches, actionsClub, modeles, projets, series,
       ] = await Promise.all([
         api.objectifsActifs({ espace: ESPACE }),
         api.victoiresDeLEspace(ESPACE),
@@ -1444,6 +2008,7 @@ export default {
         api.actionsClubToutes(),
         api.modelesPreparationTous(),
         api.projetsTous(),
+        api.chargerLesSeries(),
       ]);
       // Les projets du club, pour la pastille de rattachement de la tuile.
       etat.projets = projets.filter((projet) => projet.espace === ESPACE);
@@ -1457,6 +2022,7 @@ export default {
         partenaires: contacts.filter((contact) => contact.type === TYPE_PARTENAIRE),
         fiches,
         actionsClub,
+        series,
         // Le menu « Modèles » de la fiche ne montre que ceux du club.
         modelesPrepa: modeles.filter((modele) => modele.espace === ESPACE),
       });
@@ -1533,6 +2099,114 @@ export default {
       } catch (souci) {
         console.error('Déplacement impossible', souci);
         dire("Le report n'a pas pu être enregistré.");
+      }
+    });
+
+    // COCHER UNE TÂCHE depuis « À faire » (30 août 2026, avec la restructuration
+    // de l'accueil). Le geste est celui du hub — `cocherDepuisTableauDeBord`,
+    // js/taches.js — et non une copie : il ouvre la fenêtre de durée, écrit la
+    // victoire et laisse voir la coche avant que la ligne s'en aille.
+    //
+    // `construireLignesTaches` émet `data-cocher` ; le calendrier du site, lui,
+    // écoute `data-cocher-tache`. Deux attributs voisins, deux gestes distincts
+    // — sans cet écouteur, les cercles de « À faire » auraient été des boutons
+    // morts, exactement ce que la page du hub prend soin d'éviter.
+    section.addEventListener('click', (evenement) => {
+      const cercle = evenement.target.closest('[data-cocher]');
+      if (!cercle) return;
+      cocherDepuisTableauDeBord(cercle, etat.taches, rendre);
+    });
+
+    // POSER UN RYTHME QUI MANQUE : le bouton n'écrit RIEN. Il ouvre le
+    // formulaire « Noter une idée » déjà rempli — la rubrique et la cadence —
+    // et laisse à Noé le titre et le jour de départ, qui sont des décisions.
+    // C'est la règle des propositions du rendez-vous du dimanche : accepter
+    // coûte un geste, mais le hub ne décide pas à sa place.
+    //
+    // Il ne passe donc PAS par la tuile de capture du « + » : celle-ci n'a pas
+    // de champ rubrique — et lui en ajouter un pour ce seul besoin le poserait
+    // aux quatre espaces.
+    section.addEventListener('click', (evenement) => {
+      const bouton = evenement.target.closest('[data-poser-rubrique]');
+      if (!bouton) return;
+
+      // `construireFormulaire({ id })` se sert de l'id comme PRÉFIXE de ses
+      // champs — il ne le pose pas sur le dépliant. On part donc d'un champ
+      // connu et on remonte : `#fch-pub` n'existe pas, et le chercher rendait
+      // `null`.
+      const ancre = section.querySelector('#fch-pub-titre');
+      const formulaire = ancre?.closest('form') ?? ancre?.closest('.ajout');
+      const pli = ancre?.closest('.ajout');
+      if (!formulaire || !pli) return;
+
+      pli.open = true;
+
+      // UN CHAMP « CHOIX » NE SE REMPLIT PAS EN POSANT SA VALEUR : il porte un
+      // input CACHÉ doublé d'un bouton qui affiche le libellé et d'un panneau
+      // d'options. Écrire dans l'input laissait « Une seule fois » à l'écran
+      // sur une récurrence pourtant posée à `hebdo` — mesuré.
+      //
+      // On clique donc l'option, comme le ferait un doigt : `poserLeChoix`
+      // (js/gabarits.js) met alors à jour l'input, le libellé et l'option
+      // active, d'un seul tenant. Passer par le vrai geste plutôt que de le
+      // simuler à moitié.
+      const poser = (nom, valeur) => {
+        const option = formulaire.querySelector(
+          `[data-choix="${nom}"][data-valeur="${CSS.escape(valeur)}"]`,
+        );
+        if (option) {
+          option.click();
+          return;
+        }
+        const champ = formulaire.querySelector(`[name="${nom}"]`);
+        if (champ) champ.value = valeur;
+      };
+
+      poser('rubrique', bouton.dataset.poserRubrique);
+      poser('recurrence', 'hebdo');
+
+      // Le curseur va où la décision commence : le titre.
+      pli.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      ancre.focus({ preventScroll: true });
+    });
+
+    // RATTACHER UN RYTHME À SA RUBRIQUE, depuis « La saison ». Un menu
+    // déroulant, donc un `change` et non un `click` : c'est le seul geste du
+    // site qui se fasse au clavier comme au doigt sans rien réinventer.
+    //
+    // L'écriture est OPTIMISTE (js/ecriture.js) : la tuile change de camp tout
+    // de suite et l'aller-retour part derrière. Sans ça, le menu resterait
+    // figé 300 à 800 ms sur téléphone — et c'est un geste qu'on fait deux fois
+    // de suite, une par rythme.
+    section.addEventListener('change', async (evenement) => {
+      const menu = evenement.target.closest('[data-rubriquer]');
+      if (!menu || !menu.value) return;
+
+      const serie = etat.series.find((une) => une.id === menu.dataset.rubriquer);
+      if (!serie) return;
+      const rubrique = menu.value;
+
+      // Les occurrences À VENIR suivent leur série à l'écran comme en base :
+      // sans ça la tuile se remplirait alors que le compte par rubrique
+      // resterait faux jusqu'au prochain chargement.
+      const aujourdhui = versDateISO(new Date());
+      const touchees = etat.publications.filter(
+        (pub) => pub.serie_id === serie.id && pub.date_prevue && pub.date_prevue >= aujourdhui,
+      );
+      const avant = touchees.map((pub) => pub.rubrique);
+      for (const pub of touchees) pub.rubrique = rubrique;
+
+      const ok = await modifierAussitot(
+        serie,
+        { modele: { ...(serie.modele ?? {}), rubrique } },
+        () => api.rubriquerSerie(serie, rubrique),
+        { rendre, echouer: dire },
+      );
+      // `modifierAussitot` rend sa ligne à l'état d'avant, pas les parutions :
+      // elles ne sont pas la ligne qu'il surveille, c'est à nous de les rendre.
+      if (!ok) {
+        touchees.forEach((pub, i) => { pub.rubrique = avant[i]; });
+        rendre();
       }
     });
 
@@ -1753,8 +2427,17 @@ export default {
           rubrique: champs.rubrique?.trim() || null,
           notes: champs.notes?.trim() || null,
           date_prevue: champs.date_prevue || null,
+          // Sans date il n'y a rien à répéter : l'idée retourne à la banque, et
+          // `creerPublication` écarte la récurrence de lui-même. On la passe
+          // quand même — c'est elle qui décide, pas l'écran.
+          recurrence: champs.recurrence || null,
+          recurrence_fin: champs.recurrence_fin || null,
         });
         etat.publications = [publication, ...etat.publications];
+        // Une série vient de naître : « La saison » la lit dans `etat.series`,
+        // qu'il faut relire — sans quoi la tuile resterait « rien de posé »
+        // jusqu'au prochain chargement complet.
+        if (champs.recurrence && champs.date_prevue) etat.series = await api.chargerLesSeries();
         rendre();
         return;
       }

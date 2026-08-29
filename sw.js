@@ -38,6 +38,7 @@ const COQUILLE = [
   'js/app.js',
   'js/cache-session.js',
   'js/calendrier-commun.js',
+  'js/club-fch.js',
   'js/calendrier.js',
   'js/dashboard.js',
   'js/ecriture.js',
