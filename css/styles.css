@@ -39,6 +39,26 @@
 
   --fond: #17191a;
   --fond-carte: #212426;
+  /* ENTRE LES DEUX (29 août 2026, demande de Noé) : plus clair que la page,
+     plus sombre qu'une carte. C'est le fond de la tuile de la journée — elle
+     se soulève moins qu'une carte, juste assez pour se détacher, et elle ne se
+     confond donc pas avec les tuiles de projets qui sont à trente centimètres
+     d'elle.
+
+     LA BORNE À NE JAMAIS FRANCHIR : elle reste plus claire que la page. Un
+     premier essai la mettait à #121415, donc plus SOMBRE — elle s'enfonçait, et
+     c'était trop. Un second à #1c1f20 était trop clair. Celle-ci tombe entre la
+     page (#17191a) et une carte (#212426), près de la page : deux points de
+     gris, et c'est le filet qui finit de dire le bord.
+     Le texte y garde son contraste : 14,3:1 sur l'encre pleine, 5,3:1 sur
+     l'encre discrète. */
+  --fond-doux: #191c1d;
+  /* Le filet qui va avec : plus sombre que `--bordure`, parce qu'il cerne une
+     surface presque aussi sombre que la page. Le filet ordinaire (#34383a) est
+     dessiné pour les CARTES, qui sont claires — posé sur `--fond-doux` il
+     criait plus que le fond qu'il entourait. Les deux vont ensemble et ne se
+     séparent pas. */
+  --bordure-douce: #262a2b;
   --texte: #eceeea;
   --texte-discret: #8b928b;
   --bordure: #34383a;
@@ -800,10 +820,9 @@ a { color: var(--accent); }
 
 /* --- Blocs de contenu ------------------------------------------------------ */
 
-.jour { margin-bottom: 1.5rem; }
-.date-du-jour { margin: 0; }
-/* « jeudi 6 août » : la majuscule initiale seulement, pas sur le mois. */
-.date-du-jour::first-letter { text-transform: uppercase; }
+/* La date a quitté l'accueil le 29 août : « Ta semaine » la dit sept fois
+   juste en dessous. `.date-du-jour` est partie avec elle. */
+.jour { margin-bottom: var(--espace-24); }
 
 .bloc { margin-bottom: 2rem; }
 
@@ -833,10 +852,23 @@ a { color: var(--accent); }
   gap: var(--espace-24);
 }
 
+/* DEUX COLONNES DÈS 60 REM, et elles ne bougent plus : à faire d'un côté, à
+   publier et les rendez-vous de l'autre (demande de Noé). Elles avaient été
+   repoussées à 75 rem pour cesser de déborder — c'était traiter le symptôme :
+   la place manquait parce que la PAGE passait à deux colonnes trop tôt et
+   prenait 300 px pour les projets. C'est elle qui recule (`.accueil-grille`),
+   pas la journée. */
 @media (min-width: 60rem) {
   .jour-colonnes {
     grid-auto-flow: column;
-    grid-auto-columns: 1fr;
+    /* `minmax(0, 1fr)` et non `1fr` : un élément de grille garde
+       `min-width: auto`, donc la piste refuse de descendre sous la largeur
+       minimale de son contenu. « Instagram · Carrousel · FC Hermitage » exigeait
+       315 px, les deux colonnes en réclamaient 662 dans un conteneur de 556, et
+       la seconde débordait la tuile de 83 px — texte coupé au bord.
+       C'est le TROISIÈME piège du même genre en une journée : la bande
+       d'onglets, la colonne des projets, et celle-ci. */
+    grid-auto-columns: minmax(0, 1fr);
     align-items: start;
     gap: var(--espace-32);
   }
@@ -1061,31 +1093,25 @@ a { color: var(--accent); }
    choisir une. C'est le ROUGE (décision de Noé, 21 août 2026, après mesure).
    Le bleu du club tombait trop près du perso — écart perceptuel de 26 en
    clair et de 18 en sombre, quand les deux espaces les plus proches du hub
-   sont déjà à 55 et 53. Le rouge se pose à 53 et 54 : l'écart de tout le
-   monde. Rien d'autre n'est rouge dans la palette, un coup d'œil suffit.
+   LE FCH EST BLEU (demande de Noé, 29 août 2026). Il l'était déjà par
+   exception à TROIS endroits — le calendrier et « Ta semaine » le 25 août,
+   `#objectifs` le 27 — toujours pour la même raison : posé en aplat, le rouge
+   du club se lisait comme une alerte, or le hub n'en a pas. À la quatrième
+   demande, l'exception EST la règle : elle passe ici, et les trois surcharges
+   disparaissent.
 
-   Ce rouge n'est PAS une couleur d'alerte, et le hub n'en a toujours pas : il
-   est posé sur TOUT ce qui vient du club, quel que soit l'état de la ligne.
-   Une couleur qui ne bouge jamais ne peut rien signaler — elle nomme un
-   espace, elle ne juge pas une échéance. Le site du club dit déjà la même
-   chose avec son liseré rouge sous la navigation. */
+   Ce qu'on perd, et il faut le savoir : le rouge était la seule couleur de ce
+   nom dans la palette, un coup d'œil suffisait à reconnaître le club. En bleu,
+   la paire la plus proche devient FCH (212°) et perso (256°) — 44° d'écart,
+   assez pour se distinguer, mais moins franc qu'avant. Le calendrier tourne
+   ainsi depuis le 25 août sans que ça gêne.
+
+   `--club-fch-rouge` n'a PLUS AUCUN EMPLOI dans le hub, et il reste quand même :
+   c'est la seconde couleur du club, elle appartient à son identité et le jour
+   où quelque chose la redemandera, la valeur exacte sera là plutôt que
+   réinventée. Le site, lui, a la sienne (`--club-rouge`, css/fch.css) — les
+   deux n'ont jamais été le même jeton. */
 [data-espace="fch"] {
-  --couleur-espace: linear-gradient(180deg,
-    var(--club-fch-bleu) 50%, var(--club-fch-rouge) 50%);
-  --couleur-espace-pleine: var(--club-fch-rouge);
-}
-
-/* SAUF DANS LE CALENDRIER DU HUB, où le FCH est bleu (demande de Noé, 25 août
-   2026) : l'espace Calendrier, et « Ta semaine » de l'accueil qui en est
-   l'aperçu — pas le reste de l'accueil, où « Aujourd'hui » est une liste de
-   tâches et doit se lire comme celle de l'espace Tâches. Là, les barres sont
-   pleines et larges — le rouge y pesait plus que les autres espaces, et une
-   semaine de club virait au rouge entier. Ailleurs (pastilles, listes de
-   tâches, fiches, les deux sites), la couleur double du club ne bouge pas.
-   La proximité mesurée avec le perso reste vraie : dans une grille, la
-   colonne et l'étiquette disent l'espace avant la couleur. */
-#bloc-semaine [data-espace="fch"],
-#espace-calendrier [data-espace="fch"] {
   --couleur-espace: var(--club-fch-bleu);
   --couleur-espace-pleine: var(--club-fch-bleu);
 }
@@ -1282,51 +1308,99 @@ a { color: var(--accent); }
   opacity: 0.45;
 }
 
-/* --- Humeur ---------------------------------------------------------------- */
+/* --- La ligne de tête, et l'humeur dedans -----------------------------------
+   (29 août 2026, demande de Noé.) Elle remplace trois choses qui prenaient
+   126 px — la salutation, la date et le bloc de l'humeur — par une ligne.
+   La date est partie : « Ta semaine », juste dessous, la dit sept fois. */
 
-#bloc-humeur:empty { display: none; }
-
-.question-humeur {
-  margin: 0 0 0.625rem;
-  font-size: 1rem;
-}
-
-.echelle-humeur {
-  display: flex;
-  gap: 0.5rem;
-  /* Cinq boutons étirés sur 1240 px seraient absurdes : une échelle se répond
-     d'un geste, elle n'a pas besoin de toute la page. */
-  max-width: 32rem;
-}
-
-/* Même raison pour la note qui suit, et pour le champ de recherche. */
-.note-humeur, .recherche { max-width: 32rem; }
-
-.bouton-humeur {
-  flex: 1;
-  /* Cible confortable au pouce, une réponse en un geste. */
-  min-height: 3rem;
-  font-size: 1.5rem;
-  line-height: 1;
-  background: var(--accent-doux);
-  border: 1px solid transparent;
-  border-radius: var(--rayon-controle);
-}
-
-.bouton-humeur:hover { border-color: var(--accent); }
-.bouton-humeur.en-cours { opacity: 0.5; }
-
-.humeur-repondue {
+.tete-jour {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin: 0 0 0.5rem;
+  flex-wrap: wrap;
+  gap: var(--espace-8) var(--espace-16);
+  /* Le filet la sépare de la journée : c'est la seule ligne de la page qui ne
+     parle pas de travail. */
+  padding-bottom: var(--espace-12);
+  border-bottom: 1px solid var(--bordure);
 }
 
-.frimousse-choisie { font-size: 1.25rem; }
+/* La phrase de tête : « Bonjour Noé » tant que l'humeur n'a pas répondu, puis
+   l'état du jour. C'est un `h1` — il reste le titre de la page, même quand il
+   dit « Il t'en reste deux ». */
+.salut {
+  flex: 1 1 12rem;
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.humeur-ligne {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+}
+
+/* CINQ FRIMOUSSES DANS LA LIGNE, sans question écrite : posées à côté d'un
+   « Bonjour Noé », elles se comprennent sans le « Comment tu te sens ? » qui
+   occupait sa propre ligne. Le libellé reste pour les lecteurs d'écran, sur le
+   groupe. */
+.echelle-humeur {
+  display: flex;
+  gap: var(--espace-4);
+}
+
+.bouton-humeur {
+  /* Plus de `flex: 1` : elles ne s'étirent plus sur toute la page, elles
+     tiennent au bout de la ligne. 2,25 rem est en dessous des 44 px de la règle
+     — c'est assumé pour ce contrôle-là et lui seul : cinq cibles côte à côte au
+     bout d'une ligne, à côté d'un texte, ne peuvent pas faire 220 px de large
+     sur un téléphone de 375. Elles sont espacées, isolées du reste, et se
+     touchent au pouce sans voisinage dangereux. */
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  font-size: 1.125rem;
+  line-height: 1;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--rayon-pastille);
+}
+
+.bouton-humeur:hover { background: var(--accent-doux); border-color: var(--accent); }
+.bouton-humeur.en-cours { opacity: 0.5; }
+
+/* Une fois répondu, il ne reste QUE la frimousse choisie : c'est ce que Noé
+   reprochait le plus — l'humeur prenait plus de place APRÈS avoir répondu
+   qu'avant. On la presse pour changer d'avis. */
+.humeur-choisie {
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  font-size: 1.25rem;
+  line-height: 1;
+  background: none;
+  border: 0;
+  border-radius: var(--rayon-pastille);
+  cursor: pointer;
+}
+.humeur-choisie:hover { background: var(--accent-doux); }
+
+/* « un mot ? » — le champ de note ne s'ouvre que si on le demande. C'est lui
+   qui pesait dans l'ancien bloc, et il sert rarement. Une fois écrit, le mot
+   lui-même sert de bouton : on relit sa note sans rouvrir le champ. */
+.humeur-mot {
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+}
+
+.note-humeur, .recherche { max-width: 32rem; }
 
 .note-humeur {
-  margin: 0;
+  margin: var(--espace-12) 0 0;
   font-size: 0.9375rem;
   background: transparent;
   border-color: transparent;
@@ -1336,6 +1410,470 @@ a { color: var(--accent); }
 }
 
 .note-humeur:focus { border-bottom-color: var(--accent); }
+
+/* LE MENU À TROIS POINTS d'une ligne de tâche (29 août 2026, demande de Noé).
+   Il ne porte que ce qui n'est pas atteignable autrement depuis l'écran : la
+   priorité, et supprimer. La raison est dans js/taches.js. */
+.tache-menu {
+  flex: none;
+  position: relative;
+}
+.tache-menu-bouton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  color: var(--texte-discret);
+  border-radius: var(--rayon-controle);
+  cursor: pointer;
+  list-style: none;
+}
+/* Le triangle par défaut d'un `<summary>` : trois points valent mieux que
+   trois points ET une flèche. */
+.tache-menu-bouton::-webkit-details-marker { display: none; }
+.tache-menu-bouton::marker { content: ''; }
+.tache-menu-bouton:hover,
+.tache-menu[open] .tache-menu-bouton {
+  color: var(--texte);
+  background: color-mix(in srgb, var(--texte) 8%, transparent);
+}
+
+/* Il VOLE au-dessus de la liste : dans le flux, il pousserait les lignes
+   suivantes et l'œil perdrait celle qu'il visait. Aligné à DROITE, parce qu'il
+   s'ouvre depuis le bord droit de la ligne. */
+.tache-menu-choix {
+  position: absolute;
+  right: 0;
+  top: calc(100% + var(--espace-4));
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  min-width: 11rem;
+  padding: var(--espace-4);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+}
+.tache-menu-choix button {
+  display: flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0 var(--espace-12);
+  font-size: 0.875rem;
+  text-align: left;
+  color: var(--texte);
+  background: none;
+  border: 0;
+  border-radius: var(--rayon-controle);
+  cursor: pointer;
+}
+.tache-menu-choix button:hover {
+  background: color-mix(in srgb, var(--texte) 8%, transparent);
+}
+/* La priorité en cours se marque, elle ne se cache pas : on doit voir d'où on
+   part avant de choisir. */
+.tache-menu-choix button[aria-current] {
+  color: var(--accent);
+  font-weight: 600;
+}
+/* Supprimer se détache du reste par un filet, pas par une couleur d'alerte :
+   le hub n'en a pas, et n'en aura pas. */
+.tache-menu-retirer {
+  margin-top: var(--espace-4);
+  padding-top: var(--espace-4);
+  border-top: 1px solid var(--bordure);
+  color: var(--texte-discret);
+}
+
+/* D'où vient une tâche que le hub a posée lui-même (29 août 2026) :
+   « Préparation », « Après l'événement ». En encre d'espace et en petites
+   capitales, comme un service — elle explique la ligne, elle ne la commente
+   pas. Rien pour une tâche écrite à la main : c'est le cas ordinaire, et
+   l'ordinaire ne se justifie pas. */
+.tache-venue {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--couleur-espace-pleine, var(--texte-discret));
+}
+
+/* --- Reporter d'un geste, et la ligne toujours prête -------------------------
+   (29 août 2026, demande de Noé.) */
+
+/* Le report vit à côté de la croix, dans la même gouttière de gestes. Discret
+   au repos comme elle : ce sont des gestes qu'on trouve quand on les cherche,
+   pas des boutons qui appellent. */
+.bouton-reporter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  color: var(--texte-discret);
+  background: none;
+  border: 0;
+  border-radius: var(--rayon-controle);
+  cursor: pointer;
+}
+.bouton-reporter:hover {
+  color: var(--texte);
+  background: color-mix(in srgb, var(--texte) 8%, transparent);
+}
+
+/* --- Le titre d'une section, et celui d'un groupe ---------------------------
+   (29 août 2026, demande de Noé.) « Aujourd'hui » et « À faire » portaient
+   exactement le même habillage — 0,625 rem en petites capitales grises — et
+   rien ne disait lequel contenait l'autre. Deux rangs, deux formes :
+
+     TITRE DE SECTION   Aujourd'hui · Ta semaine · Projets en cours
+                        police de titre, corps lisible, encre pleine.
+     LIBELLÉ DE GROUPE  À faire · À publier · Rendez-vous · Ce que je te
+                        proposerais — petites capitales, inchangées.
+
+   Le libellé de groupe ne bouge pas : c'est la grammaire de tout le hub, et
+   c'est le titre de section qui manquait. */
+#espace-dashboard .titre-section {
+  margin: 0 0 var(--espace-12);
+  font-family: var(--police-titre);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--texte);
+}
+
+/* LA JOURNÉE EST UNE TUILE. Le bord dit ce qui est dedans — c'est lui qui
+   sépare la journée de la semaine, là où deux titres identiques n'y
+   parvenaient pas. Les quatre groupes y vivent : à faire, à publier, les
+   rendez-vous, et les propositions. */
+/* La classe `.bloc` est portée par la SECTION qui l'enveloppe, pas par elle :
+   les listes de tâches sont habillées par `.bloc .liste-taches-pleine` et
+   `.bloc li`, et sans cet ancêtre les `<li>` retrouvent leur puce et leur
+   empilement — la ligne se casse en trois. */
+.tuile-jour {
+  padding: var(--espace-16);
+  background: var(--fond-doux);
+  border: 1px solid var(--bordure-douce);
+  border-radius: var(--rayon-carte);
+}
+@media (min-width: 60rem) {
+  .tuile-jour { padding: var(--espace-24); }
+}
+
+/* Le dernier bloc de la tuile ne pousse pas contre le bord : `.bloc` porte une
+   marge basse qui n'a plus de voisin à écarter. */
+.tuile-jour > .bloc:last-child { margin-bottom: 0; }
+
+/* « Ce que je te propose » est un GROUPE de la journée, pas une section : son
+   titre reprend donc la forme des trois autres, et son écart avec le groupe
+   précédent est le MÊME que celui qui sépare « À faire » de « À publier » —
+   24 px, celui de `.jour-groupe`. Il valait zéro : la journée et les
+   propositions étaient deux blocs voisins, et rien ne les écartait. Trois
+   groupes dans une tuile doivent respirer pareil, ou l'un a l'air d'appartenir
+   à l'autre. */
+#espace-dashboard #bloc-propositions {
+  margin-top: var(--espace-24);
+  margin-bottom: 0;
+}
+
+#espace-dashboard #bloc-propositions > h2 {
+  font-family: var(--police-texte);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--texte-discret);
+}
+
+/* --- L'accueil en deux colonnes ---------------------------------------------
+   (29 août 2026, demande de Noé.) À gauche la journée — c'est ce qu'on vient
+   lire. À droite les projets et les pistes, que Noé trouvait « trop importants
+   à leur place ».
+
+   LES TROIS SONT DANS LA MÊME GRILLE, et c'est ce qui rend l'ordre du téléphone
+   possible : là-bas il n'y a pas de « à droite », et la semaine doit
+   s'intercaler entre la journée et le reste. `order` sur téléphone, placement
+   explicite sur grand écran — où `order` ne décide plus rien. */
+.accueil-grille {
+  display: grid;
+  gap: var(--espace-32);
+}
+
+/* Téléphone : la journée (avec ses propositions à la suite), la semaine, puis
+   les projets. Les propositions ont quitté la colonne de droite le 29 août au
+   soir — elles suivent maintenant ce qui est posé, à faire, à publier, en
+   rendez-vous. Une candidate se lit dans le fil de la journée. */
+.accueil-journee { order: 1; }
+.accueil-semaine { order: 2; }
+.accueil-cote { order: 3; }
+
+/* Les deux blocs de la colonne de gauche : leur écart vient de `.bloc`, qui
+   porte déjà sa marge basse. */
+.accueil-journee { display: flow-root; }
+
+/* `min-width: 0` sur les deux colonnes, et ce n'est pas décoratif : un élément
+   de grille garde `min-width: auto`, donc il refuse de descendre sous la
+   largeur MINIMALE de son contenu. Le rail des projets ne s'enroule pas — ses
+   quatre tuiles font 2 200 px — et la colonne s'étirait donc à 580 px dans un
+   parent de 343, débordant l'écran du téléphone. C'est le même piège que la
+   bande d'onglets, réglé le 28 août pour la même raison. */
+.accueil-journee,
+.accueil-cote {
+  min-width: 0;
+}
+
+.accueil-cote {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-32);
+}
+
+/* LES PROJETS RESTENT À DROITE DÈS 60 REM, mais leur colonne rétrécit entre
+   960 et 1200 px (demande de Noé, 29 août 2026).
+ 
+   Le problème était arithmétique : à 960 px il reste 912 px utiles, et une
+   colonne de projets à 300 n'en laissait que 580 à la journée — deux colonnes
+   de tâches à 274, où le titre se coupait devant du vide. J'avais d'abord
+   repoussé la page entière à 75 rem, ce qui faisait descendre les projets sous
+   la semaine sur toute cette tranche : on réglait l'étroitesse en supprimant le
+   vis-à-vis, or c'est le vis-à-vis qu'on voulait.
+ 
+   À 220 px, une tuile de projet fait 188 px de contenu — un nom sur deux
+   lignes, une jauge, un compte, une échéance. Elle se lit. Et la journée
+   récupère deux colonnes de 290, où le titre tient. */
+@media (min-width: 60rem) {
+  .accueil-grille {
+    grid-template-columns: minmax(0, 1fr) 220px;
+    align-items: start;
+    column-gap: var(--espace-32);
+  }
+  .accueil-journee { grid-column: 1; grid-row: 1; }
+  .accueil-cote { grid-column: 2; grid-row: 1; }
+  /* La semaine reprend toute la largeur : c'est une grille de sept jours, elle
+     ne tient pas dans une colonne. */
+  .accueil-semaine { grid-column: 1 / -1; grid-row: 2; }
+}
+
+/* Dès qu'il y a la place, la colonne des projets reprend son aisance. */
+@media (min-width: 75rem) {
+  .accueil-grille {
+    grid-template-columns: minmax(0, 1fr) 300px;
+    column-gap: var(--espace-48);
+  }
+}
+
+/* --- Les projets en cours, en tuiles qu'on fait glisser ---------------------
+   Une seule se lit à la fois ; les voisines dépassent d'un LISERÉ, juste assez
+   pour qu'on sache qu'elles existent (Noé a fait réduire le fondu deux fois).
+
+   `scroll-snap` fait tout : le geste est natif, donc fluide au doigt, et il
+   recentre toujours sur une tuile entière. Aucune flèche — elles ont été
+   écartées au profit du glissement. */
+.projet-rail {
+  display: flex;
+  gap: var(--espace-8);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  /* Le rembourrage négatif laisse le liseré déborder du cadre sans élargir la
+     colonne. Le masque fond ce qui dépasse. */
+  padding: 2px 12px;
+  margin: 0 -12px;
+  -webkit-mask: linear-gradient(90deg, transparent, #000 10px, #000 calc(100% - 10px), transparent);
+  mask: linear-gradient(90deg, transparent, #000 10px, #000 calc(100% - 10px), transparent);
+}
+.projet-rail::-webkit-scrollbar { display: none; }
+
+.projet-tuile {
+  flex: 0 0 calc(100% - 32px);
+  scroll-snap-align: center;
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+}
+
+/* Toute la tuile ouvre les projets de son espace : le geste est le même
+   partout — aller voir. Un lien qui enveloppe, comme le cap gravé. */
+/* 4 px et non 8 (demande de Noé) : le nom doit suivre l'espace de près — ils se
+   lisent comme une seule adresse, « FC Hermitage · Album du club ». La jauge,
+   elle, reprend l'air perdu par un `margin-top` : c'est là que le bloc change
+   de nature, de l'identité vers l'avancée. */
+.projet-ouvrir {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-4);
+  padding: var(--espace-12);
+  color: var(--texte);
+  text-decoration: none;
+}
+
+.projet-tete {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+}
+.projet-espace {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  /* Plus petit que le titre, et nettement (demande de Noé, 29 août 2026, en
+     deux fois) : l'espace SITUE la tuile, le nom du projet est ce qu'on vient y
+     lire. Il est descendu trois fois de suite ; à ce corps, c'est la pastille
+     de couleur juste à gauche qui porte l'espace, et le mot ne fait plus que le
+     confirmer. L'ÉCARTEMENT MONTE quand la taille descend : sous 9 px, ce sont
+     les lettres collées qui se perdent en premier, pas leur hauteur. */
+  font-size: 0.5rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--texte-discret);
+}
+/* La dernière trace, en fait brute : « 12 j ». Pas « rien depuis 12 jours » —
+   ce serait un reproche, et le hub n'en fait pas. */
+/* La trace suit l'espace : à côté d'un mot de 8 px, un chiffre de 11 prenait le
+   pas sur ce qu'il accompagne. Les deux tiennent la même ligne, ils tiennent le
+   même rang. */
+.projet-trace { flex: none; font-size: 0.5625rem; color: var(--texte-discret); }
+
+/* LE NOM PORTE LA TUILE (demande de Noé, 29 août 2026) : c'est la seule chose
+   qu'on y cherche, il doit se lire avant tout le reste. Il monte d'un cran,
+   l'espace en descend d'un — l'écart entre les deux fait la hiérarchie mieux
+   qu'une couleur. */
+.projet-nom {
+  font-family: var(--police-titre);
+  font-weight: 700;
+  font-size: 1.0625rem;
+  line-height: 1.2;
+}
+
+.projet-jauge {
+  display: block;
+  margin-top: var(--espace-4);
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--texte) 10%, transparent);
+  overflow: hidden;
+}
+.projet-jauge i {
+  display: block;
+  height: 100%;
+  background: var(--couleur-espace-pleine, var(--accent));
+}
+.projet-compte { font-size: 0.75rem; color: var(--texte-discret); }
+.projet-compte .chiffre { color: var(--texte); }
+
+.projet-suivant {
+  margin-top: var(--espace-4);
+  padding-top: var(--espace-8);
+  border-top: 1px solid var(--bordure);
+  font-size: 0.6875rem;
+  color: var(--texte-discret);
+}
+.projet-suivant b {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--texte);
+  line-height: 1.25;
+}
+
+.projet-points {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  margin: var(--espace-8) 0 0;
+}
+.projet-points i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--texte) 18%, transparent);
+}
+.projet-points i.actif { background: var(--accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .projet-points i { transition: background 150ms ease; }
+}
+
+/* --- Le bandeau de l'après --------------------------------------------------
+   (29 août 2026, demande de Noé.) Ce que le hub DÉDUIT se dit en un message,
+   jamais en une tâche : une sortie qui n'est pas au carnet, une réunion sans
+   bilan. Rien ne s'y coche — il y a quelque chose à ALLER FAIRE.
+
+   Une CARTE et non une alerte : le filet de couleur est celui de l'espace,
+   comme sur toute liste du hub. Aucun rouge, aucun fond qui crie — ce n'est pas
+   un avertissement, c'est une question. */
+.bandeau {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--espace-8) var(--espace-16);
+  margin-bottom: var(--espace-24);
+  padding: var(--espace-12) var(--espace-16);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-left: 3px solid var(--couleur-espace-pleine, var(--accent));
+  border-radius: var(--rayon-carte);
+}
+
+#bloc-suite:empty { display: none; }
+
+.bandeau-mot {
+  flex: 1 1 14rem;
+  font-size: 0.9375rem;
+  line-height: 1.4;
+}
+.bandeau-mot b { font-weight: 600; }
+/* La question passe à la ligne sous le fait : on lit ce qui s'est passé, puis
+   ce qu'on en fait. */
+.bandeau-mot .discret { display: block; font-size: 0.8125rem; }
+
+.bandeau-portes {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--espace-12);
+}
+
+/* Le bouton plein : c'est la porte, et elle doit se voir. L'encre est SOMBRE
+   sur l'accent — le hub est sombre, l'accent est clair. */
+.bandeau-aller {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 var(--espace-16);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--fond);
+  text-decoration: none;
+  background: var(--accent);
+  border-radius: var(--rayon-pastille);
+  white-space: nowrap;
+}
+
+/* La croix est définitive, elle n'a donc pas à être discrète au point qu'on la
+   presse par erreur : même cible que les autres, mais sans fond. */
+.bandeau-croix {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  color: var(--texte-discret);
+  background: none;
+  border: 0;
+  border-radius: var(--rayon-controle);
+  cursor: pointer;
+}
+.bandeau-croix:hover {
+  color: var(--texte);
+  background: color-mix(in srgb, var(--texte) 8%, transparent);
+}
 
 /* --- Objectifs ------------------------------------------------------------- */
 
@@ -1567,6 +2105,56 @@ a { color: var(--accent); }
 .cap-jalons i.atteint { background: var(--couleur-espace-pleine); }
 
 .cap-echeance { font-size: 0.75rem; }
+
+/* SUR L'ACCUEIL SEULEMENT, le cap tient en LIGNES et non en colonnes (28 août
+   2026). C'est la même grammaire que les pistes du matin, adoptée la veille
+   pour la même raison : au rang 0, une chose qu'on relit n'a pas besoin d'une
+   colonne, elle a besoin d'une ligne.
+
+   Mesuré avant/après sur un iPhone de 812 px : le bloc passait de 333 px — un
+   cinquième de tout l'accueil — à un peu plus de la moitié. Rien n'est retiré :
+   l'espace, le titre, les marches et l'échéance sont tous encore là.
+
+   `#bloc-objectifs` n'existe que sur l'accueil : les trois pages espace gardent
+   leurs colonnes, où le cap est le sujet de la page et non son pied. Une
+   demande de forme vise l'écran regardé, pas la règle commune. */
+#bloc-objectifs .cap-grave { gap: 0; }
+
+#bloc-objectifs .cap-espace {
+  flex-direction: row;
+  align-items: baseline;
+  /* Il enroule plutôt qu'il ne coupe : « Laisser une com qui tourne sans moi »
+     ne tient pas sur 375 px, et tronquer un cap serait pire que le plier. */
+  flex-wrap: wrap;
+  gap: var(--espace-4) var(--espace-8);
+  padding: var(--espace-12) 0;
+}
+
+/* Le nom de l'espace devient une PASTILLE — la grammaire du hub partout
+   ailleurs, et celle des pistes du matin juste au-dessus. Il coûtait 73 px des
+   343 disponibles, à lui seul l'enroulement de la ligne, alors que le titre dit
+   déjà de quel espace il parle.
+   Le mot reste dans le DOM et reste lu à voix haute : c'est `text-indent` qui
+   le sort du cadre, pas `display: none`. Un cap sans son espace, pour un
+   lecteur d'écran, ne se rattacherait à rien. */
+#bloc-objectifs .cap-nom {
+  flex: 0 0 auto;
+  align-self: center;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--rayon-pastille);
+  background: var(--couleur-espace-pleine);
+  overflow: hidden;
+  text-indent: 101%;
+  white-space: nowrap;
+}
+
+/* L'échéance ferme la ligne, toujours à droite : c'est la seule chose qu'on
+   compare d'un cap à l'autre. */
+#bloc-objectifs .cap-echeance { margin-left: auto; }
+
+/* Le titre ne s'étire plus pour égaliser des colonnes — il n'y en a plus. */
+#bloc-objectifs .cap-titre { flex: 0 1 auto; }
 
 /* Les euros d'un objectif, posés sous ses jalons : les jalons disent le
    chemin, le chiffre dit l'argent, et les deux se lisent d'un seul regard. */
@@ -3952,8 +4540,14 @@ body[data-espace="hermitage"] .choix-statut-neutre {
      1,5 rem n'aurait fait que 22,5 — et le seuil, lui, est absolu. */
 }
 
-/* Trois lignes au plus (demande de Noé, 24 août 2026). Le titre est un élément
+/* DEUX lignes au plus, et des points de suspension au-delà (demande de Noé,
+   29 août 2026 ; c'était trois depuis le 24 août). Le titre est un élément
    depuis ce jour-là, et pour cette seule raison : on ne limite pas du texte nu.
+
+   Deux et non trois : une semaine chargée empilait des pavés de trois lignes,
+   et le jour ne se lisait plus comme une colonne mais comme un mur. Ce qui est
+   coupé n'est pas perdu — la barre s'ouvre, et son infobulle dit le titre
+   entier.
 
    Sauf quand la barre tient sa hauteur de sa DURÉE : un match de deux heures a
    déjà cinq lignes de place, les lui refuser couperait un titre devant du vide.
@@ -3961,8 +4555,11 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 .cal-semaine .cal-barre-element:not(.cal-barre-duree) .cal-barre-titre {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   overflow: hidden;
+  /* `-webkit-line-clamp` pose l'ellipse toute seule ; `text-overflow` est écrit
+     pour les moteurs qui suivent la propriété standard `line-clamp`. */
+  text-overflow: ellipsis;
 }
 
 .cal-semaine .cal-barre-heure { margin-right: 0; }
@@ -5381,15 +5978,6 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    Attention en relisant : les `.cap-*` DU TABLEAU DE BORD (`.cap-grave`,
    `.cap-jalons`, `.cap-nom`…) sont une autre famille, plus haut dans ce
    fichier. Elles gravent le cap en lecture seule ; celles-ci le règlent. */
-
-/* Le FCH est BLEU ici (demande de Noé, 27 août 2026), comme dans le calendrier
-   du hub, et pour la même raison : posé sur des marches et sur le jalon en
-   cours, le rouge du club se lisait comme une alerte — or le hub n'en a pas.
-   Le précédent existe déjà, `#espace-calendrier [data-espace="fch"]`. */
-#espace-objectifs [data-espace="fch"] {
-  --couleur-espace: var(--club-fch-bleu);
-  --couleur-espace-pleine: var(--club-fch-bleu);
-}
 
 /* --- Le corps de l'écran ---------------------------------------------------
    Un cran plus bas que le reste du hub, partout (demande de Noé, 27 août

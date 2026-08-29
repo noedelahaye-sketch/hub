@@ -1411,9 +1411,20 @@ export default {
 
     this.naviguer = (nouvelleRoute) => {
       etat.vue = VUES.includes(nouvelleRoute?.vue) ? nouvelleRoute.vue : 'accueil';
-      etat.reunionOuverte = etat.vue === 'reunions' ? nouvelleRoute?.id ?? null : null;
+      // L'adresse porte l'id d'une FICHE — mais le bandeau de l'accueil, lui,
+      // ne connaît que l'ÉVÉNEMENT : il n'a pas les préparations sous la main.
+      // On accepte donc les deux, et l'événement se résout en sa fiche
+      // (29 août 2026). Sans ça, « Écrire le bilan » ouvrirait la liste.
+      etat.reunionOuverte =
+        etat.vue === 'reunions' ? ficheDeLAdresse(nouvelleRoute?.id ?? null) : null;
       rendre();
     };
+
+    function ficheDeLAdresse(id) {
+      if (!id) return null;
+      if (etat.fiches.some((fiche) => fiche.id === id)) return id;
+      return etat.fiches.find((fiche) => fiche.evenement_id === id)?.id ?? id;
+    }
 
     const charger = async () => {
       const [

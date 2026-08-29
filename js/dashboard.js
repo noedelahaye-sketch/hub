@@ -12,7 +12,6 @@ import {
   versDateISO,
   depuisDateISO,
   ajouterJours,
-  dateLongue,
   echeanceLisible,
   echapper,
   NOMS_ESPACES,
@@ -38,12 +37,17 @@ import {
 } from './calendrier-commun.js';
 import { construireLignesTaches, trierTaches } from './taches.js';
 import { demanderLaDuree, fermerLaDuree } from './gabarits.js';
-import { diagnosticDeLaSemaine, semaineDe, propositionsDuMatin } from './orientation.js';
+import {
+  diagnosticDeLaSemaine,
+  semaineDe,
+  propositionsDuMatin,
+  projetsEnCours,
+  suiteDuJour,
+} from './orientation.js';
 import { fenetreOuverte, construireRendezVous } from './rendez-vous.js';
-import { construireCapGrave } from './objectifs-commun.js';
 import { lireCache, ecrireCache } from './cache-session.js';
 import { marquerLesEntrantes, animerLaCoche } from './mouvements.js';
-import { modifierAussitot } from './ecriture.js';
+import { modifierAussitot, retirerAussitot } from './ecriture.js';
 
 // Les espaces offerts à la création. Les mêmes que dans l'espace Calendrier :
 // 'perso' n'accepte qu'un événement, `fenetreCreation` s'en charge.
@@ -104,45 +108,77 @@ function enTeteTuile(espace, quand, bouton = '') {
   </span>`;
 }
 
-export function construireEnTete(maintenant = new Date()) {
-  const salutation = maintenant.getHours() >= 18 ? 'Bonsoir' : 'Bonjour';
-  return `
-    <h1>${salutation} ${PRENOM}</h1>
-    <p class="discret date-du-jour">${echapper(dateLongue(maintenant))}</p>
-  `;
+// LA LIGNE DE TÊTE (29 août 2026, demande de Noé). Elle remplace trois choses
+// qui prenaient 126 px — la salutation, la date, et le bloc de l'humeur — par
+// une ligne d'une quarantaine.
+//
+// LA DATE EST PARTIE : « Ta semaine », juste en dessous, la dit sept fois.
+//
+// LA SALUTATION DEVIENT L'ÉTAT DU JOUR, parce que Noé le demandait ainsi :
+// « bonjour à la première ouverture, mais après il faut que ça change ». Le
+// signal de la première ouverture n'est pas l'heure — c'est l'HUMEUR NON
+// NOTÉE : le hub salue tant qu'on ne lui a pas répondu, puis il dit où en est
+// la journée. Aucun réglage, aucune mémoire à tenir.
+const MOTS_NOMBRE = [
+  'Rien', 'Une', 'Deux', 'Trois', 'Quatre', 'Cinq',
+  'Six', 'Sept', 'Huit', 'Neuf',
+];
+
+// En lettres et non en chiffres : c'est une phrase, pas un code. Geist Mono est
+// réservée à ce qui se compare — la règle du site Bac-3, reprise ici.
+const enLettres = (n) => MOTS_NOMBRE[n] ?? String(n);
+
+export function etatDuJour({ reste = 0, faites = 0 } = {}) {
+  if (!reste && !faites) return "Rien de posé aujourd'hui.";
+  if (!reste) return 'Tout est fait.';
+  if (faites) {
+    return reste === 1 ? "Il t'en reste une." : `Il t'en reste ${enLettres(reste).toLowerCase()}.`;
+  }
+  return reste === 1 ? "Une chose aujourd'hui." : `${enLettres(reste)} choses aujourd'hui.`;
 }
 
-export function construireHumeur(humeur) {
-  if (!humeur) {
-    const boutons = NIVEAUX_HUMEUR.map(
-      ({ niveau, frimousse, mot }) => `
+export function construireEnTete(
+  maintenant = new Date(),
+  { humeur = null, reste = 0, faites = 0, noteOuverte = false } = {},
+) {
+  const salutation = maintenant.getHours() >= 18 ? 'Bonsoir' : 'Bonjour';
+
+  // Tant que l'humeur n'a pas été notée, le hub salue. C'est aussi ce qui rend
+  // la question visible sans avoir à l'écrire : cinq frimousses posées à côté
+  // d'un « Bonjour Noé » se comprennent sans le « Comment tu te sens ? » qui
+  // occupait sa propre ligne.
+  const mot = humeur ? etatDuJour({ reste, faites }) : `${salutation} ${PRENOM}`;
+
+  const choisi = humeur ? NIVEAUX_HUMEUR.find((n) => n.niveau === humeur.niveau) : null;
+
+  const echelle = humeur
+    ? `<button type="button" class="humeur-choisie" data-action="rouvrir-humeur"
+         title="Changer" aria-label="Humeur : ${choisi?.mot ?? ''} — changer"
+         >${choisi?.frimousse ?? ''}</button>
+       <button type="button" class="lien-discret humeur-mot" data-action="note-humeur"
+         aria-expanded="${noteOuverte}">${humeur.note ? echapper(humeur.note) : 'un mot ?'}</button>`
+    : `<span class="echelle-humeur" role="group" aria-label="Comment tu te sens ?">${NIVEAUX_HUMEUR.map(
+        ({ niveau, frimousse, mot: nom }) => `
         <button type="button" class="bouton-humeur" data-niveau="${niveau}"
-          aria-label="${mot}" title="${mot}">${frimousse}</button>`,
-    ).join('');
+          aria-label="${nom}" title="${nom}">${frimousse}</button>`,
+      ).join('')}</span>`;
 
-    return `
-      <p class="question-humeur">Comment tu te sens ?</p>
-      <div class="echelle-humeur">${boutons}</div>
-    `;
-  }
+  // Le champ de note ne s'ouvre QUE si on le demande : c'est lui qui pesait
+  // dans l'ancien bloc, et il sert rarement. Le fermer par défaut ne le retire
+  // pas, il le range.
+  const note =
+    humeur && noteOuverte
+      ? `<label class="hors-ecran" for="note-humeur">Un mot sur ta journée (facultatif)</label>
+         <input type="text" id="note-humeur" class="note-humeur" maxlength="140"
+           placeholder="un mot sur ta journée ?" value="${echapper(humeur.note ?? '')}">`
+      : '';
 
-  const choisi = NIVEAUX_HUMEUR.find((n) => n.niveau === humeur.niveau);
   return `
-    <p class="humeur-repondue discret">
-      <span class="frimousse-choisie">${choisi?.frimousse ?? ''}</span>
-      Noté, merci.
-      <button type="button" class="lien-discret" data-action="rouvrir-humeur">changer</button>
-    </p>
-    <!-- L'étiquette est hors écran, pas absente : le champ n'a qu'un texte
-         d'invite, et une invite disparaît dès qu'on écrit. Elle ne dit donc
-         rien à qui revient dessus au lecteur d'écran (WCAG 1.3.1 et 3.3.2).
-         À l'œil, rien ne change : la tuile de l'humeur garde sa ligne nue. -->
-    <label class="hors-ecran" for="note-humeur">Un mot sur ta journée
-      (facultatif)</label>
-    <input type="text" id="note-humeur" class="note-humeur" maxlength="140"
-      placeholder="un mot sur ta journée ? (facultatif)"
-      value="${echapper(humeur.note ?? '')}">
-  `;
+    <div class="tete-jour">
+      <h1 class="salut">${echapper(mot)}</h1>
+      <div class="humeur-ligne">${echelle}</div>
+    </div>
+    ${note}`;
 }
 
 export function construireVictoires(victoires) {
@@ -168,28 +204,6 @@ export function construireVictoires(victoires) {
     .join('');
 
   return `<ul class="liste-victoires">${lignes}</ul>`;
-}
-
-// Sur l'accueil, le cap est une INSCRIPTION, pas des tuiles (demande de Noé,
-// 25 août 2026), et il ne dit qu'UNE colonne par espace : l'objectif à
-// l'échéance la plus proche. Le cap entier d'un espace se lit sur sa page, et
-// se règle dans #objectifs.
-const ORDRE_CAP = ['formation', 'fch', 'photo'];
-
-export function construireObjectifs(objectifs) {
-  const prochains = ORDRE_CAP.map((espace) => {
-    const deLEspace = objectifs.filter((objectif) => objectif.espace === espace);
-    // L'échéance la plus proche d'abord ; sans échéance, on passe derrière.
-    return [...deLEspace].sort((a, b) =>
-      (a.echeance ?? '9999-12-31') < (b.echeance ?? '9999-12-31') ? -1 : 1,
-    )[0];
-  }).filter(Boolean);
-
-  if (!prochains.length) {
-    return `<p class="vide">Ton cap s'écrira ici.</p>`;
-  }
-
-  return construireCapGrave(prochains, { montrerEspace: true });
 }
 
 // La semaine est un APERÇU DU CALENDRIER, plus une liste (demande de Noé,
@@ -365,11 +379,112 @@ const SIGNE_ECARTER = `<svg viewBox="0 0 24 24" width="16" height="16" fill="non
   stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
   <path d="M6 6l12 12M18 6L6 18"/></svg>`;
 
+// LE BANDEAU DE L'APRÈS (29 août 2026, demande de Noé). Ce que le hub DÉDUIT
+// se dit en un message, jamais en une tâche : une sortie qui n'est pas au
+// carnet, une réunion sans bilan. Personne n'a écrit ce travail-là, donc rien
+// ne se coche — il y a quelque chose à ALLER FAIRE, et le bandeau y mène.
+//
+// UN SEUL À LA FOIS, le plus récent (voir `suiteDuJour`, js/orientation.js).
+// Noé : « généralement il n'y en aura pas plusieurs si je respecte la chose ».
+//
+// TROIS PORTES, et les deux refus ne disent pas la même chose :
+//   — le bouton plein y mène ;
+//   — « pas maintenant » vaut pour la journée, et le message revient demain ;
+//   — la croix est définitive : cet événement n'a besoin de rien. Sans elle,
+//     une suite qu'on ne veut pas faire deviendrait un reproche permanent.
+export function construireSuite(suite, maintenant = new Date()) {
+  if (!suite) return '';
+
+  const { evenement, phrase, libelle, adresse } = suite;
+  const quand = echeanceLisible(new Date(evenement.date_debut), maintenant);
+
+  return `
+    <div class="bandeau" data-espace="${echapper(evenement.espace)}">
+      <span class="bandeau-mot">
+        <b>${echapper(evenement.titre)}</b>, c'était ${echapper(quand)}.
+        <span class="discret">${echapper(phrase)}</span>
+      </span>
+      <span class="bandeau-portes">
+        <a class="bandeau-aller" href="${adresse}">${echapper(libelle)}</a>
+        <button type="button" class="lien-discret" data-suite-plus-tard="${echapper(evenement.id)}"
+          >Pas maintenant</button>
+        <button type="button" class="bandeau-croix" data-suite-jamais="${echapper(evenement.id)}"
+          title="Cet événement n'a besoin de rien"
+          aria-label="Cet événement n'a besoin de rien">${SIGNE_ECARTER}</button>
+      </span>
+    </div>`;
+}
+
+// LES PROJETS EN COURS, en tuiles qu'on fait GLISSER (29 août 2026, demande de
+// Noé). Une seule se lit à la fois ; les voisines dépassent d'un liseré, juste
+// assez pour qu'on sache qu'elles existent.
+//
+// `scroll-snap` fait tout le travail : le geste est natif, donc fluide au
+// doigt, et il recentre toujours sur une tuile entière. Aucune flèche — Noé les
+// a écartées au profit du glissement.
+//
+// L'ordre vient de `projetsEnCours` (js/orientation.js) : le plus dormant
+// d'abord, puis celui qui a le plus de travail devant lui.
+export function construireProjetsEnCours(liste) {
+  if (!liste.length) return '';
+
+  const tuiles = liste
+    .map(({ projet, reste, faites, total, dormance, prochaine }) => {
+      // Pas de cas « à l'année » ici : `projetsEnCours` les écarte du rail — un
+      // rythme ne se classe pas par dormance. La jauge est donc toujours une
+      // vraie proportion, et un projet vide affiche zéro plutôt que rien.
+      const part = total ? Math.round((faites / total) * 100) : 0;
+
+      const quand =
+        dormance === 0 ? "aujourd'hui" : dormance === 1 ? 'hier' : `${dormance} j`;
+
+      return `
+      <article class="projet-tuile" data-espace="${echapper(projet.espace)}">
+        <a class="projet-ouvrir" href="#objectifs/projets/${echapper(projet.espace)}"
+          aria-label="Ouvrir ${echapper(projet.nom)}">
+          <span class="projet-tete">
+            <span class="pastille"></span>
+            <span class="projet-espace">${echapper(NOMS_ESPACES[projet.espace] ?? projet.espace)}</span>
+            <span class="projet-trace chiffre" title="Dernière trace">${echapper(quand)}</span>
+          </span>
+          <span class="projet-nom">${echapper(projet.nom)}</span>
+          <span class="projet-jauge" role="img" aria-label="${faites} sur ${total}"><i
+            style="width:${part}%"></i></span>
+          <span class="projet-compte">${
+            total
+              ? `<span class="chiffre">${faites}</span> sur <span class="chiffre">${total}</span>`
+              : 'Aucune tâche posée'
+          }</span>
+          ${
+            prochaine
+              ? `<span class="projet-suivant">
+                   <b>${echapper(prochaine.titre)}</b>
+                   ${echapper(echeanceLisible(depuisDateISO(prochaine.echeance)))}
+                 </span>`
+              : `<span class="projet-suivant discret">Rien de daté.</span>`
+          }
+        </a>
+      </article>`;
+    })
+    .join('');
+
+  // Les points disent COMBIEN il y en a — un rail qui glisse sans compteur ne
+  // dit pas où l'on est dedans.
+  const points = liste
+    .map((_, rang) => `<i${rang ? '' : ' class="actif"'}></i>`)
+    .join('');
+
+  return `
+    <h2 class="titre-section">Projets en cours</h2>
+    <div class="projet-rail" data-rail>${tuiles}</div>
+    <p class="projet-points" aria-hidden="true">${points}</p>`;
+}
+
 export function construirePropositions(propositions) {
   if (!propositions.length) return '';
 
   return `
-    <h2>Ce que je te proposerais</h2>
+    <h2>Ce que je te propose</h2>
     <ul class="pistes">
       ${propositions
         .map((proposition) => {
@@ -429,6 +544,12 @@ export function construireAujourdhui(
     ? construireLignesTaches(taches.slice(0, MAX_TACHES), {
         ouvrable: true,
         supprimable: false,
+        // Reporter, oui ; une croix pour supprimer, non — c'est le geste du
+        // matin d'un côté, un geste sans retour de l'autre, et ils ne peuvent
+        // pas se toucher. Supprimer existe quand même, mais RANGÉ dans le menu
+        // à trois points : disponible, jamais offert.
+        reportable: true,
+        menu: true,
       })
     : '';
 
@@ -498,13 +619,18 @@ const DONNEES = {
 
 function squelette() {
   return `
+    <!-- LA LIGNE DE TÊTE porte la salutation, l'état du jour et l'humeur.
+         Trois blocs d'hier en une ligne — voir construireEnTete. -->
     <header class="jour" id="bloc-jour"></header>
 
     <!-- L'échec de chargement se dit sous l'en-tête, sur une ligne : le reste
          de la page tient, et ce qui était déjà affiché le reste. -->
     <div id="bloc-erreur"></div>
 
-    <section class="bloc" id="bloc-humeur"></section>
+    <!-- LE BANDEAU DE L'APRÈS. Conditionnel, un seul à la fois — voir
+         construireSuite. Il vient juste sous la ligne de tête : c'est une
+         question, et une question qu'on pose en bas de page ne se voit pas. -->
+    <div id="bloc-suite"></div>
 
     <!-- LE RENDEZ-VOUS DU DIMANCHE. Après l'accueil et l'humeur, avant tout le
          reste : c'est la raison pour laquelle Noé a ouvert le hub ce soir-là.
@@ -524,34 +650,67 @@ function squelette() {
         : ''
     }
 
-    <!-- « Aujourd'hui » passe AVANT « Ta semaine » (demande de Noé, 13 août
-         2026). Ce qui se fait dans la journée vient avant ce qui se prépare —
-         et il n'est plus « discret, en bas » : c'est devenu la liste des
-         tâches, pas un pense-bête. -->
-    <section class="bloc">
-      <h2>Aujourd'hui</h2>
-      <div id="bloc-aujourdhui"><p class="vide">…</p></div>
-    </section>
+    <!-- DEUX COLONNES, ET UN ORDRE DIFFÉRENT SUR TÉLÉPHONE (29 août 2026).
+         À gauche la journée — c'est ce qu'on vient lire. À droite les projets
+         et les pistes : Noé leur reprochait de « prendre trop d'importance à
+         leur place et sous leur forme actuelle ».
+         Les trois sont dans la MÊME grille pour que la semaine puisse
+         s'intercaler : sur téléphone il n'y a pas de « à droite », et l'ordre
+         devient journée → semaine → projets et pistes. C'est le seul moyen de
+         leur retirer le poids qu'il leur reproche. Voir .accueil-grille. -->
+    <div class="accueil-grille">
+      <!-- « Aujourd'hui » passe AVANT « Ta semaine » (demande de Noé, 13 août
+           2026). Ce qui se fait dans la journée vient avant ce qui se prépare —
+           et il n'est plus « discret, en bas » : c'est devenu la liste des
+           tâches, pas un pense-bête. -->
+      <!-- LA JOURNÉE EST UNE TUILE (29 août 2026, demande de Noé). Sans elle,
+           « Aujourd'hui » et « À faire » portaient exactement le même
+           habillage — petites capitales grises — et rien ne disait lequel
+           contenait l'autre. La tuile tranche par son bord ; sa police finit le
+           travail. Elle porte les QUATRE groupes de la journée : à faire, à
+           publier, les rendez-vous, et les propositions. -->
+      <section class="bloc accueil-journee">
+        <!-- LE TITRE EST DEHORS (29 août 2026, demande de Noé), comme celui des
+             projets en cours : c'est lui qui nomme la tuile, il ne vit pas
+             dedans. Les deux sections de l'accueil se lisent donc pareil — un
+             mot, puis un cadre. -->
+        <h2 class="titre-section">Aujourd'hui</h2>
+        <div class="tuile-jour">
+          <div id="bloc-aujourdhui"><p class="vide">…</p></div>
 
-    <!-- CE QUE JE TE PROPOSERAIS. Trois candidates au plus, jamais deux du
-         même espace, tirées de ce qui n'a PAS de date — ce qui, faute d'être
-         jamais planifié, n'est jamais fait. Ce n'est pas un programme : on en
-         prend une, aucune, ou on va piocher ailleurs. -->
-    <section class="bloc" id="bloc-propositions" hidden></section>
+        <!-- CE QUE JE TE PROPOSERAIS, À LA SUITE DE LA JOURNÉE (29 août 2026,
+             demande de Noé). Elles étaient passées à droite le matin même,
+             pour leur retirer le poids qu'elles avaient ; elles reviennent dans
+             la colonne de gauche mais APRÈS ce qui est posé — à faire, à
+             publier, rendez-vous. C'est leur vraie place : une proposition est
+             une candidate pour la journée, elle se lit dans le fil de la
+             journée, une fois qu'on a vu ce qu'il y a déjà.
+             Trois au plus, jamais deux du même espace, tirées de ce qui n'a PAS
+             de date — ce qui, faute d'être jamais planifié, n'est jamais fait.
+             Ce n'est pas un programme : on en prend une, aucune, ou on va
+             piocher ailleurs. -->
+          <section class="bloc" id="bloc-propositions" hidden></section>
+        </div>
+      </section>
 
-    <section class="bloc">
-      <h2>Ta semaine</h2>
-      <div id="bloc-semaine"><p class="vide">…</p></div>
-    </section>
+      <div class="accueil-cote">
+        <!-- Les projets en cours, en tuiles qu'on fait glisser. Seuls dans la
+             colonne de droite désormais. -->
+        <section class="bloc" id="bloc-projets" hidden></section>
+      </div>
 
-    <!-- Les objectifs FERMENT la page (demande de Noé, 13 août 2026). Ils
-         disent le cap, pas la journée : on les relit quand on lève la tête, pas
-         en ouvrant l'application. Ce qui se fait maintenant — l'humeur, les
-         tâches du jour, la semaine — passe devant. -->
-    <section class="bloc">
-      <h2>Tes objectifs</h2>
-      <div id="bloc-objectifs"><p class="vide">…</p></div>
-    </section>
+      <section class="bloc accueil-semaine">
+        <h2 class="titre-section">Ta semaine</h2>
+        <div id="bloc-semaine"><p class="vide">…</p></div>
+      </section>
+    </div>
+
+    <!-- LES OBJECTIFS ONT QUITTÉ L'ACCUEIL (29 août 2026, demande de Noé).
+         Ils ont leur page à deux gestes — le menu les nomme sous « Général » —
+         et l'accueil répond à « qu'est-ce que j'ai à faire », pas à « où je
+         vais ». Ils avaient déjà reculé deux fois : au bas de la page le
+         13 août, en lignes plutôt qu'en colonnes le 28. C'était le rang qui
+         n'allait pas, pas la forme. -->
 
     <!-- Le même « + » que l'espace Tâches, au même endroit : depuis l'accueil
          aussi, on doit pouvoir noter quelque chose sans changer de page. Il
@@ -568,7 +727,6 @@ function squelette() {
 export default {
   async monter(section) {
     section.innerHTML = squelette();
-    section.querySelector('#bloc-jour').innerHTML = construireEnTete();
 
     // L'état gardé entre deux rendus : ce que l'utilisateur peut modifier sans
     // recharger la page.
@@ -582,6 +740,9 @@ export default {
       commandes: [],
       contacts: [],
       humeurOuverte: false,
+      // Le champ « un mot sur ta journée » est replié par défaut : c'est lui
+      // qui pesait dans l'ancien bloc, et il sert rarement.
+      humeurNoteOuverte: false,
       annulation: null,
       creation: null,
       // La barre de la semaine touchée, sa fenêtre de détail (demande de Noé,
@@ -713,12 +874,19 @@ export default {
       rendreDetail();
     };
 
-    function rendreHumeur() {
-      if (!pret('humeur')) return;
-      cible('bloc-humeur').innerHTML = construireHumeur(
-        etat.humeurOuverte ? null : etat.humeur,
-      );
+    // La tête se redessine quand l'humeur change ET quand la journée change :
+    // cocher une tâche fait passer « Trois choses » à « Il t'en reste deux ».
+    function rendreTete() {
+      const journee = journeeDeNoe();
+      cible('bloc-jour').innerHTML = construireEnTete(new Date(), {
+        humeur: etat.humeurOuverte ? null : etat.humeur,
+        reste: journee.reste,
+        faites: journee.faites,
+        noteOuverte: etat.humeurNoteOuverte,
+      });
     }
+
+    const rendreHumeur = rendreTete;
 
     // Ce qui a déjà été vu à l'écran : une ligne absente de ces mémoires vient
     // d'arriver, et elle seule fait son entrée en fondu.
@@ -736,15 +904,6 @@ export default {
     }
 
     // Les intentions perso n'ont ni mesure ni date : elles n'ont donc pas leur
-    // place dans un bloc de progression. Elles se relisent dans #perso.
-    const objectifsDesEspaces = () =>
-      etat.objectifs.filter((objectif) => objectif.espace !== 'perso');
-
-    function rendreObjectifs() {
-      if (!pret('objectifs')) return;
-      cible('bloc-objectifs').innerHTML = construireObjectifs(objectifsDesEspaces());
-    }
-
     // « Aujourd'hui » = ce qui est à faire aujourd'hui ou l'était déjà. Sans
     // borne basse, volontairement : une échéance passée reste visible plutôt
     // que de disparaître — le hub ne compte pas les retards, il ne les efface
@@ -798,11 +957,32 @@ export default {
       // affichée — sans cette liste, sa tuile ne s'ouvrirait pas.
       elementsDuJourAffiches = [...rendezVous, ...publications];
 
-      return { rendezVous, taches: tachesDuJour(), publications };
+      const taches = tachesDuJour();
+
+      // Ce que la ligne de tête dit. `reste` ne compte QUE ce qui demande un
+      // geste — un rendez-vous est un point fixe, pas une chose à faire, et le
+      // compter ferait dire « trois choses » un jour où il n'y a rien à cocher.
+      const faites = etat.tachesDatees.filter(
+        (tache) =>
+          tache.statut === 'fait' &&
+          tache.date_fait &&
+          versDateISO(new Date(tache.date_fait)) === aujourdhui,
+      ).length;
+
+      return {
+        rendezVous,
+        taches,
+        publications,
+        reste: taches.length + publications.length,
+        faites,
+      };
     }
 
     function rendreAujourdhui() {
       if (!pret('taches')) return;
+      // La tête compte ce que ce bloc affiche : les deux ne peuvent pas se
+      // redessiner l'un sans l'autre sans mentir.
+      rendreTete();
       const bloc = cible('bloc-aujourdhui');
       // Les rendez-vous et les publications viennent de la source « semaine ».
       // Tant qu'elle n'est pas là, le bloc montre déjà ses tâches plutôt que
@@ -828,8 +1008,43 @@ export default {
     // quelle colonne décaler en base.
     let elementsDeLaSemaine = [];
 
+    // Les objectifs ont quitté l'accueil, mais pas la SEMAINE : leurs échéances
+    // y sont des barres comme les autres. L'espace perso reste dehors — ses
+    // intentions n'ont ni date ni mesure, elles se relisent dans #perso.
+    const objectifsDesEspaces = () =>
+      etat.objectifs.filter((objectif) => objectif.espace !== 'perso');
+
+    // Le point allumé suit la tuile centrée. `scroll` et non un observateur :
+    // le rail est court, le calcul est une division, et un IntersectionObserver
+    // par tuile coûterait plus cher que la page entière.
+    function suivreLeRail(cadre) {
+      const rail = cadre.querySelector('[data-rail]');
+      const points = [...cadre.querySelectorAll('.projet-points i')];
+      if (!rail || points.length < 2) return;
+
+      const marquer = () => {
+        const tuile = rail.querySelector('.projet-tuile');
+        if (!tuile) return;
+        const pas = tuile.getBoundingClientRect().width + 8;
+        const rang = Math.min(points.length - 1, Math.max(0, Math.round(rail.scrollLeft / pas)));
+        points.forEach((point, i) => point.classList.toggle('actif', i === rang));
+      };
+
+      rail.addEventListener('scroll', marquer, { passive: true });
+      marquer();
+    }
+
+    // Le bandeau vient de la même source que la semaine — tous les événements
+    // sont déjà là, il n'y a rien à charger de plus.
+    function rendreSuite() {
+      if (!pret('semaine')) return;
+      const bloc = cible('bloc-suite');
+      bloc.innerHTML = construireSuite(suiteDuJour({ evenements: etat.evenements }));
+    }
+
     function rendreSemaine() {
       if (!pret('taches', 'semaine', 'objectifs')) return;
+      rendreSuite();
       elementsDeLaSemaine = assemblerCalendrier({
         evenements: etat.evenements,
         taches: etat.tachesDatees,
@@ -902,7 +1117,6 @@ export default {
       // (`victoires` n'est appelé que si la source existe — voir
       // VICTOIRES_VISIBLES.)
       objectifs: () => {
-        rendreObjectifs();
         rendreSemaine();
       },
       taches: () => {
@@ -986,6 +1200,15 @@ export default {
         etat.propositions = propositionsDuMatin(etat.donneesOrientation, new Date());
         bloc.innerHTML = construirePropositions(etat.propositions);
         bloc.hidden = !etat.propositions.length;
+
+        // Les projets viennent des MÊMES données : aucune requête de plus.
+        const cadre = section.querySelector('#bloc-projets');
+        if (cadre) {
+          const liste = projetsEnCours(etat.donneesOrientation, new Date());
+          cadre.innerHTML = construireProjetsEnCours(liste);
+          cadre.hidden = !liste.length;
+          suivreLeRail(cadre);
+        }
       } catch (erreur) {
         // Une proposition qui ne se calcule pas se tait : l'accueil doit servir
         // à ce pour quoi on l'ouvre d'habitude, même quand l'orientation cale.
@@ -1292,7 +1515,6 @@ export default {
       try {
         rangerLaCreation(champs.nature, await poserAuCalendrier(champs));
         rendreAujourdhui();
-        rendreObjectifs();
         rendreSemaine();
       } catch (souci) {
         console.error('Enregistrement impossible', souci);
@@ -1576,7 +1798,111 @@ export default {
 
       if (evenement.target.closest('[data-action="rouvrir-humeur"]')) {
         etat.humeurOuverte = true;
-        rendreHumeur();
+        rendreTete();
+        return;
+      }
+
+      if (evenement.target.closest('[data-action="note-humeur"]')) {
+        etat.humeurNoteOuverte = !etat.humeurNoteOuverte;
+        rendreTete();
+        if (etat.humeurNoteOuverte) section.querySelector('#note-humeur')?.focus();
+        return;
+      }
+
+      // LA PRIORITÉ DEPUIS LE MENU. Le cercle change de couleur au doigt ; le
+      // menu se referme parce que la liste se redessine.
+      const versPriorite = evenement.target.closest('[data-priorite-vers]');
+      if (versPriorite) {
+        const [id, niveau] = versPriorite.dataset.prioriteVers.split(':');
+        const tache = etat.tachesDatees.find((candidate) => candidate.id === id);
+        if (!tache || tache.priorite === Number(niveau)) return;
+
+        await modifierAussitot(
+          tache,
+          { priorite: Number(niveau) },
+          () => api.modifierTache(id, { priorite: Number(niveau) }),
+          {
+            rendre: () => {
+              rendreAujourdhui();
+              rendreSemaine();
+            },
+            echouer: signalerEcriture,
+          },
+        );
+        return;
+      }
+
+      // SUPPRIMER, depuis le menu et de là seulement. La ligne s'en va tout de
+      // suite et revient À SA PLACE si le serveur refuse — `retirerAussitot`.
+      const aRetirer = evenement.target.closest('#bloc-aujourdhui [data-supprimer]');
+      if (aRetirer) {
+        const tache = etat.tachesDatees.find(
+          (candidate) => candidate.id === aRetirer.dataset.supprimer,
+        );
+        if (!tache) return;
+
+        await retirerAussitot(
+          etat.tachesDatees,
+          tache,
+          () => api.supprimerTache(tache.id),
+          {
+            rendre: () => {
+              rendreAujourdhui();
+              rendreSemaine();
+            },
+            echouer: signalerEcriture,
+          },
+        );
+        return;
+      }
+
+      // REPORTER À DEMAIN, en un geste. L'écran d'abord : la ligne s'en va au
+      // doigt, l'écriture part derrière, et elle revient si le serveur refuse.
+      const report = evenement.target.closest('[data-reporter]');
+      if (report) {
+        const tache = etat.tachesDatees.find(
+          (candidate) => candidate.id === report.dataset.reporter,
+        );
+        if (!tache) return;
+
+        const demain = versDateISO(ajouterJours(new Date(), 1));
+        await modifierAussitot(
+          tache,
+          { echeance: demain },
+          () => api.modifierTache(tache.id, { echeance: demain }),
+          {
+            rendre: () => {
+              rendreAujourdhui();
+              rendreSemaine();
+            },
+            echouer: signalerEcriture,
+          },
+        );
+        return;
+      }
+
+      // LE BANDEAU DE L'APRÈS. « Pas maintenant » vaut pour la journée,
+      // la croix est définitive — deux refus, deux colonnes.
+      const plusTard = evenement.target.closest('[data-suite-plus-tard]');
+      const jamais = evenement.target.closest('[data-suite-jamais]');
+      if (plusTard || jamais) {
+        const id = (plusTard ?? jamais).dataset[plusTard ? 'suitePlusTard' : 'suiteJamais'];
+        const champs = plusTard ? { refusee_le: aujourdhui } : { sans_suite: true };
+        const ligne = etat.evenements.find((candidat) => candidat.id === id);
+        if (!ligne) return;
+
+        const avant = { ...ligne };
+        Object.assign(ligne, champs);
+        rendreSuite();
+
+        try {
+          await api.modifierEvenement(id, champs);
+        } catch (erreur) {
+          console.error('Refus de la suite impossible', erreur);
+          Object.assign(ligne, avant);
+          rendreSuite();
+          signalerEcriture();
+        }
         return;
       }
 
@@ -1831,7 +2157,6 @@ export default {
     // sort du cache, ou ce sont les points de suspension du squelette.
     rendreHumeur();
     rendreVictoires();
-    rendreObjectifs();
     rendreAujourdhui();
     rendreSemaine();
 

@@ -6,6 +6,7 @@ import {
   deconnexion,
   surChangementSession,
   rafraichirLesSeries,
+  poserLesTachesDEvenement,
 } from './api.js';
 import { centrerActif, ongletCalendrier } from './calendrier-commun.js';
 import { viderLesCaches } from './cache-session.js';
@@ -455,6 +456,12 @@ async function appliquerSession(session) {
     // ligne ; l'écriture n'a lieu que si des occurrences manquent vraiment.
     try {
       await rafraichirLesSeries();
+      // Les tâches que les événements font naître : la préparation à J-2, le
+      // tri des photos à J+1. Même moment et même raison que les séries — une
+      // chose qui devrait exister aujourd'hui doit exister AVANT le premier
+      // affichage, sinon « Aujourd'hui » ment. Rejouable : l'index unique fait
+      // que poser deux fois ne pose qu'une ligne.
+      await poserLesTachesDEvenement();
     } catch (erreur) {
       console.error('Génération des occurrences impossible', erreur);
     }

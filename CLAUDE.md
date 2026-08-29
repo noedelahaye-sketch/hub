@@ -251,7 +251,23 @@ La progression d'un objectif = jalons atteints / jalons totaux (calculée côté
 - `famille` text (nullable) CHECK (corps, calme, lien, intendance) — **espace perso seulement** : ce que ce moment sert. Elle se saisit à la **pastille « Famille »**, qui n'apparaît dans la tuile de capture — celle de l'espace Tâches comme celle du calendrier — que lorsque l'espace choisi est perso, juste derrière la pastille d'espace (la bande défile : une pastille en queue n'existe pas). Facultative, et elle le restera : une soirée notée en trois secondes ne s'arrête pas pour être classée. Écrite `null` dès que l'espace n'est plus perso. Les planchers qu'elle alimente sont **comptés en interne, jamais affichés** (voir `PLANCHER_PERSO`, js/orientation.js).
 - `date_fait` timestamptz
 - `serie_id` uuid REFERENCES series(id) ON DELETE SET NULL — **l'occurrence d'une série répétée** (27 août 2026). La règle (`recurrence`, `recurrence_fin`) vit dans `series`, plus sur la tâche : voir la table `series` plus bas.
+- `evenement_id` uuid REFERENCES evenements(id) ON DELETE **CASCADE** — **l'événement qui a fait naître cette tâche** (29 août 2026). En cascade : une préparation ou un tri n'a aucun sens sans son événement, et les laisser orphelins ferait deux fantômes qu'on ne saurait plus rattacher.
+- `origine` text (nullable) CHECK (preparation, tri) — **ce qui l'a fait naître automatiquement**, et `NULL` pour tout ce que Noé a écrit lui-même, qui est le cas ordinaire. Un index unique sur `(evenement_id, origine)` garantit qu'on ne la pose qu'une fois : c'est ce qui rend le rattrapage rejouable à chaque ouverture, comme celui des séries. La ligne s'en sert pour dire d'où elle vient — « Préparation », « Après l'événement » — sans quoi une tâche apparue toute seule ressemblerait à une erreur.
 - `created_at` timestamptz default now()
+
+**LES DEUX TÂCHES QUE LE HUB POSE LUI-MÊME** (29 août 2026, demande de Noé) — `poserLesTachesDEvenement` (js/api.js), appelée par `js/app.js` avant le premier affichage, au même moment et pour la même raison que le rattrapage des séries :
+
+| Ce qui naît | D'où ça vient | Quand |
+|---|---|---|
+| « Préparer *l'événement* » | une réunion du FCH ou une sortie de Yuno | **J−2** |
+| « Trier les photos de *l'événement* » | `evenements.avec_photos` est coché | **J+1** |
+
+- **Le seuil de 48 h ne s'invente pas** : il existait déjà chez Yuno (`AVANT_MONTE_A`, js/yuno.js, 26 août) pour révéler la phase « Avant » d'une sortie. Il en sort et devient la règle du hub.
+- **Le tri tombe à J+1 et non le soir même** : on ne trie pas en rentrant d'un match à 22 h.
+- **Ce sont de VRAIES lignes**, pas des lignes d'affichage : elles se cochent, se reportent, se rattachent à un projet, portent une durée, apparaissent au calendrier et dans l'espace Tâches. Une fausse tâche incapable de ces gestes serait une exception à expliquer sur chaque écran.
+- **JAMAIS pour le perso ni la formation.** L'espace perso ne mesure rien : un rendez-vous avec soi ne se prépare pas et ne se trie pas.
+- **Cocher un tri pose `oeuvre_finie`** sur la sortie, chez Yuno seulement — la tâche est le GESTE, la colonne est l'ÉTAT, comme terminer une tâche écrit sa victoire. Sans ce lien, le Carnet de terrain et l'accueil suivraient la même chose chacun de son côté.
+- **Une préparation non faite reste** après l'événement. Le hub ne supprime pas ce que Noé pourrait vouloir voir, et une préparation non faite dit quelque chose de vrai sur cette semaine-là. Il ne la répète simplement pas.
 
 **Une tâche répétée se termine comme les autres** (27 août 2026, demande de Noé). Chaque occurrence est une ligne à elle : celle du jour se coche et écrit sa victoire, celle de la semaine prochaine attend son tour. On en supprime une sans toucher aux autres, on en modifie une sans changer la série.
 
@@ -276,6 +292,8 @@ Règle métier : maximum 3 tâches en statut 'actif' par espace. L'UI doit empê
 - `photo_chemin` text · `note` text · `oeuvre_finie` boolean NOT NULL default false — le reste de la face vécue.
 - `famille` text (nullable) CHECK (corps, calme, lien, intendance) — espace perso seulement, même colonne et mêmes mots que sur `taches`. Elle se pose à la tuile de capture, au formulaire « Ajouter un rendez-vous » de `#perso`, et se corrige au formulaire de modification du calendrier.
 - `reunion_objet` text (nullable) CHECK (ca, alternance, communication, partenariat, autre) — FCH seulement : non nul = cet événement est une réunion (21 août 2026). `reunion_animee` boolean NOT NULL default false — Noé anime ou participe. La préparation et le bilan vivent dans les tables `preparations`/`modeles_preparation` (voir docs/fch-spec.md).
+- `avec_photos` boolean NOT NULL default false — **cet événement produit des photos à trier** (29 août 2026). Une DÉCLARATION, faite à la création par la pastille « Photos », exactement comme `reunion_objet` dit qu'un événement est une réunion : le hub ne peut pas le deviner, une réunion n'est pas une séance et une sortie n'est pas toujours un shooting. **Offerte au FCH et à Yuno**, décochée par défaut des deux côtés ; jamais au perso ni à la formation. Elle fait naître la tâche de tri à J+1.
+- `refusee_le` date (nullable) · `sans_suite` boolean NOT NULL default false — **les deux refus du bandeau de l'après** (29 août 2026), et ils ne disent pas la même chose. `refusee_le` est le « pas maintenant » : il vaut pour la journée et le message revient demain — même nom et même mécanique que sur `taches` et `projets`, où c'est le « pas aujourd'hui » des pistes du matin. `sans_suite` est la croix : cet événement n'a besoin de rien, et on ne le redemandera jamais. Sans le second, une suite qu'on ne veut pas faire deviendrait un reproche permanent.
 - `created_at` timestamptz default now()
 
 **Un événement porte deux faces depuis le 14 août 2026** (fusion des moments et des événements) : ce qui est *prévu* (date, lieu, type, sa préparation) et ce qui a été *vécu* (les quatre colonnes ci-dessus, plus ses `rencontres`). La table `moments` a disparu — elle ne faisait que recopier son événement. Le vocabulaire, lui, ne bouge pas : l'interface dit toujours « Moments vécus » et « Carnet de terrain ». Voir docs/yuno-spec.md.
@@ -465,41 +483,129 @@ gagné reste ce qu'on a gagné, c'est la dette qui grossit de l'essence.
 3. Politiques RLS : toutes les opérations (select/insert/update/delete) réservées au rôle `authenticated`.
 4. Le site affiche un écran de connexion simple si la session est absente ; la session persiste entre les visites.
 
-## Dashboard — contenu et ordre
+## L'accueil — refondu le 29 août 2026
 
-1. **En-tête du jour** : « Bonjour Noé », date, et la question du matin (« Comment tu te sens ? », 5 boutons, réponse en un clic) — remplacée par un remerciement discret une fois répondue.
-2. **Victoires récentes** : les 5 dernières, tous espaces perso inclus, avec pastille couleur de l'espace.
-   **Masquées depuis le 13 août 2026** (décision de Noé, « pour le moment ») : le drapeau `VICTOIRES_VISIBLES` de `js/dashboard.js` commande le bloc, sa source et son rendu. Cocher une tâche crée toujours sa victoire en base, et l'espace perso comme le site du FCH continuent de les afficher — seul l'accueil se tait.
-3. **Le cap** : **gravé, et non en tuiles** (26 août 2026). Du texte posé sur la page — ni carte, ni bordure, ni dépliage — **une colonne par espace**, qui ne dit que l'objectif à l'échéance la plus proche : son nom, son titre, une rangée de points (un par jalon, pleins quand ils sont atteints), son échéance. **Rien ne s'y modifie** : presser la zone mène à `#objectifs`, où le cap se règle. Un lien unique, pas un par objectif — le geste est le même partout : aller voir. **En BAS de page depuis le 13 août 2026** (décision de Noé) : ils disent le cap, pas la journée — on les relit quand on lève la tête, pas en ouvrant l'application.
-3 bis. **Ce que je te proposerais** : au plus **trois candidates**, **jamais deux du même espace**, tirées de ce qui n'a **pas de date** — ce qui, faute d'être jamais planifié, n'est jamais fait. Chacune porte **sa raison** : une proposition sans raison est un ordre déguisé, on l'exécute ou on l'ignore mais on ne peut pas la juger. **UNE LIGNE CHACUNE** (28 août 2026) : pastille de l'espace, titre, raison à sa suite en encre discrète, et **deux signes** — un « + » (poser une tâche) ou un calendrier (mettre à aujourd'hui), puis une **croix** pour écarter. Les deux ont le même poids : écarter doit rester aussi facile que prendre. Leur phrase vit dans `title` et `aria-label` — un bouton dit ce qui va se passer, même quand il ne l'écrit plus.
+**LA QUESTION À LAQUELLE IL RÉPOND**, dans les mots de Noé :
 
-> *Deux formes essayées et abandonnées le même jour.* Des cartes à barre de couleur (la grammaire de `.bloc li`), puis des tuiles empruntées à la galerie du cap : elles disaient juste, mais coûtaient trois cents pixels avant d'arriver au calendrier — « on met trop de temps à arriver au calendrier » (Noé). Une piste n'est pas un cap : c'est une suggestion qu'on prend ou qu'on écarte en un geste, et elle n'a pas besoin d'une carte pour ça. Ne pas les leur rendre. Deux gestes : la prendre (elle passe à aujourd'hui, ou sa première tâche s'ouvre) ou **« Pas aujourd'hui »** — un refus est une **donnée**, pas un échec, et c'est le seul signal qui reste au hub sur l'état du jour puisque l'humeur n'est qu'observée. Il vaut pour la journée : demain la proposition peut revenir, et elle le doit. Le calcul est dans `propositionsDuMatin` (js/orientation.js).
+> « Avoir une vision directe sur ce que j'ai à faire sur l'ensemble de mes
+> projets et espaces, **que j'ai noté** — mes tâches, publications, événements —
+> **et les conséquences de ce que j'ai réalisé** : bilan d'un événement, sa
+> préparation, et tout ce qui a provoqué de la même manière. »
 
-4. **Aujourd'hui** : la journée entière, et plus seulement les tâches (27 août 2026). **Deux colonnes** sur grand écran, empilées sur téléphone dans le même ordre :
-   - à gauche, **À faire** — les tâches à faire aujourd'hui (ou qui l'étaient déjà : pas de borne basse, le hub ne compte pas les retards mais ne les efface pas), max 9, **dans la forme exacte de l'espace Tâches**. Cochables directement, et **ouvrables** : appuyer sur une tâche la rouvre dans la tuile, pré-remplie (14 août 2026). Elle ne s'y supprime pas — ce geste vit dans l'espace Tâches.
-   - à droite, **À publier** puis **Rendez-vous**. Une publication compte si elle est prévue aujourd'hui ou l'était déjà et n'est pas partie — la règle des tâches, mot pour mot. Un **rendez-vous ne compte que s'il couvre aujourd'hui** : un événement passé n'est pas en attente, il a eu lieu, et le traîner en tête de page serait le reproche que ce hub ne fait jamais.
-   - Le rond d'une publication **avance d'un cran** ici comme partout ; un rendez-vous porte son **heure** à la place de la marque et ne se coche pas — c'est un point fixe, pas une chose à faire. Un groupe vide disparaît en entier, titre compris ; une colonne vide aussi, et l'autre prend toute la largeur.
-5. **Ta semaine** : un **aperçu du calendrier hebdomadaire**, tous espaces et toutes natures confondus — la même grille que `#calendrier` en vue semaine.
-   **Un jour s'y ouvre en grand** (demande de Noé, 24 août 2026) : presser le
-   titre d'un jour (« lun. 24 ») lui donne toute la largeur, deux flèches
-   passent au jour voisin dans la semaine, et represser ce même titre rouvre la
-   semaine. Ce n'est pas un autre écran : c'est la MÊME grille dont les sept
-   colonnes changent de largeur, pour que les traits entre les jours se voient
-   glisser (`--cal-colonnes`, sept valeurs déclarées une à une — `repeat(7, 1fr)`
-   n'aurait rien à interpoler). Ouvrir ou fermer une journée ne redessine donc
-   rien : `viserLeJour` ne touche qu'au style, sans quoi l'animation serait
-   coupée. La phrase d'aide sous la grille, elle, ne se dit qu'au calendrier
-   (`aide: false` sur l'accueil).
+Cette seconde moitié n'existait nulle part : le hub savait qu'un match avait eu
+lieu la veille, qu'une réunion se tenait lundi, qu'une séance avait été
+photographiée — et il n'en disait rien. Du travail réel, jamais écrit, donc
+jamais vu.
 
-Ordre 4 avant 5 depuis le 13 août 2026 (demande de Noé) : ce qui se fait dans la journée vient avant ce qui se prépare. « Aujourd'hui » n'est donc plus le bloc discret du bas.
+### LA RÈGLE QUI RANGE TOUT ÇA (formulée par Noé)
 
-**L'ordre réellement affiché aujourd'hui**, après les deux décisions du 13 août : en-tête et humeur, « Aujourd'hui », « Ta semaine », « Tes objectifs ». Les victoires sont masquées.
+> **Ce qu'il a DÉCLARÉ devient une TÂCHE. Ce que le hub DÉDUIT devient un MESSAGE.**
 
-« Aujourd'hui » et « Ta semaine » se recoupent volontairement sur la journée en cours, et ce n'est pas un doublon à corriger : le premier dit **ce qu'on fait**, avec les gestes qui vont avec ; la seconde dit **la forme de la semaine**, et on y glisse des barres.
+| Ce qui arrive | D'où ça vient | Forme | Quand |
+|---|---|---|---|
+| Préparer la réunion | l'événement est une réunion FCH ou une sortie Yuno | tâche | J−2 |
+| Trier les photos | Noé a coché « photos » à la création | tâche | J+1 |
+| Le carnet, le bilan | le hub le déduit | **message** | après |
 
-Un **bouton « + » flottant en bas à droite** ouvre la tuile du calendrier — donc n'importe quelle nature datée — **par défaut sur une tâche**.
+Il coche « photos » : le tri est du travail attendu. Personne en revanche ne
+déclare qu'un match mérite un carnet — c'est une question, et une question se
+pose, elle ne se coche pas. **Un cercle se coche, une porte emmène** : deux
+gestes ne doivent jamais porter le même signe.
 
-Check-in matinal : le dashboard doit se lire en moins de 5 minutes, sans scroll excessif sur mobile.
+### L'ordre de la page
+
+1. **La ligne de tête** — une ligne, là où il y en avait trois (126 px → 47).
+   La date est partie : « Ta semaine » la dit sept fois plus bas. La salutation
+   devient **l'état du jour**, et le signal de la première ouverture n'est pas
+   l'heure mais **l'humeur non notée** : le hub salue tant qu'on ne lui a pas
+   répondu, puis il dit « Trois choses aujourd'hui », « Il t'en reste une »,
+   « Tout est fait », « Rien de posé aujourd'hui ». Aucun réglage, aucune
+   mémoire à tenir. L'humeur tient au bout de la même ligne — cinq frimousses,
+   puis la seule choisie une fois répondu. Le champ « un mot ? » ne s'ouvre que
+   si on le demande : c'est lui qui pesait.
+2. **Le bandeau de l'après** — conditionnel, **un seul à la fois, le plus
+   récent** : un bilan s'écrit à chaud (`js/hermitage.js` le dit depuis le
+   21 août). Deux natures seulement — une sortie Yuno hors carnet, une réunion
+   FCH sans bilan. Trois portes : y aller, « pas maintenant » (revient demain),
+   la croix (jamais). **Jamais de ligne perso** : un rendez-vous avec soi ne
+   doit ni bilan ni tri. Il remonte à **quinze jours** au plus — au-delà, un
+   bilan qu'on n'a pas écrit ne s'écrira pas, et le redemander devient un
+   reproche. Le rendez-vous du dimanche passe devant : deux bandeaux empilés
+   seraient deux interruptions.
+3. **Aujourd'hui, dans une TUILE** — à faire · à publier · rendez-vous · **ce
+   que je te propose**, les quatre groupes ensemble. La tuile existe parce que
+   « Aujourd'hui » et « À faire » portaient exactement le même habillage et que
+   rien ne disait lequel contenait l'autre : **le titre de section** (Clash
+   Display, casse normale) se distingue désormais du **libellé de groupe**
+   (petites capitales), et le bord finit le travail. Le titre est DEHORS, comme
+   celui des projets — il nomme la tuile, il ne vit pas dedans.
+4. **Ta semaine** — la grille du calendrier, **jours passés estompés** (0,42) et
+   **titres sur deux lignes** avec points de suspension. Rien n'est effacé : le
+   hub ne compte pas les retards, mais il ne les cache pas non plus.
+5. **Projets en cours**, en colonne de droite — voir plus bas.
+
+**Les objectifs ont quitté l'accueil.** Ils ont leur page à deux gestes, et
+l'accueil répond à « qu'est-ce que j'ai à faire », pas à « où je vais ». Ils
+avaient déjà reculé deux fois — au bas de la page le 13 août, en lignes plutôt
+qu'en colonnes le 28 : c'était le rang qui n'allait pas, pas la forme.
+
+### Les gestes rapides
+
+- **Cocher** une tâche, **avancer** une publication d'un cran, **répondre** à
+  l'humeur, **écarter** une piste — inchangés.
+- **Reporter, en un geste — `→|`.** Un appui pousse à demain. **Une seule
+  signification** : pour une autre date, la ligne s'ouvre déjà d'un doigt sur
+  son titre. Un appui long qui ferait autre chose serait invisible.
+- **Le menu `⋯`** ne porte que ce qui n'est pas atteignable autrement depuis
+  l'accueil : **la priorité** (quatre choix) et **supprimer**. Pas « rattacher à
+  un projet » — ce serait un menu qui ouvre la tuile, or la tuile s'ouvre déjà
+  en touchant le titre.
+- **Reporter est une croix visible, supprimer est rangé dans le menu.** L'un est
+  le geste du matin, l'autre est sans retour : ils ne peuvent pas se toucher.
+  Supprimer est *disponible*, jamais *offert*.
+- **Le « + » flottant reste**, et c'est le modèle à suivre — Noé l'a dit mieux
+  que la spec : « ne prend que très peu de place, mais ultra accessible et
+  utile ».
+
+> *Une ligne de capture toujours ouverte a été essayée et retirée le même jour.*
+> Elle posait une tâche du jour d'un mot. Noé : « ça ne me servira pas » — le
+> « + » faisait déjà le travail, en plus complet. Ne pas la remettre.
+
+### Les projets en cours — une tuile qu'on fait GLISSER
+
+Colonne de droite, `scroll-snap` natif : une tuile se lit à la fois, les
+voisines dépassent d'un **liseré de 12 px** (Noé a fait réduire le fondu deux
+fois). Aucune flèche — écartées au profit du glissement.
+
+**TOUS LES PROJETS `actif`, ET EUX SEULS.** Deux règles, chacune avec sa raison :
+
+- **« À l'année » sort**, alors que le hub le range dans « en cours » depuis le
+  28 août. Ce n'est pas une contradiction : le rail classe par **dormance** —
+  *depuis quand rien n'a bougé* — et la question n'a aucun sens pour un rythme
+  qui revient tout seul chaque semaine.
+- **Aucun filtre sur les tâches ouvertes.** Un projet vide est exactement celui
+  qu'il faut voir : c'est un projet qui n'a pas commencé, et il n'y a que ce
+  rail pour le dire. Il s'affiche avec sa jauge à zéro et « Aucune tâche posée ».
+
+**L'ordre : dormance, puis ce qui attend le plus.** La *dernière trace* est la
+plus récente entre la dernière tâche terminée et la NAISSANCE du projet — sans
+quoi un projet créé la veille serait « jamais touché » et passerait devant. Le
+calcul est mesuré : au 29 août les quatre projets vivants avaient tous été créés
+le 27, et trier sur la seule dernière action n'aurait rien classé du tout. Et
+**ça varie tout seul** : agir sur celui de devant le renvoie au fond — une
+rotation par jour aurait tourné sans rien dire.
+
+`projetsEnCours` et `suiteDuJour` vivent dans **js/orientation.js** : comme le
+reste, elles ne touchent ni au réseau ni au DOM et se vérifient hors écran.
+
+### Ce que la page ne fera pas
+
+**Pas de compteur d'heures ici.** « Il te reste 4 h de créneaux libres » a été
+tenté et écarté : c'est « Le temps », pas l'accueil — et sur cet écran-là, ça
+deviendrait vite un reproche.
+
+Check-in matinal : l'accueil doit se lire en moins de 5 minutes, sans scroll
+excessif sur mobile.
 
 ## Le mot « projet » a changé de sens (27 août 2026)
 
@@ -579,6 +685,38 @@ par choix. Conséquence pour qui écrit du CSS : **plus une seule media query de
 thème**, et l'encre posée sur un aplat d'accent est SOMBRE (`var(--fond)` ou
 `var(--fond-carte)`), jamais blanche — l'accent est clair désormais.
 
+**TROIS NIVEAUX DE SURFACE**, et ils ne se remplacent pas (29 août 2026) :
+
+| Jeton | Valeur | Emploi |
+|---|---|---|
+| `--fond` | `#17191a` | la page |
+| `--fond-doux` | `#191c1d` | **la tuile de la journée** — elle se soulève moins qu'une carte, juste assez pour se détacher, et ne se confond donc pas avec les tuiles de projets à trente centimètres d'elle |
+| `--fond-carte` | `#212426` | les cartes, les tuiles de projet, le menu |
+
+`--bordure-douce` (`#262a2b`) va avec `--fond-doux` et **ne s'en sépare pas** :
+le filet ordinaire (`--bordure`, `#34383a`) est dessiné pour les cartes, qui
+sont claires ; posé sur une surface presque aussi sombre que la page, il criait
+plus que ce qu'il entourait.
+
+> *Deux essais avant de trouver.* `#121415` mettait la tuile PLUS SOMBRE que la
+> page : elle s'enfonçait, c'était trop. `#1c1f20` était trop clair. La borne à
+> ne jamais franchir : **elle reste plus claire que la page.**
+
+**LE FC HERMITAGE EST BLEU** (29 août 2026), `--couleur-espace` comme
+`--couleur-espace-pleine`. Il l'était déjà par exception à trois endroits — le
+calendrier et « Ta semaine » le 25 août, `#objectifs` le 27 — toujours pour la
+même raison : posé en aplat, le rouge du club se lisait comme une alerte, or le
+hub n'en a pas. À la quatrième demande, **l'exception est devenue la règle** et
+les trois surcharges ont disparu.
+
+Ce que ça coûte, et il faut le savoir : le rouge était la seule couleur de ce
+nom dans la palette, un coup d'œil suffisait à reconnaître le club. En bleu, la
+paire la plus proche devient **FCH (212°) et perso (256°)** — 44° d'écart, assez
+pour se distinguer, moins franc qu'avant. `--club-fch-rouge` reste défini sans
+aucun emploi : c'est la seconde couleur du club, et le jour où quelque chose la
+redemandera, la valeur exacte sera là. *(Le site du club a la sienne,
+`--club-rouge` dans css/fch.css — les deux n'ont jamais été le même jeton.)*
+
 **LA BARRE DE NAVIGATION : trois onglets centrés, le menu à gauche** (28 août
 2026). `Accueil · Perso · ▦` au milieu, les **trois barres horizontales** tout à
 gauche — aucun mot pour elles. Perso est à la fois onglet et grand titre du
@@ -655,11 +793,28 @@ l'ouverture hors ligne ne peut pas garantir.
 ## Conventions de développement
 
 - Code simple et lisible : HTML/CSS/JS vanilla, un fichier js/api.js pour tous les appels Supabase, un fichier par espace.
+- **`min-width: 0` sur tout élément de grille ou de flex qui contient une chose
+  qui ne s'enroule pas.** Un élément de grille garde `min-width: auto` : il
+  refuse de descendre sous la largeur MINIMALE de son contenu, et déborde son
+  parent au lieu de rétrécir. Le piège s'est produit **trois fois le 28 et le
+  29 août** — la bande d'onglets, la colonne des projets, les deux colonnes de
+  la journée — et il ne se voit jamais sur l'écran large où l'on travaille. Pour
+  une piste de grille, la même chose s'écrit `minmax(0, 1fr)` et non `1fr`.
 - **Avant de nommer une classe CSS, vérifier que le nom est libre.** `.barre`
   existait déjà (la progression de la formation) et la barre d'onglets l'a repris :
   déclarée plus bas, l'ancienne gagnait, et la nouvelle héritait de `height: 6px`
   — plus `.barre span` qui peignait les trois traits du menu en un seul bloc. Un
   `grep` de trois secondes contre une soirée de forme qu'on croit ratée.
+- **Un point de rupture mesure la FENÊTRE, pas le conteneur.** Une règle écrite
+  quand un bloc occupait toute la page devient fausse le jour où on le met dans
+  une colonne. Le 29 août, les deux colonnes de la journée débordaient à 1000 px
+  parce que la page passait à deux colonnes trop tôt : la bonne variable était
+  la largeur de la colonne voisine, pas le moment où elle apparaît. **Régler
+  l'étroitesse en supprimant le vis-à-vis, c'est supprimer ce qu'on voulait.**
+- **Une pastille de capture affiche la VALEUR de sa source** : une case à cocher
+  vaut « oui » qu'elle soit cochée ou non, et le libellé disait donc « oui » en
+  permanence. Une pastille booléenne se fait avec un `champChoix` à deux
+  options, comme « Réunion » (29 août 2026).
 - **`node tools/essai-diagnostic.mjs <fixture.json> [date]`** fait tourner le diagnostic d'une semaine hors ligne, sur un instantané des données. C'est la seule façon d'éprouver l'orientation sans y croire sur parole : les chiffres qu'il sort doivent pouvoir se recalculer à la main.
 - **`js/orientation.js` ne touche à rien** — ni réseau, ni session, ni DOM. Il ne fait que calculer à partir de données déjà chargées : quotas, régimes, tension d'une période, plancher perso. C'est là que vit la règle du jeu de l'orientation, et elle doit rester éprouvable hors écran — un diagnostic qu'on ne peut pas vérifier seul est un diagnostic qu'on croit sur parole. Tout y est en **minutes**, comme `taches.duree` et `projets.charge_minutes`.
 - Un espace n'est **monté qu'une fois** : ses écouteurs sont posés sur la section, qui survit à `innerHTML`, et un second montage les doublerait. Pour se mettre à jour, un espace pose un **`rafraichir()`** — comme il pose `naviguer()` — que le routeur appelle quand on revient dessus. Il relit les données et redessine, il ne rebranche rien.

@@ -5374,6 +5374,10 @@ export default {
     this.naviguer = async (nouvelleRoute) => {
       etat.vue = VUES.includes(nouvelleRoute?.vue) ? nouvelleRoute.vue : 'accueil';
       etat.feuilleOuverte = nouvelleRoute?.id ?? null;
+      // Au Carnet, l'id de l'adresse ouvre la SORTIE et non une feuille : c'est
+      // ainsi que le bandeau de l'accueil y envoie (29 août 2026). Ailleurs il
+      // ne veut rien dire, et la fiche ouverte se referme.
+      etat.momentOuvert = etat.vue === 'carnet' ? nouvelleRoute?.id ?? null : null;
       // Le mot de clôture ne vaut que pour l'instant où l'on vient de poster :
       // changer de page l'efface, il n'a pas à traîner. La capture pré-remplie
       // non plus — on la reprend depuis l'invite si besoin.

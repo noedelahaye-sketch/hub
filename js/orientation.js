@@ -710,3 +710,142 @@ export function propositionsDuMatin(donnees = {}, jour = new Date()) {
 
   return retenues;
 }
+
+// --- Ce que l'événement a laissé derrière lui --------------------------------
+//
+// LA RÈGLE QUI RANGE LES TROIS CAS (29 août 2026, formulée par Noé) :
+//
+//     Ce qu'il a DÉCLARÉ devient une tâche.
+//     Ce que le hub DÉDUIT devient un message.
+//
+// La préparation naît d'un modèle qu'il a posé, le tri d'une case qu'il a
+// cochée : ce sont des travaux attendus, donc de vraies tâches (voir
+// `js/api.js`, `poserLesTachesDEvenement`). Personne en revanche ne déclare
+// qu'un match mérite un carnet ni qu'une réunion mérite un bilan — c'est une
+// QUESTION, et une question se pose, elle ne se coche pas.
+//
+// Deux natures seulement, et c'est volontaire :
+//   — une sortie de Yuno qui n'est pas au Carnet de terrain ;
+//   — une réunion du FCH sans bilan, parce qu'un bilan de réunion produit du
+//     travail concret qu'on oublie sinon.
+// Un entraînement du club sans photos ne laisse rien à faire : il n'appelle
+// donc rien. L'ESPACE PERSO NON PLUS, JAMAIS — un rendez-vous avec soi ne doit
+// ni bilan ni tri, l'espace perso ne mesure rien.
+export const SUITE_REMONTE_A = 15;
+
+// Le plus RÉCENT d'abord, jamais le plus ancien : un bilan s'écrit à chaud —
+// `js/hermitage.js` le répète depuis le 21 août. Faire remonter une réunion de
+// trois semaines pendant qu'un match d'hier attend, c'est perdre le seul qui
+// vaille encore quelque chose. Et au-delà de quinze jours on se tait : un bilan
+// qu'on n'a pas écrit ne s'écrira pas, et le redemander devient un reproche.
+export function suiteDuJour({ evenements = [] } = {}, jour = new Date()) {
+  const aujourdhui = versDateISO(jour);
+  const plancher = versDateISO(new Date(jour.getTime() - SUITE_REMONTE_A * 86400000));
+
+  const candidats = evenements
+    .filter((evenement) => {
+      const quand = jourDeLEvenement(evenement);
+      if (quand >= aujourdhui || quand < plancher) return false;
+      if (evenement.vecu || evenement.sans_suite) return false;
+      if (evenement.refusee_le === aujourdhui) return false;
+      if (evenement.espace === 'photo') return true;
+      return evenement.espace === 'fch' && Boolean(evenement.reunion_objet);
+    })
+    .sort((a, b) => (jourDeLEvenement(a) < jourDeLEvenement(b) ? 1 : -1));
+
+  const evenement = candidats[0];
+  if (!evenement) return null;
+
+  return evenement.espace === 'photo'
+    ? {
+        evenement,
+        quoi: 'carnet',
+        phrase: 'Tu l\'inscris au Carnet de terrain ?',
+        libelle: 'Ouvrir le carnet',
+        adresse: `#yuno/carnet/${evenement.id}`,
+      }
+    : {
+        evenement,
+        quoi: 'bilan',
+        phrase: 'Son bilan peut en tirer des tâches.',
+        libelle: 'Écrire le bilan',
+        adresse: `#hermitage/reunions/${evenement.id}`,
+      };
+}
+
+// --- Les projets en cours, et lequel se montre en premier ---------------------
+//
+// LA DORMANCE, ET NON LA DERNIÈRE ACTION (29 août 2026). Noé hésitait entre
+// « celui pour lequel ça fait le plus longtemps que je n'ai rien fait » et
+// « le plus récent ». La mesure a tranché contre les deux : au 29 août, ses
+// quatre projets vivants avaient TOUS été créés le 27 et n'avaient donc aucune
+// action. Trier là-dessus aurait mis devant ceux qui n'ont rien fait *parce
+// qu'ils viennent de naître*, et n'aurait rien classé du tout.
+//
+// D'où la DERNIÈRE TRACE : la plus récente entre la dernière tâche terminée et
+// la naissance du projet. Un projet neuf n'est jamais dormant, et la règle
+// devient un vrai classement dès qu'il y a de l'histoire. À égalité, celui qui
+// a le plus de travail devant lui passe devant — sans quoi rien ne départagerait
+// quatre projets du même jour.
+//
+// ET ÇA VARIE TOUT SEUL, ce que Noé demandait : agir sur celui de devant le
+// renvoie au fond. Une rotation par jour aurait tourné sans rien dire.
+//
+// TOUS LES PROJETS ACTIFS, ET EUX SEULS (29 août 2026, correction de Noé :
+// « mets tous les projets en cours, pas seulement 4 — par contre pas les
+// projets à l'année »).
+//
+// Deux règles sont tombées avec cette phrase, et les deux méritent leur raison :
+//
+//   — « à l'année » SORT, alors que le hub le range dans « en cours » depuis le
+//     28 août. Ce n'est pas une contradiction : un rythme n'avance pas, il
+//     tourne. Le rail classe par DORMANCE — « depuis quand rien n'a bougé » —
+//     et cette question n'a pas de sens pour une chose qui revient toute seule
+//     chaque semaine. « Anniversaires du mois » y serait éternellement en tête
+//     sans que ce soit vrai.
+//
+//   — le filtre « au moins une tâche ouverte » TOMBE. Il écartait les projets
+//     vides, et c'est exactement ceux qu'il faut voir : un projet sans une
+//     seule tâche est un projet qui n'a pas commencé, et il n'y a que ce rail
+//     pour le dire. Il s'affiche avec sa jauge à zéro et « Rien de daté ».
+const VIVANTS = ['actif'];
+
+export function projetsEnCours({ projets = [], taches = [] } = {}, jour = new Date()) {
+  const aujourdhui = versDateISO(jour);
+
+  return projets
+    .filter((projet) => VIVANTS.includes(projet.statut))
+    .map((projet) => {
+      const siennes = taches.filter((tache) => tache.projet_id === projet.id);
+      const restantes = siennes.filter((tache) => tache.statut !== 'fait');
+
+      const derniereAction = siennes
+        .filter((tache) => tache.statut === 'fait' && tache.date_fait)
+        .map((tache) => versDateISO(new Date(tache.date_fait)))
+        .sort()
+        .at(-1);
+
+      const naissance = projet.created_at ? versDateISO(new Date(projet.created_at)) : aujourdhui;
+      const trace = derniereAction && derniereAction > naissance ? derniereAction : naissance;
+
+      // La prochaine échéance : ce que la tuile met en pied. Sans date, elle se
+      // tait plutôt que d'inventer un « bientôt ».
+      const prochaine = restantes
+        .filter((tache) => tache.echeance)
+        .sort((a, b) => (a.echeance < b.echeance ? -1 : 1))[0] ?? null;
+
+      return {
+        projet,
+        reste: restantes.length,
+        faites: siennes.length - restantes.length,
+        total: siennes.length,
+        dormance: Math.max(
+          0,
+          Math.round((depuisDateISO(aujourdhui) - depuisDateISO(trace)) / 86400000),
+        ),
+        prochaine,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.dormance - a.dormance || b.reste - a.reste);
+}

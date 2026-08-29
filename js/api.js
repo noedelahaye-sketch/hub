@@ -9,7 +9,7 @@
 // matin sans que personne n'ait rien poussé. La version est écrite dans
 // `js/vendor/VERSION` ; on en change en relançant l'outil.
 import { createClient } from './vendor/supabase-js.js';
-import { versDateISO, depuisDateISO, occurrencesEntre } from './format.js';
+import { versDateISO, depuisDateISO, ajouterJours, occurrencesEntre } from './format.js';
 
 // URL de l'espace et clé publique (anon) : ces deux valeurs sont publiques par
 // conception. Sans session, elles ne donnent accès à rien — les politiques RLS
@@ -302,6 +302,20 @@ export async function terminerTache(tache) {
       .select()
       .single(),
   );
+
+  // LA TÂCHE EST LE GESTE, `oeuvre_finie` EST L'ÉTAT (29 août 2026). Cocher
+  // « Trier les photos de Clermont – Sochaux » pose l'état sur la sortie —
+  // exactement comme terminer une tâche écrit sa victoire. Sans ce lien, le
+  // Carnet de terrain et l'accueil suivraient la même chose chacun de son côté
+  // et finiraient par se contredire.
+  //
+  // Chez Yuno seulement : `oeuvre_finie` appartient à la face vécue d'une
+  // sortie, et l'écrire sur une séance du club mettrait des données du FCH dans
+  // une colonne qui n'est pas la sienne. Son échec ne rouvre pas la tâche —
+  // elle est faite — mais il remonte.
+  if (faite.origine === 'tri' && faite.evenement_id && faite.espace === 'photo') {
+    await modifierEvenement(faite.evenement_id, { oeuvre_finie: true });
+  }
 
   const victoire = await ajouterVictoire({
     espace: faite.espace,
@@ -856,6 +870,10 @@ export async function creerEvenement({
   // liste blanche, et un champ absent tombe en silence — c'est exactement le
   // piège de l'heure et de la priorité, déjà raconté plus haut.
   reunion_objet = null,
+  // Cet événement produit des photos à trier (29 août 2026). C'est une LISTE
+  // BLANCHE ici : un champ absent tomberait en silence — le piège déjà raconté
+  // pour l'heure et la priorité.
+  avec_photos = false,
   reunion_animee = false,
   projet_id = null,
   // Espace perso seulement : la famille du moment. Même liste blanche, même
@@ -865,6 +883,7 @@ export async function creerEvenement({
   const champs = {
     espace, titre, date_debut, date_fin, lieu, notes,
     type_moment, club_recevant, club_visiteur, reunion_objet, reunion_animee, projet_id,
+    avec_photos,
     famille: espace === 'perso' ? famille : null,
   };
 
@@ -1966,4 +1985,138 @@ export async function atteindreJalon(jalon, espace) {
   });
 
   return { jalon: atteint, victoire };
+}
+
+// --- Les tâches que l'événement fait naître ----------------------------------
+//
+// LA RÈGLE (29 août 2026, formulée par Noé) : ce qu'il a DÉCLARÉ devient une
+// tâche, ce que le hub DÉDUIT devient un message. Ici, les deux déclarations :
+//
+//   la PRÉPARATION, à J-2   parce qu'une réunion du club ou une sortie de Yuno
+//                           a une feuille, et qu'on ne la remplit pas la veille
+//                           au soir. Le seuil de 48 h ne s'invente pas : il
+//                           existait déjà chez Yuno (`AVANT_MONTE_A`,
+//                           js/yuno.js, 26 août) pour montrer la phase
+//                           « Avant ». Il sort de Yuno et devient la règle.
+//
+//   le TRI DES PHOTOS, à J+1  parce que Noé a coché « photos » à la création.
+//                           Le lendemain et non le soir même : on ne trie pas
+//                           en rentrant d'un match à 22 h.
+//
+// Ce sont de VRAIES lignes : elles se cochent, se reportent, se rattachent, et
+// « Le temps » les compte. Une fausse tâche incapable de ces gestes serait une
+// exception à expliquer sur chaque écran.
+//
+// JAMAIS POUR LE PERSO, ni pour la formation. L'espace perso ne mesure rien :
+// un rendez-vous avec soi ne se prépare pas et ne se trie pas.
+//
+// REJOUABLE À CHAQUE OUVERTURE, comme `rafraichirLesSeries` : l'index unique
+// (evenement_id, origine) fait que poser deux fois ne pose qu'une ligne. Une
+// tâche supprimée à la main ne revient pas — la contrainte l'en empêche tant
+// qu'elle existe, et une fois retirée c'est une décision de Noé qu'on ne
+// défait pas... sauf à rouvrir le même événement, ce qui est cohérent : il
+// redemande la préparation en la redemandant.
+export const PREPARATION_MONTE_A = 2;
+export const TRI_TOMBE_A = 1;
+
+// Le tri ne remonte pas plus loin que le bandeau de l'après (quinze jours,
+// `SUITE_REMONTE_A` dans js/orientation.js) : au-delà, poser une tâche pour un
+// match d'il y a trois semaines, c'est fabriquer du retard, pas du travail.
+export const TRI_REMONTE_A = 15;
+
+const SANS_TACHE_AUTO = ['perso', 'formation'];
+
+// Une réunion du club, une sortie de Yuno : les deux natures qui ont une
+// feuille. Ce sont les MÊMES que celles du bandeau de l'après (`suiteDuJour`,
+// js/orientation.js), et c'est voulu — ce qui se prépare est ce qui se
+// débriefe.
+function seDeclarePreparable(evenement) {
+  if (SANS_TACHE_AUTO.includes(evenement.espace)) return false;
+  if (evenement.espace === 'photo') return true;
+  return evenement.espace === 'fch' && Boolean(evenement.reunion_objet);
+}
+
+export async function poserLesTachesDEvenement(jour = new Date()) {
+  const aujourdhui = versDateISO(jour);
+  const horizon = versDateISO(ajouterJours(jour, PREPARATION_MONTE_A));
+  const plancher = versDateISO(ajouterJours(jour, -TRI_REMONTE_A));
+
+  const evenements = verifier(
+    await client
+      .from('evenements')
+      .select('id, titre, espace, date_debut, reunion_objet, avec_photos')
+      .gte('date_debut', `${plancher}T00:00:00`)
+      .lte('date_debut', `${horizon}T23:59:59`),
+  );
+  if (!evenements.length) return 0;
+
+  const dejaPosees = verifier(
+    await client
+      .from('taches')
+      .select('evenement_id, origine')
+      .in('evenement_id', evenements.map((evenement) => evenement.id))
+      .not('origine', 'is', null),
+  );
+  const deja = new Set(dejaPosees.map((t) => `${t.evenement_id}:${t.origine}`));
+
+  const aPoser = [];
+  for (const evenement of evenements) {
+    const jourDe = versDateISO(new Date(evenement.date_debut));
+
+    // La préparation : dans les 48 h, et pas après. Passé l'événement, préparer
+    // n'a plus d'objet — on ne la pose donc pas rétroactivement.
+    if (
+      seDeclarePreparable(evenement) &&
+      jourDe >= aujourdhui &&
+      jourDe <= horizon &&
+      !deja.has(`${evenement.id}:preparation`)
+    ) {
+      aPoser.push({
+        espace: evenement.espace,
+        titre: `Préparer ${evenement.titre}`,
+        statut: 'actif',
+        // À J-2, pas au jour de l'événement : c'est le moment de la faire, pas
+        // celui de la constater.
+        echeance: versDateISO(ajouterJours(new Date(evenement.date_debut), -PREPARATION_MONTE_A)),
+        priorite: 4,
+        evenement_id: evenement.id,
+        origine: 'preparation',
+      });
+    }
+
+    // Le tri : le lendemain de l'événement, et seulement s'il portait des
+    // photos. Il se pose APRÈS coup — c'est la seule tâche du hub qui regarde
+    // en arrière.
+    if (
+      evenement.avec_photos &&
+      !SANS_TACHE_AUTO.includes(evenement.espace) &&
+      jourDe < aujourdhui &&
+      jourDe >= plancher &&
+      !deja.has(`${evenement.id}:tri`)
+    ) {
+      aPoser.push({
+        espace: evenement.espace,
+        titre: `Trier les photos de ${evenement.titre}`,
+        statut: 'actif',
+        echeance: versDateISO(ajouterJours(new Date(evenement.date_debut), TRI_TOMBE_A)),
+        priorite: 4,
+        evenement_id: evenement.id,
+        origine: 'tri',
+      });
+    }
+  }
+
+  if (!aPoser.length) return 0;
+
+  // `ignoreDuplicates` : deux onglets ouverts le même matin poseraient la même
+  // ligne deux fois. L'index unique refuse la seconde, et on ne veut pas que ce
+  // refus fasse échouer l'ouverture du hub.
+  verifier(
+    await client
+      .from('taches')
+      .upsert(aPoser, { onConflict: 'evenement_id,origine', ignoreDuplicates: true })
+      .select('id'),
+  );
+
+  return aPoser.length;
 }

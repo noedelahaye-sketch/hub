@@ -610,3 +610,65 @@ suivante pour valoir quelque chose.
 | 7 | ~~**Le vivier et les trois propositions du matin**~~ **fait** | |
 | 7 bis | **Les inférences** (§ 8) | Elles se posent une par une, chacune vérifiable seule. Aucune n'est nécessaire aux autres. |
 | 8 | ~~**L'arbitrage et sa trace**~~ **fait** | Le plus délicat, donc le dernier. |
+
+## 13. Ce que l'événement laisse derrière lui (29 août 2026)
+
+**LA RÈGLE, formulée par Noé, et elle range les trois cas d'un coup :**
+
+> **Ce qu'il a DÉCLARÉ devient une tâche. Ce que le hub DÉDUIT devient un message.**
+
+Une préparation naît d'un modèle qu'il a posé ; un tri naît d'une case qu'il a
+cochée. Ce sont des travaux attendus, donc de **vraies tâches** — elles se
+cochent, se reportent, portent une durée, et « Le temps » les compte. Personne
+en revanche ne déclare qu'un match mérite un carnet ni qu'une réunion mérite un
+bilan : c'est une **question**, et une question se pose, elle ne se coche pas.
+
+**Un cercle se coche, une porte emmène.** Deux gestes différents ne portent
+jamais le même signe.
+
+### `suiteDuJour` — le message
+
+Deux natures seulement, et c'est volontaire :
+
+- une **sortie de Yuno** qui n'est pas au Carnet de terrain ;
+- une **réunion du FCH** sans bilan, parce qu'un bilan de réunion produit du
+  travail concret qu'on oublie sinon.
+
+Un entraînement du club sans photos ne laisse rien à faire : il n'appelle donc
+rien. **L'espace perso jamais** — un rendez-vous avec soi ne doit ni bilan ni
+tri, l'espace perso ne mesure rien.
+
+**Le plus RÉCENT d'abord**, jamais le plus ancien : un bilan s'écrit à chaud, et
+`js/hermitage.js` le répète depuis le 21 août. Faire remonter une réunion de
+trois semaines pendant qu'un match d'hier attend, c'est perdre le seul qui
+vaille encore quelque chose.
+
+**Quinze jours en arrière au plus** (`SUITE_REMONTE_A`). Au-delà, un bilan qu'on
+n'a pas écrit ne s'écrira pas, et le redemander devient un reproche.
+
+**Deux refus, qui ne disent pas la même chose** — `evenements.refusee_le` (« pas
+maintenant », vaut pour la journée) et `evenements.sans_suite` (la croix,
+définitif). Sans le second, une suite qu'on ne veut pas faire deviendrait un
+reproche permanent, exactement ce que ce hub s'interdit.
+
+### `projetsEnCours` — le rail de l'accueil
+
+**Tous les projets `actif`, et eux seuls.** Le « à l'année » sort, alors que le
+hub le range dans « en cours » depuis le 28 août : le rail classe par
+**dormance**, et *depuis quand rien n'a bougé* n'a aucun sens pour un rythme qui
+revient tout seul chaque semaine.
+
+**Aucun filtre sur les tâches ouvertes** : un projet vide est justement celui
+qu'il faut voir — il n'a pas commencé, et il n'y a que ce rail pour le dire.
+
+**La dernière trace, et non la dernière action.** C'est la plus récente entre la
+dernière tâche terminée et la NAISSANCE du projet. La mesure a tranché contre
+les deux règles que Noé envisageait : au 29 août ses quatre projets vivants
+avaient tous été créés le 27 et n'avaient aucune action — trier là-dessus aurait
+mis devant ceux qui n'ont rien fait *parce qu'ils viennent de naître*, et
+n'aurait rien classé du tout. À égalité, celui qui a le plus de travail devant
+lui passe devant.
+
+**Et ça varie tout seul** : agir sur celui de devant le renvoie au fond. Une
+rotation par jour aurait tourné sans rien dire.
+

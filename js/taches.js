@@ -146,9 +146,58 @@ function quandLisible(tache) {
 // `projets` : la liste de l'écran, pour écrire le nom du projet servi à côté de
 // l'espace. Sans elle, la ligne ne dit pas ce qu'elle sert — et on ne voit pas
 // d'un coup d'œil ce qui est rattaché de ce qui ne l'est pas.
+// LE REPORT, en un geste (29 août 2026, demande de Noé). C'est le geste le plus
+// fréquent d'un système à soixante tâches, et il n'existait pas : il fallait
+// ouvrir la tuile et changer le champ.
+//
+// UNE SEULE SIGNIFICATION — à demain. Pour une autre date, la ligne s'ouvre
+// déjà d'un doigt sur son titre : deux gestes, mais choisis. Un appui long qui
+// ferait autre chose serait invisible et ne se devinerait jamais.
+//
+// Sur une occurrence de série, il déplace CETTE occurrence et rien d'autre —
+// la règle du 27 août : « on en modifie une sans changer la série ».
+const SIGNE_REPORT = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+  aria-hidden="true" focusable="false">
+  <path d="M4 12h11"></path><path d="m11 8 4 4-4 4"></path><path d="M20 5v14"></path></svg>`;
+
+// LE MENU À TROIS POINTS (29 août 2026, demande de Noé). Il ne porte QUE ce
+// qu'on ne peut pas atteindre autrement depuis l'écran où il vit :
+//
+//   la PRIORITÉ — elle change souvent, et ouvrir la tuile pour un chiffre
+//                 coûte trois gestes là où il en faut deux ;
+//   SUPPRIMER   — depuis l'accueil, il fallait aller dans l'espace Tâches.
+//
+// Ce qu'il ne porte PAS, et volontairement : « rattacher à un projet ». Ce
+// serait un menu qui ouvre la tuile, or la tuile s'ouvre déjà en touchant le
+// titre — un raccourci vers un geste existant n'est pas un raccourci.
+//
+// Un `<details>` et non un état à tenir : le hub en a déjà quatorze pour ses
+// formulaires, il porte son ouverture tout seul, et le sommaire est un vrai
+// bouton au clavier. Ce qui EFFACE demande confirmation nulle part ici — la
+// tâche revient d'un geste tant que l'écran ne l'a pas oubliée.
+const SIGNE_POINTS = `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"
+  aria-hidden="true" focusable="false"><circle cx="5" cy="12" r="1.6"/>
+  <circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>`;
+
+// Ce que le hub a posé lui-même, et le mot qui le dit. Rien pour le reste :
+// une tâche écrite à la main n'a pas à se justifier.
+const ORIGINES = {
+  preparation: 'Préparation',
+  tri: "Après l'événement",
+};
+
 function ligneTache(
   tache,
-  { ouvrable = true, supprimable = true, espace = true, titre = true, projets = [] } = {},
+  {
+    ouvrable = true,
+    supprimable = true,
+    espace = true,
+    titre = true,
+    projets = [],
+    reportable = false,
+    menu = false,
+  } = {},
 ) {
   const projetServi = tache.projet_id
     ? projets.find((candidat) => candidat.id === tache.projet_id)
@@ -165,6 +214,11 @@ function ligneTache(
   // Rien pour une priorité 4 : c'est le cas ordinaire, et la tuile l'écrit déjà
   // « Priorité » et non « Priorité 4 ». Ne rien dire, c'est dire l'ordinaire.
   const rang = tache.priorite && tache.priorite < 4 ? ` · ${PRIORITES[tache.priorite]}` : '';
+
+  // D'OÙ ELLE VIENT, quand ce n'est pas Noé qui l'a écrite (29 août 2026). Une
+  // tâche apparue toute seule au milieu des siennes ressemblerait à une erreur ;
+  // deux mots suffisent à dire que le hub l'a posée, et pourquoi.
+  const venue = ORIGINES[tache.origine] ?? null;
 
   return `
     <li class="tache-ligne${faite ? ' tache-faite' : ''}"
@@ -189,6 +243,7 @@ function ligneTache(
           titre ? echapper(tache.titre) : `${DATE_ICONE}${echapper(quand || 'sans date')}`
         }</span>
         <span class="tache-service">
+          ${venue ? `<span class="tache-venue">${echapper(venue)}</span>` : ''}
           ${
             titre && quand ? `<span class="tache-quand">${DATE_ICONE}${echapper(quand)}</span>` : ''
           }
@@ -207,6 +262,37 @@ function ligneTache(
         </span>
       </${ouvrable ? 'button' : 'span'}>
 
+      ${
+        menu
+          ? `<details class="tache-menu">
+               <summary class="tache-menu-bouton"
+                 title="Priorité, supprimer"
+                 aria-label="Autres gestes sur « ${echapper(tache.titre)} »"
+                 >${SIGNE_POINTS}</summary>
+               <div class="tache-menu-choix">
+                 ${Object.entries(PRIORITES)
+                   .map(
+                     ([niveau, mot]) => `<button type="button"
+                        data-priorite-vers="${echapper(tache.id)}:${niveau}"
+                        ${Number(niveau) === (tache.priorite ?? 4) ? 'aria-current="true"' : ''}
+                        >${echapper(mot)}</button>`,
+                   )
+                   .join('')}
+                 <button type="button" class="tache-menu-retirer"
+                   data-supprimer="${echapper(tache.id)}">Supprimer</button>
+               </div>
+             </details>`
+          : ''
+      }
+      ${
+        reportable && !faite
+          ? `<button type="button" class="bouton-mini bouton-reporter"
+               data-reporter="${echapper(tache.id)}"
+               title="Reporter à demain"
+               aria-label="Reporter « ${echapper(tache.titre)} » à demain"
+               >${SIGNE_REPORT}</button>`
+          : ''
+      }
       ${
         supprimable
           ? `<button type="button" class="lien-discret bouton-mini bouton-retirer"

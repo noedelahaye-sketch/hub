@@ -814,6 +814,7 @@ function ligneDeSemaine(jours, elements, options) {
           const dedans = courts.filter((segment) => segment.depuis === index);
           if (!dedans.length) return '';
           return `<div class="cal-pile" aria-hidden="false"
+            ${versDateISO(jour) < aujourdhui ? 'data-passe' : ''}
             style="grid-column: ${index + 1}; grid-row: ${couloirs + 2};">${dedans
               .map((segment) => barre(segment, { montrerEspace, proportionnel, empile: true }))
               .join('')}</div>`;
@@ -834,6 +835,7 @@ function ligneDeSemaine(jours, elements, options) {
         .join(' ');
 
       return `<div class="${classes}" data-jour="${cle}" role="button" tabindex="-1"
+        ${cle < aujourdhui ? 'data-passe' : ''}
         aria-label="${echapper(
           jour.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }),
         )}"
@@ -855,6 +857,7 @@ function ligneDeSemaine(jours, elements, options) {
         .join(' ');
 
       return `<span class="${classes}" style="grid-column: ${index + 1}; grid-row: 1;"
+        ${cle < aujourdhui ? 'data-passe' : ''}
         aria-hidden="true">${jour.getDate()}</span>`;
     })
     .join('');
@@ -919,6 +922,7 @@ function enteteDeJour(jour, ouvrant) {
   });
   return `<button type="button" class="cal-entete-jour"
     data-ouvrir-jour="${versDateISO(jour)}"
+    ${versDateISO(jour) < versDateISO(new Date()) ? 'data-passe' : ''}
     aria-label="${echapper(complet)} — voir la journée">${texte}</button>`;
 }
 
@@ -1491,6 +1495,13 @@ const ICONE = {
     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <path d="M4 21c0-9 5.5-14.5 16-15 .7 9.5-4.5 15-13 15z"></path>
     <path d="M4 21c1.5-5 4.5-8.5 9-10.5"></path></svg>`,
+  // Une pile d'images : ce que l'événement RAPPORTE, et qu'il faudra trier.
+  // Distinct du signe « moment » — celui-là est l'appareil, celui-ci le butin.
+  photos: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <rect x="3" y="7" width="14" height="11" rx="2"></rect>
+    <path d="m6 15 3-3 3 3 2-2 3 3"></path>
+    <path d="M8 4h11a2 2 0 0 1 2 2v9"></path></svg>`,
   // Quatre colonnes : les quatre piliers éditoriaux de Yuno.
   pilier: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -1639,7 +1650,7 @@ function pastilleCapture({
       ${sourceHeure ? `data-source-heure="${sourceHeure}"` : ''}
       ${sourceDuree ? `data-source-duree="${sourceDuree}"` : ''}
       ${neutre !== null ? `data-neutre="${echapper(String(neutre))}"` : ''}
-      ${siEspace ? `data-si-espace="${echapper(siEspace)}"` : ''}
+      ${siEspace ? `data-si-espace="${echapper([siEspace].flat().join(','))}"` : ''}
       ${cachee ? 'hidden' : ''}
       data-defaut="${echapper(defaut)}">${icone}<span data-libelle>${echapper(defaut)}</span></button>`,
     panneau: `<div class="capture-popover" data-panneau="${nom}" hidden>${contenu}</div>`,
@@ -1958,6 +1969,37 @@ export function fenetreCreation({
             <input type="checkbox" name="reunion_animee" value="oui"
               ${valeurs.reunion_animee ? 'checked' : ''}> J'anime la réunion
           </label>`,
+        }),
+      );
+    }
+
+    // LES PHOTOS : cet événement en produit, il faudra les trier (29 août
+    // 2026, demande de Noé). C'est une DÉCLARATION, comme « c'est une réunion »
+    // — le hub ne peut pas la deviner : une réunion n'est pas une séance, une
+    // sortie n'est pas toujours un shooting. Elle fait naître une tâche de tri
+    // à J+1 (`poserLesTachesDEvenement`, js/api.js).
+    //
+    // FCH et Yuno seulement, jamais le perso ni la formation : l'espace perso
+    // ne mesure rien, et une sortie avec des amis n'a pas de tri à rendre.
+    if (espacesOfferts?.fch || espacesOfferts?.photo || espaceInitial === 'photo') {
+      pastilles.push(
+        pastilleCapture({
+          nom: 'photos',
+          icone: ICONE.photos,
+          defaut: 'Photos',
+          source: 'avec_photos',
+          neutre: '',
+          siEspace: espacesOfferts ? ['fch', 'photo'] : null,
+          cachee: Boolean(espacesOfferts) && !['fch', 'photo'].includes(espaceInitial),
+          // UN CHOIX ET NON UNE CASE, comme la pastille « Réunion » : une
+          // pastille affiche la VALEUR de sa source, et une case à cocher vaut
+          // « oui » qu'elle soit cochée ou non — le libellé disait donc « oui »
+          // en permanence. Le même piège attend la prochaine pastille booléenne.
+          contenu: champChoix({
+            nom: 'avec_photos',
+            options: { '': 'Pas de photos', oui: 'Photos à trier' },
+            valeur: valeurs.avec_photos ? 'oui' : '',
+          }),
         }),
       );
     }
@@ -2320,7 +2362,10 @@ export function brancherCapture(section, { projets = () => [] } = {}) {
       // du formulaire l'ignorent quand l'espace n'est pas le sien.
       if (nom === 'espace') {
         for (const conditionnelle of section.querySelectorAll('.capture [data-si-espace]')) {
-          conditionnelle.hidden = valeur !== conditionnelle.dataset.siEspace;
+          // Une LISTE d'espaces depuis le 29 août : « Photos » vaut pour le FCH
+          // et pour Yuno. Un seul nom reste un cas de la liste — rien à changer
+          // là où c'est déjà écrit.
+          conditionnelle.hidden = !conditionnelle.dataset.siEspace.split(',').includes(valeur);
         }
 
         // Le panneau des projets ne montre que ceux de l'espace choisi : il se
@@ -2884,6 +2929,9 @@ export async function poserAuCalendrier(champs, { espaceParDefaut = 'photo' } = 
     type_moment: espace === 'photo' ? champs.type_moment || null : null,
     // Même règle pour la réunion : elle n'existe qu'au FCH. L'objet vide dit
     // « pas une réunion », et l'animation ne survit pas sans objet.
+    // Le FCH et Yuno seulement : le champ existe même quand sa pastille est
+    // cachée, et un tri de photos ne veut rien dire au perso ni à la formation.
+    avec_photos: ['fch', 'photo'].includes(espace) && champs.avec_photos === 'oui',
     reunion_objet: espace === 'fch' ? champs.reunion_objet || null : null,
     reunion_animee:
       espace === 'fch' && champs.reunion_objet ? champs.reunion_animee === 'oui' : false,
