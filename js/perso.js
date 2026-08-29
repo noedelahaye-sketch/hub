@@ -14,6 +14,7 @@ import * as api from './api.js';
 // de tuiles et de formulaires, réutilisés tels quels.
 import { construireFormulaire } from './gabarits.js';
 import { retirerAussitot } from './ecriture.js';
+import { etatDesHabitudes, motDeLElan, PALIERS_HABITUDE } from './orientation.js';
 import {
   versDateISO,
   ajouterJours,
@@ -42,7 +43,7 @@ const SIGNE = {
 // L'état de l'écran, hors des données : ce qui est déplié, ce qui attend une
 // confirmation, ce que la tuile volante corrige. Même trio que dans
 // `#objectifs` — un écran du hub se tient de la même façon partout.
-const vueEtat = { menu: null, confirme: null, edition: null };
+const vueEtat = { menu: null, confirme: null, edition: null, habitude: null };
 
 // --- Fabrication du HTML ----------------------------------------------------
 
@@ -124,6 +125,154 @@ export function construireIntentions(intentions) {
         .join('')}
       ${ajout}
     </div>`;
+}
+
+// LES HABITUDES (29 août 2026, demande de Noé) — et la forme est le sujet, pas
+// un détail : « propose-moi des stats qui me donnent envie de les faire comme
+// si j'étais dans un jeu, mais en restant sain pour que ça ne s'écroule pas à
+// la première fois que j'en saute une. »
+//
+// Une première maquette montrait sept points gris — les sept derniers jours. Il
+// l'a écartée d'une phrase : « ça ne me donne pas envie de les faire ». Elle
+// DÉCRIVAIT sans rien mettre en jeu. Ce qui est affiché ici est donc choisi
+// pour donner envie, et chacune des trois mesures est incapable de s'effondrer
+// (voir js/orientation.js) :
+//
+//   l'ÉLAN     le chiffre de tête, 0 à 100, et une jauge en dix crans
+//   la SÉRIE   en SEMAINES tenues, avec le record à côté — définitivement acquis
+//   le CUMUL   et surtout le PROCHAIN PALIER, un objectif proche qu'on ne peut
+//              pas se faire reprendre
+//
+// L'habitude ouverte montre tout ; les autres tiennent en une ligne. Sans ce
+// pli, cinq habitudes feraient un tableau de bord, et un tableau de bord ne
+// donne envie de rien.
+const CRANS_ELAN = 10;
+
+// Le même helper que dans js/objectifs.js. Il n'est pas importé de là : cet
+// écran-ci n'a aucune raison de dépendre de la page du cap, et trois lignes
+// valent mieux qu'un lien entre deux espaces qui n'ont rien à voir.
+function pluriel(nombre, singulier, plurielMot = `${singulier}s`) {
+  return `${nombre} ${nombre > 1 ? plurielMot : singulier}`;
+}
+
+function jaugeElan(elan, couleur) {
+  const pleins = Math.round((elan / 100) * CRANS_ELAN);
+  return `<span class="elan-jauge" role="img" aria-label="élan ${elan} sur 100">${Array.from(
+    { length: CRANS_ELAN },
+    (_, rang) =>
+      `<i class="${rang < pleins ? 'plein' : ''}"${
+        rang < pleins && rang === pleins - 1 ? ' data-tete' : ''
+      } style="--teinte: ${couleur}"></i>`,
+  ).join('')}</span>`;
+}
+
+const TEINTES_FAMILLE = {
+  corps: 'var(--famille-corps)',
+  calme: 'var(--famille-calme)',
+  lien: 'var(--famille-lien)',
+  intendance: 'var(--famille-intendance)',
+};
+
+function habitudeDepliee({ habitude, elan, serie, cumul, faitAujourdhui }) {
+  const couleur = TEINTES_FAMILLE[habitude.famille] ?? 'var(--accent)';
+
+  return `
+    <article class="habitude habitude-ouverte" data-habitude="${echapper(habitude.id)}">
+      <button type="button" class="habitude-tete" data-ouvrir-habitude="${echapper(habitude.id)}">
+        <span class="habitude-nom">${echapper(habitude.nom)}</span>
+        ${
+          elan === null
+            ? '<span class="habitude-elan discret">quand ça vient</span>'
+            : `<span class="habitude-elan" style="--teinte: ${couleur}">élan ${elan}</span>`
+        }
+      </button>
+      ${elan === null ? '' : jaugeElan(elan, couleur)}
+
+      ${
+        // UNE SÉRIE À ZÉRO NE S'AFFICHE PAS. « 0 semaine tenue d'affilée » est la
+        // première chose que voyait une habitude neuve : un zéro pour accueillir
+        // quelqu'un qui commence. Elle apparaît à la première semaine tenue,
+        // c'est-à-dire au moment où elle dit quelque chose.
+        serie && (serie.semaines || serie.record)
+          ? `<p class="habitude-ligne">
+               <span class="habitude-serie">${pluriel(serie.semaines, 'semaine')} ${
+                 serie.semaines > 1 ? 'tenues' : 'tenue'
+               } d'affilée</span>
+               ${
+                 serie.record > serie.semaines
+                   ? `<span class="discret">record ${serie.record}</span>`
+                   : ''
+               }
+             </p>`
+          : ''
+      }
+
+      <p class="habitude-ligne">
+        <span class="habitude-cumul">${pluriel(cumul.total, 'fois')} au total</span>
+        ${
+          cumul.prochain
+            ? `<span class="discret">${cumul.reste} avant le palier de ${cumul.prochain}</span>`
+            : ''
+        }
+      </p>
+
+      ${habitude.pourquoi ? `<p class="habitude-pourquoi">${echapper(habitude.pourquoi)}</p>` : ''}
+
+      <div class="habitude-pied">
+        ${
+          serie
+            ? `<span class="discret">cette semaine ${serie.cetteSemaine} sur ${habitude.cadence}</span>`
+            : '<span></span>'
+        }
+        <button type="button" class="habitude-faire${faitAujourdhui ? ' faite' : ''}"
+          data-faire="${echapper(habitude.id)}" aria-pressed="${faitAujourdhui}"
+          style="--teinte: ${couleur}">${faitAujourdhui ? "c'est fait" : "je l'ai fait"}</button>
+      </div>
+      ${menuDiscret('habitude', habitude.id)}
+    </article>`;
+}
+
+function habitudeRepliee({ habitude, elan, serie, faitAujourdhui }) {
+  const couleur = TEINTES_FAMILLE[habitude.famille] ?? 'var(--accent)';
+
+  return `
+    <article class="habitude" data-habitude="${echapper(habitude.id)}">
+      <button type="button" class="habitude-tete" data-ouvrir-habitude="${echapper(habitude.id)}">
+        <span class="habitude-nom">${echapper(habitude.nom)}</span>
+        ${
+          serie && serie.semaines
+            ? `<span class="discret habitude-semaines">${serie.semaines} sem.</span>`
+            : ''
+        }
+        ${elan === null ? '' : jaugeElan(elan, couleur)}
+      </button>
+      <button type="button" class="habitude-rond${faitAujourdhui ? ' faite' : ''}"
+        data-faire="${echapper(habitude.id)}" aria-pressed="${faitAujourdhui}"
+        style="--teinte: ${couleur}"
+        aria-label="${faitAujourdhui ? 'Revenir sur' : 'Marquer'} « ${echapper(habitude.nom)} »"></button>
+    </article>`;
+}
+
+export function construireHabitudes(etats, ouverte) {
+  const ajout = `
+    <button type="button" class="cap-ajout-discret" data-ajout="habitude">
+      ${SIGNE.plus}<span>Poser une habitude</span></button>`;
+
+  if (!etats.length) {
+    return `
+      <p class="vide">Tes habitudes s'écriront ici. Commence par une seule.</p>
+      ${ajout}`;
+  }
+
+  return `
+    <div class="habitudes">
+      ${etats
+        .map((etat) =>
+          etat.habitude.id === ouverte ? habitudeDepliee(etat) : habitudeRepliee(etat),
+        )
+        .join('')}
+    </div>
+    ${ajout}`;
 }
 
 // LES RENDEZ-VOUS AVEC SOI-MÊME, en lignes et non en cartes. Ils n'ont pas
@@ -360,6 +509,11 @@ function squelette() {
       <div data-bloc="intentions"><p class="vide">…</p></div>
     </section>
 
+    <section class="bloc" data-vue="habitudes">
+      <h2>Tes habitudes</h2>
+      <div data-bloc="habitudes"><p class="vide">…</p></div>
+    </section>
+
     <div class="perso-colonnes">
       <section class="bloc" data-vue="rendez-vous">
         <h2>Rendez-vous avec toi-même</h2>
@@ -424,6 +578,35 @@ const FORMULAIRES = {
       { nom: 'lieu', libelle: 'Lieu (facultatif)', type: 'text' },
     ],
   },
+  habitude: {
+    ajouter: 'Poser une habitude',
+    modifier: "Modifier l'habitude",
+    champs: (v) => [
+      { nom: 'nom', libelle: 'Habitude', type: 'text', requis: true, valeur: v.nom },
+      {
+        nom: 'cadence',
+        libelle: 'Combien de fois par semaine',
+        type: 'choix',
+        // « Quand ça vient » n'est pas un pis-aller : c'est la cadence des
+        // choses qu'on veut noter sans se les imposer. Elle vaut NULL, donc ni
+        // élan ni série — seulement le cumul.
+        options: {
+          '': 'Quand ça vient',
+          1: '1 fois', 2: '2 fois', 3: '3 fois', 4: '4 fois',
+          5: '5 fois', 6: '6 fois', 7: 'Tous les jours',
+        },
+        valeur: v.cadence ? String(v.cadence) : '',
+      },
+      {
+        nom: 'famille',
+        libelle: 'Ce que ça sert',
+        type: 'choix',
+        options: FAMILLES_PERSO_CHOIX,
+        valeur: v.famille ?? '',
+      },
+      { nom: 'pourquoi', libelle: 'Pourquoi ? (facultatif)', type: 'textarea', valeur: v.pourquoi },
+    ],
+  },
   victoire: {
     ajouter: 'Ajouter une victoire',
     champs: () => [{ nom: 'titre', libelle: 'Victoire', type: 'text', requis: true }],
@@ -452,6 +635,7 @@ function laFenetre() {
 // second chargement : les écouteurs sont posés sur la section et survivent.
 const VUES = {
   intentions: ['Les intentions', 'Ce que tu veux tenir, sans mesure ni date.'],
+  habitudes: ['Tes habitudes', "Le rythme que tu tiens, et rien qui puisse s'écrouler."],
   victoires: ['Les victoires', 'Une belle séance compte autant qu\'un post réussi.'],
   'rendez-vous': ['Les rendez-vous', 'Les moments que tu te réserves.'],
   humeur: ['Ton humeur', 'Les 30 derniers jours, sans relance ni reproche.'],
@@ -468,6 +652,12 @@ function appliquerLaVue(section, route) {
   section.querySelector('[data-sous-titre]').textContent = sous;
   for (const bloc of section.querySelectorAll('.bloc[data-vue]')) {
     bloc.hidden = Boolean(vue) && bloc.dataset.vue !== vue;
+    // UNE VUE SEULE NE RÉPÈTE PAS SON NOM. Le grand titre dit déjà « Tes
+    // habitudes » ; le libellé du bloc juste dessous le disait une seconde
+    // fois. C'est le défaut que `#objectifs` a corrigé le 28 août — trois noms
+    // pour une page est un défaut, pas un choix.
+    const nom = bloc.querySelector('h2');
+    if (nom) nom.hidden = Boolean(vue) && bloc.dataset.vue === vue;
   }
 
   // La colonne de droite se retire quand elle ne porte plus rien : sans ça,
@@ -491,7 +681,7 @@ export default {
     // laissé.
     this.naviguer = (nouvelle) => appliquerLaVue(section, nouvelle);
 
-    const etat = { intentions: [], evenements: [], victoires: [], humeurDuJour: null };
+    const etat = { intentions: [], evenements: [], victoires: [], humeurDuJour: null, habitudes: [], faits: [] };
     const bloc = (nom) => section.querySelector(`[data-bloc="${nom}"]`);
 
     const rendreIntentions = () => {
@@ -529,6 +719,12 @@ export default {
     const rendreEvenements = () => {
       bloc('evenements').innerHTML = construireRendezVous(etat.evenements);
     };
+    const rendreHabitudes = () => {
+      bloc('habitudes').innerHTML = construireHabitudes(
+        etatDesHabitudes({ habitudes: etat.habitudes, faits: etat.faits }),
+        vueEtat.habitude,
+      );
+    };
     const rendreHumeurDuJour = () => {
       bloc('humeur-jour').innerHTML = construireHumeurDuJour(etat.humeurDuJour);
     };
@@ -536,6 +732,7 @@ export default {
     // Quelle liste redessiner après un geste : la clé du menu discret porte
     // déjà la forme, il n'y a donc rien à deviner.
     const RENDUS = {
+      habitude: () => rendreHabitudes(),
       intention: () => rendreIntentions(),
       'rendez-vous': () => rendreEvenements(),
       victoire: () => rendreVictoires(),
@@ -543,15 +740,22 @@ export default {
 
     const charger = async () => {
       const depuis = versDateISO(ajouterJours(new Date(), -(JOURS_COURBE - 1)));
-      const [intentions, evenements, victoires, humeur, humeurDuJour] = await Promise.all([
-        api.objectifsActifs({ espace: ESPACE }),
-        api.evenementsEntre(new Date().toISOString(), horizon(), { espace: ESPACE }),
-        api.victoiresDeLEspace(ESPACE),
-        api.humeurDepuis(depuis),
-        api.humeurDuJour(versDateISO()),
-      ]);
+      // Un an de faits : l'élan n'en demande que soixante jours, la série en
+      // veut cinquante-deux semaines. C'est quelques centaines de lignes au
+      // plus, et le calcul n'a alors plus rien à redemander.
+      const [intentions, evenements, victoires, humeur, humeurDuJour, habitudes, faits] =
+        await Promise.all([
+          api.objectifsActifs({ espace: ESPACE }),
+          api.evenementsEntre(new Date().toISOString(), horizon(), { espace: ESPACE }),
+          api.victoiresDeLEspace(ESPACE),
+          api.humeurDepuis(depuis),
+          api.humeurDuJour(versDateISO()),
+          api.habitudesToutes(),
+          api.habitudesFaitsDepuis(versDateISO(ajouterJours(new Date(), -366))),
+        ]);
 
-      Object.assign(etat, { intentions, evenements, victoires, humeurDuJour });
+      Object.assign(etat, { intentions, evenements, victoires, humeurDuJour, habitudes, faits });
+      rendreHabitudes();
       rendreIntentions();
       rendreVictoires();
       rendreEvenements();
@@ -630,6 +834,26 @@ export default {
         rendreIntentions();
       }
 
+      if (forme === 'habitude') {
+        const valeurs = {
+          nom: champs.nom.trim(),
+          cadence: champs.cadence ? Number(champs.cadence) : null,
+          famille: champs.famille || null,
+          pourquoi: champs.pourquoi?.trim() || null,
+        };
+
+        if (id) {
+          const habitude = etat.habitudes.find((h) => h.id === id);
+          Object.assign(habitude, await api.modifierHabitude(id, valeurs));
+        } else {
+          etat.habitudes = [
+            ...etat.habitudes,
+            await api.creerHabitude({ ...valeurs, ordre: etat.habitudes.length + 1 }),
+          ];
+        }
+        rendreHabitudes();
+      }
+
       if (forme === 'victoire') {
         etat.victoires = [
           await api.ajouterVictoire({ espace: ESPACE, titre: champs.titre.trim() }),
@@ -678,6 +902,55 @@ export default {
         return;
       }
 
+      // COCHER UNE HABITUDE. L'écran d'abord, l'écriture derrière — et l'élan,
+      // la série et le palier se recalculent tout seuls, puisqu'ils ne sont
+      // stockés nulle part : ils se déduisent des faits.
+      const faire = dans('faire');
+      if (faire) {
+        const id = faire.dataset.faire;
+        const habitude = etat.habitudes.find((h) => h.id === id);
+        const jour = versDateISO();
+        const dejaFait = etat.faits.some((f) => f.habitude_id === id && f.jour === jour);
+
+        const avant = [...etat.faits];
+        if (dejaFait) {
+          etat.faits = etat.faits.filter((f) => !(f.habitude_id === id && f.jour === jour));
+        } else {
+          etat.faits = [...etat.faits, { habitude_id: id, jour }];
+        }
+        rendreHabitudes();
+
+        try {
+          if (dejaFait) {
+            await api.demarquerHabitude(id, jour);
+          } else {
+            await api.marquerHabitude(id, jour);
+            // LE PALIER S'ÉCRIT AU MOMENT OÙ ON LE FRANCHIT, et une seule fois.
+            // On compare le total d'avant et celui d'après : si un palier est
+            // passé entre les deux, il est franchi maintenant.
+            const avantTotal = avant.filter((f) => f.habitude_id === id).length;
+            const palier = PALIERS_HABITUDE.find(
+              (p) => p > avantTotal && p <= avantTotal + 1,
+            );
+            if (palier) await api.victoireDePalier(habitude, palier);
+          }
+        } catch (souci) {
+          console.error('Habitude non enregistrée', souci);
+          etat.faits = avant;
+          rendreHabitudes();
+        }
+        return;
+      }
+
+      const ouvrirHabitude = dans('ouvrir-habitude');
+      if (ouvrirHabitude) {
+        const id = ouvrirHabitude.dataset.ouvrirHabitude;
+        vueEtat.habitude = vueEtat.habitude === id ? null : id;
+        vueEtat.menu = null;
+        rendreHabitudes();
+        return;
+      }
+
       const menu = dans('menu');
       if (menu) {
         const [forme] = menu.dataset.menu.split(':');
@@ -690,7 +963,11 @@ export default {
       const modifier = dans('modifier');
       if (modifier) {
         const [forme, id] = modifier.dataset.modifier.split(':');
-        vueEtat.edition = { forme, id, valeurs: etat.intentions.find((i) => i.id === id) };
+        const source =
+          forme === 'habitude'
+            ? etat.habitudes.find((h) => h.id === id)
+            : etat.intentions.find((i) => i.id === id);
+        vueEtat.edition = { forme, id, valeurs: source };
         vueEtat.menu = null;
         rendreFenetre();
         RENDUS[forme]?.();
@@ -723,6 +1000,7 @@ export default {
         vueEtat.confirme = null;
 
         const RETRAITS = {
+          habitude: [etat.habitudes, api.supprimerHabitude],
           intention: [etat.intentions, api.supprimerObjectif],
           'rendez-vous': [etat.evenements, api.supprimerEvenement],
           victoire: [etat.victoires, api.supprimerVictoire],

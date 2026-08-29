@@ -9,7 +9,7 @@
 // Tout est en MINUTES, comme `taches.duree`, `projets.charge_minutes` et les
 // événements. Les heures n'apparaissent qu'à la saisie et à l'affichage.
 
-import { versDateISO, depuisDateISO } from './format.js';
+import { versDateISO, depuisDateISO, ajouterJours } from './format.js';
 
 // --- Ce que Noé a dit ---------------------------------------------------------
 //
@@ -771,6 +771,154 @@ export function suiteDuJour({ evenements = [] } = {}, jour = new Date()) {
         libelle: 'Écrire le bilan',
         adresse: `#hermitage/reunions/${evenement.id}`,
       };
+}
+
+// --- LES HABITUDES : trois mesures dont aucune ne peut s'effondrer -----------
+//
+// LA RÈGLE (29 août 2026, décision de Noé) : « propose-moi des stats qui me
+// donnent envie de les faire comme si j'étais dans un jeu, mais en restant sain
+// pour que ça ne s'écroule pas à la première fois que j'en saute une. »
+//
+// Ce qui écroule une habitude, ce n'est pas l'enjeu — c'est le TOUT OU RIEN.
+// Une série classique remet à zéro pour une soirée et efface trois semaines.
+// Les trois mesures ci-dessous gardent l'enjeu et retirent la falaise.
+
+// L'élan perd DEUX POINTS PAR JOUR, quoi qu'il arrive. C'est cette pente douce
+// qui rend l'oubli rattrapable : une semaine entièrement vide coûte 14 points,
+// pas la totalité.
+export const ELAN_PAR_JOUR = -2;
+
+// Tenir sa cadence rapporte +14 par semaine, quelle que soit cette cadence :
+// le gain d'une pratique vaut donc 28 / cadence. Sans cette division, une
+// habitude quotidienne monterait deux fois plus vite qu'une hebdomadaire alors
+// que les deux demandent le même effort — tenir ce qu'on a dit.
+export const ELAN_PAR_SEMAINE_TENUE = 14;
+
+// Assez long pour que l'état converge : à deux points par jour, il faut
+// cinquante jours pour aller de 100 à 0. Au-delà, l'histoire ne change plus le
+// résultat, et la recalculer coûterait sans rien apporter.
+const ELAN_FENETRE_JOURS = 60;
+
+export const PALIERS_HABITUDE = [10, 25, 50, 100, 200, 365];
+
+// Le lundi de la semaine d'un jour donné. Les semaines du hub commencent le
+// lundi partout ailleurs (voir `semaineDe`) : deux découpages différents
+// donneraient deux comptes pour un même fait.
+function lundiDe(jour) {
+  const date = new Date(jour);
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() - ((date.getDay() + 6) % 7));
+  return date;
+}
+
+// L'ÉLAN, de 0 à 100. Un accumulateur, pas une proportion : une proportion
+// retombe aussi vite qu'elle monte, et c'est exactement ce qu'on ne veut pas.
+//
+// Il se simule jour après jour sur la fenêtre, ce qui est le seul moyen d'être
+// exact avec un plafond ET un plancher — une formule fermée les ignorerait, et
+// une habitude tenue depuis six mois afficherait 400.
+export function elanDeLHabitude(habitude, faits = [], jour = new Date()) {
+  // Sans cadence, il n'y a rien à tenir : « quand ça vient » se compte, ne se
+  // mesure pas. Lui donner un élan reviendrait à lui poser une cible qu'on a
+  // justement refusé de poser.
+  if (!habitude.cadence) return null;
+
+  const gain = (ELAN_PAR_SEMAINE_TENUE + 7 * -ELAN_PAR_JOUR) / habitude.cadence;
+  const siens = new Set(
+    faits.filter((fait) => fait.habitude_id === habitude.id).map((fait) => fait.jour),
+  );
+
+  const naissance = habitude.created_at ? versDateISO(new Date(habitude.created_at)) : null;
+  const aujourdhui = versDateISO(jour);
+  let curseur = versDateISO(ajouterJours(jour, -(ELAN_FENETRE_JOURS - 1)));
+  if (naissance && naissance > curseur) curseur = naissance;
+
+  let elan = 0;
+  while (curseur <= aujourdhui) {
+    elan += ELAN_PAR_JOUR;
+    if (siens.has(curseur)) elan += gain;
+    elan = Math.max(0, Math.min(100, elan));
+    curseur = versDateISO(ajouterJours(depuisDateISO(curseur), 1));
+  }
+  return Math.round(elan);
+}
+
+// LA SÉRIE SE COMPTE EN SEMAINES TENUES, ET ELLE RECULE D'UN CRAN (décision de
+// Noé). Deux réglages, deux raisons :
+//
+//   — en SEMAINES : une semaine est tenue si la cadence est atteinte. Sauter un
+//     mardi ne veut alors plus rien dire, ce qui est le point de départ de la
+//     demande — « il y aura forcément des jours où je ne pourrai pas ».
+//   — RECULE d'un cran au lieu de tomber : sept semaines deviennent six, pas
+//     rien. On sent qu'on perd quelque chose, on peut le regagner la semaine
+//     suivante. C'est l'enjeu sans la falaise.
+//
+// La semaine EN COURS ne compte pas encore : elle n'est pas finie, et la juger
+// avant l'heure ferait afficher un recul tous les lundis matin.
+export function serieDeLHabitude(habitude, faits = [], jour = new Date()) {
+  if (!habitude.cadence) return null;
+
+  const siens = faits
+    .filter((fait) => fait.habitude_id === habitude.id)
+    .map((fait) => versDateISO(lundiDe(depuisDateISO(fait.jour))));
+
+  const parSemaine = new Map();
+  for (const lundi of siens) parSemaine.set(lundi, (parSemaine.get(lundi) ?? 0) + 1);
+
+  const debut = habitude.created_at ? lundiDe(new Date(habitude.created_at)) : lundiDe(jour);
+  const semaineEnCours = versDateISO(lundiDe(jour));
+
+  let serie = 0;
+  let record = 0;
+  let curseur = versDateISO(debut);
+  while (curseur < semaineEnCours) {
+    serie = (parSemaine.get(curseur) ?? 0) >= habitude.cadence ? serie + 1 : Math.max(0, serie - 1);
+    record = Math.max(record, serie);
+    curseur = versDateISO(ajouterJours(depuisDateISO(curseur), 7));
+  }
+
+  return {
+    semaines: serie,
+    record,
+    // Où en est la semaine qu'on vit : ce qui reste à faire pour la tenir.
+    cetteSemaine: parSemaine.get(semaineEnCours) ?? 0,
+  };
+}
+
+// LE CUMUL ET SES PALIERS NE REDESCENDENT JAMAIS, et c'est le ressort de jeu le
+// plus sain qui existe : un objectif proche, atteignable, qu'on ne peut pas se
+// faire reprendre. Chaque palier franchi écrit une victoire.
+export function cumulDeLHabitude(habitude, faits = []) {
+  const total = faits.filter((fait) => fait.habitude_id === habitude.id).length;
+  const prochain = PALIERS_HABITUDE.find((palier) => palier > total) ?? null;
+  return { total, prochain, reste: prochain ? prochain - total : 0 };
+}
+
+// Les mots de l'élan. Aucun n'est un reproche : une habitude en sommeil n'est
+// pas un échec, c'est une habitude qui attend.
+export function motDeLElan(elan) {
+  if (elan === null) return '';
+  if (elan >= 80) return 'solide';
+  if (elan >= 50) return 'ça tient';
+  if (elan >= 25) return 'ça vacille';
+  return 'en sommeil';
+}
+
+// Tout ce qu'un écran a besoin de savoir d'une habitude, en un appel.
+export function etatDesHabitudes({ habitudes = [], faits = [] } = {}, jour = new Date()) {
+  const aujourdhui = versDateISO(jour);
+  return habitudes
+    .filter((habitude) => !habitude.archivee)
+    .map((habitude) => ({
+      habitude,
+      elan: elanDeLHabitude(habitude, faits, jour),
+      serie: serieDeLHabitude(habitude, faits, jour),
+      cumul: cumulDeLHabitude(habitude, faits),
+      faitAujourdhui: faits.some(
+        (fait) => fait.habitude_id === habitude.id && fait.jour === aujourdhui,
+      ),
+    }))
+    .sort((a, b) => (a.habitude.ordre ?? 99) - (b.habitude.ordre ?? 99));
 }
 
 // --- L'AVANCÉE D'UN PROJET : une cascade, jamais les tâches -------------------

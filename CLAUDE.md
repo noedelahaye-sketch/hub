@@ -237,6 +237,63 @@ Ce que la refonte a corrigé, et qui n'était pas que de la forme :
 - **l'écriture est optimiste** (`js/ecriture.js`) : la page attendait
   l'aller-retour Supabase en désactivant son bouton.
 
+### Les habitudes (29 août 2026)
+
+**LA DEMANDE, en deux temps.** D'abord : « garder une routine et me motiver à la
+garder, mais sans être trop strict — il y aura forcément des jours où je ne
+pourrai pas. » Puis, devant une première maquette qui montrait les sept derniers
+jours en points gris : *« ça ne me donne pas envie de les faire… propose-moi des
+stats comme si j'étais dans un jeu, mais en restant sain pour que ça ne
+s'écroule pas à la première fois que j'en saute une. »*
+
+Les deux moitiés ne se contredisent pas. **Ce qui écroule une habitude, ce n'est
+pas l'enjeu, c'est le TOUT OU RIEN** : un compteur qui remet à zéro efface trois
+semaines pour une soirée. D'où trois mesures, dont aucune ne peut s'effondrer —
+elles vivent dans `js/orientation.js`, donc éprouvables hors écran :
+
+| Mesure | Ce qu'elle fait | Pourquoi elle ne s'effondre pas |
+|---|---|---|
+| **l'élan** (0–100) | monte à chaque pratique, perd 2 par jour | une pratique répare trois jours ; une semaine vide coûte 14 points |
+| **la série** | compte les SEMAINES tenues | sauter un mardi ne veut rien dire ; une semaine manquée la fait **reculer d'un cran**, jamais tomber à zéro |
+| **le cumul** et ses paliers | 10, 25, 50, 100, 200, 365 | il ne redescend jamais, et le prochain palier est toujours proche |
+
+- **Tenir sa cadence rapporte +14 par semaine, quelle qu'elle soit** : le gain
+  d'une pratique vaut 28 / cadence. Sans cette division, une habitude
+  quotidienne monterait deux fois plus vite qu'une hebdomadaire alors que les
+  deux demandent le même effort — tenir ce qu'on a dit. *(Vérifié : cadence 3 et
+  cadence 5 tenues douze semaines donnent toutes deux 98.)*
+- **La série recule d'un cran**, et c'est LE réglage demandé. Mesuré sur douze
+  semaines dont une sautée : la série affiche **9** là où une série classique
+  dirait 3, et l'élan passe de 98 à 95.
+- **Une cadence NULLE veut dire « quand ça vient »** : ni élan ni série, seulement
+  le cumul. Lui poser une cible reviendrait à lui en imposer une qu'on a
+  justement refusé de poser.
+- **Aucun rouge, aucun taux de réussite, aucun jour manqué compté.** Les mots de
+  l'élan vont de « solide » à « en sommeil » — une habitude en sommeil n'est pas
+  un échec, c'est une habitude qui attend.
+- **Une série à zéro ne s'affiche pas.** « 0 semaine tenue » était la première
+  chose que voyait une habitude neuve.
+- **Franchir un palier écrit une victoire** (`source = 'habitude'`), et c'est le
+  SEUL moment où une habitude parle dans « Le chemin » : la cocher tous les
+  jours y écrirait du bruit, franchir la cinquantième est un fait.
+
+**ON LES COCHE SUR L'ACCUEIL ET DANS PERSO** (choix de Noé). L'accueil en fait
+une **bande de pastilles** en tête de la tuile « Aujourd'hui » — on coche là où
+l'on est déjà le matin, sans ouvrir une autre page. Le détail, l'élan et les
+paliers restent dans perso : l'accueil dit ce qu'il y a à faire, perso dit où
+l'on en est. **Celles qui sont faites restent visibles**, pleines — une bande
+qui se vide serait un compteur de ce qui manque.
+
+**Les quatre familles ont enfin une couleur** (corps, calme, lien, intendance).
+Elles étaient collectées depuis le 27 août et n'apparaissaient nulle part.
+
+**Les cinq amorcées sortent de SES intentions**, pas d'une liste générique :
+bouger (3×), lire un peu (5×), poser le téléphone avant de dormir (5×), un vrai
+repas à midi (5×), prendre des nouvelles de quelqu'un (sans cadence). « Vivre de
+la joie, de l'espoir, de la simplicité » n'en est PAS une et ne doit pas le
+devenir : c'est l'intention-mère, celle qui juge les autres — en faire une case
+à cocher la détruirait.
+
 **Ce qui NE change pas, et ne changera pas** : ni jalon, ni barre de
 progression, ni backlog, ni retard, ni tâche affichée. Une tâche perso continue
 de vivre dans l'espace Tâches, au calendrier et dans « Aujourd'hui » — **jamais

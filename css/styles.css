@@ -4368,6 +4368,209 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 /* Une intention n'est pas une tuile comme les autres : rien ne s'y coche, rien
    ne s'y mesure. Elle se relit. D'où une carte lavée de la couleur de l'espace,
    sans bordure — plus proche d'une page de carnet que d'une ligne de liste. */
+/* LES QUATRE FAMILLES ONT ENFIN UNE COULEUR (29 août 2026). Elles étaient
+   collectées depuis le 27 août — sur une tâche, sur un rendez-vous — et
+   n'apparaissaient nulle part. Une habitude prend la teinte de ce qu'elle sert,
+   ce qui fait lire la page d'un coup d'œil : ce qui tient le corps, ce qui
+   tient le calme, ce qui tient le lien.
+
+   Elles restent PROCHES les unes des autres, dans la même famille douce que
+   l'accent du perso. Ce ne sont pas des catégories à opposer, ce sont des
+   nuances d'un même soin. */
+:root {
+  --famille-corps: #6fbfa0;
+  --famille-calme: #8f97e0;
+  --famille-lien: #dd8fae;
+  --famille-intendance: #9aa2a6;
+}
+
+/* LA BANDE DES HABITUDES DU JOUR, en tête de la tuile « Aujourd'hui ». Elles se
+   cochent le matin, avant tout le reste — mais en PASTILLES sur une ligne, là
+   où cinq lignes empilées auraient poussé la journée vers le bas.
+
+   Celles qui sont faites restent visibles, pleines : une bande qui se vide
+   serait un compteur de ce qui manque, et c'est l'inverse de ce qu'on montre. */
+.habitudes-bande {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-8);
+  margin-bottom: var(--espace-16);
+}
+
+.habitude-pastille {
+  padding: var(--espace-8) var(--espace-12);
+  background: none;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+  color: var(--texte-discret);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.habitude-pastille.faite {
+  background: var(--teinte, var(--accent));
+  border-color: var(--teinte, var(--accent));
+  color: var(--fond);
+}
+
+/* --- Les habitudes -----------------------------------------------------------
+   La forme est le sujet, pas un détail : une première maquette montrait les
+   sept derniers jours en points gris, et Noé l'a écartée d'une phrase — « ça ne
+   me donne pas envie de les faire ». Elle décrivait sans rien mettre en jeu.
+
+   Ce qui est montré ici est choisi pour donner envie, et rien ne peut
+   s'effondrer : l'élan descend de deux par jour, la série se compte en semaines
+   et recule d'un cran, le palier ne se reprend jamais. Voir js/orientation.js. */
+.habitudes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-8);
+}
+
+.habitude {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--espace-12);
+  padding: var(--espace-8) var(--espace-16);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+}
+
+.habitude-tete {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-12);
+  flex: 1;
+  min-width: 0;
+  padding: var(--espace-8) 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.habitude-nom { flex: 1; min-width: 0; font-size: 0.9375rem; }
+.habitude-semaines { flex: none; font-size: 0.75rem; }
+
+/* LA JAUGE D'ÉLAN, en dix crans plutôt qu'en barre continue : on compte du
+   regard, et chaque cran gagné se voit. Une barre qui avance de 3 % ne se voit
+   pas — or c'est précisément ce qu'on veut sentir. */
+.elan-jauge {
+  display: flex;
+  flex: none;
+  gap: 2px;
+  width: 68px;
+}
+
+.elan-jauge i {
+  flex: 1;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--bordure);
+}
+
+.elan-jauge i.plein { background: var(--teinte, var(--accent)); }
+
+/* Le cran de tête est plus pâle : il dit où l'on en est, pas où l'on s'arrête. */
+.elan-jauge i[data-tete] { opacity: 0.55; }
+
+/* Dépliée, l'habitude montre tout ; repliée, elle tient sur une ligne. Sans ce
+   pli, cinq habitudes feraient un tableau de bord — et un tableau de bord ne
+   donne envie de rien. */
+.habitude-ouverte {
+  display: block;
+  padding: var(--espace-16) 2.5rem var(--espace-16) var(--espace-16);
+}
+
+.habitude-ouverte .habitude-tete { padding-top: 0; }
+.habitude-ouverte .habitude-nom {
+  font-family: var(--police-titre);
+  font-weight: 700;
+  font-size: 1.0625rem;
+  letter-spacing: -0.015em;
+}
+
+.habitude-ouverte .elan-jauge {
+  width: 100%;
+  margin: var(--espace-8) 0 var(--espace-12);
+}
+
+.habitude-elan {
+  flex: none;
+  font-size: 0.8125rem;
+  color: var(--teinte, var(--accent));
+}
+
+.habitude-ligne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--espace-8);
+  margin: 0 0 var(--espace-4);
+  font-size: 0.8125rem;
+}
+
+.habitude-serie,
+.habitude-cumul { color: var(--texte); }
+
+.habitude-pourquoi {
+  margin: var(--espace-12) 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--texte-discret);
+}
+
+.habitude-pied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-12);
+  margin-top: var(--espace-16);
+  font-size: 0.75rem;
+}
+
+/* Le geste du jour, et il est GÉNÉREUX : c'est le seul de la page qu'on refait
+   tous les jours. Une fois pressé il ne disparaît pas — il dit « c'est fait »,
+   et se represse pour revenir dessus. */
+.habitude-faire {
+  flex: none;
+  padding: var(--espace-8) var(--espace-16);
+  background: none;
+  border: 1px solid var(--teinte, var(--accent));
+  border-radius: var(--rayon-pastille);
+  color: var(--teinte, var(--accent));
+  font: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.habitude-faire.faite {
+  background: var(--teinte, var(--accent));
+  color: var(--fond);
+}
+
+/* Replié, le même geste tient dans un rond — la cible garde ses 44 px. */
+.habitude-rond {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  margin: 10px 0;
+  background: none;
+  border: 2px solid var(--bordure);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.habitude-rond.faite {
+  background: var(--teinte, var(--accent));
+  border-color: var(--teinte, var(--accent));
+}
+
 /* --- L'espace perso, refondu le 29 août 2026 --------------------------------
    Demande de Noé : « la forme qui correspond à comment a évolué le site ».
 

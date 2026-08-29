@@ -556,7 +556,7 @@ export function construirePropositions(propositions) {
 }
 
 export function construireAujourdhui(
-  { rendezVous = [], taches = [], publications = [] } = {},
+  { rendezVous = [], taches = [], publications = [], habitudes = [], faitsHabitudes = [] } = {},
   annulation = null,
 ) {
   // Une tâche vient d'être cochée : on laisse une porte de sortie quelques
@@ -568,8 +568,12 @@ export function construireAujourdhui(
        </p>`
     : '';
 
+  // Les habitudes s'affichent MÊME si la journée est vide par ailleurs : un jour
+  // sans tâche ni rendez-vous est justement celui où l'on tient son rythme.
   if (!rendezVous.length && !taches.length && !publications.length) {
-    return `${ligneAnnulation}<p class="vide">Rien à faire aujourd'hui.</p>`;
+    return `${ligneAnnulation}
+      ${construireHabitudesDuJour(habitudes, faitsHabitudes)}
+      <p class="vide">Rien de posé aujourd'hui.</p>`;
   }
 
   const listeJour = (elements, dessiner) =>
@@ -599,6 +603,7 @@ export function construireAujourdhui(
     : '';
 
   return `${ligneAnnulation}
+    ${construireHabitudesDuJour(habitudes, faitsHabitudes)}
     <div class="jour-colonnes">
       ${colonneDuJour([groupeDuJour('À faire', listeTaches)])}
       ${colonneDuJour([
@@ -606,6 +611,38 @@ export function construireAujourdhui(
         groupeDuJour('Rendez-vous', listeJour(rendezVous, ligneRendezVous)),
       ])}
     </div>`;
+}
+
+// LES HABITUDES DU JOUR, EN UNE BANDE (29 août 2026). Elles ouvrent la tuile
+// parce qu'elles se cochent le matin, avant tout le reste — et elles tiennent
+// sur UNE ligne, en pastilles, là où cinq lignes empilées auraient poussé la
+// journée vers le bas et fait de l'accueil un tableau de bord.
+//
+// Ce qui n'est PAS ici : l'élan, la série, les paliers. L'accueil dit ce qu'il
+// y a à faire ; perso dit où l'on en est. Deux questions, deux écrans.
+//
+// Celles qui sont faites restent visibles, cochées — les retirer donnerait une
+// bande qui se vide, donc un compteur de ce qui manque. C'est l'inverse de ce
+// qu'on veut montrer.
+export function construireHabitudesDuJour(habitudes = [], faits = []) {
+  const jour = versDateISO();
+  const vivantes = habitudes.filter((habitude) => !habitude.archivee);
+  if (!vivantes.length) return '';
+
+  const pastilles = vivantes
+    .map((habitude) => {
+      const faite = faits.some((f) => f.habitude_id === habitude.id && f.jour === jour);
+      return `
+      <button type="button" class="habitude-pastille${faite ? ' faite' : ''}"
+        data-faire-habitude="${echapper(habitude.id)}" aria-pressed="${faite}"
+        style="--teinte: var(--famille-${echapper(habitude.famille ?? 'intendance')})"
+        >${echapper(habitude.nom)}</button>`;
+    })
+    .join('');
+
+  return `
+    <h3 class="jour-groupe">Tes habitudes</h3>
+    <div class="habitudes-bande">${pastilles}</div>`;
 }
 
 // --- Le démarrage ------------------------------------------------------------
@@ -631,6 +668,20 @@ const SOURCES = {
     ? { victoires: async () => ({ victoires: await api.dernieresVictoires(MAX_VICTOIRES) }) }
     : {}),
   objectifs: async () => ({ objectifs: await api.objectifsActifs() }),
+  // LES HABITUDES DU JOUR (29 août 2026, choix de Noé : les cocher sur
+  // l'accueil ET dans perso). On coche là où l'on est déjà le matin, sans
+  // ouvrir une autre page — mais le détail, l'élan et les paliers restent dans
+  // perso : l'accueil dit ce qu'il y a à faire, il ne tient pas de tableau.
+  habitudes: async () => {
+    const [habitudes, faits] = await Promise.all([
+      api.habitudesToutes(),
+      // Huit jours suffisent ici : l'accueil ne montre que le jour et ce qui
+      // reste de la semaine. L'élan et la série se lisent dans perso, qui
+      // charge l'année.
+      api.habitudesFaitsDepuis(versDateISO(ajouterJours(new Date(), -8))),
+    ]);
+    return { habitudes, faitsHabitudes: faits };
+  },
   // Toutes les tâches datées, les faites comprises — le calendrier les garde
   // barrées. « Aujourd'hui » se déduit de cette même liste : une lecture au lieu
   // de deux, et une seule vérité sur ce qui est coché. Cocher une tâche la barre
@@ -656,6 +707,7 @@ const DONNEES = {
   humeur: ['humeur'],
   ...(VICTOIRES_VISIBLES ? { victoires: ['victoires'] } : {}),
   objectifs: ['objectifs'],
+  habitudes: ['habitudes', 'faitsHabitudes'],
   taches: ['tachesDatees'],
   semaine: ['evenements', 'publications', 'commandes', 'contacts'],
 };
@@ -1042,7 +1094,12 @@ export default {
         ? journeeDeNoe()
         : { rendezVous: [], taches: tachesDuJour(), publications: [] };
 
-      bloc.innerHTML = construireAujourdhui(journee, etat.annulation);
+      bloc.innerHTML = construireAujourdhui(
+        // Les habitudes voyagent avec la journée : elles arrivent de leur propre
+        // source, qui peut être prête avant ou après « semaine ».
+        { ...journee, habitudes: etat.habitudes ?? [], faitsHabitudes: etat.faitsHabitudes ?? [] },
+        etat.annulation,
+      );
       marquerLesEntrantes(bloc, tachesVues, {
         selecteur: '.tache-ligne',
         cle: (ligne) => ligne.querySelector('[data-cocher]')?.dataset.cocher,
@@ -1170,6 +1227,9 @@ export default {
       objectifs: () => {
         rendreSemaine();
       },
+      // Les habitudes arrivent de leur côté et n'ont besoin de personne : elles
+      // redessinent la journée dès qu'elles sont là.
+      habitudes: () => rendreAujourdhui(),
       taches: () => {
         rendreAujourdhui();
         rendreSemaine();
@@ -1635,6 +1695,33 @@ export default {
         return;
       }
       location.hash = '#taches';
+    });
+
+    // COCHER UNE HABITUDE DEPUIS L'ACCUEIL. L'écran d'abord, l'écriture derrière.
+    // L'élan et les paliers ne sont stockés nulle part — ils se déduisent des
+    // faits — donc il n'y a rien d'autre à tenir à jour ici.
+    section.addEventListener('click', async (evenement) => {
+      const pastille = evenement.target.closest('[data-faire-habitude]');
+      if (!pastille) return;
+
+      const id = pastille.dataset.faireHabitude;
+      const jour = versDateISO();
+      const avant = etat.faitsHabitudes ?? [];
+      const dejaFait = avant.some((f) => f.habitude_id === id && f.jour === jour);
+
+      etat.faitsHabitudes = dejaFait
+        ? avant.filter((f) => !(f.habitude_id === id && f.jour === jour))
+        : [...avant, { habitude_id: id, jour }];
+      rendreAujourdhui();
+
+      try {
+        if (dejaFait) await api.demarquerHabitude(id, jour);
+        else await api.marquerHabitude(id, jour);
+      } catch (souci) {
+        console.error('Habitude non enregistrée', souci);
+        etat.faitsHabitudes = avant;
+        rendreAujourdhui();
+      }
     });
 
     section.addEventListener('click', async (evenement) => {

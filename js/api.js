@@ -554,6 +554,91 @@ export async function delierProjet(id) {
   if (error) throw error;
 }
 
+// --- Les habitudes de l'espace perso -----------------------------------------
+//
+// Trois mesures dont aucune ne peut s'effondrer — élan, série en semaines,
+// cumul et paliers. Elles se CALCULENT dans js/orientation.js, qui ne touche ni
+// au réseau ni au DOM : la règle du jeu doit rester éprouvable hors écran, et
+// celle-ci plus que les autres, puisque c'est elle qui décide de ce qui motive.
+
+export async function habitudesToutes() {
+  return verifier(await client.from('habitudes').select('*').order('ordre'));
+}
+
+// Les faits sur une fenêtre : soixante jours suffisent à l'élan, un an à la
+// série. On lit l'année — quelques centaines de lignes au plus, et le calcul
+// n'a alors plus rien à redemander.
+export async function habitudesFaitsDepuis(dateISO) {
+  return verifier(
+    await client
+      .from('habitudes_faits')
+      .select('habitude_id, jour')
+      .gte('jour', dateISO)
+      .order('jour'),
+  );
+}
+
+// Cocher une habitude. `ignoreDuplicates` sur la contrainte d'unicité : deux
+// appuis rapprochés, ou l'accueil et perso ouverts en même temps, ne comptent
+// pas double — et ce refus ne doit pas ressembler à une erreur.
+export async function marquerHabitude(habitude_id, jour) {
+  return verifier(
+    await client
+      .from('habitudes_faits')
+      .upsert({ habitude_id, jour }, { onConflict: 'habitude_id,jour', ignoreDuplicates: true })
+      .select(),
+  );
+}
+
+export async function demarquerHabitude(habitude_id, jour) {
+  const { error } = await client
+    .from('habitudes_faits')
+    .delete()
+    .eq('habitude_id', habitude_id)
+    .eq('jour', jour);
+  if (error) throw error;
+}
+
+export async function creerHabitude({
+  nom,
+  famille = null,
+  cadence = null,
+  pourquoi = null,
+  ordre = null,
+}) {
+  return verifier(
+    await client
+      .from('habitudes')
+      .insert({ nom, famille, cadence, pourquoi, ordre })
+      .select()
+      .single(),
+  );
+}
+
+export async function modifierHabitude(id, champs) {
+  return verifier(await client.from('habitudes').update(champs).eq('id', id).select().single());
+}
+
+// Une habitude qu'on met de côté s'ARCHIVE : son histoire et ses paliers
+// restent. La suppression existe aussi, mais elle emporte les faits — le hub ne
+// jette pas ce qui a été fait sans qu'on le lui demande deux fois.
+export async function supprimerHabitude(id) {
+  const { error } = await client.from('habitudes').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// Franchir un palier écrit une victoire, comme une étape de projet ou un jalon.
+// C'est le SEUL moment où une habitude parle dans « Le chemin » : la cocher
+// tous les jours y écrirait du bruit, franchir la cinquantième est un fait.
+export async function victoireDePalier(habitude, palier) {
+  return ajouterVictoire({
+    espace: 'perso',
+    titre: `${habitude.nom} — ${palier} fois`,
+    source: 'habitude',
+    source_id: habitude.id,
+  });
+}
+
 // --- Les étapes d'un projet ---------------------------------------------------
 //
 // LE DÉCOUPAGE QU'ON DÉCLARE (29 août 2026, décision de Noé). Ce sont elles qui
