@@ -69,9 +69,49 @@ objectif ou plusieurs (décision de Noé) :
 - `projets_cibles` : `projet_id`, `objectif_id` (nullable), `jalon_id` (nullable)
 
 **Règle anti-double-comptage** : la progression d'un objectif reste *jalons
-atteints / jalons totaux*, inchangée. Les projets ne calculent aucune
-progression — ils portent la **charge** et orientent. Deux caps servis par un
+atteints / jalons totaux*, inchangée. Un projet ne remonte aucune progression
+vers son cap — il porte la **charge** et il oriente. Deux caps servis par un
 même projet ne le comptent donc pas deux fois.
+
+### 2.1 bis — L'avancée d'un projet, et ce qu'elle n'est plus
+
+**Depuis le 29 août 2026, un projet a sa propre mesure**, et ce ne sont plus ses
+tâches. La décision est de Noé : *« l'avancée des projets ne doit pas être
+complètement liée aux tâches, ce n'est pas ça qui dit que c'est fini ou non car
+des tâches s'ajoutent petit à petit. »*
+
+Deux de ses projets ont réglé la question le jour même : « Deuxième dossier »
+affichait **100 %** (3 tâches sur 3) alors qu'il annonçait 25 h et commençait à
+peine ; « Album du club » affichait 7 % et **reculait à chaque tâche écrite**.
+Un dénominateur qui grandit à l'usage ne mesure rien, et celui-là punissait le
+geste que le hub veut encourager.
+
+D'où **`projets_etapes`** — le découpage qu'on déclare, mêmes colonnes que
+`jalons` (le même motif un étage plus bas), sans échéance : une étape découpe le
+TRAVAIL, pas le calendrier.
+
+Et d'où **`avanceeDuProjet(projet, taches)`**, dans ce module, qui rend la
+première mesure que le projet a déclarée :
+
+1. `etapes` — ses étapes franchies, dessinées en **marches**
+2. `charge` — ses minutes faites sur `charge_minutes`, dessinées en **barre**
+3. `aucune` — il n'a rien déclaré : un **pointillé**, et rien d'affirmé
+
+Les deux premières partagent le seul mérite qui compte ici : **leur dénominateur
+s'écrit une fois**, à la création du projet.
+
+Deux garde-fous portés par le calcul, pas par l'écran :
+
+- **l'état posé passe devant tout** — un projet `termine` a sa jauge pleine ;
+  un projet `annuel` n'a pas de jauge du tout, car il tourne sans finir ;
+- **le silence des durées n'est pas un zéro** — une charge dont aucune tâche
+  faite ne porte de durée retombe sur le pointillé. C'est la précaution de
+  `#temps`, et elle vaut ici pour la même raison.
+
+**`mouvementDuProjet(projet, taches, jour)`** répond à l'autre question, celle
+que l'avancée ne couvre pas : *est-ce que ça bouge.* La dernière trace est la
+plus récente entre la dernière tâche terminée et la naissance du projet — sans
+la naissance, un projet créé la veille serait « jamais touché ».
 
 ### 2.2 Les rattachements
 

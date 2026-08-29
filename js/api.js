@@ -484,9 +484,10 @@ export async function projetsTous() {
   return verifier(
     await client
       .from('projets')
-      .select('*, cibles:projets_cibles(id, objectif_id, jalon_id)')
+      .select('*, cibles:projets_cibles(id, objectif_id, jalon_id), etapes:projets_etapes(id, titre, ordre, atteint, date_atteint)')
       .order('espace')
-      .order('nom'),
+      .order('nom')
+      .order('ordre', { referencedTable: 'projets_etapes' }),
   );
 }
 
@@ -494,9 +495,10 @@ export async function projetsDeLEspace(espace) {
   return verifier(
     await client
       .from('projets')
-      .select('*, cibles:projets_cibles(id, objectif_id, jalon_id)')
+      .select('*, cibles:projets_cibles(id, objectif_id, jalon_id), etapes:projets_etapes(id, titre, ordre, atteint, date_atteint)')
       .eq('espace', espace)
-      .order('nom'),
+      .order('nom')
+      .order('ordre', { referencedTable: 'projets_etapes' }),
   );
 }
 
@@ -513,7 +515,7 @@ export async function creerProjet({
     await client
       .from('projets')
       .insert({ espace, nom, resultat, charge_minutes, charge_hebdo, echeance, statut })
-      .select('*, cibles:projets_cibles(id, objectif_id, jalon_id)')
+      .select('*, cibles:projets_cibles(id, objectif_id, jalon_id), etapes:projets_etapes(id, titre, ordre, atteint, date_atteint)')
       .single(),
   );
 }
@@ -524,7 +526,7 @@ export async function modifierProjet(id, champs) {
       .from('projets')
       .update(champs)
       .eq('id', id)
-      .select('*, cibles:projets_cibles(id, objectif_id, jalon_id)')
+      .select('*, cibles:projets_cibles(id, objectif_id, jalon_id), etapes:projets_etapes(id, titre, ordre, atteint, date_atteint)')
       .single(),
   );
 }
@@ -549,6 +551,68 @@ export async function lierProjet(projet_id, { objectif_id = null, jalon_id = nul
 
 export async function delierProjet(id) {
   const { error } = await client.from('projets_cibles').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// --- Les étapes d'un projet ---------------------------------------------------
+//
+// LE DÉCOUPAGE QU'ON DÉCLARE (29 août 2026, décision de Noé). Ce sont elles qui
+// mesurent l'avancée d'un projet, avant sa charge et à la place des tâches :
+// leur nombre est écrit UNE FOIS, donc ajouter une tâche ne fait plus reculer
+// la barre. Voir `avanceeDuProjet` (js/orientation.js) pour la cascade.
+//
+// Mêmes gestes que les jalons d'un cap, volontairement : c'est le même motif un
+// étage plus bas, et deux mécaniques différentes pour deux choses identiques
+// finiraient par diverger.
+
+export async function creerEtape({ projet_id, titre, ordre = null }) {
+  return verifier(
+    await client.from('projets_etapes').insert({ projet_id, titre, ordre }).select().single(),
+  );
+}
+
+export async function modifierEtape(id, champs) {
+  return verifier(
+    await client.from('projets_etapes').update(champs).eq('id', id).select().single(),
+  );
+}
+
+export async function supprimerEtape(id) {
+  const { error } = await client.from('projets_etapes').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// Franchir une étape écrit sa victoire, comme un jalon atteint et une tâche
+// terminée. Une étape est un vrai morceau de travail fini — la laisser muette
+// alors que le jalon parle aurait fait une exception à expliquer.
+export async function franchirEtape(etape, espace) {
+  const atteinte = verifier(
+    await client
+      .from('projets_etapes')
+      .update({ atteint: true, date_atteint: new Date().toISOString().slice(0, 10) })
+      .eq('id', etape.id)
+      .select()
+      .single(),
+  );
+
+  const victoire = await ajouterVictoire({
+    espace,
+    titre: atteinte.titre,
+    source: 'etape',
+    source_id: atteinte.id,
+  });
+
+  return { etape: atteinte, victoire };
+}
+
+// Revenir sur une étape retire sa victoire — sinon le hub garderait la trace
+// d'un travail défait. Même règle que pour un jalon.
+export async function supprimerVictoireDeLEtape(etapeId) {
+  const { error } = await client
+    .from('victoires')
+    .delete()
+    .eq('source', 'etape')
+    .eq('source_id', etapeId);
   if (error) throw error;
 }
 

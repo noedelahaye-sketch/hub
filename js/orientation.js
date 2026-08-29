@@ -773,6 +773,130 @@ export function suiteDuJour({ evenements = [] } = {}, jour = new Date()) {
       };
 }
 
+// --- L'AVANCÉE D'UN PROJET : une cascade, jamais les tâches -------------------
+//
+// LA RÈGLE (29 août 2026, décision de Noé). Sa phrase : « l'avancée des projets
+// ne doit pas être complètement liée aux tâches, ce n'est pas ça qui dit que
+// c'est fini ou non car des tâches s'ajoutent petit à petit. »
+//
+// Ce que ses données disaient ce jour-là, et qui a réglé la question :
+//
+//   « Deuxième dossier »   3 tâches sur 3 → barre PLEINE, sur un projet actif
+//                          qui annonce 25 h de travail. Il commençait à peine.
+//   « Album du club »      1 sur 14 → 7 %, et il avait RECULÉ à chaque tâche
+//                          écrite. Le dénominateur punissait le geste même que
+//                          le hub veut encourager : noter ce qu'on a à faire.
+//
+// Le défaut est structurel : un dénominateur qui grandit à l'usage ne mesure
+// rien. D'où trois mesures dans un ordre, et le projet est mesuré par la
+// première qu'il a DÉCLARÉE :
+//
+//   1. `etapes`   ses étapes franchies — des marches, comme les jalons d'un cap
+//   2. `charge`   les minutes faites sur la charge annoncée
+//   3. `aucune`   il n'a rien déclaré : le trait pointillé, et rien de plus
+//
+// Les deux premières ont le même mérite, et c'est tout l'objet de la cascade :
+// leur dénominateur s'écrit UNE FOIS, à la création du projet. Ajouter dix
+// tâches ne le bouge plus.
+//
+// Ce qui reste des tâches : elles RENSEIGNENT la charge (par leurs durées) et
+// elles disent le mouvement — elles ne définissent plus rien.
+export function avanceeDuProjet(projet, taches = []) {
+  const siennes = taches.filter((tache) => tache.projet_id === projet.id);
+  const total = siennes.length;
+  const faites = siennes.filter((tache) => tache.statut === 'fait').length;
+  const socle = { total, faites, etapes: projet.etapes ?? [] };
+
+  // L'ÉTAT POSÉ PASSE DEVANT TOUT. Un projet déclaré terminé a sa barre pleine
+  // même s'il reste des étapes ou des heures : c'est la décision de Noé qui dit
+  // la vérité, pas le décompte. L'inverse donnerait tort à sa décision.
+  if (projet.statut === 'termine') return { ...socle, mesure: 'declaree', part: 1 };
+
+  // UN PROJET À L'ANNÉE NE SE MESURE PAS, même s'il porte des étapes : il n'a
+  // pas de ligne d'arrivée, et une jauge qui se remplit lui en promettrait une.
+  // C'est un rythme, il tourne — il n'avance pas.
+  if (projet.statut === 'annuel') return { ...socle, mesure: 'aucune', part: 0 };
+
+  const etapes = projet.etapes ?? [];
+  if (etapes.length) {
+    const franchies = etapes.filter((etape) => etape.atteint).length;
+    return {
+      ...socle,
+      mesure: 'etapes',
+      part: franchies / etapes.length,
+      franchies,
+      marches: etapes.length,
+    };
+  }
+
+  // La charge : le dénominateur est annoncé, le numérateur vient des durées
+  // réellement notées. Il peut DÉPASSER, et c'est une information, pas une
+  // faute — `part` est plafonnée pour l'affichage, `minutes` dit le vrai.
+  if (projet.charge_minutes > 0) {
+    const minutes = siennes
+      .filter((tache) => tache.statut === 'fait')
+      .reduce((somme, tache) => somme + (tache.duree ?? 0), 0);
+
+    // LE SILENCE DES DURÉES N'EST PAS UN ZÉRO. « Deuxième dossier » a ses trois
+    // tâches faites et pas une durée notée : afficher « 0 h sur 25 h » dirait
+    // que rien n'a été fait, ce qui est faux — on n'en sait rien. C'est la même
+    // précaution que la première ligne de `#temps`, et elle vaut ici pour la
+    // même raison : un total bas se lit comme une semaine légère alors qu'il ne
+    // dit que le silence.
+    const sansDuree = faites > 0 && minutes === 0;
+
+    return {
+      ...socle,
+      mesure: 'charge',
+      part: sansDuree ? 0 : Math.min(1, minutes / projet.charge_minutes),
+      minutes,
+      annonce: projet.charge_minutes,
+      sansDuree,
+    };
+  }
+
+  return { ...socle, mesure: 'aucune', part: 0 };
+}
+
+// --- LE MOUVEMENT : est-ce que ça vit ? --------------------------------------
+//
+// Ce que la cascade ne dit pas, et que Noé a demandé à côté d'elle : un projet
+// peut être à 2 étapes sur 5 depuis trois semaines. L'avancée répond à « où
+// j'en suis », le mouvement à « est-ce que ça bouge » — deux questions, deux
+// réponses, et la seconde ne coûte aucune saisie.
+//
+// LA DERNIÈRE TRACE est la plus récente entre la dernière tâche terminée et la
+// NAISSANCE du projet. Sans la naissance, un projet créé la veille serait
+// « jamais touché » et passerait devant tout le monde. C'est mesuré, pas
+// supposé : au 29 août, les quatre projets vivants de Noé avaient tous été
+// créés le 27 et n'avaient aucune action — trier sur la seule dernière action
+// n'aurait rien classé du tout.
+export function mouvementDuProjet(projet, taches = [], jour = new Date()) {
+  const aujourdhui = versDateISO(jour);
+  const siennes = taches.filter((tache) => tache.projet_id === projet.id);
+
+  const jours = siennes
+    .filter((tache) => tache.statut === 'fait' && tache.date_fait)
+    .map((tache) => versDateISO(new Date(tache.date_fait)));
+
+  const naissance = projet.created_at ? versDateISO(new Date(projet.created_at)) : aujourdhui;
+  const derniere = jours.sort().at(-1);
+  const trace = derniere && derniere > naissance ? derniere : naissance;
+
+  const ilYaSeptJours = versDateISO(new Date(depuisDateISO(aujourdhui) - 7 * 86400000));
+
+  return {
+    dormance: Math.max(
+      0,
+      Math.round((depuisDateISO(aujourdhui) - depuisDateISO(trace)) / 86400000),
+    ),
+    cetteSemaine: jours.filter((date) => date > ilYaSeptJours).length,
+    // Un projet qui n'a JAMAIS rien vu fini ne dort pas, il n'a pas commencé.
+    // Les deux méritent d'être dits, et pas avec les mêmes mots.
+    commence: Boolean(derniere),
+  };
+}
+
 // --- Les projets en cours, et lequel se montre en premier ---------------------
 //
 // LA DORMANCE, ET NON LA DERNIÈRE ACTION (29 août 2026). Noé hésitait entre
@@ -811,22 +935,17 @@ export function suiteDuJour({ evenements = [] } = {}, jour = new Date()) {
 const VIVANTS = ['actif'];
 
 export function projetsEnCours({ projets = [], taches = [] } = {}, jour = new Date()) {
-  const aujourdhui = versDateISO(jour);
-
   return projets
     .filter((projet) => VIVANTS.includes(projet.statut))
     .map((projet) => {
       const siennes = taches.filter((tache) => tache.projet_id === projet.id);
       const restantes = siennes.filter((tache) => tache.statut !== 'fait');
 
-      const derniereAction = siennes
-        .filter((tache) => tache.statut === 'fait' && tache.date_fait)
-        .map((tache) => versDateISO(new Date(tache.date_fait)))
-        .sort()
-        .at(-1);
-
-      const naissance = projet.created_at ? versDateISO(new Date(projet.created_at)) : aujourdhui;
-      const trace = derniereAction && derniereAction > naissance ? derniereAction : naissance;
+      // La jauge du rail suit LA MÊME CASCADE que la galerie de `#objectifs` —
+      // étapes, puis charge, puis rien. Deux écrans qui mesureraient le même
+      // projet de deux façons différentes finiraient par se contredire.
+      const avancee = avanceeDuProjet(projet, taches);
+      const mouvement = mouvementDuProjet(projet, taches, jour);
 
       // La prochaine échéance : ce que la tuile met en pied. Sans date, elle se
       // tait plutôt que d'inventer un « bientôt ».
@@ -839,10 +958,8 @@ export function projetsEnCours({ projets = [], taches = [] } = {}, jour = new Da
         reste: restantes.length,
         faites: siennes.length - restantes.length,
         total: siennes.length,
-        dormance: Math.max(
-          0,
-          Math.round((depuisDateISO(aujourdhui) - depuisDateISO(trace)) / 86400000),
-        ),
+        avancee,
+        ...mouvement,
         prochaine,
       };
     })

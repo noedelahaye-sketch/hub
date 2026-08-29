@@ -26,6 +26,7 @@ const ORDRE_ESPACES = ['fch', 'formation', 'photo', 'perso'];
 const SOURCES = {
   tache: 'tâche terminée',
   jalon: 'jalon franchi',
+  etape: 'étape franchie',
   objectif: 'objectif atteint',
   moment: 'sortie vécue',
   manuel: null, // écrite à la main : rien à expliquer.

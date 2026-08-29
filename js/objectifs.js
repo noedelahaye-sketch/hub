@@ -40,7 +40,13 @@ import * as api from './api.js';
 // `tensionDeLaPeriode` n'est plus appelée ici : le hub ne prévient plus d'un
 // dépassement voulu (28 août 2026). Elle reste entière dans orientation.js —
 // c'est la règle du jeu, et le diagnostic s'en sert.
-import { REGIMES, chargeViseeDeLaPeriode, periodeDuJour } from './orientation.js';
+import {
+  REGIMES,
+  chargeViseeDeLaPeriode,
+  periodeDuJour,
+  avanceeDuProjet,
+  mouvementDuProjet,
+} from './orientation.js';
 import { construireFormulaire, brancherChoix, demanderLaDuree } from './gabarits.js';
 import { modifierAussitot, retirerAussitot } from './ecriture.js';
 // Le modèle de l'argent de Yuno vit avec la page qui l'a fait naître ; il
@@ -200,6 +206,12 @@ function jourLisible(iso) {
   return iso ? echeanceLisible(depuisDateISO(iso)) : '';
 }
 
+// `date_fait` est un timestamptz, `jourLisible` attend une date nue : sans cette
+// coupe, « 2026-08-27T09:12:44+00:00 » ne se lit pas comme un jour.
+function jourDuFait(tache) {
+  return tache?.date_fait ? String(tache.date_fait).slice(0, 10) : null;
+}
+
 function heuresLisibles(minutes) {
   const heures = minutes / 60;
   // Virgule et non point : on écrit « 39,5 h » en français, et le point se
@@ -244,6 +256,7 @@ const etat = {
   periodes: [],
   commandes: [],
   materiel: [],
+  faites: null, // le projet dont on relit les tâches faites
   ouvert: null, // le cap déplié
   projetOuvert: null, // le projet déplié, dans le cap ouvert
   projetGalerie: null, // le projet déplié, dans la galerie des projets
@@ -461,21 +474,31 @@ function frise(objectif) {
 // Une série ne s'écrit qu'une fois. Quinze « Visuels de la semaine » alignés,
 // c'est le mur que l'espace Tâches a appris à ne pas dresser : on montre la
 // prochaine, son rythme, et combien il en reste.
-function grouperLesTaches(taches) {
-  const restantes = taches.filter((tache) => tache.statut !== 'fait');
-  const faites = taches.length - restantes.length;
-  const parSerie = new Map();
+// Le tri d'une liste par série : ce qui n'en a pas d'un côté, un groupe par
+// série de l'autre. Les deux moitiés d'un projet — ce qui reste et ce qui est
+// fait — s'y prennent de la même façon, et c'est pour ça que ça vit à part :
+// deux copies auraient fini par replier les séries d'un côté seulement.
+function parSeries(taches) {
+  const groupes = new Map();
   const seules = [];
-
-  for (const tache of restantes) {
+  for (const tache of taches) {
     if (!tache.serie_id) {
       seules.push(tache);
       continue;
     }
-    const groupe = parSerie.get(tache.serie_id) ?? [];
+    const groupe = groupes.get(tache.serie_id) ?? [];
     groupe.push(tache);
-    parSerie.set(tache.serie_id, groupe);
+    groupes.set(tache.serie_id, groupe);
   }
+  return { groupes, seules };
+}
+
+function grouperLesTaches(taches) {
+  const restantes = taches.filter((tache) => tache.statut !== 'fait');
+  const terminees = taches.filter((tache) => tache.statut === 'fait');
+  const faites = terminees.length;
+
+  const { groupes: parSerie, seules } = parSeries(restantes);
 
   const lignes = seules.map((tache) => ({ tache, serie: null }));
   for (const groupe of parSerie.values()) {
@@ -491,16 +514,78 @@ function grouperLesTaches(taches) {
   lignes.sort((a, b) =>
     String(a.tache.echeance ?? '9999').localeCompare(String(b.tache.echeance ?? '9999')),
   );
-  return { lignes, faites };
+
+  // CE QUI EST FAIT SE LIT AUSSI (29 août 2026, demande de Noé : « dans le
+  // détail du projet, je dois pouvoir voir les tâches faites »). Le compte seul
+  // — « 3 faites. » — disait qu'il s'était passé quelque chose sans jamais dire
+  // quoi, dans un hub dont la première règle est d'être un miroir de ce qui a
+  // été accompli.
+  //
+  // LE PLUS RÉCENT D'ABORD, à l'inverse de ce qui reste : ce qui reste se lit
+  // par ce qui arrive, ce qui est fait se relit par ce qu'on vient de finir.
+  // Et les séries s'y replient pareil — douze « Visuels de la semaine » faits
+  // dresseraient le mur que l'espace Tâches a appris à ne pas dresser.
+  const { groupes: faitesParSerie, seules: faitesSeules } = parSeries(terminees);
+  const quand = (tache) => String(tache.date_fait ?? '');
+
+  const lignesFaites = faitesSeules.map((tache) => ({ tache, serie: null }));
+  for (const groupe of faitesParSerie.values()) {
+    const triees = [...groupe].sort((a, b) => quand(b).localeCompare(quand(a)));
+    lignesFaites.push({
+      tache: triees[0],
+      serie: { faites: triees.length, derniere: triees[0].date_fait },
+    });
+  }
+  lignesFaites.sort((a, b) => quand(b.tache).localeCompare(quand(a.tache)));
+
+  return { lignes, faites, lignesFaites };
+}
+
+// LE COMPTE DEVIENT UNE PORTE (29 août 2026, demande de Noé). Il reste un
+// compte au repos — « 3 faites » — et se déplie sur la liste : les tâches faites
+// sont ce que le hub est censé montrer en premier, mais un projet de quinze
+// tâches terminées ne doit pas repousser ce qui reste hors de l'écran.
+//
+// Les lignes dépliées sont les MÊMES que celles d'en haut : leur cercle se
+// décoche, leur menu supprime. Rouvrir une tâche depuis là où on la relit est
+// le geste attendu, et il n'a rien coûté à brancher — `ligneTache` le portait
+// déjà.
+function blocDesFaites(projet, faites, lignesFaites) {
+  if (!faites) return '';
+  const ouvert = etat.faites === projet.id;
+
+  return `
+    <button type="button" class="cap-taches-faites" data-faites="${echapper(projet.id)}"
+      aria-expanded="${ouvert}">
+      <span class="cap-faites-chevron${ouvert ? ' ouvert' : ''}">${SIGNE.chevron}</span>
+      <span>${echapper(pluriel(faites, 'faite'))}</span>
+    </button>
+    ${
+      ouvert
+        ? `<ul class="cap-taches cap-taches-terminees">${lignesFaites
+            .map(ligneTache)
+            .join('')}</ul>`
+        : ''
+    }`;
 }
 
 function ligneTache({ tache, serie }) {
-  const service = serie
-    ? `<span class="cap-tache-serie">${SIGNE.repetition}${echapper(
-        (RECURRENCES[tache.recurrence] ?? 'Se répète').toLowerCase(),
-      )} · ${echapper(`${serie.restantes} fois à venir`)}</span>
-       <span class="cap-tache-date">${echapper(jourLisible(serie.prochaine))}</span>`
-    : `<span class="cap-tache-date">${echapper(jourLisible(tache.echeance))}</span>`;
+  // Une série repliée ne dit pas la même chose selon le côté où elle tombe :
+  // devant soi on compte ce qui reste, derrière soi ce qui a été fait. Le même
+  // mot pour les deux aurait fait lire « 12 fois à venir » sous un titre barré.
+  const repetition = (mot, date) =>
+    `<span class="cap-tache-serie">${SIGNE.repetition}${echapper(
+      (RECURRENCES[tache.recurrence] ?? 'Se répète').toLowerCase(),
+    )} · ${echapper(mot)}</span>
+     <span class="cap-tache-date">${echapper(jourLisible(date))}</span>`;
+
+  const service = !serie
+    ? `<span class="cap-tache-date">${echapper(
+        jourLisible(tache.statut === 'fait' ? jourDuFait(tache) : tache.echeance),
+      )}</span>`
+    : serie.faites !== undefined
+      ? repetition(`${serie.faites} fois faites`, jourDuFait({ date_fait: serie.derniere }))
+      : repetition(`${serie.restantes} fois à venir`, serie.prochaine);
 
   return `
     <li class="cap-tache tache-ligne${tache.statut === 'fait' ? ' tache-faite' : ''}"
@@ -518,7 +603,7 @@ function ligneTache({ tache, serie }) {
 function tuileProjet(projet) {
   const ouvert = etat.projetOuvert === projet.id;
   const taches = tachesDuProjet(projet);
-  const { lignes, faites } = grouperLesTaches(taches);
+  const { lignes, faites, lignesFaites } = grouperLesTaches(taches);
   const charge = chargeDuProjet(projet);
 
   // Les orphelines de son espace se rattachent d'un bouton : c'est la seule
@@ -564,7 +649,7 @@ function tuileProjet(projet) {
       <div class="cap-projet-taches">
         <div class="cap-projet-taches-dedans">
           <ul class="cap-taches">${lignes.map(ligneTache).join('')}</ul>
-          ${faites ? `<p class="cap-taches-faites">${echapper(pluriel(faites, 'faite'))}.</p>` : ''}
+          ${blocDesFaites(projet, faites, lignesFaites)}
           <span class="cap-projet-gestes">
             <button type="button" class="cap-ajout-discret"
               data-ajout="tache:${echapper(projet.id)}">
@@ -608,34 +693,85 @@ function tuileProjet(projet) {
 // projets qui ne servent aucun cap. Ils existent — « Album du club », « Suivi
 // de l'alternance » — et ils étaient invisibles, donc oubliés.
 //
-// L'avancée n'a pas la même forme que celle d'un cap, et c'est voulu : un cap
-// franchit des MARCHES (un segment par jalon, on les compte du regard) ; un
-// projet avance de façon continue, tâche après tâche, et quinze segments
-// seraient du bruit. D'où une barre unique, remplie à la proportion faite.
-function avanceeDuProjet(projet) {
-  const taches = tachesDuProjet(projet);
-
-  // Un projet DÉCLARÉ terminé a sa barre pleine, même si des tâches traînent :
-  // c'est l'état que Noé a posé qui dit la vérité, pas le décompte. L'inverse —
-  // une barre à 80 % sur un projet fini — donnerait tort à sa décision.
-  if (projet.statut === 'termine') {
+// L'AVANCÉE SE LIT DANS LA FORME DE SA JAUGE (29 août 2026, décision de Noé).
+// Trois mesures, trois dessins, et le dessin dit lequel des trois on regarde :
+//
+//   des MARCHES    ses étapes déclarées — comme les jalons d'un cap, et pour la
+//                  même raison : ça se franchit, ça se compte du regard
+//   une BARRE      sa charge — des heures se remplissent, elles ne se franchissent
+//                  pas ; une barre continue est le bon signe pour ça
+//   un POINTILLÉ   il n'a rien déclaré, donc le hub ne mesure rien et le dit
+//
+// Ce qui a disparu : la proportion de tâches faites. Elle mentait dans les deux
+// sens — « Deuxième dossier » affichait 100 % (3 tâches sur 3) sur un projet de
+// 25 h à peine commencé, et « Album du club » reculait à chaque tâche écrite.
+// La règle vit dans `avanceeDuProjet` (js/orientation.js), pour rester
+// éprouvable hors écran ; ici on ne fait que la dessiner.
+function jaugeDuProjet(avancee) {
+  if (avancee.mesure === 'declaree') {
     return `<span class="cap-avancee" role="img" aria-label="Terminé"><span
       style="width: 100%"></span></span>`;
   }
 
-  // Un projet À L'ANNÉE n'a pas de fin à atteindre : une barre qui se remplit
-  // lui promettrait une ligne d'arrivée qui n'existe pas. Il porte donc le même
-  // trait pointillé que celui qui n'a encore aucune tâche — « rien ne se mesure
-  // ici », et c'est vrai des deux.
-  if (projet.statut === 'annuel' || !taches.length) {
-    return '<span class="cap-avancee cap-marches-vide"></span>';
+  if (avancee.mesure === 'etapes') {
+    return `<span class="cap-marches" role="img"
+      aria-label="${avancee.franchies} étape(s) franchie(s) sur ${avancee.marches}">${(
+      avancee.etapes ?? []
+    )
+      .map((etape) => `<span class="cap-marche${etape.atteint ? ' atteint' : ''}"></span>`)
+      .join('')}</span>`;
   }
 
-  const faites = taches.filter((tache) => tache.statut === 'fait').length;
-  const part = Math.round((faites / taches.length) * 100);
-  return `<span class="cap-avancee" role="img"
-    aria-label="${faites} tâche(s) faite(s) sur ${taches.length}"><span
-    style="width: ${part}%"></span></span>`;
+  if (avancee.mesure === 'charge') {
+    // Une charge dont aucune durée n'a été notée ne se dessine pas en barre à
+    // zéro : ce serait affirmer que rien n'a été fait. Le pointillé dit la
+    // bonne chose — le hub ne sait pas.
+    if (avancee.sansDuree) return '<span class="cap-avancee cap-marches-vide"></span>';
+    return `<span class="cap-avancee" role="img"
+      aria-label="${heuresLisibles(avancee.minutes)} sur ${heuresLisibles(
+        avancee.annonce,
+      )} annoncées"><span
+      style="width: ${Math.round(avancee.part * 100)}%"></span></span>`;
+  }
+
+  return '<span class="cap-avancee cap-marches-vide"></span>';
+}
+
+// Ce que la jauge ne peut pas dire : sur quoi elle est assise. Une barre à
+// moitié pleine ne vaut rien si l'on ne sait pas si c'est la moitié des étapes
+// ou la moitié des heures.
+function motDeLAvancee(avancee) {
+  if (avancee.mesure === 'etapes') {
+    return `${avancee.franchies} sur ${pluriel(avancee.marches, 'étape')}`;
+  }
+  if (avancee.mesure === 'charge') {
+    if (avancee.sansDuree) return `${heuresLisibles(avancee.annonce)}, aucune durée notée`;
+    // Le dépassement se dit tel quel : « 28 h sur 25 h ». C'est une
+    // information, pas une faute — le hub n'a pas de couleur d'alerte.
+    return `${heuresLisibles(avancee.minutes)} sur ${heuresLisibles(avancee.annonce)}`;
+  }
+  return '';
+}
+
+// LE MOUVEMENT, à côté de l'avancée et jamais à sa place (demande de Noé) : un
+// projet peut être à 2 étapes sur 5 depuis trois semaines. L'une répond à « où
+// j'en suis », l'autre à « est-ce que ça bouge », et aucune ne coûte de saisie.
+//
+// LA NAISSANCE N'EST PAS DU MOUVEMENT, et elle reste donc DANS LE DÉTAIL
+// (29 août 2026, correction de Noé : « le "posé il y a" n'a pas besoin d'être
+// visible sur la tuile, uniquement dans son détail »). Six de ses dix projets
+// l'affichaient — une ligne identique partout ne dit plus rien, et la galerie
+// ne montre que ce qui se compare. Un projet qui n'a rien vu se terminer se
+// tait donc sur sa tuile : son pointillé le dit déjà.
+function motDuMouvement({ dormance, cetteSemaine, commence }, { tuile = false } = {}) {
+  if (cetteSemaine) return `${pluriel(cetteSemaine, 'faite')} cette semaine`;
+  if (!commence) {
+    if (tuile) return '';
+    return dormance ? `Posé il y a ${dormance} j` : "Posé aujourd'hui";
+  }
+  if (dormance === 0) return "Bougé aujourd'hui";
+  if (dormance === 1) return 'Bougé hier';
+  return `Rien depuis ${dormance} j`;
 }
 
 function capsServis(projet) {
@@ -645,12 +781,16 @@ function capsServis(projet) {
 }
 
 function tuileProjetGalerie(projet) {
-  const taches = tachesDuProjet(projet);
-  const faites = taches.filter((tache) => tache.statut === 'fait').length;
+  const avancee = avanceeDuProjet(projet, etat.taches);
+  const mouvement = mouvementDuProjet(projet, etat.taches);
+
+  // LE PIED DIT SUR QUOI LA JAUGE EST ASSISE, puis ce que le projet porte. Le
+  // décompte des tâches faites en est parti : il ressemblait trop à une mesure
+  // d'avancée, et c'est précisément ce qu'il n'est pas.
   const porte = [
-    taches.length ? pluriel(taches.length, 'tâche') : 'Aucune tâche',
-    faites ? pluriel(faites, 'faite') : '',
-    chargeDuProjet(projet),
+    motDeLAvancee(avancee),
+    avancee.total ? pluriel(avancee.total, 'tâche') : 'Aucune tâche',
+    avancee.mesure === 'charge' ? '' : chargeDuProjet(projet),
   ].filter(Boolean);
 
   return `
@@ -665,20 +805,89 @@ function tuileProjetGalerie(projet) {
       <button type="button" class="cap-tuile-ouvrir"
         data-ouvrir-projet-galerie="${echapper(projet.id)}">
         <h3 class="cap-tuile-titre">${echapper(projet.nom)}</h3>
-        ${avanceeDuProjet(projet)}
+        ${jaugeDuProjet(avancee)}
         <span class="cap-tuile-pied">
           <span>${echapper(porte.join(' · '))}</span>
           <span class="cap-tuile-date">${echapper(jourLisible(projet.echeance))}</span>
         </span>
+        ${
+          motDuMouvement(mouvement, { tuile: true })
+            ? `<span class="cap-tuile-trace">${echapper(
+                motDuMouvement(mouvement, { tuile: true }),
+              )}</span>`
+            : ''
+        }
       </button>
       ${menuDiscret('projet', projet.id)}
     </article>`;
 }
 
+// LA FRISE DES ÉTAPES, exactement celle des jalons d'un cap : même dessin,
+// mêmes gestes, même point qu'on presse. C'est le même motif un étage plus bas,
+// et deux formes différentes pour deux choses identiques auraient demandé de
+// réapprendre le geste en descendant d'un étage.
+function friseEtapes(projet) {
+  const etapes = projet.etapes ?? [];
+  const prochaine = etapes.find((etape) => !etape.atteint);
+
+  const lignes = etapes
+    .map(
+      (etape) => `
+      <li class="cap-jalon${etape.atteint ? ' atteint' : ''}${
+        etape === prochaine ? ' prochain' : ''
+      }">
+        <button type="button" class="cap-jalon-point" data-etape="${echapper(etape.id)}"
+          aria-pressed="${Boolean(etape.atteint)}"
+          aria-label="${
+            etape.atteint ? 'Revenir sur cette étape' : 'Marquer cette étape franchie'
+          }"></button>
+        <span class="cap-jalon-corps">
+          <span class="cap-jalon-titre">${echapper(etape.titre)}</span>
+        </span>
+        ${menuDiscret('etape', etape.id)}
+      </li>`,
+    )
+    .join('');
+
+  return `
+    ${etapes.length ? `<ol class="cap-frise">${lignes}</ol>` : ''}
+    <button type="button" class="cap-ajout-discret" data-ajout="etape:${echapper(projet.id)}">
+      ${SIGNE.plus}<span>Poser une étape</span></button>`;
+}
+
+// CE QUI MESURE CE PROJET, dit en toutes lettres dans son détail. Sans cette
+// ligne, un projet à jauge pointillée laisse croire qu'il n'avance pas, alors
+// qu'il n'a simplement rien déclaré à mesurer — et rien à l'écran ne dirait
+// comment y remédier.
+function surQuoiIlSeMesure(avancee, projet) {
+  if (avancee.mesure === 'etapes') return '';
+  if (avancee.mesure === 'declaree') return 'Tu l\'as déclaré terminé.';
+  if (avancee.mesure === 'charge') {
+    if (avancee.sansDuree) {
+      return `${heuresLisibles(
+        avancee.annonce,
+      )} annoncées, mais aucune durée notée sur ce qui est fait — le hub ne peut rien en dire. Des étapes le mesureraient sans rien demander de plus.`;
+    }
+    return `Mesuré à l'heure : ${heuresLisibles(avancee.minutes)} notées sur ${heuresLisibles(
+      avancee.annonce,
+    )} annoncées. Poser des étapes le mesurerait plus finement.`;
+  }
+  if (projet.statut === 'annuel') {
+    return "Un projet à l'année ne se mesure pas : il tourne, il n'avance pas vers une fin.";
+  }
+  return "Rien ne le mesure encore. Pose des étapes, ou annonce une charge en heures.";
+}
+
 function detailProjet(projet) {
-  const { lignes, faites } = grouperLesTaches(tachesDuProjet(projet));
+  const { lignes, faites, lignesFaites } = grouperLesTaches(tachesDuProjet(projet));
   const caps = capsServis(projet);
   const charge = chargeDuProjet(projet);
+  const avancee = avanceeDuProjet(projet, etat.taches);
+  const mesure = surQuoiIlSeMesure(avancee, projet);
+  // Le mouvement ENTIER vit ici, naissance comprise : la tuile ne montre que ce
+  // qui se compare, le détail répond à tout ce qu'on peut se demander une fois
+  // entré (demande de Noé, 29 août 2026).
+  const trace = motDuMouvement(mouvementDuProjet(projet, etat.taches));
   const orphelines = etat.taches.filter(
     (tache) => tache.espace === projet.espace && !tache.projet_id && tache.statut !== 'fait',
   );
@@ -686,12 +895,17 @@ function detailProjet(projet) {
   return `
     <div class="cap-detail">
       <div class="cap-detail-tete">
-        <span class="cap-tuile-espace"><span class="pastille"></span>${echapper(
-          NOMS_ESPACES[projet.espace] ?? projet.espace,
-        )}</span>
+        <span class="cap-tuile-tete">
+          <span class="cap-tuile-espace"><span class="pastille"></span>${echapper(
+            NOMS_ESPACES[projet.espace] ?? projet.espace,
+          )}</span>
+          ${pastilleEtat(projet)}
+        </span>
         <h3 class="cap-detail-titre">${echapper(projet.nom)}</h3>
-        <p class="cap-detail-date">${pastilleEtat(projet)}<span>${echapper(
-          [charge, projet.echeance ? jourLisible(projet.echeance) : ''].filter(Boolean).join(' · '),
+        <p class="cap-detail-date"><span>${echapper(
+          [charge, projet.echeance ? jourLisible(projet.echeance) : '', trace]
+            .filter(Boolean)
+            .join(' · '),
         )}</span></p>
         ${menuDiscret('projet', projet.id)}
         <button type="button" class="cap-refermer" data-refermer-projet
@@ -706,6 +920,12 @@ function detailProjet(projet) {
       }</p>
 
       <div class="cap-etages">
+        <section class="cap-etage">
+          <h4 class="cap-etage-titre">Ses étapes</h4>
+          ${mesure ? `<p class="cap-vide">${echapper(mesure)}</p>` : ''}
+          ${friseEtapes(projet)}
+        </section>
+
         <section class="cap-etage cap-etage-large">
           <h4 class="cap-etage-titre">Ses tâches</h4>
           ${
@@ -713,7 +933,7 @@ function detailProjet(projet) {
               ? `<ul class="cap-taches">${lignes.map(ligneTache).join('')}</ul>`
               : `<p class="cap-vide">Rien encore. La première dira par où ça commence.</p>`
           }
-          ${faites ? `<p class="cap-taches-faites">${echapper(pluriel(faites, 'faite'))}.</p>` : ''}
+          ${blocDesFaites(projet, faites, lignesFaites)}
           <span class="cap-projet-gestes">
             <button type="button" class="cap-ajout-discret"
               data-ajout="tache:${echapper(projet.id)}">
@@ -988,6 +1208,15 @@ const FORMULAIRES = {
       { nom: 'echeance', libelle: 'Échéance (facultative)', type: 'date', valeur: v.echeance },
     ],
   },
+  etape: {
+    ajouter: 'Poser une étape',
+    modifier: "Modifier l'étape",
+    // Pas d'échéance, à la différence d'un jalon : une étape découpe le
+    // TRAVAIL, pas le calendrier. Ce sont les tâches qui portent les dates.
+    champs: (v) => [
+      { nom: 'titre', libelle: 'Étape', type: 'text', requis: true, valeur: v.titre },
+    ],
+  },
   projet: {
     ajouter: 'Poser un projet',
     modifier: 'Modifier le projet',
@@ -1154,6 +1383,12 @@ function trouver(cle) {
     for (const objectif of etat.objectifs) {
       const jalon = (objectif.jalons ?? []).find((j) => j.id === id);
       if (jalon) return { cible: jalon, objectif };
+    }
+  }
+  if (forme === 'etape') {
+    for (const projet of etat.projets) {
+      const etape = (projet.etapes ?? []).find((e) => e.id === id);
+      if (etape) return { cible: etape, projet };
     }
   }
   return {};
@@ -1390,6 +1625,23 @@ export default {
         return;
       }
 
+      if (forme === 'etape') {
+        const valeurs = { titre: champs.titre.trim() };
+        if (id) {
+          const etape = trouver(`etape:${id}`).cible;
+          Object.assign(etape, await api.modifierEtape(id, valeurs));
+        } else {
+          const projet = trouver(`projet:${parent}`).cible;
+          const etape = await api.creerEtape({
+            projet_id: parent,
+            ...valeurs,
+            ordre: (projet?.etapes?.length ?? 0) + 1,
+          });
+          projet.etapes = [...(projet.etapes ?? []), etape];
+        }
+        return;
+      }
+
       if (forme === 'projet') {
         const valeurs = {
           espace: champs.espace,
@@ -1555,6 +1807,7 @@ export default {
         const id = galerie.dataset.ouvrirProjetGalerie;
         etat.projetGalerie = etat.projetGalerie === id ? null : id;
         etat.rattache = null;
+        etat.faites = null;
         etat.menu = null;
         rendreAnime();
         return;
@@ -1572,6 +1825,7 @@ export default {
         const id = projet.dataset.ouvrirProjet;
         etat.projetOuvert = etat.projetOuvert === id ? null : id;
         etat.rattache = null;
+        etat.faites = null;
         etat.menu = null;
         rendre();
         return;
@@ -1582,8 +1836,19 @@ export default {
       const jalon = dans('jalon');
       if (jalon) return basculerJalon(jalon.dataset.jalon);
 
+      const etape = dans('etape');
+      if (etape) return basculerEtape(etape.dataset.etape);
+
       const tache = dans('tache');
       if (tache) return basculerTache(tache.dataset.tache);
+
+      const relire = dans('faites');
+      if (relire) {
+        const id = relire.dataset.faites;
+        etat.faites = etat.faites === id ? null : id;
+        rendre();
+        return;
+      }
 
       const rattacherVers = dans('rattacher-vers');
       if (rattacherVers) {
@@ -1730,6 +1995,35 @@ export default {
       }
     }
 
+    // Franchir une étape écrit sa victoire ; revenir dessus la retire. Même
+    // mécanique que le jalon, au mot près — c'est le même geste un étage plus
+    // bas, et il ne doit pas s'apprendre deux fois.
+    async function basculerEtape(id) {
+      const { cible: etape, projet } = trouver(`etape:${id}`);
+      if (!etape) return;
+
+      const avant = { ...etape };
+      Object.assign(etape, {
+        atteint: !etape.atteint,
+        date_atteint: etape.atteint ? null : new Date().toISOString().slice(0, 10),
+      });
+      rendre();
+
+      try {
+        if (avant.atteint) {
+          Object.assign(etape, await api.modifierEtape(id, { atteint: false, date_atteint: null }));
+          await api.supprimerVictoireDeLEtape(id);
+        } else {
+          const { etape: franchie } = await api.franchirEtape(avant, projet.espace);
+          Object.assign(etape, franchie);
+        }
+      } catch (souci) {
+        console.error('Étape non modifiée', souci);
+        Object.assign(etape, avant);
+        signaler("Ça n'a pas pu être enregistré — l'étape est revenue.");
+      }
+    }
+
     // Cocher est une intention, pas un fait acquis : la fenêtre demande combien
     // de temps ça a pris, et rien n'est écrit tant qu'on n'a pas confirmé.
     async function basculerTache(id) {
@@ -1800,6 +2094,15 @@ export default {
         const { cible: jalon, objectif } = trouver(cle);
         if (!jalon) return;
         return retirerAussitot(objectif.jalons, jalon, () => api.supprimerJalon(id), {
+          rendre,
+          echouer: () => signaler("Ça n'a pas pu être supprimé."),
+        });
+      }
+
+      if (forme === 'etape') {
+        const { cible: etape, projet } = trouver(cle);
+        if (!etape) return;
+        return retirerAussitot(projet.etapes, etape, () => api.supprimerEtape(id), {
           rendre,
           echouer: () => signaler("Ça n'a pas pu être supprimé."),
         });

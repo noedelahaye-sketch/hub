@@ -14,6 +14,7 @@ import {
   ajouterJours,
   echeanceLisible,
   echapper,
+  dureeLisible,
   NOMS_ESPACES,
 } from './format.js';
 import {
@@ -429,14 +430,57 @@ export function construireProjetsEnCours(liste) {
   if (!liste.length) return '';
 
   const tuiles = liste
-    .map(({ projet, reste, faites, total, dormance, prochaine }) => {
-      // Pas de cas « à l'année » ici : `projetsEnCours` les écarte du rail — un
-      // rythme ne se classe pas par dormance. La jauge est donc toujours une
-      // vraie proportion, et un projet vide affiche zéro plutôt que rien.
-      const part = total ? Math.round((faites / total) * 100) : 0;
+    .map(({ projet, avancee, dormance, commence, prochaine }) => {
+      // LA MÊME CASCADE QUE LA GALERIE — étapes, puis charge, puis rien (29 août
+      // 2026) : la proportion de tâches faites a disparu des deux écrans le même
+      // jour. Deux écrans qui mesureraient le même projet de deux façons
+      // différentes finiraient par se contredire, et c'est l'accueil qu'on
+      // croirait.
+      const part = Math.round(avancee.part * 100);
 
-      const quand =
-        dormance === 0 ? "aujourd'hui" : dormance === 1 ? 'hier' : `${dormance} j`;
+      // Les étapes se comptent en MARCHES, la charge se remplit en BARRE : le
+      // dessin dit lequel des deux on regarde, ici comme dans `#objectifs`.
+      const jauge =
+        avancee.mesure === 'etapes'
+          ? `<span class="projet-marches">${(avancee.etapes ?? [])
+              .map((etape) => `<i${etape.atteint ? ' class="atteint"' : ''}></i>`)
+              .join('')}</span>`
+          : avancee.mesure === 'aucune' || avancee.sansDuree
+            ? '<span class="projet-jauge projet-jauge-vide"></span>'
+            : `<span class="projet-jauge"><i style="width:${part}%"></i></span>`;
+
+      // Ce que la jauge ne peut pas dire : sur quoi elle est assise. Un projet
+      // que rien ne mesure le dit aussi — c'est une information, pas un vide.
+      const compte =
+        avancee.mesure === 'etapes'
+          ? `<span class="chiffre">${avancee.franchies}</span> sur <span class="chiffre">${
+              avancee.marches
+            }</span> étape${avancee.marches > 1 ? 's' : ''}`
+          : avancee.mesure === 'charge'
+            ? avancee.sansDuree
+              ? `<span class="chiffre">${dureeLisible(avancee.annonce)}</span>, aucune durée notée`
+              : `<span class="chiffre">${
+                  dureeLisible(avancee.minutes) || '0 h'
+                }</span> sur <span class="chiffre">${dureeLisible(avancee.annonce)}</span>`
+            : avancee.mesure === 'declaree'
+              ? 'Terminé'
+              : avancee.total
+                ? `${avancee.total} tâche${avancee.total > 1 ? 's' : ''}, rien à mesurer`
+                : 'Aucune tâche posée';
+
+      // LA NAISSANCE N'EST PAS DU MOUVEMENT (29 août 2026, correction de Noé,
+      // portée ici après la galerie de `#objectifs`) : un projet qui n'a encore
+      // rien vu se terminer n'a pas de dernière trace à montrer, il a un âge —
+      // et l'âge d'un projet ne dit rien de ce qu'il faut en faire. Le chiffre
+      // se tait donc, plutôt que d'afficher la date de création sous un mot qui
+      // promet autre chose.
+      const quand = !commence
+        ? ''
+        : dormance === 0
+          ? "aujourd'hui"
+          : dormance === 1
+            ? 'hier'
+            : `${dormance} j`;
 
       return `
       <article class="projet-tuile" data-espace="${echapper(projet.espace)}">
@@ -445,16 +489,17 @@ export function construireProjetsEnCours(liste) {
           <span class="projet-tete">
             <span class="pastille"></span>
             <span class="projet-espace">${echapper(NOMS_ESPACES[projet.espace] ?? projet.espace)}</span>
-            <span class="projet-trace chiffre" title="Dernière trace">${echapper(quand)}</span>
+            ${
+              quand
+                ? `<span class="projet-trace chiffre" title="Dernière trace">${echapper(
+                    quand,
+                  )}</span>`
+                : ''
+            }
           </span>
           <span class="projet-nom">${echapper(projet.nom)}</span>
-          <span class="projet-jauge" role="img" aria-label="${faites} sur ${total}"><i
-            style="width:${part}%"></i></span>
-          <span class="projet-compte">${
-            total
-              ? `<span class="chiffre">${faites}</span> sur <span class="chiffre">${total}</span>`
-              : 'Aucune tâche posée'
-          }</span>
+          ${jauge}
+          <span class="projet-compte">${compte}</span>
           ${
             prochaine
               ? `<span class="projet-suivant">
@@ -674,7 +719,13 @@ function squelette() {
              projets en cours : c'est lui qui nomme la tuile, il ne vit pas
              dedans. Les deux sections de l'accueil se lisent donc pareil — un
              mot, puis un cadre. -->
-        <h2 class="titre-section">Aujourd'hui</h2>
+        <!-- LE TITRE EST UN LIEN, et c'est ce qui donne le CLAVIER : la tuile
+             entière mène aux tâches par un écouteur de clic (voir la constante
+             GESTES plus bas), mais un écouteur ne se tabule pas. Le lien porte
+             donc le même geste par un chemin qui, lui, s'atteint sans souris.
+             Il garde exactement l'apparence du titre — c'est un raccourci, pas
+             une invitation de plus. -->
+        <h2 class="titre-section"><a href="#taches">Aujourd'hui</a></h2>
         <div class="tuile-jour">
           <div id="bloc-aujourdhui"><p class="vide">…</p></div>
 
@@ -1532,6 +1583,31 @@ export default {
       else if (nature === 'objectif') etat.objectifs = [...etat.objectifs, ligne];
       else etat.evenements = [...etat.evenements, ligne];
     }
+
+    // TOUTE LA TUILE DE LA JOURNÉE MÈNE AUX TÂCHES (29 août 2026, demande de
+    // Noé), « en gardant tous les autres boutons de la tuile » — et c'est cette
+    // seconde moitié qui décide de la forme.
+    //
+    // PAS UN LIEN QUI ENVELOPPE, comme celui de la tuile d'un projet : cette
+    // tuile-ci porte une vingtaine de contrôles, et un `<button>` dans un `<a>`
+    // n'est ni valide ni cliquable. C'est donc un écouteur qui se retire dès
+    // que le clic a touché quelque chose qui fait déjà quelque chose.
+    //
+    // LA LISTE DES GESTES EST EXPLICITE, et non « tout ce qui a l'air
+    // cliquable » : les rôles natifs, plus `[data-avancer-pub]` — le rond d'une
+    // publication est un `<span>`, seul geste de la tuile qui n'est pas un
+    // bouton. Un sélecteur deviné sur le curseur aurait marché ce soir et
+    // silencieusement avalé le prochain geste ajouté ici.
+    const GESTES = 'a, button, details, summary, input, select, textarea, label,' +
+      ' [role="button"], [data-avancer-pub]';
+
+    section.addEventListener('click', (evenement) => {
+      const tuile = evenement.target.closest('.tuile-jour');
+      if (!tuile || evenement.target.closest(GESTES)) return;
+      // Sélectionner un titre pour le copier n'est pas cliquer dessus.
+      if (window.getSelection()?.toString()) return;
+      location.hash = '#taches';
+    });
 
     section.addEventListener('click', async (evenement) => {
       // Prendre une proposition, ou l'écarter. Deux gestes, deux sens : l'un

@@ -1545,6 +1545,19 @@ a { color: var(--accent); }
   color: var(--texte);
 }
 
+/* LE TITRE DE LA JOURNÉE EST UN LIEN VERS LES TÂCHES, et il n'en a pas l'air
+   (29 août 2026). Toute la tuile y mène au clic ; ce lien-ci existe pour le
+   CLAVIER — un écouteur ne se tabule pas. Il ne doit donc rien ajouter à
+   l'œil : c'est le même geste par un autre chemin, pas une seconde invitation.
+   Le focus, lui, reste visible — c'est la règle du hub, et c'est justement à
+   ce moment-là que le raccourci doit se montrer. */
+#espace-dashboard .titre-section a {
+  color: inherit;
+  text-decoration: none;
+}
+
+#espace-dashboard .titre-section a:hover { color: var(--accent); }
+
 /* LA JOURNÉE EST UNE TUILE. Le bord dit ce qui est dedans — c'est lui qui
    sépare la journée de la semaine, là où deux titres identiques n'y
    parvenaient pas. Les quatre groupes y vivent : à faire, à publier, les
@@ -1558,6 +1571,12 @@ a { color: var(--accent); }
   background: var(--fond-doux);
   border: 1px solid var(--bordure-douce);
   border-radius: var(--rayon-carte);
+  /* Toute la tuile mène aux tâches (29 août 2026) : le curseur est le seul
+     signal, et il suffit — les contrôles qu'elle porte gardent le leur, qui
+     est le même. Rien d'autre ne bouge : une tuile qui se soulève au survol
+     ferait promettre une carte-bouton, or elle ne l'est pas, elle CONTIENT
+     vingt gestes qui priment sur celui-là. */
+  cursor: pointer;
 }
 @media (min-width: 60rem) {
   .tuile-jour { padding: var(--espace-24); }
@@ -1566,6 +1585,28 @@ a { color: var(--accent); }
 /* Le dernier bloc de la tuile ne pousse pas contre le bord : `.bloc` porte une
    marge basse qui n'a plus de voisin à écarter. */
 .tuile-jour > .bloc:last-child { margin-bottom: 0; }
+
+/* UN CRAN SOUS LE RESTE DU HUB, ET SEULEMENT ICI (29 août 2026, autorisé par
+   Noé dans la demande d'équilibre : « tu peux réduire la taille des textes de
+   la tuile Aujourd'hui si besoin »). C'est ce qui a payé l'élargissement de la
+   colonne des projets — voir `.accueil-grille`.
+
+   La portée est la TUILE, pas les classes : `.tache-titre` et `.jour-titre`
+   servent aussi l'espace Tâches, le calendrier et les deux sites, où rien ne
+   demandait à rétrécir. Une demande de forme vise l'écran qu'on regarde.
+
+   ET LA TUILE Y GAGNE EN PLUS D'ÉQUILIBRE : « Ce que je te propose » écrivait
+   déjà ses titres en 0,9375 et ses raisons en 0,75. Les quatre groupes de la
+   journée se lisent donc au même corps, là où le quatrième détonnait. */
+.tuile-jour .tache-titre,
+.tuile-jour .jour-titre {
+  font-size: 0.9375rem;
+}
+
+.tuile-jour .tache-service,
+.tuile-jour .jour-service {
+  font-size: 0.75rem;
+}
 
 /* « Ce que je te propose » est un GROUPE de la journée, pas une section : son
    titre reprend donc la forme des trois autres, et son écart avec le groupe
@@ -1643,10 +1684,26 @@ a { color: var(--accent); }
  
    À 220 px, une tuile de projet fait 188 px de contenu — un nom sur deux
    lignes, une jauge, un compte, une échéance. Elle se lit. Et la journée
-   récupère deux colonnes de 290, où le titre tient. */
+   récupère deux colonnes de 290, où le titre tient.
+
+   ÉQUILIBRE REPRIS LE 29 AOÛT AU SOIR (demande de Noé : « ces derniers prennent
+   trop peu de place par rapport à la tuile Aujourd'hui »). Mesuré avant : à
+   1100 px la colonne pesait 220 px contre 784, soit 21 % de la grille, et la
+   tuile de projet n'avait que 186 px de contenu.
+
+   LA LARGEUR DEVIENT FLUIDE plutôt que fixe, et c'est ce qui permet d'élargir
+   sans casser : les deux paliers d'avant sautaient de 220 à 300 d'un coup, donc
+   le chiffre bas devait tenir à 960 px, la pire largeur. Un `clamp` laisse la
+   colonne grandir avec l'écran — 250 px à 960, 286 à 1100, 420 au-delà — et le
+   plancher ne contraint plus le plafond.
+
+   CE QUI A PAYÉ L'ÉLARGISSEMENT : les textes de la journée, d'un cran (Noé l'a
+   autorisé dans la même phrase). Voir `.tuile-jour` plus haut. Sans eux, la
+   journée serait retombée sous les 290 px par colonne où le titre se coupe —
+   la contrainte de la note ci-dessus n'a pas disparu, elle a été payée. */
 @media (min-width: 60rem) {
   .accueil-grille {
-    grid-template-columns: minmax(0, 1fr) 220px;
+    grid-template-columns: minmax(0, 1fr) clamp(240px, 26vw, 320px);
     align-items: start;
     column-gap: var(--espace-32);
   }
@@ -1660,7 +1717,7 @@ a { color: var(--accent); }
 /* Dès qu'il y a la place, la colonne des projets reprend son aisance. */
 @media (min-width: 75rem) {
   .accueil-grille {
-    grid-template-columns: minmax(0, 1fr) 300px;
+    grid-template-columns: minmax(0, 1fr) clamp(260px, 30vw, 460px);
     column-gap: var(--espace-48);
   }
 }
@@ -1726,11 +1783,22 @@ a { color: var(--accent); }
      deux fois) : l'espace SITUE la tuile, le nom du projet est ce qu'on vient y
      lire. Il est descendu trois fois de suite ; à ce corps, c'est la pastille
      de couleur juste à gauche qui porte l'espace, et le mot ne fait plus que le
-     confirmer. L'ÉCARTEMENT MONTE quand la taille descend : sous 9 px, ce sont
-     les lettres collées qui se perdent en premier, pas leur hauteur. */
-  font-size: 0.5rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+     confirmer.
+
+     LA CASSE EST CELLE DE LA PAGE PROJETS (demande de Noé, 29 août 2026) :
+     « FC Hermitage », et non « FC HERMITAGE ». Un même mot ne peut pas s'écrire
+     de deux façons d'un écran à l'autre — c'est le nom d'un espace, pas un
+     libellé de rubrique.
+
+     DEUX RÉGLAGES SUIVENT LA CASSE, et ils ne sont pas décoratifs. L'écartement
+     de 0,14 em était un réglage de CAPITALES ; en bas-de-casse il délite le
+     mot, d'où celui de la page projets. Et le corps remonte de 8 à 10 px :
+     à 8 px les minuscules n'ont plus que 5 px de hauteur d'x, là où des
+     capitales en gardaient 8. Dix pixels bas-de-casse pèsent à l'œil ce que
+     huit pixels capitales pesaient — la hiérarchie voulue tient, c'est la
+     lisibilité qui est rattrapée. */
+  font-size: 0.625rem;
+  letter-spacing: 0.02em;
   color: var(--texte-discret);
 }
 /* La dernière trace, en fait brute : « 12 j ». Pas « rien depuis 12 jours » —
@@ -1764,6 +1832,32 @@ a { color: var(--accent); }
   height: 100%;
   background: var(--couleur-espace-pleine, var(--accent));
 }
+/* LES MARCHES DU RAIL : le pendant de `.cap-marches` dans `#objectifs`. Un
+   projet mesuré par ses ÉTAPES se lit en segments — ça se franchit, ça se
+   compte du regard — tandis que la charge se remplit en barre continue. Le
+   dessin dit lequel des deux on regarde, et il le dit pareil sur les deux
+   écrans (29 août 2026). */
+.projet-marches {
+  display: flex;
+  gap: 3px;
+  margin-top: var(--espace-4);
+}
+.projet-marches i {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--texte) 10%, transparent);
+}
+.projet-marches i.atteint { background: var(--couleur-espace-pleine, var(--accent)); }
+
+/* Un projet qui n'a rien déclaré à mesurer : le pointillé le dit, exactement
+   comme `.cap-marches-vide`. Une barre à zéro aurait dit « il n'avance pas »,
+   ce qui est faux — on n'en sait rien. */
+.projet-jauge-vide {
+  background: repeating-linear-gradient(90deg,
+    color-mix(in srgb, var(--texte) 10%, transparent) 0 6px, transparent 6px 12px);
+}
+
 .projet-compte { font-size: 0.75rem; color: var(--texte-discret); }
 .projet-compte .chiffre { color: var(--texte); }
 
@@ -6135,6 +6229,17 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
 .cap-tuile-date { flex: none; }
 
+/* LE MOUVEMENT, sous le pied et en encre plus discrète encore : « est-ce que ça
+   bouge » est une autre question que « où j'en suis », et elle ne doit pas
+   peser autant. Pas de couleur, pas de seuil — « Rien depuis 12 j » est un
+   constat, jamais un reproche. */
+.cap-tuile-trace {
+  display: block;
+  margin-top: var(--espace-4);
+  font-size: 0.6875rem;
+  color: var(--texte-discret);
+}
+
 /* LA TÊTE D'UNE TUILE DE PROJET : l'espace, puis l'état, sur la même ligne.
    Elle vit HORS du bouton d'ouverture — un contrôle dans un bouton n'est ni
    valide ni cliquable —, et le bouton garde tout le reste : titre, avancée,
@@ -6414,6 +6519,13 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   color: var(--texte-discret);
   font-size: 0.8125rem;
 }
+
+/* DÉPLIÉ, L'ÉTAT RESTE À CÔTÉ DU NOM DE L'ESPACE (29 août 2026, demande de
+   Noé) : ce sont les deux signes qui classent un projet, et ouvrir sa tuile ne
+   doit pas les séparer. La ligne est la même que sur la tuile fermée ; seul son
+   rembourrage tombe — le détail pose déjà ses propres marges, et le menu à
+   trois points y vit ailleurs. */
+.cap-detail-tete .cap-tuile-tete { padding: 0; }
 
 .cap-detail-tete .cap-menu { top: 2.75rem; right: 0; }
 
@@ -6904,9 +7016,41 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   font-size: 0.8125rem;
 }
 
+/* LE COMPTE DES FAITES EST UNE PORTE (29 août 2026, demande de Noé) : au repos
+   il pèse exactement ce que pesait le paragraphe qu'il remplace — c'est du
+   service, pas un appel —, et il garde ses 44 px de cible au doigt par son
+   rembourrage négatif, sans pousser la ligne qui le suit. */
 .cap-taches-faites {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
   margin: var(--espace-8) 0 0;
+  padding: var(--espace-8) var(--espace-12) var(--espace-8) 0;
+  margin-inline-start: calc(var(--espace-8) * -1);
+  padding-inline-start: var(--espace-8);
+  background: none;
+  border: 0;
   color: var(--texte-discret);
+  font: inherit;
   font-size: 0.75rem;
+  text-align: start;
+  cursor: pointer;
 }
+
+.cap-taches-faites:hover { color: var(--texte); }
+
+.cap-faites-chevron {
+  display: inline-flex;
+  transition: transform 160ms ease;
+}
+.cap-faites-chevron.ouvert { transform: rotate(90deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .cap-faites-chevron { transition: none; }
+}
+
+/* Ce qui est relu est plus pâle que ce qui reste à faire : les deux listes se
+   suivent, et rien ne doit faire croire qu'on a encore quelque chose à y faire.
+   `.tache-faite` barre déjà le titre — ici c'est le bloc entier qui recule. */
+.cap-taches-terminees { opacity: 0.72; }
 

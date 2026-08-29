@@ -161,7 +161,7 @@ l'on est **se déplie d'elle-même**.
   - **on n'ouvre pas une autre page** : la tuile pressée prend toute la largeur et se déplie sur place, comme un jour de « Ta semaine » s'ouvre en grand. Elle montre le pourquoi, la cible, la frise des jalons, les projets (qui se déplient à leur tour sur leurs tâches), les tâches rattachées au cap sans projet, et — pour « Rembourser mon matériel » seulement — les prestations et le matériel qui le mesurent.
   - **les séries se replient** : quinze « Visuels de la semaine » font UNE ligne, avec leur rythme, ce qu'il en reste et la prochaine date. Sans cette coupe, un projet récurrent redressait le mur que l'espace Tâches a appris à ne pas dresser.
   - **ajouter et modifier ouvrent la tuile volante**, avec tous les détails (`construireFormulaire`) ; la galerie ne garde que les gestes d'un doigt — cocher un jalon, terminer une tâche, ouvrir un cap. Ce qui est irréversible (supprimer, marquer atteint) demande confirmation **sur place**, dans le menu à trois points : pas de fenêtre pour ça, mais un objectif qui emporte ses jalons mérite le second appui.
-  - **une SECONDE GALERIE sous la première : les projets** (28 août 2026, demande de Noé). Même forme, un étage plus bas — un projet se compare à un projet comme un cap se compare à un cap, et on y entre du même geste. Ce qu'elle montre et que le dépliage d'un cap ne montrait pas : **les projets qui ne servent aucun cap** (« Album du club », « Suivi de l'alternance ») — ils existaient et étaient invisibles, donc oubliés. Un projet posé ici n'a pas de cap et c'est légitime : de l'intendance, ça existe. **L'avancée n'y a pas la même forme** : un cap franchit des marches (un segment par jalon, on les compte du regard) ; un projet avance tâche après tâche, d'où une barre unique remplie à la proportion faite — quinze segments seraient du bruit.
+  - **une SECONDE GALERIE sous la première : les projets** (28 août 2026, demande de Noé). Même forme, un étage plus bas — un projet se compare à un projet comme un cap se compare à un cap, et on y entre du même geste. Ce qu'elle montre et que le dépliage d'un cap ne montrait pas : **les projets qui ne servent aucun cap** (« Album du club », « Suivi de l'alternance ») — ils existaient et étaient invisibles, donc oubliés. Un projet posé ici n'a pas de cap et c'est légitime : de l'intendance, ça existe. **L'AVANCÉE SE LIT DANS LA FORME DE SA JAUGE** — des marches s'il a des étapes, une barre s'il n'a qu'une charge, un pointillé s'il n'a rien déclaré. Voir « L'avancée d'un projet » plus bas : ce n'est plus une proportion de tâches faites.
   - **les périodes ferment la page**, en deux lignes et en encre discrète, avec leur tuile d'ajout à côté d'elles. Voir « les périodes » plus bas.
   - **Elle n'a plus d'onglet** : elle est au second rang, dans le menu, sous « Général » et ses trois vues. Elle en a eu un (une boussole, du 27 au 28 août) — ce qui avait déjà renversé la décision du 26. La règle des deux rangs tranche : ouvrir le cap, c'est déjà avoir décidé quelque chose. La tuile « Le cap » du tableau de bord y mène toujours.
 - `#calendrier` — tout ce qui porte une date, tous espaces confondus, filtres par nature (tâches, événements, publications, objectifs)
@@ -303,11 +303,11 @@ Règle métier : maximum 3 tâches en statut 'actif' par espace. L'UI doit empê
 - `espace` text NOT NULL
 - `titre` text NOT NULL
 - `date` date default current_date
-- `source` text default 'manuel' CHECK (source IN ('tache', 'jalon', 'objectif', 'manuel'))
+- `source` text default 'manuel' CHECK (source IN ('tache', 'jalon', 'objectif', 'etape', 'moment', 'manuel'))
 - `source_id` uuid (nullable — id de la tâche/du jalon/de l'objectif d'origine)
 - `created_at` timestamptz default now()
 
-Alimentation automatique : passer une tâche en 'fait', un jalon en atteint ou un objectif en 'atteint' insère une victoire correspondante. L'utilisateur peut aussi en ajouter manuellement (ex. "Première accréditation obtenue").
+Alimentation automatique : passer une tâche en 'fait', un jalon en atteint, **une étape de projet en franchie** (29 août 2026) ou un objectif en 'atteint' insère une victoire correspondante. L'utilisateur peut aussi en ajouter manuellement (ex. "Première accréditation obtenue").
 
 ### humeur
 - `id` uuid PK
@@ -409,6 +409,113 @@ Un projet peut viser tout, rien, un jalon, un objectif ou plusieurs (décision d
 **La ligne d'une tâche écrit le projet qu'elle sert**, à la suite de son espace, en encre discrète : sans ça, on ne voit pas d'un coup d'œil ce qui est rattaché de ce qui ne l'est pas. Son absence est une information aussi.
 
 Les projets se lisent et se créent dans `#objectifs` — c'est la page où l'on décide, et un projet est une décision. Chacun dit **ce qu'il porte** (« 8 tâches rattachées ») : sans ce compte, un projet reste une intention, on ne voit pas s'il a commencé.
+
+### projets_etapes
+
+**LE DÉCOUPAGE QU'ON DÉCLARE** (29 août 2026, décision de Noé). Mêmes colonnes
+que `jalons`, volontairement : c'est le même motif un étage plus bas — un jalon
+découpe un objectif, une étape découpe un projet.
+
+- `id` uuid PK · `projet_id` uuid NOT NULL REFERENCES projets(id) ON DELETE CASCADE
+- `titre` text NOT NULL · `ordre` int
+- `atteint` boolean NOT NULL default false · `date_atteint` date · `created_at` timestamptz
+
+**Pas d'échéance, à la différence d'un jalon** : une étape découpe le TRAVAIL,
+pas le calendrier. Ce sont les tâches qui portent les dates.
+
+**Franchir une étape écrit une victoire** (`source = 'etape'`), et revenir dessus
+la retire — comme un jalon. La laisser muette alors que le jalon parle aurait
+fait une exception à expliquer.
+
+### L'AVANCÉE D'UN PROJET : une cascade, jamais les tâches
+
+**LA RÈGLE** (29 août 2026, décision de Noé) : *« l'avancée des projets ne doit
+pas être complètement liée aux tâches, ce n'est pas ça qui dit que c'est fini ou
+non car des tâches s'ajoutent petit à petit. »*
+
+**Ce que ses données disaient ce jour-là, et qui a réglé la question** — le
+défaut mentait dans les DEUX sens, pas seulement dans un :
+
+| Projet | Ce qui s'affichait | Ce qui était vrai |
+|---|---|---|
+| Deuxième dossier | **100 %** (3 tâches sur 3) | actif, 25 h annoncées — il commençait à peine |
+| Album du club | 7 % (1 sur 14) | il **reculait** à chaque tâche écrite |
+
+Un dénominateur qui grandit à l'usage ne mesure rien — et il punissait le geste
+même que le hub veut encourager : noter ce qu'on a à faire.
+
+**Trois mesures dans un ordre, et le projet est mesuré par la première qu'il a
+DÉCLARÉE** (`avanceeDuProjet`, js/orientation.js — la règle vit là pour rester
+éprouvable hors écran ; les écrans ne font que la dessiner) :
+
+| Rang | Mesure | Dessin | Ce qui la déclenche |
+|---|---|---|---|
+| 1 | **les étapes franchies** | des **marches** | il a des `projets_etapes` |
+| 2 | **les minutes faites / la charge annoncée** | une **barre** | il a une `charge_minutes` |
+| 3 | *rien* | un **pointillé** | il n'a rien déclaré |
+
+Les deux premières ont le même mérite, et c'est tout l'objet de la cascade :
+**leur dénominateur s'écrit UNE FOIS**, à la création. Ajouter dix tâches ne le
+bouge plus.
+
+- **Le dessin dit laquelle des trois on regarde**, sur les deux écrans qui la
+  montrent — la galerie de `#objectifs` et le rail de l'accueil. Des étapes se
+  *franchissent* (on les compte du regard) ; des heures se *remplissent*. Deux
+  écrans qui mesureraient le même projet de deux façons finiraient par se
+  contredire, et c'est l'accueil qu'on croirait.
+- **L'état posé passe devant tout** : un projet déclaré `termine` a sa jauge
+  pleine même s'il reste des étapes ou des heures. C'est la décision de Noé qui
+  dit la vérité, pas le décompte.
+- **Un projet « à l'année » ne se mesure pas**, même s'il porte des étapes : il
+  n'a pas de ligne d'arrivée, et une jauge qui se remplit lui en promettrait une.
+- **LE SILENCE DES DURÉES N'EST PAS UN ZÉRO.** Une charge annoncée dont aucune
+  tâche faite ne porte de durée retombe sur le pointillé et dit « 25 h, aucune
+  durée notée ». Afficher « 0 h sur 25 h » prétendrait que rien n'a été fait ;
+  c'est la même précaution que la première ligne de `#temps`, et pour la même
+  raison. *(Au 29 août : 1 tâche sur 47 portait une durée.)*
+- **Ce qui reste des tâches** : elles RENSEIGNENT la charge par leurs durées, et
+  elles disent le mouvement. Elles ne définissent plus rien.
+
+**LE MOUVEMENT, à côté de l'avancée et jamais à sa place** (même décision).
+L'avancée répond à « où j'en suis », le mouvement à « est-ce que ça bouge » — un
+projet peut être à 2 étapes sur 5 depuis trois semaines. `mouvementDuProjet`
+(js/orientation.js) le calcule sans rien demander de plus : « 3 faites cette
+semaine », « Rien depuis 12 j ».
+
+**La naissance n'est PAS du mouvement** : « Posé il y a 2 j » ne s'affiche que
+dans le DÉTAIL d'un projet, jamais sur sa tuile (correction de Noé le 29 août —
+six de ses dix projets l'affichaient, et une ligne identique partout ne dit plus
+rien). La galerie ne montre que ce qui se compare ; un projet qui n'a rien vu se
+terminer se tait sur sa tuile, son pointillé le dit déjà. **La règle vaut aussi
+pour le rail de l'accueil**, où la trace est un chiffre nu : le « 2 j » d'un
+projet qui n'a rien terminé n'était que son âge, et l'âge d'un projet ne dit
+rien de ce qu'il faut en faire.
+
+**Le nom de l'espace s'écrit pareil des deux côtés** — « FC Hermitage », pas
+« FC HERMITAGE » (demande de Noé, 29 août 2026). C'est le nom d'un espace, pas
+un libellé de rubrique. Deux réglages suivent la casse et ne sont pas
+décoratifs : l'écartement de 0,14 em était un réglage de capitales et délite un
+mot en bas-de-casse, et le corps remonte de 8 à 10 px — à 8 px les minuscules
+n'ont plus que 5 px de hauteur d'x là où des capitales en gardaient 8. La
+hiérarchie voulue tient, c'est la lisibilité qui est rattrapée.
+
+**LES TÂCHES FAITES SE RELISENT** (29 août 2026, demande de Noé). Le détail d'un
+projet n'en donnait que le compte — « 3 faites. » —, ce qui disait qu'il s'était
+passé quelque chose sans jamais dire quoi, dans un hub dont la première règle est
+d'être un miroir de ce qui a été accompli. **Le compte devient une porte** : il
+pèse au repos ce que pesait le paragraphe, et se déplie sur la liste — un projet
+de quinze tâches terminées ne doit pas repousser ce qui reste hors de l'écran.
+- **Le plus récent d'abord**, à l'inverse de ce qui reste : ce qui reste se lit
+  par ce qui arrive, ce qui est fait se relit par ce qu'on vient de finir.
+- **Les séries s'y replient pareil**, avec leur mot à elles — « 12 fois faites »
+  et non « 12 fois à venir », qui se serait lu sous un titre barré.
+- **Les lignes sont les MÊMES** que celles d'en haut : leur cercle décoche, leur
+  menu supprime. Rouvrir une tâche depuis là où on la relit est le geste
+  attendu, et `ligneTache` le portait déjà.
+
+**Déplié, l'état reste à côté du nom de l'espace** (demande de Noé, 29 août) :
+ce sont les deux signes qui classent un projet, et ouvrir sa tuile ne doit pas
+les séparer.
 
 ### series
 
@@ -532,8 +639,21 @@ gestes ne doivent jamais porter le même signe.
    bilan qu'on n'a pas écrit ne s'écrira pas, et le redemander devient un
    reproche. Le rendez-vous du dimanche passe devant : deux bandeaux empilés
    seraient deux interruptions.
-3. **Aujourd'hui, dans une TUILE** — à faire · à publier · rendez-vous · **ce
-   que je te propose**, les quatre groupes ensemble. La tuile existe parce que
+3. **Aujourd'hui, dans une TUILE** — **et toute la tuile mène à `#taches`**
+   (29 août 2026, demande de Noé : « en gardant tous les autres boutons de la
+   tuile »). C'est cette seconde moitié qui décide de la forme : **pas un lien
+   qui enveloppe**, comme celui d'une tuile de projet — celle-ci porte une
+   vingtaine de contrôles, et un `<button>` dans un `<a>` n'est ni valide ni
+   cliquable. C'est un écouteur qui se retire dès que le clic a touché quelque
+   chose qui fait déjà quelque chose, et **la liste de ces gestes est
+   explicite** (les rôles natifs, plus `[data-avancer-pub]` — le rond d'une
+   publication est le seul geste de la tuile qui ne soit pas un bouton) : un
+   sélecteur deviné sur le curseur aurait marché ce soir-là et silencieusement
+   avalé le geste suivant. **Le titre est un lien** vers la même adresse, sans
+   en avoir l'air : un écouteur ne se tabule pas, et le clavier doit atteindre
+   ce que la souris atteint. Une sélection de texte en cours ne navigue pas —
+   copier un titre n'est pas cliquer dessus. Elle porte à faire · à publier ·
+   rendez-vous · **ce que je te propose**, les quatre groupes ensemble. La tuile existe parce que
    « Aujourd'hui » et « À faire » portaient exactement le même habillage et que
    rien ne disait lequel contenait l'autre : **le titre de section** (Clash
    Display, casse normale) se distingue désormais du **libellé de groupe**
@@ -577,6 +697,26 @@ Colonne de droite, `scroll-snap` natif : une tuile se lit à la fois, les
 voisines dépassent d'un **liseré de 12 px** (Noé a fait réduire le fondu deux
 fois). Aucune flèche — écartées au profit du glissement.
 
+**SA COLONNE PÈSE UN TIERS, PAS UN CINQUIÈME** (29 août 2026, demande de Noé :
+« ces derniers prennent trop peu de place par rapport à la tuile Aujourd'hui »).
+Mesuré avant : à 1100 px, 220 px contre 784 — 21 % de la grille, et 186 px de
+contenu dans la tuile. Après : 286 contre 718, et 252 px de contenu.
+
+**La largeur est devenue fluide, et c'est ce qui permet d'élargir sans casser.**
+Les deux paliers d'avant sautaient de 220 à 300 d'un coup, donc le chiffre bas
+devait tenir à 960 px — la pire largeur — et bridait tout le reste. Un `clamp`
+laisse la colonne grandir avec l'écran (250 px à 960, 286 à 1100, 432 à 1440,
+plafond à 460) : le plancher ne contraint plus le plafond.
+
+**Ce qui l'a payé : les textes de la journée, d'un cran** — titres 0,9375 rem,
+service 0,75 (Noé l'a autorisé dans la même phrase). La contrainte des 290 px
+par colonne, sous lesquels un titre de tâche se coupe devant du vide, n'a pas
+disparu : elle a été payée. La portée est **la tuile** (`.tuile-jour`), pas les
+classes — `.tache-titre` sert aussi l'espace Tâches, le calendrier et les deux
+sites, où rien ne demandait à rétrécir. Bénéfice de côté : « Ce que je te
+propose » écrivait déjà à ce corps, et les quatre groupes de la journée se
+lisent enfin pareil.
+
 **TOUS LES PROJETS `actif`, ET EUX SEULS.** Deux règles, chacune avec sa raison :
 
 - **« À l'année » sort**, alors que le hub le range dans « en cours » depuis le
@@ -585,7 +725,11 @@ fois). Aucune flèche — écartées au profit du glissement.
   qui revient tout seul chaque semaine.
 - **Aucun filtre sur les tâches ouvertes.** Un projet vide est exactement celui
   qu'il faut voir : c'est un projet qui n'a pas commencé, et il n'y a que ce
-  rail pour le dire. Il s'affiche avec sa jauge à zéro et « Aucune tâche posée ».
+  rail pour le dire. Il s'affiche avec « Aucune tâche posée ».
+
+**Sa jauge suit LA MÊME CASCADE que la galerie de `#objectifs`** — étapes, puis
+charge, puis pointillé (29 août 2026). Voir « L'avancée d'un projet ». La
+proportion de tâches faites a disparu des deux écrans le même jour.
 
 **L'ordre : dormance, puis ce qui attend le plus.** La *dernière trace* est la
 plus récente entre la dernière tâche terminée et la NAISSANCE du projet — sans
