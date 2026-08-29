@@ -1601,11 +1601,39 @@ export default {
     const GESTES = 'a, button, details, summary, input, select, textarea, label,' +
       ' [role="button"], [data-avancer-pub]';
 
+    // UN CLIC ISSU D'UN GLISSEMENT N'EST PAS UN APPUI (29 août 2026). Depuis que
+    // le balayage entre onglets existe (js/app.js), un doigt qui traverse la
+    // tuile pour changer de page produit AUSSI le `click` que le navigateur
+    // émet à la suite du geste — mesuré : le balayage menait à `#perso`, et le
+    // clic écrasait aussitôt par `#taches`. Deux navigations pour un geste.
+    //
+    // La garde vaut au-delà de ce cas : un scroll vertical amorcé sur la tuile
+    // produit le même clic parasite. On compare donc la distance parcourue
+    // entre l'appui et le relâchement, comme le fait n'importe quel bouton
+    // qu'on peut faire glisser.
+    let appui = null;
+    section.addEventListener(
+      'pointerdown',
+      (evenement) => { appui = { x: evenement.clientX, y: evenement.clientY }; },
+      { passive: true },
+    );
+
+    const TOLERANCE_APPUI = 10; // px — un doigt tremble, il ne balaie pas
+
     section.addEventListener('click', (evenement) => {
       const tuile = evenement.target.closest('.tuile-jour');
       if (!tuile || evenement.target.closest(GESTES)) return;
       // Sélectionner un titre pour le copier n'est pas cliquer dessus.
       if (window.getSelection()?.toString()) return;
+      // `detail === 0` : un clic venu du clavier n'a pas de position, et il n'a
+      // pas glissé non plus.
+      if (
+        evenement.detail > 0 &&
+        appui &&
+        Math.hypot(evenement.clientX - appui.x, evenement.clientY - appui.y) > TOLERANCE_APPUI
+      ) {
+        return;
+      }
       location.hash = '#taches';
     });
 

@@ -970,6 +970,38 @@ s'atteindre comme celles des autres espaces.
   mots n'en a. En em, pour que la correction grandisse avec l'onglet actif. Le
   palier large doit écrire `padding-inline` et non le raccourci, sinon le mot
   remonte **sur ordinateur seulement**.
+- **ON PASSE D'UN ONGLET À L'AUTRE EN BALAYANT** (29 août 2026, demande de Noé :
+  « essentiellement sur téléphone… **en plus** de la possibilité d'appuyer sur
+  leur boutons »). Le geste s'ajoute, il ne remplace rien : un geste invisible
+  ne s'apprend pas tout seul, et les onglets restent la façon dont on change de
+  page. Vers la gauche on avance, comme on tourne une page ; **aux deux bouts il
+  ne se passe rien** — boucler du calendrier à l'accueil ferait traverser deux
+  écrans sans qu'on l'ait demandé.
+  - **Le tactile seulement** (`pointerType === 'touch'`) : sur ordinateur, une
+    souris qu'on traîne sur 60 px en sélectionnant du texte est un geste
+    ordinaire, et le lire comme un changement de page ferait perdre la sélection
+    ET la page.
+  - **Les trois onglets, et eux seuls.** Depuis `#objectifs` ou `#taches`, un
+    balayage ne fait rien : ces pages sont au second rang, on y entre par une
+    décision, et en sortir par un geste involontaire annulerait cette décision.
+    Les deux sites n'y sont pas non plus, et cela découle de la même liste.
+  - **Ce qui défile déjà horizontalement garde le geste** — le rail des projets,
+    les grilles du calendrier, les bandes des deux sites. La détection regarde
+    ce qu'un ancêtre FAIT (`scrollWidth`, `overflow-x`) et non comment il
+    s'appelle : le hub en compte sept, et une liste de sélecteurs vieillirait au
+    premier ajout. *(La bande d'onglets, elle, ne défile plus depuis qu'ils sont
+    trois — balayer dessus change donc d'onglet, ce qui est cohérent.)*
+  - **Une couche par-dessus garde le geste** : le menu ouvert, une tuile de
+    capture. Le signal est `body.fond-fige`, que le hub pose déjà dans ces
+    deux cas, plus `.ajout-volant[open]` pour les tuiles de formulaire, qui ne
+    figent pas le fond. Sans cette garde, un balayage sur le menu ouvert faisait
+    basculer l'écran DERRIÈRE lui.
+  - **Un clic issu d'un GLISSEMENT n'est pas un appui**, et c'est la tuile
+    « Aujourd'hui » qui l'a exigé : un doigt qui la traverse produit aussi le
+    `click` que le navigateur émet après le geste — mesuré, le balayage menait à
+    `#perso` et le clic écrasait aussitôt par `#taches`. Deux navigations pour
+    un geste. La garde vit dans js/dashboard.js et vaut au-delà de ce cas : un
+    scroll vertical amorcé sur la tuile produit le même clic parasite.
 - **L'onglet du calendrier est carré par une largeur FIXE**, jamais par
   `aspect-ratio` : le ratio déduisait sa hauteur de sa largeur, donc du
   rembourrage des autres onglets — passé celui-ci à 24 px, l'icône a pris 66 px

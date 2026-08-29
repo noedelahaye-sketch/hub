@@ -317,6 +317,99 @@ document.addEventListener(
   true,
 );
 
+// --- LE BALAYAGE ENTRE ONGLETS ------------------------------------------------
+//
+// Demande de Noé (29 août 2026) : « pouvoir slider, essentiellement sur
+// téléphone, pour passer d'un onglet à un autre, EN PLUS de la possibilité
+// d'appuyer sur leur boutons ». Le geste s'ajoute, il ne remplace rien — les
+// onglets restent la façon dont on change de page, et c'est important : un
+// geste invisible ne s'apprend pas tout seul.
+//
+// Il ne vaut QUE POUR LES TROIS ONGLETS. Depuis `#objectifs` ou `#taches`, un
+// balayage ne fait rien : ces pages sont au second rang, on y est entré par une
+// décision, et en sortir par un geste involontaire annulerait cette décision.
+// Les sites Yuno et FCH n'y sont pas non plus, et cela découle de la même
+// liste : leur espace n'y figure pas.
+const ONGLETS_BALAYABLES = ['dashboard', 'perso', 'calendrier'];
+
+// LE TACTILE SEULEMENT. Une souris qu'on traîne sur 60 px en sélectionnant du
+// texte est un geste ordinaire sur ordinateur ; le lire comme un changement de
+// page ferait perdre la sélection ET la page.
+const BALAYAGE = {
+  distance: 60, // px : sous ce seuil, c'est un appui qui a glissé
+  pente: 2, // le geste doit être 2× plus horizontal que vertical
+  duree: 600, // ms : un doigt posé puis déplacé n'est pas un balayage
+};
+
+// UN ANCÊTRE QUI DÉFILE HORIZONTALEMENT GARDE LE GESTE. Le hub en a sept — le
+// rail des projets, la bande d'onglets, les grilles du calendrier, les bandes
+// des deux sites —, et une liste de sélecteurs vieillirait au premier ajout.
+// On regarde donc ce que l'élément FAIT, pas comment il s'appelle.
+function defileHorizontalement(depuis) {
+  for (let noeud = depuis; noeud && noeud !== document.body; noeud = noeud.parentElement) {
+    if (noeud.scrollWidth <= noeud.clientWidth + 1) continue;
+    const mode = getComputedStyle(noeud).overflowX;
+    if (mode === 'auto' || mode === 'scroll') return true;
+  }
+  return false;
+}
+
+let balayage = null;
+
+document.addEventListener(
+  'pointerdown',
+  (evenement) => {
+    balayage =
+      evenement.pointerType === 'touch' && !defileHorizontalement(evenement.target)
+        ? { x: evenement.clientX, y: evenement.clientY, debut: performance.now() }
+        : null;
+  },
+  { passive: true },
+);
+
+// Un scroll vertical fait annuler le pointeur par le navigateur : `pointerup`
+// n'arrive alors jamais, et il n'y a rien à écarter nous-mêmes.
+document.addEventListener('pointercancel', () => { balayage = null; }, { passive: true });
+
+document.addEventListener(
+  'pointerup',
+  (evenement) => {
+    const depart = balayage;
+    balayage = null;
+    if (!depart) return;
+
+    const dx = evenement.clientX - depart.x;
+    const dy = evenement.clientY - depart.y;
+    if (Math.abs(dx) < BALAYAGE.distance) return;
+    if (Math.abs(dx) < Math.abs(dy) * BALAYAGE.pente) return;
+    if (performance.now() - depart.debut > BALAYAGE.duree) return;
+
+    // UNE COUCHE PAR-DESSUS GARDE LE GESTE : il appartient à ce qu'elle
+    // contient, pas à la page qu'elle recouvre. Sans cette garde, un balayage
+    // sur le menu ouvert faisait basculer l'écran DERRIÈRE lui — vérifié, et
+    // c'est exactement le genre de défaut qu'on ne voit qu'au doigt.
+    //
+    // Deux signaux, parce qu'il en faut deux : `fond-fige` est posé par le hub
+    // dès que le menu ou une tuile de capture recouvre l'écran, et il couvre
+    // donc ces deux cas-là tout seul, aujourd'hui comme demain. Les tuiles
+    // volantes des formulaires, elles, ne figent pas le fond — d'où la seconde.
+    if (document.body.classList.contains('fond-fige')) return;
+    if (document.querySelector('.ajout-volant[open]')) return;
+
+    const rang = ONGLETS_BALAYABLES.indexOf(routeCourante?.espace);
+    if (rang === -1) return;
+
+    // Vers la gauche, on avance — le geste de tourner une page. Aux deux bouts,
+    // il ne se passe rien : boucler du calendrier à l'accueil ferait passer
+    // deux écrans d'un coup sans qu'on l'ait demandé.
+    const vers = rang + (dx < 0 ? 1 : -1);
+    if (vers < 0 || vers >= ONGLETS_BALAYABLES.length) return;
+
+    location.hash = `#${ONGLETS_BALAYABLES[vers]}`;
+  },
+  { passive: true },
+);
+
 function afficherEspace() {
   const route = analyserAdresse(location.hash);
   const nom = route.espace;
