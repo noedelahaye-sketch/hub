@@ -272,10 +272,24 @@ const etat = {
 // SUR PLACE — pas de fenêtre pour ça : deux appuis suffisent, et un objectif
 // qui emporte ses jalons mérite le second.
 
-function menuDiscret(forme, id, { atteindre = false, sansModifier = false } = {}) {
+function menuDiscret(forme, id, { atteindre = false, sansModifier = false, deplacer = null } = {}) {
   const cle = `${forme}:${id}`;
   const confirmation = etat.confirme === cle;
   const attendrait = etat.confirme === `atteindre:${id}`;
+
+  // MONTER ET DESCENDRE, pour ce qui vit dans un ordre (29 août 2026, demande
+  // de Noé sur les étapes d'un projet). Deux entrées et non un glisser-déposer :
+  // le geste se fait au doigt comme à la souris, il s'atteint au clavier sans
+  // rien réinventer, et réordonner trois étapes est un geste rare — on le fait
+  // au moment où on pose le découpage, pas tous les jours.
+  //
+  // Les extrémités n'affichent pas l'entrée qui ne mène nulle part : une
+  // commande grisée est un bouton qui ment.
+  const rangs = deplacer
+    ? `${
+        deplacer.haut ? `<button type="button" data-monter="${cle}">Monter</button>` : ''
+      }${deplacer.bas ? `<button type="button" data-descendre="${cle}">Descendre</button>` : ''}`
+    : '';
 
   const choix = confirmation
     ? `<button type="button" class="cap-menu-danger" data-confirmer="${cle}">Supprimer vraiment</button>
@@ -284,6 +298,7 @@ function menuDiscret(forme, id, { atteindre = false, sansModifier = false } = {}
       ? `<button type="button" data-confirmer="atteindre:${id}">C'est atteint</button>
          <button type="button" data-annuler-confirmation>Pas encore</button>`
       : `${sansModifier ? '' : `<button type="button" data-modifier="${cle}">Modifier</button>`}
+         ${rangs}
          ${
            atteindre
              ? `<button type="button" data-atteindre="${id}">Marquer atteint</button>`
@@ -443,7 +458,7 @@ function frise(objectif) {
 
   const lignes = jalons
     .map(
-      (jalon) => `
+      (jalon, rang) => `
       <li class="cap-jalon${jalon.atteint ? ' atteint' : ''}${
         jalon === prochain ? ' prochain' : ''
       }">
@@ -460,7 +475,9 @@ function frise(objectif) {
               : ''
           }
         </span>
-        ${menuDiscret('jalon', jalon.id)}
+        ${menuDiscret('jalon', jalon.id, {
+          deplacer: { haut: rang > 0, bas: rang < jalons.length - 1 },
+        })}
       </li>`,
     )
     .join('');
@@ -832,7 +849,7 @@ function friseEtapes(projet) {
 
   const lignes = etapes
     .map(
-      (etape) => `
+      (etape, rang) => `
       <li class="cap-jalon${etape.atteint ? ' atteint' : ''}${
         etape === prochaine ? ' prochain' : ''
       }">
@@ -844,7 +861,9 @@ function friseEtapes(projet) {
         <span class="cap-jalon-corps">
           <span class="cap-jalon-titre">${echapper(etape.titre)}</span>
         </span>
-        ${menuDiscret('etape', etape.id)}
+        ${menuDiscret('etape', etape.id, {
+          deplacer: { haut: rang > 0, bas: rang < etapes.length - 1 },
+        })}
       </li>`,
     )
     .join('');
@@ -1839,6 +1858,20 @@ export default {
       const etape = dans('etape');
       if (etape) return basculerEtape(etape.dataset.etape);
 
+      // Réordonner les étapes. LE MENU RESTE OUVERT après le déplacement : une
+      // étape qui doit remonter de trois rangs se déplace alors en trois appuis
+      // et non en neuf. Il est attaché à l'identifiant de l'étape, pas à sa
+      // position, donc il suit celle qui bouge.
+      const monter = dans('monter');
+      const descendre = dans('descendre');
+      if (monter || descendre) {
+        const [forme, id] = (monter ?? descendre).dataset[
+          monter ? 'monter' : 'descendre'
+        ].split(':');
+        const pas = monter ? -1 : 1;
+        return forme === 'jalon' ? deplacerJalon(id, pas) : deplacerEtape(id, pas);
+      }
+
       const tache = dans('tache');
       if (tache) return basculerTache(tache.dataset.tache);
 
@@ -2022,6 +2055,52 @@ export default {
         Object.assign(etape, avant);
         signaler("Ça n'a pas pu être enregistré — l'étape est revenue.");
       }
+    }
+
+    // L'ORDRE SE CHANGE — pour les jalons d'un cap comme pour les étapes d'un
+    // projet (29 août 2026, demande de Noé). Un découpage ne se pense pas dans
+    // le bon ordre du premier coup : on pose les marches comme elles viennent,
+    // puis on les range.
+    //
+    // UNE SEULE MÉCANIQUE POUR LES DEUX ÉTAGES. Elles portent la même colonne
+    // `ordre`, le même menu et le même geste ; deux copies de ce code auraient
+    // fini par diverger, et c'est le genre d'écart qu'on ne voit qu'une fois
+    // qu'un des deux écrans s'est mis à mentir.
+    //
+    // L'écran d'abord, l'écriture derrière — et la liste reprend son ordre
+    // d'avant si ça n'a pas pu s'enregistrer, sans quoi l'affichage optimiste
+    // serait un mensonge.
+    async function deplacerDans(liste, id, pas, ecrire, quoi) {
+      const rang = liste.findIndex((ligne) => ligne.id === id);
+      const vers = rang + pas;
+      if (rang === -1 || vers < 0 || vers >= liste.length) return;
+
+      // Sur place, jamais par remplacement : c'est le tableau que tout le monde
+      // regarde, et un retour en arrière écrirait dans un tableau orphelin.
+      // C'est la règle de js/ecriture.js.
+      const avant = [...liste];
+      liste.splice(vers, 0, ...liste.splice(rang, 1));
+      rendre();
+
+      try {
+        await ecrire(liste);
+      } catch (souci) {
+        console.error('Ordre non enregistré', souci);
+        liste.splice(0, liste.length, ...avant);
+        signaler(`Ça n'a pas pu être enregistré — l'ordre ${quoi} est revenu.`);
+      }
+    }
+
+    function deplacerEtape(id, pas) {
+      const projet = etat.projets.find((p) => (p.etapes ?? []).some((e) => e.id === id));
+      if (!projet) return;
+      return deplacerDans(projet.etapes, id, pas, api.reordonnerEtapes, 'des étapes');
+    }
+
+    function deplacerJalon(id, pas) {
+      const { objectif } = trouver(`jalon:${id}`);
+      if (!objectif) return;
+      return deplacerDans(objectif.jalons, id, pas, api.reordonnerJalons, 'des jalons');
     }
 
     // Cocher est une intention, pas un fait acquis : la fenêtre demande combien

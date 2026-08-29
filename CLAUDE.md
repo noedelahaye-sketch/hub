@@ -476,6 +476,29 @@ découpe un objectif, une étape découpe un projet.
 **Pas d'échéance, à la différence d'un jalon** : une étape découpe le TRAVAIL,
 pas le calendrier. Ce sont les tâches qui portent les dates.
 
+**L'ORDRE SE CHANGE — ÉTAPES ET JALONS** (29 août 2026, demande de Noé) : un
+découpage ne se pense pas dans le bon ordre du premier coup — on pose les
+marches comme elles viennent, puis on les range. « Monter » et « Descendre »
+vivent dans le menu discret de la ligne, et non dans un glisser-déposer : le geste se fait au doigt comme à la
+souris, s'atteint au clavier sans rien réinventer, et réordonner trois étapes
+est un geste rare, qu'on fait au moment où l'on pose le découpage.
+- **Le menu RESTE OUVERT** après un déplacement : une étape qui doit remonter de
+  trois rangs se déplace en trois appuis et non en neuf. Il est attaché à
+  l'identifiant de l'étape et non à sa position, donc il suit celle qui bouge.
+- **Les extrémités n'affichent pas l'entrée qui ne mène nulle part** — une
+  commande grisée est un bouton qui ment.
+- **`reordonnerEtapes` (js/api.js) RENUMÉROTE la liste entière** au lieu
+  d'échanger deux valeurs. `ordre` naît de la longueur de la liste au moment où
+  l'étape est posée : une étape supprimée au milieu laisse un trou, et deux
+  étapes peuvent finir avec le même numéro — un échange de deux valeurs jumelles
+  ne changerait alors rien du tout. Seules les lignes qui bougent vraiment sont
+  écrites : deux requêtes dans le cas ordinaire, pas dix.
+- **LES JALONS D'UN CAP ONT LE MÊME GESTE**, et il passe par la MÊME mécanique
+  (`deplacerDans`, js/objectifs.js) : les deux étages portent la même colonne
+  `ordre`, le même menu et la même écriture optimiste. Deux copies de ce code
+  auraient fini par diverger, et c'est le genre d'écart qu'on ne voit qu'une
+  fois qu'un des deux écrans s'est mis à mentir.
+
 **Franchir une étape écrit une victoire** (`source = 'etape'`), et revenir dessus
 la retire — comme un jalon. La laisser muette alors que le jalon parle aurait
 fait une exception à expliquer.

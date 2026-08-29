@@ -582,6 +582,35 @@ export async function supprimerEtape(id) {
   if (error) throw error;
 }
 
+// L'ORDRE DES ÉTAPES SE CHANGE (29 août 2026, demande de Noé). Un découpage ne
+// se pense pas dans le bon ordre du premier coup : on pose les étapes comme
+// elles viennent, puis on les range.
+//
+// On RENUMÉROTE la liste entière plutôt que d'échanger deux valeurs : `ordre`
+// naît de la longueur de la liste au moment où l'étape est posée, donc une
+// étape supprimée au milieu laisse un trou, et deux étapes peuvent finir avec
+// le même numéro. Un échange de deux valeurs jumelles ne change alors rien du
+// tout, et le défaut serait invisible jusqu'au jour où il se voit.
+//
+// Seules les lignes qui bougent vraiment sont écrites : dans le cas ordinaire
+// — une étape qui monte d'un rang — cela fait deux requêtes, pas dix.
+export async function reordonnerEtapes(etapes) {
+  const modifs = etapes
+    .map((etape, rang) => ({ etape, ordre: rang + 1 }))
+    .filter(({ etape, ordre }) => etape.ordre !== ordre);
+
+  await Promise.all(
+    modifs.map(async ({ etape, ordre }) =>
+      verifier(
+        await client.from('projets_etapes').update({ ordre }).eq('id', etape.id).select().single(),
+      ),
+    ),
+  );
+
+  for (const { etape, ordre } of modifs) etape.ordre = ordre;
+  return modifs.length;
+}
+
 // Franchir une étape écrit sa victoire, comme un jalon atteint et une tâche
 // terminée. Une étape est un vrai morceau de travail fini — la laisser muette
 // alors que le jalon parle aurait fait une exception à expliquer.
@@ -2006,6 +2035,25 @@ export async function modifierTache(id, champs) {
 
 export async function modifierJalon(id, champs) {
   return verifier(await client.from('jalons').update(champs).eq('id', id).select().single());
+}
+
+// L'ordre des jalons se change comme celui des étapes (29 août 2026) — même
+// geste, même précaution : on RENUMÉROTE plutôt que d'échanger deux valeurs,
+// parce que rien ne garantit que les numéros soient uniques ni sans trou.
+// Voir `reordonnerEtapes`, dont ceci est le jumeau un étage plus haut.
+export async function reordonnerJalons(jalons) {
+  const modifs = jalons
+    .map((jalon, rang) => ({ jalon, ordre: rang + 1 }))
+    .filter(({ jalon, ordre }) => jalon.ordre !== ordre);
+
+  await Promise.all(
+    modifs.map(async ({ jalon, ordre }) =>
+      verifier(await client.from('jalons').update({ ordre }).eq('id', jalon.id).select().single()),
+    ),
+  );
+
+  for (const { jalon, ordre } of modifs) jalon.ordre = ordre;
+  return modifs.length;
 }
 
 // Atteindre un objectif crée sa victoire — le troisième et dernier automatisme
