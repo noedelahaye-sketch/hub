@@ -695,7 +695,10 @@ function signeEnHtml(element, signe) {
     aria-hidden="true">${signe}</span>`;
 }
 
-function barre(segment, { montrerEspace = false, proportionnel = false, empile = false } = {}) {
+function barre(
+  segment,
+  { montrerEspace = false, proportionnel = false, empile = false, auDela = false } = {},
+) {
   const { element, deborde } = segment;
   const espace = montrerEspace ? ` data-espace="${echapper(element.espace)}"` : '';
   const heure = heureDe(element);
@@ -709,6 +712,10 @@ function barre(segment, { montrerEspace = false, proportionnel = false, empile =
     element.faite ? 'cal-faite' : '',
     deborde.avant ? 'deborde-avant' : '',
     deborde.apres ? 'deborde-apres' : '',
+    // Au-delà du plafond d'un jour : posée dans le DOM, montrée seulement quand
+    // le jour est ouvert seul. C'est le CSS qui tranche, pas le HTML — voir la
+    // pile plus bas.
+    auDela ? 'cal-au-dela' : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -815,17 +822,32 @@ function ligneDeSemaine(jours, elements, options) {
           const dedans = courts.filter((segment) => segment.depuis === index);
           if (!dedans.length) return '';
 
-          // LE PLAFOND PAR JOUR : ce qui dépasse se compte et s'annonce. Un
-          // compte qui annonce une information et refuse de la donner serait
-          // pire que pas de compte du tout — le « +N » ouvre donc le jour, comme
-          // celui de la vue mois.
-          const montres = maxParJour ? dedans.slice(0, maxParJour) : dedans;
-          const caches = dedans.length - montres.length;
+          // LE PLAFOND PAR JOUR : ce qui dépasse est POSÉ MAIS MASQUÉ, jamais
+          // retiré (30 août 2026, après une correction de Noé : « lorsqu'on
+          // ouvre le jour en grand, tout doit apparaître »).
+          //
+          // La raison est mécanique : ouvrir un jour ne REDESSINE pas la grille
+          // — il ne fait qu'en changer les largeurs de colonnes, pour que le
+          // navigateur anime le passage. Trancher la liste ici l'aurait donc
+          // tranchée aussi pour le jour ouvert, et un `innerHTML` au moment de
+          // l'ouverture couperait l'animation net.
+          //
+          // Tout est donc dans le DOM, et c'est le CSS qui décide : la grille à
+          // sept colonnes cache ce qui dépasse, celle qui n'en montre qu'une le
+          // révèle. Voir `.cal-au-dela` (css/styles.css).
+          const caches = maxParJour ? Math.max(0, dedans.length - maxParJour) : 0;
 
           return `<div class="cal-pile" aria-hidden="false"
             ${versDateISO(jour) < aujourdhui ? 'data-passe' : ''}
-            style="grid-column: ${index + 1}; grid-row: ${couloirs + 2};">${montres
-              .map((segment) => barre(segment, { montrerEspace, proportionnel, empile: true }))
+            style="grid-column: ${index + 1}; grid-row: ${couloirs + 2};">${dedans
+              .map((segment, rang) =>
+                barre(segment, {
+                  montrerEspace,
+                  proportionnel,
+                  empile: true,
+                  auDela: Boolean(maxParJour) && rang >= maxParJour,
+                }),
+              )
               .join('')}${
               caches
                 ? `<button type="button" class="cal-pile-reste"

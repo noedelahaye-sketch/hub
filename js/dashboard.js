@@ -229,6 +229,13 @@ export function construireSemaine(elements, ancre = new Date(), jourSeul = null)
     //
     // Le calendrier plein écran, lui, continue de tout montrer : on y va pour
     // voir, pas pour jeter un œil.
+    //
+    // LE JOUR OUVERT SEUL N'A PAS DE LIMITE (30 août 2026, correction de Noé :
+    // « lorsque le jour est ouvert en grand, seul, il n'a pas de limite, il
+    // affiche tout »). Ce n'est PAS réglé ici : ouvrir un jour ne redessine pas
+    // la grille — il n'en change que les largeurs de colonnes, pour que le
+    // navigateur anime le passage. Tout est donc posé dans le DOM, et c'est le
+    // CSS qui révèle ce qui dépasse (`.cal-au-dela`).
     maxParJour: 5,
     // Le titre de chaque jour ouvre sa journée, et le referme (demande de Noé,
     // 24 août 2026). Ailleurs le titre reste un titre : au calendrier, toucher

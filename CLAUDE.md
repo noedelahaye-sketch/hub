@@ -890,8 +890,10 @@ gestes ne doivent jamais porter le même signe.
      ressemble à ça, et c'est ce qui dit sans un mot qu'une habitude n'est pas
      de la même nature que ce qui est daté.
    - **Le nom passe SOUS le rond, en petit** : il n'est là que pour reconnaître,
-     pas pour lire. Le rond garde donc sa taille — donc sa facilité à viser —
-     pendant que l'ensemble rétrécit.
+     pas pour lire. **Le rond fait 26 px** (Noé l'a fait réduire de 34) ; la
+     cible tactile ne descend pas pour autant, c'est le JETON ENTIER qui la
+     porte — 4 rem de large sur près de 44 de haut. Le rond n'est que la partie
+     qu'on voit.
    - **Le gabarit est PARTAGÉ avec le tableau de bord perso**
      (`construireHabitudesDuJour`, js/gabarits.js) : deux écrans qui montreraient
      les mêmes habitudes de deux façons finiraient par se contredire.
@@ -926,7 +928,15 @@ gestes ne doivent jamais porter le même signe.
      tout montrer** — on y va pour voir, pas pour jeter un œil.
    - **Le « +N » ouvre le jour**, comme celui de la vue mois : un compte qui
      annonce une information et refuse de la donner serait pire que pas de
-     compte du tout. Rien n'est effacé : le
+     compte du tout.
+   - **LE JOUR OUVERT SEUL N'A PAS DE LIMITE** — il affiche tout, et le « +N »
+     s'efface. Ce n'est PAS réglé en JavaScript, et la raison est mécanique :
+     ouvrir un jour **ne redessine pas la grille**, il n'en change que les
+     largeurs de colonnes, pour que le navigateur anime le passage. Un
+     `innerHTML` à ce moment-là couperait l'animation net. **Tout est donc posé
+     dans le DOM dès le départ**, et deux règles CSS décident de ce qu'on en
+     voit (`.cal-au-dela`). Vérifié : 5 visibles en semaine, 10 une fois le jour
+     ouvert. Rien n'est effacé : le
    hub ne compte pas les retards, mais il ne les cache pas non plus.
 6. **Projets en cours**, en colonne de droite — voir plus bas.
 

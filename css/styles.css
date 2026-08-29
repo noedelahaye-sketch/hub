@@ -4415,7 +4415,7 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   align-items: center;
   gap: var(--espace-4);
   flex: none;
-  width: 4.5rem;
+  width: 4rem;
   padding: 0;
   background: none;
   border: 0;
@@ -4424,9 +4424,13 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   cursor: pointer;
 }
 
+/* 26 px et non 34 (correction de Noé, 30 août 2026 : « les ronds sont trop
+   gros »). La cible tactile ne descend pas pour autant : c'est le JETON entier
+   qui la porte — rond plus nom, 4 rem de large sur près de 44 de haut. Le rond
+   n'est que la partie qu'on voit. */
 .habitude-jeton-rond {
-  width: 34px;
-  height: 34px;
+  width: 26px;
+  height: 26px;
   border: 2px solid var(--bordure);
   border-radius: 50%;
   transition: background 160ms ease-out, border-color 160ms ease-out;
@@ -4439,7 +4443,7 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   background: var(--teinte, var(--accent));
   border-color: var(--teinte, var(--accent));
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2317191a' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
-  background-size: 18px;
+  background-size: 15px;
   background-position: center;
   background-repeat: no-repeat;
 }
@@ -5650,6 +5654,18 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 }
 
 /* Le « +N » s'ouvre : c'est un bouton, il en a l'air. */
+/* LE PLAFOND DE CINQ NE VAUT QUE POUR LA SEMAINE SERRÉE (30 août 2026, Noé :
+   « lorsque le jour est ouvert en grand, seul, il n'a pas de limite, il affiche
+   tout »).
+
+   Le tri se fait ICI et non en JavaScript, et c'est mécanique : ouvrir un jour
+   ne redessine pas la grille — il n'en change que les largeurs de colonnes,
+   pour que le navigateur anime le passage d'une largeur à l'autre. Un
+   `innerHTML` à ce moment-là couperait l'animation net. Tout est donc dans le
+   DOM depuis le début, et deux règles décident de ce qu'on en voit. */
+.cal-semaine:not(.cal-un-jour) .cal-au-dela { display: none; }
+.cal-semaine.cal-un-jour .cal-pile-reste { display: none; }
+
 /* Le « +N » d'un jour trop chargé, en vue semaine (30 août 2026). Il reprend la
    forme du « +N » de la vue mois — même geste, même sens : il ouvre le jour.
    Un compte qui annonce une information et refuse de la donner serait pire que
