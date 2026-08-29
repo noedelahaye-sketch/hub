@@ -773,6 +773,50 @@ export function suiteDuJour({ evenements = [] } = {}, jour = new Date()) {
       };
 }
 
+// --- LA RELECTURE : ce que le hub te remontre --------------------------------
+//
+// Gardée des trois idées proposées le 29 août 2026, et la seule que Noé ait
+// retenue : « le hub te remontre de temps en temps une victoire perso ou une
+// intention d'il y a quelques mois ». Presque rien à coder, et c'est exactement
+// ce qu'il demandait — « se recentrer ».
+//
+// ELLE NE TIRE PAS AU SORT. Un choix aléatoire changerait à chaque rendu de la
+// page, et une phrase qui bouge pendant qu'on la lit ne se lit pas. Le jour
+// détermine le choix : le même jour montre toujours la même chose.
+const ANNIVERSAIRES = [
+  { mois: 1, mot: 'il y a un mois' },
+  { mois: 3, mot: 'il y a trois mois' },
+  { mois: 6, mot: 'il y a six mois' },
+  { mois: 12, mot: 'il y a un an' },
+];
+
+// Deux jours de battement : sans lui, il faudrait tomber pile sur la date, et
+// la relecture ne se déclencherait presque jamais.
+const BATTEMENT_JOURS = 2;
+
+export function relecture({ victoires = [], intentions = [] } = {}, jour = new Date()) {
+  // D'abord un anniversaire : « il y a un an, tu as… » vaut mieux que n'importe
+  // quelle phrase choisie au hasard.
+  for (const { mois, mot } of ANNIVERSAIRES) {
+    const cible = new Date(jour);
+    cible.setMonth(cible.getMonth() - mois);
+
+    const trouvee = victoires.find((victoire) => {
+      if (!victoire.date) return false;
+      const ecart = Math.abs(depuisDateISO(victoire.date) - cible) / 86400000;
+      return ecart <= BATTEMENT_JOURS;
+    });
+
+    if (trouvee) return { quoi: 'victoire', mot, victoire: trouvee };
+  }
+
+  // Sinon une intention, choisie PAR LE JOUR : elle tourne d'un jour à l'autre
+  // sans jamais bouger dans la même journée.
+  if (!intentions.length) return null;
+  const rang = Math.floor(depuisDateISO(versDateISO(jour)) / 86400000) % intentions.length;
+  return { quoi: 'intention', intention: intentions[rang] };
+}
+
 // --- LA LECTURE : un rythme, jamais un quota --------------------------------
 //
 // Demande de Noé (29 août 2026). Ce que le hub montre d'un livre est choisi

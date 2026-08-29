@@ -4571,6 +4571,130 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   border-color: var(--teinte, var(--accent));
 }
 
+/* --- La page du jour ---------------------------------------------------------
+   Elle se lit plus qu'elle ne se remplit : le hub connaît déjà tout ce qu'elle
+   montre. Une seule chose s'y écrit, « ce qui a compté », parce que c'est la
+   seule à laquelle il ne peut pas répondre à la place de Noé.
+
+   Aucun compte, aucun total, aucune comparaison avec hier : une journée n'a pas
+   de score, elle a eu lieu. */
+.jour-page {
+  padding: var(--espace-16);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+}
+
+.jour-navigation {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-12);
+  margin-bottom: var(--espace-16);
+}
+
+.jour-nom {
+  flex: 1;
+  font-family: var(--police-titre);
+  font-weight: 700;
+  font-size: 1.0625rem;
+  letter-spacing: -0.015em;
+}
+
+/* La flèche du lendemain se désactive sur aujourd'hui : il n'y a rien à voir
+   demain, et une flèche qui ne mène nulle part est un bouton qui ment. */
+.jour-fleche {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: 1px solid var(--bordure);
+  border-radius: 50%;
+  color: var(--texte);
+  font: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.jour-fleche[disabled] { opacity: 0.3; cursor: default; }
+
+.jour-humeur {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-12);
+  margin: 0 0 var(--espace-16);
+  padding: var(--espace-12);
+  background: var(--fond-doux);
+  border-radius: var(--rayon-controle);
+  font-size: 0.875rem;
+}
+
+.jour-frimousse { font-size: 1.25rem; }
+
+.jour-part { margin-bottom: var(--espace-16); }
+
+.jour-part-titre {
+  display: block;
+  margin-bottom: var(--espace-4);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--texte-discret);
+}
+
+.jour-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--espace-4);
+  font-size: 0.875rem;
+}
+
+.jour-liste .discret { font-size: 0.75rem; }
+.jour-coche { color: var(--famille-corps); margin-right: var(--espace-8); }
+.jour-lecture { margin: 0; font-size: 0.875rem; }
+
+.jour-pastilles { display: flex; flex-wrap: wrap; gap: var(--espace-4); }
+
+.jour-pastille {
+  padding: 2px var(--espace-12);
+  background: var(--fond-doux);
+  border-radius: var(--rayon-pastille);
+  font-size: 0.75rem;
+  color: var(--texte-discret);
+}
+
+/* La seule chose qu'on écrit. Sans bouton : elle s'enregistre quand on quitte
+   le champ — lui demander un geste de plus la ferait ne jamais s'écrire. */
+.jour-mot { margin-top: var(--espace-24); }
+
+.jour-mot-champ {
+  width: 100%;
+  padding: var(--espace-12);
+  background: var(--fond-doux);
+  border: 1px solid var(--bordure-douce);
+  border-radius: var(--rayon-controle);
+  color: var(--texte);
+  font: inherit;
+  font-size: 0.875rem;
+  resize: vertical;
+}
+
+/* CE QUE LE HUB TE REMONTRE. En voix éditoriale et en pied de page : c'est une
+   phrase qui passe, pas une donnée qu'on vient consulter. */
+.jour-relecture {
+  margin: var(--espace-24) 0 0;
+  padding-top: var(--espace-16);
+  border-top: 1px solid var(--bordure);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--texte-discret);
+}
+
+.jour-relecture b { font-weight: 600; color: var(--texte); }
+
 /* --- La bibliothèque ---------------------------------------------------------
    Le livre en cours occupe le haut, avec les deux gestes qui comptent : noter
    des pages, garder une phrase. Le reste tient en lignes.

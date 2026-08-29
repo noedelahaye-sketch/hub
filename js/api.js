@@ -554,6 +554,61 @@ export async function delierProjet(id) {
   if (error) throw error;
 }
 
+// --- La page du jour ---------------------------------------------------------
+//
+// ELLE SE CONSTRUIT TOUTE SEULE : le hub connaît déjà tout ce qu'elle montre.
+// Une seule requête par table, pour le seul jour demandé — la page s'ouvre
+// exprès, elle n'a pas à précharger trois mois.
+
+export async function journeeDe(jourISO) {
+  const debut = `${jourISO}T00:00:00`;
+  const fin = `${jourISO}T23:59:59`;
+
+  const [mot, humeur, taches, evenements, victoires, faits, seances] = await Promise.all([
+    verifier(await client.from('journees').select('mot').eq('jour', jourISO).maybeSingle()),
+    verifier(await client.from('humeur').select('*').eq('date', jourISO).maybeSingle()),
+    // Les tâches TERMINÉES ce jour-là, pas celles qui y étaient dues : la page
+    // regarde en arrière, elle ne redresse pas les comptes.
+    verifier(
+      await client
+        .from('taches')
+        .select('id, titre, espace, date_fait, duree')
+        .gte('date_fait', debut)
+        .lte('date_fait', fin),
+    ),
+    verifier(
+      await client
+        .from('evenements')
+        .select('id, titre, espace, date_debut, lieu, famille')
+        .gte('date_debut', debut)
+        .lte('date_debut', fin),
+    ),
+    verifier(await client.from('victoires').select('*').eq('date', jourISO)),
+    verifier(
+      await client
+        .from('habitudes_faits')
+        .select('habitude_id, jour')
+        .eq('jour', jourISO),
+    ),
+    verifier(
+      await client
+        .from('livres_seances')
+        .select('id, livre_id, pages, jour')
+        .eq('jour', jourISO),
+    ),
+  ]);
+
+  return { mot: mot?.mot ?? null, humeur, taches, evenements, victoires, faits, seances };
+}
+
+// La ligne libre. `upsert` sur la clé du jour : on écrit et on réécrit sans
+// avoir à savoir si la journée existait déjà.
+export async function noterLeMot(jour, mot) {
+  return verifier(
+    await client.from('journees').upsert({ jour, mot }, { onConflict: 'jour' }).select().single(),
+  );
+}
+
 // --- La bibliothèque ---------------------------------------------------------
 //
 // Les pages lues d'un livre sont la SOMME de ses séances, jamais une colonne à

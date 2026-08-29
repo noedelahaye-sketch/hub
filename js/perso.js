@@ -20,6 +20,7 @@ import {
   PALIERS_HABITUDE,
   avanceeDuLivre,
   livreEnCours,
+  relecture,
 } from './orientation.js';
 import {
   versDateISO,
@@ -27,6 +28,7 @@ import {
   depuisDateISO,
   echapper,
   momentLisible,
+  NOMS_ESPACES,
   FAMILLES_PERSO,
   FAMILLES_PERSO_CHOIX,
 } from './format.js';
@@ -49,7 +51,10 @@ const SIGNE = {
 // L'état de l'écran, hors des données : ce qui est déplié, ce qui attend une
 // confirmation, ce que la tuile volante corrige. Même trio que dans
 // `#objectifs` — un écran du hub se tient de la même façon partout.
-const vueEtat = { menu: null, confirme: null, edition: null, habitude: null };
+// `jour` : la journée qu'on regarde. Elle vient de l'adresse
+// (`#perso/journee/2026-08-29`) pour qu'un jour précis se retrouve et se
+// partage — un favori sur une journée doit rouvrir cette journée-là.
+const vueEtat = { menu: null, confirme: null, edition: null, habitude: null, jour: null };
 
 // --- Fabrication du HTML ----------------------------------------------------
 
@@ -394,6 +399,158 @@ export function construireBibliotheque(livres, seances) {
     ${ajout}`;
 }
 
+// LA PAGE DU JOUR (29 août 2026, demande de Noé) : « un outil qui me permet de
+// faire un bilan quotidien, avec une page par jour qui est construite et sur
+// laquelle on peut revenir ».
+//
+// ELLE SE LIT PLUS QU'ELLE NE SE REMPLIT, et c'est ce qui la rend tenable : le
+// hub connaît déjà l'humeur, les tâches terminées, les événements, les
+// victoires, les habitudes et les pages lues. Une seule chose s'y écrit — « ce
+// qui a compté » —, parce que c'est la seule à laquelle il ne peut pas répondre
+// à la place de Noé.
+//
+// Aucun compte, aucun total, aucune comparaison avec hier. Une journée n'a pas
+// de score : elle a eu lieu.
+const JOURS_SEMAINE = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+const MOIS_LISIBLES = [
+  'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+  'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
+];
+
+function jourEnToutesLettres(iso, aujourdhui) {
+  if (iso === aujourdhui) return "Aujourd'hui";
+  const date = depuisDateISO(iso);
+  return `${JOURS_SEMAINE[date.getDay()]} ${date.getDate()} ${MOIS_LISIBLES[date.getMonth()]}`;
+}
+
+function bloc_(titre, contenu) {
+  return contenu ? `<div class="jour-part"><span class="jour-part-titre">${titre}</span>${contenu}</div>` : '';
+}
+
+export function construireLaJournee(jour, donnees, contexte = {}) {
+  const aujourdhui = versDateISO();
+  const { humeur, taches = [], evenements = [], victoires = [], faits = [], seances = [], mot } =
+    donnees ?? {};
+  const { habitudes = [], livres = [], relue = null } = contexte;
+
+  const niveau = humeur ? NIVEAUX_HUMEUR.find((n) => n.niveau === humeur.niveau) : null;
+  const nomDe = (id, liste, cle = 'nom') => liste.find((x) => x.id === id)?.[cle] ?? '';
+  const pagesLues = seances.reduce((somme, seance) => somme + seance.pages, 0);
+
+  const rien =
+    !humeur && !taches.length && !evenements.length && !victoires.length && !faits.length &&
+    !seances.length && !mot;
+
+  return `
+    <div class="jour-page">
+      <div class="jour-navigation">
+        <button type="button" class="jour-fleche" data-jour-vers="${echapper(
+          versDateISO(ajouterJours(depuisDateISO(jour), -1)),
+        )}" aria-label="Le jour d'avant">‹</button>
+        <span class="jour-nom">${echapper(jourEnToutesLettres(jour, aujourdhui))}</span>
+        <button type="button" class="jour-fleche" data-jour-vers="${echapper(
+          versDateISO(ajouterJours(depuisDateISO(jour), 1)),
+        )}" ${jour >= aujourdhui ? 'disabled' : ''} aria-label="Le jour d'après">›</button>
+      </div>
+
+      ${
+        humeur
+          ? `<p class="jour-humeur"><span class="jour-frimousse">${niveau?.frimousse ?? ''}</span>
+             <span>${echapper(niveau?.mot ?? '')}${
+               humeur.note ? ` — « ${echapper(humeur.note)} »` : ''
+             }</span></p>`
+          : ''
+      }
+
+      ${bloc_(
+        'Habitudes',
+        faits.length
+          ? `<span class="jour-pastilles">${faits
+              .map(
+                (fait) =>
+                  `<span class="jour-pastille">${echapper(
+                    nomDe(fait.habitude_id, habitudes),
+                  )}</span>`,
+              )
+              .join('')}</span>`
+          : '',
+      )}
+
+      ${bloc_(
+        'Terminé',
+        taches.length
+          ? `<ul class="jour-liste">${taches
+              .map(
+                (tache) =>
+                  `<li><span class="jour-coche">✓</span>${echapper(tache.titre)}
+                   <span class="discret">${echapper(NOMS_ESPACES[tache.espace] ?? '')}</span></li>`,
+              )
+              .join('')}</ul>`
+          : '',
+      )}
+
+      ${bloc_(
+        'Ce jour-là',
+        evenements.length
+          ? `<ul class="jour-liste">${evenements
+              .map(
+                (evenement) =>
+                  `<li>${echapper(evenement.titre)}
+                   <span class="discret">${echapper(
+                     [evenement.lieu, FAMILLES_PERSO[evenement.famille] ?? ''].filter(Boolean).join(' · '),
+                   )}</span></li>`,
+              )
+              .join('')}</ul>`
+          : '',
+      )}
+
+      ${bloc_(
+        'Lecture',
+        pagesLues
+          ? `<p class="jour-lecture">${pluriel(pagesLues, 'page')}${
+              seances.length === 1 && nomDe(seances[0].livre_id, livres, 'titre')
+                ? ` — ${echapper(nomDe(seances[0].livre_id, livres, 'titre'))}`
+                : ''
+            }</p>`
+          : '',
+      )}
+
+      ${bloc_(
+        'Victoires',
+        // LES VICTOIRES NÉES D'UNE TÂCHE NE SE RÉPÈTENT PAS : elles sont déjà
+        // dans « Terminé » juste au-dessus, mot pour mot. Restent celles qui
+        // disent autre chose — un jalon franchi, une étape, un palier
+        // d'habitude, une victoire écrite à la main.
+        (() => {
+          const autres = victoires.filter((victoire) => victoire.source !== 'tache');
+          return autres.length
+            ? `<ul class="jour-liste">${autres
+                .map((victoire) => `<li>${echapper(victoire.titre)}</li>`)
+                .join('')}</ul>`
+            : '';
+        })(),
+      )}
+
+      ${rien ? `<p class="vide">Rien de noté ce jour-là. Ça arrive, et ce n'est pas grave.</p>` : ''}
+
+      <div class="jour-mot">
+        <span class="jour-part-titre">Ce qui a compté</span>
+        <textarea class="jour-mot-champ" data-jour-mot="${echapper(jour)}" rows="2"
+          placeholder="une ligne, si tu veux">${echapper(mot ?? '')}</textarea>
+      </div>
+
+      ${
+        relue
+          ? `<p class="jour-relecture">${
+              relue.quoi === 'victoire'
+                ? `${echapper(relue.mot)}, tu notais <b>${echapper(relue.victoire.titre)}</b>.`
+                : `Tu écrivais : <b>${echapper(relue.intention.titre)}</b>.`
+            }</p>`
+          : ''
+      }
+    </div>`;
+}
+
 // LES RENDEZ-VOUS AVEC SOI-MÊME, en lignes et non en cartes. Ils n'ont pas
 // besoin d'une tuile : ce qu'on vient y lire tient en une ligne — quoi, quand,
 // où. Ce sont les intentions qui portent des tuiles, parce qu'elles portent une
@@ -633,6 +790,11 @@ function squelette() {
       <div data-bloc="habitudes"><p class="vide">…</p></div>
     </section>
 
+    <section class="bloc" data-vue="journee">
+      <h2>Tes journées</h2>
+      <div data-bloc="journee"><p class="vide">…</p></div>
+    </section>
+
     <section class="bloc" data-vue="bibliotheque">
       <h2>Ta bibliothèque</h2>
       <div data-bloc="bibliotheque"><p class="vide">…</p></div>
@@ -806,6 +968,7 @@ const VUES = {
   intentions: ['Les intentions', 'Ce que tu veux tenir, sans mesure ni date.'],
   habitudes: ['Tes habitudes', "Le rythme que tu tiens, et rien qui puisse s'écrouler."],
   bibliotheque: ['Ta bibliothèque', 'Ce que tu lis, à ton rythme et sans quota.'],
+  journee: ['Tes journées', "Ce qu'il s'est passé, jour après jour. Rien à remplir."],
   victoires: ['Les victoires', 'Une belle séance compte autant qu\'un post réussi.'],
   'rendez-vous': ['Les rendez-vous', 'Les moments que tu te réserves.'],
   humeur: ['Ton humeur', 'Les 30 derniers jours, sans relance ni reproche.'],
@@ -813,6 +976,8 @@ const VUES = {
 
 function appliquerLaVue(section, route) {
   const vue = route?.vue in VUES ? route.vue : null;
+  // `#perso/journee/2026-08-29` : le troisième niveau du routeur porte le jour.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(route?.id ?? '')) vueEtat.jour = route.id;
   const [titre, sous] = VUES[vue] ?? [
     'Perso',
     'La vie hors espaces — sport, sorties, temps pour toi.',
@@ -889,6 +1054,32 @@ export default {
     const rendreEvenements = () => {
       bloc('evenements').innerHTML = construireRendezVous(etat.evenements);
     };
+    // LA JOURNÉE SE CHARGE À LA DEMANDE, et se garde. Naviguer de jour en jour ne
+    // redemande pas ce qui a déjà été lu — on remonte souvent plusieurs jours
+    // d'affilée, et chaque aller-retour coûterait sept requêtes.
+    const journeesVues = new Map();
+
+    const rendreJournee = () => {
+      const jour = vueEtat.jour ?? versDateISO();
+      bloc('journee').innerHTML = construireLaJournee(jour, journeesVues.get(jour), {
+        habitudes: etat.habitudes,
+        livres: etat.livres,
+        relue: relecture({ victoires: etat.victoires, intentions: etat.intentions }, depuisDateISO(jour)),
+      });
+    };
+
+    async function ouvrirLaJournee(jour) {
+      vueEtat.jour = jour;
+      rendreJournee();
+      if (journeesVues.has(jour)) return;
+      try {
+        journeesVues.set(jour, await api.journeeDe(jour));
+        if (vueEtat.jour === jour) rendreJournee();
+      } catch (souci) {
+        console.error('Journée non chargée', souci);
+      }
+    }
+
     const rendreBibliotheque = () => {
       bloc('bibliotheque').innerHTML = construireBibliotheque(etat.livres, etat.seances);
     };
@@ -937,6 +1128,7 @@ export default {
       });
       rendreHabitudes();
       rendreBibliotheque();
+      ouvrirLaJournee(vueEtat.jour ?? versDateISO());
       rendreIntentions();
       rendreVictoires();
       rendreEvenements();
@@ -990,6 +1182,30 @@ export default {
         bouton.disabled = false;
       }
     });
+
+    // LE MOT DU JOUR S'ENREGISTRE QUAND ON QUITTE LE CHAMP. Pas de bouton
+    // « enregistrer » : c'est une ligne qu'on écrit en passant, et lui demander
+    // un geste de plus la ferait ne jamais s'écrire.
+    section.addEventListener(
+      'blur',
+      async (evenement) => {
+        const champ = evenement.target.closest('[data-jour-mot]');
+        if (!champ) return;
+        const jour = champ.dataset.jourMot;
+        const mot = champ.value.trim() || null;
+        const gardee = journeesVues.get(jour);
+        if (gardee && gardee.mot === mot) return;
+
+        try {
+          await api.noterLeMot(jour, mot);
+          if (gardee) gardee.mot = mot;
+        } catch (souci) {
+          console.error('Mot du jour non enregistré', souci);
+        }
+      },
+      // En capture : `blur` ne remonte pas.
+      true,
+    );
 
     // NOTER DES PAGES : l'écran d'abord, l'écriture derrière. La séance est
     // ajoutée à la liste locale, donc l'avancée et le rythme se recalculent
@@ -1229,6 +1445,9 @@ export default {
         }
         return;
       }
+
+      const versUnJour = dans('jour-vers');
+      if (versUnJour) return ouvrirLaJournee(versUnJour.dataset.jourVers);
 
       const ouvrirHabitude = dans('ouvrir-habitude');
       if (ouvrirHabitude) {

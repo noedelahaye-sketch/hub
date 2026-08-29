@@ -328,6 +328,42 @@ redemander de cocher « lire un peu » juste après serait demander deux fois la
 même chose. L'habitude concernée se DÉCLARE elle-même (`habitudes.automatique`),
 donc rien n'est câblé sur un nom — et la colonne accueillera les suivantes.
 
+### Tes journées (29 août 2026)
+
+**La demande** : « un outil qui me permet de faire un bilan quotidien, avec une
+page par jour qui est construite et sur laquelle on peut revenir, où l'on voit
+l'humeur du jour, les habitudes faites, les tâches, événements… »
+
+**ELLE SE LIT PLUS QU'ELLE NE SE REMPLIT**, et c'est ce qui la rend tenable. Le
+hub connaît déjà l'humeur, les tâches terminées avec leur date, les événements,
+les victoires, et depuis le même jour les habitudes et les pages lues. Rien
+n'est à ressaisir : la page les rassemble, elle ne les redemande pas. **Une
+seule chose s'y écrit** — « ce qui a compté » —, parce que c'est la seule à
+laquelle le hub ne peut pas répondre à la place de Noé.
+
+- **`#perso/journee/2026-08-29`** : le jour vit dans l'adresse, donc une journée
+  se retrouve et se partage. Les flèches vont d'un jour à l'autre ; celle du
+  lendemain se désactive sur aujourd'hui — une flèche qui ne mène nulle part est
+  un bouton qui ment.
+- **Une seule table, `journees`** (jour, mot). Tout le reste se déduit.
+- **Le mot s'enregistre quand on quitte le champ**, sans bouton : c'est une
+  ligne qu'on écrit en passant, et lui demander un geste de plus la ferait ne
+  jamais s'écrire.
+- **Les journées se gardent en mémoire** une fois lues : on remonte souvent
+  plusieurs jours d'affilée, et chaque aller-retour coûterait sept requêtes.
+- **Les victoires nées d'une tâche ne s'y répètent pas.** Elles sont déjà dans
+  « Terminé », mot pour mot — restent celles qui disent autre chose : un jalon,
+  une étape, un palier d'habitude, une victoire écrite à la main.
+- **Aucun compte, aucun total, aucune comparaison avec hier.** Une journée n'a
+  pas de score : elle a eu lieu. Et un jour vide le dit sans reproche — « rien
+  de noté ce jour-là, ça arrive, et ce n'est pas grave ».
+
+**LA RELECTURE ferme la page** (la seule des trois idées du 29 août que Noé ait
+retenue). Le hub remontre une victoire d'il y a un mois, trois, six ou un an —
+sinon une intention. **Elle ne tire pas au sort** : un choix aléatoire changerait
+à chaque rendu, et une phrase qui bouge pendant qu'on la lit ne se lit pas. Le
+jour détermine le choix (`relecture`, js/orientation.js).
+
 **Ce qui NE change pas, et ne changera pas** : ni jalon, ni barre de
 progression, ni backlog, ni retard, ni tâche affichée. Une tâche perso continue
 de vivre dans l'espace Tâches, au calendrier et dans « Aujourd'hui » — **jamais
