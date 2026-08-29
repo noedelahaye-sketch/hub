@@ -995,6 +995,27 @@ s'atteindre comme celles des autres espaces.
   page. Vers la gauche on avance, comme on tourne une page ; **aux deux bouts il
   ne se passe rien** — boucler du calendrier à l'accueil ferait traverser deux
   écrans sans qu'on l'ait demandé.
+  - **`touch-action: pan-y` SUR LES ESPACES, et c'est ce qui le fait marcher sur
+    un vrai téléphone** (29 août 2026, après un rapport de Noé : « ça ne
+    fonctionne pas sur téléphone alors »). Avec `touch-action: auto`, le
+    navigateur décide seul de ce qu'il fait du doigt : dès qu'il croit à un
+    défilement, il ANNULE le pointeur et le script ne reçoit jamais son
+    relâchement. `pan-y` lui dit — le vertical est à toi, l'horizontal est à
+    moi. **Elle ne casse pas les défileurs internes** : la chaîne des
+    `touch-action` s'arrête au conteneur de défilement le plus proche, donc le
+    rail des projets garde son `auto` et son geste.
+    *Leçon de méthode : tous les essais qui simulaient les événements en
+    JavaScript passaient — le navigateur n'y participait pas. Un geste tactile
+    ne se vérifie pas en dispatchant des PointerEvent.*
+  - **Un `pointercancel` sur un geste DÉJÀ FRANC le mène à son terme.** Le
+    navigateur peut nous couper en plein mouvement ; laisser la page revenir en
+    arrière sous le doigt serait pire que d'achever ce qui était clairement
+    engagé. `pan-y` rend le cas rare, ce filet le rend inoffensif.
+  - **Le verrou d'un geste à la fois se lève par un DÉLAI, jamais par
+    `requestAnimationFrame`** : celui-ci ne s'exécute pas quand la page est
+    masquée — écran verrouillé, application en arrière-plan —, et le verrou
+    serait resté posé pour toujours, tuant tous les balayages suivants jusqu'au
+    rechargement. Trouvé en mesurant, parce que le panneau d'essai était caché.
   - **Le tactile seulement** (`pointerType === 'touch'`) : sur ordinateur, une
     souris qu'on traîne sur 60 px en sélectionnant du texte est un geste
     ordinaire, et le lire comme un changement de page ferait perdre la sélection

@@ -512,12 +512,70 @@ document.addEventListener(
 // n'arrive alors jamais, et la page doit reprendre sa place.
 document.addEventListener(
   'pointercancel',
-  () => {
-    lacherLaPage(balayage?.section);
+  (evenement) => {
+    const depart = balayage;
     balayage = null;
+    if (!depart) return;
+
+    // LE NAVIGATEUR PEUT NOUS COUPER EN PLEIN GESTE, et c'est fréquent sur
+    // téléphone : il reprend le pointeur dès qu'il croit à un défilement, et
+    // `pointerup` n'arrive alors jamais. Si le geste était DÉJÀ pris et déjà
+    // franc, l'intention était claire — on le mène à son terme plutôt que de
+    // laisser la page revenir en arrière sous le doigt. `touch-action: pan-y`
+    // (css/styles.css) rend le cas rare ; ce filet le rend inoffensif.
+    const dx = evenement.clientX - depart.x;
+    if (depart.pris && Math.abs(dx) >= BALAYAGE.distance) return acheverLeBalayage(depart, dx);
+    lacherLaPage(depart.section);
   },
   { passive: true },
 );
+
+// LA CONCLUSION DU GESTE, partagée par le relâchement et par l'annulation du
+// navigateur : deux chemins mènent ici, et un seul décide.
+function acheverLeBalayage(depart, dx) {
+  const section = depart.section;
+
+  // Vers la gauche, on avance — le geste de tourner une page. Aux deux bouts,
+  // il ne se passe rien : boucler du calendrier à l'accueil ferait passer deux
+  // écrans d'un coup sans qu'on l'ait demandé.
+  const vers = depart.rang + (dx < 0 ? 1 : -1);
+  if (vers < 0 || vers >= ONGLETS_BALAYABLES.length) return lacherLaPage(section);
+
+  const sens = dx < 0 ? -1 : 1;
+  if (sansAnimation()) {
+    lacherLaPage(section, { anime: false });
+    location.hash = `#${ONGLETS_BALAYABLES[vers]}`;
+    return;
+  }
+
+  // ON ACHÈVE LE MOUVEMENT AVANT DE NAVIGUER : la page finit de sortir du côté
+  // où le doigt l'emmenait, puis l'écran suivant arrive de l'autre bord.
+  // Naviguer tout de suite ferait disparaître la page au milieu de son geste —
+  // c'est exactement ce qui manquait à la première version.
+  section.style.transition = `transform ${BALAYAGE.sortie}ms cubic-bezier(0.4, 0, 1, 1),
+    opacity ${BALAYAGE.sortie}ms ease-out`;
+  section.style.transform = `translateX(${sens * window.innerWidth * BALAYAGE.plafond}px)`;
+  section.style.opacity = '0';
+
+  entreeDepuis = sens;
+  passageEnCours = true;
+  setTimeout(() => {
+    // Les styles partent AVANT la navigation : une section laissée translatée
+    // reviendrait de travers au prochain passage sur cet onglet.
+    section.style.cssText = '';
+    document.body.classList.remove('balaye');
+    location.hash = `#${ONGLETS_BALAYABLES[vers]}`;
+    // Levé APRÈS la navigation, le temps que `routeCourante` se mette à jour :
+    // le geste suivant repart alors du bon onglet.
+    //
+    // PAR UN DÉLAI ET NON PAR `requestAnimationFrame` : celui-ci ne s'exécute
+    // pas quand la page est masquée — écran verrouillé, application passée en
+    // arrière-plan. Le verrou serait resté posé pour toujours, et plus aucun
+    // balayage n'aurait fonctionné jusqu'au rechargement. Trouvé en mesurant,
+    // parce que le panneau d'essai était caché.
+    setTimeout(() => { passageEnCours = false; }, 50);
+  }, BALAYAGE.sortie);
+}
 
 document.addEventListener(
   'pointerup',
@@ -528,47 +586,14 @@ document.addEventListener(
 
     const dx = evenement.clientX - depart.x;
     const dy = evenement.clientY - depart.y;
-    const section = depart.section;
 
     const franc =
       Math.abs(dx) >= BALAYAGE.distance &&
       Math.abs(dx) >= Math.abs(dy) * BALAYAGE.pente &&
       performance.now() - depart.debut <= BALAYAGE.duree;
 
-    // Vers la gauche, on avance — le geste de tourner une page. Aux deux bouts,
-    // il ne se passe rien : boucler du calendrier à l'accueil ferait passer
-    // deux écrans d'un coup sans qu'on l'ait demandé.
-    const vers = depart.rang + (dx < 0 ? 1 : -1);
-    if (!franc || vers < 0 || vers >= ONGLETS_BALAYABLES.length) return lacherLaPage(section);
-
-    const sens = dx < 0 ? -1 : 1;
-    if (sansAnimation()) {
-      lacherLaPage(section, { anime: false });
-      location.hash = `#${ONGLETS_BALAYABLES[vers]}`;
-      return;
-    }
-
-    // ON ACHÈVE LE MOUVEMENT AVANT DE NAVIGUER : la page finit de sortir du
-    // côté où le doigt l'emmenait, puis l'écran suivant arrive de l'autre bord.
-    // Naviguer tout de suite ferait disparaître la page au milieu de son
-    // geste — c'est exactement ce qui manquait à la première version.
-    section.style.transition = `transform ${BALAYAGE.sortie}ms cubic-bezier(0.4, 0, 1, 1),
-      opacity ${BALAYAGE.sortie}ms ease-out`;
-    section.style.transform = `translateX(${sens * window.innerWidth * BALAYAGE.plafond}px)`;
-    section.style.opacity = '0';
-
-    entreeDepuis = sens;
-    passageEnCours = true;
-    setTimeout(() => {
-      // Les styles partent AVANT la navigation : une section laissée translatée
-      // reviendrait de travers au prochain passage sur cet onglet.
-      section.style.cssText = '';
-      document.body.classList.remove('balaye');
-      location.hash = `#${ONGLETS_BALAYABLES[vers]}`;
-      // Levé APRÈS la navigation, sur l'image suivante : `routeCourante` est
-      // alors à jour, et le geste suivant repart du bon onglet.
-      requestAnimationFrame(() => { passageEnCours = false; });
-    }, BALAYAGE.sortie);
+    if (!franc) return lacherLaPage(depart.section);
+    acheverLeBalayage(depart, dx);
   },
   { passive: true },
 );

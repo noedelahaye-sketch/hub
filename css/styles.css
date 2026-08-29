@@ -5535,6 +5535,24 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 .eclair { animation: eclair-bouton 320ms ease-out; }
 
 /* L'arrivée sur un espace. Le pendant, dans le hub, du `vue-entre` de Yuno. */
+/* LE PAN HORIZONTAL EST À NOUS, LE VERTICAL AU NAVIGATEUR (29 août 2026).
+   Sans cette déclaration, le balayage entre onglets ne marchait pas sur un vrai
+   téléphone — et il marchait dans tous mes essais, qui simulaient les
+   événements en JavaScript : le navigateur n'y participait pas.
+
+   La raison : avec `touch-action: auto`, le navigateur décide seul de ce qu'il
+   fait du doigt. Dès qu'il commence à traiter le geste comme un défilement, il
+   ANNULE le pointeur (`pointercancel`) et le script ne reçoit jamais son
+   relâchement. `pan-y` lui dit : le vertical est à toi, l'horizontal est à moi.
+
+   Elle ne casse PAS les défileurs internes — rail des projets, grilles du
+   calendrier. La chaîne des `touch-action` s'arrête au conteneur de défilement
+   le plus proche : pour un doigt posé sur le rail, c'est le rail qui décide, et
+   il garde son `auto`. */
+.espace {
+  touch-action: pan-y;
+}
+
 @keyframes espace-entree {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
