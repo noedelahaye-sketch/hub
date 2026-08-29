@@ -5254,6 +5254,24 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    L'en-tête portant déjà la date (« lun. 10 »), le numéro dans la case ferait
    doublon. */
 .cal-semaine .cal-ligne { min-height: 20rem; }
+
+/* SUR L'ACCUEIL, LA SEMAINE SUIT SON CONTENU (30 août 2026, remarque de Noé :
+   « ça doit permettre de réduire la taille que prend la semaine dans la page,
+   elle devient moins longue »).
+
+   Le plancher de 20 rem datait du temps où la grille montrait TOUT : il fallait
+   de la place d'avance. Depuis que l'accueil plafonne à cinq éléments par jour,
+   il ne produit plus que du vide — mesuré, 133 px sous la dernière pile, pour
+   rien.
+
+   Onze rem restent un plancher : une semaine vide garde une zone où l'on peut
+   glisser pour poser quelque chose. Au-delà, c'est le contenu qui décide, et un
+   jour ouvert seul s'étire donc autant qu'il en a besoin.
+
+   La règle est portée par `#bloc-semaine` et pas par `.cal-semaine` : le
+   calendrier plein écran garde ses 20 rem — il ne plafonne rien, on y va pour
+   voir, et sa grille doit rester une surface où l'on pose. */
+#bloc-semaine .cal-semaine .cal-ligne { min-height: 11rem; }
 .cal-semaine .cal-numero { display: none; }
 
 /* Une seule ligne, donc de la place en hauteur : ici un titre passe à la ligne

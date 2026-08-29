@@ -929,6 +929,14 @@ gestes ne doivent jamais porter le même signe.
    - **Le « +N » ouvre le jour**, comme celui de la vue mois : un compte qui
      annonce une information et refuse de la donner serait pire que pas de
      compte du tout.
+   - **ET LA SEMAINE RACCOURCIT D'AUTANT** (remarque de Noé) : le plancher de
+     20 rem de `.cal-ligne` datait du temps où la grille montrait tout, et il ne
+     produisait plus que du vide — 133 px sous la dernière pile, mesurés. Sur
+     l'accueil il tombe à 11 rem, assez pour qu'une semaine vide reste une
+     surface où l'on glisse ; au-delà, c'est le contenu qui décide. **332 px →
+     201.** La règle est portée par `#bloc-semaine` : le calendrier plein écran
+     garde ses 20 rem, il ne plafonne rien et sa grille doit rester une surface
+     où l'on pose.
    - **LE JOUR OUVERT SEUL N'A PAS DE LIMITE** — il affiche tout, et le « +N »
      s'efface. Ce n'est PAS réglé en JavaScript, et la raison est mécanique :
      ouvrir un jour **ne redessine pas la grille**, il n'en change que les
