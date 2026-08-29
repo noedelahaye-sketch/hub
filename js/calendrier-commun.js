@@ -755,7 +755,8 @@ function barre(segment, { montrerEspace = false, proportionnel = false, empile =
 }
 
 function ligneDeSemaine(jours, elements, options) {
-  const { montrerEspace, proportionnel, maximum, mois, aujourdhui, selection } = options;
+  const { montrerEspace, proportionnel, maximum, mois, aujourdhui, selection, maxParJour } =
+    options;
   const segments = segmentsDeLaSemaine(jours, elements);
   const visibles = maximum ? segments.filter((segment) => segment.couloir < maximum) : segments;
   const caches = maximum ? segments.filter((segment) => segment.couloir >= maximum) : [];
@@ -813,11 +814,25 @@ function ligneDeSemaine(jours, elements, options) {
         .map((jour, index) => {
           const dedans = courts.filter((segment) => segment.depuis === index);
           if (!dedans.length) return '';
+
+          // LE PLAFOND PAR JOUR : ce qui dépasse se compte et s'annonce. Un
+          // compte qui annonce une information et refuse de la donner serait
+          // pire que pas de compte du tout — le « +N » ouvre donc le jour, comme
+          // celui de la vue mois.
+          const montres = maxParJour ? dedans.slice(0, maxParJour) : dedans;
+          const caches = dedans.length - montres.length;
+
           return `<div class="cal-pile" aria-hidden="false"
             ${versDateISO(jour) < aujourdhui ? 'data-passe' : ''}
-            style="grid-column: ${index + 1}; grid-row: ${couloirs + 2};">${dedans
+            style="grid-column: ${index + 1}; grid-row: ${couloirs + 2};">${montres
               .map((segment) => barre(segment, { montrerEspace, proportionnel, empile: true }))
-              .join('')}</div>`;
+              .join('')}${
+              caches
+                ? `<button type="button" class="cal-pile-reste"
+                     data-jour-complet="${versDateISO(jour)}"
+                     aria-label="Voir les ${caches} autres">+${caches}</button>`
+                : ''
+            }</div>`;
         })
         .join('')
     : '';
@@ -944,6 +959,14 @@ export function construireGrille(
     aide = true,
     titresOuvrants = false,
     jourSeul = null,
+    // COMBIEN D'ÉLÉMENTS UN JOUR MONTRE AU PLUS, en vue semaine (30 août 2026,
+    // demande de Noé pour l'accueil : « mets un max de 5 éléments visibles,
+    // s'il y en a plus tu l'indiques »). Zéro — le défaut — veut dire « tout ».
+    //
+    // C'est un réglage de l'APPELANT et non de la vue : le calendrier plein
+    // écran, lui, doit continuer à tout montrer. On y va pour voir, pas pour
+    // jeter un œil.
+    maxParJour = 0,
   } = {},
 ) {
   const retenus = elements.filter((element) => retenu(element, natures));
@@ -958,6 +981,7 @@ export function construireGrille(
     // En vue mois une ligne ne peut pas tout montrer : trois couloirs, puis un
     // reste. La semaine n'a qu'une ligne et toute la hauteur : on montre tout.
     maximum: vue === 'semaine' ? 0 : 3,
+    maxParJour,
     mois: vue === 'semaine' ? null : ancre.getMonth(),
     aujourdhui: versDateISO(new Date()),
     selection,
@@ -1088,7 +1112,7 @@ export function brancherSelection(section, quandChoisi) {
   section.addEventListener('pointerdown', (evenement) => {
     // Une barre se clique pour son détail ou se glisse pour changer de jour ;
     // un « +N » déplie sa journée. Ni l'un ni l'autre n'ouvre une sélection.
-    if (evenement.target.closest('.cal-barre-element, .cal-reste')) return;
+    if (evenement.target.closest('.cal-barre-element, .cal-reste, .cal-pile-reste')) return;
     const cellule = evenement.target.closest('.cal-jour');
     if (!cellule) return;
     // Sans ça, le navigateur sélectionne le texte des cases traversées.

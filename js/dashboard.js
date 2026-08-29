@@ -17,6 +17,7 @@ import {
   dureeLisible,
   NOMS_ESPACES,
 } from './format.js';
+import { construireHabitudesDuJour } from './gabarits.js';
 import {
   assemblerCalendrier,
   construireGrille,
@@ -220,6 +221,15 @@ export function construireSemaine(elements, ancre = new Date(), jourSeul = null)
   return construireGrille(elements, toutesLesNatures(), 'semaine', ancre, {
     montrerEspace: true,
     jourSeul,
+    // CINQ ÉLÉMENTS AU PLUS PAR JOUR (30 août 2026, demande de Noé). L'accueil
+    // donne un aperçu de la semaine ; au-delà de cinq lignes, une journée
+    // chargée écrase les six autres et la grille cesse de se lire d'un coup
+    // d'œil. Le « +N » ouvre le jour, donc rien n'est caché — c'est le même
+    // motif que le « +N » de la vue mois.
+    //
+    // Le calendrier plein écran, lui, continue de tout montrer : on y va pour
+    // voir, pas pour jeter un œil.
+    maxParJour: 5,
     // Le titre de chaque jour ouvre sa journée, et le referme (demande de Noé,
     // 24 août 2026). Ailleurs le titre reste un titre : au calendrier, toucher
     // un jour sert déjà à y poser quelque chose.
@@ -556,7 +566,7 @@ export function construirePropositions(propositions) {
 }
 
 export function construireAujourdhui(
-  { rendezVous = [], taches = [], publications = [], habitudes = [], faitsHabitudes = [] } = {},
+  { rendezVous = [], taches = [], publications = [] } = {},
   annulation = null,
 ) {
   // Une tâche vient d'être cochée : on laisse une porte de sortie quelques
@@ -571,9 +581,7 @@ export function construireAujourdhui(
   // Les habitudes s'affichent MÊME si la journée est vide par ailleurs : un jour
   // sans tâche ni rendez-vous est justement celui où l'on tient son rythme.
   if (!rendezVous.length && !taches.length && !publications.length) {
-    return `${ligneAnnulation}
-      ${construireHabitudesDuJour(habitudes, faitsHabitudes)}
-      <p class="vide">Rien de posé aujourd'hui.</p>`;
+    return `${ligneAnnulation}<p class="vide">Rien de posé aujourd'hui.</p>`;
   }
 
   const listeJour = (elements, dessiner) =>
@@ -603,7 +611,6 @@ export function construireAujourdhui(
     : '';
 
   return `${ligneAnnulation}
-    ${construireHabitudesDuJour(habitudes, faitsHabitudes)}
     <div class="jour-colonnes">
       ${colonneDuJour([groupeDuJour('À faire', listeTaches)])}
       ${colonneDuJour([
@@ -613,37 +620,7 @@ export function construireAujourdhui(
     </div>`;
 }
 
-// LES HABITUDES DU JOUR, EN UNE BANDE (29 août 2026). Elles ouvrent la tuile
-// parce qu'elles se cochent le matin, avant tout le reste — et elles tiennent
-// sur UNE ligne, en pastilles, là où cinq lignes empilées auraient poussé la
-// journée vers le bas et fait de l'accueil un tableau de bord.
-//
-// Ce qui n'est PAS ici : l'élan, la série, les paliers. L'accueil dit ce qu'il
-// y a à faire ; perso dit où l'on en est. Deux questions, deux écrans.
-//
-// Celles qui sont faites restent visibles, cochées — les retirer donnerait une
-// bande qui se vide, donc un compteur de ce qui manque. C'est l'inverse de ce
-// qu'on veut montrer.
-export function construireHabitudesDuJour(habitudes = [], faits = []) {
-  const jour = versDateISO();
-  const vivantes = habitudes.filter((habitude) => !habitude.archivee);
-  if (!vivantes.length) return '';
 
-  const pastilles = vivantes
-    .map((habitude) => {
-      const faite = faits.some((f) => f.habitude_id === habitude.id && f.jour === jour);
-      return `
-      <button type="button" class="habitude-pastille${faite ? ' faite' : ''}"
-        data-faire-habitude="${echapper(habitude.id)}" aria-pressed="${faite}"
-        style="--teinte: var(--famille-${echapper(habitude.famille ?? 'intendance')})"
-        >${echapper(habitude.nom)}</button>`;
-    })
-    .join('');
-
-  return `
-    <h3 class="jour-groupe">Tes habitudes</h3>
-    <div class="habitudes-bande">${pastilles}</div>`;
-}
 
 // --- Le démarrage ------------------------------------------------------------
 //
@@ -766,6 +743,12 @@ function squelette() {
            contenait l'autre. La tuile tranche par son bord ; sa police finit le
            travail. Elle porte les QUATRE groupes de la journée : à faire, à
            publier, les rendez-vous, et les propositions. -->
+      <!-- LES HABITUDES VIVENT ENTRE LA TÊTE ET LA JOURNÉE (30 août 2026), et
+           hors de toute tuile : elles ne sont pas posées au calendrier, elles
+           reviennent. Elles se cochent avec l'humeur, dans le même geste du
+           matin, avant qu'on regarde ce qu'il y a à faire. -->
+      <div id="bloc-habitudes" hidden></div>
+
       <section class="bloc accueil-journee">
         <!-- LE TITRE EST DEHORS (29 août 2026, demande de Noé), comme celui des
              projets en cours : c'est lui qui nomme la tuile, il ne vit pas
@@ -1081,6 +1064,13 @@ export default {
       };
     }
 
+    function rendreLesHabitudes() {
+      const bloc = cible('bloc-habitudes');
+      if (!bloc) return;
+      bloc.innerHTML = construireHabitudesDuJour(etat.habitudes ?? [], etat.faitsHabitudes ?? []);
+      bloc.hidden = !bloc.innerHTML;
+    }
+
     function rendreAujourdhui() {
       if (!pret('taches')) return;
       // La tête compte ce que ce bloc affiche : les deux ne peuvent pas se
@@ -1094,12 +1084,7 @@ export default {
         ? journeeDeNoe()
         : { rendezVous: [], taches: tachesDuJour(), publications: [] };
 
-      bloc.innerHTML = construireAujourdhui(
-        // Les habitudes voyagent avec la journée : elles arrivent de leur propre
-        // source, qui peut être prête avant ou après « semaine ».
-        { ...journee, habitudes: etat.habitudes ?? [], faitsHabitudes: etat.faitsHabitudes ?? [] },
-        etat.annulation,
-      );
+      bloc.innerHTML = construireAujourdhui(journee, etat.annulation);
       marquerLesEntrantes(bloc, tachesVues, {
         selecteur: '.tache-ligne',
         cle: (ligne) => ligne.querySelector('[data-cocher]')?.dataset.cocher,
@@ -1229,7 +1214,7 @@ export default {
       },
       // Les habitudes arrivent de leur côté et n'ont besoin de personne : elles
       // redessinent la journée dès qu'elles sont là.
-      habitudes: () => rendreAujourdhui(),
+      habitudes: () => rendreLesHabitudes(),
       taches: () => {
         rendreAujourdhui();
         rendreSemaine();
@@ -1712,7 +1697,7 @@ export default {
       etat.faitsHabitudes = dejaFait
         ? avant.filter((f) => !(f.habitude_id === id && f.jour === jour))
         : [...avant, { habitude_id: id, jour }];
-      rendreAujourdhui();
+      rendreLesHabitudes();
 
       try {
         if (dejaFait) await api.demarquerHabitude(id, jour);
@@ -1720,7 +1705,7 @@ export default {
       } catch (souci) {
         console.error('Habitude non enregistrée', souci);
         etat.faitsHabitudes = avant;
-        rendreAujourdhui();
+        rendreLesHabitudes();
       }
     });
 

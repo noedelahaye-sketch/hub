@@ -12,7 +12,7 @@
 import * as api from './api.js';
 // Ces fonctions ne portent aucune mécanique d'espace : ce sont des gabarits
 // de tuiles et de formulaires, réutilisés tels quels.
-import { construireFormulaire } from './gabarits.js';
+import { construireFormulaire, construireHabitudesDuJour } from './gabarits.js';
 import { retirerAussitot } from './ecriture.js';
 import {
   etatDesHabitudes,
@@ -439,25 +439,21 @@ export function construireTableauPerso(donnees) {
 
       <div class="tuile-jour perso-tuile">
         ${
+          // LES MÊMES JETONS QUE L'ACCUEIL, et par la même fonction (30 août
+          // 2026) : deux écrans qui montreraient les mêmes habitudes de deux
+          // façons finiraient par se contredire. Le gabarit vit dans
+          // js/gabarits.js, que les deux empruntent.
+          //
+          // L'élan n'est PAS repris ici : il vit sur la page des habitudes,
+          // celle qui répond à « où j'en suis ». Ce tableau-ci répond à « qu'est-ce
+          // que je fais maintenant ».
           etatsHabitudes.length
-            ? `<h3 class="jour-groupe">Tes habitudes</h3>
-               <div class="habitudes-bande">
-                 ${etatsHabitudes
-                   .map(({ habitude, elan, faitAujourdhui }) => {
-                     const couleur = TEINTES_FAMILLE[habitude.famille] ?? 'var(--accent)';
-                     return `
-                     <button type="button" class="habitude-pastille${faitAujourdhui ? ' faite' : ''}"
-                       data-faire="${echapper(habitude.id)}" aria-pressed="${faitAujourdhui}"
-                       style="--teinte: ${couleur}">${echapper(habitude.nom)}${
-                       // Un élan à zéro ne s'affiche pas : c'est le cas de
-                       // toute habitude neuve, et cinq zéros pour accueillir
-                       // quelqu'un qui commence est le contraire de l'effet
-                       // voulu. Il apparaît au premier point gagné.
-                       elan ? `<span class="pastille-elan">${elan}</span>` : ''
-                     }</button>`;
-                   })
-                   .join('')}
-               </div>`
+            ? construireHabitudesDuJour(
+                etatsHabitudes.map((etat) => etat.habitude),
+                etatsHabitudes
+                  .filter((etat) => etat.faitAujourdhui)
+                  .map((etat) => ({ habitude_id: etat.habitude.id, jour })),
+              )
             : ''
         }
 
@@ -1559,9 +1555,12 @@ export default {
       // COCHER UNE HABITUDE. L'écran d'abord, l'écriture derrière — et l'élan,
       // la série et le palier se recalculent tout seuls, puisqu'ils ne sont
       // stockés nulle part : ils se déduisent des faits.
-      const faire = dans('faire');
+      // Deux attributs pour un même geste : `data-faire` sur la page des
+      // habitudes, `data-faire-habitude` sur les jetons partagés avec l'accueil.
+      // Le gabarit commun ne va pas renommer le sien pour cet écran-ci.
+      const faire = dans('faire') ?? dans('faire-habitude');
       if (faire) {
-        const id = faire.dataset.faire;
+        const id = faire.dataset.faire ?? faire.dataset.faireHabitude;
         const habitude = etat.habitudes.find((h) => h.id === id);
         const jour = versDateISO();
         const dejaFait = etat.faits.some((f) => f.habitude_id === id && f.jour === jour);
@@ -1573,6 +1572,7 @@ export default {
           etat.faits = [...etat.faits, { habitude_id: id, jour }];
         }
         rendreHabitudes();
+        rendreTableau();
 
         try {
           if (dejaFait) {
@@ -1592,6 +1592,7 @@ export default {
           console.error('Habitude non enregistrée', souci);
           etat.faits = avant;
           rendreHabitudes();
+          rendreTableau();
         }
         return;
       }

@@ -877,7 +877,27 @@ gestes ne doivent jamais porter le même signe.
    bilan qu'on n'a pas écrit ne s'écrira pas, et le redemander devient un
    reproche. Le rendez-vous du dimanche passe devant : deux bandeaux empilés
    seraient deux interruptions.
-3. **Aujourd'hui, dans une TUILE** — **et toute la tuile mène à `#taches`**
+3. **Les habitudes du jour, en JETONS RONDS et HORS DE TOUTE TUILE** (30 août
+   2026, correction de Noé : « les habitudes ne doivent pas être dans la tuile
+   des tâches, événements… et là ça prend trop de place »). Deux défauts en un,
+   et ils appelaient la même réponse. **Le rangement** : la tuile « Aujourd'hui »
+   porte ce qui est POSÉ au calendrier — tâches, publications, rendez-vous, tous
+   datés. Une habitude n'est datée de rien, elle revient. **La place** : cinq
+   pastilles à nom complet prenaient deux rangées et 110 px pour un geste d'une
+   seconde. La rangée de jetons en fait 56.
+   - **Elle change exprès de toutes les autres formes du hub** : posée à même le
+     fond, sans carte, sans bord, sans titre de section. Rien d'autre ne
+     ressemble à ça, et c'est ce qui dit sans un mot qu'une habitude n'est pas
+     de la même nature que ce qui est daté.
+   - **Le nom passe SOUS le rond, en petit** : il n'est là que pour reconnaître,
+     pas pour lire. Le rond garde donc sa taille — donc sa facilité à viser —
+     pendant que l'ensemble rétrécit.
+   - **Le gabarit est PARTAGÉ avec le tableau de bord perso**
+     (`construireHabitudesDuJour`, js/gabarits.js) : deux écrans qui montreraient
+     les mêmes habitudes de deux façons finiraient par se contredire.
+   - Ce qui n'y est PAS : l'élan, la série, les paliers. L'accueil dit ce qu'il y
+     a à faire, perso dit où l'on en est.
+4. **Aujourd'hui, dans une TUILE** — **et toute la tuile mène à `#taches`**
    (29 août 2026, demande de Noé : « en gardant tous les autres boutons de la
    tuile »). C'est cette seconde moitié qui décide de la forme : **pas un lien
    qui enveloppe**, comme celui d'une tuile de projet — celle-ci porte une
@@ -897,10 +917,18 @@ gestes ne doivent jamais porter le même signe.
    Display, casse normale) se distingue désormais du **libellé de groupe**
    (petites capitales), et le bord finit le travail. Le titre est DEHORS, comme
    celui des projets — il nomme la tuile, il ne vit pas dedans.
-4. **Ta semaine** — la grille du calendrier, **jours passés estompés** (0,42) et
-   **titres sur deux lignes** avec points de suspension. Rien n'est effacé : le
+5. **Ta semaine** — la grille du calendrier, **CINQ ÉLÉMENTS AU PLUS PAR JOUR**
+   (30 août 2026, demande de Noé), **jours passés estompés** (0,42) et
+   **titres sur deux lignes** avec points de suspension.
+   - Le plafond est un réglage de l'APPELANT (`maxParJour`), pas de la vue : au
+     delà de cinq lignes, une journée chargée écrase les six autres et la grille
+     cesse de se lire d'un coup d'œil. **Le calendrier plein écran continue de
+     tout montrer** — on y va pour voir, pas pour jeter un œil.
+   - **Le « +N » ouvre le jour**, comme celui de la vue mois : un compte qui
+     annonce une information et refuse de la donner serait pire que pas de
+     compte du tout. Rien n'est effacé : le
    hub ne compte pas les retards, mais il ne les cache pas non plus.
-5. **Projets en cours**, en colonne de droite — voir plus bas.
+6. **Projets en cours**, en colonne de droite — voir plus bas.
 
 **Les objectifs ont quitté l'accueil.** Ils ont leur page à deux gestes, et
 l'accueil répond à « qu'est-ce que j'ai à faire », pas à « où je vais ». Ils
