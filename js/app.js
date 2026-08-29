@@ -321,91 +321,232 @@ document.addEventListener(
 //
 // Demande de Noé (29 août 2026) : « pouvoir slider, essentiellement sur
 // téléphone, pour passer d'un onglet à un autre, EN PLUS de la possibilité
-// d'appuyer sur leur boutons ». Le geste s'ajoute, il ne remplace rien — les
-// onglets restent la façon dont on change de page, et c'est important : un
+// d'appuyer sur leur boutons ». Le geste s'ajoute, il ne remplace rien — un
 // geste invisible ne s'apprend pas tout seul.
+//
+// LA PAGE SUIT LE DOIGT (29 août au soir, seconde demande : « le slide n'est
+// pas fluide du tout »). La première version naviguait au relâchement et
+// l'écran basculait d'un coup : rien ne suivait la main, donc rien ne disait
+// que le geste avait pris. C'est ça qu'on lit comme « pas fluide » — pas la
+// durée de l'animation, l'absence de prise.
 //
 // Il ne vaut QUE POUR LES TROIS ONGLETS. Depuis `#objectifs` ou `#taches`, un
 // balayage ne fait rien : ces pages sont au second rang, on y est entré par une
 // décision, et en sortir par un geste involontaire annulerait cette décision.
-// Les sites Yuno et FCH n'y sont pas non plus, et cela découle de la même
-// liste : leur espace n'y figure pas.
+// Les sites Yuno et FCH n'y sont pas non plus, et cela découle de la même liste.
 const ONGLETS_BALAYABLES = ['dashboard', 'perso', 'calendrier'];
 
-// LE TACTILE SEULEMENT. Une souris qu'on traîne sur 60 px en sélectionnant du
-// texte est un geste ordinaire sur ordinateur ; le lire comme un changement de
-// page ferait perdre la sélection ET la page.
 const BALAYAGE = {
-  distance: 60, // px : sous ce seuil, c'est un appui qui a glissé
+  reconnu: 12, // px : en deçà, on ne sait pas encore ce que le doigt veut
+  distance: 60, // px : sous ce seuil au relâchement, c'est un appui qui a glissé
   pente: 2, // le geste doit être 2× plus horizontal que vertical
   duree: 600, // ms : un doigt posé puis déplacé n'est pas un balayage
+  prise: 0.9, // ce que l'écran suit du doigt — presque tout, donc « collé »
+  plafond: 0.26, // au plus, une fraction de la largeur : la page ne sort pas
+  voile: 0.45, // ce que la page perd d'opacité au bout de sa course
+  bord: 0.16, // au bout de la série, l'écran résiste et revient : « il n'y a rien »
+  sortie: 190, // ms de l'animation qui achève le geste
 };
 
-// UN ANCÊTRE QUI DÉFILE HORIZONTALEMENT GARDE LE GESTE. Le hub en a sept — le
-// rail des projets, la bande d'onglets, les grilles du calendrier, les bandes
-// des deux sites —, et une liste de sélecteurs vieillirait au premier ajout.
-// On regarde donc ce que l'élément FAIT, pas comment il s'appelle.
-function defileHorizontalement(depuis) {
+// UN ANCÊTRE QUI DÉFILE HORIZONTALEMENT NE GARDE LE GESTE QUE S'IL PEUT ENCORE
+// DÉFILER DE CE CÔTÉ-LÀ (29 août 2026, correction de Noé : « que je puisse
+// slider depuis partout sur l'écran, actuellement ce n'est que aux
+// extrémités »).
+//
+// La première version refusait le geste dès qu'un défileur se trouvait sous le
+// doigt, quel que soit le sens. Sur l'accueil, le rail des projets et la grille
+// de la semaine occupent le milieu de l'écran : il ne restait que les marges,
+// ce qui revenait à ne pas avoir le geste du tout.
+//
+// La règle juste est celle des carrousels imbriqués : le rail garde le geste
+// tant qu'il lui reste des tuiles de ce côté, et le rend à la page quand il est
+// au bout. C'est ce que fait le doigt naturellement — on pousse le rail jusqu'à
+// sa fin, puis on continue et c'est la page qui tourne. La décision se prend
+// donc au PREMIER MOUVEMENT et non au poser du doigt : avant, on ne connaît pas
+// encore le sens.
+function unDefileurGardeLeGeste(depuis, dx) {
   for (let noeud = depuis; noeud && noeud !== document.body; noeud = noeud.parentElement) {
     if (noeud.scrollWidth <= noeud.clientWidth + 1) continue;
     const mode = getComputedStyle(noeud).overflowX;
-    if (mode === 'auto' || mode === 'scroll') return true;
+    if (mode !== 'auto' && mode !== 'scroll') continue;
+
+    // Le doigt va vers la GAUCHE : on veut voir ce qui est à droite, donc le
+    // conteneur augmenterait son défilement. L'inverse pour l'autre sens.
+    const reste =
+      dx < 0
+        ? noeud.scrollLeft < noeud.scrollWidth - noeud.clientWidth - 1
+        : noeud.scrollLeft > 1;
+    if (reste) return true;
   }
   return false;
 }
 
+const sansAnimation = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 let balayage = null;
+// La direction du dernier passage, lue par `afficherEspace` pour que l'écran
+// entrant arrive du côté d'où le doigt l'a appelé. Sans elle, on glisserait
+// dehors pour réapparaître par le bas, et le mouvement se contredirait.
+let entreeDepuis = 0;
+
+function sectionDe(nom) {
+  return document.getElementById(`espace-${nom}`);
+}
+
+// Le suivi vit sur la SECTION de l'espace courant. Elle porte tout ce que la
+// page montre, elle est déjà un bloc de composition, et la translation reste
+// donc au GPU — c'est ce qui fait la différence entre « ça colle au doigt » et
+// « ça saccade ».
+function tenirLaPage(section, decalage, part = 0) {
+  section.style.transition = 'none';
+  section.style.transform = decalage ? `translateX(${decalage}px)` : '';
+  section.style.willChange = decalage ? 'transform, opacity' : '';
+  // LA PAGE S'ESTOMPE À MESURE QU'ELLE S'ÉLOIGNE. Ce qu'elle libère est du vide
+  // — on ne montre pas l'écran voisin, qui n'est pas forcément monté — et un
+  // bord net contre ce vide se lit comme un trou. En s'effaçant, elle dit
+  // qu'elle s'en va, et l'arrivée de l'autre écran enchaîne sur la même idée.
+  section.style.opacity = part ? String(1 - Math.min(1, part) * BALAYAGE.voile) : '';
+}
+
+function lacherLaPage(section, { anime = true } = {}) {
+  if (!section) return;
+  section.style.transition = anime
+    ? 'transform 190ms cubic-bezier(0.2, 0, 0, 1), opacity 190ms ease-out'
+    : 'none';
+  section.style.transform = '';
+  section.style.willChange = '';
+  section.style.opacity = '';
+  document.body.classList.remove('balaye');
+}
 
 document.addEventListener(
   'pointerdown',
   (evenement) => {
+    // LE TACTILE SEULEMENT. Une souris qu'on traîne sur 60 px en sélectionnant
+    // du texte est un geste ordinaire sur ordinateur ; le lire comme un
+    // changement de page ferait perdre la sélection ET la page.
     balayage =
-      evenement.pointerType === 'touch' && !defileHorizontalement(evenement.target)
-        ? { x: evenement.clientX, y: evenement.clientY, debut: performance.now() }
+      evenement.pointerType === 'touch'
+        ? { x: evenement.clientX, y: evenement.clientY, debut: performance.now(), pris: false }
         : null;
   },
   { passive: true },
 );
 
+document.addEventListener(
+  'pointermove',
+  (evenement) => {
+    if (!balayage) return;
+    const dx = evenement.clientX - balayage.x;
+    const dy = evenement.clientY - balayage.y;
+
+    if (!balayage.pris) {
+      // Un geste vertical n'est pas à nous : on se retire pour de bon, sinon on
+      // reprendrait la main au milieu d'un défilement.
+      if (Math.abs(dy) > BALAYAGE.reconnu && Math.abs(dy) > Math.abs(dx)) {
+        balayage = null;
+        return;
+      }
+      if (Math.abs(dx) < BALAYAGE.reconnu) return;
+
+      // C'est ici, et pas au poser du doigt, qu'on sait de quel côté il va.
+      if (unDefileurGardeLeGeste(evenement.target, dx)) {
+        balayage = null;
+        return;
+      }
+      // Une couche par-dessus garde le geste : il appartient à ce qu'elle
+      // contient, pas à la page qu'elle recouvre.
+      if (document.body.classList.contains('fond-fige')) return void (balayage = null);
+      if (document.querySelector('.ajout-volant[open]')) return void (balayage = null);
+
+      const rang = ONGLETS_BALAYABLES.indexOf(routeCourante?.espace);
+      if (rang === -1) return void (balayage = null);
+
+      balayage.pris = true;
+      balayage.rang = rang;
+      balayage.section = sectionDe(routeCourante.espace);
+      if (sansAnimation()) return;
+      document.body.classList.add('balaye');
+    }
+
+    if (sansAnimation() || !balayage.section) return;
+
+    // AU BOUT DE LA SÉRIE, L'ÉCRAN RÉSISTE au lieu de refuser en silence : il
+    // suit d'un sixième et revient. C'est la seule façon de dire « il n'y a
+    // rien de ce côté » sans écrire un mot ni bloquer le doigt.
+    const vers = balayage.rang + (dx < 0 ? 1 : -1);
+    const auBord = vers < 0 || vers >= ONGLETS_BALAYABLES.length;
+    const largeur = window.innerWidth;
+    const brut = dx * (auBord ? BALAYAGE.bord : BALAYAGE.prise);
+    const limite = largeur * (auBord ? BALAYAGE.bord : BALAYAGE.plafond);
+
+    const decalage = Math.max(-limite, Math.min(limite, brut));
+    tenirLaPage(
+      balayage.section,
+      decalage,
+      auBord ? 0 : Math.abs(decalage) / (largeur * BALAYAGE.plafond),
+    );
+  },
+  { passive: true },
+);
+
 // Un scroll vertical fait annuler le pointeur par le navigateur : `pointerup`
-// n'arrive alors jamais, et il n'y a rien à écarter nous-mêmes.
-document.addEventListener('pointercancel', () => { balayage = null; }, { passive: true });
+// n'arrive alors jamais, et la page doit reprendre sa place.
+document.addEventListener(
+  'pointercancel',
+  () => {
+    lacherLaPage(balayage?.section);
+    balayage = null;
+  },
+  { passive: true },
+);
 
 document.addEventListener(
   'pointerup',
   (evenement) => {
     const depart = balayage;
     balayage = null;
-    if (!depart) return;
+    if (!depart?.pris) return;
 
     const dx = evenement.clientX - depart.x;
     const dy = evenement.clientY - depart.y;
-    if (Math.abs(dx) < BALAYAGE.distance) return;
-    if (Math.abs(dx) < Math.abs(dy) * BALAYAGE.pente) return;
-    if (performance.now() - depart.debut > BALAYAGE.duree) return;
+    const section = depart.section;
 
-    // UNE COUCHE PAR-DESSUS GARDE LE GESTE : il appartient à ce qu'elle
-    // contient, pas à la page qu'elle recouvre. Sans cette garde, un balayage
-    // sur le menu ouvert faisait basculer l'écran DERRIÈRE lui — vérifié, et
-    // c'est exactement le genre de défaut qu'on ne voit qu'au doigt.
-    //
-    // Deux signaux, parce qu'il en faut deux : `fond-fige` est posé par le hub
-    // dès que le menu ou une tuile de capture recouvre l'écran, et il couvre
-    // donc ces deux cas-là tout seul, aujourd'hui comme demain. Les tuiles
-    // volantes des formulaires, elles, ne figent pas le fond — d'où la seconde.
-    if (document.body.classList.contains('fond-fige')) return;
-    if (document.querySelector('.ajout-volant[open]')) return;
-
-    const rang = ONGLETS_BALAYABLES.indexOf(routeCourante?.espace);
-    if (rang === -1) return;
+    const franc =
+      Math.abs(dx) >= BALAYAGE.distance &&
+      Math.abs(dx) >= Math.abs(dy) * BALAYAGE.pente &&
+      performance.now() - depart.debut <= BALAYAGE.duree;
 
     // Vers la gauche, on avance — le geste de tourner une page. Aux deux bouts,
     // il ne se passe rien : boucler du calendrier à l'accueil ferait passer
     // deux écrans d'un coup sans qu'on l'ait demandé.
-    const vers = rang + (dx < 0 ? 1 : -1);
-    if (vers < 0 || vers >= ONGLETS_BALAYABLES.length) return;
+    const vers = depart.rang + (dx < 0 ? 1 : -1);
+    if (!franc || vers < 0 || vers >= ONGLETS_BALAYABLES.length) return lacherLaPage(section);
 
-    location.hash = `#${ONGLETS_BALAYABLES[vers]}`;
+    const sens = dx < 0 ? -1 : 1;
+    if (sansAnimation()) {
+      lacherLaPage(section, { anime: false });
+      location.hash = `#${ONGLETS_BALAYABLES[vers]}`;
+      return;
+    }
+
+    // ON ACHÈVE LE MOUVEMENT AVANT DE NAVIGUER : la page finit de sortir du
+    // côté où le doigt l'emmenait, puis l'écran suivant arrive de l'autre bord.
+    // Naviguer tout de suite ferait disparaître la page au milieu de son
+    // geste — c'est exactement ce qui manquait à la première version.
+    section.style.transition = `transform ${BALAYAGE.sortie}ms cubic-bezier(0.4, 0, 1, 1),
+      opacity ${BALAYAGE.sortie}ms ease-out`;
+    section.style.transform = `translateX(${sens * window.innerWidth * BALAYAGE.plafond}px)`;
+    section.style.opacity = '0';
+
+    entreeDepuis = sens;
+    setTimeout(() => {
+      // Les styles partent AVANT la navigation : une section laissée translatée
+      // reviendrait de travers au prochain passage sur cet onglet.
+      section.style.cssText = '';
+      document.body.classList.remove('balaye');
+      location.hash = `#${ONGLETS_BALAYABLES[vers]}`;
+    }, BALAYAGE.sortie);
   },
   { passive: true },
 );
@@ -442,12 +583,22 @@ function afficherEspace() {
   // `position: fixed` — c'est le bug qui décalait toutes les fenêtres de Yuno.
   if (!memeEspace) {
     const entrant = document.getElementById(`espace-${nom}`);
-    entrant.classList.remove('espace-entre');
+    // L'ÉCRAN ARRIVE DU CÔTÉ D'OÙ LE DOIGT L'A APPELÉ (29 août 2026). Après un
+    // balayage, le fondu vertical se contredisait avec le geste : la page
+    // sortait par la droite et la suivante remontait par le bas. `entreeDepuis`
+    // porte le sens du dernier balayage, et rien d'autre ne le pose — un clic
+    // d'onglet garde donc le fondu d'origine.
+    const glisse =
+      entreeDepuis < 0 ? 'espace-entre-droite' : entreeDepuis > 0 ? 'espace-entre-gauche' : '';
+    const classe = glisse || 'espace-entre';
+    entreeDepuis = 0;
+
+    entrant.classList.remove('espace-entre', 'espace-entre-droite', 'espace-entre-gauche');
     void entrant.offsetWidth; // redémarre l'animation si on revient très vite
-    entrant.classList.add('espace-entre');
+    entrant.classList.add(classe);
     entrant.addEventListener(
       'animationend',
-      () => entrant.classList.remove('espace-entre'),
+      () => entrant.classList.remove(classe),
       { once: true },
     );
   }

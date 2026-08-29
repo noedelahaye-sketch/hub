@@ -5542,6 +5542,38 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
 .espace-entre { animation: espace-entree 130ms ease-out; }
 
+/* APRÈS UN BALAYAGE, L'ÉCRAN ARRIVE DU CÔTÉ D'OÙ LE DOIGT L'A APPELÉ (29 août
+   2026). Le fondu vertical d'origine se contredisait avec le geste : la page
+   sortait par la droite et la suivante remontait par le bas — deux mouvements
+   qui se croisent, et l'œil lit ça comme une saccade plutôt que comme un
+   passage.
+
+   La distance d'entrée est la MÊME que celle de sortie (26 % de la largeur,
+   `BALAYAGE.plafond` dans js/app.js) : le mouvement se poursuit là où il s'est
+   arrêté au lieu de repartir d'ailleurs. La courbe, elle, est l'inverse — on
+   sort en accélérant, on arrive en freinant. */
+@keyframes espace-glisse-droite {
+  from { opacity: 0; transform: translateX(26vw); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes espace-glisse-gauche {
+  from { opacity: 0; transform: translateX(-26vw); }
+  to { opacity: 1; transform: none; }
+}
+
+.espace-entre-droite { animation: espace-glisse-droite 210ms cubic-bezier(0.2, 0, 0, 1); }
+.espace-entre-gauche { animation: espace-glisse-gauche 210ms cubic-bezier(0.2, 0, 0, 1); }
+
+/* Pendant le geste, la page déborde de l'écran : sans cette coupe, le doigt
+   ferait apparaître une barre de défilement horizontale et le mouvement
+   sauterait au moment où elle naît. `clip` et non `hidden` — `hidden` sur une
+   des deux directions force l'autre à devenir un conteneur de défilement, ce
+   qui casserait le `position: sticky` de la barre. */
+body.balaye {
+  overflow-x: clip;
+}
+
 /* Une ligne qui vient d'apparaître dans une liste : une tâche créée, une
    victoire qui monte, une tâche décochée qui revient. Sans ça, elle SURGIT au
    milieu de la liste, à l'identique de ses voisines, et rien ne dit laquelle

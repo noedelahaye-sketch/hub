@@ -985,12 +985,39 @@ s'atteindre comme celles des autres espaces.
     balayage ne fait rien : ces pages sont au second rang, on y entre par une
     décision, et en sortir par un geste involontaire annulerait cette décision.
     Les deux sites n'y sont pas non plus, et cela découle de la même liste.
-  - **Ce qui défile déjà horizontalement garde le geste** — le rail des projets,
-    les grilles du calendrier, les bandes des deux sites. La détection regarde
-    ce qu'un ancêtre FAIT (`scrollWidth`, `overflow-x`) et non comment il
-    s'appelle : le hub en compte sept, et une liste de sélecteurs vieillirait au
-    premier ajout. *(La bande d'onglets, elle, ne défile plus depuis qu'ils sont
-    trois — balayer dessus change donc d'onglet, ce qui est cohérent.)*
+  - **LA PAGE SUIT LE DOIGT** (29 août au soir, seconde demande : « le slide
+    n'est pas fluide du tout »). La première version naviguait au relâchement et
+    l'écran basculait d'un coup : rien ne suivait la main, donc rien ne disait
+    que le geste avait pris. **C'est ça qu'on lit comme « pas fluide » — pas la
+    durée de l'animation, l'absence de prise.** L'écran suit à 90 %, plafonné à
+    26 % de la largeur, et **s'estompe à mesure qu'il s'éloigne** : ce qu'il
+    libère est du vide (on ne montre pas l'écran voisin, qui n'est pas forcément
+    monté), et un bord net contre ce vide se lit comme un trou.
+  - **On achève le mouvement AVANT de naviguer**, puis l'écran suivant arrive du
+    côté d'où le doigt l'a appelé (`espace-entre-gauche` / `-droite`, même
+    distance que la sortie). Naviguer aussitôt ferait disparaître la page au
+    milieu de son geste ; et le fondu vertical d'origine se contredisait avec
+    lui — la page sortait par la droite et la suivante remontait par le bas. Un
+    clic d'onglet, lui, garde ce fondu.
+  - **AU BOUT DE LA SÉRIE, L'ÉCRAN RÉSISTE** : il suit d'un sixième et revient.
+    C'est la seule façon de dire « il n'y a rien de ce côté » sans écrire un mot
+    ni bloquer le doigt.
+  - **Ce qui défile horizontalement ne garde le geste QUE S'IL PEUT ENCORE
+    DÉFILER DE CE CÔTÉ-LÀ** (29 août, correction de Noé : « que je puisse slider
+    depuis partout sur l'écran, actuellement ce n'est que aux extrémités »). La
+    première version refusait le geste dès qu'un défileur se trouvait sous le
+    doigt, quel que soit le sens : sur l'accueil, le rail des projets et la
+    grille de la semaine occupent le milieu de l'écran, il ne restait que les
+    marges — autant ne pas avoir le geste. **La règle juste est celle des
+    carrousels imbriqués** : le rail garde le geste tant qu'il lui reste des
+    tuiles de ce côté, et le rend à la page quand il est au bout. C'est ce que
+    fait le doigt naturellement. **La décision se prend donc au PREMIER
+    MOUVEMENT et non au poser du doigt** — avant, on ne connaît pas le sens.
+    La détection regarde ce qu'un ancêtre FAIT (`scrollWidth`, `overflow-x`,
+    `scrollLeft`) et non comment il s'appelle : le hub compte sept défileurs, et
+    une liste de sélecteurs vieillirait au premier ajout. *(La bande d'onglets
+    ne défile plus depuis qu'ils sont trois — balayer dessus change donc
+    d'onglet, ce qui est cohérent.)*
   - **Une couche par-dessus garde le geste** : le menu ouvert, une tuile de
     capture. Le signal est `body.fond-fige`, que le hub pose déjà dans ces
     deux cas, plus `.ajout-volant[open]` pour les tuiles de formulaire, qui ne
