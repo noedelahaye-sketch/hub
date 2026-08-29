@@ -554,6 +554,123 @@ export async function delierProjet(id) {
   if (error) throw error;
 }
 
+// --- La bibliothèque ---------------------------------------------------------
+//
+// Les pages lues d'un livre sont la SOMME de ses séances, jamais une colonne à
+// part : deux endroits pour un même nombre finissent toujours par se
+// contredire. Le journal sert aussi le rythme et la page du jour.
+
+export async function livresTous() {
+  return verifier(
+    await client
+      .from('livres')
+      .select('*, citations:livres_citations(id, texte, page)')
+      .order('created_at', { ascending: false }),
+  );
+}
+
+export async function livresSeancesDepuis(dateISO) {
+  return verifier(
+    await client
+      .from('livres_seances')
+      .select('id, livre_id, jour, pages')
+      .gte('jour', dateISO)
+      .order('jour'),
+  );
+}
+
+// Toutes les séances d'un livre, sans borne de date : l'avancée d'un livre
+// commencé il y a un an doit rester juste.
+export async function seancesDuLivre(livre_id) {
+  return verifier(
+    await client
+      .from('livres_seances')
+      .select('id, livre_id, jour, pages')
+      .eq('livre_id', livre_id),
+  );
+}
+
+// NOTER DES PAGES COCHE L'HABITUDE DE LECTURE. C'est la preuve qu'on a lu :
+// redemander de cocher « lire un peu » juste après serait demander deux fois la
+// même chose. L'habitude concernée se déclare elle-même (`automatique`), donc
+// rien n'est câblé sur un nom.
+export async function noterDesPages(livre_id, pages, jour = versDateISO()) {
+  const seance = verifier(
+    await client.from('livres_seances').insert({ livre_id, pages, jour }).select().single(),
+  );
+
+  const [habitude] = verifier(
+    await client.from('habitudes').select('id').eq('automatique', 'lecture').limit(1),
+  );
+  if (habitude) await marquerHabitude(habitude.id, jour);
+
+  return seance;
+}
+
+export async function creerLivre({
+  titre,
+  auteur = null,
+  pages = null,
+  statut = 'a_lire',
+  commence_le = null,
+}) {
+  return verifier(
+    await client
+      .from('livres')
+      .insert({ titre, auteur, pages, statut, commence_le })
+      .select('*, citations:livres_citations(id, texte, page)')
+      .single(),
+  );
+}
+
+export async function modifierLivre(id, champs) {
+  return verifier(
+    await client
+      .from('livres')
+      .update(champs)
+      .eq('id', id)
+      .select('*, citations:livres_citations(id, texte, page)')
+      .single(),
+  );
+}
+
+export async function supprimerLivre(id) {
+  const { error } = await client.from('livres').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// Terminer un livre écrit une victoire : finir un livre en est une, et le
+// perso compte au même rang que le reste (philosophie du hub).
+export async function terminerLivre(livre, note = null) {
+  const fini = verifier(
+    await client
+      .from('livres')
+      .update({ statut: 'lu', note, fini_le: versDateISO() })
+      .eq('id', livre.id)
+      .select('*, citations:livres_citations(id, texte, page)')
+      .single(),
+  );
+
+  await ajouterVictoire({
+    espace: 'perso',
+    titre: `Fini « ${livre.titre} »`,
+    source: 'manuel',
+  });
+
+  return fini;
+}
+
+export async function garderUneCitation(livre_id, texte, page = null) {
+  return verifier(
+    await client.from('livres_citations').insert({ livre_id, texte, page }).select().single(),
+  );
+}
+
+export async function retirerUneCitation(id) {
+  const { error } = await client.from('livres_citations').delete().eq('id', id);
+  if (error) throw error;
+}
+
 // --- Les habitudes de l'espace perso -----------------------------------------
 //
 // Trois mesures dont aucune ne peut s'effondrer — élan, série en semaines,

@@ -4571,6 +4571,102 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   border-color: var(--teinte, var(--accent));
 }
 
+/* --- La bibliothèque ---------------------------------------------------------
+   Le livre en cours occupe le haut, avec les deux gestes qui comptent : noter
+   des pages, garder une phrase. Le reste tient en lignes.
+
+   Ce qui n'y est PAS : aucun objectif annuel, aucun nombre de livres à
+   atteindre. « 24 livres cette année » transforme la lecture en course et
+   pousse à choisir des livres courts. */
+.livre-encours {
+  display: block;
+  padding: var(--espace-16);
+  margin-bottom: var(--espace-12);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+}
+
+.livre-titre {
+  display: block;
+  font-family: var(--police-titre);
+  font-weight: 700;
+  font-size: 1.0625rem;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+}
+
+.livre-auteur {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+}
+
+.livre-jauge {
+  display: block;
+  height: 5px;
+  margin: var(--espace-12) 0 var(--espace-8);
+  border-radius: 3px;
+  background: var(--bordure);
+  overflow: hidden;
+}
+
+.livre-jauge i {
+  display: block;
+  height: 100%;
+  background: var(--famille-calme);
+}
+
+.livre-ligne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-8);
+  font-size: 0.75rem;
+}
+
+.livre-pas { display: flex; gap: var(--espace-4); }
+
+/* Les deux pas rapides et « autre » : le geste doit coûter un doigt. Taper un
+   nombre reste possible, mais ce n'est pas le cas ordinaire. */
+.livre-pas-bouton {
+  padding: var(--espace-4) var(--espace-12);
+  background: none;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+  color: var(--texte);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.livre-pas-bouton:hover { border-color: var(--famille-calme); color: var(--famille-calme); }
+
+/* CE QUI RESTE D'UN LIVRE six mois après, plus que la note. En voix
+   éditoriale : c'est une phrase d'un autre, pas du service. */
+.livre-citation {
+  margin: var(--espace-12) 0 0;
+  padding-left: var(--espace-12);
+  border-left: 2px solid var(--bordure);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--texte-discret);
+}
+
+.livre-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-16);
+  margin-top: var(--espace-16);
+  font-size: 0.75rem;
+}
+
+.livre-note { flex: none; font-size: 0.75rem; color: var(--famille-calme); letter-spacing: 1px; }
+
+.livres-liste .perso-ligne-titre { font-size: 0.875rem; }
+
 /* --- L'espace perso, refondu le 29 août 2026 --------------------------------
    Demande de Noé : « la forme qui correspond à comment a évolué le site ».
 

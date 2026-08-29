@@ -14,7 +14,13 @@ import * as api from './api.js';
 // de tuiles et de formulaires, réutilisés tels quels.
 import { construireFormulaire } from './gabarits.js';
 import { retirerAussitot } from './ecriture.js';
-import { etatDesHabitudes, motDeLElan, PALIERS_HABITUDE } from './orientation.js';
+import {
+  etatDesHabitudes,
+  motDeLElan,
+  PALIERS_HABITUDE,
+  avanceeDuLivre,
+  livreEnCours,
+} from './orientation.js';
 import {
   versDateISO,
   ajouterJours,
@@ -275,6 +281,119 @@ export function construireHabitudes(etats, ouverte) {
     ${ajout}`;
 }
 
+// LA BIBLIOTHÈQUE (29 août 2026, demande de Noé) : « un espace qui m'encourage
+// à lire ». Le mot compte — encourager, pas mesurer.
+//
+// D'où ce qui n'y est PAS : aucun objectif annuel, aucun nombre de livres à
+// atteindre. « 24 livres cette année » transforme la lecture en course et pousse
+// à choisir des livres courts. Le hub montre où l'on en est et à quel rythme on
+// avance, et le rythme se compte PAR JOUR DE LECTURE — sauter trois jours ne
+// doit pas faire chuter un chiffre.
+//
+// Le livre en cours occupe le haut, avec les deux gestes qui comptent : noter
+// des pages, et garder une phrase. Le reste de la bibliothèque tient en lignes.
+const PAS_DE_PAGES = [10, 25];
+
+function etoiles(note) {
+  if (!note) return '';
+  return `<span class="livre-note" role="img" aria-label="${note} sur 5">${'★'.repeat(
+    note,
+  )}${'☆'.repeat(5 - note)}</span>`;
+}
+
+const MOTS_STATUT = { a_lire: 'à lire', en_cours: 'en cours', lu: 'lu', repose: 'reposé' };
+
+function livreDuHaut(livre, seances) {
+  const { lues, part, rythme } = avanceeDuLivre(livre, seances);
+  const citation = (livre.citations ?? []).at(-1);
+
+  return `
+    <article class="livre-encours" data-livre="${echapper(livre.id)}">
+      <span class="livre-titre">${echapper(livre.titre)}</span>
+      ${livre.auteur ? `<span class="livre-auteur">${echapper(livre.auteur)}</span>` : ''}
+
+      ${
+        part === null
+          ? ''
+          : `<span class="livre-jauge" role="img" aria-label="${lues} pages sur ${livre.pages}"><i
+               style="width:${Math.round(part * 100)}%"></i></span>`
+      }
+
+      <span class="livre-ligne">
+        <span class="discret">${
+          livre.pages ? `${lues} sur ${livre.pages} pages` : pluriel(lues, 'page')
+        }${rythme ? ` · ${rythme} par jour de lecture` : ''}</span>
+        <span class="livre-pas">
+          ${PAS_DE_PAGES.map(
+            (pas) =>
+              `<button type="button" class="livre-pas-bouton" data-pages="${pas}"
+                data-livre-pages="${echapper(livre.id)}">+${pas}</button>`,
+          ).join('')}
+          <button type="button" class="livre-pas-bouton" data-livre-autre="${echapper(livre.id)}"
+            >autre</button>
+        </span>
+      </span>
+
+      ${
+        citation
+          ? `<p class="livre-citation">« ${echapper(citation.texte)} »${
+              citation.page ? `<span class="discret"> — p. ${citation.page}</span>` : ''
+            }</p>`
+          : ''
+      }
+
+      <span class="livre-gestes">
+        <button type="button" class="lien-discret" data-livre-citation="${echapper(livre.id)}"
+          >Garder une phrase</button>
+        <button type="button" class="lien-discret" data-livre-fini="${echapper(livre.id)}"
+          >Je l'ai fini</button>
+      </span>
+    </article>`;
+}
+
+export function construireBibliotheque(livres, seances) {
+  const ajout = `
+    <button type="button" class="cap-ajout-discret" data-ajout="livre">
+      ${SIGNE.plus}<span>Ajouter un livre</span></button>`;
+
+  if (!livres.length) {
+    return `
+      <p class="vide">Tes livres s'écriront ici. Même ceux que tu n'as pas finis.</p>
+      ${ajout}`;
+  }
+
+  const encours = livreEnCours(livres, seances);
+  const autres = livres.filter((livre) => livre.id !== encours?.id);
+
+  return `
+    ${encours ? livreDuHaut(encours, seances) : ''}
+    ${
+      autres.length
+        ? `<ul class="perso-lignes livres-liste">${autres
+            .map((livre) => {
+              const { lues } = avanceeDuLivre(livre, seances);
+              const service = [
+                MOTS_STATUT[livre.statut] ?? livre.statut,
+                livre.auteur ?? '',
+                livre.statut === 'repose' && lues ? `${lues} pages lues` : '',
+              ].filter(Boolean);
+
+              return `
+        <li class="perso-ligne" data-livre="${echapper(livre.id)}">
+          <span class="perso-ligne-corps">
+            <span class="perso-ligne-titre">${echapper(livre.titre)}</span>
+            <span class="perso-ligne-service">${echapper(service.join(' · '))}</span>
+          </span>
+          ${etoiles(livre.note)}
+          ${menuDiscret('livre', livre.id)}
+        </li>`;
+            })
+            .join('')}</ul>`
+        : ''
+    }
+    ${ajout}`;
+}
+
 // LES RENDEZ-VOUS AVEC SOI-MÊME, en lignes et non en cartes. Ils n'ont pas
 // besoin d'une tuile : ce qu'on vient y lire tient en une ligne — quoi, quand,
 // où. Ce sont les intentions qui portent des tuiles, parce qu'elles portent une
@@ -514,6 +633,11 @@ function squelette() {
       <div data-bloc="habitudes"><p class="vide">…</p></div>
     </section>
 
+    <section class="bloc" data-vue="bibliotheque">
+      <h2>Ta bibliothèque</h2>
+      <div data-bloc="bibliotheque"><p class="vide">…</p></div>
+    </section>
+
     <div class="perso-colonnes">
       <section class="bloc" data-vue="rendez-vous">
         <h2>Rendez-vous avec toi-même</h2>
@@ -607,6 +731,47 @@ const FORMULAIRES = {
       { nom: 'pourquoi', libelle: 'Pourquoi ? (facultatif)', type: 'textarea', valeur: v.pourquoi },
     ],
   },
+  livre: {
+    ajouter: 'Ajouter un livre',
+    modifier: 'Modifier le livre',
+    champs: (v) => [
+      { nom: 'titre', libelle: 'Titre', type: 'text', requis: true, valeur: v.titre },
+      { nom: 'auteur', libelle: 'Auteur (facultatif)', type: 'text', valeur: v.auteur },
+      {
+        nom: 'pages',
+        libelle: 'Nombre de pages (facultatif)',
+        type: 'number',
+        valeur: v.pages ?? '',
+      },
+      {
+        nom: 'statut',
+        libelle: 'Où il en est',
+        type: 'choix',
+        // « Reposé » et non « abandonné » : un livre qu'on lâche n'est pas un
+        // échec, et le mot compte.
+        options: { a_lire: 'À lire', en_cours: 'En cours', lu: 'Lu', repose: 'Reposé' },
+        valeur: v.statut ?? 'en_cours',
+      },
+      {
+        nom: 'note',
+        libelle: 'Ta note (une fois lu)',
+        type: 'choix',
+        options: { '': 'Pas encore', 1: '★', 2: '★★', 3: '★★★', 4: '★★★★', 5: '★★★★★' },
+        valeur: v.note ? String(v.note) : '',
+      },
+    ],
+  },
+  citation: {
+    ajouter: 'Garder une phrase',
+    champs: () => [
+      { nom: 'texte', libelle: 'La phrase', type: 'textarea', requis: true },
+      { nom: 'page', libelle: 'Page (facultatif)', type: 'number' },
+    ],
+  },
+  pages: {
+    ajouter: 'Combien de pages',
+    champs: () => [{ nom: 'pages', libelle: 'Pages lues', type: 'number', requis: true }],
+  },
   victoire: {
     ajouter: 'Ajouter une victoire',
     champs: () => [{ nom: 'titre', libelle: 'Victoire', type: 'text', requis: true }],
@@ -625,8 +790,12 @@ function laFenetre() {
     action: 'enregistrer-perso',
     bouton: id ? 'Enregistrer' : 'Ajouter',
     champs: modele.champs(vueEtat.edition.valeurs ?? {}),
+    // `parent` porte ce à quoi la fenêtre se rattache : le livre d'une citation
+    // ou d'un nombre de pages. Sans lui, la ligne partait sans son livre — et
+    // Postgres refusait, ce qui valait mieux qu'une citation orpheline.
     extra: `<input type="hidden" name="forme" value="${echapper(forme)}">
-            <input type="hidden" name="id" value="${echapper(id ?? '')}">`,
+            <input type="hidden" name="id" value="${echapper(id ?? '')}">
+            <input type="hidden" name="parent" value="${echapper(vueEtat.edition.parent ?? '')}">`,
   });
 }
 
@@ -636,6 +805,7 @@ function laFenetre() {
 const VUES = {
   intentions: ['Les intentions', 'Ce que tu veux tenir, sans mesure ni date.'],
   habitudes: ['Tes habitudes', "Le rythme que tu tiens, et rien qui puisse s'écrouler."],
+  bibliotheque: ['Ta bibliothèque', 'Ce que tu lis, à ton rythme et sans quota.'],
   victoires: ['Les victoires', 'Une belle séance compte autant qu\'un post réussi.'],
   'rendez-vous': ['Les rendez-vous', 'Les moments que tu te réserves.'],
   humeur: ['Ton humeur', 'Les 30 derniers jours, sans relance ni reproche.'],
@@ -681,7 +851,7 @@ export default {
     // laissé.
     this.naviguer = (nouvelle) => appliquerLaVue(section, nouvelle);
 
-    const etat = { intentions: [], evenements: [], victoires: [], humeurDuJour: null, habitudes: [], faits: [] };
+    const etat = { intentions: [], evenements: [], victoires: [], humeurDuJour: null, habitudes: [], faits: [], livres: [], seances: [] };
     const bloc = (nom) => section.querySelector(`[data-bloc="${nom}"]`);
 
     const rendreIntentions = () => {
@@ -719,6 +889,9 @@ export default {
     const rendreEvenements = () => {
       bloc('evenements').innerHTML = construireRendezVous(etat.evenements);
     };
+    const rendreBibliotheque = () => {
+      bloc('bibliotheque').innerHTML = construireBibliotheque(etat.livres, etat.seances);
+    };
     const rendreHabitudes = () => {
       bloc('habitudes').innerHTML = construireHabitudes(
         etatDesHabitudes({ habitudes: etat.habitudes, faits: etat.faits }),
@@ -733,6 +906,7 @@ export default {
     // déjà la forme, il n'y a donc rien à deviner.
     const RENDUS = {
       habitude: () => rendreHabitudes(),
+      livre: () => rendreBibliotheque(),
       intention: () => rendreIntentions(),
       'rendez-vous': () => rendreEvenements(),
       victoire: () => rendreVictoires(),
@@ -743,7 +917,7 @@ export default {
       // Un an de faits : l'élan n'en demande que soixante jours, la série en
       // veut cinquante-deux semaines. C'est quelques centaines de lignes au
       // plus, et le calcul n'a alors plus rien à redemander.
-      const [intentions, evenements, victoires, humeur, humeurDuJour, habitudes, faits] =
+      const [intentions, evenements, victoires, humeur, humeurDuJour, habitudes, faits, livres, seances] =
         await Promise.all([
           api.objectifsActifs({ espace: ESPACE }),
           api.evenementsEntre(new Date().toISOString(), horizon(), { espace: ESPACE }),
@@ -752,10 +926,17 @@ export default {
           api.humeurDuJour(versDateISO()),
           api.habitudesToutes(),
           api.habitudesFaitsDepuis(versDateISO(ajouterJours(new Date(), -366))),
+          api.livresTous(),
+          // Sans borne : l'avancée d'un livre commencé il y a un an doit rester
+          // juste, et il n'y en aura jamais des milliers.
+          api.livresSeancesDepuis('2000-01-01'),
         ]);
 
-      Object.assign(etat, { intentions, evenements, victoires, humeurDuJour, habitudes, faits });
+      Object.assign(etat, {
+        intentions, evenements, victoires, humeurDuJour, habitudes, faits, livres, seances,
+      });
       rendreHabitudes();
+      rendreBibliotheque();
       rendreIntentions();
       rendreVictoires();
       rendreEvenements();
@@ -810,6 +991,38 @@ export default {
       }
     });
 
+    // NOTER DES PAGES : l'écran d'abord, l'écriture derrière. La séance est
+    // ajoutée à la liste locale, donc l'avancée et le rythme se recalculent
+    // tout seuls — ils ne sont stockés nulle part.
+    async function noterDesPages(livreId, pages) {
+      if (!pages || Number.isNaN(pages)) return;
+      const provisoire = {
+        id: `provisoire-${livreId}`,
+        livre_id: livreId,
+        jour: versDateISO(),
+        pages,
+      };
+      const avant = [...etat.seances];
+      etat.seances = [...etat.seances, provisoire];
+      vueEtat.edition = null;
+      rendreFenetre();
+      rendreBibliotheque();
+
+      try {
+        const seance = await api.noterDesPages(livreId, pages);
+        etat.seances = [...etat.seances.filter((s) => s.id !== provisoire.id), seance];
+        // La lecture coche l'habitude : le bloc des habitudes doit le montrer
+        // sans qu'on ait à recharger la page.
+        etat.faits = await api.habitudesFaitsDepuis(versDateISO(ajouterJours(new Date(), -366)));
+        rendreHabitudes();
+        rendreBibliotheque();
+      } catch (souci) {
+        console.error('Pages non enregistrées', souci);
+        etat.seances = avant;
+        rendreBibliotheque();
+      }
+    }
+
     async function appliquerAjout(action, champs) {
       if (action !== 'enregistrer-perso') return;
       const { forme, id } = champs;
@@ -852,6 +1065,45 @@ export default {
           ];
         }
         rendreHabitudes();
+      }
+
+      if (forme === 'livre') {
+        const valeurs = {
+          titre: champs.titre.trim(),
+          auteur: champs.auteur?.trim() || null,
+          pages: champs.pages ? Number(champs.pages) : null,
+          statut: champs.statut,
+          note: champs.note ? Number(champs.note) : null,
+        };
+
+        if (id) {
+          const livre = etat.livres.find((l) => l.id === id);
+          Object.assign(livre, await api.modifierLivre(id, valeurs));
+        } else {
+          etat.livres = [
+            await api.creerLivre({
+              ...valeurs,
+              commence_le: valeurs.statut === 'en_cours' ? versDateISO() : null,
+            }),
+            ...etat.livres,
+          ];
+        }
+        rendreBibliotheque();
+      }
+
+      if (forme === 'pages') {
+        await noterDesPages(champs.parent, Number(champs.pages));
+      }
+
+      if (forme === 'citation') {
+        const livre = etat.livres.find((l) => l.id === champs.parent);
+        const gardee = await api.garderUneCitation(
+          champs.parent,
+          champs.texte.trim(),
+          champs.page ? Number(champs.page) : null,
+        );
+        livre.citations = [...(livre.citations ?? []), gardee];
+        rendreBibliotheque();
       }
 
       if (forme === 'victoire') {
@@ -942,6 +1194,42 @@ export default {
         return;
       }
 
+      // NOTER DES PAGES, le geste du livre en cours. Il coche aussi l'habitude de
+      // lecture — noter des pages EST la preuve qu'on a lu, et redemander de
+      // cocher juste après serait demander deux fois la même chose.
+      const pages = dans('livre-pages');
+      if (pages) return noterDesPages(pages.dataset.livrePages, Number(pages.dataset.pages));
+
+      const autre = dans('livre-autre');
+      if (autre) {
+        vueEtat.edition = { forme: 'pages', id: null, parent: autre.dataset.livreAutre };
+        rendreFenetre();
+        return;
+      }
+
+      const citation = dans('livre-citation');
+      if (citation) {
+        vueEtat.edition = { forme: 'citation', id: null, parent: citation.dataset.livreCitation };
+        rendreFenetre();
+        return;
+      }
+
+      const fini = dans('livre-fini');
+      if (fini) {
+        const livre = etat.livres.find((l) => l.id === fini.dataset.livreFini);
+        if (!livre) return;
+        Object.assign(livre, { statut: 'lu', fini_le: versDateISO() });
+        rendreBibliotheque();
+        try {
+          Object.assign(livre, await api.terminerLivre(livre, livre.note));
+        } catch (souci) {
+          console.error('Livre non terminé', souci);
+          Object.assign(livre, { statut: 'en_cours', fini_le: null });
+          rendreBibliotheque();
+        }
+        return;
+      }
+
       const ouvrirHabitude = dans('ouvrir-habitude');
       if (ouvrirHabitude) {
         const id = ouvrirHabitude.dataset.ouvrirHabitude;
@@ -963,10 +1251,12 @@ export default {
       const modifier = dans('modifier');
       if (modifier) {
         const [forme, id] = modifier.dataset.modifier.split(':');
-        const source =
-          forme === 'habitude'
-            ? etat.habitudes.find((h) => h.id === id)
-            : etat.intentions.find((i) => i.id === id);
+        const SOURCES_EDITION = {
+          habitude: () => etat.habitudes.find((h) => h.id === id),
+          livre: () => etat.livres.find((l) => l.id === id),
+          intention: () => etat.intentions.find((i) => i.id === id),
+        };
+        const source = (SOURCES_EDITION[forme] ?? SOURCES_EDITION.intention)();
         vueEtat.edition = { forme, id, valeurs: source };
         vueEtat.menu = null;
         rendreFenetre();
@@ -1001,6 +1291,7 @@ export default {
 
         const RETRAITS = {
           habitude: [etat.habitudes, api.supprimerHabitude],
+          livre: [etat.livres, api.supprimerLivre],
           intention: [etat.intentions, api.supprimerObjectif],
           'rendez-vous': [etat.evenements, api.supprimerEvenement],
           victoire: [etat.victoires, api.supprimerVictoire],

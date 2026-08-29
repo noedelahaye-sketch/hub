@@ -294,6 +294,40 @@ la joie, de l'espoir, de la simplicité » n'en est PAS une et ne doit pas le
 devenir : c'est l'intention-mère, celle qui juge les autres — en faire une case
 à cocher la détruirait.
 
+### La bibliothèque (29 août 2026)
+
+**La demande** : « un espace qui m'encourage à lire — une bibliothèque où mes
+livres sont recensés, un bouton qui me permet de rajouter rapidement un nombre
+de pages lues sur mon livre en cours, pouvoir noter le livre. » Le mot est
+*encourager*, pas mesurer, et il commande tout ce qui suit.
+
+**Trois tables.** `livres`, `livres_seances` (le journal de lecture) et
+`livres_citations`. La deuxième est celle qui compte : **les pages lues d'un
+livre sont la SOMME de ses séances, jamais une colonne à part** — deux endroits
+pour un même nombre finissent toujours par se contredire. Elle donne aussi le
+rythme, et servira la page du jour.
+
+- **PAS d'objectif annuel, PAS de quota de livres.** « 24 livres cette année »
+  transforme la lecture en course et pousse à choisir des livres courts. Le hub
+  montre où l'on en est et à quel rythme on avance, jamais un reste à faire.
+- **Le rythme se compte PAR JOUR DE LECTURE**, pas par jour de calendrier :
+  sauter trois jours ne doit pas faire chuter un chiffre, sinon c'est un
+  reproche déguisé.
+- **« Reposé » et non « abandonné »** (`statut`) : un livre qu'on lâche n'est pas
+  un échec, et le mot compte. Ses pages sont gardées, on peut le reprendre.
+- **Un livre déclaré lu est fini**, même si le compte des pages ne tombe pas
+  juste : c'est la décision qui dit la vérité, pas l'arithmétique — même règle
+  que l'état posé d'un projet.
+- **Les citations gardées** sont l'ajout que Noé n'avait pas demandé et qui sert
+  le plus sa première phrase (« une page qui me permet de me recentrer ») : c'est
+  ce qui reste d'un livre six mois après, plus que la note.
+- **Finir un livre écrit une victoire**, au même rang que le reste.
+
+**NOTER DES PAGES COCHE L'HABITUDE DE LECTURE.** C'est la preuve qu'on a lu :
+redemander de cocher « lire un peu » juste après serait demander deux fois la
+même chose. L'habitude concernée se DÉCLARE elle-même (`habitudes.automatique`),
+donc rien n'est câblé sur un nom — et la colonne accueillera les suivantes.
+
 **Ce qui NE change pas, et ne changera pas** : ni jalon, ni barre de
 progression, ni backlog, ni retard, ni tâche affichée. Une tâche perso continue
 de vivre dans l'espace Tâches, au calendrier et dans « Aujourd'hui » — **jamais
