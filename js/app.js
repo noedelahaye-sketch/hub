@@ -109,12 +109,20 @@ document.body.insertAdjacentHTML(
            Le bouton du menu est posé par monterLeMenu, à côté de la bande et
            non dedans : la bande défile, une chose en queue de bande n'existe
            pas. -->
-      <div class="barre-onglets">
-        <nav class="navigation" aria-label="Espaces">
-          ${['dashboard', 'perso'].map(ongletMot).join('\n          ')}
-          ${ongletCalendrier('#calendrier', false)}
-        </nav>
-      </div>
+    </div>
+
+    <!-- LA BARRE EST SORTIE DE l'en-tête (29 août 2026, demande de Noé : « une
+         barre fixe, qui reste lorsque l'on descend dans la page »). Elle était
+         déjà collante, mais un élément collant est BORNÉ PAR SON PARENT :
+         enfermée dans un en-tête haut de 100 px, elle ne pouvait coller que sur
+         ces 100 px, puis elle sortait de l'écran avec lui. Mesuré : à 600 px de
+         défilement, elle se trouvait à moins 553.
+         Enfant direct de l'application, elle colle sur toute la page. -->
+    <div class="barre-onglets">
+      <nav class="navigation" aria-label="Espaces">
+        ${['dashboard', 'perso'].map(ongletMot).join('\n        ')}
+        ${ongletCalendrier('#calendrier', false)}
+      </nav>
     </div>
 
     <!-- Les id sont préfixés : sans ça, \`#photo\` dans la barre d'adresse ferait
@@ -384,6 +392,11 @@ function unDefileurGardeLeGeste(depuis, dx) {
 const sansAnimation = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let balayage = null;
+// UN GESTE À LA FOIS. Entre le relâchement et la navigation, il s'écoule le
+// temps de l'animation ; un second balayage lancé dans cet intervalle repartait
+// du MÊME onglet — `routeCourante` n'avait pas encore changé — et faisait
+// sauter deux crans. C'est ce qui ramenait à l'accueil depuis le calendrier.
+let passageEnCours = false;
 // La direction du dernier passage, lue par `afficherEspace` pour que l'écran
 // entrant arrive du côté d'où le doigt l'a appelé. Sans elle, on glisserait
 // dehors pour réapparaître par le bas, et le mouvement se contredirait.
@@ -426,7 +439,7 @@ document.addEventListener(
     // du texte est un geste ordinaire sur ordinateur ; le lire comme un
     // changement de page ferait perdre la sélection ET la page.
     balayage =
-      evenement.pointerType === 'touch'
+      evenement.pointerType === 'touch' && !passageEnCours
         ? { x: evenement.clientX, y: evenement.clientY, debut: performance.now(), pris: false }
         : null;
   },
@@ -454,9 +467,14 @@ document.addEventListener(
         balayage = null;
         return;
       }
-      // Une couche par-dessus garde le geste : il appartient à ce qu'elle
-      // contient, pas à la page qu'elle recouvre.
-      if (document.body.classList.contains('fond-fige')) return void (balayage = null);
+      // UNE COUCHE VISIBLE garde le geste : il appartient à ce qu'elle contient,
+      // pas à la page qu'elle recouvre. On regarde ce qui est RÉELLEMENT
+      // déplié, et non `body.fond-fige` : celui-ci reste posé tant qu'une tuile
+      // de capture existe dans l'espace courant, même repliée, et il coupait
+      // donc le balayage sur des écrans entiers — le calendrier le premier.
+      if (document.querySelector('#menu-voile:not([hidden])')) return void (balayage = null);
+      if (document.querySelector('.espace:not([hidden]) .capture:not([hidden])'))
+        return void (balayage = null);
       if (document.querySelector('.ajout-volant[open]')) return void (balayage = null);
 
       const rang = ONGLETS_BALAYABLES.indexOf(routeCourante?.espace);
@@ -540,12 +558,16 @@ document.addEventListener(
     section.style.opacity = '0';
 
     entreeDepuis = sens;
+    passageEnCours = true;
     setTimeout(() => {
       // Les styles partent AVANT la navigation : une section laissée translatée
       // reviendrait de travers au prochain passage sur cet onglet.
       section.style.cssText = '';
       document.body.classList.remove('balaye');
       location.hash = `#${ONGLETS_BALAYABLES[vers]}`;
+      // Levé APRÈS la navigation, sur l'image suivante : `routeCourante` est
+      // alors à jour, et le geste suivant repart du bon onglet.
+      requestAnimationFrame(() => { passageEnCours = false; });
     }, BALAYAGE.sortie);
   },
   { passive: true },

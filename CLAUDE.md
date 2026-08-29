@@ -955,6 +955,24 @@ s'atteindre comme celles des autres espaces.
   La barre d'onglets héritait de `height: 6px` et d'un fond `--accent-doux`, et
   `.barre span` peignait les trois traits du menu en un seul bloc d'accent.
   Deux défauts pour une collision de nom.
+- **LA BARRE RESTE QUAND ON DESCEND, ET ELLE VIT HORS DE L'EN-TÊTE** (29 août
+  2026, demande de Noé). Elle était déjà `position: sticky; top: 0` — et elle ne
+  collait pas : **un élément collant est borné par son PARENT.** Enfermée dans
+  `.haut`, haut d'une centaine de pixels, elle ne pouvait coller que sur cette
+  hauteur, puis sortait de l'écran avec lui. Mesuré : à 600 px de défilement,
+  elle se trouvait à −553. Enfant direct de `#app`, elle colle sur toute la
+  page. Le titre « Hub » et « Se déconnecter », eux, défilent — ce sont les
+  onglets qu'on veut sous le pouce, pas l'en-tête.
+- **UN GESTE À LA FOIS** (même jour, symptôme rapporté par Noé : « être sur le
+  calendrier et en un slide vers la gauche me retrouver sur l'accueil »). Entre
+  le relâchement et la navigation s'écoule le temps de l'animation ; un second
+  balayage lancé dans cet intervalle repartait du MÊME onglet — `routeCourante`
+  n'avait pas encore changé — et faisait sauter deux crans. Le verrou se lève
+  APRÈS la navigation, sur l'image suivante.
+- **La garde des couches regarde ce qui est DÉPLIÉ**, et non `body.fond-fige` :
+  celui-ci reste posé tant qu'une tuile de capture existe dans l'espace courant,
+  même repliée, et il coupait donc le balayage sur des écrans entiers — le
+  calendrier le premier.
 - **Le bouton du menu vit HORS de la bande qui défile** — une chose en queue de
   bande n'existe pas, c'est la leçon de la pastille famille.
 - **L'onglet actif porte QUATRE signes à la fois** : le fond plein et l'encre
