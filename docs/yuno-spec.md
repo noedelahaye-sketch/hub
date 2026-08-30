@@ -511,6 +511,37 @@ Trois conséquences, et elles tiennent l'intention :
 **Le vocabulaire n'a pas bougé** : l'écran dit toujours « Moments vécus » et
 « Carnet de terrain ». C'est la donnée qui a fusionné, pas les mots.
 
+### Un match fait naître son post (29 août 2026)
+
+Demande de Noé : *« après chaque évènement match yuno, il faut programmer un post
+sur le match à J+1. »* C'est la troisième chose que le hub pose lui-même à partir
+d'un événement, après la préparation à J−2 et le tri des photos à J+1 — et **la
+première qui ne soit pas une tâche** : une parution n'est pas du travail à
+cocher, elle vit au calendrier éditorial avec son réseau, son format et son cycle
+d'états.
+
+- **La pastille « match » est une DÉCLARATION**, comme « photos » l'est pour le
+  tri. Le hub ne devine pas qu'une sortie est un match : un concert et une séance
+  n'appellent pas le même post.
+- **Elle naît en `idee`, sur Instagram et en carrousel.** Le hub programme la
+  parution, il n'écrit pas à la place de Noé — et le carrousel parce qu'un match
+  donne plusieurs images.
+- **APRÈS COUP, comme le tri**, et c'est la même règle que `vecu` juste au-dessus
+  : un post posé d'avance sur un match où Noé n'ira pas est une promesse fausse.
+  Conséquence assumée — la parution naît le jour même où elle est prévue. Si
+  l'anticipation manque à l'usage, c'est cette décision-là qu'il faudra rouvrir,
+  pas la date.
+- **Supprimer un match ne supprime pas son post** : `publications.evenement_id`
+  est en `ON DELETE SET NULL` là où celui des tâches est en CASCADE. Une
+  préparation n'a aucun sens sans son événement ; une publication en a un — elle
+  peut être partie, porter son lien, compter dans un bilan.
+- **Yuno seulement.** Le club a son propre calendrier éditorial, nourri par sa
+  chaîne à trois états ; rien n'a demandé qu'un entraînement y fasse naître une
+  parution.
+
+Le mécanisme vit dans `poserCeQuUnEvenementFaitNaitre` (js/api.js) — voir
+CLAUDE.md pour les trois automatismes réunis.
+
 - **Le mur, entier** (décision de Noé, 12 août 2026). Sous les compteurs, le
   même mur qu'à l'accueil — mêmes emplacements en 3:4, même recadrage — avec
   deux différences qui sont tout l'écart entre les deux pages : **rien n'est
