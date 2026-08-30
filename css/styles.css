@@ -8530,6 +8530,17 @@ body.balaye {
 
 .bloc ul.vivier-liste {
   display: grid;
+  /* `minmax(0, 1fr)` ET NON la colonne implicite (30 août 2026, symptôme
+     rapporté par Noé : « la croix est difficile d'accès sur ordi, il faut
+     glisser la colonne sur le côté »).
+
+     Une piste de grille implicite vaut `auto`, c'est-à-dire la largeur MINIMALE
+     du contenu — ici 315 px pour une colonne qui en fait 296. La liste
+     débordait donc de quinze pixels, et la croix, tout au bout de la ligne,
+     tombait hors du champ : il fallait faire défiler pour l'atteindre.
+     C'est le piège documenté dans les conventions, celui qui ne se voit jamais
+     sur l'écran large où l'on travaille. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--espace-4);
   margin: 0;
   padding: 0;
@@ -8567,6 +8578,9 @@ body.balaye {
   /* Le corps prend la place, la date se range au bout. `auto` et non une
      largeur : sans date, la colonne ne mesure rien et le nom prend tout. */
   display: grid;
+  /* Elle est elle-même un élément de grille, et garderait sinon sa largeur
+     minimale — c'est par elle que le débordement remontait jusqu'à la liste. */
+  min-width: 0;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--espace-8);

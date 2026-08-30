@@ -1355,6 +1355,15 @@ fois. Elle vit désormais dans le nom accessible de chaque tuile, où elle ne
 prend aucune place. *Conséquence assumée : le chemin tactile ne s'annonce plus
 nulle part à l'écran.*
 
+**LA LIGNE TIENT DANS LA LARGEUR DE LA COLONNE, ET LA CROIX AVEC ELLE** (30 août
+2026, symptôme rapporté par Noé : « la croix est difficile d'accès sur ordi, il
+faut glisser la colonne sur le côté »). La liste est une grille dont la piste
+doit s'écrire `minmax(0, 1fr)` : la piste implicite vaut `auto`, c'est-à-dire la
+largeur MINIMALE du contenu — mesuré, 315 px pour une colonne qui en fait 296.
+La croix, tout au bout de la ligne, tombait donc hors du champ. C'est le piège
+documenté dans les conventions, celui qui ne se voit jamais sur l'écran large où
+l'on travaille — et il se paie ici pour la quatrième fois.
+
 **HUIT TUILES, ET LE RESTE DÉFILE DANS LA COLONNE** (demande de Noé). Dix-sept
 tâches sans date faisaient une colonne trois fois plus haute que la grille d'en
 face : on ne voyait plus les jours où les poser. Le défilement est **dans la
