@@ -1390,3 +1390,80 @@ export function projetsEnCours({ projets = [], taches = [] } = {}, jour = new Da
     .filter(Boolean)
     .sort((a, b) => b.dormance - a.dormance || b.reste - a.reste);
 }
+
+// --- LE BILAN D'UNE SEMAINE : ce qu'elle a laissé ----------------------------
+//
+// Quelques chiffres, et rien d'autre (30 août 2026, demande de Noé pour la page
+// de programmation du dimanche soir). Ce sont ceux du MIROIR : ce qui a été
+// accompli, jamais ce qui a manqué. Aucun taux de réussite, aucune tâche non
+// faite comptée, aucune comparaison avec la semaine d'avant — un bilan qui
+// note la semaine passée transformerait le rendez-vous du dimanche en examen,
+// et on cesserait très vite de l'ouvrir.
+//
+// Il ne calcule QUE des choses qui montent. Le seul chiffre qui dit un manque
+// est la couverture des durées, et elle dit ce que le hub ignore — pas ce que
+// Noé a raté (même précaution que la première ligne de `#temps`).
+
+// LE DIMANCHE SOIR, LA SEMAINE QUI VIENT COMMENCE DEMAIN (30 août 2026).
+// `semaineDe` répond « la semaine où l'on est » — juste partout ailleurs, faux
+// pour le rendez-vous du dimanche : à 20 h, elle rend celle qui s'achève. Le
+// bandeau de l'accueil s'appelait « Ta semaine qui vient » et montrait la charge
+// de celle qui finissait.
+//
+// Le défaut se payait deux fois : il validait aussi la MAUVAISE semaine —
+// `validerLaSemaine` écrivait le lundi passé, si bien que le rendez-vous
+// revenait le lendemain matin comme s'il ne s'était rien dit.
+//
+// Rendu ici et non dans l'écran : c'est une règle de semaine, et elle doit
+// s'éprouver hors écran comme les autres.
+export function pivotDeLaSemaine(maintenant = new Date()) {
+  const pivot = new Date(maintenant);
+  if (pivot.getDay() === 0) pivot.setDate(pivot.getDate() + 1);
+  // Midi : à minuit pile, un décalage d'heure d'été ferait basculer le jour.
+  pivot.setHours(12, 0, 0, 0);
+  return pivot;
+}
+
+export function semainePrecedente(semaine) {
+  return semaineDe(ajouterJours(depuisDateISO(semaine.debut), -7));
+}
+
+const jourDuFait = (horodatage) => (horodatage ? versDateISO(new Date(horodatage)) : null);
+
+export function bilanDeLaSemaine(
+  { taches = [], publications = [], victoires = [], humeurs = [], habitudesFaits = [] } = {},
+  semaine,
+) {
+  const faites = taches.filter((tache) => dans(jourDuFait(tache.date_fait), semaine));
+  // Une publication n'a pas de date de parution à elle : c'est son jour prévu
+  // qui fait foi, comme partout ailleurs dans le hub.
+  const parties = publications.filter(
+    (pub) => pub.statut === 'publie' && dans(pub.date_prevue, semaine),
+  );
+
+  const terminees = [...faites, ...parties];
+  const chiffrees = terminees.filter((ligne) => ligne.duree);
+  const minutes = chiffrees.reduce((somme, ligne) => somme + ligne.duree, 0);
+
+  const notes = humeurs.filter((ligne) => dans(ligne.date, semaine));
+
+  return {
+    semaine,
+    victoires: victoires.filter((victoire) => dans(victoire.date, semaine)).length,
+    taches: faites.length,
+    publications: parties.length,
+    minutes,
+    // Ce que le hub SAIT compter, sur ce qu'il y avait à compter. Sans ces deux
+    // nombres, « 2 h 30 » se lirait comme une semaine légère alors qu'il ne dit
+    // que le silence des durées.
+    chiffrees: chiffrees.length,
+    terminees: terminees.length,
+    humeur: notes.length
+      ? {
+          moyenne: notes.reduce((somme, ligne) => somme + ligne.niveau, 0) / notes.length,
+          jours: notes.length,
+        }
+      : null,
+    habitudes: habitudesFaits.filter((fait) => dans(fait.jour, semaine)).length,
+  };
+}

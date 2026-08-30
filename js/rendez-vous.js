@@ -200,7 +200,11 @@ function propositionDeLInference(inference) {
 
 // --- Le dessin ----------------------------------------------------------------
 
-export function construireRendezVous(diagnostic) {
+// `intro` et `valider` : la page de programmation (30 août 2026) écrit déjà
+// l'intervalle dans son sous-titre et pose son bouton de fin tout en bas, après
+// la grille. Deux fois la même phrase, ou deux boutons de validation sur un
+// même écran, ne diraient rien de plus.
+export function construireRendezVous(diagnostic, { intro = true, valider = true } = {}) {
   const lignes = lignesDuRendezVous(diagnostic);
   const { semaine } = diagnostic;
 
@@ -216,8 +220,12 @@ export function construireRendezVous(diagnostic) {
     )}">${echapper(proposition.libelle)}</button>`;
   };
 
+  if (!lignes.length) {
+    return `<p class="vide">Rien à signaler sur cette semaine — elle est à toi.</p>`;
+  }
+
   return `
-    <p class="rdv-intro">Du ${echapper(bornesLisibles(semaine))}.</p>
+    ${intro ? `<p class="rdv-intro">Du ${echapper(bornesLisibles(semaine))}.</p>` : ''}
 
     <ul class="rdv-lignes">
       ${lignes
@@ -233,9 +241,13 @@ export function construireRendezVous(diagnostic) {
         .join('')}
     </ul>
 
-    <button type="button" class="bouton-secondaire rdv-valider" data-valider-semaine>
-      C’est ma semaine
-    </button>`;
+    ${
+      valider
+        ? `<button type="button" class="bouton-secondaire rdv-valider" data-valider-semaine>
+             C’est ma semaine
+           </button>`
+        : ''
+    }`;
 }
 
 export { PLANCHER_PERSO };

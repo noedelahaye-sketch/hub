@@ -1216,7 +1216,14 @@ const FORMULAIRES = {
         valeur: v.pourquoi,
       },
       { nom: 'cible', libelle: "À quoi tu sauras que c'est réussi", type: 'text', valeur: v.cible },
-      { nom: 'echeance', libelle: 'Échéance (facultative)', type: 'date', valeur: v.echeance },
+      // L'ÉCHÉANCE D'UN OBJECTIF N'EST PAS FACULTATIVE (30 août 2026, décision
+      // de Noé). Elle l'était depuis le début et le hub s'en accommodait — la
+      // galerie range en queue « ce qui n'a pas de date ferme ». Mais un cap
+      // sans date n'est pas un cap : c'est une intention, et les intentions ont
+      // leur page, dans perso, où justement rien ne se mesure.
+      // Un JALON, lui, la garde facultative : il découpe un objectif qui porte
+      // déjà la date, et tous les jalons n'ont pas de jour à eux.
+      { nom: 'echeance', libelle: 'Échéance', type: 'date', requis: true, valeur: v.echeance },
     ],
   },
   jalon: {
@@ -1239,7 +1246,7 @@ const FORMULAIRES = {
   projet: {
     ajouter: 'Poser un projet',
     modifier: 'Modifier le projet',
-    champs: (v) => [
+    champs: (v, contexte = []) => [
       // L'espace est demandé MÊME quand le projet naît sous un cap : il arrive
       // alors pré-rempli avec celui du cap, et il reste corrigeable. Un projet
       // posé depuis la galerie, lui, n'a que ce champ pour dire d'où il vient.
@@ -1249,6 +1256,31 @@ const FORMULAIRES = {
         type: 'choix',
         options: Object.fromEntries(ESPACES.map((espace) => [espace, NOMS_ESPACES[espace]])),
         valeur: v.espace ?? ESPACES[0],
+      },
+      // LES OBJECTIFS QUE CE PROJET SERT (30 août 2026, demande de Noé). Le lien
+      // existait en base depuis le 27 août — `projets_cibles`, plusieurs
+      // objectifs par projet — et ne se posait QUE d'un endroit : poser un
+      // projet depuis un cap déjà ouvert. Autrement dit, un projet créé depuis
+      // la galerie ne pouvait plus jamais être rattaché.
+      //
+      // La pastille vient juste après l'espace, comme demandé : ce sont les
+      // deux réglages qui disent OÙ le projet se range.
+      //
+      // Elle offre TOUS les objectifs, chacun avec la pastille de son espace,
+      // et non ceux du seul espace choisi : la rangée ne se redessine pas quand
+      // l'espace change (c'est un service de la tuile de capture, pas du
+      // formulaire commun), et un menu qui ne suit pas son espace vaut mieux
+      // qu'un menu qui ment.
+      {
+        nom: 'objectifs',
+        libelle: 'Objectifs servis',
+        mot: 'objectif',
+        type: 'choix-multiple',
+        options: Object.fromEntries(contexte.map((objectif) => [objectif.id, objectif.titre])),
+        espaces: Object.fromEntries(contexte.map((objectif) => [objectif.id, objectif.espace])),
+        valeur: (v.cibles ?? [])
+          .filter((cible) => cible.objectif_id)
+          .map((cible) => cible.objectif_id),
       },
       { nom: 'nom', libelle: 'Projet', type: 'text', requis: true, valeur: v.nom },
       {
@@ -1324,6 +1356,7 @@ const FORMULAIRES = {
       { nom: 'fin', libelle: 'Au', type: 'date', requis: true, valeur: v.fin },
       {
         nom: 'regime_fch',
+        marqueEspace: 'fch',
         libelle: 'FC Hermitage',
         type: 'choix',
         options: NOMS_REGIMES,
@@ -1331,6 +1364,7 @@ const FORMULAIRES = {
       },
       {
         nom: 'regime_formation',
+        marqueEspace: 'formation',
         libelle: 'Formation',
         type: 'choix',
         options: NOMS_REGIMES,
@@ -1338,6 +1372,7 @@ const FORMULAIRES = {
       },
       {
         nom: 'regime_photo',
+        marqueEspace: 'photo',
         libelle: 'Yuno',
         type: 'choix',
         options: NOMS_REGIMES,
@@ -1383,11 +1418,45 @@ function laFenetre() {
     libelle: id ? modele.modifier : modele.ajouter,
     action: 'enregistrer-cap',
     bouton: id ? 'Enregistrer' : 'Ajouter',
-    champs: modele.champs(valeurs),
+    // Le second argument est le CONTEXTE : ce que le formulaire ne peut pas
+    // deviner tout seul. Seul celui d'un projet s'en sert — la liste des
+    // objectifs qu'il peut servir.
+    champs: modele.champs(valeurs, etat.objectifs),
     extra: `<input type="hidden" name="forme" value="${echapper(forme)}">
             <input type="hidden" name="id" value="${echapper(id ?? '')}">
             <input type="hidden" name="parent" value="${echapper(parent ?? '')}">`,
   });
+}
+
+// ACCORDER LES LIENS D'UN PROJET AVEC CE QUI VIENT D'ÊTRE COCHÉ (30 août 2026).
+// On ne réécrit pas la table : on retire ce qui a été décoché, on ajoute ce qui
+// a été coché, et on laisse le reste tranquille. Refaire tous les liens à
+// chaque enregistrement leur donnerait de nouveaux identifiants sans raison.
+//
+// LES LIENS VERS UN JALON NE SONT PAS TOUCHÉS : la pastille ne parle que des
+// objectifs, et effacer ce qu'un écran n'offre pas serait le pire des défauts —
+// invisible au moment où il se produit.
+async function accorderLesCibles(projet, voulus) {
+  const cibles = projet.cibles ?? [];
+  const versObjectif = cibles.filter((cible) => cible.objectif_id && !cible.jalon_id);
+  const gardees = cibles.filter((cible) => !versObjectif.includes(cible));
+
+  const aRetirer = versObjectif.filter((cible) => !voulus.includes(cible.objectif_id));
+  const aPoser = voulus.filter(
+    (objectif) => !versObjectif.some((cible) => cible.objectif_id === objectif),
+  );
+
+  for (const cible of aRetirer) await api.delierProjet(cible.id);
+  const neuves = [];
+  for (const objectif of aPoser) {
+    neuves.push(await api.lierProjet(projet.id, { objectif_id: objectif }));
+  }
+
+  return [
+    ...gardees,
+    ...versObjectif.filter((cible) => !aRetirer.includes(cible)),
+    ...neuves,
+  ];
 }
 
 // --- Trouver ------------------------------------------------------------------
@@ -1671,17 +1740,26 @@ export default {
           echeance: champs.echeance || null,
           statut: champs.statut,
         };
+        // CE QUE LA PASTILLE A COCHÉ. Une chaîne d'identifiants séparés par des
+        // virgules : `FormData` ne transporte pas de tableau.
+        const voulus = (champs.objectifs ?? '').split(',').filter(Boolean);
+
         if (id) {
           const projet = trouver(`projet:${id}`).cible;
           Object.assign(projet, await api.modifierProjet(id, valeurs));
+          projet.cibles = await accorderLesCibles(projet, voulus);
         } else {
           const projet = await api.creerProjet(valeurs);
           // Un projet posé DEPUIS un cap sert ce cap : le lien se fait tout
-          // seul, sinon il faudrait le refaire à la main juste après. Posé
-          // depuis la galerie, il ne sert rien pour l'instant — et c'est
-          // légitime : de l'intendance, ça existe.
-          const cible = parent ? await api.lierProjet(projet.id, { objectif_id: parent }) : null;
-          etat.projets = [...etat.projets, { ...projet, cibles: cible ? [cible] : [] }];
+          // seul, sinon il faudrait le refaire à la main juste après. Il
+          // s'ajoute à ce que la pastille a coché — sans se compter deux fois
+          // si Noé l'a coché lui aussi.
+          const tous = [...new Set(parent ? [parent, ...voulus] : voulus)];
+          const cibles = [];
+          for (const objectif of tous) {
+            cibles.push(await api.lierProjet(projet.id, { objectif_id: objectif }));
+          }
+          etat.projets = [...etat.projets, { ...projet, cibles }];
         }
         return;
       }

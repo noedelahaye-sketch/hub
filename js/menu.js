@@ -41,6 +41,11 @@ export const RUBRIQUES = [
       { nom: 'Projets', adresse: '#objectifs/projets' },
       { nom: 'Tâches', adresse: '#taches', nav: 'taches' },
       { nom: 'Périodes', adresse: '#objectifs/periodes' },
+      // La page du dimanche soir (30 août 2026). L'accueil ouvre sa porte dans
+      // sa fenêtre — dimanche 20 h, et le lundi ; le menu la garde ouverte le
+      // reste du temps, sinon une semaine qu'on veut reprendre le mercredi
+      // n'aurait aucun chemin.
+      { nom: 'Ma semaine', adresse: '#semaine', nav: 'semaine' },
       { nom: 'Le chemin', adresse: '#chemin', nav: 'chemin' },
     ],
   },

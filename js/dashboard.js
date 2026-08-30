@@ -39,13 +39,13 @@ import {
 import { construireLignesTaches, trierTaches } from './taches.js';
 import { demanderLaDuree, fermerLaDuree } from './gabarits.js';
 import {
-  diagnosticDeLaSemaine,
+  pivotDeLaSemaine,
   semaineDe,
   propositionsDuMatin,
   projetsEnCours,
   suiteDuJour,
 } from './orientation.js';
-import { fenetreOuverte, construireRendezVous } from './rendez-vous.js';
+import { fenetreOuverte } from './rendez-vous.js';
 import { lireCache, ecrireCache } from './cache-session.js';
 import { marquerLesEntrantes, animerLaCoche } from './mouvements.js';
 import { modifierAussitot, retirerAussitot } from './ecriture.js';
@@ -432,6 +432,22 @@ export function construireSuite(suite, maintenant = new Date()) {
     </div>`;
 }
 
+// LA PORTE DU DIMANCHE (30 août 2026, demande de Noé). Elle a remplacé le
+// rendez-vous lui-même, qui tenait ici en bandeau.
+//
+// ELLE NE DIT AUCUN CONSTAT, et c'est le point : un constat sur l'accueil
+// appelle un geste que l'accueil ne peut pas offrir — poser une tâche sur un
+// jour. Elle dit où elle mène, et elle y mène.
+//
+// UN BOUTON, ET RIEN D'AUTRE (correction de Noé le soir même) : elle a d'abord
+// été un bandeau — titre, intervalle de dates, phrase expliquant ce qu'il y a
+// derrière, puis le bouton. Trois lignes pour un seul geste, au-dessus de la
+// journée. Le nom du bouton dit déjà tout ce que la phrase disait, et les dates
+// s'écrivent en tête de la page qui s'ouvre.
+export function construirePorteDeLaSemaine() {
+  return `<a class="porte-semaine" href="#semaine">Programmer ma semaine</a>`;
+}
+
 // LES PROJETS EN COURS, en tuiles qu'on fait GLISSER (29 août 2026, demande de
 // Noé). Une seule se lit à la fois ; les voisines dépassent d'un liseré, juste
 // assez pour qu'on sache qu'elles existent.
@@ -694,16 +710,22 @@ function squelette() {
          de la page tient, et ce qui était déjà affiché le reste. -->
     <div id="bloc-erreur"></div>
 
+    <!-- LA PORTE DU DIMANCHE (30 août 2026, demande de Noé). Elle a remplacé
+         le rendez-vous lui-même, qui vivait ici en bandeau : il DISAIT la
+         semaine — le club à 26 h, rien pour toi — et ne permettait de rien
+         poser. Il a désormais sa page — l'adresse #semaine — où la grille de
+         la semaine qui vient et les tâches sans jour se voient ensemble.
+         L'accueil n'en garde que l'invitation, dans la MÊME fenêtre horaire :
+         dimanche à partir de 20 h, et le lundi. C'est la règle des deux rangs —
+         programmer sa semaine est une décision, pas un réflexe.
+         Masquée le reste du temps, et dès que la semaine est validée : le hub
+         ne relance pas. -->
+    <div id="bloc-rdv" hidden></div>
+
     <!-- LE BANDEAU DE L'APRÈS. Conditionnel, un seul à la fois — voir
          construireSuite. Il vient juste sous la ligne de tête : c'est une
          question, et une question qu'on pose en bas de page ne se voit pas. -->
     <div id="bloc-suite"></div>
-
-    <!-- LE RENDEZ-VOUS DU DIMANCHE. Après l'accueil et l'humeur, avant tout le
-         reste : c'est la raison pour laquelle Noé a ouvert le hub ce soir-là.
-         Masqué le reste du temps — il n'apparaît que dans sa fenêtre, et
-         disparaît dès qu'il est validé. Le hub ne relance pas. -->
-    <section class="bloc" id="bloc-rdv" hidden></section>
 
     ${
       // Masqué pour le moment (demande de Noé, 13 août 2026) — voir
@@ -1127,6 +1149,15 @@ export default {
     function rendreSuite() {
       if (!pret('semaine')) return;
       const bloc = cible('bloc-suite');
+      // LA PORTE DU DIMANCHE PASSE DEVANT : deux bandeaux empilés seraient deux
+      // interruptions, et c'est la règle depuis le 29 août — elle n'avait
+      // jamais été tenue par le code, les deux pouvaient s'afficher ensemble.
+      // Le bilan qu'on ne réclame pas ce soir revient demain : il remonte à
+      // quinze jours.
+      if (!cible('bloc-rdv').hidden) {
+        bloc.innerHTML = '';
+        return;
+      }
       bloc.innerHTML = construireSuite(suiteDuJour({ evenements: etat.evenements }));
     }
 
@@ -1246,7 +1277,7 @@ export default {
       }
       rendreEchec();
       ecrireCache(CLE_CACHE, aGarder());
-      chargerLeRendezVous();
+      chargerLaPorteDeLaSemaine();
       chargerLesPropositions();
     }
 
@@ -1305,12 +1336,11 @@ export default {
       }
     }
 
-    // LE RENDEZ-VOUS DU DIMANCHE. Il charge SES données à lui, et seulement
-    // dans sa fenêtre : le diagnostic demande les projets, les périodes, les
-    // séries et toutes les tâches — six requêtes qu'un check-in de mardi matin
-    // n'a aucune raison de payer. Il n'est jamais mis en cache non plus : ce
-    // qu'il dit vaut pour ce soir.
-    async function chargerLeRendezVous() {
+    // LA PORTE DU DIMANCHE. Une seule requête, contre huit avant : l'accueil
+    // n'a plus à calculer le diagnostic pour l'afficher — il a sa page — il n'a
+    // qu'à savoir si la semaine a déjà été validée. Le reste du temps, la porte
+    // ne s'ouvre pas et rien n'est demandé du tout.
+    async function chargerLaPorteDeLaSemaine() {
       const bloc = section.querySelector('#bloc-rdv');
       if (!bloc) return;
 
@@ -1321,18 +1351,12 @@ export default {
       }
 
       try {
-        const semaine = semaineDe(maintenant);
-        const [validees, projets, periodes, series, taches, publications, objectifs, arbitrages] =
-          await Promise.all([
-            api.semainesValidees(),
-            api.projetsTous(),
-            api.periodesToutes(),
-            api.chargerLesSeries(),
-            api.tachesToutes(),
-            api.publicationsDatees(),
-            api.objectifsActifs(),
-            api.arbitragesTous(),
-          ]);
+        // LA SEMAINE QUI VIENT, et non celle où l'on est : le dimanche à 20 h,
+        // `semaineDe` rend celle qui s'achève. C'est la même bascule que la
+        // page — et sans elle, valider le dimanche soir marquait le lundi
+        // passé, si bien que la porte se rouvrait le lendemain matin.
+        const semaine = semaineDe(pivotDeLaSemaine(maintenant));
+        const validees = await api.semainesValidees();
 
         // Déjà validée : le rendez-vous s'est tenu, il n'a plus rien à dire.
         if (validees.some((ligne) => ligne.debut === semaine.debut)) {
@@ -1340,26 +1364,15 @@ export default {
           return;
         }
 
-        etat.donneesOrientation = {
-          evenements: etat.evenements,
-          taches,
-          publications,
-          objectifs,
-          projets,
-          periodes,
-          series,
-          // Ce que Noé a déjà tranché : le rendez-vous ne repose pas une
-          // question à laquelle il a répondu.
-          arbitrages,
-        };
-        etat.diagnostic = diagnosticDeLaSemaine(etat.donneesOrientation, maintenant);
-
-        bloc.innerHTML = `<h2>Ta semaine qui vient</h2>${construireRendezVous(etat.diagnostic)}`;
+        bloc.innerHTML = construirePorteDeLaSemaine();
         bloc.hidden = false;
+        // Le bandeau de l'après a pu s'écrire pendant que la porte se
+        // décidait : il s'efface maintenant qu'elle est là.
+        rendreSuite();
       } catch (erreur) {
-        // Un rendez-vous qui ne peut pas se calculer se tait : il ne doit pas
-        // empêcher l'accueil de servir à ce pour quoi on l'ouvre d'habitude.
-        console.error('Rendez-vous de la semaine indisponible', erreur);
+        // Une porte qui ne sait pas si elle doit s'ouvrir se tait : elle ne doit
+        // pas empêcher l'accueil de servir à ce pour quoi on l'ouvre d'habitude.
+        console.error('Porte de la semaine indisponible', erreur);
         bloc.hidden = true;
       }
     }
@@ -1730,46 +1743,11 @@ export default {
         return;
       }
 
-      // Valider la semaine : le rendez-vous s'en va, et ne revient pas.
-      if (evenement.target.closest('[data-valider-semaine]')) {
-        const bloc = section.querySelector('#bloc-rdv');
-        bloc.hidden = true;
-        try {
-          await api.validerLaSemaine(semaineDe(new Date()).debut);
-        } catch (erreur) {
-          console.error('Semaine non validée', erreur);
-          bloc.hidden = false;
-          signalerEcriture();
-        }
-        return;
-      }
-
-      // Une proposition du rendez-vous ouvre la tuile de création, déjà
-      // remplie : accepter doit coûter UN geste, sinon ce n'est pas une
-      // proposition, c'est encore un constat.
-      const proposition = evenement.target.closest('[data-rdv-creer]');
-      if (proposition) {
-        const voulu = JSON.parse(proposition.dataset.rdvCreer);
-        etat.creation = {
-          nature: voulu.nature ?? 'tache',
-          debut: aujourdhui,
-          fin: aujourdhui,
-          heure: '',
-          valeurs: {
-            titre: voulu.titre ?? '',
-            espace: voulu.espace ?? 'fch',
-            priorite: 4,
-            duree: 0,
-            recurrence: '',
-            recurrence_fin: '',
-            // « Caler une séance » sait déjà de quelle famille elle relève :
-            // c'est le manque qui l'a proposée. Accepter doit coûter UN geste.
-            famille: voulu.famille ?? '',
-          },
-        };
-        rendreCreation();
-        return;
-      }
+      // VALIDER LA SEMAINE ET ACCEPTER UNE PROPOSITION ONT QUITTÉ L'ACCUEIL
+      // (30 août 2026) : ils vivent sur `#semaine`, avec les constats qui les
+      // appelaient. Les laisser ici aurait été garder deux endroits pour un
+      // même rituel — et c'est toujours celui qu'on ne met pas à jour qui finit
+      // par mentir.
 
       if (evenement.target.closest('[data-ouvrir-creation]')) {
         etat.creation = { debut: aujourdhui, fin: aujourdhui, nature: NATURE_PAR_DEFAUT };

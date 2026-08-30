@@ -95,10 +95,21 @@
      mêmes coins. */
   --rayon-tuile: 26px;
 
-  /* Largeur et marges reprises de Bac-3. La règle qui compte : la mise en page
-     occupe toute la largeur disponible, le texte jamais — d'où les tuiles en
-     colonnes plutôt qu'étirées sur 1240 px (voir « Les tuiles »). */
-  --colonne-max: 1240px;
+  /* LA PAGE PREND TOUTE LA LARGEUR DE L'ÉCRAN (30 août 2026, demande de Noé :
+     « sur ordinateur, le site doit utiliser toute la largeur »).
+
+     La règle héritée de Bac-3 n'a pas changé — « la mise en page occupe toute
+     la largeur disponible, le texte jamais » —, c'est le plafond de 1240 px qui
+     la contredisait : sur un écran de 1728 px il laissait 488 px de vide de
+     part et d'autre, alors que les listes savent depuis toujours se ranger en
+     colonnes plutôt que de s'étirer. Ce qui empêche les lignes de devenir
+     illisibles, ce sont ces colonnes et la mesure posée sur le texte courant
+     (voir « Le texte ne s'étire pas »), pas une largeur de page.
+
+     Le jeton reste : il porte désormais l'absence de plafond, et tout ce qui
+     s'alignait dessus continue de s'aligner. Y remettre une valeur suffit à
+     revenir en arrière. */
+  --colonne-max: none;
   --marge-cote: var(--espace-16);
 
   /* Trois rôles, trois familles. Aucune n'est là pour faire joli. */
@@ -303,6 +314,10 @@ body[data-espace="hermitage"] {
 /* Points de rupture de Bac-3 : 720 px et 1080 px. */
 @media (min-width: 45rem) { :root { --marge-cote: var(--espace-24); } }
 @media (min-width: 67.5rem) { :root { --marge-cote: var(--espace-32); } }
+/* Un quatrième palier depuis que la page n'a plus de plafond : sans lui, le
+   contenu se collerait au bord de l'écran sur un grand moniteur. Toute la
+   largeur ne veut pas dire bord à bord. */
+@media (min-width: 100rem) { :root { --marge-cote: var(--espace-48); } }
 
 /* --- Base ------------------------------------------------------------------ */
 
@@ -741,10 +756,11 @@ a { color: var(--accent); }
      changement de taille d'onglet — c'est exactement ce qui vient d'arriver.
      La valeur de secours ne sert que si le script n'a pas encore mesuré. */
   padding-top: var(--sous-la-barre, 7rem);
-  /* Le bord gauche du panneau tombe sur celui du bouton. La barre est centrée
-     dans `--colonne-max`, le voile est plein écran : il faut donc refaire le
-     même calcul de centrage, puis ajouter la marge. */
-  padding-inline: calc(max(0px, (100vw - var(--colonne-max)) / 2) + var(--marge-cote));
+  /* Le bord gauche du panneau tombe sur celui du bouton. Depuis que la page
+     n'a plus de plafond (30 août 2026), la barre commence à la marge : le
+     voile, plein écran, n'a plus qu'à la reprendre. Il refaisait avant le
+     calcul de centrage de `--colonne-max`, qui ne veut plus rien dire. */
+  padding-inline: var(--marge-cote);
   padding-bottom: var(--espace-16);
   background: rgb(0 0 0 / 45%);
   overflow-y: auto;
@@ -1034,9 +1050,25 @@ a { color: var(--accent); }
 
 .tuile-entete .quand { margin-left: auto; }
 
+/* --- LE TEXTE NE S'ÉTIRE PAS -------------------------------------------------
+
+   L'autre moitié de la règle, et elle compte double depuis que la page n'a plus
+   de plafond (30 août 2026) : ce qui prend toute la largeur, c'est la MISE EN
+   PAGE — les listes se rangent en colonnes, les grilles gagnent des jours. Une
+   phrase, elle, se lit mal au-delà d'une certaine mesure : l'œil perd la ligne
+   en revenant à gauche.
+
+   La portée est volontairement étroite : les paragraphes POSÉS DANS LA PAGE —
+   sous-titres, phrases d'aide, écrans vides. Jamais ceux qui vivent dans une
+   tuile ou une colonne, où c'est le conteneur qui donne déjà la mesure. */
+.espace > p,
+.espace > section > p,
+.sous-titre,
+.vide { max-width: 68ch; }
+
 /* Sur grand écran, les listes se répartissent en colonnes. C'est la règle de
    Bac-3 : la mise en page prend toute la largeur, le texte jamais. Une tuile
-   étirée sur 1240 px donnerait des lignes illisibles.
+   étirée sur toute la page donnerait des lignes illisibles.
    Les jalons sont exclus : ils vivent DANS la tuile de leur objectif. */
 @media (min-width: 60rem) {
   .bloc ul:not(.liste-jalons) {
@@ -3905,29 +3937,134 @@ body.fond-fige {
   margin-bottom: var(--espace-12);
 }
 
-/* Le déclencheur a l'allure des autres champs — même hauteur, même cadre, même
-   rayon : dans un formulaire, un choix est un champ comme un autre. */
+/* LE DÉCLENCHEUR EST UNE PASTILLE (30 août 2026, demande de Noé : « les menus
+   déroulants doivent être des pastilles de manière à être différentes de
+   l'espace qui note du texte »).
+
+   Il avait jusqu'ici l'allure des autres champs — même hauteur, même cadre,
+   même rayon —, au motif que « dans un formulaire, un choix est un champ comme
+   un autre ». C'est ce motif qui est renversé, et Noé a raison : on n'ÉCRIT pas
+   dans un choix, on y prend. Un rectangle à fond de carte dit « écris ici » ;
+   une pastille dit « choisis ». Deux gestes différents ne portent pas la même
+   forme.
+
+   C'est le dessin de `.pastille-capture`, au trait près : c'est le même objet,
+   à un autre endroit — et il n'y a aucune raison qu'un choix se présente d'une
+   façon dans la tuile de capture et d'une autre dans un formulaire. */
 .choix-declencheur {
-  display: flex;
+  /* LA COULEUR DE LA VALEUR, pas une teinte décorative (30 août 2026, demande
+     de Noé : « avec des couleurs »). `--teinte-choix` vaut l'accent par défaut
+     et se remplace par le vocabulaire du hub — espace, priorité, famille —
+     posé en attribut par `teinteDuChoix` (js/gabarits.js).
+     ET PLUS DE CHEVRON (même demande) : la pastille pleine se distingue déjà
+     d'un champ, la flèche ne servait qu'à dire « ceci s'ouvre » à un contrôle
+     qui avait l'allure d'un champ. */
+  --teinte-choix: var(--accent);
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--espace-8);
-  width: 100%;
-  min-height: 2.75rem;
-  padding: var(--espace-8) var(--espace-12);
+  min-height: 2.25rem;
+  max-width: 100%;
+  padding: 0 var(--espace-12);
   font-family: inherit;
-  font-size: 16px;
+  font-size: 0.8125rem;
+  font-weight: 600;
   text-align: left;
-  color: var(--texte);
-  background: var(--fond-carte);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-controle);
+  color: var(--teinte-choix);
+  /* LE FOND RESTE VIDE (30 août 2026, Noé montrant la pastille « P1 » de la
+     tuile de capture : « la couleur de la pastille, comme celle-là »). C'est
+     le dessin de `.pastille-capture.remplie`, au trait près : l'encre et le
+     filet portent la couleur, l'intérieur laisse voir la page. Un aplat teinté
+     avait été essayé et pesait trop — cinq pastilles remplies font cinq taches
+     là où cinq contours font une rangée. */
+  background: none;
+  /* LE CONTOUR SE FAIT PLUS FIN (30 août 2026, demande de Noé : « le contour des
+     pastilles un peu moins large »). Il tient déjà le minimum géométrique —
+     1 px — donc c'est son ENCRE qui recule : à 70 % de la teinte, le trait se
+     lit comme un filet et non comme un cadre, pendant que le texte garde toute
+     sa couleur. Descendre sous 1 px aurait disparu sur un écran non retina. */
+  border: 1px solid color-mix(in srgb, var(--teinte-choix) 70%, transparent);
+  border-radius: var(--rayon-pastille);
   cursor: pointer;
 }
 
-.choix-declencheur:hover { border-color: var(--accent); }
-.choix-declencheur svg { flex: none; color: var(--texte-discret); }
-.choix-declencheur[aria-expanded="true"] svg { transform: rotate(180deg); }
+.choix-declencheur[data-espace] { --teinte-choix: var(--couleur-espace-pleine, var(--accent)); }
+.choix-declencheur[data-priorite="1"] { --teinte-choix: var(--prio-1); }
+.choix-declencheur[data-priorite="2"] { --teinte-choix: var(--prio-2); }
+.choix-declencheur[data-priorite="3"] { --teinte-choix: var(--prio-3); }
+/* La priorité 4 est le cas ordinaire : elle ne colore rien, ici comme ailleurs. */
+.choix-declencheur[data-famille="corps"] { --teinte-choix: var(--famille-corps); }
+.choix-declencheur[data-famille="calme"] { --teinte-choix: var(--famille-calme); }
+.choix-declencheur[data-famille="lien"] { --teinte-choix: var(--famille-lien); }
+
+/* SANS FAMILLE ET INTENDANCE ÉCHANGENT LEUR COULEUR (30 août 2026, demande de
+   Noé). Elles étaient à l'envers : l'option VIDE prenait l'accent de la page —
+   du violet, en perso — et ressemblait donc à un choix fait, tandis
+   qu'« intendance », qui est une vraie famille, portait le gris neutre.
+   Le gris va à l'absence de choix, la couleur va au choix. */
+.choix-declencheur[data-famille=""] { --teinte-choix: var(--famille-intendance); }
+.choix-declencheur[data-famille="intendance"] { --teinte-choix: var(--accent); }
+
+/* LA CADENCE D'UNE HABITUDE : SEPT BLEUS DIFFÉRENTS, pas un seul délavé sept
+   fois (30 août 2026, deux demandes de Noé). Une habitude quotidienne se voit
+   avant d'être lue, et la pastille dit l'exigence qu'on se donne — pas un
+   jugement, une intensité.
+
+   *Ce que ça remplace, et pourquoi ça ne suffisait pas* : un unique bleu mêlé
+   au gris de service, de 22 à 100 %. Noé : « là c'est juste la saturation qui
+   est modifiée… je préférerais que ce soit vraiment une nuance de bleu
+   différente ». Il a raison — mélanger une couleur à du gris n'en change ni la
+   teinte ni vraiment la clarté : les sept crans se ressemblaient.
+
+   LA TEINTE MARCHE DONC AVEC : 202° au premier cran, 227° au dernier, et la
+   saturation monte de 42 à 78 %. Écrites en `hsl()` et non en hexadécimal
+   justement pour qu'on VOIE la marche — c'est la seule façon de vérifier d'un
+   coup d'œil qu'aucun cran ne saute.
+
+   LES DEUX BORNES SONT CHOISIES, pas trouvées : en deçà de 200° on entre dans
+   le teal de la formation, au-delà de 230° dans le violet de perso et de
+   `--famille-calme`, qui vit dans la MÊME rangée. Vingt-huit degrés, c'est
+   étroit — d'où la clarté qui descend de 78 à 64 % pour élargir l'écart. Elle
+   ne descend pas plus bas : la pastille est un contour et une encre sur fond
+   sombre, un bleu foncé n'y serait plus lisible. */
+.choix-declencheur[data-cadence="1"] { --teinte-choix: hsl(202 42% 78%); }
+.choix-declencheur[data-cadence="2"] { --teinte-choix: hsl(207 50% 75%); }
+.choix-declencheur[data-cadence="3"] { --teinte-choix: hsl(211 58% 72%); }
+.choix-declencheur[data-cadence="4"] { --teinte-choix: hsl(215 64% 69%); }
+.choix-declencheur[data-cadence="5"] { --teinte-choix: hsl(219 70% 67%); }
+.choix-declencheur[data-cadence="6"] { --teinte-choix: hsl(223 74% 65%); }
+.choix-declencheur[data-cadence="7"] { --teinte-choix: hsl(227 78% 64%); }
+
+/* Le libellé se tronque plutôt que d'étirer la pastille : « Chaque quinzaine »
+   ne doit pas faire déborder la rangée. */
+.choix-declencheur > span,
+.choix-declencheur { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* UNE PASTILLE DE RATTACHEMENT SE PLAFONNE : elle porte le TITRE de ce qu'on a
+   choisi quand il n'y en a qu'un, et « Participer à ramener un nouveau
+   partenaire » prenait la ligne entière, renvoyant les autres pastilles au rang
+   du dessous. Tronquée, elle garde sa place dans la bande — le titre entier
+   reste dans le menu et dans l'infobulle. */
+[data-multiple] > .choix-declencheur { max-width: 14rem; }
+
+/* Le mot qui remplace un menu vide : sans lui, changer d'espace pour un espace
+   sans objectif ouvrirait un panneau blanc, qui se lit comme une panne. */
+.choix-rien {
+  padding: var(--espace-8) var(--espace-12);
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+}
+
+/* Au survol, le fond s'allume à peine : de quoi dire que ça se touche, sans
+   remettre l'aplat qu'on vient d'écarter. */
+.choix-declencheur:hover {
+  background: color-mix(in srgb, var(--teinte-choix) 12%, transparent);
+  border-color: var(--teinte-choix);
+}
+
+/* Le point de couleur d'un régime : il dit l'espace, et la pastille qui le
+   porte est déjà de cette couleur — il prend donc simplement l'encre. */
+.choix-declencheur .pastille { background: currentColor; }
 
 /* Le panneau, sous le champ. Même dessin que celui de la tuile — c'est le même
    objet, à un autre endroit. Il se pose PAR-DESSUS ce qui suit plutôt que de
@@ -3938,7 +4075,11 @@ body.fond-fige {
   z-index: 2;
   top: calc(100% + var(--espace-4));
   left: 0;
-  right: 0;
+  /* Il tirait sa largeur du champ, qui faisait toute la ligne ; une pastille
+     de six caractères lui donnerait six caractères de large. Il se pose donc
+     sa propre mesure, et déborde de la pastille sans la suivre. */
+  min-width: 12rem;
+  max-width: min(20rem, calc(100vw - 3rem));
   max-height: 15rem;
   overflow-y: auto;
   padding: var(--espace-8);
@@ -3947,6 +4088,12 @@ body.fond-fige {
   border-radius: var(--rayon-controle);
   box-shadow: 0 12px 48px rgb(0 0 0 / 35%);
 }
+
+/* Retourné vers le haut ou vers la gauche quand le bord de la tuile est trop
+   proche — voir `placerLePanneau` (js/gabarits.js). Un menu coupé est un menu
+   dont on ne sait pas qu'il a d'autres options. */
+.choix-panneau-haut { top: auto; bottom: calc(100% + var(--espace-4)); }
+.choix-panneau-droite { left: auto; right: 0; }
 
 /* Sans icône devant, le filet part du bord du texte. */
 .choix-panneau .choix-capture li + li button::before { left: var(--espace-8); }
@@ -8255,4 +8402,457 @@ body.balaye {
 .hab-groupe-mot {
   margin: calc(var(--espace-8) * -1) 0 var(--espace-8);
   font-size: 0.75rem;
+}
+
+/* --- Programmer la semaine (30 août 2026) ------------------------------------
+
+   La page du dimanche soir. Elle a remplacé le bandeau de l'accueil, qui
+   DISAIT la semaine sans permettre d'y rien poser. Sa forme suit cette
+   raison-là : la chose à poser et l'endroit où la poser se voient ENSEMBLE,
+   côte à côte, parce que c'est un geste et non une lecture. */
+
+/* LA PORTE, SUR L'ACCUEIL : un bouton, et rien d'autre (correction de Noé,
+   30 août 2026 — « le bouton doit simplement dire "Programmer ma semaine" et
+   être dans la forme du bouton actuel »).
+
+   Elle a d'abord été un bandeau complet — titre, dates, phrase d'explication,
+   puis le bouton : trois lignes au-dessus de la journée pour un seul geste.
+   C'est la forme de `.bandeau-aller`, en `inline-flex` : posée seule dans la
+   page et non dans un rang, elle doit épouser son texte au lieu de s'étirer sur
+   toute la largeur — et la page n'a plus de plafond, ce qui ferait un bouton de
+   1600 px. */
+.porte-semaine {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  margin-bottom: var(--espace-24);
+  padding: 0 var(--espace-16);
+  font-size: 0.875rem;
+  font-weight: 600;
+  /* L'encre est SOMBRE sur l'accent : le hub est sombre, l'accent est clair. */
+  color: var(--fond);
+  text-decoration: none;
+  background: var(--accent);
+  border-radius: var(--rayon-pastille);
+  white-space: nowrap;
+}
+
+#bloc-rdv:empty { display: none; }
+
+/* Les chiffres de la semaine passée. C'est la forme des chiffres nus de Yuno,
+   et pour la même raison : ce sont des faits, rien ne s'y touche. Ils ouvrent
+   la page parce que le hub est d'abord un miroir de ce qui a été accompli. */
+/* `.bloc ul` et non `.bilan-chiffres` : la règle commune pose TOUTES les
+   listes du hub en colonne, et elle pèse une classe et un type — elle
+   l'emportait sur une classe nue. Mesuré : les chiffres s'empilaient, et leur
+   `flex-basis` de 7 rem devenait une HAUTEUR de 105 px. Même idiome que
+   `.bloc ul.chiffres-cles`. */
+.bloc ul.bilan-chiffres {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--espace-16) var(--espace-24);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* `.bloc li` habille TOUTES les listes du hub en tuiles — carte, cadre, et une
+   barre de couleur dès qu'il y a un `data-espace`. Ici on ne veut ni l'une ni
+   l'autre : ce sont des chiffres posés, séparés par un filet. D'où l'annulation
+   explicite, comme les trois listes de Yuno et le panneau de choix la font
+   déjà. Le piège est le même que celui des lignes du rendez-vous. */
+.bloc .bilan-chiffres li {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  /* Ils se partagent la ligne au lieu de s'empiler : sur 375 px, cinq chiffres
+     en colonne coûtaient 500 px avant la grille — ils sont deux par rang. */
+  flex: 1 1 7rem;
+  min-width: 0;
+  max-width: 14rem;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+
+/* LE FILET N'APPARAÎT QU'UNE FOIS LA LIGNE ENTIÈRE : quand les chiffres
+   passent à la ligne, le premier de chaque rang porterait un séparateur qui ne
+   sépare de rien. */
+@media (min-width: 720px) {
+  .bloc .bilan-chiffres li {
+    padding-left: var(--espace-16);
+    border-left: 1px solid var(--bordure);
+  }
+
+  .bloc .bilan-chiffres li:first-child { padding-left: 0; border-left: none; }
+}
+
+.bilan-valeur { font-size: 1.375rem; line-height: 1.1; color: var(--accent); }
+.bilan-mot { font-size: 0.75rem; color: var(--texte-discret); }
+.bilan-precision { font-size: 0.6875rem; color: var(--texte-discret); opacity: 0.75; }
+
+/* Ce que le hub IGNORE, à côté de ce qu'il sait — même précaution que la
+   première ligne de « Le temps » : sans elle, un total bas se lirait comme une
+   semaine légère alors qu'il ne dit que le silence des durées. */
+.bilan-couverture { margin: var(--espace-16) 0 0; font-size: 0.8125rem; }
+
+/* La grille et le vivier. Sur téléphone ils s'empilent, la grille d'abord :
+   c'est pour elle qu'on est venu, et le glissement n'existe pas au doigt — on
+   choisit la tâche, puis on touche le jour. */
+.semaine-programmation {
+  display: grid;
+  gap: var(--espace-24);
+  align-items: start;
+}
+
+@media (min-width: 1080px) {
+  /* `minmax(0, …)` et non `1fr` : une piste de grille garde `min-width: auto`
+     et refuse de descendre sous la largeur minimale de son contenu — ici, sept
+     colonnes de calendrier. Le piège s'est produit trois fois fin août. */
+  .semaine-programmation { grid-template-columns: minmax(0, 1fr) minmax(0, 20rem); }
+}
+
+.semaine-validee {
+  margin: 0;
+  padding: var(--espace-16) 0;
+  font-size: 0.9375rem;
+}
+
+/* Le vivier : ce qui attend un jour. UNE SEULE LISTE depuis le 30 août 2026 —
+   ce qui était posé et n'a pas été fait d'abord, avec sa date à droite ; le
+   reste ensuite. Les deux titres de groupe disaient ce que cette date dit déjà,
+   et coûtaient deux lignes dans une colonne qui n'en a que huit. Aucun mot de
+   retard nulle part : une date n'est pas un reproche. */
+
+.bloc ul.vivier-liste {
+  display: grid;
+  gap: var(--espace-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Même annulation pour le vivier : la tuile, c'est le BOUTON — celui qu'on
+   prend en main. Deux cadres emboîtés en feraient une chose posée dans une
+   chose posée, et la couleur de l'espace se dirait deux fois (la barre de
+   `.bloc li`, puis la pastille). */
+/* `li.vivier-tache` et non `.vivier-tache` seul : `.bloc li[data-espace]` pèse
+   deux classes ET un type, et l'emportait sur deux classes nues — la barre de
+   couleur restait, doublant la pastille. Le compte des sélecteurs se fait, il
+   ne se devine pas. */
+.bloc li.vivier-tache {
+  /* La prise prend la place, la croix se range au bout : deux gestes qui ne
+     doivent jamais se toucher — l'un pose la tâche dans la semaine, l'autre
+     l'en retire. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--espace-4);
+  min-width: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+
+.bloc li.vivier-tache::before { content: none; }
+
+/* Une tuile qu'on prend en main. Le fond doux et non celui d'une carte : elle
+   n'est pas encore posée dans la semaine, et sa surface le dit. */
+.vivier-prise {
+  /* Le corps prend la place, la date se range au bout. `auto` et non une
+     largeur : sans date, la colonne ne mesure rien et le nom prend tout. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--espace-8);
+  width: 100%;
+  min-height: 2.75rem;
+  padding: var(--espace-8) var(--espace-12);
+  text-align: left;
+  color: var(--texte);
+  font-family: var(--police-texte);
+  background: var(--fond-doux);
+  border: 1px solid var(--bordure-douce);
+  border-radius: var(--rayon-controle);
+  cursor: grab;
+}
+
+.vivier-prise:hover { border-color: var(--bordure); }
+
+.vivier-corps { display: grid; gap: 2px; min-width: 0; }
+
+.vivier-nom { font-size: 0.875rem; line-height: 1.3; }
+
+/* LE JOUR OÙ ELLE ÉTAIT POSÉE. En encre discrète et en chiffres : c'est un
+   repère, pas une alerte — et le hub n'a pas de couleur d'alerte. */
+.vivier-quand {
+  font-size: 0.6875rem;
+  color: var(--texte-discret);
+  white-space: nowrap;
+}
+
+.vivier-service {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  min-width: 0;
+  font-size: 0.75rem;
+  color: var(--texte-discret);
+}
+
+/* La tâche choisie au doigt : elle reste en main jusqu'à ce qu'on touche un
+   jour, ou qu'on la repose. Un choix qu'on ne peut pas défaire est un piège. */
+.vivier-choisie .vivier-prise {
+  border-color: var(--accent);
+  background: var(--accent-doux);
+  cursor: default;
+}
+
+.vivier-tache.en-deplacement { opacity: 0.3; }
+
+/* LA CROIX : « pas cette semaine » (30 août 2026, demande de Noé). Elle met de
+   côté, elle ne supprime pas — d'où le trait fin et l'encre discrète : ce
+   n'est pas un geste sans retour, et sa forme ne doit pas le laisser croire.
+
+   32 px de large contre les 44 de la règle : la colonne doit tenir huit tuiles,
+   et c'est le même arbitrage que la ligne d'une habitude. Ce qui le rend
+   tenable, c'est qu'elle est HAUTE comme sa tuile et qu'il n'y a rien d'autre
+   à côté d'elle — rien contre quoi tomber. */
+.vivier-croix {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  align-self: stretch;
+  min-height: 2.75rem;
+  padding: 0;
+  color: var(--texte-discret);
+  background: none;
+  border: 0;
+  border-radius: var(--rayon-controle);
+  cursor: pointer;
+}
+
+.vivier-croix:hover { color: var(--texte); background: var(--fond-carte); }
+
+/* CE QUI EST MIS DE CÔTÉ SE RETROUVE. Un × sans retour serait une suppression
+   déguisée, et le hub ne cache rien — il range. */
+.vivier-ecartees { margin-top: var(--espace-16); }
+
+.vivier-ecartees > summary {
+  font-size: 0.75rem;
+  color: var(--texte-discret);
+  cursor: pointer;
+  list-style: none;
+  padding: var(--espace-8) 0;
+}
+
+.vivier-ecartees > summary::-webkit-details-marker { display: none; }
+.vivier-ecartees > summary:hover { color: var(--texte); }
+
+.vivier-ecartee .vivier-prise {
+  background: none;
+  border-style: dashed;
+  color: var(--texte-discret);
+  cursor: default;
+}
+
+.vivier-remettre { font-size: 0.75rem; white-space: nowrap; }
+
+/* HUIT TUILES, ET LE RESTE DÉFILE (30 août 2026, demande de Noé). Dix-sept
+   tâches sans date faisaient une colonne trois fois plus haute que la grille
+   d'en face : on ne voyait plus les jours où les poser. Le défilement est
+   DANS la colonne, pas dans la page — la grille reste sous les yeux pendant
+   qu'on cherche.
+
+   26 rem coupe la huitième tuile en deux : c'est ce qui dit qu'il y en a
+   d'autres, mieux qu'une ombre ou une flèche. */
+.vivier {
+  max-height: 26rem;
+  overflow-y: auto;
+  /* Le filet de défilement ne doit pas coller aux tuiles. */
+  padding-right: var(--espace-4);
+}
+
+/* UNE TÂCHE EN MAIN : les jours s'offrent. C'est le seul signe qui dise que le
+   second geste attend — sans lui, « touche-la, puis touche le jour » serait une
+   phrase et rien d'autre. */
+.semaine-en-main .cal-jour {
+  outline: 1px dashed var(--bordure);
+  outline-offset: -2px;
+  cursor: copy;
+}
+
+/* Ramener une barre dans le vivier la déprogramme : le geste inverse de celui
+   qu'on vient de faire, et il se devine parce qu'il est symétrique. */
+.semaine-vivier.cal-cible-zone {
+  outline: 2px dashed var(--accent);
+  outline-offset: var(--espace-8);
+  border-radius: var(--rayon-carte);
+}
+
+/* --- LES TUILES N'ONT PLUS DE CONTOUR (30 août 2026) -------------------------
+
+   Demande de Noé : *« sur les tuiles, j'aime pas trop avoir des contours
+   (uniquement pour des tuiles à l'intérieur d'une tuile) »*.
+
+   LA RÈGLE, et elle est juste : une tuile posée dans la page se distingue par
+   sa SURFACE — `--fond-carte` sur `--fond`, un écart franc. Le filet ne fait
+   alors que redire ce que la couleur dit déjà, et vingt filets sur un écran
+   finissent par le quadriller. Il ne redevient utile que lorsqu'une tuile est
+   posée DANS une autre : là, les deux surfaces se ressemblent trop pour se
+   séparer seules.
+
+   `border-color: transparent` plutôt que `border: 0` : le fond d'un élément est
+   peint SOUS sa bordure, un filet transparent ne laisse donc rien voir — et
+   rien ne bouge d'un pixel. C'est ce qui permet de le faire en un seul endroit
+   sans reprendre douze géométries, dont la barre d'espace de `.bloc li`, qui se
+   cale sur ce 1 px. Y remettre une couleur suffit à revenir en arrière. */
+.bloc li,
+.tuile-jour,
+.projet-tuile,
+.objectif,
+.habitude,
+.jour-page,
+.livre-encours,
+.intention-tuile,
+.cap-tuile,
+.hab-stat,
+.hab-courbe,
+.hab-carte,
+.vivier-prise { border-color: transparent; }
+
+/* L'EXCEPTION, mot pour mot : les tuiles à l'intérieur d'une tuile. La tuile de
+   la journée perd le sien — elle est posée dans la page — et ses lignes
+   gardent le leur : `--fond-carte` sur `--fond-doux`, deux surfaces voisines
+   que le filet sépare. Vérifié à l'écran : sans son filet, la tuile de la
+   journée se lit encore, en lavis. Même chose dans une fenêtre volante
+   et dans un cap déplié — `.cap-projet` garde le sien par sa propre règle. */
+.tuile-jour li,
+.fenetre li,
+.ajout-volant .ajout-tuile li { border-color: var(--bordure); }
+
+/* La tuile du vivier passe sur la surface des cartes. Elle vivait sur
+   `--fond-doux` — 2 % plus clair que la page —, ce que seul son filet rendait
+   visible ; sans lui, elle disparaissait. La nuance qu'elle disait (« pas
+   encore posée dans la semaine ») ne valait pas une tuile qu'on ne voit pas. */
+.vivier-prise { background: var(--fond-carte); }
+
+/* Une mise de côté reste en retrait : elle recule d'un cran de surface au lieu
+   de porter un filet en pointillé. */
+.vivier-ecartee .vivier-prise { background: var(--fond-doux); border-style: solid; }
+
+/* --- LES CHOIX D'UN FORMULAIRE, TOUS SUR UNE RANGÉE (30 août 2026) -----------
+
+   Demande de Noé : *« elles doivent toutes être côte à côte s'il y en a
+   plusieurs sur la tuile »*. Une pastille coincée entre deux champs de texte
+   pleine largeur ne se distingue de rien ; rassemblées, elles forment la barre
+   de réglages de la tuile — exactement la bande de pastilles de la capture.
+
+   Elle vient EN TÊTE (demande de Noé, le même soir) : ce qui cadre se pose
+   avant ce qu'on écrit, et c'est ce que les formulaires faisaient déjà —
+   « Espace » ouvrait celui d'un objectif. */
+.formulaire-choix {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-8);
+  margin: 0 0 var(--espace-16);
+}
+
+/* Dans une fenêtre large, la rangée traverse les deux colonnes : c'est une
+   bande, pas un champ. */
+@media (min-width: 40rem) {
+  .fenetre-large .ajout form > .formulaire-choix { grid-column: 1 / -1; }
+}
+
+/* LE BOUTON DE FIN DE TUILE N'A PAS DE CONTOUR (30 août 2026, demande de Noé).
+   C'est la même règle que les tuiles : il porte déjà un aplat, le filet ne fait
+   que le redire. Et il est le SEUL bouton de la tuile — rien à côté de quoi il
+   devrait se démarquer.
+   Scopé au formulaire d'ajout : `.bouton-secondaire` sert partout ailleurs, où
+   il vit souvent à même le fond et a besoin de son filet. */
+.ajout form > button[type="submit"] { border-color: transparent; }
+
+/* LE TEXTE PRINCIPAL D'UNE TUILE D'AJOUT : pas de cadre, pas d'étiquette — une
+   invite en gris qui s'efface dès qu'on écrit (30 août 2026, demande de Noé).
+   C'est le « Nom de la tâche » de la tuile de capture, et c'est la première
+   chose qu'on voit : l'encadrer, c'est en faire un champ parmi six.
+
+   Le corps monte à 1,0625 rem — au-dessus des autres champs, sous le titre de
+   la tuile : c'est la vedette de l'écran, elle doit se voir sans crier. */
+.ajout .champ-titre {
+  width: 100%;
+  /* LE BLANC SOUS LE TEXTE EST PLUS LARGE QU'AILLEURS, et ce n'est pas du
+     confort : c'est lui qui ISOLE la vedette (demande de Noé — « un espace un
+     peu plus important pour que le texte soit un peu isolé »). Sans ce
+     retrait, le titre se noyait dans la rangée de pastilles qui le suit, et
+     c'est ce qui avait fait passer les pastilles au-dessus de lui. */
+  margin: 0 0 var(--espace-24);
+  padding: 0;
+  font-family: inherit;
+  font-size: 1.0625rem;
+  color: var(--texte);
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+
+.ajout .champ-titre:focus { outline: none; border: 0; }
+.ajout .champ-titre::placeholder { color: var(--texte-discret); }
+
+/* LA PASTILLE DE DATE : le logo du calendrier, puis la date — ou le nom du
+   champ tant qu'elle est vide, comme toutes les pastilles du hub.
+
+   Le champ natif est POSÉ PAR-DESSUS, transparent : c'est lui qu'on touche, donc
+   le navigateur ouvre son sélecteur sans qu'on l'appelle, et un champ requis
+   reste focusable — un champ requis que le navigateur ne peut pas atteindre
+   bloque l'envoi en silence. `.ajout input` lui pose une largeur, un fond et une
+   marge : tout est repris ici. */
+.pastille-date { position: relative; display: inline-block; }
+
+.pastille-date input[type="date"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+/* Le clavier doit voir ce qu'il touche : le champ est transparent, pas caché.
+   `:has()` et non `+` — le champ vient APRÈS la pastille dans le balisage,
+   puisqu'il se pose par-dessus elle. */
+.pastille-date:has(input[type="date"]:focus-visible) .choix-declencheur {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.pastille-date .choix-declencheur { pointer-events: none; }
+
+/* Une pastille vide dit le nom de son champ, en encre de service : elle n'a pas
+   encore de valeur, elle ne doit donc pas se colorer comme celles qui en ont
+   une. */
+.choix-declencheur.choix-vide { --teinte-choix: var(--texte-discret); }
+
+/* AUCUNE ÉTIQUETTE AU-DESSUS D'ELLES (demande de Noé, le même jour) : une
+   pastille se lit par sa valeur, et son libellé vit dans son `title` et son nom
+   accessible — la même parade que sur la ligne d'une habitude, quand les mots
+   en sont partis.
+
+   Le groupe garde sa position relative pour son panneau, mais il ne s'étire
+   plus sur la ligne : il fait la largeur de sa pastille. */
+.formulaire-choix > .choix-champ {
+  display: inline-block;
+  min-width: 0;
+  max-width: 100%;
+  margin-bottom: 0;
 }

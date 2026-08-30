@@ -128,7 +128,7 @@ l'absence d'une entrée « son éditorial », qui vit sur les sites.
 déplie ses sous-pages ; une rubrique sans sous-page n'a pas de flèche, car une
 flèche qui ne s'ouvre sur rien est un mensonge de forme :
 
-| **Général** | Objectifs · Projets · Tâches · Périodes · Le chemin |
+| **Général** | Objectifs · Projets · Tâches · Périodes · Ma semaine · Le chemin |
 | **FC Hermitage** | Ses objectifs · Ses projets · Ses tâches · Le site |
 | **Formation** | Ses objectifs · Ses projets · Ses tâches |
 | **Yuno** | Ses objectifs · Ses projets · Ses tâches · Le site |
@@ -165,6 +165,7 @@ l'on est **se déplie d'elle-même**.
   - **les périodes ferment la page**, en deux lignes et en encre discrète, avec leur tuile d'ajout à côté d'elles. Voir « les périodes » plus bas.
   - **Elle n'a plus d'onglet** : elle est au second rang, dans le menu, sous « Général » et ses trois vues. Elle en a eu un (une boussole, du 27 au 28 août) — ce qui avait déjà renversé la décision du 26. La règle des deux rangs tranche : ouvrir le cap, c'est déjà avoir décidé quelque chose. La tuile « Le cap » du tableau de bord y mène toujours.
 - `#calendrier` — tout ce qui porte une date, tous espaces confondus, filtres par nature (tâches, événements, publications, objectifs)
+- `#semaine` — **« Ma semaine » : le rendez-vous du dimanche soir, devenu une page** (30 août 2026, demande de Noé). Le bilan de la semaine passée en quelques chiffres, la grille de la semaine qui vient, et à côté d'elle les tâches sans jour, qu'on **glisse dessus** pour les programmer. Voir « Ma semaine » plus bas.
 - `#chemin` — **« Le chemin » : le miroir de ce qui a été accompli** (28 août 2026). Les victoires groupées par mois, tous espaces, le perso au même rang que le pro. **La source est UNIQUE — la table `victoires`** : terminer une tâche, franchir un jalon, vivre une sortie y écrivent déjà, et recompter les tâches faites à côté donnerait deux chiffres pour un seul fait. **Rien ne s'y modifie** : la page ne fait que regarder en arrière, et sa forme le dit — aucun bouton, aucune coche. Elle existe parce que la philosophie n° 1 dit que le hub est *d'abord un miroir de ce qui a été accompli*, et que ce miroir avait quitté l'accueil le 13 août sans être remplacé.
 - `#temps` — **« Le temps » : où partent les heures** (28 août 2026, demande de Noé). La semaine par espace (sur place · traitement · rythmes · ligne à ligne, contre l'attendu de la période), puis projet par projet l'annoncé contre le mesuré. **Il ne calcule rien lui-même** : tout vient de `js/orientation.js`, qui reste éprouvable hors écran. **Sa première ligne est la plus importante** — « 3 des 35 choses terminées portent une durée » : sans elle, un total bas se lirait comme une semaine légère alors qu'il ne dit que le silence des durées. **Sa raison d'être** : la fenêtre « combien de temps ça a pris ? » existe depuis le 27 août et rien n'a jamais rien fait de la réponse ; une question dont la réponse ne sert à rien finit par ne plus recevoir de réponse. **Aucun rouge, aucun seuil, aucun « trop »** : un écart entre l'annoncé et le mesuré est une information, pas une faute.
 - `#formation` — espace formation (thème : teal)
@@ -641,7 +642,7 @@ Usage de la valeur 'perso' : autorisée dans `objectifs` (= intentions : champs 
 - `titre` text NOT NULL — formulation mesurable (ex. "Atteindre 1k abonnés Instagram FCH")
 - `pourquoi` text — le sens, relu les jours sans motivation
 - `cible` text — la mesure de réussite
-- `echeance` date
+- `echeance` date — **exigée par le formulaire depuis le 30 août 2026** (décision de Noé). La colonne reste nullable, et les lignes anciennes sans date restent lisibles ; mais on n'en pose plus. Un cap sans date n'est pas un cap : c'est une intention, et les intentions ont leur page dans perso, où justement rien ne se mesure. Un JALON, lui, garde son échéance facultative — il découpe un objectif qui porte déjà la date.
 - `statut` text default 'actif' CHECK (statut IN ('actif', 'atteint', 'abandonne'))
 - `date_atteint` date
 - `created_at` timestamptz default now()
@@ -779,7 +780,9 @@ La trace du **rendez-vous du dimanche**. Une ligne par semaine validée, identif
 
 - `debut` date PK (le lundi) · `validee_le` timestamptz · `notes` text
 
-**Il ouvre le dimanche à 20 h et reste jusqu'à la fin du lundi**, ou jusqu'à ce qu'il soit validé (choix de Noé). Passé ce délai il se tait : le hub ne relance pas et ne compte pas les rendez-vous manqués. Il s'affiche en tête de l'accueil, **après l'humeur et avant « Aujourd'hui »** — c'est la raison pour laquelle Noé a ouvert le hub ce soir-là, mais sa page s'ouvre toujours sur lui.
+**Il ouvre le dimanche à 20 h et reste jusqu'à la fin du lundi**, ou jusqu'à ce qu'il soit validé (choix de Noé). Passé ce délai il se tait : le hub ne relance pas et ne compte pas les rendez-vous manqués. **Depuis le 30 août 2026, l'accueil n'en porte plus qu'une PORTE** — un bandeau à une seule sortie, dans la même fenêtre horaire ; le rendez-vous lui-même vit sur `#semaine`.
+
+**LA LIGNE VALIDÉE EST CELLE DE LA SEMAINE QUI VIENT, et c'était un défaut** (corrigé le 30 août 2026). `semaineDe(maintenant)` rend « la semaine où l'on est » : le dimanche à 20 h, celle qui s'achève. On validait donc le lundi PASSÉ, et le rendez-vous revenait le lendemain matin comme s'il ne s'était rien dit. `pivotDeLaSemaine` (js/orientation.js) fait la bascule : le dimanche, la semaine qui vient commence demain.
 
 **Aucun constat sans proposition, sans exception** (`js/rendez-vous.js`) : chaque ligne porte son geste, et accepter coûte **un** geste — une proposition ouvre la tuile de capture déjà remplie, ou mène à l'écran où le réglage se fait. Une ligne sans porte de sortie est un reproche déguisé.
 
@@ -830,6 +833,15 @@ La trace du **rendez-vous du dimanche**. Une ligne par semaine validée, identif
 Un projet peut viser tout, rien, un jalon, un objectif ou plusieurs (décision de Noé) : d'où une table de liens plutôt qu'une colonne.
 
 - `projet_id` uuid NOT NULL · `objectif_id` uuid (nullable) · `jalon_id` uuid (nullable), avec un CHECK exigeant au moins l'un des deux.
+
+**LE LIEN SE POSE DEPUIS LA TUILE DU PROJET** (30 août 2026, demande de Noé) — une **pastille « Objectifs servis »**, juste après celle de l'espace, où l'on en coche un ou plusieurs. Elle existe à la création comme à la modification.
+- *Ce qu'elle répare* : le lien existait en base depuis le 27 août et ne se posait QUE d'un endroit — poser un projet **depuis un cap déjà ouvert**. Un projet créé depuis la galerie ne pouvait donc plus jamais être rattaché, et six des dix projets de Noé ne servaient aucun cap.
+- **Le panneau ne se referme pas** entre deux options : un menu qui se referme à chaque coche obligerait à le rouvrir autant de fois qu'on veut de liens. C'est le seul choix du hub qui se comporte ainsi (`type: 'choix-multiple'`, js/gabarits.js).
+- **La pastille dit LEQUEL quand il n'y en a qu'un**, et les compte au-delà (« 2 objectifs ») : trois titres d'objectifs dans une pastille feraient une phrase. Chaque option porte la **pastille de son espace**.
+- **Elle N'OFFRE QUE LES OBJECTIFS DE L'ESPACE CHOISI** (demande de Noé) : un projet du club ne sert pas un cap de la formation. Changer la pastille d'espace **refiltre le menu ET DÉCOCHE ce qui vient d'en sortir** — un lien coché qu'on ne voit plus s'enregistrerait sans que personne l'ait voulu. C'est la règle de la tuile de capture, où « un projet devenu incohérent s'efface ». Un espace sans objectif le dit (« Aucun dans cet espace ») : un panneau vide se lit comme une panne.
+  - C'est **la seule dépendance entre deux champs d'un formulaire**, d'où un branchement nommé dans `poserLeChoix` plutôt qu'un mécanisme général : un formulaire n'a pas de dépendances, il en a UNE.
+- **L'icône est une CIBLE**, pas un maillon de chaîne : un projet *vise* un cap — le mot du hub pour ce qu'on vise — et le dessin doit le dire.
+- **L'enregistrement ACCORDE, il ne réécrit pas** (`accorderLesCibles`, js/objectifs.js) : il retire ce qui a été décoché, ajoute ce qui a été coché, et laisse le reste tranquille. **Les liens vers un JALON ne sont jamais touchés** — la pastille ne parle que des objectifs, et effacer ce qu'un écran n'offre pas serait le pire des défauts : invisible au moment où il se produit.
 
 **Règle anti-double-comptage** : la progression d'un objectif reste *jalons atteints / jalons totaux*, inchangée. **Un projet ne calcule aucune progression** — il porte la charge et il oriente. Deux caps servis par un même projet ne le comptent donc pas deux fois.
 
@@ -1089,20 +1101,33 @@ gestes ne doivent jamais porter le même signe.
    mémoire à tenir. L'humeur tient au bout de la même ligne — cinq frimousses,
    puis la seule choisie une fois répondu. Le champ « un mot ? » ne s'ouvre que
    si on le demande : c'est lui qui pesait.
-2. **Le bandeau de l'après** — conditionnel, **un seul à la fois, le plus
+2. **La porte du dimanche** — conditionnelle, dans sa fenêtre (dimanche à
+   partir de 20 h, et le lundi) et tant que la semaine n'est pas validée. **Un
+   bouton, et rien d'autre** : « Programmer ma semaine », en pastille d'accent,
+   qui mène à `#semaine`. Elle ne dit aucun constat, et c'est le point — un
+   constat sur l'accueil appellerait un geste que l'accueil ne peut pas offrir,
+   poser une tâche sur un jour.
+   *Ce que ça remplace, le même jour :* un bandeau complet — titre « Ta semaine
+   qui vient », intervalle de dates, phrase expliquant ce qu'il y avait
+   derrière, puis le bouton. Trois lignes au-dessus de la journée pour un seul
+   geste (correction de Noé). Le nom du bouton dit ce que la phrase disait, et
+   les dates s'écrivent en tête de la page qui s'ouvre.
+3. **Le bandeau de l'après** — conditionnel, **un seul à la fois, le plus
    récent** : un bilan s'écrit à chaud (`js/hermitage.js` le dit depuis le
    21 août). Deux natures seulement — une sortie Yuno hors carnet, une réunion
    FCH sans bilan. Trois portes : y aller, « pas maintenant » (revient demain),
    la croix (jamais). **Jamais de ligne perso** : un rendez-vous avec soi ne
    doit ni bilan ni tri. Il remonte à **quinze jours** au plus — au-delà, un
    bilan qu'on n'a pas écrit ne s'écrira pas, et le redemander devient un
-   reproche. Le rendez-vous du dimanche passe devant : deux bandeaux empilés
-   seraient deux interruptions.
-3. **Les habitudes ont QUITTÉ l'accueil** (30 août 2026, décision de Noé le
+   reproche. **La porte du dimanche passe devant, et elle le fait vraiment
+   depuis le 30 août** : la règle était écrite depuis le 29 et le code ne la
+   tenait pas — les deux bandeaux pouvaient s'empiler, ce qui fait deux
+   interruptions. Le bilan qu'on ne réclame pas ce soir revient demain.
+4. **Les habitudes ont QUITTÉ l'accueil** (30 août 2026, décision de Noé le
    soir même où elles y étaient arrivées). Elles vivent dans perso, seul écran
    qui les montre — voir « Les habitudes » plus haut. L'accueil porte ce qui est
    POSÉ ; une habitude n'est posée nulle part, elle revient.
-4. **Aujourd'hui, dans une TUILE** — **et toute la tuile mène à `#taches`**
+5. **Aujourd'hui, dans une TUILE** — **et toute la tuile mène à `#taches`**
    (29 août 2026, demande de Noé : « en gardant tous les autres boutons de la
    tuile »). C'est cette seconde moitié qui décide de la forme : **pas un lien
    qui enveloppe**, comme celui d'une tuile de projet — celle-ci porte une
@@ -1122,7 +1147,7 @@ gestes ne doivent jamais porter le même signe.
    Display, casse normale) se distingue désormais du **libellé de groupe**
    (petites capitales), et le bord finit le travail. Le titre est DEHORS, comme
    celui des projets — il nomme la tuile, il ne vit pas dedans.
-5. **Ta semaine** — la grille du calendrier, **CINQ ÉLÉMENTS AU PLUS PAR JOUR**
+6. **Ta semaine** — la grille du calendrier, **CINQ ÉLÉMENTS AU PLUS PAR JOUR**
    (30 août 2026, demande de Noé), **jours passés estompés** (0,42) et
    **titres sur deux lignes** avec points de suspension.
    - Le plafond est un réglage de l'APPELANT (`maxParJour`), pas de la vue : au
@@ -1149,7 +1174,7 @@ gestes ne doivent jamais porter le même signe.
      voit (`.cal-au-dela`). Vérifié : 5 visibles en semaine, 10 une fois le jour
      ouvert. Rien n'est effacé : le
    hub ne compte pas les retards, mais il ne les cache pas non plus.
-6. **Projets en cours**, en colonne de droite — voir plus bas.
+7. **Projets en cours**, en colonne de droite — voir plus bas.
 
 **Les objectifs ont quitté l'accueil.** Ils ont leur page à deux gestes, et
 l'accueil répond à « qu'est-ce que j'ai à faire », pas à « où je vais ». Ils
@@ -1237,6 +1262,154 @@ deviendrait vite un reproche.
 
 Check-in matinal : l'accueil doit se lire en moins de 5 minutes, sans scroll
 excessif sur mobile.
+
+## Ma semaine — `#semaine` (30 août 2026)
+
+**LA DEMANDE, dans les mots de Noé** :
+
+> « Pour les propositions de la semaine du dimanche soir, on va créer une
+> nouvelle page (je ferai cette programmation essentiellement sur ordinateur)
+> qui sera accessible via un bouton sur la page d'accueil qui apparaîtra avec
+> les mêmes horaires que les propositions qui apparaissent le dimanche
+> actuellement. Cette nouvelle page doit afficher la page de la semaine qui
+> arrive, avec la liste des tâches à faire (non programmé) sur le côté que l'on
+> peut glisser dans le calendrier pour les programmer. Il me faut également un
+> bilan de la semaine qui est passée en quelques chiffres. »
+
+**CE QU'ELLE RÉPARE.** Le rendez-vous du dimanche vivait sur l'accueil, en
+bandeau : il DISAIT la semaine — le club à 26 h, la formation en grappe, rien
+pour toi — et ne permettait de rien poser. Il fallait sortir de l'accueil,
+ouvrir le calendrier, retrouver la tâche, lui donner un jour, recommencer. Le
+constat était au bon endroit, le geste nulle part.
+
+**ELLE S'APPELLE « MA SEMAINE »**, du même nom dans son `<h1>`, dans l'onglet du
+navigateur et dans le menu — c'est la leçon de « Général » : trois noms pour une
+page est un défaut, pas un choix. Elle a porté « Programmer la semaine » pendant
+une heure, le nom du GESTE plutôt que celui de la chose ; le verbe reste sur le
+bouton de l'accueil, où il est à sa place — un bouton dit ce qui va se passer,
+un titre nomme ce qu'on regarde. *À ne pas confondre avec « Ta semaine », le
+bloc de l'accueil : celui-là est un aperçu du calendrier, celle-ci est la page
+où l'on décide.*
+
+**LA RÈGLE DES DEUX RANGS la sort de l'accueil**, qui n'en garde qu'une
+**porte** — un simple bouton « Programmer ma semaine », dans la même fenêtre
+horaire (dimanche à partir de 20 h, et le lundi). Programmer sa semaine est une
+décision, pas un réflexe. Ce que ça débloque n'est pas une économie, c'est de la
+place : la page peut porter une grille, un vivier et un bilan, ce qu'un bandeau
+ne pouvait pas. **L'accueil y gagne aussi une requête contre huit** : il n'a
+plus à calculer le diagnostic pour l'afficher, seulement à savoir si la semaine
+a déjà été validée.
+
+### Ce qu'elle montre, dans l'ordre où on la lit
+
+1. **le bilan de la semaine passée**, en quelques chiffres — le miroir d'abord,
+   c'est la philosophie n° 1 ;
+2. **la grille de la semaine qui vient**, et à côté d'elle **le vivier** : les
+   tâches qui attendent un jour ;
+3. **ce que le hub voit** — les lignes du diagnostic, chacune avec son geste ;
+4. **« C'est ma semaine »**, qui ferme le rendez-vous.
+
+**La grille et le vivier sont CÔTE À CÔTE**, et c'est tout l'objet de la page :
+la chose à poser et l'endroit où la poser doivent se voir ensemble, parce que
+c'est un geste et non une lecture. Sur téléphone ils s'empilent, la grille
+d'abord — c'est pour elle qu'on est venu.
+
+### Le bilan : cinq chiffres, et aucun ne peut baisser
+
+Victoires · tâches terminées · heures mesurées · humeur moyenne · habitudes
+tenues (`bilanDeLaSemaine`, js/orientation.js — éprouvable hors écran comme le
+reste). **Nulle part un taux de réussite, une tâche non faite comptée, ou une
+comparaison avec la semaine d'avant** : un bilan qui note la semaine passée
+transformerait le rendez-vous du dimanche en examen, et on cesserait très vite
+de l'ouvrir.
+
+- **Un zéro ne s'affiche pas.** « 0 victoire » est la première chose qu'on
+  lirait d'une semaine calme : un constat d'échec pour une information nulle.
+  C'est la règle des habitudes, appliquée ici — une série à zéro se tait.
+- **Le seul chiffre qui dise un manque dit ce que le HUB ignore** : « 6 des 24
+  choses terminées portent une durée ». Sans lui, « 3 h 55 » se lirait comme une
+  semaine légère alors qu'il ne dit que le silence des durées. Même précaution
+  que la première ligne de `#temps`.
+
+### Le vivier : ce qui attend un jour
+
+**UNE SEULE LISTE, ET CE QUI A GLISSÉ EN TÊTE.** Elle contient les tâches
+**sans date** — ce que Noé a demandé — et celles dont la date est **passée sans
+être faites**, qui restent autrement coincées dans la semaine d'avant :
+invisibles à la grille de la semaine qui vient, donc absentes de la
+programmation. Ces dernières **passent devant** (30 août 2026, demande de Noé) :
+ce sont elles qu'on reprogramme en premier.
+
+**LA DATE OÙ ELLE ÉTAIT POSÉE S'ÉCRIT À DROITE DE LA TUILE**, et c'est elle qui
+remplace les titres de groupe — « Sans date » et « Restées ouvertes » ont existé
+une heure et disaient ce que cette date dit déjà, au prix de deux lignes dans
+une colonne qui n'en montre que huit. **Une vraie date, jamais un relatif** :
+« il y a 4 jours » compterait les jours perdus, ce que le hub ne fait pas, et on
+reprogramme mieux en sachant quel jour on avait choisi. Encre discrète, aucun
+mot de retard, aucune couleur d'alerte.
+
+**LA COLONNE N'A QUE SON TITRE** — « À poser », rien dessous. Elle a porté une
+phrase d'aide (« glisse une tâche sur un jour ; au doigt, touche-la puis touche
+le jour ») : deux lignes en permanence pour un geste qu'on n'apprend qu'une
+fois. Elle vit désormais dans le nom accessible de chaque tuile, où elle ne
+prend aucune place. *Conséquence assumée : le chemin tactile ne s'annonce plus
+nulle part à l'écran.*
+
+**HUIT TUILES, ET LE RESTE DÉFILE DANS LA COLONNE** (demande de Noé). Dix-sept
+tâches sans date faisaient une colonne trois fois plus haute que la grille d'en
+face : on ne voyait plus les jours où les poser. Le défilement est **dans la
+colonne**, pas dans la page — la grille reste sous les yeux pendant qu'on
+cherche. La huitième tuile est coupée en deux : c'est ce qui dit qu'il y en a
+d'autres, mieux qu'une ombre ou une flèche.
+
+**LA CROIX MET DE CÔTÉ POUR LA SEMAINE** (demande de Noé : « elle ne sera pas
+traitée cette semaine »). C'est `refusee_le` qui la porte, la **même colonne**
+que le « pas aujourd'hui » des pistes du matin : dans les deux cas elle dit la
+date POUR LAQUELLE on a dit non. L'accueil la lit au jour, cet écran la lit à la
+semaine — d'où la comparaison au lundi.
+- **Elle expire d'elle-même** : dimanche prochain, le lundi aura avancé et la
+  tâche reviendra dans le vivier. Une mise de côté définitive serait une
+  suppression déguisée.
+- **Ce qu'on écarte se retrouve**, replié sous « 3 mises de côté cette
+  semaine », et se remet d'un geste. Un × sans retour serait un piège, et le hub
+  ne cache rien — il range.
+
+### Les trois glissements
+
+| Geste | Ce qu'il écrit |
+|---|---|
+| une tuile du vivier **sur un jour** | `echeance` = ce jour |
+| une barre **d'un jour à l'autre** | le décalage habituel du calendrier |
+| une barre **ramenée dans le vivier** | `echeance` et `heure` à `null` — elle se déprogramme |
+
+Le troisième est le geste inverse du premier, et il se devine parce qu'il est
+symétrique. Il passe par une option de `brancherDeplacement` (`zones`) plutôt
+que par une seconde mécanique : les deux glissements partagent le fantôme qu'on
+tient en main et la case qu'on vise (`prendreEnMain`, `jourSousLePoint`,
+`viserLeJour`, js/calendrier-commun.js). **Seule une tâche se déprogramme** :
+un événement sans date n'existe pas, et une publication sans date rejoindrait la
+banque d'idées, où le vivier ne va pas la chercher.
+
+**AU DOIGT, ON NE GLISSE PAS.** Sur une liste verticale, un glissement ne se
+distingue pas d'un défilement — c'est la même prudence qui fait n'accepter, sur
+les barres du calendrier, qu'un mouvement franchement horizontal. Le toucher a
+donc son chemin à lui : **on choisit la tâche, puis on touche le jour**, et les
+jours s'allument tant qu'elle est en main. Un second appui la repose — un choix
+qu'on ne peut pas défaire est un piège.
+
+### Ce qu'elle ne fait pas
+
+- **Elle ne calcule rien elle-même** : le diagnostic et le bilan viennent de
+  `js/orientation.js`, qui ne touche ni au réseau ni au DOM.
+- **On n'y modifie pas ce qui est déjà posé.** Cliquer une barre n'ouvre aucune
+  fenêtre de détail : cette grille est une **surface de placement**, pas le
+  calendrier — il est à un clic. Ce qui s'y écrit, c'est une date, et c'est tout.
+- **Treize requêtes à l'ouverture, et c'est assumé** : la page s'ouvre une fois
+  par semaine, sur décision, devant un ordinateur. Elle a le droit de coûter ce
+  qu'un check-in de mardi matin n'a pas le droit de coûter.
+- **Elle reste atteignable hors de sa fenêtre**, par le menu (« Général ›
+  Ma semaine ») : la porte de l'accueil est l'invitation, le menu est le
+  chemin. Une semaine qu'on veut reprendre le mercredi doit pouvoir l'être.
 
 ## Le mot « projet » a changé de sens (27 août 2026)
 
@@ -1519,6 +1692,173 @@ supabase-js dans `js/vendor/` (figé, rapatrié par
 coquille tient en cache, un fichier distant est aussi le seul morceau que
 l'ouverture hors ligne ne peut pas garantir.
 
+## La forme d'une tuile, et celle d'un choix (30 août 2026)
+
+Deux décisions de Noé le même soir, et elles vont ensemble : elles disent qu'une
+forme doit dire ce qu'on fait avec, pas décorer.
+
+### LES TUILES N'ONT PLUS DE CONTOUR
+
+> *« Sur les tuiles, j'aime pas trop avoir des contours (uniquement pour des
+> tuiles à l'intérieur d'une tuile). »*
+
+**Une tuile posée dans la page se distingue par sa SURFACE** — `--fond-carte`
+sur `--fond`, un écart franc. Le filet ne fait que redire ce que la couleur dit
+déjà, et vingt filets sur un écran finissent par le quadriller. Il ne redevient
+utile que **lorsqu'une tuile est posée DANS une autre** : là, les deux surfaces
+se ressemblent trop pour se séparer seules.
+
+- La règle vaut pour toute la famille : `.bloc li` (l'unité), la tuile de la
+  journée, les projets de l'accueil, les objectifs, les habitudes, les
+  intentions, les livres, les journées, les caps, les cartes de statistiques,
+  les tuiles du vivier.
+- **L'exception, mot pour mot** : `.tuile-jour li`, `.fenetre li`,
+  `.ajout-tuile li`, et `.cap-projet` dans un cap déplié.
+- **`border-color: transparent` plutôt que `border: 0`** : le fond d'un élément
+  est peint SOUS sa bordure, un filet transparent ne laisse donc rien voir — et
+  rien ne bouge d'un pixel. C'est ce qui permet de le faire en un endroit sans
+  reprendre douze géométries, dont la barre d'espace de `.bloc li`, calée sur ce
+  1 px. Y remettre une couleur suffit à revenir en arrière.
+- **La tuile du vivier a changé de surface** : elle vivait sur `--fond-doux`,
+  2 % plus clair que la page, ce que seul son filet rendait visible. La nuance
+  qu'elle disait (« pas encore posée dans la semaine ») ne valait pas une tuile
+  qu'on ne voit pas.
+
+### UN MENU DÉROULANT EST UNE PASTILLE, PAS UN CHAMP
+
+> *« Les menus déroulants doivent être des pastilles de manière à être
+> différentes de l'espace qui note du texte, et elles doivent toutes être côte à
+> côte s'il y en a plusieurs sur la tuile. »* Puis, dans la foulée : *« sans
+> leur titre »*.
+
+**LA TUILE DE CAPTURE EST LA RÉFÉRENCE** (30 août 2026, Noé en la montrant) :
+*« tout ce qui peut être une pastille l'est, pour simplifier la tuile — mais en
+respectant ce qui nécessite un espace de texte, donc [on] ne peut pas tout
+mettre sous forme de pastille, et en variant les formes et la place si
+nécessaire. »* Un champ de texte reste un champ de texte ; **tout ce qui se
+RÈGLE devient une pastille**, et la tuile se lit alors d'un regard : une bande
+de réglages, puis ce qu'on écrit.
+
+**LA FORME D'UNE TUILE D'AJOUT, dans l'ordre** (30 août 2026) :
+
+1. **le texte principal, SANS CADRE NI ÉTIQUETTE** — une invite en gris qui
+   s'efface dès qu'on écrit, comme le « Nom de la tâche » de la capture. C'est
+   le premier champ de texte EXIGÉ qui joue ce rôle : le titre d'un objectif, le
+   nom d'un projet, celui d'une période. Un formulaire qui n'en a pas garde tous
+   ses champs étiquetés — mieux vaut pas de vedette qu'une vedette tirée au
+   hasard.
+2. **un blanc plus large que les autres**, et il n'est pas décoratif : c'est lui
+   qui ISOLE la vedette (« un espace un peu plus important pour que le texte
+   soit un peu isolé »). Sans lui, le titre se noyait dans la rangée qui le suit.
+3. **la rangée de pastilles** — tout ce qui se RÈGLE : les choix, puis les
+   dates.
+4. **le reste des champs**, étiquetés comme avant : ce qui demande vraiment un
+   espace de texte (un « pourquoi », des notes) ne se met pas en pastille.
+5. **le bouton, sans contour** : il porte déjà un aplat, et c'est le seul bouton
+   de la tuile — rien à côté de quoi se démarquer.
+
+> *Trois ordres ont été essayés le même soir : la rangée en pied (après tous les
+> champs), la rangée en tête (avant le texte), puis celui-ci. Le troisième est
+> celui de la tuile de capture, et il ne tenait pas sans le blanc du point 2 —
+> c'est justement ce qui avait fait remonter les pastilles au tour d'avant.
+> Ne pas les redéplacer sans rouvrir cette question-là.*
+
+**LE CURSEUR EST DANS LE TEXTE À L'OUVERTURE**, et le clavier avec lui (« comme
+pour les tâches »). Deux chemins, et le premier est le seul qui marche sur
+iPhone : un `focus()` programmé HORS d'un geste ne lève pas le clavier sur iOS,
+or l'événement `toggle` d'un `<details>` est mis en file, donc tiré du geste. On
+intercepte donc le clic sur le sommaire, on ouvre soi-même, et on donne le focus
+dans la foulée. Le second chemin — `toggle` en capture, car il ne remonte pas —
+rattrape les tuiles qu'un espace ouvre lui-même : là le clavier attendra le
+doigt, mais le curseur est au bon endroit.
+
+**Ce que ça renverse** : le déclencheur d'un `type: 'choix'` avait l'allure des
+autres champs — même hauteur, même cadre, même rayon —, au motif que « dans un
+formulaire, un choix est un champ comme un autre ». C'est ce motif qui tombe, et
+Noé a raison : **on n'ÉCRIT pas dans un choix, on y prend.** Un rectangle à fond
+de carte dit « écris ici » ; une pastille dit « choisis ».
+
+- **C'est le dessin de `.pastille-capture`**, au trait près : il n'y a aucune
+  raison qu'un choix se présente d'une façon dans la tuile de capture et d'une
+  autre dans un formulaire.
+- **TOUS LES CHOIX D'UN FORMULAIRE DANS UNE SEULE RANGÉE, EN TÊTE**
+  (`.formulaire-choix`, js/gabarits.js — les dix-sept formulaires à la fois).
+  « Côte à côte » ne se fait pas si chacun reste coincé entre deux champs de
+  texte pleine largeur. *La rangée a passé une heure en PIED, par analogie avec
+  la tuile de capture où l'on écrit d'abord et où l'on règle ensuite ; Noé a
+  tranché l'inverse, et c'est cohérent avec ce que les formulaires faisaient
+  déjà — « Espace » ouvrait celui d'un objectif. Ce qui CADRE se pose avant ce
+  qu'on écrit.*
+- **AUCUN TITRE AU-DESSUS D'ELLES.** C'est le geste déjà fait sur la ligne d'une
+  habitude — « le texte n'est pas nécessaire une fois que je sais à quoi les
+  chiffres correspondent » —, et la parade est la même : le sens n'est pas
+  perdu, il est **déplacé**. `title` le donne au survol, `aria-label` au lecteur
+  d'écran, qui ne sait pas de quoi « Normal » est la valeur.
+- **LE POINT DE COULEUR, quand plusieurs pastilles partagent leurs options.**
+  Les trois régimes d'une période disent tous « Normal » : sans titre, ils ne se
+  distinguaient plus. `marqueEspace` leur pose la couleur de leur espace — celle
+  de sa pastille partout ailleurs. Une couleur, pas un mot revenu par la
+  fenêtre. *La règle a failli être « on garde le titre dans ce cas-là » ; Noé
+  l'a retirée en voyant le point : « t'as rajouté le rond de couleur, donc on
+  peut enlever le titre aussi ».*
+- **PAS DE CHEVRON** (« sans la flèche sur le côté »). La flèche disait « ceci
+  s'ouvre » à un contrôle qui avait l'allure d'un champ ; une pastille pleine
+  le dit par sa forme.
+- **LA PASTILLE PORTE LA COULEUR DE SA VALEUR** (« avec des couleurs »), et pas
+  une teinte décorative : celle que le hub emploie déjà pour cette valeur-là —
+  l'espace, la priorité, la famille. Elle se **déduit des options** et ne se
+  déclare pas (`teinteDuChoix`) : un champ qui offre les quatre espaces se
+  reconnaît à ses clés, et les dix-sept formulaires n'ont pas un réglage de
+  plus à apprendre. Sans vocabulaire connu, la pastille garde l'accent de
+  l'espace courant. **La couleur suit la valeur** : changer une priorité
+  reteinte la pastille sur-le-champ — une couleur qui ment est pire que pas de
+  couleur.
+- **DEUX VOCABULAIRES DE PLUS, propres aux habitudes** (30 août 2026, demande de
+  Noé) : **la cadence se lit en SEPT BLEUS DIFFÉRENTS**, du plus pâle (une fois
+  par semaine) au plus franc (tous les jours) — une habitude quotidienne se voit
+  avant d'être lue, et la couleur dit l'exigence qu'on se donne, pas un
+  jugement. **La teinte marche vraiment** : 202° au premier cran, 227° au
+  dernier, la clarté descendant de 78 à 64 %. *Un unique bleu mêlé au gris a été
+  essayé d'abord et écarté par Noé — « là c'est juste la saturation qui est
+  modifiée » : mélanger une couleur à du gris n'en change ni la teinte ni
+  vraiment la clarté, et les sept crans se ressemblaient.* Les deux bornes sont
+  choisies, pas trouvées : en deçà de 200° on entre dans le teal de la
+  formation, au-delà de 230° dans le violet de perso et de `--famille-calme`,
+  qui vit dans la MÊME rangée. Et **« Sans famille » et
+  « intendance » ont échangé leur couleur** : elles étaient à l'envers — l'option
+  VIDE prenait l'accent de la page et ressemblait donc à un choix fait, tandis
+  qu'« intendance », qui est une vraie famille, portait le gris neutre. Le gris
+  va à l'absence de choix, la couleur va au choix. *C'est ce qui a rendu
+  nécessaire `vide: true` : une teinte qui pose son attribut MÊME sans valeur,
+  sans quoi le vide n'a pas d'accroche à lui.*
+- **UNE DATE EST UNE PASTILLE, ELLE AUSSI** (« la date sur ces tuiles peut se
+  mettre à la suite des pastilles, sous la forme d'une pastille aussi, avec le
+  logo calendrier »). Elle porte le calendrier, dit le nom de son champ tant
+  qu'elle est vide — « Échéance », « Du » — puis la date choisie, en court
+  (« 15 déc. »). **Elle suit les choix dans la même rangée** : une date se
+  règle, elle ne s'écrit pas.
+  - **Le champ natif reste, invisible, PAR-DESSUS la pastille** : c'est lui
+    qu'on touche, donc le navigateur ouvre son sélecteur sans qu'on l'appelle,
+    `FormData` le lit comme avant, et **un champ requis reste focusable** — un
+    champ requis que le navigateur ne peut pas atteindre bloque l'envoi en
+    silence, sans un mot.
+  - **La parenthèse d'un libellé ne monte pas dans la pastille** :
+    « Jusqu'au (vide = un seul jour) » tenait une ligne à lui seul. C'est une
+    explication, pas un nom — elle part vers le `title`. Fait une fois dans le
+    gabarit, pas dans les huit formulaires qui écrivent une date.
+- **LE FOND RESTE VIDE, ET LE FILET EST FIN** : l'encre porte la couleur pleine,
+  le filet la porte à 70 %, l'intérieur laisse voir la page. Le trait se lit
+  ainsi comme un filet et non comme un cadre (demande de Noé : « le contour des
+  pastilles un peu moins large ») — il tenait déjà le minimum géométrique,
+  1 px, et descendre sous ce chiffre disparaîtrait sur un écran non retina. C'est le dessin de la pastille « P1 » de la tuile de
+  capture, que Noé a montrée en disant « la couleur de la pastille, comme
+  celle-là ». Un aplat teinté a été essayé et pesait trop : cinq pastilles
+  remplies font cinq taches là où cinq contours font une rangée.
+- **Le panneau se retourne plutôt que de se faire couper** (`placerLePanneau`) :
+  les choix étant désormais en bas du formulaire, le dernier ouvrait son menu
+  dans le bord de la tuile. Il bascule vers le haut, ou vers la gauche, selon la
+  place qui reste.
+
 ## Conventions de développement
 
 - Code simple et lisible : HTML/CSS/JS vanilla, un fichier js/api.js pour tous les appels Supabase, un fichier par espace.
@@ -1552,7 +1892,9 @@ l'ouverture hors ligne ne peut pas garantir.
 - **Ajouter du contenu ouvre une tuile volante** (27 août 2026) — un objectif, un projet, une période, un jalon, une intention, une idée : le fond s'assombrit, la tuile se centre, et on la referme par la croix, le fond ou Échap. Déplié sur place, un formulaire de six champs poussait la page vers le bas et faisait perdre de vue ce qu'on regardait. C'est `construireFormulaire` (js/gabarits.js) qui le fait, **pour les dix-sept formulaires à la fois** : le `<details>` reste — il porte l'état, donne au sommaire son rôle de bouton, et les écrans qui referment après enregistrement écrivaient déjà `.closest('.ajout').open = false`. Seuls les formulaires `ouvert: true` restent en place : ils vivent déjà dans une fenêtre, et une tuile par-dessus une fenêtre serait une fenêtre de trop.
 - **Un geste répond tout de suite, et se voit.** Toucher un bouton l'éclaire brièvement (`.eclair`, posé par `app.js` sur `pointerdown`) ; cocher une tâche dessine sa coche et la laisse voir 600 ms avant que la ligne ne s'en aille. Un effet de ce genre se pose **une fois, pour tout le monde** — jamais écran par écran — et se coupe sous `prefers-reduced-motion`.
 - **L'écran d'abord, le réseau ensuite.** Une action de Noé change l'affichage tout de suite ; l'écriture part derrière. Un geste qui attend l'aller-retour Supabase, ce sont 300 à 800 ms de figement sur téléphone. La contrepartie n'est pas facultative : si l'écriture échoue, l'état d'avant est remis ET une ligne le dit — sans ce retour en arrière, l'affichage optimiste est un mensonge. La mécanique vit dans `js/ecriture.js` (`modifierAussitot`, `retirerAussitot`, `ajouterAussitot`) : ne pas la recopier. **Les listes s'y modifient sur place**, jamais par remplacement, sans quoi le retour en arrière écrirait dans un tableau orphelin. Deux exceptions volontaires : les **formulaires** (ils ont un endroit pour dire l'échec, et gardent la saisie) et les écritures qui envoient un fichier.
-- Largeur, marges et points de rupture repris de Bac-3 : contenu à 1240 px, marges de 16/24/32 px, ruptures à 720 et 1080 px. **La mise en page prend toute la largeur, le texte jamais** — sur grand écran les listes passent en colonnes plutôt que de s'étirer.
+- **LA PAGE N'A PLUS DE PLAFOND DE LARGEUR** (30 août 2026, demande de Noé : « sur ordinateur, le site doit utiliser toute la largeur »). Elle en a eu un de 1240 px, hérité de Bac-3 ; sur un écran de 1728 px il laissait 488 px de vide de part et d'autre. Marges de **16/24/32/48 px** (le quatrième palier est né avec la suppression du plafond : toute la largeur ne veut pas dire bord à bord), ruptures à 720 et 1080 px.
+  - **La règle, elle, n'a pas changé — et c'est elle qui rend la suppression possible** : **la mise en page prend toute la largeur, le texte jamais.** Sur grand écran les listes passent en colonnes plutôt que de s'étirer (quatre ou cinq au lieu de trois), et le **texte courant porte sa mesure** : sous-titres, phrases d'aide et écrans vides s'arrêtent à 68 caractères (`.espace > p`, `.sous-titre`, `.vide`). Ce qui empêche une ligne de devenir illisible, ce sont ces deux règles, pas une largeur de page.
+  - `--colonne-max` **existe toujours** et vaut `none` : tout ce qui s'alignait dessus — l'en-tête, la barre d'onglets, le voile du menu — continue de s'aligner, et y remettre une valeur suffit à revenir en arrière. Le voile du menu, lui, refaisait le calcul de centrage de cette largeur ; il reprend simplement la marge.
 - Migrations : toute évolution du schéma passe par un fichier SQL dans supabase/migrations/, versionné dans git.
 - Déploiement : branche main → GitHub Pages. Vérifier que le site fonctionne en local avant de pousser : `node tools/static-server.js`, puis http://localhost:4173 (ouvrir `index.html` en `file://` ne marche pas, les modules ES sont bloqués).
 - **`node tools/verifier-gabarits.js` avant de pousser du HTML dans un gabarit.** Un accent grave nu dans un commentaire HTML, à l'intérieur d'un gabarit JS, ferme la chaîne : le fichier reste valide pour `node --check`, et le module casse au chargement en emportant tout l'écran. Le piège s'est produit quatre fois entre le 13 et le 15 août 2026 ; cet outil le voit, `node --check` non. (Un accent grave échappé, lui, est correct.)

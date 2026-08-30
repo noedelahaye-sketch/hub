@@ -10,7 +10,11 @@
 >
 > **§ 0 raconte la dernière session** (30 août : LE SITE FCH PREND LA CHARTE DU
 > CLUB et son accueil redevient un atelier ; PERSO REFOND SES HABITUDES —
-> émoji, colonne, tableau de bord, compte quotidien). **§ 0 ante** le 29 au soir
+> émoji, colonne, tableau de bord, compte quotidien ; LE RENDEZ-VOUS DU DIMANCHE
+> DEVIENT UNE PAGE, `#semaine`, où l'on glisse les tâches sans date dans la
+> semaine qui vient — § 0.11 ; LA PAGE PREND TOUTE LA LARGEUR DE L'ÉCRAN —
+> § 0.12 ; LES TUILES PERDENT LEUR CONTOUR et LES CHOIX DEVIENNENT DES
+> PASTILLES — § 0.13). **§ 0 ante** le 29 au soir
 > (perso devient un espace vivant), **§ 0 ante bis** le 29 dans la journée
 > (l'accueil refondu), **§ 0 ante ter** le 28 au soir (la navigation à deux
 > rangs), **§ 0 ante quater** le 28 dans la journée, **§ 0 ante quinquies** le 27
@@ -19,18 +23,22 @@
 > le 21, **§ 0 ante undecies** le 15, **§ 0 ante duodecies** les 14–15. Les § 1 et
 > suivants décrivent l'état stable et les chantiers antérieurs.
 
-## 0. La session du 30 août 2026 — LE FCH PREND SA CHARTE, PERSO REFOND SES HABITUDES
+## 0. La session du 30 août 2026 — LE FCH PREND SA CHARTE, PERSO REFOND SES HABITUDES, LE DIMANCHE SOIR PREND SA PAGE
 
 **Un commit poussé** (`94954d8`, le FCH) **et une seconde moitié encore dans
 l'arbre de travail** (perso). Deux migrations appliquées en base —
 `20260830120000_temps_fort_fch`, `20260830140000_emoji_habitude`. `CLAUDE.md` et
 `docs/fch-spec.md` mis à jour.
 
-La session s'est jouée en deux temps sans rapport l'un avec l'autre : d'abord la
-**lecture du dossier FCH de Noé et de son Drive**, qui a fourni la plupart des
-réponses que le site cherchait depuis le 7 août ; ensuite une **refonte des
-habitudes** menée par petites corrections successives, dont plusieurs se sont
-renversées en cours de route (§ 0.7 — à lire avant d'y toucher).
+La session s'est jouée en cinq temps sans rapport les uns avec les autres :
+d'abord la **lecture du dossier FCH de Noé et de son Drive**, qui a fourni la
+plupart des réponses que le site cherchait depuis le 7 août ; ensuite une
+**refonte des habitudes** menée par petites corrections successives, dont
+plusieurs se sont renversées en cours de route (§ 0.7 — à lire avant d'y
+toucher) ; puis **la page de programmation du dimanche soir** (§ 0.11), qui
+sort le rendez-vous de l'accueil et lui donne enfin un geste ; puis **la
+suppression du plafond de largeur** (§ 0.12) ; enfin **deux règles de forme** —
+les tuiles sans contour, les choix en pastilles (§ 0.13).
 
 ### 0.1 LE DOSSIER FCH RÉPOND AUX QUESTIONS OUVERTES DU CAHIER DES CHARGES
 
@@ -323,6 +331,266 @@ refus de Noé : elle affiche les manques avec la même précision que les faits.
 Quatre pistes en sortent, classées dans l'artefact — la première étant de
 **croiser l'humeur et les habitudes** (les trois ingrédients existent déjà, rien
 à stocker).
+
+### 0.11 « MA SEMAINE » — le rendez-vous du dimanche devient une page
+
+**La demande de Noé**, le soir : une page pour les propositions du dimanche,
+atteinte par un bouton d'accueil qui apparaît aux mêmes horaires, montrant la
+**semaine qui arrive** avec les **tâches non programmées sur le côté**, qu'on
+**glisse dans le calendrier**, plus un **bilan de la semaine passée en quelques
+chiffres**. « Je ferai cette programmation essentiellement sur ordinateur. »
+
+**Ce que ça répare, et c'est le vrai sujet.** Le rendez-vous vivait en bandeau
+sur l'accueil : il DISAIT la semaine et ne permettait de rien poser. Le constat
+était au bon endroit, le geste nulle part.
+
+**Trois décisions prises avec lui avant d'écrire** : le bouton **remplace** le
+bandeau (il ne s'y ajoute pas) ; le vivier porte les tâches **sans date ET
+celles restées ouvertes** — sinon elles restent coincées dans la semaine d'avant
+et disparaissent de la programmation ; le bilan tient en **victoires, tâches
+terminées, heures mesurées, humeur, habitudes**.
+
+**Trois ajouts en cours de route**, demandés pendant l'écriture : la colonne se
+limite à **huit tuiles et défile** (dix-sept tâches faisaient une colonne trois
+fois plus haute que la grille d'en face) ; chaque tuile porte une **croix
+« pas cette semaine »** ; et **la porte de l'accueil se réduit à un bouton**.
+
+**LA COLONNE AUSSI, dans la même passe** : plus de sous-titre, plus de titres de
+groupe, une seule liste où **ce qui était posé et n'a pas été fait passe
+devant**, avec **la date de son ancien jour à droite de la tuile**. Cette date
+remplace les deux titres qu'elle rendait inutiles, et c'est une vraie date — un
+relatif (« il y a 4 jours ») compterait les jours perdus.
+
+**LA PORTE A MAIGRI LE SOIR MÊME.** Elle était née bandeau — titre « Ta semaine
+qui vient », intervalle de dates, phrase expliquant ce qu'il y avait derrière,
+puis le bouton. Noé : *« le bouton doit simplement dire "Programmer ma semaine"
+et être dans la forme du bouton actuel »*. Trois lignes au-dessus de la journée
+pour un seul geste : le nom du bouton dit ce que la phrase disait, et les dates
+s'écrivent en tête de la page qui s'ouvre.
+
+**ET LA PAGE A CHANGÉ DE NOM dans la foulée** : « Programmer la semaine » est
+devenu **« Ma semaine »** — `<h1>`, onglet du navigateur et menu, un seul nom
+pour une page (la leçon de « Général »). Le verbe reste sur le bouton de
+l'accueil, où il est à sa place.
+
+**UN DÉFAUT DE FOND TROUVÉ EN CHEMIN — le rendez-vous validait la MAUVAISE
+semaine.** `semaineDe(maintenant)` rend « la semaine où l'on est » : le dimanche
+à 20 h, celle qui s'achève. Le bandeau s'appelait « Ta semaine qui vient » et
+affichait la charge de celle qui finissait ; pire, `validerLaSemaine` écrivait
+le lundi PASSÉ — le rendez-vous revenait donc le lendemain matin comme s'il ne
+s'était rien dit. `pivotDeLaSemaine` (js/orientation.js) fait la bascule.
+
+**UN SECOND, plus petit** : « la porte du dimanche passe devant » était écrit
+dans `CLAUDE.md` depuis le 29 août et le code ne l'avait jamais tenu — les deux
+bandeaux pouvaient s'empiler. La porte est passée au-dessus dans le balisage, et
+le bandeau de l'après se tait tant qu'elle est ouverte.
+
+**UN TROISIÈME, trouvé en mesurant** : les écouteurs de la page étaient branchés
+APRÈS `await charger()`, donc absents pendant les treize requêtes. La page
+s'affichait, les tâches étaient visibles, et les toucher ne faisait rien.
+Squelette, écouteurs, données — dans cet ordre.
+
+**Ce qui a été mis en commun plutôt que recopié** : `jourSousLePoint`,
+`prendreEnMain`, `suivreLaMain` et `viserLeJour` sortent de
+`brancherDeplacement` et sont exportés ; le glissement vers le vivier passe par
+une option `zones` de cette même fonction, pas par une seconde mécanique.
+
+**Ce qui a été vérifié, dans le navigateur, sur ses vraies données** : le
+glissement d'une tâche du vivier vers le samedi 5 (elle atterrit dans la bonne
+colonne) ; le glissement inverse, qui la déprogramme ; la croix, qui la range
+sous « 1 mise de côté cette semaine » **et qui survit à un rechargement** ; le
+« Remettre », qui la rend au vivier. **Tout a été remis dans l'état d'avant** —
+les dix-sept tâches sans date le sont restées.
+
+**Ce qui n'a PAS été vérifié, et il faut le dire** : le bouton **« C'est ma
+semaine » n'a jamais été pressé**. Il écrit une ligne dans `semaines` pour la
+semaine du 31 août, et il n'existe aucun écran pour la retirer — la presser en
+essai aurait supprimé la porte du dimanche soir de Noé. Le chemin d'écriture est
+le même qu'avant (`api.validerLaSemaine`), seule la date passée a changé.
+
+**Rien non plus au doigt** : le chemin tactile — choisir la tâche, puis toucher
+le jour — n'a été éprouvé qu'à la souris. C'est la leçon du 29 août sur le
+balayage : un geste tactile ne se vérifie pas en simulant des événements.
+
+### 0.12 LA PAGE PREND TOUTE LA LARGEUR DE L'ÉCRAN
+
+Demande de Noé, en une phrase : *« sur ordinateur, le site doit utiliser toute
+la largeur »*. Le hub portait un plafond de **1240 px** hérité de Bac-3 : sur un
+écran de 1728 px, cela laissait **488 px de vide** de part et d'autre.
+
+**Ce que ça ne change pas, et c'est ce qui rend la suppression possible** : la
+règle « la mise en page prend toute la largeur, le texte jamais » était déjà
+écrite, et c'est le plafond qui la contredisait. Les listes savaient déjà se
+ranger en colonnes (`repeat(auto-fill, minmax(21rem, 1fr))`) ; elles en prennent
+simplement quatre ou cinq au lieu de trois.
+
+**Ce qui a été ajouté pour que ça tienne** :
+- **une mesure sur le texte courant** — `.espace > p`, `.sous-titre`, `.vide`
+  s'arrêtent à 68 caractères. Sans elle, un sous-titre aurait couru sur 1600 px
+  et l'œil aurait perdu la ligne en revenant à gauche ;
+- **un quatrième palier de marge** (48 px au-delà de 100 rem) : toute la largeur
+  ne veut pas dire bord à bord ;
+- **le voile du menu ne recentre plus rien** — il refaisait le calcul
+  `(100vw - --colonne-max) / 2` pour aligner son panneau sur le bouton, calcul
+  qui n'a plus d'objet ; il reprend la marge.
+
+`--colonne-max` **reste défini** et vaut `none` : les trois conteneurs qui s'y
+alignaient (`.entete`, `.barre-onglets`, `#vue`) n'ont pas bougé, et y remettre
+une valeur suffit à revenir en arrière.
+
+**Mesuré à 1728 px** : `#vue` occupe 1728, le contenu 1632 (marges de 48), aucun
+débordement horizontal sur les dix écrans du hub ni sur les deux sites. À
+1440 px, la grille de `#semaine` passe de 780 à 1052 px et le sous-titre reste à
+642. **Vu à l'écran** : l'accueil, `#semaine`, le site Yuno et celui du club.
+
+> **Piège d'outillage à connaître** : au-delà de ~1440 px de viewport émulé, les
+> captures d'écran du panneau ne sont plus fiables — le contenu y paraît occuper
+> 40 % de la largeur alors que le DOM le mesure plein. C'est le même repère
+> faussé que les coordonnées de clic. **Mesurer, ne pas juger sur la capture.**
+
+### 0.13 LES TUILES PERDENT LEUR CONTOUR, LES CHOIX DEVIENNENT DES PASTILLES
+
+Deux demandes de Noé, à la suite, et elles vont ensemble : une forme doit dire
+ce qu'on fait avec.
+
+**LES CONTOURS.** *« Sur les tuiles, j'aime pas trop avoir des contours
+(uniquement pour des tuiles à l'intérieur d'une tuile). »* La règle est juste :
+une tuile posée dans la page se distingue par sa surface — `--fond-carte` sur
+`--fond` —, le filet ne fait que redire ce que la couleur dit déjà. Il ne
+redevient utile qu'entre deux surfaces voisines, c'est-à-dire quand une tuile
+est dans une autre. Fait en un seul endroit, par `border-color: transparent`
+(le fond est peint sous la bordure : rien ne bouge d'un pixel, et la barre
+d'espace de `.bloc li`, calée sur ce 1 px, ne bouge pas non plus).
+
+**La tuile du vivier a dû changer de surface** : sur `--fond-doux`, elle
+n'existait que par son filet. Passée sur `--fond-carte`.
+
+**LES CHOIX.** *« Les menus déroulants doivent être des pastilles… et elles
+doivent toutes être côte à côte »*, puis *« sans leur titre »*. Le déclencheur
+avait l'allure d'un champ, au motif écrit dans le code que « dans un formulaire,
+un choix est un champ comme un autre ». Ce motif tombe : on n'écrit pas dans un
+choix, on y prend. Les dix-sept formulaires du hub sont servis d'un coup —
+`construireFormulaire` sort les choix du fil et les range en une bande, à la fin,
+comme la tuile de capture.
+
+**Puis trois corrections de Noé, dans l'ordre où elles sont venues** : *« sans
+leur titre »* (les libellés au-dessus des pastilles ont disparu, déplacés dans
+le `title` et le nom accessible) ; *« sans la flèche sur le côté, et avec des
+couleurs »* (le chevron retiré, la pastille teintée de la couleur que le hub
+emploie déjà pour cette valeur — espace, priorité, famille, déduite des options
+et non déclarée) ; enfin, en voyant le point de couleur des régimes : *« t'as
+rajouté le rond de couleur donc on peut enlever le titre aussi pour déclarer une
+période »* — la seule exception envisagée est tombée d'elle-même.
+
+**Deux derniers réglages, à la capture d'écran près** : Noé a montré la pastille
+« P1 » de la tuile de capture — *« la couleur de la pastille, comme celle-là »* —
+et le fond teinté a laissé place au **contour seul**, encre et filet de couleur
+sur fond vide ; puis *« les pastilles doivent être en haut plutôt qu'en bas »*,
+ce qui renverse l'analogie avec la tuile de capture au profit de ce que les
+formulaires faisaient déjà : « Espace » ouvrait celui d'un objectif. **Ce qui
+cadre se pose avant ce qu'on écrit.**
+
+**Puis deux vocabulaires de couleur propres aux habitudes** : la **cadence** se
+lit en **sept bleus différents**, du plus pâle (une fois) au plus franc (tous les
+jours) — la teinte marche de 202° à 227°, la clarté de 78 à 64 %. *Un unique
+bleu mêlé au gris avait été fait d'abord ; Noé l'a écarté — « là c'est juste la
+saturation qui est modifiée » — et il avait raison : mélanger une couleur à du
+gris n'en change pas la teinte.* Et **« Sans famille » et « intendance » ont
+échangé leur couleur** — le vide prenait l'accent de la page et ressemblait à un choix fait,
+la vraie famille portait le gris. Le gris va à l'absence de choix.
+
+*Ce que ça a demandé au passage* : une teinte qui pose son attribut **même sans
+valeur** (`vide: true`), sans quoi « Sans famille » n'avait aucune accroche CSS
+à lui et retombait sur l'accent.
+
+**PUIS LES DATES SONT DEVENUES DES PASTILLES**, à la suite des choix, avec le
+logo du calendrier : elles disent le nom de leur champ tant qu'elles sont vides
+(« Échéance », « Du »), puis la date en court. Le champ natif reste, invisible,
+par-dessus la pastille — c'est lui qu'on touche, donc le sélecteur du navigateur
+s'ouvre sans une ligne de JavaScript, et un champ requis reste focusable (un
+champ requis inatteignable bloque l'envoi en silence).
+
+**La parenthèse d'un libellé ne monte pas dans la pastille** : « Jusqu'au (vide
+= un seul jour) » tenait une ligne à lui seul dans la fenêtre de modification du
+calendrier. Elle part vers le `title`. Résultat mesuré : cette fenêtre, qui
+demandait de faire défiler, tient maintenant d'un seul tenant.
+
+**ET L'ÉCHÉANCE D'UN OBJECTIF EST DEVENUE OBLIGATOIRE** (décision de Noé). La
+colonne reste nullable — rien ne casse pour les lignes anciennes — mais le
+formulaire l'exige. Un cap sans date n'est pas un cap. Le jalon garde la sienne
+facultative.
+
+**PUIS LA TUILE A PRIS SA FORME DÉFINITIVE**, en trois demandes : le **texte
+principal perd son cadre et son étiquette** — une invite en gris qui s'efface
+dès qu'on écrit, comme « Nom de la tâche » ; **le curseur y va à l'ouverture**,
+clavier compris ; et **le bouton de fin perd son contour**.
+
+**L'ORDRE A ÉTÉ CHERCHÉ EN TROIS ESSAIS**, tous le même soir : la rangée de
+pastilles en pied (après tous les champs), puis en tête (avant le texte), puis
+enfin **sous le texte, séparée de lui par un blanc plus large**. C'est celui de
+la tuile de capture, et il ne tenait pas sans ce blanc — la vedette se noyait
+dans la rangée, et c'est exactement ce qui avait fait remonter les pastilles au
+tour d'avant. **Le blanc n'est donc pas du confort : c'est lui qui rend cet
+ordre possible.**
+
+*Le piège du clavier sur iPhone, et comment il est contourné* : un `focus()`
+programmé hors d'un geste de l'utilisateur ne lève pas le clavier sur iOS, or
+l'événement `toggle` d'un `<details>` est mis en file — donc tiré du geste. On
+intercepte le clic sur le sommaire, on ouvre soi-même, on donne le focus dans la
+foulée. Un second chemin (`toggle` en capture, il ne remonte pas) rattrape les
+tuiles qu'un espace ouvre lui-même, comme « Déclarer une période ».
+
+**ET UN VRAI MANQUE A ÉTÉ COMBLÉ AU PASSAGE** : depuis la tuile d'un projet, on
+peut enfin le **rattacher à un ou plusieurs objectifs** — une pastille juste
+après celle de l'espace. Le lien existait en base depuis le 27 août et ne se
+posait que d'un endroit : poser un projet depuis un cap déjà ouvert. Un projet
+créé depuis la galerie ne pouvait donc plus jamais être rattaché — et six des dix
+projets de Noé ne servent aucun cap.
+
+*Quatre précautions dans l'écriture* : le panneau **ne se referme pas** entre
+deux coches (`type: 'choix-multiple'`, le seul du hub) ; l'enregistrement
+**accorde** au lieu de réécrire — il retire les décochés, ajoute les cochés, et
+ne touche jamais aux liens vers un JALON, que la pastille n'offre pas ; la
+pastille dit **lequel** quand il n'y en a qu'un, les compte au-delà ; et le menu
+**ne montre que les objectifs de l'espace choisi**, en décochant ce qui sort de
+l'espace quand on en change (sinon un lien invisible s'enregistrerait). C'est la
+seule dépendance entre deux champs d'un formulaire du hub.
+
+**Vérifié dans les deux sens sur ses vraies données** : « Suivi de l'alternance »
+rattaché à « Laisser une com qui tourne sans moi », relu en base, puis détaché et
+relu à zéro. Le projet est revenu dans l'état où il était.
+
+**La règle qui commande tout ça, dans ses mots** : *« cette tuile d'ajout [la
+capture] est ma référence, où tout ce qui peut être une pastille l'est pour
+simplifier la tuile, mais en respectant ce qui nécessite un espace de texte. »*
+Mesuré sur « Déclarer une période » : cinq pastilles sur une rangée et **un seul
+champ de texte**, là où il y avait six champs empilés.
+
+**Et le filet des pastilles a maigri** : l'encre garde la couleur pleine, le
+contour la porte à 70 %. Il tenait déjà le minimum géométrique — 1 px —, donc
+c'est la couleur qui recule ; sous 1 px, le trait disparaîtrait sur un écran non
+retina.
+
+**Deux défauts trouvés en le faisant, et corrigés :**
+- **le panneau se faisait couper.** Les choix étant désormais en bas du
+  formulaire, le dernier ouvrait son menu dans le bord de la tuile, qui défile.
+  Mesuré sur « Déclarer une période » : la troisième option restait invisible.
+  `placerLePanneau` le retourne vers le haut, ou vers la gauche.
+- **trois pastilles disaient « Normal ».** Sans titre au-dessus d'elles, les
+  régimes d'une période ne se distinguaient plus. Elles portent la couleur de
+  leur espace (`marqueEspace`) — une couleur, pas un mot revenu par la fenêtre.
+- **la couleur ne suivait pas la valeur.** `poserLeChoix` réécrit le contenu du
+  déclencheur sans redessiner le formulaire : il emportait le point de couleur
+  et laissait la teinte de l'ancienne valeur. Changer une priorité laissait donc
+  la pastille dans la couleur de la précédente.
+
+**L'étiquette d'un choix ne pointait sur rien** depuis le début : `<label for>`
+visait un id que le déclencheur ne portait pas. Réparé au passage, même si
+l'étiquette a disparu ensuite.
+
+**Vérifié à l'écran** : les formulaires objectif, période, habitude, et la
+fenêtre de modification du calendrier ; l'accueil, `#semaine`, `#objectifs`,
+`#perso`, les deux sites. Aucune erreur de console sur les dix écrans.
 
 ## 0 ante. La session du 29 août (soir) — PERSO DEVIENT UN ESPACE VIVANT
 
@@ -4589,20 +4857,31 @@ voir § 4 bis, « Les quatre manques ». Restent des conforts :
 
 Dans cet ordre, du plus pressé au moins pressé.
 
-**L'ARBRE N'EST PAS PROPRE, ET C'EST LA PREMIÈRE CHOSE À RÉGLER.** Le FCH est
-commité et poussé (`94954d8`) ; **toute la moitié perso ne l'est pas** —
-`CLAUDE.md`, `css/styles.css`, `js/api.js`, `js/dashboard.js`, `js/gabarits.js`,
-`js/orientation.js`, `js/perso.js`, plus la migration
-`20260830140000_emoji_habitude.sql` non suivie. Les **deux migrations de la
-journée sont déjà appliquées en base** : le code et la base ne sont pas au même
-point tant que ce n'est pas poussé.
+**CE QUI RESTE À COMMITER : la page de programmation, et elle seule.** Les deux
+premiers tiers de la journée sont poussés — le FCH (`94954d8`), les habitudes et
+leur migration (`69f8147`), la doc (`9b37534`). Restent dans l'arbre
+`CLAUDE.md`, `css/styles.css` (la page de programmation, la largeur **et** les
+deux règles de forme), `docs/etat-des-lieux.md`, `js/app.js`, `js/gabarits.js`,
+`js/objectifs.js`,
+`js/calendrier-commun.js`, `js/dashboard.js`, `js/menu.js`, `js/orientation.js`,
+`js/rendez-vous.js`, `sw.js`, et le nouveau `js/semaine.js`.
 
-**Restent aussi deux fichiers modifiés AVANT cette session** et jamais commités :
-`docs/etat-des-lieux.md` (ce document) et `docs/yuno-spec.md` — la doc de la
-session du 29 au soir. Je ne les ai pas endossés faute de les avoir relus.
+**`sw.js` passe en `v10`** — sans ce numéro, la coquille ne se renouvelle pas,
+et `js/semaine.js` y est ajouté (vérifié par `tools/verifier-coquille.js`).
+
+**LA PAGE `#semaine` N'A PAS DE MIGRATION** : elle n'écrit que dans des colonnes
+qui existaient déjà (`taches.echeance`, `taches.heure`, `taches.refusee_le`,
+`semaines.debut`).
 
 ### Ce qui est périssable, d'abord
 
+0. **LE DIMANCHE SOIR LUI-MÊME — c'est CE SOIR.** La page `#semaine` n'a jamais
+   servi à ce pour quoi elle est faite : programmer une vraie semaine. Trois
+   questions : le glissement se fait-il **sans réfléchir** sur son écran à lui ;
+   **huit tuiles** est-il le bon nombre ; et « C'est ma semaine » écrit-il bien
+   sa ligne (**le bouton n'a jamais été pressé** — voir § 0.11). Si l'écriture
+   échoue, la porte de l'accueil reviendra demain, ce qui est le bon
+   comportement de repli.
 1. **UN VRAI MATIN AVEC LES HABITUDES — toujours, et maintenant sur une forme
    qui a changé six fois.** Rien n'a encore été vécu : les cinq habitudes de Noé
    sont à **zéro pratique**. Trois questions, dans l'ordre : la ligne de 32 px

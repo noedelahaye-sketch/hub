@@ -1235,52 +1235,88 @@ export function brancherClavier(section, quandJourChoisi) {
 
 // La barre est posée PAR-DESSUS les cases : `closest` ne trouverait rien. On
 // regarde donc ce qu'il y a sous le point, et on prend la première case.
-function jourSousLePoint(x, y) {
+//
+// Exportée depuis le 30 août 2026 : la page de programmation du dimanche soir
+// glisse ses tâches sans date DANS la grille, et elle a besoin de savoir sur
+// quel jour le doigt s'est arrêté — exactement la même question, posée par un
+// autre geste.
+export function jourSousLePoint(x, y) {
   return document
     .elementsFromPoint(x, y)
     .find((element) => element.classList?.contains('cal-jour'))?.dataset.jour;
 }
 
-export function brancherDeplacement(section, quandDeplace) {
+// Ce qu'on a dans la main (demande de Noé, 14 août 2026). Sans lui, un
+// déplacement n'était qu'une barre pâlie et une case teintée : on devinait
+// qu'il se passait quelque chose, on ne voyait pas QUOI on déplaçait.
+//
+// C'est une copie de l'élément saisi, en `position: fixed`, qui suit le
+// pointeur. Une copie et non l'original : l'original vit dans une grille dont
+// il occupe une colonne et une ligne — le sortir du flux ferait sauter tout le
+// reste. Sortie de `brancherDeplacement` le 30 août pour servir aussi au
+// glissement des tâches sans date : deux copies de ces vingt lignes auraient
+// fini par ne plus tenir l'objet de la même façon.
+export function prendreEnMain(element, x, y) {
+  const boite = element.getBoundingClientRect();
+  const fantome = element.cloneNode(true);
+  fantome.classList.add('cal-fantome');
+  fantome.removeAttribute('id');
+  fantome.style.width = `${boite.width}px`;
+  // L'élément reste sous le doigt là où on l'a saisi, pas centré dessus :
+  // c'est ce décalage qui donne l'impression de tenir l'objet.
+  fantome.dataset.decalageX = String(boite.left - x);
+  fantome.dataset.decalageY = String(boite.top - y);
+  document.body.append(fantome);
+  return fantome;
+}
+
+export function suivreLaMain(fantome, x, y) {
+  fantome.style.transform = `translate(${x + Number(fantome.dataset.decalageX)}px, ${
+    y + Number(fantome.dataset.decalageY)
+  }px)`;
+}
+
+// Les jours de la grille s'allument, un à la fois : c'est le seul retour qui
+// dise où la chose va tomber.
+export function viserLeJour(section, cle) {
+  for (const cellule of section.querySelectorAll('.cal-jour')) {
+    cellule.classList.toggle('cal-cible', Boolean(cle) && cellule.dataset.jour === cle);
+  }
+}
+
+// `zones` : des cibles de dépôt HORS de la grille (30 août 2026). La page de
+// programmation s'en sert pour son vivier — y ramener une barre déprogramme la
+// tâche. Chacune est un `{ selecteur, quand }` ; sans elles, rien ne change du
+// geste d'origine.
+export function brancherDeplacement(section, quandDeplace, { zones = [] } = {}) {
   let prise = null;
 
-  const viser = (cle) => {
-    for (const cellule of section.querySelectorAll('.cal-jour')) {
-      cellule.classList.toggle('cal-cible', Boolean(cle) && cellule.dataset.jour === cle);
+  const viser = (cle) => viserLeJour(section, cle);
+
+  // Sous quelle zone de dépôt le point se trouve, s'il y en a une. Même méthode
+  // que pour les jours : la barre fantôme est `pointer-events: none`, donc
+  // `elementsFromPoint` voit à travers elle.
+  const zoneSousLePoint = (x, y) => {
+    if (!zones.length) return null;
+    const sous = document.elementsFromPoint(x, y);
+    return (
+      zones.find((zone) => sous.some((element) => element.closest?.(zone.selecteur))) ?? null
+    );
+  };
+
+  const viserLaZone = (zone) => {
+    for (const candidate of zones) {
+      for (const element of section.querySelectorAll(candidate.selecteur)) {
+        element.classList.toggle('cal-cible-zone', candidate === zone);
+      }
     }
-  };
-
-  // Ce qu'on a dans la main (demande de Noé, 14 août 2026). Sans lui, un
-  // déplacement n'était qu'une barre pâlie et une case teintée : on devinait
-  // qu'il se passait quelque chose, on ne voyait pas QUOI on déplaçait.
-  //
-  // C'est une copie de la barre, en `position: fixed`, qui suit le pointeur.
-  // Une copie et non l'original : l'original vit dans une grille dont il occupe
-  // une colonne et une ligne — le sortir du flux ferait sauter tout le reste.
-  const prendreEnMain = (barre, x, y) => {
-    const boite = barre.getBoundingClientRect();
-    const fantome = barre.cloneNode(true);
-    fantome.classList.add('cal-fantome');
-    fantome.removeAttribute('id');
-    fantome.style.width = `${boite.width}px`;
-    // La barre reste sous le doigt là où on l'a saisie, pas centrée dessus :
-    // c'est ce décalage qui donne l'impression de tenir l'objet.
-    fantome.dataset.decalageX = String(boite.left - x);
-    fantome.dataset.decalageY = String(boite.top - y);
-    document.body.append(fantome);
-    return fantome;
-  };
-
-  const suivreLaMain = (fantome, x, y) => {
-    fantome.style.transform = `translate(${x + Number(fantome.dataset.decalageX)}px, ${
-      y + Number(fantome.dataset.decalageY)
-    }px)`;
   };
 
   const lacher = () => {
     prise?.barre.classList.remove('en-deplacement');
     prise?.fantome?.remove();
     viser(null);
+    viserLaZone(null);
     prise = null;
   };
 
@@ -1347,7 +1383,12 @@ export function brancherDeplacement(section, quandDeplace) {
     }
 
     suivreLaMain(prise.fantome, evenement.clientX, evenement.clientY);
-    viser(jourSousLePoint(evenement.clientX, evenement.clientY));
+    // La zone passe DEVANT le jour : sur la page de programmation, le vivier
+    // est posé à côté de la grille, jamais dessus, mais l'ordre est ce qui
+    // évite d'allumer les deux si un jour venait à passer dessous.
+    const zone = zoneSousLePoint(evenement.clientX, evenement.clientY);
+    viserLaZone(zone);
+    viser(zone ? null : jourSousLePoint(evenement.clientX, evenement.clientY));
   });
 
   section.addEventListener('pointerup', (evenement) => {
@@ -1363,6 +1404,7 @@ export function brancherDeplacement(section, quandDeplace) {
       // Le pointeur n'était plus à capturer : rien à relâcher.
     }
     const arrivee = jourSousLePoint(evenement.clientX, evenement.clientY);
+    const zone = zoneSousLePoint(evenement.clientX, evenement.clientY);
     lacher();
 
     if (!bouge) return;
@@ -1377,6 +1419,11 @@ export function brancherDeplacement(section, quandDeplace) {
     };
     section.addEventListener('click', avaler, { capture: true, once: true });
     setTimeout(() => section.removeEventListener('click', avaler, { capture: true }), 400);
+
+    if (zone) {
+      zone.quand(barre.dataset.element);
+      return;
+    }
 
     if (!arrivee || arrivee === jour) return;
 

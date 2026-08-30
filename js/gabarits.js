@@ -217,6 +217,121 @@ export function construireFenetre(titre, contenu, { large = false } = {}) {
 // fenêtre, le titre est déjà dit par la fenêtre elle-même.
 // Le chevron du menu : un dessin, pas un caractère — il garde son épaisseur et
 // son alignement quelle que soit la police.
+// LE LOGO CALENDRIER d'une pastille de date (30 août 2026, demande de Noé). Le
+// même trait que partout ailleurs — le hub en a déjà un dans la ligne d'une
+// tâche et dans la tuile de capture ; c'est le troisième endroit, pas un
+// troisième dessin.
+export const ICONE_DATE = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+  aria-hidden="true" focusable="false">
+  <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+  <path d="M3 10h18M8 3v4M16 3v4"></path></svg>`;
+
+// Ce qu'une pastille de date écrit : sa valeur quand elle en a une, le nom du
+// champ quand elle est vide. C'est la règle des pastilles de la tuile de
+// capture, et il n'y a pas de raison qu'elle change de forme ici.
+//
+// Une date COURTE : « 4 sept. » et non « le 4 septembre » — la pastille tient
+// dans une rangée, et l'année ne s'écrit que si ce n'est pas celle en cours.
+export function dateDePastille(valeur, libelle) {
+  if (!valeur) return libelle;
+  const date = depuisDateISO(valeur);
+  const memeAnnee = date.getFullYear() === new Date().getFullYear();
+  return date.toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+    ...(memeAnnee ? {} : { year: 'numeric' }),
+  });
+}
+
+// LA PASTILLE SUIT SON CHAMP, posé une seule fois pour tout le document. Le
+// champ natif vit SOUS la pastille, transparent : c'est lui qu'on touche, donc
+// c'est le sélecteur de dates du navigateur qui s'ouvre, sans une ligne de
+// JavaScript pour l'appeler — et il reste focusable, ce qui compte : un champ
+// requis que le navigateur ne peut pas atteindre bloque l'envoi en silence.
+//
+// Posé ici et non par espace : dix-sept formulaires vivent dans ce document, et
+// une pastille qui n'afficherait pas la date qu'on vient de choisir serait un
+// mensonge — pas un réglage qu'on branche au cas par cas.
+if (typeof document !== 'undefined') {
+  document.addEventListener('change', (evenement) => {
+    const champ = evenement.target;
+    if (!champ.matches?.('.pastille-date input[type="date"]')) return;
+    const pastille = champ.closest('.pastille-date').querySelector('.choix-declencheur');
+    if (!pastille) return;
+
+    const libelle = champ.closest('.pastille-date').dataset.libelle ?? 'Date';
+    pastille.lastElementChild.textContent = dateDePastille(champ.value, libelle);
+    pastille.classList.toggle('choix-vide', !champ.value);
+    const nom = champ.value ? `${libelle} : ${dateDePastille(champ.value, libelle)}` : libelle;
+    pastille.setAttribute('title', nom);
+  });
+}
+
+// LE CLAVIER S'OUVRE AVEC LA TUILE (30 août 2026, demande de Noé : « comme pour
+// les tâches, le clavier s'ouvre directement pour écrire dans cette zone »).
+//
+// DEUX CHEMINS, et le premier est le seul qui marche sur iPhone. Un `focus()`
+// programmé HORS d'un geste de l'utilisateur ne lève pas le clavier sur iOS ; or
+// l'événement `toggle` d'un `<details>` est mis en file, donc tiré du geste. On
+// intercepte donc le clic sur le sommaire, on ouvre soi-même, et on donne le
+// focus dans la foulée — tout dans la même impulsion.
+//
+// Le second chemin, `toggle` en capture (il ne remonte pas), rattrape les tuiles
+// qu'un espace ouvre lui-même : là, le clavier attendra le doigt, mais le
+// curseur est au bon endroit.
+if (typeof document !== 'undefined') {
+  const donnerLeFocus = (details) => {
+    const champ = details.querySelector('.champ-titre');
+    if (champ && !details.contains(document.activeElement)) champ.focus();
+  };
+
+  document.addEventListener('click', (evenement) => {
+    const sommaire = evenement.target.closest?.('.ajout > summary');
+    if (!sommaire) return;
+
+    const details = sommaire.parentElement;
+    // On ne touche à rien quand elle se REFERME : le geste natif suffit.
+    if (details.open || !details.querySelector('.champ-titre')) return;
+
+    evenement.preventDefault();
+    details.open = true;
+    donnerLeFocus(details);
+  });
+
+  document.addEventListener(
+    'toggle',
+    (evenement) => {
+      const details = evenement.target;
+      if (details?.classList?.contains('ajout') && details.open) donnerLeFocus(details);
+    },
+    true,
+  );
+}
+
+// LE SIGNE D'UN RATTACHEMENT : UNE CIBLE (30 août 2026, demande de Noé). Elle
+// dit ce qu'on vise, là où les deux maillons d'un lien ne disaient que « c'est
+// attaché à quelque chose ». Un projet sert un CAP — le mot du hub pour ce
+// qu'on vise — et le dessin le dit maintenant.
+export const ICONE_CIBLE = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+  aria-hidden="true" focusable="false">
+  <circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="5"></circle>
+  <circle cx="12" cy="12" r="1.5"></circle></svg>`;
+
+// Ce qu'une pastille de choix multiple écrit : rien de choisi, elle dit le nom
+// du champ ; un seul, elle dit LEQUEL — c'est l'information la plus utile ;
+// plusieurs, elle les compte. Écrire trois titres d'objectifs dans une pastille
+// ferait une phrase, pas une pastille.
+export function libelleMultiple(choisis, options, libelle, mot) {
+  if (!choisis.length) return libelle;
+  if (choisis.length === 1) {
+    const trouve = options.find(([cle]) => String(cle) === String(choisis[0]));
+    return trouve ? trouve[1] : `1 ${mot}`;
+  }
+  return `${choisis.length} ${mot}s`;
+}
+
 export const CHEVRON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none"
   stroke="currentColor" stroke-width="2" stroke-linecap="round"
   stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"></path></svg>`;
@@ -229,6 +344,14 @@ export function poserLeChoix(bouton) {
   const groupe = bouton.closest('[data-choix-champ]');
   if (!groupe) return;
 
+  // LE CAS MULTIPLE a son propre chemin : on bascule une option, on laisse le
+  // panneau ouvert, et le déclencheur recompte. Rien d'autre ne bouge — ni la
+  // teinte, ni les autres options.
+  if (groupe.hasAttribute('data-multiple')) {
+    basculerUnChoixMultiple(groupe, bouton);
+    return;
+  }
+
   groupe.querySelector('input[type="hidden"]').value = bouton.dataset.valeur;
   for (const autre of groupe.querySelectorAll('[data-choix]')) {
     const actif = autre === bouton;
@@ -240,10 +363,113 @@ export function poserLeChoix(bouton) {
   // formulaire sans ouvrir un seul menu.
   const declencheur = groupe.querySelector('[data-ouvrir-choix]');
   if (declencheur) {
-    declencheur.innerHTML = `${bouton.textContent.trim()}${CHEVRON}`;
+    // Le point de couleur d'un régime survit au choix : il dit l'espace, pas la
+    // valeur, et il était emporté par la réécriture.
+    const marque = declencheur.querySelector('.pastille')
+      ? '<span class="pastille" aria-hidden="true"></span>'
+      : '';
+    declencheur.innerHTML = `${marque}${echapper(bouton.textContent.trim())}`;
     declencheur.setAttribute('aria-expanded', 'false');
+
+    // LA COULEUR SUIT LA VALEUR. Sans ça, changer une priorité laissait la
+    // pastille dans la teinte de l'ancienne jusqu'au prochain rendu — et une
+    // couleur qui ment est pire que pas de couleur. `marque` marque justement
+    // le cas où la teinte ne dépend PAS de la valeur (les régimes d'une
+    // période, teintés par leur espace) : celle-là ne bouge pas.
+    const teinte = groupe.dataset.teinte;
+    if (teinte && !marque) {
+      // La valeur vide POSE l'attribut au lieu de le retirer quand le groupe
+      // le demande (`data-teinte-vide`) : « Sans famille » a sa couleur à lui,
+      // le gris neutre, et non l'accent de la page.
+      const valeur = bouton.dataset.valeur;
+      if (valeur || groupe.dataset.teinteVide) {
+        declencheur.setAttribute(`data-${teinte}`, valeur ?? '');
+      } else {
+        declencheur.removeAttribute(`data-${teinte}`);
+      }
+    }
+
+    // Le nom accessible porte le libellé du champ ET sa valeur : il remplace le
+    // titre qui s'écrivait au-dessus de la pastille, il doit donc suivre.
+    const libelle = groupe.dataset.libelle;
+    if (libelle) {
+      const nom = `${libelle} : ${bouton.textContent.trim()}`;
+      declencheur.setAttribute('title', nom);
+      declencheur.setAttribute('aria-label', nom);
+    }
   }
   groupe.querySelector('.choix-panneau').hidden = true;
+
+  // CHANGER D'ESPACE REFILTRE CE QUI S'Y RATTACHE. C'est le seul champ d'un
+  // formulaire qui en commande un autre, d'où ce branchement nommé plutôt qu'un
+  // mécanisme général : un formulaire n'a pas de dépendances, il en a UNE.
+  if (groupe.dataset.choixChamp === 'espace') {
+    const formulaire = groupe.closest('form');
+    if (formulaire) filtrerParEspace(formulaire, bouton.dataset.valeur);
+  }
+}
+
+// LE FILTRE REJOUÉ QUAND L'ESPACE CHANGE (30 août 2026). Un projet du club ne
+// sert pas un cap de la formation : changer la pastille d'espace masque les
+// options des autres, ET DÉCOCHE celles qui viennent d'en sortir — un lien
+// coché qu'on ne voit plus s'enregistrerait sans que personne l'ait voulu.
+// C'est la règle de la tuile de capture, où « un projet devenu incohérent
+// s'efface ».
+function filtrerParEspace(formulaire, espace) {
+  for (const groupe of formulaire.querySelectorAll('[data-multiple]')) {
+    let aChange = false;
+    let visibles = 0;
+
+    for (const ligne of groupe.querySelectorAll('li[data-espace-cible]')) {
+      const dedans = !espace || ligne.dataset.espaceCible === espace;
+      ligne.hidden = !dedans;
+      if (dedans) visibles += 1;
+
+      const option = ligne.querySelector('[data-choix]');
+      if (!dedans && option?.classList.contains('actif')) {
+        option.classList.remove('actif');
+        option.setAttribute('aria-pressed', 'false');
+        aChange = true;
+      }
+    }
+
+    // Une ligne le dit quand il n'y a rien : un menu vide se lit comme une
+    // panne.
+    const rien = groupe.querySelector('.choix-rien');
+    if (rien) rien.hidden = visibles > 0;
+
+    if (aChange) recompterUnChoixMultiple(groupe);
+  }
+}
+
+// Ce que le déclencheur affiche, relu depuis le panneau — la seule source qui
+// ne peut pas se désynchroniser de ce qui est coché.
+function recompterUnChoixMultiple(groupe) {
+  const choisis = [...groupe.querySelectorAll('[data-choix].actif')].map(
+    (option) => option.dataset.valeur,
+  );
+  groupe.querySelector('input[type="hidden"]').value = choisis.join(',');
+
+  const options = [...groupe.querySelectorAll('[data-choix]')].map((option) => [
+    option.dataset.valeur,
+    option.textContent.trim(),
+  ]);
+  const declencheur = groupe.querySelector('[data-ouvrir-choix]');
+  declencheur.lastElementChild.textContent = libelleMultiple(
+    choisis,
+    options,
+    groupe.dataset.libelle ?? '',
+    groupe.dataset.mot ?? 'élément',
+  );
+  declencheur.classList.toggle('choix-vide', !choisis.length);
+}
+
+function basculerUnChoixMultiple(groupe, bouton) {
+  const actif = !bouton.classList.contains('actif');
+  bouton.classList.toggle('actif', actif);
+  bouton.setAttribute('aria-pressed', String(actif));
+
+  recompterUnChoixMultiple(groupe);
 }
 
 // Ouvrir un menu ferme les autres : deux panneaux ouverts se recouvriraient.
@@ -255,6 +481,31 @@ export function basculerChoixDeFormulaire(declencheur, section) {
   fermerLesChoix(section);
   panneau.hidden = ouvert;
   declencheur.setAttribute('aria-expanded', String(!ouvert));
+  if (!ouvert) placerLePanneau(declencheur, panneau);
+}
+
+// LE PANNEAU SE RETOURNE PLUTÔT QUE DE SE FAIRE COUPER (30 août 2026). Depuis
+// que les choix se rangent en fin de formulaire, le dernier d'entre eux tombe
+// juste au-dessus du bouton d'envoi : son panneau s'ouvrait dans le bord de la
+// tuile, qui défile — donc le découpait. Mesuré sur « Déclarer une période » :
+// la troisième option restait invisible.
+//
+// On mesure APRÈS avoir montré le panneau — un élément caché n'a pas de boîte —
+// et on regarde le cadre qui le découpe, la tuile volante ou la fenêtre, à
+// défaut l'écran.
+function placerLePanneau(declencheur, panneau) {
+  panneau.classList.remove('choix-panneau-haut', 'choix-panneau-droite');
+
+  const cadre = declencheur.closest('.ajout-tuile, .fenetre');
+  const bord = cadre
+    ? cadre.getBoundingClientRect()
+    : { bottom: window.innerHeight, right: window.innerWidth };
+  const boite = panneau.getBoundingClientRect();
+
+  // Huit pixels de garde : un panneau qui affleure le bord a l'air coupé même
+  // quand il ne l'est pas.
+  if (boite.bottom > bord.bottom - 8) panneau.classList.add('choix-panneau-haut');
+  if (boite.right > bord.right - 8) panneau.classList.add('choix-panneau-droite');
 }
 
 export function fermerLesChoix(section) {
@@ -286,6 +537,36 @@ export function brancherChoix(section) {
   });
 }
 
+// D'où vient la couleur d'une pastille de choix (30 août 2026). Elle se DÉDUIT
+// des options, elle ne se déclare pas : les dix-sept formulaires du hub n'ont
+// pas à apprendre un réglage de plus, et un champ qui offre les espaces se
+// reconnaît à ses clés. Trois vocabulaires, ceux que le hub emploie déjà.
+//
+// Une valeur vide ne pose rien : « Sans famille » n'a pas de couleur, et une
+// pastille teintée dirait qu'un choix a été fait.
+const CLES_ESPACES = new Set(['fch', 'formation', 'photo', 'perso']);
+const CLES_FAMILLES = new Set(['corps', 'calme', 'lien', 'intendance']);
+
+function teinteDuChoix(champ, options) {
+  if (champ.marqueEspace) return { nom: 'espace', fixe: champ.marqueEspace };
+
+  const cles = options.map(([cle]) => String(cle)).filter(Boolean);
+  const toutes = (ensemble) => cles.length > 0 && cles.every((cle) => ensemble.has(cle));
+
+  if (toutes(CLES_ESPACES)) return { nom: 'espace' };
+  if (champ.nom === 'priorite') return { nom: 'priorite' };
+  // LA CADENCE D'UNE HABITUDE, en nuances de bleu (30 août 2026, demande de
+  // Noé) : la pastille pâlit à une fois par semaine et se sature à sept. La
+  // couleur dit donc l'exigence de l'habitude avant même qu'on lise le chiffre.
+  if (champ.nom === 'cadence') return { nom: 'cadence' };
+  // `vide: true` : la famille pose son attribut MÊME sans valeur. « Sans
+  // famille » a besoin d'un accroche-CSS à lui — c'est le seul moyen de lui
+  // donner le gris neutre plutôt que l'accent de la page, qui le faisait
+  // ressembler à un choix fait.
+  if (toutes(CLES_FAMILLES)) return { nom: 'famille', vide: true };
+  return null;
+}
+
 export function construireFormulaire({
   id,
   libelle,
@@ -302,6 +583,10 @@ export function construireFormulaire({
   // partout changerait la mise en page de tous les autres.
   grille = false,
 }) {
+  // L'espace choisi dans CE formulaire, s'il en a un. Il filtre les options des
+  // champs qui s'y rattachent — voir `choix-multiple`.
+  const espaceActif = champs.find((champ) => champ.nom === 'espace')?.valeur ?? null;
+
   const rendreChamp = (champ) => {
     const idChamp = `${id}-${champ.nom}`;
     const requis = champ.requis ? 'required' : '';
@@ -322,6 +607,18 @@ export function construireFormulaire({
     // qui ouvre au toucher un panneau de lignes pleine largeur. Pas une rangée
     // d'options toutes visibles — un formulaire de dix champs deviendrait un
     // mur de pastilles.
+    //
+    // ET C'EST UNE PASTILLE, PLUS UN CHAMP (30 août 2026, demande de Noé :
+    // « les menus déroulants doivent être des pastilles de manière à être
+    // différentes de l'espace qui note du texte, et elles doivent toutes être
+    // côte à côte s'il y en a plusieurs sur la tuile »). Le déclencheur avait
+    // jusqu'ici l'allure des autres champs — même hauteur, même cadre, même
+    // rayon — au motif que « dans un formulaire, un choix est un champ comme un
+    // autre ». C'est ce motif qui est renversé : on n'ÉCRIT pas dans un choix,
+    // on y prend. Deux gestes différents ne portent pas la même forme.
+    //
+    // Le regroupement se fait plus bas (`rendreLigne` les met de côté), et la
+    // pastille elle-même est habillée par le CSS.
     //
     // La valeur voyage dans un champ caché : le formulaire se lit toujours
     // avec `FormData`, il n'a pas à savoir comment on a saisi.
@@ -344,11 +641,49 @@ export function construireFormulaire({
 
       const choisi = options.find(([cle]) => String(cle) === String(valeur));
 
-      return `<span class="choix-champ" data-choix-champ="${champ.nom}">
+      // LE LIBELLÉ NE S'ÉCRIT PLUS AU-DESSUS (30 août 2026, demande de Noé :
+      // « sans leur titre »). C'est le geste qu'il avait déjà fait sur la ligne
+      // d'une habitude — « le texte n'est pas nécessaire une fois que je sais à
+      // quoi les chiffres correspondent » —, et la parade est la même : le sens
+      // n'est pas perdu, il est DÉPLACÉ. `title` le donne au survol,
+      // `aria-label` au lecteur d'écran, qui lui ne sait pas de quoi « Normal »
+      // est la valeur.
+      const nomComplet = `${champ.libelle} : ${choisi?.[1] ?? 'à choisir'}`;
+
+      // LE POINT DE COULEUR, quand plusieurs pastilles d'un même formulaire
+      // partagent leurs options : les trois régimes d'une période disent tous
+      // « Normal » et, sans titre au-dessus d'eux, ne se distinguaient plus.
+      // C'est la couleur de l'espace qui les sépare — la même que sa pastille
+      // partout ailleurs —, et non un mot revenu par la fenêtre. Noé a tranché
+      // en le voyant : « t'as rajouté le rond de couleur, donc on peut enlever
+      // le titre aussi ».
+      const marque = champ.marqueEspace
+        ? '<span class="pastille" aria-hidden="true"></span>'
+        : '';
+
+      // ET LA PASTILLE PORTE UNE COULEUR (demande de Noé : « avec des
+      // couleurs »). Pas une teinte décorative : celle que le hub emploie déjà
+      // pour cette valeur-là — la couleur de l'espace, celle de la priorité,
+      // celle de la famille. Une pastille sans vocabulaire connu garde
+      // l'accent. La couleur se pose par un attribut, comme partout ailleurs,
+      // et le CSS fait le reste.
+      const teinte = teinteDuChoix(champ, options);
+      const valeurTeintee = teinte?.fixe ?? String(valeur);
+      const attribut =
+        teinte && (valeurTeintee || teinte.vide)
+          ? `data-${teinte.nom}="${echapper(valeurTeintee)}"`
+          : '';
+
+      return `<span class="choix-champ" data-choix-champ="${champ.nom}"
+        ${teinte && !teinte.fixe ? `data-teinte="${teinte.nom}"` : ''}
+        ${teinte?.vide ? 'data-teinte-vide' : ''}
+        data-libelle="${echapper(champ.libelle ?? '')}">
         <input type="hidden" name="${champ.nom}" value="${echapper(valeur)}">
-        <button type="button" class="choix-declencheur" data-ouvrir-choix
+        <button type="button" id="${idChamp}" class="choix-declencheur" data-ouvrir-choix
           aria-expanded="false" aria-haspopup="listbox"
-          >${echapper(choisi?.[1] ?? 'Choisir')}${CHEVRON}</button>
+          ${attribut}
+          title="${echapper(nomComplet)}" aria-label="${echapper(nomComplet)}"
+          >${marque}${echapper(choisi?.[1] ?? 'Choisir')}</button>
         <div class="choix-panneau" hidden>
           <ul class="choix-capture">
             ${options
@@ -360,6 +695,89 @@ export function construireFormulaire({
                 >${echapper(libelleOption)}</button></li>`,
               )
               .join('')}
+          </ul>
+        </div>
+      </span>`;
+    }
+
+    // UNE DATE EST UNE PASTILLE, elle aussi (30 août 2026, demande de Noé :
+    // « la date sur ces tuiles peut se mettre à la suite des pastilles, sous
+    // la forme d'une pastille aussi »). Elle porte le logo du calendrier, et
+    // dit « Échéance » ou « Du » tant qu'elle est vide — le nom du champ —,
+    // puis la date choisie.
+    //
+    // Le champ natif reste, invisible, PAR-DESSUS la pastille : c'est lui qu'on
+    // touche. Le navigateur ouvre donc son sélecteur tout seul, la validation
+    // d'un champ requis peut l'atteindre, et `FormData` le lit comme avant.
+    if (champ.type === 'date') {
+      // LE MOT SEUL, PAS SON EXPLICATION. « Jusqu'au (vide = un seul jour) »
+      // était un bon libellé au-dessus d'un champ ; dans une pastille, il tient
+      // une ligne à lui tout seul. La parenthèse est une explication, pas un
+      // nom : elle part vers le `title`, où elle ne coûte rien. Fait ici, une
+      // fois, plutôt que dans les huit formulaires qui écrivent une date.
+      const court = champ.libelle.replace(/\s*\([^)]*\)\s*$/, '');
+      const texte = dateDePastille(champ.valeur, court);
+      const nom = champ.valeur ? `${champ.libelle} : ${texte}` : champ.libelle;
+
+      return `<span class="choix-champ pastille-date" data-libelle="${echapper(court)}">
+        <span class="choix-declencheur${champ.valeur ? '' : ' choix-vide'}"
+          title="${echapper(nom)}">${ICONE_DATE}<span>${echapper(texte)}</span></span>
+        <input id="${idChamp}" name="${champ.nom}" type="date" ${requis}
+          aria-label="${echapper(champ.libelle)}"
+          value="${echapper(champ.valeur ?? '')}">
+      </span>`;
+    }
+
+    // UN CHOIX MULTIPLE : la même pastille, mais on en coche plusieurs et le
+    // panneau NE SE REFERME PAS (30 août 2026 — rattacher un projet à ses
+    // objectifs). Un menu qui se referme à chaque option obligerait à le
+    // rouvrir autant de fois qu'on veut de liens.
+    //
+    // La valeur voyage en une chaîne d'identifiants séparés par des virgules :
+    // `FormData` ne sait pas transporter un tableau, et l'appelant n'a pas à
+    // savoir comment la pastille s'y est prise.
+    if (champ.type === 'choix-multiple') {
+      const options = Object.entries(champ.options ?? {});
+      const mot = champ.mot ?? 'élément';
+      // LES OPTIONS D'UN AUTRE ESPACE NE S'AFFICHENT PAS (30 août 2026, demande
+      // de Noé) : un projet du club ne sert pas un cap de la formation. Le
+      // filtre se pose ici pour le premier rendu, et `filtrerParEspace` le
+      // rejoue à chaque fois que la pastille d'espace change.
+      const horsEspace = (cle) =>
+        champ.espaces && espaceActif && champ.espaces[cle] !== espaceActif;
+      // Ce qui est coché mais hors de l'espace ne compte plus : la valeur doit
+      // dire ce que l'écran montre, sinon on enregistre un lien invisible.
+      const choisis = (champ.valeur ?? []).map(String).filter((cle) => !horsEspace(cle));
+
+      return `<span class="choix-champ" data-choix-champ="${champ.nom}" data-multiple
+        data-libelle="${echapper(champ.libelle)}" data-mot="${echapper(mot)}">
+        <input type="hidden" name="${champ.nom}" value="${echapper(choisis.join(','))}">
+        <button type="button" id="${idChamp}" class="choix-declencheur${
+          choisis.length ? '' : ' choix-vide'
+        }" data-ouvrir-choix aria-expanded="false" aria-haspopup="listbox"
+          title="${echapper(champ.libelle)}"
+          >${ICONE_CIBLE}<span>${echapper(
+            libelleMultiple(choisis, options, champ.libelle, mot),
+          )}</span></button>
+        <div class="choix-panneau" hidden>
+          <ul class="choix-capture">
+            ${options
+              .map(([cle, texte]) => {
+                const actif = choisis.includes(String(cle));
+                return `<li${horsEspace(cle) ? ' hidden' : ''}
+                  ${champ.espaces?.[cle] ? `data-espace-cible="${echapper(champ.espaces[cle])}"` : ''}
+                  ><button type="button" data-choix="${champ.nom}"
+                  data-valeur="${echapper(String(cle))}"
+                  class="${actif ? 'actif' : ''}" aria-pressed="${actif}"
+                  ${champ.espaces?.[cle] ? `data-espace="${echapper(champ.espaces[cle])}"` : ''}
+                  >${
+                    champ.espaces?.[cle]
+                      ? '<span class="choix-pastille" aria-hidden="true"></span>'
+                      : ''
+                  }<span>${echapper(texte)}</span></button></li>`;
+              })
+              .join('')}
+            <li class="choix-rien" hidden>Aucun dans cet espace</li>
           </ul>
         </div>
       </span>`;
@@ -418,10 +836,77 @@ export function construireFormulaire({
     return `<div class="champ${champ.large ? ' champ-large' : ''}">${corps}</div>`;
   };
 
+  // TOUS LES CHOIX DANS UNE SEULE RANGÉE, EN TÊTE DE FORMULAIRE (30 août 2026,
+  // demande de Noé). Il faut les sortir du fil plutôt que de les habiller sur
+  // place : « côte à côte » ne se fait pas si chacun reste coincé entre deux
+  // champs de texte pleine largeur.
+  //
+  // EN TÊTE et non en pied — la rangée a passé une heure en bas, par analogie
+  // avec la tuile de capture où l'on écrit d'abord et où l'on règle ensuite.
+  // Noé a tranché l'inverse, et c'est cohérent avec ce que les formulaires
+  // faisaient déjà : « Espace » ouvrait le formulaire d'objectif, « Où il en
+  // est » celui d'un livre. Ce qui CADRE se pose avant ce qu'on écrit.
+  //
+  // AUCUNE ÉTIQUETTE AU-DESSUS D'ELLES (30 août 2026, demande de Noé : « sans
+  // leur titre ») : ce sont des pastilles, et une pastille se lit par sa
+  // valeur. Le libellé vit dans le `title` et le nom accessible de chacune.
+  //
+  // Le cas qui reste à surveiller : les trois régimes d'une période disent tous
+  // « Normal » et ne se distinguent plus qu'au survol. Si ça gêne à l'usage,
+  // c'est le libellé des OPTIONS qu'il faudra revoir, pas remettre les titres.
+  //
+  // LES DATES SUIVENT LES CHOIX dans la même rangée (30 août 2026, demande de
+  // Noé : « à la suite des pastilles »). Elles se règlent, elles ne s'écrivent
+  // pas : elles sont de la même nature que les choix, et leur champ natif
+  // pleine largeur cassait la bande en deux.
+  const estChoix = (champ) => champ.type === 'choix' || champ.type === 'choix-multiple';
+  const estPastille = (champ) => estChoix(champ) || champ.type === 'date';
+  const choix = champs.filter(estChoix);
+  const dates = champs.filter((champ) => champ.type === 'date');
+
+  // LE TEXTE PRINCIPAL N'A NI ÉTIQUETTE NI CADRE (30 août 2026, demande de Noé,
+  // la tuile de capture en main) : « un texte en gris qui décrit ce qu'il y a à
+  // écrire, qui se remplace dès qu'on commence à noter ». C'est le
+  // « Nom de la tâche » de la capture, et c'est la première chose qu'on voit
+  // d'une tuile d'ajout — l'encadrer, c'est en faire un champ parmi six.
+  //
+  // C'est le PREMIER champ de texte EXIGÉ qui joue ce rôle : le titre d'un
+  // objectif, le nom d'un projet, celui d'une période. Un formulaire qui n'en
+  // a pas garde tous ses champs étiquetés — mieux vaut pas de vedette qu'une
+  // vedette choisie au hasard.
+  const principal = champs.find((champ) => champ.type === 'text' && champ.requis);
+  const autres = champs.filter((champ) => !estPastille(champ) && champ !== principal);
+
+  const rangeeDeChoix = choix.length || dates.length
+    ? `<div class="formulaire-choix">${[...choix, ...dates].map(rendreChamp).join('')}</div>`
+    : '';
+
+  // L'ORDRE, ARRÊTÉ APRÈS TROIS ESSAIS (30 août 2026) : le TEXTE, puis les
+  // pastilles, puis les détails. C'est celui de la tuile de capture, et Noé y
+  // revient en le précisant : « les pastilles en dessous du titre, mais avec un
+  // espace un peu plus important pour que le texte soit un peu isolé, et
+  // qu'ensuite il y ait tous les détails ».
+  //
+  // C'est l'ISOLEMENT qui fait tenir cet ordre — un blanc plus large sous le
+  // texte. Sans lui, la vedette se noyait dans la rangée qui la suivait, et
+  // c'est ce qui avait fait remonter les pastilles au-dessus d'elle.
+  //
+  // *Les deux ordres essayés avant, pour ne pas les refaire :* la rangée en
+  // pied (après tous les champs), puis la rangée en tête (avant le texte).
+  const champPrincipal = principal
+    ? `<input class="champ-titre" id="${id}-${principal.nom}" name="${principal.nom}"
+         type="text" required
+         placeholder="${echapper(principal.libelle)}"
+         aria-label="${echapper(principal.libelle)}"
+         value="${echapper(principal.valeur ?? '')}">`
+    : '';
+
   const corps = `
     <form data-action="${action}">
       ${extra}
-      ${champs.map(rendreLigne).join('')}
+      ${champPrincipal}
+      ${rangeeDeChoix}
+      ${autres.map(rendreLigne).join('')}
       <button type="submit" class="bouton-secondaire">${echapper(bouton)}</button>
       <p class="message-erreur" data-erreur hidden></p>
     </form>`;

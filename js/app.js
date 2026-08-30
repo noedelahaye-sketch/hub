@@ -13,6 +13,7 @@ import { viderLesCaches } from './cache-session.js';
 import { monterLeMenu } from './menu.js';
 import dashboard from './dashboard.js';
 import taches from './taches.js';
+import semaine from './semaine.js';
 import objectifs from './objectifs.js';
 import calendrier from './calendrier.js';
 import formation from './formation.js';
@@ -30,7 +31,7 @@ import temps from './temps.js';
 // on y vient par la porte du bloc « Tes objectifs », et rarement.
 const espaces = {
   dashboard, taches, objectifs, calendrier, formation, photo, yuno, fch, hermitage, perso,
-  chemin, temps,
+  chemin, temps, semaine,
 };
 
 // Trois pages d'entrée pour trois applications sur l'écran d'accueil :
@@ -154,6 +155,7 @@ const TITRES = {
   perso: 'Perso',
   chemin: 'Le chemin',
   temps: 'Le temps',
+  semaine: 'Ma semaine',
 };
 // Une vue a son propre titre quand elle est une page à elle seule : « Le cap »
 // pour les trois étages ensemble, mais « Projets » quand le menu n'a ouvert que
