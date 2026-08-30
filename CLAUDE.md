@@ -1390,6 +1390,21 @@ tient en main et la case qu'on vise (`prendreEnMain`, `jourSousLePoint`,
 un événement sans date n'existe pas, et une publication sans date rejoindrait la
 banque d'idées, où le vivier ne va pas la chercher.
 
+**ON Y AJOUTE AUSSI** (30 août 2026, demande de Noé) — un événement, une tâche,
+une publication, un objectif : la tuile de capture s'ouvre en touchant un jour
+de la grille, et le **« + » flottant** est là comme ailleurs. Une page où l'on
+programme sa semaine doit permettre d'y ajouter, pas seulement d'y ranger ce qui
+existe : le rendez-vous dont on se souvient en regardant le jeudi n'a pas à
+faire changer de page. Le « + », lui, ouvre sur le **lundi de la semaine
+programmée** et non sur aujourd'hui — ce qu'on pose ici appartient à la semaine
+qu'on remplit.
+
+**UN JOUR TOUCHÉ FAIT DEUX CHOSES, jamais les deux à la fois** : il POSE la tâche
+qu'on a en main s'il y en a une, sinon il OUVRE la tuile. Les deux passent par le
+même geste que le calendrier (`brancherSelection`), et ce n'est pas seulement une
+question de cohérence : la sélection appelle `preventDefault` au poser du doigt,
+ce qui peut avaler le clic sur lequel un second chemin se serait appuyé.
+
 **AU DOIGT, ON NE GLISSE PAS.** Sur une liste verticale, un glissement ne se
 distingue pas d'un défilement — c'est la même prudence qui fait n'accepter, sur
 les barres du calendrier, qu'un mouvement franchement horizontal. Le toucher a
@@ -1403,7 +1418,7 @@ qu'on ne peut pas défaire est un piège.
   `js/orientation.js`, qui ne touche ni au réseau ni au DOM.
 - **On n'y modifie pas ce qui est déjà posé.** Cliquer une barre n'ouvre aucune
   fenêtre de détail : cette grille est une **surface de placement**, pas le
-  calendrier — il est à un clic. Ce qui s'y écrit, c'est une date, et c'est tout.
+  calendrier — il est à un clic.
 - **Treize requêtes à l'ouverture, et c'est assumé** : la page s'ouvre une fois
   par semaine, sur décision, devant un ordinateur. Elle a le droit de coûter ce
   qu'un check-in de mardi matin n'a pas le droit de coûter.

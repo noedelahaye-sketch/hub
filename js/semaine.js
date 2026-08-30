@@ -36,11 +36,14 @@ import {
   appliquerAuCalendrier,
   assemblerCalendrier,
   brancherCapture,
+  brancherClavier,
   brancherDeplacement,
+  brancherSelection,
   champsApresDeplacement,
   construireGrille,
   fenetreCreation,
   jourSousLePoint,
+  natureParDefaut,
   poserAuCalendrier,
   prendreEnMain,
   suivreLaMain,
@@ -57,6 +60,10 @@ import {
 } from './orientation.js';
 import { construireRendezVous } from './rendez-vous.js';
 import { trierTaches } from './taches.js';
+
+const PLUS = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none"
+  stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+  aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"></path></svg>`;
 
 const ESPACES = {
   photo: 'Yuno',
@@ -333,6 +340,9 @@ export default {
     };
 
     let rafraichirLaCapture = null;
+    // Posés plus bas, avec les écouteurs ; déclarés ici parce que les fonctions
+    // de rendu s'en servent.
+    let poserLEntreeClavier = null;
 
     const cible = (id) => section.querySelector(`#${id}`);
 
@@ -405,6 +415,14 @@ export default {
         </section>
 
         <div id="bloc-fin"></div>
+
+        <!-- LE MÊME « + » QU'AILLEURS (30 août 2026, demande de Noé). Une page
+             où l'on programme sa semaine doit permettre d'y AJOUTER, pas
+             seulement d'y ranger ce qui existe : le rendez-vous qu'on se
+             rappelle en regardant le jeudi n'a pas à faire changer de page. -->
+        <button type="button" class="ouvrir-capture" data-ouvrir-creation
+          title="Ajouter au calendrier" aria-label="Ajouter au calendrier">${PLUS}</button>
+
         <div id="bloc-creation"></div>`;
     }
 
@@ -448,6 +466,10 @@ export default {
         etat.ecarteesOuvertes,
       );
       colonne.scrollTop = defilement;
+      // La grille vient d'être réécrite : sa case d'entrée au clavier est
+      // partie avec. Sans ce rappel, la tabulation ne trouve plus le calendrier
+      // dès qu'on a posé une seule tâche.
+      poserLEntreeClavier?.();
       // Les jours s'allument quand une tâche est choisie : sans ce signe, le
       // second geste du toucher ne se devinerait pas.
       section.querySelector('.semaine-programmation')?.classList
@@ -744,6 +766,42 @@ export default {
 
     section.addEventListener('pointercancel', lacher);
 
+    // --- Poser quelque chose sur un jour -----------------------------------------
+    //
+    // UN JOUR TOUCHÉ FAIT DEUX CHOSES, et jamais les deux à la fois : il POSE
+    // la tâche qu'on a en main s'il y en a une, sinon il OUVRE la tuile de
+    // capture sur ce jour-là (30 août 2026, demande de Noé — « depuis la page
+    // ma semaine je dois pouvoir ajouter événement, publication et tâche via le
+    // calendrier »).
+    //
+    // Les deux passent par le MÊME geste, celui du calendrier : c'est ce qui
+    // évite qu'un appui veuille dire une chose ici et une autre là-bas. Et
+    // c'est aussi ce qui règle un conflit qui serait sinon invisible — la
+    // sélection appelle `preventDefault` au poser du doigt, ce qui peut avaler
+    // le clic sur lequel le placement s'appuyait.
+    const ouvrirLaCapture = ({ debut, fin }) => {
+      etat.creation = { debut, fin, nature: natureParDefaut(toutesLesNatures()) };
+      rendreCreation();
+      cible('bloc-creation').querySelector('#cal-titre')?.focus();
+    };
+
+    const surUnJour = ({ debut, fin }) => {
+      if (etat.choisie) {
+        programmer(etat.choisie, debut);
+        return;
+      }
+      ouvrirLaCapture({ debut, fin });
+    };
+
+    brancherSelection(section, surUnJour);
+
+    // Entrée ou Espace sur une case posée au clavier fait la même chose qu'un
+    // doigt : le clavier ne doit pas être un second jeu de règles.
+    poserLEntreeClavier = brancherClavier(section, (jour) =>
+      surUnJour({ debut: jour, fin: jour }),
+    );
+    poserLEntreeClavier();
+
     // --- Les clics ---------------------------------------------------------------
 
     rafraichirLaCapture = brancherCapture(section, { projets: () => etat.sources.projets });
@@ -790,15 +848,12 @@ export default {
         return;
       }
 
-      // Un jour de la grille, quand une tâche est en main. La case est posée
-      // SOUS les barres : `closest` ne la trouverait pas depuis une barre, on
-      // regarde donc ce qu'il y a sous le point — comme le glissement.
-      if (etat.choisie && evenement.target.closest('.cal-grille')) {
-        const jour = jourSousLePoint(evenement.clientX, evenement.clientY);
-        if (jour) {
-          await programmer(etat.choisie, jour);
-          return;
-        }
+      // LE « + » OUVRE SUR LE LUNDI DE LA SEMAINE PROGRAMMÉE, et non sur
+      // aujourd'hui : ce qu'on pose depuis cette page appartient à la semaine
+      // qu'on est en train de remplir. C'est la même règle que les propositions.
+      if (evenement.target.closest('[data-ouvrir-creation]')) {
+        ouvrirLaCapture({ debut: etat.semaine.debut, fin: etat.semaine.debut });
+        return;
       }
 
       if (evenement.target.closest('[data-valider-semaine]')) {

@@ -3175,6 +3175,7 @@ a.cap-grave:focus-visible {
    bouton flottant lui passe dessus. Les deux espaces qui le portent : les
    Tâches et l'accueil. */
 body[data-espace="taches"] #espace-taches,
+body[data-espace="semaine"] #espace-semaine,
 body[data-espace="dashboard"] #espace-dashboard { padding-bottom: 5.5rem; }
 
 /* Le fond des autres fenêtres du hub est à 45 % : assez pour une fiche qu'on
