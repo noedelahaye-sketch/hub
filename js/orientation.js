@@ -946,8 +946,61 @@ export function elanDeLHabitude(habitude, faits = [], jour = new Date()) {
 //
 // La semaine EN COURS ne compte pas encore : elle n'est pas finie, et la juger
 // avant l'heure ferait afficher un recul tous les lundis matin.
+// LA SÉRIE SE COMPTE EN JOURS POUR UNE HABITUDE QUOTIDIENNE (30 août 2026,
+// demande de Noé : « je préfère que le compte des habitudes soit quotidien
+// plutôt qu'hebdomadaire, lorsque je loupe un jour ça fait -1 à la série comme
+// c'était prévu pour la semaine »).
+//
+// UNE HABITUDE EST QUOTIDIENNE QUAND SA CADENCE EST 7. Pas de colonne nouvelle :
+// le formulaire écrit déjà « Tous les jours » sur cette valeur, et deux champs
+// qui disent la même chose finissent toujours par se contredire. Sept fois par
+// semaine EST tous les jours.
+//
+// LE RECUL D'UN CRAN NE CHANGE PAS, c'est le réglage qui fonde ces mesures :
+// un jour manqué fait -1, jamais retour à zéro. Trois semaines de tenue ne
+// s'effacent pas pour une soirée — c'est exactement ce que Noé avait demandé
+// pour la semaine, transposé au jour.
+export const CADENCE_QUOTIDIENNE = 7;
+
+export function estQuotidienne(habitude) {
+  return habitude.cadence === CADENCE_QUOTIDIENNE;
+}
+
 export function serieDeLHabitude(habitude, faits = [], jour = new Date()) {
   if (!habitude.cadence) return null;
+
+  if (estQuotidienne(habitude)) {
+    const siens = new Set(
+      faits.filter((fait) => fait.habitude_id === habitude.id).map((fait) => fait.jour),
+    );
+    const debut = habitude.created_at ? versDateISO(new Date(habitude.created_at)) : versDateISO(jour);
+    const aujourdhui = versDateISO(jour);
+
+    let serie = 0;
+    let record = 0;
+    let curseur = debut;
+    // On s'arrête AVANT aujourd'hui : la journée n'est pas finie, et compter un
+    // jour non encore vécu comme manqué ferait reculer la série chaque matin.
+    // C'est la même précaution que la semaine en cours, un cran plus bas.
+    while (curseur < aujourdhui) {
+      serie = siens.has(curseur) ? serie + 1 : Math.max(0, serie - 1);
+      record = Math.max(record, serie);
+      curseur = versDateISO(ajouterJours(depuisDateISO(curseur), 1));
+    }
+
+    return {
+      unite: 'jour',
+      jours: serie,
+      semaines: serie,
+      record,
+      faitAujourdhui: siens.has(aujourdhui),
+      // Ce qui reste de la semaine en cours garde son sens : la colonne du
+      // tableau de bord dessine sept points, quotidienne ou non.
+      cetteSemaine: [...siens].filter(
+        (j) => versDateISO(lundiDe(depuisDateISO(j))) === versDateISO(lundiDe(jour)),
+      ).length,
+    };
+  }
 
   const siens = faits
     .filter((fait) => fait.habitude_id === habitude.id)
@@ -969,6 +1022,7 @@ export function serieDeLHabitude(habitude, faits = [], jour = new Date()) {
   }
 
   return {
+    unite: 'semaine',
     semaines: serie,
     record,
     // Où en est la semaine qu'on vit : ce qui reste à faire pour la tenir.
@@ -993,6 +1047,137 @@ export function motDeLElan(elan) {
   if (elan >= 50) return 'ça tient';
   if (elan >= 25) return 'ça vacille';
   return 'en sommeil';
+}
+
+// --- LE BILAN DES HABITUDES : ce que dix semaines racontent --------------------
+//
+// Demande de Noé (30 août 2026) : « des stats globales, des graphiques
+// d'évolution » sur la page des habitudes.
+//
+// LA CONTRAINTE QUI COMMANDE TOUT, et elle est déjà écrite dans le CLAUDE.md :
+// une première maquette montrait les sept derniers jours en points gris, et Noé
+// l'a écartée d'une phrase — « ça ne me donne pas envie de les faire ». Elle
+// DÉCRIVAIT sans rien mettre en jeu.
+//
+// Donc aucune de ces mesures ne compte un manque. On ne montre que ce qui a été
+// FAIT : une semaine vide est une barre courte, jamais une alerte ; une case
+// sans pratique est du vide, pas un reproche. Ce qui met en jeu, ce sont les
+// mesures qui montent — les semaines tenues, le cumul, l'élan.
+//
+// Rien ici ne touche au réseau ni au DOM : ça se vérifie avec des faits
+// factices, comme le reste du fichier.
+
+// Les semaines regardées en arrière. Douze : un trimestre, assez pour voir une
+// habitude s'installer ou s'endormir, assez court pour tenir en une rangée de
+// barres lisible sur un téléphone.
+export const SEMAINES_REGARDEES = 12;
+
+// L'histoire d'UNE habitude, semaine par semaine. `tenue` dit qu'elle a atteint
+// sa cadence — c'est ce qui distingue une barre pleine d'une barre courte, et
+// c'est la seule chose qui se « gagne » ici.
+export function historiqueDeLHabitude(habitude, faits = [], jour = new Date(), semaines = SEMAINES_REGARDEES) {
+  const siens = faits.filter((fait) => fait.habitude_id === habitude.id);
+  const parSemaine = new Map();
+  for (const fait of siens) {
+    const lundi = versDateISO(lundiDe(depuisDateISO(fait.jour)));
+    parSemaine.set(lundi, (parSemaine.get(lundi) ?? 0) + 1);
+  }
+
+  const semaineEnCours = lundiDe(jour);
+  const histoire = [];
+  for (let i = semaines - 1; i >= 0; i -= 1) {
+    const lundi = versDateISO(ajouterJours(new Date(semaineEnCours), -i * 7));
+    const total = parSemaine.get(lundi) ?? 0;
+    histoire.push({
+      lundi,
+      total,
+      // Sans cadence, aucune semaine ne se « tient » : il n'y a pas de cible, et
+      // lui en inventer une ici contredirait la règle même de « quand ça vient ».
+      tenue: Boolean(habitude.cadence) && total >= habitude.cadence,
+      enCours: i === 0,
+    });
+  }
+  return histoire;
+}
+
+// LE BILAN DE TOUTES LES HABITUDES ENSEMBLE. Quatre chiffres, choisis pour ce
+// qu'ils donnent envie de faire — jamais pour ce qu'ils reprochent :
+//
+//   `tenues` / `avecCadence`  ce qui reste à tenir CETTE semaine : le seul
+//                             chiffre qui parle du jour même, et le seul qui
+//                             puisse encore bouger avant dimanche ;
+//   `pratiquesCetteSemaine`   ce qui a déjà été fait — il ne descend jamais ;
+//   `cumul`                   toutes pratiques confondues, depuis toujours ;
+//   `meilleureSerie`          la plus longue série en cours, et son habitude.
+//
+// `parSemaine` porte les barres du graphique global : le total de pratiques de
+// chaque semaine, toutes habitudes confondues.
+export function bilanDesHabitudes({ habitudes = [], faits = [] } = {}, jour = new Date(), semaines = SEMAINES_REGARDEES) {
+  const vivantes = habitudes.filter((habitude) => !habitude.archivee);
+  const idsVivantes = new Set(vivantes.map((habitude) => habitude.id));
+  const siens = faits.filter((fait) => idsVivantes.has(fait.habitude_id));
+
+  const semaineEnCours = versDateISO(lundiDe(jour));
+  const semaineDe = (fait) => versDateISO(lundiDe(depuisDateISO(fait.jour)));
+
+  const pratiquesCetteSemaine = siens.filter((fait) => semaineDe(fait) === semaineEnCours).length;
+
+  const avecCadence = vivantes.filter((habitude) => habitude.cadence);
+  const tenues = avecCadence.filter((habitude) => {
+    const faites = siens.filter(
+      (fait) => fait.habitude_id === habitude.id && semaineDe(fait) === semaineEnCours,
+    ).length;
+    return faites >= habitude.cadence;
+  }).length;
+
+  // LA MEILLEURE SÉRIE SE COMPARE EN JOURS, ET S'AFFICHE DANS SON UNITÉ.
+  // Depuis que le compte est quotidien pour les unes et hebdomadaire pour les
+  // autres, `semaines` ne veut plus dire la même chose d'une habitude à
+  // l'autre : mesuré, une série de 25 jours s'affichait « 25 semaines » et
+  // passait devant une vraie série de 9 semaines. On classe donc sur la durée
+  // RÉELLE — une semaine tenue vaut sept jours de rythme — et on rend à
+  // l'écran l'unité que l'habitude compte.
+  let meilleureSerie = null;
+  for (const habitude of vivantes) {
+    const serie = serieDeLHabitude(habitude, faits, jour);
+    if (!serie || !serie.semaines) continue;
+    const enJours = serie.unite === 'jour' ? serie.semaines : serie.semaines * 7;
+    if (!meilleureSerie || enJours > meilleureSerie.enJours) {
+      meilleureSerie = {
+        valeur: serie.semaines,
+        unite: serie.unite,
+        enJours,
+        nom: habitude.nom,
+        emoji: habitude.emoji ?? '',
+      };
+    }
+  }
+
+  // Les barres du graphique global. On les construit à partir du calendrier et
+  // non des faits, pour que les semaines SANS pratique existent quand même —
+  // une barre à zéro fait partie de la courbe, un trou la déformerait.
+  const parSemaine = [];
+  const lundiCourant = lundiDe(jour);
+  for (let i = semaines - 1; i >= 0; i -= 1) {
+    const lundi = versDateISO(ajouterJours(new Date(lundiCourant), -i * 7));
+    parSemaine.push({
+      lundi,
+      total: siens.filter((fait) => semaineDe(fait) === lundi).length,
+      enCours: i === 0,
+    });
+  }
+
+  return {
+    pratiquesCetteSemaine,
+    tenues,
+    avecCadence: avecCadence.length,
+    cumul: siens.length,
+    meilleureSerie,
+    parSemaine,
+    // Le plus haut de la période : c'est lui qui donne l'échelle des barres.
+    // Jamais zéro, sans quoi la division qui suit n'aurait pas de sens.
+    plafond: Math.max(1, ...parSemaine.map((semaine) => semaine.total)),
+  };
 }
 
 // Tout ce qu'un écran a besoin de savoir d'une habitude, en un appel.

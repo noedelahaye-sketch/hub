@@ -777,11 +777,14 @@ export async function creerHabitude({
   cadence = null,
   pourquoi = null,
   ordre = null,
+  // Le signe qui la représente sur l'accueil, à la place de son nom (30 août
+  // 2026). Facultatif : sans lui, le nom reste affiché.
+  emoji = null,
 }) {
   return verifier(
     await client
       .from('habitudes')
-      .insert({ nom, famille, cadence, pourquoi, ordre })
+      .insert({ nom, famille, cadence, pourquoi, ordre, emoji })
       .select()
       .single(),
   );

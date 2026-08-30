@@ -667,53 +667,10 @@ export function fermerLaDuree() {
   for (const ancienne of document.querySelectorAll('.tuile-duree-hote')) ancienne.remove();
 }
 
-// LES HABITUDES DU JOUR, EN JETONS ET HORS DE TOUTE TUILE (30 août 2026,
-// correction de Noé : « les habitudes ne doivent pas être dans la tuile des
-// tâches, événements… et là ça prend trop de place. Propose-moi une autre forme
-// qui change un peu des autres tuiles »).
-//
-// DEUX DÉFAUTS EN UN, et ils appelaient la même réponse.
-//
-// Le premier est de rangement : la tuile « Aujourd'hui » porte ce qui est POSÉ
-// au calendrier — des tâches, des publications, des rendez-vous, tous datés.
-// Une habitude n'est datée de rien : elle revient. La mettre là, c'était dire
-// qu'elle est de la même nature.
-//
-// Le second est de place : cinq pastilles à nom complet prenaient deux rangées
-// et 110 px, pour un geste qui dure une seconde.
-//
-// D'OÙ LA FORME, et elle change exprès de toutes les autres : des JETONS RONDS
-// posés à même le fond, sans carte, sans bord, sans titre de section. Rien
-// d'autre dans le hub ne ressemble à ça — les tuiles y sont rectangulaires et
-// cadrées. Un rond se coche d'un doigt, se lit d'un coup d'œil, et cinq d'entre
-// eux tiennent sur une ligne en 56 px au lieu de 110.
-//
-// Le nom passe SOUS le jeton, en petit : il n'est là que pour reconnaître, pas
-// pour lire. C'est ce qui permet au rond de rester gros — donc facile à viser —
-// alors que l'ensemble rétrécit.
-//
-// Ce qui n'est PAS ici : l'élan, la série, les paliers. L'accueil dit ce qu'il y
-// a à faire ; perso dit où l'on en est. Deux questions, deux écrans.
-//
-// Celles qui sont faites restent visibles, pleines — les retirer donnerait une
-// rangée qui se vide, donc un compteur de ce qui manque.
-export function construireHabitudesDuJour(habitudes = [], faits = []) {
-  const jour = versDateISO();
-  const vivantes = habitudes.filter((habitude) => !habitude.archivee);
-  if (!vivantes.length) return '';
-
-  const jetons = vivantes
-    .map((habitude) => {
-      const faite = faits.some((f) => f.habitude_id === habitude.id && f.jour === jour);
-      return `
-      <button type="button" class="habitude-jeton${faite ? ' faite' : ''}"
-        data-faire-habitude="${echapper(habitude.id)}" aria-pressed="${faite}"
-        style="--teinte: var(--famille-${echapper(habitude.famille ?? 'intendance')})">
-        <span class="habitude-jeton-rond" aria-hidden="true"></span>
-        <span class="habitude-jeton-nom">${echapper(habitude.nom)}</span>
-      </button>`;
-    })
-    .join('');
-
-  return `<div class="habitudes-rangee" role="group" aria-label="Tes habitudes">${jetons}</div>`;
-}
+// `construireHabitudesDuJour` a QUITTÉ ce fichier le 30 août 2026. Il y vivait
+// parce que l'accueil et le tableau de bord perso le partageaient — « deux
+// écrans qui montreraient les mêmes habitudes de deux façons finiraient par se
+// contredire ». Les habitudes ont quitté l'accueil le soir même : le gabarit
+// n'a plus qu'un appelant, et n'a donc plus rien à faire parmi les morceaux que
+// tout le monde emprunte. Il vit dans js/perso.js, sous le nom
+// `construireHabitudesDuJour`.

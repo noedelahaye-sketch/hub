@@ -4446,72 +4446,174 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    ET ELLE TIENT EN 56 px au lieu de 110 : le nom passe SOUS le jeton, en petit,
    parce qu'il n'est là que pour reconnaître — pas pour lire. Le rond garde donc
    sa taille, donc sa facilité à viser, pendant que l'ensemble rétrécit. */
-.habitudes-rangee {
-  display: flex;
-  gap: var(--espace-16);
-  margin-bottom: var(--espace-24);
-  padding-bottom: var(--espace-4);
-  overflow-x: auto;
-  scrollbar-width: none;
+/* --- Les habitudes du jour, en COLONNE ----------------------------------------
+   Demande de Noé, 30 août 2026 : « une colonne pour les habitudes, une ligne =
+   une habitude, une ou deux stats à voir facilement chaque jour pour donner
+   envie ». Voir `construireHabitudesDuJour`, js/perso.js.
+
+   CE QUE ÇA REMPLACE : une bande horizontale de jetons ronds, née la veille
+   POUR L'ACCUEIL, où la place était comptée et où elle devait tenir en 56 px.
+   Les habitudes ayant quitté l'accueil, la contrainte est tombée avec lui. */
+
+/* LA GRILLE EST PORTÉE PAR LA COLONNE, PAS PAR CHAQUE LIGNE, et c'est ce qui
+   aligne les mesures entre elles. Chaque ligne était une grille indépendante :
+   « quand ça vient » étant plus court que « 0 sur 5 cette semaine », la
+   cinquième ligne démarrait ses chiffres 160 px plus loin que les autres. Des
+   stats qu'on vient lire d'un coup d'œil doivent tomber sur la même verticale.
+
+   `subgrid` fait hériter les quatre colonnes ; là où il manque, la ligne
+   retombe sur des colonnes automatiques — la mise en page reste lisible, elle
+   perd seulement son alignement. Dégradation douce, aucun repli à écrire. */
+.hab-colonne {
+  display: grid;
+  /* Le rond d'abord : c'est le geste qu'on vient faire (demande de Noé). */
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  /* AUCUN ÉCART : la colonne doit tenir DIX habitudes sans devenir longue
+     (demande de Noé). Elle est passée de 64 px par habitude à 46, puis à 32 —
+     10 lignes font 320 px, soit un tiers d'écran de téléphone au lieu de 640.
+     Les lignes se distinguent par le voile d'une habitude faite, pas par du
+     vide entre elles. */
+  gap: 0;
+  margin: 0 0 var(--espace-16);
+  padding: 0;
+  list-style: none;
 }
 
-.habitudes-rangee::-webkit-scrollbar { display: none; }
-
-.habitude-jeton {
-  display: flex;
-  flex-direction: column;
+.hab-ligne {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   align-items: center;
-  gap: var(--espace-4);
+  gap: var(--espace-8);
+  /* Pas de rembourrage vertical : le bouton porte la hauteur. Il en reste sur
+     les côtés pour que le voile d'une habitude faite ne colle pas au texte. */
+  padding: 0 var(--espace-8);
+  border-radius: var(--rayon-controle);
+}
+
+/* Une habitude faite s'éclaire d'un voile de sa famille — pas d'un aplat : la
+   ligne reste lisible, et la colonne ne devient pas un damier. Celles qui
+   restent vides ne sont pas en défaut ; la colonne ne se vide jamais, sinon
+   elle deviendrait un compteur de ce qui manque. */
+.hab-ligne.faite {
+  background: color-mix(in srgb, var(--teinte, var(--accent)) 12%, transparent);
+}
+
+.hab-titre {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espace-8);
+  min-width: 0;
+}
+
+.hab-emoji {
   flex: none;
-  width: 4rem;
+  font-size: 0.9375rem;
+  line-height: 1;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+}
+
+.hab-nom {
+  /* 13 px : un cran sous le corps courant. Une liste de dix lignes se PARCOURT
+     du regard, elle ne se lit pas — et Noé a autorisé la réduction dans la même
+     phrase que la densité. */
+  font-size: 0.8125rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hab-mesure {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+}
+
+.hab-mot {
+  font-size: 0.6875rem;
+  color: var(--texte-discret);
+  white-space: nowrap;
+}
+
+.hab-mot .chiffre { color: var(--texte); }
+
+/* Les points de la semaine : un par pratique visée, plein quand elle est faite.
+   Le motif des jalons du hub — on les lit AVANT le chiffre, et c'est voulu :
+   « il en reste un » se voit sans compter. */
+.hab-points {
+  display: flex;
+  gap: 2px;
+}
+
+.hab-points i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--texte) 16%, transparent);
+}
+
+.hab-points i.tenu { background: var(--teinte, var(--accent)); }
+
+/* Le palier passe APRÈS la semaine, et s'efface d'un cran : il dit où l'on va,
+   pas ce qu'il reste aujourd'hui. Sur mobile, il cède la place le premier. */
+.hab-palier .hab-mot { opacity: 0.75; }
+
+/* 16 px de rond, 44 × 32 de cible : le rond est la partie qu'on VOIT, le bouton
+   celle qu'on TOUCHE. Il est passé de 34 à 26 puis à 16 le 30 août 2026.
+
+   LA HAUTEUR DE LA CIBLE CÈDE À LA DENSITÉ, et c'est un arbitrage assumé : le
+   hub demande 44 px, la colonne doit tenir dix habitudes. Ce qui rend le
+   compromis tenable, c'est que la LARGEUR reste à 44 et surtout qu'il n'y a
+   AUCUNE autre cible sur la ligne — rien à côté de quoi tomber. Seul le voisin
+   du dessus ou du dessous est proche, et 32 px restent confortables au doigt.
+   Si l'usage dit le contraire, c'est cette ligne qu'il faut rouvrir.
+
+   La coche suit à 9 px : à 15 elle débordait un intérieur qui n'en fait plus
+   que 12. */
+.hab-rond {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 32px;
   padding: 0;
   background: none;
   border: 0;
-  color: var(--texte-discret);
-  font: inherit;
   cursor: pointer;
 }
 
-/* 26 px et non 34 (correction de Noé, 30 août 2026 : « les ronds sont trop
-   gros »). La cible tactile ne descend pas pour autant : c'est le JETON entier
-   qui la porte — rond plus nom, 4 rem de large sur près de 44 de haut. Le rond
-   n'est que la partie qu'on voit. */
-.habitude-jeton-rond {
-  width: 26px;
-  height: 26px;
+.hab-rond::before {
+  content: "";
+  width: 16px;
+  height: 16px;
   border: 2px solid var(--bordure);
   border-radius: 50%;
   transition: background 160ms ease-out, border-color 160ms ease-out;
 }
 
-/* Une habitude faite se remplit de la couleur de sa famille et porte sa coche.
-   Celles qui restent vides ne sont pas en défaut : la rangée ne se vide jamais,
-   sinon elle deviendrait un compteur de ce qui manque. */
-.habitude-jeton.faite .habitude-jeton-rond {
+.hab-rond.faite::before {
   background: var(--teinte, var(--accent));
   border-color: var(--teinte, var(--accent));
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2317191a' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
-  background-size: 15px;
+  background-size: 9px;
   background-position: center;
   background-repeat: no-repeat;
 }
 
-.habitude-jeton.faite { color: var(--texte); }
-
-.habitude-jeton-nom {
-  font-size: 0.625rem;
-  line-height: 1.25;
-  text-align: center;
-  /* Deux lignes au plus : au-delà, la rangée grandit pour un nom qu'on ne lit
-     de toute façon pas en entier. */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
+/* Sur téléphone, la ligne garde son nom, ses points et son rond : c'est le
+   palier qui s'en va. Trois colonnes de texte ne tiennent pas sur 375 px, et
+   c'est la mesure la moins urgente des deux. */
+/* RIEN NE SE MASQUE PLUS SUR TÉLÉPHONE, et c'est le texte retiré qui l'a permis.
+   Il a fallu deux passes : tant que la ligne écrivait « 0 sur 5 cette semaine »
+   et « encore 9 avant 10 », elle ne tenait pas sur 375 px — mesuré, « Bouger »
+   tombait à « B… ». On masquait donc le palier et la légende de la semaine.
+   Une fois les mesures réduites à des points et à un chiffre, les deux tiennent
+   partout : mieux vaut une ligne courte pour tout le monde qu'une ligne longue
+   qu'on ampute selon l'écran. */
 
 @media (prefers-reduced-motion: reduce) {
-  .habitude-jeton-rond { transition: none; }
+  .hab-rond::before { transition: none; }
 }
 
 /* --- Les habitudes -----------------------------------------------------------
@@ -7246,6 +7348,7 @@ body.balaye {
 .cap-jalon:hover .cap-menu-bouton,
 .cap-projet:hover .cap-menu-bouton,
 .cap-tache:hover .cap-menu-bouton,
+.hab-carte:hover .cap-menu-bouton,
 .cap-menu-bouton:focus-visible,
 .cap-menu.ouvert .cap-menu-bouton {
   opacity: 1;
@@ -7255,6 +7358,20 @@ body.balaye {
 
 /* Au doigt, il n'y a pas de survol : le menu reste visible en permanence, mais
    très discret. Une main ne cherche pas un bouton qu'elle ne voit pas. */
+/* SUR LA CARTE D'UNE HABITUDE, LE MENU EST VISIBLE EN PERMANENCE (30 août 2026,
+   après un rapport de Noé : « je ne peux plus modifier une habitude »). Le
+   bouton répondait au clic — mesuré, `opacity: 0` et pourtant cliquable —, il
+   était simplement INVISIBLE : la liste des conteneurs qui le révèlent au
+   survol ne connaît que les tuiles du cap, et ma carte n'y était pas.
+
+   Il ne suffisait pas de l'y ajouter. Ailleurs, le menu est un geste de second
+   plan qu'on découvre en passant ; ICI, c'est la page où l'on GÈRE ses
+   habitudes — modifier une cadence ou un émoji est la raison même de venir.
+   Un geste principal ne se cache pas derrière un survol. */
+.hab-carte .cap-menu-bouton { opacity: 0.55; }
+.hab-carte:hover .cap-menu-bouton,
+.hab-carte .cap-menu.ouvert .cap-menu-bouton { opacity: 1; }
+
 @media (hover: none) {
   .cap-menu-bouton { opacity: 0.55; }
 }
@@ -7864,3 +7981,278 @@ body.balaye {
    `.tache-faite` barre déjà le titre — ici c'est le bloc entier qui recule. */
 .cap-taches-terminees { opacity: 0.72; }
 
+
+/* L'émoji d'une habitude dans la page qui les gère : DEVANT le nom, pas à sa
+   place. Le tableau de bord perso, lui, remplace le nom par l'émoji — on y
+   reconnaît ce qu'on coche ; ici on vient lire une cadence et un pourquoi, les
+   mots restent nécessaires. */
+.habitude-signe {
+  flex: none;
+  margin-right: var(--espace-4);
+  font-size: 1rem;
+  line-height: 1;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+}
+
+/* --- Le duo de perso : habitudes | lecture -------------------------------------
+   Demande de Noé, 30 août 2026 : les habitudes dans une colonne, une autre à
+   côté. Voir `construireTableauPerso`, js/perso.js — le choix de la lecture y
+   est justifié.
+
+   Les colonnes se DÉFONT sur téléphone : deux colonnes de 180 px y seraient
+   deux listes illisibles, et les habitudes ont besoin de leur largeur pour
+   garder leurs noms entiers — c'est ce qu'on vient de gagner en retirant le
+   texte des mesures, et on ne va pas le reperdre. */
+.perso-duo {
+  display: grid;
+  gap: var(--espace-24);
+  margin-bottom: var(--espace-16);
+}
+
+@media (min-width: 45rem) {
+  .perso-duo {
+    /* Les habitudes prennent plus de place : elles portent dix lignes, la
+       lecture en porte trois. `minmax(0, …)` et non `1fr` — un titre de livre
+       long refuserait de rétrécir. */
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+/* `duo-` ET NON `perso-colonne` : le nom était PRIS. `.perso-colonne` est la
+   colonne de mise en page des sous-vues de perso, et le script la masque quand
+   elle ne porte aucun `[data-vue]` — mes colonnes, qui n'en portent pas, se
+   cachaient donc entières. Le titre était un `<h2>` pour la même raison : le
+   script masque le premier `h2` d'une vue affichée seule, et c'est le mien
+   qu'il attrapait. Deux collisions pour un nom non vérifié — le grep de trois
+   secondes que le CLAUDE.md réclame. */
+.duo-colonne { min-width: 0; }
+
+/* Le titre d'une colonne : la graisse d'un libellé de section, comme « CE QUI A
+   COMPTÉ AUJOURD'HUI » juste en dessous. Il NOMME, il ne pèse pas — les
+   habitudes en dessous sont le sujet. */
+.duo-titre {
+  margin: 0 0 var(--espace-8);
+  font-family: var(--police-texte);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--texte-discret);
+}
+
+/* La colonne des habitudes n'a plus de marge basse à elle : c'est le duo qui la
+   porte, sinon les deux colonnes ne finissent pas à la même hauteur. */
+.duo-colonne .hab-colonne { margin-bottom: 0; }
+
+/* La colonne de lecture quand aucun livre n'est en cours : une tuile pointillée
+   qui tient sa place et invite, plutôt qu'une phrase perdue à côté de dix
+   habitudes. Même forme que « Déclarer une période » dans #objectifs. */
+.perso-lecture-vide {
+  display: grid;
+  gap: var(--espace-4);
+  padding: var(--espace-16);
+  text-align: center;
+  text-decoration: none;
+  color: var(--texte-discret);
+  border: 1px dashed var(--bordure);
+  border-radius: var(--rayon-carte);
+}
+
+.perso-lecture-vide:hover { border-color: var(--accent); color: var(--texte); }
+
+/* --- La page des habitudes : stats globales et courbes -------------------------
+   Demande de Noé, 30 août 2026 : « des stats globales, des graphiques
+   d'évolution ». Voir `construireHabitudes`, js/perso.js — le renversement du
+   pli y est justifié.
+
+   AUCUNE COULEUR NE JUGE ICI. Pas de rouge, pas de seuil, pas de « raté » : une
+   semaine sans pratique est une barre courte, jamais une alerte. C'est la règle
+   qui a fait écarter la toute première maquette des habitudes, et elle tient. */
+
+.hab-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: var(--espace-8);
+  margin-bottom: var(--espace-16);
+}
+
+.hab-stat {
+  display: grid;
+  gap: 2px;
+  padding: var(--espace-12);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+}
+
+.hab-stat-chiffre {
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Le dénominateur ne pèse pas autant que le chiffre : « 3 » est la nouvelle,
+   « /4 » n'est que son échelle. */
+.hab-stat-sur {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--texte-discret);
+}
+
+.hab-stat-mot {
+  font-size: 0.6875rem;
+  line-height: 1.3;
+  color: var(--texte-discret);
+}
+
+/* La courbe globale : douze barres, une par semaine. Elles se lisent de gauche
+   à droite comme le temps. */
+.hab-courbe {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 4.5rem;
+  padding: var(--espace-12);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+}
+
+.hab-courbe i {
+  flex: 1;
+  min-width: 0;
+  border-radius: 2px 2px 0 0;
+  background: var(--accent);
+  opacity: 0.55;
+}
+
+/* La semaine EN COURS se distingue, et ce n'est pas décoratif : elle n'est pas
+   finie. La comparer aux autres sans le dire ferait lire une baisse tous les
+   lundis. */
+.hab-courbe i.en-cours {
+  opacity: 1;
+  background: var(--accent);
+}
+
+.hab-courbe-mot {
+  margin: var(--espace-4) 0 var(--espace-24);
+  font-size: 0.6875rem;
+}
+
+/* --- Les cartes ------------------------------------------------------------- */
+
+.hab-cartes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  gap: var(--espace-12);
+  margin-bottom: var(--espace-16);
+}
+
+.hab-carte {
+  position: relative;
+  min-width: 0;
+  padding: var(--espace-16);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+}
+
+.hab-carte-tete {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  margin-bottom: var(--espace-12);
+}
+
+.hab-carte-nom {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--espace-4);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+/* Le mot de l'élan prend la couleur de la famille : c'est la seule teinte de la
+   carte, et elle dit à quoi cette habitude sert. */
+.hab-carte-elan {
+  flex: none;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--teinte, var(--accent));
+}
+
+.hab-carte-elan.discret { color: var(--texte-discret); }
+
+/* La sparkline d'une habitude : ses douze semaines, dans sa couleur. Une semaine
+   TENUE est pleine, une semaine entamée est en creux — jamais « ratée ». */
+.hab-spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 2rem;
+  margin: var(--espace-12) 0;
+}
+
+.hab-spark i {
+  flex: 1;
+  min-width: 0;
+  border-radius: 2px 2px 0 0;
+  background: color-mix(in srgb, var(--teinte, var(--accent)) 30%, transparent);
+}
+
+.hab-spark i.tenue { background: var(--teinte, var(--accent)); }
+
+/* La semaine en cours porte un liseré : elle n'est pas finie. */
+.hab-spark i.en-cours { outline: 1px solid var(--teinte, var(--accent)); outline-offset: 1px; }
+
+.hab-carte-chiffres {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--texte-discret);
+}
+
+.hab-carte-chiffres b { color: var(--texte); font-weight: 600; }
+
+.hab-carte-pourquoi {
+  margin: var(--espace-8) 0 0;
+  font-size: 0.8125rem;
+  font-style: italic;
+  color: var(--texte-discret);
+}
+
+/* La jauge d'élan garde sa place dans la carte. */
+.hab-carte .elan-jauge { margin-top: var(--espace-4); }
+
+/* Le titre d'un groupe d'habitudes : « Tous les jours », « Chaque semaine »,
+   « Quand ça vient ». Elles ne se comptent plus dans la même unité — des jours
+   d'un côté, des semaines de l'autre — et les aligner sans le dire ferait lire
+   deux séries comme deux valeurs comparables. */
+.hab-groupe {
+  margin: var(--espace-24) 0 var(--espace-8);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--texte-discret);
+}
+
+.hab-groupe .chiffre { color: var(--texte); letter-spacing: normal; }
+
+/* Sur le tableau de bord, où la place est comptée, un filet remplace le titre :
+   il dit que l'unité change sans coûter une ligne. */
+.hab-colonne-suite {
+  margin-top: var(--espace-8);
+  padding-top: var(--espace-8);
+  border-top: 1px solid var(--bordure);
+}
+
+.hab-groupe-mot {
+  margin: calc(var(--espace-8) * -1) 0 var(--espace-8);
+  font-size: 0.75rem;
+}

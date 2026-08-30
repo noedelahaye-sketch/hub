@@ -287,7 +287,7 @@ elles vivent dans `js/orientation.js`, donc éprouvables hors écran :
 | Mesure | Ce qu'elle fait | Pourquoi elle ne s'effondre pas |
 |---|---|---|
 | **l'élan** (0–100) | monte à chaque pratique, perd 2 par jour | une pratique répare trois jours ; une semaine vide coûte 14 points |
-| **la série** | compte les SEMAINES tenues | sauter un mardi ne veut rien dire ; une semaine manquée la fait **reculer d'un cran**, jamais tomber à zéro |
+| **la série** | compte les JOURS ou les SEMAINES tenus, selon la cadence | un manque la fait **reculer d'un cran**, jamais tomber à zéro |
 | **le cumul** et ses paliers | 10, 25, 50, 100, 200, 365 | il ne redescend jamais, et le prochain palier est toujours proche |
 
 - **Tenir sa cadence rapporte +14 par semaine, quelle qu'elle soit** : le gain
@@ -295,12 +295,59 @@ elles vivent dans `js/orientation.js`, donc éprouvables hors écran :
   quotidienne monterait deux fois plus vite qu'une hebdomadaire alors que les
   deux demandent le même effort — tenir ce qu'on a dit. *(Vérifié : cadence 3 et
   cadence 5 tenues douze semaines donnent toutes deux 98.)*
+### DEUX NATURES D'HABITUDE : quotidienne et hebdomadaire (30 août 2026)
+
+Demande de Noé : *« je préfère que le compte des habitudes soit quotidien plutôt
+qu'hebdomadaire, lorsque je loupe un jour ça fait -1 à la série comme c'était
+prévu pour la semaine. Il faut simplement séparer les habitudes journalières et
+les habitudes hebdo. »*
+
+**UNE HABITUDE EST QUOTIDIENNE QUAND SA CADENCE VAUT 7.** Pas de colonne
+nouvelle : le formulaire écrit déjà « Tous les jours » sur cette valeur, et deux
+champs qui disent la même chose finissent toujours par se contredire. Sept fois
+par semaine EST tous les jours.
+
+| Cadence | Unité de la série | Un manque coûte |
+|---|---|---|
+| 7 | des **jours** tenus | −1 jour |
+| 1 à 6 | des **semaines** tenues | −1 semaine |
+| aucune | pas de série | rien à tenir |
+
+**Le recul d'un cran ne change pas** — c'est le réglage qui fonde ces mesures.
+Il est simplement transposé du jour à la semaine. *(Vérifié : 29 jours dont 2
+manqués donnent une série de 25, et non 8 comme le ferait un compteur qui remet
+à zéro.)*
+
+**La série s'arrête AVANT aujourd'hui**, comme elle s'arrêtait avant la semaine
+en cours : la journée n'est pas finie, et compter un jour non encore vécu comme
+manqué ferait reculer la série chaque matin.
+
+**LES TROIS NATURES SE SÉPARENT À L'ÉCRAN** — « Tous les jours », « Chaque
+semaine », « Quand ça vient ». Elles ne se comptent plus dans la même unité :
+les aligner sans le dire ferait lire « 25 » et « 9 » comme deux valeurs
+comparables, alors que 9 semaines valent 63 jours de rythme. Sur le tableau de
+bord, où la place est comptée, un simple filet remplace les titres.
+
+**LA MEILLEURE SÉRIE SE COMPARE EN JOURS, ET S'AFFICHE DANS SON UNITÉ.** Mesuré
+avant correction : une série de 25 jours s'affichait « 25 semaines » et passait
+devant une vraie série de 9 semaines. Le classement se fait sur la durée réelle,
+l'écran rend l'unité que l'habitude compte.
+
 - **La série recule d'un cran**, et c'est LE réglage demandé. Mesuré sur douze
   semaines dont une sautée : la série affiche **9** là où une série classique
   dirait 3, et l'élan passe de 98 à 95.
-- **Une cadence NULLE veut dire « quand ça vient »** : ni élan ni série, seulement
-  le cumul. Lui poser une cible reviendrait à lui en imposer une qu'on a
-  justement refusé de poser.
+- **« QUAND ÇA VIENT » N'EXISTE PLUS** (30 août 2026, décision de Noé : « quand
+  ça vient ne doit pas exister, c'est pas une habitude »). Et il a raison sur le
+  fond : sans cadence, il n'y a ni élan ni série — rien à tenir, donc rien qui
+  puisse se tenir. C'était un compteur, pas une habitude. **La cadence est
+  désormais obligatoire.**
+  *Ce que ça remplace : l'option valait NULL et se disait « la cadence des
+  choses qu'on veut noter sans se les imposer ». L'idée était juste, l'endroit
+  non — une chose qu'on note sans se l'imposer est une victoire ou un
+  rendez-vous.*
+  **Les habitudes qui portent encore NULL ne disparaissent pas** : la page les
+  range dans un groupe « À régler » qui invite à leur donner un rythme. Les
+  cacher les rendrait impossibles à corriger, ce qui est le pire des deux maux.
 - **Aucun rouge, aucun taux de réussite, aucun jour manqué compté.** Les mots de
   l'élan vont de « solide » à « en sommeil » — une habitude en sommeil n'est pas
   un échec, c'est une habitude qui attend.
@@ -310,12 +357,123 @@ elles vivent dans `js/orientation.js`, donc éprouvables hors écran :
   SEUL moment où une habitude parle dans « Le chemin » : la cocher tous les
   jours y écrirait du bruit, franchir la cinquantième est un fait.
 
-**ON LES COCHE SUR L'ACCUEIL ET DANS PERSO** (choix de Noé). L'accueil en fait
-une **bande de pastilles** en tête de la tuile « Aujourd'hui » — on coche là où
-l'on est déjà le matin, sans ouvrir une autre page. Le détail, l'élan et les
-paliers restent dans perso : l'accueil dit ce qu'il y a à faire, perso dit où
-l'on en est. **Celles qui sont faites restent visibles**, pleines — une bande
-qui se vide serait un compteur de ce qui manque.
+**ON LES COCHE DANS PERSO, ET NULLE PART AILLEURS** (30 août 2026, décision de
+Noé : « finalement les habitudes n'ont pas besoin d'être sur l'écran d'accueil,
+uniquement dans la page perso »). Elles ont vécu une journée sur l'accueil, en
+bande de jetons ronds entre la tête et la journée.
+
+C'est le même mouvement que les objectifs la veille : l'accueil répond à
+« qu'est-ce que j'ai à faire », et **une habitude n'est posée nulle part — elle
+revient**. Elle se coche donc là où vivent déjà son élan, sa série et ses
+paliers : un seul endroit pour la voir et pour la tenir. **Celles qui sont
+faites restent visibles**, pleines — une bande qui se vide serait un compteur de
+ce qui manque.
+
+### La forme dans perso : UNE COLONNE, UNE LIGNE PAR HABITUDE
+
+Demande de Noé (30 août 2026) : *« une colonne pour les habitudes, une ligne =
+une habitude, une ou deux stats à voir facilement chaque jour pour donner envie
+de faire l'habitude »*. Elle remplace une bande horizontale de jetons ronds, née
+la veille POUR L'ACCUEIL — où la place était comptée et où elle devait tenir en
+56 px. Les habitudes ayant quitté l'accueil, la contrainte est tombée avec lui.
+
+**LE ROND EN PREMIER, TOUT À GAUCHE** (même demande) : c'est le geste qu'on vient
+faire. Il tombe sous le pouce dès l'ouverture, et l'œil ne traverse pas la ligne
+pour l'atteindre. Le nom et les mesures suivent — on les lit APRÈS avoir vu où
+cocher.
+
+**32 px PAR HABITUDE**, contre 64 au départ. La cible est chiffrée par Noé :
+« il doit pouvoir y avoir 10 sans que ce soit trop long » — dix lignes font donc
+320 px, un tiers d'écran de téléphone au lieu de 640. Aucun écart entre elles :
+ce qui les distingue est le voile d'une habitude faite, pas du vide. Les corps
+ont suivi (nom 13 px, chiffres 11, points 6), Noé l'ayant autorisé dans la même
+phrase.
+
+**LA HAUTEUR DE LA CIBLE CÈDE À LA DENSITÉ**, et c'est un arbitrage assumé : le
+hub demande 44 px, la colonne doit tenir dix habitudes. Ce qui rend le compromis
+tenable, c'est que la LARGEUR reste à 44 et surtout qu'il n'y a **aucune autre
+cible sur la ligne** — rien à côté de quoi tomber. Seul le voisin du dessus ou du
+dessous est proche. Si l'usage dit le contraire, c'est cette décision qu'il faut
+rouvrir.
+
+**ELLES SONT HORS DE TOUTE TUILE** (demande de Noé : « détache-les de la tuile ce
+qui a compté aujourd'hui »), posées à même le fond. C'est la MÊME correction
+qu'il avait faite le matin sur l'accueil, et pour la même raison : une tuile
+porte ce qui est POSÉ — une lecture du jour, un mot qu'on écrit —, et **une
+habitude n'est posée de rien, elle revient**. Les mettre dedans, c'était dire
+qu'elles sont de la même nature.
+
+**ELLES OUVRENT UN DUO : Habitudes | Ta lecture** (demande de Noé, la seconde
+colonne étant à trouver). Pourquoi la lecture, et pas les rendez-vous ni le mot
+du jour : c'est le **second geste quotidien** de cette page — on coche une
+habitude, on note des pages ; les deux se font en trois secondes et font avancer
+quelque chose, tandis qu'un rendez-vous se lit. Et surtout, **les deux sont déjà
+liées** : noter des pages coche l'habitude de lecture. Les poser côte à côte,
+c'est mettre ensemble ce que la base relie déjà.
+
+*Sans livre en cours — le cas au 30 août 2026 — la colonne porte une tuile
+pointillée qui invite, et non une phrase perdue à côté de dix habitudes.*
+
+> **Piège de nommage, payé une seconde fois.** Ces colonnes se sont d'abord
+> appelées `.perso-colonne` — un nom DÉJÀ PRIS par la mise en page des
+> sous-vues, que le script masque quand elle ne porte aucun `[data-vue]`. Les
+> deux colonnes disparaissaient donc entières. Leur titre était un `<h2>`, et le
+> script masque le premier `h2` d'une vue affichée seule : il attrapait le
+> mien. Deux collisions pour un nom non vérifié. Elles s'appellent `.duo-*` et
+> leur titre est un `<h3>`. **Le grep de trois secondes n'est pas facultatif.**
+
+**DEUX MESURES, ET PAS TROIS.** Le hub en calcule trois ; trois chiffres alignés
+font un tableau. On garde celles qui poussent à faire AUJOURD'HUI :
+
+1. **la semaine en cours**, en points — un par pratique visée, plein quand elle
+   est faite. Il en reste une se voit sans compter, et c'est la seule des trois
+   mesures qui parle du jour même ;
+2. **le prochain palier**, en un chiffre — ce qu'il reste avant 10, 25, 50… Il
+   ne redescend jamais et il est toujours proche.
+
+**AUCUN TEXTE, QUE DES CHIFFRES** (demande de Noé : « le texte n'est pas
+nécessaire une fois que je sais à quoi les chiffres correspondent »). La ligne a
+perdu ses mots en trois passes, et chacun coûtait de la place au NOM :
+« 0 sur 5 cette semaine » répétait en dix-huit caractères ce que trois points
+disent déjà ; « encore » n'apprenait plus rien à quelqu'un qui lit cet écran
+tous les jours ; « quand ça vient » disait une absence de cadence que l'absence
+de points dit mieux. **Résultat mesuré : tous les noms tiennent en entier sur
+grand écran**, là où trois sur cinq étaient tronqués.
+
+Le sens n'est pas perdu, il est **déplacé** : `title` porte la phrase complète,
+`aria-label` la donne au lecteur d'écran — qui, lui, ne sait pas à quoi le
+chiffre correspond.
+
+**LE ROND FAIT 16 px**, la cible 44. Il est passé de 34 à 26 le matin, de 26 à
+16 le soir (« le rond doit être beaucoup moins gros ») ; le bouton n'a jamais
+bougé. C'est cette séparation — le rond est ce qu'on VOIT, le bouton ce qu'on
+TOUCHE — qui permet de le réduire autant sans rien perdre au doigt.
+
+**L'élan reste sur la page des habitudes**, avec sa jauge et ses mots : ce
+tableau répond à « qu'est-ce que je fais maintenant », l'autre à « où j'en suis ».
+
+- **Une cadence nulle n'a pas de semaine** : « 0 sur 0 » lui poserait la cible
+  qu'on a justement refusé de lui poser. Elle dit « quand ça vient ».
+- **Une habitude neuve dit « encore 10 », pas « encore 10 avant 10 »** : quand
+  rien n'a été fait, reste et palier valent le même nombre — juste, et illisible.
+- **La grille est portée par la COLONNE, pas par chaque ligne** (`subgrid`) :
+  sinon chaque ligne se cale seule et les mesures ne tombent pas sur la même
+  verticale. Là où `subgrid` manque, la ligne perd son alignement et rien
+  d'autre.
+- **Rien ne se masque sur téléphone**, et c'est le texte retiré qui l'a permis.
+  Tant que la ligne écrivait ses mesures en toutes lettres, elle ne tenait pas
+  sur 375 px — « Bouger » y tombait à « B… » — et l'on masquait le palier. Une
+  fois réduites à des points et à un chiffre, les deux tiennent partout : mieux
+  vaut une ligne courte pour tout le monde qu'une ligne longue qu'on ampute
+  selon l'écran.
+
+**UN ÉMOJI PAR HABITUDE** (même jour), facultatif — il précède le nom et le rend
+reconnaissable sans qu'on ait à le lire.
+- **Sur la page qui les GÈRE aussi**, devant le nom : on y vient lire une
+  cadence, un pourquoi, un palier — les mots y sont nécessaires des deux côtés.
+- Le nom passe dans `aria-label` : au lecteur d'écran, « 🏃 » ne dit rien.
+- **Huit caractères au plus** : un émoji composé en occupe plusieurs — une
+  famille tient sur huit unités UTF-16, une teinte de peau sur quatre.
 
 **Les quatre familles ont enfin une couleur** (corps, calme, lien, intendance).
 Elles étaient collectées depuis le 27 août et n'apparaissaient nulle part.
@@ -326,6 +484,68 @@ repas à midi (5×), prendre des nouvelles de quelqu'un (sans cadence). « Vivre
 la joie, de l'espoir, de la simplicité » n'en est PAS une et ne doit pas le
 devenir : c'est l'intention-mère, celle qui juge les autres — en faire une case
 à cocher la détruirait.
+
+### La page des habitudes : un tableau de bord (30 août 2026)
+
+Demande de Noé : *« revois la forme d'affichage des habitudes, et il faut qu'il
+y ait des stats globales, des graphiques d'évolution »*.
+
+**CE QUE ÇA RENVERSE, ET IL FAUT LE DIRE.** La page avait un PLI — une habitude
+ouverte montrait tout, les autres tenaient en une ligne : *« sans ce pli, cinq
+habitudes feraient un tableau de bord, et un tableau de bord ne donne envie de
+rien »*. La règle était juste tant que la page ne portait que des chiffres nus.
+Noé demande maintenant des stats et des courbes : il VEUT ce tableau de bord. Le
+pli disparaît, et chaque habitude devient une CARTE qui montre son histoire.
+
+**QUATRE CHIFFRES EN TÊTE**, choisis pour ce qu'ils donnent envie de faire :
+ce qui reste à tenir cette semaine (le seul qui parle du jour même et qui puisse
+encore bouger avant dimanche), les pratiques de la semaine, la meilleure série
+en cours avec son habitude, et le cumul depuis le début. **Aucun ne peut baisser
+à cause d'un oubli** : trois ne font que monter.
+
+**DEUX GRAPHIQUES**, tous deux en barres, tous deux sur douze semaines — un
+trimestre : assez pour voir une habitude s'installer ou s'endormir, assez court
+pour tenir sur un téléphone.
+- **la courbe globale**, toutes habitudes confondues ;
+- **une sparkline par carte**, dans la couleur de sa famille, où une semaine
+  TENUE est pleine et une semaine entamée en creux.
+
+**LA CONTRAINTE QUI TIENT, et c'est elle qui a dessiné le reste** : aucune de ces
+mesures ne compte un manque. La toute première maquette des habitudes montrait
+les sept derniers jours en points gris, et Noé l'avait écartée d'une phrase —
+« ça ne me donne pas envie de les faire ». Elle DÉCRIVAIT sans rien mettre en
+jeu. Ici : pas de rouge, pas de taux de réussite, pas de jour manqué. **Une
+semaine sans pratique est une barre courte, jamais une alerte.**
+
+- **Une barre à zéro garde 6 % de hauteur** : à zéro elle disparaîtrait, et la
+  courbe aurait des trous là où elle doit avoir des creux.
+- **La semaine en cours se distingue** — elle n'est pas finie. La comparer aux
+  autres sans le dire ferait lire une baisse tous les lundis.
+- **Sans cadence, aucune semaine ne se « tient »** : il n'y a pas de cible, et
+  lui en inventer une contredirait la règle de « quand ça vient ».
+- **Une habitude neuve ne dit ni « 0 au total » ni « encore 10 avant 10 »** :
+  le premier ressemble à un constat d'échec, le second est juste et illisible.
+
+Les calculs vivent dans `js/orientation.js` (`bilanDesHabitudes`,
+`historiqueDeLHabitude`) : comme le reste, ils ne touchent ni au réseau ni au
+DOM et se vérifient avec des faits factices.
+
+> **Deux défauts trouvés le 30 août en refaisant cette page, et le second était
+> le vrai.** Noé : « je ne peux plus modifier une habitude ». Le menu à trois
+> points répondait pourtant au clic — mesuré, `opacity: 0` et pourtant
+> cliquable : la liste des conteneurs qui le révèlent au survol ne connaît que
+> les tuiles du cap, et la nouvelle carte n'y était pas. **Sur cette page il est
+> désormais visible en permanence** : ailleurs le menu est un geste de second
+> plan, ici modifier une cadence est la raison même de venir.
+>
+> Mais le formulaire s'ouvrait, et **cliquer « 4 fois » laissait la cadence à
+> 3** — puis s'enregistrait proprement avec l'ancienne valeur, sans erreur ni
+> signe. **`perso.js` n'appelait `brancherChoix` nulle part** : ses champs de
+> type « choix » sont un input caché doublé d'un bouton et d'un panneau, et
+> sans ce branchement la valeur ne se pose jamais. Le défaut touchait aussi la
+> famille d'une habitude et le statut d'un livre. Perso n'ayant pas de tuile de
+> capture, l'appel y est seul — sans le double traitement qui a fait retirer ce
+> même appel du site FCH.
 
 ### La bibliothèque (29 août 2026)
 
@@ -878,28 +1098,10 @@ gestes ne doivent jamais porter le même signe.
    bilan qu'on n'a pas écrit ne s'écrira pas, et le redemander devient un
    reproche. Le rendez-vous du dimanche passe devant : deux bandeaux empilés
    seraient deux interruptions.
-3. **Les habitudes du jour, en JETONS RONDS et HORS DE TOUTE TUILE** (30 août
-   2026, correction de Noé : « les habitudes ne doivent pas être dans la tuile
-   des tâches, événements… et là ça prend trop de place »). Deux défauts en un,
-   et ils appelaient la même réponse. **Le rangement** : la tuile « Aujourd'hui »
-   porte ce qui est POSÉ au calendrier — tâches, publications, rendez-vous, tous
-   datés. Une habitude n'est datée de rien, elle revient. **La place** : cinq
-   pastilles à nom complet prenaient deux rangées et 110 px pour un geste d'une
-   seconde. La rangée de jetons en fait 56.
-   - **Elle change exprès de toutes les autres formes du hub** : posée à même le
-     fond, sans carte, sans bord, sans titre de section. Rien d'autre ne
-     ressemble à ça, et c'est ce qui dit sans un mot qu'une habitude n'est pas
-     de la même nature que ce qui est daté.
-   - **Le nom passe SOUS le rond, en petit** : il n'est là que pour reconnaître,
-     pas pour lire. **Le rond fait 26 px** (Noé l'a fait réduire de 34) ; la
-     cible tactile ne descend pas pour autant, c'est le JETON ENTIER qui la
-     porte — 4 rem de large sur près de 44 de haut. Le rond n'est que la partie
-     qu'on voit.
-   - **Le gabarit est PARTAGÉ avec le tableau de bord perso**
-     (`construireHabitudesDuJour`, js/gabarits.js) : deux écrans qui montreraient
-     les mêmes habitudes de deux façons finiraient par se contredire.
-   - Ce qui n'y est PAS : l'élan, la série, les paliers. L'accueil dit ce qu'il y
-     a à faire, perso dit où l'on en est.
+3. **Les habitudes ont QUITTÉ l'accueil** (30 août 2026, décision de Noé le
+   soir même où elles y étaient arrivées). Elles vivent dans perso, seul écran
+   qui les montre — voir « Les habitudes » plus haut. L'accueil porte ce qui est
+   POSÉ ; une habitude n'est posée nulle part, elle revient.
 4. **Aujourd'hui, dans une TUILE** — **et toute la tuile mène à `#taches`**
    (29 août 2026, demande de Noé : « en gardant tous les autres boutons de la
    tuile »). C'est cette seconde moitié qui décide de la forme : **pas un lien

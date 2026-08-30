@@ -17,7 +17,6 @@ import {
   dureeLisible,
   NOMS_ESPACES,
 } from './format.js';
-import { construireHabitudesDuJour } from './gabarits.js';
 import {
   assemblerCalendrier,
   construireGrille,
@@ -585,8 +584,10 @@ export function construireAujourdhui(
        </p>`
     : '';
 
-  // Les habitudes s'affichent MÊME si la journée est vide par ailleurs : un jour
-  // sans tâche ni rendez-vous est justement celui où l'on tient son rythme.
+  // Une journée sans rien de posé le dit, et s'arrête là. Ce commentaire
+  // justifiait, le 30 août au matin, que la bande d'habitudes vive HORS de
+  // cette tuile pour survivre à ce retour anticipé ; les habitudes ont quitté
+  // l'accueil le soir même, il n'y a plus rien à préserver ici.
   if (!rendezVous.length && !taches.length && !publications.length) {
     return `${ligneAnnulation}<p class="vide">Rien de posé aujourd'hui.</p>`;
   }
@@ -652,20 +653,6 @@ const SOURCES = {
     ? { victoires: async () => ({ victoires: await api.dernieresVictoires(MAX_VICTOIRES) }) }
     : {}),
   objectifs: async () => ({ objectifs: await api.objectifsActifs() }),
-  // LES HABITUDES DU JOUR (29 août 2026, choix de Noé : les cocher sur
-  // l'accueil ET dans perso). On coche là où l'on est déjà le matin, sans
-  // ouvrir une autre page — mais le détail, l'élan et les paliers restent dans
-  // perso : l'accueil dit ce qu'il y a à faire, il ne tient pas de tableau.
-  habitudes: async () => {
-    const [habitudes, faits] = await Promise.all([
-      api.habitudesToutes(),
-      // Huit jours suffisent ici : l'accueil ne montre que le jour et ce qui
-      // reste de la semaine. L'élan et la série se lisent dans perso, qui
-      // charge l'année.
-      api.habitudesFaitsDepuis(versDateISO(ajouterJours(new Date(), -8))),
-    ]);
-    return { habitudes, faitsHabitudes: faits };
-  },
   // Toutes les tâches datées, les faites comprises — le calendrier les garde
   // barrées. « Aujourd'hui » se déduit de cette même liste : une lecture au lieu
   // de deux, et une seule vérité sur ce qui est coché. Cocher une tâche la barre
@@ -691,7 +678,6 @@ const DONNEES = {
   humeur: ['humeur'],
   ...(VICTOIRES_VISIBLES ? { victoires: ['victoires'] } : {}),
   objectifs: ['objectifs'],
-  habitudes: ['habitudes', 'faitsHabitudes'],
   taches: ['tachesDatees'],
   semaine: ['evenements', 'publications', 'commandes', 'contacts'],
 };
@@ -750,11 +736,20 @@ function squelette() {
            contenait l'autre. La tuile tranche par son bord ; sa police finit le
            travail. Elle porte les QUATRE groupes de la journée : à faire, à
            publier, les rendez-vous, et les propositions. -->
-      <!-- LES HABITUDES VIVENT ENTRE LA TÊTE ET LA JOURNÉE (30 août 2026), et
-           hors de toute tuile : elles ne sont pas posées au calendrier, elles
-           reviennent. Elles se cochent avec l'humeur, dans le même geste du
-           matin, avant qu'on regarde ce qu'il y a à faire. -->
-      <div id="bloc-habitudes" hidden></div>
+      <!-- LES HABITUDES ONT QUITTÉ L'ACCUEIL (30 août 2026, décision de Noé :
+           « finalement les habitudes n'ont pas besoin d'être sur l'écran
+           d'accueil, uniquement dans la page perso »). Elles y ont vécu une
+           journée, entre la tête et la journée.
+
+           C'est le même mouvement que les objectifs la veille : l'accueil
+           répond à « qu'est-ce que j'ai à faire », et une habitude n'est posée
+           nulle part — elle revient. Elle se coche désormais dans perso, où
+           vivent déjà son élan, sa série et ses paliers : un seul endroit pour
+           la voir et pour la tenir.
+
+           Le gabarit construireHabitudesDuJour (js/gabarits.js) N'A PAS
+           disparu : perso s'en sert toujours. Il n'est simplement plus partagé
+           entre deux écrans. -->
 
       <section class="bloc accueil-journee">
         <!-- LE TITRE EST DEHORS (29 août 2026, demande de Noé), comme celui des
@@ -1071,13 +1066,6 @@ export default {
       };
     }
 
-    function rendreLesHabitudes() {
-      const bloc = cible('bloc-habitudes');
-      if (!bloc) return;
-      bloc.innerHTML = construireHabitudesDuJour(etat.habitudes ?? [], etat.faitsHabitudes ?? []);
-      bloc.hidden = !bloc.innerHTML;
-    }
-
     function rendreAujourdhui() {
       if (!pret('taches')) return;
       // La tête compte ce que ce bloc affiche : les deux ne peuvent pas se
@@ -1219,9 +1207,6 @@ export default {
       objectifs: () => {
         rendreSemaine();
       },
-      // Les habitudes arrivent de leur côté et n'ont besoin de personne : elles
-      // redessinent la journée dès qu'elles sont là.
-      habitudes: () => rendreLesHabitudes(),
       taches: () => {
         rendreAujourdhui();
         rendreSemaine();
@@ -1687,33 +1672,6 @@ export default {
         return;
       }
       location.hash = '#taches';
-    });
-
-    // COCHER UNE HABITUDE DEPUIS L'ACCUEIL. L'écran d'abord, l'écriture derrière.
-    // L'élan et les paliers ne sont stockés nulle part — ils se déduisent des
-    // faits — donc il n'y a rien d'autre à tenir à jour ici.
-    section.addEventListener('click', async (evenement) => {
-      const pastille = evenement.target.closest('[data-faire-habitude]');
-      if (!pastille) return;
-
-      const id = pastille.dataset.faireHabitude;
-      const jour = versDateISO();
-      const avant = etat.faitsHabitudes ?? [];
-      const dejaFait = avant.some((f) => f.habitude_id === id && f.jour === jour);
-
-      etat.faitsHabitudes = dejaFait
-        ? avant.filter((f) => !(f.habitude_id === id && f.jour === jour))
-        : [...avant, { habitude_id: id, jour }];
-      rendreLesHabitudes();
-
-      try {
-        if (dejaFait) await api.demarquerHabitude(id, jour);
-        else await api.marquerHabitude(id, jour);
-      } catch (souci) {
-        console.error('Habitude non enregistrée', souci);
-        etat.faitsHabitudes = avant;
-        rendreLesHabitudes();
-      }
     });
 
     section.addEventListener('click', async (evenement) => {

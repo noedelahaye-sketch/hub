@@ -12,7 +12,7 @@
 import * as api from './api.js';
 // Ces fonctions ne portent aucune mécanique d'espace : ce sont des gabarits
 // de tuiles et de formulaires, réutilisés tels quels.
-import { construireFormulaire, construireHabitudesDuJour } from './gabarits.js';
+import { construireFormulaire, brancherChoix } from './gabarits.js';
 import { retirerAussitot } from './ecriture.js';
 import {
   etatDesHabitudes,
@@ -21,6 +21,10 @@ import {
   avanceeDuLivre,
   livreEnCours,
   relecture,
+  bilanDesHabitudes,
+  estQuotidienne,
+  historiqueDeLHabitude,
+  SEMAINES_REGARDEES,
 } from './orientation.js';
 import {
   versDateISO,
@@ -54,7 +58,10 @@ const SIGNE = {
 // `jour` : la journée qu'on regarde. Elle vient de l'adresse
 // (`#perso/journee/2026-08-29`) pour qu'un jour précis se retrouve et se
 // partage — un favori sur une journée doit rouvrir cette journée-là.
-const vueEtat = { menu: null, confirme: null, edition: null, habitude: null, jour: null };
+// `habitude` a disparu le 30 août 2026 : il portait l'habitude DÉPLIÉE, et la
+// page n'a plus de pli — chaque carte montre son histoire (voir
+// `construireHabitudes`).
+const vueEtat = { menu: null, confirme: null, edition: null, jour: null };
 
 // --- Fabrication du HTML ----------------------------------------------------
 
@@ -184,87 +191,200 @@ const TEINTES_FAMILLE = {
   intendance: 'var(--famille-intendance)',
 };
 
-function habitudeDepliee({ habitude, elan, serie, cumul, faitAujourdhui }) {
-  const couleur = TEINTES_FAMILLE[habitude.famille] ?? 'var(--accent)';
+// L'ÉMOJI DEVANT LE NOM, et non à sa place (30 août 2026). Sur le TABLEAU DE
+// BORD perso, la bande de jetons remplace le nom par l'émoji : on y reconnaît
+// d'un coup d'œil ce qu'on coche. Ici, dans la page où l'on GÈRE ses habitudes,
+// les mots restent nécessaires — on vient y lire une cadence, un pourquoi, un
+// palier. L'émoji précède donc le nom au lieu de l'effacer.
+function signeHabitude(habitude) {
+  const emoji = (habitude.emoji ?? '').trim();
+  return emoji
+    ? `<span class="habitude-signe" aria-hidden="true">${echapper(emoji)}</span>`
+    : '';
+}
+
+
+
+// --- LA PAGE DES HABITUDES : un tableau de bord, enfin -------------------------
+//
+// Demande de Noé (30 août 2026) : « revois la forme d'affichage des habitudes,
+// et il faut qu'il y ait des stats globales, des graphiques d'évolution ».
+//
+// CE QUE ÇA RENVERSE, ET IL FAUT LE DIRE. Cette page avait un PLI : une habitude
+// ouverte montrait tout, les autres tenaient en une ligne, « sans ce pli, cinq
+// habitudes feraient un tableau de bord, et un tableau de bord ne donne envie
+// de rien ». La règle était juste tant que la page ne portait que des chiffres
+// nus. Noé demande maintenant des stats et des courbes : il VEUT ce tableau de
+// bord. Le pli disparaît donc, et chaque habitude montre son histoire.
+//
+// LA CONTRAINTE QUI TIENT TOUJOURS, elle : aucune de ces mesures ne compte un
+// manque. Une première maquette montrait les sept derniers jours en points gris
+// et Noé l'a écartée — « ça ne me donne pas envie de les faire ». Ici, une
+// semaine sans pratique est une barre courte, jamais une alerte ; il n'y a ni
+// rouge, ni taux de réussite, ni jour manqué. Ce qu'on dessine, c'est ce qui a
+// été fait.
+
+// La hauteur d'une barre, en pourcentage de la plus haute de la période. Un
+// plancher à 6 % pour qu'une semaine vide reste VISIBLE : une barre de hauteur
+// nulle disparaîtrait, et la courbe aurait des trous là où elle doit avoir des
+// creux.
+function hauteurBarre(total, plafond) {
+  return total === 0 ? 6 : Math.max(12, Math.round((total / plafond) * 100));
+}
+
+// LE GRAPHIQUE GLOBAL : une barre par semaine, douze semaines. La semaine en
+// cours se distingue — elle n'est pas finie, et la comparer aux autres sans le
+// dire serait une fausse baisse tous les lundis.
+function courbeDesSemaines(bilan) {
+  const barres = bilan.parSemaine
+    .map((semaine) => {
+      const jour = depuisDateISO(semaine.lundi);
+      const mois = jour.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+      return `<i class="${semaine.enCours ? 'en-cours' : ''}"
+        style="height:${hauteurBarre(semaine.total, bilan.plafond)}%"
+        title="semaine du ${mois} — ${semaine.total} ${
+          semaine.total > 1 ? 'pratiques' : 'pratique'
+        }"></i>`;
+    })
+    .join('');
 
   return `
-    <article class="habitude habitude-ouverte" data-habitude="${echapper(habitude.id)}">
-      <button type="button" class="habitude-tete" data-ouvrir-habitude="${echapper(habitude.id)}">
-        <span class="habitude-nom">${echapper(habitude.nom)}</span>
-        ${
-          elan === null
-            ? '<span class="habitude-elan discret">quand ça vient</span>'
-            : `<span class="habitude-elan" style="--teinte: ${couleur}">élan ${elan}</span>`
-        }
-      </button>
-      ${elan === null ? '' : jaugeElan(elan, couleur)}
+    <div class="hab-courbe" role="img"
+      aria-label="Pratiques des ${SEMAINES_REGARDEES} dernières semaines">${barres}</div>`;
+}
 
-      ${
-        // UNE SÉRIE À ZÉRO NE S'AFFICHE PAS. « 0 semaine tenue d'affilée » est la
-        // première chose que voyait une habitude neuve : un zéro pour accueillir
-        // quelqu'un qui commence. Elle apparaît à la première semaine tenue,
-        // c'est-à-dire au moment où elle dit quelque chose.
-        serie && (serie.semaines || serie.record)
-          ? `<p class="habitude-ligne">
-               <span class="habitude-serie">${pluriel(serie.semaines, 'semaine')} ${
-                 serie.semaines > 1 ? 'tenues' : 'tenue'
-               } d'affilée</span>
-               ${
-                 serie.record > serie.semaines
-                   ? `<span class="discret">record ${serie.record}</span>`
-                   : ''
-               }
-             </p>`
-          : ''
-      }
+// LA SPARKLINE D'UNE HABITUDE : ses douze semaines, dans sa couleur de famille.
+// Une semaine TENUE est pleine, une semaine entamée est en creux — c'est la
+// seule distinction, et elle ne dit jamais « raté », seulement « tenu ».
+function sparkline(habitude, faits, jour) {
+  const histoire = historiqueDeLHabitude(habitude, faits, jour);
+  const plafond = Math.max(1, ...histoire.map((semaine) => semaine.total));
 
-      <p class="habitude-ligne">
-        <span class="habitude-cumul">${pluriel(cumul.total, 'fois')} au total</span>
-        ${
-          cumul.prochain
-            ? `<span class="discret">${cumul.reste} avant le palier de ${cumul.prochain}</span>`
-            : ''
-        }
-      </p>
+  return `
+    <div class="hab-spark" role="img"
+      aria-label="${SEMAINES_REGARDEES} dernières semaines">${histoire
+      .map((semaine) => {
+        const classes = [semaine.tenue ? 'tenue' : '', semaine.enCours ? 'en-cours' : '']
+          .filter(Boolean)
+          .join(' ');
+        return `<i class="${classes}" style="height:${hauteurBarre(semaine.total, plafond)}%"
+          title="${semaine.total} cette semaine-là"></i>`;
+      })
+      .join('')}</div>`;
+}
 
-      ${habitude.pourquoi ? `<p class="habitude-pourquoi">${echapper(habitude.pourquoi)}</p>` : ''}
+// LES QUATRE CHIFFRES DU HAUT. Aucun ne peut baisser à cause d'un oubli : trois
+// ne font que monter, et le quatrième — ce qui reste à tenir cette semaine —
+// est le seul qui parle du jour même, donc le seul sur lequel on peut encore
+// agir avant dimanche.
+function statsGlobales(bilan) {
+  const cases = [
+    bilan.avecCadence
+      ? [`${bilan.tenues}<span class="hab-stat-sur">/${bilan.avecCadence}</span>`, 'tenues cette semaine']
+      : null,
+    [bilan.pratiquesCetteSemaine, 'fois cette semaine'],
+    bilan.meilleureSerie
+      ? [
+          bilan.meilleureSerie.valeur,
+          `${
+            bilan.meilleureSerie.unite === 'jour'
+              ? bilan.meilleureSerie.valeur > 1 ? 'jours' : 'jour'
+              : bilan.meilleureSerie.valeur > 1 ? 'semaines' : 'semaine'
+          } — ${echapper(bilan.meilleureSerie.emoji || bilan.meilleureSerie.nom)}`,
+        ]
+      : null,
+    [bilan.cumul, 'depuis le début'],
+  ].filter(Boolean);
 
-      <div class="habitude-pied">
-        ${
-          serie
-            ? `<span class="discret">cette semaine ${serie.cetteSemaine} sur ${habitude.cadence}</span>`
-            : '<span></span>'
-        }
-        <button type="button" class="habitude-faire${faitAujourdhui ? ' faite' : ''}"
+  return `
+    <div class="hab-stats">${cases
+      .map(
+        ([chiffre, mot]) => `
+      <div class="hab-stat">
+        <span class="hab-stat-chiffre chiffre">${chiffre}</span>
+        <span class="hab-stat-mot">${mot}</span>
+      </div>`,
+      )
+      .join('')}</div>`;
+}
+
+// La carte d'une habitude : tout ce qu'elle a à dire, sans pli.
+function carteHabitude({ habitude, elan, serie, cumul, faitAujourdhui }, faits, jour) {
+  const couleur = TEINTES_FAMILLE[habitude.famille] ?? 'var(--accent)';
+
+  // L'ordre des mesures suit ce qu'elles engagent : la semaine d'abord (elle
+  // peut encore bouger), la série ensuite (ce qu'on ne veut pas perdre), le
+  // cumul enfin (il ne bouge jamais à la baisse).
+  const chiffres = [
+    // Une QUOTIDIENNE se lit au jour : « 5/7 cette semaine » dirait juste, mais
+    // ce n'est pas la question qu'on se pose devant elle — c'est « est-ce que
+    // je l'ai faite aujourd'hui ». Les hebdomadaires gardent leur compte.
+    !habitude.cadence
+      ? null
+      : estQuotidienne(habitude)
+        ? serie?.faitAujourdhui
+          ? 'faite aujourd’hui'
+          : 'pas encore aujourd’hui'
+        : `<b>${serie?.cetteSemaine ?? 0}</b>/${habitude.cadence} cette semaine`,
+    // Le mot suit l'UNITÉ : une quotidienne compte des jours, une hebdo des
+    // semaines. Écrire « semaines » sur les deux aurait fait mentir la moitié
+    // des cartes le jour où le compte est devenu quotidien.
+    serie && serie.semaines
+      ? `<b>${serie.semaines}</b> ${
+          serie.unite === 'jour'
+            ? serie.semaines > 1 ? 'jours tenus' : 'jour tenu'
+            : serie.semaines > 1 ? 'semaines tenues' : 'semaine tenue'
+        }`
+      : null,
+    // Quand rien n'a été fait, reste ET palier valent le même nombre :
+    // « encore 10 avant 10 » est juste et illisible. Même garde que la colonne
+    // du tableau de bord — la formulation vit à deux endroits, la règle aussi.
+    cumul?.prochain
+      ? cumul.total
+        ? `encore <b>${cumul.reste}</b> avant ${cumul.prochain}`
+        : `encore <b>${cumul.reste}</b>`
+      : null,
+    // « 0 au total » sur une habitude qu'on vient de poser n'apprend rien et
+    // ressemble à un constat d'échec. Elle se tait jusqu'à la première fois.
+    cumul?.total ? `<b>${cumul.total}</b> au total` : null,
+  ].filter(Boolean);
+
+  return `
+    <article class="hab-carte" data-habitude="${echapper(habitude.id)}"
+      style="--teinte: ${couleur}">
+      <div class="hab-carte-tete">
+        <button type="button" class="hab-rond${faitAujourdhui ? ' faite' : ''}"
           data-faire="${echapper(habitude.id)}" aria-pressed="${faitAujourdhui}"
-          style="--teinte: ${couleur}">${faitAujourdhui ? "c'est fait" : "je l'ai fait"}</button>
-      </div>
-      ${menuDiscret('habitude', habitude.id)}
-    </article>`;
-}
-
-function habitudeRepliee({ habitude, elan, serie, faitAujourdhui }) {
-  const couleur = TEINTES_FAMILLE[habitude.famille] ?? 'var(--accent)';
-
-  return `
-    <article class="habitude" data-habitude="${echapper(habitude.id)}">
-      <button type="button" class="habitude-tete" data-ouvrir-habitude="${echapper(habitude.id)}">
-        <span class="habitude-nom">${echapper(habitude.nom)}</span>
+          aria-label="${faitAujourdhui ? 'Revenir sur' : 'Marquer'} « ${echapper(
+            habitude.nom,
+          )} »"></button>
+        <span class="hab-carte-nom">
+          ${signeHabitude(habitude)}${echapper(habitude.nom)}
+        </span>
         ${
-          serie && serie.semaines
-            ? `<span class="discret habitude-semaines">${serie.semaines} sem.</span>`
-            : ''
+          // L'élan se dit en MOT avant de se dire en jauge : « solide » se lit
+          // plus vite qu'un 98, et aucun de ces mots n'est un reproche — une
+          // habitude en sommeil est une habitude qui attend.
+          elan === null
+            // « Quand ça vient » ne se dit plus (30 août 2026) : l'option
+            // n'existe plus, et le mot désignait une nature d'habitude que Noé
+            // a écartée. Ce qui reste est un état transitoire — une habitude
+            // qui n'a pas encore sa cadence.
+            ? '<span class="hab-carte-elan discret">sans cadence</span>'
+            : `<span class="hab-carte-elan">${motDeLElan(elan)}</span>`
         }
-        ${elan === null ? '' : jaugeElan(elan, couleur)}
-      </button>
-      <button type="button" class="habitude-rond${faitAujourdhui ? ' faite' : ''}"
-        data-faire="${echapper(habitude.id)}" aria-pressed="${faitAujourdhui}"
-        style="--teinte: ${couleur}"
-        aria-label="${faitAujourdhui ? 'Revenir sur' : 'Marquer'} « ${echapper(habitude.nom)} »"></button>
+        ${menuDiscret('habitude', habitude.id)}
+      </div>
+
+      ${elan === null ? '' : jaugeElan(elan, couleur)}
+      ${sparkline(habitude, faits, jour)}
+
+      <p class="hab-carte-chiffres">${chiffres.join(' · ')}</p>
+      ${habitude.pourquoi ? `<p class="hab-carte-pourquoi">${echapper(habitude.pourquoi)}</p>` : ''}
     </article>`;
 }
 
-export function construireHabitudes(etats, ouverte) {
+export function construireHabitudes(etats, donnees = {}) {
   const ajout = `
     <button type="button" class="cap-ajout-discret" data-ajout="habitude">
       ${SIGNE.plus}<span>Poser une habitude</span></button>`;
@@ -275,28 +395,163 @@ export function construireHabitudes(etats, ouverte) {
       ${ajout}`;
   }
 
+  const jour = new Date();
+  const faits = donnees.faits ?? [];
+  const bilan = bilanDesHabitudes(
+    { habitudes: donnees.habitudes ?? etats.map((etat) => etat.habitude), faits },
+    jour,
+  );
+
+  // TROIS GROUPES, ET NON UNE SEULE LISTE (30 août 2026, demande de Noé : « il
+  // faut simplement séparer les habitudes journalières et les habitudes
+  // hebdo »). Elles ne se comptent plus dans la même unité — des jours d'un
+  // côté, des semaines de l'autre —, donc les aligner sans le dire ferait lire
+  // « 25 » et « 9 » comme deux valeurs comparables. Elles ne le sont pas.
+  //
+  // Le troisième groupe est celui qui ne se compte pas du tout : « quand ça
+  // vient » n'a ni cadence, ni série, ni élan. Il ferme la page, en retrait —
+  // c'est ce qu'on note sans se l'imposer.
+  const groupes = [
+    ['Tous les jours', etats.filter((etat) => estQuotidienne(etat.habitude))],
+    [
+      'Chaque semaine',
+      etats.filter((etat) => etat.habitude.cadence && !estQuotidienne(etat.habitude)),
+    ],
+    // PLUS DE GROUPE « QUAND ÇA VIENT » : l'option n'existe plus. Mais les
+    // habitudes qui portent encore cette valeur ne disparaissent pas de
+    // l'écran — les cacher les rendrait impossibles à corriger, ce qui est le
+    // pire des deux maux. Elles attendent leur cadence, et le disent.
+    ['À régler', etats.filter((etat) => !etat.habitude.cadence)],
+  ].filter(([, lot]) => lot.length);
+
   return `
-    <div class="habitudes">
-      ${etats
-        .map((etat) =>
-          etat.habitude.id === ouverte ? habitudeDepliee(etat) : habitudeRepliee(etat),
-        )
-        .join('')}
-    </div>
+    ${statsGlobales(bilan)}
+    ${courbeDesSemaines(bilan)}
+    <p class="hab-courbe-mot discret">Les ${SEMAINES_REGARDEES} dernières semaines,
+      toutes habitudes confondues.</p>
+
+    ${groupes
+      .map(
+        ([titre, lot]) => `
+      <h3 class="hab-groupe">${titre} <span class="chiffre">${lot.length}</span></h3>
+      ${
+        titre === 'À régler'
+          ? `<p class="hab-groupe-mot discret">Sans cadence, il n’y a rien à tenir :
+               donne-leur un rythme par « Modifier ».</p>`
+          : ''
+      }
+      <div class="hab-cartes">
+        ${lot.map((etat) => carteHabitude(etat, faits, jour)).join('')}
+      </div>`,
+      )
+      .join('')}
     ${ajout}`;
 }
 
-// LA BIBLIOTHÈQUE (29 août 2026, demande de Noé) : « un espace qui m'encourage
-// à lire ». Le mot compte — encourager, pas mesurer.
-//
-// D'où ce qui n'y est PAS : aucun objectif annuel, aucun nombre de livres à
-// atteindre. « 24 livres cette année » transforme la lecture en course et pousse
-// à choisir des livres courts. Le hub montre où l'on en est et à quel rythme on
-// avance, et le rythme se compte PAR JOUR DE LECTURE — sauter trois jours ne
-// doit pas faire chuter un chiffre.
-//
-// Le livre en cours occupe le haut, avec les deux gestes qui comptent : noter
-// des pages, et garder une phrase. Le reste de la bibliothèque tient en lignes.
+// Un point par pratique visée dans la semaine, plein quand elle est faite. Le
+// motif des jalons du hub : « il en reste un » se voit sans compter.
+function pointsDeLaSemaine(fait, cadence) {
+  const points = Array.from({ length: cadence }, (_, i) =>
+    `<i${i < fait ? ' class="tenu"' : ''}></i>`,
+  ).join('');
+  return `<span class="hab-points" aria-hidden="true">${points}</span>`;
+}
+
+export function construireHabitudesDuJour(etats = []) {
+  if (!etats.length) return '';
+
+  const ligne = ({ habitude, serie, cumul, faitAujourdhui }) => {
+      const emoji = (habitude.emoji ?? '').trim();
+      const cadence = habitude.cadence ?? 0;
+      const cetteSemaine = serie?.cetteSemaine ?? 0;
+
+      // LES POINTS SEULS, SANS LÉGENDE (30 août 2026, demande de Noé : « les
+      // stats doivent prendre moins de place »). « 1 sur 3 cette semaine »
+      // répétait en dix-huit caractères ce que trois points disaient déjà — et
+      // c'est ce texte qui rognait les noms : « Poser le téléphone avant de
+      // dormir » tombait à « Poser le télépho… » sur grand écran.
+      //
+      // La phrase complète n'est pas perdue : elle passe en `title`, pour qui
+      // la cherche. Ce qui se lit d'un coup d'œil n'a pas besoin d'être écrit.
+      // SANS CADENCE, PAS DE POINTS — ET RIEN D'AUTRE. L'absence de points dit
+      // déjà qu'aucune cible n'est posée. Depuis le 30 août 2026, ce cas est
+      // TRANSITOIRE : on ne peut plus créer d'habitude sans cadence, seules
+      // celles d'avant en portent encore une, et la page les range dans
+      // « À régler ».
+      const semaine = cadence
+        ? `<span class="hab-mesure hab-semaine"
+             title="${cetteSemaine} sur ${cadence} cette semaine">
+             ${pointsDeLaSemaine(cetteSemaine, cadence)}
+           </span>`
+        : '<span class="hab-mesure" title="sans cadence — à régler"></span>';
+
+      // LE PALIER TIENT EN DEUX MOTS : « encore 9 ». Il disait « encore 9 avant
+      // 10 » — le palier visé est le seul détail qu'on perde, et il part en
+      // `title` avec le reste. Ce qui donne envie, c'est le nombre qui descend,
+      // pas la borne qu'il vise ; et il descend toujours vers un palier proche,
+      // c'est la règle même des paliers.
+      //
+      // Le dernier franchi se dit aussi : arriver à 365 n'est pas une raison de
+      // n'avoir plus rien à lire sur sa ligne.
+      // LE CHIFFRE NU (30 août 2026, demande de Noé : « le texte n'est pas
+      // nécessaire une fois que je sais à quoi les chiffres correspondent »).
+      // C'est son écran, il le lit tous les jours : « encore » ne lui apprenait
+      // plus rien et coûtait sept caractères sur chaque ligne.
+      //
+      // Le sens n'est pas perdu, il est DÉPLACÉ : le `title` porte la phrase
+      // entière, et `aria-label` la donne au lecteur d'écran — qui, lui, ne
+      // sait pas à quoi le chiffre correspond.
+      const total = cumul?.total ?? 0;
+      const palier = cumul?.prochain
+        ? `<span class="hab-mesure hab-palier"
+             title="encore ${cumul.reste} avant le palier ${cumul.prochain} — ${total} au total"
+             aria-label="encore ${cumul.reste} avant le palier ${cumul.prochain}">
+             <span class="chiffre">${cumul.reste}</span>
+           </span>`
+        : `<span class="hab-mesure hab-palier" title="tous les paliers franchis"
+             aria-label="${total} fois au total">
+             <span class="chiffre">${total}</span>
+           </span>`;
+
+      // LE ROND EN PREMIER, TOUT À GAUCHE (demande de Noé, 30 août 2026). C'est
+      // le geste qu'on vient faire : il se trouve sous le pouce dès qu'on ouvre
+      // la page, et l'œil n'a pas à traverser la ligne pour l'atteindre. Le nom
+      // et les mesures suivent — on les lit APRÈS avoir vu où cocher.
+      return `
+      <li class="hab-ligne${faitAujourdhui ? ' faite' : ''}"
+        style="--teinte: var(--famille-${echapper(habitude.famille ?? 'intendance')})">
+        <button type="button" class="hab-rond${faitAujourdhui ? ' faite' : ''}"
+          data-faire-habitude="${echapper(habitude.id)}" aria-pressed="${faitAujourdhui}"
+          aria-label="${faitAujourdhui ? 'Revenir sur' : 'Marquer'} « ${echapper(
+            habitude.nom,
+          )} »"></button>
+        <span class="hab-titre">
+          ${emoji ? `<span class="hab-emoji" aria-hidden="true">${echapper(emoji)}</span>` : ''}
+          <span class="hab-nom">${echapper(habitude.nom)}</span>
+        </span>
+        ${semaine}${palier}
+      </li>`;
+  };
+
+  // LES DEUX NATURES SE SÉPARENT ICI AUSSI (30 août 2026). Sur la page des
+  // habitudes elles ont trois titres ; ici, où la place est comptée, un simple
+  // filet suffit à dire que l'unité change — des jours au-dessus, des semaines
+  // en dessous. Sans lui, deux séries incomparables se liraient en enfilade.
+  const quotidiennes = etats.filter((etat) => estQuotidienne(etat.habitude));
+  const autres = etats.filter((etat) => !estQuotidienne(etat.habitude));
+
+  const lot = (liste, classe = '') =>
+    liste.length
+      ? `<ul class="hab-colonne ${classe}" role="group"
+           aria-label="Tes habitudes">${liste.map(ligne).join('')}</ul>`
+      : '';
+
+  // Un seul groupe non vide : pas de filet, il ne séparerait rien.
+  if (!quotidiennes.length || !autres.length) return lot([...quotidiennes, ...autres]);
+
+  return lot(quotidiennes) + lot(autres, 'hab-colonne-suite');
+}
+
 const PAS_DE_PAGES = [10, 25];
 
 function etoiles(note) {
@@ -437,30 +692,40 @@ export function construireTableauPerso(donnees) {
     <div class="perso-tableau">
       ${construireHumeurDuJour(humeurDuJour)}
 
-      <div class="tuile-jour perso-tuile">
-        ${
-          // LES MÊMES JETONS QUE L'ACCUEIL, et par la même fonction (30 août
-          // 2026) : deux écrans qui montreraient les mêmes habitudes de deux
-          // façons finiraient par se contredire. Le gabarit vit dans
-          // js/gabarits.js, que les deux empruntent.
-          //
-          // L'élan n'est PAS repris ici : il vit sur la page des habitudes,
-          // celle qui répond à « où j'en suis ». Ce tableau-ci répond à « qu'est-ce
-          // que je fais maintenant ».
-          etatsHabitudes.length
-            ? construireHabitudesDuJour(
-                etatsHabitudes.map((etat) => etat.habitude),
-                etatsHabitudes
-                  .filter((etat) => etat.faitAujourdhui)
-                  .map((etat) => ({ habitude_id: etat.habitude.id, jour })),
-              )
-            : ''
-        }
+      <!-- DEUX COLONNES : LES HABITUDES À GAUCHE, LA LECTURE À DROITE (30 août
+           2026, demande de Noé — la seconde colonne était à trouver).
 
-        ${
-          livre
-            ? `<h3 class="jour-groupe">Ta lecture</h3>
-               <div class="perso-lecture">
+           POURQUOI LA LECTURE, et pas les rendez-vous ni le mot du jour : c'est
+           le SECOND GESTE QUOTIDIEN de cette page. On coche une habitude, on
+           note des pages ; les deux se font en trois secondes, tous les jours,
+           et font avancer quelque chose. Les rendez-vous, eux, se lisent — on
+           n'agit pas dessus.
+
+           Et surtout, les deux sont DÉJÀ LIÉES : noter des pages coche
+           l'habitude de lecture (habitudes.automatique). Les poser côte à
+           côte, c'est mettre ensemble ce que le hub relie déjà en base.
+
+           LES HABITUDES RESTENT HORS DE TOUTE TUILE : posées à même le fond,
+           sans carte ni bord — c'est la correction que Noé a faite le matin sur
+           l'accueil, et pour la même raison. Une tuile porte ce qui est POSÉ ;
+           une habitude n'est posée de rien, elle revient. -->
+      <div class="perso-duo">
+        <div class="duo-colonne">
+          <h3 class="duo-titre">Habitudes</h3>
+          ${
+            // L'ÉTAT COMPLET, et non la seule liste des habitudes : la colonne
+            // affiche la semaine en cours et le prochain palier, qui vivent
+            // dans `serie` et `cumul`. C'est déjà calculé par
+            // `etatDesHabitudes` (js/orientation.js) — rien à recompter ici.
+            construireHabitudesDuJour(etatsHabitudes)
+          }
+        </div>
+
+        <div class="duo-colonne">
+          <h3 class="duo-titre">Ta lecture</h3>
+          ${
+            livre
+              ? `<div class="perso-lecture">
                  <span class="perso-lecture-titre">${echapper(livre.titre)}</span>
                  ${
                    avancee.part === null
@@ -484,9 +749,21 @@ export function construireTableauPerso(donnees) {
                    </span>
                  </span>
                </div>`
-            : ''
-        }
+              // UN VIDE QUI OCCUPE SA COLONNE. Au 30 août 2026 il n'y a aucun
+              // livre en base : une phrase perdue en haut d'une colonne vide,
+              // à côté de cinq habitudes, aurait été un trou. La tuile
+              // pointillée tient la place et invite — c'est la forme de
+              // « Déclarer une période » dans #objectifs, et la règle du hub :
+              // un écran vide ouvre une porte, il ne s'excuse pas.
+              : `<a class="perso-lecture-vide" href="#perso/bibliotheque">
+                   <span>Aucun livre en cours</span>
+                   <span class="discret">Ouvrir ta bibliothèque →</span>
+                 </a>`
+          }
+        </div>
+      </div>
 
+      <div class="tuile-jour perso-tuile">
         <h3 class="jour-groupe">Ce qui a compté aujourd'hui</h3>
         <textarea class="jour-mot-champ" data-jour-mot="${echapper(jour)}" rows="2"
           placeholder="une ligne, si tu veux">${echapper(mot ?? '')}</textarea>
@@ -1022,18 +1299,33 @@ const FORMULAIRES = {
     champs: (v) => [
       { nom: 'nom', libelle: 'Habitude', type: 'text', requis: true, valeur: v.nom },
       {
+        nom: 'emoji',
+        // Le mot « émoji » suffit à dire quoi y mettre ; la phrase dit à quoi
+        // il SERT, parce que ce n'est pas un ornement — c'est ce que l'accueil
+        // affichera à la place du nom.
+        libelle: 'Émoji (facultatif — il remplace le nom sur l’accueil)',
+        type: 'text',
+        valeur: v.emoji ?? '',
+      },
+      {
         nom: 'cadence',
         libelle: 'Combien de fois par semaine',
         type: 'choix',
-        // « Quand ça vient » n'est pas un pis-aller : c'est la cadence des
-        // choses qu'on veut noter sans se les imposer. Elle vaut NULL, donc ni
-        // élan ni série — seulement le cumul.
+        // « QUAND ÇA VIENT » A DISPARU (30 août 2026, décision de Noé : « quand
+        // ça vient ne doit pas exister, c'est pas une habitude »). Et il a
+        // raison sur le fond : sans cadence, il n'y a ni élan ni série — rien à
+        // tenir, donc rien qui puisse se tenir. C'était un compteur, pas une
+        // habitude.
+        //
+        // Ce que ça remplace : l'option valait NULL et se disait « la cadence
+        // des choses qu'on veut noter sans se les imposer ». L'idée était
+        // juste, l'endroit non — une chose qu'on note sans se l'imposer est une
+        // victoire ou un rendez-vous, pas une habitude.
         options: {
-          '': 'Quand ça vient',
           1: '1 fois', 2: '2 fois', 3: '3 fois', 4: '4 fois',
           5: '5 fois', 6: '6 fois', 7: 'Tous les jours',
         },
-        valeur: v.cadence ? String(v.cadence) : '',
+        valeur: v.cadence ? String(v.cadence) : '3',
       },
       {
         nom: 'famille',
@@ -1264,7 +1556,10 @@ export default {
     const rendreHabitudes = () => {
       bloc('habitudes').innerHTML = construireHabitudes(
         etatDesHabitudes({ habitudes: etat.habitudes, faits: etat.faits }),
-        vueEtat.habitude,
+        // Les faits BRUTS en plus : les graphiques regardent douze semaines en
+        // arrière, ce que l'état d'une habitude — qui ne décrit que
+        // l'aujourd'hui — ne porte pas.
+        { habitudes: etat.habitudes, faits: etat.faits },
       );
     };
     const rendreHumeurDuJour = () => {
@@ -1530,6 +1825,22 @@ export default {
       rendreFenetre();
     }
 
+    // LES MENUS DÉROULANTS DES FORMULAIRES (30 août 2026, après un rapport de
+    // Noé : « je ne peux plus modifier une habitude »).
+    //
+    // Le défaut était PLUS LARGE que le symptôme, et plus ancien : perso
+    // n'appelait `brancherChoix` nulle part. Ses champs de type « choix » —
+    // la cadence et la famille d'une habitude, le statut d'un livre — sont un
+    // input CACHÉ doublé d'un bouton et d'un panneau ; sans ce branchement, le
+    // panneau ne s'ouvre pas et la valeur ne se pose jamais. Mesuré : cliquer
+    // « 4 fois » laissait la cadence à 3, et le formulaire s'enregistrait
+    // proprement — avec l'ancienne valeur. Aucune erreur, aucun signe.
+    //
+    // Perso n'a PAS de tuile de capture : `brancherChoix` est donc seul, sans
+    // le risque de double traitement qui a fait retirer cet appel du site FCH
+    // (deux gestionnaires basculent le panneau deux fois, il reste fermé).
+    brancherChoix(section);
+
     section.addEventListener('click', async (evenement) => {
       const dans = (nom) => evenement.target.closest(`[data-${nom}]`);
 
@@ -1635,15 +1946,6 @@ export default {
 
       const versUnJour = dans('jour-vers');
       if (versUnJour) return ouvrirLaJournee(versUnJour.dataset.jourVers);
-
-      const ouvrirHabitude = dans('ouvrir-habitude');
-      if (ouvrirHabitude) {
-        const id = ouvrirHabitude.dataset.ouvrirHabitude;
-        vueEtat.habitude = vueEtat.habitude === id ? null : id;
-        vueEtat.menu = null;
-        rendreHabitudes();
-        return;
-      }
 
       const menu = dans('menu');
       if (menu) {
