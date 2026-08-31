@@ -1425,9 +1425,22 @@ qu'on ne peut pas défaire est un piège.
 
 - **Elle ne calcule rien elle-même** : le diagnostic et le bilan viennent de
   `js/orientation.js`, qui ne touche ni au réseau ni au DOM.
-- **On n'y modifie pas ce qui est déjà posé.** Cliquer une barre n'ouvre aucune
-  fenêtre de détail : cette grille est une **surface de placement**, pas le
-  calendrier — il est à un clic.
+- **Ce qui est posé se rouvre.** Toucher une barre ouvre **la même fenêtre de
+  détail qu'ailleurs** — lire, modifier, supprimer — et non une fenêtre à elle
+  (30 août 2026, demande de Noé : « il faut que je puisse modifier aussi en
+  appuyant sur une tâche posée »). *La grille a été une pure surface de
+  placement pendant une journée ; c'était une page de moins à tenir, mais une
+  page où l'on programme sa semaine doit pouvoir corriger ce qu'on vient d'y
+  poser.*
+  - **Sauf quand une tâche est en main** : le geste veut alors dire « pose-la
+    ici », et c'est la sélection du jour qui répond. Ouvrir une fenêtre
+    par-dessus ferait deux réponses pour un seul appui.
+  - **`corriger` et `effacer` ont déménagé dans `calendrier-commun.js`** le
+    même jour (`corrigerDepuisLeCalendrier`, `effacerDepuisLeCalendrier`) : ils
+    vivaient en double, mot pour mot, dans l'accueil et dans l'espace
+    Calendrier, et cette page en aurait fait une troisième copie. C'est le motif
+    de `poserAuCalendrier`, et la même leçon — c'est dans la copie oubliée qu'un
+    champ finit par manquer. **Bilan : 181 lignes retirées, 91 posées.**
 - **Treize requêtes à l'ouverture, et c'est assumé** : la page s'ouvre une fois
   par semaine, sur décision, devant un ordinateur. Elle a le droit de coûter ce
   qu'un check-in de mardi matin n'a pas le droit de coûter.

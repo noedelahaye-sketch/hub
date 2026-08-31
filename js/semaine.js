@@ -41,7 +41,10 @@ import {
   brancherSelection,
   champsApresDeplacement,
   construireGrille,
+  corrigerDepuisLeCalendrier,
+  effacerDepuisLeCalendrier,
   fenetreCreation,
+  fenetreDetail,
   jourSousLePoint,
   natureParDefaut,
   poserAuCalendrier,
@@ -335,6 +338,9 @@ export default {
       ecarteesOuvertes: false,
       validee: false,
       creation: null,
+      // La barre touchée, et si l'on est en train de la corriger.
+      detail: null,
+      edition: false,
       message: null,
       echec: false,
     };
@@ -423,7 +429,8 @@ export default {
         <button type="button" class="ouvrir-capture" data-ouvrir-creation
           title="Ajouter au calendrier" aria-label="Ajouter au calendrier">${PLUS}</button>
 
-        <div id="bloc-creation"></div>`;
+        <div id="bloc-creation"></div>
+        <div id="bloc-detail"></div>`;
     }
 
     function rendreMessage() {
@@ -500,6 +507,27 @@ export default {
       if (etat.creation) rafraichirLaCapture?.();
     }
 
+    // LA MÊME FENÊTRE QUE PARTOUT AILLEURS (30 août 2026, demande de Noé :
+    // « il faut que je puisse modifier aussi en appuyant sur une tâche
+    // posée »). La grille n'est donc plus seulement une surface de placement :
+    // ce qu'on y a posé se rouvre, se corrige et se supprime, sans changer de
+    // page — et par le même geste qu'à l'accueil et au calendrier.
+    function rendreDetail() {
+      cible('bloc-detail').innerHTML = etat.detail
+        ? fenetreDetail(etat.detail, {
+            montrerEspace: true,
+            edition: etat.edition,
+            statutModifiable: true,
+          })
+        : '';
+    }
+
+    const fermerLeDetail = () => {
+      etat.detail = null;
+      etat.edition = false;
+      rendreDetail();
+    };
+
     function rendreTout() {
       rendreMessage();
       rendreBilan();
@@ -507,6 +535,7 @@ export default {
       rendreLignes();
       rendreFin();
       rendreCreation();
+      rendreDetail();
     }
 
     // TREIZE REQUÊTES, ET C'EST ASSUMÉ. Cette page s'ouvre une fois par
@@ -811,6 +840,8 @@ export default {
       if (etat.creation) {
         etat.creation = null;
         rendreCreation();
+      } else if (etat.detail) {
+        fermerLeDetail();
       } else if (etat.choisie) {
         etat.choisie = null;
         rendreProgrammation();
@@ -833,6 +864,52 @@ export default {
         etat.choisie = etat.choisie === choix.dataset.choisir ? null : choix.dataset.choisir;
         etat.message = null;
         rendreProgrammation();
+        return;
+      }
+
+      // TOUCHER UNE BARRE OUVRE SON DÉTAIL. Sauf quand une tâche est en main :
+      // à ce moment-là le geste veut dire « pose-la ici », et c'est la
+      // sélection du jour qui s'en charge — ouvrir une fenêtre par-dessus
+      // ferait deux réponses pour un seul appui.
+      const ouvrirElement = evenement.target.closest('[data-element]');
+      if (ouvrirElement && !etat.choisie) {
+        const [type, id] = ouvrirElement.dataset.element.split(':');
+        etat.detail =
+          etat.elements.find(
+            (candidat) => candidat.type === type && String(candidat.id) === id,
+          ) ?? null;
+        etat.edition = false;
+        rendreDetail();
+        return;
+      }
+
+      if (evenement.target.closest('[data-modifier-element]')) {
+        etat.edition = true;
+        rendreDetail();
+        cible('bloc-detail').querySelector('#cal-edition-titre')?.focus();
+        return;
+      }
+
+      if (evenement.target.closest('[data-annuler-edition]')) {
+        etat.edition = false;
+        rendreDetail();
+        return;
+      }
+
+      const supprimerElement = evenement.target.closest('[data-supprimer-element]');
+      if (supprimerElement) {
+        const [type, id] = supprimerElement.dataset.supprimerElement.split(':');
+        if (!confirm(`Supprimer « ${etat.detail?.titre} » ?`)) return;
+        supprimerElement.disabled = true;
+        try {
+          await effacerDepuisLeCalendrier(type, id);
+          fermerLeDetail();
+          await charger();
+        } catch (souci) {
+          console.error('Suppression impossible', souci);
+          supprimerElement.disabled = false;
+          signaler("Ça n'a pas pu être supprimé.");
+        }
         return;
       }
 
@@ -902,6 +979,7 @@ export default {
       if (evenement.target.closest('[data-fermer-fenetre]')) {
         etat.creation = null;
         rendreCreation();
+        fermerLeDetail();
         return;
       }
 
@@ -918,6 +996,32 @@ export default {
     });
 
     section.addEventListener('submit', async (evenement) => {
+      // CORRIGER PASSE PAR LE MÊME CHEMIN QUE PARTOUT (`corrigerDepuisLeCalendrier`,
+      // js/calendrier-commun.js) : chaque nature range sa date dans sa propre
+      // colonne, et cette table de correspondance n'existe qu'une fois.
+      const modification = evenement.target.closest(
+        'form[data-action="modifier-depuis-calendrier"]',
+      );
+      if (modification) {
+        evenement.preventDefault();
+        const champs = Object.fromEntries(new FormData(modification));
+        const erreur = modification.querySelector('[data-erreur]');
+        erreur.hidden = true;
+
+        try {
+          await corrigerDepuisLeCalendrier(champs);
+          fermerLeDetail();
+          // La correction peut toucher n'importe quelle nature : on relit tout,
+          // comme le font l'accueil et l'espace Calendrier après ce geste.
+          await charger();
+        } catch (souci) {
+          console.error('Enregistrement impossible', souci);
+          erreur.textContent = souci.message ?? "Ça n'a pas pu être enregistré.";
+          erreur.hidden = false;
+        }
+        return;
+      }
+
       const formulaire = evenement.target.closest('form[data-action="creer-depuis-calendrier"]');
       if (!formulaire) return;
       evenement.preventDefault();

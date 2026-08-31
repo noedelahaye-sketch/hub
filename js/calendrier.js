@@ -24,7 +24,6 @@ import {
   fenetreDetail,
   fenetreJour,
   elementsDuJour,
-  finDeLEvenement,
   brancherSelection,
   brancherClavier,
   brancherDeplacement,
@@ -33,6 +32,8 @@ import {
   poserAuCalendrier,
   brancherEtatPublication,
   champsApresDeplacement,
+  corrigerDepuisLeCalendrier,
+  effacerDepuisLeCalendrier,
   deplacerAncre,
   toutesLesNatures,
   natureParDefaut,
@@ -385,20 +386,13 @@ export default {
       }
     });
 
-    // Chaque nature se supprime là où elle vit. Une relance n'est pas une ligne
-    // à effacer : c'est une date qu'on retire d'une fiche du carnet.
-    async function effacer(type, id) {
-      if (type === 'evenement') return api.supprimerEvenement(id);
-      if (type === 'tache') return api.supprimerTache(id);
-      if (type === 'publication') return api.supprimerPublication(id);
-      if (type === 'objectif') return api.supprimerObjectif(id);
-      if (type === 'jalon') return api.supprimerJalon(id);
-      if (type === 'commande') return api.supprimerCommande(id);
-      if (type === 'relance') {
-        return api.modifierContact(id, { prochaine_action_date: null });
-      }
-      throw new Error(`Nature inconnue : ${type}`);
-    }
+    // CORRIGER ET EFFACER VIVENT DANS `calendrier-commun.js` (30 août 2026).
+    // Ils étaient ici mot pour mot, et à l'identique dans l'accueil ; « Ma
+    // semaine » en aurait fait une troisième copie. C'est le motif de
+    // `poserAuCalendrier` — et la même leçon : c'est dans la copie oubliée
+    // qu'un champ finit par manquer.
+    const effacer = effacerDepuisLeCalendrier;
+    const corriger = corrigerDepuisLeCalendrier;
 
     section.addEventListener('submit', async (evenement) => {
       const formulaire = evenement.target.closest('form[data-action]');
@@ -429,82 +423,6 @@ export default {
       }
     });
 
-    // Où écrire, par nature. Le formulaire de modification et le glissement
-    // passent tous deux par ici — seuls les champs changent.
-    // Corriger sur place. Chaque nature range sa date dans sa propre colonne :
-    // `debut` est le nom du champ à l'écran, pas celui de la base.
-    async function corriger(champs) {
-      const { type, id } = champs;
-      const titre = champs.titre.trim();
-
-      if (type === 'evenement') {
-        const debut = new Date(`${champs.debut}T${champs.heure || '00:00'}`);
-        const fin = finDeLEvenement(debut, champs);
-        return appliquerAuCalendrier(type, id, {
-          titre,
-          date_debut: debut.toISOString(),
-          date_fin: fin ? fin.toISOString() : null,
-          recurrence: champs.recurrence || null,
-          recurrence_fin: champs.recurrence_fin || null,
-          lieu: champs.lieu?.trim() || null,
-          notes: champs.notes?.trim() || null,
-          // Le champ n'existe que sur un événement photo (champsDeModification).
-          ...(champs.type_moment !== undefined
-            ? { type_moment: champs.type_moment || null }
-            : {}),
-          // Et ceux-ci que sur un événement fch. Le checkbox décoché est absent
-          // du formulaire : c'est l'objet, toujours présent, qui dit que la
-          // face réunion voyageait. Sans objet, pas d'animation qui tienne.
-          ...(champs.reunion_objet !== undefined
-            ? {
-                reunion_objet: champs.reunion_objet || null,
-                reunion_animee: champs.reunion_objet
-                  ? champs.reunion_animee === 'oui'
-                  : false,
-              }
-            : {}),
-          // Et celui-ci que sur un événement perso : la famille du moment.
-          ...(champs.famille !== undefined ? { famille: champs.famille || null } : {}),
-        });
-      }
-
-      if (type === 'publication') {
-        return appliquerAuCalendrier(type, id, {
-          titre,
-          date_prevue: champs.debut,
-          reseau: champs.reseau,
-          format: champs.format,
-          recurrence: champs.recurrence || null,
-          recurrence_fin: (champs.recurrence && champs.recurrence_fin) || null,
-        });
-      }
-
-      if (type === 'objectif') {
-        return appliquerAuCalendrier(type, id, {
-          titre,
-          echeance: champs.debut,
-          pourquoi: champs.pourquoi?.trim() || null,
-          cible: champs.cible?.trim() || null,
-        });
-      }
-
-      if (type === 'commande') {
-        return appliquerAuCalendrier(type, id, {
-          titre,
-          echeance: champs.debut,
-          client: champs.client?.trim() || null,
-        });
-      }
-
-      if (type === 'relance') {
-        return appliquerAuCalendrier(type, id, {
-          prochaine_action: titre,
-          prochaine_action_date: champs.debut,
-        });
-      }
-
-      return appliquerAuCalendrier(type, id, { titre, echeance: champs.debut });
-    }
 
   },
 };
