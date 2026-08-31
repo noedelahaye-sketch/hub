@@ -1310,6 +1310,29 @@ a déjà été validée.
 3. **ce que le hub voit** — les lignes du diagnostic, chacune avec son geste ;
 4. **« C'est ma semaine »**, qui ferme le rendez-vous.
 
+**LA GRILLE EST PLUS GRANDE ICI QU'AILLEURS** (31 août 2026, demande de Noé).
+C'est la page où l'on POSE : on y vise une case avec une tâche en main, et on
+relit ce qu'on vient d'y mettre. Un aperçu peut se contenter d'être petit —
+celui-ci est l'outil. La ligne passe de 20 à **23 rem**, le titre d'une barre de
+10,3 à **11,25 px**, sa hauteur minimale de 24 à **29 px**, et un titre se
+replie sur **trois lignes** au lieu de deux — ce que le corps vient de prendre,
+la troisième ligne le rend.
+
+- **La règle est portée par `.semaine-grille`**, comme l'accueil porte la sienne
+  par `#bloc-semaine` : une même grille, trois usages, trois tailles. Le
+  calendrier plein écran et l'aperçu de l'accueil ne bougent pas.
+- **Au-delà du téléphone seulement** (720 px). Sept colonnes à 375 px font 40 px
+  par jour : y écrire plus gros ne donnerait pas à lire, ça replierait les
+  titres lettre par lettre. Et Noé programme sa semaine sur ordinateur.
+- **Un premier essai est allé trop loin et a été ramené d'un cran** le même jour
+  (28 rem, 12,2 px). Ce qu'il a appris : **les corps ne peuvent pas rendre 15 à
+  20 %** — 12,2 px moins 17 %, c'est exactement la taille d'avant. Entre « trop
+  gros » et « comme avant », il n'y a qu'un cran, et c'est celui qui est posé.
+- **Le retrait du titre derrière le rond est passé en `em`** (`1.745em`) : à la
+  taille commune il rend les 18 px d'avant au centième près, mais le rond
+  grandit avec le texte, et un retrait figé lui laissait 3,2 px d'air au lieu
+  de 4,6.
+
 **La grille et le vivier sont CÔTE À CÔTE**, et c'est tout l'objet de la page :
 la chose à poser et l'endroit où la poser doivent se voir ensemble, parce que
 c'est un geste et non une lecture. Sur téléphone ils s'empilent, la grille
@@ -1365,12 +1388,19 @@ La croix, tout au bout de la ligne, tombait donc hors du champ. C'est le piège
 documenté dans les conventions, celui qui ne se voit jamais sur l'écran large où
 l'on travaille — et il se paie ici pour la quatrième fois.
 
-**HUIT TUILES, ET LE RESTE DÉFILE DANS LA COLONNE** (demande de Noé). Dix-sept
+**NEUF TUILES, ET LE RESTE DÉFILE DANS LA COLONNE** (demande de Noé). Dix-sept
 tâches sans date faisaient une colonne trois fois plus haute que la grille d'en
 face : on ne voyait plus les jours où les poser. Le défilement est **dans la
 colonne**, pas dans la page — la grille reste sous les yeux pendant qu'on
-cherche. La huitième tuile est coupée en deux : c'est ce qui dit qu'il y en a
+cherche. La dernière tuile est coupée en deux : c'est ce qui dit qu'il y en a
 d'autres, mieux qu'une ombre ou une flèche.
+
+**Le plafond n'a jamais été un chiffre pour lui-même** : il dit « ne dépasse pas
+la semaine ». Il valait huit tuiles (26 rem) jusqu'au 31 août 2026 ; la grille
+d'en face ayant grandi ce jour-là, il en rend une de plus (30 rem, soit un pas
+de tuile). Mesuré : la colonne finit à 450 px, la grille à 452. **Il suit le
+même palier que l'agrandissement** — sur téléphone les deux blocs s'empilent,
+la colonne ne vole rien à personne, et 26 rem gardent tout leur sens.
 
 **LA CROIX MET DE CÔTÉ POUR LA SEMAINE** (demande de Noé : « elle ne sera pas
 traitée cette semaine »). C'est `refusee_le` qui la porte, la **même colonne**
@@ -1518,6 +1548,23 @@ manifeste PWA, `tools/static-server.js`.
 | Clash Display | `--police-titre` | Titres (`h1`, `h2`), « Hub » dans l'en-tête. Graisses 600 et 700 **seulement** — il n'y a pas d'autre fichier. |
 | Instrument Sans | `--police-texte` | Tout le corps de texte, les libellés de section, les boutons. |
 | Geist Mono | `--police-chiffre` | Compteurs et pourcentages, via la classe `.chiffre`. Pas les dates en toutes lettres (« dans 4 jours » est une phrase, pas un code). |
+| Google Sans | *(pas de jeton)* | **Les barres du calendrier, et elles seules** — titre et heure. Deux fichiers, roman et italique, variables de 400 à 700. |
+
+**Google Sans est entrée le 31 août 2026** (apportée par Noé, qui l'avait
+reconnue sur Google Agenda). Publiée sous **SIL Open Font License** — sa licence
+est gardée à côté d'elle (`fonts/GoogleSans-OFL.txt`) —, elle vit dans le dépôt
+comme les autres et n'est jamais appelée à un CDN.
+- **Son italique a vécu deux heures** : rapatriée pour les publications — c'est
+  la seule police du hub qui en ait une vraie —, puis retirée avec elles le soir
+  même. Le fichier ne reste pas dans `fonts/` : 60 Ko mis en cache sur chaque
+  appareil pour rien. `tools/installer-google-sans.py --italique` le refait.
+- **Elle n'a pas de jeton** et ne s'applique nulle part ailleurs : un jeton
+  inviterait à l'étendre, et rien ne l'a demandé.
+- **`tools/installer-google-sans.py`** la rapatrie et l'allège : deux axes figés
+  sur trois (`opsz`, `GRAD` — seule la graisse nous sert), sous-réglage latin,
+  **4,8 Mo de TTF réduits à 57 Ko**. Il complète `gvar` avant de sous-régler,
+  sans quoi fontTools s'arrête sur un glyphe sans variation.
+
 
 **Le hub est SOMBRE, toujours** (décision de Noé, 27 août 2026). Il n'a plus de
 thème clair : ni réglage à suivre, ni `prefers-color-scheme`, ni deux jeux de
@@ -1701,21 +1748,172 @@ s'atteindre comme celles des autres espaces.
 > d'accueil, et git garde le code ; dans le menu, chaque espace porte sa
 > pastille ronde.
 
-**Gilroy sert deux endroits, et ce sont les deux où l'on VISE plutôt qu'on ne
-lit** (27 puis 28 août 2026) :
+**Gilroy ne sert plus qu'un endroit** — **les onglets**, 600 au repos et 700
+actif (28 août 2026). C'est ce qu'Instrument Sans ne pouvait pas donner :
+déclarée de 400 à 600, demander 700 la faisait clamper, et l'écart plafonnait à
+500/600 sans se voir.
 
-- **le titre d'une barre du calendrier**, en 700, dans les trois calendriers. La
-  règle est posée sur `.cal-barre-titre` et non sur la barre : les signes
-  (○ ◐ ◉ ▲ ↗) sont dans le même conteneur et Gilroy ne les dessine pas — ils
-  retomberaient, glyphe par glyphe, sur une police choisie par le navigateur.
-  L'heure reste en Geist Mono.
-- **les onglets**, 600 au repos et 700 actif. C'est ce qu'Instrument Sans ne
-  pouvait pas donner : déclarée de 400 à 600, demander 700 la faisait clamper, et
-  l'écart plafonnait à 500/600 sans se voir.
+*Elle a aussi porté le titre des barres du calendrier, du 27 août au 31, au
+motif qu'on VISE une barre plutôt qu'on ne la lit. Ce motif est tombé le jour où
+la forme du titre s'est mise à dire la nature de ce qu'on regarde — voir « Une
+barre de calendrier » ci-dessous.*
 
 Gilroy est déclarée dans `css/yuno.css` (chargée sur les trois pages) en 400,
 500, 600, 700 et 900 ; les quatre premiers sont dans la coquille : aucun fichier
 de plus.
+
+### Une barre de calendrier : la couleur dit l'espace, la police dit la nature
+
+**L'ORDRE D'UNE JOURNÉE : l'heure, puis l'ESPACE** (31 août 2026, demande de
+Noé). Le second tri départage tout ce qui tombe à la même heure — et surtout
+tout ce qui n'en a pas : sans lui, une journée sans horaire s'affichait dans
+l'ordre où les tables avaient été lues, donc les événements d'abord, puis les
+tâches, puis les objectifs. **Un ordre qui ne veut rien dire est un ordre qu'on
+relit à chaque fois.** Avec, une journée se lit par blocs : le club, la
+formation, Yuno, soi.
+
+C'est **l'ordre des journées de Noé**, celui de la galerie des caps depuis le
+28 août, et il vit désormais dans `js/format.js` (`ORDRE_ESPACES`,
+`rangDEspace`) : « Le chemin », « Le temps » et le calendrier le récitaient
+chacun de son côté. `#objectifs` garde la sienne, à trois espaces — perso n'a
+pas d'objectifs, et cette liste-là peuple aussi des formulaires.
+
+Règle posée par Noé le 31 août 2026, et elle vaut pour **tous les calendriers** —
+le hub, l'accueil, « Ma semaine », le site Yuno, celui du FC Hermitage.
+
+**TOUT CE QUI EST AU CALENDRIER EST UNE TUILE COLORÉE**, à la couleur de son
+espace. **La nature se dit par la POLICE, et par elle seule** :
+
+| | sa forme | son titre | ce que c'est |
+|---|---|---|---|
+| **événement** | tuile **pleine**, encre sombre, sans trait | **gras** (600) | ce qui ARRIVE, à l'heure dite |
+| **publication** | une ligne, trait à gauche, **voile à 10 %** | normal | ce qui PART |
+| **tâche** | une ligne, trait à gauche, **rien** | normal | le cas ordinaire — ce qu'on fait |
+
+**LES TROIS SE LISENT SUR UNE SEULE ÉCHELLE, celle de la présence** : plein pour
+l'événement, un voile pour la publication, rien pour la tâche. **Une publication
+prend la MÊME DISPOSITION qu'une tâche** (31 août 2026, demande de Noé) et ne
+garde qu'un fond très léger — 10 % au lieu de 22 (« diminue l'opacité de la
+couleur de fond »). À cette dose la teinte ne se nomme pas, elle se sent : c'est
+la règle du fond des tuiles de `#objectifs`, et il n'en faut pas plus pour la
+séparer d'une tâche.
+
+**UNE TÂCHE EST UNE LIGNE, PAS UNE TUILE** (forme demandée par Noé, reprise de
+Google Agenda) :
+
+    | ○ 17:30 Story reprise U11
+
+Le **trait** dit l'espace, le **rond** se coche, l'**heure** situe, le **titre**
+se lit — et tout coule dans une seule ligne de texte.
+
+- **ELLE EST EN FLUX, ET SURTOUT PAS EN FLEX.** C'est la leçon d'un essai que
+  Noé a renvoyé d'une phrase : « rien n'est aligné, l'heure est en haut alors
+  que le rond de couleur est centré, le rond cochable est en haut ». Un
+  conteneur flex donne à chaque enfant son propre alignement transversal, et
+  trois réglages faisaient trois hauteurs. Le flux de texte les pose tous sur la
+  MÊME ligne de base sans qu'on règle quoi que ce soit.
+- **L'HEURE EST ÉCRITE DANS LE TITRE** (« intégrer l'heure de manière fluide et
+  sans qu'elle utilise une ligne à elle seule »), et non à côté — **pour les
+  DEUX natures en ligne**, la tâche et la publication (`EN_LIGNE`,
+  js/calendrier-commun.js). Une publication a bien une heure : c'est une
+  décision éditoriale, et l'oublier lui remettait son rond par-dessus — le
+  premier défaut de cette forme, rapporté par Noé. C'est la seule
+  façon qu'elle coule avec le texte — le titre se replie derrière elle — **et**
+  que la coupe à trois lignes tienne : cette coupe vit sur le titre, qui est un
+  `-webkit-box` ; la monter d'un cran, sur la barre, fait de CHAQUE enfant une
+  ligne de la boîte — mesuré sur téléphone, le premier mot du titre disparaissait
+  sous une ellipse à lui seul.
+- **L'écart heure/titre est une VRAIE ESPACE**, écrite dans le texte, pas une
+  marge : deux éléments collés ne s'écartent que visuellement — le navigateur
+  les traite comme un seul mot et ne peut pas couper entre eux. Mesuré :
+  « 13:00Mind- » tenait sur la première ligne et « Map résumé 1 » passait
+  dessous.
+- **L'heure d'un ÉVÉNEMENT reste dehors**, dans son propre élément : sa barre
+  est en colonne — quand, puis quoi —, la mise en page que Noé a redemandée
+  telle quelle le 26 août. C'est la seule nature dans ce cas, d'où une liste
+  nommée plutôt qu'un test sur « tâche » : le jour où une troisième s'écrit en
+  ligne, elle s'ajoute à un seul endroit.
+- **EN VUE MOIS, PAS DE ROND**, sur ordinateur comme sur téléphone. Une case de
+  mois porte une ligne tronquée à l'ellipse : on y lit ce qui vient, on ne coche
+  pas. Le geste existe partout ailleurs — la semaine, le jour ouvert, l'espace
+  Tâches, l'accueil.
+- **Le rond fait 1,15 em**, contre 1,3 avant le 31 août : il avait été grossi
+  quand il était seul devant le titre, et depuis que l'heure le suit sur la même
+  ligne, il la dominait. Sa CIBLE n'a pas bougé — elle vit dans le rembourrage,
+  pas dans le glyphe.
+- **Sur téléphone, en vue semaine, la tâche reprend la colonne commune** : le
+  rond revient dans le flux et son retrait tombe. Sept colonnes à 375 px font
+  47 px par jour, et les 21 px de retrait ne laissaient plus la place d'écrire
+  l'heure. Attention au sélecteur : la règle générale s'appuie sur
+  `:not(:has(.cal-barre-heure))`, qui ne reconnaît plus une tâche depuis que
+  l'heure est dans son titre.
+
+**C'EST LE REMPLISSAGE QUI PORTE LES TROIS NATURES** — trois degrés de présence,
+du plus posé au plus léger —, et le gras vient renforcer l'événement. La grammaire
+s'est cherchée en une soirée et a fini là, chaque pas ayant sa raison :
+
+- **La tâche a cherché sa forme en cinq pas ce soir-là** : l'aplat teinté donné
+  le matin, repris le soir (« une chose à faire, pas une chose qui arrive » — le
+  motif du 13 août, qui tient toujours) ; le trait de couleur à gauche ; ce même
+  trait arrondi en tuile ; une pastille ronde en tête de ligne, portée par un
+  flex qui désalignait tout ; et enfin le trait de nouveau, avec la ligne en
+  flux. Le mouvement va toujours dans le même sens — **une tâche pèse moins
+  qu'un événement** — et ce qui a été gagné en route, c'est que **le trait tient
+  la colonne sans rien coûter à la ligne** : il est À CÔTÉ du texte, pas dedans.
+- **Plus d'italique pour les publications** (dernière correction). Elle n'avait
+  plus rien à dire : le remplissage distinguait déjà les trois, et la pente
+  coûtait la seule lettre qu'on lit de travers dans une colonne étroite.
+
+**Le titre ET l'heure sont en Google Sans** (« pour l'horaire aussi »).
+L'heure était en Geist Mono comme tous les chiffres du hub, et la règle disait
+qu'elle y resterait ; elle tombe **ici et ici seulement** — une heure collée à
+son titre n'est pas un compteur qu'on aligne en colonne, c'est le premier mot de
+la ligne. Les chiffres qui se COMPARENT gardent leur chasse fixe.
+
+**UN ÉVÉNEMENT EST UNE TUILE PLEINE** (même jour, demande de Noé : « remplie
+complètement, sans barre sur le côté, quitte à inverser la couleur du texte ») —
+c'est le second signe de sa nature, avec le gras : ce qui ARRIVE se pose dans la
+semaine, ça ne se coche pas.
+- **L'encre s'inverse, et c'est la règle du hub**, pas une exception : « l'encre
+  posée sur un aplat d'accent est SOMBRE, jamais blanche ». Les quatre couleurs
+  d'espace sont claires — du blanc dessus se lirait à peine. Mesuré : 6,94 sur
+  le bleu du club.
+- **Pas de trait à gauche** : il redirait la couleur que la tuile entière dit
+  déjà, et il rognerait un angle qu'on vient d'arrondir.
+- **L'heure passe à l'encre du titre, moins appuyée** : `--texte-discret` est un
+  gris pensé pour le fond sombre, il disparaîtrait sur un aplat clair.
+
+**LE RAYON D'UNE BARRE PASSE DE 3 À 6 px** (même jour, « les tuiles un peu plus
+arrondies »). Ce sont des tuiles depuis ce jour-là, et 3 px était le rayon d'une
+étiquette. **Pas `--rayon-controle` (10 px), essayé et repris dans la foulée** :
+à 22 px de haut, l'angle mange la première lettre et la tuile se met à ressembler
+à une pastille. Ne pas y retourner sans regarder une semaine chargée.
+
+**CE QUE ÇA RENVERSE, ET IL FAUT LE DIRE.** Depuis le 13 août, une tâche n'était
+qu'un **trait de couleur à gauche** — « une chose à faire, pas une chose qui
+arrive » —, l'aplat étant réservé à ce qui ARRIVE ; une publication l'avait
+rejointe le 25 août pour la même raison. La distinction était juste ; c'est le
+MOYEN qui change. **Trois natures et quatre espaces se lisaient sur un seul
+canal ; ils en ont deux maintenant**, chacun avec son travail. Ne pas remettre un
+fond transparent sur les tâches sans rouvrir cette question-là.
+
+- **Le titre a quitté Gilroy**, d'abord pour la police de texte de son écran
+  (`--police-texte`), puis pour **Google Sans** quelques heures plus tard : une
+  graisse comme une italique se lisent mieux dans une famille de texte courant,
+  et celle-ci a l'italique que les autres n'ont pas. `--police-texte` reste en
+  second, pour les glyphes que le sous-réglage latin ne couvre pas.
+- **600 et non 700 pour le gras** : Instrument Sans est déclarée de 400 à 600 et
+  clamperait au-delà, sans que l'écart se voie.
+- **La règle reste posée sur `.cal-barre-titre`**, jamais sur la barre : les
+  signes (○ ◐ ◉ ▲ ↗) sont dans le même conteneur et n'ont rien à annoncer ;
+  l'heure est en Geist Mono et le restera — elle situe.
+- **Le reste — objectif, jalon, commande, relance — garde le normal de la
+  tâche** : ce sont des échéances, ni un rendez-vous ni une parution, et leur
+  inventer une quatrième forme ferait un alphabet à retenir.
+- **Une tâche faite voit sa TUILE pâlir** (6 % au lieu de 22). Effet de bord
+  mesuré le jour même : en encre discrète SUR de la couleur, son contraste
+  tombait de 5,53 à 3,29 — sous le seuil, et pour la seule chose qu'on relit
+  après coup. Le retrait se dit par le fond, plus par l'encre seule.
 
 **Non repris, volontairement : le ton.** Bac-3 est un outil de pression, et
 c'est justifié — 44 livrables, une date de dépôt. Il a une couleur `--flag`

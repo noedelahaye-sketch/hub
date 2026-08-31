@@ -91,6 +91,24 @@ export const NOMS_ESPACES = {
   perso: 'Perso',
 };
 
+// L'ORDRE DES JOURNÉES DE NOÉ — le club, la formation, Yuno, puis lui (demande
+// du 28 août 2026, posée pour la galerie des caps). Il vit ici, à côté des noms,
+// parce que trois écrans le récitaient chacun de son côté : « Le chemin », « Le
+// temps » et maintenant le calendrier. Trois copies d'un même ordre finissent
+// par se contredire, et c'est le genre d'écart qu'on ne voit qu'une fois qu'un
+// écran s'est mis à ranger autrement.
+//
+// `#objectifs` garde la sienne, à trois espaces : perso n'a pas d'objectifs et
+// n'en aura pas, et cette liste-là sert aussi à peupler des formulaires.
+export const ORDRE_ESPACES = ['fch', 'formation', 'photo', 'perso'];
+
+// Le rang d'un espace dans cet ordre. Ce qui ne s'y trouve pas ferme la marche
+// plutôt que d'ouvrir : un espace inconnu n'a pas à passer devant le club.
+export const rangDEspace = (espace) => {
+  const rang = ORDRE_ESPACES.indexOf(espace);
+  return rang < 0 ? ORDRE_ESPACES.length : rang;
+};
+
 // --- Les familles d'un moment perso ------------------------------------------
 // Ce que sert un moment de l'espace perso — la seule chose qu'on lui demande de
 // dire. Elle se saisit à la pastille « Famille », qui n'apparaît que lorsque

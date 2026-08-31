@@ -18,7 +18,7 @@
 // vérifier seul est un diagnostic qu'on croit sur parole.
 
 import * as api from './api.js';
-import { dureeLisible, echapper, NOMS_ESPACES } from './format.js';
+import { dureeLisible, echapper, NOMS_ESPACES, ORDRE_ESPACES } from './format.js';
 import {
   chargeDeLaSemaine,
   chargeViseeDeLaPeriode,
@@ -26,7 +26,8 @@ import {
   semaineDe,
 } from './orientation.js';
 
-const ESPACES = ['fch', 'formation', 'photo', 'perso'];
+// L'ordre des journées de Noé, partagé (js/format.js) : il était recopié ici.
+const ESPACES = ORDRE_ESPACES;
 
 const heures = (minutes) => dureeLisible(Math.round(minutes)) || '0 h';
 

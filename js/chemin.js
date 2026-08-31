@@ -17,9 +17,7 @@
 // retire là où elle a été écrite : cette page ne fait que regarder en arrière.
 
 import * as api from './api.js';
-import { depuisDateISO, echapper, NOMS_ESPACES } from './format.js';
-
-const ORDRE_ESPACES = ['fch', 'formation', 'photo', 'perso'];
+import { depuisDateISO, echapper, NOMS_ESPACES, ORDRE_ESPACES } from './format.js';
 
 // D'où vient la victoire. Le mot est au singulier et en encre discrète : il
 // explique la ligne, il ne la commente pas.

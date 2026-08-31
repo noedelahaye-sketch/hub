@@ -29,6 +29,7 @@ import {
   echeanceLisible,
   echapper,
   NOMS_ESPACES,
+  rangDEspace,
   RECURRENCES,
   DUREES,
   dureeLisible,
@@ -594,16 +595,24 @@ function segmentsDeLaSemaine(jours, elements) {
       };
     })
     .filter(Boolean)
-    // Trois clés, dans cet ordre. Le jour de départ. Puis les plus longues :
+    // Quatre clés, dans cet ordre. Le jour de départ. Puis les plus longues :
     // une barre de trois jours mérite le couloir du haut, sinon elle se faufile
     // sous des barres d'un jour — et une barre qui traverse la semaine n'a pas
     // d'heure qui veuille dire quelque chose. Puis l'heure : entre deux
     // éléments d'un même jour, celui de 9 h passe au-dessus de celui de 15 h.
+    //
+    // PUIS L'ESPACE (31 août 2026, demande de Noé). Il départage tout ce qui
+    // tombe à la même heure — et surtout tout ce qui n'en a pas : sans lui, une
+    // journée sans horaire s'affichait dans l'ordre où les tables avaient été
+    // lues, donc les événements d'abord, puis les tâches, puis les objectifs.
+    // Un ordre qui ne veut rien dire est un ordre qu'on relit à chaque fois.
+    // Avec, une journée se lit par blocs : le club, la formation, Yuno, soi.
     .sort(
       (a, b) =>
         a.depuis - b.depuis ||
         b.jusqua - b.depuis - (a.jusqua - a.depuis) ||
-        a.element.date - b.element.date,
+        a.element.date - b.element.date ||
+        rangDEspace(a.element.espace) - rangDEspace(b.element.espace),
     );
 
   const couloirs = [];
@@ -702,6 +711,13 @@ function signeEnHtml(element, signe) {
     aria-hidden="true">${signe}</span>`;
 }
 
+// LES DEUX NATURES QUI S'ÉCRIVENT EN UNE LIGNE — trait à gauche, rond, heure,
+// titre, tout dans le même flux de texte (31 août 2026). Leur heure est écrite
+// DANS leur titre ; celle d'un événement reste à côté, sa barre étant en
+// colonne. Une publication a bien une heure : c'est une décision éditoriale, et
+// l'oublier ici lui remettait son rond par-dessus.
+const EN_LIGNE = new Set(['tache', 'publication']);
+
 function barre(
   segment,
   { montrerEspace = false, proportionnel = false, empile = false, auDela = false } = {},
@@ -750,6 +766,14 @@ function barre(
         .join(' · '),
     )}"
     title="${echapper(`${TYPES[element.type]} · ${element.titre}`)}">${
+      // L'HEURE D'UN ÉVÉNEMENT reste devant, dans son propre élément : sa barre
+      // est en colonne — quand, puis quoi — et c'est la mise en page que Noé a
+      // redemandée telle quelle le 26 août 2026. Celle d'une TÂCHE et d'une
+      // PUBLICATION entre DANS le titre : voir juste en dessous.
+      heure && !EN_LIGNE.has(element.type)
+        ? `<span class="cal-barre-heure" aria-hidden="true">${echapper(heure)}</span>`
+        : ''
+    }${
       // Le signe est décoratif : le titre de l'infobulle dit déjà la nature en
       // toutes lettres, pour qui n'y voit rien.
       // Sauf pour une tâche, dont le cercle se coche — et pour une publication,
@@ -760,12 +784,27 @@ function barre(
       // de clics qui reconnaît la cible. Au clavier, la barre s'ouvre et la
       // fenêtre de détail porte le geste, avec ses trois pastilles.
       signe ? signeEnHtml(element, signe) : ''
-    }${
-      // L'heure devant le titre, en chiffres et en retrait : c'est ce qui
-      // remplace la grille horaire. Elle est déjà dans l'étiquette lue à voix
-      // haute, d'où l'`aria-hidden`.
-      heure ? `<span class="cal-barre-heure" aria-hidden="true">${echapper(heure)}</span>` : ''
-    }<span class="cal-barre-titre">${echapper(element.titre)}</span></button>`;
+    }<span class="cal-barre-titre">${
+      // L'HEURE D'UNE TÂCHE EST DANS SA PHRASE (31 août 2026, demande de Noé :
+      // « intégrer l'heure de manière fluide et sans qu'elle utilise une ligne à
+      // elle seule »). Elle est donc écrite DANS le titre, et non à côté :
+      //
+      //   — c'est la seule façon qu'elle coule avec le texte, qui se replie
+      //     derrière elle au lieu de la laisser seule sur son rang ;
+      //   — et c'est ce qui garde la coupe à trois lignes. Elle vit sur le
+      //     titre, qui est un `-webkit-box` ; monter cette coupe d'un cran, sur
+      //     la barre, faisait de CHAQUE enfant une ligne de la boîte — mesuré
+      //     sur téléphone, le premier mot du titre disparaissait sous une
+      //     ellipse à lui tout seul.
+      // L'ESPACE APRÈS L'HEURE EST UNE VRAIE ESPACE, et pas une marge : deux
+      // éléments collés l'un à l'autre ne s'écartent que visuellement — le
+      // navigateur les traite comme un seul mot et ne peut pas couper entre eux.
+      // Mesuré sur téléphone : « 13:00Mind- » tenait sur la première ligne et
+      // « Map résumé 1 » passait dessous.
+      heure && EN_LIGNE.has(element.type)
+        ? `<span class="cal-barre-heure" aria-hidden="true">${echapper(heure)}</span> `
+        : ''
+    }${echapper(element.titre)}</span></button>`;
 }
 
 function ligneDeSemaine(jours, elements, options) {

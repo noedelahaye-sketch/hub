@@ -26,6 +26,18 @@
   src: url("../fonts/GeistMono-Variable.woff2") format("woff2");
   font-weight: 400 500; font-style: normal; font-display: swap;
 }
+/* GOOGLE SANS (31 août 2026, apportée par Noé). Publiée par Google sous SIL
+   Open Font License — sa licence est gardée à côté d'elle, `fonts/GoogleSans-OFL.txt`.
+   Un seul fichier, variable de 400 à 700. Son italique a été rapatriée le même
+   jour puis retirée dans la soirée, les publications ayant cessé de pencher ;
+   `tools/installer-google-sans.py --italique` la refait en une commande.
+   Rapatriée et allégée par `tools/installer-google-sans.py` : deux axes figés
+   sur trois, sous-réglage latin, 4,8 Mo de TTF réduits à 57 Ko. */
+@font-face {
+  font-family: "Google Sans";
+  src: url("../fonts/GoogleSans-roman.woff2") format("woff2");
+  font-weight: 400 700; font-style: normal; font-display: swap;
+}
 
 /* --- Jetons ---------------------------------------------------------------- */
 
@@ -5660,9 +5672,14 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 }
 
 .cal-semaine .cal-barre-element:not(.cal-barre-duree, :has(.cal-barre-heure)) .cal-barre-titre {
-  /* La largeur du rond (13,4 px, mesurée) plus son air : ce que la première
-     ligne lui cède. */
-  text-indent: 18px;
+  /* La largeur du rond plus son air : ce que la première ligne lui cède.
+     EN EM ET NON EN PIXELS (31 août 2026) : à 0,6875 rem, 1,745 em fait
+     exactement les 18 px mesurés d'avant — rien ne bouge sur l'accueil ni au
+     calendrier plein écran. Mais « Ma semaine » écrit désormais ses barres en
+     0,8125 rem, et un retrait figé y laissait 3,2 px d'air entre le rond et le
+     mot au lieu de 4,6. Le rond grandit avec le texte : son retrait doit le
+     suivre. */
+  text-indent: 1.745em;
 }
 
 /* Deux barres restent en colonne, et pour deux raisons distinctes : une barre
@@ -5701,6 +5718,12 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   text-decoration: line-through;
   text-decoration-color: var(--trait-cal, var(--bordure));
 }
+
+/* Sa tuile a pâli quelques heures le 31 août 2026, le temps que les tâches
+   aient un aplat : en encre discrète SUR de la couleur, son contraste tombait
+   de 5,53 à 3,29 — sous le seuil, pour la seule chose qu'on relit après coup.
+   Les tâches étant revenues au fond vide le soir même, la question ne se pose
+   plus. À rouvrir si un jour une barre faite reçoit de nouveau un aplat. */
 
 .cal-barre-element.cal-faite .cal-signe { text-decoration: none; }
 
@@ -5802,13 +5825,11 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   padding: 1px var(--espace-8);
   font-family: inherit;
   font-size: 0.6875rem;
-  /* En 700 : à 11 px sur un fond teinté, le poids normal se devinait plus qu'il
-     ne se lisait, et le 600 restait timide. C'est le titre de la barre, il doit
-     se prendre d'un coup d'œil — l'heure devant lui reste, elle, en poids
-     ordinaire et plus pâle.
-     Le 700 est un vrai fichier partout : Instrument Sans est variable (hub,
-     FCH), et Gilroy a reçu son Bold le 13 août (voir yuno.css). */
-  font-weight: 700;
+  /* LA GRAISSE A QUITTÉ LA BARRE le 31 août 2026 : elle dit désormais la NATURE
+     de ce qu'on regarde, et elle se pose donc sur le titre, type par type (voir
+     plus bas). Ici elle ne vaut plus que pour les signes (○ ◐ ◉ ▲ ↗), qui n'ont
+     rien à annoncer. L'heure garde la sienne, plus pâle : elle situe. */
+  font-weight: 400;
   line-height: 1.5;
   text-align: left;
   text-overflow: ellipsis;
@@ -5820,36 +5841,72 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   background: color-mix(in srgb, var(--couleur-espace-pleine, var(--accent)) 22%, var(--fond-carte));
   border: none;
   border-left: 3px solid var(--couleur-espace-pleine, var(--accent));
-  border-radius: 3px;
+  /* 6 px et non 3 (31 août 2026, demande de Noé : « les tuiles un peu plus
+     arrondies »). Ce sont des tuiles depuis le même jour, et une barre de 22 px
+     de haut portait le rayon d'une étiquette.
+     PAS `--rayon-controle` (10 px), ESSAYÉ ET REPRIS le même jour : à cette
+     hauteur, l'angle mange la première lettre et la tuile se met à ressembler à
+     une pastille. Ne pas y retourner sans regarder une semaine chargée. */
+  border-radius: 6px;
   cursor: pointer;
 }
 
-/* Le TITRE d'une barre est en Gilroy (demande de Noé, 27 août 2026) — et lui
-   seul. La règle est posée sur le titre et non sur la barre, pour deux raisons
-   qui tiennent toutes les deux :
+/* LE TITRE D'UNE BARRE REVIENT À LA POLICE DE TEXTE DE SON ÉCRAN (31 août 2026,
+   demande de Noé : « la même police que le titre des tâches dans la colonne à
+   poser, potentiellement un retour vers Instrument Sans, c'est voulu »).
 
-   — les SIGNES de la barre (○ ◐ ◉ ▲ △ ▸ ↗) sont dans le même conteneur, et
-     Gilroy ne les dessine pas. Les y faire passer aurait fait retomber chaque
-     glyphe, un par un, sur une police de secours choisie par le navigateur —
-     avec sa taille et son aplomb à elle. Le rond d'une tâche aurait changé de
-     forme selon la machine.
-   — l'HEURE est en Geist Mono et le restera : elle situe, elle ne se lit pas
-     comme un texte.
+   Il était en Gilroy depuis le 27 août, au motif qu'on VISE une barre plutôt
+   qu'on ne la lit. Ce motif tombe avec la refonte du même jour : c'est la
+   FORME du titre qui dit maintenant la nature de ce qu'on regarde, et une
+   graisse comme une italique se lisent mieux dans la famille du texte courant.
+   `var(--police-texte)` et non « Instrument Sans » écrit en dur : sur les deux
+   sites, cette variable vaut Gilroy — chacun garde la police de son identité,
+   la règle reste la même.
 
-   Gilroy est déjà déclaré (css/yuno.css, chargé sur les trois pages) et son
-   Bold est déjà mis en cache par le service worker : aucun fichier de plus.
-   La famille de secours ajustée vient avec, pour que la bascule au chargement
-   ne fasse pas sauter la ligne. */
+   La règle est posée sur le TITRE et non sur la barre, et ça n'a pas changé :
+   les SIGNES (○ ◐ ◉ ▲ △ ▸ ↗) sont dans le même conteneur et retomberaient, un
+   glyphe à la fois, sur une police de secours choisie par le navigateur ;
+   l'HEURE, elle, est en Geist Mono et le restera — elle situe, elle ne se lit
+   pas comme un texte.
+
+   LA NATURE SE DIT PAR LA POLICE, ET PAR ELLE SEULE (même demande) : la
+   couleur, elle, est désormais celle de l'espace pour tout le monde — voir
+   l'aplat plus bas.
+
+     événement   gras       ce qui ARRIVE, à l'heure dite
+     tâche       normal     le cas ordinaire — ce qu'on fait
+     publication italique   ce qui PART
+
+   Le reste — objectif, jalon, commande, relance — garde le normal de la tâche :
+   ce sont des échéances, elles ne sont ni un rendez-vous ni une parution, et
+   leur inventer une quatrième forme ferait un alphabet à retenir. */
 .cal-barre-titre {
-  font-family: "Gilroy", "Gilroy secours", var(--police-texte);
+  font-family: "Google Sans", var(--police-texte);
+  font-weight: 400;
 }
+
+/* 600 et non 700 : Instrument Sans est déclarée de 400 à 600, et demander
+   au-delà la fait clamper — l'écart ne se verrait pas. */
+.cal-type-evenement .cal-barre-titre { font-weight: 600; }
+
+/* UNE PUBLICATION N'EST PLUS EN ITALIQUE (31 août 2026, décision de Noé le même
+   soir). Elle n'en avait plus besoin : le REMPLISSAGE la distingue déjà des deux
+   autres — une tâche n'a pas de fond, un événement est plein, elle est teintée
+   entre les deux. La pente ne faisait plus que redire ce que la tuile disait, au
+   prix de la seule lettre qu'on lit de travers dans une colonne étroite. */
 
 .cal-barre-element:hover {
   background: color-mix(in srgb, var(--couleur-espace-pleine, var(--accent)) 34%, var(--fond-carte));
 }
 
-.cal-barre-element.deborde-avant { border-left: none; border-radius: 0 3px 3px 0; margin-left: 0; }
-.cal-barre-element.deborde-apres { border-radius: 3px 0 0 3px; margin-right: 0; }
+.cal-barre-element.deborde-avant {
+  border-left: none;
+  border-radius: 0 6px 6px 0;
+  margin-left: 0;
+  /* Elle continue à gauche : ni trait ni coin de ce côté. */
+  box-shadow: none;
+}
+.cal-barre-element.deborde-apres { border-radius: 6px 0 0 6px; margin-right: 0; }
 .cal-barre-element.deborde-avant.deborde-apres { border-radius: 0; }
 
 /* L'état d'une publication, dans la tuile : une PASTILLE à la suite de celles
@@ -5928,7 +5985,11 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    spécificité, et c'est l'ordre du fichier qui tranche. Écrite plus haut, elle
    ne s'appliquait pas. */
 .cal-signe-cochable {
-  font-size: 1.3em;
+  /* 1,15 em et non 1,3 (31 août 2026, « réduis un peu la taille du rond ») : il
+     avait été grossi quand il était seul devant le titre ; depuis que l'heure
+     le suit sur la même ligne, un rond trop gros la dominait. Sa CIBLE ne bouge
+     pas — elle vit dans le rembourrage, pas dans le glyphe. */
+  font-size: 1.15em;
   opacity: 0.9;
   vertical-align: -0.06em;
 }
@@ -5939,7 +6000,13 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    se consulte le plus : c'est justement l'information qu'on est venu chercher. */
 .cal-barre-heure {
   margin-right: 0.4em;
-  font-family: var(--police-chiffre);
+  /* GOOGLE SANS ELLE AUSSI (31 août 2026, demande de Noé : « pour l'horaire
+     aussi »). Elle était en Geist Mono, comme tous les chiffres du hub — et la
+     règle disait qu'elle y resterait. Elle tombe ICI, et ici seulement : une
+     heure collée à son titre n'est pas un compteur qu'on aligne en colonne,
+     c'est le premier mot de la ligne. Les chiffres du hub qui se COMPARENT —
+     bilans, pourcentages, durées — gardent leur chasse fixe. */
+  font-family: "Google Sans", var(--police-texte);
   font-size: 0.9em;
   font-weight: 400;
   color: var(--texte-discret);
@@ -5947,27 +6014,172 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
 .cal-barre-element.cal-faite .cal-barre-heure { text-decoration: none; }
 
-/* Une tâche est une chose à faire, pas une chose qui arrive : là où
-   l'événement est un aplat, elle n'est qu'un trait de couleur à gauche
-   (demande de Noé, 13 août 2026). Le cadre complet en faisait une étiquette de
-   plus dans une grille déjà pleine de traits ; le trait seul suffit à dire le
-   espace, et la ligne respire.
+/* UN ÉVÉNEMENT EST UNE TUILE PLEINE (31 août 2026, demande de Noé : « remplie
+   complètement, sans barre sur le côté, quitte à inverser la couleur du
+   texte »). C'est le troisième signe de sa nature, avec le gras : ce qui ARRIVE
+   se pose dans la semaine, ça ne se coche pas.
 
-   UNE PUBLICATION EST DU MÊME BORD depuis le 25 août 2026 (demande de Noé) :
-   c'est quelque chose à faire partir, pas un rendez-vous. Son aplat la faisait
-   lire comme un événement — l'aplat reste aux seules choses qui ARRIVENT. */
+   L'ENCRE S'INVERSE, ET C'EST LA RÈGLE DU HUB, pas une exception : « l'encre
+   posée sur un aplat d'accent est SOMBRE, jamais blanche ». Les quatre couleurs
+   d'espace sont claires (#56b8ad, #e8b000, #b3a3d9, #7ba5dc) — du blanc dessus
+   se lirait à peine.
+
+   Pas de trait à gauche : il redirait la couleur que la tuile entière dit déjà,
+   et il rognerait un angle qu'on vient d'arrondir. */
+.cal-type-evenement {
+  background: var(--couleur-espace-pleine, var(--accent));
+  border-left: none;
+  color: var(--fond);
+}
+
+.cal-type-evenement:hover {
+  background: color-mix(in srgb, var(--couleur-espace-pleine, var(--accent)) 88%, #fff);
+}
+
+/* L'heure garde son rôle — elle situe, elle ne se lit pas — mais elle ne peut
+   plus le dire avec `--texte-discret`, qui est un gris pensé pour le fond
+   sombre : sur un aplat clair il disparaîtrait. C'est la même encre que le
+   titre, simplement moins appuyée. */
+.cal-type-evenement .cal-barre-heure { color: inherit; opacity: 0.7; }
+
+/* UNE TÂCHE N'A PAS DE FOND — LE TRAIT SUR LE CÔTÉ, ET RIEN D'AUTRE (31 août
+   2026, décision de Noé le soir même où l'aplat lui avait été donné :
+   « finalement les tâches ne doivent pas avoir de fond de couleur, seulement la
+   barre sur le côté »).
+
+   ELLE RETROUVE CE QU'ELLE AVAIT DEPUIS LE 13 AOÛT, et le motif d'alors tient
+   toujours : « une chose à faire, pas une chose qui arrive ». Ce qui a changé
+   entre-temps n'est pas perdu — le REMPLISSAGE est devenu le troisième signe de
+   la nature, à côté de la police :
+
+     événement    tuile PLEINE, encre sombre    ce qui ARRIVE
+     publication  teintée à 22 %                ce qui PART
+     tâche        rien, un trait à gauche       ce qu'on FAIT
+
+   Trois degrés de présence pour trois natures, du plus posé au plus léger. Une
+   colonne de tâches ne fait plus un mur de couleur, et ce qui arrive vraiment
+   se voit de loin. */
+/* UNE TÂCHE EST UNE LIGNE, PAS UNE TUILE (31 août 2026, forme demandée par
+   Noé) :
+
+       | 17:30 ○ Story reprise U11
+
+   Le TRAIT de couleur dit l'espace, l'HEURE situe, le ROND se coche, le TITRE se
+   lit — et tout coule dans une seule ligne de texte.
+
+   ELLE EST EN FLUX, ET SURTOUT PAS EN FLEX. C'est la leçon de l'essai
+   précédent, que Noé a renvoyé d'une phrase : « rien n'est aligné, l'heure est
+   en haut alors que le rond de couleur est centré, le rond cochable est en
+   haut ». Un conteneur flex donne à chaque enfant son propre alignement
+   transversal, et trois réglages différents faisaient trois hauteurs. Le flux de
+   texte, lui, les pose tous sur la MÊME ligne de base sans qu'on ait rien à
+   régler — et c'est aussi ce qui met l'heure dans la phrase plutôt que sur une
+   ligne à elle : le titre continue derrière elle et se replie dessous.
+
+   Deux formes ont été essayées avant celle-ci, le même jour : l'aplat teinté
+   (repris — une tâche pèse moins qu'un événement), puis la pastille ronde en
+   tête de ligne (reprise avec le flex qui la portait). Le trait revient parce
+   qu'il tient la colonne sans rien coûter à la ligne : il est À CÔTÉ du texte,
+   pas dedans. */
 .cal-type-tache,
 .cal-type-publication {
-  background: transparent;
+  display: block;
   border: none;
   border-left: 3px solid var(--couleur-espace-pleine, var(--accent));
-  border-radius: 0 3px 3px 0;
+  border-radius: 0 6px 6px 0;
 }
 
-.cal-type-tache:hover,
+.cal-type-tache { background: transparent; }
+
+/* UNE PUBLICATION PREND LA MÊME DISPOSITION QU'UNE TÂCHE (31 août 2026,
+   demande de Noé), et garde un fond — mais BEAUCOUP plus léger (« diminue
+   l'opacité de la couleur de fond ») : 10 % au lieu de 22.
+
+   C'est ce qui la sépare encore d'une tâche, et il n'en faut pas plus : à cette
+   dose la teinte ne se nomme pas, elle se sent — la même règle que le fond des
+   tuiles de `#objectifs`. Les trois natures se lisent donc sur une seule
+   échelle, celle de la présence : plein pour l'événement, un voile pour la
+   publication, rien pour la tâche. */
+.cal-type-publication {
+  background: color-mix(in srgb, var(--couleur-espace-pleine, var(--accent)) 10%, transparent);
+}
+
+/* La vue semaine met ses barres en flex (une heure au-dessus de son titre, une
+   barre haute comme sa durée qui écrit en haut) : une tâche n'a besoin ni de
+   l'un ni de l'autre, elle reprend le flux. Le sélecteur pèse trois classes,
+   comme celui qu'il défait. */
+.cal-semaine .cal-barre-element.cal-type-tache,
+.cal-semaine .cal-barre-element.cal-type-publication { display: block; }
+
+/* LE ROND SORT DU FLUX, LE TITRE S'INDENTE D'UNE PREMIÈRE LIGNE — c'est la
+   mécanique du 26 août 2026, et elle reprend du service telle quelle : le titre
+   est un `-webkit-box` (il se coupe à trois lignes), or un tel bloc établit son
+   propre contexte et refuse de contourner quoi que ce soit. Avec `text-indent`,
+   la coupe et ses points de suspension restent entiers, et le texte repasse
+   SOUS le rond à la ligne suivante.
+   L'heure, elle, est maintenant écrite dans le titre : elle coule avec lui. */
+.cal-semaine .cal-barre-element.cal-type-tache .cal-signe,
+.cal-semaine .cal-barre-element.cal-type-publication .cal-signe {
+  position: absolute;
+  left: var(--espace-8);
+  top: 1px;
+}
+
+.cal-semaine .cal-barre-element.cal-type-tache .cal-barre-titre,
+.cal-semaine .cal-barre-element.cal-type-publication .cal-barre-titre {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-indent: 1.745em;
+}
+
+/* En vue MOIS il n'y a plus de rond du tout : rien à contourner, rien à
+   indenter. */
+.cal-mois .cal-type-tache .cal-barre-titre,
+.cal-mois .cal-type-publication .cal-barre-titre { text-indent: 0; }
+
+/* L'heure vit dans le titre : elle prend son retrait avec lui et n'a rien à
+   régler de son côté. En vue semaine elle reste sur la même ligne que les
+   premiers mots — c'est tout l'objet de la forme.
+   Sa marge tombe : l'écart au titre est une vraie espace, écrite dans le texte
+   (voir `barre`, js/calendrier-commun.js), et l'ajout des deux ferait un blanc
+   trop large. */
+.cal-type-tache .cal-barre-heure,
+.cal-type-publication .cal-barre-heure { text-indent: 0; margin-right: 0; }
+
+/* EN VUE MOIS, PAS DE ROND — sur ordinateur comme sur téléphone (31 août 2026,
+   demande de Noé). Une case de mois porte une ligne par tâche, tronquée à
+   l'ellipse : on y lit ce qui vient, on ne coche pas. Le geste existe partout
+   ailleurs — la semaine, le jour ouvert, l'espace Tâches, l'accueil. Sur
+   téléphone, il rendait au titre les 29 px que le rond et son rembourrage
+   prenaient dans une case de 40. */
+.cal-mois .cal-type-tache .cal-signe { display: none; }
+
 .cal-type-publication:hover {
+  background: color-mix(in srgb, var(--couleur-espace-pleine, var(--accent)) 22%, var(--fond-carte));
+}
+
+.cal-type-tache:hover {
   background: color-mix(in srgb, var(--couleur-espace-pleine, var(--accent)) 18%, var(--fond-carte));
 }
+
+/* TOUT CE QUI EST AU CALENDRIER EST UNE TUILE COLORÉE (31 août 2026, demande
+   de Noé), et la couleur est celle de son espace — l'aplat de `.cal-barre-element`
+   suffit, il n'y a plus rien à surcharger ici.
+
+   CE QUE ÇA RENVERSE, ET IL FAUT LE DIRE. Depuis le 13 août, une tâche n'était
+   qu'un trait de couleur à gauche : « une chose à faire, pas une chose qui
+   arrive » — l'aplat était réservé à ce qui ARRIVE, et une publication l'avait
+   rejointe le 25 août pour la même raison. La distinction était juste ; c'est
+   le MOYEN qui change. Elle passe à la police (voir `.cal-barre-titre`), ce qui
+   libère la couleur pour ne plus dire qu'une chose : de quel espace on parle.
+   Trois natures et quatre espaces se lisaient sur un seul canal ; ils en ont
+   deux maintenant, chacun avec son travail.
+
+   Ne pas remettre un fond transparent sur les tâches sans rouvrir cette
+   question-là : ce serait redonner à la couleur deux sens à la fois. */
 
 /* Le « +N » s'ouvre : c'est un bouton, il en a l'air. */
 /* LE PLAFOND DE CINQ NE VAUT QUE POUR LA SEMAINE SERRÉE (30 août 2026, Noé :
@@ -6392,6 +6604,28 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   /* Le jour ouvert garde tout, à ceci près que la barre y est moins rembourrée
      que sur grand écran : le rond suit. */
   .cal-un-jour .cal-barre-element .cal-signe { left: 4px; }
+
+  /* UNE TÂCHE REPREND LA COLONNE COMMUNE (31 août 2026). Sept colonnes à 375 px
+     font 47 px par jour : le rond sorti du flux y coûte 21 px de retrait sur la
+     première ligne, et il ne restait plus la place d'écrire l'heure — mesuré,
+     « 13:00 » se coupait à « 13:… » et le premier mot du titre partait avec.
+
+     Le rond revient donc dans le flux et le retrait tombe, comme pour toutes les
+     barres de cette taille. La règle générale porte déjà ce traitement, mais son
+     `:not(:has(.cal-barre-heure))` ne reconnaît plus une tâche : depuis que
+     l'heure est écrite DANS le titre, la barre en contient une. D'où ces deux
+     lignes, qui la nomment. */
+  .cal-semaine:not(.cal-un-jour) .cal-barre-element.cal-type-tache .cal-signe,
+  .cal-semaine:not(.cal-un-jour) .cal-barre-element.cal-type-publication .cal-signe {
+    position: static;
+  }
+
+  .cal-semaine:not(.cal-un-jour) .cal-barre-element.cal-type-tache .cal-barre-titre,
+  .cal-semaine:not(.cal-un-jour) .cal-barre-element.cal-type-publication .cal-barre-titre {
+    text-indent: 0;
+  }
+
+
 
   .cal-reste { padding-left: 3px; font-size: 0.5625rem; }
   .cal-nav { margin-left: 0; width: 100%; }
@@ -8516,6 +8750,62 @@ body.balaye {
   .semaine-programmation { grid-template-columns: minmax(0, 1fr) minmax(0, 20rem); }
 }
 
+/* LA GRILLE DE « MA SEMAINE » EST PLUS GRANDE, ET SON CONTENU AVEC (31 août
+   2026, demande de Noé ; revu à la baisse le même jour, voir plus bas). C'est la page où l'on POSE : on y vise une case avec
+   une tâche en main, et on relit ce qu'on vient d'y mettre. Un calendrier
+   d'aperçu peut se contenter d'être petit — celui-ci est l'outil.
+
+   Elle est portée par `.semaine-grille`, comme l'accueil porte la sienne par
+   `#bloc-semaine` : le calendrier plein écran garde ses réglages, et l'aperçu
+   de l'accueil les siens. Une même grille, trois usages, trois tailles.
+
+   AU-DELÀ DU TÉLÉPHONE SEULEMENT. Sept colonnes à 375 px font 40 px par jour :
+   y écrire plus gros ne donnerait pas à lire, ça replierait les titres lettre
+   par lettre. Le palier de 40 rem garde donc la main, et Noé programme sa
+   semaine « essentiellement sur ordinateur ». */
+/* UN CRAN EN DESSOUS DU PREMIER ESSAI (31 août 2026, Noé devant l'écran :
+   « c'est un peu trop gros, réduis de 15-20 % »). Les HAUTEURS rendent les 15 à
+   20 % demandés ; les CORPS ne le peuvent pas — 12,2 px moins 17 %, c'est
+   10,1 px, soit la taille d'avant. Descendre d'un cran est donc tout ce qu'il y
+   a entre « trop gros » et « comme avant », et c'est ce qui est fait : le titre
+   d'une barre passe au palier intermédiaire, la date d'un jour retrouve son
+   corps mais garde l'air qu'on lui a donné. */
+@media (min-width: 720px) {
+  /* 20 rem d'aperçu contre 23 rem ici : la hauteur d'une case est ce qui rend
+     un jour visable au glissement, et ce qui laisse une journée chargée
+     s'empiler sans se serrer. */
+  .semaine-grille .cal-semaine .cal-ligne { min-height: 23rem; }
+
+  /* La date d'un jour est ce qu'on vise : son corps est celui d'ailleurs, sa
+     bande respire un peu plus. */
+  .semaine-grille .cal-entetes span,
+  .semaine-grille .cal-entete-jour { padding: var(--espace-4) var(--espace-4); }
+
+  /* Le titre d'une barre passe de 10,3 à 11,25 px, et la barre respire : 29 px
+     de haut au minimum contre 24. Le seuil des 24 px était une taille de CIBLE
+     minimale (WCAG 2.2, 2.5.8) — ici on ne le rattrape pas, on le dépasse. */
+  .semaine-grille .cal-semaine .cal-barre-element {
+    margin: 0 3px 2px;
+    padding: 2px var(--espace-8);
+    font-size: 0.75rem;
+    min-height: max(var(--duree, 0rem), 29px);
+  }
+
+  /* TROIS LIGNES ICI, DEUX AILLEURS. La coupe à deux date du 29 août : une
+     semaine chargée empilait des pavés, et le jour se lisait comme un mur. Le
+     motif tenait dans une ligne de 20 rem ; celle-ci en fait 23, et le texte
+     plus gros mord plus loin — mesuré, « Relancer le partenaire boulangerie »
+     s'arrêtait à « le partenaire… ». La troisième ligne rend ce que le corps
+     vient de prendre.
+
+     Le sélecteur reprend la forme EXACTE de la règle d'origine, préfixée : à
+     spécificité mal comptée, c'est la coupe à deux qui reste, et on ne voit
+     rien changer. */
+  .semaine-grille .cal-semaine .cal-barre-element:not(.cal-barre-duree) .cal-barre-titre {
+    -webkit-line-clamp: 3;
+  }
+}
+
 .semaine-validee {
   margin: 0;
   padding: var(--espace-16) 0;
@@ -8691,6 +8981,20 @@ body.balaye {
   overflow-y: auto;
   /* Le filet de défilement ne doit pas coller aux tuiles. */
   padding-right: var(--espace-4);
+}
+
+/* UNE TUILE DE PLUS, PARCE QUE LA GRILLE D'EN FACE A GRANDI (31 août 2026,
+   demande de Noé, dans la foulée de l'agrandissement). Le plafond n'a jamais
+   été un chiffre pour lui-même : il dit « ne dépasse pas la semaine, sinon on
+   ne voit plus les jours où poser ». La ligne étant passée de 20 à 23 rem, la
+   colonne peut rendre la même chose une tuile plus bas — 30 rem contre 26,
+   soit un pas de tuile (51 px) plus son écart.
+
+   Elle suit donc le MÊME palier que la grille : sur téléphone les deux blocs
+   s'empilent, la colonne ne vole rien à personne, et son plafond d'origine
+   garde tout son sens. */
+@media (min-width: 720px) {
+  .vivier { max-height: 30rem; }
 }
 
 /* UNE TÂCHE EN MAIN : les jours s'offrent. C'est le seul signe qui dise que le

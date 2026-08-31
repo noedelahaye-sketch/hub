@@ -16,7 +16,7 @@
 // Sans ça, chaque session de travail verrait une fois ses modifications
 // ignorées — le piège classique du service worker en développement.
 
-const CACHE = 'hub-coquille-v10';
+const CACHE = 'hub-coquille-v11';
 
 const EN_LOCAL = ['localhost', '127.0.0.1'].includes(self.location.hostname);
 
@@ -79,6 +79,7 @@ const COQUILLE = [
   'fonts/ClashDisplay-700.woff2',
   'fonts/InstrumentSans-Variable.woff2',
   'fonts/GeistMono-Variable.woff2',
+  'fonts/GoogleSans-roman.woff2',
   'fonts/CanelaDeck-Regular.otf',
   'fonts/CanelaDeck-Bold.otf',
   'fonts/CanelaDeck-RegularItalic.otf',
