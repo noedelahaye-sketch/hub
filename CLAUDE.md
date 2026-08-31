@@ -1473,10 +1473,132 @@ coûterait le plus. À égalité, le dimanche reste le repos par défaut.
   ça occupe tous les jours »). La première version remplissait au plus vite :
   elle donnait quatre journées pleines et trois vides, parce qu'elle vidait le
   reste du club dès qu'elle trouvait de la place. **On répartit maintenant AVANT
-  de placer**, et la part se recalcule à chaque jour sur les jours OUVRÉS qui
-  restent : ce qu'un jour n'a pas pu prendre revient aux suivants. Diviser par
-  les sept jours donnait une part trop maigre, et il restait des heures que
-  personne ne plaçait.
+  de placer** : chaque jour ouvré reçoit sa part du quota, et ce qui n'a pas pu
+  se poser revient à la fin sur le jour le moins chargé. Diviser par les sept
+  jours donnait une part trop maigre, et il restait des heures que personne ne
+  plaçait.
+
+**LA PART D'UN JOUR TIENT COMPTE DE CE QU'IL PORTE DÉJÀ** (1er septembre 2026,
+demande de Noé : *« ce n'est pas normal qu'on n'atteigne pas le quota pour la
+formation… il faut que les jours soient équilibrés, là il y a beaucoup de
+déséquilibre »*). C'est la pièce qui manquait, et elle explique les deux moitiés
+de la plainte d'un coup. **Trois règles étaient en cause, et chacune se corrige
+là où elle vit** :
+
+1. **Le repli sur la journée entière ne s'ajoute plus à toute pose.** Il était
+   collé au fond de `poser`, donc le club — servi le premier — débordait sur le
+   MATIN, la seule plage que la formation puisse prendre : elle s'arrête à 20 h,
+   et l'après-midi comme le soir lui passent devant. **On sert donc chacun chez
+   soi d'abord, et l'on ne déborde qu'ensuite**, en deux tours qui parcourent
+   chacun la semaine entière — sans quoi le club du lundi déborderait avant que
+   la formation du mardi n'ait vu son matin. *Mesuré sur la semaine du 31 août :
+   le club posait 10 h–11 h le mardi, la formation tombait à 1 h 30 ce jour-là,
+   et c'était exactement l'heure qui manquait au total — 14 h pour 15 visées.*
+2. **La part d'un jour se calcule MOINS ce que le jour porte déjà.** Elle
+   ignorait les blocs nés d'un événement : le mardi recevait ses 4 h de club EN
+   PLUS des 4 h de son entraînement, pendant que le budget s'épuisait le
+   vendredi et que le samedi restait vide. *Mesuré : 9 h le lundi, 9 h 30 le
+   mardi, 2 h 30 le samedi, rien le dimanche.*
+3. **La part n'est plus plafonnée à quatre heures.** Le plafond dit qu'un BLOC
+   ne dépasse pas 4 h — pas qu'un espace ne reçoit que 4 h dans la journée. Les
+   confondre rendait le quota inatteignable dès qu'un régime le monte : 26 h sur
+   six jours font 4 h 20 par jour, et la part était rabotée avant de commencer.
+
+**LE RELIQUAT VA AU JOUR LE MOINS CHARGÉ**, un bloc à la fois, le classement
+refait après chacun. C'est ce qui remplit le quota SANS ramener le déséquilibre :
+ce qu'une journée pleine n'a pas pu prendre retombe sur celle qui porte le moins,
+et non sur la première venue.
+
+*Mesuré après correction, sur les mêmes données : club 26 h sur 26 visées,
+formation 15 h sur 15, et six jours entre 6 h 30 et 7 h 30 au lieu de 9 h / 2 h 30
+/ rien.*
+
+**CE QUI RESTE SOUS L'HEURE RALLONGE UN BLOC** (1er septembre 2026, demande de
+Noé : *« dans ce cas-là tu peux mettre 3 h au lendemain, quelle règle t'en
+empêche ? »* — aucune, sinon une que le hub s'était posée à lui-même).
+
+**« Un bloc fait une heure au moins » ne veut pas dire qu'un reste de 30 minutes
+est perdu** : ça veut dire qu'on n'en CRÉE pas un de 30 minutes. On allonge donc
+celui d'un autre jour — le matin de la formation passe de 2 h 30 à 3 h — et le
+quota tombe juste. **Le jour le moins chargé d'abord**, le classement refait à
+chaque pas : c'est la règle du reliquat, et elle protège l'équilibre qu'il vient
+d'établir.
+
+*Ce que ça répare, mesuré sur les données réelles du 31 août : trois tâches
+posées à 13 h ce lundi-là poussent la pause de midi à 12 h, le matin s'arrête à
+12 h, et la formation affichait 14 h 30 pour 15 visées sans aucun recours. Elle
+prend maintenant 10 h–13 h le mardi. Un plafond monté par une échéance en profite
+de la même façon : 19 h 30 visées, 19 h 30 posées, là où il en manquait une
+demi-heure.*
+
+- **Un bloc né d'un ÉVÉNEMENT ne se rallonge pas** : sa durée est celle de ce
+  qu'il englobe, elle ne se négocie pas.
+- **Il ne s'allonge que par l'APRÈS, et jamais au-delà de quatre heures** ni du
+  butoir de son espace — la formation s'arrête toujours à 20 h.
+- **Ni au-delà de la pause du midi**, qui est réservée avant lui : c'est ce qui
+  arrête le matin du mardi à 13 h et non à 14 h.
+
+**L'HEURE QU'ON A POSÉE PASSE AVANT TOUT** (1er septembre 2026, règle de Noé :
+*« le critère n° 1 des tâches, c'est l'horaire fixé lorsqu'elle a été posée — les
+blocs le prennent en compte en plus ; puis si elles n'ont pas d'horaire elles
+doivent être placées dans les espaces vides, mais en respectant les règles de
+l'algorithme »*).
+
+| Ce qu'elle porte | Où elle se dessine |
+|---|---|
+| une heure, **et un bloc la porte** | en liste dans son bloc, sans horaire |
+| une heure, **et aucun bloc ne la porte** | **à son heure**, sur l'échelle |
+| pas d'heure | dans un vide de la journée |
+
+**Ce que ça répare** : un événement et une publication restaient à leur heure,
+une tâche non — elle était glissée dans un trou. Yuno et le perso n'ayant AUCUN
+bloc, aucune de leurs tâches n'était jamais à l'heure prévue : la tâche Yuno de
+13 h se dessinait à 16 h 42.
+
+**Ça ne contredit pas « l'heure d'une tâche est une échéance, pas un créneau »**
+(31 août) : cette règle vaut DANS un bloc, où la tâche est une liste qu'on fait
+dans l'ordre qu'on veut. Hors de tout bloc, il n'y a plus de contenant pour dire
+quand ; il ne reste que l'heure, et l'effacer serait perdre la seule chose que
+Noé ait dite.
+
+**UN VIDE EST CE QUE RIEN N'OCCUPE** — les blocs, la pause du midi, et ce qui
+vient d'être posé à son heure. Sans cette dernière part, une tâche sans heure se
+glisserait par-dessus la tâche Yuno de 13 h.
+
+**L'ÉCHELLE VAUT DEUX REM PAR HEURE, ANCRÉE EN HAUT — JAMAIS LA HAUTEUR MESURÉE
+DE LA PILE** (1er septembre 2026). C'est ce que dit le CSS : la graduation se
+répète toutes les 4 rem depuis le haut, et la hauteur d'un bloc vaut sa durée en
+rem. Or la LIGNE a un plancher de 25 rem quand l'échelle en fait 24 — **une pile
+mesure 376 px là où la journée en vaut 360**. Lire l'échelle dans la mesure
+décalait donc tout de 4 % : la pause de midi tombait 4 px trop bas, et
+`heureSousLePoint` — l'heure à laquelle on lâche un bloc ou une tâche — se
+trompait jusqu'à une demi-heure au bas de la journée. Sur la page dont le seul
+objet est de placer, c'est le genre d'erreur qu'on ne voit jamais parce qu'elle
+est petite en haut.
+
+**UNE HEURE DE PAUSE ENTRE 12 H ET 14 H, ET C'EST LA DERNIÈRE LIBRE DE LA
+TRANCHE.** À 12 h, elle coupait le matin en deux et la formation plafonnait à 2 h
+par jour ; repoussée, elle laisse le matin aller jusqu'à elle. Si ce qui est posé
+occupe toute la tranche, il n'y a rien à réserver — **le posé commande**.
+
+**ELLE EST CONNUE DE LA GRILLE AUTANT QUE DE L'ALGORITHME** (1er septembre 2026,
+défaut trouvé par Noé : *« étant donné qu'il doit y avoir 1 h de libre entre 12 h
+et 14 h, la tâche perso du mardi 1 ne peut pas être ici »*). C'est la règle qui
+n'avait pas été mise à jour. `pauseDuMidi` (js/orientation.js) est **exportée**,
+et les deux écrans s'en servent :
+
+- l'algorithme n'y pose aucun bloc ;
+- **la grille ne l'appelle plus un vide.** Depuis le 31 août, ce qui n'a pas
+  d'heure « se glisse dans les espaces vides » d'une journée — et pour ce
+  calcul-là, une heure gardée libre ressemblait à un trou comme un autre. Une
+  tâche perso venait donc s'y loger. **Une heure gardée libre qu'un autre écran
+  remplit n'est plus une heure gardée libre.**
+
+Deux copies de ce calcul auraient fini par ne plus dire la même heure : la pause
+dépend de ce qui est posé ET des blocs nés d'un événement, donc elle se calcule,
+elle ne se devine pas. *Vérifié : le mardi, le bloc s'arrête à 13 h, la tranche
+13 h–14 h reste vide, et la tâche perso descend à 14 h ; le lundi, où trois
+tâches occupent 13 h–14 h, la pause est 12 h–13 h et rien ne s'y pose.*
 - **LE PERSO EN FAIT PARTIE** (même demande : « ça doit intégrer aussi perso,
   par exemple tout un dimanche perso ou un créneau d'1 h sur 3/4 jours »), et
   c'est un renversement de la règle posée le matin même — « rien pour le
@@ -1513,6 +1635,30 @@ côté, un événement de l'autre — et elle ne disait rien de vrai sur la jour
   touchent restent deux blocs, parce que personne ne tient six heures d'affilée.
   C'est exactement ce que le plafond dit.
 
+**LA COLONNE EST LA JOURNÉE, DE 10 H À 22 H** (31 août 2026, Noé : « quand il y
+a des espaces vides il faut qu'on le comprenne ou l'indiquer ; on va dire qu'une
+journée démarre à 10 h et se finit à 22 h max »).
+
+**Ce que ça remplace** : les blocs s'empilaient les uns sous les autres, dans
+l'ordre des heures mais sans distance entre eux — un trou d'une heure et un trou
+de quatre se ressemblaient trait pour trait, et l'après-midi vide d'un jour sans
+rien à faire ne se voyait pas. **Le vide a maintenant la taille du temps qu'il
+dure.** Douze heures, deux rem chacune : la même échelle que la hauteur des
+blocs, qui vaut déjà deux rem par heure. *Mesuré : une colonne de 360 px, un
+bloc de 14 h posé à 8 rem du haut.*
+
+- **La graduation dit les heures sans les écrire** : un filet toutes les deux
+  heures, assez pâle pour qu'on le lise seulement quand on le cherche. Écrire
+  « 12 h », « 14 h », « 16 h » dans sept colonnes aurait ajouté quarante-deux
+  nombres à une page qui en compte déjà beaucoup — et chaque bloc porte déjà son
+  heure de début.
+- **LA JOURNÉE A UNE FIN, et l'algorithme la respecte** : un bloc né d'une
+  réunion de 20 h à 23 h s'arrête à 22 h — il couvre ce qu'il peut, et l'échelle
+  de la colonne reste vraie. Le recalage après un déplacement obéit à la même
+  borne.
+- **Seule la vue des blocs est graduée** : dans l'autre, les barres s'empilent
+  comme partout ailleurs dans le hub. Une même grille, deux lectures.
+
 **SA HAUTEUR EST SA DURÉE** (demande de Noé : « la taille des blocs doit
 correspondre à la durée en heure ») — deux rem par heure. C'est la variable
 `--duree` que le CSS confronte déjà à un minimum : elle existait pour les
@@ -1529,54 +1675,110 @@ le reste du calendrier est plein ou teinté — un événement arrive, une publi
 part, une tâche se fait ; un bloc est une INTENTION de temps, et le pointillé est
 déjà le signe du hub pour ça.
 
-**DEUX AFFICHAGES, ET UN BOUTON POUR PASSER DE L'UN À L'AUTRE** (31 août 2026,
-demande de Noé : *« l'affichage actuel ne permet pas de vraiment bien
-comprendre »*). Mêlés dans la même grille, les blocs et ce qui est posé se
-lisaient comme une seule pile — on ne voyait plus ni la forme de la semaine, ni
-ce qu'elle contient. La bascule reprend `.affichages`, le groupe de boutons du
-calendrier : c'est le même geste, choisir ce que la grille montre.
-- **« Les blocs » ouvre la page** : c'est la proposition qu'on vient regarder, et
-  qu'on corrige avant de poser quoi que ce soit.
-- **« Reproposer » ne s'offre que là**, sur la vue qui montre ce qu'il change.
+**DEUX INTERRUPTEURS, ET PAS TROIS VUES** (31 août 2026, Noé : *« c'est le
+foutoir complet ; plutôt que d'avoir trois options, donne-moi l'option d'activer
+la vision des blocs et la vision de ce qui est posé, du style case à cocher »*).
+Deux cases indépendantes — **Les blocs**, **Ce qui est posé** — reprennent
+`.cal-coche`, le filtre du calendrier. Elles disent la même chose que trois
+boutons sans avoir à nommer la troisième combinaison.
 
-**ON LE GLISSE, ET ON CHOISIT ENTRE QUELS BLOCS IL SE POSE** (31 août 2026,
-Noé : « il faut que je puisse déplacer les blocs en les glissant » puis « je dois
-pouvoir choisir entre quels blocs je le place, ce qui adaptera les horaires ; on
-garde toujours la même durée mais ça adapte les horaires de début pour que ce
-soit possible »).
+*Ce que ça remplace :* une bascule à trois positions, dont la troisième
+superposait les barres à leurs blocs et devenait illisible.
 
-**LA DURÉE NE BOUGE JAMAIS, seuls les débuts s'ajustent** (`replacerLeBloc`,
-js/orientation.js). Le bloc déplacé prend la place qu'on lui désigne — juste
-après le précédent — et ceux qui suivent reculent d'autant qu'il faut. *Mesuré :
-un bloc de 2 h 30 posé en tête d'un jeudi pousse la formation de 10 h à 12 h 30,
-Yuno à 15 h et le club à 16 h.*
-- **DEUX BLOCS NE SE SUPERPOSENT JAMAIS**, et ce n'est pas une vérification
-  ajoutée après coup : le recalage avance un curseur, chaque bloc commence à la
-  fin du précédent au plus tôt. La superposition est impossible par
-  construction.
-- **Ce qui n'a pas besoin de bouger ne bouge pas** : une journée qu'on
-  réorganise par le bas ne doit pas voir son matin se déplacer, sinon chaque
-  geste rebat toute la colonne et on ne sait plus ce qu'on a fait.
-- **UN REPÈRE MONTRE OÙ ÇA TOMBE** pendant le geste — un trait d'accent au-dessus
-  du bloc devant lequel on va se poser. Sans lui, « choisir entre quels blocs »
-  serait un pari qu'on ne découvre qu'au lâcher.
-- **`brancherDeplacement` accepte le MÊME JOUR** pour les blocs (option
-  `memeJour`). Il le refusait partout, et pour une bonne raison — décaler une
-  tâche de zéro jour écrirait en base ce qu'elle porte déjà —, mais l'essentiel
-  de ce geste se passe DANS une colonne.
-- **Après chaque geste, on RANGE** : deux blocs du même espace devenus voisins
-  fondent, comme au calcul. La règle vit dans `js/orientation.js` et ne se
-  recopie pas dans l'écran.
-- **Le vivier n'accueille pas un bloc** : la zone de dépôt qui déprogramme une
-  tâche le dit plutôt que de l'avaler en silence.
+**L'HEURE D'UNE TÂCHE EST UNE ÉCHÉANCE, PAS UN CRÉNEAU** — et c'est la clé de
+tout ce qui suit (31 août 2026, Noé explique sa logique) :
 
-> *Ce que le geste a coûté à trouver.* Il « ne marchait pas » alors qu'il était
-> branché depuis le début : `brancherDeplacement` prend toute
-> `.cal-barre-element`, mais le callback mourait sur `champsApresDeplacement`,
-> qui range une date dans la colonne de sa nature — un bloc n'a ni colonne ni
-> table. Puis il a fallu lever la garde du même jour. **Les deux échecs étaient
-> muets** : rien ne bougeait, aucune erreur visible. C'est la console qui a
-> tranché, pas la lecture du code.
+> *« L'horaire que je mets à mes tâches, c'est l'heure à laquelle je souhaite les
+> avoir finies — je ne veux pas que ce soit trop rigide, j'ai juste ces tâches-là
+> à faire avant cette heure, ce bloc. Donc ça n'a pas forcément de sens de
+> respecter l'horaire dans l'affichage : elles appartiennent à ce bloc, c'est une
+> LISTE dans le bloc, je peux les faire dans l'ordre que je veux. Il y a juste
+> les événements et les publications qui respectent un horaire strict. »*
+
+**Deux natures de temps, donc deux dessins** :
+
+| | où ça se dessine | pourquoi |
+|---|---|---|
+| **tâche** | **en liste dans son bloc**, sans horaire | son heure est une limite, pas un moment |
+| **événement, publication** | **à son heure**, en barre par-dessus | un horaire strict est un fait |
+
+- **Une tâche « avant 13 h » appartient au bloc qui se termine à 13 h ou
+  avant** — le dernier —, et non à celui qui contiendrait 13 h. C'est ce qui
+  manquait : le hub la cherchait DANS un créneau, et une tâche du matin notée
+  « 13 h » ne tombait dans aucun.
+- **SANS HEURE, C'EST L'ESPACE QUI RATTACHE** (« les tâches qui n'ont pas
+  d'horaire doivent être associées au bloc de leur espace présent dans cette
+  journée »). C'est le seul lien qui reste quand le temps ne dit rien — et il
+  dit quelque chose de vrai : une tâche du club se fera pendant les heures du
+  club.
+- **CE SONT LES VRAIES BARRES QUI ENTRENT DANS LE CADRE**, pas du texte. Une
+  liste écrite disait ce qu'il y avait, mais on ne pouvait rien en faire : pas
+  de rond à cocher, pas de menu, pas d'ouverture. Les barres ne peuvent pas être
+  ENFANTS du bloc — un bouton ne s'imbrique pas dans un bouton —, elles restent
+  ses voisines dans la pile et c'est leur position qui les met dedans.
+- **Entre les pointillés, pas collées à eux, et centrées** : une marge
+  intérieure de 6 px, et le groupe centré dans ce qui reste du cadre. Un cadre
+  dont le contenu touche les bords ne se lit plus comme un cadre.
+- **LES BLOCS PERDENT TOUT LEUR TEXTE** — heure, espace, durée — dès que « ce
+  qui est posé » est coché, et pour TOUS les blocs, qu'ils portent quelque chose
+  ou non. Ils redeviennent ce qu'ils sont, un cadre ; leur nom reste au survol.
+- **UNE TÂCHE RANGÉE DANS UN BLOC NE DIT PLUS SON HEURE** : le bloc la dit déjà,
+  et la répéter sur chaque ligne vole la place au titre. Au calendrier plein
+  écran, où aucun bloc ne la porte, l'heure reste.
+- **CENTRÉ EN LARGEUR, PAS EN HAUTEUR** : une marge identique des deux côtés, et
+  chacun garde sa place verticale selon son horaire.
+- **UN ÉVÉNEMENT OCCUPE SA DURÉE** : un match de deux heures se voit comme deux
+  heures. C'est la seule chose de cette grille qui prenne un vrai créneau — la
+  hauteur proportionnelle avait été retirée de TOUS les calendriers le 27 août
+  2026, elle revient ici et ici seulement, sur une journée à l'échelle.
+- **RIEN NE TOUCHE LE POINTILLÉ** — ni sur les côtés, ni en haut, ni en bas
+  (6 px). Un événement plus long que son cadre est **borné**, quitte à ce qu'il
+  ne colle plus exactement à son horaire : Noé l'a tranché — « quitte à
+  descendre de quelques pixels ». On borne sa position et sa hauteur VISIBLE,
+  jamais sa durée : c'est le cadre qu'on respecte, pas le fait qu'on rogne.
+  - *Deux défauts muets pour y arriver, et tous deux invisibles en lisant le
+    code.* `const MARGE` déclarée après son premier usage : zone morte, la
+    fonction levait une ReferenceError au premier bloc et six barres gardaient
+    l'ancien placement, sans un mot à l'écran. Puis `max-height` ignoré : en
+    CSS, un `min-height` l'emporte sur lui, et celui de la barre valait sa
+    durée — l'événement dépassait encore de 6 px, exactement la marge qu'on
+    venait de lui poser.
+- **UNE SEULE LIGNE PAR ÉLÉMENT, ET RIEN NE DÉPASSE DU CADRE** : dans un bloc de
+  90 px, un titre qui se replie sur trois lignes chasse tout ce qui suit. Ce
+  qu'on lit ici, c'est COMBIEN de choses et lesquelles — l'intitulé entier
+  s'ouvre d'un appui. Ce qui ne tient pas est **caché et compté** (« +2 »),
+  comme le « +N » d'un jour trop chargé au calendrier : un aperçu qui tronque
+  sans le dire ment sur ce qu'il montre.
+- **NI ROND NI HEURE dans cette grille** : cette vue sert à PROGRAMMER, pas à
+  faire. Cocher une tâche, avancer une publication — les deux gestes existent
+  partout ailleurs, et ici même dès qu'on décoche « Les blocs ». Le retrait du
+  titre part avec le rond, sans quoi chaque ligne commençait par 21 px de vide.
+- **Sous l'échelle, ce qui n'appartient à aucun bloc** : un jour sans bloc de
+  cet espace. Elles n'ont ni moment ni cadre, elles ont un jour.
+
+> *Trois essais avant celui-ci, et ils disent tous la même chose.* Poser les
+> tâches à leur heure comme les blocs les faisait se couvrir entre elles (trois
+> tâches de 13 h), puis déborder sur le bloc suivant une fois décalées. Puis les
+> ranger toutes sous l'échelle a fait perdre l'intérêt de la vue mêlée — « on
+> perd tout l'intérêt d'avoir les 2 sur une même vue s'il ne superpose pas ».
+> **Ce n'était pas un problème de placement mais de MODÈLE** : une tâche n'a pas
+> d'horaire, elle a une appartenance. Une fois ça dit, le dessin va de soi.
+
+- **La colonne n'est graduée que si l'on montre les blocs** : sans eux, il n'y a
+  pas d'échelle à tenir, et les barres reprennent l'empilement de partout
+  ailleurs dans le hub.
+- **Les blocs seuls ne portent pas leur contenu** : ils montrent la FORME de la
+  semaine, et y écrire ce qu'ils contiennent répondrait à une question qu'on n'a
+  pas posée.
+- **UNE SEULE LIGNE DE COMMANDES** (31 août 2026, demande de Noé) : le titre, le
+  décompte des heures, les deux cases et les deux gestes. Les séparer en deux
+  rangs laissait croire à deux étages de réglage là où il n'y en a qu'un.
+- **RIEN NE DISPARAÎT QUAND ON DÉCOCHE** (« ce n'est pas une page différente,
+  c'est juste du contenu qui est ajouté ou enlevé ; seul l'affichage du
+  calendrier doit être modifié »). Le décompte reste — il compte les heures des
+  blocs proposés, qui existent que la grille les montre ou non —, et les deux
+  gestes aussi. Les faire disparaître faisait bouger la page autour d'une case
+  à cocher.
 
 **On règle un bloc d'un appui** : jour, début, durée, espace — quatre champs
 natifs dans une fenêtre, plus « Retirer ce bloc ». Pas de confirmation : rien ne

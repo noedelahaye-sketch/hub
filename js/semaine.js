@@ -62,15 +62,19 @@ import {
   viserLeJour,
 } from './calendrier-commun.js';
 import { modifierAussitot } from './ecriture.js';
-import { construireFenetre } from './gabarits.js';
+import { brancherChoix, construireFenetre, construireFormulaire } from './gabarits.js';
 import {
   bilanDeLaSemaine,
   diagnosticDeLaSemaine,
   pivotDeLaSemaine,
   semaineDe,
   blocsDeLaSemaine,
+  pauseDuMidi,
+  chargeViseeDeLaPeriode,
   fondreLesVoisins,
-  replacerLeBloc,
+  JOURNEE_DEBUT,
+  JOURNEE_FIN,
+  poserLeBloc,
   periodeDuJour,
   semainePrecedente,
 } from './orientation.js';
@@ -351,15 +355,19 @@ export default {
       blocs: [],
       // Le bloc qu'on est en train de régler, s'il y en a un.
       blocRegle: null,
-      // DEUX AFFICHAGES, ET UN BOUTON POUR PASSER DE L'UN À L'AUTRE (31 août
-      // 2026, demande de Noé : « l'affichage actuel ne permet pas de vraiment
-      // bien comprendre »). Mêlés dans la même grille, les blocs et ce qui est
-      // posé se lisaient comme une seule pile — on ne voyait plus ni la forme
-      // de la semaine, ni ce qu'elle contient.
+      // DEUX INTERRUPTEURS, ET PAS TROIS VUES (31 août 2026, Noé : « c'est le
+      // foutoir complet ; plutôt que d'avoir trois options, donne-moi l'option
+      // d'activer la vision des blocs et la vision de ce qui est posé, du style
+      // case à cocher »).
       //
-      // « Les blocs » ouvre la page : c'est la proposition qu'on vient
-      // regarder, et c'est elle qu'on corrige avant de poser quoi que ce soit.
-      vueGrille: 'blocs',
+      // Ce que ça remplace : une bascule à trois positions — les blocs, ce qui
+      // est posé, les deux —, dont la troisième superposait les barres à leurs
+      // blocs et devenait illisible. Deux cases indépendantes disent la même
+      // chose sans la troisième combinaison à nommer, et surtout : quand les
+      // deux sont cochées, ce qui est posé s'écrit DANS le bloc au lieu de se
+      // dessiner par-dessus.
+      voirBlocs: true,
+      voirPose: false,
       // La tâche prise en main AU DOIGT : on la choisit, puis on touche un
       // jour. Le glissement est un geste de souris — sur une liste verticale,
       // au doigt, il ne se distingue pas d'un défilement.
@@ -387,35 +395,56 @@ export default {
       rendreMessage();
     };
 
-    // LE RANG SOUS LE POINT : combien de blocs de ce jour passent AVANT celui
-    // qu'on tient. On compare à leur milieu — au-dessus on passe devant, en
-    // dessous on passe derrière —, ce qui est la convention de tout
-    // réordonnancement à la souris.
-    const rangSousLePoint = (jourISO, y, sauf) => {
-      const autres = [...section.querySelectorAll('.cal-type-bloc')]
-        .filter((barre) => {
-          const [, id] = barre.dataset.element.split(':');
-          const bloc = etat.blocs.find((candidat) => candidat.id === id);
-          return bloc && bloc.jour === jourISO && bloc.id !== sauf;
-        })
-        .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+    // L'ÉCHELLE VAUT DEUX REM PAR HEURE, ANCRÉE EN HAUT — et surtout PAS la
+    // hauteur mesurée de la pile (1er septembre 2026). C'est ce que dit le CSS :
+    // la graduation se répète toutes les 4 rem depuis le haut, et la hauteur
+    // d'un bloc vaut sa durée en rem. Or la LIGNE a un plancher de 25 rem quand
+    // l'échelle en fait 24 : une pile mesure 376 px là où la journée en vaut
+    // 360, et prendre la mesure pour l'échelle décalait tout de 4 % — jusqu'à
+    // une demi-heure au bas de la journée, sur la page dont le seul objet est de
+    // placer. Le jour où « deux rem par heure » changera, c'est ici et dans le
+    // CSS que ça se change ; rien n'est écrit en pixels.
+    const pixelsParHeure = () =>
+      2 * parseFloat(getComputedStyle(document.documentElement).fontSize);
 
-      let rang = 0;
-      for (const barre of autres) {
-        const boite = barre.getBoundingClientRect();
-        if (y > boite.top + boite.height / 2) rang += 1;
-      }
-      return rang;
+    // L'HEURE SOUS LE POINT. La colonne étant graduée de 10 h à 22 h, la hauteur
+    // du lâcher se lit directement comme une heure.
+    const heureSousLePoint = (jourISO, y) => {
+      const index = Math.round(
+        (depuisDateISO(jourISO) - depuisDateISO(etat.semaine.debut)) / 86400000,
+      );
+      const pile = section.querySelectorAll('#bloc-grille .cal-pile')[index];
+      if (!pile) return JOURNEE_DEBUT;
+
+      const boite = pile.getBoundingClientRect();
+      const minutes = JOURNEE_DEBUT + ((y - boite.top) / pixelsParHeure()) * 60;
+      return Math.max(JOURNEE_DEBUT, Math.min(minutes, JOURNEE_FIN));
     };
 
-    // LE REPÈRE, pendant le geste : le bloc devant lequel on va se poser porte
-    // un trait. Sans lui, « choisir entre quels blocs » serait un pari — on ne
-    // saurait qu'au lâcher où la chose est tombée.
-    const viserLeRang = (barre) => {
-      for (const autre of section.querySelectorAll('.cal-bloc-avant')) {
-        autre.classList.remove('cal-bloc-avant');
-      }
-      barre?.classList.add('cal-bloc-avant');
+    // LE REPÈRE, pendant le geste : un trait à l'heure ronde où le bloc va se
+    // poser, avec cette heure écrite. Sans lui, « à quelle heure ça tombe »
+    // resterait un pari qu'on ne découvre qu'au lâcher — et depuis que le
+    // calage se fait à l'heure et non plus au rang, c'est la seule chose que le
+    // geste ait besoin de dire.
+    const viserLHeure = (jourISO, minutes) => {
+      section.querySelector('.cal-visee')?.remove();
+      if (!jourISO) return;
+
+      const index = Math.round(
+        (depuisDateISO(jourISO) - depuisDateISO(etat.semaine.debut)) / 86400000,
+      );
+      const pile = section.querySelectorAll('#bloc-grille .cal-pile')[index];
+      if (!pile) return;
+
+      const ronde = Math.max(
+        JOURNEE_DEBUT,
+        Math.min(Math.round(minutes / 60) * 60, JOURNEE_FIN),
+      );
+      const trait = document.createElement('span');
+      trait.className = 'cal-visee';
+      trait.style.top = `${((ronde - JOURNEE_DEBUT) / 60) * 2}rem`;
+      trait.textContent = `${String(Math.floor(ronde / 60)).padStart(2, '0')}:00`;
+      pile.append(trait);
     };
 
     section.addEventListener('pointermove', (evenement) => {
@@ -423,22 +452,451 @@ export default {
       if (!tenu) return;
 
       const jourISO = jourSousLePoint(evenement.clientX, evenement.clientY);
-      if (!jourISO) {
-        viserLeRang(null);
-        return;
+      viserLHeure(jourISO, jourISO ? heureSousLePoint(jourISO, evenement.clientY) : 0);
+    });
+
+    // COMBIEN D'HEURES SONT PLACÉES (31 août 2026, demande de Noé : « il manque
+    // un compteur des heures pour que je sache combien on a placé »). Une
+    // pastille par espace, dans l'ordre des journées, avec le VISÉ en regard
+    // quand il y en a un : « 26 h / 26 h » dit en trois signes que le club est
+    // servi, ce qu'aucune lecture de la grille ne donne d'un coup d'œil.
+    //
+    // Yuno et le perso n'ont pas de quota — leur chiffre est seul, et c'est
+    // exact : leur temps ne se déduit d'aucun objectif.
+    function construireCompteur() {
+      if (!etat.blocs.length) return '';
+
+      const visees = chargeViseeDeLaPeriode(periodeDuJour(etat.sources.periodes, etat.pivot));
+      const total = {};
+      for (const bloc of etat.blocs) {
+        total[bloc.espace] = (total[bloc.espace] ?? 0) + bloc.minutes;
       }
 
-      const [, id] = tenu.dataset.element.split(':');
-      const autres = [...section.querySelectorAll('.cal-type-bloc')]
-        .filter((barre) => {
-          const [, autre] = barre.dataset.element.split(':');
-          const bloc = etat.blocs.find((candidat) => candidat.id === autre);
-          return bloc && bloc.jour === jourISO && bloc.id !== id;
-        })
-        .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+      // PAS DE COMPTEUR POUR LE PERSO (31 août 2026, correction de Noé), et
+      // c'est la philosophie du hub qui parle : l'espace perso ne mesure rien.
+      // Compter ses heures en ferait un quatrième chantier à tenir, alors que
+      // ses blocs sont du temps gardé — le seul dont on ne demande jamais de
+      // comptes.
+      const lignes = ORDRE_ESPACES.filter(
+        (espace) => espace !== 'perso' && total[espace],
+      ).map((espace) => {
+        const vise = visees[espace];
+        const nom = NOMS_ESPACES[espace] ?? espace;
+        const valeur = `${dureeLisible(total[espace])}${vise ? ` / ${dureeLisible(vise)}` : ''}`;
 
-      viserLeRang(autres[rangSousLePoint(jourISO, evenement.clientY, id)] ?? null);
-    });
+        // LE NOM DE L'ESPACE NE S'ÉCRIT PLUS (31 août 2026, demande de Noé) :
+        // un rond de sa couleur le dit, et c'est la couleur qu'on lit de toute
+        // façon en premier. Le sens n'est pas perdu, il est DÉPLACÉ — le nom
+        // passe au survol et au lecteur d'écran, comme sur la ligne d'une
+        // habitude ou la pastille d'un formulaire.
+        return `
+          <li data-espace="${echapper(espace)}" title="${echapper(`${nom} — ${valeur}`)}">
+            <span class="compte-rond" aria-hidden="true"></span>
+            <span class="compte-valeur chiffre"
+              aria-label="${echapper(`${nom} : ${valeur}`)}">${echapper(valeur)}</span>
+          </li>`;
+      });
+
+      return `<ul class="semaine-compteur">${lignes.join('')}</ul>`;
+    }
+
+    // À QUEL BLOC UNE TÂCHE APPARTIENT (31 août 2026, Noé explique sa logique, et
+    // elle renverse le modèle) :
+    //
+    //   « L'horaire que je mets à mes tâches, c'est l'heure à laquelle je
+    //     souhaite les avoir finies — je ne veux pas que ce soit trop rigide,
+    //     j'ai juste ces tâches-là à faire avant cette heure, ce bloc. Donc ça
+    //     n'a pas forcément de sens de respecter l'horaire dans l'affichage :
+    //     elles appartiennent à ce bloc, c'est une LISTE dans le bloc, je peux
+    //     les faire dans l'ordre que je veux. Il y a juste les événements et les
+    //     publications qui respectent un horaire strict. »
+    //
+    // Une tâche « avant 13 h » appartient donc au bloc qui se termine à 13 h ou
+    // avant — le dernier —, et non à celui qui contiendrait 13 h. C'est ce qui
+    // manquait : le hub la cherchait DANS un créneau, et une tâche du matin
+    // notée « 13 h » ne tombait dans aucun.
+    // À QUEL BLOC UNE TÂCHE APPARTIENT — et seulement à un bloc DE SON ESPACE
+    // (31 août 2026, dernière règle de Noé) :
+    //
+    //   « Les blocs Yuno et perso ne doivent pas être proposés par
+    //     l'algorithme, il gère seulement FCH et formation. Les tâches Yuno et
+    //     perso déjà posées se rangeront donc en fonction de leur horaire, et
+    //     si elles n'en ont pas, dans un espace vide. »
+    //
+    // Une tâche Yuno ne se range donc plus dans un bloc du club faute de mieux :
+    // elle n'a pas de cadre, et c'est exact — le hub ne programme pas son temps.
+    // Elle se dessine à son heure, ou sous la journée si elle n'en a pas.
+    //
+    // L'HEURE D'UNE TÂCHE RESTE UNE ÉCHÉANCE : « ces tâches-là à faire avant
+    // cette heure, ce bloc ». Elle appartient donc au bloc qui se termine à
+    // cette heure ou avant — le dernier —, et non à celui qui la contiendrait.
+    const blocDeLaTache = (element) => {
+      const jour = versDateISO(element.date);
+      const heure = element.date.getHours() * 60 + element.date.getMinutes();
+
+      const siens = etat.blocs
+        .filter((bloc) => bloc.jour === jour && bloc.espace === element.espace)
+        .sort((a, b) => a.debut - b.debut);
+
+      // SANS BLOC DE SON ESPACE — le cas de Yuno et du perso, que l'algorithme
+      // ne programme plus — elle rejoint le bloc qui CONTIENT son heure, quel
+      // qu'il soit (31 août 2026, règle de Noé : « si elles ont un horaire,
+      // elles s'intègrent à un bloc qui correspond à leur horaire ; et si elles
+      // en ont un et qu'il n'y a pas de bloc associé, elles se placent
+      // simplement à leur horaire »).
+      if (!siens.length) {
+        if (!heure) return null;
+        return (
+          etat.blocs.find(
+            (bloc) =>
+              bloc.jour === jour &&
+              heure >= bloc.debut &&
+              heure < bloc.debut + bloc.minutes,
+          ) ?? null
+        );
+      }
+
+      // Sans heure, le premier bloc de son espace : c'est le seul lien qui
+      // reste quand le temps ne dit rien.
+      if (!heure) return siens[0];
+
+      const dedans = siens.find(
+        (bloc) => heure > bloc.debut && heure <= bloc.debut + bloc.minutes,
+      );
+      if (dedans) return dedans;
+
+      const avant = siens.filter((bloc) => bloc.debut + bloc.minutes <= heure);
+      return avant[avant.length - 1] ?? siens[0];
+    };
+
+    // LES TÂCHES SE POSENT DANS LEUR BLOC, EN VRAIES BARRES (31 août 2026,
+    // corrections successives de Noé : « enlève le texte à l'intérieur des blocs
+    // lorsque les 2 cases sont cochées… les éléments doivent être dans le bloc,
+    // donc entre les pointillés, pas collés aux pointillés, et bien centrés »).
+    //
+    // CE QUE ÇA REMPLACE : une liste ÉCRITE dans le bloc, en texte nu. Elle
+    // disait ce qu'il y avait, mais on ne pouvait rien en faire — pas de rond à
+    // cocher, pas de menu, pas d'ouverture. Ce sont les barres elles-mêmes qui
+    // entrent dans le cadre, avec tous leurs gestes.
+    //
+    // Elles ne peuvent pas être ENFANTS du bloc : un bouton ne s'imbrique pas
+    // dans un bouton. Elles restent donc ses voisines dans la pile, et c'est
+    // leur position qui les met dedans.
+    function poserDansLesBlocs() {
+      const hautDe = (element) => element.getBoundingClientRect().top;
+
+      for (const barre of section.querySelectorAll('#bloc-grille .cal-type-bloc')) {
+        const [, id] = barre.dataset.element.split(':');
+        const bloc = etat.blocs.find((candidat) => candidat.id === id);
+        if (!bloc) continue;
+
+        const pile = barre.closest('.cal-pile');
+
+        // MARGE INTÉRIEURE : rien ne touche le pointillé, ni sur les côtés ni
+        // en haut ni en bas. Un cadre dont le contenu colle aux bords ne se lit
+        // plus comme un cadre.
+        //
+        // ELLE SE DÉCLARE ICI, avant tout usage : posée plus bas, elle laissait
+        // la zone morte d'un `const` derrière elle — la fonction levait une
+        // ReferenceError au premier bloc, sans un mot à l'écran, et six barres
+        // gardaient l'ancien placement. Un défaut muet de plus.
+        // LA MÊME MARGE POUR TOUT LE MONDE (31 août 2026, Noé : « mets la même
+        // marge qu'ont les tâches »). Elle est passée à 12 px pour les
+        // événements le temps de comprendre qu'ils ne se détachaient pas — le
+        // vrai défaut était ailleurs : ils restaient en position relative, où
+        // `left` décale sans rétrécir. Une fois corrigé, six pixels suffisent.
+        const MARGE = 6;
+        const MARGE_STRICTE = MARGE;
+
+        // TOUT CE QUI APPARTIENT AU BLOC SE RANGE DEDANS, centré avec le reste
+        // (31 août 2026, Noé : « le placement des événements et des
+        // publications n'est toujours pas bon, ce n'est pas centré »).
+        //
+        // Leur HEURE reste ce qui les rattache — un événement de 17 h 15 tombe
+        // dans le bloc de 14 h–18 h et non ailleurs —, mais elle ne décide plus
+        // de leur hauteur dans le cadre : deux règles de placement dans un même
+        // rectangle, c'était le désordre qu'on voyait. Ce qui n'appartient à
+        // aucun bloc, lui, garde sa place sur l'échelle.
+        // LES TÂCHES DU BLOC, et elles seules : ce qui tient un horaire strict
+        // garde sa hauteur — voir plus bas.
+        const dedans = [...pile.querySelectorAll('.cal-type-tache')].filter((barreFille) => {
+          const [, cle] = barreFille.dataset.element.split(':');
+          const element = etat.elements.find(
+            (candidat) => candidat.type === 'tache' && String(candidat.id) === cle,
+          );
+          return element && blocDeLaTache(element)?.id === bloc.id;
+        });
+
+        // TOUT CE QUI EST DANS LE CADRE EST CENTRÉ EN LARGEUR (31 août 2026,
+        // correction de Noé : « il faut que ce soit centré dans la largeur du
+        // bloc, pas dans la longueur ; il doit garder sa place par rapport à
+        // l'horaire qu'il a »). La marge est la même des deux côtés — un cadre
+        // dont le contenu s'appuie sur un seul bord ne se lit pas comme un
+        // cadre.
+        const strictsDuCadre = [...pile.querySelectorAll('.cal-type-evenement, .cal-type-publication')]
+          .filter((barreFille) => {
+            const [type, cle] = barreFille.dataset.element.split(':');
+            const element = etat.elements.find(
+              (candidat) => candidat.type === type && String(candidat.id) === cle,
+            );
+            if (!element || versDateISO(element.date) !== bloc.jour) return false;
+            // CHEVAUCHER SUFFIT, il n'est pas besoin de commencer dedans
+            // (31 août 2026, défaut mesuré : un entraînement de 17 h 15 dans un
+            // bloc de 18 h 45 n'appartenait à aucun des deux, restait à son
+            // heure, et venait mordre le cadre voisin de 6 px). Ce qui touche
+            // un cadre est borné par lui.
+            const debut = element.date.getHours() * 60 + element.date.getMinutes();
+            const fin = debut + (element.minutes ?? 60);
+            return debut < bloc.debut + bloc.minutes && fin > bloc.debut;
+          });
+
+        // ILS NE TOUCHENT JAMAIS LE POINTILLÉ (31 août 2026, demande de Noé) —
+        // ni sur les côtés, ni en haut, ni en bas. Un événement porte SA durée
+        // depuis ce jour-là : un match de deux heures dans un bloc de deux
+        // heures viendrait sinon s'appuyer exactement sur le cadre, et l'on ne
+        // verrait plus qu'un trait pour deux choses.
+        //
+        // On borne sa position et sa hauteur VISIBLE, jamais sa durée : c'est
+        // le cadre qu'on respecte, pas le fait qu'on rogne.
+        const cadreStrict = barre.getBoundingClientRect();
+        const hautDeLaPile = pile.getBoundingClientRect().top;
+        for (const strict of strictsDuCadre) {
+          // MARQUÉ : la passe qui range sous l'échelle ne doit pas le
+          // repositionner ensuite. C'est ce qui venait de casser le bornage —
+          // elle le renvoyait à son heure, contre le pointillé.
+          strict.dataset.dansBloc = '1';
+          const r = strict.getBoundingClientRect();
+          // EN ABSOLU, sans quoi `left`/`right` ne font que DÉCALER la barre :
+          // en position relative, sa largeur ne change pas et elle sort du
+          // cadre par la droite d'exactement ce qu'on lui a donné à gauche.
+          // Mesuré : 12 px de marge à gauche, 12 px de débordement à droite.
+          strict.style.position = 'absolute';
+          const haut = Math.max(r.top, cadreStrict.top + MARGE_STRICTE) - hautDeLaPile;
+          const basMax = cadreStrict.bottom - MARGE_STRICTE - hautDeLaPile;
+          strict.style.left = `${MARGE_STRICTE}px`;
+          strict.style.right = `${MARGE_STRICTE}px`;
+          strict.style.top = `${haut}px`;
+          // `height` et `min-height: 0`, PAS `max-height` : en CSS, un
+          // `min-height` l'emporte sur un `max-height`, et celui de la barre
+          // vaut sa durée. Mesuré : l'événement dépassait encore de 6 px du
+          // cadre, exactement la marge qu'on venait de lui poser.
+          strict.style.minHeight = '0';
+          strict.style.height = `${Math.max(16, basMax - haut)}px`;
+        }
+
+        if (!dedans.length) continue;
+
+        const cadre = cadreStrict;
+        const hautPile = hautDeLaPile;
+
+        // On mesure d'abord, on place ensuite : la hauteur totale sert à
+        // CENTRER le groupe dans le cadre.
+        for (const tache of dedans) {
+          tache.dataset.dansBloc = '1';
+          tache.style.position = 'absolute';
+          tache.style.left = `${MARGE}px`;
+          tache.style.right = `${MARGE}px`;
+          tache.style.zIndex = '2';
+        }
+
+        // RIEN NE DÉPASSE DU CADRE (31 août 2026, demande de Noé : « ça ne doit
+        // pas dépasser du bloc, s'il y en a trop mets un plus »). On garde ce
+        // qui tient, on cache le reste, et on le COMPTE — un aperçu qui tronque
+        // sans le dire ment sur ce qu'il montre.
+        // LES TÂCHES COMMENCENT SOUS CE QUI TIENT UN HORAIRE STRICT : celui-ci
+        // garde sa hauteur — c'est un fait posé —, elles n'ont qu'une limite.
+        const plancher = strictsDuCadre.reduce((bas, strict) => {
+          const r = strict.getBoundingClientRect();
+          return Math.max(bas, r.bottom - hautPile + 2);
+        }, cadre.top - hautPile + MARGE);
+
+        const place = cadre.bottom - hautPile - MARGE - plancher;
+        const hauteurs = dedans.map((barreFille) => barreFille.getBoundingClientRect().height);
+        const pas = (hauteurs[0] ?? 18) + 2;
+
+        let tiennent = Math.max(0, Math.floor((place + 2) / pas));
+        tiennent = Math.min(tiennent, dedans.length);
+        const reste = dedans.length - tiennent;
+
+        for (const cachee of dedans.slice(tiennent)) cachee.style.display = 'none';
+
+        const montres = dedans.slice(0, tiennent);
+        let haut = plancher;
+
+        for (const barreFille of montres) {
+          barreFille.style.top = `${haut}px`;
+          haut += pas;
+        }
+
+        if (reste > 0) {
+          const compte = document.createElement('span');
+          compte.className = 'bloc-deborde';
+          compte.textContent = `+${reste}`;
+          barre.append(compte);
+        }
+      }
+    }
+
+    // CE QU'AUCUN BLOC NE PORTE SE RANGE SOUS L'ÉCHELLE (31 août 2026, Noé :
+    // « c'est le foutoir complet… retravaille l'intégration de ce qui est posé
+    // dans les blocs »).
+    //
+    // DEUX SYSTÈMES DE PLACEMENT NE TIENNENT PAS DANS UNE COLONNE DE 130 px.
+    // Poser ces barres à leur heure, comme les blocs, a été essayé et repris :
+    // elles se couvraient entre elles — trois tâches de 13 h —, puis, une fois
+    // décalées, débordaient sur le bloc suivant. Une barre de texte est plus
+    // haute que la durée qu'elle occupe, et aucun réglage ne rattrape ça.
+    //
+    // Elles descendent donc sous la journée graduée, l'une après l'autre, avec
+    // un filet pour dire où l'échelle s'arrête. La question qu'on se pose en
+    // cochant les deux cases est « qu'est-ce qui n'est couvert par aucun
+    // bloc ? » — et une liste y répond mieux qu'une superposition.
+    function rangerSousLEchelle() {
+      const piles = [...section.querySelectorAll('#bloc-grille .cal-pile')];
+      for (const [rang, pile] of piles.entries()) {
+        pile.style.minHeight = '';
+        pile.querySelector('.separateur-hors-bloc')?.remove();
+
+        // L'HEURE QU'ON A POSÉE PASSE AVANT TOUT (1er septembre 2026, règle de
+        // Noé : « le critère n° 1 des tâches, c'est l'horaire fixé lorsqu'elle a
+        // été posée ; puis si elles n'ont pas d'horaire elles doivent être
+        // placées dans les espaces vides »).
+        //
+        // UNE TÂCHE EN FAIT PARTIE dès lors qu'aucun bloc ne la porte. C'est ce
+        // qui manquait : un événement et une publication restaient à leur heure,
+        // une tâche non — elle était glissée dans un trou, et la tâche Yuno de
+        // 13 h se retrouvait à 16 h 42. Yuno et le perso n'ont pas de bloc, donc
+        // AUCUNE de leurs tâches n'était jamais à l'heure prévue.
+        //
+        // Ça ne contredit pas la règle du 31 août — « l'heure d'une tâche est une
+        // échéance, pas un créneau » : celle-là vaut DANS un bloc, où la tâche
+        // est une liste qu'on fait dans l'ordre qu'on veut. Hors de tout bloc, il
+        // n'y a plus de contenant pour dire quand ; il ne reste que l'heure, et
+        // l'effacer serait perdre la seule chose que Noé ait dite.
+        const stricts = [
+          ...pile.querySelectorAll('.cal-type-evenement, .cal-type-publication, .cal-type-tache'),
+        ].filter((barre) => barre.style.getPropertyValue('--depuis') && !barre.dataset.dansBloc);
+
+        for (const barre of stricts) {
+          barre.style.position = 'absolute';
+          barre.style.left = '10px';
+          barre.style.right = '0';
+          barre.style.top = barre.style.getPropertyValue('--depuis');
+          barre.style.zIndex = '2';
+        }
+
+        // DEUX HORAIRES STRICTS À LA MÊME HEURE NE SE COUVRENT PAS non plus :
+        // deux publications de 10 h tombent au même endroit. La seconde descend
+        // sous la première — le fait le plus tôt garde sa place.
+        let plafond = -Infinity;
+        const hautDeLaPile = pile.getBoundingClientRect().top;
+        for (const barre of stricts.sort(
+          (a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top,
+        )) {
+          const boite = barre.getBoundingClientRect();
+          const depuis = boite.top - hautDeLaPile;
+          const cale = Math.max(depuis, plafond);
+          if (cale !== depuis) barre.style.top = `${cale}px`;
+          plafond = cale + boite.height + 2;
+        }
+
+        // CE QUI RESTE SANS HEURE SE GLISSE DANS LES VIDES (31 août 2026, règle
+        // de Noé : « les tâches perso et Yuno doivent s'intégrer dans les
+        // espaces vides si elles n'ont pas d'horaire »). Les trous d'une
+        // journée sont ce qu'aucun bloc n'occupe : c'est là qu'il reste du
+        // temps, et c'est donc là qu'elles vont.
+        // UN VIDE EST CE QUE RIEN N'OCCUPE — les blocs, mais aussi ce qui vient
+        // d'être posé à son heure : sans ça, une tâche sans heure se glisserait
+        // par-dessus la tâche Yuno de 13 h.
+        const cadres = [
+          ...pile.querySelectorAll('.cal-type-bloc'),
+          ...stricts,
+        ].map((b) => b.getBoundingClientRect());
+        const hautPile = pile.getBoundingClientRect().top;
+
+        // LA PAUSE DU MIDI N'EST PAS UN VIDE (1er septembre 2026, défaut trouvé
+        // par Noé : « étant donné qu'il doit y avoir 1 h de libre entre 12 h et
+        // 14 h, la tâche perso du mardi 1 ne peut pas être ici »).
+        //
+        // C'est la règle qui n'avait pas été mise à jour. L'algorithme garde une
+        // heure libre entre 12 h et 14 h, et n'y pose aucun bloc ; la grille, qui
+        // glisse dans les trous ce qui n'a pas d'heure, ne connaissait pas cette
+        // décision et y voyait un trou comme un autre. Une heure gardée libre
+        // qu'un autre écran remplit n'est plus une heure gardée libre.
+        const jourDeLaPile = versDateISO(
+          ajouterJours(depuisDateISO(etat.semaine.debut), rang),
+        );
+        const midi = pauseDuMidi(
+          jourDeLaPile,
+          etat.sources,
+          etat.blocs.filter((bloc) => bloc.jour === jourDeLaPile),
+        );
+        if (midi) {
+          // Deux rem par heure depuis le haut, comme le CSS et comme les blocs
+          // — jamais la hauteur mesurée de la pile, qui la dépasse.
+          const versHaut = (minutes) =>
+            hautPile + ((minutes - JOURNEE_DEBUT) / 60) * pixelsParHeure();
+          cadres.push({ top: versHaut(midi[0]), bottom: versHaut(midi[1]) });
+        }
+
+        cadres.sort((a, b) => a.top - b.top);
+        const vides = [];
+        let curseur = 0;
+        for (const c of cadres) {
+          const haut = c.top - hautPile;
+          if (haut - curseur >= 18) vides.push([curseur, haut]);
+          curseur = Math.max(curseur, c.bottom - hautPile);
+        }
+        vides.push([curseur, pile.getBoundingClientRect().height]);
+
+        // ET SOUS L'ÉCHELLE, CE QUI N'APPARTIENT À AUCUN BLOC : les tâches sans
+        // heure, celles d'un jour sans bloc. Elles n'ont pas de moment, elles
+        // ont un jour.
+        const barres = [...pile.querySelectorAll('.cal-barre-element:not(.cal-type-bloc)')].filter(
+          (barre) =>
+            !barre.dataset.dansBloc && getComputedStyle(barre).position !== 'absolute',
+        );
+        if (!barres.length) continue;
+
+        const echelle = pile.getBoundingClientRect().height;
+        const filet = document.createElement('span');
+        filet.className = 'separateur-hors-bloc';
+        filet.style.top = `${echelle + 4}px`;
+        pile.append(filet);
+
+        let bas = echelle + 8;
+        let vide = 0;
+        let dansLeVide = vides[0]?.[0] ?? 0;
+
+        for (const barre of barres) {
+          barre.style.position = 'absolute';
+          barre.style.left = '0';
+          barre.style.right = '0';
+
+          // Un trou d'abord, le bas de la journée ensuite : une tâche sans
+          // heure appartient au jour, et il vaut mieux la voir dans le temps
+          // qui reste que reléguée sous l'échelle.
+          const hauteur = barre.getBoundingClientRect().height;
+          while (vide < vides.length && dansLeVide + hauteur > vides[vide][1]) {
+            vide += 1;
+            dansLeVide = vides[vide]?.[0] ?? Infinity;
+          }
+
+          if (vide < vides.length) {
+            barre.style.top = `${dansLeVide}px`;
+            dansLeVide += hauteur + 2;
+          } else {
+            barre.style.top = `${bas}px`;
+            bas += hauteur + 2;
+          }
+        }
+
+        // LA COLONNE S'ÉTEND POUR LES PORTER : posées en absolu, ces barres ne
+        // poussent rien — sans cette hauteur, elles sortaient de la case du
+        // jour et flottaient sous le calendrier.
+        pile.style.minHeight = `${bas}px`;
+      }
+    }
 
     // APRÈS CHAQUE GESTE, ON RANGE. Un bloc déplacé sur un jour qui en porte
     // déjà un du même espace doit fondre avec lui — sinon deux blocs identiques
@@ -467,16 +925,10 @@ export default {
       espace: bloc.espace,
       // Sa durée, que la barre traduit en hauteur.
       minutes: bloc.minutes,
-      // CE QU'IL ENGLOBE SE DIT DANS SON TITRE (31 août 2026, Noé : « lorsque
-      // l'on regarde la vue ce qui est posé, on voit que ce bloc comprend un
-      // événement déjà posé »). Sans ça, un bloc de 4 h posé sur une réunion de
-      // 3 h ressemblait à 4 h de travail en plus.
-      titre: [
-        `${NOMS_ESPACES[bloc.espace] ?? bloc.espace} · ${dureeLisible(bloc.minutes)}`,
-        bloc.autour ? `avec ${bloc.autour}` : null,
-      ]
-        .filter(Boolean)
-        .join(' · '),
+      // SON TITRE NE DIT PLUS « avec X » (31 août 2026) : ce qu'il englobe est
+      // désormais ÉCRIT DEDANS, ligne par ligne. Le répéter en tête faisait
+      // deux fois la même chose, et volait la place au nom de l'espace.
+      titre: `${NOMS_ESPACES[bloc.espace] ?? bloc.espace} · ${dureeLisible(bloc.minutes)}`,
     });
 
     function assembler() {
@@ -494,6 +946,21 @@ export default {
         ),
         relances: contacts.filter((contact) => contact.prochaine_action_date),
       });
+      // UN ÉVÉNEMENT PORTE SA DURÉE (31 août 2026, demande de Noé : « les
+      // événements doivent avoir la taille de leur réelle durée »). La barre en
+      // fait une hauteur (`--duree`), comme pour un bloc.
+      //
+      // POSÉ ICI ET NON DANS `assemblerCalendrier` : la hauteur proportionnelle
+      // a été retirée de TOUS les calendriers le 27 août 2026 — « supprime
+      // l'affichage de la durée dans le calendrier, il ne faut pas qu'il y ait
+      // trop d'info ». Elle revient sur cette grille-là, qui est une journée à
+      // l'échelle, et sur elle seule.
+      for (const element of etat.elements) {
+        if (element.type !== 'evenement' || !element.source?.date_fin) continue;
+        const minutes = (new Date(element.source.date_fin) - element.date) / 60000;
+        if (minutes > 0) element.minutes = minutes;
+      }
+
       etat.elements.push(...etat.blocs.map(elementDeBloc));
     }
 
@@ -531,16 +998,28 @@ export default {
              pour elle qu'on est venu. -->
         <div class="semaine-programmation">
           <section class="bloc semaine-grille">
+            <h2>Jour par jour</h2>
+            <!-- LE DÉCOMPTE, LES CASES ET LES DEUX GESTES SUR UNE MÊME LIGNE
+                 (31 août 2026, demande de Noé). Ce sont les commandes de la
+                 grille : les séparer en deux rangs laissait croire à deux
+                 étages de réglage là où il n'y en a qu'un.
+                 LE TITRE, LUI, RESTE AU-DESSUS (même jour) : il nomme la
+                 section, il n'est pas une commande. -->
             <div class="semaine-tete">
-              <h2>Jour par jour</h2>
-              <div class="affichages" role="group" aria-label="Ce que montre la grille">
-                <button type="button" data-vue-grille="blocs">Les blocs</button>
-                <button type="button" data-vue-grille="pose">Ce qui est posé</button>
+              <div id="bloc-compteur"></div>
+              <div class="cal-filtres" role="group" aria-label="Ce que montre la grille">
+                <label class="cal-coche"><input type="checkbox" data-voir="blocs">
+                  <span>Les blocs</span></label>
+                <label class="cal-coche"><input type="checkbox" data-voir="pose">
+                  <span>Ce qui est posé</span></label>
               </div>
               <!-- LE FILET DU « RIEN NE S'ENREGISTRE » : les blocs se
                    recalculent, donc on peut tout bouger sans rien risquer. Sans
                    cette porte, un bloc retiré par erreur ne reviendrait qu'en
                    rechargeant la page. -->
+              <button type="button" class="lien-discret" data-ajouter-bloc>
+                Ajouter un bloc
+              </button>
               <button type="button" class="lien-discret" data-reproposer-blocs>
                 Reproposer les blocs
               </button>
@@ -595,11 +1074,40 @@ export default {
       // CHAQUE VUE NE MONTRE QUE SA MOITIÉ : les blocs d'un côté, ce qui est
       // posé de l'autre. C'est le tri qu'on ne pouvait pas faire du regard
       // quand les deux partageaient la même pile.
-      const montres =
-        etat.vueGrille === 'blocs'
-          ? etat.elements.filter((element) => element.type === 'bloc')
-          : etat.elements.filter((element) => element.type !== 'bloc');
+      // CE QUE LA GRILLE MONTRE, selon les deux interrupteurs.
+      //
+      // QUAND LES DEUX SONT COCHÉS, CE QUI EST DANS UN BLOC N'EST PAS DESSINÉ À
+      // CÔTÉ : il est écrit DEDANS (voir `garnirLesBlocs`). C'est ce qui a
+      // remplacé la superposition, illisible — une barre posée par-dessus son
+      // bloc masquait le cadre qu'elle était censée occuper, et deux barres à
+      // la même heure se couvraient l'une l'autre. Reste dessiné en barre ce
+      // qu'aucun bloc ne porte : c'est justement ce qu'on cherche du regard.
+      // UNE TÂCHE QUI A TROUVÉ SON BLOC N'EST PAS DESSINÉE À CÔTÉ : elle est
+      // écrite dedans. Les événements et les publications, eux, restent des
+      // barres — ils respectent un horaire strict, et c'est là leur différence.
+      const montres = etat.elements.filter((element) => {
+        if (element.type === 'bloc') return etat.voirBlocs;
+        if (!etat.voirPose) return false;
+        // PAS DE PUBLICATIONS AVEC LES BLOCS (31 août 2026, demande de Noé).
+        // Cette grille sert à placer du TEMPS — ce qu'on va faire, et quand.
+        // Une parution n'occupe pas de temps : elle part. Elle reste entière
+        // sur la vue de ce qui est posé, où l'on regarde la semaine telle
+        // qu'elle est.
+        return !(etat.voirBlocs && element.type === 'publication');
+      });
 
+      // LA VUE DES BLOCS EST GRADUÉE, l'autre non : dans l'une, la colonne EST
+      // la journée de 10 h à 22 h ; dans l'autre, les barres s'empilent comme
+      // partout ailleurs dans le hub.
+      // La colonne n'est graduée que si l'on montre les blocs : sans eux, il n'y
+      // a pas d'échelle à tenir, et les barres reprennent l'empilement de
+      // partout ailleurs dans le hub.
+      cible('bloc-grille').classList.toggle('grille-blocs', etat.voirBlocs);
+      // DÈS QUE CE QUI EST POSÉ EST COCHÉ, LES BLOCS PERDENT LEUR TEXTE (31 août
+      // 2026, demande de Noé) : heure, espace, durée. Ils redeviennent ce qu'ils
+      // sont — un cadre —, et tout ce qui se lit dans la colonne est ce qui est
+      // vraiment posé. Leur nom reste au survol, et revient dès qu'on décoche.
+      cible('bloc-grille').classList.toggle('blocs-nus', etat.voirBlocs && etat.voirPose);
       cible('bloc-grille').innerHTML = construireGrille(
         montres,
         // « bloc » s'ajoute ICI et pas dans `NATURES` : le calendrier plein
@@ -610,6 +1118,63 @@ export default {
         etat.pivot,
         { montrerEspace: true, aide: false },
       );
+      // ON NE GARNIT QUE SI L'ON DEMANDE LES DEUX : les blocs seuls montrent la
+      // FORME de la semaine, et y écrire leur contenu serait répondre à une
+      // question qu'on n'a pas posée.
+      // UN BLOC DE 30 MIN TIENT SUR UNE LIGNE (31 août 2026, demande de Noé :
+      // « l'heure, l'espace et la durée alignés »). Sa hauteur vaut sa durée —
+      // une demi-heure fait 15 px, deux lignes n'y entrent pas. La classe se
+      // pose ici plutôt qu'en CSS : aucune règle ne sait comparer `--duree` à
+      // un seuil.
+      for (const barre of section.querySelectorAll('#bloc-grille .cal-type-bloc')) {
+        const [, id] = barre.dataset.element.split(':');
+        const bloc = etat.blocs.find((candidat) => candidat.id === id);
+        if (!bloc) continue;
+        barre.classList.toggle('bloc-court', bloc.minutes <= 30);
+
+        // SA HAUTEUR EST SA DURÉE, POSÉE EN STYLE (31 août 2026, Noé : « aucun
+        // bloc ne doit se superposer »). En CSS, la règle ne passait pas : la
+        // barre garde un plancher de 24 px — une taille de cible — que la
+        // cascade rendait indéboulonnable, et une demi-heure occupait 29 px là
+        // où l'échelle lui en donne 15. Elle mordait sur le bloc suivant.
+        //
+        // Un style inline tranche sans avoir à compter les sélecteurs. Ce qu'on
+        // y perd : sur cette grille, un bloc court n'est plus une cible de
+        // 24 px — mais on y programme à la souris, devant un écran.
+        if (etat.voirBlocs) {
+          barre.style.minHeight = '0';
+          barre.style.height = `${(bloc.minutes / 60) * 2}rem`;
+        }
+      }
+
+      // AUCUN BLOC NE DÉPASSE LE BAS DE LA JOURNÉE (31 août 2026, Noé : « ce
+      // bloc est coupé en fin de calendrier »). Un bloc de 30 min posé à
+      // 21 h 15 finit à 21 h 45 sur l'échelle, mais sa hauteur MINIMALE — celle
+      // d'une cible qu'on peut viser — l'emmène plus bas que 22 h. Il remonte
+      // d'autant : mieux vaut un bloc légèrement en avance qu'un bloc tronqué.
+      for (const barre of section.querySelectorAll('#bloc-grille .cal-type-bloc')) {
+        const pile = barre.closest('.cal-pile');
+        if (!pile) continue;
+        const trop = barre.getBoundingClientRect().bottom - pile.getBoundingClientRect().bottom;
+        if (trop <= 0) continue;
+        const haut = parseFloat(getComputedStyle(barre).top) || 0;
+        barre.style.top = `${Math.max(0, haut - trop)}px`;
+      }
+
+      if (etat.voirBlocs && etat.voirPose) {
+        // DANS CET ORDRE (31 août 2026, corrigé) : on range D'ABORD ce qui va
+        // dans un cadre, et SEULEMENT ENSUITE ce qu'aucun bloc ne porte.
+        //
+        // L'inverse laissait des traces : `rangerSousLEchelle` descendait tout
+        // sous la journée et réservait la hauteur qu'il fallait, puis
+        // `poserDansLesBlocs` remontait presque tout dans les cadres — la
+        // hauteur, elle, restait. Mesuré : 219 px de vide au bas de la grille et
+        // trois filets qui ne séparaient plus rien. « Il y a des lignes à la fin
+        // du tableau qui ne servent plus à rien », a dit Noé.
+        poserDansLesBlocs();
+        rangerSousLEchelle();
+      }
+
       // LE DÉFILEMENT DE LA COLONNE SURVIT AU RENDU. Programmer la douzième
       // tâche la fait quitter la liste, donc redessiner : sans cette ligne, la
       // colonne remonterait en haut à chaque geste et il faudrait redescendre
@@ -629,15 +1194,22 @@ export default {
       // partie avec. Sans ce rappel, la tabulation ne trouve plus le calendrier
       // dès qu'on a posé une seule tâche.
       poserLEntreeClavier?.();
-      for (const bouton of section.querySelectorAll('[data-vue-grille]')) {
-        const actif = bouton.dataset.vueGrille === etat.vueGrille;
-        bouton.classList.toggle('actif', actif);
-        bouton.setAttribute('aria-pressed', String(actif));
+      // LE DÉCOMPTE RESTE, QUOI QU'ON COCHE (31 août 2026, Noé : « ce n'est pas
+      // une page différente, c'est juste du contenu qui est ajouté ou enlevé ;
+      // seul l'affichage du calendrier doit être modifié »). Il compte les
+      // heures des blocs proposés, qui existent que la grille les montre ou
+      // non — le masquer faisait bouger la page autour d'une case à cocher.
+      cible('bloc-compteur').innerHTML = construireCompteur();
+
+      for (const boite of section.querySelectorAll('[data-voir]')) {
+        const coche = boite.dataset.voir === 'blocs' ? etat.voirBlocs : etat.voirPose;
+        boite.checked = coche;
+        boite.closest('.cal-coche')?.classList.toggle('actif', coche);
       }
-      // « Reproposer » ne s'offre que là où l'on voit ce qu'il change : sur la
-      // vue de ce qui est posé, il rejetterait des blocs qu'on ne regarde pas.
-      const reproposer = section.querySelector('[data-reproposer-blocs]');
-      if (reproposer) reproposer.hidden = etat.vueGrille !== 'blocs';
+      // LES DEUX GESTES RESTENT EUX AUSSI : ajouter un bloc coche « Les blocs »
+      // au passage, et reproposer agit sur ce qu'on affichera. Les faire
+      // disparaître était la même erreur — une case à cocher ne doit pas
+      // réorganiser la page autour d'elle.
 
       // Les jours s'allument quand une tâche est choisie : sans ce signe, le
       // second geste du toucher ne se devinerait pas.
@@ -660,39 +1232,76 @@ export default {
         return;
       }
 
-      const jours = JOURS_LISIBLES.map((nom, index) => {
-        const jour = versDateISO(ajouterJours(depuisDateISO(etat.semaine.debut), index));
-        return `<option value="${jour}"${jour === bloc.jour ? ' selected' : ''}>${nom}</option>`;
-      }).join('');
+      // LES GABARITS DU HUB, ET PAS DES CHAMPS NATIFS (31 août 2026, correction
+      // de Noé : « la tuile d'ajout ne respecte pas les critères qu'on a faits
+      // hier, les pastilles pour les menus déroulants »). Cette fenêtre était
+      // écrite à la main — quatre `<label>`, deux `<select>` du système —, ce
+      // qui la mettait hors de la grammaire posée la veille : un choix est une
+      // PASTILLE, jamais un champ ; les pastilles vont côte à côte, en tête ;
+      // aucune ne porte son titre. `construireFormulaire` fait tout cela pour
+      // les dix-sept formulaires du hub, et il n'y avait aucune raison que
+      // celui-ci soit le dix-huitième à part.
+      const jours = Object.fromEntries(
+        JOURS_LISIBLES.map((nom, index) => [
+          versDateISO(ajouterJours(depuisDateISO(etat.semaine.debut), index)),
+          nom,
+        ]),
+      );
 
       const heure = `${String(Math.floor(bloc.debut / 60)).padStart(2, '0')}:${String(
         bloc.debut % 60,
       ).padStart(2, '0')}`;
 
-      const espaces = ORDRE_ESPACES.filter((espace) => espace !== 'perso')
-        .map(
-          (espace) =>
-            `<option value="${espace}"${espace === bloc.espace ? ' selected' : ''}>${echapper(
-              NOMS_ESPACES[espace] ?? espace,
-            )}</option>`,
-        )
-        .join('');
-
-      conteneur.innerHTML = construireFenetre(
-        'Régler ce bloc',
-        `<form class="formulaire bloc-reglage" data-regler-bloc>
-           <label>Jour<select name="jour">${jours}</select></label>
-           <label>Début<input type="time" name="debut" value="${heure}" step="900"></label>
-           <label>Combien de temps (en minutes)
-             <input type="number" name="minutes" value="${bloc.minutes}" min="30" max="480" step="30">
-           </label>
-           <label>Espace<select name="espace">${espaces}</select></label>
-           <div class="bloc-reglage-gestes">
-             <button type="submit" class="bouton-principal">Régler</button>
-             <button type="button" class="lien-discret" data-retirer-bloc>Retirer ce bloc</button>
-           </div>
-         </form>`,
+      // LE PERSO EST OFFERT ICI, alors que le plan ne le donne qu'au jour de
+      // repos : le hub ne se propose pas de planifier la vie de Noé, mais Noé
+      // a le droit de se réserver un mardi soir.
+      const espaces = Object.fromEntries(
+        ORDRE_ESPACES.map((espace) => [espace, NOMS_ESPACES[espace] ?? espace]),
       );
+
+      // Les durées en toutes lettres : un bloc se pense en heures, et le champ
+      // « nombre » demandait des minutes qu'il fallait convertir de tête.
+      const durees = {};
+      for (let minutes = 60; minutes <= 720; minutes += 30) {
+        durees[minutes] = dureeLisible(minutes);
+      }
+
+      const neuf = !bloc.id;
+      conteneur.innerHTML = construireFenetre(
+        neuf ? 'Ajouter un bloc' : 'Régler ce bloc',
+        construireFormulaire({
+          id: 'bloc-reglage',
+          libelle: neuf ? 'Ajouter un bloc' : 'Régler ce bloc',
+          action: 'regler-bloc',
+          bouton: neuf ? 'Ajouter' : 'Régler',
+          ouvert: true,
+          avecPli: false,
+          champs: [
+            { nom: 'espace', libelle: 'Espace', type: 'choix', options: espaces, valeur: bloc.espace },
+            { nom: 'jour', libelle: 'Jour', type: 'choix', options: jours, valeur: bloc.jour },
+            {
+              nom: 'minutes',
+              libelle: 'Durée',
+              type: 'choix',
+              options: durees,
+              valeur: String(bloc.minutes),
+            },
+            { nom: 'debut', libelle: 'Début', type: 'time', valeur: heure },
+          ],
+          extra: neuf
+            ? ''
+            : `<button type="button" class="lien-discret" data-retirer-bloc>
+                 Retirer ce bloc
+               </button>`,
+        }),
+      );
+
+      // SANS CET APPEL, LES PASTILLES NE POSENT RIEN. C'est le défaut trouvé
+      // dans perso.js le 30 août : un champ « choix » est un input caché doublé
+      // d'un bouton et d'un panneau, et le branchement est ce qui relie les
+      // deux. Il s'enregistrait proprement avec l'ancienne valeur, sans erreur
+      // ni signe.
+      brancherChoix(conteneur);
       document.body.classList.add('fond-fige');
     }
 
@@ -949,15 +1558,15 @@ export default {
         // colonne de sa nature, et un bloc n'a ni colonne ni table. Il se
         // décale donc ICI, dans l'état de la page, et rien ne part au réseau.
         if (type === 'bloc') {
-          // ENTRE QUELS BLOCS ON LE POSE, et pas seulement sur quel jour
-          // (31 août 2026, demande de Noé). La hauteur du lâcher désigne un
-          // rang dans la colonne ; `replacerLeBloc` fait le reste — il garde
-          // les durées et décale les débuts pour que la journée tienne, sans
-          // jamais superposer deux blocs.
+          // À L'HEURE OÙ ON LE LÂCHE (31 août 2026, demande de Noé). La
+          // colonne étant graduée, la hauteur du lâcher se lit comme une
+          // heure ; `poserLeBloc` fait le reste — il arrondit à l'heure ronde,
+          // garde les durées, et pousse ce que le bloc rencontre sans jamais
+          // en superposer deux.
           etat.blocs = ranger(
-            replacerLeBloc(etat.blocs, id, arrivee, rangSousLePoint(arrivee, point.y, id)),
+            poserLeBloc(etat.blocs, id, arrivee, heureSousLePoint(arrivee, point.y)),
           );
-          viserLeRang(null);
+          viserLHeure(null);
           rendreProgrammation();
           return;
         }
@@ -1292,9 +1901,28 @@ export default {
         return;
       }
 
-      const bascule = evenement.target.closest('[data-vue-grille]');
-      if (bascule) {
-        etat.vueGrille = bascule.dataset.vueGrille;
+      // AJOUTER UN BLOC SOI-MÊME (31 août 2026, demande de Noé). Il naît sur le
+      // premier jour de la semaine, à 14 h et pour deux heures : des valeurs
+      // qu'on change dans la foulée, mais qui font que la fenêtre s'ouvre déjà
+      // remplie plutôt que vide.
+      if (evenement.target.closest('[data-ajouter-bloc]')) {
+        etat.voirBlocs = true;
+        etat.blocRegle = {
+          id: null,
+          jour: etat.semaine.debut,
+          debut: 14 * 60,
+          minutes: 120,
+          espace: 'fch',
+        };
+        rendreReglage();
+        rendreProgrammation();
+        return;
+      }
+
+      const coche = evenement.target.closest('[data-voir]');
+      if (coche) {
+        if (coche.dataset.voir === 'blocs') etat.voirBlocs = coche.checked;
+        else etat.voirPose = coche.checked;
         rendreProgrammation();
         return;
       }
@@ -1339,23 +1967,29 @@ export default {
       // RÉGLER UN BLOC : rien ne part au réseau, tout se joue dans l'état de la
       // page. C'est la seule écriture du hub qui ne touche pas Supabase, et
       // c'est voulu — un bloc est une proposition, pas une donnée.
-      const reglage = evenement.target.closest('form[data-regler-bloc]');
+      const reglage = evenement.target.closest('form[data-action="regler-bloc"]');
       if (reglage) {
         evenement.preventDefault();
         const champs = Object.fromEntries(new FormData(reglage));
-        const [heures, minutes] = String(champs.debut || '09:00').split(':');
-        etat.blocs = etat.blocs.map((bloc) =>
-          bloc.id === etat.blocRegle?.id
-            ? {
-                ...bloc,
-                jour: champs.jour,
-                debut: Number(heures) * 60 + Number(minutes),
-                minutes: Math.max(30, Number(champs.minutes) || bloc.minutes),
-                espace: champs.espace,
-              }
-            : bloc,
-        );
-        etat.blocs = ranger(etat.blocs);
+        const [heures, minutes] = String(champs.debut || '10:00').split(':');
+        const regle = {
+          jour: champs.jour,
+          debut: Number(heures) * 60 + Number(minutes),
+          minutes: Math.max(30, Number(champs.minutes) || 60),
+          espace: champs.espace,
+        };
+
+        // ON PASSE PAR LE MÊME CHEMIN QUE LE GLISSEMENT (`poserLeBloc`) : régler
+        // un bloc à la main ou le lâcher sur une heure, c'est le même fait — il
+        // veut cette heure-là, et ce qu'il rencontre recule. Sans ce passage, un
+        // bloc créé à 16 h se posait PAR-DESSUS celui de 14 h à 16 h 30 : la
+        // fusion des voisins ne règle que les chevauchements d'un même espace.
+        const id = etat.blocRegle?.id ?? `main-${crypto.randomUUID()}`;
+        const avecLui = etat.blocRegle?.id
+          ? etat.blocs.map((bloc) => (bloc.id === id ? { ...bloc, ...regle } : bloc))
+          : [...etat.blocs, { ...regle, id }];
+
+        etat.blocs = ranger(poserLeBloc(avecLui, id, regle.jour, regle.debut));
         etat.blocRegle = null;
         rendreReglage();
         rendreProgrammation();

@@ -205,9 +205,18 @@ tous à la fois ne hiérarchise rien — si tout penche, plus rien ne ressort.
 | Onglet inactif | Canela | italique | 400 | 1 rem |
 | Titre de tuile (contenu) | Canela | romain | 400 | 1,125 rem |
 | Sous-titre, libellé fort | Gilroy | romain | 600 | — |
-| Barre du calendrier (titre) | Gilroy | romain | 700 | 0,6875 rem |
+| Barre du calendrier (titre) | **Google Sans** | romain | 400 (600 pour un événement) | 0,6875 rem |
 | Corps, date, statut | Gilroy | romain | 400 | — |
 | Chiffre | Geist Mono | — | — | via `.chiffre` |
+
+**LA BARRE DU CALENDRIER A QUITTÉ GILROY LE 1er SEPTEMBRE 2026**, et c'est une
+règle du HUB qui l'emporte ici, pas une décision de Yuno : les trois calendriers
+partagent `.cal-barre-titre`, et le hub y a posé **Google Sans** — la police
+distingue désormais les trois natures par sa seule graisse (événement 600, tâche
+400), au lieu du fond coloré qui les distinguait avant. Voir CLAUDE.md et
+l'état des lieux. **Le site ne surcharge rien**, et c'est volontaire : un
+calendrier qui se lirait autrement selon l'écran obligerait à réapprendre le
+même objet deux fois. Gilroy garde tout le reste de l'utilitaire.
 
 **Le 700 est né le 13 août**, pour ces barres-là : à 11 px sur un fond teinté,
 le 600 restait timide. Il a fallu **ajouter le fichier** (`Gilroy-Bold.woff2`,
@@ -562,7 +571,11 @@ CLAUDE.md pour les trois automatismes réunis.
   base commune : à spécificité mêlée, un palier de l'une écrasait celui de
   l'autre.
 - **La capture** s'ouvre en **fenêtre volante**, comme au calendrier — le geste
-  est le même partout dans le hub. **C'est le « + » flottant qui l'ouvre**
+  est le même partout dans le hub. **Elle pose une TÂCHE par défaut depuis le
+  31 août 2026** — décision prise pour tout le hub ; la vue éditoriale garde
+  « Publication », et si les SORTIES devaient rester le défaut du site, c'est
+  une ligne dans le seul appel de `natureParDefaut` de `js/yuno.js`.
+  **C'est le « + » flottant qui l'ouvre**
   (demande de Noé, 14 août 2026) : sur cette page il ne pose pas une date, il
   ouvre « Ajouter une sortie » directement — comme sur les pages du réseau, où
   il ouvre une fiche. Le bouton dédié qui vivait à gauche des compteurs a

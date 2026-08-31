@@ -6087,6 +6087,117 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   color: var(--texte);
 }
 
+/* CE QUI EST POSÉ, DANS LE BLOC (31 août 2026, demande de Noé). Le pointillé
+   reste tout autour — c'est le bloc qui contient, pas les lignes qui le
+   remplacent — et le texte s'adapte : le titre du bloc passe en tête, plus
+   discret, et ce qu'il porte s'écrit dessous, un par ligne.
+
+   Chaque ligne garde la couleur de SON espace : un bloc du club peut contenir
+   une tâche de la formation, et c'est justement ce qu'on veut voir. */
+/* UNE TÂCHE RANGÉE DANS UN BLOC NE DIT PLUS SON HEURE (31 août 2026, demande de
+   Noé). C'est la suite de sa logique : cette heure est une ÉCHÉANCE, pas un
+   moment — « ces tâches-là à faire avant cette heure, ce bloc ». Une fois la
+   tâche posée dans son bloc, l'heure est dite par le bloc lui-même, et la
+   répéter sur chaque ligne vole la place au titre.
+
+   Sur la grille des blocs seulement : au calendrier plein écran, où il n'y a
+   pas de bloc pour la dire, l'heure reste. */
+.grille-blocs .cal-type-tache .cal-barre-heure { display: none; }
+
+/* UNE SEULE LIGNE, ET SERRÉ (31 août 2026, demande de Noé). Dans un cadre de
+   90 px, un titre qui se replie sur trois lignes chasse tout ce qui suit : ce
+   qu'on veut lire ici, c'est COMBIEN de choses et lesquelles, pas leur intitulé
+   entier — il s'ouvre d'un appui. */
+.grille-blocs .cal-semaine .cal-barre-element:not(.cal-type-bloc) {
+  min-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: 1.45;
+}
+
+/* SAUF UN ÉVÉNEMENT : il occupe SA DURÉE (31 août 2026, demande de Noé). C'est
+   la seule chose de cette grille qui prenne un vrai créneau — un match de deux
+   heures se voit comme deux heures. Le plancher de 16 px garde lisible un
+   rendez-vous d'un quart d'heure. */
+.grille-blocs .cal-semaine .cal-barre-element.cal-type-evenement {
+  min-height: max(var(--duree, 0rem), 16px);
+}
+
+.grille-blocs .cal-semaine .cal-barre-element:not(.cal-type-bloc) .cal-barre-titre {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* CE QUI NE TIENT PAS SE COMPTE, en bas du cadre : un aperçu qui tronque sans
+   le dire ment sur ce qu'il montre. C'est le « +N » d'un jour trop chargé au
+   calendrier, un étage plus bas. */
+.bloc-deborde {
+  position: absolute;
+  right: 6px;
+  bottom: 2px;
+  font-size: 0.625rem;
+  color: var(--texte-discret);
+  pointer-events: none;
+}
+
+/* ET PAS LE ROND NON PLUS (31 août 2026, demande de Noé) — celui qui coche une
+   tâche, celui qui avance une publication. Cette grille sert à PROGRAMMER, pas
+   à faire : on y range, on y déplace, on ne coche pas. Les deux gestes existent
+   partout ailleurs — l'espace Tâches, l'accueil, le calendrier, et ici même dès
+   qu'on décoche « Les blocs ».
+
+   Le retrait du titre part avec : il réservait la largeur du rond, et sans lui
+   chaque ligne commençait par un vide de 21 px. Le sélecteur pèse cinq classes,
+   parce que celui qui pose ce retrait en pèse quatre. */
+.grille-blocs .cal-type-tache .cal-signe,
+.grille-blocs .cal-type-publication .cal-signe {
+  display: none;
+}
+
+.grille-blocs .cal-semaine .cal-barre-element.cal-type-tache .cal-barre-titre,
+.grille-blocs .cal-semaine .cal-barre-element.cal-type-publication .cal-barre-titre {
+  text-indent: 0;
+}
+
+/* UN BLOC COURT TIENT SUR UNE LIGNE : heure, espace et durée à la suite, et ce
+   qui dépasse s'arrête à l'ellipse. À 15 px de haut — une demi-heure —, un
+   texte qui se replie sort du cadre qu'il est censé nommer. */
+.cal-semaine .cal-barre-element.cal-type-bloc.bloc-court {
+  white-space: nowrap;
+  line-height: 1.15;
+}
+
+.cal-semaine .cal-barre-element.cal-type-bloc.bloc-court .cal-barre-titre {
+  display: inline;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* L'heure retrouve son écart : la vue semaine le met à zéro parce qu'elle
+   écrit d'ordinaire l'heure AU-DESSUS du titre. Sur une ligne, « 20:00Yuno »
+   se lit comme un seul mot. */
+.cal-semaine .cal-barre-element.cal-type-bloc.bloc-court .cal-barre-heure {
+  margin-right: 0.4em;
+}
+
+/* LES BLOCS PERDENT LEUR TEXTE DÈS QUE CE QUI EST POSÉ EST COCHÉ (31 août 2026,
+   demande de Noé) — heure, espace, durée, et pour TOUS les blocs, qu'ils
+   portent quelque chose ou non. Ils redeviennent ce qu'ils sont, un cadre, et
+   tout ce qui se lit dans la colonne est ce qui est vraiment posé. Leur nom
+   reste au survol, et revient dès qu'on décoche.
+
+   Le sélecteur porte `.cal-semaine .cal-barre-element` en tête, et ce n'est pas
+   du zèle : `.cal-semaine .cal-barre-element:not(.cal-barre-duree)
+   .cal-barre-titre` pèse QUATRE classes et l'emportait. C'est le même piège que
+   le vivier et que le compteur, la cinquième fois de la journée. Le compte des
+   sélecteurs se fait, il ne se devine pas. */
+.blocs-nus .cal-semaine .cal-barre-element.cal-type-bloc > .cal-barre-heure,
+.blocs-nus .cal-semaine .cal-barre-element.cal-type-bloc > .cal-barre-titre {
+  display: none;
+}
+
 /* Son titre ne se met pas en avant : c'est un cadre où poser, pas une chose à
    faire. Il garde la police des barres et perd leur graisse. */
 .cal-type-bloc .cal-barre-titre {
@@ -6097,12 +6208,166 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
 .cal-type-bloc .cal-barre-heure { color: inherit; opacity: 0.8; }
 
-/* LE REPÈRE D'INSERTION, pendant qu'on glisse un bloc : un trait d'accent
-   au-dessus de celui devant lequel on va se poser. Il répond à la seule
-   question du geste — « entre lesquels ça tombe ? » —, et il disparaît avec
-   lui. Une ombre portée dirait « au-dessus », pas « avant ». */
-.cal-type-bloc.cal-bloc-avant {
-  box-shadow: 0 -3px 0 -1px var(--accent);
+/* LE COMPTEUR DES HEURES PLACÉES (31 août 2026, demande de Noé). Une pastille
+   par espace, dans l'ordre des journées, avec le visé en regard quand il y en a
+   un. Il se lit d'une ligne, au-dessus de la grille qu'il résume — et il ne
+   s'affiche que sur la vue des blocs, seule à en avoir un sens. */
+/* UNE SEULE LIGNE (31 août 2026, correction de Noé) : trois espaces y tiennent,
+   et un compteur qui se replie sur deux rangs cesse d'être une ligne d'état
+   pour devenir un bloc. S'il venait à déborder, il défile plutôt que de
+   s'empiler. */
+.bloc ul.semaine-compteur {
+  display: flex;
+  /* `row` explicitement : `.bloc ul` empile ses listes en COLONNE, et ne pas
+     redire la direction laissait le compteur s'empiler — trois lignes pleine
+     largeur au lieu d'une. Une propriété héritée d'un sélecteur plus général
+     se redit, elle ne se devine pas. */
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: var(--espace-16);
+  margin: 0 0 var(--espace-12);
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.bloc ul.semaine-compteur::-webkit-scrollbar { display: none; }
+
+/* `.bloc ul.semaine-compteur li` et non `.semaine-compteur li` : `.bloc
+   li[data-espace]` pèse une classe, un type ET un attribut, et l'emportait —
+   chaque compte prenait alors toute la largeur, avec le fond et le cadre d'une
+   tuile. C'est le piège documenté dans les conventions, celui du vivier, et il
+   se paie ici une fois de plus. Le compte des sélecteurs se fait, il ne se
+   devine pas. */
+.bloc ul.semaine-compteur li {
+  flex: none;
+  display: flex;
+  align-items: baseline;
+  gap: var(--espace-8);
+  gap: var(--espace-4);
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+}
+
+/* UN ROND, PAS UNE BARRE (31 août 2026, demande de Noé). Le trait latéral est
+   la grammaire d'une chose POSÉE dans la grille — une tâche, une publication ;
+   ici il n'y a rien de posé, seulement un total. Le rond est celui des
+   pastilles d'espace du hub, et il suffit à dire de qui on parle depuis que le
+   nom ne s'écrit plus. */
+.semaine-compteur .compte-rond {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--rayon-pastille);
+  background: var(--couleur-espace-pleine, var(--accent));
+}
+
+.bloc ul.semaine-compteur li::before { content: none; }
+
+/* 0,75 rem et non 0,875 (31 août 2026, « réduis un peu la taille du texte du
+   décompte ») : c'est une ligne d'état, pas un bilan — elle se consulte, elle ne
+   se lit pas. Les chiffres du bilan de la semaine, eux, gardent leur corps :
+   ceux-là sont ce qu'on vient voir.
+
+   EN GOOGLE SANS, ET NON EN GEIST MONO (31 août 2026, demande de Noé). Le hub
+   met en chasse fixe les chiffres qui se COMPARENT, et « 26 h / 26 h » en est
+   un ; mais ce compteur est posé à trois pixels de la grille, dont les barres
+   sont en Google Sans depuis le matin — deux polices qui se touchent se voient.
+   La règle générale ne bouge pas : c'est une exception de VOISINAGE, comme
+   l'heure d'une barre qui a quitté Geist Mono pour la même raison.
+   `.chiffre` reste sur l'élément : il porte aussi l'alignement des chiffres. */
+.semaine-compteur .compte-valeur {
+  font-family: "Google Sans", var(--police-texte);
+  font-size: 0.75rem;
+  color: var(--texte);
+}
+
+/* LA COLONNE EST LA JOURNÉE, DE 10 H À 22 H (31 août 2026, Noé : « quand il y a
+   des espaces vides il faut qu'on le comprenne ou l'indiquer ; on va dire qu'une
+   journée démarre à 10 h et se finit à 22 h max »).
+
+   CE QUE ÇA REMPLACE : les blocs s'empilaient les uns sous les autres, dans
+   l'ordre des heures mais sans distance entre eux. Un trou d'une heure et un
+   trou de quatre se ressemblaient donc trait pour trait — et l'après-midi vide
+   d'un jour où l'on n'avait rien à faire ne se voyait pas.
+
+   Douze heures, deux rem chacune : la même échelle que la hauteur des blocs,
+   qui vaut déjà deux rem par heure. Un bloc posé à 14 h tombe à 8 rem du haut,
+   et le vide entre deux blocs A LA TAILLE DU TEMPS QU'IL DURE.
+
+   La graduation dit les heures sans les écrire : un filet toutes les deux
+   heures, assez pâle pour qu'on le lise seulement quand on le cherche. Écrire
+   « 12 h », « 14 h », « 16 h » dans sept colonnes de 130 px aurait ajouté
+   quarante-deux nombres à une page qui en compte déjà beaucoup. */
+.grille-blocs .cal-pile {
+  position: relative;
+  min-height: 24rem;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--trait-cal) 0 1px,
+    transparent 1px 4rem
+  );
+}
+
+.grille-blocs .cal-type-bloc {
+  position: absolute;
+  top: var(--depuis, 0);
+  left: 0;
+  right: 0;
+  /* SA HAUTEUR EST EXACTEMENT SA DURÉE (31 août 2026, Noé : « aucun bloc ne
+     doit se superposer, il y en a plusieurs dans ce cas »). Le plancher de
+     24 px — une taille de cible — gonflait les blocs courts : une demi-heure
+     vaut 15 px sur l'échelle, elle en occupait 29 et mordait sur le bloc
+     suivant. Sur cette grille, c'est l'échelle qui commande ; le geste, lui,
+     se fait à la souris devant un écran. */
+  min-height: 0;
+  height: var(--duree, auto);
+}
+
+/* CE QU'AUCUN BLOC NE PORTE SE RANGE SOUS L'ÉCHELLE, en liste (31 août 2026).
+   Le placement se fait en JS — il dépend de la hauteur des barres — mais la
+   raison tient en une phrase : DEUX SYSTÈMES DE PLACEMENT NE TIENNENT PAS DANS
+   UNE COLONNE DE 130 px.
+
+   Ce qui a été essayé avant, et repris : poser ces barres à leur heure, comme
+   les blocs. Elles se couvraient entre elles (trois tâches de 13 h), puis
+   débordaient sur le bloc suivant une fois décalées — une barre de texte est
+   plus haute que la durée qu'elle occupe, et rien ne peut rattraper ça. La
+   liste sous l'échelle répond mieux à la question qu'on se pose vraiment :
+   « qu'est-ce qui n'est couvert par aucun bloc ? » */
+.grille-blocs .separateur-hors-bloc {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px solid var(--trait-cal);
+}
+
+/* La ligne suit l'échelle : une journée fait douze heures, la case doit les
+   porter. Elle passe donc de 23 rem à 24, plus le rembourrage. */
+.grille-blocs .cal-ligne { min-height: 25rem; }
+
+/* LE REPÈRE DU GESTE : un trait à l'heure ronde où le bloc va se poser, avec
+   cette heure écrite. Depuis que le calage se fait à l'HEURE et non plus au
+   rang (31 août 2026), c'est la seule chose que le geste ait besoin de dire —
+   « entre lesquels ça tombe » se voit tout seul sur une colonne graduée. */
+.cal-visee {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 2px solid var(--accent);
+  font-family: var(--police-chiffre);
+  font-size: 0.625rem;
+  line-height: 1;
+  color: var(--accent);
+  padding-left: 2px;
+  pointer-events: none;
+  z-index: 3;
 }
 
 /* La tête de la grille : son titre, la bascule des deux vues, et la porte qui
@@ -6116,7 +6381,14 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   margin-bottom: var(--espace-12);
 }
 
-.semaine-tete h2 { margin-bottom: 0; margin-right: auto; }
+/* Le décompte pousse les commandes à droite : le compteur informe, les cases et
+   les gestes agissent. Le titre, lui, est au-dessus — il nomme la section. */
+.semaine-tete #bloc-compteur { margin-right: auto; }
+.semaine-tete .semaine-compteur { margin-bottom: 0; }
+
+/* Les cases se centrent comme le reste de la ligne : `.cal-filtres` les aligne
+   en haut pour le calendrier, où elles tiennent seules sur leur rang. */
+.semaine-tete .cal-filtres { align-items: center; margin: 0; }
 
 /* La bascule reprend `.affichages`, le groupe de boutons du calendrier : c'est
    le même geste — choisir ce que la grille montre —, il n'a pas à se présenter

@@ -764,7 +764,16 @@ function barre(
       // elle existait pour les événements et ne servait plus depuis que leur
       // hauteur est fixe (27 août). Elle reprend du service ici, et ici
       // seulement : un bloc est un CONTENANT, sa taille est ce qu'il contient.
-      element.minutes ? ` --duree: ${(element.minutes / 60) * 2}rem;` : ''
+      // OÙ ELLE COMMENCE DANS LA JOURNÉE, en heures depuis 10 h (31 août 2026).
+      // C'est ce qui permet de poser une barre à sa vraie place dans une colonne
+      // graduée — sans quoi un trou d'une heure et un trou de trois se
+      // ressemblent. Posée pour TOUT ce qui a une heure, et pas seulement pour
+      // les blocs : la vue qui montre les deux à la fois en a besoin des deux
+      // côtés. Ce qui n'a pas d'heure n'a pas de place sur l'échelle, et reste
+      // dans le flux.
+      (element.date.getHours() || element.date.getMinutes()
+        ? ` --depuis: ${Math.max(0, (element.date.getHours() * 60 + element.date.getMinutes() - 600) / 60) * 2}rem;`
+        : '') + (element.minutes ? ` --duree: ${(element.minutes / 60) * 2}rem;` : '')
     }"
     ${element.recurrent ? 'data-recurrent' : ''}
     data-element="${echapper(element.type)}:${echapper(element.id)}"

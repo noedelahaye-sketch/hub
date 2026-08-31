@@ -264,6 +264,11 @@ qui ouvre la fenêtre de durée et écrit la victoire. Attention au piège :
 écoute `data-cocher-tache`. Deux attributs voisins, deux gestes distincts — sans
 le nouvel écouteur, les cercles auraient été des boutons morts.
 
+**Ce qu'il pose par défaut est une TÂCHE depuis le 31 août 2026** (décision de
+Noé, prise pour tout le hub) : c'était un événement, sans raison écrite, alors
+que l'espace Tâches et l'accueil posaient déjà une tâche. La règle du filtre
+passe avant — une seule nature cochée, c'est elle qu'on vient poser.
+
 Le site a gagné **le « + » flottant** le même jour (décision de Noé) : la
 tuile du hub, ouverte sur la nature Événement — une réunion se note en sortant
 de la salle. La pastille « Réunion » y est toujours offerte.
@@ -545,6 +550,14 @@ Ce qui SURVIT de cette journée, et sous quelle forme :
 
 Publications, tâches, événements, objectifs et jalons de l'espace `fch`, groupés
 par mois, filtrables par nature. Même module que le hub et Yuno.
+
+**Ses barres suivent la grammaire du hub depuis le 1er septembre 2026** — un
+événement en tuile pleine et grasse, une tâche en simple filet latéral, une
+publication en aplat léger, toutes en **Google Sans** : la nature se lit à la
+graisse et au dessin, plus à la couleur seule. Le site **ne surcharge rien**, et
+c'est volontaire : un calendrier qui se lirait autrement selon l'écran
+obligerait à réapprendre le même objet trois fois. Gilroy garde tout le reste du
+site.
 
 ### `#hermitage/partenaires` — les partenaires
 
