@@ -1599,13 +1599,20 @@ const NATURES_CREABLES = {
 };
 
 // Quand une seule nature est cochée, c'est elle qu'on vient poser : le filtre
-// dit déjà ce qu'on est en train de faire, autant ne pas le redemander. Une
-// relance fait exception — elle ne se crée pas d'ici, c'est une date qu'on
-// pose sur une fiche du carnet — alors on retombe sur l'événement.
+// dit déjà ce qu'on est en train de faire, autant ne pas le redemander.
+//
+// SINON, C'EST UNE TÂCHE (30 août 2026, décision de Noé : « quand j'ajoute
+// quelque chose, par défaut ça doit être une tâche »). C'était un événement
+// jusque-là, sans raison écrite ; or ce qu'on note le plus souvent, c'est une
+// chose à faire — l'espace Tâches et l'accueil posaient déjà une tâche par
+// défaut, le calendrier était le seul à ne pas le faire.
+//
+// Une relance retombe ici aussi : elle ne se crée pas d'ici, c'est une date
+// qu'on pose sur une fiche du carnet.
 export function natureParDefaut(natures) {
-  if (natures.size !== 1) return 'evenement';
+  if (natures.size !== 1) return 'tache';
   const [seule] = natures;
-  return seule in NATURES_CREABLES ? seule : 'evenement';
+  return seule in NATURES_CREABLES ? seule : 'tache';
 }
 
 // --- Poser au calendrier : la tuile ------------------------------------------
