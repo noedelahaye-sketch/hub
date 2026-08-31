@@ -8830,7 +8830,8 @@ body.balaye {
    marge : tout est repris ici. */
 .pastille-date { position: relative; display: inline-block; }
 
-.pastille-date input[type="date"] {
+.pastille-date input[type="date"],
+.pastille-date input[type="time"] {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -8846,7 +8847,7 @@ body.balaye {
 /* Le clavier doit voir ce qu'il touche : le champ est transparent, pas caché.
    `:has()` et non `+` — le champ vient APRÈS la pastille dans le balisage,
    puisqu'il se pose par-dessus elle. */
-.pastille-date:has(input[type="date"]:focus-visible) .choix-declencheur {
+.pastille-date:has(input:focus-visible) .choix-declencheur {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }

@@ -227,12 +227,24 @@ export const ICONE_DATE = `<svg viewBox="0 0 24 24" width="14" height="14" fill=
   <rect x="3" y="5" width="18" height="16" rx="2"></rect>
   <path d="M3 10h18M8 3v4M16 3v4"></path></svg>`;
 
+// L'horloge, pour une pastille d'heure. Même trait que le calendrier : ce sont
+// les deux moitiés d'une même question — quand.
+export const ICONE_HEURE = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+  aria-hidden="true" focusable="false">
+  <circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>`;
+
 // Ce qu'une pastille de date écrit : sa valeur quand elle en a une, le nom du
 // champ quand elle est vide. C'est la règle des pastilles de la tuile de
 // capture, et il n'y a pas de raison qu'elle change de forme ici.
 //
 // Une date COURTE : « 4 sept. » et non « le 4 septembre » — la pastille tient
 // dans une rangée, et l'année ne s'écrit que si ce n'est pas celle en cours.
+// Une heure se lit telle quelle, sans les secondes que la base y met.
+export function heureDePastille(valeur, libelle) {
+  return valeur ? valeur.slice(0, 5) : libelle;
+}
+
 export function dateDePastille(valeur, libelle) {
   if (!valeur) return libelle;
   const date = depuisDateISO(valeur);
@@ -256,14 +268,17 @@ export function dateDePastille(valeur, libelle) {
 if (typeof document !== 'undefined') {
   document.addEventListener('change', (evenement) => {
     const champ = evenement.target;
-    if (!champ.matches?.('.pastille-date input[type="date"]')) return;
+    if (!champ.matches?.('.pastille-date input[type="date"], .pastille-date input[type="time"]')) {
+      return;
+    }
     const pastille = champ.closest('.pastille-date').querySelector('.choix-declencheur');
     if (!pastille) return;
 
     const libelle = champ.closest('.pastille-date').dataset.libelle ?? 'Date';
-    pastille.lastElementChild.textContent = dateDePastille(champ.value, libelle);
+    const ecrire = champ.type === 'time' ? heureDePastille : dateDePastille;
+    pastille.lastElementChild.textContent = ecrire(champ.value, libelle);
     pastille.classList.toggle('choix-vide', !champ.value);
-    const nom = champ.value ? `${libelle} : ${dateDePastille(champ.value, libelle)}` : libelle;
+    const nom = champ.value ? `${libelle} : ${ecrire(champ.value, libelle)}` : libelle;
     pastille.setAttribute('title', nom);
   });
 }
@@ -709,20 +724,25 @@ export function construireFormulaire({
     // Le champ natif reste, invisible, PAR-DESSUS la pastille : c'est lui qu'on
     // touche. Le navigateur ouvre donc son sélecteur tout seul, la validation
     // d'un champ requis peut l'atteindre, et `FormData` le lit comme avant.
-    if (champ.type === 'date') {
+    if (champ.type === 'date' || champ.type === 'time') {
+      const estHeure = champ.type === 'time';
       // LE MOT SEUL, PAS SON EXPLICATION. « Jusqu'au (vide = un seul jour) »
       // était un bon libellé au-dessus d'un champ ; dans une pastille, il tient
       // une ligne à lui tout seul. La parenthèse est une explication, pas un
       // nom : elle part vers le `title`, où elle ne coûte rien. Fait ici, une
       // fois, plutôt que dans les huit formulaires qui écrivent une date.
       const court = champ.libelle.replace(/\s*\([^)]*\)\s*$/, '');
-      const texte = dateDePastille(champ.valeur, court);
+      const texte = estHeure
+        ? heureDePastille(champ.valeur, court)
+        : dateDePastille(champ.valeur, court);
       const nom = champ.valeur ? `${champ.libelle} : ${texte}` : champ.libelle;
 
       return `<span class="choix-champ pastille-date" data-libelle="${echapper(court)}">
         <span class="choix-declencheur${champ.valeur ? '' : ' choix-vide'}"
-          title="${echapper(nom)}">${ICONE_DATE}<span>${echapper(texte)}</span></span>
-        <input id="${idChamp}" name="${champ.nom}" type="date" ${requis}
+          title="${echapper(nom)}">${estHeure ? ICONE_HEURE : ICONE_DATE}<span>${echapper(
+            texte,
+          )}</span></span>
+        <input id="${idChamp}" name="${champ.nom}" type="${estHeure ? 'time' : 'date'}" ${requis}
           aria-label="${echapper(champ.libelle)}"
           value="${echapper(champ.valeur ?? '')}">
       </span>`;
@@ -860,9 +880,10 @@ export function construireFormulaire({
   // pas : elles sont de la même nature que les choix, et leur champ natif
   // pleine largeur cassait la bande en deux.
   const estChoix = (champ) => champ.type === 'choix' || champ.type === 'choix-multiple';
-  const estPastille = (champ) => estChoix(champ) || champ.type === 'date';
+  const estQuand = (champ) => champ.type === 'date' || champ.type === 'time';
+  const estPastille = (champ) => estChoix(champ) || estQuand(champ);
   const choix = champs.filter(estChoix);
-  const dates = champs.filter((champ) => champ.type === 'date');
+  const dates = champs.filter(estQuand);
 
   // LE TEXTE PRINCIPAL N'A NI ÉTIQUETTE NI CADRE (30 août 2026, demande de Noé,
   // la tuile de capture en main) : « un texte en gris qui décrit ce qu'il y a à

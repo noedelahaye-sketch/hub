@@ -1868,6 +1868,14 @@ de carte dit « écris ici » ; une pastille dit « choisis ».
   va à l'absence de choix, la couleur va au choix. *C'est ce qui a rendu
   nécessaire `vide: true` : une teinte qui pose son attribut MÊME sans valeur,
   sans quoi le vide n'a pas d'accroche à lui.*
+- **UNE HEURE AUSSI**, avec une horloge au lieu du calendrier : ce sont les deux
+  moitiés d'une même question — *quand*. Elle se corrige désormais sur une
+  **tâche** et sur une **publication** (30 août 2026, demande de Noé : « dans
+  les modifications, il faut que je puisse modifier ou rajouter l'horaire ») ;
+  les deux la portaient en base, la posaient à la capture, et ne la
+  rattrapaient nulle part. **Pas sur un jalon** : il marque une étape, il
+  n'occupe pas d'heure — et sa table n'a pas la colonne. Vidée, elle repasse à
+  `NULL` : minuit n'existe pas dans le hub.
 - **UNE DATE EST UNE PASTILLE, ELLE AUSSI** (« la date sur ces tuiles peut se
   mettre à la suite des pastilles, sous la forme d'une pastille aussi, avec le
   logo calendrier »). Elle porte le calendrier, dit le nom de son champ tant

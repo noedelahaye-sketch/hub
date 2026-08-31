@@ -1495,6 +1495,10 @@ export async function corrigerDepuisLeCalendrier(champs) {
     return appliquerAuCalendrier(type, id, {
       titre,
       date_prevue: champs.debut,
+      // Vidée, elle repasse à NULL : minuit n'existe pas dans le hub — sans
+      // heure, la colonne est nulle, et c'est ce qui distingue « à un moment
+      // dans la journée » de « à zéro heure ».
+      heure: champs.heure || null,
       reseau: champs.reseau,
       format: champs.format,
       recurrence: champs.recurrence || null,
@@ -1526,8 +1530,14 @@ export async function corrigerDepuisLeCalendrier(champs) {
     });
   }
 
-  // Tâche et jalon : un titre et une échéance.
-  return appliquerAuCalendrier(type, id, { titre, echeance: champs.debut });
+  // Tâche et jalon : un titre et une échéance — plus l'heure, quand le
+  // formulaire l'a offerte. `!== undefined` et non `|| null` : un jalon n'a pas
+  // ce champ, et lui écrire une colonne qu'il n'a pas ferait échouer la ligne.
+  return appliquerAuCalendrier(type, id, {
+    titre,
+    echeance: champs.debut,
+    ...(champs.heure !== undefined ? { heure: champs.heure || null } : {}),
+  });
 }
 
 // Chaque nature se supprime là où elle vit ; une relance n'est pas une ligne à
@@ -2788,6 +2798,16 @@ function champsDeModification(element) {
     return [
       { nom: 'titre', libelle: "L'idée", type: 'text', requis: true, valeur: ligne.titre },
       { nom: 'debut', libelle: 'Prévue le', type: 'date', requis: true, valeur: ligne.date_prevue },
+      // L'HEURE DE PARUTION SE CORRIGE (30 août 2026, demande de Noé). Elle se
+      // posait à la capture et ne se rattrapait nulle part ; or l'heure d'une
+      // parution est une décision éditoriale, pas un détail — c'est écrit dans
+      // l'assemblage du calendrier depuis le premier jour.
+      {
+        nom: 'heure',
+        libelle: 'À quelle heure (facultatif)',
+        type: 'time',
+        valeur: ligne.heure ? ligne.heure.slice(0, 5) : '',
+      },
       { nom: 'reseau', libelle: 'Réseau', type: 'choix', options: RESEAUX, valeur: ligne.reseau },
       { nom: 'format', libelle: 'Format', type: 'choix', options: FORMATS, valeur: ligne.format },
       {
@@ -2836,10 +2856,23 @@ function champsDeModification(element) {
     ];
   }
 
-  // Tâche et jalon : un titre et une échéance, rien de plus ici.
+  // Tâche et jalon : un titre et une échéance. L'HEURE EN PLUS POUR UNE TÂCHE
+  // (30 août 2026, demande de Noé) — elle réserve un créneau, et jusqu'ici elle
+  // se posait à la capture sans jamais pouvoir se corriger. Un jalon n'a pas
+  // cette colonne : il marque une étape, il n'occupe pas d'heure.
   return [
     { nom: 'titre', libelle: 'Quoi', type: 'text', requis: true, valeur: ligne.titre },
     { nom: 'debut', libelle: 'Échéance', type: 'date', requis: true, valeur: ligne.echeance },
+    ...(element.type === 'tache'
+      ? [
+          {
+            nom: 'heure',
+            libelle: 'À quelle heure (vide = dans la journée)',
+            type: 'time',
+            valeur: ligne.heure ? ligne.heure.slice(0, 5) : '',
+          },
+        ]
+      : []),
   ];
 }
 
