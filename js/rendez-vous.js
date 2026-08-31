@@ -42,6 +42,13 @@ const enHeures = (minutes) => dureeLisible(Math.round(minutes));
 
 const NOMS = { fch: 'le club', formation: 'la formation', photo: 'Yuno', perso: 'toi' };
 
+// La flèche du geste : le seul signe de la carte, et il ne dit qu'une chose —
+// ceci mène quelque part. En trait plutôt qu'en glyphe, pour ne pas dépendre
+// d'une police de secours choisie par le navigateur.
+const FLECHE = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none"
+  stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+  aria-hidden="true" focusable="false"><path d="M5 12h13M13 6l6 6-6 6"></path></svg>`;
+
 // --- Du diagnostic aux lignes -------------------------------------------------
 //
 // Chaque ligne porte son constat ET son geste. `creer` ouvre la tuile de
@@ -57,6 +64,9 @@ export function lignesDuRendezVous(diagnostic) {
     const trop = club.ecart > 0;
     lignes.push({
       cle: 'charge-fch',
+      espace: 'fch',
+      chiffre: `${enHeures(club.total)} / ${enHeures(club.vise)}`,
+      mot: club.seances ? `Le club, ${club.seances} séances` : 'Le club cette semaine',
       constat: `Le club est à ${enHeures(club.total)} sur ${enHeures(club.vise)} visées`
         + (club.seances ? `, dont ${club.seances} séances et leur traitement.` : '.'),
       precision: club.nonChiffre
@@ -78,6 +88,9 @@ export function lignesDuRendezVous(diagnostic) {
     const p = formation.prochain;
     lignes.push({
       cle: 'formation',
+      espace: 'formation',
+      chiffre: enHeures(p.besoin),
+      mot: p.nom,
       constat: `« ${p.nom} » demande ${enHeures(p.besoin)} cette semaine —`
         + ` ${enHeures(p.reste)} restent d'ici ${echeanceLisible(depuisDateISO(p.echeance))}.`,
       precision:
@@ -118,6 +131,9 @@ export function lignesDuRendezVous(diagnostic) {
   if (perso.manques.length === Object.keys(PLANCHER_PERSO).length) {
     lignes.push({
       cle: 'perso-rien',
+      espace: 'perso',
+      chiffre: 'Rien',
+      mot: 'pour toi cette semaine',
       constat: 'Rien pour toi cette semaine.',
       precision: 'Ni séance, ni moment de calme, ni personne de vu.',
       ton: 'calme',
@@ -131,6 +147,9 @@ export function lignesDuRendezVous(diagnostic) {
       const mot = MOTS[manque.famille];
       lignes.push({
         cle: `perso-${manque.famille}`,
+        espace: 'perso',
+        chiffre: `${manque.pose ?? 0} / ${manque.attendu}`,
+        mot: mot.titre,
         constat: manque.pose
           ? `${manque.pose} ${mot.compte} sur ${manque.attendu} cette semaine.`
           : `${mot.vide} cette semaine.`,
@@ -147,6 +166,9 @@ export function lignesDuRendezVous(diagnostic) {
   if (perso.nonClasses) {
     lignes.push({
       cle: 'perso-non-classes',
+      espace: 'perso',
+      chiffre: String(perso.nonClasses),
+      mot: 'moments sans famille',
       constat: `${perso.nonClasses} moments perso ne disent pas à quelle famille ils appartiennent.`,
       precision: 'Sans ça, le hub ne peut pas savoir si ta semaine t’a reposé.',
       ton: 'calme',
@@ -158,6 +180,9 @@ export function lignesDuRendezVous(diagnostic) {
   for (const inference of inferences) {
     lignes.push({
       cle: inference.cle,
+      espace: inference.espace,
+      chiffre: inference.chiffre,
+      mot: inference.mot,
       constat: inference.constat,
       precision: inference.consequence,
       dou: inference.dou,
@@ -199,47 +224,78 @@ function propositionDeLInference(inference) {
 }
 
 // --- Le dessin ----------------------------------------------------------------
+//
+// DES CARTES, PAS DES PARAGRAPHES (31 août 2026, Noé : « leur forme est
+// catastrophique, elles prennent trop de place, il n'y a rien de visuel qui
+// permette de comprendre sans lire — quel espace, quelle info importante »).
+//
+// Chaque constat tient maintenant en DEUX LIGNES, et se comprend d'un regard
+// avant d'être lu :
+//
+//     ● 16 h 30 / 26 h            ↗
+//       Le club, 3 séances
+//
+//   — la PASTILLE donne l'espace par sa couleur, comme partout dans le hub ;
+//   — le CHIFFRE est ce qu'on vient chercher : il est en Geist Mono, gros,
+//     posé seul sur sa ligne ;
+//   — le MOT dit de quoi il s'agit en trois mots, jamais en trois phrases.
+//
+// LE CONSTAT COMPLET N'EST PAS PERDU, IL EST DÉPLACÉ : il passe dans le `title`
+// et dans le nom accessible, avec sa précision et son « d'après ». C'est la
+// parade déjà employée sur la ligne d'une habitude — le sens survit à la
+// place qu'on lui reprend, et un écran qu'on ouvre chaque dimanche n'a pas
+// besoin qu'on lui réexplique ses propres chiffres.
+//
+// TOUTE LA CARTE PORTE LE GESTE, et c'est ce qui fait tenir les deux lignes :
+// un libellé de bouton (« Bloquer un créneau », « Voir ce qui peut attendre »)
+// coûtait une troisième ligne à lui seul. La règle du rendez-vous ne bouge
+// pas — aucun constat sans proposition, accepter coûte UN geste : ici, le
+// geste est la carte elle-même, et la flèche le dit.
 
-// `intro` et `valider` : la page de programmation (30 août 2026) écrit déjà
-// l'intervalle dans son sous-titre et pose son bouton de fin tout en bas, après
-// la grille. Deux fois la même phrase, ou deux boutons de validation sur un
-// même écran, ne diraient rien de plus.
 export function construireRendezVous(diagnostic, { intro = true, valider = true } = {}) {
   const lignes = lignesDuRendezVous(diagnostic);
   const { semaine } = diagnostic;
-
-  const geste = (proposition) => {
-    if (!proposition) return '';
-    if (proposition.lien) {
-      return `<a class="rdv-geste" href="${echapper(proposition.lien)}">${echapper(
-        proposition.libelle,
-      )}</a>`;
-    }
-    return `<button type="button" class="rdv-geste" data-rdv-creer="${echapper(
-      JSON.stringify(proposition.creer),
-    )}">${echapper(proposition.libelle)}</button>`;
-  };
 
   if (!lignes.length) {
     return `<p class="vide">Rien à signaler sur cette semaine — elle est à toi.</p>`;
   }
 
+  const carte = (ligne) => {
+    // Ce que le survol et le lecteur d'écran reçoivent : la phrase entière,
+    // puis ce que le geste va faire. Deux informations, un seul texte.
+    const entier = [ligne.constat, ligne.precision, ligne.dou ? `d’après ${ligne.dou}` : null]
+      .filter(Boolean)
+      .join(' ');
+    const libelle = ligne.proposition?.libelle ?? '';
+    const dedans = `
+      ${ligne.chiffre ? `<span class="rdv-chiffre chiffre">${echapper(ligne.chiffre)}</span>` : ''}
+      <span class="rdv-mot">${echapper(ligne.mot ?? ligne.constat)}</span>
+      ${libelle ? `<span class="rdv-fleche" aria-hidden="true">${FLECHE}</span>` : ''}`;
+
+    const attributs =
+      `class="rdv-carte${ligne.ton === 'tendu' ? ' rdv-tendu' : ''}"` +
+      ` data-espace="${echapper(ligne.espace ?? '')}"` +
+      ` title="${echapper(libelle ? `${entier} — ${libelle}` : entier)}"` +
+      ` aria-label="${echapper(libelle ? `${entier} ${libelle}` : entier)}"`;
+
+    // Un lien mène ailleurs, un bouton ouvre la tuile de capture : la carte
+    // prend la forme de ce qu'elle fait. Sans proposition — le cas n'existe pas
+    // aujourd'hui, la règle l'interdit — elle reste un simple bloc.
+    if (ligne.proposition?.lien) {
+      return `<li><a ${attributs} href="${echapper(ligne.proposition.lien)}">${dedans}</a></li>`;
+    }
+    if (ligne.proposition?.creer) {
+      return `<li><button type="button" ${attributs} data-rdv-creer="${echapper(
+        JSON.stringify(ligne.proposition.creer),
+      )}">${dedans}</button></li>`;
+    }
+    return `<li><span ${attributs}>${dedans}</span></li>`;
+  };
+
   return `
     ${intro ? `<p class="rdv-intro">Du ${echapper(bornesLisibles(semaine))}.</p>` : ''}
 
-    <ul class="rdv-lignes">
-      ${lignes
-        .map(
-          (ligne) => `
-        <li class="rdv-ligne${ligne.ton === 'tendu' ? ' rdv-tendu' : ''}">
-          <span class="rdv-constat">${echapper(ligne.constat)}</span>
-          ${ligne.precision ? `<span class="rdv-precision">${echapper(ligne.precision)}</span>` : ''}
-          ${ligne.dou ? `<span class="rdv-dou">d’après ${echapper(ligne.dou)}</span>` : ''}
-          ${geste(ligne.proposition)}
-        </li>`,
-        )
-        .join('')}
-    </ul>
+    <ul class="rdv-cartes">${lignes.map(carte).join('')}</ul>
 
     ${
       valider

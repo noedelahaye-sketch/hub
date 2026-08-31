@@ -31,7 +31,15 @@
 // écran. Elle dessine, elle branche, elle écrit.
 
 import * as api from './api.js';
-import { depuisDateISO, dureeLisible, echapper, NOMS_ESPACES } from './format.js';
+import {
+  ajouterJours,
+  depuisDateISO,
+  dureeLisible,
+  echapper,
+  NOMS_ESPACES,
+  ORDRE_ESPACES,
+  versDateISO,
+} from './format.js';
 import {
   appliquerAuCalendrier,
   assemblerCalendrier,
@@ -54,11 +62,16 @@ import {
   viserLeJour,
 } from './calendrier-commun.js';
 import { modifierAussitot } from './ecriture.js';
+import { construireFenetre } from './gabarits.js';
 import {
   bilanDeLaSemaine,
   diagnosticDeLaSemaine,
   pivotDeLaSemaine,
   semaineDe,
+  blocsDeLaSemaine,
+  fondreLesVoisins,
+  replacerLeBloc,
+  periodeDuJour,
   semainePrecedente,
 } from './orientation.js';
 import { construireRendezVous } from './rendez-vous.js';
@@ -330,6 +343,23 @@ export default {
       pivot: pivotDeLaSemaine(),
       diagnostic: null,
       bilan: null,
+      // LES BLOCS DE LA SEMAINE — une proposition, et RIEN D'AUTRE (31 août
+      // 2026, décision de Noé : « les blocs ne doivent être que de l'affichage,
+      // pas besoin qu'ils soient enregistrés »). Ils vivent ici, dans l'état de
+      // la page, et disparaissent au rechargement. Ce qui reste d'une
+      // programmation, ce sont les TÂCHES qu'on a posées dedans.
+      blocs: [],
+      // Le bloc qu'on est en train de régler, s'il y en a un.
+      blocRegle: null,
+      // DEUX AFFICHAGES, ET UN BOUTON POUR PASSER DE L'UN À L'AUTRE (31 août
+      // 2026, demande de Noé : « l'affichage actuel ne permet pas de vraiment
+      // bien comprendre »). Mêlés dans la même grille, les blocs et ce qui est
+      // posé se lisaient comme une seule pile — on ne voyait plus ni la forme
+      // de la semaine, ni ce qu'elle contient.
+      //
+      // « Les blocs » ouvre la page : c'est la proposition qu'on vient
+      // regarder, et c'est elle qu'on corrige avant de poser quoi que ce soit.
+      vueGrille: 'blocs',
       // La tâche prise en main AU DOIGT : on la choisit, puis on touche un
       // jour. Le glissement est un geste de souris — sur une liste verticale,
       // au doigt, il ne se distingue pas d'un défilement.
@@ -357,6 +387,98 @@ export default {
       rendreMessage();
     };
 
+    // LE RANG SOUS LE POINT : combien de blocs de ce jour passent AVANT celui
+    // qu'on tient. On compare à leur milieu — au-dessus on passe devant, en
+    // dessous on passe derrière —, ce qui est la convention de tout
+    // réordonnancement à la souris.
+    const rangSousLePoint = (jourISO, y, sauf) => {
+      const autres = [...section.querySelectorAll('.cal-type-bloc')]
+        .filter((barre) => {
+          const [, id] = barre.dataset.element.split(':');
+          const bloc = etat.blocs.find((candidat) => candidat.id === id);
+          return bloc && bloc.jour === jourISO && bloc.id !== sauf;
+        })
+        .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+
+      let rang = 0;
+      for (const barre of autres) {
+        const boite = barre.getBoundingClientRect();
+        if (y > boite.top + boite.height / 2) rang += 1;
+      }
+      return rang;
+    };
+
+    // LE REPÈRE, pendant le geste : le bloc devant lequel on va se poser porte
+    // un trait. Sans lui, « choisir entre quels blocs » serait un pari — on ne
+    // saurait qu'au lâcher où la chose est tombée.
+    const viserLeRang = (barre) => {
+      for (const autre of section.querySelectorAll('.cal-bloc-avant')) {
+        autre.classList.remove('cal-bloc-avant');
+      }
+      barre?.classList.add('cal-bloc-avant');
+    };
+
+    section.addEventListener('pointermove', (evenement) => {
+      const tenu = section.querySelector('.cal-type-bloc.en-deplacement');
+      if (!tenu) return;
+
+      const jourISO = jourSousLePoint(evenement.clientX, evenement.clientY);
+      if (!jourISO) {
+        viserLeRang(null);
+        return;
+      }
+
+      const [, id] = tenu.dataset.element.split(':');
+      const autres = [...section.querySelectorAll('.cal-type-bloc')]
+        .filter((barre) => {
+          const [, autre] = barre.dataset.element.split(':');
+          const bloc = etat.blocs.find((candidat) => candidat.id === autre);
+          return bloc && bloc.jour === jourISO && bloc.id !== id;
+        })
+        .sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
+
+      viserLeRang(autres[rangSousLePoint(jourISO, evenement.clientY, id)] ?? null);
+    });
+
+    // APRÈS CHAQUE GESTE, ON RANGE. Un bloc déplacé sur un jour qui en porte
+    // déjà un du même espace doit fondre avec lui — sinon deux blocs identiques
+    // se superposent, et le second est invisible sous le premier. C'est la même
+    // règle qu'au calcul, appliquée à la main de Noé : elle vit dans
+    // `js/orientation.js`, elle ne se recopie pas ici.
+    const ranger = (blocs) =>
+      fondreLesVoisins(
+        [...blocs].sort((a, b) => (a.jour < b.jour ? -1 : a.jour > b.jour ? 1 : a.debut - b.debut)),
+      );
+
+    // UN BLOC SE DESSINE COMME UNE BARRE, et c'est ce qui le rend compatible
+    // avec la grille existante : elle range ses barres par heure, un bloc de
+    // 9 h se pose donc de lui-même avant une tâche de 13 h. Il n'a fallu ni axe
+    // horaire ni calque — ce que Noé se demandait en posant la question.
+    //
+    // Ce n'est PAS une ligne de base de données : `id` est fabriqué, et rien
+    // n'ira le chercher. Le détail qu'on ouvre dessus est le sien.
+    const elementDeBloc = (bloc) => ({
+      id: bloc.id,
+      type: 'bloc',
+      source: bloc,
+      date: new Date(`${bloc.jour}T${String(Math.floor(bloc.debut / 60)).padStart(2, '0')}:${String(
+        bloc.debut % 60,
+      ).padStart(2, '0')}`),
+      espace: bloc.espace,
+      // Sa durée, que la barre traduit en hauteur.
+      minutes: bloc.minutes,
+      // CE QU'IL ENGLOBE SE DIT DANS SON TITRE (31 août 2026, Noé : « lorsque
+      // l'on regarde la vue ce qui est posé, on voit que ce bloc comprend un
+      // événement déjà posé »). Sans ça, un bloc de 4 h posé sur une réunion de
+      // 3 h ressemblait à 4 h de travail en plus.
+      titre: [
+        `${NOMS_ESPACES[bloc.espace] ?? bloc.espace} · ${dureeLisible(bloc.minutes)}`,
+        bloc.autour ? `avec ${bloc.autour}` : null,
+      ]
+        .filter(Boolean)
+        .join(' · '),
+    });
+
     function assembler() {
       const { evenements, taches, objectifs, publications, commandes, contacts } = etat.sources;
       etat.elements = assemblerCalendrier({
@@ -372,6 +494,7 @@ export default {
         ),
         relances: contacts.filter((contact) => contact.prochaine_action_date),
       });
+      etat.elements.push(...etat.blocs.map(elementDeBloc));
     }
 
     function squelette() {
@@ -389,13 +512,39 @@ export default {
           <div id="bloc-bilan"><p class="vide">…</p></div>
         </section>
 
+        <!-- CE QUE LE HUB VOIT, ENTRE LE BILAN ET LA SEMAINE (31 août 2026,
+             demande de Noé). Il fermait la page depuis le 30 août, au motif
+             qu'on lit un constat mieux après avoir vu la semaine qu'il décrit ;
+             c'était vrai d'un paragraphe, ça ne l'est plus d'une carte de deux
+             lignes. Ces constats servent à décider de ce qu'on va poser : ils
+             doivent être sous les yeux AU MOMENT où l'on pose, pas après.
+             Chaque carte porte sa porte de sortie — la règle du rendez-vous n'a
+             pas d'exception. -->
+        <section class="bloc bloc-vue">
+          <h2>Ce que je vois</h2>
+          <div id="bloc-lignes"><p class="vide">…</p></div>
+        </section>
+
         <!-- LA GRILLE ET LE VIVIER CÔTE À CÔTE, et c'est tout l'objet de la
              page : la chose à poser et l'endroit où la poser doivent se voir
              ensemble. Sur téléphone ils s'empilent, la grille d'abord — c'est
              pour elle qu'on est venu. -->
         <div class="semaine-programmation">
           <section class="bloc semaine-grille">
-            <h2>Jour par jour</h2>
+            <div class="semaine-tete">
+              <h2>Jour par jour</h2>
+              <div class="affichages" role="group" aria-label="Ce que montre la grille">
+                <button type="button" data-vue-grille="blocs">Les blocs</button>
+                <button type="button" data-vue-grille="pose">Ce qui est posé</button>
+              </div>
+              <!-- LE FILET DU « RIEN NE S'ENREGISTRE » : les blocs se
+                   recalculent, donc on peut tout bouger sans rien risquer. Sans
+                   cette porte, un bloc retiré par erreur ne reviendrait qu'en
+                   rechargeant la page. -->
+              <button type="button" class="lien-discret" data-reproposer-blocs>
+                Reproposer les blocs
+              </button>
+            </div>
             <div id="bloc-grille"><p class="vide">…</p></div>
           </section>
 
@@ -411,15 +560,6 @@ export default {
           </section>
         </div>
 
-        <!-- CE QUE LE HUB VOIT, après la grille et non avant : on lit un
-             constat mieux une fois qu'on a vu la semaine qu'il décrit. Chaque
-             ligne porte sa porte de sortie — c'est la règle du rendez-vous, et
-             elle n'a pas d'exception. -->
-        <section class="bloc">
-          <h2>Ce que je vois</h2>
-          <div id="bloc-lignes"><p class="vide">…</p></div>
-        </section>
-
         <div id="bloc-fin"></div>
 
         <!-- LE MÊME « + » QU'AILLEURS (30 août 2026, demande de Noé). Une page
@@ -430,7 +570,8 @@ export default {
           title="Ajouter au calendrier" aria-label="Ajouter au calendrier">${PLUS}</button>
 
         <div id="bloc-creation"></div>
-        <div id="bloc-detail"></div>`;
+        <div id="bloc-detail"></div>
+        <div id="bloc-reglage"></div>`;
     }
 
     function rendreMessage() {
@@ -451,9 +592,20 @@ export default {
     // laisseraient une demi-seconde où elle serait aux deux endroits.
     function rendreProgrammation() {
       assembler();
+      // CHAQUE VUE NE MONTRE QUE SA MOITIÉ : les blocs d'un côté, ce qui est
+      // posé de l'autre. C'est le tri qu'on ne pouvait pas faire du regard
+      // quand les deux partageaient la même pile.
+      const montres =
+        etat.vueGrille === 'blocs'
+          ? etat.elements.filter((element) => element.type === 'bloc')
+          : etat.elements.filter((element) => element.type !== 'bloc');
+
       cible('bloc-grille').innerHTML = construireGrille(
-        etat.elements,
-        toutesLesNatures(),
+        montres,
+        // « bloc » s'ajoute ICI et pas dans `NATURES` : le calendrier plein
+        // écran n'en affiche pas, et lui donner une case à cocher promettrait
+        // quelque chose qui n'existe que sur cette page.
+        new Set([...toutesLesNatures(), 'bloc']),
         'semaine',
         etat.pivot,
         { montrerEspace: true, aide: false },
@@ -477,10 +629,71 @@ export default {
       // partie avec. Sans ce rappel, la tabulation ne trouve plus le calendrier
       // dès qu'on a posé une seule tâche.
       poserLEntreeClavier?.();
+      for (const bouton of section.querySelectorAll('[data-vue-grille]')) {
+        const actif = bouton.dataset.vueGrille === etat.vueGrille;
+        bouton.classList.toggle('actif', actif);
+        bouton.setAttribute('aria-pressed', String(actif));
+      }
+      // « Reproposer » ne s'offre que là où l'on voit ce qu'il change : sur la
+      // vue de ce qui est posé, il rejetterait des blocs qu'on ne regarde pas.
+      const reproposer = section.querySelector('[data-reproposer-blocs]');
+      if (reproposer) reproposer.hidden = etat.vueGrille !== 'blocs';
+
       // Les jours s'allument quand une tâche est choisie : sans ce signe, le
       // second geste du toucher ne se devinerait pas.
       section.querySelector('.semaine-programmation')?.classList
         .toggle('semaine-en-main', Boolean(etat.choisie));
+    }
+
+    // LE RÉGLAGE D'UN BLOC — jour, début, durée, espace, et la porte pour le
+    // retirer. Quatre champs natifs plutôt qu'un formulaire du hub : un bloc
+    // n'existe qu'en mémoire, il n'a ni pastille d'espace à teinter ni
+    // enregistrement à confirmer. Ce qu'on règle ici ne quitte pas la page.
+    const JOURS_LISIBLES = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+
+    function rendreReglage() {
+      const conteneur = cible('bloc-reglage');
+      const bloc = etat.blocRegle;
+      if (!bloc) {
+        conteneur.innerHTML = '';
+        document.body.classList.remove('fond-fige');
+        return;
+      }
+
+      const jours = JOURS_LISIBLES.map((nom, index) => {
+        const jour = versDateISO(ajouterJours(depuisDateISO(etat.semaine.debut), index));
+        return `<option value="${jour}"${jour === bloc.jour ? ' selected' : ''}>${nom}</option>`;
+      }).join('');
+
+      const heure = `${String(Math.floor(bloc.debut / 60)).padStart(2, '0')}:${String(
+        bloc.debut % 60,
+      ).padStart(2, '0')}`;
+
+      const espaces = ORDRE_ESPACES.filter((espace) => espace !== 'perso')
+        .map(
+          (espace) =>
+            `<option value="${espace}"${espace === bloc.espace ? ' selected' : ''}>${echapper(
+              NOMS_ESPACES[espace] ?? espace,
+            )}</option>`,
+        )
+        .join('');
+
+      conteneur.innerHTML = construireFenetre(
+        'Régler ce bloc',
+        `<form class="formulaire bloc-reglage" data-regler-bloc>
+           <label>Jour<select name="jour">${jours}</select></label>
+           <label>Début<input type="time" name="debut" value="${heure}" step="900"></label>
+           <label>Combien de temps (en minutes)
+             <input type="number" name="minutes" value="${bloc.minutes}" min="30" max="480" step="30">
+           </label>
+           <label>Espace<select name="espace">${espaces}</select></label>
+           <div class="bloc-reglage-gestes">
+             <button type="submit" class="bouton-principal">Régler</button>
+             <button type="button" class="lien-discret" data-retirer-bloc>Retirer ce bloc</button>
+           </div>
+         </form>`,
+      );
+      document.body.classList.add('fond-fige');
     }
 
     function rendreLignes() {
@@ -600,6 +813,15 @@ export default {
         // semaine qui vient qu'on regarde, y compris le dimanche soir.
         etat.diagnostic = diagnosticDeLaSemaine(etat.sources, etat.pivot);
         etat.bilan = bilanDeLaSemaine(etat.sources, passee);
+        // LES BLOCS SE RECALCULENT À CHAQUE CHARGEMENT, et c'est tout leur
+        // principe : rien n'est enregistré, donc rien ne périme. La période du
+        // jour donne les heures visées — un mois « intense » propose plus de
+        // blocs, sans qu'on ait à le dire.
+        etat.blocs = blocsDeLaSemaine(
+          etat.sources,
+          etat.semaine,
+          periodeDuJour(periodes, etat.pivot),
+        );
         etat.echec = false;
       } catch (erreur) {
         console.error('Chargement de la semaine impossible', erreur);
@@ -631,24 +853,51 @@ export default {
 
     // Poser une tâche sur un jour. L'écran d'abord, le réseau ensuite — et si
     // l'écriture échoue, la tâche retourne dans le vivier ET une ligne le dit.
-    async function programmer(id, jour) {
+    // `heure` arrive quand la tâche a été posée DANS un bloc (31 août 2026,
+    // demande de Noé : « puis ajouter des tâches qui correspondent »). C'est là
+    // que la proposition laisse une trace : le bloc s'évapore au rechargement,
+    // l'heure de la tâche reste.
+    async function programmer(id, jour, heure = null) {
       const tache = etat.sources.taches.find((candidate) => candidate.id === id);
-      if (!tache || tache.echeance === jour) return;
+      if (!tache) return;
+      if (tache.echeance === jour && (!heure || tache.heure === heure)) return;
+
+      const champs = heure ? { echeance: jour, heure } : { echeance: jour };
 
       etat.choisie = null;
       etat.message = null;
       await modifierAussitot(
         tache,
-        { echeance: jour },
-        () => api.modifierTache(tache.id, { echeance: jour }),
+        champs,
+        () => api.modifierTache(tache.id, champs),
         { rendre: rendreProgrammation, echouer: signaler },
       );
     }
+
+    // LE BLOC SOUS LE POINT, s'il y en a un. Une tâche lâchée dessus prend son
+    // jour ET son heure ; lâchée à côté, elle ne prend que le jour — le bloc
+    // est une cible plus fine dans la même surface, pas un second geste.
+    const heureDuBlocSousLePoint = (x, y) => {
+      const barre = document.elementFromPoint(x, y)?.closest('.cal-type-bloc');
+      const id = barre?.dataset.element?.split(':')[1];
+      const bloc = id ? etat.blocs.find((candidat) => candidat.id === id) : null;
+      if (!bloc) return null;
+      return {
+        jour: bloc.jour,
+        heure: `${String(Math.floor(bloc.debut / 60)).padStart(2, '0')}:${String(
+          bloc.debut % 60,
+        ).padStart(2, '0')}`,
+      };
+    };
 
     // La ramener au vivier. `heure` part avec la date : une heure sans jour ne
     // veut rien dire, c'est la règle de la tuile de capture.
     async function deprogrammer(cle) {
       const [type, id] = cle.split(':');
+      if (type === 'bloc') {
+        signaler('Un bloc ne se déprogramme pas : il se retire depuis son réglage.');
+        return;
+      }
       if (type !== 'tache') {
         signaler('Seule une tâche se déprogramme d’ici. Le reste se règle au calendrier.');
         return;
@@ -689,8 +938,30 @@ export default {
     // faire, et il se devine parce qu'il est symétrique.
     brancherDeplacement(
       section,
-      async ({ element: cle, ecart }) => {
+      async ({ element: cle, ecart, arrivee, point }) => {
         const [type, id] = cle.split(':');
+
+        // UN BLOC SE GLISSE COMME LE RESTE, mais il n'a rien à écrire (31 août
+        // 2026, Noé : « il faut que je puisse déplacer les blocs en les
+        // glissant, ce n'est pas le cas actuellement »). Le geste était déjà
+        // branché — `brancherDeplacement` prend toute `.cal-barre-element` —,
+        // il mourait plus bas : `champsApresDeplacement` range une date dans la
+        // colonne de sa nature, et un bloc n'a ni colonne ni table. Il se
+        // décale donc ICI, dans l'état de la page, et rien ne part au réseau.
+        if (type === 'bloc') {
+          // ENTRE QUELS BLOCS ON LE POSE, et pas seulement sur quel jour
+          // (31 août 2026, demande de Noé). La hauteur du lâcher désigne un
+          // rang dans la colonne ; `replacerLeBloc` fait le reste — il garde
+          // les durées et décale les débuts pour que la journée tienne, sans
+          // jamais superposer deux blocs.
+          etat.blocs = ranger(
+            replacerLeBloc(etat.blocs, id, arrivee, rangSousLePoint(arrivee, point.y, id)),
+          );
+          viserLeRang(null);
+          rendreProgrammation();
+          return;
+        }
+
         const element = etat.elements.find(
           (candidat) => candidat.type === type && String(candidat.id) === id,
         );
@@ -705,7 +976,12 @@ export default {
           { rendre: rendreProgrammation, echouer: signaler },
         );
       },
-      { zones: [{ selecteur: '.semaine-vivier', quand: deprogrammer }] },
+      {
+        zones: [{ selecteur: '.semaine-vivier', quand: deprogrammer }],
+        // Un bloc se réordonne dans sa propre journée : c'est même le geste le
+        // plus courant, « entre quels blocs je le place ».
+        memeJour: (barre) => barre.classList.contains('cal-type-bloc'),
+      },
     );
 
     // --- Glisser une tâche du vivier vers un jour -------------------------------
@@ -775,6 +1051,7 @@ export default {
       } catch {
         // Le pointeur n'était plus à capturer : rien à relâcher.
       }
+      const dansUnBloc = heureDuBlocSousLePoint(evenement.clientX, evenement.clientY);
       const arrivee = jourSousLePoint(evenement.clientX, evenement.clientY);
       lacher();
 
@@ -790,6 +1067,10 @@ export default {
       section.addEventListener('click', avaler, { capture: true, once: true });
       setTimeout(() => section.removeEventListener('click', avaler, { capture: true }), 400);
 
+      if (dansUnBloc) {
+        programmer(id, dansUnBloc.jour, dansUnBloc.heure);
+        return;
+      }
       if (arrivee) programmer(id, arrivee);
     });
 
@@ -867,6 +1148,24 @@ export default {
         return;
       }
 
+      // UNE TÂCHE EN MAIN, TOUCHÉE SUR UN BLOC : elle s'y pose, avec son heure.
+      // C'est le chemin du doigt, celui qui ne glisse pas — sans cette
+      // interception, le geste retomberait sur la sélection du jour et la tâche
+      // perdrait l'heure que le bloc lui donnait.
+      const blocVise = evenement.target.closest('.cal-type-bloc');
+      if (blocVise && etat.choisie) {
+        const bloc = etat.blocs.find(
+          (candidat) => candidat.id === blocVise.dataset.element?.split(':')[1],
+        );
+        if (bloc) {
+          const heure = `${String(Math.floor(bloc.debut / 60)).padStart(2, '0')}:${String(
+            bloc.debut % 60,
+          ).padStart(2, '0')}`;
+          programmer(etat.choisie, bloc.jour, heure);
+          return;
+        }
+      }
+
       // TOUCHER UNE BARRE OUVRE SON DÉTAIL. Sauf quand une tâche est en main :
       // à ce moment-là le geste veut dire « pose-la ici », et c'est la
       // sélection du jour qui s'en charge — ouvrir une fenêtre par-dessus
@@ -874,6 +1173,14 @@ export default {
       const ouvrirElement = evenement.target.closest('[data-element]');
       if (ouvrirElement && !etat.choisie) {
         const [type, id] = ouvrirElement.dataset.element.split(':');
+        // UN BLOC N'A PAS DE DÉTAIL À CHARGER : il n'existe qu'ici. Son appui
+        // ouvre son réglage — jour, début, durée, espace —, et le détail
+        // générique irait chercher en base une ligne qui n'y est pas.
+        if (type === 'bloc') {
+          etat.blocRegle = etat.blocs.find((bloc) => bloc.id === id) ?? null;
+          rendreReglage();
+          return;
+        }
         etat.detail =
           etat.elements.find(
             (candidat) => candidat.type === type && String(candidat.id) === id,
@@ -980,6 +1287,39 @@ export default {
         etat.creation = null;
         rendreCreation();
         fermerLeDetail();
+        etat.blocRegle = null;
+        rendreReglage();
+        return;
+      }
+
+      const bascule = evenement.target.closest('[data-vue-grille]');
+      if (bascule) {
+        etat.vueGrille = bascule.dataset.vueGrille;
+        rendreProgrammation();
+        return;
+      }
+
+      // RETIRER UN BLOC. Pas de confirmation : il ne s'enregistre nulle part,
+      // et « Reproposer » le fait revenir. Ce qui est irréversible demande un
+      // second appui ; ceci ne l'est pas.
+      if (evenement.target.closest('[data-retirer-bloc]')) {
+        etat.blocs = etat.blocs.filter((bloc) => bloc.id !== etat.blocRegle?.id);
+        etat.blocRegle = null;
+        rendreReglage();
+        rendreProgrammation();
+        return;
+      }
+
+      // REPROPOSER : on jette ce qu'on a bougé et le hub recalcule. C'est le
+      // filet du « rien ne s'enregistre » — sans lui, un bloc supprimé par
+      // erreur ne reviendrait qu'en rechargeant la page.
+      if (evenement.target.closest('[data-reproposer-blocs]')) {
+        etat.blocs = blocsDeLaSemaine(
+          etat.sources,
+          etat.semaine,
+          periodeDuJour(etat.sources.periodes, etat.pivot),
+        );
+        rendreProgrammation();
         return;
       }
 
@@ -996,6 +1336,32 @@ export default {
     });
 
     section.addEventListener('submit', async (evenement) => {
+      // RÉGLER UN BLOC : rien ne part au réseau, tout se joue dans l'état de la
+      // page. C'est la seule écriture du hub qui ne touche pas Supabase, et
+      // c'est voulu — un bloc est une proposition, pas une donnée.
+      const reglage = evenement.target.closest('form[data-regler-bloc]');
+      if (reglage) {
+        evenement.preventDefault();
+        const champs = Object.fromEntries(new FormData(reglage));
+        const [heures, minutes] = String(champs.debut || '09:00').split(':');
+        etat.blocs = etat.blocs.map((bloc) =>
+          bloc.id === etat.blocRegle?.id
+            ? {
+                ...bloc,
+                jour: champs.jour,
+                debut: Number(heures) * 60 + Number(minutes),
+                minutes: Math.max(30, Number(champs.minutes) || bloc.minutes),
+                espace: champs.espace,
+              }
+            : bloc,
+        );
+        etat.blocs = ranger(etat.blocs);
+        etat.blocRegle = null;
+        rendreReglage();
+        rendreProgrammation();
+        return;
+      }
+
       // CORRIGER PASSE PAR LE MÊME CHEMIN QUE PARTOUT (`corrigerDepuisLeCalendrier`,
       // js/calendrier-commun.js) : chaque nature range sa date dans sa propre
       // colonne, et cette table de correspondance n'existe qu'une fois.

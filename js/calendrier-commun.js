@@ -231,6 +231,10 @@ export function brancherEtatPublication(
 
 // Les types d'éléments datés.
 const TYPES = {
+  // « bloc » n'est pas une nature du calendrier (il n'a pas de case à cocher,
+  // voir `natureDe`) mais il en est un TYPE : sans cette ligne, l'infobulle
+  // d'un bloc s'ouvrait sur « undefined ».
+  bloc: 'Bloc',
   evenement: 'Événement',
   tache: 'Tâche',
   publication: 'Publication',
@@ -254,6 +258,9 @@ export const NATURES = {
 export function natureDe(element) {
   if (element.type === 'jalon') return 'objectif';
   if (element.type === 'commande') return 'relance';
+  // « bloc » n'est pas dans `NATURES` et n'y sera pas : il n'existe que sur
+  // « Ma semaine », qui l'ajoute lui-même à l'ensemble qu'il passe. Une case à
+  // cocher au calendrier plein écran promettrait ce qui n'y est pas.
   return element.type;
 }
 
@@ -750,6 +757,14 @@ function barre(
         : `grid-column: ${segment.depuis + 1} / ${segment.jusqua + 2}; grid-row: ${
             segment.couloir + 2
           };`
+    }${
+      // LA HAUTEUR D'UN BLOC DIT SA DURÉE (31 août 2026, demande de Noé : « la
+      // taille des blocs doit correspondre à la durée en heure »). C'est la
+      // variable `--duree` que le CSS confronte déjà au minimum de la vue —
+      // elle existait pour les événements et ne servait plus depuis que leur
+      // hauteur est fixe (27 août). Elle reprend du service ici, et ici
+      // seulement : un bloc est un CONTENANT, sa taille est ce qu'il contient.
+      element.minutes ? ` --duree: ${(element.minutes / 60) * 2}rem;` : ''
     }"
     ${element.recurrent ? 'data-recurrent' : ''}
     data-element="${echapper(element.type)}:${echapper(element.id)}"
@@ -1327,7 +1342,16 @@ export function viserLeJour(section, cle) {
 // programmation s'en sert pour son vivier — y ramener une barre déprogramme la
 // tâche. Chacune est un `{ selecteur, quand }` ; sans elles, rien ne change du
 // geste d'origine.
-export function brancherDeplacement(section, quandDeplace, { zones = [] } = {}) {
+// `memeJour` : accepter un lâcher sur le jour d'où l'on vient (31 août 2026).
+// Il est refusé partout ailleurs, et pour une bonne raison — décaler une tâche
+// de zéro jour écrirait en base ce qu'elle porte déjà. Mais « Ma semaine » y
+// réordonne ses blocs, et l'essentiel de ce geste se passe DANS une colonne :
+// sans cette porte, on ne pouvait glisser un bloc que vers un autre jour.
+export function brancherDeplacement(
+  section,
+  quandDeplace,
+  { zones = [], memeJour = () => false } = {},
+) {
   let prise = null;
 
   const viser = (cle) => viserLeJour(section, cle);
@@ -1464,12 +1488,21 @@ export function brancherDeplacement(section, quandDeplace, { zones = [] } = {}) 
       return;
     }
 
-    if (!arrivee || arrivee === jour) return;
+    if (!arrivee) return;
+    if (arrivee === jour && !memeJour(barre)) return;
 
     const ecart = Math.round(
       (depuisDateISO(arrivee) - depuisDateISO(jour)) / 86400000,
     );
-    quandDeplace({ element: barre.dataset.element, ecart });
+    // LE POINT DU LÂCHER part avec l'écart (31 août 2026) : un bloc ne se
+    // contente pas de changer de jour, il se glisse ENTRE deux autres. Les
+    // appelants qui n'en ont pas besoin l'ignorent.
+    quandDeplace({
+      element: barre.dataset.element,
+      ecart,
+      arrivee,
+      point: { x: evenement.clientX, y: evenement.clientY },
+    });
   });
 
   section.addEventListener('pointercancel', lacher);

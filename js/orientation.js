@@ -284,6 +284,409 @@ export function chargeDeLaSemaine(
   };
 }
 
+// --- Les blocs de la semaine --------------------------------------------------
+//
+// « Je fonctionne beaucoup en bloc par jour — 3 h le matin sur la formation, 1 h
+// pour Yuno, 4 h l'après-midi pour le FCH ; ça pour le lundi, une organisation
+// un peu différente le mardi » (Noé, 31 août 2026). Le hub propose donc une
+// forme de semaine, à partir de ce qu'il sait déjà : les heures visées par
+// espace, et ce qui est déjà pris.
+//
+// TROIS PARTIS PRIS, ET IL FAUT LES CONNAÎTRE AVANT DE LIRE LE CODE :
+//
+//   1. UN BLOC NE S'ENREGISTRE PAS (décision de Noé). Il n'y a pas de table, pas
+//      de migration, rien à nettoyer : les blocs se recalculent à chaque
+//      ouverture. **Ce qui reste d'une programmation, ce sont les TÂCHES qu'on
+//      a posées dedans** — c'est-à-dire leur jour et leur heure. Le bloc est
+//      l'échafaudage, pas le mur.
+//   2. LE HUB INVENTE DEPUIS LES QUOTAS (choix de Noé entre trois options). Il
+//      ne demande aucun rythme type et n'apprend pas des semaines passées : il
+//      répartit ce qui reste à faire dans les plages libres. Conséquence
+//      assumée, et Noé l'a acceptée en choisissant : la première proposition
+//      tombera à côté d'un vrai emploi du temps — cours, présence à
+//      l'entreprise — et se corrigera à la main.
+//   3. RIEN POUR LE PERSO. Le hub ne planifie pas la vie de Noé : l'espace
+//      perso ne mesure rien, et poser « 2 h de perso mardi soir » en ferait un
+//      quatrième chantier. Le plancher perso continue de vivre où il est — dans
+//      les constats du dimanche, qui proposent de caler une séance.
+//
+// COMME LE RESTE DE CE FICHIER, ça ne touche ni au réseau ni au DOM : on peut
+// donner des faits factices et vérifier les blocs à la main.
+
+// Les trois moments d'une journée, et l'espace qui s'y pose d'abord. Ce ne sont
+// pas des horaires imposés : ce sont ceux que Noé a donnés en exemple, et le
+// défaut doit ressembler à ce qu'il fait déjà — sinon il corrige tout.
+//
+// Le matin à la formation et l'après-midi au club parce que c'est ce qu'il
+// décrit ; le soir à Yuno parce que Yuno vit HORS des 35 h de l'alternance,
+// comme le dit le quota (`QUOTAS.photo` vaut null).
+export const PLAGES = [
+  // 10 h et non 9 h (31 août 2026, Noé : « mes journées commencent plutôt à
+  // 10 h »). Un défaut doit ressembler à ce qu'on fait déjà, sinon on le
+  // corrige à chaque semaine.
+  { cle: 'matin', debut: 10 * 60, fin: 12 * 60 + 30, prefere: 'formation' },
+  { cle: 'apres-midi', debut: 14 * 60, fin: 18 * 60, prefere: 'fch' },
+  { cle: 'soir', debut: 20 * 60, fin: 22 * 60, prefere: 'photo' },
+];
+
+// Le jour de repos ne se découpe pas en plages : il est d'un seul tenant, du
+// premier créneau au dernier.
+export const JOURNEE_DEBUT = 10 * 60;
+export const JOURNEE_FIN = 22 * 60;
+
+// Un bloc plus court qu'une heure n'est pas un bloc, c'est un trou entre deux
+// choses ; plus long que quatre heures, personne ne le tient d'affilée.
+export const BLOC_MIN = 60;
+export const BLOC_MAX = 4 * 60;
+
+// Ce que Yuno reçoit quand il a du travail en attente. Il n'a pas de quota —
+// c'est voulu, il ne se compte pas dans les 35 h —, mais lui refuser toute
+// place reviendrait à ne jamais lui en donner. Une heure trente par soirée
+// libre, tant qu'il reste des tâches à faire.
+export const ENVELOPPE_PHOTO = 90;
+
+const minutesDe = (valeur) => {
+  const [h, m] = String(valeur).split(':');
+  return Number(h) * 60 + Number(m ?? 0);
+};
+
+// Ce qu'un jour a déjà de PRIS : les événements datés avec une heure, et les
+// tâches qui portent heure et durée. Rendu en intervalles de minutes, triés.
+function creneauxOccupes(jourISO, { evenements = [], taches = [] }) {
+  const pris = [];
+
+  for (const evenement of evenements) {
+    const debut = new Date(evenement.date_debut);
+    if (versDateISO(debut) !== jourISO) continue;
+    const depuis = debut.getHours() * 60 + debut.getMinutes();
+    // Un événement sans heure tient le jour sans occuper de créneau : c'est la
+    // règle du hub, et elle vaut ici — sinon une simple date bloquerait tout.
+    if (!depuis) continue;
+    const fin = evenement.date_fin ? new Date(evenement.date_fin) : null;
+    const duree = fin ? Math.max(30, (fin - debut) / 60000) : 60;
+    pris.push([depuis, depuis + duree]);
+  }
+
+  for (const tache of taches) {
+    if (tache.echeance !== jourISO || !tache.heure) continue;
+    const depuis = minutesDe(tache.heure);
+    pris.push([depuis, depuis + (tache.duree || 60)]);
+  }
+
+  return pris.sort((a, b) => a[0] - b[0]);
+}
+
+// Ce qui reste de libre dans une plage, une fois retiré ce qui est pris. On ne
+// rend que les segments qui valent un bloc : en dessous d'une heure, il n'y a
+// rien à proposer.
+function segmentsLibres(plage, occupes) {
+  let segments = [[plage.debut, plage.fin]];
+
+  for (const [debut, fin] of occupes) {
+    const suivants = [];
+    for (const [a, b] of segments) {
+      if (fin <= a || debut >= b) {
+        suivants.push([a, b]);
+        continue;
+      }
+      if (debut > a) suivants.push([a, debut]);
+      if (fin < b) suivants.push([fin, b]);
+    }
+    segments = suivants;
+  }
+
+  return segments.filter(([a, b]) => b - a >= BLOC_MIN);
+}
+
+// UN BLOC ENGLOBE CE QUI EST DÉJÀ POSÉ, IL NE LE DÉDUIT PAS (31 août 2026,
+// correction de Noé, et c'est LA règle du modèle) :
+//
+//   « Si j'ai un événement de 3 h prévu le mardi soir pour le FCH, le site peut
+//     me proposer un bloc de 4 h sur cet horaire-là. Il ne déduit pas ce que
+//     j'ai déjà posé : il dit bien que c'est un bloc de 4 h, et lorsqu'on
+//     regarde la vue “ce qui est posé”, on voit que ce bloc comprend un
+//     événement déjà posé. »
+//
+// CE QUE ÇA RENVERSE : la première version soustrayait le posé du quota, puis
+// répartissait le reliquat. Elle produisait des blocs qui FUYAIENT les
+// événements — et un total qui ne valait plus le quota, puisque le terrain
+// n'était compté nulle part. Le bloc est un CONTENANT : le quota s'y verse en
+// entier, et ce qui est déjà là se retrouve dedans.
+//
+// Conséquence directe, et c'est elle qu'on vérifie : la somme des blocs d'un
+// espace vaut son quota. « Les blocs ne respectent pas les quotas d'heures »
+// était le premier reproche de Noé ; c'est cette ligne-là qui y répond.
+
+// Ce que le perso reçoit sur son jour de repos. Il ne compte rien : c'est du
+// temps gardé, pas un chantier — le hub ne demandera jamais s'il a été tenu.
+export const BLOC_PERSO_LONG = 120;
+
+// Ce qu'un bloc ajoute autour d'un événement : le temps qui ne se voit pas —
+// arriver, s'installer, ranger, envoyer. Une heure, comme dans l'exemple de
+// Noé (3 h d'événement, 4 h de bloc).
+export const MARGE_AUTOUR = 60;
+
+// LE JOUR DE REPOS. « Dans l'idée c'est d'avoir un jour de repos dans la
+// semaine, et potentiellement un peu de Yuno, mais pas forcément le dimanche »
+// (correction de Noé). Ce n'est donc plus le dimanche par principe : c'est le
+// jour le PLUS LIBRE de la semaine — celui où poser du travail coûterait le
+// plus, puisqu'il est le seul à ne rien porter.
+function jourDeRepos(jours, evenements) {
+  const charge = new Map(jours.map((jour) => [jour, 0]));
+
+  for (const evenement of evenements) {
+    const debut = new Date(evenement.date_debut);
+    const jour = versDateISO(debut);
+    if (!charge.has(jour)) continue;
+    const fin = evenement.date_fin ? new Date(evenement.date_fin) : null;
+    charge.set(jour, charge.get(jour) + (fin ? (fin - debut) / 60000 : 60));
+  }
+
+  // À égalité, le dernier gagne : on parcourt du lundi au dimanche, et le
+  // dimanche reste donc le repos par défaut d'une semaine vide.
+  let repos = jours[jours.length - 1];
+  let minimum = Infinity;
+  for (const jour of jours) {
+    if (charge.get(jour) <= minimum) {
+      minimum = charge.get(jour);
+      repos = jour;
+    }
+  }
+  return repos;
+}
+
+// DEUX SORTES DE JOURNÉES, ET PAS TROIS (31 août 2026, correction de Noé :
+// « utilise le samedi aussi pour les 3 espaces qui ne sont pas perso, enfin il
+// me faut qu'un jour de repos où ce n'est que perso ») :
+//
+//   — un jour de TRAVAIL, samedi compris : la formation le matin, le club
+//     l'après-midi, Yuno le soir. Ce sont les horaires que Noé a donnés en
+//     exemple ;
+//   — UN jour de REPOS, un seul, qui n'est que pour soi.
+//
+// Le week-end n'est donc plus une catégorie : six jours portent le travail, un
+// le repos.
+const PLAN_TRAVAIL = { matin: 'formation', 'apres-midi': 'fch', soir: 'photo' };
+
+export function blocsDeLaSemaine(donnees = {}, semaine, periode = null) {
+  const { evenements = [], taches = [], projets = [] } = donnees;
+  const visees = chargeViseeDeLaPeriode(periode);
+
+  const jours = [];
+  for (let index = 0; index < 7; index += 1) {
+    jours.push(versDateISO(ajouterJours(depuisDateISO(semaine.debut), index)));
+  }
+
+  const deLaSemaine = evenements.filter((evenement) =>
+    jours.includes(versDateISO(new Date(evenement.date_debut))),
+  );
+  const repos = jourDeRepos(jours, deLaSemaine);
+
+  // LE BUDGET, ET IL EST ENTIER : le quota visé, sans rien en retrancher. Ce
+  // qui est déjà posé sera DEDANS.
+  const budget = {};
+  for (const espace of ESPACES_A_QUOTA) budget[espace] = visees[espace];
+
+  // LES ÉCHÉANCES PASSENT DEVANT LE QUOTA (demande de Noé : « les blocs doivent
+  // être construits en fonction de ce qui est déjà posé, des quotas d'heure, et
+  // des échéances des objectifs »). Quand le prochain livrable de la formation
+  // demande plus que son quota, c'est lui qui commande — un quota est une
+  // moyenne, une échéance est une date.
+  const courbe = projets.length
+    ? courbeFormation(projets, taches, depuisDateISO(semaine.debut))
+    : null;
+  if (courbe?.prochain?.besoin > budget.formation) budget.formation = courbe.prochain.besoin;
+
+  // Yuno n'a pas de quota : son enveloppe vient de ce qui l'attend. Sans tâche
+  // ouverte, pas de bloc — proposer du temps pour rien serait du remplissage.
+  const photoEnAttente = taches.filter(
+    (tache) => tache.espace === 'photo' && tache.statut !== 'fait',
+  ).length;
+  budget.photo = photoEnAttente ? ENVELOPPE_PHOTO * Math.min(3, photoEnAttente) : 0;
+
+  const blocs = [];
+  const prisParJour = new Map(jours.map((jour) => [jour, []]));
+
+  // --- 1. LES BLOCS QUI NAISSENT D'UN ÉVÉNEMENT ------------------------------
+  //
+  // Ils suivent l'événement et NON les plages : une plage est un défaut, un
+  // événement est un fait. Un match de 15 h à 17 h donne un bloc de 15 h à
+  // 18 h, quelle que soit la plage où il tombe.
+  for (const evenement of deLaSemaine) {
+    const espace = evenement.espace;
+    if (!(espace in budget) || budget[espace] < BLOC_MIN) continue;
+
+    const debut = new Date(evenement.date_debut);
+    const depuis = debut.getHours() * 60 + debut.getMinutes();
+    // Un événement sans heure tient le jour sans occuper de créneau : il n'y a
+    // pas d'horaire autour duquel bâtir un bloc.
+    if (!depuis) continue;
+
+    const fin = evenement.date_fin ? new Date(evenement.date_fin) : null;
+    const duree = fin ? Math.max(30, (fin - debut) / 60000) : 60;
+    const minutes = Math.min(BLOC_MAX, budget[espace], Math.round((duree + MARGE_AUTOUR) / 30) * 30);
+    if (minutes < BLOC_MIN) continue;
+
+    const jour = versDateISO(debut);
+    blocs.push({
+      id: `${jour}-evenement-${evenement.id ?? depuis}`,
+      jour,
+      debut: depuis,
+      minutes,
+      espace,
+      // Ce qui l'a fait naître : la vue « ce qui est posé » le montre dedans.
+      autour: evenement.titre ?? null,
+    });
+    budget[espace] -= minutes;
+    prisParJour.get(jour).push([depuis, depuis + minutes]);
+  }
+
+  // --- 2. CE QUI RESTE DU BUDGET, ÉTALÉ SUR LA SEMAINE -----------------------
+  //
+  // La part d'un jour se recalcule à chaque tour sur les jours qui restent :
+  // c'est ce qui remplit les sept jours au lieu de tasser la semaine au début,
+  // et ce qui rattrape les jours où un événement a déjà tout pris.
+  // LES JOURS QUI PEUVENT PORTER L'ALTERNANCE : les ouvrés, moins celui du
+  // repos. C'est sur EUX qu'on divise le budget, et pas sur les sept — sinon la
+  // part est trop maigre et il reste des heures que personne ne place. Le
+  // premier reproche de Noé était exactement là : « les blocs ne respectent pas
+  // les quotas d'heures ».
+  const ouvres = jours.filter((jour) => jour !== repos);
+
+  for (const jourISO of jours) {
+    // LE JOUR DE REPOS EST UN SEUL BLOC, DU MATIN AU SOIR (31 août 2026,
+    // demande de Noé : « il doit remplir l'entièreté de la colonne du jour, un
+    // bloc perso sur tout le jour »). Il ne se découpe pas en plages, et il
+    // échappe au plafond de quatre heures : celui-ci protège d'une session de
+    // travail trop longue, or un jour de repos n'est pas du travail.
+    if (jourISO === repos) {
+      blocs.push({
+        id: `${jourISO}-repos`,
+        jour: jourISO,
+        debut: JOURNEE_DEBUT,
+        minutes: JOURNEE_FIN - JOURNEE_DEBUT,
+        espace: 'perso',
+      });
+      continue;
+    }
+
+    const plan = PLAN_TRAVAIL;
+    // Ce jour compris : la part se recalcule à chaque tour, donc ce qu'un jour
+    // n'a pas pu prendre revient aux suivants.
+    const restants = Math.max(1, ouvres.filter((jour) => jour >= jourISO).length);
+    const occupes = [...prisParJour.get(jourISO), ...creneauxOccupes(jourISO, { evenements, taches })]
+      .sort((a, b) => a[0] - b[0]);
+
+    for (const plage of PLAGES) {
+      const espace = plan[plage.cle];
+      if (!espace) continue;
+
+      const [segment] = segmentsLibres(plage, occupes);
+      if (!segment) continue;
+
+      if ((budget[espace] ?? 0) < BLOC_MIN) continue;
+
+      const voulu = Math.min(BLOC_MAX, Math.ceil(budget[espace] / restants / 30) * 30);
+      const minutes = Math.floor(Math.min(segment[1] - segment[0], voulu) / 30) * 30;
+      if (minutes < BLOC_MIN) continue;
+
+      blocs.push({ id: `${jourISO}-${plage.cle}`, jour: jourISO, debut: segment[0], minutes, espace });
+      budget[espace] -= minutes;
+      occupes.push([segment[0], segment[0] + minutes]);
+      occupes.sort((a, b) => a[0] - b[0]);
+    }
+  }
+
+  return fondreLesVoisins(
+    blocs.sort((a, b) => (a.jour < b.jour ? -1 : a.jour > b.jour ? 1 : a.debut - b.debut)),
+  );
+}
+
+// DEUX BLOCS QUI SE SUIVENT N'EN FONT QU'UN (31 août 2026, demande de Noé). Un
+// après-midi de club qui se prolonge par l'entraînement du soir, ce n'est pas
+// « 3 h 30 puis 3 h » : c'est 6 h 30 au club. La coupure ne venait que de la
+// mécanique — une plage d'un côté, un événement de l'autre — et elle ne disait
+// rien de vrai sur la journée.
+//
+// Se suivent : même jour, même espace, et moins d'une demi-heure entre les deux.
+// La tolérance n'est pas un confort — mesuré, un après-midi de club s'arrêtait à
+// 17 h 00 et l'entraînement commençait à 17 h 15 : un quart d'heure de trou
+// coupait la journée en deux blocs qui disaient la même chose. Un VRAI trou, lui,
+// les laisse séparés : entre le matin et l'après-midi il y a un déjeuner, et
+// personne ne travaille six heures d'affilée.
+const JOINTURE = 30;
+
+export function fondreLesVoisins(blocs) {
+  const fondus = [];
+
+  for (const bloc of blocs) {
+    const dernier = fondus[fondus.length - 1];
+    // LA FUSION S'ARRÊTE À QUATRE HEURES (31 août 2026, Noé : « finalement
+    // t'avais raison, les blocs peuvent faire 4 h max »). Deux après-midi de
+    // trois heures qui se touchent restent donc deux blocs : personne ne tient
+    // six heures d'affilée, et c'est précisément ce que le plafond dit.
+    const fin = dernier ? Math.max(dernier.debut + dernier.minutes, bloc.debut + bloc.minutes) : 0;
+    const contigu =
+      dernier &&
+      dernier.jour === bloc.jour &&
+      dernier.espace === bloc.espace &&
+      dernier.debut + dernier.minutes + JOINTURE >= bloc.debut &&
+      fin - dernier.debut <= BLOC_MAX;
+
+    if (!contigu) {
+      fondus.push({ ...bloc });
+      continue;
+    }
+
+    // La fin la plus lointaine des deux : un bloc peut en recouvrir un autre.
+    dernier.minutes = fin - dernier.debut;
+    // Ce que le bloc fondu englobe se dit d'un seul tenant : « avec la réunion
+    // et l'entraînement ».
+    dernier.autour = [dernier.autour, bloc.autour].filter(Boolean).join(' et ') || null;
+  }
+
+  return fondus;
+}
+
+// REPLACER UN BLOC — entre quels autres, et à quelle heure (31 août 2026,
+// demande de Noé : « je dois pouvoir choisir entre quels blocs je le place, ce
+// qui adaptera les horaires ; on garde toujours la même durée mais ça adapte
+// les horaires de début pour que ce soit possible »).
+//
+// LA DURÉE NE BOUGE JAMAIS, seuls les débuts s'ajustent. Le bloc déplacé prend
+// la place qu'on lui désigne — après le précédent —, et ceux qui suivent
+// reculent d'autant qu'il faut pour que la journée tienne debout.
+//
+// Ce qui NE se recalcule pas : le début d'un bloc qui n'a pas besoin de bouger.
+// Une journée qu'on réorganise par le bas ne doit pas voir son matin se
+// déplacer — sinon chaque geste rebat toute la colonne, et on ne sait plus ce
+// qu'on a fait.
+export function replacerLeBloc(blocs, id, jour, index) {
+  const bouge = blocs.find((bloc) => bloc.id === id);
+  if (!bouge) return blocs;
+
+  const ailleurs = blocs.filter((bloc) => bloc.id !== id && bloc.jour !== jour);
+  const duJour = blocs
+    .filter((bloc) => bloc.id !== id && bloc.jour === jour)
+    .sort((a, b) => a.debut - b.debut);
+
+  const place = Math.max(0, Math.min(index, duJour.length));
+  const ordre = [...duJour.slice(0, place), { ...bouge, jour }, ...duJour.slice(place)];
+
+  let curseur = JOURNEE_DEBUT;
+  const recales = ordre.map((bloc) => {
+    // Le bloc déplacé prend la place qu'on lui a désignée ; les autres gardent
+    // leur heure tant qu'elle reste possible.
+    const debut = bloc.id === id ? curseur : Math.max(bloc.debut, curseur);
+    curseur = debut + bloc.minutes;
+    return { ...bloc, debut };
+  });
+
+  return [...ailleurs, ...recales].sort((a, b) =>
+    a.jour < b.jour ? -1 : a.jour > b.jour ? 1 : a.debut - b.debut,
+  );
+}
+
 // --- La courbe d'atterrissage de la formation ---------------------------------
 //
 // Ce que ce calcul dit, et lui seul : « trop ambitieux ». Chaque livrable a un
@@ -405,6 +808,12 @@ export function inferences(
   if (seancesAVenir.length >= 2 && triPose < seancesAVenir.length) {
     trouvees.push({
       cle: 'terrain-sans-tri',
+      // TROIS CHAMPS POUR SE DESSINER (31 août 2026) : l'espace donne sa
+      // couleur, le chiffre se lit sans lire, le mot dit de quoi il s'agit en
+      // trois mots. Le constat entier reste — il passe au survol.
+      espace: 'fch',
+      chiffre: `${seancesAVenir.length} sorties`,
+      mot: 'Tri à poser',
       constat: `${seancesAVenir.length} sorties terrain d'ici deux semaines, et ${
         triPose ? `seulement ${triPose} tri posé` : 'aucun tri posé'
       }.`,
@@ -441,6 +850,9 @@ export function inferences(
     if (!porte) {
       trouvees.push({
         cle: `maillon-${premier.id}`,
+        espace: objectif.espace,
+        chiffre: chaine.length > 1 ? `${chaine.length} jalons` : 'Premier jalon',
+        mot: premier.titre,
         constat: `« ${premier.titre} » n'a ni projet ni tâche, et c'est le premier maillon de « ${objectif.titre} ».`,
         consequence: 'Les jalons suivants en dépendent : rien ne bouge tant qu\'il dort.',
         dou: 'le premier jalon non atteint de cet objectif',
@@ -457,6 +869,12 @@ export function inferences(
       if (!porte) {
         trouvees.push({
           cle: `jalon-${jalon.id}`,
+          espace: objectif.espace,
+          chiffre: `dans ${Math.max(
+            0,
+            Math.round((depuisDateISO(jalon.echeance) - depuisDateISO(aujourdhui)) / 86400000),
+          )} j`,
+          mot: jalon.titre,
           constat: `« ${jalon.titre} » tombe le ${jalon.echeance} et aucune tâche n'y mène.`,
           consequence: null,
           dou: 'un jalon daté à moins de trois semaines',
@@ -480,6 +898,9 @@ export function inferences(
     if (!recente) {
       trouvees.push({
         cle: `silence-${projet.id}`,
+        espace: projet.espace,
+        chiffre: `${Math.round(JOURS_SILENCE_PROJET / 7)} semaines`,
+        mot: projet.nom,
         constat: `« ${projet.nom} » n'a rien vu passer depuis trois semaines.`,
         consequence: projet.echeance ? `Son échéance est le ${projet.echeance}.` : null,
         dou: 'aucune tâche, publication ni événement rattaché sur la période',
@@ -498,6 +919,9 @@ export function inferences(
     if (passees.length >= 3 && ratees.length >= 3) {
       trouvees.push({
         cle: `rythme-${serie.id}`,
+        espace: serie.espace,
+        chiffre: `${ratees.length} fois`,
+        mot: serie.modele?.titre ?? 'Une série',
         constat: `« ${serie.modele?.titre ?? 'Une série'} » est passée ${ratees.length} fois sans être faite.`,
         consequence: 'Le rythme est peut-être trop serré — le passer en quinzaine ?',
         dou: 'les occurrences passées de cette série',

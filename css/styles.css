@@ -6059,6 +6059,107 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    Trois degrés de présence pour trois natures, du plus posé au plus léger. Une
    colonne de tâches ne fait plus un mur de couleur, et ce qui arrive vraiment
    se voit de loin. */
+/* UN BLOC DE LA SEMAINE (31 août 2026, demande de Noé : « je fonctionne
+   beaucoup en bloc par jour — 3 h le matin sur la formation, 4 h l'après-midi
+   pour le FCH »). Il n'existe que sur « Ma semaine », et seulement en mémoire :
+   ce qui reste d'une programmation, ce sont les tâches qu'on y a posées.
+
+   SON DESSIN DIT QU'IL N'EST PAS POSÉ : un contour en pointillé, aucun fond.
+   Tout le reste du calendrier est plein ou teinté — un événement arrive, une
+   publication part, une tâche se fait ; un bloc, lui, est une INTENTION de
+   temps. Le pointillé est déjà le signe du hub pour ça : c'est la jauge d'un
+   projet qui n'a rien déclaré, et la tuile qui invite à ajouter. */
+.cal-type-bloc {
+  display: block;
+  /* SA HAUTEUR EST SA DURÉE (31 août 2026) : deux rem par heure, posés en
+     `--duree` par la barre. La règle générale de la vue semaine confronte déjà
+     cette variable à un minimum — un bloc d'une heure ne descend donc pas sous
+     la taille d'une cible. */
+  align-self: start;
+  background: transparent;
+  border: 1px dashed color-mix(in srgb, var(--couleur-espace-pleine, var(--accent)) 55%, transparent);
+  border-radius: 6px;
+  color: var(--texte-discret);
+}
+
+.cal-type-bloc:hover {
+  background: color-mix(in srgb, var(--couleur-espace-pleine, var(--accent)) 8%, transparent);
+  color: var(--texte);
+}
+
+/* Son titre ne se met pas en avant : c'est un cadre où poser, pas une chose à
+   faire. Il garde la police des barres et perd leur graisse. */
+.cal-type-bloc .cal-barre-titre {
+  display: inline;
+  text-indent: 0;
+  font-weight: 400;
+}
+
+.cal-type-bloc .cal-barre-heure { color: inherit; opacity: 0.8; }
+
+/* LE REPÈRE D'INSERTION, pendant qu'on glisse un bloc : un trait d'accent
+   au-dessus de celui devant lequel on va se poser. Il répond à la seule
+   question du geste — « entre lesquels ça tombe ? » —, et il disparaît avec
+   lui. Une ombre portée dirait « au-dessus », pas « avant ». */
+.cal-type-bloc.cal-bloc-avant {
+  box-shadow: 0 -3px 0 -1px var(--accent);
+}
+
+/* La tête de la grille : son titre, la bascule des deux vues, et la porte qui
+   rejette les blocs. Le titre pousse le reste à droite — c'est lui qui nomme la
+   section, les deux autres sont des commandes. */
+.semaine-tete {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-12);
+  flex-wrap: wrap;
+  margin-bottom: var(--espace-12);
+}
+
+.semaine-tete h2 { margin-bottom: 0; margin-right: auto; }
+
+/* La bascule reprend `.affichages`, le groupe de boutons du calendrier : c'est
+   le même geste — choisir ce que la grille montre —, il n'a pas à se présenter
+   autrement ici. */
+.semaine-tete .affichages { margin: 0; }
+
+/* Le réglage d'un bloc : quatre champs, et la porte pour le retirer.
+   Les styles de champ du hub sont scopés à `.ajout` — cette fenêtre n'en est
+   pas une (elle n'ajoute rien, elle règle) : elle reprend donc les mêmes
+   valeurs, à l'identique, plutôt que d'élargir un sélecteur qui sert à seize
+   formulaires. */
+.bloc-reglage { display: grid; gap: var(--espace-12); }
+
+.bloc-reglage label {
+  display: grid;
+  gap: var(--espace-4);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--texte-discret);
+}
+
+.bloc-reglage input,
+.bloc-reglage select {
+  width: 100%;
+  padding: var(--espace-8) var(--espace-12);
+  font-size: 16px;
+  font-family: inherit;
+  color: var(--texte);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+}
+
+.bloc-reglage input:focus,
+.bloc-reglage select:focus { border-color: var(--accent); }
+
+.bloc-reglage-gestes {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-16);
+  flex-wrap: wrap;
+}
+
 /* UNE TÂCHE EST UNE LIGNE, PAS UNE TUILE (31 août 2026, forme demandée par
    Noé) :
 
@@ -7145,57 +7246,100 @@ body.balaye {
    Un constat sans geste est un reproche déguisé, et ce hub n'en fait pas. */
 .rdv-intro { margin: 0 0 var(--espace-16); color: var(--texte-discret); font-size: 0.875rem; }
 
-.rdv-lignes { margin: 0; padding: 0; list-style: none; }
+/* DES CARTES EN COLONNES, DEUX LIGNES CHACUNE (31 août 2026, Noé : « leur forme
+   est catastrophique, elles prennent trop de place, il n'y a rien de visuel qui
+   permette de comprendre sans lire »).
 
-/* `.rdv-lignes` dans le sélecteur : `.bloc li` pose déjà une mise en page sur
-   l'accueil, et à spécificité égale c'est elle qui gagnait — le geste se
-   retrouvait à droite de sa précision au lieu d'être dessous. Même piège que
-   les projets, même parade. */
-.rdv-lignes .rdv-ligne {
+   Ce que ça remplace : une liste verticale de paragraphes — constat, précision,
+   provenance, puis un bouton sur sa propre ligne. Cinq constats faisaient
+   750 px de haut et repoussaient la grille de la semaine hors de l'écran, alors
+   qu'ils sont là pour l'éclairer.
+
+   La grille se remplit d'elle-même : autant de colonnes que la largeur en
+   porte, quatre sur un écran de 1500 px, une seule sur un téléphone. */
+.rdv-cartes {
   display: grid;
-  gap: var(--espace-4);
-  padding: var(--espace-16) 0;
-  border-top: 1px solid var(--bordure);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: var(--espace-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.rdv-lignes .rdv-constat { font-size: 0.9375rem; }
-.rdv-lignes .rdv-precision { font-size: 0.875rem; color: var(--texte-discret); }
+/* `.rdv-cartes li` et non `li` seul : `.bloc li` pose déjà sa propre mise en
+   page — c'est le piège qui avait mis le geste à droite de sa précision, et il
+   se paierait ici en barre de couleur doublée. */
+.rdv-cartes li { margin: 0; padding: 0; border: none; background: none; }
+.rdv-cartes li::before { content: none; }
 
-/* D'où sort l'inférence, en tout petit : c'est ce qui permet de la contredire
-   d'un coup d'œil, et une inférence qu'on ne peut pas contredire n'a pas sa
-   place ici. */
-.rdv-lignes .rdv-dou { font-size: 0.75rem; color: var(--texte-discret); opacity: 0.75; }
-
-/* Le geste se pose à gauche, sous son constat, et ne s'en détache jamais : il
-   est la réponse à CETTE ligne, pas une action de la page. */
-.rdv-lignes .rdv-geste {
-  justify-self: start;
-  margin-top: var(--espace-8);
-  padding: var(--espace-8) var(--espace-12);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-controle);
-  background: none;
+/* DEUX RANGS, ET LA FLÈCHE PAR-DESSUS : le chiffre en haut, le mot en dessous.
+   La flèche occupe la colonne de droite sur les deux rangs — elle appartient à
+   la carte entière, pas à l'une de ses lignes. */
+.rdv-carte {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0 var(--espace-8);
+  width: 100%;
+  padding: var(--espace-12);
+  border: none;
+  /* La couleur de l'espace tient le bord gauche : c'est la grammaire d'une
+     tâche au calendrier, et elle se lit sans qu'on ait à la nommer. */
+  border-left: 3px solid var(--couleur-espace-pleine, var(--accent));
+  border-radius: 0 var(--rayon-controle) var(--rayon-controle) 0;
+  background: var(--fond-carte);
   color: var(--texte);
   font-family: var(--police-texte);
-  font-size: 0.8125rem;
+  text-align: left;
   text-decoration: none;
   cursor: pointer;
-  min-height: 2.25rem;
-  display: inline-flex;
-  align-items: center;
 }
 
-.rdv-lignes .rdv-geste:hover { border-color: var(--accent); color: var(--accent); }
+.rdv-carte:hover { background: color-mix(in srgb, var(--accent) 8%, var(--fond-carte)); }
 
-/* La ligne tendue — l'arbitrage — porte un fond doux, JAMAIS une couleur
-   d'alerte : le hub n'en a pas et n'en aura pas. C'est une question posée, pas
-   un avertissement. */
-.rdv-lignes .rdv-tendu {
-  padding: var(--espace-16);
-  margin-top: var(--espace-8);
-  border-top: 0;
-  background: var(--accent-doux);
-  border-radius: var(--rayon-controle);
+/* Le chiffre est ce qu'on vient chercher : il se lit avant tout le reste, et il
+   porte la couleur de son espace. */
+.rdv-chiffre {
+  grid-column: 1;
+  font-size: 1.0625rem;
+  line-height: 1.2;
+  color: var(--couleur-espace-pleine, var(--accent));
+}
+
+/* Le mot dit de quoi il s'agit, en une ligne — jamais deux : au-delà, la carte
+   grandit et la grille cesse de s'aligner. Ce qui dépasse s'arrête à
+   l'ellipse, et la phrase entière attend dans le `title`. */
+.rdv-mot {
+  grid-column: 1;
+  min-width: 0;
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La flèche ne dit qu'une chose — ceci mène quelque part — et elle s'affirme au
+   survol plutôt que de tirer l'œil au repos. */
+.rdv-fleche {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  display: inline-flex;
+  color: var(--texte-discret);
+  opacity: 0.6;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.rdv-carte:hover .rdv-fleche { opacity: 1; transform: translateX(2px); }
+
+/* La carte tendue — la charge qui déborde — porte un fond doux, JAMAIS une
+   couleur d'alerte : le hub n'en a pas et n'en aura pas. C'est une question
+   posée, pas un avertissement. */
+.rdv-carte.rdv-tendu { background: var(--accent-doux); }
+
+@media (prefers-reduced-motion: reduce) {
+  .rdv-fleche { transition: none; }
+  .rdv-carte:hover .rdv-fleche { transform: none; }
 }
 
 /* « C'est ma semaine » ferme le rendez-vous. Pleine largeur : c'est la seule

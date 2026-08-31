@@ -785,6 +785,31 @@ La trace du **rendez-vous du dimanche**. Une ligne par semaine validée, identif
 
 **LA LIGNE VALIDÉE EST CELLE DE LA SEMAINE QUI VIENT, et c'était un défaut** (corrigé le 30 août 2026). `semaineDe(maintenant)` rend « la semaine où l'on est » : le dimanche à 20 h, celle qui s'achève. On validait donc le lundi PASSÉ, et le rendez-vous revenait le lendemain matin comme s'il ne s'était rien dit. `pivotDeLaSemaine` (js/orientation.js) fait la bascule : le dimanche, la semaine qui vient commence demain.
 
+**DES CARTES, PAS DES PARAGRAPHES** (31 août 2026, Noé : *« leur forme est
+catastrophique, elles prennent trop de place, il n'y a rien de visuel qui
+permette de comprendre sans lire — quel espace, quelle info importante »*).
+Chaque constat tient en **deux lignes**, dans une grille qui se remplit d'elle-même
+— quatre colonnes sur un écran de 1500 px, une sur un téléphone :
+
+    ▌ 16 h 30 / 26 h          →
+      Le club, 3 séances
+
+- le **bord gauche** porte la couleur de l'espace — la grammaire d'une tâche au
+  calendrier ;
+- le **chiffre** est ce qu'on vient chercher : en Geist Mono, dans la couleur de
+  son espace ;
+- le **mot** dit de quoi il s'agit en trois mots, jamais en trois phrases.
+
+**Le constat complet n'est pas perdu, il est DÉPLACÉ** : la phrase entière, sa
+précision et son « d'après » passent dans le `title` et le nom accessible. C'est
+la parade déjà employée sur la ligne d'une habitude — un écran qu'on ouvre chaque
+dimanche n'a pas besoin qu'on lui réexplique ses propres chiffres.
+
+**Toute la carte porte le geste**, et c'est ce qui fait tenir les deux lignes :
+un libellé de bouton (« Bloquer un créneau ») coûtait une troisième ligne à lui
+seul. *Mesuré : 7 constats en 131 px, contre une colonne de paragraphes qui
+repoussait la grille hors de l'écran.*
+
 **Aucun constat sans proposition, sans exception** (`js/rendez-vous.js`) : chaque ligne porte son geste, et accepter coûte **un** geste — une proposition ouvre la tuile de capture déjà remplie, ou mène à l'écran où le réglage se fait. Une ligne sans porte de sortie est un reproche déguisé.
 
 ### arbitrages
@@ -1307,7 +1332,10 @@ a déjà été validée.
    c'est la philosophie n° 1 ;
 2. **la grille de la semaine qui vient**, et à côté d'elle **le vivier** : les
    tâches qui attendent un jour ;
-3. **ce que le hub voit** — les lignes du diagnostic, chacune avec son geste ;
+3. **ce que le hub voit** — les constats du diagnostic, chacun avec son geste.
+   **Ils sont passés ENTRE le bilan et la grille le 31 août 2026** (demande de
+   Noé) : ils servent à décider de ce qu'on va poser, ils doivent donc être sous
+   les yeux AU MOMENT où l'on pose, pas après ;
 4. **« C'est ma semaine »**, qui ferme le rendez-vous.
 
 **LA GRILLE EST PLUS GRANDE ICI QU'AILLEURS** (31 août 2026, demande de Noé).
@@ -1354,6 +1382,210 @@ de l'ouvrir.
   choses terminées portent une durée ». Sans lui, « 3 h 55 » se lirait comme une
   semaine légère alors qu'il ne dit que le silence des durées. Même précaution
   que la première ligne de `#temps`.
+
+### Les blocs : ce que le hub propose comme forme de semaine (31 août 2026)
+
+**La demande de Noé** : *« je fonctionne beaucoup en bloc par jour — 3 h le matin
+sur la formation, 1 h pour Yuno, 4 h l'après-midi pour le FCH ; ça pour le lundi,
+une organisation un peu différente le mardi. J'aimerais que le site me propose
+une organisation comme ça pour ma semaine en fonction de mes objectifs, des
+heures prévues. »*
+
+**UN BLOC NE S'ENREGISTRE PAS** (décision de Noé : « les blocs ne doivent être
+que de l'affichage »). Pas de table, pas de migration, rien à nettoyer : ils se
+recalculent à chaque ouverture, et ce qu'on leur fait subir — déplacer,
+rallonger, retirer — meurt avec la page. **Ce qui reste d'une programmation, ce
+sont les TÂCHES qu'on a posées dedans**, c'est-à-dire leur jour et leur heure.
+Le bloc est l'échafaudage, pas le mur.
+- *Conséquence assumée* : une semaine réorganisée à la main se retrouve
+  reproposée telle quelle au rechargement. C'est le prix de n'avoir rien à
+  maintenir, et « Reproposer les blocs » en fait une commande plutôt qu'un
+  accident.
+
+**UN BLOC ENGLOBE CE QUI EST DÉJÀ POSÉ, IL NE LE DÉDUIT PAS** — et c'est LA
+règle du modèle (correction de Noé, le jour même) :
+
+> *« Si j'ai un événement de 3 h prévu le mardi soir pour le FCH, le site peut me
+> proposer un bloc de 4 h sur cet horaire-là. Il ne déduit pas ce que j'ai déjà
+> posé : il dit bien que c'est un bloc de 4 h, et lorsqu'on regarde la vue “ce
+> qui est posé”, on voit que ce bloc comprend un événement déjà posé. »*
+
+**Ce que ça renverse** : la première version soustrayait le posé du quota, puis
+répartissait le reliquat. Elle produisait des blocs qui **fuyaient** les
+événements — et un total qui ne valait plus le quota, puisque le terrain n'était
+compté nulle part. **Le bloc est un CONTENANT** : le quota s'y verse en entier,
+et ce qui est déjà là se retrouve dedans.
+- Un bloc né d'un événement **suit son horaire et non les plages** : une plage
+  est un défaut, un événement est un fait. Il lui ajoute une heure de marge — le
+  temps qui ne se voit pas : arriver, s'installer, ranger, envoyer.
+- **Son titre dit ce qu'il englobe** (« FC Hermitage · 4 h · avec Entraînement
+  U13 »), sans quoi il ressemblerait à 4 h de travail en plus.
+- *Vérifié sur les données de Noé : 26 h de club proposées pour 26 h visées,
+  15 h de formation pour 15 h. « Les blocs ne respectent pas les quotas
+  d'heures » était le premier reproche ; c'est cette règle qui y répond.*
+
+**LES ÉCHÉANCES PASSENT DEVANT LE QUOTA** (« les blocs doivent être construits en
+fonction de ce qui est déjà posé, des quotas d'heure, et des échéances des
+objectifs »). Quand le prochain livrable de la formation demande plus que son
+quota, c'est lui qui commande : **un quota est une moyenne, une échéance est une
+date**. *Mesuré : un livrable à 20 h fait passer la formation de 15 h à 17 h 30 —
+tout ce que ses matins peuvent porter.*
+
+**LE HUB INVENTE DEPUIS LES QUOTAS** (choix de Noé entre trois options — un
+rythme type déclaré, la déduction, ou la recopie de la semaine passée). Il ne
+demande rien et n'apprend rien : `blocsDeLaSemaine` (js/orientation.js) part des
+heures visées par espace (20 h club, 15 h formation, × le régime de la période),
+retire **tout ce que la semaine porte déjà** — terrain, traitement, forfaits,
+durées notées — et répartit le reste dans les plages libres. *Conséquence que
+Noé a acceptée en choisissant : la première proposition tombe à côté d'un vrai
+emploi du temps — cours, présence à l'entreprise — et se corrige à la main.*
+
+**Trois plages, et un PLAN qui dit qui les occupe** : matin **10 h**–12 h 30,
+après-midi 14 h–18 h, soir 20 h–22 h. Dix heures et non neuf (« mes journées
+commencent plutôt à 10 h ») : ce ne sont pas des horaires imposés, ce sont **ceux
+que Noé a donnés**, et un défaut doit ressembler à ce qu'on fait déjà, sinon on
+le corrige chaque semaine.
+
+**DEUX SORTES DE JOURNÉES, ET PAS TROIS** (correction de Noé : *« utilise le
+samedi aussi pour les 3 espaces qui ne sont pas perso, enfin il me faut qu'un
+jour de repos où ce n'est que perso »*) :
+
+| | matin | après-midi | soir |
+|---|---|---|---|
+| **travail** (six jours, samedi compris) | formation | club | Yuno |
+| **repos** (un seul) | *un seul bloc perso, de 10 h à 22 h* | | |
+
+Le week-end n'est plus une catégorie : six jours portent le travail, un le repos.
+
+**LE JOUR DE REPOS EST UN SEUL BLOC, DU MATIN AU SOIR** (« il doit remplir
+l'entièreté de la colonne du jour, un bloc perso sur tout le jour »). Il ne se
+découpe pas en plages, et **il échappe au plafond de quatre heures** : celui-ci
+protège d'une session de travail trop longue, or un jour de repos n'est pas du
+travail.
+
+**IL N'EST PAS LE DIMANCHE PAR PRINCIPE** (correction de Noé :
+*« dans l'idée c'est d'avoir un jour de repos dans la semaine, et potentiellement
+un peu de Yuno, mais pas forcément le dimanche »*). C'est **le jour le plus
+libre** de la semaine — celui qui ne porte rien, donc celui où poser du travail
+coûterait le plus. À égalité, le dimanche reste le repos par défaut.
+
+- **LES SEPT JOURS SONT COUVERTS** (31 août 2026, demande de Noé : « il faut que
+  ça occupe tous les jours »). La première version remplissait au plus vite :
+  elle donnait quatre journées pleines et trois vides, parce qu'elle vidait le
+  reste du club dès qu'elle trouvait de la place. **On répartit maintenant AVANT
+  de placer**, et la part se recalcule à chaque jour sur les jours OUVRÉS qui
+  restent : ce qu'un jour n'a pas pu prendre revient aux suivants. Diviser par
+  les sept jours donnait une part trop maigre, et il restait des heures que
+  personne ne plaçait.
+- **LE PERSO EN FAIT PARTIE** (même demande : « ça doit intégrer aussi perso,
+  par exemple tout un dimanche perso ou un créneau d'1 h sur 3/4 jours »), et
+  c'est un renversement de la règle posée le matin même — « rien pour le
+  perso ». **Il ne contredit pas la philosophie** : un bloc perso ne mesure rien
+  et ne juge rien, c'est du temps GARDÉ, pas un chantier. Le hub ne demandera
+  jamais si ce temps a été tenu.
+  - **Il n'a pas de budget à épuiser**, et c'est ce qui le distingue des trois
+    autres : son temps ne se déduit d'aucun objectif. Le plan lui donne ses
+    créneaux, un point.
+  - **Le jour de repos est le seul qu'aucun espace de travail ne peut
+    réclamer.** C'est la traduction, dans l'algorithme, de la règle qui dit que
+    le plancher perso ne se négocie jamais.
+- **Un espace À QUOTA qui a atteint son compte ne reçoit plus de bloc** : le hub
+  ne remplit pas une semaine pour la remplir. Yuno, qui n'a pas de quota, reçoit
+  son enveloppe tant qu'il lui reste des tâches ouvertes — et rien s'il n'en a
+  aucune.
+- **Les créneaux déjà pris sont retirés** : un entraînement de 17 h 15 coupe la
+  plage du soir, une tâche à 13 h avec sa durée aussi. Un événement **sans
+  heure** ne bloque rien — c'est la règle du hub, et sinon une simple date
+  fermerait la journée.
+
+**QUATRE HEURES AU PLUS** (« finalement t'avais raison, les blocs peuvent faire
+4 h max ») — pour tout ce qui est du travail. Seul le jour de repos y échappe.
+
+**DEUX BLOCS QUI SE SUIVENT N'EN FONT QU'UN**, tant que le total tient sous ces
+quatre heures. Un après-midi de club prolongé par l'entraînement du soir n'est
+pas « 2 h puis 2 h » : la coupure ne venait que de la mécanique — une plage d'un
+côté, un événement de l'autre — et elle ne disait rien de vrai sur la journée.
+- La tolérance est d'une **demi-heure** : mesuré, un après-midi s'arrêtait à
+  17 h 00 et l'entraînement commençait à 17 h 15 ; ce quart d'heure suffisait à
+  couper la journée en deux blocs qui disaient la même chose.
+- **Un VRAI trou les laisse séparés** — entre le matin et l'après-midi il y a un
+  déjeuner —, **et le plafond aussi** : deux après-midi de trois heures qui se
+  touchent restent deux blocs, parce que personne ne tient six heures d'affilée.
+  C'est exactement ce que le plafond dit.
+
+**SA HAUTEUR EST SA DURÉE** (demande de Noé : « la taille des blocs doit
+correspondre à la durée en heure ») — deux rem par heure. C'est la variable
+`--duree` que le CSS confronte déjà à un minimum : elle existait pour les
+événements et ne servait plus depuis que leur hauteur est fixe (27 août 2026).
+Elle reprend du service **ici et ici seulement** : un bloc est un contenant, sa
+taille est ce qu'il contient. *Mesuré : 3 h = 90 px, 7 h 15 = 218 px.*
+
+**UN BLOC SE DESSINE COMME UNE BARRE**, et c'est ce qui l'a rendu compatible avec
+la grille sans rien réécrire : elle range ses barres par heure, un bloc de 9 h se
+pose donc de lui-même avant une tâche de 13 h. Ni axe horaire, ni calque — la
+question que Noé posait (« à voir si c'est compatible avec le calendrier
+actuel ») se règle là. **Son contour est en pointillé et son fond vide** : tout
+le reste du calendrier est plein ou teinté — un événement arrive, une publication
+part, une tâche se fait ; un bloc est une INTENTION de temps, et le pointillé est
+déjà le signe du hub pour ça.
+
+**DEUX AFFICHAGES, ET UN BOUTON POUR PASSER DE L'UN À L'AUTRE** (31 août 2026,
+demande de Noé : *« l'affichage actuel ne permet pas de vraiment bien
+comprendre »*). Mêlés dans la même grille, les blocs et ce qui est posé se
+lisaient comme une seule pile — on ne voyait plus ni la forme de la semaine, ni
+ce qu'elle contient. La bascule reprend `.affichages`, le groupe de boutons du
+calendrier : c'est le même geste, choisir ce que la grille montre.
+- **« Les blocs » ouvre la page** : c'est la proposition qu'on vient regarder, et
+  qu'on corrige avant de poser quoi que ce soit.
+- **« Reproposer » ne s'offre que là**, sur la vue qui montre ce qu'il change.
+
+**ON LE GLISSE, ET ON CHOISIT ENTRE QUELS BLOCS IL SE POSE** (31 août 2026,
+Noé : « il faut que je puisse déplacer les blocs en les glissant » puis « je dois
+pouvoir choisir entre quels blocs je le place, ce qui adaptera les horaires ; on
+garde toujours la même durée mais ça adapte les horaires de début pour que ce
+soit possible »).
+
+**LA DURÉE NE BOUGE JAMAIS, seuls les débuts s'ajustent** (`replacerLeBloc`,
+js/orientation.js). Le bloc déplacé prend la place qu'on lui désigne — juste
+après le précédent — et ceux qui suivent reculent d'autant qu'il faut. *Mesuré :
+un bloc de 2 h 30 posé en tête d'un jeudi pousse la formation de 10 h à 12 h 30,
+Yuno à 15 h et le club à 16 h.*
+- **DEUX BLOCS NE SE SUPERPOSENT JAMAIS**, et ce n'est pas une vérification
+  ajoutée après coup : le recalage avance un curseur, chaque bloc commence à la
+  fin du précédent au plus tôt. La superposition est impossible par
+  construction.
+- **Ce qui n'a pas besoin de bouger ne bouge pas** : une journée qu'on
+  réorganise par le bas ne doit pas voir son matin se déplacer, sinon chaque
+  geste rebat toute la colonne et on ne sait plus ce qu'on a fait.
+- **UN REPÈRE MONTRE OÙ ÇA TOMBE** pendant le geste — un trait d'accent au-dessus
+  du bloc devant lequel on va se poser. Sans lui, « choisir entre quels blocs »
+  serait un pari qu'on ne découvre qu'au lâcher.
+- **`brancherDeplacement` accepte le MÊME JOUR** pour les blocs (option
+  `memeJour`). Il le refusait partout, et pour une bonne raison — décaler une
+  tâche de zéro jour écrirait en base ce qu'elle porte déjà —, mais l'essentiel
+  de ce geste se passe DANS une colonne.
+- **Après chaque geste, on RANGE** : deux blocs du même espace devenus voisins
+  fondent, comme au calcul. La règle vit dans `js/orientation.js` et ne se
+  recopie pas dans l'écran.
+- **Le vivier n'accueille pas un bloc** : la zone de dépôt qui déprogramme une
+  tâche le dit plutôt que de l'avaler en silence.
+
+> *Ce que le geste a coûté à trouver.* Il « ne marchait pas » alors qu'il était
+> branché depuis le début : `brancherDeplacement` prend toute
+> `.cal-barre-element`, mais le callback mourait sur `champsApresDeplacement`,
+> qui range une date dans la colonne de sa nature — un bloc n'a ni colonne ni
+> table. Puis il a fallu lever la garde du même jour. **Les deux échecs étaient
+> muets** : rien ne bougeait, aucune erreur visible. C'est la console qui a
+> tranché, pas la lecture du code.
+
+**On règle un bloc d'un appui** : jour, début, durée, espace — quatre champs
+natifs dans une fenêtre, plus « Retirer ce bloc ». Pas de confirmation : rien ne
+s'enregistre, et « Reproposer les blocs » ramène tout.
+
+**ET ON Y POSE UNE TÂCHE** : la lâcher sur un bloc lui donne son jour **et son
+heure**, là où la lâcher sur le jour ne donne que le jour. Le bloc est une cible
+plus fine dans la même surface, pas un second geste — au doigt comme à la souris.
+C'est le seul moment où un bloc laisse une trace.
 
 ### Le vivier : ce qui attend un jour
 
