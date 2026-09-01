@@ -5137,11 +5137,20 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   border-radius: var(--rayon-carte);
 }
 
+/* UN FILET SOUS LA LIGNE DU JOUR (1er septembre 2026, demande de Noé : « mets
+   une barre qui sépare le titre du jour et l'humeur du jour avec le reste de la
+   page »). Le jour et sa note sont l'EN-TÊTE de la tuile — ce qu'on regarde,
+   et ce qu'on lui donne ; tout ce qui suit est le contenu de cette journée-là.
+   Le filet dit cette coupure d'un trait, là où un blanc plus large la laissait
+   deviner. Il reprend `--bordure-douce`, celui du relevé juste en dessous :
+   deux filets dans la même tuile ne peuvent pas avoir deux forces. */
 .jour-navigation {
   display: flex;
   align-items: center;
   gap: var(--espace-12);
+  padding-bottom: var(--espace-12);
   margin-bottom: var(--espace-16);
+  border-bottom: 1px solid var(--bordure-douce);
 }
 
 .jour-nom {
@@ -5223,6 +5232,11 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 .ajout-volant .ajout-tuile .jour-liste li {
   display: flex;
   align-items: baseline;
+  /* `nowrap` SE REDIT : `.bloc li` enroule ses enfants, ce qui renvoyait la
+     coche seule sur sa ligne dès qu'un titre était long — « Mettre à jour la
+     forme des propositions de la semaine » le montrait. Ici la coche tient sa
+     colonne et le texte se replie SOUS lui-même, dans sa propre boîte. */
+  flex-wrap: nowrap;
   gap: var(--espace-8);
   padding: 0;
   margin: 0;
@@ -5234,8 +5248,13 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
 .jour-liste li::before { content: none; }
 
+/* La boîte du texte : `min-width: 0` pour qu'elle accepte de rétrécir sous la
+   largeur de son plus long mot — c'est le piège du dépôt, et il vaut pour un
+   élément de flex comme pour une piste de grille. */
+.jour-liste-texte { min-width: 0; }
+
 .jour-liste .discret { font-size: 0.75rem; }
-.jour-coche { color: var(--famille-corps); margin-right: var(--espace-8); }
+.jour-coche { flex: none; color: var(--famille-corps); }
 .jour-lecture { margin: 0; font-size: 0.875rem; }
 
 /* CÔTE À CÔTE, et qui se replient : la colonne porte neuf habitudes, et une

@@ -1184,7 +1184,18 @@ export function construireLaJournee(jour, donnees, contexte = {}) {
            des faits déjà écrits ailleurs, qu'on regarde. Les habitudes, elles,
            sont la seule chose de ce bloc qu'on vient COCHER. Les ranger avec ce
            qui se lit, c'était demander un geste avant d'ouvrir un tiroir. -->
-      ${bloc_('Habitudes', construirePastillesHabitudes(jour, habitudes, tousLesFaits))}
+      ${
+        // SANS TITRE (1er septembre 2026, demande de Noé). Neuf pastilles qui
+        // se cochent n'ont pas besoin qu'on annonce que ce sont des habitudes :
+        // on les reconnaît à ce qu'elles sont — les seules choses de cette tuile
+        // sur lesquelles on appuie. C'est le quatrième titre qui tombe dans
+        // cette journée, et pour la même raison : ce qui se montre n'a pas à se
+        // nommer.
+        (() => {
+          const pastilles = construirePastillesHabitudes(jour, habitudes, tousLesFaits);
+          return pastilles ? `<div class="jour-part">${pastilles}</div>` : '';
+        })()
+      }
 
       <details class="jour-releve" open>
         <!-- UNE ICÔNE, SANS FLÈCHE (1er septembre 2026, demande de Noé). Le
@@ -1205,8 +1216,9 @@ export function construireLaJournee(jour, donnees, contexte = {}) {
               ? `<ul class="jour-liste">${taches
                   .map(
                     (tache) =>
-                      `<li><span class="jour-coche">✓</span>${echapper(tache.titre)}
-                       <span class="discret">${echapper(NOMS_ESPACES[tache.espace] ?? '')}</span></li>`,
+                      `<li><span class="jour-coche">✓</span><span class="jour-liste-texte"
+                       >${echapper(tache.titre)}
+                       <span class="discret">${echapper(NOMS_ESPACES[tache.espace] ?? '')}</span></span></li>`,
                   )
                   .join('')}</ul>`
               : '',

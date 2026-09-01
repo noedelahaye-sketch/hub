@@ -704,6 +704,16 @@ rendrait d'abord l'ancienne.
     que le hub RELÈVE — des faits déjà écrits ailleurs, qu'on regarde ; les
     habitudes sont la seule chose de ce bloc qu'on vient COCHER.** Les ranger
     avec ce qui se lit, c'était demander un geste avant d'ouvrir un tiroir.
+    **Sans titre** (1er septembre 2026) : neuf pastilles qui se cochent n'ont pas
+    besoin qu'on annonce que ce sont des habitudes — c'est le quatrième titre qui
+    tombe dans cette tuile, et pour la même raison. **Ce qui se montre n'a pas à
+    se nommer.**
+  - **UN FILET SOUS LA LIGNE DU JOUR** (même jour, demande de Noé). Le jour et sa
+    note sont l'EN-TÊTE de la tuile ; tout ce qui suit est le contenu de cette
+    journée-là. Le filet dit cette coupure d'un trait, là où un blanc plus large
+    la laissait deviner. Il reprend `--bordure-douce`, celui du relevé juste en
+    dessous : **deux filets dans la même tuile ne peuvent pas avoir deux
+    forces.**
   - **LA NOTE DU JOUR EST SUR LA LIGNE DU JOUR** (même demande). Elle a eu sa
     ligne, puis son bloc : deux rangs pour cinq frimousses. **Le jour et la note
     qu'on lui donne sont la même information** — quel jour, et comment il était —
