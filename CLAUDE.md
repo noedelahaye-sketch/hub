@@ -1391,6 +1391,15 @@ reste du hub.
 - **Une grille qui se remplit d'elle-même** (`auto-fit`), et non un nombre de
   colonnes : le bilan en compte quatre aujourd'hui, il en comptait cinq hier.
   Quatre de front sur grand écran, deux sur un téléphone.
+- **LE CHIFFRE EST EN CLASH DISPLAY 700** (1er septembre 2026, demande de Noé :
+  « les chiffres doivent être dans une police plus grasse, essaie la même police
+  que celle du titre Ma semaine »). C'est la police du `<h1>`, et c'est déjà ce
+  que fait `.chiffre-cle` sur la page des habitudes : **un chiffre qu'on vient
+  VOIR se donne du poids ; un chiffre qu'on vient COMPARER garde sa chasse
+  fixe** — d'où le détail par espace, qui reste en Geist Mono parce que ses
+  durées s'alignent en colonne. 700 et pas davantage : le dépôt n'a que 600 et
+  700, demander plus ferait clamper sans que l'écart se voie. La règle s'écrit
+  APRÈS `.chiffre`, qui pose Geist Mono à spécificité égale — l'ordre tranche.
 
 **LES HEURES MESURÉES DISENT OÙ ELLES SONT PARTIES** (même demande), une ligne
 par espace **dans la tuile du total**, avec la pastille du décompte — la même

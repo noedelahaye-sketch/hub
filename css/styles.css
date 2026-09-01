@@ -9169,7 +9169,28 @@ body.balaye {
   border-radius: var(--rayon-carte);
 }
 
-.bilan-valeur { font-size: 1.375rem; line-height: 1.1; color: var(--accent); }
+/* LE CHIFFRE D'UNE TUILE EST EN CLASH DISPLAY (1er septembre 2026, demande de
+   Noé : « les chiffres doivent être dans une police plus grasse, essaie la même
+   police que celle du titre Ma semaine »). C'est le titre de la page, et c'est
+   déjà ce que fait `.chiffre-cle` sur la page des habitudes — un chiffre qu'on
+   vient VOIR se donne du poids ; un chiffre qu'on vient comparer garde sa
+   chasse fixe.
+
+   700 et pas davantage : Clash Display n'a que 600 et 700 dans le dépôt, et
+   demander plus ferait clamper sans que l'écart se voie. La règle s'écrit APRÈS
+   `.chiffre`, qui pose Geist Mono à spécificité égale — l'ordre est ce qui
+   tranche.
+
+   Le détail par espace, lui, RESTE en chasse fixe : ses durées s'alignent en
+   colonne, et c'est exactement le cas que Geist Mono sert. */
+.bilan-valeur {
+  font-family: var(--police-titre);
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  color: var(--accent);
+}
 .bilan-mot { font-size: 0.75rem; color: var(--texte-discret); }
 .bilan-precision { font-size: 0.6875rem; color: var(--texte-discret); opacity: 0.75; }
 
