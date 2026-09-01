@@ -693,6 +693,16 @@ rendrait d'abord l'ancienne.
   - **Un `details` natif, ouvert par défaut** : le repli est un geste rare et
     n'a pas besoin d'un état à tenir — la tuile se redessine à l'ouverture d'un
     jour, pas pendant qu'on la lit.
+  - **AUCUN TITRE AU-DESSUS DES TROIS CHAMPS** (1er septembre 2026, demande de
+    Noé). La note du jour, la gratitude et le journal n'annoncent plus ce qu'ils
+    sont : cinq frimousses en haut d'une journée ne demandent pas qu'on explique
+    ce qu'elles sont, et un libellé au-dessus d'une invite qui dit la même chose
+    ne dit rien de plus — il coûtait une ligne à chacun des deux champs. **C'est
+    l'invite qui reste**, dans le champ, à l'endroit exact où l'on va écrire :
+    « Une chose dont je suis reconnaissant », « Ma journée en quelques mots ».
+    - **`aria-label` prend le relais, et ce n'est pas optionnel** : le libellé
+      était le nom accessible du champ, et une invite disparaît dès qu'on tape.
+      Sans lui, un lecteur d'écran annoncerait deux zones de texte anonymes.
   - **PAS DE RECTANGLE AUTOUR DU JOURNAL** (1er septembre 2026, demande de Noé,
     référence à l'appui : « pas de rectangle visible dans lequel mettre le
     texte »). **Un champ encadré dit « remplis ce formulaire »** ; on n'écrit pas

@@ -1102,11 +1102,11 @@ export function construirePastillesHabitudes(jour, habitudes = [], faits = []) {
 export function construireNoteDuJour(jour, humeur) {
   const choisi = humeur ? NIVEAUX_HUMEUR.find((n) => n.niveau === humeur.niveau) : null;
 
+  // SANS TITRE NON PLUS (1er septembre 2026, demande de Noé). Cinq frimousses
+  // en haut d'une journée ne demandent pas qu'on explique ce qu'elles sont. Le
+  // nom du groupe le dit au lecteur d'écran, qui lui ne les voit pas.
   return `
-    <span class="jour-part-titre">${
-      choisi ? 'Ta note du jour' : 'Comment était cette journée ?'
-    }</span>
-    <span class="echelle-humeur" role="group" aria-label="La note de cette journée">
+    <span class="echelle-humeur" role="group" aria-label="Comment était cette journée ?">
       ${NIVEAUX_HUMEUR.map(
         ({ niveau, frimousse, mot }) => `
         <button type="button" class="bouton-humeur${
@@ -1281,12 +1281,22 @@ export function construireLaJournee(jour, donnees, contexte = {}) {
            ELLE GARDE SON CADRE, à la différence du journal : c'est une case à
            remplir, et une case doit se voir. Un aplat chaud, pas un contour —
            c'est le seul endroit du hub qui invite plutôt qu'il ne range. -->
+      <!-- SANS TITRE, L'INVITE LE DIT (1er septembre 2026, demande de Noé).
+           Deux fois la même phrase — un libellé au-dessus, une invite dedans —
+           ne disait rien de plus et coûtait une ligne à chacun des deux champs.
+           C'est l'invite qui reste : elle est DANS le champ, à l'endroit exact
+           où l'on va écrire.
+
+           L'attribut aria-label PREND LE RELAIS, et ce n'est pas optionnel : le libellé
+           était le nom accessible du champ, et une invite disparaît dès qu'on
+           tape. Sans lui, un lecteur d'écran annoncerait deux zones de texte
+           anonymes. -->
       <div class="jour-gratitude">
-        <span class="jour-part-titre">Une chose dont je suis reconnaissant</span>
         <div class="jour-gratitude-champ">
           <span class="jour-gratitude-signe" aria-hidden="true">⭐</span>
           <textarea class="jour-champ" data-jour-champ="gratitude" data-jour-mot="${echapper(jour)}"
-            rows="2" placeholder="Écris quelque chose…">${echapper(gratitude ?? '')}</textarea>
+            rows="2" aria-label="Une chose dont je suis reconnaissant"
+            placeholder="Une chose dont je suis reconnaissant">${echapper(gratitude ?? '')}</textarea>
         </div>
       </div>
 
@@ -1297,10 +1307,10 @@ export function construireLaJournee(jour, donnees, contexte = {}) {
            n'en porte plus l'habit : pas de fond, pas de contour, le texte posé
            sur la page comme dans un carnet. -->
       <div class="jour-mot">
-        <span class="jour-part-titre">Ce qui a compté</span>
         <textarea class="jour-champ jour-mot-long" data-jour-champ="mot"
           data-jour-mot="${echapper(jour)}" rows="12"
-          placeholder="Ce que tu veux garder de ce jour-là."
+          aria-label="Ma journée en quelques mots"
+          placeholder="Ma journée en quelques mots"
           >${echapper(mot ?? '')}</textarea>
       </div>
 
