@@ -9194,19 +9194,35 @@ body.balaye {
 .bilan-mot { font-size: 0.75rem; color: var(--texte-discret); }
 .bilan-precision { font-size: 0.6875rem; color: var(--texte-discret); opacity: 0.75; }
 
-/* OÙ LES HEURES SONT PARTIES (1er septembre 2026, demande de Noé : « ajoute un
-   détail des heures mesurées »). Une ligne par espace, sous le total, avec la
-   pastille du décompte — c'est la même grammaire à trois pixels de là, et deux
-   façons de dire « FC Hermitage » sur le même écran en feraient deux choses.
+/* OÙ LES HEURES SONT PARTIES (1er septembre 2026, demande de Noé). La pastille
+   du décompte et le chiffre, RIEN D'AUTRE, et tout sur un seul rang.
 
-   `.bloc .bilan-chiffres li` annule déjà la tuile que `.bloc li` pose partout ;
-   cette liste-ci est imbriquée, donc elle repasse sous la règle générale — d'où
-   l'annulation, une fois de plus, au même endroit et pour la même raison. */
+   C'EST LE NOM QUI COÛTAIT LA HAUTEUR (même jour, seconde demande : « pas
+   besoin du titre des espaces, et intègre-les mieux pour que les autres tuiles
+   voisines ne soient pas impactées »). Une ligne par espace faisait grandir la
+   tuile des heures, et dans une grille tout un rang prend la hauteur du plus
+   grand : deux tuiles voisines s'étiraient pour un détail qui ne les concernait
+   pas. Sur un rang, la tuile ne dépasse plus celle de l'humeur, qui porte déjà
+   sa précision. Mesuré : le rang passe de 106 px à 85, et les trois tuiles
+   retrouvent la hauteur qu'elles avaient sans le détail.
+
+   La couleur suffit à dire l'espace parce que c'est la MÊME pastille que le
+   décompte des heures, trois pixels plus bas — le nom vit dans `title` et dans
+   le nom accessible. */
+/* `flex-direction: row` SE REDIT — troisième fois que ce piège se paie ici :
+   `.bloc ul` pose toutes les listes du hub en COLONNE, et ce qu'on ne redit pas
+   reste. Mesuré : les deux durées s'empilaient encore, chacune sur 185 px. */
 .bloc .bilan-detail,
 .bilan-detail {
-  display: grid;
-  gap: 1px;
-  margin: var(--espace-4) 0 0;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 2px var(--espace-12);
+  /* AUCUNE MARGE : le détail prend exactement la place de `.bilan-precision`
+     — « 7 jours notés » sous l'humeur —, donc l'écart de 2 px que le li pose
+     déjà en `gap`. Quatre pixels de plus, et la tuile dépassait ses voisines
+     de quatre pixels. Mesuré : 4 px d'écart, ramenés à 0. */
+  margin: 0;
   padding: 0;
   list-style: none;
 }
@@ -9244,16 +9260,7 @@ body.balaye {
   background: var(--couleur-espace-pleine, var(--accent));
 }
 
-/* Le nom cède la place au chiffre quand la colonne est étroite : c'est le
-   chiffre qu'on vient lire, le nom se devine à la pastille. */
-.bilan-detail-mot {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-}
-
-.bilan-detail-valeur { margin-left: auto; flex: none; color: var(--texte); }
+.bilan-detail-valeur { flex: none; color: var(--texte); white-space: nowrap; }
 
 /* Ce que le hub IGNORE, à côté de ce qu'il sait — même précaution que la
    première ligne de « Le temps » : sans elle, un total bas se lirait comme une

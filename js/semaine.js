@@ -169,22 +169,37 @@ export function construireBilan(bilan) {
               : ''
           }
           ${
-            // UNE LIGNE PAR ESPACE, avec sa pastille — la grammaire du décompte
-            // d'en dessous. Un espace sans heure notée n'y figure pas : « Yuno
-            // 0 h » se lirait comme un reproche là où ce n'est qu'un silence.
+            // LA PASTILLE ET LE CHIFFRE, SUR UNE SEULE LIGNE (1er septembre
+            // 2026, demande de Noé : « pas besoin du titre des espaces pour les
+            // heures de la semaine passée, et intègre-les mieux pour que les
+            // autres tuiles voisines ne soient pas impactées par leur ajout »).
+            //
+            // LES DEUX MOITIÉS DE LA DEMANDE N'EN FONT QU'UNE : c'était le nom
+            // qui imposait une ligne par espace, donc une tuile plus haute, donc
+            // ses voisines étirées avec elle — dans une grille, tout un rang
+            // prend la hauteur du plus grand. Sans les noms, tout tient sur un
+            // rang, et la tuile ne grandit pas plus que celle de l'humeur, qui
+            // porte déjà sa précision.
+            //
+            // Le sens n'est pas perdu, il est DÉPLACÉ : `title` porte le nom au
+            // survol, `aria-label` le donne au lecteur d'écran — qui, lui, ne
+            // voit pas la couleur. C'est la parade déjà employée sur la ligne
+            // d'une habitude, et la couleur suffit ici parce que c'est la MÊME
+            // pastille que le décompte des heures, trois pixels plus bas.
             chiffre.parts?.length
               ? `<ul class="bilan-detail">${chiffre.parts
-                  .map(
-                    (part) => `<li data-espace="${echapper(part.espace)}">
+                  .map((part) => {
+                    const nom = NOMS_ESPACES[part.espace] ?? part.espace;
+                    const duree = dureeLisible(part.minutes);
+                    return `<li data-espace="${echapper(part.espace)}" title="${echapper(
+                      `${nom} — ${duree}`,
+                    )}">
                       <span class="compte-rond" aria-hidden="true"></span>
-                      <span class="bilan-detail-mot">${echapper(
-                        NOMS_ESPACES[part.espace] ?? part.espace,
-                      )}</span>
-                      <span class="bilan-detail-valeur chiffre">${echapper(
-                        dureeLisible(part.minutes),
-                      )}</span>
-                    </li>`,
-                  )
+                      <span class="bilan-detail-valeur chiffre" aria-label="${echapper(
+                        `${nom} : ${duree}`,
+                      )}">${echapper(duree)}</span>
+                    </li>`;
+                  })
                   .join('')}</ul>`
               : ''
           }
