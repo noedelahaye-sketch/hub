@@ -33,6 +33,7 @@ import {
   echapper,
   momentLisible,
   NOMS_ESPACES,
+  ORDRE_ESPACES,
   FAMILLES_PERSO,
   FAMILLES_PERSO_CHOIX,
 } from './format.js';
@@ -61,7 +62,17 @@ const SIGNE = {
 // `habitude` a disparu le 30 août 2026 : il portait l'habitude DÉPLIÉE, et la
 // page n'a plus de pli — chaque carte montre son histoire (voir
 // `construireHabitudes`).
-const vueEtat = { menu: null, confirme: null, edition: null, jour: null };
+const vueEtat = {
+  menu: null,
+  confirme: null,
+  edition: null,
+  jour: null,
+  // LE CALENDRIER DES JOURNÉES (1er septembre 2026) : sa vue et le mois — ou la
+  // semaine — qu'il montre. Le mois par défaut : c'est la vue qui donne le plus
+  // à voir d'un coup, et c'est pour voir qu'on ouvre cette page.
+  joursVue: 'mois',
+  joursPivot: null,
+};
 
 // --- Fabrication du HTML ----------------------------------------------------
 
@@ -816,7 +827,7 @@ export function construireTableauPerso(donnees) {
       <nav class="perso-portes">
         ${porte('#perso/habitudes', 'Tes habitudes')}
         ${porte('#perso/bibliotheque', 'Ta bibliothèque')}
-        ${porte('#perso/journee', 'Tes journées')}
+        ${porte('#perso/journee', 'Mes journées')}
         ${porte('#perso/intentions', 'Tes intentions')}
       </nav>
     </div>`;
@@ -848,6 +859,180 @@ function jourEnToutesLettres(iso, aujourdhui) {
 
 function bloc_(titre, contenu) {
   return contenu ? `<div class="jour-part"><span class="jour-part-titre">${titre}</span>${contenu}</div>` : '';
+}
+
+// --- LE CALENDRIER DES JOURNÉES (1er septembre 2026) --------------------------
+//
+// LA DEMANDE DE NOÉ : « intègre un calendrier en vue mois et semaine où je peux
+// cliquer sur un jour et voir le détail de chaque jour — habitudes, tâches
+// terminées, journaling du jour, événements, humeur… »
+//
+// CE QU'IL RÉPARE. La page n'avait que deux flèches, un jour à la fois : pour
+// retrouver le mardi d'il y a trois semaines il fallait cliquer vingt fois, et
+// surtout **on ne voyait pas ce qu'il y avait à retrouver**. Une page qui
+// regarde en arrière a besoin d'un dessus.
+//
+// CE N'EST PAS `construireGrille` DU CALENDRIER, ET C'EST VOULU : celui-là
+// dessine des barres — ce qui est posé, ce qui arrive. Ici on ne pose rien, on
+// CHOISIT un jour ; la case ne montre donc pas des lignes mais des SIGNES de ce
+// qui s'y est passé. Deux besoins, deux dessins.
+//
+// LES SIGNES D'UNE CASE, et rien de plus :
+//   — la FRIMOUSSE de l'humeur, quand elle a été notée. C'est le seul signe qui
+//     dise comment la journée a été vécue, et c'est celui qu'on cherche ;
+//   — un POINT PAR ESPACE qui a bougé — la couleur dit lequel, comme partout
+//     ailleurs dans le hub. Une journée bleue est une journée de club ; on lit
+//     la forme d'un mois sans lire un mot ;
+//   — un point discret de plus si un MOT a été écrit ce jour-là.
+//
+// AUCUN COMPTE, AUCUN SCORE, AUCUNE CASE VIDE QUI S'EXCUSE. Un jour sans rien
+// est un jour sans rien : il reste une case, sobre, et il se clique comme les
+// autres. C'est la règle de la page — « un jour vide le dit sans reproche ».
+export function resumeParJour({ humeurs = [], taches = [], evenements = [], faits = [], mots = [] }) {
+  const par = new Map();
+  const pour = (jour) => {
+    if (!par.has(jour)) par.set(jour, { humeur: null, espaces: new Set(), mot: false });
+    return par.get(jour);
+  };
+
+  for (const ligne of humeurs) pour(ligne.date).humeur = ligne.niveau;
+  for (const tache of taches) {
+    if (!tache.date_fait) continue;
+    pour(versDateISO(new Date(tache.date_fait))).espaces.add(tache.espace);
+  }
+  for (const evenement of evenements) {
+    pour(versDateISO(new Date(evenement.date_debut))).espaces.add(evenement.espace);
+  }
+  // Une habitude cochée n'a pas d'espace : elle vit dans le perso, et c'est là
+  // qu'elle se compte.
+  for (const fait of faits) pour(fait.jour).espaces.add('perso');
+  for (const ligne of mots) if (ligne.mot?.trim()) pour(ligne.jour).mot = true;
+
+  return par;
+}
+
+// Le lundi de la semaine d'un jour. Le hub commence ses semaines le lundi
+// partout ailleurs ; il n'y a aucune raison que ce calendrier-ci soit le seul à
+// commencer le dimanche.
+function lundiDe(iso) {
+  const date = depuisDateISO(iso);
+  const rang = (date.getDay() + 6) % 7;
+  return versDateISO(ajouterJours(date, -rang));
+}
+
+// Les jours que la vue montre : six semaines pleines pour un mois — toujours
+// six, jamais cinq puis six, sinon la grille saute d'un mois à l'autre — et
+// sept pour une semaine.
+export function joursDeLaVue(vue, pivot) {
+  if (vue === 'semaine') {
+    const debut = depuisDateISO(lundiDe(pivot));
+    return Array.from({ length: 7 }, (_, index) => versDateISO(ajouterJours(debut, index)));
+  }
+  const premier = depuisDateISO(pivot);
+  premier.setDate(1);
+  const debut = depuisDateISO(lundiDe(versDateISO(premier)));
+  return Array.from({ length: 42 }, (_, index) => versDateISO(ajouterJours(debut, index)));
+}
+
+const JOURS_COURTS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+
+export function construireCalendrierDesJournees(vue, pivot, resumes, choisi) {
+  const jours = joursDeLaVue(vue, pivot);
+  const aujourdhui = versDateISO();
+  const moisPivot = pivot.slice(0, 7);
+  const pas = vue === 'semaine' ? 7 : 0;
+
+  const recule = pas
+    ? versDateISO(ajouterJours(depuisDateISO(pivot), -7))
+    : (() => {
+        const d = depuisDateISO(pivot);
+        d.setDate(1);
+        d.setMonth(d.getMonth() - 1);
+        return versDateISO(d);
+      })();
+  const avance = pas
+    ? versDateISO(ajouterJours(depuisDateISO(pivot), 7))
+    : (() => {
+        const d = depuisDateISO(pivot);
+        d.setDate(1);
+        d.setMonth(d.getMonth() + 1);
+        return versDateISO(d);
+      })();
+
+  const titre =
+    vue === 'semaine'
+      ? `Semaine du ${depuisDateISO(jours[0]).toLocaleDateString('fr-FR', {
+          day: 'numeric',
+          month: 'long',
+        })}`
+      : depuisDateISO(pivot).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+
+  const case_ = (jour) => {
+    const resume = resumes.get(jour);
+    const niveau = resume?.humeur
+      ? NIVEAUX_HUMEUR.find((n) => n.niveau === resume.humeur)
+      : null;
+    // Les points suivent l'ordre des journées de Noé, comme partout ailleurs.
+    const espaces = [...(resume?.espaces ?? [])].sort(
+      (a, b) => ORDRE_ESPACES.indexOf(a) - ORDRE_ESPACES.indexOf(b),
+    );
+
+    const classes = [
+      'jours-case',
+      jour === choisi ? 'jours-choisi' : '',
+      jour === aujourdhui ? 'jours-aujourdhui' : '',
+      // Un jour d'un autre mois reste cliquable — il a eu lieu comme les
+      // autres —, il s'estompe seulement pour que le mois se lise.
+      vue === 'mois' && jour.slice(0, 7) !== moisPivot ? 'jours-hors' : '',
+      jour > aujourdhui ? 'jours-avenir' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    // UN JOUR À VENIR NE S'OUVRE PAS. La flèche du détail refuse déjà le
+    // lendemain depuis le 29 août — « une flèche qui ne mène nulle part est un
+    // bouton qui ment » —, et une case qui ouvrirait une journée vide dirait la
+    // même chose autrement. Elle reste dessinée : le mois doit garder sa forme.
+    const aVenir = jour > aujourdhui;
+
+    return `<button type="button" class="${classes}" data-jour-vers="${echapper(jour)}"
+      ${aVenir ? 'disabled' : ''}
+      aria-current="${jour === choisi}"
+      aria-label="${echapper(jourEnToutesLettres(jour, aujourdhui))}">
+      <span class="jours-numero">${Number(jour.slice(8))}</span>
+      ${niveau ? `<span class="jours-frimousse">${niveau.frimousse}</span>` : ''}
+      <span class="jours-points">
+        ${espaces
+          .map((espace) => `<span class="jours-point" data-espace="${echapper(espace)}"></span>`)
+          .join('')}
+        ${resume?.mot ? '<span class="jours-point jours-mot"></span>' : ''}
+      </span>
+    </button>`;
+  };
+
+  return `
+    <div class="jours-tete">
+      <div class="jours-navigation">
+        <button type="button" class="jour-fleche" data-jours-pivot="${echapper(
+          recule,
+        )}" aria-label="Avant">‹</button>
+        <span class="jours-titre">${echapper(titre)}</span>
+        <button type="button" class="jour-fleche" data-jours-pivot="${echapper(
+          avance,
+        )}" aria-label="Après">›</button>
+      </div>
+      <div class="cal-filtres" role="group" aria-label="La vue du calendrier">
+        <button type="button" class="lien-discret${vue === 'mois' ? ' actif' : ''}"
+          data-jours-vue="mois">Mois</button>
+        <button type="button" class="lien-discret${vue === 'semaine' ? ' actif' : ''}"
+          data-jours-vue="semaine">Semaine</button>
+      </div>
+    </div>
+
+    <div class="jours-grille${vue === 'semaine' ? ' jours-grille-semaine' : ''}">
+      ${JOURS_COURTS.map((lettre) => `<span class="jours-entete">${lettre}</span>`).join('')}
+      ${jours.map(case_).join('')}
+    </div>`;
 }
 
 export function construireLaJournee(jour, donnees, contexte = {}) {
@@ -1220,8 +1405,18 @@ function squelette() {
     </section>
 
     <section class="bloc" data-vue="journee">
-      <h2>Tes journées</h2>
-      <div data-bloc="journee"><p class="vide">…</p></div>
+      <h2>Mes journées</h2>
+      <div data-bloc="jours-calendrier"></div>
+      <!-- LE DÉTAIL D'UN JOUR EST UNE TUILE VOLANTE (1er septembre 2026,
+           demande de Noé : « ça doit ouvrir une tuile volante »). La page ne
+           montre plus que son calendrier ; le jour s'ouvre PAR-DESSUS, comme
+           tout ce qu'on ouvre dans le hub — le fond s'assombrit, la tuile se
+           centre, et on la referme par la croix, le fond ou Échap.
+
+           CE QUE ÇA REMPLACE : le détail vivait à demeure sous la grille, et
+           l'un poussait l'autre hors de l'écran. Un calendrier sert à CHOISIR ;
+           ce qu'on a choisi n'a pas à occuper la page en permanence. -->
+      <div data-bloc="journee"></div>
     </section>
 
     <section class="bloc" data-vue="bibliotheque">
@@ -1412,7 +1607,7 @@ const VUES = {
   intentions: ['Les intentions', 'Ce que tu veux tenir, sans mesure ni date.'],
   habitudes: ['Tes habitudes', "Le rythme que tu tiens, et rien qui puisse s'écrouler."],
   bibliotheque: ['Ta bibliothèque', 'Ce que tu lis, à ton rythme et sans quota.'],
-  journee: ['Tes journées', "Ce qu'il s'est passé, jour après jour. Rien à remplir."],
+  journee: ['Mes journées', "Ce qu'il s'est passé, jour après jour. Rien à remplir."],
   victoires: ['Les victoires', 'Une belle séance compte autant qu\'un post réussi.'],
   'rendez-vous': ['Les rendez-vous', 'Les moments que tu te réserves.'],
   humeur: ['Ton humeur', 'Les 30 derniers jours, sans relance ni reproche.'],
@@ -1467,7 +1662,13 @@ export default {
     // Changer de vue ne relit rien et ne redessine rien : trois blocs sur
     // quatre s'effacent, le quatrième reste exactement dans l'état où on l'a
     // laissé.
-    this.naviguer = (nouvelle) => appliquerLaVue(section, nouvelle);
+    this.naviguer = (nouvelle) => {
+      appliquerLaVue(section, nouvelle);
+      // UNE ADRESSE QUI PORTE UN JOUR L'OUVRE. Sans ça, coller
+      // `#perso/journee/2026-08-20` depuis la page elle-même changeait l'état
+      // sans rien redessiner : le lien menait au bon jour et montrait l'autre.
+      if (/^\d{4}-\d{2}-\d{2}$/.test(nouvelle?.id ?? '')) ouvrirLaJournee(nouvelle.id);
+    };
 
     const etat = { intentions: [], evenements: [], victoires: [], humeurDuJour: null, habitudes: [], faits: [], livres: [], seances: [] };
     const bloc = (nom) => section.querySelector(`[data-bloc="${nom}"]`);
@@ -1512,18 +1713,100 @@ export default {
     // d'affilée, et chaque aller-retour coûterait sept requêtes.
     const journeesVues = new Map();
 
-    const rendreJournee = () => {
+    // LE CALENDRIER DES JOURNÉES. Ses résumés se gardent PAR INTERVALLE : revenir
+    // sur un mois déjà lu ne redemande rien, et l'on remonte souvent plusieurs
+    // mois d'affilée. C'est la même précaution que `journeesVues` pour le
+    // détail d'un jour.
+    const resumesVus = new Map();
+    let resumes = new Map();
+
+    const rendreCalendrierDesJournees = () => {
       const jour = vueEtat.jour ?? versDateISO();
-      bloc('journee').innerHTML = construireLaJournee(jour, journeesVues.get(jour), {
+      bloc('jours-calendrier').innerHTML = construireCalendrierDesJournees(
+        vueEtat.joursVue,
+        vueEtat.joursPivot ?? jour,
+        resumes,
+        jour,
+      );
+    };
+
+    async function chargerLesResumes() {
+      const jours = joursDeLaVue(vueEtat.joursVue, vueEtat.joursPivot ?? vueEtat.jour ?? versDateISO());
+      const cle = `${jours[0]}..${jours[jours.length - 1]}`;
+      if (resumesVus.has(cle)) {
+        resumes = resumesVus.get(cle);
+        rendreCalendrierDesJournees();
+        return;
+      }
+      try {
+        const brut = await api.resumeDesJournees(jours[0], jours[jours.length - 1]);
+        const par = resumeParJour(brut);
+        resumesVus.set(cle, par);
+        resumes = par;
+        rendreCalendrierDesJournees();
+      } catch (souci) {
+        console.error('Résumé des journées non chargé', souci);
+      }
+    }
+
+    // LE DÉTAIL D'UN JOUR EST UNE TUILE VOLANTE (1er septembre 2026, demande de
+    // Noé). Le gabarit est celui de tout le hub — `.ajout-volant` avec son fond
+    // assombri et sa croix —, et `app.js` tient déjà ses trois fermetures : la
+    // croix, le fond, Échap. Rien à rebrancher.
+    //
+    // ELLE EST REDESSINÉE À CHAQUE FOIS et dépliée à la main, comme la fenêtre
+    // d'édition juste au-dessus : ici non plus il n'y a pas de sommaire à
+    // presser — c'est une case du calendrier qui l'ouvre.
+    const rendreJournee = () => {
+      rendreCalendrierDesJournees();
+
+      const hote = bloc('journee');
+      if (!vueEtat.jour) {
+        hote.innerHTML = '';
+        return;
+      }
+
+      const jour = vueEtat.jour;
+      const corps = construireLaJournee(jour, journeesVues.get(jour), {
         habitudes: etat.habitudes,
         livres: etat.livres,
         relue: relecture({ victoires: etat.victoires, intentions: etat.intentions }, depuisDateISO(jour)),
       });
+
+      hote.innerHTML = `
+        <details class="ajout ajout-volant" data-ajout="journee">
+          <summary hidden></summary>
+          <div class="ajout-fond" data-fermer-ajout></div>
+          <div class="ajout-tuile jour-tuile">
+            <p class="ajout-titre">
+              <span>La journée</span>
+              <button type="button" class="lien-discret bouton-mini bouton-retirer"
+                data-fermer-ajout title="Fermer" aria-label="Fermer">×</button>
+            </p>
+            ${corps}
+          </div>
+        </details>`;
+
+      const tuile = hote.querySelector('.ajout-volant');
+      tuile.open = true;
+      // REFERMER OUBLIE LE JOUR, quel que soit le chemin. Sans ça, rouvrir une
+      // autre case rendrait d'abord l'ancienne — c'est le défaut que la fenêtre
+      // d'édition de cette page a déjà rencontré, et il ne se voit qu'au geste
+      // suivant.
+      tuile.addEventListener('toggle', () => {
+        if (tuile.open) return;
+        vueEtat.jour = null;
+        if (location.hash.startsWith('#perso/journee/')) {
+          history.replaceState(null, '', '#perso/journee');
+        }
+        rendreCalendrierDesJournees();
+      });
     };
 
-    async function ouvrirLaJournee(jour) {
-      vueEtat.jour = jour;
-      rendreJournee();
+    // CHARGER N'EST PAS OUVRIR (1er septembre 2026). Le tableau de bord a besoin
+    // de la journée d'aujourd'hui — c'est de là que vient le mot du jour — sans
+    // pour autant qu'une tuile s'ouvre sur l'écran au montage.
+    async function chargerLaJournee(jour) {
       if (journeesVues.has(jour)) return;
       try {
         journeesVues.set(jour, await api.journeeDe(jour));
@@ -1531,6 +1814,35 @@ export default {
       } catch (souci) {
         console.error('Journée non chargée', souci);
       }
+    }
+
+    async function ouvrirLaJournee(jour) {
+      vueEtat.jour = jour;
+      // LE JOUR VIT DANS L'ADRESSE (règle de la page depuis le 29 août : « une
+      // journée se retrouve et se partage »). Elle était LUE — le routeur pose
+      // `vueEtat.jour` depuis `#perso/journee/2026-08-29` — mais jamais ÉCRITE :
+      // ni les flèches ni, maintenant, le calendrier ne la mettaient à jour. On
+      // pouvait donc arriver sur un jour par un lien, pas en repartir avec.
+      //
+      // `replaceState` et NON `location.hash` : celui-ci relancerait le routeur
+      // pour un jour qu'on vient déjà d'ouvrir, et chaque case cliquée
+      // empilerait une entrée d'historique. L'adresse doit être partageable, pas
+      // bavarde.
+      //
+      // Seulement DEPUIS la page des journées : `ouvrirLaJournee` sert aussi le
+      // tableau de bord au montage — c'est de là que vient le mot du jour —, et
+      // réécrire l'adresse à ce moment-là ferait changer de page tout seul.
+      if (location.hash.startsWith('#perso/journee')) {
+        history.replaceState(null, '', `#perso/journee/${jour}`);
+      }
+      // LE CALENDRIER SUIT LE JOUR CHOISI, mais ne saute pas de mois pour rien :
+      // il ne se recale que si le jour sort de ce qu'il montre. Sans ça, ouvrir
+      // le 31 août depuis la grille de septembre ramènerait tout en arrière.
+      const montres = joursDeLaVue(vueEtat.joursVue, vueEtat.joursPivot ?? jour);
+      if (!montres.includes(jour)) vueEtat.joursPivot = jour;
+      rendreJournee();
+      chargerLesResumes();
+      return chargerLaJournee(jour);
     }
 
     const rendreTableau = () => {
@@ -1603,9 +1915,18 @@ export default {
       rendreBibliotheque();
       rendreTableau();
       // La journée d'aujourd'hui nourrit AUSSI le tableau de bord : c'est de là
-      // que vient le mot du jour.
-      await ouvrirLaJournee(vueEtat.jour ?? versDateISO());
+      // que vient le mot du jour. On la CHARGE sans l'ouvrir — depuis que le
+      // détail est une tuile volante, l'ouvrir ferait s'afficher une fenêtre que
+      // personne n'a demandée en arrivant sur la page.
+      await chargerLaJournee(versDateISO());
       rendreTableau();
+      // Une adresse qui porte un jour l'ouvre ; `#perso/journee` seul montre son
+      // calendrier et attend qu'on choisisse.
+      if (vueEtat.jour) await ouvrirLaJournee(vueEtat.jour);
+      else {
+        rendreCalendrierDesJournees();
+        chargerLesResumes();
+      }
       rendreIntentions();
       rendreVictoires();
       rendreEvenements();
@@ -1946,6 +2267,26 @@ export default {
 
       const versUnJour = dans('jour-vers');
       if (versUnJour) return ouvrirLaJournee(versUnJour.dataset.jourVers);
+
+      // CHANGER DE MOIS OU DE SEMAINE ne change PAS le jour ouvert : on regarde
+      // ailleurs sans perdre ce qu'on lisait. C'est ce qui distingue une
+      // navigation d'un choix — le détail ne bouge que lorsqu'on touche un jour.
+      const versUnPivot = dans('jours-pivot');
+      if (versUnPivot) {
+        vueEtat.joursPivot = versUnPivot.dataset.joursPivot;
+        rendreCalendrierDesJournees();
+        return chargerLesResumes();
+      }
+
+      const versUneVue = dans('jours-vue');
+      if (versUneVue) {
+        vueEtat.joursVue = versUneVue.dataset.joursVue;
+        // On repart du jour ouvert : passer du mois à la semaine doit montrer
+        // LA semaine de ce jour-là, pas celle d'aujourd'hui.
+        vueEtat.joursPivot = vueEtat.jour ?? versDateISO();
+        rendreCalendrierDesJournees();
+        return chargerLesResumes();
+      }
 
       const menu = dans('menu');
       if (menu) {

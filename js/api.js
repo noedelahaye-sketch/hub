@@ -589,6 +589,52 @@ export async function delierProjet(id) {
 // Une seule requête par table, pour le seul jour demandé — la page s'ouvre
 // exprès, elle n'a pas à précharger trois mois.
 
+// LE RÉSUMÉ D'UNE PÉRIODE, pour le calendrier des journées (1er septembre 2026,
+// demande de Noé : « intègre un calendrier en vue mois et semaine où je peux
+// cliquer sur un jour et voir le détail de chaque jour »).
+//
+// UNE REQUÊTE PAR TABLE, ET NON PAR JOUR : `journeeDe` en coûte sept, et un mois
+// en aurait coûté deux cents. On lit l'intervalle entier d'un coup, on groupe
+// par jour côté client — c'est du comptage, pas du calcul, et ça ne demande rien
+// à Postgres qu'il ne fasse déjà.
+//
+// ON NE LIT QUE CE QUI SE VOIT DANS UNE CASE : l'humeur, ce qui a été terminé,
+// ce qui a eu lieu, les habitudes cochées, et le fait qu'un mot ait été écrit.
+// Le DÉTAIL d'un jour reste `journeeDe` — inutile de rapatrier un mois de notes
+// pour dessiner trente cases.
+export async function resumeDesJournees(debutISO, finISO) {
+  const debut = `${debutISO}T00:00:00`;
+  const fin = `${finISO}T23:59:59`;
+
+  const [humeurs, taches, evenements, faits, mots] = await Promise.all([
+    verifier(
+      await client.from('humeur').select('date, niveau').gte('date', debutISO).lte('date', finISO),
+    ),
+    verifier(
+      await client
+        .from('taches')
+        .select('espace, date_fait')
+        .gte('date_fait', debut)
+        .lte('date_fait', fin),
+    ),
+    verifier(
+      await client
+        .from('evenements')
+        .select('espace, date_debut')
+        .gte('date_debut', debut)
+        .lte('date_debut', fin),
+    ),
+    verifier(
+      await client.from('habitudes_faits').select('jour').gte('jour', debutISO).lte('jour', finISO),
+    ),
+    verifier(
+      await client.from('journees').select('jour, mot').gte('jour', debutISO).lte('jour', finISO),
+    ),
+  ]);
+
+  return { humeurs, taches, evenements, faits, mots };
+}
+
 export async function journeeDe(jourISO) {
   const debut = `${jourISO}T00:00:00`;
   const fin = `${jourISO}T23:59:59`;

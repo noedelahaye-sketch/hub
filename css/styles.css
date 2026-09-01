@@ -5008,6 +5008,128 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
    Aucun compte, aucun total, aucune comparaison avec hier : une journée n'a pas
    de score, elle a eu lieu. */
+/* --- LE CALENDRIER DES JOURNÉES (1er septembre 2026) ------------------------
+   « Un calendrier en vue mois et semaine où je peux cliquer sur un jour et voir
+   le détail de chaque jour » (Noé).
+
+   CE N'EST PAS LA GRILLE DU CALENDRIER, et c'est voulu : celle-là dessine des
+   barres — ce qui est posé, ce qui arrive. Ici on ne pose rien, on CHOISIT un
+   jour ; la case porte donc des SIGNES et non des lignes. Deux besoins, deux
+   dessins. */
+.jours-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--espace-8);
+  margin-bottom: var(--espace-8);
+}
+
+.jours-navigation { display: flex; align-items: center; gap: var(--espace-8); }
+
+.jours-titre {
+  font-family: var(--police-titre);
+  font-weight: 600;
+  font-size: 1rem;
+  /* La première lettre d'un mois vient en bas de casse de `toLocaleDateString`. */
+  text-transform: capitalize;
+}
+
+.jours-grille {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.jours-entete {
+  padding-bottom: var(--espace-4);
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+  text-align: center;
+  color: var(--texte-discret);
+}
+
+/* LA CASE EST UN BOUTON, jamais un simple bloc : on vient la choisir. Sa hauteur
+   est franche — une case qu'on vise au doigt —, et elle porte ses signes du haut
+   vers le bas : le numéro et la frimousse sur un rang, les points en dessous. */
+.jours-case {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 2px;
+  min-height: 3.25rem;
+  padding: var(--espace-4);
+  background: var(--fond-carte);
+  border: 1px solid transparent;
+  border-radius: var(--rayon-controle);
+  color: var(--texte);
+  text-align: left;
+  cursor: pointer;
+}
+
+.jours-grille-semaine .jours-case { min-height: 5rem; }
+
+.jours-case:hover { background: color-mix(in srgb, var(--accent) 8%, var(--fond-carte)); }
+
+/* LE JOUR CHOISI porte un filet d'accent, pas un aplat : la case reste lisible,
+   et c'est le détail en dessous qui montre vraiment ce qu'elle contient. */
+.jours-choisi { border-color: var(--accent); }
+
+/* AUJOURD'HUI se dit par son numéro, en accent — un second cadre entrerait en
+   concurrence avec celui du jour choisi. */
+.jours-aujourdhui .jours-numero { color: var(--accent); font-weight: 700; }
+
+/* Un jour d'un autre mois reste cliquable — il a eu lieu comme les autres —, il
+   s'estompe seulement pour que le mois se lise. Un jour à venir aussi : il n'a
+   rien à montrer, mais rien n'interdit d'aller le voir. */
+.jours-hors { opacity: 0.4; }
+
+/* Un jour à venir reste dessiné — le mois doit garder sa forme — mais il ne
+   s'ouvre pas : il n'a pas encore eu lieu. */
+.jours-avenir { opacity: 0.45; cursor: default; }
+.jours-avenir:hover { background: var(--fond-carte); }
+
+.jours-numero {
+  font-family: var(--police-chiffre);
+  font-size: 0.6875rem;
+  line-height: 1;
+  color: var(--texte-discret);
+}
+
+/* La frimousse en haut à droite : c'est le signe qu'on cherche, et il ne doit
+   pas se confondre avec le numéro du jour. */
+.jours-frimousse {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.jours-points {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: end;
+  gap: 3px;
+}
+
+/* UN POINT PAR ESPACE QUI A BOUGÉ : la couleur dit lequel, comme partout
+   ailleurs dans le hub. Une journée bleue est une journée de club — on lit la
+   forme d'un mois sans lire un mot. */
+.jours-point {
+  width: 5px;
+  height: 5px;
+  border-radius: var(--rayon-pastille);
+  background: var(--couleur-espace-pleine, var(--accent));
+}
+
+/* Le mot écrit ce jour-là : un point creux, pour qu'il ne se compte pas avec
+   les espaces. */
+.jours-mot {
+  background: none;
+  border: 1px solid var(--texte-discret);
+}
+
 .jour-page {
   padding: var(--espace-16);
   background: var(--fond-carte);

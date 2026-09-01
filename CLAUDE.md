@@ -132,7 +132,7 @@ flèche qui ne s'ouvre sur rien est un mensonge de forme :
 | **FC Hermitage** | Ses objectifs · Ses projets · Ses tâches · Le site |
 | **Formation** | Ses objectifs · Ses projets · Ses tâches |
 | **Yuno** | Ses objectifs · Ses projets · Ses tâches · Le site |
-| **Perso** | Les intentions · Les rendez-vous · L'humeur · Les victoires |
+| **Perso** | Les intentions · Les rendez-vous · L'humeur · Les victoires · Mes journées |
 | **Le temps** | *(pas de sous-page)* |
 
 **« Ses objectifs », « ses projets », « ses tâches » ne sont pas de nouveaux
@@ -583,7 +583,7 @@ redemander de cocher « lire un peu » juste après serait demander deux fois la
 même chose. L'habitude concernée se DÉCLARE elle-même (`habitudes.automatique`),
 donc rien n'est câblé sur un nom — et la colonne accueillera les suivantes.
 
-### Tes journées (29 août 2026)
+### Mes journées (29 août 2026)
 
 **La demande** : « un outil qui me permet de faire un bilan quotidien, avec une
 page par jour qui est construite et sur laquelle on peut revenir, où l'on voit
@@ -596,10 +596,69 @@ n'est à ressaisir : la page les rassemble, elle ne les redemande pas. **Une
 seule chose s'y écrit** — « ce qui a compté » —, parce que c'est la seule à
 laquelle le hub ne peut pas répondre à la place de Noé.
 
+**ELLE S'APPELLE « MES JOURNÉES »** (1er septembre 2026, mot choisi par Noé) —
+dans son `<h1>`, dans le menu et dans la porte du tableau de bord. Elle disait
+« Tes journées » ; c'est la leçon de « Général » et de « Ma semaine », un seul
+nom par page.
+
+### SON CALENDRIER (1er septembre 2026)
+
+**La demande** : *« intègre un calendrier en vue mois et semaine où je peux
+cliquer sur un jour et voir le détail de chaque jour — habitudes, tâches
+terminées, journaling du jour, événements, humeur… »*
+
+**CE QU'IL RÉPARE.** La page n'avait que deux flèches, un jour à la fois : pour
+retrouver le mardi d'il y a trois semaines il fallait cliquer vingt fois, et
+surtout **on ne voyait pas ce qu'il y avait à retrouver**. Une page qui regarde
+en arrière a besoin d'un dessus.
+
+**CE N'EST PAS `construireGrille`, ET C'EST VOULU** : la grille du calendrier
+dessine des BARRES — ce qui est posé, ce qui arrive. Ici on ne pose rien, on
+CHOISIT un jour ; la case porte donc des **signes** et non des lignes. Deux
+besoins, deux dessins.
+
+**Les signes d'une case, et rien de plus** : la **frimousse** de l'humeur quand
+elle a été notée — le seul signe qui dise comment la journée a été vécue, et
+celui qu'on cherche ; un **point par espace qui a bougé**, la couleur disant
+lequel, si bien qu'on lit la forme d'un mois sans lire un mot ; un point creux
+de plus si un **mot** a été écrit. **Aucun compte, aucun score** : un jour sans
+rien reste une case sobre qui se clique comme les autres.
+
+- **Un jour à venir ne s'ouvre pas** : la flèche du détail refuse déjà le
+  lendemain, et une case qui ouvrirait une journée vide dirait la même chose
+  autrement. Elle reste dessinée — le mois doit garder sa forme.
+- **Changer de mois ne change pas le jour ouvert** : on regarde ailleurs sans
+  perdre ce qu'on lisait. C'est ce qui distingue une navigation d'un choix.
+- **Le calendrier suit le jour choisi sans sauter pour rien** : il ne se recale
+  que si le jour sort de ce qu'il montre.
+- **Une requête par table, jamais par jour** : `journeeDe` en coûte sept, un mois
+  en aurait coûté deux cents. `resumeDesJournees` lit l'intervalle d'un coup et
+  groupe côté client, et les résumés se gardent par intervalle.
+
+**LE DÉTAIL EST UNE TUILE VOLANTE** (même jour, correction de Noé : « ça doit
+ouvrir une tuile volante »). Il vivait à demeure sous la grille, et l'un
+poussait l'autre hors de l'écran. **Un calendrier sert à CHOISIR ; ce qu'on a
+choisi n'a pas à occuper la page en permanence.** Le gabarit est celui de tout le
+hub — `.ajout-volant`, son fond assombri, sa croix —, et `app.js` tient déjà ses
+trois fermetures. Refermer oublie le jour, sans quoi rouvrir une autre case
+rendrait d'abord l'ancienne.
+
 - **`#perso/journee/2026-08-29`** : le jour vit dans l'adresse, donc une journée
   se retrouve et se partage. Les flèches vont d'un jour à l'autre ; celle du
   lendemain se désactive sur aujourd'hui — une flèche qui ne mène nulle part est
   un bouton qui ment.
+  - **L'adresse était LUE et jamais ÉCRITE**, et ça se corrige le 1er septembre
+    2026 : le routeur posait le jour venu de l'URL, mais ni les flèches ni le
+    calendrier ne le réécrivaient — on arrivait sur un jour par un lien, on n'en
+    repartait pas avec. `replaceState` et non `location.hash` : celui-ci
+    relancerait le routeur pour un jour qu'on vient d'ouvrir, et chaque case
+    cliquée empilerait une entrée d'historique. **Et une adresse qui porte un
+    jour l'OUVRE** — coller `#perso/journee/2026-08-20` depuis la page changeait
+    l'état sans rien redessiner : le lien menait au bon jour et montrait l'autre.
+  - **`#perso/journee` seul ne montre que son calendrier** et attend qu'on
+    choisisse : ouvrir une tuile en arrivant serait une fenêtre que personne n'a
+    demandée. **Charger n'est pas ouvrir** — le tableau de bord a besoin de la
+    journée d'aujourd'hui, c'est de là que vient le mot du jour.
 - **Une seule table, `journees`** (jour, mot). Tout le reste se déduit.
 - **Le mot s'enregistre quand on quitte le champ**, sans bouton : c'est une
   ligne qu'on écrit en passant, et lui demander un geste de plus la ferait ne

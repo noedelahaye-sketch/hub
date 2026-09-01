@@ -102,7 +102,7 @@ export const RUBRIQUES = [
     pages: [
       { nom: 'Les habitudes', adresse: '#perso/habitudes' },
       { nom: 'La bibliothèque', adresse: '#perso/bibliotheque' },
-      { nom: 'Les journées', adresse: '#perso/journee' },
+      { nom: 'Mes journées', adresse: '#perso/journee' },
       { nom: 'Les intentions', adresse: '#perso/intentions' },
       { nom: 'Les rendez-vous', adresse: '#perso/rendez-vous' },
       { nom: "L'humeur", adresse: '#perso/humeur' },
