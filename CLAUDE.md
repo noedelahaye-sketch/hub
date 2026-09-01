@@ -865,14 +865,24 @@ c'est le quatrième piège de ce type payé sur cette page.
 - **La phrase est en Google Sans** (demande de Noé), **trois lignes au plus**.
   Ce qui dépasse s'arrête à l'ellipse et attend dans le détail — ce n'est plus
   un `title` qu'on n'ouvre jamais, c'est un écran.
-- **TOUTES LES TUILES ONT LA MÊME TAILLE** (1er septembre 2026, demande de Noé).
-  Une grille donne à chaque RANG la hauteur de sa carte la plus haute : deux
-  rangs voisins tombaient à 32 et 49 px, et la galerie n'en était plus une.
-  `grid-auto-rows: 1fr` les aligne tous sur le plus grand, et la carte remplit
-  le sien — sans `height: 100%` elle resterait collée en haut d'une case devenue
-  trop grande pour elle. *Mesuré : sept cartes à 248 × 65, et le bloc passe de
-  187 px à 212. C'est le prix d'une galerie régulière, et il reste très loin des
-  468 px de ce matin.*
+- **TOUTES LES TUILES ONT LA MÊME TAILLE** (1er septembre 2026, demande de Noé),
+  et il a fallu **deux** réglages, pas un :
+  - `grid-auto-rows: 1fr` — une grille donne à chaque RANG la hauteur de sa
+    carte la plus haute, et deux rangs voisins tombaient à 32 et 49 px ;
+  - **`align-items: stretch`, qui SE REDIT** — une règle plus générale pose
+    `start` sur les listes du hub. Le rang faisait bien 65 px, mais les cartes
+    s'y calaient en haut, chacune à sa propre hauteur. *Le rang était juste,
+    l'alignement non*, et c'est ce que Noé voyait encore sur grand écran. Ce
+    qu'on ne redit pas reste : cinquième fois sur cette page.
+- **`auto-fit` ET NON `auto-fill`, ET 18 REM** (1er septembre 2026, Noé : « cette
+  page doit être optimisée pour un affichage ordinateur »). **`auto-fill`
+  FABRIQUE des colonnes vides** : à 1920 px il en posait NEUF pour sept cartes,
+  chacune tenait dans 196 px, ses phrases se repliaient sur trois lignes — et
+  deux colonnes de vide restaient à droite. `auto-fit` replie les pistes que
+  personne n'occupe et rend leur largeur aux autres.
+  *Mesuré à 1920 px : six colonnes de 297 px, toutes les cartes à 49 px, et le
+  bloc tombe de 212 px à 106. Quatre colonnes à 1440 et 1200, trois à 1000, deux
+  à 800, une sur un téléphone — la même taille partout, à chaque largeur.*
 
 ### arbitrages
 

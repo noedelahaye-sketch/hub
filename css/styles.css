@@ -7578,14 +7578,27 @@ body.balaye {
      de la semaine doivent prendre moins de place »). Le texte ayant maigri d'un
      cran, la carte tient dans moins de largeur — et une colonne de plus est ce
      qui fait vraiment baisser la hauteur. */
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+  /* `auto-fit` ET NON `auto-fill`, et 18 rem et non 13 (1er septembre 2026,
+     Noé : « cette page doit être optimisée pour un affichage ordinateur »).
+     `auto-fill` FABRIQUE des colonnes vides : à 1920 px il en posait NEUF pour
+     sept cartes, si bien que chacune tenait dans 196 px et que ses phrases se
+     repliaient sur trois lignes — avec deux colonnes de vide à droite.
+     `auto-fit` replie les pistes que personne n'occupe et rend leur largeur aux
+     autres. Mesuré à 1920 px : six colonnes de 296 px, deux lignes de texte au
+     lieu de trois. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
   /* TOUTES LES TUILES DE LA MÊME TAILLE (1er septembre 2026, demande de Noé).
      Une grille donne à chaque RANG la hauteur de sa carte la plus haute : deux
      rangs voisins tombaient donc à 32 et 49 px, et la galerie n'en était plus
-     une. `1fr` sur les rangs implicites les aligne tous sur le plus grand, et
-     la carte remplit le sien (`height: 100%`) — sans quoi elle resterait
-     collée en haut d'une case devenue trop grande pour elle. */
+     une. `1fr` sur les rangs implicites les aligne tous sur le plus grand.
+
+     ET `align-items: stretch` SE REDIT : une règle plus générale pose `start`
+     sur les listes du hub, si bien que le rang faisait bien 65 px mais que les
+     cartes s'y calaient en haut, chacune à sa propre hauteur. Le rang était
+     juste, l'alignement non — et c'est exactement le défaut que Noé voyait sur
+     grand écran. Ce qu'on ne redit pas reste : cinquième fois sur cette page. */
   grid-auto-rows: 1fr;
+  align-items: stretch;
   gap: var(--espace-8);
   margin: 0;
   padding: 0;
