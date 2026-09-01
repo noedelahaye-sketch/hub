@@ -5233,7 +5233,15 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 .jour-coche { color: var(--famille-corps); margin-right: var(--espace-8); }
 .jour-lecture { margin: 0; font-size: 0.875rem; }
 
-.jour-pastilles { display: flex; flex-wrap: wrap; gap: var(--espace-4); }
+/* CÔTE À CÔTE, et qui se replient : la colonne porte neuf habitudes, et une
+   par ligne en ferait une liste à faire défiler dans un relevé qu'on parcourt.
+   `align-content: start` pour que les rangs se tassent en haut de la colonne. */
+.jour-pastilles {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: start;
+  gap: var(--espace-4);
+}
 
 /* UNE HABITUDE SE COCHE ICI (1er septembre 2026, demande de Noé). La pastille
    est devenue un bouton : creuse tant que l'habitude n'est pas faite, pleine
@@ -5309,23 +5317,34 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    cases vides là où une colonne se remplit d'elle-même. `break-inside: avoid`
    pour qu'aucun bloc ne se coupe en deux au passage d'une colonne, ce qui est
    le seul vrai défaut de ce mode. */
+/* UNE GRILLE, ET NON UN FLUX EN COLONNES (1er septembre 2026, demande de Noé :
+   « les habitudes doivent être une colonne à elle seule »). Le relevé coulait
+   dans un `columns: 2`, où c'est la HAUTEUR du contenu qui décide de ce qui
+   bascule à droite : un jour sans lecture ni victoire, « Terminé » remontait à
+   côté des habitudes ; un jour chargé, il passait dessous. La colonne des
+   habitudes n'était donc à elle seule que par accident.
+
+   Deux pistes explicites le disent une fois pour toutes — les habitudes à
+   gauche, tout le reste à droite. `minmax(0, 1fr)` et non `1fr` : une piste
+   implicite refuse de descendre sous la largeur minimale de son contenu, et une
+   pastille d'habitude est longue. C'est le piège du dépôt, payé une fois de
+   plus. */
 .jour-releve-corps {
   padding-top: var(--espace-12);
   border-top: 1px solid var(--bordure-douce);
-  columns: 2;
-  column-gap: var(--espace-24);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--espace-24);
+  align-items: start;
 }
 
-.jour-releve-corps > * {
-  break-inside: avoid;
-  /* La marge HAUTE d'un premier bloc de colonne se replie en haut de colonne :
-     c'est la marge basse qui tient l'écart, sinon les deux colonnes ne partent
-     pas de la même ligne. */
-  margin: 0 0 var(--espace-16);
-}
+.jour-releve-colonne { min-width: 0; }
+
+.jour-releve-colonne > * { margin: 0 0 var(--espace-16); }
+.jour-releve-colonne > *:last-child { margin-bottom: 0; }
 
 @media (max-width: 720px) {
-  .jour-releve-corps { columns: 1; }
+  .jour-releve-corps { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -718,6 +718,14 @@ rendrait d'abord l'ancienne.
     *Vérifié : cocher depuis le 11 août écrit au 11 août, et décocher retire la
     ligne.* Les faits viennent d'`etat.faits`, la MÊME source que la page des
     habitudes — deux sources pour une coche se contredisent au premier clic.
+    - **ELLES ONT LEUR COLONNE, ET LES FAITES D'ABORD** (1er septembre 2026,
+      demande de Noé). Un bilan se lit dans ce sens : ce qui a été tenu, puis ce
+      qui reste. Le tri est **stable** — deux habitudes faites gardent l'ordre où
+      Noé les a posées — et **il ne se refait pas au clic** : cocher ne redessine
+      que le bouton, car une pastille qui saute ailleurs au moment où on la
+      touche fait perdre la ligne qu'on parcourait.
+    - **Côte à côte et repliées** : la colonne en porte neuf, et une par ligne en
+      ferait une liste à faire défiler dans un relevé qu'on parcourt.
   - **LES TÂCHES ET LES ÉVÉNEMENTS SONT DES LIGNES, PAS DES TUILES** (même
     demande : « ils doivent prendre moins de place »). Chaque ligne était une
     carte — `.bloc li` habille toutes les listes du hub, et la règle « une tuile
@@ -728,10 +736,17 @@ rendrait d'abord l'ancienne.
     longueur et que ce soit plus lisible »). Six blocs empilés faisaient une page
     à eux seuls et repoussaient l'écriture sous la ligne de flottaison. Ce sont
     des RELEVÉS — de courtes listes qu'on parcourt du regard, exactement ce qui
-    se met côte à côte. **`columns` et non une grille** : le nombre de blocs
-    varie d'un jour à l'autre — une journée sans lecture n'en a que quatre —, et
-    une grille laisserait des cases vides là où une colonne se remplit
-    d'elle-même. Une seule colonne sur téléphone.
+    se met côte à côte. Une seule colonne sur téléphone.
+    - **UNE GRILLE À DEUX PISTES, ET NON UN FLUX `columns`** — les habitudes à
+      gauche, tout le reste à droite. Le flux a tenu une heure : c'est la
+      HAUTEUR du contenu qui y décide de ce qui bascule à droite, si bien qu'un
+      jour sans lecture ni victoire faisait remonter « Terminé » à côté des
+      habitudes, et un jour chargé le faisait passer dessous. **La colonne des
+      habitudes n'était à elle seule que par accident** ; une grille le dit une
+      fois pour toutes.
+    - **`minmax(0, 1fr)` et non `1fr`** : une piste implicite refuse de descendre
+      sous la largeur minimale de son contenu, et une pastille d'habitude est
+      longue. C'est le piège du dépôt, payé une fois de plus.
 
 **LA NOTE DE LA JOURNÉE OUVRE LA TUILE** (1er septembre 2026, demande de Noé :
 *« il manque l'humeur du jour, et cette humeur doit être notée en fin de journée

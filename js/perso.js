@@ -1136,6 +1136,18 @@ export function construireLaJournee(jour, donnees, contexte = {}) {
       <details class="jour-releve" open>
         <summary>Ce que dit la journée</summary>
         <div class="jour-releve-corps">
+          <!-- LES HABITUDES ONT LEUR COLONNE (1er septembre 2026, demande de
+               Noé : « les habitudes doivent être une colonne à elle seule, avec
+               toutes les habitudes côte à côte »).
+
+               DEUX BOÎTES ET UNE GRILLE, ET NON UN FLUX EN COLONNES : le
+               relevé coulait dans un flux à deux colonnes, où c'est la HAUTEUR du
+               contenu qui décide de ce qui bascule à droite. Un jour sans
+               lecture ni victoire, « Terminé » remontait à côté des habitudes ;
+               un jour chargé, il passait dessous. La colonne des habitudes
+               n'était donc à elle seule que par accident. Une grille le dit une
+               fois pour toutes. -->
+          <div class="jour-releve-colonne">
           ${bloc_(
             'Habitudes',
             // COCHABLES ET DÉCOCHABLES (1er septembre 2026, demande de Noé :
@@ -1154,21 +1166,38 @@ export function construireLaJournee(jour, donnees, contexte = {}) {
             // sans mentir sur aujourd'hui.
             habitudes.length
               ? `<span class="jour-pastilles" data-bloc-habitudes>${habitudes
-                  .map((habitude) => {
-                    const fait = tousLesFaits.some(
+                  // LES FAITES D'ABORD (1er septembre 2026, demande de Noé).
+                  // Un bilan se lit dans ce sens : ce qui a été tenu, puis ce
+                  // qui reste. L'ordre déclaré tient à l'intérieur de chaque
+                  // moitié — `sort` est stable, et deux habitudes faites gardent
+                  // l'ordre où Noé les a posées.
+                  //
+                  // ON NE RÉORDONNE PAS AU CLIC : le tri se fait au rendu du
+                  // jour, et cocher ne redessine que le bouton. Une pastille qui
+                  // saute ailleurs au moment où on la touche fait perdre la
+                  // ligne qu'on était en train de parcourir.
+                  .map((habitude) => ({
+                    habitude,
+                    fait: tousLesFaits.some(
                       (f) => f.habitude_id === habitude.id && f.jour === jour,
-                    );
-                    return `<button type="button" class="jour-pastille${
+                    ),
+                  }))
+                  .sort((a, b) => Number(b.fait) - Number(a.fait))
+                  .map(
+                    ({ habitude, fait }) => `<button type="button" class="jour-pastille${
                       fait ? ' faite' : ''
                     }" data-faire-habitude="${echapper(habitude.id)}"
                       data-jour="${echapper(jour)}" aria-pressed="${fait}">${
                       habitude.emoji ? `${echapper(habitude.emoji)} ` : ''
-                    }${echapper(habitude.nom)}</button>`;
-                  })
+                    }${echapper(habitude.nom)}</button>`,
+                  )
                   .join('')}</span>`
               : '',
           )}
 
+          </div>
+
+          <div class="jour-releve-colonne">
           ${bloc_(
             'Terminé',
             taches.length
@@ -1226,6 +1255,7 @@ export function construireLaJournee(jour, donnees, contexte = {}) {
 
 
           ${rien ? `<p class="vide">Rien de noté ce jour-là. Ça arrive, et ce n'est pas grave.</p>` : ''}
+          </div>
         </div>
       </details>
 
