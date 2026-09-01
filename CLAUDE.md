@@ -718,14 +718,29 @@ rendrait d'abord l'ancienne.
     *Vérifié : cocher depuis le 11 août écrit au 11 août, et décocher retire la
     ligne.* Les faits viennent d'`etat.faits`, la MÊME source que la page des
     habitudes — deux sources pour une coche se contredisent au premier clic.
-    - **ELLES ONT LEUR COLONNE, ET LES FAITES D'ABORD** (1er septembre 2026,
-      demande de Noé). Un bilan se lit dans ce sens : ce qui a été tenu, puis ce
-      qui reste. Le tri est **stable** — deux habitudes faites gardent l'ordre où
-      Noé les a posées — et **il ne se refait pas au clic** : cocher ne redessine
-      que le bouton, car une pastille qui saute ailleurs au moment où on la
-      touche fait perdre la ligne qu'on parcourait.
-    - **Côte à côte et repliées** : la colonne en porte neuf, et une par ligne en
-      ferait une liste à faire défiler dans un relevé qu'on parcourt.
+    - **ELLES SONT UNE LIGNE, AU-DESSUS DES COLONNES** (1er septembre 2026,
+      demande de Noé : « les habitudes ne doivent pas être dans le même bloc de
+      colonnes que les tâches, événements et publications »). Et c'est plus
+      juste : **les habitudes sont une CHECK-LIST qu'on parcourt en entier, les
+      autres blocs des RELEVÉS qu'on lit**. Deux natures, deux mises en page — la
+      ligne prend la largeur dont ses neuf pastilles ont besoin, les colonnes se
+      partagent le reste. *Elles ont eu leur propre colonne pendant une heure :
+      elle bridait la largeur des pastilles à la moitié de la tuile, pour rien.*
+    - **LES FAITES D'ABORD, ET LE TRI EST DYNAMIQUE** (même jour) : décocher une
+      habitude la renvoie à la fin, avec celles qui n'ont pas été faites. Un tri
+      figé au rendu — essayé une heure — laissait une pastille « faite » en tête
+      alors qu'elle ne l'était plus, ce qui est pire que de perdre sa place. Le
+      tri est **stable** : deux habitudes faites gardent l'ordre où Noé les a
+      posées. **Seul le bandeau se redessine**, jamais la tuile.
+    - **DU VERT, SANS CONTOUR** (même jour) : `--famille-corps` à 30 %, LE vert
+      du hub — celui de la famille « corps » et de la coche d'une tâche terminée
+      juste à côté. Un second vert dans la même tuile ferait deux verts. Il ne
+      juge rien : il dit « tenu », pas « bien ». *Ce que ça remplace :
+      `--accent-doux`, un fond de SECTION — un violet presque noir fait pour
+      passer sous du texte, qui sur une pastille de 24 px ne se distinguait
+      quasiment pas du fond.* **Pas de filet** : une pastille se distingue par sa
+      surface, comme les tuiles depuis le 30 août, et neuf filets sur une ligne
+      la quadrillent.
   - **LES TÂCHES ET LES ÉVÉNEMENTS SONT DES LIGNES, PAS DES TUILES** (même
     demande : « ils doivent prendre moins de place »). Chaque ligne était une
     carte — `.bloc li` habille toutes les listes du hub, et la règle « une tuile
@@ -737,16 +752,13 @@ rendrait d'abord l'ancienne.
     à eux seuls et repoussaient l'écriture sous la ligne de flottaison. Ce sont
     des RELEVÉS — de courtes listes qu'on parcourt du regard, exactement ce qui
     se met côte à côte. Une seule colonne sur téléphone.
-    - **UNE GRILLE À DEUX PISTES, ET NON UN FLUX `columns`** — les habitudes à
-      gauche, tout le reste à droite. Le flux a tenu une heure : c'est la
-      HAUTEUR du contenu qui y décide de ce qui bascule à droite, si bien qu'un
-      jour sans lecture ni victoire faisait remonter « Terminé » à côté des
-      habitudes, et un jour chargé le faisait passer dessous. **La colonne des
-      habitudes n'était à elle seule que par accident** ; une grille le dit une
-      fois pour toutes.
-    - **`minmax(0, 1fr)` et non `1fr`** : une piste implicite refuse de descendre
-      sous la largeur minimale de son contenu, et une pastille d'habitude est
-      longue. C'est le piège du dépôt, payé une fois de plus.
+    - **Un flux `columns`, une fois les habitudes sorties** : le nombre de blocs
+      varie d'un jour à l'autre — une journée sans lecture ni victoire n'en a que
+      deux —, et un flux se remplit de lui-même là où une grille laisserait des
+      cases vides. Le reproche qu'on lui faisait quand il portait AUSSI les
+      habitudes — c'est la hauteur du contenu qui décide de ce qui bascule à
+      droite — n'a plus d'objet : il n'a plus à garantir la place d'un bloc en
+      particulier.
 
 **LA NOTE DE LA JOURNÉE OUVRE LA TUILE** (1er septembre 2026, demande de Noé :
 *« il manque l'humeur du jour, et cette humeur doit être notée en fin de journée
@@ -2976,7 +2988,7 @@ de carte dit « écris ici » ; une pastille dit « choisis ».
   29 août** — la bande d'onglets, la colonne des projets, les deux colonnes de
   la journée — et il ne se voit jamais sur l'écran large où l'on travaille. Pour
   une piste de grille, la même chose s'écrit `minmax(0, 1fr)` et non `1fr`.
-- **Avant de nommer une classe CSS, vérifier que le nom est libre.** `.barre`
+- **Avant de nommer une classe CSS OU UNE FONCTION, vérifier que le nom est libre.** Le 1er septembre 2026, `construireHabitudesDuJour` a été écrite une seconde fois dans js/perso.js : le module s'est chargé sur « Identifier has already been declared » et a emporté tout l'écran. `node --check` passe — c'est un fichier valide —, seul le chargement tombe. La leçon est la même que pour `.barre` : un `grep` de trois secondes. `.barre`
   existait déjà (la progression de la formation) et la barre d'onglets l'a repris :
   déclarée plus bas, l'ancienne gagnait, et la nouvelle héritait de `height: 6px`
   — plus `.barre span` qui peignait les trois traits du menu en un seul bloc. Un

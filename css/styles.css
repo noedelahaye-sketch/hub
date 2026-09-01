@@ -5247,10 +5247,14 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    est devenue un bouton : creuse tant que l'habitude n'est pas faite, pleine
    quand elle l'est. Pas de vert, pas de croix — c'est un relevé, pas un
    barème, et une habitude non faite un soir n'est pas une faute. */
+/* SANS CONTOUR (1er septembre 2026, demande de Noé). Une pastille se distingue
+   par sa SURFACE, comme les tuiles du hub depuis le 30 août : le filet ne fait
+   que redire ce que le fond dit déjà, et neuf filets sur une ligne la
+   quadrillent. Le fond doux suffit à dire qu'on peut appuyer. */
 .jour-pastille {
-  padding: 3px var(--espace-12);
-  background: none;
-  border: 1px solid var(--bordure);
+  padding: 4px var(--espace-12);
+  background: var(--fond-doux);
+  border: 0;
   border-radius: var(--rayon-pastille);
   font-size: 0.75rem;
   color: var(--texte-discret);
@@ -5258,12 +5262,29 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   text-align: left;
 }
 
-.jour-pastille:hover { color: var(--texte); border-color: var(--texte-discret); }
+.jour-pastille:hover { color: var(--texte); background: var(--fond-carte); }
 
+/* DU VERT, ET PLUS VIF (1er septembre 2026, demandes successives de Noé : « il
+   faut que ce soit un peu plus vive », puis « du vert pour les habitudes »).
+
+   `--famille-corps` (#6fbfa0) et non un vert de plus : c'est LE vert du hub,
+   celui de la famille « corps » et celui de la coche d'une tâche terminée juste
+   à côté. Un second vert dans la même tuile ferait deux verts.
+
+   *Ce que ça remplace : `--accent-doux`, un fond de SECTION — un violet presque
+   noir, fait pour passer sous du texte. Sur une pastille de 24 px il ne se
+   distinguait quasiment pas du fond de la tuile.*
+
+   À 30 % avec l'encre à pleine force : la pastille se voit d'un regard sans
+   devenir un aplat plein — sept habitudes tenues feraient sept blocs de
+   couleur. Et ce vert ne juge rien : il dit « tenu », pas « bien ». */
 .jour-pastille.faite {
-  background: var(--accent-doux);
-  border-color: transparent;
+  background: color-mix(in srgb, var(--famille-corps) 30%, transparent);
   color: var(--texte);
+}
+
+.jour-pastille.faite:hover {
+  background: color-mix(in srgb, var(--famille-corps) 42%, transparent);
 }
 
 /* --- LE RELEVÉ DE LA JOURNÉE, replié si l'on veut (1er septembre 2026) ------
@@ -5317,34 +5338,45 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    cases vides là où une colonne se remplit d'elle-même. `break-inside: avoid`
    pour qu'aucun bloc ne se coupe en deux au passage d'une colonne, ce qui est
    le seul vrai défaut de ce mode. */
-/* UNE GRILLE, ET NON UN FLUX EN COLONNES (1er septembre 2026, demande de Noé :
-   « les habitudes doivent être une colonne à elle seule »). Le relevé coulait
-   dans un `columns: 2`, où c'est la HAUTEUR du contenu qui décide de ce qui
-   bascule à droite : un jour sans lecture ni victoire, « Terminé » remontait à
-   côté des habitudes ; un jour chargé, il passait dessous. La colonne des
-   habitudes n'était donc à elle seule que par accident.
+/* LES HABITUDES SONT UNE LIGNE, LE RESTE DES COLONNES (1er septembre 2026,
+   demande de Noé : « les habitudes ne doivent pas être dans le même bloc de
+   colonnes que les tâches, événements et publications ; ce doit être une ligne
+   au-dessus »).
 
-   Deux pistes explicites le disent une fois pour toutes — les habitudes à
-   gauche, tout le reste à droite. `minmax(0, 1fr)` et non `1fr` : une piste
-   implicite refuse de descendre sous la largeur minimale de son contenu, et une
-   pastille d'habitude est longue. C'est le piège du dépôt, payé une fois de
-   plus. */
+   Et c'est plus juste : les habitudes sont une CHECK-LIST qu'on parcourt en
+   entier, les autres blocs des RELEVÉS qu'on lit. Deux natures, deux mises en
+   page — la ligne prend la largeur dont ses neuf pastilles ont besoin, les
+   colonnes se partagent le reste.
+
+   Elles ont eu leur propre colonne pendant une heure : elle bridait la largeur
+   des pastilles à la moitié de la tuile, pour rien. */
 .jour-releve-corps {
   padding-top: var(--espace-12);
   border-top: 1px solid var(--bordure-douce);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: var(--espace-24);
-  align-items: start;
 }
 
-.jour-releve-colonne { min-width: 0; }
+.jour-releve-ligne { margin-bottom: var(--espace-16); }
 
-.jour-releve-colonne > * { margin: 0 0 var(--espace-16); }
-.jour-releve-colonne > *:last-child { margin-bottom: 0; }
+/* En dessous, un flux à deux colonnes : le nombre de blocs varie d'un jour à
+   l'autre — une journée sans lecture ni victoire n'en a que deux —, et un flux
+   se remplit de lui-même là où une grille laisserait des cases vides. Le défaut
+   qu'on lui reprochait plus haut n'existe plus : il n'a plus à garantir la place
+   d'un bloc en particulier. */
+.jour-releve-colonnes {
+  columns: 2;
+  column-gap: var(--espace-24);
+}
+
+.jour-releve-colonnes > * {
+  break-inside: avoid;
+  /* La marge HAUTE d'un premier bloc de colonne se replie en haut de colonne :
+     c'est la marge basse qui tient l'écart, sinon les deux colonnes ne partent
+     pas de la même ligne. */
+  margin: 0 0 var(--espace-16);
+}
 
 @media (max-width: 720px) {
-  .jour-releve-corps { grid-template-columns: minmax(0, 1fr); }
+  .jour-releve-colonnes { columns: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {

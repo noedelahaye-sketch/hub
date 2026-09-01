@@ -1052,6 +1052,53 @@ export function construireCalendrierDesJournees(vue, pivot, resumes, choisi) {
 // journée passée : `enregistrerHumeur` prend déjà une date, seul l'écran ne
 // savait parler que d'aujourd'hui. On peut donc revenir sur hier soir sans
 // mentir sur la date.
+// LES PASTILLES D'HABITUDE D'UNE JOURNÉE (1er septembre 2026).
+//
+// `construirePastillesHabitudes` ET NON `construireHabitudesDuJour` : ce
+// nom-là était DÉJÀ PRIS, par les jetons du tableau de bord. Le module se
+// chargeait avec « Identifier has already been declared » et emportait tout
+// l'écran. C'est la règle du dépôt appliquée aux fonctions comme aux classes
+// CSS : le grep de trois secondes n'est pas facultatif.
+//
+// UNE FABRIQUE À PART, parce que le clic la rappelle : le tri est DYNAMIQUE
+// (demande de Noé) — décocher une habitude la renvoie à la fin, avec celles qui
+// n'ont pas été faites. Un tri figé au rendu aurait laissé une habitude
+// « faite » en tête alors qu'elle ne l'était plus.
+//
+// TOUTES LES HABITUDES SONT LÀ, celles du jour comme les autres : c'est la liste
+// qu'on parcourt le soir. Le bloc ne montrait que les cochées, en pastilles
+// muettes — il disait ce qui avait été fait sans permettre de le corriger, et
+// surtout il ne disait rien de ce qui restait. On ne fait pas un bilan sur une
+// liste qui cache la moitié de ses lignes.
+//
+// LES FAITES D'ABORD : un bilan se lit dans ce sens — ce qui a été tenu, puis ce
+// qui reste. `sort` est stable, donc deux habitudes faites gardent l'ordre où
+// Noé les a posées.
+//
+// LA COCHE VAUT POUR CE JOUR-LÀ : chaque bouton porte sa date, donc on rattrape
+// hier sans mentir sur aujourd'hui.
+export function construirePastillesHabitudes(jour, habitudes = [], faits = []) {
+  if (!habitudes.length) return '';
+
+  const rangees = habitudes
+    .map((habitude) => ({
+      habitude,
+      fait: faits.some((f) => f.habitude_id === habitude.id && f.jour === jour),
+    }))
+    .sort((a, b) => Number(b.fait) - Number(a.fait));
+
+  return `<span class="jour-pastilles" data-bloc-habitudes>${rangees
+    .map(
+      ({ habitude, fait }) => `<button type="button" class="jour-pastille${
+        fait ? ' faite' : ''
+      }" data-faire-habitude="${echapper(habitude.id)}"
+        data-jour="${echapper(jour)}" aria-pressed="${fait}">${
+        habitude.emoji ? `${echapper(habitude.emoji)} ` : ''
+      }${echapper(habitude.nom)}</button>`,
+    )
+    .join('')}</span>`;
+}
+
 export function construireNoteDuJour(jour, humeur) {
   const choisi = humeur ? NIVEAUX_HUMEUR.find((n) => n.niveau === humeur.niveau) : null;
 
@@ -1136,68 +1183,24 @@ export function construireLaJournee(jour, donnees, contexte = {}) {
       <details class="jour-releve" open>
         <summary>Ce que dit la journée</summary>
         <div class="jour-releve-corps">
-          <!-- LES HABITUDES ONT LEUR COLONNE (1er septembre 2026, demande de
-               Noé : « les habitudes doivent être une colonne à elle seule, avec
-               toutes les habitudes côte à côte »).
+          <!-- LES HABITUDES SONT UNE LIGNE, AU-DESSUS DES COLONNES (1er
+               septembre 2026, demande de Noé : « les habitudes ne doivent pas
+               être dans le même bloc de colonnes que les tâches, événements et
+               publications ; ce doit être une ligne au-dessus de ces
+               colonnes »).
 
-               DEUX BOÎTES ET UNE GRILLE, ET NON UN FLUX EN COLONNES : le
-               relevé coulait dans un flux à deux colonnes, où c'est la HAUTEUR du
-               contenu qui décide de ce qui bascule à droite. Un jour sans
-               lecture ni victoire, « Terminé » remontait à côté des habitudes ;
-               un jour chargé, il passait dessous. La colonne des habitudes
-               n'était donc à elle seule que par accident. Une grille le dit une
-               fois pour toutes. -->
-          <div class="jour-releve-colonne">
-          ${bloc_(
-            'Habitudes',
-            // COCHABLES ET DÉCOCHABLES (1er septembre 2026, demande de Noé :
-            // « lorsque je fais mon bilan du jour je puisse également noter les
-            // habitudes que j'ai faites ou non aujourd'hui »).
-            //
-            // CE QUE ÇA RENVERSE : le bloc ne montrait que les habitudes DÉJÀ
-            // cochées, en pastilles muettes. Il disait donc ce qui avait été
-            // fait sans permettre de le corriger — et surtout, il ne disait
-            // rien de ce qui restait. On ne fait pas un bilan sur une liste qui
-            // cache la moitié de ses lignes.
-            //
-            // TOUTES LES HABITUDES SONT LÀ, celles du jour comme les autres :
-            // c'est la liste qu'on parcourt le soir. La coche vaut POUR CE
-            // JOUR-LÀ — le bouton porte sa date —, donc on peut rattraper hier
-            // sans mentir sur aujourd'hui.
-            habitudes.length
-              ? `<span class="jour-pastilles" data-bloc-habitudes>${habitudes
-                  // LES FAITES D'ABORD (1er septembre 2026, demande de Noé).
-                  // Un bilan se lit dans ce sens : ce qui a été tenu, puis ce
-                  // qui reste. L'ordre déclaré tient à l'intérieur de chaque
-                  // moitié — `sort` est stable, et deux habitudes faites gardent
-                  // l'ordre où Noé les a posées.
-                  //
-                  // ON NE RÉORDONNE PAS AU CLIC : le tri se fait au rendu du
-                  // jour, et cocher ne redessine que le bouton. Une pastille qui
-                  // saute ailleurs au moment où on la touche fait perdre la
-                  // ligne qu'on était en train de parcourir.
-                  .map((habitude) => ({
-                    habitude,
-                    fait: tousLesFaits.some(
-                      (f) => f.habitude_id === habitude.id && f.jour === jour,
-                    ),
-                  }))
-                  .sort((a, b) => Number(b.fait) - Number(a.fait))
-                  .map(
-                    ({ habitude, fait }) => `<button type="button" class="jour-pastille${
-                      fait ? ' faite' : ''
-                    }" data-faire-habitude="${echapper(habitude.id)}"
-                      data-jour="${echapper(jour)}" aria-pressed="${fait}">${
-                      habitude.emoji ? `${echapper(habitude.emoji)} ` : ''
-                    }${echapper(habitude.nom)}</button>`,
-                  )
-                  .join('')}</span>`
-              : '',
-          )}
+               Et c'est plus juste : les habitudes sont une CHECK-LIST qu'on
+               parcourt en entier, les autres blocs des relevés qu'on lit. Deux
+               natures, deux mises en page — la ligne prend la largeur dont ses
+               neuf pastilles ont besoin, les colonnes se partagent le reste.
 
+               Elles ont eu leur colonne pendant une heure : elle bridait la
+               largeur des pastilles à la moitié de la tuile, pour rien. -->
+          <div class="jour-releve-ligne">
+          ${bloc_('Habitudes', construirePastillesHabitudes(jour, habitudes, tousLesFaits))}
           </div>
 
-          <div class="jour-releve-colonne">
+          <div class="jour-releve-colonnes">
           ${bloc_(
             'Terminé',
             taches.length
@@ -2391,12 +2394,17 @@ export default {
         // SEUL LE BLOC DES HABITUDES SE REDESSINE, pas la tuile : le journal
         // vient peut-être de s'enregistrer sur son `blur`, et l'écriture est
         // encore en vol. C'est la même précaution que pour la note du jour.
-        const bandeau = section.querySelector('[data-bloc-habitudes]');
-        if (bandeau) {
-          const bouton = bandeau.querySelector(`[data-faire-habitude="${CSS.escape(id)}"]`);
-          bouton?.classList.toggle('faite', !dejaFait);
-          bouton?.setAttribute('aria-pressed', String(!dejaFait));
-        }
+        // LE TRI EST DYNAMIQUE (1er septembre 2026, demande de Noé) : décocher
+        // une habitude la renvoie à la fin, avec celles qui n'ont pas été
+        // faites. On redessine donc TOUT le bandeau, pas seulement le bouton —
+        // mais toujours le bandeau SEUL, jamais la tuile : le journal vient
+        // peut-être de s'enregistrer sur son `blur` et l'écriture est en vol.
+        const redessinerLesHabitudes = () => {
+          const bandeau = section.querySelector('[data-bloc-habitudes]');
+          if (!bandeau) return;
+          bandeau.outerHTML = construirePastillesHabitudes(jour, etat.habitudes, etat.faits);
+        };
+        redessinerLesHabitudes();
 
         try {
           if (dejaFait) {
@@ -2417,11 +2425,7 @@ export default {
           etat.faits = avant;
           rendreHabitudes();
           rendreTableau();
-          if (bandeau) {
-            const bouton = bandeau.querySelector(`[data-faire-habitude="${CSS.escape(id)}"]`);
-            bouton?.classList.toggle('faite', dejaFait);
-            bouton?.setAttribute('aria-pressed', String(dejaFait));
-          }
+          redessinerLesHabitudes();
         }
         // Le calendrier porte un point par espace : cocher une habitude en
         // allume un pour le perso.
