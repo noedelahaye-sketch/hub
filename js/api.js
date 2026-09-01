@@ -408,6 +408,35 @@ export async function validerLaSemaine(debut, notes = null) {
   );
 }
 
+// --- La disposition des blocs d'une semaine -----------------------------------
+//
+// LES BLOCS SE GARDENT D'UNE VISITE À L'AUTRE (1er septembre 2026, demande de
+// Noé). Ce qui est enregistré, c'est ce qu'il a ARRANGÉ — jamais ce que
+// l'algorithme a calculé : tant qu'il n'a rien touché, il n'y a pas de ligne et
+// le hub propose. « Reproposer les blocs » efface la ligne, et c'est exactement
+// ce que ce bouton veut dire.
+
+export async function blocsGardes(debut) {
+  const lignes = verifier(
+    await client.from('semaines_blocs').select('blocs').eq('debut', debut).limit(1),
+  );
+  return lignes[0]?.blocs ?? null;
+}
+
+export async function garderLesBlocs(debut, blocs) {
+  return verifier(
+    await client
+      .from('semaines_blocs')
+      .upsert({ debut, blocs, posee_le: new Date().toISOString() }, { onConflict: 'debut' })
+      .select()
+      .single(),
+  );
+}
+
+export async function oublierLesBlocs(debut) {
+  return verifier(await client.from('semaines_blocs').delete().eq('debut', debut).select());
+}
+
 // --- Les arbitrages : ce que Noé a tranché ------------------------------------
 //
 // Le hub pose la question, Noé tranche. Sans trace, il la reposerait le

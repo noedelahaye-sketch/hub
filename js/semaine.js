@@ -407,6 +407,23 @@ export default {
     const pixelsParHeure = () =>
       2 * parseFloat(getComputedStyle(document.documentElement).fontSize);
 
+    // GARDER L'ARRANGEMENT (1er septembre 2026, demande de Noé). Un seul chemin
+    // pour les quatre gestes qui touchent aux blocs — glisser, régler, ajouter,
+    // retirer : quatre appels recopiés auraient fini par ne plus enregistrer la
+    // même chose, et c'est dans la copie oubliée qu'un geste cesse d'être gardé.
+    //
+    // L'ÉCRAN D'ABORD, LE RÉSEAU ENSUITE, comme partout — mais SANS retour en
+    // arrière, et c'est une exception assumée : l'arrangement est déjà à
+    // l'écran et il vaut pour la session entière. Défaire le geste de Noé parce
+    // que le réseau a hoqueté serait pire que de lui dire. On lui dit.
+    const garderLesBlocs = () => {
+      const aGarder = etat.blocs.map((bloc) => ({ ...bloc }));
+      api.garderLesBlocs(etat.semaine.debut, aGarder).catch((erreur) => {
+        console.error('Blocs non gardés', erreur);
+        signaler("L’arrangement des blocs n’a pas pu être enregistré.");
+      });
+    };
+
     // L'HEURE SOUS LE POINT. La colonne étant graduée de 10 h à 22 h, la hauteur
     // du lâcher se lit directement comme une heure.
     const heureSousLePoint = (jourISO, y) => {
@@ -779,7 +796,15 @@ export default {
 
         for (const barre of stricts) {
           barre.style.position = 'absolute';
-          barre.style.left = '10px';
+          // LES DEUX BORDS À ZÉRO (1er septembre 2026, correction de Noé :
+          // « l'événement perso n'est pas placé correctement, trop à droite,
+          // pas centré »). Il portait `left: 10px; right: 0` : dix pixels d'un
+          // côté et rien de l'autre, donc une colonne dont le contenu ne tombe
+          // pas sur la même verticale que ce qui l'entoure. Ce qui est DANS un
+          // cadre porte la même marge des deux côtés depuis le 31 août ; ce qui
+          // est dehors n'a pas de cadre, donc pas de marge — comme les barres
+          // sans heure juste en dessous.
+          barre.style.left = '0';
           barre.style.right = '0';
           barre.style.top = barre.style.getPropertyValue('--depuis');
           barre.style.zIndex = '2';
@@ -1384,6 +1409,7 @@ export default {
           humeurs,
           habitudesFaits,
           validees,
+          gardes,
         ] = await Promise.all([
           api.evenementsTous(),
           api.tachesToutes(),
@@ -1399,6 +1425,7 @@ export default {
           api.humeurDepuis(passee.debut),
           api.habitudesFaitsDepuis(passee.debut),
           api.semainesValidees(),
+          api.blocsGardes(etat.semaine.debut),
         ]);
 
         etat.sources = {
@@ -1422,15 +1449,22 @@ export default {
         // semaine qui vient qu'on regarde, y compris le dimanche soir.
         etat.diagnostic = diagnosticDeLaSemaine(etat.sources, etat.pivot);
         etat.bilan = bilanDeLaSemaine(etat.sources, passee);
-        // LES BLOCS SE RECALCULENT À CHAQUE CHARGEMENT, et c'est tout leur
-        // principe : rien n'est enregistré, donc rien ne périme. La période du
-        // jour donne les heures visées — un mois « intense » propose plus de
-        // blocs, sans qu'on ait à le dire.
-        etat.blocs = blocsDeLaSemaine(
-          etat.sources,
-          etat.semaine,
-          periodeDuJour(periodes, etat.pivot),
-        );
+        // CE QUE NOÉ A ARRANGÉ PASSE DEVANT LA PROPOSITION (1er septembre 2026,
+        // demande de Noé : « il faut que la disposition des blocs soit
+        // sauvegardée entre 2 chargements de page »).
+        //
+        // CE QUE ÇA RENVERSE : depuis le 31 août, « un bloc ne s'enregistre
+        // pas, les blocs ne doivent être que de l'affichage ». Le motif était
+        // juste — rien à maintenir, rien qui périme — mais il avait un prix que
+        // l'usage a révélé : une semaine réorganisée à la main se retrouvait
+        // reproposée telle quelle au rechargement.
+        //
+        // La table ne garde QUE ce que Noé a touché. Sans ligne, le hub propose,
+        // et la période du jour donne les heures visées — un mois « intense »
+        // propose plus de blocs, sans qu'on ait à le dire.
+        etat.blocs = Array.isArray(gardes) && gardes.length
+          ? gardes
+          : blocsDeLaSemaine(etat.sources, etat.semaine, periodeDuJour(periodes, etat.pivot));
         etat.echec = false;
       } catch (erreur) {
         console.error('Chargement de la semaine impossible', erreur);
@@ -1567,6 +1601,7 @@ export default {
             poserLeBloc(etat.blocs, id, arrivee, heureSousLePoint(arrivee, point.y)),
           );
           viserLHeure(null);
+          garderLesBlocs();
           rendreProgrammation();
           return;
         }
@@ -1927,26 +1962,35 @@ export default {
         return;
       }
 
-      // RETIRER UN BLOC. Pas de confirmation : il ne s'enregistre nulle part,
-      // et « Reproposer » le fait revenir. Ce qui est irréversible demande un
-      // second appui ; ceci ne l'est pas.
+      // RETIRER UN BLOC. Pas de confirmation, et c'est toujours vrai depuis que
+      // l'arrangement se garde : « Reproposer » le fait revenir. Ce qui est
+      // irréversible demande un second appui ; ceci ne l'est pas.
       if (evenement.target.closest('[data-retirer-bloc]')) {
         etat.blocs = etat.blocs.filter((bloc) => bloc.id !== etat.blocRegle?.id);
+        garderLesBlocs();
         etat.blocRegle = null;
         rendreReglage();
         rendreProgrammation();
         return;
       }
 
-      // REPROPOSER : on jette ce qu'on a bougé et le hub recalcule. C'est le
-      // filet du « rien ne s'enregistre » — sans lui, un bloc supprimé par
-      // erreur ne reviendrait qu'en rechargeant la page.
+      // REPROPOSER : on jette ce qu'on a arrangé et le hub recalcule. C'est le
+      // filet — sans lui, un bloc supprimé par erreur ne reviendrait pas.
+      //
+      // IL EFFACE LA LIGNE au lieu d'en écrire une neuve, et ce n'est pas un
+      // détail : la table ne garde que ce que Noé a DÉCIDÉ. Sans ligne, le hub
+      // reproposera — donc si les données ont bougé d'ici la prochaine visite,
+      // il proposera mieux. Y écrire la proposition du jour la figerait.
       if (evenement.target.closest('[data-reproposer-blocs]')) {
         etat.blocs = blocsDeLaSemaine(
           etat.sources,
           etat.semaine,
           periodeDuJour(etat.sources.periodes, etat.pivot),
         );
+        api.oublierLesBlocs(etat.semaine.debut).catch((erreur) => {
+          console.error('Arrangement non oublié', erreur);
+          signaler("L’arrangement n’a pas pu être oublié.");
+        });
         rendreProgrammation();
         return;
       }
@@ -1964,9 +2008,11 @@ export default {
     });
 
     section.addEventListener('submit', async (evenement) => {
-      // RÉGLER UN BLOC : rien ne part au réseau, tout se joue dans l'état de la
-      // page. C'est la seule écriture du hub qui ne touche pas Supabase, et
-      // c'est voulu — un bloc est une proposition, pas une donnée.
+      // RÉGLER UN BLOC. Depuis le 1er septembre 2026, l'arrangement PART au
+      // réseau — il se garde d'une visite à l'autre (`garderLesBlocs`). Ce qui
+      // n'a pas changé : un bloc reste une PROPOSITION, pas une donnée. On
+      // n'enregistre pas un bloc, on enregistre la forme que Noé a donnée à sa
+      // semaine, et « Reproposer » l'efface d'un geste.
       const reglage = evenement.target.closest('form[data-action="regler-bloc"]');
       if (reglage) {
         evenement.preventDefault();
@@ -1990,6 +2036,7 @@ export default {
           : [...etat.blocs, { ...regle, id }];
 
         etat.blocs = ranger(poserLeBloc(avecLui, id, regle.jour, regle.debut));
+        garderLesBlocs();
         etat.blocRegle = null;
         rendreReglage();
         rendreProgrammation();

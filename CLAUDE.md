@@ -1391,16 +1391,45 @@ une organisation un peu différente le mardi. J'aimerais que le site me propose
 une organisation comme ça pour ma semaine en fonction de mes objectifs, des
 heures prévues. »*
 
-**UN BLOC NE S'ENREGISTRE PAS** (décision de Noé : « les blocs ne doivent être
-que de l'affichage »). Pas de table, pas de migration, rien à nettoyer : ils se
-recalculent à chaque ouverture, et ce qu'on leur fait subir — déplacer,
-rallonger, retirer — meurt avec la page. **Ce qui reste d'une programmation, ce
-sont les TÂCHES qu'on a posées dedans**, c'est-à-dire leur jour et leur heure.
-Le bloc est l'échafaudage, pas le mur.
-- *Conséquence assumée* : une semaine réorganisée à la main se retrouve
-  reproposée telle quelle au rechargement. C'est le prix de n'avoir rien à
-  maintenir, et « Reproposer les blocs » en fait une commande plutôt qu'un
-  accident.
+**L'ARRANGEMENT SE GARDE D'UNE VISITE À L'AUTRE** (1er septembre 2026, demande
+de Noé : *« il faut que la disposition des blocs soit sauvegardée entre 2
+chargements de page ; si je modifie, ajoute ou retire un bloc, ce doit être
+sauvegardé à la prochaine visite »*). Une table, `semaines_blocs`, une ligne par
+semaine.
+
+> *Ce que ça renverse.* Le 31 août, la règle était l'inverse — **« un bloc ne
+> s'enregistre pas, les blocs ne doivent être que de l'affichage »** : pas de
+> table, rien qui périme, et ce qu'on leur faisait subir mourait avec la page.
+> Le motif était juste ; c'est son PRIX que l'usage a révélé — une semaine
+> réorganisée à la main se retrouvait reproposée telle quelle au rechargement,
+> et le travail d'arrangement était perdu. La conséquence était écrite noir sur
+> blanc comme « assumée » ; elle ne l'était pas.
+
+**UN BLOC RESTE UNE PROPOSITION, PAS UNE DONNÉE**, et c'est ce qui n'a pas
+changé. On n'enregistre pas un bloc : on enregistre **la forme que Noé a donnée à
+sa semaine**.
+- **La table ne garde QUE ce qu'il a touché.** Tant qu'il n'a rien arrangé, il
+  n'y a pas de ligne et le hub propose. Elle dit ce qu'il a DÉCIDÉ, jamais ce que
+  l'algorithme a calculé.
+- **« Reproposer les blocs » EFFACE la ligne** au lieu d'en écrire une neuve —
+  c'est exactement ce que ce bouton veut dire. Sans ligne, le hub reproposera :
+  si les données ont bougé d'ici la prochaine visite, il proposera *mieux*. Y
+  figer la proposition du jour serait le contraire du filet.
+- **UNE TABLE À PART, et surtout pas une colonne de `semaines`** : là-bas,
+  l'existence d'une ligne SIGNIFIE que la semaine est validée — `etat.validee` et
+  le bandeau du dimanche s'y fient tous les deux. Y écrire des blocs fermerait le
+  rendez-vous du dimanche sans que personne l'ait demandé.
+- **Un seul chemin pour les quatre gestes** — glisser, régler, ajouter, retirer
+  (`garderLesBlocs`, js/semaine.js). Quatre appels recopiés auraient fini par ne
+  plus enregistrer la même chose, et c'est dans la copie oubliée qu'un geste
+  cesse d'être gardé.
+- **L'écran d'abord, le réseau ensuite — mais SANS retour en arrière**, et c'est
+  une exception assumée à la règle de `js/ecriture.js` : l'arrangement est déjà à
+  l'écran et vaut pour la session entière. Défaire le geste de Noé parce que le
+  réseau a hoqueté serait pire que de le lui dire. **On le lui dit.**
+- **Ce qui reste d'une programmation, ce sont toujours les TÂCHES qu'on a posées
+  dedans** — leur jour et leur heure. Le bloc est l'échafaudage ; l'échafaudage
+  se garde maintenant, le mur n'a pas changé.
 
 **UN BLOC ENGLOBE CE QUI EST DÉJÀ POSÉ, IL NE LE DÉDUIT PAS** — et c'est LA
 règle du modèle (correction de Noé, le jour même) :
@@ -1560,6 +1589,14 @@ bloc, aucune de leurs tâches n'était jamais à l'heure prévue : la tâche Yun
 dans l'ordre qu'on veut. Hors de tout bloc, il n'y a plus de contenant pour dire
 quand ; il ne reste que l'heure, et l'effacer serait perdre la seule chose que
 Noé ait dite.
+
+**RIEN NE S'APPUIE SUR UN SEUL BORD** (1er septembre 2026, correction de Noé :
+*« l'événement perso n'est pas placé correctement, trop à droite, pas centré »*).
+Ce qui est DANS un cadre porte la même marge des deux côtés depuis le 31 août ;
+ce qui est DEHORS n'a pas de cadre, donc pas de marge. Il portait
+`left: 10px; right: 0` — dix pixels d'un côté et rien de l'autre —, si bien
+qu'un événement perso ou une tâche Yuno, qui n'ont jamais de bloc, ne tombaient
+pas sur la même verticale que le reste de leur colonne.
 
 **UN VIDE EST CE QUE RIEN N'OCCUPE** — les blocs, la pause du midi, et ce qui
 vient d'être posé à son heure. Sans cette dernière part, une tâche sans heure se
@@ -1781,8 +1818,9 @@ tout ce qui suit (31 août 2026, Noé explique sa logique) :
   à cocher.
 
 **On règle un bloc d'un appui** : jour, début, durée, espace — quatre champs
-natifs dans une fenêtre, plus « Retirer ce bloc ». Pas de confirmation : rien ne
-s'enregistre, et « Reproposer les blocs » ramène tout.
+natifs dans une fenêtre, plus « Retirer ce bloc ». Pas de confirmation, et ça
+reste vrai depuis que l'arrangement se garde : « Reproposer les blocs » ramène
+tout.
 
 **ET ON Y POSE UNE TÂCHE** : la lâcher sur un bloc lui donne son jour **et son
 heure**, là où la lâcher sur le jour ne donne que le jour. Le bloc est une cible
