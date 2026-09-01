@@ -5324,12 +5324,29 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
    La flèche disait le sens du geste ; l'icône s'ALLUME quand le tiroir est
    ouvert, ce qui le dit aussi bien avec un signe de moins. */
+/* LES HABITUDES ET L'ICÔNE PARTAGENT UNE LIGNE (1er septembre 2026, demande de
+   Noé : « déplace l'icône pour qu'elle ne fasse pas une ligne entière à elle
+   seule, à droite, sur la même ligne que les habitudes »).
+
+   Le sommaire ne peut pas sortir de son tiroir — c'est lui qui le bascule, et
+   tout ce qui le suit disparaît quand il est fermé. On garde donc la structure
+   et on POSE l'icône, en absolu, dans le coin haut droit d'un cadre qui
+   enveloppe les deux. Les pastilles lui réservent sa place par une marge à
+   droite, pour qu'aucune ne passe dessous. */
+.jour-cocher { position: relative; }
+
+.jour-cocher > .jour-part { padding-right: 2rem; }
+
 .jour-releve > summary {
+  position: absolute;
+  top: 0;
+  right: 0;
   display: inline-flex;
   align-items: center;
   cursor: pointer;
   list-style: none;
-  padding: var(--espace-4) 0;
+  padding: var(--espace-4);
+  border-radius: var(--rayon-controle);
   color: var(--texte-discret);
 }
 
@@ -9627,7 +9644,22 @@ body.balaye {
   white-space: nowrap;
 }
 
-#bloc-rdv:empty { display: none; }
+/* LA PORTE DU SOIR reprend la porte du dimanche au trait près — même geste,
+   même forme : un bouton qui dit où il mène. Elle s'en distingue par sa
+   COULEUR seulement, celle de l'espace perso, parce que c'est là qu'elle
+   emmène. Deux portes identiques sur un même écran — le dimanche soir, elles
+   coexistent — se distingueraient sinon par leur seul libellé. */
+.porte-soir {
+  /* `data-espace="perso"` sur le lien : la couleur vient de la table des
+     espaces, jamais d'un code écrit ici. C'est la grammaire du hub — une
+     pastille, une barre de calendrier et cette porte disent « perso » de la
+     même façon. */
+  background: var(--couleur-espace-pleine);
+  color: var(--fond);
+}
+
+#bloc-rdv:empty,
+#bloc-bilan-jour:empty { display: none; }
 
 /* Les chiffres de la semaine passée. C'est la forme des chiffres nus de Yuno,
    et pour la même raison : ce sont des faits, rien ne s'y touche. Ils ouvrent

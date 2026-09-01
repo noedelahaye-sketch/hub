@@ -1459,7 +1459,28 @@ gestes ne doivent jamais porter le même signe.
    derrière, puis le bouton. Trois lignes au-dessus de la journée pour un seul
    geste (correction de Noé). Le nom du bouton dit ce que la phrase disait, et
    les dates s'écrivent en tête de la page qui s'ouvre.
-3. **Le bandeau de l'après** — conditionnel, **un seul à la fois, le plus
+3. **La porte du soir** — conditionnelle, **tous les jours à partir de 20 h**
+   (1er septembre 2026, demande de Noé). Un bouton, « Faire le bilan du jour »,
+   qui mène à `#perso/journee/<aujourd'hui>`.
+   - **La même heure que le rendez-vous du dimanche**, et ce n'est pas un
+     hasard : c'est l'heure où la journée est finie. Un seul nombre pour les deux
+     portes — deux heures d'ouverture finiraient par se contredire, et rien ne
+     justifie qu'un dimanche soir commence plus tôt qu'un mardi.
+   - **Pas de borne haute** : elle reste jusqu'à minuit, puis la journée change
+     et c'est celle du lendemain qu'elle ouvrira. Le rendez-vous du dimanche
+     déborde sur le lundi parce qu'une semaine se programme encore le lendemain
+     matin ; un bilan du jour, non.
+   - **Elle mène au jour NOMMÉ**, pas à `#perso/journee` : l'adresse porte la
+     date, si bien qu'ouvrir la porte à 23 h 50 et écrire à 00 h 05 écrit
+     toujours dans la journée qu'on est en train de fermer.
+   - **Elle s'efface dès que le bilan est écrit** — le journal ou la gratitude,
+     pas la note du jour : celle-ci se répond d'un doigt depuis trois écrans, et
+     l'atteindre ne veut pas dire qu'on a fait son bilan. **Une seule requête**,
+     et seulement dans sa fenêtre : le reste du temps elle ne demande rien.
+   - **Elle porte la couleur du perso** (`data-espace="perso"`, jamais un code
+     écrit dans la feuille) : le dimanche soir les deux portes coexistent, et
+     deux boutons identiques ne se distingueraient que par leur libellé.
+4. **Le bandeau de l'après** — conditionnel, **un seul à la fois, le plus
    récent** : un bilan s'écrit à chaud (`js/hermitage.js` le dit depuis le
    21 août). Deux natures seulement — une sortie Yuno hors carnet, une réunion
    FCH sans bilan. Trois portes : y aller, « pas maintenant » (revient demain),
@@ -1470,11 +1491,11 @@ gestes ne doivent jamais porter le même signe.
    depuis le 30 août** : la règle était écrite depuis le 29 et le code ne la
    tenait pas — les deux bandeaux pouvaient s'empiler, ce qui fait deux
    interruptions. Le bilan qu'on ne réclame pas ce soir revient demain.
-4. **Les habitudes ont QUITTÉ l'accueil** (30 août 2026, décision de Noé le
+5. **Les habitudes ont QUITTÉ l'accueil** (30 août 2026, décision de Noé le
    soir même où elles y étaient arrivées). Elles vivent dans perso, seul écran
    qui les montre — voir « Les habitudes » plus haut. L'accueil porte ce qui est
    POSÉ ; une habitude n'est posée nulle part, elle revient.
-5. **Aujourd'hui, dans une TUILE** — **et toute la tuile mène à `#taches`**
+6. **Aujourd'hui, dans une TUILE** — **et toute la tuile mène à `#taches`**
    (29 août 2026, demande de Noé : « en gardant tous les autres boutons de la
    tuile »). C'est cette seconde moitié qui décide de la forme : **pas un lien
    qui enveloppe**, comme celui d'une tuile de projet — celle-ci porte une
@@ -1494,7 +1515,7 @@ gestes ne doivent jamais porter le même signe.
    Display, casse normale) se distingue désormais du **libellé de groupe**
    (petites capitales), et le bord finit le travail. Le titre est DEHORS, comme
    celui des projets — il nomme la tuile, il ne vit pas dedans.
-6. **Ta semaine** — la grille du calendrier, **CINQ ÉLÉMENTS AU PLUS PAR JOUR**
+7. **Ta semaine** — la grille du calendrier, **CINQ ÉLÉMENTS AU PLUS PAR JOUR**
    (30 août 2026, demande de Noé), **jours passés estompés** (0,42) et
    **titres sur deux lignes** avec points de suspension.
    - Le plafond est un réglage de l'APPELANT (`maxParJour`), pas de la vue : au
@@ -1521,7 +1542,7 @@ gestes ne doivent jamais porter le même signe.
      voit (`.cal-au-dela`). Vérifié : 5 visibles en semaine, 10 une fois le jour
      ouvert. Rien n'est effacé : le
    hub ne compte pas les retards, mais il ne les cache pas non plus.
-7. **Projets en cours**, en colonne de droite — voir plus bas.
+8. **Projets en cours**, en colonne de droite — voir plus bas.
 
 **Les objectifs ont quitté l'accueil.** Ils ont leur page à deux gestes, et
 l'accueil répond à « qu'est-ce que j'ai à faire », pas à « où je vais ». Ils

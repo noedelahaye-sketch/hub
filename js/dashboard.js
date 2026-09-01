@@ -46,7 +46,7 @@ import {
   projetsEnCours,
   suiteDuJour,
 } from './orientation.js';
-import { fenetreOuverte } from './rendez-vous.js';
+import { fenetreOuverte, soireeOuverte } from './rendez-vous.js';
 import { lireCache, ecrireCache } from './cache-session.js';
 import { marquerLesEntrantes, animerLaCoche } from './mouvements.js';
 import { modifierAussitot, retirerAussitot } from './ecriture.js';
@@ -449,6 +449,22 @@ export function construirePorteDeLaSemaine() {
   return `<a class="porte-semaine" href="#semaine">Programmer ma semaine</a>`;
 }
 
+// LA PORTE DU SOIR (1er septembre 2026, demande de Noé : « un bouton sur la page
+// d'accueil qui apparaît quotidiennement à partir de 20 h et qui mène à la page
+// du jour pour en faire son bilan »).
+//
+// MÊME FORME QUE LA PORTE DU DIMANCHE, et pour la même raison : elle ne dit
+// aucun constat, elle dit où elle mène et elle y mène. Un bandeau qui
+// expliquerait ce qu'est un bilan du jour ferait trois lignes pour un geste.
+//
+// ELLE MÈNE AU JOUR NOMMÉ, pas à `#perso/journee` : l'adresse porte la date, si
+// bien qu'ouvrir la porte à 23 h 50 et écrire à 00 h 05 écrit toujours dans la
+// journée qu'on est en train de fermer.
+export function construirePorteDuSoir(jourISO) {
+  return `<a class="porte-semaine porte-soir" data-espace="perso"
+    href="#perso/journee/${echapper(jourISO)}">Faire le bilan du jour</a>`;
+}
+
 // LES PROJETS EN COURS, en tuiles qu'on fait GLISSER (29 août 2026, demande de
 // Noé). Une seule se lit à la fois ; les voisines dépassent d'un liseré, juste
 // assez pour qu'on sache qu'elles existent.
@@ -722,6 +738,11 @@ function squelette() {
          Masquée le reste du temps, et dès que la semaine est validée : le hub
          ne relance pas. -->
     <div id="bloc-rdv" hidden></div>
+
+    <!-- LA PORTE DU SOIR (1er septembre 2026, demande de Noé). Tous les jours à
+         partir de 20 h, et jusqu'à minuit : l'heure où la journée est finie.
+         Masquée dès que le bilan est écrit — le hub ne relance pas. -->
+    <div id="bloc-bilan-jour" hidden></div>
 
     <!-- LE BANDEAU DE L'APRÈS. Conditionnel, un seul à la fois — voir
          construireSuite. Il vient juste sous la ligne de tête : c'est une
@@ -1279,6 +1300,7 @@ export default {
       rendreEchec();
       ecrireCache(CLE_CACHE, aGarder());
       chargerLaPorteDeLaSemaine();
+      chargerLaPorteDuSoir();
       chargerLesPropositions();
     }
 
@@ -1333,6 +1355,39 @@ export default {
         // Une proposition qui ne se calcule pas se tait : l'accueil doit servir
         // à ce pour quoi on l'ouvre d'habitude, même quand l'orientation cale.
         console.error('Propositions du matin indisponibles', erreur);
+        bloc.hidden = true;
+      }
+    }
+
+    // LA PORTE DU SOIR. Une seule requête, et seulement dans sa fenêtre : le
+    // reste du temps elle ne demande rien du tout.
+    async function chargerLaPorteDuSoir() {
+      const bloc = section.querySelector('#bloc-bilan-jour');
+      if (!bloc) return;
+
+      const maintenant = new Date();
+      if (!soireeOuverte(maintenant)) {
+        bloc.hidden = true;
+        return;
+      }
+
+      const jour = versDateISO(maintenant);
+      try {
+        // DÉJÀ ÉCRIT : le bilan est fait, la porte n'a plus rien à dire. On
+        // regarde ce qui S'ÉCRIT — le journal ou la gratitude —, pas la note du
+        // jour : celle-ci se répond d'un doigt depuis trois écrans, et
+        // l'atteindre ne veut pas dire qu'on a fait son bilan.
+        const ecrite = await api.journeeEcrite(jour);
+        if (ecrite?.mot?.trim() || ecrite?.gratitude?.trim()) {
+          bloc.hidden = true;
+          return;
+        }
+
+        bloc.innerHTML = construirePorteDuSoir(jour);
+        bloc.hidden = false;
+      } catch (erreur) {
+        // Une porte qui ne sait pas si elle doit s'ouvrir se tait.
+        console.error('Porte du soir indisponible', erreur);
         bloc.hidden = true;
       }
     }

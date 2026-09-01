@@ -639,6 +639,16 @@ export async function resumeDesJournees(debutISO, finISO) {
   return { humeurs, taches, evenements, faits, mots };
 }
 
+// CE QUI EST DÉJÀ ÉCRIT D'UN JOUR, en UNE requête (1er septembre 2026). La
+// porte du soir n'a pas besoin du détail d'une journée — `journeeDe` en coûte
+// sept — mais seulement de savoir si le bilan a été fait. C'est la même
+// économie que la porte du dimanche, qui ne lit que les semaines validées.
+export async function journeeEcrite(jourISO) {
+  return verifier(
+    await client.from('journees').select('mot, gratitude').eq('jour', jourISO).maybeSingle(),
+  );
+}
+
 export async function journeeDe(jourISO) {
   const debut = `${jourISO}T00:00:00`;
   const fin = `${jourISO}T23:59:59`;

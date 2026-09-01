@@ -1184,6 +1184,18 @@ export function construireLaJournee(jour, donnees, contexte = {}) {
            des faits déjà écrits ailleurs, qu'on regarde. Les habitudes, elles,
            sont la seule chose de ce bloc qu'on vient COCHER. Les ranger avec ce
            qui se lit, c'était demander un geste avant d'ouvrir un tiroir. -->
+      <!-- LES HABITUDES ET L'ICÔNE DU RELEVÉ PARTAGENT UNE LIGNE (1er septembre
+           2026, demande de Noé : « déplace l'icône pour qu'elle ne fasse pas
+           une ligne entière à elle seule, à droite, sur la même ligne que les
+           habitudes »).
+
+           LE SOMMAIRE NE PEUT PAS SORTIR DE SON TIROIR — c'est lui qui
+           bascule le tiroir, et tout ce qui le suit disparaît quand il est
+           fermé : y glisser les habitudes les ferait disparaître avec. On garde
+           donc la structure et on POSE l'icône, en absolu, dans le coin haut
+           droit d'un cadre qui enveloppe les deux. Les pastilles lui réservent
+           sa place par une marge à droite, pour qu'aucune ne passe dessous. -->
+      <div class="jour-cocher">
       ${
         // SANS TITRE (1er septembre 2026, demande de Noé). Neuf pastilles qui
         // se cochent n'ont pas besoin qu'on annonce que ce sont des habitudes :
@@ -1271,6 +1283,7 @@ export function construireLaJournee(jour, donnees, contexte = {}) {
           </div>
         </div>
       </details>
+      </div>
 
       <!-- L'ÉCRITURE EST L'ÉLÉMENT PRINCIPAL (même demande : « l'espace pour
            écrire du texte doit être plus grand, et pouvoir conserver un texte

@@ -37,6 +37,23 @@ import { PLANCHER_PERSO } from './orientation.js';
 
 const HEURE_OUVERTURE = 20;
 
+// LE SOIR, À PARTIR DE 20 H, TOUS LES JOURS (1er septembre 2026, demande de
+// Noé : « un bouton sur la page d'accueil qui apparaît quotidiennement à partir
+// de 20 h et qui mène à la page du jour pour en faire son bilan »).
+//
+// LA MÊME HEURE QUE LE RENDEZ-VOUS DU DIMANCHE, et ce n'est pas un hasard :
+// c'est l'heure où la journée est finie. Un seul nombre pour les deux portes —
+// deux heures d'ouverture différentes finiraient par se contredire, et il n'y
+// a aucune raison qu'un dimanche soir commence plus tôt qu'un mardi.
+//
+// PAS DE BORNE HAUTE : la porte reste jusqu'à minuit, puis la journée change et
+// c'est celle du lendemain qu'elle ouvrira. Le rendez-vous du dimanche, lui,
+// déborde sur le lundi parce qu'une semaine se programme encore le lendemain
+// matin ; un bilan du jour, non.
+export function soireeOuverte(jour = new Date()) {
+  return jour.getHours() >= HEURE_OUVERTURE;
+}
+
 // Dimanche à partir de 20 h, ou lundi. `getDay()` : 0 = dimanche, 1 = lundi.
 export function fenetreOuverte(jour = new Date()) {
   const semaine = jour.getDay();
