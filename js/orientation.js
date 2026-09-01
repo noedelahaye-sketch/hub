@@ -9,7 +9,7 @@
 // Tout est en MINUTES, comme `taches.duree`, `projets.charge_minutes` et les
 // événements. Les heures n'apparaissent qu'à la saisie et à l'affichage.
 
-import { versDateISO, depuisDateISO, ajouterJours } from './format.js';
+import { versDateISO, depuisDateISO, ajouterJours, rangDEspace } from './format.js';
 
 // --- Ce que Noé a dit ---------------------------------------------------------
 //
@@ -2092,6 +2092,23 @@ export function bilanDeLaSemaine(
   const chiffrees = terminees.filter((ligne) => ligne.duree);
   const minutes = chiffrees.reduce((somme, ligne) => somme + ligne.duree, 0);
 
+  // LE DÉTAIL DES HEURES MESURÉES, par espace (1er septembre 2026, demande de
+  // Noé). Un total répond à « combien » ; il ne répond pas à « où elles sont
+  // parties », qui est la question qu'on se pose vraiment le dimanche soir en
+  // regardant la semaine qu'on vient de vivre.
+  //
+  // DANS L'ORDRE DES JOURNÉES DE NOÉ — le club, la formation, Yuno, puis lui —
+  // et sans les espaces à zéro : un espace sans heure notée n'a rien à dire, et
+  // « Yuno 0 h » se lirait comme un reproche là où ce n'est qu'un silence.
+  const parEspace = new Map();
+  for (const ligne of chiffrees) {
+    parEspace.set(ligne.espace, (parEspace.get(ligne.espace) ?? 0) + ligne.duree);
+  }
+  const detail = [...parEspace]
+    .map(([espace, minutes]) => ({ espace, minutes }))
+    .filter((part) => part.minutes > 0)
+    .sort((a, b) => rangDEspace(a.espace) - rangDEspace(b.espace));
+
   const notes = humeurs.filter((ligne) => dans(ligne.date, semaine));
 
   return {
@@ -2100,6 +2117,7 @@ export function bilanDeLaSemaine(
     taches: faites.length,
     publications: parties.length,
     minutes,
+    detail,
     // Ce que le hub SAIT compter, sur ce qu'il y avait à compter. Sans ces deux
     // nombres, « 2 h 30 » se lirait comme une semaine légère alors qu'il ne dit
     // que le silence des durées.

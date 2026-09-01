@@ -1366,11 +1366,24 @@ la chose à poser et l'endroit où la poser doivent se voir ensemble, parce que
 c'est un geste et non une lecture. Sur téléphone ils s'empilent, la grille
 d'abord — c'est pour elle qu'on est venu.
 
-### Le bilan : cinq chiffres, et aucun ne peut baisser
+### Le bilan : quatre chiffres, et aucun ne peut baisser
 
-Victoires · tâches terminées · heures mesurées · humeur moyenne · habitudes
-tenues (`bilanDeLaSemaine`, js/orientation.js — éprouvable hors écran comme le
-reste). **Nulle part un taux de réussite, une tâche non faite comptée, ou une
+Tâches terminées · heures mesurées · humeur moyenne · habitudes tenues
+(`bilanDeLaSemaine`, js/orientation.js — éprouvable hors écran comme le reste).
+
+**LES VICTOIRES ONT QUITTÉ LE BILAN** (1er septembre 2026, demande de Noé).
+Elles n'y disaient pas grand-chose : terminer une tâche en écrit une, si bien
+que « 18 victoires » et « 17 tâches terminées » se lisaient côte à côte comme
+deux mesures alors que la première recopiait presque la seconde. Elles gardent
+**« Le chemin »**, la page faite pour les regarder.
+
+**LES HEURES MESURÉES DISENT OÙ ELLES SONT PARTIES** (même demande), une ligne
+par espace sous le total, avec la pastille du décompte — la même grammaire à
+trois pixels de là. Un total répond à « combien » ; le dimanche soir, on se
+demande « où ». Le détail reprend exactement la place que les victoires
+libèrent.
+- **Dans l'ordre des journées de Noé**, et **sans les espaces à zéro** : « Yuno
+  0 h » se lirait comme un reproche là où ce n'est qu'un silence. **Nulle part un taux de réussite, une tâche non faite comptée, ou une
 comparaison avec la semaine d'avant** : un bilan qui note la semaine passée
 transformerait le rendez-vous du dimanche en examen, et on cesserait très vite
 de l'ouvrir.
@@ -1719,6 +1732,30 @@ Deux cases indépendantes — **Les blocs**, **Ce qui est posé** — reprennent
 `.cal-coche`, le filtre du calendrier. Elles disent la même chose que trois
 boutons sans avoir à nommer la troisième combinaison.
 
+**UNE TROISIÈME CASE : « SÉPARÉS »** (1er septembre 2026, demande de Noé :
+*« j'aimerais avoir la possibilité d'avoir un affichage avec le calendrier des
+blocs et le calendrier de ce qui est posé, mais pas superposé »*). Les deux
+couches, mais **chacune sur sa grille** — les blocs au-dessus, ce qui est posé en
+dessous, chacune avec sa légende.
+
+**Il n'y a rien de neuf à dessiner** : ce sont les deux vues à UNE couche que la
+page sait déjà faire, rendues l'une sous l'autre. La première est graduée et
+porte le texte de ses blocs ; la seconde empile ses barres comme partout ailleurs
+dans le hub. **Ni `poserDansLesBlocs` ni `rangerSousLEchelle` ne tournent** :
+ces deux passes n'existent que pour faire tenir deux couches dans une colonne,
+et c'est justement ce qu'on ne fait plus.
+- **Elle reste visible quand elle n'a rien à séparer** — une case qui apparaît
+  et disparaît réorganiserait la ligne autour d'elle, ce qu'on refuse depuis le
+  31 août.
+- **La seconde grille porte son PROPRE identifiant** (`#bloc-grille-pose`), et
+  ce n'est pas cosmétique : `heureSousLePoint`, `poserDansLesBlocs` et
+  `rangerSousLEchelle` cherchent tous les piles de `#bloc-grille`. Un même
+  identifiant leur donnerait quatorze colonnes pour sept jours — et les gestes
+  (glisser un bloc, viser une heure) restent ainsi sur la première, la seule qui
+  porte des blocs.
+- **L'un SOUS l'autre, pas côte à côte** : la grille partage déjà sa largeur avec
+  le vivier ; deux grilles de sept jours côte à côte feraient 50 px par jour.
+
 *Ce que ça remplace :* une bascule à trois positions, dont la troisième
 superposait les barres à leurs blocs et devenait illisible.
 
@@ -1808,8 +1845,20 @@ tout ce qui suit (31 août 2026, Noé explique sa logique) :
   semaine, et y écrire ce qu'ils contiennent répondrait à une question qu'on n'a
   pas posée.
 - **UNE SEULE LIGNE DE COMMANDES** (31 août 2026, demande de Noé) : le titre, le
-  décompte des heures, les deux cases et les deux gestes. Les séparer en deux
-  rangs laissait croire à deux étages de réglage là où il n'y en a qu'un.
+  décompte des heures, les cases et les deux gestes. Les séparer en deux rangs
+  laissait croire à deux étages de réglage là où il n'y en a qu'un.
+  - **ET SES TROIS RANGS SE SERRENT** (1er septembre 2026, demande de Noé :
+    « moins d'espace entre la ligne du décompte des heures, jour par jour et le
+    calendrier »). Le titre, le décompte et la grille ne sont qu'une seule
+    chose ; 8 px puis 12 px les faisaient lire comme trois blocs empilés.
+    *Mesuré : 64 px du haut du titre au haut de la grille, ramenés à 52.*
+  - **Le décompte se cale sur la même ligne que les cases**, et il a fallu écrire
+    `ul.semaine-compteur` pour ça : la règle existait et ne gagnait pas —
+    `.bloc ul.semaine-compteur` pose une marge basse et pèse une balise de plus.
+    Les douze pixels restaient sous la liste, le conteneur faisait 29 px de haut
+    pour 17 de contenu, et le décompte se calait en haut de sa boîte pendant que
+    les cases se centraient. **Une spécificité qu'on n'égale pas est une règle
+    qu'on n'écrit pas.**
 - **RIEN NE DISPARAÎT QUAND ON DÉCOCHE** (« ce n'est pas une page différente,
   c'est juste du contenu qui est ajouté ou enlevé ; seul l'affichage du
   calendrier doit être modifié »). Le décompte reste — il compte les heures des

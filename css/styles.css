@@ -6373,18 +6373,51 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 /* La tête de la grille : son titre, la bascule des deux vues, et la porte qui
    rejette les blocs. Le titre pousse le reste à droite — c'est lui qui nomme la
    section, les deux autres sont des commandes. */
+/* LE TITRE, LE DÉCOMPTE ET LA GRILLE SE SERRENT (1er septembre 2026, demande
+   de Noé : « moins d'espace entre la ligne du décompte des heures, jour par
+   jour et le calendrier »). Les trois ne sont qu'une seule chose — la grille et
+   ses commandes —, et 8 px puis 12 px les faisaient lire comme trois blocs
+   empilés. Mesuré : 64 px du haut du titre au haut de la grille, ramenés à 52.
+   Le titre garde SA marge partout ailleurs : la règle est scopée à cette
+   section, où le décompte le suit immédiatement. */
+.semaine-grille > h2 { margin-bottom: var(--espace-4); }
+
 .semaine-tete {
   display: flex;
   align-items: center;
   gap: var(--espace-12);
   flex-wrap: wrap;
-  margin-bottom: var(--espace-12);
+  margin-bottom: var(--espace-4);
 }
+
+/* LA LÉGENDE D'UNE GRILLE, quand les deux couches sont séparées (1er septembre
+   2026). Elle ne dit qu'un mot et ne doit pas peser plus qu'un mot : elle se
+   colle à sa grille, et la seconde reprend l'air qu'on vient de retirer en
+   haut — sans quoi les deux calendriers se toucheraient. */
+.grille-legende {
+  margin: 0 0 var(--espace-4);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* L'air entre les deux calendriers se pose sur la LÉGENDE de la seconde, pas
+   sur la grille : c'est la légende qui vient juste après la première. */
+#bloc-legende-pose { margin-top: var(--espace-16); }
 
 /* Le décompte pousse les commandes à droite : le compteur informe, les cases et
    les gestes agissent. Le titre, lui, est au-dessus — il nomme la section. */
 .semaine-tete #bloc-compteur { margin-right: auto; }
-.semaine-tete .semaine-compteur { margin-bottom: 0; }
+
+/* `ul.semaine-compteur` ET NON `.semaine-compteur` (1er septembre 2026,
+   correction de Noé : « réaligne le décompte des heures avec les cases à cocher
+   et boutons »). La règle existait et ne gagnait pas : `.bloc ul.semaine-compteur`
+   pose `margin-bottom: var(--espace-12)` et pèse une balise de plus. Les douze
+   pixels restaient donc SOUS la liste, le conteneur en faisait 29 de haut pour
+   17 de contenu, et le décompte se calait en haut de sa boîte pendant que les
+   cases et les boutons se centraient — mesuré, huit pixels d'écart de ligne de
+   base. Une spécificité qu'on n'égale pas est une règle qu'on n'écrit pas. */
+.semaine-tete ul.semaine-compteur { margin-bottom: 0; }
 
 /* Les cases se centrent comme le reste de la ligne : `.cal-filtres` les aligne
    en haut pour le calendrier, où elles tiennent seules sur leur rang. */
@@ -9144,6 +9177,67 @@ body.balaye {
 .bilan-valeur { font-size: 1.375rem; line-height: 1.1; color: var(--accent); }
 .bilan-mot { font-size: 0.75rem; color: var(--texte-discret); }
 .bilan-precision { font-size: 0.6875rem; color: var(--texte-discret); opacity: 0.75; }
+
+/* OÙ LES HEURES SONT PARTIES (1er septembre 2026, demande de Noé : « ajoute un
+   détail des heures mesurées »). Une ligne par espace, sous le total, avec la
+   pastille du décompte — c'est la même grammaire à trois pixels de là, et deux
+   façons de dire « FC Hermitage » sur le même écran en feraient deux choses.
+
+   `.bloc .bilan-chiffres li` annule déjà la tuile que `.bloc li` pose partout ;
+   cette liste-ci est imbriquée, donc elle repasse sous la règle générale — d'où
+   l'annulation, une fois de plus, au même endroit et pour la même raison. */
+.bloc .bilan-detail,
+.bilan-detail {
+  display: grid;
+  gap: 1px;
+  margin: var(--espace-4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* `flex-direction`, `flex` et `max-width` SE REDISENT : la liste est imbriquée
+   dans `.bilan-chiffres`, dont la règle des li pose une COLONNE qui se partage
+   la ligne. Elle matche donc aussi ces li-ci, et ce qu'on ne redit pas reste.
+   C'est le piège déjà payé par le compteur — une propriété héritée d'un
+   sélecteur plus général se redit, elle ne se devine pas. Mesuré : le nom et le
+   chiffre tombaient l'un sous l'autre. */
+.bloc .bilan-detail li,
+.bilan-detail li {
+  display: flex;
+  flex-direction: row;
+  flex: none;
+  max-width: none;
+  align-items: center;
+  gap: var(--espace-4);
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  font-size: 0.6875rem;
+  color: var(--texte-discret);
+}
+
+.bloc ul.bilan-detail li::before { content: none; }
+
+.bilan-detail .compte-rond {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--rayon-pastille);
+  background: var(--couleur-espace-pleine, var(--accent));
+}
+
+/* Le nom cède la place au chiffre quand la colonne est étroite : c'est le
+   chiffre qu'on vient lire, le nom se devine à la pastille. */
+.bilan-detail-mot {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.bilan-detail-valeur { margin-left: auto; flex: none; color: var(--texte); }
 
 /* Ce que le hub IGNORE, à côté de ce qu'il sait — même précaution que la
    première ligne de « Le temps » : sans elle, un total bas se lirait comme une

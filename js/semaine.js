@@ -108,8 +108,8 @@ function bornesLisibles({ debut, fin }) {
 // --- LE BILAN, EN QUELQUES CHIFFRES ------------------------------------------
 //
 // « Un bilan de la semaine qui est passée en quelques chiffres » (Noé). Ce sont
-// ceux du MIROIR, et aucun ne peut baisser à cause d'un oubli : victoires,
-// tâches terminées, heures mesurées, humeur, pratiques d'habitudes. Nulle part
+// ceux du MIROIR, et aucun ne peut baisser à cause d'un oubli : tâches
+// terminées, heures mesurées, humeur, pratiques d'habitudes. Nulle part
 // un taux de réussite, une tâche non faite comptée, ou une comparaison avec la
 // semaine d'avant — un bilan qui note la semaine passée transformerait le
 // rendez-vous du dimanche en examen.
@@ -120,16 +120,25 @@ function bornesLisibles({ debut, fin }) {
 const dixieme = (nombre) => nombre.toFixed(1).replace('.', ',').replace(',0', '');
 
 export function construireBilan(bilan) {
+  // LES VICTOIRES ONT QUITTÉ LE BILAN (1er septembre 2026, demande de Noé).
+  // Elles ne disaient pas grand-chose ici : terminer une tâche en écrit une, si
+  // bien que « 18 victoires » et « 17 tâches terminées » se lisaient côte à côte
+  // comme deux mesures alors que la première recopiait presque la seconde. Elles
+  // gardent leur page — « Le chemin » —, qui est faite pour les regarder.
   const chiffres = [
-    bilan.victoires && {
-      valeur: String(bilan.victoires),
-      mot: bilan.victoires > 1 ? 'victoires' : 'victoire',
-    },
     bilan.taches && {
       valeur: String(bilan.taches),
       mot: bilan.taches > 1 ? 'tâches terminées' : 'tâche terminée',
     },
-    bilan.minutes && { valeur: dureeLisible(bilan.minutes), mot: 'mesurées' },
+    bilan.minutes && {
+      valeur: dureeLisible(bilan.minutes),
+      mot: 'mesurées',
+      // OÙ ELLES SONT PARTIES (1er septembre 2026, demande de Noé : « ajoute un
+      // détail des heures mesurées »). Un total répond à « combien » ; le
+      // dimanche soir on se demande plutôt « où ». Le détail reprend la place
+      // que les victoires viennent de libérer.
+      parts: bilan.detail ?? [],
+    },
     bilan.humeur && {
       valeur: dixieme(bilan.humeur.moyenne),
       mot: 'd’humeur en moyenne',
@@ -157,6 +166,26 @@ export function construireBilan(bilan) {
           ${
             chiffre.precision
               ? `<span class="bilan-precision">${echapper(chiffre.precision)}</span>`
+              : ''
+          }
+          ${
+            // UNE LIGNE PAR ESPACE, avec sa pastille — la grammaire du décompte
+            // d'en dessous. Un espace sans heure notée n'y figure pas : « Yuno
+            // 0 h » se lirait comme un reproche là où ce n'est qu'un silence.
+            chiffre.parts?.length
+              ? `<ul class="bilan-detail">${chiffre.parts
+                  .map(
+                    (part) => `<li data-espace="${echapper(part.espace)}">
+                      <span class="compte-rond" aria-hidden="true"></span>
+                      <span class="bilan-detail-mot">${echapper(
+                        NOMS_ESPACES[part.espace] ?? part.espace,
+                      )}</span>
+                      <span class="bilan-detail-valeur chiffre">${echapper(
+                        dureeLisible(part.minutes),
+                      )}</span>
+                    </li>`,
+                  )
+                  .join('')}</ul>`
               : ''
           }
         </li>`,
@@ -368,6 +397,12 @@ export default {
       // dessiner par-dessus.
       voirBlocs: true,
       voirPose: false,
+      // DEUX GRILLES PLUTÔT QU'UNE SUPERPOSITION (1er septembre 2026, demande
+      // de Noé : « j'aimerais avoir la possibilité d'avoir un affichage avec le
+      // calendrier des blocs et le calendrier de ce qui est posé, mais pas
+      // superposé »). Elle ne veut dire quelque chose que si les DEUX couches
+      // sont demandées : il n'y a rien à séparer quand on n'en montre qu'une.
+      separes: false,
       // La tâche prise en main AU DOIGT : on la choisit, puis on touche un
       // jour. Le glissement est un geste de souris — sur une liste verticale,
       // au doigt, il ne se distingue pas d'un défilement.
@@ -1037,6 +1072,12 @@ export default {
                   <span>Les blocs</span></label>
                 <label class="cal-coche"><input type="checkbox" data-voir="pose">
                   <span>Ce qui est posé</span></label>
+                <!-- SÉPARÉS : les deux couches, mais chacune sur sa grille. Elle
+                     reste visible quand elle n'a rien à séparer — une case qui
+                     apparaît et disparaît réorganiserait la ligne autour
+                     d'elle, et c'est ce qu'on refuse depuis le 31 août. -->
+                <label class="cal-coche"><input type="checkbox" data-voir="separes">
+                  <span>Séparés</span></label>
               </div>
               <!-- LE FILET DU « RIEN NE S'ENREGISTRE » : les blocs se
                    recalculent, donc on peut tout bouger sans rien risquer. Sans
@@ -1049,7 +1090,16 @@ export default {
                 Reproposer les blocs
               </button>
             </div>
+            <p class="discret grille-legende" id="bloc-legende-blocs" hidden>Les blocs</p>
             <div id="bloc-grille"><p class="vide">…</p></div>
+            <!-- LA SECONDE GRILLE, vide et masquée tant qu'on ne demande pas
+                 « Séparés ». Elle porte son propre identifiant, et ce n'est pas
+                 cosmétique : heureSousLePoint, poserDansLesBlocs et
+                 rangerSousLEchelle cherchent tous les piles de #bloc-grille. Un
+                 même identifiant leur donnerait quatorze colonnes pour sept
+                 jours. -->
+            <p class="discret grille-legende" id="bloc-legende-pose" hidden>Ce qui est posé</p>
+            <div id="bloc-grille-pose" hidden></div>
           </section>
 
           <section class="bloc semaine-vivier">
@@ -1094,6 +1144,20 @@ export default {
     // La grille et le vivier se redessinent ENSEMBLE : programmer une tâche la
     // retire de l'un et la pose dans l'autre, et deux rendus séparés
     // laisseraient une demi-seconde où elle serait aux deux endroits.
+    // CE QUE MONTRE UNE GRILLE, selon les deux couches qu'on lui demande.
+    //
+    // PAS DE PUBLICATIONS AVEC LES BLOCS (31 août 2026, demande de Noé). Cette
+    // grille sert à placer du TEMPS — ce qu'on va faire, et quand. Une parution
+    // n'occupe pas de temps : elle part. Elle reste entière sur la vue de ce qui
+    // est posé, où l'on regarde la semaine telle qu'elle est — et donc, une fois
+    // les deux grilles séparées, sur la seconde.
+    const elementsMontres = (avecBlocs, avecPose) =>
+      etat.elements.filter((element) => {
+        if (element.type === 'bloc') return avecBlocs;
+        if (!avecPose) return false;
+        return !(avecBlocs && element.type === 'publication');
+      });
+
     function rendreProgrammation() {
       assembler();
       // CHAQUE VUE NE MONTRE QUE SA MOITIÉ : les blocs d'un côté, ce qui est
@@ -1110,16 +1174,15 @@ export default {
       // UNE TÂCHE QUI A TROUVÉ SON BLOC N'EST PAS DESSINÉE À CÔTÉ : elle est
       // écrite dedans. Les événements et les publications, eux, restent des
       // barres — ils respectent un horaire strict, et c'est là leur différence.
-      const montres = etat.elements.filter((element) => {
-        if (element.type === 'bloc') return etat.voirBlocs;
-        if (!etat.voirPose) return false;
-        // PAS DE PUBLICATIONS AVEC LES BLOCS (31 août 2026, demande de Noé).
-        // Cette grille sert à placer du TEMPS — ce qu'on va faire, et quand.
-        // Une parution n'occupe pas de temps : elle part. Elle reste entière
-        // sur la vue de ce qui est posé, où l'on regarde la semaine telle
-        // qu'elle est.
-        return !(etat.voirBlocs && element.type === 'publication');
-      });
+      // SÉPARÉS : chaque couche a sa grille, et aucune ne connaît l'autre
+      // (1er septembre 2026, demande de Noé). Il n'y a rien de neuf à dessiner —
+      // ce sont les deux vues à une couche que la page sait déjà faire, rendues
+      // l'une sous l'autre. Rien à garnir, rien à ranger sous l'échelle : ces
+      // deux passes n'existent que pour faire tenir les deux couches dans une
+      // seule colonne, et c'est justement ce qu'on ne fait plus ici.
+      const separes = etat.voirBlocs && etat.voirPose && etat.separes;
+
+      const montres = elementsMontres(etat.voirBlocs, separes ? false : etat.voirPose);
 
       // LA VUE DES BLOCS EST GRADUÉE, l'autre non : dans l'une, la colonne EST
       // la journée de 10 h à 22 h ; dans l'autre, les barres s'empilent comme
@@ -1128,11 +1191,15 @@ export default {
       // a pas d'échelle à tenir, et les barres reprennent l'empilement de
       // partout ailleurs dans le hub.
       cible('bloc-grille').classList.toggle('grille-blocs', etat.voirBlocs);
+      // LES LÉGENDES N'APPARAISSENT QU'UNE FOIS SÉPARÉES : dans la vue mêlée,
+      // une seule grille porte tout et la nommer deux fois n'apprendrait rien.
+      cible('bloc-legende-blocs').hidden = !separes;
+      cible('bloc-legende-pose').hidden = !separes;
       // DÈS QUE CE QUI EST POSÉ EST COCHÉ, LES BLOCS PERDENT LEUR TEXTE (31 août
       // 2026, demande de Noé) : heure, espace, durée. Ils redeviennent ce qu'ils
       // sont — un cadre —, et tout ce qui se lit dans la colonne est ce qui est
       // vraiment posé. Leur nom reste au survol, et revient dès qu'on décoche.
-      cible('bloc-grille').classList.toggle('blocs-nus', etat.voirBlocs && etat.voirPose);
+      cible('bloc-grille').classList.toggle('blocs-nus', !separes && etat.voirBlocs && etat.voirPose);
       cible('bloc-grille').innerHTML = construireGrille(
         montres,
         // « bloc » s'ajoute ICI et pas dans `NATURES` : le calendrier plein
@@ -1186,7 +1253,23 @@ export default {
         barre.style.top = `${Math.max(0, haut - trop)}px`;
       }
 
-      if (etat.voirBlocs && etat.voirPose) {
+      // LA SECONDE GRILLE : ce qui est posé, tout seul, empilé comme partout
+      // ailleurs dans le hub. Elle n'est jamais graduée — il n'y a pas d'échelle
+      // à tenir sans blocs — et ne porte aucun bloc, ce qui garde les gestes
+      // (glisser un bloc, viser une heure) au premier `#bloc-grille`.
+      const seconde = cible('bloc-grille-pose');
+      seconde.hidden = !separes;
+      seconde.innerHTML = separes
+        ? construireGrille(
+            elementsMontres(false, true),
+            new Set([...toutesLesNatures(), 'bloc']),
+            'semaine',
+            etat.pivot,
+            { montrerEspace: true, aide: false },
+          )
+        : '';
+
+      if (!separes && etat.voirBlocs && etat.voirPose) {
         // DANS CET ORDRE (31 août 2026, corrigé) : on range D'ABORD ce qui va
         // dans un cadre, et SEULEMENT ENSUITE ce qu'aucun bloc ne porte.
         //
@@ -1227,7 +1310,12 @@ export default {
       cible('bloc-compteur').innerHTML = construireCompteur();
 
       for (const boite of section.querySelectorAll('[data-voir]')) {
-        const coche = boite.dataset.voir === 'blocs' ? etat.voirBlocs : etat.voirPose;
+        const coche =
+          boite.dataset.voir === 'blocs'
+            ? etat.voirBlocs
+            : boite.dataset.voir === 'pose'
+              ? etat.voirPose
+              : etat.separes;
         boite.checked = coche;
         boite.closest('.cal-coche')?.classList.toggle('actif', coche);
       }
@@ -1957,7 +2045,8 @@ export default {
       const coche = evenement.target.closest('[data-voir]');
       if (coche) {
         if (coche.dataset.voir === 'blocs') etat.voirBlocs = coche.checked;
-        else etat.voirPose = coche.checked;
+        else if (coche.dataset.voir === 'pose') etat.voirPose = coche.checked;
+        else etat.separes = coche.checked;
         rendreProgrammation();
         return;
       }
