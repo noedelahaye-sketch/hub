@@ -5145,7 +5145,7 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 }
 
 .jour-nom {
-  flex: 1;
+  margin-right: auto;
   font-family: var(--police-titre);
   font-weight: 700;
   font-size: 1.0625rem;
@@ -5184,6 +5184,11 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 .jour-frimousse { font-size: 1.25rem; }
 
 .jour-part { margin-bottom: var(--espace-16); }
+
+/* Les habitudes sont sorties du repli : elles se cochent, elles n'attendent pas
+   qu'on ouvre un tiroir. Leur bloc vit donc entre la ligne du jour et le relevé,
+   et il porte son propre écart. */
+.jour-page > .jour-part { margin-bottom: var(--espace-12); }
 
 .jour-part-titre {
   display: block;
@@ -5293,35 +5298,26 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    repli est un geste rare, il n'a pas besoin d'un dessin à lui. */
 .jour-releve { margin-bottom: var(--espace-16); }
 
+/* UNE ICÔNE, SANS FLÈCHE (1er septembre 2026, demande de Noé). Le libellé
+   nommait un tiroir dont le contenu se voit dès qu'il est ouvert — et il l'est
+   par défaut. L'icône dit « il y a un relevé ici » sans occuper une ligne de
+   titre, et son nom accessible garde la phrase pour qui ne voit pas le dessin.
+
+   La flèche disait le sens du geste ; l'icône s'ALLUME quand le tiroir est
+   ouvert, ce qui le dit aussi bien avec un signe de moins. */
 .jour-releve > summary {
+  display: inline-flex;
+  align-items: center;
   cursor: pointer;
   list-style: none;
-  padding: var(--espace-8) 0;
-  font-size: 0.625rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  padding: var(--espace-4) 0;
   color: var(--texte-discret);
 }
 
 .jour-releve > summary::-webkit-details-marker { display: none; }
+.jour-releve > summary::marker { content: ""; }
 
-/* Le chevron dit le sens du geste, et tourne avec lui. Un dessin CSS plutôt
-   qu'un glyphe : il garde son épaisseur quelle que soit la police de secours. */
-.jour-releve > summary::after {
-  content: "";
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-left: var(--espace-8);
-  border-right: 1.5px solid currentColor;
-  border-bottom: 1.5px solid currentColor;
-  transform: translateY(-2px) rotate(45deg);
-  transition: transform 160ms ease;
-}
-
-.jour-releve[open] > summary::after { transform: translateY(1px) rotate(-135deg); }
-
+.jour-releve[open] > summary { color: var(--accent); }
 .jour-releve > summary:hover { color: var(--texte); }
 
 /* LE RELEVÉ EN COLONNES (1er septembre 2026, demande de Noé : « pour les
@@ -5355,8 +5351,6 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   border-top: 1px solid var(--bordure-douce);
 }
 
-.jour-releve-ligne { margin-bottom: var(--espace-16); }
-
 /* En dessous, un flux à deux colonnes : le nombre de blocs varie d'un jour à
    l'autre — une journée sans lecture ni victoire n'en a que deux —, et un flux
    se remplit de lui-même là où une grille laisserait des cases vides. Le défaut
@@ -5377,10 +5371,6 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
 @media (max-width: 720px) {
   .jour-releve-colonnes { columns: 1; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .jour-releve > summary::after { transition: none; }
 }
 
 /* L'ÉCRITURE EST L'ÉLÉMENT PRINCIPAL (1er septembre 2026, demande de Noé).
@@ -5493,13 +5483,15 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 /* LA NOTE DE LA JOURNÉE (1er septembre 2026). Elle ferme la tuile : une humeur
    demandée le matin dit comment on se réveille, demandée après avoir écrit sa
    journée elle la RÉSUME. Même chiffre, autre question. */
-.jour-note {
-  margin-top: var(--espace-24);
-  padding-top: var(--espace-16);
-  border-top: 1px solid var(--bordure-douce);
-}
+/* LA NOTE SUR LA LIGNE DU JOUR (1er septembre 2026, demande de Noé). Elle avait
+   sa propre ligne, puis son propre bloc : deux rangs pour cinq frimousses. Le
+   jour et la note qu'on lui donne sont la MÊME information — quel jour, et
+   comment il était —, et ils se lisent ensemble. Ça rend une ligne au journal.
+   `margin-right: auto` sur le nom pousse la flèche du lendemain au bout ; la
+   note se cale juste avant elle. */
+.jour-note { flex: none; }
 
-.jour-note .echelle-humeur { margin-top: var(--espace-4); }
+.jour-note .echelle-humeur { margin: 0; }
 
 /* La frimousse choisie ne se dit pas par une couleur — le hub n'en a pas pour
    juger une journée — mais par un fond doux et sa taille pleine. Les autres

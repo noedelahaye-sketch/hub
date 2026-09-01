@@ -857,6 +857,14 @@ function jourEnToutesLettres(iso, aujourdhui) {
   return `${JOURS_SEMAINE[date.getDay()]} ${date.getDate()} ${MOIS_LISIBLES[date.getMonth()]}`;
 }
 
+// L'ICÔNE DU RELEVÉ : trois lignes et leurs puces, le dessin d'une liste. En
+// trait plutôt qu'en glyphe, comme les autres icônes du hub — un caractère
+// dépendrait d'une police de secours choisie par le navigateur.
+const ICONE_RELEVE = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+  aria-hidden="true" focusable="false">
+  <path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"></path></svg>`;
+
 function bloc_(titre, contenu) {
   return contenu ? `<div class="jour-part"><span class="jour-part-titre">${titre}</span>${contenu}</div>` : '';
 }
@@ -1142,29 +1150,17 @@ export function construireLaJournee(jour, donnees, contexte = {}) {
           versDateISO(ajouterJours(depuisDateISO(jour), -1)),
         )}" aria-label="Le jour d'avant">‹</button>
         <span class="jour-nom">${echapper(jourEnToutesLettres(jour, aujourdhui))}</span>
+        <!-- LA NOTE SUR LA LIGNE DU JOUR (1er septembre 2026, demande de Noé).
+             Elle avait sa propre ligne, puis son propre bloc : deux rangs pour
+             cinq frimousses. Le jour et la note qu'on lui donne sont la même
+             information — quel jour, et comment il était —, et ils se lisent
+             ensemble. Ça rend une ligne entière au journal. -->
+        <div class="jour-note" data-note-jour>
+          ${construireNoteDuJour(jour, humeur)}
+        </div>
         <button type="button" class="jour-fleche" data-jour-vers="${echapper(
           versDateISO(ajouterJours(depuisDateISO(jour), 1)),
         )}" ${jour >= aujourdhui ? 'disabled' : ''} aria-label="Le jour d'après">›</button>
-      </div>
-
-      <!-- LA NOTE DE LA JOURNÉE (1er septembre 2026, demande de Noé : « il
-           manque l'humeur du jour, et cette humeur doit être notée en fin de
-           journée plutôt qu'au début — une note de la journée en quelque
-           sorte »).
-
-           ELLE EST EN HAUT (correction de Noé le même jour : « la note du
-           jour doit être en haut »). Elle avait fermé la tuile une heure,
-           au motif qu'une humeur demandée après avoir écrit sa journée la
-           RÉSUME au lieu de dire comment on s'est réveillé. Ce motif tient
-           toujours — c'est la QUESTION qui a changé, pas le rang : « comment
-           était cette journée ? » se pose du même endroit qu'on la relit, et
-           on ne fait pas défiler une page entière pour répondre d'un doigt.
-
-           Elle remplace la ligne muette que le relevé portait : l'humeur s'y
-           LISAIT sans pouvoir s'y écrire, alors que c'est le seul relevé de la
-           tuile que Noé pose lui-même. Tout le reste, le hub le sait déjà. -->
-      <div class="jour-note" data-note-jour>
-        ${construireNoteDuJour(jour, humeur)}
       </div>
 
       <!-- LES DÉTAILS EN HAUT, ET REPLIABLES (1er septembre 2026, demande de
@@ -1180,26 +1176,28 @@ export function construireLaJournee(jour, donnees, contexte = {}) {
            UN details NATIF, ouvert par défaut : le repli est un geste rare, et
            il n'a pas besoin d'état à tenir — la tuile se redessine à
            l'ouverture d'un jour, pas pendant qu'on la lit. -->
+      <!-- LES HABITUDES SORTENT DU REPLI (1er septembre 2026, demande de Noé :
+           « sors les habitudes de ce bloc, elles apparaissent constamment sur
+           la page »).
+
+           ET C'EST LA BONNE PLACE : le repli contient ce que le hub RELÈVE —
+           des faits déjà écrits ailleurs, qu'on regarde. Les habitudes, elles,
+           sont la seule chose de ce bloc qu'on vient COCHER. Les ranger avec ce
+           qui se lit, c'était demander un geste avant d'ouvrir un tiroir. -->
+      ${bloc_('Habitudes', construirePastillesHabitudes(jour, habitudes, tousLesFaits))}
+
       <details class="jour-releve" open>
-        <summary>Ce que dit la journée</summary>
+        <!-- UNE ICÔNE, SANS FLÈCHE (1er septembre 2026, demande de Noé). Le
+             libellé nommait un tiroir dont le contenu se voit dès qu'il est
+             ouvert — et il l'est par défaut. L'icône dit « il y a un relevé
+             ici » sans occuper une ligne de titre ; son nom accessible garde la
+             phrase, pour qui ne voit pas le dessin. La flèche disait le sens du
+             geste ; l'icône s'allume quand le tiroir est ouvert, ce qui le dit
+             aussi bien avec un signe de moins. -->
+        <summary aria-label="Ce que dit la journée" title="Ce que dit la journée">
+          ${ICONE_RELEVE}
+        </summary>
         <div class="jour-releve-corps">
-          <!-- LES HABITUDES SONT UNE LIGNE, AU-DESSUS DES COLONNES (1er
-               septembre 2026, demande de Noé : « les habitudes ne doivent pas
-               être dans le même bloc de colonnes que les tâches, événements et
-               publications ; ce doit être une ligne au-dessus de ces
-               colonnes »).
-
-               Et c'est plus juste : les habitudes sont une CHECK-LIST qu'on
-               parcourt en entier, les autres blocs des relevés qu'on lit. Deux
-               natures, deux mises en page — la ligne prend la largeur dont ses
-               neuf pastilles ont besoin, les colonnes se partagent le reste.
-
-               Elles ont eu leur colonne pendant une heure : elle bridait la
-               largeur des pastilles à la moitié de la tuile, pour rien. -->
-          <div class="jour-releve-ligne">
-          ${bloc_('Habitudes', construirePastillesHabitudes(jour, habitudes, tousLesFaits))}
-          </div>
-
           <div class="jour-releve-colonnes">
           ${bloc_(
             'Terminé',

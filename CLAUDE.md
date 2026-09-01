@@ -693,6 +693,21 @@ rendrait d'abord l'ancienne.
   - **Un `details` natif, ouvert par défaut** : le repli est un geste rare et
     n'a pas besoin d'un état à tenir — la tuile se redessine à l'ouverture d'un
     jour, pas pendant qu'on la lit.
+  - **UNE ICÔNE, SANS LIBELLÉ NI FLÈCHE** (1er septembre 2026, demande de Noé).
+    « Ce que dit la journée » nommait un tiroir dont le contenu se voit dès
+    qu'il est ouvert — et il l'est par défaut. L'icône dit « il y a un relevé
+    ici » sans occuper une ligne de titre, et son nom accessible garde la
+    phrase. La flèche disait le sens du geste ; **l'icône s'ALLUME quand le
+    tiroir est ouvert**, ce qui le dit aussi bien avec un signe de moins.
+  - **LES HABITUDES SONT SORTIES DU REPLI** (même demande : « elles apparaissent
+    constamment sur la page »), et c'est la bonne place : **le repli contient ce
+    que le hub RELÈVE — des faits déjà écrits ailleurs, qu'on regarde ; les
+    habitudes sont la seule chose de ce bloc qu'on vient COCHER.** Les ranger
+    avec ce qui se lit, c'était demander un geste avant d'ouvrir un tiroir.
+  - **LA NOTE DU JOUR EST SUR LA LIGNE DU JOUR** (même demande). Elle a eu sa
+    ligne, puis son bloc : deux rangs pour cinq frimousses. **Le jour et la note
+    qu'on lui donne sont la même information** — quel jour, et comment il était —
+    et ils se lisent ensemble. Ça rend une ligne entière au journal.
   - **AUCUN TITRE AU-DESSUS DES TROIS CHAMPS** (1er septembre 2026, demande de
     Noé). La note du jour, la gratitude et le journal n'annoncent plus ce qu'ils
     sont : cinq frimousses en haut d'une journée ne demandent pas qu'on explique
