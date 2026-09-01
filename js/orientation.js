@@ -1684,6 +1684,38 @@ export function serieDeLHabitude(habitude, faits = [], jour = new Date()) {
   };
 }
 
+// LES JOURS D'AFFILÉE — et ce n'est PAS la série (2 septembre 2026, demande de
+// Noé : « une flamme lorsque l'habitude a été cochée 5 jours d'affilé »).
+//
+// LA DIFFÉRENCE COMPTE. La série recule d'un cran quand un jour manque, elle ne
+// tombe pas : on peut donc afficher « 7 jours tenus » avec deux trous dedans, ce
+// qui est exactement le réglage que Noé a demandé pour qu'elle ne s'écroule pas.
+// La FLAMME, elle, dit autre chose — cinq jours SANS TROU, d'affilée. Deux
+// mesures, deux mots, et il faut les deux : l'une protège, l'autre récompense.
+//
+// ON PART D'AUJOURD'HUI S'IL EST COCHÉ, D'HIER SINON. Sans ça la flamme
+// s'éteindrait chaque matin, avant qu'on ait eu le temps de cocher — c'est la
+// même précaution que la série, qui s'arrête avant le jour en cours.
+export function joursDAffileeDeLHabitude(habitude, faits = [], jour = new Date()) {
+  const siens = new Set(
+    faits.filter((fait) => fait.habitude_id === habitude.id).map((fait) => fait.jour),
+  );
+  const aujourdhui = versDateISO(jour);
+  let curseur = siens.has(aujourdhui) ? aujourdhui : versDateISO(ajouterJours(jour, -1));
+
+  let compte = 0;
+  while (siens.has(curseur)) {
+    compte += 1;
+    curseur = versDateISO(ajouterJours(depuisDateISO(curseur), -1));
+  }
+  return compte;
+}
+
+// Cinq jours sans trou : c'est le seuil que Noé a posé. La flamme ne s'éteint
+// pas d'un coup à la première absence — elle disparaît, et la série, elle, ne
+// perd qu'un cran. Rien ici ne compte un manque.
+export const FLAMME_JOURS = 5;
+
 // LE CUMUL ET SES PALIERS NE REDESCENDENT JAMAIS, et c'est le ressort de jeu le
 // plus sain qui existe : un objectif proche, atteignable, qu'on ne peut pas se
 // faire reprendre. Chaque palier franchi écrit une victoire.
@@ -1695,6 +1727,35 @@ export function cumulDeLHabitude(habitude, faits = []) {
 
 // Les mots de l'élan. Aucun n'est un reproche : une habitude en sommeil n'est
 // pas un échec, c'est une habitude qui attend.
+// LE RANG D'UNE SÉRIE — la règle de couleur, écrite UNE fois (2 septembre
+// 2026). Elle vit ici et non dans un écran parce que deux écrans la portent
+// désormais — la page d'une habitude et la colonne du tableau de bord perso —,
+// et parce qu'une règle à seuils se vérifie hors écran.
+//
+// Règle de Noé : *« la série max en orange, la série en cours en vert au début,
+// puis bleu après 3 jours, une flamme lorsque l'habitude a été cochée 5 jours
+// d'affilé, et jaune lorsque l'on est à 2 jours près de la série max »*, puis
+// *« lorsque série max et série en cours sont égales, la même couleur »*, et
+// enfin *« un dégradé qui rend le chiffre couleur or »*.
+//
+// L'ORDRE DES TESTS EST LA RÈGLE, et il règle tout seul un cas idiot : au tout
+// début, série et record valent 1, donc « à 2 près du record » serait vrai — un
+// jaune « tu approches ton meilleur » sur une habitude d'un jour ne veut rien
+// dire. L'égalité passe devant, puis le vert en dessous de trois.
+//
+// AUCUN DE CES RANGS N'EST UN AVERTISSEMENT : ils disent où l'on en est, jamais
+// ce qui manque. Le hub n'a pas de couleur d'alerte, et il n'en aura pas ici.
+export const SERIE_APPROCHE = 2;
+export const SERIE_LANCEE = 3;
+
+export function rangDeLaSerie(serie) {
+  if (!serie?.semaines) return 'vert';
+  if (serie.semaines === serie.record) return 'record';
+  if (serie.semaines < SERIE_LANCEE) return 'vert';
+  if (serie.record - serie.semaines <= SERIE_APPROCHE) return 'jaune';
+  return 'bleu';
+}
+
 export function motDeLElan(elan) {
   if (elan === null) return '';
   if (elan >= 80) return 'solide';
@@ -1752,6 +1813,109 @@ export function historiqueDeLHabitude(habitude, faits = [], jour = new Date(), s
     });
   }
   return histoire;
+}
+
+// LES QUATORZE DERNIERS JOURS D'UNE HABITUDE QUOTIDIENNE (2 septembre 2026,
+// demande de Noé : « pour les séries journalières, le graphique doit être par
+// jour et non par semaine, montre les 14 derniers jours »).
+//
+// POURQUOI CETTE EXCEPTION EST JUSTE. Depuis le 30 août, une habitude se compte
+// en jours quand sa cadence vaut 7 et en semaines sinon — *« les trois natures
+// se séparent à l'écran ; les aligner sans le dire ferait lire 25 et 9 comme
+// deux valeurs comparables »*. Le graphique, lui, était resté hebdomadaire pour
+// tout le monde : une quotidienne y montrait « 7 sur 7 » douze fois de suite,
+// c'est-à-dire douze barres pleines qui ne disaient plus rien. **Le graphique
+// suit maintenant l'unité que l'habitude compte**, comme sa série.
+//
+// > *Ce que ça renverse.* La toute première maquette des habitudes montrait les
+// > sept derniers jours en points gris, et Noé l'avait écartée d'une phrase :
+// > « ça ne me donne pas envie de les faire ». Ce qu'il refusait, c'était un
+// > relevé qui DÉCRIT sans rien mettre en jeu — sur l'écran d'accueil, à côté de
+// > rien. Ici la barre vit à côté d'une série, d'un record et d'une flamme, qui
+// > eux mettent en jeu ; et **elle ne compte toujours aucun manque** : un jour
+// > sans pratique est une barre courte, jamais une alerte.
+//
+// QUATORZE ET NON SEPT : deux semaines montrent le rythme d'une habitude — les
+// jours qu'on saute, ceux qu'on tient — là où sept ne montrent que la semaine
+// en cours, qui est justement celle qu'un chiffre dit déjà.
+export const JOURS_REGARDES = 14;
+
+export function historiqueQuotidienDeLHabitude(
+  habitude,
+  faits = [],
+  jour = new Date(),
+  jours = JOURS_REGARDES,
+) {
+  const siens = new Set(
+    faits.filter((fait) => fait.habitude_id === habitude.id).map((fait) => fait.jour),
+  );
+
+  const histoire = [];
+  for (let i = jours - 1; i >= 0; i -= 1) {
+    const cle = versDateISO(ajouterJours(jour, -i));
+    histoire.push({
+      jour: cle,
+      fait: siens.has(cle),
+      // Un jour fait EST un jour tenu : il n'y a pas de demi-mesure à l'échelle
+      // du jour, là où une semaine peut être entamée sans être tenue.
+      total: siens.has(cle) ? 1 : 0,
+      tenue: siens.has(cle),
+      enCours: i === 0,
+    });
+  }
+  return histoire;
+}
+
+// LE TAUX DE COMPLÉTION (2 septembre 2026, demande de Noé : « il faut rajouter
+// aussi comme stat le pourcentage de fois où elle a été complétée, en prenant
+// comme date référence la 1ère fois où elle a été faite »).
+//
+// CE QUE ÇA RENVERSE, ET IL FAUT LE DIRE. Le CLAUDE.md interdit depuis le
+// 30 août « aucun taux de réussite » sur les habitudes, et la raison tenait :
+// un taux COMPTE UN MANQUE, et la première maquette qui en montrait un avait
+// été écartée d'une phrase — « ça ne me donne pas envie de les faire ». Noé le
+// redemande explicitement, sur une page qu'on ouvre exprès, à côté d'une série,
+// d'un record et d'une flamme qui, eux, ne peuvent que monter. **Ce n'est plus
+// le seul chiffre qu'on voit ; c'en est un parmi cinq.** La règle ne vaut plus
+// pour cette page ; elle vaut toujours pour l'accueil et pour la carte.
+//
+// LA RÉFÉRENCE EST LA PREMIÈRE PRATIQUE, pas la naissance de l'habitude — c'est
+// ce que Noé a demandé, et c'est le seul choix juste : les jours d'avant ne sont
+// pas des jours ratés, ce sont des jours où elle n'existait pas encore.
+//
+// L'ATTENDU SE DÉDUIT DE LA CADENCE, et une seule formule couvre les sept :
+// `jours × cadence / 7`. Une quotidienne attend un jour sur un ; une habitude à
+// trois fois par semaine en attend trois sur sept. Sans ça il aurait fallu deux
+// calculs, et deux calculs finissent par ne plus dire la même chose.
+export function tauxDeLHabitude(habitude, faits = [], jour = new Date()) {
+  if (!habitude.cadence) return null;
+
+  const siens = faits
+    .filter((fait) => fait.habitude_id === habitude.id)
+    .map((fait) => fait.jour)
+    .sort();
+  if (!siens.length) return null;
+
+  // Bornes incluses : le jour de la première pratique compte, celui d'aujourd'hui
+  // aussi. Sans le « + 1 », une habitude faite pour la première fois ce matin
+  // diviserait par zéro.
+  const jours = Math.max(
+    1,
+    Math.round((depuisDateISO(versDateISO(jour)) - depuisDateISO(siens[0])) / 86400000) + 1,
+  );
+  const attendu = (jours * habitude.cadence) / 7;
+
+  return {
+    depuis: siens[0],
+    jours,
+    faites: siens.length,
+    // Arrondi à l'entier : un taux d'habitude n'a pas de décimale à défendre.
+    attendu: Math.round(attendu),
+    // PLAFONNÉ À 100 POUR L'AFFICHAGE, comme l'avancée d'un projet : « 166 % »
+    // n'est pas un pourcentage de fois complétées, c'est un dépassement — et il
+    // se lit dans `faites` et `attendu`, que la bulle donne en toutes lettres.
+    part: Math.min(1, siens.length / Math.max(attendu, 1)),
+  };
 }
 
 // LE BILAN DE TOUTES LES HABITUDES ENSEMBLE. Quatre chiffres, choisis pour ce

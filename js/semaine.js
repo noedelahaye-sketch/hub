@@ -1378,7 +1378,7 @@ export default {
       // Les jours s'allument quand une tâche est choisie : sans ce signe, le
       // second geste du toucher ne se devinerait pas.
       section.querySelector('.semaine-programmation')?.classList
-        .toggle('semaine-en-main', Boolean(etat.choisie));
+        .toggle('en-main', Boolean(etat.choisie));
     }
 
     // LE RÉGLAGE D'UN BLOC — jour, début, durée, espace, et la porte pour le

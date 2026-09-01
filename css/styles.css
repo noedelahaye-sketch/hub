@@ -141,6 +141,14 @@ body[data-espace="taches"] { --accent: #9db3c0; --accent-doux: #262a2e; }
 /* Objectifs regarde tous les espaces, comme les tâches et le calendrier : il
    n'en porte donc aucune couleur. Ce sont les blocs qui disent l'espace. */
 body[data-espace="objectifs"] { --accent: #9db3c0; --accent-doux: #262a2e; }
+/* La page d'un projet remplace cet accent par celui de SON espace dès qu'elle
+   sait lequel (js/projet.js) : un projet appartient à un espace, et c'est celui
+   qu'on doit sentir. Cette ligne ne sert que le temps du chargement. */
+body[data-espace="projet"] { --accent: #9db3c0; --accent-doux: #262a2e; }
+body[data-espace="objectif"] { --accent: #9db3c0; --accent-doux: #262a2e; }
+/* La page d'une habitude prend le violet du perso dès qu'elle sait laquelle —
+   une habitude est du perso, toujours. Cette ligne ne sert qu'au chargement. */
+body[data-espace="habitude"] { --accent: #b3a3d9; --accent-doux: #272335; }
 body[data-espace="formation"] { --accent: #56b8ad; --accent-doux: #1b2e2c; }
 /* Yuno : le doré du logo (#e8b000, relevé sur le fichier). En clair il
    s'assombrit en ocre — un doré clair sur fond blanc ne se lit pas
@@ -4690,34 +4698,48 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   gap: var(--espace-8);
 }
 
-.hab-mot {
-  font-size: 0.6875rem;
+/* LES DEUX SÉRIES, ET LE CODE COULEUR DE LEUR PAGE (2 septembre 2026, demande
+   de Noé). En cours d'abord, record ensuite. Les teintes sont celles de
+   `#habitude/<id>` — une même mesure ne change pas de couleur d'un écran à
+   l'autre —, et la largeur est fixe : sans elle, deux chiffres de longueurs
+   différentes décaleraient les colonnes d'une ligne à l'autre. */
+.hab-serie {
+  justify-content: flex-end;
+  min-width: 1.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
   color: var(--texte-discret);
-  white-space: nowrap;
 }
 
-.hab-mot .chiffre { color: var(--texte); }
+/* EN GOOGLE SANS, PAS EN GEIST MONO (2 septembre 2026, demande de Noé). C'est
+   l'exception déjà faite au décompte des heures du bilan de « Ma semaine », et
+   pour la même raison : **la chasse fixe donne à chaque glyphe la même largeur**,
+   et à 13 px deux chiffres seuls s'y étalent au lieu de se lire. Ces deux-là ne
+   s'alignent avec rien d'autre — c'est la colonne qui les cale, pas la police.
 
-/* Les points de la semaine : un par pratique visée, plein quand elle est faite.
-   Le motif des jalons du hub — on les lit AVANT le chiffre, et c'est voulu :
-   « il en reste un » se voit sans compter. */
-.hab-points {
-  display: flex;
-  gap: 2px;
+   Elle passe par le sélecteur du CHIFFRE, sinon `.chiffre` (0-1-0) la battrait
+   en étant déclarée plus bas. */
+.hab-serie .chiffre {
+  font-family: "Google Sans", var(--police-texte);
+  /* La graisse se REDIT ici : `.chiffre` pose 500 sur l'élément lui-même, ce qui
+     bat le 600 hérité de la ligne. */
+  font-weight: 600;
 }
 
-.hab-points i {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--texte) 16%, transparent);
+.hab-serie[data-serie="vert"] { color: var(--serie-vert); }
+.hab-serie[data-serie="bleu"] { color: var(--serie-bleu); }
+.hab-serie[data-serie="jaune"] { color: var(--serie-jaune); }
+.hab-serie[data-serie="max"] { color: var(--serie-orange); }
+.hab-serie[data-serie="record"] { color: var(--serie-jaune); }
+
+@supports ((background-clip: text) or (-webkit-background-clip: text)) {
+  .hab-serie[data-serie="record"] .chiffre {
+    background-image: linear-gradient(135deg, #ffe9a8 0%, #e8b000 38%, #b07d10 62%, #ffd977 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
 }
-
-.hab-points i.tenu { background: var(--teinte, var(--accent)); }
-
-/* Le palier passe APRÈS la semaine, et s'efface d'un cran : il dit où l'on va,
-   pas ce qu'il reste aujourd'hui. Sur mobile, il cède la place le premier. */
-.hab-palier .hab-mot { opacity: 0.75; }
 
 /* 16 px de rond, 44 × 32 de cible : le rond est la partie qu'on VOIT, le bouton
    celle qu'on TOUCHE. Il est passé de 34 à 26 puis à 16 le 30 août 2026.
@@ -6815,7 +6837,8 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    empilés. Mesuré : 64 px du haut du titre au haut de la grille, ramenés à 52.
    Le titre garde SA marge partout ailleurs : la règle est scopée à cette
    section, où le décompte le suit immédiatement. */
-.semaine-grille > h2 { margin-bottom: var(--espace-4); }
+.semaine-grille > h2,
+.projet-page-grille > h2 { margin-bottom: var(--espace-4); }
 
 .semaine-tete {
   display: flex;
@@ -8385,7 +8408,11 @@ body.balaye {
 }
 
 /* Toute la tuile est le bouton : on ne vise pas un titre, on vise un objet. */
+/* Elle est un LIEN sur la galerie des projets — elle mène à la page du projet —
+   et un bouton sur celle des caps, qui se déplie sur place. Le dessin est le
+   même ; il ne reste qu'à retirer au lien ce qu'un navigateur lui ajoute. */
 .cap-tuile-ouvrir {
+  text-decoration: none;
   display: grid;
   gap: var(--espace-12);
   width: 100%;
@@ -8640,6 +8667,11 @@ body.balaye {
   cursor: pointer;
 }
 
+/* Il sert aussi de LIEN — « Ouvrir sa page », sous un projet déplié dans son
+   cap : le dessin est le même, il ne reste qu'à retirer ce qu'un navigateur
+   ajoute à un lien. */
+a.cap-ajout-discret { text-decoration: none; }
+
 .cap-ajout-discret:hover { color: var(--texte); }
 .cap-ajout-discret svg { opacity: 0.75; }
 
@@ -8722,8 +8754,15 @@ body.balaye {
    plan qu'on découvre en passant ; ICI, c'est la page où l'on GÈRE ses
    habitudes — modifier une cadence ou un émoji est la raison même de venir.
    Un geste principal ne se cache pas derrière un survol. */
+/* LE MENU SE VOIT EN PERMANENCE LÀ OÙ IL EST LA RAISON DE VENIR — la page des
+   habitudes, celle d'un projet. Ailleurs c'est un geste de second plan, et il
+   attend le survol : ici, modifier une cadence ou une charge est ce qu'on vient
+   faire. */
+.cap-menu-visible .cap-menu-bouton,
 .hab-carte .cap-menu-bouton { opacity: 0.55; }
 .hab-carte:hover .cap-menu-bouton,
+.cap-menu-visible:hover .cap-menu-bouton,
+.cap-menu-visible.ouvert .cap-menu-bouton,
 .hab-carte .cap-menu.ouvert .cap-menu-bouton { opacity: 1; }
 
 @media (hover: none) {
@@ -9440,7 +9479,16 @@ body.balaye {
   border-radius: var(--rayon-carte);
 }
 
+/* LE CHIFFRE D'UN TABLEAU DE BORD EST EN CLASH DISPLAY (2 septembre 2026,
+   demande de Noé). C'est la règle déjà posée sur `.chiffre-cle` et sur le bilan
+   de « Ma semaine » : un chiffre qu'on vient VOIR se donne du poids ; un chiffre
+   qu'on vient COMPARER garde sa chasse fixe. Ces cinq-là ne s'alignent en
+   colonne avec rien — ils se lisent d'un regard.
+
+   Elle s'écrit APRÈS `.chiffre`, qui pose Geist Mono à spécificité égale :
+   l'ordre tranche. */
 .hab-stat-chiffre {
+  font-family: var(--police-titre);
   font-size: 1.375rem;
   font-weight: 700;
   line-height: 1;
@@ -9880,17 +9928,21 @@ body.balaye {
   /* 20 rem d'aperçu contre 23 rem ici : la hauteur d'une case est ce qui rend
      un jour visable au glissement, et ce qui laisse une journée chargée
      s'empiler sans se serrer. */
-  .semaine-grille .cal-semaine .cal-ligne { min-height: 23rem; }
+  .semaine-grille .cal-semaine .cal-ligne,
+  .projet-page-grille .cal-semaine .cal-ligne { min-height: 23rem; }
 
   /* La date d'un jour est ce qu'on vise : son corps est celui d'ailleurs, sa
      bande respire un peu plus. */
   .semaine-grille .cal-entetes span,
-  .semaine-grille .cal-entete-jour { padding: var(--espace-4) var(--espace-4); }
+  .semaine-grille .cal-entete-jour,
+  .projet-page-grille .cal-entetes span,
+  .projet-page-grille .cal-entete-jour { padding: var(--espace-4) var(--espace-4); }
 
   /* Le titre d'une barre passe de 10,3 à 11,25 px, et la barre respire : 29 px
      de haut au minimum contre 24. Le seuil des 24 px était une taille de CIBLE
      minimale (WCAG 2.2, 2.5.8) — ici on ne le rattrape pas, on le dépasse. */
-  .semaine-grille .cal-semaine .cal-barre-element {
+  .semaine-grille .cal-semaine .cal-barre-element,
+  .projet-page-grille .cal-semaine .cal-barre-element {
     margin: 0 3px 2px;
     padding: 2px var(--espace-8);
     font-size: 0.75rem;
@@ -9907,7 +9959,8 @@ body.balaye {
      Le sélecteur reprend la forme EXACTE de la règle d'origine, préfixée : à
      spécificité mal comptée, c'est la coupe à deux qui reste, et on ne voit
      rien changer. */
-  .semaine-grille .cal-semaine .cal-barre-element:not(.cal-barre-duree) .cal-barre-titre {
+  .semaine-grille .cal-semaine .cal-barre-element:not(.cal-barre-duree) .cal-barre-titre,
+  .projet-page-grille .cal-semaine .cal-barre-element:not(.cal-barre-duree) .cal-barre-titre {
     -webkit-line-clamp: 3;
   }
 }
@@ -10106,7 +10159,7 @@ body.balaye {
 /* UNE TÂCHE EN MAIN : les jours s'offrent. C'est le seul signe qui dise que le
    second geste attend — sans lui, « touche-la, puis touche le jour » serait une
    phrase et rien d'autre. */
-.semaine-en-main .cal-jour {
+.en-main .cal-jour {
   outline: 1px dashed var(--bordure);
   outline-offset: -2px;
   cursor: copy;
@@ -10114,7 +10167,8 @@ body.balaye {
 
 /* Ramener une barre dans le vivier la déprogramme : le geste inverse de celui
    qu'on vient de faire, et il se devine parce qu'il est symétrique. */
-.semaine-vivier.cal-cible-zone {
+.semaine-vivier.cal-cible-zone,
+.projet-page-colonne.cal-cible-zone {
   outline: 2px dashed var(--accent);
   outline-offset: var(--espace-8);
   border-radius: var(--rayon-carte);
@@ -10230,6 +10284,144 @@ body.balaye {
 .ajout .champ-titre:focus { outline: none; border: 0; }
 .ajout .champ-titre::placeholder { color: var(--texte-discret); }
 
+/* L'ÉMOJI À GAUCHE DU TEXTE (2 septembre 2026, demande de Noé, Notion en
+   référence : « un petit carré cliquable qui mène directement sur les émojis et
+   qui s'affiche dès qu'on l'a sélectionné »).
+
+   C'est le titre qui garde le blanc du dessous : la ligne le porte pour les
+   deux, sans quoi le carré poserait le sien et la vedette flotterait. */
+.champ-vedette {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-12);
+  margin-bottom: var(--espace-24);
+}
+
+.champ-vedette .champ-titre { margin-bottom: 0; }
+
+/* UN CARRÉ, PAS UNE PASTILLE, et c'est ce qui le distingue de la rangée des
+   réglages : une pastille dit « choisis une valeur », ce carré dit « pose une
+   image ici ». Il fait la hauteur de la vedette pour tomber sur sa ligne. */
+.emoji-champ {
+  position: relative;
+  flex: none;
+}
+
+.emoji-carre {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  color: var(--texte-discret);
+  background: color-mix(in srgb, var(--texte) 6%, transparent);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  cursor: pointer;
+}
+
+.emoji-carre:hover { background: color-mix(in srgb, var(--texte) 11%, transparent); }
+
+/* Une fois l'émoji posé, le carré n'a plus rien à dire de lui-même : il
+   s'efface derrière ce qu'il porte. */
+.emoji-carre:not(.emoji-vide) {
+  background: none;
+  border-color: transparent;
+}
+
+.emoji-choisi {
+  font-size: 1.25rem;
+  line-height: 1;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+}
+
+/* Le panneau reprend `.choix-panneau` — même fond, même ombre, même
+   retournement quand il touche un bord —, il n'en change que le contenu. */
+.emoji-panneau {
+  min-width: 0;
+  width: max-content;
+  max-width: min(19rem, calc(100vw - 3rem));
+  /* Les huit rangées tiennent SANS défiler : `.choix-panneau` s'arrête à 15 rem,
+     ce qui coupait la dernière ligne et « Sans émoji » — et un panneau d'images
+     se parcourt du regard, pas au doigt. Il cède devant un petit écran, où le
+     défilement reprend son office. */
+  max-height: min(23rem, calc(100vh - 6rem));
+}
+
+/* LE CHAMP D'ABORD, LA PALETTE ENSUITE. Il prend le focus à l'ouverture : c'est
+   lui qui fait monter le clavier sur iPhone, et c'est dedans qu'écrit le
+   sélecteur d'Apple sur Mac. La palette reste en dessous pour le doigt. */
+.emoji-saisie {
+  width: 100%;
+  margin-bottom: var(--espace-4);
+  padding: var(--espace-8);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  color: var(--texte);
+  background: var(--fond);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+}
+
+.emoji-saisie::placeholder { color: var(--texte-discret); }
+
+.emoji-astuce {
+  margin: 0 0 var(--espace-8);
+  font-size: 0.6875rem;
+}
+
+.emoji-grille {
+  display: grid;
+  grid-template-columns: repeat(8, 2rem);
+  gap: 2px;
+}
+
+.emoji-grille button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  font-size: 1.125rem;
+  line-height: 1;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  background: none;
+  border: 0;
+  border-radius: var(--rayon-pastille);
+  cursor: pointer;
+}
+
+.emoji-grille button:hover { background: color-mix(in srgb, var(--texte) 12%, transparent); }
+.emoji-grille button.actif { background: var(--accent-doux); }
+
+/* « Sans émoji » ferme la liste : c'est la seule option qui n'est pas une
+   image, et la mettre dans la grille en aurait fait une case vide qu'on
+   confondrait avec un trou. */
+.emoji-retirer {
+  display: block;
+  width: 100%;
+  margin-top: var(--espace-8);
+  padding: var(--espace-8);
+  font-family: inherit;
+  font-size: 0.75rem;
+  color: var(--texte-discret);
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--bordure-douce);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.emoji-retirer:hover { color: var(--texte); }
+
+/* Sept colonnes sur un téléphone : huit carrés de 2 rem plus les marges du
+   panneau dépassent 375 px. */
+@media (max-width: 24rem) {
+  .emoji-grille { grid-template-columns: repeat(7, 2rem); }
+}
+
 /* LA PASTILLE DE DATE : le logo du calendrier, puis la date — ou le nom du
    champ tant qu'elle est vide, comme toutes les pastilles du hub.
 
@@ -10282,3 +10474,823 @@ body.balaye {
   max-width: 100%;
   margin-bottom: 0;
 }
+
+/* --- LA PAGE D'UN PROJET (2 septembre 2026) ---------------------------------
+
+   `#projet/<id>`. Elle remplace le dépliage sur place de la galerie : la
+   galerie est à deux gestes et ne dit que ce qui se COMPARE, la page est à
+   trois et dit tout. Sa mise en page emprunte celle de « Ma semaine » — la
+   grille et la colonne côte à côte, ajoutées par une virgule aux règles
+   d'origine plus haut : c'est le même geste, poser une chose sur un jour, et il
+   n'y avait aucune raison de le redessiner.
+
+   Ce qui suit n'est que sa TÊTE : tout le reste — la frise des étapes, les
+   lignes de tâches, la tuile volante — est déjà habillé par les règles de
+   `#objectifs`, et c'est voulu. Un projet doit se lire pareil des deux côtés. */
+
+/* LE RETOUR EN PREMIER, et il n'est pas décoratif : on entre sur cette page
+   depuis la galerie, et la barre d'onglets n'en dit rien — elle est au second
+   rang, sous le menu. Sans ce lien, sortir demanderait deux gestes de menu. */
+.projet-page-retour {
+  margin: 0 0 var(--espace-12);
+  font-size: 0.8125rem;
+}
+
+.projet-page-retour a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-4);
+  padding: var(--espace-8) var(--espace-8) var(--espace-8) 0;
+  color: var(--texte-discret);
+  text-decoration: none;
+}
+
+.projet-page-retour a:hover { color: var(--texte); }
+
+/* La tête porte le menu à trois points, donc elle est son repère. Le
+   rembourrage à droite lui garde sa place : sans lui, un nom long passerait
+   dessous. */
+.projet-page-tete {
+  position: relative;
+  padding-right: 3rem;
+}
+
+.projet-page-tete h1 { margin: var(--espace-4) 0 0; }
+
+/* LE CAP QUE LE PROJET SERT, À CÔTÉ DE SON TITRE (2 septembre 2026, demande de
+   Noé) : plus petit, en encre discrète. Les deux réponses à « où je suis » se
+   lisent d'un seul regard — ce projet-ci, et ce vers quoi il pousse.
+
+   Il est DANS le `h1`, donc il en hérite tout : la police d'affichage, la
+   graisse 700 et la casse serrée. On lui rend celle du texte courant — sans
+   quoi « 1 000 abonnés Instagram » aurait crié aussi fort que le nom du projet,
+   ce qui est l'inverse de ce qui est demandé.
+
+   *Ce que ça remplace : une ligne « CE QU'IL SERT » sous le résultat attendu.
+   Elle disait la même chose un écran plus bas, et la garder aurait été
+   exactement la répétition que Noé venait de faire retirer des colonnes.
+   Conséquence assumée : un projet qui ne sert AUCUN cap ne dit plus rien à cet
+   endroit — son absence est l'information, et c'est légitime, l'intendance
+   existe. Il se rattache par le menu à trois points.* */
+.projet-page-cap {
+  font-family: var(--police-texte);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  /* Il hérite aussi de la CHASSE SERRÉE du titre et de sa hauteur de ligne :
+     l'une délite un texte courant, l'autre écarte ses lignes comme si chacune
+     était un titre. */
+  letter-spacing: 0;
+  line-height: 1.35;
+  color: var(--texte-discret);
+  /* SOUS LE TITRE SUR TÉLÉPHONE, à côté de lui dès qu'il y a la place. Mesuré à
+     375 px : « Équipe com avec Lina  Laisser » puis « une com qui tourne sans
+     moi » au ras de la marge — la phrase se coupait en deux et sa suite se
+     lisait comme un second titre. Rien n'est perdu, la place manquait. */
+  display: block;
+  margin-top: 2px;
+}
+
+@media (min-width: 720px) {
+  .projet-page-cap {
+    display: inline;
+    margin: 0 0 0 var(--espace-12);
+  }
+}
+
+.projet-page-tete .cap-tuile-tete { padding: 0; }
+
+.projet-page-tete .cap-menu { top: 0; right: 0; }
+
+.projet-page-service {
+  margin: var(--espace-4) 0 0;
+  font-size: 0.8125rem;
+}
+
+/* L'AVANCÉE SE LIT DANS LA FORME DE SA JAUGE — des marches s'il a des étapes,
+   une barre s'il n'a qu'une charge, un pointillé s'il n'a rien déclaré. Le
+   dessin vient de la galerie (`jaugeDuProjet`), et le mot dit sur quoi elle est
+   assise : une barre à moitié pleine ne vaut rien si l'on ne sait pas si c'est
+   la moitié des étapes ou la moitié des heures. */
+.projet-page-avancee {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-12);
+  margin-top: var(--espace-16);
+  max-width: 34rem;
+}
+
+.projet-page-avancee .cap-avancee,
+.projet-page-avancee .cap-marches { flex: 1; }
+
+.projet-page-avancee-mot {
+  color: var(--texte-discret);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+/* CE QUI LE MESURE, dit en toutes lettres. Sans cette ligne, une jauge
+   pointillée laisse croire qu'un projet n'avance pas, alors qu'il n'a
+   simplement rien déclaré à mesurer — et rien à l'écran ne dirait comment y
+   remédier. */
+.projet-page-mesure {
+  max-width: 66ch;
+  margin: var(--espace-8) 0 0;
+  font-size: 0.8125rem;
+}
+
+/* TROIS COLONNES : LES ÉTAPES, LE CALENDRIER, LES TÂCHES (2 septembre 2026,
+   demande de Noé). Ce qu'on pose et l'endroit où on le pose doivent se voir
+   ENSEMBLE — c'est un geste, pas une lecture.
+
+   DEUX ÉTATS, ET PAS TROIS. En dessous de 1200 px, tout s'empile dans l'ordre du
+   document ; au-dessus, les trois colonnes se rangent de gauche à droite dans ce
+   même ordre. Un arrangement intermédiaire — les deux colonnes côte à côte
+   au-dessus du calendrier — a été écarté : il aurait fallu déplacer la grille
+   par la mise en page, et le clavier serait alors passé dans un ordre que l'œil
+   ne voit pas. Ici l'ordre du DOM est l'ordre de lecture à toutes les largeurs. */
+.projet-page-programmation,
+.objectif-page-programmation {
+  display: grid;
+  gap: var(--espace-24);
+  align-items: start;
+  margin-top: var(--espace-24);
+}
+
+/* LA PAGE D'UN CAP N'A QUE DEUX COLONNES (2 septembre 2026, décision de Noé :
+   « supprime la colonne de droite »). Un cap n'a qu'une chose à poser sur son
+   calendrier — ses jalons —, et une seconde réserve vide de l'autre côté ne
+   disait rien. Le calendrier prend la place qu'elle rend.
+
+   ET ELLES ARRIVENT PLUS TÔT, à 1000 px et non 1200 : une colonne de moins,
+   c'est 18 rem de moins à trouver. Mesuré à 1000 px : 89 px par jour, ce qui
+   vaut la vue mois du calendrier plein écran. */
+@media (min-width: 1000px) {
+  .objectif-page-programmation {
+    grid-template-columns: minmax(0, 16rem) minmax(0, 1fr);
+  }
+
+  .objectif-page-programmation .projet-page-liste {
+    max-height: 30rem;
+    overflow-y: auto;
+    padding-right: var(--espace-4);
+  }
+}
+
+@media (min-width: 1200px) {
+  /* `minmax(0, …)` et non une largeur nue : une piste de grille garde
+     `min-width: auto` et refuse de descendre sous la largeur minimale de son
+     contenu — ici, sept colonnes de calendrier. Le piège s'est produit quatre
+     fois depuis fin août. */
+  .projet-page-programmation {
+    grid-template-columns: minmax(0, 16rem) minmax(0, 1fr) minmax(0, 18rem);
+  }
+
+  /* LES COLONNES NE DÉPASSENT PAS LE CALENDRIER, sinon on perd de vue les jours
+     où poser pendant qu'on cherche quoi poser. Le défilement est DANS la
+     colonne, pas dans la page — c'est le réglage du vivier de « Ma semaine », et
+     pour la même raison. */
+  .projet-page-programmation .projet-page-liste {
+    max-height: 30rem;
+    overflow-y: auto;
+    /* Le filet de défilement ne doit pas coller aux lignes. */
+    padding-right: var(--espace-4);
+  }
+}
+
+/* LES DEUX COLONNES PORTENT LES LISTES DE `#objectifs` TELLES QUELLES — c'est
+   ce que Noé a demandé, « comme elles sont affichées actuellement ». Mais elles
+   vivent dans une `.bloc`, et `.bloc li` fait de TOUTE ligne une tuile à
+   contour : chaque étape et chaque tâche se retrouvait dans une carte. On rend
+   donc leur forme à ces trois listes, comme le vivier de « Ma semaine » le fait
+   déjà pour les siennes.
+
+   Les sélecteurs pèsent une classe de plus que `.bloc ul` / `.bloc li` : à
+   spécificité égale c'est l'ordre du fichier qui trancherait, et une règle qu'on
+   n'égale pas est une règle qu'on n'écrit pas — le piège s'est payé cinq fois
+   depuis fin août. */
+/* `ul.` et `ol.` en tête, ET CE N'EST PAS DÉCORATIF : au-delà de 60 rem, une
+   règle passe toutes les listes du hub en GRILLE (`.bloc ul:not(.liste-jalons)`,
+   spécificité 0-2-1). Sans ce type devant la classe, la mienne pesait 0-2-0 et
+   perdait — la liste restait une grille, où chaque ligne garde
+   `min-width: auto` et REFUSE de descendre sous la largeur de son contenu.
+   *Mesuré à 1500 px : des lignes de 315 px dans une colonne de 270, le menu à
+   trois points 45 px hors de l'écran.* C'est le piège documenté dans les
+   conventions, et il se paie ici pour la sixième fois. */
+.projet-page-colonne ol.cap-frise,
+.projet-page-colonne ul.cap-taches,
+.projet-page-colonne ul.cap-orphelines {
+  display: block;
+  gap: 0;
+}
+
+.projet-page-colonne .cap-frise > li,
+.projet-page-colonne .cap-taches > li,
+.projet-page-colonne .cap-orphelines > li {
+  flex-wrap: nowrap;
+  background: none;
+  border-width: 0;
+  border-radius: 0;
+}
+
+/* Chacune retrouve ensuite le rembourrage qu'elle a dans `#objectifs` — celui
+   que `.bloc li` venait d'écraser. */
+.projet-page-colonne .cap-frise > li { padding: var(--espace-8) 0; }
+.projet-page-colonne .cap-taches > li { padding: var(--espace-8) 2.5rem var(--espace-8) 0; }
+.projet-page-colonne .cap-orphelines > li { padding: var(--espace-8) 0; }
+
+/* Le filet qui sépare deux tâches, rendu lui aussi : c'est lui qui fait de la
+   liste une liste plutôt qu'un bloc de texte. */
+.projet-page-colonne .cap-taches > li + li,
+.projet-page-colonne .cap-orphelines > li + li {
+  border-top-width: 1px;
+  border-top-style: solid;
+  border-color: color-mix(in srgb, var(--bordure) 60%, transparent);
+}
+
+/* La frise pose son trait vertical à gauche : sans ce retrait, les points des
+   étapes tomberaient sous le bord de la colonne. */
+.projet-page-etapes .cap-frise { margin-left: var(--espace-4); }
+
+/* --- LA PAGE D'UNE HABITUDE (2 septembre 2026) ------------------------------
+
+   Demande de Noé : *« chaque habitude doit avoir une page dédiée également, avec
+   toutes les stats intéressantes et les détails (dont depuis quand je l'ai
+   ajoutée/commencée) + un calendrier qui permet de voir quand l'habitude a été
+   faite ou non (vue mois, 3 mois) »*.
+
+   Elle emprunte tout ce qu'elle peut à la page des habitudes — la jauge d'élan,
+   la sparkline, les chiffres — et n'habille que ce qui n'existait pas. */
+
+/* Le nom d'une habitude, sur sa carte, est devenu un lien vers sa page : on lui
+   retire ce qu'un navigateur ajoute, il garde son allure de titre. */
+a.hab-carte-nom { text-decoration: none; color: inherit; }
+a.hab-carte-nom:hover { color: var(--accent); }
+
+/* DEPUIS QUAND ELLE EXISTE — le détail que Noé a nommé. Une série de neuf
+   semaines ne dit pas la même chose sur une habitude posée il y a deux mois et
+   sur une posée il y a deux ans. */
+/* LES DEUX SÉRIES SE DISTINGUENT PAR LA COULEUR (2 septembre 2026, demande de
+   Noé, puis deux corrections : *« la tuile ne doit pas être de couleur,
+   seulement le numéro, et ça ne doit pas être la même couleur entre les 2 »*,
+   puis *« n'utilise pas le violet »*).
+
+   > *Ce que ça remplace.* Les deux tuiles portaient un fond teinté, un liseré, et
+   > la MÊME couleur — celle de la famille de l'habitude, au motif qu'elle était
+   > déjà celle de sa jauge et de ses jours cochés. Deux tuiles voisines de la
+   > même couleur ne se distinguent pas ; et « calme » EST un violet.
+
+   SEUL LE CHIFFRE PORTE LA COULEUR. La tuile reste une tuile — c'est ce qui la
+   garde comparable aux deux autres, qui n'ont rien à mettre en jeu.
+
+   DEUX COULEURS FIXES, LES MÊMES SUR TOUTES LES HABITUDES, et chacune dit ce
+   qu'elle marque :
+
+     série en cours   LE VERT DU « TENU » (`--famille-corps`) — celui d'une tâche
+                      terminée et des pastilles cochées d'une journée. C'est la
+                      mesure vivante, celle qu'on ne veut pas perdre.
+     série max        L'OR D'UN RECORD. Le hub l'a déjà emprunté à Yuno pour le
+                      champ de gratitude ; ici il ne dit pas « Yuno », il dit
+                      « c'est ton meilleur ».
+
+   L'ÉCHELLE DE LA SÉRIE EN COURS (2 septembre 2026, règle de Noé) : *« la série
+   max doit être en orange, la série en cours en vert au début, puis bleu après
+   3 jours, une flamme lorsque l'habitude a été cochée 5 jours d'affilé, et jaune
+   lorsque l'on est à 2 jours près de la série max »* — puis *« lorsque série max
+   et série en cours sont égales, la même couleur, un orange un peu plus
+   rouge »*.
+
+     vert     moins de trois — ça commence
+     bleu     trois et plus — ça tient
+     jaune    à deux crans du record — ça chauffe
+     OR       série et record à égalité : LES DEUX TUILES prennent ce dégradé,
+              et c'est le seul moment où elles disent la même chose
+     orange   le record, quand il n'est pas atteint
+
+   L'ORDRE DES TESTS EST LA RÈGLE, et il règle tout seul un cas idiot : au tout
+   début, série et record valent 1, donc « à 2 près du record » serait vrai — un
+   jaune « tu approches ton meilleur » sur une habitude d'un jour ne veut rien
+   dire. L'égalité passe devant, puis le vert en dessous de trois.
+
+   AUCUNE DE CES COULEURS N'EST UNE ALERTE, et il n'y en aura pas : elles disent
+   où l'on en est, jamais ce qui manque.
+
+   L'ÉGALITÉ EST UN DÉGRADÉ, PAS UNE COULEUR (correction de Noé : *« non
+   finalement un dégradé qui rend le chiffre couleur or »*). Un aplat de plus
+   n'aurait été qu'un cinquième cran ; l'or MÉTALLIQUE dit autre chose — c'est un
+   sommet, et le seul endroit du hub où un chiffre brille. *Ce que ça remplace :
+   un rouge-orangé, écarté avant d'être vu.* */
+:root {
+  --serie-vert: var(--famille-corps);
+  /* Le bleu du club, seule teinte froide de la palette qui ne soit pas un
+     violet — Noé les a écartés. */
+  --serie-bleu: #7ba5dc;
+  /* L'or du hub, déjà emprunté à Yuno pour le champ de gratitude. */
+  --serie-jaune: #e8b000;
+  --serie-orange: #e8823c;
+}
+
+.hab-stat[data-serie="vert"] .hab-stat-chiffre { color: var(--serie-vert); }
+.hab-stat[data-serie="bleu"] .hab-stat-chiffre { color: var(--serie-bleu); }
+.hab-stat[data-serie="jaune"] .hab-stat-chiffre { color: var(--serie-jaune); }
+.hab-stat[data-serie="max"] .hab-stat-chiffre { color: var(--serie-orange); }
+/* L'or plat est le SECOURS : un `background-clip: text` non pris en charge
+   laisserait un chiffre transparent, c'est-à-dire invisible. On peint d'abord,
+   on découpe ensuite — et seulement là où le navigateur sait le faire. */
+.hab-stat[data-serie="record"] .hab-stat-chiffre { color: var(--serie-jaune); }
+
+@supports ((background-clip: text) or (-webkit-background-clip: text)) {
+  .hab-stat[data-serie="record"] .hab-stat-chiffre {
+    background-image: linear-gradient(
+      135deg,
+      #ffe9a8 0%,
+      #e8b000 38%,
+      #b07d10 62%,
+      #ffd977 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+/* LA FLAMME REPREND UNE ENCRE À ELLE dans le chiffre doré : elle est un SVG en
+   `currentColor`, et le découpage du dégradé rend justement cette encre
+   transparente — sans cette ligne, elle disparaissait au moment précis où elle a
+   le plus de raisons d'être là. */
+.hab-stat[data-serie="record"] .hab-flamme { color: var(--serie-jaune); }
+
+/* LA FLAMME SUIT LE CHIFFRE ET PREND SA COULEUR : elle brûle en vert, en bleu ou
+   en jaune selon où l'on en est. Dessinée et non en émoji — le hub n'écrit qu'en
+   signes tracés, et un émoji arriverait avec sa couleur à lui. */
+.hab-flamme {
+  display: inline-flex;
+  margin-left: 2px;
+  vertical-align: -0.08em;
+}
+
+.hab-page-rythme { margin: var(--espace-16) 0 0; font-size: 0.8125rem; }
+
+.hab-page-spark { margin-top: var(--espace-16); }
+
+
+/* LES PALIERS, TOUS VISIBLES. Ailleurs on ne lit que le prochain ; ici on voit
+   le chemin entier, et ce qui est franchi ne redescend jamais — c'est tout leur
+   intérêt. Un palier à venir n'est pas un manque : il est simplement pâle. */
+/* `.bloc ul.` EN TÊTE, ET IL FAUT LES DEUX : au-delà de 60 rem,
+   `.bloc ul:not(.liste-jalons)` pèse 0-2-1 et passe toutes les listes du hub en
+   GRILLE. Écrite `ul.hab-page-paliers` (0-1-1) ma règle perdait encore — et le
+   défaut ne se voyait QUE sur grand écran, puisque en dessous de 60 rem la règle
+   adverse ne s'applique pas. *Mesuré à 1210 px : les six paliers en trois
+   colonnes pleine largeur ; à 800 px, rien à signaler.* **Huitième fois que ce
+   piège se paie**, et la deuxième dans la même heure. */
+.bloc ul.hab-page-paliers {
+  display: flex;
+  /* `flex-direction: row` SE REDIT : `.bloc ul` met toutes les listes du hub en
+     COLONNE, et ce qu'on ne redit pas reste. *Mesuré : six paliers empilés à
+     774 px de large chacun.* C'est le même piège que le décompte des heures de
+     « Ma semaine », et il se paie ici pour la quatrième fois. */
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--espace-8);
+  margin: var(--espace-16) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bloc ul.hab-page-paliers li {
+  min-width: 2.5rem;
+  border: 0;
+  padding: var(--espace-4) var(--espace-8);
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--texte-discret);
+  background: var(--fond-carte);
+  border-radius: var(--rayon-pastille);
+}
+
+.bloc ul.hab-page-paliers li.franchi {
+  color: var(--fond);
+  background: var(--accent);
+}
+
+.hab-page-calendrier { margin-top: var(--espace-32); }
+
+/* LE CALENDRIER DES FAITS : la grille compacte du trimestre — un mois ou trois,
+   collés dans un seul cadre —, mais la case ne porte plus des points : elle est
+   PLEINE ou vide. C'est la question de cette page, et elle n'en a qu'une.
+
+   AUCUN ROUGE, AUCUN TAUX : une case vide est du vide, pas un reproche. C'est la
+   contrainte de toutes les mesures d'habitude depuis le 30 août, et c'est elle
+   qui interdit d'inventer ici une couleur pour « pas faite ». */
+/* LES INITIALES DES JOURS REVIENNENT ICI, et seulement ici. Le trimestre les a
+   perdues parce qu'on n'y vise pas un mardi ; sur une habitude, au contraire,
+   c'est la question — « est-ce que je la tiens le week-end ? ». Elles occupent
+   le rang que le nom du mois occupe ailleurs, sous lui. */
+.hab-calendrier .cal-tri-entetes {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
+
+/* SON RANG SE DÉCLARE, sinon elle prend celui d'une case. `grid-auto-rows` vaut
+   pour tous les rangs IMPLICITES, en-tête compris : la rangée des initiales
+   faisait donc 48 px comme un jour, et se lisait comme une première ligne du
+   mois. Un premier rang `auto` la laisse tenir sur son texte ; les suivants
+   restent des jours. */
+.hab-calendrier .cal-tri-grille { grid-template-rows: auto; }
+
+/* PLUS FINE (2 septembre 2026, demande de Noé : « la case des initiales des
+   jours doit être plus fine, moins longue »). Elle n'a qu'une lettre à porter :
+   le rembourrage d'une case de calendrier lui donnait la hauteur d'une case de
+   jour, et elle se lisait comme une première ligne du mois. */
+.hab-calendrier .cal-tri-entetes span {
+  padding: 0;
+  line-height: 1.5;
+  text-align: center;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--texte-discret);
+  border-right: 1px solid var(--trait-cal);
+  border-bottom: 1px solid var(--trait-cal);
+}
+
+.hab-calendrier .cal-tri-entetes span:last-child { border-right: none; }
+
+/* LA VUE MOIS EST CELLE DU SITE, ET ELLE PREND TOUTE LA LARGEUR (2 septembre
+   2026, demande de Noé : « la vue mois doit prendre toute la largeur… comme les
+   autres vues mois utilisées sur le site, la même forme »).
+
+   > *Ce que ça remplace.* Le mois empruntait la grille COMPACTE du trimestre,
+   > bornée à 24 rem pour que la case ne change pas de taille d'une vue à
+   > l'autre. Le motif se tenait, mais il faisait de la vue mois une chose que le
+   > hub n'a nulle part ailleurs — et une page qui a de la place n'a aucune
+   > raison de la laisser vide.
+
+   Il n'y a donc RIEN à écrire ici pour elle : `.cal-grille.cal-mois` et
+   `.cal-ligne` font déjà tout le travail, cases de 7 rem comprises. Ne restent
+   que les trois états d'une case, plus bas. */
+
+.hab-jour { cursor: default; }
+.hab-jour[data-basculer-jour] { cursor: pointer; }
+
+.hab-jour-fait {
+  background: color-mix(in srgb, var(--teinte, var(--accent)) 30%, transparent);
+}
+
+.hab-jour-fait .cal-tri-numero { color: var(--texte); }
+
+/* Hors de portée — avant qu'elle existe, ou après aujourd'hui. Elles ne se
+   cochent pas : on ne tient pas une habitude avant de l'avoir posée, et on ne
+   coche pas demain. */
+.hab-jour-hors .cal-tri-numero { opacity: 0.3; }
+
+.hab-jour[data-basculer-jour]:hover {
+  background: color-mix(in srgb, var(--teinte, var(--accent)) 14%, var(--surbrillance));
+}
+
+.hab-jour-fait[data-basculer-jour]:hover {
+  background: color-mix(in srgb, var(--teinte, var(--accent)) 44%, transparent);
+}
+
+/* --- L'ANNÉE : DOUZE MOIS, UNE CASE PAR SEMAINE (2 septembre 2026) ----------
+
+   Demande de Noé : *« crée une vue par année, par 12 mois plutôt (mais appelée
+   année) ; tu ne référence pas tous les jours, seulement les semaines, pour
+   pouvoir intégrer 12 mois dans un espace similaire que les autres vues. »*
+
+   C'EST LE MÊME MOUVEMENT QUE LE TRIMESTRE, D'UN CRAN ENCORE : le mois montre
+   des barres dans un jour, le trimestre des points dans un jour, l'année des
+   points dans une SEMAINE. À chaque fois la maille grossit et la question
+   change — de « qu'y a-t-il ce jour-là » à « où sont les échéances de l'année ».
+
+   UNE SEULE GRILLE POUR LES DOUZE MOIS, et c'est ce qui aligne les semaines : le
+   nom du mois est la première colonne, les cinq suivantes sont ses lundis. Douze
+   grilles indépendantes se seraient décalées les unes des autres. */
+.cal-annee {
+  /* `.cal-grille` met ses enfants en colonne : ici c'est une grille, et la règle
+     se redit. */
+  display: grid;
+  grid-template-columns: auto repeat(5, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+/* Le nom du mois tient la première colonne, en encre discrète : il situe la
+   ligne, il n'est pas ce qu'on lit. Un trait à droite le sépare des semaines,
+   comme les traits qui séparent les semaines entre elles. */
+/* C'EST UN BOUTON : il ouvre son mois en vue Mois. On lui retire ce qu'un
+   navigateur ajoute, il garde l'allure d'un libellé — c'est un nom qu'on lit,
+   pas une commande à peser. */
+.cal-an-nom {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: 0 var(--espace-8);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--texte-discret);
+  border-right: 1px solid var(--trait-cal);
+  border-bottom: 1px solid var(--trait-cal);
+}
+
+/* 2,2 rem par ligne : douze lignes font 26 rem, soit la hauteur d'une vue mois.
+   C'est la contrainte que Noé a posée — « un espace similaire aux autres
+   vues » —, et c'est elle qui interdit de descendre au jour. */
+.cal-an-semaine,
+.cal-an-vide {
+  min-height: 2.2rem;
+  border-right: 1px solid var(--trait-cal);
+  border-bottom: 1px solid var(--trait-cal);
+}
+
+.cal-an-semaine {
+  /* `grid-row: 1 / -1` vient de la case du mois, où le fond s'étire sous les
+     couloirs. Ici il n'y a pas de couloir. */
+  grid-row: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 2px;
+}
+
+/* Une case muette ne se clique pas et ne s'allume pas : c'est du vide qui garde
+   l'alignement, pas une semaine. */
+.cal-an-vide { background: color-mix(in srgb, var(--texte) 3%, transparent); }
+
+/* Les deux portes de l'année se disent au survol, sobrement : le mois et la
+   semaine s'éclairent, et c'est tout ce qu'il faut pour qu'on comprenne qu'on
+   peut y descendre. */
+.cal-an-nom:hover,
+.cal-an-nom:focus-visible { color: var(--texte); background: var(--surbrillance); }
+.cal-an-semaine:hover { background: var(--surbrillance); }
+
+/* La dernière colonne et la dernière ligne touchent le cadre : pas de double
+   trait. `:nth-child(6n)` compte le nom du mois — il est le premier des six. */
+.cal-annee > :nth-child(6n) { border-right: none; }
+.cal-annee > :nth-last-child(-n+6) { border-bottom: none; }
+
+/* Le jour du lundi : c'est la date que le glissement écrira, et donc ce qu'il
+   faut lire. */
+.cal-an-numero {
+  font-family: var(--police-chiffre);
+  font-size: 0.625rem;
+  line-height: 1;
+  color: var(--texte-discret);
+}
+
+.cal-an-semaine.cal-aujourdhui .cal-an-numero {
+  color: var(--fond);
+  background: var(--accent);
+  border-radius: var(--rayon-pastille);
+  padding: 2px 4px;
+  margin: -2px -4px;
+}
+
+.cal-an-semaine[data-passe] .cal-an-numero { opacity: 0.55; }
+
+/* --- LE TRIMESTRE : TROIS MOIS EN TROIS COLONNES (2 septembre 2026) ---------
+
+   Demande de Noé, en trois temps : d'abord une vue « 3 mois » ; puis — devant
+   trois grilles de mois empilées — *« les 3 mois doivent être 3 colonnes, ça ne
+   doit pas avoir la même forme que les mois de la vue mois, c'est trop long »* ;
+   enfin *« les mois doivent être collés côte à côte, le L de lundi, M de
+   mardi… ne doit pas y être, seulement le mois doit être inscrit à cette
+   place »*.
+
+   IL A RAISON, ET C'EST UNE QUESTION DE NATURE. Une grille de mois est faite
+   pour qu'on LISE ce qu'il y a dans un jour : des barres titrées, une case de
+   sept rem. Trois de ces grilles, c'est trois mois de LONGUEUR — et personne ne
+   fait défiler un trimestre pour le lire.
+
+   Le trimestre répond à une autre question — « où sont les échéances, où sont
+   les creux » —, donc la case porte son numéro et des POINTS. C'est le choix du
+   calendrier de « Mes journées », et le même motif : on ne lit pas un jour ici,
+   on le repère. Les initiales des jours partent pour la même raison : on ne vise
+   pas un mardi dans cette vue.
+
+   UN SEUL CADRE POUR LES TROIS. Trois `.cal-grille` voisines gardaient chacune
+   son contour et ses angles arrondis : au milieu du trimestre, deux traits et
+   quatre coins ronds là où il ne devrait rien y avoir. C'est le trimestre qui
+   porte le cadre ; les mois n'ont plus que leurs traits intérieurs. */
+.cal-trimestre {
+  /* `.cal-grille` met ses enfants en colonne : ici ce sont trois mois côte à
+     côte, et la règle se redit. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* TROIS COLONNES dès 60 rem. En dessous, elles s'empilent — sept colonnes dans
+   un tiers de 375 px feraient 18 px par jour, soit moins qu'un chiffre. */
+@media (min-width: 60rem) {
+  .cal-trimestre { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* Le mois s'étire pour que les trois finissent à la même ligne : un cadre au
+   bord inférieur en dents de scie se lirait comme un défaut d'alignement. */
+.cal-tri-mois {
+  display: flex;
+  flex-direction: column;
+}
+
+/* LE NOM DU MOIS, À LA PLACE DES INITIALES : même hauteur, même corps, même
+   trait dessous que la rangée qu'il remplace — c'est cette place qu'il prend, et
+   il ne doit pas peser plus qu'elle. */
+.cal-tri-titre {
+  margin: 0;
+  padding: var(--espace-4);
+  font-family: var(--police-texte);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--texte-discret);
+  border-bottom: 1px solid var(--trait-cal);
+}
+
+.cal-tri-grille {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  /* `1fr` en plus du minimum : un mois de cinq lignes s'étire à la hauteur de
+     celui de six, et les trois colonnes finissent ensemble. 2,75 rem est la
+     hauteur qui décide si un trimestre tient sous les yeux — de quoi poser un
+     numéro et sa rangée de points, pas un pixel de plus. */
+  grid-auto-rows: minmax(2.75rem, 1fr);
+}
+
+/* `grid-row: 1 / -1` vient de la case du mois, où le fond s'étire sous les
+   couloirs. Ici il n'y a pas de couloir : la case est la case. */
+.cal-tri-jour {
+  grid-row: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 2px;
+}
+
+/* LES TRAITS, ET RIEN QUE CEUX QUI SÉPARENT. La règle générale des cases de
+   calendrier retire la bordure droite de la SEPTIÈME case (`nth-child(7)`) —
+   pensée pour une grille où l'en-tête compte parmi les enfants. Ici les enfants
+   sont les jours seuls : il faut redire la nôtre, et compter par sept. */
+.cal-tri-mois .cal-tri-grille .cal-tri-jour {
+  border-right: 1px solid var(--trait-cal);
+  border-bottom: 1px solid var(--trait-cal);
+}
+
+/* Le bord droit d'un mois ne se double pas contre le cadre : empilés, chaque
+   mois touche le cadre à droite. */
+.cal-tri-mois .cal-tri-grille .cal-tri-jour:nth-child(7n) { border-right: none; }
+.cal-tri-mois:last-child .cal-tri-titre { border-right: none; }
+
+/* Côte à côte, en revanche, ce bord DEVIENT la couture entre deux mois — sauf
+   pour le dernier, qui touche le cadre. Le titre porte la même couture, pour
+   que le trait descende d'un seul tenant. */
+@media (min-width: 60rem) {
+  .cal-tri-mois:not(:last-child) .cal-tri-grille .cal-tri-jour:nth-child(7n),
+  .cal-tri-mois:not(:last-child) .cal-tri-titre {
+    border-right: 1px solid var(--trait-cal);
+  }
+}
+
+/* La dernière ligne ne double pas le cadre. Empilés, seul le dernier mois est au
+   ras du bas ; côte à côte, les trois le sont. */
+.cal-tri-mois:last-child .cal-tri-grille .cal-tri-jour:nth-last-child(-n+7) {
+  border-bottom: none;
+}
+
+@media (min-width: 60rem) {
+  .cal-tri-mois .cal-tri-grille .cal-tri-jour:nth-last-child(-n+7) { border-bottom: none; }
+}
+
+.cal-tri-numero {
+  font-family: var(--police-chiffre);
+  font-size: 0.625rem;
+  line-height: 1;
+  color: var(--texte-discret);
+}
+
+.cal-tri-jour.cal-aujourdhui .cal-tri-numero {
+  color: var(--fond);
+  background: var(--accent);
+  border-radius: var(--rayon-pastille);
+  padding: 2px 4px;
+  margin: -2px -4px;
+}
+
+.cal-tri-jour[data-passe] .cal-tri-numero { opacity: 0.55; }
+.cal-tri-jour.cal-hors-mois .cal-tri-numero { opacity: 0.35; }
+
+/* Un point par chose, à la couleur de son espace : sur la page d'un cap ils
+   sont tous de la même, et c'est juste — ce qu'on lit alors est le NOMBRE. */
+.cal-tri-points {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 2px;
+}
+
+.cal-tri-points i {
+  width: 4px;
+  height: 4px;
+  border-radius: var(--rayon-pastille);
+  background: var(--couleur-espace-pleine, var(--accent));
+}
+
+.cal-tri-points b {
+  font-family: var(--police-chiffre);
+  font-size: 0.5rem;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--texte-discret);
+}
+
+/* --- LE RAIL DES PROJETS D'UN CAP, SOUS SON CALENDRIER (2 septembre 2026) ---
+
+   Demande de Noé : *« les projets ne sont pas à "poser", donc mets-les côte à
+   côte sur une même ligne, dans une forme similaire à comment sont affichés les
+   projets dans la page d'accueil ; ça peut en afficher plus qu'un, c'est juste
+   que s'il y a trop de projets on voit la suite en slide sur le côté »* — puis,
+   dans la foulée : *« finalement en dessous du calendrier »*.
+
+   IL A RAISON SUR LE FOND, ET C'EST CE QUI COMMANDE LA PLACE. Les deux colonnes
+   qui encadrent un calendrier sont une RÉSERVE : ce qu'elles portent se glisse
+   sur un jour. Un projet ne se pose pas — il n'a pas d'échéance qu'on déplace du
+   doigt, il a une page. Le mettre là promettait un geste qui n'existe pas.
+
+   C'EST LE RAIL DE L'ACCUEIL, repris tel quel : même tuile, même glissement,
+   même fondu sur les bords. Ne change que la LARGEUR d'une tuile — sur l'accueil
+   le rail vit dans une colonne étroite et en montre une à la fois ; ici il a
+   toute la page, et en montre autant qu'il y a de place. */
+.objectif-page-projets { margin-top: var(--espace-32); }
+
+/* 17 rem : assez pour un nom de projet sur deux lignes, assez court pour qu'à
+   1200 px la quatrième tuile dépasse — et c'est ce dépassement qui dit qu'il y
+   en a d'autres. PAS DE POINTS SOUS LE RAIL, à la différence de l'accueil : là
+   bas une seule tuile se voit, et sans compteur on ne saurait pas où l'on est
+   dedans. */
+.objectif-page-rail .projet-tuile { flex: 0 0 17rem; }
+
+/* La jauge vient de `#objectifs` (`jaugeDuProjet`), pas du rail de l'accueil :
+   une avancée doit se dessiner pareil sur tous les écrans. Elle prend juste
+   l'air que la tuile donne à la sienne. */
+.objectif-page-rail .cap-avancee,
+.objectif-page-rail .cap-marches { margin-top: var(--espace-4); }
+
+/* L'argent de « Rembourser mon matériel » ferme la page : c'est le seul cap qui
+   se mesure autrement qu'en jalons, et il le dit après tout le reste. */
+.objectif-page-argent { margin-top: var(--espace-32); }
+
+/* La piste des trois filtres hugge ses boutons : étirée sur toute la colonne,
+   elle laissait un vide à droite qui la faisait lire comme un champ. */
+.projet-page-taches .affichages {
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: var(--espace-12);
+}
+
+/* LE TITRE EST LA POIGNÉE, et c'est un vrai bouton : le glissement est un geste
+   de souris, et sans lui le clavier n'aurait aucun moyen de prendre une ligne en
+   main. On lui retire tout ce qu'un navigateur ajoute à un bouton — mais PAS sa
+   taille de texte, qui vient de sa propre classe (`.cap-tache-titre`,
+   `.cap-jalon-titre`) : un `font: inherit` la lui aurait volée. */
+.colonne-prise {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  background: none;
+  border: 0;
+  color: inherit;
+  font-family: inherit;
+  cursor: grab;
+}
+
+.colonne-prise:hover { color: var(--texte); }
+
+/* CE QU'ON A EN MAIN se dit par un liseré à gauche et un fond très doux : la
+   ligne reste une ligne, elle ne devient pas une carte. */
+.projet-page-colonne .colonne-choisie {
+  background: var(--accent-doux);
+  box-shadow: inset 2px 0 0 var(--accent);
+  border-radius: var(--rayon-controle);
+}
+
+.projet-page-colonne .cap-tache.colonne-choisie { padding-left: var(--espace-8); }
+
+.projet-page-colonne .en-deplacement { opacity: 0.3; }

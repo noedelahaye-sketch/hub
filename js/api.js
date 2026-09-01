@@ -513,7 +513,7 @@ export async function projetsTous() {
   return verifier(
     await client
       .from('projets')
-      .select('*, cibles:projets_cibles(id, objectif_id, jalon_id), etapes:projets_etapes(id, titre, ordre, atteint, date_atteint)')
+      .select('*, cibles:projets_cibles(id, objectif_id, jalon_id), etapes:projets_etapes(id, titre, ordre, atteint, date_atteint, echeance)')
       .order('espace')
       .order('nom')
       .order('ordre', { referencedTable: 'projets_etapes' }),
@@ -524,7 +524,7 @@ export async function projetsDeLEspace(espace) {
   return verifier(
     await client
       .from('projets')
-      .select('*, cibles:projets_cibles(id, objectif_id, jalon_id), etapes:projets_etapes(id, titre, ordre, atteint, date_atteint)')
+      .select('*, cibles:projets_cibles(id, objectif_id, jalon_id), etapes:projets_etapes(id, titre, ordre, atteint, date_atteint, echeance)')
       .eq('espace', espace)
       .order('nom')
       .order('ordre', { referencedTable: 'projets_etapes' }),
@@ -544,7 +544,7 @@ export async function creerProjet({
     await client
       .from('projets')
       .insert({ espace, nom, resultat, charge_minutes, charge_hebdo, echeance, statut })
-      .select('*, cibles:projets_cibles(id, objectif_id, jalon_id), etapes:projets_etapes(id, titre, ordre, atteint, date_atteint)')
+      .select('*, cibles:projets_cibles(id, objectif_id, jalon_id), etapes:projets_etapes(id, titre, ordre, atteint, date_atteint, echeance)')
       .single(),
   );
 }
@@ -555,7 +555,7 @@ export async function modifierProjet(id, champs) {
       .from('projets')
       .update(champs)
       .eq('id', id)
-      .select('*, cibles:projets_cibles(id, objectif_id, jalon_id), etapes:projets_etapes(id, titre, ordre, atteint, date_atteint)')
+      .select('*, cibles:projets_cibles(id, objectif_id, jalon_id), etapes:projets_etapes(id, titre, ordre, atteint, date_atteint, echeance)')
       .single(),
   );
 }
@@ -866,6 +866,20 @@ export async function habitudesFaitsDepuis(dateISO) {
 // Cocher une habitude. `ignoreDuplicates` sur la contrainte d'unicité : deux
 // appuis rapprochés, ou l'accueil et perso ouverts en même temps, ne comptent
 // pas double — et ce refus ne doit pas ressembler à une erreur.
+// TOUS LES FAITS D'UNE SEULE HABITUDE, sans fenêtre (2 septembre 2026). Sa page
+// montre son cumul depuis toujours et un calendrier qu'on peut remonter : une
+// fenêtre de soixante jours y mentirait sur les deux. Le volume reste petit —
+// 365 lignes par an au plus, et une habitude n'a qu'une poignée d'années.
+export async function faitsDeLHabitude(habitude_id) {
+  return verifier(
+    await client
+      .from('habitudes_faits')
+      .select('habitude_id, jour')
+      .eq('habitude_id', habitude_id)
+      .order('jour'),
+  );
+}
+
 export async function marquerHabitude(habitude_id, jour) {
   return verifier(
     await client
@@ -938,9 +952,16 @@ export async function victoireDePalier(habitude, palier) {
 // étage plus bas, et deux mécaniques différentes pour deux choses identiques
 // finiraient par diverger.
 
-export async function creerEtape({ projet_id, titre, ordre = null }) {
+// `echeance` : le jour où l'on compte s'y mettre (2 septembre 2026, décision de
+// Noé). Facultatif — un découpage qui n'a pas encore de jour est un découpage,
+// pas un retard.
+export async function creerEtape({ projet_id, titre, ordre = null, echeance = null }) {
   return verifier(
-    await client.from('projets_etapes').insert({ projet_id, titre, ordre }).select().single(),
+    await client
+      .from('projets_etapes')
+      .insert({ projet_id, titre, ordre, echeance })
+      .select()
+      .single(),
   );
 }
 

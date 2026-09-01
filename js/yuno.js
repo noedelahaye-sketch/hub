@@ -1762,7 +1762,11 @@ function vueEditorial(etat) {
     <h2 class="titre-page">Calendrier éditorial</h2>
     <!-- Pas de vue « Week-end » ici : l'éditorial programme des publications,
          il n'a rien à faire des rencontres à couvrir. -->
-    ${construireBarrePeriode(etat.vueCal, etat.ancreCal)}
+    ${construireBarrePeriode(etat.vueCal, etat.ancreCal, {
+      // TROIS VUES : le trimestre, né le 2 septembre 2026, est réservé aux pages
+      // d'un cap et d'un projet — rien ici n'a demandé qu'il traverse.
+      vues: ['mois', 'semaine', 'agenda'],
+    })}
 
     <div class="editorial">
       <div class="editorial-grille" data-bloc="calendrier">
@@ -1996,6 +2000,9 @@ function vueCalendrier(etat) {
   return `
     ${enTete('calendrier', etat)}
     ${construireBarrePeriode(etat.vueCal, etat.ancreCal, {
+      // TROIS VUES, plus la sienne : le trimestre est réservé aux pages d'un cap
+      // et d'un projet, et rien ici n'a demandé qu'il traverse.
+      vues: ['mois', 'semaine', 'agenda'],
       // Les rencontres qu'on POURRAIT couvrir : une vue de Yuno seul, le hub
       // n'a pas de vivier.
       vuesEnPlus: { weekend: 'Week-end' },

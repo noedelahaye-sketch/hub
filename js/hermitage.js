@@ -1618,7 +1618,11 @@ function vueCalendrier(etat) {
 
   return `
     ${enTete('calendrier')}
-    ${construireBarrePeriode(etat.vueCal, etat.ancreCal)}
+    ${construireBarrePeriode(etat.vueCal, etat.ancreCal, {
+      // TROIS VUES : le trimestre, né le 2 septembre 2026, est réservé aux pages
+      // d'un cap et d'un projet — rien ici n'a demandé qu'il traverse.
+      vues: ['mois', 'semaine', 'agenda'],
+    })}
     ${construireFiltres(etat.natures, { offertes: NATURES_FCH })}
     <div data-bloc="calendrier">
       ${

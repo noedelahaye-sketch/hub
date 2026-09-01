@@ -235,6 +235,10 @@ const TYPES = {
   // voir `natureDe`) mais il en est un TYPE : sans cette ligne, l'infobulle
   // d'un bloc s'ouvrait sur « undefined ».
   bloc: 'Bloc',
+  // « étape » n'est pas une nature du calendrier non plus : elle n'existe que
+  // sur la page d'un projet, qui l'ajoute elle-même à l'ensemble qu'elle passe.
+  // Une case à cocher au calendrier plein écran promettrait ce qui n'y est pas.
+  etape: 'Étape',
   evenement: 'Événement',
   tache: 'Tâche',
   publication: 'Publication',
@@ -449,7 +453,21 @@ export function ongletCalendrier(adresse, actif) {
 
 // --- Les périodes ------------------------------------------------------------
 
-export const VUES_CALENDRIER = { mois: 'Mois', semaine: 'Semaine', agenda: 'Agenda' };
+// LE TRIMESTRE (2 septembre 2026, demande de Noé) : trois mois d'affilée, pour
+// voir l'horizon d'un cap ou d'un projet — leurs jalons et leurs étapes tombent
+// à des mois de distance, et une vue mois ne montrait jamais que le premier.
+//
+// IL N'EST OFFERT QUE LÀ OÙ ON LE DEMANDE : la barre le sait déplacer et le sait
+// nommer, mais l'espace Calendrier garde ses trois vues — un quatrième bouton y
+// serait un rang de plus sur l'écran le plus visité du hub. C'est l'option
+// `vues` de `construireBarrePeriode` qui décide, page par page.
+export const VUES_CALENDRIER = {
+  semaine: 'Semaine',
+  mois: 'Mois',
+  trimestre: '3 mois',
+  annee: 'Année',
+  agenda: 'Agenda',
+};
 
 const JOURS_COURTS = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
 
@@ -485,14 +503,135 @@ export function grilleDeLaSemaine(ancre) {
   return suiteDeJours(debutDeLaSemaine(ancre), 7);
 }
 
+// Les trois mois d'un trimestre, l'ancre en tête : on regarde DEVANT soi, pas
+// autour de soi. Un cap dont le prochain jalon tombe dans six semaines veut voir
+// les six suivantes, pas les six passées.
+export function moisDuTrimestre(ancre) {
+  return [0, 1, 2].map((pas) => new Date(ancre.getFullYear(), ancre.getMonth() + pas, 1));
+}
+
+// DOUZE MOIS, ET LA MÊME RÈGLE : l'ancre en tête. « Année » est le mot de Noé —
+// ce n'est pas l'année civile, ce sont les douze mois qui viennent, et c'est ce
+// qu'on veut d'un cap dont l'échéance tombe en juin prochain.
+export function moisDeLAnnee(ancre) {
+  return Array.from(
+    { length: 12 },
+    (_, pas) => new Date(ancre.getFullYear(), ancre.getMonth() + pas, 1),
+  );
+}
+
+// LES SEMAINES D'UN MOIS — la maille de la vue « Année » (2 septembre 2026,
+// demande de Noé : « tu ne référence pas tous les jours, seulement les semaines,
+// pour pouvoir intégrer 12 mois dans un espace similaire aux autres vues »).
+// Rendues par leur LUNDI, qui est la date que le glissement écrira.
+//
+// UNE SEMAINE APPARTIENT AU MOIS DE SON JEUDI, et à lui seul — la règle
+// d'ISO 8601, c'est-à-dire le mois dont elle a le plus de jours. Deux propriétés
+// à la fois, et il faut les deux :
+//
+//   — AUCUNE SEMAINE N'EST DESSINÉE DEUX FOIS. C'est le défaut payé sur le
+//     trimestre, où le 31 octobre tombait dans deux grilles.
+//   — ET AUCUNE N'EST OUBLIÉE. C'est ce qui a fait changer de règle : rangée par
+//     son LUNDI, la semaine du 31 août n'était d'aucun des douze mois d'une
+//     année ouverte en septembre — **et les deux échéances du 2 et du 3
+//     septembre ne se voyaient nulle part**. Mesuré : zéro semaine oubliée sur
+//     les douze mois avec le jeudi, contre une avec le lundi.
+//
+// Le prix, assumé : la première case de septembre peut porter « 31 » — le lundi
+// de sa semaine est en août. La bulle donne l'intervalle en toutes lettres.
+//
+// Quatre ou cinq semaines par mois, jamais plus (vérifié sur huit ans) : c'est
+// ce qui donne à la grille ses cinq colonnes.
+// LE NUMÉRO ISO D'UNE SEMAINE (2 septembre 2026, demande de Noé : « les numéros
+// doivent dire le numéro de la semaine plutôt que le numéro du lundi »).
+//
+// Il tombe juste avec la règle d'appartenance qu'on vient de poser : la norme
+// ISO 8601 range une semaine dans l'ANNÉE de son jeudi, exactement comme
+// `semainesDuMois` la range dans le MOIS de son jeudi. Les deux disent la même
+// chose à deux échelles, et une case ne peut donc pas porter un numéro qui
+// contredirait sa ligne.
+// EN UTC, ET ON COMPTE DEPUIS LE 1er JANVIER — pas depuis « le jeudi de la
+// semaine du 1er janvier », qui peut appartenir à l'année d'AVANT. *Mesuré : le
+// 4 janvier 2027 sortait en semaine 2 au lieu de 1, et le 4 janvier 2021 aussi —
+// les deux années où le 1er janvier tombe un vendredi.* L'UTC écarte l'autre
+// piège du genre : une différence de dates en heures locales n'est pas un
+// multiple de 24 h les nuits de changement d'heure.
+export function numeroDeSemaine(jour) {
+  const jeudi = new Date(Date.UTC(jour.getFullYear(), jour.getMonth(), jour.getDate()));
+  jeudi.setUTCDate(jeudi.getUTCDate() + 4 - (jeudi.getUTCDay() || 7));
+  const premierJanvier = new Date(Date.UTC(jeudi.getUTCFullYear(), 0, 1));
+  return Math.ceil(((jeudi - premierJanvier) / 86400000 + 1) / 7);
+}
+
+export function semainesDuMois(mois) {
+  const semaines = [];
+  const lundi = debutDeLaSemaine(new Date(mois.getFullYear(), mois.getMonth(), 1));
+
+  for (let pas = 0; pas < 7; pas += 1) {
+    const jeudi = new Date(lundi);
+    jeudi.setDate(jeudi.getDate() + 3);
+    if (jeudi.getMonth() === mois.getMonth() && jeudi.getFullYear() === mois.getFullYear()) {
+      semaines.push(new Date(lundi));
+    }
+    lundi.setDate(lundi.getDate() + 7);
+  }
+  return semaines;
+}
+
 export function deplacerAncre(ancre, vue, sens) {
-  const suite = new Date(ancre);
-  if (vue === 'semaine') suite.setDate(suite.getDate() + 7 * sens);
-  else suite.setMonth(suite.getMonth() + sens);
-  return suite;
+  if (vue === 'semaine') {
+    const suite = new Date(ancre);
+    suite.setDate(suite.getDate() + 7 * sens);
+    return suite;
+  }
+
+  // LE TRIMESTRE GLISSE D'UN MOIS, il ne se tourne pas comme une page (2
+  // septembre 2026, Noé, avec son exemple : « la période actuelle est
+  // septembre-novembre ; si j'appuie sur la flèche qui va vers la droite, la
+  // période doit être octobre-décembre »).
+  //
+  // *J'avais compris l'inverse et posé un pas de trois mois — la fenêtre sautait
+  // de septembre-novembre à décembre-février.* Une FENÊTRE de trois mois n'est
+  // pas une page de trois mois : on la fait glisser pour suivre une échéance qui
+  // arrive au bord, et un saut de trimestre la ferait justement disparaître d'un
+  // coup. Le pas est donc le même que celui du mois, et c'est ce que la fenêtre
+  // MONTRE qui change, pas ce dont elle avance.
+  //
+  // ON REPART DU 1er DU MOIS, ET CE N'EST PAS DE LA COQUETTERIE (trouvé le même
+  // jour, en vérifiant ce pas). `setMonth` DÉBORDE quand le mois d'arrivée est
+  // plus court que le jour de départ : depuis le 31 janvier, « mois suivant »
+  // donnait le 31 février, c'est-à-dire le 3 mars — **février était sauté**, et
+  // le calendrier plein écran en souffrait depuis toujours, un mois sur sept.
+  //
+  // Le jour de l'ancre ne sert à rien dans ces deux vues — `grilleDuMois` et
+  // `moisDuTrimestre` ne lisent que l'année et le mois. On le pose donc au 1er,
+  // où aucun mois ne déborde.
+  return new Date(ancre.getFullYear(), ancre.getMonth() + sens, 1);
 }
 
 export function titreDePeriode(ancre, vue) {
+  if (vue === 'annee') {
+    const mois = moisDeLAnnee(ancre);
+    const [premier] = mois;
+    const dernier = mois[11];
+    return `${premier.toLocaleDateString('fr-FR', {
+      month: 'long',
+      year: 'numeric',
+    })} – ${dernier.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`;
+  }
+
+  if (vue === 'trimestre') {
+    const [premier, , dernier] = moisDuTrimestre(ancre);
+    const memeAnnee = premier.getFullYear() === dernier.getFullYear();
+    // « septembre – novembre 2026 », et « novembre 2026 – janvier 2027 » quand
+    // le trimestre change d'année : répéter l'année des deux côtés quand elle
+    // est la même n'apprend rien.
+    return `${premier.toLocaleDateString('fr-FR', {
+      month: 'long',
+      ...(memeAnnee ? {} : { year: 'numeric' }),
+    })} – ${dernier.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}`;
+  }
+
   if (vue !== 'semaine') {
     return ancre.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
   }
@@ -543,11 +682,19 @@ export function construireFiltres(natures, { offertes = null } = {}) {
 // sert pour son week-end (les rencontres qu'il pourrait couvrir), qui n'a rien
 // à faire dans le calendrier du hub. Elles portent leur propre navigation : la
 // barre n'affiche la sienne que pour les vues qu'elle sait déplacer.
-export function construireBarrePeriode(vue, ancre, { vuesEnPlus = null } = {}) {
+// `vues` : restreindre les vues offertes à celles que l'appelant sait rendre
+// (2 septembre 2026). La page d'un projet n'a que le mois et la semaine — c'est
+// ce que Noé a demandé, et un agenda y répéterait la liste de ses tâches, qui
+// vit juste en dessous. Absent = les trois, comme avant.
+export function construireBarrePeriode(vue, ancre, { vuesEnPlus = null, vues = null } = {}) {
+  const offertes = vues
+    ? Object.fromEntries(vues.filter((cle) => cle in VUES_CALENDRIER).map((cle) => [cle, VUES_CALENDRIER[cle]]))
+    : VUES_CALENDRIER;
+
   return `
     <div class="cal-barre">
       <div class="affichages" role="group" aria-label="Affichage du calendrier">
-        ${Object.entries({ ...VUES_CALENDRIER, ...(vuesEnPlus ?? {}) })
+        ${Object.entries({ ...offertes, ...(vuesEnPlus ?? {}) })
           .map(
             ([valeur, libelle]) => `
           <button type="button" data-vue-cal="${valeur}"
@@ -646,6 +793,10 @@ const SIGNES = {
   publication: '◆',
   objectif: '▲',
   jalon: '△',
+  // Une étape est au projet ce qu'un jalon est au cap : le même dessin d'un
+  // cran plus bas. Le carré creux, parce que les deux triangles sont pris et
+  // qu'un projet n'est pas un cap.
+  etape: '◻',
   commande: '▸',
   relance: '↗',
 };
@@ -1062,7 +1213,7 @@ export function construireGrille(
   } = {},
 ) {
   const retenus = elements.filter((element) => retenu(element, natures));
-  const jours = vue === 'semaine' ? grilleDeLaSemaine(ancre) : grilleDuMois(ancre);
+  const jours = grilleDeLaSemaine(ancre);
 
   const options = {
     montrerEspace,
@@ -1074,7 +1225,9 @@ export function construireGrille(
     // reste. La semaine n'a qu'une ligne et toute la hauteur : on montre tout.
     maximum: vue === 'semaine' ? 0 : 3,
     maxParJour,
-    mois: vue === 'semaine' ? null : ancre.getMonth(),
+    // `mois` est posé par `grilleDUnMois`, qui seul sait de quel mois il dessine
+    // la grille — le trimestre en empile trois, chacun avec le sien.
+    mois: null,
     aujourdhui: versDateISO(new Date()),
     selection,
   };
@@ -1100,9 +1253,31 @@ export function construireGrille(
       ${aide ? AIDE : ''}`;
   }
 
+  if (vue === 'annee') {
+    return grilleDeLAnnee(retenus, ancre, options) + (aide ? AIDE : '');
+  }
+
+  if (vue === 'trimestre') {
+    return grilleDuTrimestre(retenus, ancre, options) + (aide ? AIDE : '');
+  }
+
+  return grilleDUnMois(ancre, retenus, options) + (aide ? AIDE : '');
+}
+
+// La grille d'UN mois. Tirée de `construireGrille` le 2 septembre 2026, quand le
+// trimestre est né — il n'en fait plus rien depuis qu'il a sa forme à lui, mais
+// la fonction reste où elle est : `construireGrille` y gagne une branche de
+// moins.
+function grilleDUnMois(ancre, retenus, options) {
+  const jours = grilleDuMois(ancre);
   const lignes = [];
   for (let debut = 0; debut < jours.length; debut += 7) {
-    lignes.push(ligneDeSemaine(jours.slice(debut, debut + 7), retenus, options));
+    lignes.push(
+      ligneDeSemaine(jours.slice(debut, debut + 7), retenus, {
+        ...options,
+        mois: ancre.getMonth(),
+      }),
+    );
   }
 
   return `
@@ -1112,8 +1287,247 @@ export function construireGrille(
         ${JOURS_COURTS.map((nom) => `<span>${nom}</span>`).join('')}
       </div>
       ${lignes.join('')}
-    </div>
-    ${aide ? AIDE : ''}`;
+    </div>`;
+}
+
+// --- L'ANNÉE : DOUZE MOIS, UNE CASE PAR SEMAINE (2 septembre 2026) -----------
+//
+// Demande de Noé : *« crée une vue par année, par 12 mois plutôt (mais appelée
+// année) ; tu ne référence pas tous les jours, seulement les semaines, pour
+// pouvoir intégrer 12 mois dans un espace similaire que les autres vues. Quand
+// on déplace un jalon dedans, ça se place au lundi de la semaine choisie. »*
+//
+// C'EST LE MÊME MOUVEMENT QUE LE TRIMESTRE, D'UN CRAN ENCORE : le mois montre
+// des barres dans un jour, le trimestre des points dans un jour, l'année des
+// points dans une SEMAINE. À chaque fois la maille grossit et la question
+// change — de « qu'y a-t-il ce jour-là » à « où sont les échéances de l'année ».
+// Trois cent soixante-cinq cases n'auraient jamais tenu ; cinquante-deux, oui.
+//
+// UNE SEMAINE APPARTIENT AU MOIS DE SON JEUDI (`semainesDuMois`), et à lui
+// seul : aucune n'est dessinée deux fois, aucune n'est oubliée. Quatre ou cinq
+// par mois, jamais plus — vérifié sur huit ans —, d'où les CINQ colonnes.
+//
+// LA CASE PORTE LE NUMÉRO DE SA SEMAINE (demande de Noé) et non le jour de son
+// lundi : dans une grille dont la maille EST la semaine, un numéro de jour se
+// lisait comme une date et laissait croire à une case-jour. Le lundi, lui, reste
+// dans `data-jour` — c'est la date que le glissement écrit, donc
+// `jourSousLePoint`, `brancherSelection` et le dépôt d'un jalon marchent sans une
+// ligne de plus, et posent le lundi que Noé a demandé.
+//
+// ET L'ANNÉE EST UNE VUE OÙ L'ON ZOOME (2 septembre 2026, demande de Noé) : une
+// semaine pressée ouvre la vue SEMAINE, le nom d'un mois ouvre la vue MOIS.
+// C'est la seule vue du hub où un appui n'ouvre pas la tuile de capture, et
+// c'est cohérent : on ne pose pas une chose « dans une semaine », on descend d'un
+// cran pour voir où. La règle vit dans les deux pages qui offrent la vue —
+// `surUnJour` et `[data-zoom-mois]`.
+function grilleDeLAnnee(retenus, ancre, { aujourdhui, selection }) {
+  const lundiDe = (iso) => versDateISO(debutDeLaSemaine(depuisDateISO(iso)));
+
+  const lignes = moisDeLAnnee(ancre)
+    .map((mois) => {
+      const lundis = semainesDuMois(mois);
+
+      const cases = lundis
+        .map((lundi) => {
+          const cle = versDateISO(lundi);
+          const dimanche = new Date(lundi);
+          dimanche.setDate(dimanche.getDate() + 6);
+          const finISO = versDateISO(dimanche);
+
+          const siens = retenus.filter((element) => {
+            const debut = versDateISO(element.date);
+            const fin = element.jusqua && element.jusqua > debut ? element.jusqua : debut;
+            return fin >= cle && debut <= finISO;
+          });
+
+          const classes = [
+            'cal-jour',
+            'cal-an-semaine',
+            lundiDe(aujourdhui) === cle ? 'cal-aujourdhui' : '',
+            selection && cle >= selection.debut && cle <= selection.fin ? 'cal-choisi' : '',
+          ]
+            .filter(Boolean)
+            .join(' ');
+
+          const points = siens
+            .slice(0, siens.length > POINTS_MAX ? POINTS_MAX - 1 : POINTS_MAX)
+            .map((element) => `<i data-espace="${echapper(element.espace)}"></i>`)
+            .join('');
+          const reste = siens.length > POINTS_MAX ? siens.length - (POINTS_MAX - 1) : 0;
+
+          const numero = numeroDeSemaine(lundi);
+          const quand = `semaine ${numero}, du ${lundi.toLocaleDateString('fr-FR', {
+            day: 'numeric',
+            month: 'long',
+          })} au ${dimanche.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}`;
+          const dit = siens.length
+            ? `${quand} — ${siens.map((element) => element.titre).join(', ')}`
+            : quand;
+
+          return `<div class="${classes}" data-jour="${cle}" role="button" tabindex="-1"
+            ${finISO < aujourdhui ? 'data-passe' : ''}
+            title="${echapper(dit)}"
+            aria-label="${echapper(`${dit} — l'ouvrir en vue semaine`)}">
+            <span class="cal-an-numero" aria-hidden="true">${numero}</span>
+            ${
+              siens.length
+                ? `<span class="cal-tri-points" aria-hidden="true">${points}${
+                    reste ? `<b>+${reste}</b>` : ''
+                  }</span>`
+                : ''
+            }
+          </div>`;
+        })
+        .join('');
+
+      // Les mois à quatre lundis laissent leur dernière colonne vide : sans
+      // cette case muette, la grille se décalerait d'une ligne à l'autre et les
+      // semaines ne tomberaient plus les unes sous les autres.
+      const vides = new Array(5 - lundis.length)
+        .fill('<span class="cal-an-vide" aria-hidden="true"></span>')
+        .join('');
+
+      // LE NOM DU MOIS EST UNE PORTE (2 septembre 2026, demande de Noé : « quand
+      // je clique sur le nom du mois ça doit m'amener vers sa vue mois »). Un
+      // vrai bouton, pas un `<p>` cliquable : il se tabule, et le hub ne
+      // fabrique pas de faux boutons.
+      const nomLong = mois.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+      return `
+        <button type="button" class="cal-an-nom"
+          data-zoom-mois="${versDateISO(mois)}"
+          aria-label="${echapper(`Voir ${nomLong} en vue mois`)}">${echapper(
+            mois.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' }),
+          )}</button>
+        ${cases}${vides}`;
+    })
+    .join('');
+
+  return `<div class="cal-grille cal-annee" role="group"
+    aria-label="${echapper(`Calendrier, ${titreDePeriode(ancre, 'annee')}`)}">${lignes}</div>`;
+}
+
+// --- LE TRIMESTRE : TROIS MOIS EN TROIS COLONNES (2 septembre 2026) -----------
+//
+// Demande de Noé, en deux temps : d'abord *« rajoute une vue 3 mois au
+// calendrier »*, puis, devant trois grilles de mois empilées : *« les 3 mois
+// doivent être 3 colonnes, ça ne doit pas avoir la même forme que les mois de la
+// vue mois, c'est trop long »*.
+//
+// IL A RAISON, ET C'EST UNE QUESTION DE NATURE, pas de mise en page. Une grille
+// de mois est faite pour qu'on LISE ce qu'il y a dans un jour : des barres
+// titrées, une case de sept rem de haut. Trois de ces grilles, c'est trois mois
+// de longueur — et personne ne fait défiler un trimestre pour le lire.
+//
+// LE TRIMESTRE RÉPOND À UNE AUTRE QUESTION : « où sont les échéances, et où sont
+// les creux ». Ce n'est pas ce qu'il y a dans un jour, c'est LA FORME du
+// trimestre. La case n'a donc plus besoin de titres — elle porte son numéro et
+// des POINTS, un par chose. C'est exactement le choix du calendrier de « Mes
+// journées » (1er septembre 2026), et pour la même raison : *« on ne pose rien,
+// on CHOISIT un jour ; la case porte donc des signes et non des lignes »*.
+//
+// CE QU'ON PERD, ET QUI EST ASSUMÉ : on ne lit pas un titre dans cette vue. Il
+// est dans le `title` de la case et dans son nom accessible ; et la vue Mois est
+// à un clic, juste à gauche.
+//
+// CE QU'ON GARDE : la case reste un `.cal-jour` avec sa date. Tout ce qui vise
+// un jour — poser ce qu'on tient, y lâcher un jalon, l'atteindre au clavier —
+// marche ici sans une ligne de plus. C'est même là que ça sert le plus : un
+// jalon se glisse à deux mois sans changer de vue.
+// PAS D'INITIALES DE JOURS ICI, ET C'EST LE MOIS QUI PREND LEUR PLACE (2
+// septembre 2026, demande de Noé : « le L de lundi, M de mardi… ne doit pas y
+// être, seulement le mois doit être inscrit à cette place »).
+//
+// Elles ne servaient à rien : on ne vise pas un mardi dans cette vue, on repère
+// une grappe et un creux. Le NOM DU MOIS, lui, est ce qu'il faut savoir pour
+// lire la colonne — et il n'avait pas de rang à lui, il en volait un au-dessus
+// de la grille. Il occupe donc celui des initiales, et le trimestre y gagne une
+// ligne par mois.
+
+// Quatre points, puis un compte. Au-delà, une rangée de points ne se compte plus
+// du regard — c'est justement ce qu'un chiffre fait mieux.
+const POINTS_MAX = 4;
+
+function grilleDuTrimestre(retenus, ancre, { aujourdhui, selection }) {
+  const colonnes = moisDuTrimestre(ancre)
+    .map((debutMois) => {
+      const jours = grilleDuMois(debutMois);
+
+      const cases = jours
+        .map((jour) => {
+          const cle = versDateISO(jour);
+          // RIEN SUR UN JOUR QUI N'EST PAS DE CE MOIS-LÀ. La grille garde la
+          // traîne des mois voisins pour rester rectangulaire, mais elle ne la
+          // remplit pas : un jalon du 31 octobre tombait sinon dans la grille
+          // d'octobre ET dans la première ligne de celle de novembre. **Le même
+          // point à deux endroits se lit comme un défaut, même quand il n'en est
+          // pas un** — et ici il n'y a pas de titre pour dire que c'est le même.
+          const sien = jour.getMonth() === debutMois.getMonth();
+          const siens = sien
+            ? retenus.filter((element) => {
+                const debut = versDateISO(element.date);
+                const fin = element.jusqua && element.jusqua > debut ? element.jusqua : debut;
+                return cle >= debut && cle <= fin;
+              })
+            : [];
+
+          const classes = [
+            'cal-jour',
+            'cal-tri-jour',
+            sien ? '' : 'cal-hors-mois',
+            cle === aujourdhui ? 'cal-aujourdhui' : '',
+            selection && cle >= selection.debut && cle <= selection.fin ? 'cal-choisi' : '',
+          ]
+            .filter(Boolean)
+            .join(' ');
+
+          const points = siens
+            .slice(0, siens.length > POINTS_MAX ? POINTS_MAX - 1 : POINTS_MAX)
+            .map((element) => `<i data-espace="${echapper(element.espace)}"></i>`)
+            .join('');
+          const reste = siens.length > POINTS_MAX ? siens.length - (POINTS_MAX - 1) : 0;
+
+          const quand = jour.toLocaleDateString('fr-FR', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+          });
+          const dit = siens.length
+            ? `${quand} — ${siens.map((element) => element.titre).join(', ')}`
+            : quand;
+
+          return `<div class="${classes}" data-jour="${cle}" role="button" tabindex="-1"
+            ${cle < aujourdhui ? 'data-passe' : ''}
+            title="${echapper(dit)}" aria-label="${echapper(dit)}">
+            <span class="cal-tri-numero" aria-hidden="true">${jour.getDate()}</span>
+            ${
+              siens.length
+                ? `<span class="cal-tri-points" aria-hidden="true">${points}${
+                    reste ? `<b>+${reste}</b>` : ''
+                  }</span>`
+                : ''
+            }
+          </div>`;
+        })
+        .join('');
+
+      return `
+        <section class="cal-tri-mois" aria-label="${echapper(
+          titreDePeriode(debutMois, 'mois'),
+        )}">
+          <p class="cal-tri-titre">${echapper(titreDePeriode(debutMois, 'mois'))}</p>
+          <div class="cal-tri-grille">${cases}</div>
+        </section>`;
+    })
+    .join('');
+
+  // UN SEUL CADRE POUR LES TROIS MOIS (2 septembre 2026, demande de Noé : « les
+  // mois doivent être collés côte à côte »). Trois `.cal-grille` voisines
+  // gardaient chacune son contour et ses angles arrondis : au milieu du
+  // trimestre, deux traits et quatre coins ronds là où il ne devrait rien y
+  // avoir. C'est le TRIMESTRE qui porte le cadre ; les mois n'ont plus que leurs
+  // traits intérieurs, et ils se rejoignent.
+  return `<div class="cal-grille cal-trimestre" role="group"
+    aria-label="${echapper(`Calendrier, ${titreDePeriode(ancre, 'trimestre')}`)}">${colonnes}</div>`;
 }
 
 // Quand un événement finit, selon ce que le formulaire a reçu. Trois cas :
@@ -1530,6 +1944,7 @@ export async function appliquerAuCalendrier(type, id, champs) {
   if (type === 'commande') return api.modifierCommande(id, champs);
   if (type === 'relance') return api.modifierContact(id, champs);
   if (type === 'jalon') return api.modifierJalon(id, champs);
+  if (type === 'etape') return api.modifierEtape(id, champs);
   return api.modifierTache(id, champs);
 }
 
@@ -1611,9 +2026,10 @@ export async function corrigerDepuisLeCalendrier(champs) {
     });
   }
 
-  // Tâche et jalon : un titre et une échéance — plus l'heure, quand le
-  // formulaire l'a offerte. `!== undefined` et non `|| null` : un jalon n'a pas
-  // ce champ, et lui écrire une colonne qu'il n'a pas ferait échouer la ligne.
+  // Tâche, jalon et étape : un titre et une échéance — plus l'heure, quand le
+  // formulaire l'a offerte. `!== undefined` et non `|| null` : ni un jalon ni
+  // une étape n'ont ce champ, et leur écrire une colonne qu'ils n'ont pas ferait
+  // échouer la ligne.
   return appliquerAuCalendrier(type, id, {
     titre,
     echeance: champs.debut,
@@ -1629,6 +2045,7 @@ export async function effacerDepuisLeCalendrier(type, id) {
   if (type === 'publication') return api.supprimerPublication(id);
   if (type === 'objectif') return api.supprimerObjectif(id);
   if (type === 'jalon') return api.supprimerJalon(id);
+  if (type === 'etape') return api.supprimerEtape(id);
   if (type === 'commande') return api.supprimerCommande(id);
   if (type === 'relance') return api.modifierContact(id, { prochaine_action_date: null });
   throw new Error(`Nature inconnue : ${type}`);
@@ -2779,6 +3196,7 @@ const VERBE_SUPPRESSION = {
   publication: 'Supprimer la publication',
   objectif: "Supprimer l'objectif et ses jalons",
   jalon: 'Supprimer le jalon',
+  etape: "Supprimer l'étape",
   commande: 'Supprimer la commande',
   relance: 'Retirer du calendrier',
 };
@@ -2944,10 +3362,11 @@ function champsDeModification(element) {
     ];
   }
 
-  // Tâche et jalon : un titre et une échéance. L'HEURE EN PLUS POUR UNE TÂCHE
-  // (30 août 2026, demande de Noé) — elle réserve un créneau, et jusqu'ici elle
-  // se posait à la capture sans jamais pouvoir se corriger. Un jalon n'a pas
-  // cette colonne : il marque une étape, il n'occupe pas d'heure.
+  // Tâche, jalon et ÉTAPE : un titre et une échéance. L'HEURE EN PLUS POUR UNE
+  // TÂCHE (30 août 2026, demande de Noé) — elle réserve un créneau, et jusqu'ici
+  // elle se posait à la capture sans jamais pouvoir se corriger. Ni un jalon ni
+  // une étape n'ont cette colonne : ils marquent un passage, ils n'occupent pas
+  // d'heure.
   return [
     { nom: 'titre', libelle: 'Quoi', type: 'text', requis: true, valeur: ligne.titre },
     { nom: 'debut', libelle: 'Échéance', type: 'date', requis: true, valeur: ligne.echeance },

@@ -221,6 +221,84 @@ export function construireFenetre(titre, contenu, { large = false } = {}) {
 // même trait que partout ailleurs — le hub en a déjà un dans la ligne d'une
 // tâche et dans la tuile de capture ; c'est le troisième endroit, pas un
 // troisième dessin.
+// --- LE MENU DISCRET ----------------------------------------------------------
+//
+// Trois points qui ne se voient qu'au survol et au clavier, mais qui gardent
+// leurs 44 px de cible au doigt. Ce qui est irréversible demande confirmation
+// SUR PLACE — pas de fenêtre pour ça : deux appuis suffisent, et un objectif qui
+// emporte ses jalons mérite le second.
+//
+// IL VIT ICI DEPUIS LE 2 SEPTEMBRE 2026, et non plus dans `#objectifs` seul : la
+// page d'un projet en porte un sur le projet, sur chacune de ses étapes et sur
+// chacune de ses tâches. Deux copies de ces trente lignes auraient fini par ne
+// plus offrir les mêmes entrées — et c'est dans la copie oubliée qu'un geste
+// finit par manquer.
+//
+// Le gabarit est PUR : il ne lit aucun état, on lui dit ce qui est ouvert et ce
+// qui attend confirmation. C'est ce qui permet à deux écrans de tenir leur menu
+// chacun de leur côté sans se marcher dessus.
+const POINTS = `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"
+  aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/>
+  <circle cx="19" cy="12" r="1.6"/></svg>`;
+
+export function construireMenuDiscret(
+  forme,
+  id,
+  {
+    ouvert = false,
+    confirmation = false,
+    // La confirmation d'une ATTEINTE — le second appui d'un objectif qu'on
+    // déclare atteint. Elle ne dit pas la même chose qu'une suppression, et ses
+    // mots non plus.
+    attendrait = false,
+    atteindre = false,
+    sansModifier = false,
+    // MONTER ET DESCENDRE, pour ce qui vit dans un ordre (29 août 2026, demande
+    // de Noé sur les étapes d'un projet). Deux entrées et non un
+    // glisser-déposer : le geste se fait au doigt comme à la souris, il
+    // s'atteint au clavier sans rien réinventer, et réordonner trois étapes est
+    // un geste rare — on le fait au moment où l'on pose le découpage.
+    //
+    // Les extrémités n'affichent pas l'entrée qui ne mène nulle part : une
+    // commande grisée est un bouton qui ment.
+    deplacer = null,
+    // Le menu se voit en permanence là où il EST la raison de venir — la page
+    // des habitudes, celle d'un projet. Ailleurs c'est un geste de second plan,
+    // et il attend le survol.
+    visible = false,
+  } = {},
+) {
+  const cle = `${forme}:${id}`;
+
+  const rangs = deplacer
+    ? `${
+        deplacer.haut ? `<button type="button" data-monter="${cle}">Monter</button>` : ''
+      }${deplacer.bas ? `<button type="button" data-descendre="${cle}">Descendre</button>` : ''}`
+    : '';
+
+  const choix = confirmation
+    ? `<button type="button" class="cap-menu-danger" data-confirmer="${cle}">Supprimer vraiment</button>
+       <button type="button" data-annuler-confirmation>Annuler</button>`
+    : attendrait
+      ? `<button type="button" data-confirmer="atteindre:${id}">C'est atteint</button>
+         <button type="button" data-annuler-confirmation>Pas encore</button>`
+      : `${sansModifier ? '' : `<button type="button" data-modifier="${cle}">Modifier</button>`}
+         ${rangs}
+         ${
+           atteindre
+             ? `<button type="button" data-atteindre="${id}">Marquer atteint</button>`
+             : ''
+         }
+         <button type="button" data-supprimer="${cle}">Supprimer</button>`;
+
+  return `
+    <span class="cap-menu${ouvert ? ' ouvert' : ''}${visible ? ' cap-menu-visible' : ''}">
+      <button type="button" class="cap-menu-bouton" data-menu="${cle}"
+        aria-expanded="${ouvert}" aria-label="Modifier ou supprimer">${POINTS}</button>
+      <span class="cap-menu-choix" ${ouvert ? '' : 'hidden'}>${choix}</span>
+    </span>`;
+}
+
 export const ICONE_DATE = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none"
   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
   aria-hidden="true" focusable="false">
@@ -351,6 +429,75 @@ export const CHEVRON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="no
   stroke="currentColor" stroke-width="2" stroke-linecap="round"
   stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"></path></svg>`;
 
+// L'ÉMOJI SE PREND DANS UN CARRÉ, À GAUCHE DU TEXTE (2 septembre 2026, demande
+// de Noé, Notion en référence : « pour ajouter un émoji c'est à gauche du texte,
+// avant le texte, un petit carré cliquable qui mène directement sur les émojis
+// et qui s'affiche dès qu'on l'a sélectionné »).
+//
+// CE QUE ÇA REMPLACE : un champ de texte étiqueté « Émoji (facultatif) », au
+// milieu du formulaire. Il demandait d'en TAPER un — c'est-à-dire d'ouvrir le
+// clavier système, de trouver le bon panneau, et de savoir que ça s'appelle
+// Ctrl+Cmd+Espace. **Un champ qui exige un raccourci système n'est pas un
+// champ**, et Noé a rapporté qu'il ne fonctionnait pas.
+//
+// LA PALETTE EST DESSINÉE, comme tous les menus du hub depuis le 13 août 2026 :
+// il n'y a pas d'API du navigateur pour ouvrir le sélecteur du système, et une
+// dépendance externe est exclue. Elle est donc COURTE et CHOISIE — ce ne sera
+// jamais un clavier émoji complet, et ça n'a pas à l'être : on nomme des
+// habitudes et des projets, pas des drapeaux.
+const EMOJIS = [
+  '🏃', '🚴', '🏋️', '🧘', '🤸', '⚽', '🏊', '🥊',
+  '📖', '✍️', '🎓', '🧠', '💡', '🎯', '📝', '🗂️',
+  '☀️', '🌙', '⏰', '🛏️', '🚿', '🪥', '🧹', '🧺',
+  '💧', '🥗', '🍎', '🥦', '☕', '🍵', '🧊', '🍳',
+  '📷', '🎥', '🎬', '🎨', '🎧', '🎸', '🎹', '🎤',
+  '💬', '📞', '💌', '🤝', '👋', '❤️', '🫶', '🎁',
+  '💻', '📱', '📊', '📈', '💼', '📬', '🗓️', '✅',
+  '🌱', '🌳', '🔥', '⭐', '✨', '🚀', '🏔️', '🧭',
+];
+
+// Le carré vide ne montre pas un émoji par défaut — il en montrerait un qu'on
+// n'a pas choisi. Un signe TRACÉ, dans l'encre du texte : il dit « il y a une
+// image à mettre ici » sans en proposer une.
+const SIGNE_EMOJI = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none"
+  stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+  aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle>
+  <path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"></path><path d="M9 9.5h.01"></path>
+  <path d="M15 9.5h.01"></path></svg>`;
+
+// CE QUE LE CLAVIER APPLE PEUT ET NE PEUT PAS (2 septembre 2026, demande de
+// Noé : « ça doit ouvrir le clavier des émojis Apple »).
+//
+// **Aucune API du navigateur n'ouvre le sélecteur du système.** Ctrl+Cmd+Espace
+// est un raccourci de macOS ; une page web ne le déclenche pas, et il n'existe
+// ni `inputmode="emoji"` ni équivalent. Ce qu'on peut faire, c'est donner le
+// FOCUS à un vrai champ de texte : sur iPhone le clavier monte de lui-même —
+// parce que le focus part d'un geste —, et sur Mac le raccourci de Noé écrit
+// dedans, avec accès à tous les émojis et pas seulement aux soixante-quatre.
+//
+// La palette reste, en dessous : elle sert au doigt, sans clavier, et c'est
+// elle qui répond en un geste dans le cas ordinaire.
+//
+// ON NE GARDE QUE L'ÉMOJI de ce qui est tapé : le champ accepte n'importe quel
+// texte — c'est un champ —, et « course à pied 🏃 » collé s'y retrouverait en
+// entier. On lit la dernière suite pictographique, modificateurs de teinte et
+// jointures comprises, faute de quoi une famille ou un pouce coloré ressortirait
+// coupé en deux.
+const SUITE_EMOJI =
+  /\p{Extended_Pictographic}(?:\p{Emoji_Modifier}|\uFE0F|\u200D\p{Extended_Pictographic}|[\u{E0020}-\u{E007F}])*/gu;
+
+export function emojiDeLaSaisie(texte) {
+  const trouves = String(texte ?? '').match(SUITE_EMOJI);
+  return trouves ? trouves[trouves.length - 1].slice(0, 8) : '';
+}
+
+// Le carré porte l'émoji choisi, ou le signe. C'est un seul endroit pour les
+// deux moments — le rendu et le choix —, sans quoi le carré neuf et le carré
+// vidé finiraient par ne pas se ressembler.
+function faceDuCarreEmoji(valeur) {
+  return valeur ? `<span class="emoji-choisi">${echapper(valeur)}</span>` : SIGNE_EMOJI;
+}
+
 // Un choix dans un formulaire : le bouton touché devient l'actif, la valeur va
 // dans le champ caché de son groupe, le libellé du déclencheur suit, et le
 // panneau se referme. Rien n'est redessiné — le formulaire
@@ -364,6 +511,28 @@ export function poserLeChoix(bouton) {
   // teinte, ni les autres options.
   if (groupe.hasAttribute('data-multiple')) {
     basculerUnChoixMultiple(groupe, bouton);
+    return;
+  }
+
+  // L'ÉMOJI A SON PROPRE RETOUR : le déclencheur d'un choix ordinaire recopie le
+  // LIBELLÉ de l'option, ce qui écrirait « Retirer » dans le carré qu'on vient
+  // de vider. Ici c'est la VALEUR qui s'affiche — l'émoji lui-même —, et le
+  // signe tracé quand il n'y en a pas.
+  if (groupe.hasAttribute('data-emoji')) {
+    const valeur = bouton.dataset.valeur ?? '';
+    groupe.querySelector('input[type="hidden"]').value = valeur;
+    for (const autre of groupe.querySelectorAll('[data-choix]')) {
+      const actif = autre === bouton;
+      autre.classList.toggle('actif', actif);
+      autre.setAttribute('aria-pressed', String(actif));
+    }
+    const carre = groupe.querySelector('[data-ouvrir-choix]');
+    carre.innerHTML = faceDuCarreEmoji(valeur);
+    carre.classList.toggle('emoji-vide', !valeur);
+    carre.setAttribute('aria-expanded', 'false');
+    // Un émoji se prend d'un geste et on repart écrire : le panneau se referme,
+    // à la différence du choix multiple qui reste ouvert.
+    groupe.querySelector('.choix-panneau').hidden = true;
     return;
   }
 
@@ -496,7 +665,13 @@ export function basculerChoixDeFormulaire(declencheur, section) {
   fermerLesChoix(section);
   panneau.hidden = ouvert;
   declencheur.setAttribute('aria-expanded', String(!ouvert));
-  if (!ouvert) placerLePanneau(declencheur, panneau);
+  if (!ouvert) {
+    placerLePanneau(declencheur, panneau);
+    // LE FOCUS PART DU GESTE, et c'est la seule façon que le clavier monte sur
+    // iPhone : un `focus()` programmé hors d'un geste ne lève rien sur iOS.
+    // C'est la même précaution que la vedette d'une tuile d'ajout.
+    panneau.querySelector('.emoji-saisie')?.focus();
+  }
 }
 
 // LE PANNEAU SE RETOURNE PLUTÔT QUE DE SE FAIRE COUPER (30 août 2026). Depuis
@@ -508,19 +683,42 @@ export function basculerChoixDeFormulaire(declencheur, section) {
 // On mesure APRÈS avoir montré le panneau — un élément caché n'a pas de boîte —
 // et on regarde le cadre qui le découpe, la tuile volante ou la fenêtre, à
 // défaut l'écran.
+const GARDE_PANNEAU = 8;
+
 function placerLePanneau(declencheur, panneau) {
   panneau.classList.remove('choix-panneau-haut', 'choix-panneau-droite');
+  panneau.style.maxHeight = '';
 
   const cadre = declencheur.closest('.ajout-tuile, .fenetre');
   const bord = cadre
     ? cadre.getBoundingClientRect()
-    : { bottom: window.innerHeight, right: window.innerWidth };
+    : { top: 0, bottom: window.innerHeight, right: window.innerWidth };
+  const ancre = declencheur.getBoundingClientRect();
   const boite = panneau.getBoundingClientRect();
+
+  // ON NE SE RETOURNE QUE SI ÇA AIDE (2 septembre 2026). La règle d'avant
+  // basculait vers le haut dès que le panneau dépassait EN BAS, sans regarder
+  // s'il y avait plus de place au-dessus : le panneau des émojis, ouvert au
+  // premier champ d'une tuile, se retournait pour aller se faire couper par le
+  // haut — huit rangées d'images, dont une seule visible. **Un retournement qui
+  // ne gagne rien est un retournement qui perd tout.**
+  //
+  // Et ce qui ne tient toujours pas se met à DÉFILER plutôt qu'à déborder :
+  // mieux vaut un panneau court qu'un panneau coupé. Le plancher de 8 rem évite
+  // qu'un cadre étroit ne le réduise à une fente.
+  const dessous = bord.bottom - ancre.bottom - GARDE_PANNEAU;
+  const dessus = ancre.top - bord.top - GARDE_PANNEAU;
+  const enHaut = boite.height > dessous && dessus > dessous;
+  const place = enHaut ? dessus : dessous;
+
+  if (enHaut) panneau.classList.add('choix-panneau-haut');
+  if (boite.height > place) panneau.style.maxHeight = `${Math.max(place, 128)}px`;
 
   // Huit pixels de garde : un panneau qui affleure le bord a l'air coupé même
   // quand il ne l'est pas.
-  if (boite.bottom > bord.bottom - 8) panneau.classList.add('choix-panneau-haut');
-  if (boite.right > bord.right - 8) panneau.classList.add('choix-panneau-droite');
+  if (panneau.getBoundingClientRect().right > bord.right - GARDE_PANNEAU) {
+    panneau.classList.add('choix-panneau-droite');
+  }
 }
 
 export function fermerLesChoix(section) {
@@ -530,10 +728,47 @@ export function fermerLesChoix(section) {
   }
 }
 
+// Ce qui est tapé se pose SUR-LE-CHAMP dans le carré (demande de Noé : « qui
+// s'affiche dès qu'on l'a sélectionné »). Le panneau, lui, reste ouvert : on
+// vient peut-être d'en essayer un et on va en essayer un autre.
+export function poserLEmojiSaisi(saisie) {
+  const groupe = saisie.closest('[data-choix-champ]');
+  if (!groupe) return;
+
+  const valeur = emojiDeLaSaisie(saisie.value);
+  groupe.querySelector('input[type="hidden"]').value = valeur;
+
+  const carre = groupe.querySelector('[data-ouvrir-choix]');
+  carre.innerHTML = faceDuCarreEmoji(valeur);
+  carre.classList.toggle('emoji-vide', !valeur);
+
+  for (const option of groupe.querySelectorAll('[data-choix]')) {
+    const actif = option.dataset.valeur === valeur;
+    option.classList.toggle('actif', actif);
+    option.setAttribute('aria-pressed', String(actif));
+  }
+}
+
 // À poser une fois par espace qui affiche un formulaire à choix. Les espaces
 // qui branchent déjà la tuile de capture n'en ont pas besoin — elle s'en
 // charge —, mais le site du FCH, lui, a des formulaires sans tuile.
 export function brancherChoix(section) {
+  section.addEventListener('input', (evenement) => {
+    if (evenement.target.classList?.contains('emoji-saisie')) {
+      poserLEmojiSaisi(evenement.target);
+    }
+  });
+
+  // ENTRÉE FERME LE PANNEAU, ELLE N'ENVOIE PAS LE FORMULAIRE. Un champ de texte
+  // dans un `<form>` le soumet à la touche Entrée : sans cette garde, choisir un
+  // émoji au clavier enregistrait l'habitude à moitié remplie.
+  section.addEventListener('keydown', (evenement) => {
+    if (evenement.key !== 'Enter') return;
+    if (!evenement.target.classList?.contains('emoji-saisie')) return;
+    evenement.preventDefault();
+    fermerLesChoix(section);
+  });
+
   section.addEventListener('click', (evenement) => {
     const declencheur = evenement.target.closest('[data-ouvrir-choix]');
     if (declencheur) {
@@ -546,6 +781,10 @@ export function brancherChoix(section) {
       poserLeChoix(bouton);
       return;
     }
+
+    // Un clic DANS le panneau ne le referme pas : le champ de saisie des émojis
+    // y vit, et se faire fermer le menu en cliquant dedans serait un piège.
+    if (evenement.target.closest('.choix-panneau')) return;
 
     // Un clic ailleurs referme : c'est le geste attendu d'un menu.
     fermerLesChoix(section);
@@ -803,6 +1042,36 @@ export function construireFormulaire({
       </span>`;
     }
 
+    if (champ.type === 'emoji') {
+      const valeur = (champ.valeur ?? '').trim();
+      const nomComplet = valeur ? `${champ.libelle} : ${valeur}` : champ.libelle;
+
+      return `<span class="choix-champ emoji-champ" data-choix-champ="${champ.nom}" data-emoji>
+        <input type="hidden" name="${champ.nom}" value="${echapper(valeur)}">
+        <button type="button" id="${idChamp}"
+          class="emoji-carre${valeur ? '' : ' emoji-vide'}" data-ouvrir-choix
+          aria-expanded="false" aria-haspopup="listbox"
+          title="${echapper(nomComplet)}" aria-label="${echapper(nomComplet)}"
+          >${faceDuCarreEmoji(valeur)}</button>
+        <div class="choix-panneau emoji-panneau" hidden>
+          <input type="text" class="emoji-saisie" autocomplete="off"
+            placeholder="Tape ou colle un émoji" aria-label="Émoji au clavier">
+          <p class="emoji-astuce discret">⌃⌘Espace ouvre le clavier d’émojis</p>
+          <div class="emoji-grille">
+            ${EMOJIS.map(
+              (emoji) => `<button type="button" data-choix="${champ.nom}"
+                data-valeur="${echapper(emoji)}"
+                class="${emoji === valeur ? 'actif' : ''}"
+                aria-pressed="${emoji === valeur}"
+                aria-label="${echapper(emoji)}">${echapper(emoji)}</button>`,
+            ).join('')}
+          </div>
+          <button type="button" class="emoji-retirer" data-choix="${champ.nom}" data-valeur=""
+            aria-pressed="${!valeur}">Sans émoji</button>
+        </div>
+      </span>`;
+    }
+
     if (champ.type === 'select') {
       return `<select id="${idChamp}" name="${champ.nom}" ${requis}>${Object.entries(
         champ.options,
@@ -896,10 +1165,21 @@ export function construireFormulaire({
   // a pas garde tous ses champs étiquetés — mieux vaut pas de vedette qu'une
   // vedette choisie au hasard.
   const principal = champs.find((champ) => champ.type === 'text' && champ.requis);
-  const autres = champs.filter((champ) => !estPastille(champ) && champ !== principal);
 
-  const rangeeDeChoix = choix.length || dates.length
-    ? `<div class="formulaire-choix">${[...choix, ...dates].map(rendreChamp).join('')}</div>`
+  // L'ÉMOJI COLLE À LA VEDETTE, et c'est tout ce que Noé demande : « à gauche du
+  // texte, avant le texte ». Il ne descend donc PAS dans la rangée de pastilles,
+  // où il aurait été un réglage parmi d'autres — c'est l'image de la chose qu'on
+  // est en train de nommer, elle appartient à son nom. Sans vedette, il rejoint
+  // les pastilles : mieux vaut une place approximative que pas de champ.
+  const emoji = champs.find((champ) => champ.type === 'emoji');
+  const emojiAvecLeTitre = principal ? emoji : null;
+  const autres = champs.filter(
+    (champ) => !estPastille(champ) && champ !== principal && champ !== emoji,
+  );
+
+  const pastilles = [...choix, ...dates, ...(emojiAvecLeTitre ? [] : emoji ? [emoji] : [])];
+  const rangeeDeChoix = pastilles.length
+    ? `<div class="formulaire-choix">${pastilles.map(rendreChamp).join('')}</div>`
     : '';
 
   // L'ORDRE, ARRÊTÉ APRÈS TROIS ESSAIS (30 août 2026) : le TEXTE, puis les
@@ -914,13 +1194,17 @@ export function construireFormulaire({
   //
   // *Les deux ordres essayés avant, pour ne pas les refaire :* la rangée en
   // pied (après tous les champs), puis la rangée en tête (avant le texte).
-  const champPrincipal = principal
+  const laVedette = principal
     ? `<input class="champ-titre" id="${id}-${principal.nom}" name="${principal.nom}"
          type="text" required
          placeholder="${echapper(principal.libelle)}"
          aria-label="${echapper(principal.libelle)}"
          value="${echapper(principal.valeur ?? '')}">`
     : '';
+
+  const champPrincipal = emojiAvecLeTitre
+    ? `<div class="champ-vedette">${rendreChamp(emojiAvecLeTitre)}${laVedette}</div>`
+    : laVedette;
 
   const corps = `
     <form data-action="${action}">

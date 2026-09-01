@@ -92,8 +92,13 @@ qui relie le nom exact d'un club à son fichier.
 
 ## Structure du site
 
-**Quatre espaces, six vues transverses, deux sites**, servis par un routeur à
-deux niveaux (`#espace/vue/id`). La distinction compte : un **espace** est un
+**Quatre espaces, six vues transverses, une page par objectif et par projet,
+deux sites**, servis par un routeur à deux niveaux (`#espace/vue/id`). *Ces deux
+pages rangent leur identifiant au NIVEAU DE LA VUE — `#objectif/<id>`,
+`#projet/<id>` — parce qu'il n'y a rien d'autre à nommer sur ces écrans :
+`#projet/fiche/<id>` aurait mis un mot vide entre l'adresse et son sujet. Le
+SINGULIER dit la page, le pluriel dit la galerie : `#objectifs` les compare,
+`#objectif/<id>` en ouvre un.* La distinction compte : un **espace** est un
 domaine de la vie de Noé et porte une couleur ; une **vue transverse** les
 regarde tous et n'en porte aucune.
 
@@ -158,14 +163,17 @@ l'on est **se déplie d'elle-même**.
   - **Elle s'appelle « Général »** (28 août 2026, mot choisi par Noé pour le grand titre du menu), `<h1>` et titre du navigateur compris. Elle disait « Le cap » dans son `<h1>`, « Objectifs » dans l'onglet et « Général » dans le menu : trois noms pour une page est un défaut, pas un choix. **« Le cap » reste le nom de l'ÉTAGE des objectifs**, qui a sa page à lui. L'adresse ne bouge pas — un favori se casse, pas un nom.
   - **Trois vues, plus un espace en troisième niveau** : `#objectifs/caps`, `/projets`, `/periodes`, chacune ne montrant qu'un étage avec son propre titre ; `#objectifs` seul les garde tous les trois avec leurs titres d'étage. Sans ce découpage, « Objectifs », « Projets » et « Périodes » auraient été **trois liens vers le même écran**, et trois liens identiques ne sont pas un menu. Changer de vue ne relit rien : les trois étages viennent du même chargement, seule change la part qu'on en montre.
   - **la galerie ne dit que ce qui se compare** — une tuile compacte par objectif : son espace, son titre, une rangée de marches (un segment par jalon, plein quand il est atteint), « 3 projets · 23 tâches » et son échéance. **Le titre porte seul le poids** (Clash Display 700) ; le nom de l'espace passe en encre discrète, et sa couleur se dit deux fois sans jamais reprendre l'œil : la pastille, et **le fond de la tuile teinté à 5 %** de la couleur de son espace (Noé a regardé 11 %, puis 7, puis choisi 5). À cette dose la teinte ne se nomme pas, elle se sent : deux tuiles voisines ne se ressemblent plus tout à fait, et rien n'a l'air coloré. Le texte garde son contraste (18:1 sur le titre, 6,6:1 sur le service). Ni pourcentage, ni barre continue : un cap se lit en marches franchies. Le tri suit **l'ordre des journées de Noé — FCH, formation, Yuno** (demande du 28 août 2026) ; à l'intérieur d'un espace, le plus proche d'abord, et ce qui n'a pas de date ferme la marche. Une seule liste (`ESPACES`, js/objectifs.js) porte cet ordre : elle range les tuiles, les choix du formulaire et les régimes d'une période. **Pas de filtre par espace** : il a existé une heure, entre le groupement de l'ancienne page et le tri — depuis que les caps arrivent groupés, il ne cachait rien qu'on ne voyait déjà, et six tuiles s'embrassent du regard.
-  - **on n'ouvre pas une autre page** : la tuile pressée prend toute la largeur et se déplie sur place, comme un jour de « Ta semaine » s'ouvre en grand. Elle montre le pourquoi, la cible, la frise des jalons, les projets (qui se déplient à leur tour sur leurs tâches), les tâches rattachées au cap sans projet, et — pour « Rembourser mon matériel » seulement — les prestations et le matériel qui le mesurent.
+  - **LA TUILE OUVRE SA PAGE** (`#objectif/<id>`) depuis le 2 septembre 2026 : le pourquoi, la cible, la frise des jalons, les projets, les tâches du cap sans projet et — pour « Rembourser mon matériel » — les prestations et le matériel, tout cela vit là-bas. *Ce que ça remplace : un dépliage sur place, où la tuile pressée prenait toute la largeur. La règle des deux rangs tranche dès qu'il y a une page — la galerie est à deux gestes et ne dit que ce qui se COMPARE, la page est à trois et dit tout.*
   - **les séries se replient** : quinze « Visuels de la semaine » font UNE ligne, avec leur rythme, ce qu'il en reste et la prochaine date. Sans cette coupe, un projet récurrent redressait le mur que l'espace Tâches a appris à ne pas dresser.
   - **ajouter et modifier ouvrent la tuile volante**, avec tous les détails (`construireFormulaire`) ; la galerie ne garde que les gestes d'un doigt — cocher un jalon, terminer une tâche, ouvrir un cap. Ce qui est irréversible (supprimer, marquer atteint) demande confirmation **sur place**, dans le menu à trois points : pas de fenêtre pour ça, mais un objectif qui emporte ses jalons mérite le second appui.
-  - **une SECONDE GALERIE sous la première : les projets** (28 août 2026, demande de Noé). Même forme, un étage plus bas — un projet se compare à un projet comme un cap se compare à un cap, et on y entre du même geste. Ce qu'elle montre et que le dépliage d'un cap ne montrait pas : **les projets qui ne servent aucun cap** (« Album du club », « Suivi de l'alternance ») — ils existaient et étaient invisibles, donc oubliés. Un projet posé ici n'a pas de cap et c'est légitime : de l'intendance, ça existe. **L'AVANCÉE SE LIT DANS LA FORME DE SA JAUGE** — des marches s'il a des étapes, une barre s'il n'a qu'une charge, un pointillé s'il n'a rien déclaré. Voir « L'avancée d'un projet » plus bas : ce n'est plus une proportion de tâches faites.
+  - **une SECONDE GALERIE sous la première : les projets** (28 août 2026, demande de Noé). Même forme, un étage plus bas — un projet se compare à un projet comme un cap se compare à un cap. **Presser une tuile OUVRE SA PAGE** (`#projet/<id>`) depuis le 2 septembre 2026 : elle ne se déplie plus sur place, à la différence d'un cap. Voir « La page d'un projet » plus bas. Ce qu'elle montre et que le dépliage d'un cap ne montrait pas : **les projets qui ne servent aucun cap** (« Album du club », « Suivi de l'alternance ») — ils existaient et étaient invisibles, donc oubliés. Un projet posé ici n'a pas de cap et c'est légitime : de l'intendance, ça existe. **L'AVANCÉE SE LIT DANS LA FORME DE SA JAUGE** — des marches s'il a des étapes, une barre s'il n'a qu'une charge, un pointillé s'il n'a rien déclaré. Voir « L'avancée d'un projet » plus bas : ce n'est plus une proportion de tâches faites.
   - **les périodes ferment la page**, en deux lignes et en encre discrète, avec leur tuile d'ajout à côté d'elles. Voir « les périodes » plus bas.
   - **Elle n'a plus d'onglet** : elle est au second rang, dans le menu, sous « Général » et ses trois vues. Elle en a eu un (une boussole, du 27 au 28 août) — ce qui avait déjà renversé la décision du 26. La règle des deux rangs tranche : ouvrir le cap, c'est déjà avoir décidé quelque chose. La tuile « Le cap » du tableau de bord y mène toujours.
 - `#calendrier` — tout ce qui porte une date, tous espaces confondus, filtres par nature (tâches, événements, publications, objectifs)
   - **CE QU'ON POSE EST UNE TÂCHE PAR DÉFAUT** (30 août 2026, décision de Noé), partout où la tuile de capture s'ouvre depuis un calendrier. C'était un événement, sans raison écrite ; or ce qu'on note le plus souvent est une chose à faire — l'espace Tâches et l'accueil posaient déjà une tâche, le calendrier était le seul à ne pas le faire. **La règle du filtre passe avant** : quand une seule nature est cochée, c'est elle qu'on vient poser, et le défaut ne s'applique pas.
+- `#objectif/<id>` — **la page d'un objectif** (2 septembre 2026, demande de Noé) : tous ses détails, ses jalons qu'on pose au calendrier, et les projets qui le servent avec un lien vers chacun. Voir « La page d'un objectif » plus bas.
+- `#habitude/<id>` — **la page d'une habitude** (2 septembre 2026, demande de Noé) : depuis quand elle existe, ses chiffres, ses paliers, et le calendrier de ce qui a été fait. Voir « La page d'une habitude » plus bas.
+- `#projet/<id>` — **la page d'un projet** (2 septembre 2026, demande de Noé) : tous ses détails, son calendrier en vue mois et semaine, et la colonne de ce qui attend un jour. Voir « La page d'un projet » plus bas.
 - `#semaine` — **« Ma semaine » : le rendez-vous du dimanche soir, devenu une page** (30 août 2026, demande de Noé). Le bilan de la semaine passée en quelques chiffres, la grille de la semaine qui vient, et à côté d'elle les tâches sans jour, qu'on **glisse dessus** pour les programmer. Voir « Ma semaine » plus bas.
 - `#chemin` — **« Le chemin » : le miroir de ce qui a été accompli** (28 août 2026). Les victoires groupées par mois, tous espaces, le perso au même rang que le pro. **La source est UNIQUE — la table `victoires`** : terminer une tâche, franchir un jalon, vivre une sortie y écrivent déjà, et recompter les tâches faites à côté donnerait deux chiffres pour un seul fait. **Rien ne s'y modifie** : la page ne fait que regarder en arrière, et sa forme le dit — aucun bouton, aucune coche. Elle existe parce que la philosophie n° 1 dit que le hub est *d'abord un miroir de ce qui a été accompli*, et que ce miroir avait quitté l'accueil le 13 août sans être remplacé.
 - `#temps` — **« Le temps » : où partent les heures** (28 août 2026, demande de Noé). La semaine par espace (sur place · traitement · rythmes · ligne à ligne, contre l'attendu de la période), puis projet par projet l'annoncé contre le mesuré. **Il ne calcule rien lui-même** : tout vient de `js/orientation.js`, qui reste éprouvable hors écran. **Sa première ligne est la plus importante** — « 3 des 35 choses terminées portent une durée » : sans elle, un total bas se lirait comme une semaine légère alors qu'il ne dit que le silence des durées. **Sa raison d'être** : la fenêtre « combien de temps ça a pris ? » existe depuis le 27 août et rien n'a jamais rien fait de la réponse ; une question dont la réponse ne sert à rien finit par ne plus recevoir de réponse. **Aucun rouge, aucun seuil, aucun « trop »** : un écart entre l'annoncé et le mesuré est une information, pas une faute.
@@ -425,13 +433,52 @@ pointillée qui invite, et non une phrase perdue à côté de dix habitudes.*
 > leur titre est un `<h3>`. **Le grep de trois secondes n'est pas facultatif.**
 
 **DEUX MESURES, ET PAS TROIS.** Le hub en calcule trois ; trois chiffres alignés
-font un tableau. On garde celles qui poussent à faire AUJOURD'HUI :
+font un tableau. **Ce sont LES DEUX SÉRIES depuis le 2 septembre 2026** (demande
+de Noé : *« les stats présentes doivent être série en cours et série max, avec le
+code couleur »*) :
 
-1. **la semaine en cours**, en points — un par pratique visée, plein quand elle
-   est faite. Il en reste une se voit sans compter, et c'est la seule des trois
-   mesures qui parle du jour même ;
-2. **le prochain palier**, en un chiffre — ce qu'il reste avant 10, 25, 50… Il
-   ne redescend jamais et il est toujours proche.
+1. **la série en cours**, dans la couleur de son rang — vert, bleu, jaune, ou
+   l'or de l'égalité ;
+2. **la série max**, en orange — et **en or elle aussi quand les deux sont
+   égales**, comme sur la page : une même égalité ne peut pas se lire en or d'un
+   côté et en orange de l'autre.
+
+**LES DEUX CHIFFRES SONT TOUJOURS LÀ, ZÉRO COMPRIS** (2 septembre 2026, deux
+corrections de Noé : *« je ne vois pas la série max là »*, et *« si la série en
+cours est 0 mets 0 »*). Ce sont **deux règles qui tombent**, et il a raison sur
+les deux :
+- le record se taisait à égalité, au motif que l'or le disait déjà. Mais on ne
+  lit pas une couleur qu'on n'a pas encore apprise, et **une colonne vide ne se
+  lit pas comme « c'est pareil », elle se lit comme « il n'y a rien »** ;
+- **« une série à zéro ne s'affiche pas »** datait du 30 août et protégeait une
+  habitude neuve d'un « 0 » en guise d'accueil. Dans DEUX COLONNES ALIGNÉES, la
+  case vide était pire : elle décalait le regard, et on ne savait plus lequel des
+  deux chiffres manquait. **Un zéro dans une colonne qui en compte une autre
+  n'est pas un reproche, c'est une case remplie.** *(La règle tient toujours là
+  où un chiffre est seul — sur la page d'une habitude, le record ne s'affiche pas
+  à zéro.)*
+
+**EN GOOGLE SANS, PAS EN GEIST MONO** (même jour, demande de Noé). C'est
+l'exception déjà faite au décompte des heures du bilan de « Ma semaine », et pour
+la même raison : la chasse fixe donne à chaque glyphe la même largeur, et à 13 px
+deux chiffres seuls s'y étalent au lieu de se lire. **Ces deux-là ne s'alignent
+avec rien d'autre** — c'est la colonne qui les cale, pas la police. *La graisse
+se redit dans la même règle : `.chiffre` pose 500 sur l'élément lui-même, ce qui
+bat le 600 hérité de la ligne.*
+
+> *Ce que ça remplace, et le motif n'a pas changé — c'est le CHOIX des deux qui
+> change.* La ligne portait **les points de la semaine** et **le chiffre du
+> prochain palier** (30 août 2026). Une série est ce qu'on ne veut pas perdre, et
+> c'est ce qui fait cocher un soir où l'on n'en a pas envie ; un palier à dix
+> jours de là ne pousse personne.
+
+**LES MOTS ET LES COULEURS SONT CEUX DE SA PAGE** (`rangDeLaSerie`,
+js/orientation.js — la règle à seuils vit là, donc éprouvable hors écran, et
+*dix cas y sont vérifiés*). **Une même mesure ne change ni de nom ni de teinte
+d'un écran à l'autre** : deux copies d'une règle de couleur finissent par ne plus
+colorer pareil, et ça ne se voit qu'à côté. Ici il n'y a la place ni pour les
+mots ni pour la flamme — ils partent dans la bulle et le nom accessible, la
+parade de cette ligne depuis le premier jour.
 
 **AUCUN TEXTE, QUE DES CHIFFRES** (demande de Noé : « le texte n'est pas
 nécessaire une fois que je sais à quoi les chiffres correspondent »). La ligne a
@@ -451,8 +498,21 @@ chiffre correspond.
 bougé. C'est cette séparation — le rond est ce qu'on VOIT, le bouton ce qu'on
 TOUCHE — qui permet de le réduire autant sans rien perdre au doigt.
 
-**L'élan reste sur la page des habitudes**, avec sa jauge et ses mots : ce
-tableau répond à « qu'est-ce que je fais maintenant », l'autre à « où j'en suis ».
+**L'ÉLAN A QUITTÉ LE HUB** (2 septembre 2026, décision de Noé en deux temps :
+*« supprime les petits ronds et en sommeil »* sur la page d'une habitude, puis
+*« enlève alors en sommeil et les petits points »* sur les cartes). Il n'existe
+plus nulle part à l'écran.
+
+Ce qui l'a tué n'est pas son calcul mais son MOT : « en sommeil » s'affichait sur
+les neuf habitudes à la fois — elles ont toutes commencé le même jour —, et un
+mot identique partout ne distingue rien. **Une mesure qui ne sépare pas est une
+mesure qui occupe de la place.** Les seuils (`elanDeLHabitude`, `motDeLElan`)
+restent dans js/orientation.js, éprouvés : y remettre un affichage est l'affaire
+de trois lignes si l'usage le redemande.
+
+**Ce qui reste, c'est « sans cadence »** : une habitude qui n'a rien à tenir. Ce
+n'est pas un élan, c'est un réglage qui manque — et il faut le voir pour le
+corriger.
 
 - **Une cadence nulle n'a pas de semaine** : « 0 sur 0 » lui poserait la cible
   qu'on a justement refusé de lui poser. Elle dit « quand ça vient ».
@@ -471,6 +531,70 @@ tableau répond à « qu'est-ce que je fais maintenant », l'autre à « où j'e
 
 **UN ÉMOJI PAR HABITUDE** (même jour), facultatif — il précède le nom et le rend
 reconnaissable sans qu'on ait à le lire.
+
+### IL SE PREND DANS UN CARRÉ, À GAUCHE DU NOM (2 septembre 2026)
+
+**Demande de Noé**, Notion en référence : *« ajouter un émoji ne fonctionne pas
+pour l'instant. Fais comme sur Notion : à gauche du texte, avant le texte, un
+petit carré cliquable qui mène directement sur les émojis et qui s'affiche dès
+qu'on l'a sélectionné. »*
+
+**LA PANNE ÉTAIT EN DEUX MORCEAUX, ET LE PREMIER ÉTAIT MUET** : le formulaire
+demandait l'émoji depuis le 30 août, la base a sa colonne — et l'objet
+`valeurs` de l'enregistrement ne le reprenait pas. **La valeur partait à la
+poubelle sans erreur ni signe.** C'est le genre de défaut qui ne se voit qu'en
+relisant la ligne d'à côté.
+
+**LE SECOND ÉTAIT LE CHAMP LUI-MÊME** : un `type: 'text'` étiqueté « Émoji
+(facultatif) », au milieu du formulaire. Il demandait d'en TAPER un —
+c'est-à-dire de connaître ⌃⌘Espace. **Un champ qui exige un raccourci système
+n'est pas un champ.**
+
+**IL NE DESCEND PAS DANS LA RANGÉE DE PASTILLES**, et c'est la seule exception à
+la règle du 30 août (« tout ce qui se règle devient une pastille ») : **l'émoji
+est l'image de la chose qu'on est en train de nommer, il appartient à son nom**,
+pas aux réglages. D'où un CARRÉ et non une pastille — une pastille dit « choisis
+une valeur », ce carré dit « pose une image ici ». Il porte le signe d'un visage
+TRACÉ tant qu'il est vide : proposer un émoji par défaut, ce serait en poser un
+qu'on n'a pas choisi.
+
+**LE CLAVIER D'APPLE NE S'OUVRE PAS DEPUIS UNE PAGE WEB** (demande de Noé : « ça
+doit ouvrir le clavier des émojis Apple »). ⌃⌘Espace est un raccourci du système,
+aucune API du navigateur ne le déclenche, et il n'existe pas d'`inputmode="emoji"`.
+**Ce qu'on peut faire, c'est donner le FOCUS à un vrai champ de texte**, en tête
+du panneau :
+- **sur iPhone, le clavier monte de lui-même** — parce que le focus part d'un
+  geste, la même mécanique que la vedette d'une tuile d'ajout ;
+- **sur Mac, le raccourci de Noé écrit dedans**, avec accès à tous les émojis.
+
+**LA PALETTE RESTE, en dessous** : soixante-quatre émojis choisis, qui répondent
+en un geste au doigt et sans clavier. Elle est dessinée comme tous les menus du
+hub depuis le 13 août 2026 — il n'y a pas de sélecteur du système à appeler, et
+une dépendance externe est exclue. **Elle ne sera jamais un clavier complet, et
+elle n'a pas à l'être** : on nomme des habitudes, pas des drapeaux.
+
+- **ON NE GARDE QUE L'ÉMOJI de ce qui est tapé** (`emojiDeLaSaisie`,
+  js/gabarits.js) : le champ accepte n'importe quel texte, et « course à pied 🏃 »
+  collé s'y retrouverait en entier. On lit la dernière suite pictographique,
+  **modificateurs de teinte et jointures comprises** — sans quoi une famille ou un
+  pouce coloré ressortirait coupé en deux. *Vérifié sur sept cas.*
+- **ENTRÉE FERME LE PANNEAU, elle n'envoie pas le formulaire.** Un champ de texte
+  dans un `<form>` le soumet à la touche Entrée : sans cette garde, choisir un
+  émoji au clavier enregistrait l'habitude à moitié remplie.
+- **Un clic DANS le panneau ne le referme plus** : le champ y vit, et se faire
+  fermer le menu en cliquant dedans serait un piège.
+- **« Sans émoji » ferme la liste**, hors de la grille : c'est la seule option qui
+  n'est pas une image, et l'y mettre en aurait fait une case vide qu'on
+  confondrait avec un trou.
+
+**ET UN PANNEAU NE SE RETOURNE PLUS QUE SI ÇA AIDE** (`placerLePanneau`,
+js/gabarits.js). La règle d'avant basculait vers le haut dès que le panneau
+dépassait EN BAS, sans regarder s'il y avait plus de place au-dessus : le panneau
+des émojis, ouvert au PREMIER champ d'une tuile, se retournait pour aller se
+faire couper par le haut — huit rangées d'images, dont une seule visible.
+**Un retournement qui ne gagne rien est un retournement qui perd tout.** Et ce
+qui ne tient toujours pas se met à DÉFILER plutôt qu'à déborder. *Le défaut
+touchait tous les panneaux du hub, pas seulement celui-ci.*
 - **Sur la page qui les GÈRE aussi**, devant le nom : on y vient lire une
   cadence, un pourquoi, un palier — les mots y sont nécessaires des deux côtés.
 - Le nom passe dans `aria-label` : au lecteur d'écran, « 🏃 » ne dit rien.
@@ -1211,10 +1335,25 @@ découpe un objectif, une étape découpe un projet.
 
 - `id` uuid PK · `projet_id` uuid NOT NULL REFERENCES projets(id) ON DELETE CASCADE
 - `titre` text NOT NULL · `ordre` int
+- `echeance` date (nullable) — **le jour où l'on compte s'y mettre** (2 septembre 2026)
 - `atteint` boolean NOT NULL default false · `date_atteint` date · `created_at` timestamptz
 
-**Pas d'échéance, à la différence d'un jalon** : une étape découpe le TRAVAIL,
-pas le calendrier. Ce sont les tâches qui portent les dates.
+**ELLE PORTE UN JOUR DEPUIS LE 2 SEPTEMBRE 2026** (décision de Noé), et c'est un
+renversement qu'il faut dire. Elle n'en avait pas — *« une étape découpe le
+TRAVAIL, pas le calendrier ; ce sont les tâches qui portent les dates »* —, et
+c'était sa différence avec un jalon. La page d'un projet demande de poser ses
+étapes sur un calendrier en les glissant : l'autre réponse possible était de
+fabriquer une tâche au passage, et Noé a préféré que **ce qu'on glisse soit ce
+qu'on retrouve**.
+- Elle reste **facultative** : un découpage sans jour est un découpage, pas un
+  retard.
+- Elle ne gagne **ni durée, ni heure, ni statut** — une étape se franchit, elle
+  ne s'occupe pas.
+- Elle n'a d'échéance qu'ici : **`#objectifs` ne la demande plus du tout**, la
+  machinerie des étapes ayant suivi la page du projet.
+
+**Pas de durée ni d'heure, à la différence d'une tâche** : une étape marque un
+passage, elle n'occupe pas de créneau.
 
 **L'ORDRE SE CHANGE — ÉTAPES ET JALONS** (29 août 2026, demande de Noé) : un
 découpage ne se pense pas dans le bon ordre du premier coup — on pose les
@@ -1233,10 +1372,12 @@ est un geste rare, qu'on fait au moment où l'on pose le découpage.
   étapes peuvent finir avec le même numéro — un échange de deux valeurs jumelles
   ne changerait alors rien du tout. Seules les lignes qui bougent vraiment sont
   écrites : deux requêtes dans le cas ordinaire, pas dix.
-- **LES JALONS D'UN CAP ONT LE MÊME GESTE**, et il passe par la MÊME mécanique
-  (`deplacerDans`, js/objectifs.js) : les deux étages portent la même colonne
-  `ordre`, le même menu et la même écriture optimiste. Deux copies de ce code
-  auraient fini par diverger, et c'est le genre d'écart qu'on ne voit qu'une
+- **LES JALONS D'UN CAP ONT LE MÊME GESTE**, le même menu et la même écriture
+  optimiste : les deux étages portent la même colonne `ordre`. Ils ne partagent
+  plus la même fonction depuis le 2 septembre 2026 — chacun se réordonne sur sa
+  page, `#objectif/<id>` et `#projet/<id>`. Ce qui reste commun est ce qui compte : `reordonnerJalons` et
+  `reordonnerEtapes` (js/api.js) renumérotent de la même façon. C'est le genre
+  d'écart qu'on ne voit qu'une
   fois qu'un des deux écrans s'est mis à mentir.
 
 **Franchir une étape écrit une victoire** (`source = 'etape'`), et revenir dessus
@@ -1630,6 +1771,781 @@ deviendrait vite un reproche.
 
 Check-in matinal : l'accueil doit se lire en moins de 5 minutes, sans scroll
 excessif sur mobile.
+
+## La page d'une habitude — `#habitude/<id>` (2 septembre 2026)
+
+**La demande de Noé** : *« chaque habitude doit avoir une page dédiée également,
+avec toutes les stats intéressantes et les détails (dont depuis quand je l'ai
+ajoutée/commencée) + un calendrier qui permet de voir quand l'habitude a été
+faite ou non (vue mois, 3 mois). »*
+
+**C'EST LE MÊME MOUVEMENT QUE LES CAPS ET LES PROJETS** — la galerie compare, la
+page dit tout — **mais la NATURE de ce qu'on regarde change tout le reste** : un
+cap a des jalons à POSER, une habitude n'a rien à poser, **elle REVIENT**. Son
+calendrier ne sert donc pas à programmer mais à REGARDER EN ARRIÈRE, et c'est la
+seule grille du hub où l'on coche un jour passé au lieu d'y déposer quelque
+chose.
+
+**LA CARTE RESTE**, et le nom devient la porte. Ce n'est pas le cas des caps et
+des projets, dont le dépliage a disparu : ici la carte est un TABLEAU DE BORD —
+on la lit tous les jours pour cocher —, pas un index dupliqué. La page ajoute ce
+que la carte ne peut pas porter : la naissance, les paliers, le rythme, le
+calendrier.
+
+**ET LA CARTE MAIGRIT D'AUTANT** (2 septembre 2026, demande de Noé : *« sur cet
+affichage il doit donc y avoir moins d'infos, seulement l'essentiel, avec le voc
+qu'on a corrigé ; pas de graphique ici »*). C'est la conséquence directe de la
+page : ce qui restait sur la carte y était **parce qu'il n'y avait nulle part où
+le poser**. Il reste le rond, le nom, l'élan et **deux chiffres**.
+- **PAS DE SPARKLINE.** Elle répond à « comment ça a évolué » — une question
+  qu'on se pose sur UNE habitude, pas sur neuf d'affilée. Elle prenait deux
+  hauteurs de texte par carte, sa légende comprise, pour douze barres de 3 px.
+  *Mesuré : une carte passe de 300 px à 137.*
+- **LES MOTS SONT CEUX DE LA PAGE** : « série en cours » et non « jours tenus »,
+  qui demandait de deviner de quoi on parlait. **Une même mesure ne change pas de
+  nom d'un écran à l'autre** ; l'unité part dans la bulle.
+- **« 2/10 vers le palier » remplace « encore 8 avant 10 · 2 au total »** — la
+  règle de la page appliquée ici le même jour : ce qui a été fait, pas ce qui
+  reste, et **le total EST le numérateur**, donc un item au lieu de deux.
+- **UNE QUOTIDIENNE NE DIT PLUS SA JOURNÉE** : « pas encore aujourd'hui »
+  comptait un manque, et le rond, à trois centimètres de là, dit déjà si elle est
+  faite. Une hebdomadaire garde son « 2/3 cette semaine » : son rond ne sait pas
+  le dire.
+
+### Ce qu'elle montre
+
+**LES CHIFFRES OUVRENT LA PAGE, ET RIEN NE LES PRÉCÈDE** (2 septembre 2026, deux
+corrections de Noé : *« supprime "où elle en est" »*, puis *« supprime les petits
+ronds et en sommeil »*). C'est la même coupe que sur la tuile d'une journée la
+veille — **ce qui se montre n'a pas à se nommer** : cinq tuiles chiffrées sous le
+nom d'une habitude ne demandent pas qu'on annonce que c'est son état. Le titre
+reste hors écran pour les lecteurs d'écran, qui n'ont pas la mise en page.
+
+**L'ÉLAN QUITTE CETTE PAGE**, avec sa jauge de dix crans et son mot (« en
+sommeil », « solide »). Il n'y a pas de contradiction avec la règle du 30 août —
+« l'élan reste sur la page des habitudes » : c'est là qu'il est, sur les cartes,
+et il y reste. Ici il faisait un sixième chiffre, sous une autre forme et dans
+une autre unité, **au-dessus de cinq qui se comparent** ; et son mot le plus
+fréquent est un constat de creux, ce qui est la dernière chose à lire en ouvrant.
+
+**Cinq chiffres**, et un seul compte un manque :
+
+| | |
+|---|---|
+| **2/7 cette semaine** | le seul qui parle du jour même, et le seul qui puisse encore bouger |
+| **2 · série en cours** | le chiffre **change de couleur avec elle** (voir plus bas) |
+| **2 · série max** | le chiffre en **orange** |
+| **67 % · complétée** | ce qu'elle a tenu depuis sa première fois |
+| **2/10 vers le palier** | ce qui a été fait, et le palier visé |
+
+**ILS SONT EN CLASH DISPLAY** (2 septembre 2026, demande de Noé : *« les chiffres
+des dashboards doivent être en Clash Display »*), ici et sur le tableau de bord
+des habitudes. C'est la règle déjà posée sur `.chiffre-cle` et sur le bilan de
+« Ma semaine » : **un chiffre qu'on vient VOIR se donne du poids ; un chiffre
+qu'on vient COMPARER garde sa chasse fixe.** Ces cinq-là ne s'alignent en colonne
+avec rien. *La règle s'écrit APRÈS `.chiffre`, qui pose Geist Mono à spécificité
+égale — l'ordre tranche.*
+
+### LE POURCENTAGE DE FOIS COMPLÉTÉES
+
+**Demande de Noé** : *« il faut rajouter aussi comme stat le pourcentage de fois
+où elle a été complétée, en prenant comme date référence la 1ère fois où elle a
+été faite »* — `tauxDeLHabitude` (js/orientation.js), éprouvable hors écran.
+
+**C'EST LE SEUL CHIFFRE DU HUB QUI COMPTE UN MANQUE**, et il faut le dire : la
+règle des habitudes l'interdit depuis le 30 août — « aucun taux de réussite ».
+Noé le redemande, donc il existe ; **ce qui le rend tenable, c'est qu'il est un
+parmi cinq**, à côté de quatre qui ne peuvent que monter, et qu'il ne porte ni
+rouge ni seuil.
+
+- **La référence est la PREMIÈRE PRATIQUE**, comme la moyenne : les semaines
+  d'avant le premier jour ne sont pas des semaines ratées, ce sont des semaines
+  où l'habitude n'existait pas. *Sans ça, une habitude posée en janvier et
+  commencée en août afficherait 12 %.*
+- **L'attendu se déduit de la cadence** — `jours × cadence / 7` —, si bien qu'une
+  habitude à trois fois par semaine n'est pas jugée comme une quotidienne.
+- **Il est PLAFONNÉ à 100 %** : tenir mieux que sa cadence n'écrit pas 140 %, un
+  pourcentage au-delà de son plein ne veut rien dire.
+- **Une habitude jamais pratiquée n'en a pas** : elle n'a pas de référence, et
+  « 0 % » serait la première chose qu'elle dirait.
+
+**LES DEUX SÉRIES, ET EN COULEUR** (demande de Noé : *« je dois pouvoir voir la
+série en cours et la série max — comme on avait dit, avec -1 sur la série en
+cours lorsqu'un jour n'est pas tenu, pas une remise à 0 — avec de la couleur »*).
+- **Le record était DÉJÀ CALCULÉ et ne s'affichait nulle part** :
+  `serieDeLHabitude` le rend depuis le premier jour, sous le même réglage que la
+  série en cours — un jour manqué coûte UN, jamais tout. Il n'y avait rien à
+  recalculer, seulement à le montrer.
+- **LES MOTS DISENT CE QUE C'EST, pas ce qu'on compte** (correction de Noé) :
+  « 2 jours tenus » et « 2 au mieux » demandaient de deviner que la seconde était
+  un record. « Série en cours » et « série max » se lisent sans rien savoir, et
+  **l'unité part dans la bulle**, où elle ne coûte pas une ligne.
+- **SEUL LE CHIFFRE PORTE LA COULEUR** (correction de Noé) : les deux tuiles ont
+  porté un fond teinté et un liseré. La tuile reste une tuile — c'est ce qui la
+  garde comparable aux deux autres, qui n'ont rien à mettre en jeu.
+### L'ÉCHELLE DE LA SÉRIE EN COURS
+
+**Règle de Noé** : *« la série max en orange, la série en cours en vert au début,
+puis bleu après 3 jours, une flamme lorsque l'habitude a été cochée 5 jours
+d'affilé, et jaune lorsque l'on est à 2 jours près de la série max »* — puis
+*« lorsque série max et série en cours sont égales, la même couleur »*, et enfin
+*« un dégradé qui rend le chiffre couleur or »*.
+
+| | |
+|---|---|
+| **vert** | moins de trois — ça commence |
+| **bleu** | trois et plus — ça tient |
+| **jaune** | à deux crans du record — ça chauffe |
+| **or (dégradé)** | série et record à ÉGALITÉ — **les deux tuiles** le prennent |
+| **orange** | le record, quand il n'est pas atteint |
+
+**L'ORDRE DES TESTS EST LA RÈGLE**, et il règle tout seul un cas idiot : au tout
+début, série et record valent 1, donc « à 2 près du record » serait vrai — un
+jaune « tu approches ton meilleur » sur une habitude d'un jour ne veut rien dire.
+L'égalité passe devant, puis le vert en dessous de trois. *Dix cas vérifiés hors
+écran, comme le reste de l'orientation.*
+
+**L'ÉGALITÉ EST UN DÉGRADÉ, PAS UNE COULEUR.** Un aplat de plus n'aurait été
+qu'un cinquième cran ; l'or MÉTALLIQUE dit autre chose — c'est un sommet, et le
+seul endroit du hub où un chiffre brille. *L'or plat reste en secours : un
+`background-clip: text` non pris en charge laisserait un chiffre transparent,
+c'est-à-dire invisible.*
+
+**ET PAS DE MOT POUR LE DIRE** (correction de Noé : *« c'est les couleurs qui me
+le disent »*). La tuile a porté « série max — tu y es » ; **un mot qui redit ce
+qu'une couleur montre est un mot de trop.** Il ne reste que là où la couleur ne
+va pas : dans la bulle et pour le lecteur d'écran.
+
+**UNE FLAMME À CINQ JOURS D'AFFILÉE**, à côté du chiffre — dessinée et non en
+émoji, donc **elle prend la couleur de la série** : elle brûle en vert, en bleu
+ou en jaune selon où l'on en est.
+- **CE N'EST PAS LA SÉRIE, et c'est tout l'intérêt.** La série recule d'un cran
+  quand un jour manque, elle ne tombe pas : on peut donc afficher « 7 jours
+  tenus » avec deux trous dedans — c'est exactement le réglage demandé pour
+  qu'elle ne s'écroule pas. La flamme, elle, dit **cinq jours SANS TROU**. Deux
+  mesures, deux signes : **l'une protège, l'autre récompense.**
+- **Elle part d'aujourd'hui s'il est coché, d'hier sinon** : sans ça elle
+  s'éteindrait chaque matin, avant qu'on ait eu le temps de cocher. Même
+  précaution que la série, qui s'arrête avant le jour en cours.
+  (`joursDAffileeDeLHabitude`, js/orientation.js — éprouvable hors écran.)
+
+**PAS DE VIOLET** (règle de Noé), et c'est ce qui écarte la couleur de famille
+autant que l'accent du perso : « calme » EST un violet. **Aucune de ces couleurs
+n'est une alerte, et il n'y en aura pas** : elles disent où l'on en est, jamais
+ce qui manque.
+
+**Le record ne s'affiche pas à zéro**, comme la série : « 0 » sur une habitude
+neuve serait la première chose qu'on lirait.
+
+**CE QUI A ÉTÉ FAIT, PAS CE QUI RESTE** (correction de Noé : *« plutôt que
+"8 avant 10", montre ce que j'ai fait, donc 2/10 »*). C'est **la philosophie n° 1
+appliquée là où je l'avais oubliée** — *le hub est d'abord un miroir de ce qui a
+été accompli, pas une liste de ce qui reste*. « 8 avant 10 » comptait un manque ;
+« 2/10 » compte un acquis et dit le palier au passage. **Les deux tuiles n'en
+font plus qu'une** : le total EST le numérateur, et l'afficher à côté aurait
+écrit deux fois le même chiffre.
+
+**LE RYTHME, en une ligne d'encre discrète, SOUS LES CHIFFRES** : la première
+fois, la dernière fois, la moyenne par semaine.
+
+**LA PREMIÈRE FOIS, ET NON LA DATE DE CRÉATION** (correction de Noé : *« enlève
+le "posé le…", la donnée 1ère fois est plus intéressante »*). Et il a raison :
+**la date où l'on a TAPÉ une habitude ne dit rien** — on peut la poser un
+dimanche soir et ne commencer que trois semaines plus tard. La première pratique
+date le début réel. *Sa demande disait « depuis quand je l'ai ajoutée/commencée » ;
+entre les deux réponses, c'est la seconde qui compte.*
+
+**ELLE VIT ICI, PAS EN TÊTE** (2 septembre 2026, correction de Noé : *« remets la
+1ère fois à la place qu'elle était au début, en dessous des stats, en petit comme
+dernière fois »*). Elle est montée dans la tête pendant une heure, en corps de
+texte : **elle y pesait autant que le pourquoi de l'habitude**, alors que c'est
+un fait de même nature que les deux qui la suivent. Trois dates de rythme, une
+seule ligne, une seule taille.
+
+**La moyenne se compte depuis la PREMIÈRE PRATIQUE et non depuis la naissance de
+l'habitude**, pour la raison qui vaut aussi pour le pourcentage.
+
+**TOUS LES PALIERS, ET CEUX QUI SONT FRANCHIS.** C'est le seul endroit du hub où
+on les voit tous — ailleurs on ne lit que le prochain. Ils ne redescendent
+jamais, et c'est tout leur intérêt. Un palier à venir n'est pas un manque : il
+est simplement pâle.
+
+### LA SPARKLINE, ET SA MAILLE
+
+**Celle de la carte**, à la fonction près (`sparkline`, js/perso.js) : deux
+dessins pour une seule mesure auraient fini par ne plus compter pareil.
+
+**UNE HABITUDE QUOTIDIENNE SE LIT EN JOURS** (2 septembre 2026, demande de Noé :
+*« pour les séries journalières, le graphique doit être par jour et non par
+semaine, montre les 14 derniers jours »*), **les autres restent en semaines**.
+- **La maille suit ce que l'habitude COMPTE**, exactement comme sa série : une
+  quotidienne compte des jours tenus depuis le 30 août, et sa courbe le disait en
+  semaines — « 7 sur 7 » et « 4 sur 7 » y faisaient deux barres pleines. **Une
+  barre qui ne peut pas montrer un écart ne montre rien.**
+- **Quatorze jours et non douze semaines** : à l'échelle du jour, un trimestre
+  ferait 84 barres de 2 px. Deux semaines suffisent à voir un trou, et c'est la
+  fenêtre qu'on habite.
+- **Un jour est PLEIN ou vide** — il n'y a pas de demi-journée —, là où une
+  semaine tenue est pleine et une semaine entamée en creux.
+
+**LE PLUS RÉCENT À GAUCHE** (correction de Noé : *« avec le dernier jour qui
+s'affiche à gauche, actuellement c'est à droite »*), pour les deux mailles : on
+lit de gauche à droite, donc **la première chose lue doit être aujourd'hui**, pas
+il y a trois mois. *Conséquence assumée : le temps y coule à rebours, et c'est
+pourquoi la légende le dit en toutes lettres — « d'aujourd'hui à il y a deux
+semaines ».*
+
+**Et la légende suit la maille**, sur la page comme sur la carte : douze barres
+et quatorze barres côte à côte sans un mot laisseraient deviner pourquoi elles ne
+comptent pas la même chose.
+
+### Le calendrier des faits
+
+**MOIS ET 3 MOIS**, c'est ce que Noé a demandé. Pas de semaine — sept cases ne
+disent rien d'une habitude ; pas d'année — une case par semaine ne saurait pas
+dire « faite ou non », qui est la question de cette page.
+
+**LA VUE MOIS EST CELLE DU SITE, à la lettre, et elle prend toute la largeur**
+(correction de Noé : *« la vue mois doit prendre toute la largeur… comme les
+autres vues mois utilisées sur le site, la même forme »*). Mêmes classes, même
+géométrie, mêmes en-têtes que `#calendrier` — cases de 7 rem, numéro en haut.
+> *Ce que ça remplace.* Le mois empruntait la grille COMPACTE du trimestre,
+> bornée à 24 rem pour que la case ne change pas de taille d'une vue à l'autre.
+> Le motif se tenait, mais il faisait de la vue mois une chose que le hub n'a
+> nulle part ailleurs — et une page qui a de la place n'a aucune raison de la
+> laisser vide.
+
+**LA VUE 3 MOIS reste la grille compacte du trimestre**, mais la case n'y porte
+plus des points : **elle est PLEINE ou vide**, dans la couleur de la famille.
+
+- **LES INITIALES DES JOURS REVIENNENT ICI, et seulement ici.** Le trimestre les
+  a perdues parce qu'on n'y vise pas un mardi ; sur une habitude, au contraire,
+  **c'est la question** — « est-ce que je la tiens le week-end ? ».
+- **Et leur rang SE DÉCLARE** (demande de Noé : *« la case des initiales des
+  jours doit être plus fine, moins longue »*) : `grid-auto-rows` vaut pour tous
+  les rangs IMPLICITES, en-tête compris — la rangée faisait donc 48 px comme un
+  jour, et se lisait comme une première ligne du mois. Un premier rang `auto` la
+  laisse tenir sur son texte. *Mesuré : 14 px contre 50 pour une case.*
+- **ET LA CASE SE COCHE.** Un calendrier de coches qu'on ne pourrait pas corriger
+  serait une frustration à chaque oubli, et le hub sait déjà rattraper un jour
+  passé — c'est ce que fait la tuile d'une journée depuis le 1er septembre. La
+  coche vaut pour CE jour-là : le bouton porte sa date.
+- **TROIS ÉTATS, ET AUCUN N'EST UN REPROCHE** : faite, pas faite, et hors de
+  portée — avant qu'elle existe, ou après aujourd'hui. Les jours hors de portée
+  ne se cochent pas : **on ne tient pas une habitude avant de l'avoir posée, et
+  on ne coche pas demain.**
+
+**AUCUN ROUGE, AUCUN TAUX DE RÉUSSITE, AUCUN JOUR MANQUÉ COMPTÉ.** C'est la
+contrainte de toutes les mesures d'habitude depuis le 30 août, et c'est elle qui
+interdit d'inventer ici une couleur pour « pas faite ». *La toute première
+maquette des habitudes montrait les sept derniers jours en points gris, et Noé
+l'avait écartée d'une phrase : « ça ne me donne pas envie de les faire ».* Une
+case vide est du vide.
+
+## La page d'un objectif — `#objectif/<id>` (2 septembre 2026)
+
+**La demande de Noé** : *« on va faire pareil pour les objectifs : une page
+indépendante pour chacun avec tous les détails, un calendrier qui permet de
+poser les jalons. Et une vue (et un lien vers la page détail) des projets qui lui
+sont rattachés. »*
+
+**C'EST LA PAGE D'UN PROJET, UN ÉTAGE PLUS HAUT**, et volontairement : mêmes
+trois colonnes, même geste, mêmes mots. Un cap se découpe en jalons comme un
+projet se découpe en étapes. Ce qui change, c'est ce que porte la colonne de
+droite — **un projet y montre ses TÂCHES, un cap y montre ses PROJETS**, parce
+que c'est l'étage en dessous de lui. Réapprendre un geste en montant d'un étage
+aurait été le pire des deux mondes.
+
+| | à gauche | au centre | à droite | sous le calendrier |
+|---|---|---|---|---|
+| `#objectif/<id>` | ses **jalons** | son calendrier | — | le **rail de ses projets** |
+| `#projet/<id>` | ses **étapes** | son calendrier | ses **tâches**, filtrables | — |
+
+**UNE COLONNE EST UNE RÉSERVE : ce qu'elle porte SE POSE.** C'est Noé qui l'a vu
+et c'est la règle qui range cette page — *« les projets ne sont pas à
+"poser" »*. Un projet n'a pas d'échéance qu'on déplace du doigt : il a une page.
+Le mettre dans une colonne promettait un geste qui n'existe pas.
+
+**LA PAGE D'UN CAP N'A DONC QUE DEUX COLONNES** (décision de Noé : *« supprime la
+colonne de droite »*). Un cap n'a qu'une chose à poser sur son calendrier — ses
+jalons —, et une seconde réserve de l'autre côté ne disait rien. **Le calendrier
+prend la place qu'elle rend, et les deux colonnes arrivent plus tôt** : à
+1000 px et non 1200, une colonne de moins étant 18 rem de moins à trouver.
+*Mesuré à 1000 px : 89 px par jour ; à 1210 px : 126 px.*
+- **Conséquence assumée** : les tâches accrochées au cap SANS projet ne
+  s'affichent plus sur cette page — seulement au calendrier, quand elles ont une
+  date. Il n'y a plus non plus de geste pour en poser une d'ici. Elles vivent
+  dans l'espace Tâches, où rien n'est caché. *Si elles manquent à l'usage, leur
+  place est sous les jalons, pas dans une colonne à elles.*
+
+### Ce qu'elle montre
+
+**La tête** : son espace, son échéance, ce qu'il porte (« 3 projets · 23 tâches »),
+ses **marches** — un cap se lit en jalons franchis, jamais en pourcentage —, son
+**pourquoi** et sa **cible**, et le menu à trois points qui modifie, marque
+atteint ou supprime.
+
+**Le calendrier** montre **le cap à son échéance, ses jalons, et le TRAVAIL qui
+le sert** : les tâches, événements et parutions de ses projets, plus les tâches
+accrochées au cap sans projet. C'est la réponse à « quand ce cap avance-t-il »,
+et elle n'existait nulle part.
+- **Les jalons se posent à la main et non par `assemblerCalendrier`** : celui-ci
+  écarte les jalons ATTEINTS — juste au calendrier plein écran, où ce qui est
+  fait n'a plus à occuper le regard ; faux ici, où l'on vient voir le chemin
+  entier. Même choix que les étapes d'un projet.
+
+**LES PROJETS SONT UN RAIL, SOUS LE CALENDRIER** (demande de Noé, en deux
+temps : *« côte à côte sur une même ligne, dans une forme similaire à comment
+sont affichés les projets dans la page d'accueil ; ça peut en afficher plus
+qu'un, c'est juste que s'il y a trop de projets on voit la suite en slide sur le
+côté »*, puis *« finalement en dessous du calendrier »*).
+
+**C'est le rail de l'accueil, repris tel quel** : même tuile, même glissement,
+même fondu sur les bords. Ne change que la LARGEUR d'une tuile — sur l'accueil le
+rail vit dans une colonne étroite et en montre une à la fois ; ici il a toute la
+page et en montre autant qu'il y a de place. *Mesuré à 1210 px : quatre tuiles
+entières et la cinquième qui dépasse.*
+- **TOUTE LA TUILE MÈNE À SA PAGE** (« et un lien vers la page détail ») : c'est
+  là que vivent ses étapes, ses tâches et son calendrier, et les redire ici en
+  ferait deux endroits à tenir d'accord.
+- **La jauge vient de `#objectifs`** (`jaugeDuProjet`) et non du rail de
+  l'accueil, qui dessine la sienne : une avancée doit se dessiner pareil sur tous
+  les écrans.
+- **PAS DE POINTS SOUS LE RAIL**, à la différence de l'accueil : là-bas une seule
+  tuile se voit, et sans compteur on ne saurait pas où l'on est dedans. Ici la
+  tuile suivante dépasse — c'est ce qui dit qu'il y en a d'autres, mieux qu'une
+  rangée de points, et c'est déjà l'argument de la colonne « À poser ».
+
+### L'ANNÉE — douze mois, une case par SEMAINE (2 septembre 2026)
+
+**La demande de Noé** : *« crée une vue par année, par 12 mois plutôt (mais
+appelée année) ; tu ne référence pas tous les jours, seulement les semaines, pour
+pouvoir intégrer 12 mois dans un espace similaire que les autres vues. Quand on
+déplace un jalon dedans, ça se place au lundi de la semaine choisie. »*
+
+**C'EST LE MÊME MOUVEMENT QUE LE TRIMESTRE, D'UN CRAN ENCORE.** Le mois montre
+des barres dans un JOUR, le trimestre des points dans un JOUR, l'année des points
+dans une SEMAINE. À chaque fois la maille grossit et la question change — de
+« qu'y a-t-il ce jour-là » à « où sont les échéances de l'année ». Trois cent
+soixante-cinq cases n'auraient jamais tenu ; cinquante-deux, oui. *Mesuré :
+398 px, la hauteur d'une vue mois.*
+
+**« Année » est le mot de Noé, mais ce n'est pas l'année civile** : ce sont les
+douze mois qui VIENNENT, l'ancre en tête — comme le trimestre, et pour la même
+raison. Un cap dont l'échéance tombe en juin prochain veut voir juin.
+
+**UNE SEMAINE APPARTIENT AU MOIS DE SON JEUDI**, et à lui seul — la règle
+d'ISO 8601, c'est-à-dire le mois dont elle a le plus de jours. Deux propriétés à
+la fois, et il faut les deux :
+- **aucune semaine n'est dessinée deux fois** — le défaut payé sur le trimestre,
+  où le 31 octobre tombait dans deux grilles ;
+- **et aucune n'est oubliée.** C'est ce qui a fait changer de règle : rangée par
+  son LUNDI, la semaine du 31 août n'était d'aucun des douze mois d'une année
+  ouverte en septembre, **et les deux échéances du 2 et du 3 septembre ne se
+  voyaient nulle part**. *Mesuré : zéro semaine oubliée avec le jeudi, une avec
+  le lundi.*
+
+Le prix, assumé : la première case de septembre peut porter la semaine 36, qui
+commence le 31 août. La bulle donne l'intervalle en toutes lettres.
+
+**Quatre ou cinq semaines par mois, jamais plus** (vérifié sur huit ans) : c'est
+ce qui donne à la grille ses **cinq colonnes**, plus celle du nom du mois. Les
+mois à quatre laissent une case muette — sans elle, les semaines ne tomberaient
+plus les unes sous les autres d'une ligne à l'autre.
+
+**LA CASE PORTE LE NUMÉRO DE SA SEMAINE** (demande de Noé) et non le jour de son
+lundi : dans une grille dont la maille EST la semaine, un numéro de jour se
+lisait comme une date et laissait croire à une case-jour. Le numéro est celui
+d'ISO 8601 — la même règle du jeudi que l'appartenance au mois, si bien qu'une
+case ne peut pas porter un numéro qui contredirait sa ligne.
+- **On compte depuis le 1er janvier, en UTC.** Compter depuis « le jeudi de la
+  semaine du 1er janvier » se trompe les années où celui-ci appartient à l'année
+  d'AVANT : *mesuré, le 4 janvier 2027 sortait en semaine 2 au lieu de 1, et le
+  4 janvier 2021 aussi.* L'UTC écarte l'autre piège du genre — une différence de
+  dates en heures locales n'est pas un multiple de 24 h les nuits de changement
+  d'heure. *Dix cas de bord vérifiés, dont les semaines 53.*
+
+**LE LUNDI RESTE DANS `data-jour`**, et c'est lui que le glissement écrit : la
+case est un `.cal-jour` comme les autres, donc `jourSousLePoint`,
+`brancherSelection` et le dépôt d'un jalon marchent sans une ligne de plus.
+*Vérifié : « QCM des blocs » lâché sur la semaine 46 s'est posé au 9 novembre,
+son lundi.*
+
+**C'EST UNE VUE OÙ L'ON ZOOME** (demande de Noé) : **une semaine pressée ouvre la
+vue SEMAINE, le nom d'un mois ouvre la vue MOIS**. C'est la seule vue du hub où
+un appui n'ouvre pas la tuile de capture, et c'est cohérent — **on ne pose pas
+une chose « dans une semaine », on descend d'un cran pour voir où**. Le nom du
+mois est un vrai `<button>`, pas un `<p>` cliquable : il se tabule, et le hub ne
+fabrique pas de faux boutons.
+- **Zoomer déplace l'ancre**, donc revenir à l'année la fait commencer au mois où
+  l'on était. C'est voulu : l'ancre suit le regard, comme partout ailleurs.
+
+### LE TRIMESTRE — une vue « 3 mois » (2 septembre 2026, demande de Noé)
+
+**Les deux pages offrent SEMAINE · MOIS · 3 MOIS**, dans cet ordre : c'est la
+progression naturelle, du plus près au plus loin. Elle existe parce que **les
+jalons d'un cap et les étapes d'un projet tombent à des mois de distance** — les
+six jalons du Bac+3 vont du 15 septembre au 8 décembre — et qu'une vue mois n'en
+montrait jamais que le premier.
+
+**TROIS COLONNES, ET SA FORME À LUI** (correction de Noé, dans la foulée :
+*« les 3 mois doivent être 3 colonnes, ça ne doit pas avoir la même forme que les
+mois de la vue mois, c'est trop long »*).
+
+> *Ce que ça remplace, et il a raison.* La première version empilait trois
+> grilles de MOIS, l'une sous l'autre. **C'était trois mois de longueur** —
+> 1 700 px mesurés à 1210 px de large — et personne ne fait défiler un trimestre
+> pour le lire.
+
+**C'EST UNE QUESTION DE NATURE, PAS DE MISE EN PAGE.** Une grille de mois est
+faite pour qu'on LISE ce qu'il y a dans un jour : des barres titrées, une case de
+sept rem. Le trimestre répond à une autre question — **« où sont les échéances,
+où sont les creux »** —, c'est-à-dire la FORME du trimestre et non le contenu
+d'un jour. Sa case porte donc **son numéro et des POINTS, un par chose**.
+
+C'est exactement le choix du calendrier de « Mes journées » (1er septembre 2026),
+et le même motif : *« on ne pose rien, on CHOISIT un jour ; la case porte donc
+des signes et non des lignes »*.
+
+- **CE QU'ON PERD, ET QUI EST ASSUMÉ** : on ne lit pas un titre dans cette vue.
+  Il est dans le `title` de la case et dans son nom accessible ; et la vue Mois
+  est à un clic, juste à gauche.
+- **CE QU'ON GARDE, ET C'EST LE PLUS UTILE** : la case reste un `.cal-jour` avec
+  sa date. Tout ce qui vise un jour — poser ce qu'on tient, y lâcher un jalon,
+  l'atteindre au clavier — marche sans une ligne de plus. **Un jalon se glisse à
+  deux mois sans changer de vue**, ce qu'aucune autre vue ne permettait.
+  *Vérifié : « QCM des blocs » posé au 20 novembre depuis la colonne, en une
+  fois.*
+- **Quatre points, puis un compte** : au-delà, une rangée de points ne se compte
+  plus du regard — c'est ce qu'un chiffre fait mieux.
+- **PAS D'INITIALES DE JOURS, ET LE MOIS PREND LEUR PLACE** (troisième demande de
+  Noé : *« le L de lundi, M de mardi… ne doit pas y être, seulement le mois doit
+  être inscrit à cette place »*). Elles ne servaient à rien — **on ne vise pas un
+  mardi dans cette vue, on repère une grappe et un creux** ; le nom du mois, lui,
+  est ce qu'il faut savoir pour lire la colonne, et il volait un rang au-dessus
+  de la grille. Il occupe donc celui des initiales, à leur corps et sous leur
+  trait, et le trimestre gagne une ligne par mois.
+- **LES TROIS MOIS SONT COLLÉS, DANS UN SEUL CADRE** (même demande). Trois
+  `.cal-grille` voisines gardaient chacune son contour et ses angles arrondis :
+  au milieu du trimestre, deux traits et quatre coins ronds là où il ne devrait
+  rien y avoir. **C'est le trimestre qui porte le cadre** ; les mois n'ont plus
+  que leurs traits intérieurs, et le bord droit d'un mois DEVIENT la couture avec
+  le suivant — titre compris, pour que le trait descende d'un seul tenant.
+  *Mesuré à 1210 px : 297–590, 590–884, 884–1177, et les trois finissent à la
+  même ligne.*
+- **Un mois de cinq lignes s'étire à la hauteur de celui de six** : un cadre au
+  bord inférieur en dents de scie se lirait comme un défaut d'alignement.
+- **RIEN SUR UN JOUR QUI N'EST PAS DE CE MOIS-LÀ.** La grille garde la traîne des
+  mois voisins pour rester rectangulaire, mais elle ne la remplit pas : un jalon
+  du 31 octobre tombait sinon dans la grille d'octobre **et** dans la première
+  ligne de celle de novembre. Le même point à deux endroits se lit comme un
+  défaut, même quand il n'en est pas un — et ici, pas de titre pour dire que
+  c'est le même.
+- **Une case fait 2,75 rem**, et pas un pixel de plus : c'est la hauteur qui
+  décide si un trimestre tient sous les yeux. *Mesuré à 1210 px : 274 px pour les
+  trois mois, contre 1 700 pour trois grilles empilées.*
+- **Les trois colonnes s'empilent en dessous de 60 rem** : sept colonnes dans un
+  tiers de 375 px feraient 18 px par jour, soit moins qu'un chiffre.
+- **LA FENÊTRE GLISSE D'UN MOIS, elle ne se tourne pas comme une page** (règle
+  de Noé, avec son exemple : *« la période actuelle est septembre-novembre ; si
+  j'appuie sur la flèche qui va vers la droite, la période doit être
+  octobre-décembre »*).
+  > *J'avais compris l'inverse et posé un pas de trois mois — la fenêtre sautait
+  > de septembre-novembre à décembre-février.* **Une FENÊTRE de trois mois n'est
+  > pas une PAGE de trois mois** : on la fait glisser pour suivre une échéance
+  > qui arrive au bord, et un saut de trimestre la ferait justement disparaître
+  > d'un coup. Le pas est donc celui du mois ; c'est ce que la fenêtre MONTRE qui
+  > change, pas ce dont elle avance.
+- **ET L'ANCRE REPART DU 1er DU MOIS**, ce qui n'est pas de la coquetterie
+  (trouvé en vérifiant ce pas). `setMonth` DÉBORDE quand le mois d'arrivée est
+  plus court que le jour de départ : **depuis le 31 janvier, « mois suivant »
+  donnait le 31 février, c'est-à-dire le 3 mars — février était sauté.** Le jour
+  de l'ancre ne sert à rien dans ces deux vues — `grilleDuMois` et
+  `moisDuTrimestre` ne lisent que l'année et le mois —, on le pose donc au 1er.
+  **Le défaut touchait le calendrier plein écran depuis toujours**, un mois sur
+  sept.
+- **L'ancre est en TÊTE du trimestre**, pas au milieu : on regarde devant soi.
+- **`#calendrier` et les deux sites gardent leurs trois vues.** La barre sait
+  déplacer et nommer le trimestre comme l'année, mais c'est l'option `vues` qui
+  décide page par page — deux boutons de plus sur l'écran le plus visité du hub
+  seraient un rang de plus pour des vues qu'on n'y demande pas.
+
+**L'ARGENT DE « REMBOURSER MON MATÉRIEL » FERME LA PAGE**, sous les trois
+colonnes : c'est le seul cap du hub qui se mesure autrement qu'en jalons, et il
+le dit après tout le reste. Les prestations et le matériel s'y corrigent, comme
+avant — ils ont simplement suivi l'écran.
+
+### UN JALON N'A EU BESOIN DE RIEN
+
+Il porte une `echeance` depuis le premier jour, facultative, et le calendrier
+sait déjà le lire, le déplacer, le corriger et le supprimer. **C'est la seule
+différence avec l'étape d'un projet**, qu'il a fallu doter d'une colonne le même
+jour — et elle dit quelque chose de vrai : *un jalon a toujours été un point du
+calendrier, une étape un morceau de travail.*
+
+**CE QUI EST ATTEINT NE SE GLISSE PAS** : sa ligne dit encore son échéance, mais
+la déplacer réécrirait une date que le cap a déjà dépassée. Même règle que pour
+une étape franchie et une tâche faite.
+
+### Ce que `#objectifs` a perdu, et pourquoi
+
+Le dépliage d'un cap est parti, et **toute la machinerie qu'il portait avec lui**
+— franchir un jalon, l'ordonner, le poser, le modifier, le supprimer ; cocher une
+tâche, la rattacher, relire ce qui est fait ; les prestations et le matériel. Elle
+n'y était atteignable que depuis ce dépliage, et la garder aurait fait du code
+mort qu'on recopie.
+
+**La galerie garde tout ce qui se compare** : ses tuiles, leurs marches, leur
+menu — modifier, marquer atteint, supprimer — et les deux autres étages, les
+projets et les périodes. **Elle charge quatre tables au lieu de six** : les
+prestations et le matériel ne servaient qu'à l'argent d'un cap déplié.
+
+## La page d'un projet — `#projet/<id>` (2 septembre 2026)
+
+**LA DEMANDE, dans les mots de Noé** :
+
+> « Pour les projets, chacun d'eux doit avoir sa propre page (à ouvrir depuis la
+> page projet) dans laquelle un calendrier en vue mois et semaine et une colonne
+> pour les tâches et étapes que l'on pourra glisser dans le calendrier pour les
+> programmer. La page doit contenir tous les détails du projet également. »
+
+**CE QU'ELLE REMPLACE, ET IL FAUT LE DIRE.** Un projet se dépliait SUR PLACE
+dans la galerie de `#objectifs/projets` — la tuile prenait toute la largeur et
+montrait ses étapes, ses tâches, ce qu'il sert. La règle des deux rangs tranche
+autrement dès qu'il y a une page : **la galerie est à deux gestes et ne dit que
+ce qui se COMPARE ; la page est à trois, et elle dit tout.** Deux endroits qui
+montrent la même chose finissent par se contredire, et c'est toujours celui
+qu'on regarde le moins qui ment. Le dépliage est donc parti — git en garde la
+trace. *Un CAP, lui, continue de se déplier sur place : il n'a pas de page à
+lui, et sa règle du 27 août ne bouge pas.*
+
+**CE QU'ELLE AJOUTE, et qui n'existait nulle part : le TEMPS d'un projet.** Le
+hub savait qu'un projet portait quatorze tâches ; il ne montrait ni quand elles
+tombaient, ni les trous entre elles. Le calendrier de la page ne montre que ce
+qui sert ce projet-là — ses tâches, ses événements, ses parutions, ses étapes.
+
+### Ce qu'elle montre, dans l'ordre où on la lit
+
+1. **la porte de retour** vers la galerie — on entre ici depuis elle, et la
+   barre d'onglets n'en dit rien : cette page est au troisième rang ;
+2. **tous ses détails** : son espace, son état (qui se change sur place), **le
+   cap qu'il sert, à côté de son titre**, sa charge, son échéance, son
+   mouvement, sa jauge et **ce qui la mesure**, son résultat attendu, et le menu
+   à trois points ;
+
+**LE CAP SE LIT À CÔTÉ DU TITRE** (2 septembre 2026, demande de Noé : « j'aimerais
+que l'objectif que sert le projet soit noté à côté du titre du projet, en plus
+petite police et gris »). Les deux réponses à « où je suis » se lisent alors d'un
+seul regard : ce projet-ci, et ce vers quoi il pousse.
+- **Il est DANS le `h1`**, donc il en hérite tout — la police d'affichage, la
+  graisse 700, la chasse serrée, la hauteur de ligne d'un titre. On lui rend
+  celle du texte courant : sans quoi le cap aurait crié aussi fort que le nom du
+  projet, ce qui est l'inverse de ce qui est demandé.
+- **« Sert : » est HORS ÉCRAN, pas supprimé** : à l'œil, deux textes voisins de
+  deux tailles se comprennent sans mot de liaison ; à l'oreille, « Album du club
+  1 000 abonnés » n'en aurait aucun.
+- **SOUS le titre sur téléphone**, à côté de lui dès 720 px. *Mesuré à 375 px :
+  « Équipe com avec Lina  Laisser » puis « une com qui tourne sans moi » au ras
+  de la marge — la phrase se coupait en deux et sa suite se lisait comme un
+  second titre.*
+- *Ce que ça remplace : une ligne « CE QU'IL SERT » sous le résultat attendu.
+  Elle disait la même chose un écran plus bas.* **Conséquence assumée : un projet
+  qui ne sert AUCUN cap ne dit plus rien à cet endroit** — son absence est
+  l'information, et elle est légitime : de l'intendance, ça existe. Il se
+  rattache par le menu à trois points, dont la pastille « Objectifs servis ».
+
+3. **TROIS COLONNES : ses étapes, son calendrier, ses tâches.**
+
+### Trois colonnes, et chaque liste n'existe qu'une fois
+
+**La demande de Noé** (2 septembre 2026) : *« plutôt qu'une répétition des étapes
+et des tâches, faisons une colonne à gauche du calendrier pour les étapes comme
+elles sont affichées actuellement, et que l'on peut glisser-déposer à une date du
+calendrier ; et à droite pareil, une colonne pour les tâches que l'on peut
+filtrer par les tâches à poser, celles à faire, celles faites. »*
+
+> *Ce que ça remplace, et il a raison.* La page a porté TROIS listes pendant une
+> heure : une colonne « À poser » qui ne montrait que ce qui n'avait pas de jour,
+> puis, SOUS le calendrier, la frise entière des étapes et la liste entière des
+> tâches. Une étape sans date s'affichait donc **deux fois, à deux endroits qui
+> ne se ressemblaient pas**. La réserve et le découpage étaient la même chose vue
+> sous deux angles.
+
+**CE QUE ÇA CHANGE POUR LE GESTE** : on ne glisse plus seulement ce qui n'a pas
+de jour. **N'importe quelle étape, n'importe quelle tâche ouverte se pose ou se
+REPOSE d'un glissement**, depuis la liste même où on la relit.
+
+**CE QUI EST FAIT NE SE GLISSE PAS** — une étape franchie, une tâche terminée. Ce
+n'est pas une prudence : leur ligne n'affiche plus `echeance` mais le jour où
+c'est arrivé, et un glissement écrirait une date qu'on ne verrait pas changer.
+**Un geste dont on ne voit pas l'effet est pire qu'un geste absent.** *(Une
+occurrence de série repliée ne se glisse pas non plus : décaler l'une décalerait
+ce que la ligne représente — c'est déjà la règle du calendrier.)*
+
+**LE TITRE EST LA POIGNÉE, et c'est un vrai `<button>`** : le glissement est un
+geste de souris, et sans lui le clavier n'aurait aucun moyen de prendre une ligne
+en main. Un `role` posé sur un `span` aurait fait un faux bouton, ce que le hub
+ne fabrique pas. Le CSS lui retire tout ce qu'un navigateur ajoute à un bouton —
+mais **pas sa taille de texte**, qui vient de sa propre classe : un `font:
+inherit` la lui aurait volée.
+
+**DEUX ÉTATS DE MISE EN PAGE, ET PAS TROIS.** En dessous de 1200 px tout s'empile
+dans l'ordre du document ; au-dessus, les trois colonnes se rangent de gauche à
+droite **dans ce même ordre**. Un arrangement intermédiaire — les deux colonnes
+côte à côte au-dessus du calendrier — a été écarté : il aurait fallu déplacer la
+grille par la mise en page, et **le clavier serait alors passé dans un ordre que
+l'œil ne voit pas**. *Mesuré : 82 px par jour à 1200 px, aucun débordement de 375
+à 1500.*
+
+- **`en-main`** — les jours qui s'allument quand on tient quelque chose — vient
+  de « Ma semaine » et a perdu son préfixe pour servir les deux pages. Les
+  réglages de taille de la grille (`.semaine-grille`) sont partagés par une
+  virgule ; la mise en page, elle, est propre à cette page.
+- **Les colonnes ne dépassent pas le calendrier** : leur liste défile dans la
+  colonne, pas dans la page — sinon on perd de vue les jours où poser pendant
+  qu'on cherche quoi poser. C'est le réglage du vivier de « Ma semaine ». En
+  dessous de 1200 px il tombe : rien ne leur fait plus face.
+
+### La colonne de gauche : ses étapes
+
+**La MÊME frise que les jalons d'un cap**, telle qu'elle était — c'est ce que Noé
+a demandé. Le point qu'on presse pour franchir, le menu qui ordonne et modifie,
+« Poser une étape » en pied, hors de la liste qui défile.
+
+**SA DATE A LA FORME DE CELLE D'UNE TÂCHE** (correction de Noé, le même jour), et
+il a fallu la lui donner : `.cap-tache-date` n'a **aucun style à lui** — son
+corps et son encre discrète viennent entièrement de `.cap-tache-service`, qui
+l'entoure sur une ligne de tâche. Posée nue dans la frise, elle héritait du corps
+de la page, donc **1 rem en encre pleine — plus grosse que le titre de l'étape**,
+qui vaut 0,875 rem. Elle porte maintenant le même conteneur, et les deux colonnes
+disent une date de la même façon.
+
+### La colonne de droite : ses tâches
+
+**TROIS FILTRES, ET UN SEUL À LA FOIS** — *à poser · programmées · faites*. Ce
+sont trois QUESTIONS différentes, pas trois cases à combiner. Le dessin est celui
+des `.affichages` du calendrier : c'est le MÊME geste — choisir ce qu'une liste
+montre —, et écrire un troisième dessin pour un geste qui en a déjà un, c'est
+fabriquer la divergence qu'on passe ensuite à rattraper.
+
+**« PROGRAMMÉES » ET NON « À FAIRE »** (correction de Noé, le même jour). Et
+c'est plus juste : « à faire » CONTENAIT « à poser », si bien que passer de l'un
+à l'autre ne retirait rien — on ne voyait pas ce que le filtre faisait. Les trois
+sont maintenant **disjoints** : ce qui n'a pas de jour, ce qui en a un, ce qui est
+fait. Mis bout à bout, ils font exactement le projet.
+
+**« À poser » est le défaut** : c'est la page où l'on place, et c'est la seule des
+trois listes dont chaque ligne appelle un geste. Les deux autres se relisent.
+
+**Changer de filtre REPOSE ce qu'on tenait** : garder en main une chose qu'on ne
+voit plus est un piège.
+
+- **SEMAINE, MOIS, 3 MOIS, ANNÉE — PAS D'AGENDA** : un agenda répéterait la
+  liste de ses tâches, qui vit dans la colonne d'à côté. C'est l'option `vues` de
+  `construireBarrePeriode`. Le trimestre et l'année sont arrivés le 2 septembre
+  2026 : voir « La page d'un objectif », où ils sont décrits — les deux pages les
+  offrent.
+- **AUCUN FILTRE DE NATURE.** La page ne montre qu'un projet ; cacher une part
+  de si peu n'ajouterait qu'une rangée de cases à cocher.
+- **LA PAGE PORTE LA COULEUR DE SON ESPACE.** « projet » est le nom d'un ÉCRAN,
+  pas d'un espace de Noé — un projet, lui, appartient à un espace, et c'est celui
+  qu'on doit sentir, comme dans la galerie d'où l'on vient. Le nom de la page est
+  le nom du projet, dans l'onglet du navigateur.
+  - **Les deux se REPOSENT à chaque passage du routeur**, et pas seulement au
+    chargement : `app.js` les écrit dans `afficherEspace`, qu'il appelle une
+    seconde fois au démarrage — Supabase rend un événement de session juste
+    après qu'on s'y abonne. *Mesuré : l'onglet repassait à « Projet — Hub » et
+    l'accent au gris neutre une fois la page déjà affichée, sans que rien à
+    l'écran ne bouge.*
+- **« Ouvrir sa page » s'ajoute sous un projet déplié dans son cap** : sans ce
+  lien, la page ne s'atteindrait que depuis la galerie.
+
+### Les trois gestes, repris de « Ma semaine » au trait près
+
+| Geste | Ce qu'il écrit |
+|---|---|
+| une ligne d'une colonne **sur un jour** | `echeance` = ce jour |
+| une barre **d'un jour à l'autre** | le décalage habituel du calendrier |
+| une barre **ramenée dans une colonne** | `echeance` à `null` — elle se déprogramme |
+
+**LES DEUX COLONNES DÉPROGRAMMENT**, et c'est voulu qu'elles le fassent toutes
+les deux : **ce qui décide est la CHOSE qu'on lâche, pas l'endroit où on la
+lâche.** Une étape ramenée sur la colonne des tâches perd son jour comme si elle
+était rentrée chez elle — se tromper de colonne ne doit pas annuler le geste.
+
+**AU DOIGT, ON NE GLISSE PAS** : sur une liste verticale, un glissement ne se
+distingue pas d'un défilement. On touche le titre, puis on touche le jour, et les
+jours s'allument tant qu'on tient quelque chose.
+
+### UNE ÉTAPE PORTE UN JOUR (décision de Noé, entre deux options)
+
+**CE QUE ÇA RENVERSE.** Le 29 août, `projets_etapes` est née SANS échéance, et
+pour une raison écrite : *« une étape découpe le TRAVAIL, pas le calendrier ; ce
+sont les tâches qui portent les dates »*. C'était la différence entre une étape
+et un jalon.
+
+Glisser une étape sur un calendrier demandait de trancher : **fabriquer une
+tâche qui la porte** (l'étape aurait gardé sa règle), ou **donner un jour à
+l'étape**. Noé a choisi la seconde — la plus directe, celle où **ce qu'on glisse
+est ce qu'on retrouve**.
+
+- **Ce qui NE change pas** : l'étape reste le découpage du travail, elle se
+  franchit et elle s'ordonne. Elle gagne un jour ; elle ne gagne ni durée, ni
+  heure, ni statut.
+- **Elle reste FACULTATIVE** : un découpage qui n'a pas encore de jour est un
+  découpage, pas un retard.
+- **Elle devient une barre du calendrier**, du même dessin qu'un jalon — ce sont
+  deux échéances, et leur inventer une forme à elles ferait un alphabet à
+  retenir. Son signe est le carré creux : les deux triangles sont pris par
+  l'objectif et son jalon.
+- **`etape` est un TYPE du calendrier, jamais une NATURE** : elle n'existe que
+  sur cette page, qui l'ajoute elle-même à l'ensemble qu'elle passe. Une case à
+  cocher au calendrier plein écran promettrait ce qui n'y est pas. C'est
+  exactement le statut du « bloc » de « Ma semaine ».
+- **Le reste s'est branché tout seul** : `champsApresDeplacement` range déjà
+  toute date inconnue dans `echeance`, et `champsDeModification` demande un titre
+  et une échéance à ce qui n'est ni un événement ni une publication. Il n'a fallu
+  ajouter que l'écriture (`appliquerAuCalendrier`, `effacerDepuisLeCalendrier`).
+
+### Ce qui a été mis en commun plutôt que recopié
+
+- **`construireMenuDiscret`** (js/gabarits.js) : la page en porte un sur le
+  projet, sur chacune de ses étapes et sur chacune de ses tâches. Le gabarit est
+  PUR — on lui dit ce qui est ouvert et ce qui attend confirmation —, ce qui
+  permet à deux écrans de tenir leur menu chacun de leur côté.
+- **`FORMULAIRES`, `grouperLesTaches`, `jaugeDuProjet`, `motDeLAvancee`,
+  `motDuMouvement`, `pastilleEtat`** viennent de `js/objectifs.js` : deux listes
+  de champs auraient fini par ne plus demander la même chose, et une jauge qui
+  dirait deux choses selon l'écran ferait croire celui qu'on regarde le plus.
+
+**LA MACHINERIE DES ÉTAPES A QUITTÉ `#objectifs`** — franchir, ordonner, poser,
+modifier, supprimer : elle n'y était atteignable que depuis le dépliage qui a
+disparu, et la garder aurait fait du code mort qu'on recopie.
+
+**`brancherCapture` SEUL, jamais avec `brancherChoix`** : les deux écoutent
+`[data-ouvrir-choix]`, et un menu ouvert puis refermé dans le même clic ne
+s'ouvre jamais. C'est le double traitement qui avait fait retirer l'appel du site
+FCH.
+
+> **Le piège de nommage, payé une sixième fois.** Les classes de la page se sont
+> d'abord appelées `.projet-tete`, `.projet-service` — deux noms DÉJÀ PRIS par la
+> tuile de projet du tableau de bord. La tête de la page héritait donc d'un
+> `display: flex` et se rangeait sur une seule ligne, titre compris. `.fiche-tete`,
+> essayé ensuite, était pris lui aussi — par `css/fch.css`, **qui est chargée sur
+> les trois pages d'entrée**. Elles s'appellent `.projet-page-*`. *Le grep de
+> trois secondes n'est toujours pas facultatif, et il doit couvrir les trois
+> feuilles.*
+>
+> **Et le piège de la spécificité, payé dans la foulée.** Les deux colonnes
+> portent les listes de `#objectifs` telles quelles, mais elles vivent dans une
+> `.bloc` — et au-delà de 60 rem, `.bloc ul:not(.liste-jalons)` passe TOUTES les
+> listes du hub en grille (spécificité 0-2-1). Écrite `.projet-page-colonne
+> .cap-taches` (0-2-0), ma règle perdait : la liste restait une grille, où chaque
+> ligne garde `min-width: auto` et refuse de descendre sous la largeur de son
+> contenu. *Mesuré à 1500 px : des lignes de 315 px dans une colonne de 270, le
+> menu à trois points 45 px hors de l'écran.* Il a fallu écrire
+> `ul.cap-taches`. **Une spécificité qu'on n'égale pas est une règle qu'on
+> n'écrit pas.**
 
 ## Ma semaine — `#semaine` (30 août 2026)
 
@@ -3044,7 +3960,7 @@ de carte dit « écris ici » ; une pastille dit « choisis ».
   29 août** — la bande d'onglets, la colonne des projets, les deux colonnes de
   la journée — et il ne se voit jamais sur l'écran large où l'on travaille. Pour
   une piste de grille, la même chose s'écrit `minmax(0, 1fr)` et non `1fr`.
-- **Avant de nommer une classe CSS OU UNE FONCTION, vérifier que le nom est libre.** Le 1er septembre 2026, `construireHabitudesDuJour` a été écrite une seconde fois dans js/perso.js : le module s'est chargé sur « Identifier has already been declared » et a emporté tout l'écran. `node --check` passe — c'est un fichier valide —, seul le chargement tombe. La leçon est la même que pour `.barre` : un `grep` de trois secondes. `.barre`
+- **Avant de nommer une classe CSS OU UNE FONCTION, vérifier que le nom est libre — ET DANS LES TROIS FEUILLES.** `index.html` charge `css/styles.css`, `css/yuno.css` ET `css/fch.css` : un nom pris par la feuille d'un site s'applique au hub. Le 2 septembre 2026, `.projet-tete` (déjà pris par la tuile de projet du tableau de bord) a mis la tête de la page d'un projet sur une seule ligne, titre compris ; `.fiche-tete`, essayé ensuite, était pris par `css/fch.css`. Deux collisions pour une même tête. Le 1er septembre 2026, `construireHabitudesDuJour` a été écrite une seconde fois dans js/perso.js : le module s'est chargé sur « Identifier has already been declared » et a emporté tout l'écran. `node --check` passe — c'est un fichier valide —, seul le chargement tombe. La leçon est la même que pour `.barre` : un `grep` de trois secondes. `.barre`
   existait déjà (la progression de la formation) et la barre d'onglets l'a repris :
   déclarée plus bas, l'ancienne gagnait, et la nouvelle héritait de `height: 6px`
   — plus `.barre span` qui peignait les trois traits du menu en un seul bloc. Un

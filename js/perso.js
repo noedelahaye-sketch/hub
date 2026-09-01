@@ -16,14 +16,16 @@ import { construireFormulaire, brancherChoix } from './gabarits.js';
 import { retirerAussitot } from './ecriture.js';
 import {
   etatDesHabitudes,
-  motDeLElan,
   PALIERS_HABITUDE,
   avanceeDuLivre,
   livreEnCours,
   relecture,
   bilanDesHabitudes,
   estQuotidienne,
+  rangDeLaSerie,
   historiqueDeLHabitude,
+  historiqueQuotidienDeLHabitude,
+  JOURS_REGARDES,
   SEMAINES_REGARDEES,
 } from './orientation.js';
 import {
@@ -175,8 +177,6 @@ export function construireIntentions(intentions) {
 // L'habitude ouverte montre tout ; les autres tiennent en une ligne. Sans ce
 // pli, cinq habitudes feraient un tableau de bord, et un tableau de bord ne
 // donne envie de rien.
-const CRANS_ELAN = 10;
-
 // Le même helper que dans js/objectifs.js. Il n'est pas importé de là : cet
 // écran-ci n'a aucune raison de dépendre de la page du cap, et trois lignes
 // valent mieux qu'un lien entre deux espaces qui n'ont rien à voir.
@@ -184,18 +184,7 @@ function pluriel(nombre, singulier, plurielMot = `${singulier}s`) {
   return `${nombre} ${nombre > 1 ? plurielMot : singulier}`;
 }
 
-function jaugeElan(elan, couleur) {
-  const pleins = Math.round((elan / 100) * CRANS_ELAN);
-  return `<span class="elan-jauge" role="img" aria-label="élan ${elan} sur 100">${Array.from(
-    { length: CRANS_ELAN },
-    (_, rang) =>
-      `<i class="${rang < pleins ? 'plein' : ''}"${
-        rang < pleins && rang === pleins - 1 ? ' data-tete' : ''
-      } style="--teinte: ${couleur}"></i>`,
-  ).join('')}</span>`;
-}
-
-const TEINTES_FAMILLE = {
+export const TEINTES_FAMILLE = {
   corps: 'var(--famille-corps)',
   calme: 'var(--famille-calme)',
   lien: 'var(--famille-lien)',
@@ -207,7 +196,7 @@ const TEINTES_FAMILLE = {
 // d'un coup d'œil ce qu'on coche. Ici, dans la page où l'on GÈRE ses habitudes,
 // les mots restent nécessaires — on vient y lire une cadence, un pourquoi, un
 // palier. L'émoji précède donc le nom au lieu de l'effacer.
-function signeHabitude(habitude) {
+export function signeHabitude(habitude) {
   const emoji = (habitude.emoji ?? '').trim();
   return emoji
     ? `<span class="habitude-signe" aria-hidden="true">${echapper(emoji)}</span>`
@@ -239,7 +228,7 @@ function signeHabitude(habitude) {
 // plancher à 6 % pour qu'une semaine vide reste VISIBLE : une barre de hauteur
 // nulle disparaîtrait, et la courbe aurait des trous là où elle doit avoir des
 // creux.
-function hauteurBarre(total, plafond) {
+export function hauteurBarre(total, plafond) {
   return total === 0 ? 6 : Math.max(12, Math.round((total / plafond) * 100));
 }
 
@@ -264,24 +253,68 @@ function courbeDesSemaines(bilan) {
       aria-label="Pratiques des ${SEMAINES_REGARDEES} dernières semaines">${barres}</div>`;
 }
 
-// LA SPARKLINE D'UNE HABITUDE : ses douze semaines, dans sa couleur de famille.
-// Une semaine TENUE est pleine, une semaine entamée est en creux — c'est la
-// seule distinction, et elle ne dit jamais « raté », seulement « tenu ».
-function sparkline(habitude, faits, jour) {
-  const histoire = historiqueDeLHabitude(habitude, faits, jour);
-  const plafond = Math.max(1, ...histoire.map((semaine) => semaine.total));
+// LA SPARKLINE D'UNE HABITUDE, dans sa couleur de famille. Ce qui est TENU est
+// plein, ce qui est entamé est en creux — c'est la seule distinction, et elle ne
+// dit jamais « raté », seulement « tenu ».
+//
+// SA MAILLE SUIT L'UNITÉ QUE L'HABITUDE COMPTE (2 septembre 2026, demande de
+// Noé : « pour les séries journalières, le graphique doit être par jour et non
+// par semaine, montre les 14 derniers jours »). Une quotidienne se compte en
+// JOURS depuis le 30 août — sa série, son recul d'un cran — et son graphique
+// restait hebdomadaire : il montrait « 7 sur 7 » douze fois de suite, douze
+// barres pleines qui ne disaient plus rien.
+//
+// LE PLUS RÉCENT À GAUCHE (même jour, correction de Noé : « avec le dernier jour
+// qui s'affiche à gauche, actuellement c'est à droite »). C'est le sens de
+// lecture de tout le reste du hub — ce qui vient d'arriver ouvre la ligne, les
+// victoires du « chemin » comme les tâches faites d'un projet.
+//
+// UNE SEULE FONCTION POUR LES DEUX ÉCRANS : la carte des habitudes et la page
+// d'une habitude dessinaient la même chose chacune de son côté. Deux copies
+// auraient fini par ne plus lire dans le même sens — ce qui a failli arriver le
+// jour même.
+export function sparkline(habitude, faits, jour, { classe = '' } = {}) {
+  const quotidienne = estQuotidienne(habitude);
+  const histoire = (quotidienne
+    ? historiqueQuotidienDeLHabitude(habitude, faits, jour)
+    : historiqueDeLHabitude(habitude, faits, jour)
+  ).slice().reverse();
+  const plafond = Math.max(1, ...histoire.map((pas) => pas.total));
+
+  const nomme = (pas) =>
+    quotidienne
+      ? `${depuisDateISO(pas.jour).toLocaleDateString('fr-FR', {
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short',
+        })} — ${pas.fait ? 'faite' : 'pas faite'}`
+      : `${pas.total} cette semaine-là`;
 
   return `
-    <div class="hab-spark" role="img"
-      aria-label="${SEMAINES_REGARDEES} dernières semaines">${histoire
-      .map((semaine) => {
-        const classes = [semaine.tenue ? 'tenue' : '', semaine.enCours ? 'en-cours' : '']
+    <div class="hab-spark ${classe}" role="img"
+      aria-label="${
+        quotidienne
+          ? `${JOURS_REGARDES} derniers jours, le plus récent à gauche`
+          : `${SEMAINES_REGARDEES} dernières semaines, la plus récente à gauche`
+      }">${histoire
+      .map((pas) => {
+        const classes = [pas.tenue ? 'tenue' : '', pas.enCours ? 'en-cours' : '']
           .filter(Boolean)
           .join(' ');
-        return `<i class="${classes}" style="height:${hauteurBarre(semaine.total, plafond)}%"
-          title="${semaine.total} cette semaine-là"></i>`;
+        return `<i class="${classes}" style="height:${hauteurBarre(pas.total, plafond)}%"
+          title="${echapper(nomme(pas))}"></i>`;
       })
       .join('')}</div>`;
+}
+
+// Ce que la sparkline dit d'elle-même, sous elle. Les deux écrans l'écrivent, et
+// il n'y a qu'une phrase par maille.
+export function motDeLaSparkline(habitude) {
+  return estQuotidienne(habitude)
+    ? `Les ${JOURS_REGARDES} derniers jours, d'aujourd'hui à il y a deux semaines.
+       Un jour fait est plein.`
+    : `Les ${SEMAINES_REGARDEES} dernières semaines, de la plus récente à la plus
+       ancienne. Une semaine tenue est pleine.`;
 }
 
 // LES QUATRE CHIFFRES DU HAUT. Aucun ne peut baisser à cause d'un oubli : trois
@@ -320,44 +353,41 @@ function statsGlobales(bilan) {
 }
 
 // La carte d'une habitude : tout ce qu'elle a à dire, sans pli.
-function carteHabitude({ habitude, elan, serie, cumul, faitAujourdhui }, faits, jour) {
+function carteHabitude({ habitude, serie, cumul, faitAujourdhui }) {
   const couleur = TEINTES_FAMILLE[habitude.famille] ?? 'var(--accent)';
 
   // L'ordre des mesures suit ce qu'elles engagent : la semaine d'abord (elle
   // peut encore bouger), la série ensuite (ce qu'on ne veut pas perdre), le
   // cumul enfin (il ne bouge jamais à la baisse).
+  // DEUX OU TROIS CHIFFRES, ET LES MOTS DE LA PAGE (2 septembre 2026, demande de
+  // Noé : « sur cet affichage il doit donc y avoir moins d'infos, seulement
+  // l'essentiel, avec le voc qu'on a corrigé »).
+  //
+  // La carte COMPARE, la page dit tout. Ce qui reste ici est ce qu'on regarde
+  // avant de cocher ; le reste est à un clic, sur `#habitude/<id>`.
   const chiffres = [
-    // Une QUOTIDIENNE se lit au jour : « 5/7 cette semaine » dirait juste, mais
-    // ce n'est pas la question qu'on se pose devant elle — c'est « est-ce que
-    // je l'ai faite aujourd'hui ». Les hebdomadaires gardent leur compte.
-    !habitude.cadence
+    // Une QUOTIDIENNE ne dit pas sa semaine : le rond, à trois centimètres de
+    // là, dit déjà si elle est faite aujourd'hui — et « pas encore aujourd'hui »
+    // comptait un manque, ce que le hub ne fait pas. Les hebdomadaires le
+    // gardent : leur rond ne peut pas dire « 2 sur 3 ».
+    !habitude.cadence || estQuotidienne(habitude)
       ? null
-      : estQuotidienne(habitude)
-        ? serie?.faitAujourdhui
-          ? 'faite aujourd’hui'
-          : 'pas encore aujourd’hui'
-        : `<b>${serie?.cetteSemaine ?? 0}</b>/${habitude.cadence} cette semaine`,
-    // Le mot suit l'UNITÉ : une quotidienne compte des jours, une hebdo des
-    // semaines. Écrire « semaines » sur les deux aurait fait mentir la moitié
-    // des cartes le jour où le compte est devenu quotidien.
+      : `<b>${serie?.cetteSemaine ?? 0}</b>/${habitude.cadence} cette semaine`,
+    // LE MOT DE LA PAGE : « série en cours », pas « jours tenus » — ce dernier
+    // demandait de deviner de quoi on parlait, et il n'y a pas de raison qu'une
+    // même mesure change de nom d'un écran à l'autre. L'unité part dans la
+    // bulle, où elle ne coûte pas de place.
     serie && serie.semaines
-      ? `<b>${serie.semaines}</b> ${
-          serie.unite === 'jour'
-            ? serie.semaines > 1 ? 'jours tenus' : 'jour tenu'
-            : serie.semaines > 1 ? 'semaines tenues' : 'semaine tenue'
-        }`
+      ? `<b>${serie.semaines}</b> série en cours`
       : null,
-    // Quand rien n'a été fait, reste ET palier valent le même nombre :
-    // « encore 10 avant 10 » est juste et illisible. Même garde que la colonne
-    // du tableau de bord — la formulation vit à deux endroits, la règle aussi.
+    // CE QUI A ÉTÉ FAIT, PAS CE QUI RESTE — la règle de la page, appliquée ici
+    // le même jour : « encore 8 avant 10 » comptait un manque et prenait deux
+    // items pour ce qu'un seul dit. Le total EST le numérateur.
     cumul?.prochain
-      ? cumul.total
-        ? `encore <b>${cumul.reste}</b> avant ${cumul.prochain}`
-        : `encore <b>${cumul.reste}</b>`
-      : null,
-    // « 0 au total » sur une habitude qu'on vient de poser n'apprend rien et
-    // ressemble à un constat d'échec. Elle se tait jusqu'à la première fois.
-    cumul?.total ? `<b>${cumul.total}</b> au total` : null,
+      ? `<b>${cumul.total}</b>/${cumul.prochain} vers le palier`
+      : cumul?.total
+        ? `<b>${cumul.total}</b> au total`
+        : null,
   ].filter(Boolean);
 
   return `
@@ -369,27 +399,32 @@ function carteHabitude({ habitude, elan, serie, cumul, faitAujourdhui }, faits, 
           aria-label="${faitAujourdhui ? 'Revenir sur' : 'Marquer'} « ${echapper(
             habitude.nom,
           )} »"></button>
-        <span class="hab-carte-nom">
+        <!-- LE NOM EST UNE PORTE (2 septembre 2026) : la carte compare, la page
+             dit tout — depuis quand l'habitude existe, ses paliers, son rythme,
+             et le calendrier de ce qui a été fait. La carte reste : c'est un
+             tableau de bord, pas un index. -->
+        <a class="hab-carte-nom" href="#habitude/${encodeURIComponent(habitude.id)}">
           ${signeHabitude(habitude)}${echapper(habitude.nom)}
-        </span>
+        </a>
         ${
-          // L'élan se dit en MOT avant de se dire en jauge : « solide » se lit
-          // plus vite qu'un 98, et aucun de ces mots n'est un reproche — une
-          // habitude en sommeil est une habitude qui attend.
-          elan === null
-            // « Quand ça vient » ne se dit plus (30 août 2026) : l'option
-            // n'existe plus, et le mot désignait une nature d'habitude que Noé
-            // a écartée. Ce qui reste est un état transitoire — une habitude
-            // qui n'a pas encore sa cadence.
-            ? '<span class="hab-carte-elan discret">sans cadence</span>'
-            : `<span class="hab-carte-elan">${motDeLElan(elan)}</span>`
+          // L'ÉLAN A QUITTÉ LE HUB (2 septembre 2026, décision de Noé, en deux
+          // temps : « supprime les petits ronds et en sommeil » sur la page
+          // d'une habitude, puis « enlève alors en sommeil et les petits
+          // points » ici). Il ne reste que le cas où il n'y a rien à mesurer —
+          // une habitude sans cadence —, qui n'est pas un élan mais un réglage
+          // qui manque, et qu'il faut pouvoir voir pour le corriger.
+          habitude.cadence
+            ? ''
+            : '<span class="hab-carte-elan discret">sans cadence</span>'
         }
         ${menuDiscret('habitude', habitude.id)}
       </div>
 
-      ${elan === null ? '' : jaugeElan(elan, couleur)}
-      ${sparkline(habitude, faits, jour)}
-
+      <!-- PAS DE GRAPHIQUE ICI (2 septembre 2026, demande de Noé). La sparkline
+           répond à « comment ça a évolué » — une question qu'on se pose sur UNE
+           habitude, pas sur neuf d'affilée. Elle vit sur sa page, où elle a la
+           place de se lire ; ici elle prenait deux hauteurs de texte par carte,
+           sa légende comprise, pour douze barres de 3 px. -->
       <p class="hab-carte-chiffres">${chiffres.join(' · ')}</p>
       ${habitude.pourquoi ? `<p class="hab-carte-pourquoi">${echapper(habitude.pourquoi)}</p>` : ''}
     </article>`;
@@ -452,77 +487,68 @@ export function construireHabitudes(etats, donnees = {}) {
           : ''
       }
       <div class="hab-cartes">
-        ${lot.map((etat) => carteHabitude(etat, faits, jour)).join('')}
+        ${lot.map((etat) => carteHabitude(etat)).join('')}
       </div>`,
       )
       .join('')}
     ${ajout}`;
 }
 
-// Un point par pratique visée dans la semaine, plein quand elle est faite. Le
-// motif des jalons du hub : « il en reste un » se voit sans compter.
-function pointsDeLaSemaine(fait, cadence) {
-  const points = Array.from({ length: cadence }, (_, i) =>
-    `<i${i < fait ? ' class="tenu"' : ''}></i>`,
-  ).join('');
-  return `<span class="hab-points" aria-hidden="true">${points}</span>`;
-}
-
 export function construireHabitudesDuJour(etats = []) {
   if (!etats.length) return '';
 
-  const ligne = ({ habitude, serie, cumul, faitAujourdhui }) => {
+  const ligne = ({ habitude, serie, faitAujourdhui }) => {
       const emoji = (habitude.emoji ?? '').trim();
-      const cadence = habitude.cadence ?? 0;
-      const cetteSemaine = serie?.cetteSemaine ?? 0;
 
-      // LES POINTS SEULS, SANS LÉGENDE (30 août 2026, demande de Noé : « les
-      // stats doivent prendre moins de place »). « 1 sur 3 cette semaine »
-      // répétait en dix-huit caractères ce que trois points disaient déjà — et
-      // c'est ce texte qui rognait les noms : « Poser le téléphone avant de
-      // dormir » tombait à « Poser le télépho… » sur grand écran.
+      // LES DEUX SÉRIES, ET LE CODE COULEUR (2 septembre 2026, demande de Noé :
+      // « les stats présentes doivent être série en cours et série max, avec le
+      // code couleur »).
       //
-      // La phrase complète n'est pas perdue : elle passe en `title`, pour qui
-      // la cherche. Ce qui se lit d'un coup d'œil n'a pas besoin d'être écrit.
-      // SANS CADENCE, PAS DE POINTS — ET RIEN D'AUTRE. L'absence de points dit
-      // déjà qu'aucune cible n'est posée. Depuis le 30 août 2026, ce cas est
-      // TRANSITOIRE : on ne peut plus créer d'habitude sans cadence, seules
-      // celles d'avant en portent encore une, et la page les range dans
-      // « À régler ».
-      const semaine = cadence
-        ? `<span class="hab-mesure hab-semaine"
-             title="${cetteSemaine} sur ${cadence} cette semaine">
-             ${pointsDeLaSemaine(cetteSemaine, cadence)}
-           </span>`
-        : '<span class="hab-mesure" title="sans cadence — à régler"></span>';
+      // CE QUE ÇA REMPLACE : les points de la semaine et le chiffre du prochain
+      // palier — les deux mesures posées le 30 août. Le motif d'alors tient
+      // toujours (« deux mesures, et pas trois »), c'est le CHOIX des deux qui
+      // change : une série est ce qu'on ne veut pas perdre, et c'est ce qui fait
+      // cocher un soir où l'on n'en a pas envie. Un palier à dix jours de là ne
+      // pousse personne.
+      //
+      // LES MOTS SONT CEUX DE SA PAGE, et la couleur aussi (`rangDeLaSerie`,
+      // js/orientation.js) — une même mesure ne change ni de nom ni de teinte
+      // d'un écran à l'autre. Ici il n'y a la place ni pour les mots ni pour la
+      // flamme : ils partent dans la bulle et le nom accessible, la parade de
+      // cette ligne depuis le premier jour.
+      const rang = rangDeLaSerie(serie);
+      const unite = serie?.unite === 'jour' ? 'jours' : 'semaines';
 
-      // LE PALIER TIENT EN DEUX MOTS : « encore 9 ». Il disait « encore 9 avant
-      // 10 » — le palier visé est le seul détail qu'on perde, et il part en
-      // `title` avec le reste. Ce qui donne envie, c'est le nombre qui descend,
-      // pas la borne qu'il vise ; et il descend toujours vers un palier proche,
-      // c'est la règle même des paliers.
+      // LES DEUX CHIFFRES SONT TOUJOURS LÀ, ZÉRO COMPRIS (2 septembre 2026, deux
+      // corrections de Noé : « je ne vois pas la série max là », et « si la
+      // série en cours est 0 mets 0 »).
       //
-      // Le dernier franchi se dit aussi : arriver à 365 n'est pas une raison de
-      // n'avoir plus rien à lire sur sa ligne.
-      // LE CHIFFRE NU (30 août 2026, demande de Noé : « le texte n'est pas
-      // nécessaire une fois que je sais à quoi les chiffres correspondent »).
-      // C'est son écran, il le lit tous les jours : « encore » ne lui apprenait
-      // plus rien et coûtait sept caractères sur chaque ligne.
+      // Ce sont DEUX RÈGLES qui tombent, et il a raison sur les deux :
+      //   — le record se taisait quand il égalait la série, au motif que l'or
+      //     disait déjà l'égalité. Mais on ne lit pas une couleur qu'on n'a pas
+      //     encore apprise, et **une colonne vide ne se lit pas comme « c'est
+      //     pareil », elle se lit comme « il n'y a rien »** ;
+      //   — « une série à zéro ne s'affiche pas » datait du 30 août et
+      //     protégeait une habitude neuve d'un « 0 » en guise d'accueil. Dans
+      //     DEUX COLONNES ALIGNÉES, la case vide était pire : elle décalait le
+      //     regard, et on ne savait plus lequel des deux chiffres manquait.
       //
-      // Le sens n'est pas perdu, il est DÉPLACÉ : le `title` porte la phrase
-      // entière, et `aria-label` la donne au lecteur d'écran — qui, lui, ne
-      // sait pas à quoi le chiffre correspond.
-      const total = cumul?.total ?? 0;
-      const palier = cumul?.prochain
-        ? `<span class="hab-mesure hab-palier"
-             title="encore ${cumul.reste} avant le palier ${cumul.prochain} — ${total} au total"
-             aria-label="encore ${cumul.reste} avant le palier ${cumul.prochain}">
-             <span class="chiffre">${cumul.reste}</span>
-           </span>`
-        : `<span class="hab-mesure hab-palier" title="tous les paliers franchis"
-             aria-label="${total} fois au total">
-             <span class="chiffre">${total}</span>
-           </span>`;
+      // Un zéro dans une colonne qui en compte une autre n'est pas un reproche,
+      // c'est une case remplie.
+      const mesure = (valeur, rangCouleur, mot) =>
+        `<span class="hab-mesure hab-serie" data-serie="${rangCouleur}"
+           title="${mot} : ${valeur} ${unite}"
+           aria-label="${mot} : ${valeur} ${unite}">
+           <span class="chiffre">${valeur}</span>
+         </span>`;
+
+      // À ÉGALITÉ, LES DEUX CHIFFRES SONT EN OR — la règle de la page d'une
+      // habitude, où « les deux tuiles le prennent ». Sans ça, la même égalité
+      // se lisait en or ici et en orange là : c'est exactement la divergence
+      // qu'on vient d'éviter en sortant la règle de couleur dans l'orientation.
+      const series =
+        mesure(serie?.semaines ?? 0, rang, 'Série en cours') +
+        mesure(serie?.record ?? 0, rang === 'record' ? 'record' : 'max', 'Série max');
 
       // LE ROND EN PREMIER, TOUT À GAUCHE (demande de Noé, 30 août 2026). C'est
       // le geste qu'on vient faire : il se trouve sous le pouce dès qu'on ouvre
@@ -540,7 +566,7 @@ export function construireHabitudesDuJour(etats = []) {
           ${emoji ? `<span class="hab-emoji" aria-hidden="true">${echapper(emoji)}</span>` : ''}
           <span class="hab-nom">${echapper(habitude.nom)}</span>
         </span>
-        ${semaine}${palier}
+        ${series}
       </li>`;
   };
 
@@ -1646,7 +1672,9 @@ function squelette() {
 //
 // La tuile SERT AUSSI À CORRIGER une intention, ce que la page ne savait pas
 // faire : on ne pouvait que la jeter et la réécrire.
-const FORMULAIRES = {
+// EXPORTÉ le 2 septembre 2026 : la page d'une habitude pose le même formulaire,
+// et deux listes de champs auraient fini par ne plus demander la même chose.
+export const FORMULAIRES = {
   intention: {
     ajouter: 'Écrire une intention',
     modifier: "Modifier l'intention",
@@ -1683,15 +1711,10 @@ const FORMULAIRES = {
     modifier: "Modifier l'habitude",
     champs: (v) => [
       { nom: 'nom', libelle: 'Habitude', type: 'text', requis: true, valeur: v.nom },
-      {
-        nom: 'emoji',
-        // Le mot « émoji » suffit à dire quoi y mettre ; la phrase dit à quoi
-        // il SERT, parce que ce n'est pas un ornement — c'est ce que l'accueil
-        // affichera à la place du nom.
-        libelle: 'Émoji (facultatif — il remplace le nom sur l’accueil)',
-        type: 'text',
-        valeur: v.emoji ?? '',
-      },
+      // LE CARRÉ, À GAUCHE DU NOM (2 septembre 2026). Il ne descend pas dans la
+      // rangée de pastilles : c'est l'image de la chose qu'on nomme, pas un
+      // réglage. Voir `type: 'emoji'` dans js/gabarits.js.
+      { nom: 'emoji', libelle: 'Émoji', type: 'emoji', valeur: v.emoji ?? '' },
       {
         nom: 'cadence',
         libelle: 'Combien de fois par semaine',
@@ -2264,6 +2287,13 @@ export default {
       if (forme === 'habitude') {
         const valeurs = {
           nom: champs.nom.trim(),
+          // L'ÉMOJI NE S'ENREGISTRAIT PAS (2 septembre 2026, panne rapportée par
+          // Noé : « ajouter un émoji ne fonctionne pas »). Le formulaire le
+          // demandait depuis le 30 août, la base a sa colonne, et cet objet-ci
+          // ne le reprenait pas : la valeur partait à la poubelle en silence,
+          // sans erreur ni signe. Huit unités UTF-16 au plus — un émoji composé
+          // en occupe plusieurs, une famille tient sur huit.
+          emoji: champs.emoji?.trim().slice(0, 8) || null,
           cadence: champs.cadence ? Number(champs.cadence) : null,
           famille: champs.famille || null,
           pourquoi: champs.pourquoi?.trim() || null,

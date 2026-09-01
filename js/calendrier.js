@@ -109,7 +109,14 @@ export default {
           // optimiste serait un mensonge (js/ecriture.js).
           etat.message ? `<p class="discret message-regle">${echapper(etat.message)}</p>` : ''
         }
-        ${construireBarrePeriode(etat.vue, etat.ancre)}
+        ${
+          // TROIS VUES ICI, et pas quatre : le trimestre existe depuis le
+          // 2 septembre 2026 mais il est réservé aux pages d'un cap et d'un
+          // projet, où l'on regarde un horizon. Sur l'écran le plus visité du
+          // hub, un quatrième bouton serait un rang de plus pour une vue qu'on
+          // n'y demande pas.
+          construireBarrePeriode(etat.vue, etat.ancre, { vues: ['mois', 'semaine', 'agenda'] })
+        }
         ${construireFiltres(etat.natures)}
         <div data-bloc="liste">
           ${

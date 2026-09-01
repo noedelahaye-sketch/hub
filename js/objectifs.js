@@ -47,11 +47,8 @@ import {
   avanceeDuProjet,
   mouvementDuProjet,
 } from './orientation.js';
-import { construireFormulaire, brancherChoix, demanderLaDuree } from './gabarits.js';
+import { construireFormulaire, construireMenuDiscret, brancherChoix } from './gabarits.js';
 import { modifierAussitot, retirerAussitot } from './ecriture.js';
-// Le modèle de l'argent de Yuno vit avec la page qui l'a fait naître ; il
-// n'est pas recopié ici.
-import { argentDeYuno, enEuros } from './photo.js';
 import {
   NOMS_ESPACES,
   RECURRENCES,
@@ -81,7 +78,7 @@ const NOMS_REGIMES = Object.fromEntries(
 // (c'est déjà la règle du format `post` d'une publication). `en_pause` et
 // `abandonne` se lisent donc toujours si une ligne en porte un ; rien ne les
 // écrit plus.
-const ETATS_PROJET = {
+export const ETATS_PROJET = {
   actif: 'En cours',
   // « À l'année » est un SECOND ÉTAT D'EN COURS (28 août 2026, demande de Noé).
   // Certains projets ne finissent pas — « Programmation de la semaine »,
@@ -94,7 +91,7 @@ const ETATS_PROJET = {
   termine: 'Terminé',
 };
 
-const ETATS_PROJET_LUS = {
+export const ETATS_PROJET_LUS = {
   ...ETATS_PROJET,
   en_pause: 'En pause',
   abandonne: 'Abandonné',
@@ -145,7 +142,7 @@ const COULEURS_ETAT = {
 // garde sa ligne pour lui seul.
 //
 // Le menu qui s'ouvre dessous, lui, reste celui de tout le hub.
-function pastilleEtat(projet) {
+export function pastilleEtat(projet) {
   const courant = projet.statut ?? 'actif';
   const nom = (etat) => echapper(ETATS_PROJET_LUS[etat] ?? etat);
   const couleur = (etat) => COULEURS_ETAT[etat] ?? 'var(--texte-discret)';
@@ -175,12 +172,6 @@ function pastilleEtat(projet) {
 
 const PRIORITES = { 1: 'Priorité 1', 2: 'Priorité 2', 3: 'Priorité 3', 4: 'Priorité 4' };
 
-// L'objectif dont les prestations et le matériel disent la mesure. Reconnu par
-// son titre, comme sur la page Yuno : c'est le seul lien entre une ligne
-// d'objectif et une mécanique, et l'inscrire en dur vaut mieux qu'une colonne
-// « type » que rien d'autre n'utiliserait.
-const OBJECTIF_MATERIEL = 'Rembourser mon matériel';
-
 // --- Les signes ---------------------------------------------------------------
 // Dessinés, jamais des caractères : ils gardent leur épaisseur quelle que soit
 // la police, et ils suivent le trait du reste du hub.
@@ -188,9 +179,6 @@ const OBJECTIF_MATERIEL = 'Rembourser mon matériel';
 const SIGNE = {
   plus: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
     stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`,
-  points: `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"
-    aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/>
-    <circle cx="19" cy="12" r="1.6"/></svg>`,
   chevron: `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor"
     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <path d="M9 6l6 6-6 6"/></svg>`,
@@ -204,12 +192,6 @@ const SIGNE = {
 
 function jourLisible(iso) {
   return iso ? echeanceLisible(depuisDateISO(iso)) : '';
-}
-
-// `date_fait` est un timestamptz, `jourLisible` attend une date nue : sans cette
-// coupe, « 2026-08-27T09:12:44+00:00 » ne se lit pas comme un jour.
-function jourDuFait(tache) {
-  return tache?.date_fait ? String(tache.date_fait).slice(0, 10) : null;
 }
 
 function heuresLisibles(minutes) {
@@ -259,7 +241,6 @@ const etat = {
   faites: null, // le projet dont on relit les tâches faites
   ouvert: null, // le cap déplié
   projetOuvert: null, // le projet déplié, dans le cap ouvert
-  projetGalerie: null, // le projet déplié, dans la galerie des projets
   menu: null, // `${forme}:${id}` — le menu discret ouvert
   confirme: null, // la suppression (ou l'atteinte) en attente de confirmation
   edition: null, // { forme, id, parent } — ce que la tuile volante corrige
@@ -267,53 +248,20 @@ const etat = {
 };
 
 // --- Le menu discret ----------------------------------------------------------
-// Trois points qui ne se voient qu'au survol et au clavier, mais qui gardent
-// leurs 44 px de cible au doigt. Ce qui est irréversible demande confirmation
-// SUR PLACE — pas de fenêtre pour ça : deux appuis suffisent, et un objectif
-// qui emporte ses jalons mérite le second.
+// Le dessin et ses entrées vivent dans `js/gabarits.js` depuis le 2 septembre
+// 2026 : la page d'un projet en porte un sur le projet, sur chacune de ses
+// étapes et sur chacune de ses tâches, et deux copies de ces trente lignes
+// auraient fini par ne plus offrir les mêmes entrées. Ne reste ici que ce que
+// le gabarit ne peut pas savoir : ce qui est ouvert, et ce qui attend d'être
+// confirmé.
 
-function menuDiscret(forme, id, { atteindre = false, sansModifier = false, deplacer = null } = {}) {
-  const cle = `${forme}:${id}`;
-  const confirmation = etat.confirme === cle;
-  const attendrait = etat.confirme === `atteindre:${id}`;
-
-  // MONTER ET DESCENDRE, pour ce qui vit dans un ordre (29 août 2026, demande
-  // de Noé sur les étapes d'un projet). Deux entrées et non un glisser-déposer :
-  // le geste se fait au doigt comme à la souris, il s'atteint au clavier sans
-  // rien réinventer, et réordonner trois étapes est un geste rare — on le fait
-  // au moment où on pose le découpage, pas tous les jours.
-  //
-  // Les extrémités n'affichent pas l'entrée qui ne mène nulle part : une
-  // commande grisée est un bouton qui ment.
-  const rangs = deplacer
-    ? `${
-        deplacer.haut ? `<button type="button" data-monter="${cle}">Monter</button>` : ''
-      }${deplacer.bas ? `<button type="button" data-descendre="${cle}">Descendre</button>` : ''}`
-    : '';
-
-  const choix = confirmation
-    ? `<button type="button" class="cap-menu-danger" data-confirmer="${cle}">Supprimer vraiment</button>
-       <button type="button" data-annuler-confirmation>Annuler</button>`
-    : attendrait
-      ? `<button type="button" data-confirmer="atteindre:${id}">C'est atteint</button>
-         <button type="button" data-annuler-confirmation>Pas encore</button>`
-      : `${sansModifier ? '' : `<button type="button" data-modifier="${cle}">Modifier</button>`}
-         ${rangs}
-         ${
-           atteindre
-             ? `<button type="button" data-atteindre="${id}">Marquer atteint</button>`
-             : ''
-         }
-         <button type="button" data-supprimer="${cle}">Supprimer</button>`;
-
-  return `
-    <span class="cap-menu${etat.menu === cle ? ' ouvert' : ''}">
-      <button type="button" class="cap-menu-bouton" data-menu="${cle}"
-        aria-expanded="${etat.menu === cle}" aria-label="Modifier ou supprimer">${
-        SIGNE.points
-      }</button>
-      <span class="cap-menu-choix" ${etat.menu === cle ? '' : 'hidden'}>${choix}</span>
-    </span>`;
+function menuDiscret(forme, id, options = {}) {
+  return construireMenuDiscret(forme, id, {
+    ...options,
+    ouvert: etat.menu === `${forme}:${id}`,
+    confirmation: etat.confirme === `${forme}:${id}`,
+    attendrait: etat.confirme === `atteindre:${id}`,
+  });
 }
 
 // --- Les périodes -------------------------------------------------------------
@@ -389,7 +337,10 @@ function bandePeriodes(seule = false) {
 // Pas de pourcentage — un cap ne se lit pas en chiffres, il se lit en marches
 // franchies. Et pas de barre continue : quatre jalons font quatre segments, on
 // compte du regard sans lire.
-function marches(jalons = []) {
+// Les marches d'un cap : une par jalon, pleine quand il est atteint. Exportée
+// le 2 septembre 2026 — la page d'un objectif montre la même chose en tête, et
+// deux dessins pour une seule mesure finiraient par ne plus compter pareil.
+export function marches(jalons = []) {
   if (!jalons.length) return '<span class="cap-marches cap-marches-vide"></span>';
   const atteints = jalons.filter((jalon) => jalon.atteint).length;
   return `<span class="cap-marches" role="img"
@@ -435,7 +386,7 @@ function tuileObjectif(objectif) {
   return `
     <article class="cap-tuile" data-espace="${objectif.espace}"
       data-objectif="${echapper(objectif.id)}">
-      <button type="button" class="cap-tuile-ouvrir" data-ouvrir="${echapper(objectif.id)}">
+      <a class="cap-tuile-ouvrir" href="#objectif/${encodeURIComponent(objectif.id)}">
         <span class="cap-tuile-espace"><span class="pastille"></span>${echapper(
           NOMS_ESPACES[objectif.espace] ?? objectif.espace,
         )}</span>
@@ -445,48 +396,12 @@ function tuileObjectif(objectif) {
           <span>${echapper(comptesDuCap(objectif))}</span>
           <span class="cap-tuile-date">${echapper(jourLisible(objectif.echeance))}</span>
         </span>
-      </button>
+      </a>
       ${menuDiscret('objectif', objectif.id, { atteindre: true })}
     </article>`;
 }
 
 // --- Le détail d'un cap -------------------------------------------------------
-
-function frise(objectif) {
-  const jalons = objectif.jalons ?? [];
-  const prochain = jalons.find((jalon) => !jalon.atteint);
-
-  const lignes = jalons
-    .map(
-      (jalon, rang) => `
-      <li class="cap-jalon${jalon.atteint ? ' atteint' : ''}${
-        jalon === prochain ? ' prochain' : ''
-      }">
-        <button type="button" class="cap-jalon-point" data-jalon="${echapper(jalon.id)}"
-          aria-pressed="${Boolean(jalon.atteint)}"
-          aria-label="${
-            jalon.atteint ? 'Revenir sur ce jalon' : 'Marquer ce jalon atteint'
-          }"></button>
-        <span class="cap-jalon-corps">
-          <span class="cap-jalon-titre">${echapper(jalon.titre)}</span>
-          ${
-            jalon.echeance
-              ? `<span class="cap-jalon-date">${echapper(jourLisible(jalon.echeance))}</span>`
-              : ''
-          }
-        </span>
-        ${menuDiscret('jalon', jalon.id, {
-          deplacer: { haut: rang > 0, bas: rang < jalons.length - 1 },
-        })}
-      </li>`,
-    )
-    .join('');
-
-  return `
-    ${jalons.length ? `<ol class="cap-frise">${lignes}</ol>` : ''}
-    <button type="button" class="cap-ajout-discret" data-ajout="jalon:${echapper(objectif.id)}">
-      ${SIGNE.plus}<span>Poser un jalon</span></button>`;
-}
 
 // Une série ne s'écrit qu'une fois. Quinze « Visuels de la semaine » alignés,
 // c'est le mur que l'espace Tâches a appris à ne pas dresser : on montre la
@@ -510,7 +425,11 @@ function parSeries(taches) {
   return { groupes, seules };
 }
 
-function grouperLesTaches(taches) {
+// PURE, ET EXPORTÉE DEPUIS LE 2 SEPTEMBRE 2026 : la page d'un projet range ses
+// tâches exactement pareil — les séries repliées, ce qui vient d'abord, ce qui
+// est fait à part. Deux tris différents auraient fini par ne plus replier les
+// mêmes séries.
+export function grouperLesTaches(taches) {
   const restantes = taches.filter((tache) => tache.statut !== 'fait');
   const terminees = taches.filter((tache) => tache.statut === 'fait');
   const faites = terminees.length;
@@ -558,148 +477,6 @@ function grouperLesTaches(taches) {
   return { lignes, faites, lignesFaites };
 }
 
-// LE COMPTE DEVIENT UNE PORTE (29 août 2026, demande de Noé). Il reste un
-// compte au repos — « 3 faites » — et se déplie sur la liste : les tâches faites
-// sont ce que le hub est censé montrer en premier, mais un projet de quinze
-// tâches terminées ne doit pas repousser ce qui reste hors de l'écran.
-//
-// Les lignes dépliées sont les MÊMES que celles d'en haut : leur cercle se
-// décoche, leur menu supprime. Rouvrir une tâche depuis là où on la relit est
-// le geste attendu, et il n'a rien coûté à brancher — `ligneTache` le portait
-// déjà.
-function blocDesFaites(projet, faites, lignesFaites) {
-  if (!faites) return '';
-  const ouvert = etat.faites === projet.id;
-
-  return `
-    <button type="button" class="cap-taches-faites" data-faites="${echapper(projet.id)}"
-      aria-expanded="${ouvert}">
-      <span class="cap-faites-chevron${ouvert ? ' ouvert' : ''}">${SIGNE.chevron}</span>
-      <span>${echapper(pluriel(faites, 'faite'))}</span>
-    </button>
-    ${
-      ouvert
-        ? `<ul class="cap-taches cap-taches-terminees">${lignesFaites
-            .map(ligneTache)
-            .join('')}</ul>`
-        : ''
-    }`;
-}
-
-function ligneTache({ tache, serie }) {
-  // Une série repliée ne dit pas la même chose selon le côté où elle tombe :
-  // devant soi on compte ce qui reste, derrière soi ce qui a été fait. Le même
-  // mot pour les deux aurait fait lire « 12 fois à venir » sous un titre barré.
-  const repetition = (mot, date) =>
-    `<span class="cap-tache-serie">${SIGNE.repetition}${echapper(
-      (RECURRENCES[tache.recurrence] ?? 'Se répète').toLowerCase(),
-    )} · ${echapper(mot)}</span>
-     <span class="cap-tache-date">${echapper(jourLisible(date))}</span>`;
-
-  const service = !serie
-    ? `<span class="cap-tache-date">${echapper(
-        jourLisible(tache.statut === 'fait' ? jourDuFait(tache) : tache.echeance),
-      )}</span>`
-    : serie.faites !== undefined
-      ? repetition(`${serie.faites} fois faites`, jourDuFait({ date_fait: serie.derniere }))
-      : repetition(`${serie.restantes} fois à venir`, serie.prochaine);
-
-  return `
-    <li class="cap-tache tache-ligne${tache.statut === 'fait' ? ' tache-faite' : ''}"
-      data-priorite="${tache.priorite ?? 4}">
-      <button type="button" class="tache-cercle" data-tache="${echapper(tache.id)}"
-        aria-pressed="${tache.statut === 'fait'}" aria-label="Terminer"></button>
-      <span class="cap-tache-corps">
-        <span class="cap-tache-titre tache-titre">${echapper(tache.titre)}</span>
-        <span class="cap-tache-service">${service}</span>
-      </span>
-      ${menuDiscret('tache', tache.id)}
-    </li>`;
-}
-
-function tuileProjet(projet) {
-  const ouvert = etat.projetOuvert === projet.id;
-  const taches = tachesDuProjet(projet);
-  const { lignes, faites, lignesFaites } = grouperLesTaches(taches);
-  const charge = chargeDuProjet(projet);
-
-  // Les orphelines de son espace se rattachent d'un bouton : c'est la seule
-  // façon raisonnable de rattraper les dizaines de tâches écrites avant qu'il
-  // existe un étage projet.
-  const orphelines = etat.taches.filter(
-    (tache) => tache.espace === projet.espace && !tache.projet_id && tache.statut !== 'fait',
-  );
-
-  return `
-    <article class="cap-projet${ouvert ? ' ouvert' : ''}" data-projet="${echapper(projet.id)}">
-      <button type="button" class="cap-projet-ouvrir" data-ouvrir-projet="${echapper(projet.id)}"
-        aria-expanded="${ouvert}">
-        <span class="cap-projet-chevron">${SIGNE.chevron}</span>
-        <span class="cap-projet-corps">
-          <span class="cap-projet-nom">${echapper(projet.nom)}</span>
-          ${
-            projet.resultat
-              ? `<span class="cap-projet-resultat">${echapper(projet.resultat)}</span>`
-              : ''
-          }
-          <span class="cap-projet-pied">
-            <span>${
-              taches.length ? echapper(pluriel(taches.length, 'tâche')) : 'Aucune tâche'
-            }</span>
-            ${charge ? `<span class="cap-projet-charge">${echapper(charge)}</span>` : ''}
-            ${
-              projet.echeance
-                ? `<span class="cap-projet-charge">${echapper(jourLisible(projet.echeance))}</span>`
-                : ''
-            }
-            ${
-              projet.statut && projet.statut !== 'actif'
-                ? `<span class="cap-projet-charge">${echapper(
-                    ETATS_PROJET_LUS[projet.statut] ?? projet.statut,
-                  )}</span>`
-                : ''
-            }
-          </span>
-        </span>
-      </button>
-      ${menuDiscret('projet', projet.id)}
-      <div class="cap-projet-taches">
-        <div class="cap-projet-taches-dedans">
-          <ul class="cap-taches">${lignes.map(ligneTache).join('')}</ul>
-          ${blocDesFaites(projet, faites, lignesFaites)}
-          <span class="cap-projet-gestes">
-            <button type="button" class="cap-ajout-discret"
-              data-ajout="tache:${echapper(projet.id)}">
-              ${SIGNE.plus}<span>Ajouter une tâche</span></button>
-            ${
-              orphelines.length
-                ? `<button type="button" class="cap-ajout-discret"
-                     data-rattacher-vers="${echapper(projet.id)}">
-                     <span>Rattacher une tâche</span>
-                     <span class="chiffre">${orphelines.length}</span></button>`
-                : ''
-            }
-          </span>
-          ${
-            etat.rattache === projet.id
-              ? `<ul class="cap-orphelines">${orphelines
-                  .map(
-                    (tache) => `
-                  <li>
-                    <span>${echapper(tache.titre)}</span>
-                    <button type="button" class="lien-discret bouton-mini"
-                      data-rattacher="${echapper(tache.id)}"
-                      data-vers="${echapper(projet.id)}">Rattacher</button>
-                  </li>`,
-                  )
-                  .join('')}</ul>`
-              : ''
-          }
-        </div>
-      </div>
-    </article>`;
-}
-
 // --- La galerie des projets ---------------------------------------------------
 //
 // LA MÊME FORME QUE LES CAPS, un étage plus bas (demande de Noé, 28 août 2026).
@@ -724,7 +501,7 @@ function tuileProjet(projet) {
 // 25 h à peine commencé, et « Album du club » reculait à chaque tâche écrite.
 // La règle vit dans `avanceeDuProjet` (js/orientation.js), pour rester
 // éprouvable hors écran ; ici on ne fait que la dessiner.
-function jaugeDuProjet(avancee) {
+export function jaugeDuProjet(avancee) {
   if (avancee.mesure === 'declaree') {
     return `<span class="cap-avancee" role="img" aria-label="Terminé"><span
       style="width: 100%"></span></span>`;
@@ -757,7 +534,7 @@ function jaugeDuProjet(avancee) {
 // Ce que la jauge ne peut pas dire : sur quoi elle est assise. Une barre à
 // moitié pleine ne vaut rien si l'on ne sait pas si c'est la moitié des étapes
 // ou la moitié des heures.
-function motDeLAvancee(avancee) {
+export function motDeLAvancee(avancee) {
   if (avancee.mesure === 'etapes') {
     return `${avancee.franchies} sur ${pluriel(avancee.marches, 'étape')}`;
   }
@@ -780,7 +557,7 @@ function motDeLAvancee(avancee) {
 // l'affichaient — une ligne identique partout ne dit plus rien, et la galerie
 // ne montre que ce qui se compare. Un projet qui n'a rien vu se terminer se
 // tait donc sur sa tuile : son pointillé le dit déjà.
-function motDuMouvement({ dormance, cetteSemaine, commence }, { tuile = false } = {}) {
+export function motDuMouvement({ dormance, cetteSemaine, commence }, { tuile = false } = {}) {
   if (cetteSemaine) return `${pluriel(cetteSemaine, 'faite')} cette semaine`;
   if (!commence) {
     if (tuile) return '';
@@ -789,12 +566,6 @@ function motDuMouvement({ dormance, cetteSemaine, commence }, { tuile = false } 
   if (dormance === 0) return "Bougé aujourd'hui";
   if (dormance === 1) return 'Bougé hier';
   return `Rien depuis ${dormance} j`;
-}
-
-function capsServis(projet) {
-  return (projet.cibles ?? [])
-    .map((cible) => etat.objectifs.find((objectif) => objectif.id === cible.objectif_id)?.titre)
-    .filter(Boolean);
 }
 
 function tuileProjetGalerie(projet) {
@@ -819,8 +590,7 @@ function tuileProjetGalerie(projet) {
         )}</span>
         ${pastilleEtat(projet)}
       </span>
-      <button type="button" class="cap-tuile-ouvrir"
-        data-ouvrir-projet-galerie="${echapper(projet.id)}">
+      <a class="cap-tuile-ouvrir" href="#projet/${encodeURIComponent(projet.id)}">
         <h3 class="cap-tuile-titre">${echapper(projet.nom)}</h3>
         ${jaugeDuProjet(avancee)}
         <span class="cap-tuile-pied">
@@ -834,156 +604,9 @@ function tuileProjetGalerie(projet) {
               )}</span>`
             : ''
         }
-      </button>
+      </a>
       ${menuDiscret('projet', projet.id)}
     </article>`;
-}
-
-// LA FRISE DES ÉTAPES, exactement celle des jalons d'un cap : même dessin,
-// mêmes gestes, même point qu'on presse. C'est le même motif un étage plus bas,
-// et deux formes différentes pour deux choses identiques auraient demandé de
-// réapprendre le geste en descendant d'un étage.
-function friseEtapes(projet) {
-  const etapes = projet.etapes ?? [];
-  const prochaine = etapes.find((etape) => !etape.atteint);
-
-  const lignes = etapes
-    .map(
-      (etape, rang) => `
-      <li class="cap-jalon${etape.atteint ? ' atteint' : ''}${
-        etape === prochaine ? ' prochain' : ''
-      }">
-        <button type="button" class="cap-jalon-point" data-etape="${echapper(etape.id)}"
-          aria-pressed="${Boolean(etape.atteint)}"
-          aria-label="${
-            etape.atteint ? 'Revenir sur cette étape' : 'Marquer cette étape franchie'
-          }"></button>
-        <span class="cap-jalon-corps">
-          <span class="cap-jalon-titre">${echapper(etape.titre)}</span>
-        </span>
-        ${menuDiscret('etape', etape.id, {
-          deplacer: { haut: rang > 0, bas: rang < etapes.length - 1 },
-        })}
-      </li>`,
-    )
-    .join('');
-
-  return `
-    ${etapes.length ? `<ol class="cap-frise">${lignes}</ol>` : ''}
-    <button type="button" class="cap-ajout-discret" data-ajout="etape:${echapper(projet.id)}">
-      ${SIGNE.plus}<span>Poser une étape</span></button>`;
-}
-
-// CE QUI MESURE CE PROJET, dit en toutes lettres dans son détail. Sans cette
-// ligne, un projet à jauge pointillée laisse croire qu'il n'avance pas, alors
-// qu'il n'a simplement rien déclaré à mesurer — et rien à l'écran ne dirait
-// comment y remédier.
-function surQuoiIlSeMesure(avancee, projet) {
-  if (avancee.mesure === 'etapes') return '';
-  if (avancee.mesure === 'declaree') return 'Tu l\'as déclaré terminé.';
-  if (avancee.mesure === 'charge') {
-    if (avancee.sansDuree) {
-      return `${heuresLisibles(
-        avancee.annonce,
-      )} annoncées, mais aucune durée notée sur ce qui est fait — le hub ne peut rien en dire. Des étapes le mesureraient sans rien demander de plus.`;
-    }
-    return `Mesuré à l'heure : ${heuresLisibles(avancee.minutes)} notées sur ${heuresLisibles(
-      avancee.annonce,
-    )} annoncées. Poser des étapes le mesurerait plus finement.`;
-  }
-  if (projet.statut === 'annuel') {
-    return "Un projet à l'année ne se mesure pas : il tourne, il n'avance pas vers une fin.";
-  }
-  return "Rien ne le mesure encore. Pose des étapes, ou annonce une charge en heures.";
-}
-
-function detailProjet(projet) {
-  const { lignes, faites, lignesFaites } = grouperLesTaches(tachesDuProjet(projet));
-  const caps = capsServis(projet);
-  const charge = chargeDuProjet(projet);
-  const avancee = avanceeDuProjet(projet, etat.taches);
-  const mesure = surQuoiIlSeMesure(avancee, projet);
-  // Le mouvement ENTIER vit ici, naissance comprise : la tuile ne montre que ce
-  // qui se compare, le détail répond à tout ce qu'on peut se demander une fois
-  // entré (demande de Noé, 29 août 2026).
-  const trace = motDuMouvement(mouvementDuProjet(projet, etat.taches));
-  const orphelines = etat.taches.filter(
-    (tache) => tache.espace === projet.espace && !tache.projet_id && tache.statut !== 'fait',
-  );
-
-  return `
-    <div class="cap-detail">
-      <div class="cap-detail-tete">
-        <span class="cap-tuile-tete">
-          <span class="cap-tuile-espace"><span class="pastille"></span>${echapper(
-            NOMS_ESPACES[projet.espace] ?? projet.espace,
-          )}</span>
-          ${pastilleEtat(projet)}
-        </span>
-        <h3 class="cap-detail-titre">${echapper(projet.nom)}</h3>
-        <p class="cap-detail-date"><span>${echapper(
-          [charge, projet.echeance ? jourLisible(projet.echeance) : '', trace]
-            .filter(Boolean)
-            .join(' · '),
-        )}</span></p>
-        ${menuDiscret('projet', projet.id)}
-        <button type="button" class="cap-refermer" data-refermer-projet
-          aria-label="Refermer ce projet">Refermer</button>
-      </div>
-
-      ${projet.resultat ? `<p class="cap-pourquoi">${echapper(projet.resultat)}</p>` : ''}
-      <p class="cap-cible"><span>Ce qu'il sert</span>${
-        caps.length
-          ? echapper(caps.join(' · '))
-          : "Aucun cap déclaré — c'est de l'intendance, et c'est légitime."
-      }</p>
-
-      <div class="cap-etages">
-        <section class="cap-etage">
-          <h4 class="cap-etage-titre">Ses étapes</h4>
-          ${mesure ? `<p class="cap-vide">${echapper(mesure)}</p>` : ''}
-          ${friseEtapes(projet)}
-        </section>
-
-        <section class="cap-etage cap-etage-large">
-          <h4 class="cap-etage-titre">Ses tâches</h4>
-          ${
-            lignes.length
-              ? `<ul class="cap-taches">${lignes.map(ligneTache).join('')}</ul>`
-              : `<p class="cap-vide">Rien encore. La première dira par où ça commence.</p>`
-          }
-          ${blocDesFaites(projet, faites, lignesFaites)}
-          <span class="cap-projet-gestes">
-            <button type="button" class="cap-ajout-discret"
-              data-ajout="tache:${echapper(projet.id)}">
-              ${SIGNE.plus}<span>Ajouter une tâche</span></button>
-            ${
-              orphelines.length
-                ? `<button type="button" class="cap-ajout-discret"
-                     data-rattacher-vers="${echapper(projet.id)}">
-                     <span>Rattacher une tâche</span>
-                     <span class="chiffre">${orphelines.length}</span></button>`
-                : ''
-            }
-          </span>
-          ${
-            etat.rattache === projet.id
-              ? `<ul class="cap-orphelines">${orphelines
-                  .map(
-                    (tache) => `
-                  <li>
-                    <span>${echapper(tache.titre)}</span>
-                    <button type="button" class="lien-discret bouton-mini"
-                      data-rattacher="${echapper(tache.id)}"
-                      data-vers="${echapper(projet.id)}">Rattacher</button>
-                  </li>`,
-                  )
-                  .join('')}</ul>`
-              : ''
-          }
-        </section>
-      </div>
-    </div>`;
 }
 
 // Par espace d'abord, comme les caps ; PUIS PAR ÉTAT — ce qui est en cours, ce
@@ -1011,14 +634,7 @@ function galerieProjets(seule = false) {
     <section class="cap-bande">
       ${seule ? '' : '<h2 class="cap-etage-titre">Les projets — le comment</h2>'}
       <div class="cap-galerie">
-        ${projets
-          .map((projet) =>
-            etat.projetGalerie === projet.id
-              ? `<article class="cap-tuile cap-tuile-ouverte" data-espace="${projet.espace}"
-                   data-projet-tuile="${echapper(projet.id)}">${detailProjet(projet)}</article>`
-              : tuileProjetGalerie(projet),
-          )
-          .join('')}
+        ${projets.map(tuileProjetGalerie).join('')}
         <button type="button" class="cap-tuile cap-tuile-ajout" data-ajout="projet:rien">
           ${SIGNE.plus}<span>Poser un projet</span></button>
       </div>
@@ -1039,158 +655,18 @@ function galerieProjets(seule = false) {
 // ICI, à côté de l'objectif qu'elles mesurent (demande de Noé, 26 août 2026) —
 // la page Yuno, elle, se contente d'en afficher le total.
 
-export function construireArgent(commandes, materiel) {
-  const { encaisse, frais, achats, cible, reste } = argentDeYuno(commandes, materiel);
-  const chiffrees = commandes.filter((commande) => commande.montant != null);
-
-  const ligne = (entree, somme, detail, action) => `
-    <li>
-      <span class="argent-nom">
-        ${echapper(entree.titre ?? entree.nom)}
-        ${detail ? `<span class="discret argent-detail">${detail}</span>` : ''}
-      </span>
-      <span class="chiffre argent-somme">${enEuros(somme)}</span>
-      <button type="button" class="lien-discret bouton-mini bouton-retirer"
-        data-${action}="${echapper(entree.id)}"
-        title="Retirer" aria-label="Retirer « ${echapper(entree.titre ?? entree.nom)} »">×</button>
-    </li>`;
-
-  return `
-    <div class="cap-argent">
-      <p class="cap-argent-total">
-        <span class="chiffre">${enEuros(encaisse)}</span> encaissés sur
-        <span class="chiffre">${enEuros(cible)}</span> —
-        il reste <span class="chiffre">${enEuros(reste)}</span>.
-        ${
-          frais
-            ? `<span class="discret">Dont ${enEuros(
-                achats,
-              )} de matériel et ${enEuros(frais)} de déplacements.</span>`
-            : ''
-        }
-      </p>
-
-      <h5 class="cap-argent-titre">Les prestations</h5>
-      ${
-        chiffrees.length
-          ? `<ul class="liste-argent">${chiffrees
-              .map((commande) =>
-                ligne(
-                  commande,
-                  commande.montant,
-                  // Les frais se disent ici mais comptent en face : ils
-                  // grossissent ce qu'il reste à rembourser, ils n'entament pas
-                  // la recette.
-                  commande.frais ? `${enEuros(commande.frais)} de déplacement` : '',
-                  'retirer-commande',
-                ),
-              )
-              .join('')}</ul>`
-          : '<p class="vide">Rien encore.</p>'
-      }
-      <button type="button" class="cap-ajout-discret" data-ajout="prestation:rien">
-        ${SIGNE.plus}<span>Noter une prestation</span></button>
-
-      <h5 class="cap-argent-titre">Le matériel</h5>
-      ${
-        materiel.length
-          ? `<ul class="liste-argent">${materiel
-              .map((achat) =>
-                ligne(
-                  achat,
-                  achat.prix,
-                  achat.date_achat ? jourLisible(achat.date_achat) : '',
-                  'retirer-materiel',
-                ),
-              )
-              .join('')}</ul>`
-          : '<p class="vide">Rien encore.</p>'
-      }
-      <button type="button" class="cap-ajout-discret" data-ajout="materiel:rien">
-        ${SIGNE.plus}<span>Noter un achat</span></button>
-    </div>`;
-}
-
-function detail(objectif) {
-  const projets = projetsDuCap(objectif);
-  const directes = grouperLesTaches(tachesDuCap(objectif));
-  const argent = objectif.titre === OBJECTIF_MATERIEL;
-
-  return `
-    <div class="cap-detail">
-      <div class="cap-detail-tete">
-        <span class="cap-tuile-espace"><span class="pastille"></span>${echapper(
-          NOMS_ESPACES[objectif.espace] ?? objectif.espace,
-        )}</span>
-        <h3 class="cap-detail-titre">${echapper(objectif.titre)}</h3>
-        ${
-          objectif.echeance
-            ? `<p class="cap-detail-date">${echapper(jourLisible(objectif.echeance))}</p>`
-            : ''
-        }
-        ${menuDiscret('objectif', objectif.id, { atteindre: true })}
-        <button type="button" class="cap-refermer" data-refermer aria-label="Refermer ce cap">
-          Refermer
-        </button>
-      </div>
-
-      ${objectif.pourquoi ? `<p class="cap-pourquoi">${echapper(objectif.pourquoi)}</p>` : ''}
-      ${
-        objectif.cible
-          ? `<p class="cap-cible"><span>À quoi je saurai</span>${echapper(objectif.cible)}</p>`
-          : ''
-      }
-
-      <div class="cap-etages">
-        <section class="cap-etage">
-          <h4 class="cap-etage-titre">Les jalons</h4>
-          ${frise(objectif)}
-        </section>
-
-        <section class="cap-etage">
-          <h4 class="cap-etage-titre">Les projets</h4>
-          <div class="cap-projets">
-            ${
-              projets.length
-                ? projets.map(tuileProjet).join('')
-                : `<p class="cap-vide">Aucun projet ne le sert encore. Un projet, c'est le
-                   <em>comment</em> : l'album, la rubrique, le dossier — ce qui porte les
-                   tâches et la charge.</p>`
-            }
-          </div>
-          <button type="button" class="cap-ajout-discret"
-            data-ajout="projet:${echapper(objectif.id)}">
-            ${SIGNE.plus}<span>Poser un projet</span></button>
-        </section>
-
-        ${
-          directes.lignes.length
-            ? `<section class="cap-etage">
-                 <h4 class="cap-etage-titre">Rattachées au cap, sans projet</h4>
-                 <ul class="cap-taches">${directes.lignes.map(ligneTache).join('')}</ul>
-               </section>`
-            : ''
-        }
-
-        ${
-          argent
-            ? `<section class="cap-etage">
-                 <h4 class="cap-etage-titre">Ce qui le mesure</h4>
-                 ${construireArgent(etat.commandes, etat.materiel)}
-               </section>`
-            : ''
-        }
-      </div>
-    </div>`;
-}
-
 // --- Les formulaires de la tuile volante --------------------------------------
 //
 // Un formulaire par étage, dans la forme exacte du hub : `construireFormulaire`
 // pose la tuile, le fond assombri, la croix et le menu dessiné ; `app.js` la
 // referme du fond, de la croix ou d'Échap. Rien à réapprendre, rien à recopier.
 
-const FORMULAIRES = {
+// CE QU'UN FORMULAIRE DEMANDE, dit une seule fois. Exporté depuis le
+// 2 septembre 2026 : la page d'un projet pose les mêmes trois formes — le
+// projet, son étape, sa tâche — et deux listes de champs auraient fini par ne
+// plus demander la même chose. Ce qui n'est pas exporté n'est pas privé : c'est
+// simplement que personne d'autre n'en a eu besoin.
+export const FORMULAIRES = {
   objectif: {
     ajouter: 'Poser un objectif',
     modifier: "Modifier l'objectif",
@@ -1237,10 +713,18 @@ const FORMULAIRES = {
   etape: {
     ajouter: 'Poser une étape',
     modifier: "Modifier l'étape",
-    // Pas d'échéance, à la différence d'un jalon : une étape découpe le
-    // TRAVAIL, pas le calendrier. Ce sont les tâches qui portent les dates.
+    // UNE ÉTAPE PORTE UN JOUR DEPUIS LE 2 SEPTEMBRE 2026 (décision de Noé). Elle
+    // n'en avait pas — « une étape découpe le TRAVAIL, pas le calendrier » —, et
+    // c'est ce qui la distinguait d'un jalon. La page d'un projet demande de
+    // poser ses étapes sur un calendrier en les glissant ; Noé a choisi que ce
+    // qu'on glisse soit ce qu'on retrouve, plutôt qu'une tâche fabriquée au
+    // passage.
+    //
+    // Elle reste FACULTATIVE : un découpage sans jour est un découpage, pas un
+    // retard.
     champs: (v) => [
       { nom: 'titre', libelle: 'Étape', type: 'text', requis: true, valeur: v.titre },
+      { nom: 'echeance', libelle: 'Quand (facultatif)', type: 'date', valeur: v.echeance },
     ],
   },
   projet: {
@@ -1473,12 +957,6 @@ function trouver(cle) {
       if (jalon) return { cible: jalon, objectif };
     }
   }
-  if (forme === 'etape') {
-    for (const projet of etat.projets) {
-      const etape = (projet.etapes ?? []).find((e) => e.id === id);
-      if (etape) return { cible: etape, projet };
-    }
-  }
   return {};
 }
 
@@ -1519,14 +997,7 @@ function etageCaps() {
 
   return `
     <div class="cap-galerie">
-      ${caps
-        .map((objectif) =>
-          etat.ouvert === objectif.id
-            ? `<article class="cap-tuile cap-tuile-ouverte" data-espace="${objectif.espace}"
-                 data-objectif="${echapper(objectif.id)}">${detail(objectif)}</article>`
-            : tuileObjectif(objectif),
-        )
-        .join('')}
+      ${caps.map(tuileObjectif).join('')}
       <button type="button" class="cap-tuile cap-tuile-ajout" data-ajout="objectif:rien">
         ${SIGNE.plus}<span>Poser un objectif</span></button>
     </div>
@@ -1584,42 +1055,22 @@ export default {
       }
     };
 
-    // Le seul moment animé de l'écran : la tuile devient le détail, et le détail
-    // redevient la tuile. Les navigateurs qui ne savent pas le faire changent
-    // simplement de contenu — rien ne dépend de l'animation.
-    const rendreAnime = () => {
-      const bouge =
-        document.startViewTransition &&
-        !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (!bouge) return rendre();
-
-      // Les TROIS promesses d'une transition peuvent échouer — deux gestes trop
-      // rapprochés, et la précédente est abandonnée. Ce n'est pas une erreur :
-      // l'écran est déjà juste. Sans ces `catch`, la console en garde la trace
-      // comme d'un défaut, et `finished` seule ne suffit pas (`ready` rejette
-      // de son côté quand la transition est sautée).
-      const passage = document.startViewTransition(() => rendre());
-      passage.finished.catch(() => {});
-      passage.ready.catch(() => {});
-      passage.updateCallbackDone.catch(() => {});
-    };
-
     const charger = async () => {
-      const [objectifs, projets, taches, periodes, commandes, materiel] = await Promise.all([
+      // QUATRE REQUÊTES, ET NON SIX : les prestations et le matériel ne
+      // servaient qu'à l'argent d'un cap déplié, qui vit sur `#objectif/<id>`
+      // depuis le 2 septembre 2026. Les TÂCHES restent — les tuiles comptent ce
+      // qu'un cap et un projet portent.
+      const [objectifs, projets, taches, periodes] = await Promise.all([
         api.objectifsActifs(),
         api.projetsTous(),
         api.tachesToutes(),
         api.periodesToutes(),
-        api.commandesToutes(),
-        api.materielTout(),
       ]);
 
       etat.objectifs = objectifs.filter((objectif) => ESPACES.includes(objectif.espace));
       etat.projets = projets;
       etat.taches = taches;
       etat.periodes = periodes;
-      etat.commandes = commandes;
-      etat.materiel = materiel;
       rendre();
     };
 
@@ -1713,23 +1164,6 @@ export default {
         return;
       }
 
-      if (forme === 'etape') {
-        const valeurs = { titre: champs.titre.trim() };
-        if (id) {
-          const etape = trouver(`etape:${id}`).cible;
-          Object.assign(etape, await api.modifierEtape(id, valeurs));
-        } else {
-          const projet = trouver(`projet:${parent}`).cible;
-          const etape = await api.creerEtape({
-            projet_id: parent,
-            ...valeurs,
-            ordre: (projet?.etapes?.length ?? 0) + 1,
-          });
-          projet.etapes = [...(projet.etapes ?? []), etape];
-        }
-        return;
-      }
-
       if (forme === 'projet') {
         const valeurs = {
           espace: champs.espace,
@@ -1816,29 +1250,6 @@ export default {
         return;
       }
 
-      if (forme === 'prestation') {
-        // Livrée d'emblée : on note ce qu'on a ENCAISSÉ, pas ce qu'on espère.
-        const commande = await api.creerCommande({
-          titre: champs.titre.trim(),
-          client: champs.client?.trim() || null,
-          montant: Number(champs.montant),
-          // Vide = pas de frais, et non zéro : la colonne dit alors « on n'a
-          // rien noté », pas « ça n'a rien coûté ».
-          frais: champs.frais ? Number(champs.frais) : null,
-          statut: 'livree',
-        });
-        etat.commandes = [commande, ...etat.commandes];
-        return;
-      }
-
-      if (forme === 'materiel') {
-        const achat = await api.creerMateriel({
-          nom: champs.nom.trim(),
-          prix: Number(champs.prix),
-          date_achat: champs.date_achat || null,
-        });
-        etat.materiel = [achat, ...etat.materiel];
-      }
     }
 
     // --- Les gestes ---
@@ -1882,128 +1293,13 @@ export default {
       // s'ouvrir.
       if (evenement.target.closest('[data-ouvrir-choix], .choix-panneau')) return;
 
-      const ouvrir = dans('ouvrir');
-      if (ouvrir) {
-        const id = ouvrir.dataset.ouvrir;
-        etat.ouvert = etat.ouvert === id ? null : id;
-        etat.projetOuvert = null;
-        etat.menu = null;
-        rendreAnime();
-        return;
-      }
-
-      if (dans('refermer')) {
-        etat.ouvert = null;
-        etat.menu = null;
-        rendreAnime();
-        return;
-      }
-
-      const galerie = dans('ouvrir-projet-galerie');
-      if (galerie) {
-        const id = galerie.dataset.ouvrirProjetGalerie;
-        etat.projetGalerie = etat.projetGalerie === id ? null : id;
-        etat.rattache = null;
-        etat.faites = null;
-        etat.menu = null;
-        rendreAnime();
-        return;
-      }
-
-      if (dans('refermer-projet')) {
-        etat.projetGalerie = null;
-        etat.menu = null;
-        rendreAnime();
-        return;
-      }
-
-      const projet = dans('ouvrir-projet');
-      if (projet) {
-        const id = projet.dataset.ouvrirProjet;
-        etat.projetOuvert = etat.projetOuvert === id ? null : id;
-        etat.rattache = null;
-        etat.faites = null;
-        etat.menu = null;
-        rendre();
-        return;
-      }
-
       // --- Ce qui s'écrit d'un doigt ---
-
-      const jalon = dans('jalon');
-      if (jalon) return basculerJalon(jalon.dataset.jalon);
-
-      const etape = dans('etape');
-      if (etape) return basculerEtape(etape.dataset.etape);
-
-      // Réordonner les étapes. LE MENU RESTE OUVERT après le déplacement : une
-      // étape qui doit remonter de trois rangs se déplace alors en trois appuis
-      // et non en neuf. Il est attaché à l'identifiant de l'étape, pas à sa
-      // position, donc il suit celle qui bouge.
-      const monter = dans('monter');
-      const descendre = dans('descendre');
-      if (monter || descendre) {
-        const [forme, id] = (monter ?? descendre).dataset[
-          monter ? 'monter' : 'descendre'
-        ].split(':');
-        const pas = monter ? -1 : 1;
-        return forme === 'jalon' ? deplacerJalon(id, pas) : deplacerEtape(id, pas);
-      }
-
-      const tache = dans('tache');
-      if (tache) return basculerTache(tache.dataset.tache);
-
-      const relire = dans('faites');
-      if (relire) {
-        const id = relire.dataset.faites;
-        etat.faites = etat.faites === id ? null : id;
-        rendre();
-        return;
-      }
-
-      const rattacherVers = dans('rattacher-vers');
-      if (rattacherVers) {
-        const id = rattacherVers.dataset.rattacherVers;
-        etat.rattache = etat.rattache === id ? null : id;
-        rendre();
-        return;
-      }
-
-      const rattacher = dans('rattacher');
-      if (rattacher) {
-        const cible = etat.taches.find((t) => t.id === rattacher.dataset.rattacher);
-        if (!cible) return;
-        const modifs = { projet_id: rattacher.dataset.vers };
-        await modifierAussitot(cible, modifs, () => api.modifierTache(cible.id, modifs), {
-          rendre,
-          echouer: () => signaler("Ça n'a pas pu être rattaché."),
-        });
-        return;
-      }
-
-      // --- Les périodes ---
-
-      // --- L'argent ---
-
-      const commande = dans('retirer-commande');
-      if (commande) {
-        const id = commande.dataset.retirerCommande;
-        const cible = etat.commandes.find((c) => c.id === id);
-        return retirerAussitot(etat.commandes, cible, () => api.supprimerCommande(id), {
-          rendre,
-          echouer: () => signaler("Ça n'a pas pu être retiré."),
-        });
-      }
-
-      const achat = dans('retirer-materiel');
-      if (achat) {
-        const id = achat.dataset.retirerMateriel;
-        const cible = etat.materiel.find((m) => m.id === id);
-        return retirerAussitot(etat.materiel, cible, () => api.supprimerMateriel(id), {
-          rendre,
-          echouer: () => signaler("Ça n'a pas pu être retiré."),
-        });
-      }
+      //
+      // LA GALERIE NE PORTE PLUS QUE DES GESTES D'UN DOIGT SUR UNE TUILE : son
+      // état, son menu. Ouvrir un cap ou un projet, franchir un jalon, cocher
+      // une tâche, rattacher — tout cela vit sur les pages `#objectif/<id>` et
+      // `#projet/<id>` depuis le 2 septembre 2026, et les gestes ont suivi les
+      // écrans où on les fait.
 
       // --- Le menu discret ---
 
@@ -2078,144 +1374,6 @@ export default {
       rendre();
     }
 
-    // Marquer un jalon atteint écrit sa victoire ; revenir dessus la retire —
-    // sinon le hub garderait la trace d'un travail défait.
-    async function basculerJalon(id) {
-      const { cible: jalon, objectif } = trouver(`jalon:${id}`);
-      if (!jalon) return;
-
-      const avant = { ...jalon };
-      Object.assign(jalon, {
-        atteint: !jalon.atteint,
-        date_atteint: jalon.atteint ? null : new Date().toISOString().slice(0, 10),
-      });
-      rendre();
-
-      try {
-        if (avant.atteint) {
-          Object.assign(jalon, await api.modifierJalon(id, { atteint: false, date_atteint: null }));
-          await api.supprimerVictoireDuJalon(id);
-        } else {
-          const { jalon: atteint } = await api.atteindreJalon(avant, objectif.espace);
-          Object.assign(jalon, atteint);
-        }
-      } catch (souci) {
-        console.error('Jalon non modifié', souci);
-        Object.assign(jalon, avant);
-        signaler("Ça n'a pas pu être enregistré — le jalon est revenu.");
-      }
-    }
-
-    // Franchir une étape écrit sa victoire ; revenir dessus la retire. Même
-    // mécanique que le jalon, au mot près — c'est le même geste un étage plus
-    // bas, et il ne doit pas s'apprendre deux fois.
-    async function basculerEtape(id) {
-      const { cible: etape, projet } = trouver(`etape:${id}`);
-      if (!etape) return;
-
-      const avant = { ...etape };
-      Object.assign(etape, {
-        atteint: !etape.atteint,
-        date_atteint: etape.atteint ? null : new Date().toISOString().slice(0, 10),
-      });
-      rendre();
-
-      try {
-        if (avant.atteint) {
-          Object.assign(etape, await api.modifierEtape(id, { atteint: false, date_atteint: null }));
-          await api.supprimerVictoireDeLEtape(id);
-        } else {
-          const { etape: franchie } = await api.franchirEtape(avant, projet.espace);
-          Object.assign(etape, franchie);
-        }
-      } catch (souci) {
-        console.error('Étape non modifiée', souci);
-        Object.assign(etape, avant);
-        signaler("Ça n'a pas pu être enregistré — l'étape est revenue.");
-      }
-    }
-
-    // L'ORDRE SE CHANGE — pour les jalons d'un cap comme pour les étapes d'un
-    // projet (29 août 2026, demande de Noé). Un découpage ne se pense pas dans
-    // le bon ordre du premier coup : on pose les marches comme elles viennent,
-    // puis on les range.
-    //
-    // UNE SEULE MÉCANIQUE POUR LES DEUX ÉTAGES. Elles portent la même colonne
-    // `ordre`, le même menu et le même geste ; deux copies de ce code auraient
-    // fini par diverger, et c'est le genre d'écart qu'on ne voit qu'une fois
-    // qu'un des deux écrans s'est mis à mentir.
-    //
-    // L'écran d'abord, l'écriture derrière — et la liste reprend son ordre
-    // d'avant si ça n'a pas pu s'enregistrer, sans quoi l'affichage optimiste
-    // serait un mensonge.
-    async function deplacerDans(liste, id, pas, ecrire, quoi) {
-      const rang = liste.findIndex((ligne) => ligne.id === id);
-      const vers = rang + pas;
-      if (rang === -1 || vers < 0 || vers >= liste.length) return;
-
-      // Sur place, jamais par remplacement : c'est le tableau que tout le monde
-      // regarde, et un retour en arrière écrirait dans un tableau orphelin.
-      // C'est la règle de js/ecriture.js.
-      const avant = [...liste];
-      liste.splice(vers, 0, ...liste.splice(rang, 1));
-      rendre();
-
-      try {
-        await ecrire(liste);
-      } catch (souci) {
-        console.error('Ordre non enregistré', souci);
-        liste.splice(0, liste.length, ...avant);
-        signaler(`Ça n'a pas pu être enregistré — l'ordre ${quoi} est revenu.`);
-      }
-    }
-
-    function deplacerEtape(id, pas) {
-      const projet = etat.projets.find((p) => (p.etapes ?? []).some((e) => e.id === id));
-      if (!projet) return;
-      return deplacerDans(projet.etapes, id, pas, api.reordonnerEtapes, 'des étapes');
-    }
-
-    function deplacerJalon(id, pas) {
-      const { objectif } = trouver(`jalon:${id}`);
-      if (!objectif) return;
-      return deplacerDans(objectif.jalons, id, pas, api.reordonnerJalons, 'des jalons');
-    }
-
-    // Cocher est une intention, pas un fait acquis : la fenêtre demande combien
-    // de temps ça a pris, et rien n'est écrit tant qu'on n'a pas confirmé.
-    async function basculerTache(id) {
-      const tache = etat.taches.find((t) => t.id === id);
-      if (!tache) return;
-
-      if (tache.statut === 'fait') return terminerTache(tache, false, null);
-      demanderLaDuree(tache, (minutes) => terminerTache(tache, true, minutes));
-    }
-
-    async function terminerTache(tache, versFait, minutes) {
-      const avant = { ...tache };
-      Object.assign(tache, {
-        statut: versFait ? 'fait' : 'actif',
-        date_fait: versFait ? new Date().toISOString() : null,
-        duree: minutes ?? tache.duree,
-      });
-      rendre();
-
-      try {
-        if (versFait) {
-          if (minutes !== null) await api.modifierTache(tache.id, { duree: minutes });
-          const { tache: faite } = await api.terminerTache(avant);
-          Object.assign(tache, faite);
-        } else {
-          Object.assign(tache, await api.rouvrirTache(avant));
-          await api.supprimerVictoireDeLaTache(tache.id);
-        }
-      } catch (souci) {
-        console.error('Tâche non mise à jour', souci);
-        Object.assign(tache, avant);
-        signaler("Ça n'a pas pu être enregistré — la tâche est revenue.");
-      }
-    }
-
     // Ce qui est irréversible passe par ici, et seulement après confirmation.
     async function executer(cle) {
       const [forme, id] = cle.split(':');
@@ -2226,7 +1384,6 @@ export default {
         const objectif = trouver(`objectif:${id}`).cible;
         if (!objectif) return;
         etat.objectifs = etat.objectifs.filter((o) => o.id !== id);
-        etat.ouvert = null;
         rendre();
         try {
           await api.atteindreObjectif(objectif);
@@ -2240,26 +1397,7 @@ export default {
 
       if (forme === 'objectif') {
         const objectif = trouver('objectif:' + id).cible;
-        etat.ouvert = null;
         return retirerAussitot(etat.objectifs, objectif, () => api.supprimerObjectif(id), {
-          rendre,
-          echouer: () => signaler("Ça n'a pas pu être supprimé."),
-        });
-      }
-
-      if (forme === 'jalon') {
-        const { cible: jalon, objectif } = trouver(cle);
-        if (!jalon) return;
-        return retirerAussitot(objectif.jalons, jalon, () => api.supprimerJalon(id), {
-          rendre,
-          echouer: () => signaler("Ça n'a pas pu être supprimé."),
-        });
-      }
-
-      if (forme === 'etape') {
-        const { cible: etape, projet } = trouver(cle);
-        if (!etape) return;
-        return retirerAussitot(projet.etapes, etape, () => api.supprimerEtape(id), {
           rendre,
           echouer: () => signaler("Ça n'a pas pu être supprimé."),
         });
@@ -2267,17 +1405,7 @@ export default {
 
       if (forme === 'projet') {
         const projet = trouver(cle).cible;
-        etat.projetOuvert = null;
-        etat.projetGalerie = null;
         return retirerAussitot(etat.projets, projet, () => api.supprimerProjet(id), {
-          rendre,
-          echouer: () => signaler("Ça n'a pas pu être supprimé."),
-        });
-      }
-
-      if (forme === 'tache') {
-        const tache = trouver(cle).cible;
-        return retirerAussitot(etat.taches, tache, () => api.supprimerTache(id), {
           rendre,
           echouer: () => signaler("Ça n'a pas pu être supprimé."),
         });

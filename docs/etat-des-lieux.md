@@ -1,4 +1,4 @@
-# État des lieux — 1er septembre 2026
+# État des lieux — 2 septembre 2026
 
 > **Reprise : § 4 bis, « Par où reprendre ».**
 >
@@ -8,27 +8,672 @@
 > [orientation-spec.md](orientation-spec.md). À relire au début d'une session,
 > à mettre à jour à la fin.
 >
-> **§ 0 raconte la dernière session** (31 août – 1er septembre : LE CALENDRIER
-> CHANGE DE GRAMMAIRE — la couleur dit l'espace, la forme dit la nature, et
-> Google Sans entre dans le hub ; « CE QUE JE VOIS » passe en cartes de deux
-> lignes ; et surtout LES BLOCS DE « MA SEMAINE », une proposition d'emploi du
-> temps que le hub calcule et que Noé corrige à la main).
-> **§ 0.8 liste les décisions qui ont fait un aller-retour** — il y en a
-> beaucoup cette fois : **à lire avant de toucher aux blocs ou aux barres du
-> calendrier.**
+> **§ 0 raconte la dernière session** (2 septembre : **CHAQUE PROJET, CHAQUE CAP
+> ET CHAQUE HABITUDE ONT LEUR PAGE** — `#projet/<id>` et `#objectif/<id>`, en trois
+> colonnes : son découpage, son calendrier en mois et semaine, et l'étage en
+> dessous. Tout se glisse d'une colonne au calendrier et revient. Les deux
+> dépliages sur place ont disparu de `#objectifs`, leurs machineries ont suivi,
+> et **une étape porte désormais un jour**).
 >
-> **§ 0 ante** le 30–31 août au soir (« Ma semaine » naît, les tuiles d'ajout
-> passent en pastilles), **§ 0 ante bis** le 30 dans la journée (le FCH prend sa
-> charte, perso refond ses habitudes), **§ 0 ante ter** le 29 au soir (perso
-> devient un espace vivant), **§ 0 ante quater** le 29 dans la journée (l'accueil
-> refondu), **§ 0 ante quinquies** le 28 au soir (la navigation à deux rangs),
-> **§ 0 ante sexies** le 28 dans la journée, **§ 0 ante septies** le 27
-> après-midi, **§ 0 ante octies** le 27 au matin, **§ 0 ante nonies** le 26,
-> **§ 0 ante decies** les 24–25, **§ 0 ante undecies** le 24, **§ 0 ante
-> duodecies** le 21, **§ 0 ante terdecies** le 15, **§ 0 ante quaterdecies** les
-> 14–15. Les § 1 et suivants décrivent l'état stable et les chantiers antérieurs.
+> **§ 0 ante** le 1er septembre après-midi et soir (l'algorithme des blocs tient
+> ses quotas ; « Ma semaine » garde ce qu'on y arrange ; « Mes journées » devient
+> un journal). **Son § 0.9 liste les décisions qui ont fait un aller-retour** —
+> il y en a beaucoup : **à lire avant de « corriger » quoi que ce soit dans la
+> tuile d'une journée ou dans les blocs.**
+>
+> **§ 0 ante bis** le 31 août – 1er septembre au matin (le calendrier change de
+> grammaire, les blocs de « Ma semaine » naissent), **§ 0 ante ter** le 30–31
+> août au soir (« Ma semaine » naît, les tuiles d'ajout passent en pastilles),
+> **§ 0 ante quater** le 30 dans la journée (le FCH prend sa charte, perso refond
+> ses habitudes), **§ 0 ante quinquies** le 29 au soir (perso devient un espace
+> vivant), **§ 0 ante sexies** le 29 dans la journée (l'accueil refondu),
+> **§ 0 ante septies** le 28 au soir (la navigation à deux rangs), **§ 0 ante
+> octies** le 28 dans la journée, **§ 0 ante nonies** le 27 après-midi,
+> **§ 0 ante decies** le 27 au matin, **§ 0 ante undecies** le 26, **§ 0 ante
+> duodecies** les 24–25, **§ 0 ante terdecies** le 24, **§ 0 ante quaterdecies**
+> le 21, **§ 0 ante quindecies** le 15, **§ 0 ante sexdecies** les 14–15. Les
+> § 1 et suivants décrivent l'état stable et les chantiers antérieurs.
 
-## 0. La session du 31 août – 1er septembre 2026 — LE CALENDRIER, ET LES BLOCS DE LA SEMAINE
+## 0. La session du 2 septembre 2026 — CHAQUE PROJET, CHAQUE CAP, CHAQUE HABITUDE A SA PAGE
+
+**UNE MIGRATION, appliquée à la base réelle** :
+
+| | |
+|---|---|
+| `20260902090000_echeance_etape.sql` | colonne `projets_etapes.echeance` |
+
+**DEUX FICHIERS NEUFS** : `js/projet.js` et `js/objectif.js`, les espaces
+`projet` et `objectif` du routeur. **`js/objectifs.js` est passé de 2 295 à
+1 423 lignes** : les deux dépliages sur place et toutes leurs machineries l'ont
+quitté. Il ne lui reste que ce pour quoi il est fait — **trois galeries qui
+comparent** (les caps, les projets, les périodes) et les formulaires du hub.
+
+### 0.1 La demande, et les deux choix que Noé a tranchés
+
+> « Pour les projets, chacun d'eux doit avoir sa propre page (à ouvrir depuis la
+> page projet) dans laquelle un calendrier en vue mois et semaine et une colonne
+> pour les tâches et étapes que l'on pourra glisser dans le calendrier pour les
+> programmer. La page doit contenir tous les détails du projet également. »
+
+Deux questions se posaient avant d'écrire une ligne, et les deux étaient les
+siennes :
+
+1. **Glisser une ÉTAPE sur un jour — qu'est-ce que ça écrit ?** Une étape n'avait
+   pas de date, et c'était une règle écrite : *« elle découpe le TRAVAIL, pas le
+   calendrier »* (29 août). Deux réponses possibles — fabriquer une tâche qui la
+   porte, ou donner un jour à l'étape. **Noé a choisi la seconde** : ce qu'on
+   glisse doit être ce qu'on retrouve.
+2. **Que fait la tuile de la galerie ?** **Elle ouvre la page** : deux endroits
+   qui montrent la même chose finissent par se contredire.
+
+Puis, devant la première version, **deux corrections qui ont refait la page** :
+
+3. *« Plutôt qu'une répétition des étapes et des tâches, faisons une colonne à
+   gauche du calendrier pour les étapes comme elles sont affichées actuellement,
+   et que l'on peut glisser-déposer à une date du calendrier ; et à droite
+   pareil, une colonne pour les tâches que l'on peut filtrer. »* La page portait
+   TROIS listes — une colonne « À poser », puis la frise entière et la liste
+   entière sous le calendrier : une étape sans date s'affichait **deux fois, à
+   deux endroits qui ne se ressemblaient pas**. Elle en porte deux, une de chaque
+   côté du calendrier, et **chaque chose n'y est qu'une fois**.
+4. *« Plutôt que "à faire" pour le filtre des tâches, c'est les tâches
+   programmées. »* Et c'est plus juste : « à faire » CONTENAIT « à poser », si
+   bien que passer de l'un à l'autre ne retirait rien. Les trois filtres sont
+   maintenant **disjoints** — à poser · programmées · faites — et, mis bout à
+   bout, ils font exactement le projet.
+
+### 0.1 bis La page d'un objectif, dans la foulée
+
+**La demande** : *« on va faire pareil pour les objectifs : une page indépendante
+pour chacun avec tous les détails, un calendrier qui permet de poser les jalons.
+Et une vue (et un lien vers la page détail) des projets qui lui sont
+rattachés. »*
+
+**C'EST LA PAGE D'UN PROJET, UN ÉTAGE PLUS HAUT** — mêmes trois colonnes, même
+geste, mêmes mots.
+
+**MAIS LES PROJETS NE SONT PAS DANS UNE COLONNE**, et c'est Noé qui l'a vu :
+*« les projets ne sont pas à "poser" »*. **Les deux colonnes qui encadrent un
+calendrier sont une RÉSERVE : ce qu'elles portent se glisse sur un jour.** Un
+projet n'a pas d'échéance qu'on déplace du doigt — il a une page. Les y mettre
+promettait un geste qui n'existe pas. Ils forment donc **un rail pleine largeur
+SOUS le calendrier** — celui de l'accueil, tuile pour tuile, avec un lien vers
+la page de chacun ; la colonne de droite ne garde que les tâches accrochées au
+cap **sans projet**, qui elles se posent. *Le rail a été demandé au-dessus du
+calendrier, puis corrigé en dessous dans la foulée.*
+
+**UN JALON N'A EU BESOIN D'AUCUNE MIGRATION** : il porte une `echeance` depuis le
+premier jour, et le calendrier savait déjà le lire, le déplacer, le corriger et
+le supprimer. **C'est la seule différence avec l'étape d'un projet**, qu'il a
+fallu doter d'une colonne le matin même — et elle dit quelque chose de vrai : un
+jalon a toujours été un point du calendrier, une étape un morceau de travail.
+
+**L'argent de « Rembourser mon matériel » a suivi l'écran** : il ferme la page du
+cap.
+
+**PUIS LA PAGE A PERDU SA TROISIÈME COLONNE** (*« supprime la colonne de
+droite »*) : un cap n'a qu'une chose à poser sur son calendrier, ses jalons. Les
+tâches accrochées au cap sans projet ne s'affichent donc plus ici — **conséquence
+assumée**, elles vivent dans l'espace Tâches et au calendrier quand elles ont une
+date. Le calendrier prend la place rendue, et les deux colonnes arrivent dès
+1000 px.
+
+### 0.1 ter Une vue « 3 mois », et sa forme à elle
+
+**La demande** : *« rajoute une vue 3 mois au calendrier »* — puis, devant trois
+grilles de mois empilées : *« les 3 mois doivent être 3 colonnes, ça ne doit pas
+avoir la même forme que les mois de la vue mois, c'est trop long »*.
+
+**IL A RAISON, ET C'EST UNE QUESTION DE NATURE.** Une grille de mois est faite
+pour qu'on LISE un jour ; le trimestre répond à « où sont les échéances, où sont
+les creux ». Sa case porte donc son numéro et des POINTS — le choix du calendrier
+de « Mes journées », pour le même motif. *Mesuré à 1210 px : 295 px pour les trois
+mois, contre 1 700 pour trois grilles empilées.*
+
+**CE QU'ON GARDE, ET C'EST LE PLUS UTILE** : la case reste un `.cal-jour` avec sa
+date, donc **un jalon se glisse à deux mois sans changer de vue**. Aucune autre
+vue ne le permettait.
+
+**PUIS LES TROIS MOIS SE SONT COLLÉS** (*« les mois doivent être collés côte à
+côte, le L de lundi, M de mardi… ne doit pas y être, seulement le mois doit être
+inscrit à cette place »*). Un seul cadre pour les trois — trois `.cal-grille`
+voisines gardaient chacune son contour et ses coins arrondis au milieu du
+trimestre —, et le nom du mois prend le rang des initiales, qui ne servaient à
+rien : on ne vise pas un mardi dans cette vue. *Mesuré : 274 px pour les trois
+mois, et les colonnes se touchent au pixel.*
+
+### 0.1 quater Et une vue « Année », par semaines
+
+**La demande** : *« crée une vue par année, par 12 mois plutôt (mais appelée
+année) ; tu ne référence pas tous les jours, seulement les semaines… Quand on
+déplace un jalon dedans, ça se place au lundi de la semaine choisie. »* Puis :
+*« les numéros doivent dire le numéro de la semaine plutôt que le numéro du
+lundi »*, et *« quand j'appuie sur une semaine ça doit me mener à sa vue semaine,
+et quand je clique sur le nom du mois ça doit m'amener vers sa vue mois »*.
+
+**MÊME MOUVEMENT QUE LE TRIMESTRE, D'UN CRAN ENCORE** : des barres dans un jour,
+puis des points dans un jour, puis des points dans une SEMAINE. *Mesuré : 398 px,
+la hauteur d'une vue mois, pour douze mois.*
+
+**DEUX DÉFAUTS TROUVÉS EN LE CONSTRUISANT** :
+1. **Une semaine rangée par son LUNDI laissait un TROU.** La semaine du 31 août
+   n'était d'aucun des douze mois d'une année ouverte en septembre, **et les
+   échéances du 2 et du 3 septembre ne se voyaient nulle part**. La règle est
+   celle d'ISO 8601 — le mois du JEUDI : aucune semaine deux fois, aucune
+   oubliée.
+2. **Le numéro de semaine se trompait en fin d'année.** Compter depuis « le jeudi
+   de la semaine du 1er janvier » échoue quand celui-ci appartient à l'année
+   d'avant : le 4 janvier 2027 sortait en semaine 2 au lieu de 1. *Dix cas de
+   bord vérifiés depuis, dont les semaines 53.*
+
+**C'EST UNE VUE OÙ L'ON ZOOME**, la seule du hub où un appui n'ouvre pas la tuile
+de capture : on ne pose pas une chose « dans une semaine », on descend d'un cran
+pour voir où.
+
+**`#calendrier`, le site Yuno et celui du club gardent leurs trois vues** : la
+barre sait déplacer et nommer le trimestre comme l'année, mais c'est l'option
+`vues` qui décide page par page.
+
+**LA FENÊTRE GLISSE D'UN MOIS, elle ne se tourne pas comme une page.** J'avais
+posé un pas de TROIS mois — septembre-novembre sautait à décembre-février — et
+Noé l'a corrigé deux fois, la seconde avec un exemple : *« la période actuelle
+est septembre-novembre ; si j'appuie sur la flèche qui va vers la droite, la
+période doit être octobre-décembre »*. **Une fenêtre de trois mois n'est pas une
+page de trois mois** : on la fait glisser pour suivre une échéance qui arrive au
+bord. *Vérifié à la vraie souris : sept–nov → oct–déc → nov–janv, et retour.*
+
+**UN DÉFAUT ANCIEN TROUVÉ EN VÉRIFIANT CE PAS.** `deplacerAncre` déplaçait
+l'ancre avec `setMonth`, **qui déborde quand le mois d'arrivée est plus court que
+le jour de départ** : depuis le 31 janvier, « mois suivant » donnait le 3 mars —
+**février était sauté**, et ça touchait le calendrier plein écran depuis
+toujours, un mois sur sept. L'ancre repart maintenant du 1er du mois.
+
+### 0.1 quinquies Et une page par HABITUDE
+
+**La demande** : *« chaque habitude doit avoir une page dédiée également, avec
+toutes les stats intéressantes et les détails (dont depuis quand je l'ai
+ajoutée/commencée) + un calendrier qui permet de voir quand l'habitude a été
+faite ou non (vue mois, 3 mois). »*
+
+**MÊME MOUVEMENT, AUTRE NATURE.** Un cap a des jalons à POSER ; une habitude n'a
+rien à poser, **elle revient**. Son calendrier regarde donc en arrière, et c'est
+**la seule grille du hub où l'on coche un jour passé** au lieu d'y déposer
+quelque chose.
+
+**LA CARTE RESTE**, à la différence des caps et des projets dont le dépliage a
+disparu : elle est un tableau de bord qu'on lit tous les jours pour cocher, pas
+un index dupliqué. Son nom devient la porte.
+
+**Ce que la page ajoute** : **la première fois** (et non la date de création —
+*« la date où l'on a TAPÉ une habitude ne dit rien »*), **les deux séries en
+couleur** — celle en cours et le record, sous le même réglage du −1 —, tous ses
+paliers, son rythme, et le calendrier.
+
+**HUIT CORRECTIONS DE NOÉ, ET DEUX SONT DES RÈGLES DU HUB QUE J'AVAIS
+OUBLIÉES** :
+1. *« Plutôt que "8 avant 10", montre ce que j'ai fait, donc 2/10. »* C'est la
+   **philosophie n° 1** — le hub est un miroir de ce qui a été accompli, pas une
+   liste de ce qui reste. Les deux tuiles n'en font plus qu'une : le total EST le
+   numérateur.
+2. *« Enlève le "posé le…", la donnée 1ère fois est plus intéressante. »*
+3. *« La vue mois doit prendre toute la largeur, comme les autres vues mois
+   utilisées sur le site, la même forme. »* Elle empruntait la grille compacte du
+   trimestre — une forme que le hub n'a nulle part ailleurs.
+4. *« La case des initiales des jours doit être plus fine. »* `grid-auto-rows`
+   vaut pour tous les rangs implicites, en-tête compris : la rangée faisait 48 px
+   comme un jour. *Mesuré après : 14 px.*
+5. *« Pour les séries journalières, le graphique doit être par jour et non par
+   semaine, montre les 14 derniers jours »*, puis *« avec le dernier jour à
+   gauche »*. **La maille doit suivre ce que l'habitude COMPTE** : une quotidienne
+   compte des jours depuis le 30 août, et sa courbe le disait en semaines — « 7
+   sur 7 » et « 4 sur 7 » y faisaient deux barres pleines. *Une barre qui ne peut
+   pas montrer un écart ne montre rien.* Et on lit de gauche à droite : la
+   première chose lue doit être aujourd'hui.
+6. *« Supprime "où elle en est" »*, puis *« supprime les petits ronds et en
+   sommeil »*. **Ce qui se montre n'a pas à se nommer** — la coupe de la tuile
+   d'une journée, la veille. L'élan faisait ici un sixième chiffre, dans une
+   autre unité et sous une autre forme, au-dessus de cinq qui se comparent ; il
+   reste où il vit, sur les cartes.
+7. *« Remets la 1ère fois à la place qu'elle était au début, en dessous des
+   stats, en petit comme dernière fois. »* Elle était montée en tête, en corps de
+   texte, où **elle pesait autant que le pourquoi de l'habitude** — alors que
+   c'est un fait de même nature que les deux qui la suivent.
+8. *« Les chiffres des dashboards doivent être en Clash Display. »* La règle de
+   `.chiffre-cle` et du bilan de « Ma semaine » : un chiffre qu'on vient VOIR se
+   donne du poids, un chiffre qu'on vient COMPARER garde sa chasse fixe.
+
+**UN CINQUIÈME CHIFFRE, ET C'EST LE SEUL DU HUB QUI COMPTE UN MANQUE** : *« il
+faut rajouter aussi comme stat le pourcentage de fois où elle a été complétée, en
+prenant comme date référence la 1ère fois où elle a été faite. »* La règle des
+habitudes l'interdit depuis le 30 août — « aucun taux de réussite » — et Noé le
+redemande, donc il existe ; **ce qui le rend tenable, c'est qu'il est un parmi
+cinq**, à côté de quatre qui ne peuvent que monter, sans rouge ni seuil.
+L'attendu se déduit de la cadence (`jours × cadence / 7`), le taux est plafonné à
+100 %, et une habitude jamais pratiquée n'en a pas. *Vérifié hors écran : 5 jours
+sur 7 en quotidienne donnent 71 %, 6 pratiques pour 6 attendues donnent 100 %.*
+
+**LE RECORD DE SÉRIE ÉTAIT DÉJÀ CALCULÉ** et ne s'affichait nulle part —
+`serieDeLHabitude` le rend depuis le premier jour, sous le même réglage du −1. Il
+n'y avait rien à recalculer, seulement à le montrer.
+
+**LES DEUX SÉRIES ONT DEMANDÉ CINQ PASSES DE PLUS**, et chacune corrige une
+erreur de ma part : les mots (« jours tenus » / « au mieux » demandaient de
+deviner qu'il s'agissait d'un record → « série en cours » / « série max »), la
+forme (la tuile entière était teintée → **seul le chiffre**), la couleur (la MÊME
+des deux côtés → **pas de violet, et une par mesure**), puis **une ÉCHELLE** —
+vert au début, bleu après trois, jaune à deux crans du record, **or en dégradé
+quand les deux sont à égalité**, orange pour le record — et enfin le retrait de
+« tu y es », *« c'est les couleurs qui me le disent »*.
+
+**UNE FLAMME À CINQ JOURS D'AFFILÉE**, et ce n'est PAS la série : celle-ci recule
+d'un cran quand un jour manque, donc « 7 jours tenus » peut avoir deux trous
+dedans. La flamme dit cinq jours SANS trou. **L'une protège, l'autre récompense**
+(`joursDAffileeDeLHabitude`, js/orientation.js).
+
+**L'échelle est vérifiée hors écran** — dix cas, dont ceux qui piègent : série et
+record à 1 le premier jour (or, pas jaune), série 2 sur record 5 (vert, pas
+jaune).
+
+**ET LA CARTE A MAIGRI D'AUTANT** (*« moins d'infos, seulement l'essentiel, avec
+le voc qu'on a corrigé ; pas de graphique ici »*) : plus de sparkline ni de
+légende, « série en cours » au lieu de « jours tenus », « 2/10 vers le palier »
+au lieu de « encore 8 avant 10 · 2 au total », et une quotidienne ne dit plus
+« pas encore aujourd'hui » — son rond le dit, et ce mot comptait un manque.
+*Mesuré : une carte passe de 300 px à 137.* **C'est la conséquence directe de la
+page** : ce qui traînait sur la carte y était parce qu'il n'y avait nulle part où
+le poser.
+
+**L'ÉLAN A QUITTÉ LE HUB**, en deux temps (« supprime les petits ronds et en
+sommeil », puis « enlève alors en sommeil et les petits points ») : il n'existe
+plus nulle part à l'écran. **Ce qui l'a tué n'est pas son calcul mais son mot** —
+« en sommeil » s'affichait sur les neuf habitudes à la fois, et un mot identique
+partout ne distingue rien. Les seuils restent dans js/orientation.js ; y remettre
+un affichage est l'affaire de trois lignes.
+
+**LA LIGNE DU TABLEAU DE BORD PERSO PORTE LES DEUX SÉRIES** (« les stats
+présentes doivent être série en cours et série max, avec le code couleur »), aux
+mots et aux couleurs de la page. La règle à seuils est sortie de l'écran pour
+`rangDeLaSerie` (js/orientation.js), **vérifiée sur dix cas** : deux copies d'une
+règle de couleur finissent par ne plus colorer pareil, et ça ne se voit qu'à
+côté.
+
+**LES DEUX CHIFFRES SONT TOUJOURS LÀ, ZÉRO COMPRIS** (« je ne vois pas la série
+max là », « si la série en cours est 0 mets 0 ») : le record se taisait à égalité
+et la série se taisait à zéro. **Une colonne vide ne se lit pas comme "c'est
+pareil", elle se lit comme "il n'y a rien"** — et dans deux colonnes alignées, on
+ne savait plus lequel des deux chiffres manquait. En **Google Sans**, comme le
+décompte des heures du bilan : à 13 px, deux chiffres seuls s'étalent en chasse
+fixe au lieu de se lire.
+
+### 0.1 ter L'émoji d'une habitude ne s'enregistrait pas
+
+*« Ajouter un émoji ne fonctionne pas pour l'instant. »* **La panne était en deux
+morceaux, et le premier était MUET** : le formulaire le demandait depuis le
+30 août, la base a sa colonne, et l'objet `valeurs` de l'enregistrement ne le
+reprenait pas — la valeur partait à la poubelle sans erreur ni signe.
+
+**Le second était le champ lui-même** : un `text` étiqueté « Émoji (facultatif) »,
+qui demandait d'en TAPER un, c'est-à-dire de connaître ⌃⌘Espace. Il devient un
+**carré cliquable à gauche du nom** (forme demandée, Notion en référence), qui
+ouvre un panneau : un champ de texte qui prend le focus — sur iPhone le clavier
+monte de lui-même, sur Mac le raccourci d'Apple écrit dedans — et **soixante-quatre
+émojis choisis** en dessous, pour le doigt.
+
+**Aucune API du navigateur n'ouvre le sélecteur du système** ; c'est ce qui a
+décidé de cette forme. `emojiDeLaSaisie` ne garde que la dernière suite
+pictographique de ce qui est tapé, **jointures et teintes de peau comprises** —
+sinon une famille ressortirait coupée en deux. *Vérifié sur sept cas.*
+
+**ET UN PANNEAU NE SE RETOURNE PLUS QUE SI ÇA AIDE** (`placerLePanneau`) : la
+règle basculait vers le haut dès qu'il dépassait en bas, sans regarder la place
+au-dessus — le panneau des émojis, ouvert au premier champ d'une tuile, allait se
+faire couper par le haut. Ce qui ne tient toujours pas DÉFILE au lieu de
+déborder. *Le défaut touchait tous les panneaux du hub.*
+
+**UNE SEULE REQUÊTE DE PLUS EN BASE** : `faitsDeLHabitude` lit tous les faits
+d'une habitude, sans fenêtre. Le cumul depuis toujours et un calendrier qu'on
+peut remonter mentiraient tous les deux sur soixante jours.
+
+### 0.2 Ce qui est parti de `#objectifs`
+
+- le dépliage d'un PROJET : `detailProjet`, `friseEtapes`, `surQuoiIlSeMesure`,
+  `capsServis`, `etat.projetGalerie` et les gestes qui les ouvraient ;
+- le dépliage d'un CAP : `detail`, `frise`, `tuileProjet`, `ligneTache`,
+  `blocDesFaites`, `construireArgent` ;
+- **les deux machineries** — franchir un jalon ou une étape, les ordonner, les
+  poser, les modifier, les supprimer ; cocher une tâche, la rattacher, relire ce
+  qui est fait ; les prestations et le matériel. Rien de tout cela n'y était
+  atteignable autrement que par un dépliage.
+
+**Les galeries gardent tout ce qui se COMPARE** : les tuiles, leurs marches et
+leurs jauges, la pastille d'état d'un projet, les menus — modifier, marquer
+atteint, supprimer — et les périodes. **Quatre requêtes au chargement au lieu de
+six.**
+
+### 0.3 Ce qui a été mis en commun plutôt que recopié
+
+| Ce qui a bougé | Où | Pourquoi |
+|---|---|---|
+| `construireMenuDiscret` | `js/objectifs.js` → `js/gabarits.js` | les deux pages en portent un sur chaque ligne |
+| `FORMULAIRES`, `grouperLesTaches`, `jaugeDuProjet`, `motDeLAvancee`, `motDuMouvement`, `pastilleEtat`, `marches`, `ETATS_PROJET*` | exportés de `js/objectifs.js` | une jauge ou des marches qui diraient deux choses selon l'écran feraient croire celui qu'on regarde le plus |
+| `.semaine-en-main` → `.en-main` | `css/styles.css` | deux pages s'en servent ; le nom ne pouvait plus dire « semaine » |
+| `.semaine-programmation`, `.semaine-grille`, `.semaine-vivier` | `.projet-page-*` ajouté par une virgule | même geste, mêmes règles, une seule déclaration |
+
+**`construireBarrePeriode` prend une option `vues`** : la page d'un projet
+n'offre que le mois et la semaine. Un agenda y répéterait la liste de ses
+tâches, qui vit juste en dessous.
+
+**`etape` est un TYPE du calendrier, jamais une NATURE** — exactement le statut
+du « bloc » de « Ma semaine ». Le reste s'est branché tout seul :
+`champsApresDeplacement` range déjà toute date inconnue dans `echeance`, et
+`champsDeModification` demande un titre et une échéance à ce qui n'est ni un
+événement ni une publication. Il n'a fallu ajouter que l'écriture
+(`appliquerAuCalendrier`, `effacerDepuisLeCalendrier`) et trois entrées de
+vocabulaire (`TYPES`, `SIGNES`, `VERBE_SUPPRESSION`).
+
+### 0.4 Trois défauts trouvés en vérifiant dans le navigateur
+
+1. **`deprogrammer` recevait un objet, `zone.quand` passe une CHAÎNE.** Ramener
+   une barre dans la colonne levait une `TypeError` sans un mot à l'écran : le
+   geste ne faisait simplement rien. Trouvé en le mesurant, pas en le lisant.
+2. **Le titre de l'onglet et la couleur de la page repassaient au neutre après
+   coup.** `app.js` les écrit dans `afficherEspace`, et il l'appelle **une
+   seconde fois au démarrage** — Supabase rend un événement de session juste
+   après qu'on s'y abonne. Les deux se REPOSENT donc à chaque passage du routeur,
+   `naviguer` compris, même quand le projet n'a pas changé.
+3. **Le nom `.projet-tete` était DÉJÀ PRIS** par la tuile de projet du tableau de
+   bord : la tête de la page héritait d'un `display: flex` et se rangeait sur une
+   seule ligne, titre compris. `.fiche-tete`, essayé ensuite, était pris lui aussi
+   — par `css/fch.css`, **qui est chargée sur les trois pages d'entrée**. Elles
+   s'appellent `.projet-page-*`. *Sixième fois que ce piège se paie ; la
+   convention dit maintenant explicitement de greper les TROIS feuilles.*
+4. **Une spécificité qu'on n'égale pas est une règle qu'on n'écrit pas**, et
+   c'est la SEPTIÈME fois. Les deux colonnes portent les listes de `#objectifs`
+   telles quelles, mais elles vivent dans une `.bloc` — et au-delà de 60 rem,
+   `.bloc ul:not(.liste-jalons)` (0-2-1) passe toutes les listes du hub en
+   GRILLE. Écrite `.projet-page-colonne .cap-taches` (0-2-0), ma règle perdait :
+   la liste restait une grille, où chaque ligne garde `min-width: auto` et refuse
+   de descendre sous la largeur de son contenu. *Mesuré à 1500 px : des lignes de
+   315 px dans une colonne de 270, le menu à trois points 45 px hors de l'écran.*
+   Il a fallu écrire `ul.cap-taches`.
+
+### 0.5 Ce qui a été vérifié dans le navigateur, sur les vraies données
+
+- la galerie ouvre la page, l'onglet prend le nom du projet, la page prend la
+  couleur de son espace (mesuré : `fch` → `#7ba5dc`, `formation` → teal) ;
+- **glisser une étape depuis la colonne de gauche** et **une tâche depuis celle
+  de droite** écrit leur échéance (vérifié en base) ; **les ramener dans une
+  colonne** l'efface, et les deux colonnes déprogramment ;
+- **toucher le titre puis toucher un jour** — le chemin du doigt, et le seul que
+  le clavier puisse suivre — pose la même chose ;
+- **les trois filtres** : 11 à poser, 1 programmée, 2 faites, et **rien de fait
+  ne se glisse** (aucune ligne prenable sous « Faites ») ;
+- **le cap servi se lit à côté du titre**, en petit et en gris (12,2 px contre
+  22,5), sous le titre en dessous de 720 px ; la ligne « CE QU'IL SERT » qui
+  disait la même chose plus bas est partie avec ;
+- **la date d'une étape a la forme de celle d'une tâche** — 11,25 px en encre
+  discrète contre 13,125 px en encre pleine pour son titre. *Elle est arrivée
+  nue dans la frise et héritait du corps de la page : `.cap-tache-date` n'a aucun
+  style à lui, tout vient de `.cap-tache-service` qui l'entoure ailleurs.* ;
+- **la mise en page à trois colonnes** : 82 px par jour à 1200 px, une seule
+  colonne en dessous, **aucun débordement de 375 à 1500 px** ;
+- ouvrir une étape depuis le calendrier, changer sa date, la franchir (une
+  victoire `source = 'etape'` est écrite), revenir dessus (elle est retirée),
+  la supprimer ;
+- poser une étape avec sa date, poser une tâche par le « + » (elle arrive
+  **déjà rattachée au projet**), la supprimer par son menu ;
+- réordonner les étapes, le menu restant ouvert ;
+- le formulaire du projet, dont la pastille « Objectifs servis » n'offre que les
+  caps de son espace ;
+- **la page d'une habitude** : ses **cinq chiffres** en Clash Display 700 — dont
+  **les deux séries en couleur** et « 67 % complétée » —, sa ligne de rythme
+  (« Première fois le 31 août 2026 · Dernière fois hier · 2 par semaine en
+  moyenne »), ses six paliers en pastilles, son calendrier en vue mois (forme du
+  site, pleine largeur) et en 3 mois (compacte) ; **cocher le 2 septembre à la
+  souris** fait passer « 2/7 » à « 3/7 » et « 2/10 » à « 3/10 », décocher les
+  ramène. **Ni titre de section, ni jauge d'élan.** Sa sparkline compte
+  **14 barres pour une quotidienne** (la plus récente à gauche : « mer. 2 sept. »
+  en premier, « jeu. 20 août » en dernier) et **12 pour une hebdomadaire**, la
+  légende suivant la maille ;
+- **la vue Année** : 52 semaines et 8 cases muettes, numéros ISO, un jalon lâché
+  sur la semaine 46 s'est posé **au 9 novembre, son lundi** ; presser une semaine
+  ouvre sa vue Semaine (« 14 – 20 septembre 2026 »), presser « oct. 26 » ouvre sa
+  vue Mois — les deux à la vraie souris ;
+- **la page d'un cap** : sa tuile l'ouvre, l'onglet prend son nom, la page prend
+  la couleur de son espace ; glisser un jalon sur un jour écrit son échéance et
+  le ramener l'efface — **y compris depuis la vue 3 mois, à deux mois de
+  distance** ; **le rail des projets glisse** (six tuiles, 1 594 px de contenu
+  dans 1 170) et chaque tuile mène bien à `#projet/<id>` ; une
+  tâche posée « sans projet » naît accrochée au cap et se supprime par son menu ;
+  l'argent de « Rembourser mon matériel » s'affiche entier (1 255 € sur 5 195 €,
+  ses 18 lignes) ;
+- **`#objectifs` et ses trois vues, `#semaine`, `#dashboard`, `#taches`,
+  `#calendrier`, `#perso`, `#chemin`, `#temps` intacts** ; le menu d'un cap dans
+  la galerie garde ses trois entrées et son formulaire ses huit champs ;
+- **mobile 375 px : aucun débordement horizontal.**
+
+**Toutes les données d'essai ont été remises comme elles étaient.**
+
+### 0.6 Ce qui reste ouvert
+
+- **La page n'est pas dans le menu**, et c'est voulu : on y entre par la galerie
+  ou par un projet déplié dans son cap. Si Noé veut un accès direct à un projet
+  précis, c'est une décision à prendre, pas un oubli.
+- **Le calendrier de la page n'a pas de vue « jour »** ni de bloc : elle
+  n'existe pas ailleurs non plus, et rien ne l'a demandée.
+- **Rien n'empêche encore de dater une étape déjà franchie.** Ce n'est pas faux
+  — on peut noter après coup quand on l'a faite — mais ce n'est pas non plus
+  décidé.
+
+## 0 ante. La session du 1er septembre 2026 (après-midi et soir) — LES BLOCS TIENNENT, ET « MES JOURNÉES » DEVIENT UN JOURNAL
+
+**Vingt-deux commits poussés, tout est sur `main`, et l'arbre de travail est
+propre** — c'est la première chose à savoir : contrairement à la session
+précédente, il n'y a rien en attente.
+
+**UNE MIGRATION, ET UNE COLONNE** — les deux appliquées à la base réelle :
+
+| | |
+|---|---|
+| `20260901120000_blocs_de_la_semaine.sql` | table `semaines_blocs` (+ `grant`) |
+| `20260901180000_gratitude_du_jour.sql` | colonne `journees.gratitude` |
+
+### 0.1 L'algorithme des blocs, corrigé trois fois
+
+**Le reproche de Noé** : *« ce n'est pas normal qu'on n'atteigne pas le quota
+pour la formation, quelle règle fait que ce n'est pas atteint ? Il faut que les
+jours soient équilibrés, là il y a beaucoup de déséquilibre. »*
+
+Trois règles étaient en cause, et **chacune a été corrigée là où elle vit** :
+
+1. **Le repli sur la journée entière était collé à toute pose.** Le club, servi
+   le premier, débordait donc sur le MATIN — la seule plage que la formation
+   puisse prendre, puisqu'elle s'arrête à 20 h. *Mesuré : le club posait
+   10 h–11 h le mardi, la formation tombait à 1 h 30 ce jour-là, et c'était
+   exactement l'heure qui manquait au total.* **On sert chacun chez soi d'abord,
+   on ne déborde qu'ensuite**, en deux tours qui parcourent chacun la semaine
+   entière.
+2. **La part d'un jour ignorait ce qu'il portait déjà** : le mardi recevait ses
+   4 h de club EN PLUS des 4 h de son entraînement. *Mesuré : 9 h le lundi,
+   9 h 30 le mardi, 2 h 30 le samedi, rien le dimanche.*
+3. **La part était plafonnée à 4 h**, ce qui confondait « un BLOC fait 4 h au
+   plus » et « un espace reçoit 4 h par jour ». 26 h sur six jours font 4 h 20.
+
+**Le reliquat va au jour le moins chargé**, le classement refait à chaque pas ;
+**et ce qui reste sous l'heure RALLONGE un bloc existant** au lieu d'être perdu
+(demande de Noé : *« tu peux mettre 3 h au lendemain, quelle règle t'en
+empêche ? »* — aucune, sinon une que le hub s'était posée à lui-même).
+
+*Mesuré après correction : club 26 h sur 26 visées, formation 15 h sur 15, six
+jours entre 6 h 30 et 7 h 30.*
+
+**LA PAUSE DU MIDI EST DEVENUE PUBLIQUE** (`pauseDuMidi`, js/orientation.js).
+Elle n'existait que dans l'algorithme ; la grille, qui glisse dans les vides
+d'une journée ce qui n'a pas d'heure, y voyait un trou comme un autre et y
+posait une tâche perso. **Une heure gardée libre qu'un autre écran remplit n'est
+plus une heure gardée libre.**
+
+**L'HEURE POSÉE PASSE AVANT TOUT** (règle de Noé). Une tâche qu'aucun bloc ne
+porte se dessine **à son heure** ; dans un bloc, elle reste une liste. Yuno et le
+perso n'ayant aucun bloc, **aucune de leurs tâches n'était jamais à l'heure
+prévue** — la tâche Yuno de 13 h se dessinait à 16 h 42.
+
+### 0.2 « Ma semaine » garde ce qu'on y arrange
+
+**Renversement de la règle du 31 août** (« un bloc ne s'enregistre pas, les blocs
+ne doivent être que de l'affichage »). Le motif tenait — rien à maintenir, rien
+qui périme — mais son PRIX est apparu à l'usage : une semaine réorganisée à la
+main se retrouvait reproposée telle quelle au rechargement.
+
+- **Une table à part, `semaines_blocs`**, et surtout PAS une colonne de
+  `semaines` : là-bas, **l'existence d'une ligne signifie que la semaine est
+  validée** (`etat.validee` et le bandeau du dimanche s'y fient tous les deux).
+- **Elle ne garde que ce que Noé a touché.** Sans ligne, le hub propose.
+- **« Reproposer les blocs » EFFACE la ligne** au lieu d'en écrire une neuve :
+  sans ligne, le hub reproposera — donc *mieux* si les données ont bougé.
+- **Un seul chemin pour les quatre gestes**, et **sans retour en arrière si
+  l'écriture échoue** : défaire le geste de Noé parce que le réseau a hoqueté
+  serait pire que de le lui dire.
+
+*Cycle vérifié de bout en bout : bloc retiré → 14 en base → rechargement, il ne
+revient pas → « Reproposer » → 15 blocs et la ligne effacée.*
+
+### 0.3 Le bilan de la semaine passée
+
+- **Les victoires en sortent** : terminer une tâche en écrit une, si bien que
+  « 18 victoires » et « 17 tâches terminées » recopiaient presque la même chose.
+- **Les heures mesurées disent OÙ elles sont parties**, une pastille et un
+  chiffre par espace, sur un seul rang. *Le NOM de l'espace imposait une ligne
+  par espace, donc une tuile plus haute, donc ses voisines étirées : dans une
+  grille, tout un rang prend la hauteur du plus grand. Mesuré : 106 px ramenés à
+  87, zéro écart avec ou sans le détail.*
+- **Une tuile de plus : les projets traités** — ceux pour qui une tâche a été
+  faite **ou un événement a eu lieu**. « 17 tâches terminées » dit combien, pas
+  sur quoi.
+- **C'est une galerie de tuiles**, et les chiffres sont en **Clash Display 700**,
+  la police du titre. Les heures du détail, elles, sont passées en **Google
+  Sans** : la chasse fixe étalait « 1 h 55 » sur 47 px, ramenés à 27.
+
+### 0.4 Les propositions du dimanche — une phrase, et le détail au clic
+
+**Demande de Noé** : *« on ne comprend pas vraiment ce que ça veut dire ; plutôt
+une petite phrase, et quand on clique dessus on voit un détail avec l'action
+proposée. »*
+
+**Ce que ça renverse, et il faut le dire** : la forme du 31 août se comprenait
+d'un REGARD — un chiffre en gros, trois mots dessous. Mais un regard ne dit pas
+ce qu'il faut en faire, et le constat qui l'expliquait dormait dans un `title`
+que personne n'ouvre. **On avait déplacé le sens jusqu'à le perdre.**
+
+- **Deux textes** : `court` sur la carte, `constat` dans le détail. Les
+  inférences d'`orientation.js` écrivent les deux.
+- **Accepter coûte un geste de plus**, et c'est le prix assumé : la règle
+  « aucun constat sans proposition » ne bouge pas, elle change d'endroit.
+- **Triées par espace**, tri stable.
+- **LA GRILLE DES CONSTATS N'AVAIT JAMAIS EXISTÉ** : `.rdv-cartes` posait
+  `display: grid` sans effet depuis le 31 août — `.bloc ul` met toutes les
+  listes du hub en flex-colonne et pèse une balise de plus. *468 px de haut là
+  où trois colonnes en font 165.* `auto-fit` remplace `auto-fill`, qui
+  FABRIQUAIT neuf colonnes vides pour sept cartes à 1920 px.
+- **Toutes les tuiles ont la même taille** : `grid-auto-rows: 1fr` **et**
+  `align-items: stretch`, qui se redit — une règle plus générale pose `start`.
+
+### 0.5 « Mes journées » devient un journal
+
+C'est le gros morceau de la session. La page s'appelle désormais **« Mes
+journées »** partout (h1, menu, porte).
+
+- **UN CALENDRIER, MOIS ET SEMAINE.** Ce n'est **pas** `construireGrille` : la
+  grille du calendrier dessine des barres — ce qui est posé, ce qui arrive. Ici
+  on ne pose rien, on CHOISIT un jour ; la case porte des **signes** — la
+  frimousse de l'humeur, un point par espace qui a bougé, un point creux si un
+  mot a été écrit. Aucun compte, aucun score. Un jour à venir ne s'ouvre pas.
+- **Une requête par table, jamais par jour** (`resumeDesJournees`) : `journeeDe`
+  en coûte sept, un mois en aurait coûté deux cents.
+- **Le détail s'ouvre en TUILE VOLANTE**, pas sous la grille : un calendrier sert
+  à choisir, et ce qu'on a choisi n'a pas à occuper la page en permanence.
+- **L'écriture est l'élément principal** : le champ passe de 2 lignes à 16 rem,
+  **sans rectangle** — un champ encadré dit « remplis ce formulaire ».
+- **UNE GRATITUDE**, colonne `journees.gratitude`. Colonne à part et non ligne de
+  plus dans `mot` : `mot` est libre, la gratitude est une **question posée**, et
+  on voudra les relire séparément.
+- **UNE NOTE DU JOUR**, sur la ligne du jour. `enregistrerHumeur` prenait déjà
+  une date ; seul l'écran ne savait parler que d'aujourd'hui.
+- **LES HABITUDES SE COCHENT, pour ce jour-là.** Le bloc ne montrait que les
+  cochées, en pastilles muettes : il ne disait rien de ce qui restait.
+- **Le relevé se replie derrière une icône** ; les habitudes en sont sorties,
+  parce que **le repli contient ce que le hub RELÈVE, et les habitudes sont la
+  seule chose qu'on vient COCHER**.
+
+### 0.6 Une porte du soir sur l'accueil
+
+Tous les jours **à partir de 20 h**, « Faire le bilan du jour » → la journée du
+jour. Même heure que le rendez-vous du dimanche — c'est l'heure où la journée est
+finie. **Pas de borne haute** : elle s'arrête à minuit, la journée change.
+**Elle mène au jour NOMMÉ** : ouvrir à 23 h 50 et écrire à 00 h 05 écrit toujours
+dans la journée qu'on ferme. **Elle s'efface dès que le journal ou la gratitude
+est écrit** — pas sur la note du jour, qui se répond d'un doigt depuis trois
+écrans.
+
+### 0.7 Ce qui a été vérifié, et comment
+
+- **Les blocs, hors écran** (`node`, sur un instantané des données réelles) :
+  quotas atteints, jours équilibrés, cas limites — semaine vide, régime intense
+  des deux côtés, échéance qui pousse le plafond.
+- **Dans le navigateur, à quatre largeurs** (1920, 1440, 1000, 800, 375) : les
+  colonnes des constats, la grille des blocs, la tuile d'une journée.
+- **En base** : l'arrangement des blocs écrit puis effacé ; **cocher une habitude
+  depuis le 11 août écrit au 11 août** (vérifié sur une habitude sans historique,
+  pour ne pas risquer une victoire de palier), puis décoché — **les données de
+  Noé sont revenues à leur état d'origine**.
+- **Ce qui n'a PAS été vérifié** : rien n'a été écrit dans le journal ni dans la
+  gratitude de Noé — le chemin d'écriture n'a pas changé, seul le champ a grandi.
+
+### 0.8 Trois défauts d'outillage, trouvés en chemin
+
+1. **`tools/verifier-gabarits.js` ÉTAIT AVEUGLE, et il a été corrigé.** Il
+   suivait un simple drapeau « dans un gabarit », qui basculait à l'envers au
+   premier gabarit IMBRIQUÉ dans une interpolation — `${x ? \`…\` : ''}`. À
+   partir de là il lisait le HTML comme du CODE, la première apostrophe française
+   y ouvrait une fausse chaîne, et **tous les commentaires du fichier échappaient
+   au contrôle**. Il a dit « sains » pendant que la page ne se chargeait plus. Il
+   tient maintenant une PILE. *Un outil qui rassure à tort est pire que pas
+   d'outil.* **Et un accent grave PAR PAIRES est tout aussi dangereux** : un
+   commentaire HTML n'existe pas pour JavaScript.
+2. **Un nom de FONCTION déjà pris** (`construireHabitudesDuJour`, deux fois dans
+   js/perso.js) : le module s'est chargé sur « Identifier has already been
+   declared » et a emporté tout l'écran. `node --check` passe. La règle du dépôt
+   sur les classes CSS vaut pour les fonctions.
+3. **`getBoundingClientRect` MENT sur un `<details>` fermé** : Chrome masque le
+   contenu par `content-visibility`, ce qui laisse une géométrie périmée. J'ai
+   cru à un bug du repli pendant dix minutes. Le signal juste est
+   `getComputedStyle(details, '::details-content').contentVisibility` — ou une
+   capture d'écran.
+
+### 0.9 LES ALLERS-RETOURS — à lire avant de « corriger » quoi que ce soit
+
+Cette session en compte beaucoup, et **plusieurs portent sur des règles que
+j'avais défendues avant que Noé ne les renverse**. Ne pas les rétablir sans
+rouvrir la question.
+
+| Ce que j'avais posé | Ce que Noé a tranché, et pourquoi |
+|---|---|
+| La note du jour **ferme** la tuile (« en fin de journée » = en bas) | **En haut**, sur la ligne du jour. *Ce qui change, c'est la QUESTION, pas le rang : on ne fait pas défiler une page pour répondre d'un doigt.* |
+| Le tri des habitudes **figé** au rendu (« une pastille qui saute fait perdre sa place ») | **Dynamique** : décocher renvoie à la fin. *Un tri figé laisse une pastille « faite » en tête alors qu'elle ne l'est plus — pire que de perdre sa place.* |
+| Les habitudes en **colonne** dans le relevé | **Une ligne au-dessus des colonnes**, puis **hors du repli**. *Les habitudes sont une CHECK-LIST qu'on parcourt ; le reste, des relevés qu'on lit.* |
+| Le relevé en flux `columns` à deux colonnes | Flux **conservé** pour les relevés, mais **jamais pour garantir la place d'un bloc** : c'est la hauteur du contenu qui décide de ce qui bascule à droite. |
+| `--accent-doux` pour une habitude faite | **Vert `--famille-corps` à 30 %, sans contour.** *Le vert du hub, celui de la coche d'une tâche ; il dit « tenu », pas « bien ».* |
+| Les libellés au-dessus des champs | **Aucun titre** : la note, la gratitude, le journal, les habitudes. *Ce qui se montre n'a pas à se nommer* — mais `aria-label` prend le relais, sans quoi les champs n'ont plus de nom accessible. |
+| « Un bloc ne s'enregistre pas » (31 août) | **L'arrangement se garde.** *Le motif tenait ; c'est son prix que l'usage a révélé.* |
+| Le chiffre d'un constat en Geist Mono | **Google Sans**, comme les barres du calendrier — la chasse fixe est pour ce qui se COMPARE. |
+
+**Et une correction que je dois à Noé** : j'ai annoncé « vérifié, noter le
+31 août n'a créé aucune ligne au 1er septembre » alors que **le clic était avalé**
+par une garde de `#perso` (`.ajout-volant` → `return`) et que la valeur était
+déjà la bonne. La vérification ne valait rien. **Une mesure qui ne peut pas
+échouer ne prouve rien.**
+
+## 0 ante bis. La session du 31 août – 1er septembre (matin) — LE CALENDRIER, ET LES BLOCS DE LA SEMAINE
 
 **Deux commits poussés, et un chantier NON COMMITÉ** — c'est la première chose à
 savoir en reprenant. Aucune migration : rien de cette session ne touche au
@@ -285,7 +930,7 @@ vraies ensemble. Aujourd'hui le club atteint 26 h / 26 h, la formation reste à
 13 h 30 / 15 h — il lui manque 1 h 30 que les créneaux libres de cette semaine ne
 peuvent pas absorber.
 
-## 0 ante. La session du 30–31 août 2026 (soir et nuit) — MA SEMAINE, ET LA FORME DES TUILES D'AJOUT
+## 0 ante ter. La session du 30–31 août 2026 (soir et nuit) — MA SEMAINE, ET LA FORME DES TUILES D'AJOUT
 
 **Six commits, tous poussés, aucune migration** : rien de ce qui a été fait ici
 ne touche au schéma — tout écrit dans des colonnes qui existaient déjà.
@@ -746,7 +1391,7 @@ d'avant à chaque fois — il n'y a pas de base de bac à sable.
   modules restent ceux d'avant, et l'on croit que le code ne marche pas. Les deux
   sont notés dans ma mémoire de travail.
 
-## 0 ante bis. La session du 30 août (jour) — LE FCH PREND SA CHARTE, PERSO REFOND SES HABITUDES
+## 0 ante quater. La session du 30 août (jour) — LE FCH PREND SA CHARTE, PERSO REFOND SES HABITUDES
 
 **Trois commits poussés** — `94954d8` (le FCH), `69f8147` (les habitudes),
 `9b37534` (la doc). Deux migrations appliquées en base :
@@ -921,7 +1566,7 @@ sur la page de gestion il le **précède**, parce qu'on y vient lire une cadence
 un pourquoi.
 
 **LES HABITUDES ONT QUITTÉ L'ACCUEIL** — décision prise le soir même où elles y
-étaient arrivées (§ 0 ante). Même mouvement que les objectifs la veille :
+étaient arrivées (§ 0 ante bis). Même mouvement que les objectifs la veille :
 l'accueil porte ce qui est POSÉ, et **une habitude n'est posée de rien, elle
 revient**.
 
@@ -1054,7 +1699,7 @@ Quatre pistes en sortent, classées dans l'artefact — la première étant de
 **croiser l'humeur et les habitudes** (les trois ingrédients existent déjà, rien
 à stocker).
 
-## 0 ante ter. La session du 29 août (soir) — PERSO DEVIENT UN ESPACE VIVANT
+## 0 ante quinquies. La session du 29 août (soir) — PERSO DEVIENT UN ESPACE VIVANT
 
 **Quatorze commits, tous poussés et déployés.** Cinq migrations appliquées
 (`etapes_projet`, `post_de_match` et son correctif d'index, `habitudes`,
@@ -1299,13 +1944,13 @@ distingue ce tableau de bord d'un second accueil.
   fois le jour ouvert), la hauteur de la grille.
 - **Le balayage** : onze cas, dont les deux sens, les deux bords, le rail au
   début et au bout, le menu ouvert, la tuile de capture. **Mais tous simulés** —
-  voir la leçon du § 0 ante bis, point 4.
+  voir la leçon du § 0 ante ter, point 4.
 - **Toutes les données d'essai ont été retirées** : `habitudes_faits`,
   `livres`, `livres_seances`, `livres_citations`, `journees` sont vides, les
   étapes d'essai supprimées, l'ordre des jalons de « Laisser une com » remis
   comme il était (1 à 6, relu en base).
 
-## 0 ante quater. La session du 29 août (jour) — L'ACCUEIL REFONDU
+## 0 ante sexies. La session du 29 août (jour) — L'ACCUEIL REFONDU
 
 **Un commit, poussé.** Deux migrations appliquées (`accueil_suites`,
 `taches_origine`, plus un correctif d'index). `CLAUDE.md`,
@@ -1449,7 +2094,7 @@ d'essai, deux tâches d'essai, un refus de bandeau. **90 tâches au départ,
 90 à l'arrivée.**
 
 
-## 0 ante quinquies. La session du 28 août (soir) — la navigation à DEUX RANGS
+## 0 ante septies. La session du 28 août (soir) — la navigation à DEUX RANGS
 
 **Rien n'était commité en arrivant** : l'état des lieux du matin et
 `yuno-spec.md` attendaient encore. Ils partent avec cette session.
@@ -1714,7 +2359,7 @@ la trace — dans le menu, chaque espace porte sa pastille ronde, celle du FCH
 coupée en deux comme partout ailleurs dans le hub.
 
 
-## 0 ante sexies. La session du 28 août (jour) — « Le cap », la barre en signes, le hub sombre
+## 0 ante octies. La session du 28 août (jour) — « Le cap », la barre en signes, le hub sombre
 
 **Deux commits, tous deux poussés** — `00303b2` et `1854b55`. **Une migration**
 appliquée : `projet_annuel`. `CLAUDE.md`, `docs/orientation-spec.md` et
@@ -1724,7 +2369,7 @@ qu'`origin/main`.
 **La session a été conduite par l'œil de Noé, pas par une liste.** Une seule
 demande a été posée au départ (la pastille famille) ; tout le reste est né d'un
 échange serré — il regardait, il disait « trop gros », « trop de place », « plus
-discret », et la forme se refaisait. D'où beaucoup d'allers-retours, et une § 0 ante bis, point 1
+discret », et la forme se refaisait. D'où beaucoup d'allers-retours, et une § 0 ante ter, point 1
 plus longue que d'habitude : ce sont eux qui portent le sens.
 
 ### 0.1 Les décisions qui ont fait un ALLER-RETOUR
@@ -1908,7 +2553,7 @@ passé en *pas commencé*.
 `objectifs.js`, `objectifs-commun.js`, `orientation.js`, `rendez-vous.js`. La
 coquille est passée en **v3**.
 
-## 0 ante septies. La session du 27 août (après-midi et soir) — l'orientation, de bout en bout
+## 0 ante nonies. La session du 27 août (après-midi et soir) — l'orientation, de bout en bout
 
 **Onze commits, tous poussés** — de `a98a9c2` à `df51a4f`. **Huit migrations**
 appliquées : `renommage_projet_espace`, `series_occurrences`, `projets`,
@@ -2135,7 +2780,7 @@ il a d'ailleurs terminé « Terminer résumé 4 et faire mind-map » en cours de
 session, ce qui a un moment fait croire à un défaut.
 
 
-## 0 ante octies. La session du 27 août (matin) — la répétition partout, la journée entière, un geste unique
+## 0 ante decies. La session du 27 août (matin) — la répétition partout, la journée entière, un geste unique
 
 **Quatre commits, tous poussés** : `d069884` (publications répétées + durée des
 tâches), `bde6e7a` (`graphify-out` ignoré), `3c4591d` (« Aujourd'hui » porte la
@@ -2360,7 +3005,7 @@ légèrement plus maigres que le reste de la page, partout. Une ligne de CSS suf
 
 ---
 
-## 0 ante nonies. La session du 26 août — les objectifs posés, et les pages espace refaites
+## 0 ante undecies. La session du 26 août — les objectifs posés, et les pages espace refaites
 
 **Neuf commits, tous poussés** : `e4bcca3` (forme des objectifs), `850a637`
 (cap gravé + espace `#objectifs`), `e8aca73` (page Yuno), `0fffce4` (page FCH),
@@ -2604,7 +3249,7 @@ passée).
 
 ---
 
-## 0 ante decies. La session du 24–25 août — la journée dans la semaine, et le FCH à trois états
+## 0 ante duodecies. La session du 24–25 août — la journée dans la semaine, et le FCH à trois états
 
 **Deux commits, poussés** : `03c8a9a` (la journée, les icônes de la tuile, le
 bleu du FCH au calendrier, les trois états des publications) et `cf4db78` (le
@@ -2767,7 +3412,7 @@ cache forcés. `sw.js` n'a pas été touché et se sert correctement (200,
 
 ---
 
-## 0 ante undecies. La session du 24 août — les réunions trouvent leur forme
+## 0 ante terdecies. La session du 24 août — les réunions trouvent leur forme
 
 **Cinq commits, tous poussés** : `d99062e` (tuiles de préparation), `bac89a8`
 (habillage FCH), `0e3fdf3` (modèle depuis la feuille Yuno), `b15af2b` (fiche
@@ -2860,7 +3505,7 @@ précautions qui ont servi :
 - **la déduplication a été prouvée en base** : appliquer à une feuille son
   propre modèle n'ajoute rien (11 lignes → 11).
 
-## 0 ante duodecies. La session du 21 août — l'egress, la semaine, et les réunions du FCH
+## 0 ante quaterdecies. La session du 21 août — l'egress, la semaine, et les réunions du FCH
 
 **Cinq commits, tous poussés** (`ee372bf` et `c1dc1ad` ferment la soirée du
 15 ; `1dd9bda`, `60f17d6` et `8762577` sont du 21). Les cahiers des charges
@@ -3099,7 +3744,7 @@ déjà. Les six modèles de préparation du matin restent en base sans servir.
    courtes, et **l'onglet actif écrit en blanc** (la pastille jaune est
    partie). `fch-spec.md` porte le détail.
 
-## 0 ante terdecies. La session du 15 août — Yuno passe au réseau
+## 0 ante quindecies. La session du 15 août — Yuno passe au réseau
 
 **Vingt-trois commits, tous poussés.** Toute la session a porté sur **la
 Passerelle et ce qu'elle a fait naître** : un vivier de clubs, leurs
@@ -3194,7 +3839,7 @@ incluses), `20260815230000` (statut `a_relancer`), `20260815240000`
 
 ---
 
-## 0 ante quaterdecies. La session des 14–15 août, en un coup d'œil
+## 0 ante sexdecies. La session des 14–15 août, en un coup d'œil
 
 **Vingt-quatre commits, tous poussés.** Le site Yuno a été refondu en
 profondeur ; le hub n'a été touché qu'aux endroits qu'il partage.
@@ -3225,7 +3870,7 @@ profondeur ; le hub n'a été touché qu'aux endroits qu'il partage.
 4. **L'écran passe devant le réseau** partout où le geste tient en un clic
    (`js/ecriture.js` — ne pas la recopier). Les formulaires font exception.
 5. **Le FCH reste mis de côté** par Noé — ne pas l'entamer par petites touches
-   (§ 3). Yuno, lui, a occupé toute la session du 15 (§ 0 ante decies).
+   (§ 3). Yuno, lui, a occupé toute la session du 15 (§ 0 ante undecies).
 
 ### L'état de la base, au soir du 15 août
 
@@ -3381,7 +4026,7 @@ Toujours sur décision de Noé, et **jamais en détruisant des données** :
 > sont des bilans à deux colonnes, la table `materiel` et la colonne
 > `commandes.frais` sont apparues. **Le 28 août, `#objectifs` est devenu
 > « Le cap »** — deux galeries de tuiles, les périodes en pied de page — et il a
-> pris son onglet dans la barre (§ 0 ante bis, point 4).
+> pris son onglet dans la barre (§ 0 ante ter, point 4).
 >
 > **Le 29 août au soir, six tables sont nées** — `projets_etapes` (le découpage
 > déclaré d'un projet), `habitudes` et `habitudes_faits`, `livres`,
@@ -3390,8 +4035,18 @@ Toujours sur décision de Noé, et **jamais en détruisant des données** :
 > `origine`) et une à `habitudes` (`automatique`). `victoires.source` accepte
 > désormais `etape` et `habitude`.
 >
+> **Le 1er septembre au soir, deux ajouts au schéma** : la table
+> **`semaines_blocs`** (l'arrangement des blocs d'une semaine, gardé d'une visite
+> à l'autre) et la colonne **`journees.gratitude`**. Aucune table renommée,
+> aucune colonne retirée.
+>
 > `CLAUDE.md` porte le détail à jour, et `docs/orientation-spec.md` la règle du
-> jeu de l'orientation.
+> jeu de l'orientation. **Les deux cahiers des charges des sites
+> (`yuno-spec.md`, `fch-spec.md`) sont à jour** : ils ont reçu la nouvelle
+> grammaire des barres du calendrier — Google Sans, la nature dite par la
+> graisse — au matin du 1er septembre, et **rien de la session du soir ne touche
+> à Yuno ni au FC Hermitage**. Ils restent l'autorité sur le détail de leurs
+> écrans ; ce document n'en recopie rien.
 
 Le hub est **déployé et fonctionnel** :
 https://noedelahaye-sketch.github.io/hub/
@@ -3404,7 +4059,7 @@ https://noedelahaye-sketch.github.io/hub/
 | **Perso** | `#perso` | **tableau de bord** : humeur, habitudes du jour, livre en cours, mot du jour, une intention relue |
 | Ses habitudes | `#perso/habitudes` | élan, série en semaines, paliers de cumul |
 | Sa bibliothèque | `#perso/bibliotheque` | le livre en cours et ses gestes, la pile, les citations |
-| Ses journées | `#perso/journee` | une page par jour, construite toute seule, qu'on remonte |
+| **Mes journées** | `#perso/journee` | **un calendrier mois/semaine** pour choisir un jour ; le détail s'ouvre en tuile volante — note du jour, habitudes cochables, relevé repliable, gratitude, journal |
 | Calendrier global | `#calendrier` | grille mois/semaine + agenda ; on y pose, modifie et supprime |
 | Formation | `#formation` | complet, avec la progression lue dans le gist Bac-3 |
 | Page Yuno du hub | `#photo` | complète |
@@ -3438,7 +4093,7 @@ filtres se cochent, et le « +N » déplie la journée.
 **Les événements peuvent se répéter** (chaque semaine, quinzaine, mois).
 *Depuis le 27 août, les occurrences sont de VRAIES LIGNES* reliées par
 `serie_id` — elles ne se déduisent plus à la lecture, et chacune se termine,
-se modifie et se supprime seule (§ 0 ante ter.1, point 1).
+se modifie et se supprime seule (§ 0 ante quater.1, point 1).
 
 **La grille de 24 h a été retirée de la vue semaine** (13 août, demande de Noé).
 Elle datait du 12 août et coûtait cher : vingt-quatre cases par jour, une
@@ -3672,7 +4327,7 @@ c'est ce qui a fait remonter la plupart des demandes de ces deux jours.
 **Le 28 août** : la famille écrite et corrigée sur ses quatre chemins, un jalon
 coché puis décoché (victoire créée puis retirée), un projet posé sans cap puis
 supprimé, les quatre états changés depuis la tuile — chaque fois relu en SQL, et
-chaque ligne d'essai retirée ensuite. Le détail est en § 0 ante bis, point 5.
+chaque ligne d'essai retirée ensuite. Le détail est en § 0 ante ter, point 5.
 
 **Les chemins d'écriture de Yuno l'ont été, en conditions réelles** (12 août) :
 une session était ouverte dans le navigateur de travail. Ont été exercés puis
@@ -5157,9 +5812,9 @@ La méthode qui a tenu toute la journée — exercer, relire en SQL, défaire, r
 
 **Ce que la session du 28 août a CLOS ici** — ne plus le reposer :
 - **La colonne `famille` était vide et rien ne l'écrivait** — c'était le premier
-  trou de l'orientation, il est bouché (§ 0 ante bis, point 2). Le plancher perso peut compter.
+  trou de l'orientation, il est bouché (§ 0 ante ter, point 2). Le plancher perso peut compter.
 - **La question de la période** (« 45 h pour 35, qu'est-ce qui cède ? ») —
-  **retirée des deux écrans**, sur décision de Noé (§ 0 ante bis, point 1, point 1). Ne pas la
+  **retirée des deux écrans**, sur décision de Noé (§ 0 ante ter, point 1, point 1). Ne pas la
   remettre : elle a été posée, essayée avec une troisième porte, puis retirée.
 - **L'espace Objectifs empilé** — remplacé par « Le cap » et ses deux galeries.
 - **Un projet ne se modifiait pas une fois créé**, et **une période non plus** :
@@ -5187,7 +5842,7 @@ sorties » aveugle aux séries ; les menus déroulants morts de l'espace Objecti
 - **Le hub ne savait pas reconnaître un temps fort du club** — il ne le devine
   toujours pas, et c'est voulu : `temps_fort` est une déclaration.
 - **« Quand ça vient » comme cadence d'habitude** — supprimé, sur décision de
-  Noé. Ne pas le réintroduire (§ 0 ante bis, 0.7).
+  Noé. Ne pas le réintroduire (§ 0 ante ter, 0.7).
 - **« Je ne peux plus modifier une habitude »** — deux causes, les deux
   corrigées : le menu invisible, et surtout `brancherChoix` absent de `perso.js`
   (§ 0.9). Ce second défaut **préexistait** et touchait aussi la famille d'une
@@ -5200,7 +5855,7 @@ sorties » aveugle aux séries ; les menus déroulants morts de l'espace Objecti
 - **« Deux projets qui ne devraient plus être en cours »** (Deuxième dossier à
   3 sur 3, Présentation des catégories sans tâche) — la question ne se pose plus
   dans ces termes : **c'était la mesure qui mentait**, pas le classement. La
-  cascade l'a corrigée (§ 0 ante bis, point 1).
+  cascade l'a corrigée (§ 0 ante ter, point 1).
 - **« Un projet ne se mesurait que par ses tâches »** — remplacé par la cascade.
 - **L'ordre des jalons et des étapes** ne pouvait pas se changer ; il se change.
 - **Perso n'avait ni habitudes, ni lecture, ni bilan quotidien** — les trois
@@ -5222,7 +5877,7 @@ sorties » aveugle aux séries ; les menus déroulants morts de l'espace Objecti
 
 **Nées du 27 août, et toujours sans réponse** :
 - **D'où vient la durée de 5 minutes** sur « Contacter l'entreprise de Cedric
-  Facebook » ? Elle n'a pas été écrite volontairement (§ 0 ante ter.7).
+  Facebook » ? Elle n'a pas été écrite volontairement (§ 0 ante quater.7).
 - **Les trois lots écrits dans ses données** sont-ils justes : les cibles des
   projets FCH, les 62 rattachements par nom, les six livrables formation
   chiffrés 25/6/6 h ? Ce sont des propositions.
@@ -5259,7 +5914,7 @@ reste du hub :
    qu'il attend.
 
 *(La question des **4 objectifs de fin d'alternance** est close depuis le
-26 août — et la réponse a été **trois**, pas quatre : voir § 0 ante ter, point 1, pour
+26 août — et la réponse a été **trois**, pas quatre : voir § 0 ante quater, point 1, pour
 la raison. Ne pas en « rajouter » un quatrième.)*
 
 (La quatrième, les statuts de relation des partenaires, s'est réglée d'
@@ -5338,33 +5993,49 @@ voir § 4 bis, « Les quatre manques ». Restent des conforts :
 
 ---
 
-## 4 bis. Par où reprendre (fin de la session du 1er septembre 2026)
+## 4 bis. Par où reprendre (fin de la session du 2 septembre 2026)
 
 Dans cet ordre, du plus pressé au moins pressé.
 
-### 0. IL Y A DU TRAVAIL NON COMMITÉ — à regarder AVANT tout le reste
+### 0. CE QUI ATTEND DANS L'ARBRE DE TRAVAIL
 
-**Deux commits sont poussés** (`922a009`, `b13da70`), mais **la moitié de la
-session ne l'est pas** : l'échelle horaire de la grille, les deux cases à
-cocher, le placement des barres dans les blocs, et **l'algorithme des blocs dans
-sa forme finale** — cinq fichiers modifiés (`js/orientation.js`, `js/semaine.js`,
-`js/calendrier-commun.js`, `css/styles.css`, `CLAUDE.md`).
+**La page d'un projet n'est PAS commitée.** Le travail est entier et vérifié
+dans le navigateur (§ 0.5), mais il faut le relire et le pousser :
 
-**Ce n'est pas un oubli** : Noé n'a pas redemandé de commit après `b13da70`, et
-la règle du hub est de ne commiter que sur demande. Mais **l'état non commité est
-celui qui marche** — tout ce qui a été mesuré en fin de session porte dessus.
-Premier geste d'une prochaine session : le lui montrer et lui demander s'il veut
-qu'on le commite.
+    js/projet.js  js/objectif.js  js/habitude.js     (nouveaux)
+    supabase/migrations/20260902090000_echeance_etape.sql   (nouveau, DÉJÀ APPLIQUÉ)
+    js/objectifs.js  js/gabarits.js  js/calendrier-commun.js
+    js/api.js  js/app.js  js/semaine.js  css/styles.css  sw.js
+    CLAUDE.md  docs/etat-des-lieux.md
 
-**Trois fichiers étaient déjà modifiés AVANT cette session** — `docs/etat-des-lieux.md`,
-`docs/fch-spec.md`, `docs/yuno-spec.md` — et n'ont volontairement pas été
-touchés ni commités : ce ne sont pas les changements de cette session.
+**La migration est déjà appliquée à la base réelle** — la colonne
+`projets_etapes.echeance` existe. Le fichier SQL est là pour la trace ; ne pas
+la rejouer en croyant qu'elle manque (elle est en `if not exists`, mais autant
+le savoir).
 
-**Aucune migration.** `sw.js` est en **`v11`** (Google Sans ajoutée) : le
-téléphone servira une fois la version précédente — **ouvrir deux fois** si
-l'écran semble d'hier.
+**`sw.js` passe en `v14`**, parce que TROIS fichiers neufs entrent dans la
+coquille : `js/projet.js`, `js/objectif.js` et `js/habitude.js`. Sans ce changement de version, un appareil déjà installé
+n'aurait jamais rapatrié la liste. Conséquence connue et assumée — **il
+affichera une fois la version d'avant** ; ouvrir deux fois si l'écran semble
+d'hier. *En local, la stratégie est inverse (réseau d'abord) — mais si un écran
+d'avant apparaît quand même pendant une session de travail, vider le cache et
+désinscrire le service worker.*
 
-### Ce qui est périssable, ensuite
+**Un piège d'outillage réparé pendant la session, à connaître** :
+`tools/verifier-gabarits.js` disait « sains » alors que la page ne se chargeait
+plus (§ 0.8). Il est corrigé — mais **la leçon vaut pour le prochain outil qu'on
+croira sur parole**.
+
+### Ce qui est périssable
+
+0 pre. **LES DEUX PAGES, À L'USAGE.** Elle a été éprouvée geste par geste,
+   jamais vécue. Trois questions : **le glissement se fait-il sans viser** — les
+   colonnes encadrent la grille au-delà de 1200 px et s'empilent en dessous, et
+   c'est là que le geste peut manquer ; **le filtre par défaut est-il le bon**
+   (« À poser » ; « Programmées » serait l'autre candidat si Noé vient surtout
+   relire sa semaine) ; **et les étapes datées servent-elles à quelque chose**,
+   ou continue-t-il de tout passer par des tâches. Si la troisième réponse est
+   « rien », c'est la décision du 2 septembre qu'il faut rouvrir, pas la page.
 
 0 bis. **LE RENDEZ-VOUS DU DIMANCHE, LE 6 SEPTEMBRE AU SOIR — et cette fois avec
    les BLOCS.** C'est la première fois que « Ma semaine » servira à ce pour quoi
@@ -5375,10 +6046,20 @@ l'écran semble d'hier.
    réfléchir** (glisser un bloc, y déposer une tâche) ; et **« C'est ma semaine »
    écrit-il bien sa ligne** — le bouton n'a **jamais été pressé**, parce
    qu'aucun écran ne permet de retirer ce qu'il écrit.
-   *Rappel qui vaut pour tous les essais : les blocs ne s'enregistrent pas. Tout
-   ce qu'on leur fait subir meurt au rechargement — ce qui reste, ce sont les
-   tâches qu'on a posées dedans.*
-0 ter. **LA GRILLE AU DOIGT, toujours pas éprouvée** — et elle a changé deux
+   *Ce rappel a changé le 1er septembre au soir : l'arrangement des blocs SE
+   GARDE maintenant (§ 0.2). Ce qui est déplacé, ajouté ou retiré revient à la
+   visite suivante, et « Reproposer les blocs » efface la ligne pour redonner la
+   main au calcul. Les quotas, eux, tombent juste — club 26 h / 26, formation
+   15 h / 15 — ce qui n'était pas le cas au matin.*
+0 ter. **LE PREMIER BILAN DU SOIR, dès ce soir après 20 h.** Rien de « Mes
+   journées » n'a été vécu : le journal de Noé est **vide**, la gratitude aussi,
+   et la porte du soir n'a jamais été vue à son heure — elle a été éprouvée en
+   forçant l'horloge, pas en attendant 20 h. Les questions : **la porte se
+   remarque-t-elle** au milieu de l'accueil ; **le champ sans rectangle invite-t-il
+   à écrire** ou a-t-il l'air d'un texte à lire ; et **la porte disparaît-elle**
+   une fois le bilan écrit (elle regarde le journal ou la gratitude, pas la note
+   du jour).
+0 quater. **LA GRILLE AU DOIGT, toujours pas éprouvée** — et elle a changé deux
    fois depuis. Deux points neufs à surveiller : **un bloc court n'est plus une
    cible de 24 px** (sa hauteur vaut sa durée, décision assumée du § 0.5), et le
    chemin tactile de la programmation (choisir la tâche, puis toucher le jour)
@@ -5390,7 +6071,7 @@ l'écran semble d'hier.
 2. **UN VRAI MATIN AVEC LES HABITUDES — toujours, et maintenant sur une forme
    qui a changé six fois.** Rien n'a encore été vécu : les cinq habitudes de Noé
    sont à **zéro pratique**. Trois questions, dans l'ordre : la ligne de 32 px
-   se coche-t-elle **au pouce sans viser** (l'arbitrage assumé du § 0 ante bis, 0.7) ;
+   se coche-t-elle **au pouce sans viser** (l'arbitrage assumé du § 0 ante ter, 0.7) ;
    les **deux chiffres nus** se lisent-ils sans effort maintenant qu'aucun mot ne
    les explique ; et l'**émoji** rend-il vraiment la ligne reconnaissable.
 3. **DONNER UNE CADENCE À « Prendre des nouvelles de quelqu'un ».** C'est la
@@ -5400,7 +6081,7 @@ l'écran semble d'hier.
    regardé une victoire « Bouger — 10 fois » arriver dans « Le chemin ».
 5. **LES GRAPHIQUES AVEC DE VRAIES DONNÉES.** La courbe des douze semaines et
    les sparklines n'ont été jugées que sur un **rendu d'essai en DOM**
-   (§ 0 ante bis, 0.8) — à zéro pratique, l'écran réel ne montre que des barres minimales.
+   (§ 0 ante ter, 0.8) — à zéro pratique, l'écran réel ne montre que des barres minimales.
    La question à se poser : est-ce que ça **donne envie**, ou est-ce que c'est la
    maquette en points gris que Noé a déjà rejetée une fois ?
 6. **LA BIBLIOTHÈQUE EST VIDE, et la colonne de droite de `#perso` avec elle.**
@@ -5415,7 +6096,7 @@ l'écran semble d'hier.
    n'était pas connue ; la case « Photos » est une déclaration qui appartient à
    Noé — or « présentation des équipes » est manifestement un moment photo. À
    trancher quand il ouvrira l'événement.
-9. **LES HUIT AUTRES DATES DE LA SAISON FCH ne sont pas en base** (§ 0 ante bis, 0.1). Deux
+9. **LES HUIT AUTRES DATES DE LA SAISON FCH ne sont pas en base** (§ 0 ante ter, 0.1). Deux
    d'entre elles portent un « ou » (loto 13 **ou** 20 février, matinée saucisses
    11 **ou** 18 avril) : ce sont des décisions du club, pas des dates à
    recopier.
@@ -5435,7 +6116,7 @@ l'écran semble d'hier.
     formulaire déjà rempli ; il manque le titre et le jour de départ, qui sont
     des décisions.
 12. **LES CONTREPARTIES DES PACKS**, quand les partenaires seront branchés.
-    C'est la part de Noé dans les partenariats (§ 0 ante bis, 0.1), et elle se déduit du
+    C'est la part de Noé dans les partenariats (§ 0 ante ter, 0.1), et elle se déduit du
     pack. Chaîne à tenir : les vignettes et encarts partent dans le dossier de
     l'album, qui se boucle **six semaines avant la livraison**.
 
@@ -5443,12 +6124,12 @@ l'écran semble d'hier.
 
 13. **La piste n° 1 de l'étude de marché** : croiser l'humeur et les habitudes.
     Les trois ingrédients existent (humeur du jour, habitudes cochées, famille de
-    chacune), rien à stocker, et personne ne les croise. § 0 ante bis, 0.10.
+    chacune), rien à stocker, et personne ne les croise. § 0 ante ter, 0.10.
 14. **La régression de la barre d'onglets sur les deux sites** — une tâche de
     fond a été proposée et lancée par Noé pendant la session. Vérifier où elle
     en est avant d'y retoucher : la barre du hub reste visible sur `#hermitage`
     et `#yuno`, alors que les deux specs l'interdisent.
-15. **La pastille « Photos » ne s'affiche pas sur les sites** (§ 0 ante bis, 0.5), défaut
+15. **La pastille « Photos » ne s'affiche pas sur les sites** (§ 0 ante ter, 0.5), défaut
     préexistant repéré en posant celle du temps fort. Une ligne, même motif.
 16. **`#hermitage/club` à l'usage.** Il ne sert à rien tant que Noé n'a pas
     besoin d'y chercher quelque chose — mais il sert l'objectif du 15 décembre.
@@ -5462,7 +6143,7 @@ l'écran semble d'hier.
 
 19. **CE QUE LA SESSION DU 31 A LAISSÉ OUVERT.** Trois points, tous petits :
     - **la nature par défaut sur les DEUX SITES.** « Une tâche par défaut »
-      (§ 0 ante bis, 0.3) vaut maintenant aussi pour le calendrier du FCH et pour Yuno hors
+      (§ 0 ante ter, 0.3) vaut maintenant aussi pour le calendrier du FCH et pour Yuno hors
       vue éditoriale. Chez Yuno, les sorties sont la matière du site : si
       « Événement » y était le bon défaut, c'est une ligne dans le seul appel de
       `js/yuno.js`.
@@ -5474,26 +6155,21 @@ l'écran semble d'hier.
       idée de la banque, et elle ne se programme donc pas depuis cette page. Ça
       se défend ; à rouvrir si l'éditorial se programme aussi le dimanche.
 
-20. **CE QUE LA SESSION DU 1er SEPTEMBRE A LAISSÉ OUVERT.** Cinq points, dont
-    le premier est le seul qui soit une vraie question de fond :
-    - **L'ARBITRAGE ENTRE « UN BLOC PAR JOUR » ET « LES QUOTAS TENUS », et il
-      revient à Noé.** Les deux règles sont de lui et elles se contredisent :
-      regrouper au maximum réduit le nombre de créneaux, donc les heures qui
-      rentrent. Au dernier état mesuré : **club 26 h / 26 h** (tenu),
-      **formation 13 h 30 / 15 h** (1 h 30 manquante). Trois issues, et aucune
-      n'est meilleure dans l'absolu : accepter le manque, autoriser un second
-      bloc de formation certains jours, ou étendre la journée au-delà de 22 h.
-      **Ne pas trancher à sa place** — c'est un arbitrage sur sa vie, pas sur du
-      code.
-    - **les blocs ne s'enregistrent pas**, par décision de Noé (« que de
-      l'affichage »). Conséquence assumée : déplacer un bloc, en ajouter un, en
-      régler un — tout meurt au rechargement. Si l'usage réclame la permanence,
-      c'est **cette décision-là** qu'il faut rouvrir, pas la contourner par un
-      stockage local.
+20. **CE QUE LE 1er SEPTEMBRE AU MATIN A LAISSÉ OUVERT — deux points sur cinq
+    ont été TRANCHÉS l'après-midi**, et il faut le savoir avant de les rouvrir :
+    - ~~l'arbitrage entre « un bloc par jour » et « les quotas tenus »~~ →
+      **RÉGLÉ.** Il n'y avait pas d'arbitrage à faire : c'étaient **trois
+      défauts** de l'algorithme, pas une contradiction entre deux règles de Noé
+      (§ 0.1). Mesuré après correction : **club 26 h / 26, formation 15 h / 15**,
+      six jours entre 6 h 30 et 7 h 30. **Ne pas rouvrir cette question comme un
+      arbitrage.**
+    - ~~les blocs ne s'enregistrent pas~~ → **RENVERSÉ par Noé** le soir même.
+      L'arrangement se garde dans `semaines_blocs` (§ 0.2). Le motif d'origine
+      (« rien à maintenir ») tenait ; c'est son prix que l'usage a révélé.
     - **l'algorithme ne connaît que le club et la formation.** Yuno et perso
       n'ont pas de blocs proposés (décision de Noé) : leurs tâches se rangent
-      dans les vides. À l'usage, vérifier qu'une tâche Yuno sans heure trouve
-      toujours une place lisible.
+      dans les vides — et depuis le 1er septembre au soir, **celles qui portent
+      une heure se dessinent à leur heure**. À l'usage, vérifier que ça se lit.
     - **le jour de repos est choisi par l'algorithme**, jamais par Noé. Personne
       n'a encore regardé si le jour qu'il retient est celui qu'on aurait choisi.
     - **le second tri des barres est celui de `ORDRE_ESPACES`** — FCH,
@@ -5501,6 +6177,36 @@ l'écran semble d'hier.
       pris de `js/format.js` et désormais partagé par quatre écrans. Rien ne dit
       qu'il soit le bon dans une colonne de calendrier ; c'est le seul qui
       existait.
+
+21. **CE QUE LA SESSION DU 1er SEPTEMBRE (SOIR) LAISSE OUVERT.** Six points,
+    aucun bloquant :
+    - **LE REPLI DU RELEVÉ NE SE GARDE PAS d'un jour à l'autre.** La tuile est
+      redessinée à chaque ouverture, avec le tiroir ouvert. C'est assumé — « le
+      repli est un geste rare, il n'a pas besoin d'un état à tenir » — mais si
+      Noé le referme tous les soirs, c'est cette décision qu'il faut rouvrir.
+    - **LA NOTE DU JOUR EST DEMANDÉE À DEUX ENDROITS.** Noé a dit qu'elle doit
+      se noter « en fin de journée plutôt qu'au début » ; l'accueil continue de
+      la demander le matin, en tête de page. Je ne l'ai pas retirée — la
+      salutation de l'accueil s'appuie sur « humeur non notée », et la retirer
+      touche un autre écran. **À lui de dire s'il veut qu'elle quitte
+      l'accueil.**
+    - **LA GRATITUDE NE SE RELIT NULLE PART.** La colonne existe et se remplit ;
+      aucun écran ne la ressort. C'est pourtant l'argument qui a justifié d'en
+      faire une colonne à part — remonter une année de gratitudes. Le candidat
+      naturel est la relecture qui ferme la journée (`relecture`,
+      js/orientation.js), qui ne connaît aujourd'hui que les victoires et les
+      intentions.
+    - **LE POINT DU CALENDRIER NE DIT PAS LES PUBLICATIONS.** `resumeDesJournees`
+      lit les tâches faites, les événements, les habitudes et les mots — pas les
+      parutions. Un jour où seule une publication est partie n'a donc aucun
+      point. À voir à l'usage : ça peut être juste (une parution n'est pas du
+      temps passé) comme ce peut être un oubli.
+    - **LES PROJETS TRAITÉS COMPTENT LES ÉVÉNEMENTS RATTACHÉS**, pas les
+      publications. Même question, même arbitrage.
+    - **LA PORTE DU SOIR ET CELLE DU DIMANCHE COEXISTENT** le dimanche à partir
+      de 20 h. Elles ne se distinguent que par leur libellé et leur couleur —
+      violet pour le perso, accent pour la semaine. Personne ne les a encore vues
+      côte à côte.
 
 ### Sans urgence
 
@@ -5532,7 +6238,7 @@ rouvre pas en croyant bien faire :
 - **« Quelle police pour les barres »**. Instrument Sans avait été essayée,
   Gilroy régnait : c'est **Google Sans** qui l'emporte, sur les titres, les
   heures et le décompte (§ 0.3). *La question « Gilroy sur le site du club »
-  était déjà close (§ 0 ante bis, 0.2) et ne bouge pas : Gilroy garde les
+  était déjà close (§ 0 ante ter, 0.2) et ne bouge pas : Gilroy garde les
   onglets, Google Sans prend les barres.*
 - **« Comment le hub propose-t-il une organisation de la semaine ? »**, posée
   depuis la naissance de « Ma semaine » et jamais traitée. Elle a maintenant une
@@ -5887,7 +6593,7 @@ restaurée par le routeur. Ne pas « simplifier » ces id.
 | `js/api.js` | **Tous** les appels Supabase, une fonction par usage |
 | `js/gabarits.js` | Les gabarits partagés (fut la fabrique des pages d'espace) — dont `construireFormulaire`, la tuile volante des dix-sept formulaires |
 | `js/objectifs.js` | **« Le cap »** : la galerie des objectifs, celle des projets, les périodes en pied. Tout ce qui se règle du cap passe par là |
-| `js/orientation.js` | Le calcul de l'orientation — ni réseau, ni session, ni DOM. **`tensionDeLaPeriode` n'est plus affichée nulle part** (§ 0 ante bis, point 1), elle reste vraie |
+| `js/orientation.js` | Le calcul de l'orientation — ni réseau, ni session, ni DOM. **`tensionDeLaPeriode` n'est plus affichée nulle part** (§ 0 ante ter, point 1), elle reste vraie |
 | `js/publications.js` | Le calendrier éditorial, partagé Yuno/FCH — ce qui diffère passe en paramètre (cycle, checklist, piliers) |
 | `js/calendrier-commun.js` | L'assemblage de tout ce qui porte une date, les trois vues, le glissement et le clavier — **et la tuile « Poser au calendrier » avec `poserAuCalendrier` / `brancherCapture`, partagées par le hub, l'accueil et les deux sites** |
 | `js/yuno.js` | Le site Yuno : le Carnet de terrain, le réseau, la Passerelle, le rendez-vous stats |
