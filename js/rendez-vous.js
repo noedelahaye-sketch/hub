@@ -13,7 +13,13 @@
 // diagnostic (js/orientation.js) en lignes, puis les lignes en HTML. Les deux
 // se vérifient seuls.
 
-import { echapper, dureeLisible, echeanceLisible, depuisDateISO } from './format.js';
+import {
+  echapper,
+  dureeLisible,
+  echeanceLisible,
+  depuisDateISO,
+  rangDEspace,
+} from './format.js';
 
 // L'intervalle de la semaine, en toutes lettres. `echeanceLisible` ne convient
 // pas ici : il parle en relatif — « aujourd'hui », « dans 4 jours » —, ce qui
@@ -67,6 +73,7 @@ export function lignesDuRendezVous(diagnostic) {
       espace: 'fch',
       chiffre: `${enHeures(club.total)} / ${enHeures(club.vise)}`,
       mot: club.seances ? `Le club, ${club.seances} séances` : 'Le club cette semaine',
+      court: `Le club : ${enHeures(club.total)} sur ${enHeures(club.vise)} visées.`,
       constat: `Le club est à ${enHeures(club.total)} sur ${enHeures(club.vise)} visées`
         + (club.seances ? `, dont ${club.seances} séances et leur traitement.` : '.'),
       precision: club.nonChiffre
@@ -91,6 +98,7 @@ export function lignesDuRendezVous(diagnostic) {
       espace: 'formation',
       chiffre: enHeures(p.besoin),
       mot: p.nom,
+      court: `« ${p.nom} » demande ${enHeures(p.besoin)} cette semaine.`,
       constat: `« ${p.nom} » demande ${enHeures(p.besoin)} cette semaine —`
         + ` ${enHeures(p.reste)} restent d'ici ${echeanceLisible(depuisDateISO(p.echeance))}.`,
       precision:
@@ -134,6 +142,7 @@ export function lignesDuRendezVous(diagnostic) {
       espace: 'perso',
       chiffre: 'Rien',
       mot: 'pour toi cette semaine',
+      court: 'Rien pour toi cette semaine.',
       constat: 'Rien pour toi cette semaine.',
       precision: 'Ni séance, ni moment de calme, ni personne de vu.',
       ton: 'calme',
@@ -150,6 +159,9 @@ export function lignesDuRendezVous(diagnostic) {
         espace: 'perso',
         chiffre: `${manque.pose ?? 0} / ${manque.attendu}`,
         mot: mot.titre,
+        court: manque.pose
+          ? `${manque.pose} ${mot.compte} sur ${manque.attendu}.`
+          : `${mot.vide} cette semaine.`,
         constat: manque.pose
           ? `${manque.pose} ${mot.compte} sur ${manque.attendu} cette semaine.`
           : `${mot.vide} cette semaine.`,
@@ -169,6 +181,7 @@ export function lignesDuRendezVous(diagnostic) {
       espace: 'perso',
       chiffre: String(perso.nonClasses),
       mot: 'moments sans famille',
+      court: `${perso.nonClasses} moments perso sans famille.`,
       constat: `${perso.nonClasses} moments perso ne disent pas à quelle famille ils appartiennent.`,
       precision: 'Sans ça, le hub ne peut pas savoir si ta semaine t’a reposé.',
       ton: 'calme',
@@ -183,6 +196,7 @@ export function lignesDuRendezVous(diagnostic) {
       espace: inference.espace,
       chiffre: inference.chiffre,
       mot: inference.mot,
+      court: inference.court ?? inference.constat,
       constat: inference.constat,
       precision: inference.consequence,
       dou: inference.dou,
@@ -200,6 +214,19 @@ export function lignesDuRendezVous(diagnostic) {
   //
   //    Le calcul reste entier (`tensionDeLaPeriode`, js/orientation.js) : c'est
   //    la mesure qu'on garde, c'est le reproche qu'on enlève.
+
+  // TRIÉES PAR ESPACE (1er septembre 2026, demande de Noé). C'est l'ordre des
+  // journées de Noé — le club, la formation, Yuno, puis lui —, celui de la
+  // galerie des caps et du calendrier, et il vit dans `rangDEspace`. Sans lui,
+  // les lignes sortaient dans l'ordre où le diagnostic les avait trouvées : la
+  // charge, la formation, le perso, puis les inférences en vrac. **Un ordre qui
+  // ne veut rien dire est un ordre qu'on relit à chaque fois** ; avec, la liste
+  // se lit par blocs, comme une journée.
+  //
+  // `sort` est STABLE en JavaScript : à espace égal, l'ordre de construction
+  // tient — la charge avant la formation, le plancher perso avant ses
+  // inférences. On range les espaces sans mélanger ce qu'ils contiennent.
+  lignes.sort((a, b) => rangDEspace(a.espace) - rangDEspace(b.espace));
 
   return lignes;
 }
@@ -225,32 +252,33 @@ function propositionDeLInference(inference) {
 
 // --- Le dessin ----------------------------------------------------------------
 //
-// DES CARTES, PAS DES PARAGRAPHES (31 août 2026, Noé : « leur forme est
-// catastrophique, elles prennent trop de place, il n'y a rien de visuel qui
-// permette de comprendre sans lire — quel espace, quelle info importante »).
+// UNE PHRASE, ET LE DÉTAIL AU CLIC (1er septembre 2026, Noé : « je n'aime pas
+// la forme des propositions, on ne comprend pas vraiment ce que ça veut dire ;
+// il ne faut pas avoir un titre et un petit descriptif, plutôt une petite
+// phrase, et quand on clique dessus on voit un détail de la proposition avec
+// l'action proposée associée »).
 //
-// Chaque constat tient maintenant en DEUX LIGNES, et se comprend d'un regard
-// avant d'être lu :
+// CE QUE ÇA RENVERSE. Depuis le 31 août, la carte tenait en deux lignes — un
+// chiffre en gros, trois mots en dessous :
 //
 //     ● 16 h 30 / 26 h            ↗
 //       Le club, 3 séances
 //
-//   — la PASTILLE donne l'espace par sa couleur, comme partout dans le hub ;
-//   — le CHIFFRE est ce qu'on vient chercher : il est en Geist Mono, gros,
-//     posé seul sur sa ligne ;
-//   — le MOT dit de quoi il s'agit en trois mots, jamais en trois phrases.
+// La forme était juste sur un point : elle se comprenait d'un REGARD. Mais un
+// regard ne dit pas ce qu'il faut en faire. « 2 · moments sans famille » ne
+// veut rien dire pour qui ne connaît pas déjà la règle des familles, et le
+// constat complet — qui, lui, l'explique — était rangé dans un `title` que
+// personne n'ouvre. **On avait déplacé le sens jusqu'à le perdre.**
 //
-// LE CONSTAT COMPLET N'EST PAS PERDU, IL EST DÉPLACÉ : il passe dans le `title`
-// et dans le nom accessible, avec sa précision et son « d'après ». C'est la
-// parade déjà employée sur la ligne d'une habitude — le sens survit à la
-// place qu'on lui reprend, et un écran qu'on ouvre chaque dimanche n'a pas
-// besoin qu'on lui réexplique ses propres chiffres.
+// LA PHRASE REVIENT DONC AU PREMIER PLAN, et c'est elle la carte. Ce qui part
+// à sa place, c'est la précision, le « d'après » et le libellé du geste : ils
+// vivent dans le DÉTAIL, qu'un appui ouvre.
 //
-// TOUTE LA CARTE PORTE LE GESTE, et c'est ce qui fait tenir les deux lignes :
-// un libellé de bouton (« Bloquer un créneau », « Voir ce qui peut attendre »)
-// coûtait une troisième ligne à lui seul. La règle du rendez-vous ne bouge
-// pas — aucun constat sans proposition, accepter coûte UN geste : ici, le
-// geste est la carte elle-même, et la flèche le dit.
+// ACCEPTER COÛTE UN GESTE DE PLUS, et c'est le prix assumé de la demande. La
+// règle du rendez-vous — aucun constat sans proposition — ne bouge pas d'un
+// pouce : elle change seulement d'endroit. Le geste n'est plus la carte, il est
+// le bouton du détail, où on le lit en toutes lettres au lieu de le deviner
+// derrière une flèche.
 
 export function construireRendezVous(diagnostic, { intro = true, valider = true } = {}) {
   const lignes = lignesDuRendezVous(diagnostic);
@@ -260,37 +288,20 @@ export function construireRendezVous(diagnostic, { intro = true, valider = true 
     return `<p class="vide">Rien à signaler sur cette semaine — elle est à toi.</p>`;
   }
 
-  const carte = (ligne) => {
-    // Ce que le survol et le lecteur d'écran reçoivent : la phrase entière,
-    // puis ce que le geste va faire. Deux informations, un seul texte.
-    const entier = [ligne.constat, ligne.precision, ligne.dou ? `d’après ${ligne.dou}` : null]
-      .filter(Boolean)
-      .join(' ');
-    const libelle = ligne.proposition?.libelle ?? '';
-    const dedans = `
-      ${ligne.chiffre ? `<span class="rdv-chiffre chiffre">${echapper(ligne.chiffre)}</span>` : ''}
-      <span class="rdv-mot">${echapper(ligne.mot ?? ligne.constat)}</span>
-      ${libelle ? `<span class="rdv-fleche" aria-hidden="true">${FLECHE}</span>` : ''}`;
-
-    const attributs =
-      `class="rdv-carte${ligne.ton === 'tendu' ? ' rdv-tendu' : ''}"` +
-      ` data-espace="${echapper(ligne.espace ?? '')}"` +
-      ` title="${echapper(libelle ? `${entier} — ${libelle}` : entier)}"` +
-      ` aria-label="${echapper(libelle ? `${entier} ${libelle}` : entier)}"`;
-
-    // Un lien mène ailleurs, un bouton ouvre la tuile de capture : la carte
-    // prend la forme de ce qu'elle fait. Sans proposition — le cas n'existe pas
-    // aujourd'hui, la règle l'interdit — elle reste un simple bloc.
-    if (ligne.proposition?.lien) {
-      return `<li><a ${attributs} href="${echapper(ligne.proposition.lien)}">${dedans}</a></li>`;
-    }
-    if (ligne.proposition?.creer) {
-      return `<li><button type="button" ${attributs} data-rdv-creer="${echapper(
-        JSON.stringify(ligne.proposition.creer),
-      )}">${dedans}</button></li>`;
-    }
-    return `<li><span ${attributs}>${dedans}</span></li>`;
-  };
+  // LA CARTE NE PORTE QUE SA PHRASE. Pas de chiffre en vedette, pas de mot en
+  // dessous : une phrase se lit, et c'est tout ce qu'on lui demande ici.
+  //
+  // ELLE EST TOUJOURS UN BOUTON, quelle que soit sa proposition — un lien
+  // mènerait ailleurs, or l'appui ouvre maintenant le détail et rien d'autre.
+  // C'est le détail qui porte le lien ou la tuile de capture.
+  const carte = (ligne) => `
+    <li><button type="button"
+      class="rdv-carte${ligne.ton === 'tendu' ? ' rdv-tendu' : ''}"
+      data-espace="${echapper(ligne.espace ?? '')}"
+      data-rdv-ouvrir="${echapper(ligne.cle)}">
+      <span class="rdv-phrase">${echapper(ligne.court ?? ligne.constat)}</span>
+      <span class="rdv-fleche" aria-hidden="true">${FLECHE}</span>
+    </button></li>`;
 
   return `
     ${intro ? `<p class="rdv-intro">Du ${echapper(bornesLisibles(semaine))}.</p>` : ''}
@@ -304,6 +315,48 @@ export function construireRendezVous(diagnostic, { intro = true, valider = true 
            </button>`
         : ''
     }`;
+}
+
+// LE DÉTAIL D'UNE PROPOSITION (1er septembre 2026, demande de Noé : « quand on
+// clique dessus on voit un détail de la proposition avec l'action proposée
+// associée »).
+//
+// Il dit tout ce que la carte ne dit plus, et dans cet ordre : le constat en
+// entier, ce qu'il implique, d'où il sort, puis ce qu'on peut en faire.
+//
+// LE « D'APRÈS » N'EST PAS DE LA COQUETTERIE : c'est ce qui rend le constat
+// vérifiable. Un hub qui affirme sans dire d'où il tient ce qu'il affirme finit
+// par être cru — ou ignoré —, et aucun des deux ne vaut mieux que l'autre.
+//
+// L'ACTION EST ÉCRITE EN TOUTES LETTRES, en pastille d'accent : c'est la seule
+// chose de cette fenêtre sur laquelle on appuie, et son libellé dit ce qui va
+// se passer. Un lien mène ailleurs, un bouton ouvre la tuile de capture — la
+// commande prend la forme de ce qu'elle fait, comme la carte le faisait avant.
+export function construireDetailProposition(ligne) {
+  if (!ligne) return '';
+
+  const proposition = ligne.proposition ?? null;
+  const geste = proposition?.lien
+    ? `<a class="bouton rdv-geste" href="${echapper(proposition.lien)}" data-rdv-fermer>
+         ${echapper(proposition.libelle)}
+       </a>`
+    : proposition?.creer
+      ? `<button type="button" class="bouton rdv-geste" data-rdv-creer="${echapper(
+          JSON.stringify(proposition.creer),
+        )}">${echapper(proposition.libelle)}</button>`
+      : '';
+
+  return `
+    <div class="rdv-detail" data-espace="${echapper(ligne.espace ?? '')}">
+      <p class="rdv-detail-constat">${echapper(ligne.constat)}</p>
+      ${ligne.precision ? `<p class="rdv-detail-precision">${echapper(ligne.precision)}</p>` : ''}
+      ${
+        ligne.dou
+          ? `<p class="rdv-detail-dou discret">D’après ${echapper(ligne.dou)}.</p>`
+          : ''
+      }
+      ${geste}
+    </div>`;
 }
 
 export { PLANCHER_PERSO };

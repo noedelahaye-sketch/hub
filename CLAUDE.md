@@ -810,7 +810,62 @@ un libellé de bouton (« Bloquer un créneau ») coûtait une troisième ligne 
 seul. *Mesuré : 7 constats en 131 px, contre une colonne de paragraphes qui
 repoussait la grille hors de l'écran.*
 
-**Aucun constat sans proposition, sans exception** (`js/rendez-vous.js`) : chaque ligne porte son geste, et accepter coûte **un** geste — une proposition ouvre la tuile de capture déjà remplie, ou mène à l'écran où le réglage se fait. Une ligne sans porte de sortie est un reproche déguisé.
+**Aucun constat sans proposition, sans exception** (`js/rendez-vous.js`) : chaque ligne porte son geste — une proposition ouvre la tuile de capture déjà remplie, ou mène à l'écran où le réglage se fait. Une ligne sans porte de sortie est un reproche déguisé.
+
+### UNE PHRASE, ET LE DÉTAIL AU CLIC (1er septembre 2026)
+
+**La demande de Noé** : *« je n'aime pas la forme des propositions, on ne comprend
+pas vraiment ce que ça veut dire ; il ne faut pas avoir un titre et un petit
+descriptif, plutôt une petite phrase, et quand on clique dessus on voit un détail
+de la proposition avec l'action proposée associée. »* Puis, dans la foulée :
+*« trie par espace, des phrases plus courtes, on voit l'explication — une phrase
+plus longue — en appuyant dessus. »*
+
+> *Ce que ça renverse.* Depuis le 31 août, la carte tenait en deux lignes : un
+> chiffre en gros, trois mots dessous. **La forme était juste sur un point — elle
+> se comprenait d'un REGARD.** Mais un regard ne dit pas ce qu'il faut en faire :
+> « 2 · moments sans famille » ne veut rien dire pour qui ne connaît pas déjà la
+> règle des familles, et le constat qui l'explique était rangé dans un `title`
+> que personne n'ouvre. **On avait déplacé le sens jusqu'à le perdre.**
+
+**DEUX TEXTES, ET PAS UN** : `court` sur la carte, `constat` dans le détail. Le
+premier tient sur une ligne (« 3 sorties, 1 tri posé. »), le second explique
+(« 3 sorties terrain d'ici deux semaines, et seulement 1 tri posé. »). Chaque
+ligne du rendez-vous porte les deux, y compris les inférences —
+`orientation.js` les écrit toutes les deux.
+
+**LE DÉTAIL DIT CE QUE LA CARTE NE DIT PLUS**, dans cet ordre : le constat
+entier, ce qu'il implique, **d'où il sort**, puis l'action. Le « d'après » n'est
+pas de la coquetterie : c'est ce qui rend le constat vérifiable — un hub qui
+affirme sans dire d'où il tient ce qu'il affirme finit par être cru, ou ignoré,
+et aucun des deux ne vaut mieux que l'autre.
+
+**ACCEPTER COÛTE UN GESTE DE PLUS**, et c'est le prix assumé de la demande. La
+règle ne bouge pas d'un pouce, elle change d'endroit : le geste n'est plus la
+carte, il est **le bouton du détail**, où on le lit en toutes lettres au lieu de
+le deviner derrière une flèche.
+
+**TRIÉES PAR ESPACE** — l'ordre des journées de Noé, celui de la galerie des caps
+et du calendrier (`rangDEspace`). Sans lui, les lignes sortaient dans l'ordre où
+le diagnostic les avait trouvées. **Un ordre qui ne veut rien dire est un ordre
+qu'on relit à chaque fois** ; avec, la liste se lit par blocs. Le tri est
+**stable** : à espace égal, la charge reste avant la formation et le plancher
+perso avant ses inférences — on range les espaces sans mélanger ce qu'ils
+contiennent.
+
+**ELLES PRENNENT MOINS DE PLACE, ET LA GRILLE EXISTE ENFIN** (même jour,
+première demande de Noé). `.rdv-cartes` posait `display: grid` et
+`grid-template-columns` **sans effet depuis le 31 août** : `.bloc ul` met toutes
+les listes du hub en flex-colonne et pèse une balise de plus. Les sept constats
+s'empilaient donc en pleine largeur — *468 px de haut là où trois colonnes en
+font 165* —, et ils repoussaient hors de l'écran la grille qu'ils sont là pour
+éclairer, c'est-à-dire exactement ce que la refonte du 31 août prétendait
+corriger. **Une spécificité qu'on n'égale pas est une règle qu'on n'écrit pas** —
+c'est le quatrième piège de ce type payé sur cette page.
+- **La phrase est en Google Sans** (demande de Noé), **trois lignes au plus** :
+  au-delà, une carte dicterait la hauteur de toute sa rangée. Ce qui dépasse
+  s'arrête à l'ellipse et attend dans le détail — ce n'est plus un `title` qu'on
+  n'ouvre jamais, c'est un écran.
 
 ### arbitrages
 
@@ -1408,6 +1463,22 @@ demande « où ». Le détail reprend exactement la place que les victoires
 libèrent.
 - **Dans l'ordre des journées de Noé**, et **sans les espaces à zéro** : « Yuno
   0 h » se lirait comme un reproche là où ce n'est qu'un silence.
+**LES PROJETS TRAITÉS ONT LEUR TUILE** (1er septembre 2026, demande de Noé :
+« une tuile pour dire les projets qui ont été traités — pour qui une tâche a été
+faite ou un événement »). C'est le chiffre qui manquait au miroir : « 17 tâches
+terminées » dit COMBIEN on a fait, il ne dit pas SUR QUOI — un projet qui a vu
+passer trois tâches et un autre qui n'a rien vu se ressemblaient comme deux
+gouttes d'eau.
+- **Le compte en vedette, les NOMS en dessous** : c'est pour eux qu'on regarde
+  cette tuile. Ils reprennent la grammaire du détail des heures — la pastille de
+  l'espace et le texte — et s'arrêtent à l'ellipse, leur nom entier dans `title`.
+- **UN ÉVÉNEMENT COMPTE MÊME S'IL N'EST PAS « TERMINÉ »** : il a eu lieu, c'est
+  du temps passé sur ce projet. C'est la règle que Noé pose dans sa demande, et
+  elle est juste — un entraînement photographié fait avancer l'album du club sans
+  qu'aucune case ne se coche.
+- **Dans l'ordre des journées de Noé**, et un projet supprimé depuis est ignoré
+  plutôt qu'affiché sous son identifiant.
+
 - **LA PASTILLE ET LE CHIFFRE, SUR UN SEUL RANG — PAS LE NOM** (1er septembre
   2026, demande de Noé : *« pas besoin du titre des espaces pour les heures de la
   semaine passée, et intègre-les mieux pour que les autres tuiles voisines ne

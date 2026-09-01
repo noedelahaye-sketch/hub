@@ -1037,6 +1037,9 @@ export function inferences(
       espace: 'fch',
       chiffre: `${seancesAVenir.length} sorties`,
       mot: 'Tri à poser',
+      court: `${seancesAVenir.length} sorties, ${
+        triPose ? `${triPose} tri posé` : 'aucun tri'
+      }.`,
       constat: `${seancesAVenir.length} sorties terrain d'ici deux semaines, et ${
         triPose ? `seulement ${triPose} tri posé` : 'aucun tri posé'
       }.`,
@@ -1076,6 +1079,7 @@ export function inferences(
         espace: objectif.espace,
         chiffre: chaine.length > 1 ? `${chaine.length} jalons` : 'Premier jalon',
         mot: premier.titre,
+        court: `« ${premier.titre} » n'a ni projet ni tâche.`,
         constat: `« ${premier.titre} » n'a ni projet ni tâche, et c'est le premier maillon de « ${objectif.titre} ».`,
         consequence: 'Les jalons suivants en dépendent : rien ne bouge tant qu\'il dort.',
         dou: 'le premier jalon non atteint de cet objectif',
@@ -1098,6 +1102,7 @@ export function inferences(
             Math.round((depuisDateISO(jalon.echeance) - depuisDateISO(aujourdhui)) / 86400000),
           )} j`,
           mot: jalon.titre,
+          court: `« ${jalon.titre} » approche, sans tâche.`,
           constat: `« ${jalon.titre} » tombe le ${jalon.echeance} et aucune tâche n'y mène.`,
           consequence: null,
           dou: 'un jalon daté à moins de trois semaines',
@@ -1124,6 +1129,7 @@ export function inferences(
         espace: projet.espace,
         chiffre: `${Math.round(JOURS_SILENCE_PROJET / 7)} semaines`,
         mot: projet.nom,
+        court: `« ${projet.nom} » dort depuis trois semaines.`,
         constat: `« ${projet.nom} » n'a rien vu passer depuis trois semaines.`,
         consequence: projet.echeance ? `Son échéance est le ${projet.echeance}.` : null,
         dou: 'aucune tâche, publication ni événement rattaché sur la période',
@@ -1145,6 +1151,7 @@ export function inferences(
         espace: serie.espace,
         chiffre: `${ratees.length} fois`,
         mot: serie.modele?.titre ?? 'Une série',
+        court: `« ${serie.modele?.titre ?? 'Une série'} » ratée ${ratees.length} fois.`,
         constat: `« ${serie.modele?.titre ?? 'Une série'} » est passée ${ratees.length} fois sans être faite.`,
         consequence: 'Le rythme est peut-être trop serré — le passer en quinzaine ?',
         dou: 'les occurrences passées de cette série',
@@ -2078,7 +2085,15 @@ export function semainePrecedente(semaine) {
 const jourDuFait = (horodatage) => (horodatage ? versDateISO(new Date(horodatage)) : null);
 
 export function bilanDeLaSemaine(
-  { taches = [], publications = [], victoires = [], humeurs = [], habitudesFaits = [] } = {},
+  {
+    taches = [],
+    publications = [],
+    victoires = [],
+    humeurs = [],
+    habitudesFaits = [],
+    evenements = [],
+    projets = [],
+  } = {},
   semaine,
 ) {
   const faites = taches.filter((tache) => dans(jourDuFait(tache.date_fait), semaine));
@@ -2109,6 +2124,35 @@ export function bilanDeLaSemaine(
     .filter((part) => part.minutes > 0)
     .sort((a, b) => rangDEspace(a.espace) - rangDEspace(b.espace));
 
+  // LES PROJETS QUI ONT ÉTÉ TRAITÉS (1er septembre 2026, demande de Noé : « une
+  // tuile pour dire les projets qui ont été traités — pour qui une tâche a été
+  // faite ou un événement »).
+  //
+  // C'est le chiffre qui manquait au miroir : « 17 tâches terminées » dit
+  // COMBIEN on a fait, il ne dit pas SUR QUOI. Un projet qui a vu passer trois
+  // tâches et un autre qui n'a rien vu se ressemblent, sur ce bilan, comme deux
+  // gouttes d'eau.
+  //
+  // UN ÉVÉNEMENT COMPTE MÊME S'IL N'EST PAS « TERMINÉ » : il a eu lieu, c'est du
+  // temps passé sur ce projet. C'est la règle que Noé pose dans sa demande, et
+  // elle est juste — un entraînement photographié fait avancer l'album du club
+  // sans qu'aucune case ne se coche.
+  const touches = new Set();
+  for (const tache of faites) if (tache.projet_id) touches.add(tache.projet_id);
+  for (const evenement of evenements) {
+    if (!evenement.projet_id) continue;
+    if (dans(versDateISO(new Date(evenement.date_debut)), semaine)) touches.add(evenement.projet_id);
+  }
+
+  // DANS L'ORDRE DES JOURNÉES DE NOÉ, comme le détail des heures. Un projet
+  // supprimé depuis n'a plus de nom : on l'ignore plutôt que d'écrire un
+  // identifiant.
+  const projetsTouches = [...touches]
+    .map((id) => projets.find((projet) => String(projet.id) === String(id)))
+    .filter(Boolean)
+    .map((projet) => ({ id: projet.id, nom: projet.nom, espace: projet.espace }))
+    .sort((a, b) => rangDEspace(a.espace) - rangDEspace(b.espace) || a.nom.localeCompare(b.nom));
+
   const notes = humeurs.filter((ligne) => dans(ligne.date, semaine));
 
   return {
@@ -2118,6 +2162,7 @@ export function bilanDeLaSemaine(
     publications: parties.length,
     minutes,
     detail,
+    projetsTouches,
     // Ce que le hub SAIT compter, sur ce qu'il y avait à compter. Sans ces deux
     // nombres, « 2 h 30 » se lirait comme une semaine légère alors qu'il ne dit
     // que le silence des durées.

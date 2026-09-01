@@ -78,7 +78,11 @@ import {
   periodeDuJour,
   semainePrecedente,
 } from './orientation.js';
-import { construireRendezVous } from './rendez-vous.js';
+import {
+  construireRendezVous,
+  construireDetailProposition,
+  lignesDuRendezVous,
+} from './rendez-vous.js';
 import { trierTaches } from './taches.js';
 
 const PLUS = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none"
@@ -148,6 +152,19 @@ export function construireBilan(bilan) {
       valeur: String(bilan.habitudes),
       mot: bilan.habitudes > 1 ? 'habitudes tenues' : 'habitude tenue',
     },
+    // LES PROJETS TRAITÉS (1er septembre 2026, demande de Noé). Le compte
+    // répond à « combien », et les noms disent LESQUELS — c'est pour eux qu'on
+    // regarde cette tuile : « 17 tâches terminées » ne dit pas sur quoi.
+    //
+    // Les noms prennent la place du détail des heures, dans la même grammaire :
+    // la pastille de l'espace et le texte, sur un rang qui se replie. Un nom
+    // long s'arrête à l'ellipse et attend dans son `title` — une tuile de la
+    // rangée ne doit pas dicter la hauteur des autres.
+    bilan.projetsTouches?.length && {
+      valeur: String(bilan.projetsTouches.length),
+      mot: bilan.projetsTouches.length > 1 ? 'projets avancés' : 'projet avancé',
+      noms: bilan.projetsTouches,
+    },
   ].filter(Boolean);
 
   if (!chiffres.length) {
@@ -166,6 +183,20 @@ export function construireBilan(bilan) {
           ${
             chiffre.precision
               ? `<span class="bilan-precision">${echapper(chiffre.precision)}</span>`
+              : ''
+          }
+          ${
+            chiffre.noms?.length
+              ? `<ul class="bilan-detail bilan-noms">${chiffre.noms
+                  .map(
+                    (projet) => `<li data-espace="${echapper(projet.espace)}" title="${echapper(
+                      projet.nom,
+                    )}">
+                      <span class="compte-rond" aria-hidden="true"></span>
+                      <span class="bilan-detail-nom">${echapper(projet.nom)}</span>
+                    </li>`,
+                  )
+                  .join('')}</ul>`
               : ''
           }
           ${
@@ -418,6 +449,10 @@ export default {
       // superposé »). Elle ne veut dire quelque chose que si les DEUX couches
       // sont demandées : il n'y a rien à séparer quand on n'en montre qu'une.
       separes: false,
+      // LA PROPOSITION OUVERTE (1er septembre 2026). La carte ne porte plus
+      // qu'une phrase ; son détail — précision, provenance, action — vit dans
+      // une fenêtre, comme le réglage d'un bloc.
+      proposition: null,
       // La tâche prise en main AU DOIGT : on la choisit, puis on touche un
       // jour. Le glissement est un geste de souris — sur une liste verticale,
       // au doigt, il ne se distingue pas d'un défilement.
@@ -1140,7 +1175,8 @@ export default {
 
         <div id="bloc-creation"></div>
         <div id="bloc-detail"></div>
-        <div id="bloc-reglage"></div>`;
+        <div id="bloc-reglage"></div>
+        <div id="bloc-proposition"></div>`;
     }
 
     function rendreMessage() {
@@ -1350,6 +1386,26 @@ export default {
     // n'existe qu'en mémoire, il n'a ni pastille d'espace à teinter ni
     // enregistrement à confirmer. Ce qu'on règle ici ne quitte pas la page.
     const JOURS_LISIBLES = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+
+    // LA FENÊTRE D'UNE PROPOSITION. Même mécanique que le réglage d'un bloc :
+    // le fond s'assombrit, la fenêtre se centre, et l'on referme par la croix,
+    // le fond ou Échap. Rien de neuf à inventer — c'est la fenêtre du hub.
+    function rendreProposition() {
+      const conteneur = cible('bloc-proposition');
+      // ON NE TOUCHE PAS À `fond-fige`, et c'est mesuré (1er septembre 2026) :
+      // un MutationObserver de `app.js` surveille le corps entier et LIBÈRE le
+      // fond dès qu'il n'y voit ni tuile de capture ni voile de menu. La classe
+      // qu'on poserait ici serait retirée dans la foulée — pire, `libererLeFond`
+      // rendrait la page à un défilement qu'il n'a jamais enregistré, puisque
+      // `figerLeFond` n'a pas tourné. Le voile de la fenêtre fait déjà le
+      // travail visuel.
+      //
+      // (`rendreReglage` pose encore cette classe depuis le 31 août : elle n'y
+      // fait rien non plus. À nettoyer, mais pas au milieu d'une refonte.)
+      conteneur.innerHTML = etat.proposition
+        ? construireFenetre('Ce que je vois', construireDetailProposition(etat.proposition))
+        : '';
+    }
 
     function rendreReglage() {
       const conteneur = cible('bloc-reglage');
@@ -1868,6 +1924,12 @@ export default {
       if (etat.creation) {
         etat.creation = null;
         rendreCreation();
+      } else if (etat.proposition) {
+        etat.proposition = null;
+        rendreProposition();
+      } else if (etat.blocRegle) {
+        etat.blocRegle = null;
+        rendreReglage();
       } else if (etat.detail) {
         fermerLeDetail();
       } else if (etat.choisie) {
@@ -2004,9 +2066,35 @@ export default {
 
       // Une proposition ouvre la tuile de capture déjà remplie : accepter doit
       // coûter UN geste, sinon ce n'est pas une proposition, c'est un constat.
+      // OUVRIR LE DÉTAIL D'UNE PROPOSITION (1er septembre 2026, demande de
+      // Noé). La carte ne fait plus que ça : elle montre ce qu'elle a compris,
+      // et l'action attend dans le détail, écrite en toutes lettres.
+      const ouvrir = evenement.target.closest('[data-rdv-ouvrir]');
+      if (ouvrir) {
+        // Les lignes se recalculent depuis le diagnostic déjà chargé : rien ne
+        // part au réseau, et la fenêtre lit la MÊME source que les cartes.
+        etat.proposition =
+          lignesDuRendezVous(etat.diagnostic).find(
+            (ligne) => ligne.cle === ouvrir.dataset.rdvOuvrir,
+          ) ?? null;
+        rendreProposition();
+        return;
+      }
+
+      if (evenement.target.closest('[data-rdv-fermer]')) {
+        etat.proposition = null;
+        rendreProposition();
+        return;
+      }
+
       const proposition = evenement.target.closest('[data-rdv-creer]');
       if (proposition) {
         const voulu = JSON.parse(proposition.dataset.rdvCreer);
+        // La fenêtre a fait son travail : elle se retire pour laisser la place
+        // à la tuile de capture. Deux fenêtres l'une sur l'autre ne se ferment
+        // pas dans le bon ordre.
+        etat.proposition = null;
+        rendreProposition();
         // Le premier jour de la semaine qu'on programme, et non aujourd'hui :
         // ce qu'on pose ici appartient à la semaine qui vient.
         const jour = etat.semaine.debut;
@@ -2036,6 +2124,8 @@ export default {
         fermerLeDetail();
         etat.blocRegle = null;
         rendreReglage();
+        etat.proposition = null;
+        rendreProposition();
         return;
       }
 
