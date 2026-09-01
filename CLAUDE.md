@@ -666,6 +666,23 @@ rendrait d'abord l'ancienne.
     demandée. **Charger n'est pas ouvrir** — le tableau de bord a besoin de la
     journée d'aujourd'hui, c'est de là que vient le mot du jour.
 - **Une seule table, `journees`** (jour, mot). Tout le reste se déduit.
+- **L'ÉCRITURE EST L'ÉLÉMENT PRINCIPAL, ET LE RELEVÉ SE REPLIE** (1er septembre
+  2026, demande de Noé : *« l'espace pour écrire du texte doit être plus grand,
+  et pouvoir conserver un texte long, ça doit être l'élément principal de la
+  page ; les autres — habitudes, tâches… — sont des détails qui doivent
+  s'afficher en haut, et qu'on peut masquer si envie »*).
+  **Ce que ça renverse** : l'écriture FERMAIT la page, après six blocs de
+  relevés. Elle était donc la dernière chose qu'on voyait, alors que c'est la
+  **seule que le hub ne puisse pas remplir à la place de Noé** — tout le reste,
+  il le sait déjà. Le rang disait l'inverse de la règle de la page.
+  - **La colonne n'a jamais eu de limite** (`journees.mot` est du texte libre, et
+    l'écriture l'envoie entière) : ce qui bridait, c'était le CHAMP — deux
+    lignes, et une invite qui disait « une ligne, si tu veux ». **On n'écrit pas
+    un bilan dans un champ qui annonce qu'il n'en attend pas.** Il fait
+    maintenant 16 rem de haut au minimum, en corps de texte courant.
+  - **Un `details` natif, ouvert par défaut** : le repli est un geste rare et
+    n'a pas besoin d'un état à tenir — la tuile se redessine à l'ouverture d'un
+    jour, pas pendant qu'on la lit.
 - **Le mot s'enregistre quand on quitte le champ**, sans bouton : c'est une
   ligne qu'on écrit en passant, et lui demander un geste de plus la ferait ne
   jamais s'écrire.

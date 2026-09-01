@@ -1068,90 +1068,118 @@ export function construireLaJournee(jour, donnees, contexte = {}) {
         )}" ${jour >= aujourdhui ? 'disabled' : ''} aria-label="Le jour d'après">›</button>
       </div>
 
+      <!-- LES DÉTAILS EN HAUT, ET REPLIABLES (1er septembre 2026, demande de
+           Noé : « les autres — habitudes, tâches… — sont des détails qui
+           doivent s'afficher en haut, et qu'on peut masquer si envie »).
+
+           CE QUE ÇA RENVERSE : l'écriture fermait la page, après six blocs de
+           relevés. Elle était donc la dernière chose qu'on voyait, alors que
+           c'est la SEULE que le hub ne puisse pas remplir à la place de Noé —
+           tout le reste, il le sait déjà. Le rang disait l'inverse de la règle
+           de la page.
+
+           UN details NATIF, ouvert par défaut : le repli est un geste rare, et
+           il n'a pas besoin d'état à tenir — la tuile se redessine à
+           l'ouverture d'un jour, pas pendant qu'on la lit. -->
+      <details class="jour-releve" open>
+        <summary>Ce que dit la journée</summary>
+        <div class="jour-releve-corps">
       ${
-        humeur
-          ? `<p class="jour-humeur"><span class="jour-frimousse">${niveau?.frimousse ?? ''}</span>
-             <span>${echapper(niveau?.mot ?? '')}${
-               humeur.note ? ` — « ${echapper(humeur.note)} »` : ''
-             }</span></p>`
-          : ''
-      }
+            humeur
+              ? `<p class="jour-humeur"><span class="jour-frimousse">${niveau?.frimousse ?? ''}</span>
+                 <span>${echapper(niveau?.mot ?? '')}${
+                   humeur.note ? ` — « ${echapper(humeur.note)} »` : ''
+                 }</span></p>`
+              : ''
+          }
 
-      ${bloc_(
-        'Habitudes',
-        faits.length
-          ? `<span class="jour-pastilles">${faits
-              .map(
-                (fait) =>
-                  `<span class="jour-pastille">${echapper(
-                    nomDe(fait.habitude_id, habitudes),
-                  )}</span>`,
-              )
-              .join('')}</span>`
-          : '',
-      )}
+          ${bloc_(
+            'Habitudes',
+            faits.length
+              ? `<span class="jour-pastilles">${faits
+                  .map(
+                    (fait) =>
+                      `<span class="jour-pastille">${echapper(
+                        nomDe(fait.habitude_id, habitudes),
+                      )}</span>`,
+                  )
+                  .join('')}</span>`
+              : '',
+          )}
 
-      ${bloc_(
-        'Terminé',
-        taches.length
-          ? `<ul class="jour-liste">${taches
-              .map(
-                (tache) =>
-                  `<li><span class="jour-coche">✓</span>${echapper(tache.titre)}
-                   <span class="discret">${echapper(NOMS_ESPACES[tache.espace] ?? '')}</span></li>`,
-              )
-              .join('')}</ul>`
-          : '',
-      )}
+          ${bloc_(
+            'Terminé',
+            taches.length
+              ? `<ul class="jour-liste">${taches
+                  .map(
+                    (tache) =>
+                      `<li><span class="jour-coche">✓</span>${echapper(tache.titre)}
+                       <span class="discret">${echapper(NOMS_ESPACES[tache.espace] ?? '')}</span></li>`,
+                  )
+                  .join('')}</ul>`
+              : '',
+          )}
 
-      ${bloc_(
-        'Ce jour-là',
-        evenements.length
-          ? `<ul class="jour-liste">${evenements
-              .map(
-                (evenement) =>
-                  `<li>${echapper(evenement.titre)}
-                   <span class="discret">${echapper(
-                     [evenement.lieu, FAMILLES_PERSO[evenement.famille] ?? ''].filter(Boolean).join(' · '),
-                   )}</span></li>`,
-              )
-              .join('')}</ul>`
-          : '',
-      )}
+          ${bloc_(
+            'Ce jour-là',
+            evenements.length
+              ? `<ul class="jour-liste">${evenements
+                  .map(
+                    (evenement) =>
+                      `<li>${echapper(evenement.titre)}
+                       <span class="discret">${echapper(
+                         [evenement.lieu, FAMILLES_PERSO[evenement.famille] ?? ''].filter(Boolean).join(' · '),
+                       )}</span></li>`,
+                  )
+                  .join('')}</ul>`
+              : '',
+          )}
 
-      ${bloc_(
-        'Lecture',
-        pagesLues
-          ? `<p class="jour-lecture">${pluriel(pagesLues, 'page')}${
-              seances.length === 1 && nomDe(seances[0].livre_id, livres, 'titre')
-                ? ` — ${echapper(nomDe(seances[0].livre_id, livres, 'titre'))}`
-                : ''
-            }</p>`
-          : '',
-      )}
+          ${bloc_(
+            'Lecture',
+            pagesLues
+              ? `<p class="jour-lecture">${pluriel(pagesLues, 'page')}${
+                  seances.length === 1 && nomDe(seances[0].livre_id, livres, 'titre')
+                    ? ` — ${echapper(nomDe(seances[0].livre_id, livres, 'titre'))}`
+                    : ''
+                }</p>`
+              : '',
+          )}
 
-      ${bloc_(
-        'Victoires',
-        // LES VICTOIRES NÉES D'UNE TÂCHE NE SE RÉPÈTENT PAS : elles sont déjà
-        // dans « Terminé » juste au-dessus, mot pour mot. Restent celles qui
-        // disent autre chose — un jalon franchi, une étape, un palier
-        // d'habitude, une victoire écrite à la main.
-        (() => {
-          const autres = victoires.filter((victoire) => victoire.source !== 'tache');
-          return autres.length
-            ? `<ul class="jour-liste">${autres
-                .map((victoire) => `<li>${echapper(victoire.titre)}</li>`)
-                .join('')}</ul>`
-            : '';
-        })(),
-      )}
+          ${bloc_(
+            'Victoires',
+            // LES VICTOIRES NÉES D'UNE TÂCHE NE SE RÉPÈTENT PAS : elles sont déjà
+            // dans « Terminé » juste au-dessus, mot pour mot. Restent celles qui
+            // disent autre chose — un jalon franchi, une étape, un palier
+            // d'habitude, une victoire écrite à la main.
+            (() => {
+              const autres = victoires.filter((victoire) => victoire.source !== 'tache');
+              return autres.length
+                ? `<ul class="jour-liste">${autres
+                    .map((victoire) => `<li>${echapper(victoire.titre)}</li>`)
+                    .join('')}</ul>`
+                : '';
+            })(),
+          )}
 
-      ${rien ? `<p class="vide">Rien de noté ce jour-là. Ça arrive, et ce n'est pas grave.</p>` : ''}
 
+          ${rien ? `<p class="vide">Rien de noté ce jour-là. Ça arrive, et ce n'est pas grave.</p>` : ''}
+        </div>
+      </details>
+
+      <!-- L'ÉCRITURE EST L'ÉLÉMENT PRINCIPAL (même demande : « l'espace pour
+           écrire du texte doit être plus grand, et pouvoir conserver un texte
+           long, ça doit être l'élément principal de la page »).
+
+           La colonne journees.mot est du texte libre : elle n'a jamais eu de
+           limite. Ce qui bridait, c'était le CHAMP — deux lignes, une invite
+           qui disait « une ligne, si tu veux ». On n'écrit pas un bilan dans un
+           champ qui annonce qu'il n'en attend pas. -->
       <div class="jour-mot">
         <span class="jour-part-titre">Ce qui a compté</span>
-        <textarea class="jour-mot-champ" data-jour-mot="${echapper(jour)}" rows="2"
-          placeholder="une ligne, si tu veux">${echapper(mot ?? '')}</textarea>
+        <textarea class="jour-mot-champ jour-mot-long" data-jour-mot="${echapper(jour)}"
+          rows="12" placeholder="Ce que tu veux garder de ce jour-là."
+          >${echapper(mot ?? '')}</textarea>
       </div>
 
       ${

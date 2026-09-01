@@ -5218,9 +5218,56 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   color: var(--texte-discret);
 }
 
-/* La seule chose qu'on écrit. Sans bouton : elle s'enregistre quand on quitte
-   le champ — lui demander un geste de plus la ferait ne jamais s'écrire. */
-.jour-mot { margin-top: var(--espace-24); }
+/* --- LE RELEVÉ DE LA JOURNÉE, replié si l'on veut (1er septembre 2026) ------
+   « Les autres — habitudes, tâches… — sont des détails qui doivent s'afficher
+   en haut, et qu'on peut masquer si envie » (Noé). Un `details` natif : le
+   repli est un geste rare, il n'a pas besoin d'un dessin à lui. */
+.jour-releve { margin-bottom: var(--espace-16); }
+
+.jour-releve > summary {
+  cursor: pointer;
+  list-style: none;
+  padding: var(--espace-8) 0;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--texte-discret);
+}
+
+.jour-releve > summary::-webkit-details-marker { display: none; }
+
+/* Le chevron dit le sens du geste, et tourne avec lui. Un dessin CSS plutôt
+   qu'un glyphe : il garde son épaisseur quelle que soit la police de secours. */
+.jour-releve > summary::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: var(--espace-8);
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 160ms ease;
+}
+
+.jour-releve[open] > summary::after { transform: translateY(1px) rotate(-135deg); }
+
+.jour-releve > summary:hover { color: var(--texte); }
+
+.jour-releve-corps {
+  padding-top: var(--espace-8);
+  border-top: 1px solid var(--bordure-douce);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jour-releve > summary::after { transition: none; }
+}
+
+/* L'ÉCRITURE EST L'ÉLÉMENT PRINCIPAL (1er septembre 2026, demande de Noé).
+   Sans bouton : elle s'enregistre quand on quitte le champ — lui demander un
+   geste de plus la ferait ne jamais s'écrire. */
+.jour-mot { margin-top: var(--espace-16); }
 
 .jour-mot-champ {
   width: 100%;
@@ -5232,6 +5279,21 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   font: inherit;
   font-size: 0.875rem;
   resize: vertical;
+}
+
+/* LE GRAND CHAMP, celui de la journée. Il ne diffère du petit — celui du
+   tableau de bord, où l'on note un mot en passant — que par sa TAILLE et son
+   confort de lecture : une hauteur franche, une ligne plus aérée, un corps de
+   texte courant. On n'écrit pas un bilan dans un champ de deux lignes.
+
+   `min-height` en rem plutôt qu'un nombre de lignes seul : `rows` donne la
+   hauteur de départ, mais un champ qu'on redimensionne doit garder un plancher
+   qui dise ce qu'il attend. */
+.jour-mot-long {
+  min-height: 16rem;
+  padding: var(--espace-16);
+  font-size: 1rem;
+  line-height: 1.6;
 }
 
 /* CE QUE LE HUB TE REMONTRE. En voix éditoriale et en pied de page : c'est une
