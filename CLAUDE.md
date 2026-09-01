@@ -629,6 +629,12 @@ rien reste une case sobre qui se clique comme les autres.
   autrement. Elle reste dessinée — le mois doit garder sa forme.
 - **Changer de mois ne change pas le jour ouvert** : on regarde ailleurs sans
   perdre ce qu'on lisait. C'est ce qui distingue une navigation d'un choix.
+- **La bascule Mois / Semaine reprend `.affichages`** (forme montrée par Noé le
+  1er septembre 2026), le groupe de boutons du calendrier : une piste arrondie,
+  l'actif en pastille pleine et l'encre inversée. C'est le MÊME geste — choisir
+  ce que la grille montre —, et « Ma semaine » l'avait déjà repris pour la même
+  raison. **Écrire un troisième dessin pour un geste qui en a déjà un, c'est
+  fabriquer la divergence qu'on passe ensuite à rattraper.**
 - **Le calendrier suit le jour choisi sans sauter pour rien** : il ne se recale
   que si le jour sort de ce qu'il montre.
 - **Une requête par table, jamais par jour** : `journeeDe` en coûte sept, un mois

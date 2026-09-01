@@ -1021,11 +1021,18 @@ export function construireCalendrierDesJournees(vue, pivot, resumes, choisi) {
           avance,
         )}" aria-label="Après">›</button>
       </div>
-      <div class="cal-filtres" role="group" aria-label="La vue du calendrier">
-        <button type="button" class="lien-discret${vue === 'mois' ? ' actif' : ''}"
-          data-jours-vue="mois">Mois</button>
-        <button type="button" class="lien-discret${vue === 'semaine' ? ' actif' : ''}"
-          data-jours-vue="semaine">Semaine</button>
+      <!-- LA BASCULE REPREND .affichages (1er septembre 2026, forme montrée par
+           Noé), le groupe de boutons du calendrier : une piste arrondie, l'actif
+           en pastille pleine et l'encre inversée. C'est le MÊME geste — choisir
+           ce que la grille montre —, il n'a aucune raison de se présenter
+           autrement ici, et « Ma semaine » l'avait déjà repris pour la même
+           raison. Écrire un troisième dessin pour un geste qui en a déjà un,
+           c'est fabriquer la divergence qu'on passe ensuite à rattraper. -->
+      <div class="affichages" role="group" aria-label="La vue du calendrier">
+        <button type="button" class="${vue === 'mois' ? 'actif' : ''}"
+          aria-pressed="${vue === 'mois'}" data-jours-vue="mois">Mois</button>
+        <button type="button" class="${vue === 'semaine' ? 'actif' : ''}"
+          aria-pressed="${vue === 'semaine'}" data-jours-vue="semaine">Semaine</button>
       </div>
     </div>
 
