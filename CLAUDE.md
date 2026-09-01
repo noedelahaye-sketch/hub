@@ -862,10 +862,17 @@ font 165* —, et ils repoussaient hors de l'écran la grille qu'ils sont là po
 éclairer, c'est-à-dire exactement ce que la refonte du 31 août prétendait
 corriger. **Une spécificité qu'on n'égale pas est une règle qu'on n'écrit pas** —
 c'est le quatrième piège de ce type payé sur cette page.
-- **La phrase est en Google Sans** (demande de Noé), **trois lignes au plus** :
-  au-delà, une carte dicterait la hauteur de toute sa rangée. Ce qui dépasse
-  s'arrête à l'ellipse et attend dans le détail — ce n'est plus un `title` qu'on
-  n'ouvre jamais, c'est un écran.
+- **La phrase est en Google Sans** (demande de Noé), **trois lignes au plus**.
+  Ce qui dépasse s'arrête à l'ellipse et attend dans le détail — ce n'est plus
+  un `title` qu'on n'ouvre jamais, c'est un écran.
+- **TOUTES LES TUILES ONT LA MÊME TAILLE** (1er septembre 2026, demande de Noé).
+  Une grille donne à chaque RANG la hauteur de sa carte la plus haute : deux
+  rangs voisins tombaient à 32 et 49 px, et la galerie n'en était plus une.
+  `grid-auto-rows: 1fr` les aligne tous sur le plus grand, et la carte remplit
+  le sien — sans `height: 100%` elle resterait collée en haut d'une case devenue
+  trop grande pour elle. *Mesuré : sept cartes à 248 × 65, et le bloc passe de
+  187 px à 212. C'est le prix d'une galerie régulière, et il reste très loin des
+  468 px de ce matin.*
 
 ### arbitrages
 
