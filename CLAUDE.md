@@ -661,6 +661,16 @@ rendrait d'abord l'ancienne.
     cliquée empilerait une entrée d'historique. **Et une adresse qui porte un
     jour l'OUVRE** — coller `#perso/journee/2026-08-20` depuis la page changeait
     l'état sans rien redessiner : le lien menait au bon jour et montrait l'autre.
+  - **LA TUILE D'UNE JOURNÉE N'EST PAS UNE TUILE D'AJOUT**, et ça se paie cher
+    si on l'oublie (1er septembre 2026, défaut rapporté par Noé : « les flèches
+    pour changer de jour sont dysfonctionnelles »). Le gestionnaire de clic de
+    `#perso` abandonne au premier `.ajout-volant` rencontré — une garde posée
+    quand une tuile volante ne contenait qu'un FORMULAIRE, qui se gère par son
+    `submit`. Depuis que le détail d'une journée y vit, elle **avalait ses
+    flèches ET ses frimousses** : tout ce qui s'y cliquait passait à la trappe,
+    sans un mot. La tuile est donc exclue par sa classe, et **ne porte pas
+    `data-ajout`** — la branche suivante y aurait vu une demande d'ouvrir un
+    formulaire « journee » qui n'existe pas.
   - **`#perso/journee` seul ne montre que son calendrier** et attend qu'on
     choisisse : ouvrir une tuile en arrivant serait une fenêtre que personne n'a
     demandée. **Charger n'est pas ouvrir** — le tableau de bord a besoin de la
@@ -697,6 +707,22 @@ rendrait d'abord l'ancienne.
     c'est la mise en colonnes du relevé qui a demandé les douze de plus — à
     44 rem, chaque colonne tombait sous 20 rem et les titres de tâches s'y
     repliaient mot à mot.*
+  - **LES HABITUDES SE COCHENT ET SE DÉCOCHENT** (1er septembre 2026, demande de
+    Noé : « lorsque je fais mon bilan du jour je puisse également noter les
+    habitudes que j'ai faites ou non aujourd'hui »). Le bloc ne montrait que les
+    habitudes DÉJÀ cochées, en pastilles muettes : il disait ce qui avait été
+    fait sans permettre de le corriger, et surtout **il ne disait rien de ce qui
+    restait**. On ne fait pas un bilan sur une liste qui cache la moitié de ses
+    lignes. Toutes y sont maintenant, et **la coche vaut pour CE jour-là** — le
+    bouton porte sa date, donc on rattrape hier sans mentir sur aujourd'hui.
+    *Vérifié : cocher depuis le 11 août écrit au 11 août, et décocher retire la
+    ligne.* Les faits viennent d'`etat.faits`, la MÊME source que la page des
+    habitudes — deux sources pour une coche se contredisent au premier clic.
+  - **LES TÂCHES ET LES ÉVÉNEMENTS SONT DES LIGNES, PAS DES TUILES** (même
+    demande : « ils doivent prendre moins de place »). Chaque ligne était une
+    carte — `.bloc li` habille toutes les listes du hub, et la règle « une tuile
+    dans une tuile porte un filet » lui en remettait un. Cinq tâches faisaient
+    cinq cartes empilées dans un relevé qu'on ne fait que PARCOURIR.
   - **LE RELEVÉ EST EN DEUX COLONNES** (1er septembre 2026, demande de Noé :
     « organisé en plusieurs colonnes pour que ça prenne moins de place en
     longueur et que ce soit plus lisible »). Six blocs empilés faisaient une page
@@ -707,13 +733,18 @@ rendrait d'abord l'ancienne.
     une grille laisserait des cases vides là où une colonne se remplit
     d'elle-même. Une seule colonne sur téléphone.
 
-**LA NOTE DE LA JOURNÉE FERME LA TUILE** (1er septembre 2026, demande de Noé :
+**LA NOTE DE LA JOURNÉE OUVRE LA TUILE** (1er septembre 2026, demande de Noé :
 *« il manque l'humeur du jour, et cette humeur doit être notée en fin de journée
-plutôt qu'au début — une note de la journée en quelque sorte »*).
+plutôt qu'au début — une note de la journée en quelque sorte »*, puis, une heure
+plus tard : *« la note du jour doit être en haut »*).
 
-**LE RANG EST TOUT LE PROPOS** : une humeur demandée le matin dit comment on se
-réveille ; demandée **après** avoir écrit sa journée, elle la RÉSUME. Le même
-chiffre, une autre question — et c'est la question qui change ce qu'on répond.
+**CE QUI CHANGE, C'EST LA QUESTION, PAS LE RANG.** Une humeur demandée le matin
+dit comment on se réveille ; posée dans la tuile d'une journée qu'on est en train
+de relire, elle la RÉSUME. Le même chiffre, une autre question. Elle a fermé la
+tuile pendant une heure, au motif que « en fin de journée » voulait dire « en bas
+de la page » — c'était confondre le moment et l'endroit : **on ne fait pas
+défiler une page entière pour répondre d'un doigt**, et on répond du même endroit
+qu'on relit.
 
 - **Elle remplace une ligne muette** : l'humeur se LISAIT dans le relevé sans
   pouvoir s'y écrire, alors que c'est le seul relevé de la tuile que Noé pose
@@ -723,9 +754,9 @@ chiffre, une autre question — et c'est la question qui change ce qu'on répond
   savait parler que d'aujourd'hui. *Sans ça, noter hier soir écrivait sur la
   date du jour — un défaut qui ne se voit qu'en relisant la courbe. Vérifié :
   noter le 31 août n'a créé aucune ligne au 1er septembre.*
-- **Seule la note se redessine, pas la tuile** : le journal juste au-dessus vient
-  de s'enregistrer sur son `blur`, et l'écriture est encore en vol — redessiner
-  remettrait le texte d'avant dans le champ.
+- **Seule la note se redessine, pas la tuile** : le journal vient peut-être de
+  s'enregistrer sur son `blur`, et l'écriture est encore en vol — redessiner
+  remettrait le texte d'avant dans le champ. Même précaution pour les habitudes.
 - **La frimousse choisie ne se dit pas par une couleur** — le hub n'en a pas pour
   juger une journée — mais par un fond doux et sa pleine opacité, les autres
   s'effaçant. **Aucune note n'est « mauvaise »** : les cinq restent offertes, et

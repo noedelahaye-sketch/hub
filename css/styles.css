@@ -5195,14 +5195,39 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   color: var(--texte-discret);
 }
 
+/* LES TÂCHES ET LES ÉVÉNEMENTS PRENNENT MOINS DE PLACE (1er septembre 2026,
+   demande de Noé). Chaque ligne était une TUILE — `.bloc li` habille toutes les
+   listes du hub, et `.ajout-volant .ajout-tuile li` lui remet un filet parce
+   qu'une tuile dans une tuile a besoin d'être détourée. Cinq tâches faisaient
+   donc cinq cartes empilées, dans un relevé qu'on ne fait que PARCOURIR.
+
+   Ici ce sont des lignes : une coche, un titre, un espace en encre discrète.
+   L'annulation est explicite, comme partout où le hub sort une liste du moule
+   commun. */
 .jour-liste {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: var(--espace-4);
-  font-size: 0.875rem;
+  gap: 2px;
+  font-size: 0.8125rem;
 }
+
+.jour-liste li,
+.bloc .jour-liste li,
+.ajout-volant .ajout-tuile .jour-liste li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espace-8);
+  padding: 0;
+  margin: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  line-height: 1.4;
+}
+
+.jour-liste li::before { content: none; }
 
 .jour-liste .discret { font-size: 0.75rem; }
 .jour-coche { color: var(--famille-corps); margin-right: var(--espace-8); }
@@ -5210,12 +5235,27 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
 .jour-pastilles { display: flex; flex-wrap: wrap; gap: var(--espace-4); }
 
+/* UNE HABITUDE SE COCHE ICI (1er septembre 2026, demande de Noé). La pastille
+   est devenue un bouton : creuse tant que l'habitude n'est pas faite, pleine
+   quand elle l'est. Pas de vert, pas de croix — c'est un relevé, pas un
+   barème, et une habitude non faite un soir n'est pas une faute. */
 .jour-pastille {
-  padding: 2px var(--espace-12);
-  background: var(--fond-doux);
+  padding: 3px var(--espace-12);
+  background: none;
+  border: 1px solid var(--bordure);
   border-radius: var(--rayon-pastille);
   font-size: 0.75rem;
   color: var(--texte-discret);
+  cursor: pointer;
+  text-align: left;
+}
+
+.jour-pastille:hover { color: var(--texte); border-color: var(--texte-discret); }
+
+.jour-pastille.faite {
+  background: var(--accent-doux);
+  border-color: transparent;
+  color: var(--texte);
 }
 
 /* --- LE RELEVÉ DE LA JOURNÉE, replié si l'on veut (1er septembre 2026) ------

@@ -1079,7 +1079,7 @@ export function construireLaJournee(jour, donnees, contexte = {}) {
   const {
     humeur, taches = [], evenements = [], victoires = [], faits = [], seances = [], mot, gratitude,
   } = donnees ?? {};
-  const { habitudes = [], livres = [], relue = null } = contexte;
+  const { habitudes = [], livres = [], relue = null, faits: tousLesFaits = [] } = contexte;
 
   const nomDe = (id, liste, cle = 'nom') => liste.find((x) => x.id === id)?.[cle] ?? '';
   const pagesLues = seances.reduce((somme, seance) => somme + seance.pages, 0);
@@ -1100,6 +1100,26 @@ export function construireLaJournee(jour, donnees, contexte = {}) {
         )}" ${jour >= aujourdhui ? 'disabled' : ''} aria-label="Le jour d'après">›</button>
       </div>
 
+      <!-- LA NOTE DE LA JOURNÉE (1er septembre 2026, demande de Noé : « il
+           manque l'humeur du jour, et cette humeur doit être notée en fin de
+           journée plutôt qu'au début — une note de la journée en quelque
+           sorte »).
+
+           ELLE EST EN HAUT (correction de Noé le même jour : « la note du
+           jour doit être en haut »). Elle avait fermé la tuile une heure,
+           au motif qu'une humeur demandée après avoir écrit sa journée la
+           RÉSUME au lieu de dire comment on s'est réveillé. Ce motif tient
+           toujours — c'est la QUESTION qui a changé, pas le rang : « comment
+           était cette journée ? » se pose du même endroit qu'on la relit, et
+           on ne fait pas défiler une page entière pour répondre d'un doigt.
+
+           Elle remplace la ligne muette que le relevé portait : l'humeur s'y
+           LISAIT sans pouvoir s'y écrire, alors que c'est le seul relevé de la
+           tuile que Noé pose lui-même. Tout le reste, le hub le sait déjà. -->
+      <div class="jour-note" data-note-jour>
+        ${construireNoteDuJour(jour, humeur)}
+      </div>
+
       <!-- LES DÉTAILS EN HAUT, ET REPLIABLES (1er septembre 2026, demande de
            Noé : « les autres — habitudes, tâches… — sont des détails qui
            doivent s'afficher en haut, et qu'on peut masquer si envie »).
@@ -1118,14 +1138,33 @@ export function construireLaJournee(jour, donnees, contexte = {}) {
         <div class="jour-releve-corps">
           ${bloc_(
             'Habitudes',
-            faits.length
-              ? `<span class="jour-pastilles">${faits
-                  .map(
-                    (fait) =>
-                      `<span class="jour-pastille">${echapper(
-                        nomDe(fait.habitude_id, habitudes),
-                      )}</span>`,
-                  )
+            // COCHABLES ET DÉCOCHABLES (1er septembre 2026, demande de Noé :
+            // « lorsque je fais mon bilan du jour je puisse également noter les
+            // habitudes que j'ai faites ou non aujourd'hui »).
+            //
+            // CE QUE ÇA RENVERSE : le bloc ne montrait que les habitudes DÉJÀ
+            // cochées, en pastilles muettes. Il disait donc ce qui avait été
+            // fait sans permettre de le corriger — et surtout, il ne disait
+            // rien de ce qui restait. On ne fait pas un bilan sur une liste qui
+            // cache la moitié de ses lignes.
+            //
+            // TOUTES LES HABITUDES SONT LÀ, celles du jour comme les autres :
+            // c'est la liste qu'on parcourt le soir. La coche vaut POUR CE
+            // JOUR-LÀ — le bouton porte sa date —, donc on peut rattraper hier
+            // sans mentir sur aujourd'hui.
+            habitudes.length
+              ? `<span class="jour-pastilles" data-bloc-habitudes>${habitudes
+                  .map((habitude) => {
+                    const fait = tousLesFaits.some(
+                      (f) => f.habitude_id === habitude.id && f.jour === jour,
+                    );
+                    return `<button type="button" class="jour-pastille${
+                      fait ? ' faite' : ''
+                    }" data-faire-habitude="${echapper(habitude.id)}"
+                      data-jour="${echapper(jour)}" aria-pressed="${fait}">${
+                      habitude.emoji ? `${echapper(habitude.emoji)} ` : ''
+                    }${echapper(habitude.nom)}</button>`;
+                  })
                   .join('')}</span>`
               : '',
           )}
@@ -1230,23 +1269,6 @@ export function construireLaJournee(jour, donnees, contexte = {}) {
           data-jour-mot="${echapper(jour)}" rows="12"
           placeholder="Ce que tu veux garder de ce jour-là."
           >${echapper(mot ?? '')}</textarea>
-      </div>
-
-      <!-- LA NOTE DE LA JOURNÉE (1er septembre 2026, demande de Noé : « il
-           manque l'humeur du jour, et cette humeur doit être notée en fin de
-           journée plutôt qu'au début — une note de la journée en quelque
-           sorte »).
-
-           ELLE EST EN BAS, ET C'EST TOUT LE PROPOS : une humeur demandée le
-           matin dit comment on se réveille ; demandée après avoir écrit sa
-           journée, elle la RÉSUME. Le même chiffre, une autre question — et
-           c'est la question qui change ce qu'on répond.
-
-           Elle remplace la ligne muette que le relevé portait : l'humeur s'y
-           LISAIT sans pouvoir s'y écrire, alors que c'est le seul relevé de la
-           tuile que Noé pose lui-même. Tout le reste, le hub le sait déjà. -->
-      <div class="jour-note" data-note-jour>
-        ${construireNoteDuJour(jour, humeur)}
       </div>
 
       ${
@@ -1871,12 +1893,19 @@ export default {
       const jour = vueEtat.jour;
       const corps = construireLaJournee(jour, journeesVues.get(jour), {
         habitudes: etat.habitudes,
+        // LES FAITS VIENNENT D'`etat.faits`, la MÊME source que la page des
+        // habitudes et que le tableau de bord — jamais de ceux que `journeeDe`
+        // rapporte pour ce jour-là. Deux sources pour une même coche finissent
+        // par se contredire au premier clic, et c'est celle qu'on regarde qui
+        // aurait tort. Ils couvrent 366 jours : le calendrier n'en montre pas
+        // davantage.
+        faits: etat.faits,
         livres: etat.livres,
         relue: relecture({ victoires: etat.victoires, intentions: etat.intentions }, depuisDateISO(jour)),
       });
 
       hote.innerHTML = `
-        <details class="ajout ajout-volant" data-ajout="journee">
+        <details class="ajout ajout-volant jour-volant">
           <summary hidden></summary>
           <div class="ajout-fond" data-fermer-ajout></div>
           <div class="ajout-tuile jour-tuile">
@@ -2278,7 +2307,21 @@ export default {
         rendreFenetre();
         return;
       }
-      if (evenement.target.closest('.ajout-volant')) return;
+      // LA TUILE D'UNE JOURNÉE N'EST PAS UNE TUILE D'AJOUT (1er septembre 2026,
+      // défaut rapporté par Noé : « les flèches pour changer de jour sont
+      // dysfonctionnelles »).
+      //
+      // Cette garde existe parce qu'une tuile volante ne contenait qu'un
+      // FORMULAIRE : il se gère par son `submit` et par `brancherChoix`, et
+      // laisser les clics tomber dans les branches ci-dessous en aurait fait
+      // ouvrir d'autres. Depuis que le détail d'une journée vit lui aussi dans
+      // une tuile, elle avalait ses flèches ET ses frimousses — tout ce qui s'y
+      // clique passait à la trappe, sans un mot.
+      //
+      // La tuile de la journée est donc exclue par sa classe. Elle ne porte pas
+      // non plus `data-ajout` : la branche juste en dessous y aurait vu une
+      // demande d'ouvrir un formulaire « journee » qui n'existe pas.
+      if (evenement.target.closest('.ajout-volant:not(.jour-volant)')) return;
 
       const ajout = dans('ajout');
       if (ajout) {
@@ -2299,7 +2342,12 @@ export default {
       if (faire) {
         const id = faire.dataset.faire ?? faire.dataset.faireHabitude;
         const habitude = etat.habitudes.find((h) => h.id === id);
-        const jour = versDateISO();
+        // LE JOUR VIENT DU BOUTON quand il en porte un (1er septembre 2026) :
+        // la tuile d'une journée coche POUR CETTE JOURNÉE-LÀ. Partout ailleurs
+        // — la page des habitudes, le tableau de bord — c'est aujourd'hui, et
+        // le bouton se tait.
+        const jour = faire.dataset.jour ?? versDateISO();
+        const cejour = jour === versDateISO();
         const dejaFait = etat.faits.some((f) => f.habitude_id === id && f.jour === jour);
 
         const avant = [...etat.faits];
@@ -2310,6 +2358,15 @@ export default {
         }
         rendreHabitudes();
         rendreTableau();
+        // SEUL LE BLOC DES HABITUDES SE REDESSINE, pas la tuile : le journal
+        // vient peut-être de s'enregistrer sur son `blur`, et l'écriture est
+        // encore en vol. C'est la même précaution que pour la note du jour.
+        const bandeau = section.querySelector('[data-bloc-habitudes]');
+        if (bandeau) {
+          const bouton = bandeau.querySelector(`[data-faire-habitude="${CSS.escape(id)}"]`);
+          bouton?.classList.toggle('faite', !dejaFait);
+          bouton?.setAttribute('aria-pressed', String(!dejaFait));
+        }
 
         try {
           if (dejaFait) {
@@ -2330,7 +2387,16 @@ export default {
           etat.faits = avant;
           rendreHabitudes();
           rendreTableau();
+          if (bandeau) {
+            const bouton = bandeau.querySelector(`[data-faire-habitude="${CSS.escape(id)}"]`);
+            bouton?.classList.toggle('faite', dejaFait);
+            bouton?.setAttribute('aria-pressed', String(dejaFait));
+          }
         }
+        // Le calendrier porte un point par espace : cocher une habitude en
+        // allume un pour le perso.
+        resumesVus.clear();
+        chargerLesResumes();
         return;
       }
 
