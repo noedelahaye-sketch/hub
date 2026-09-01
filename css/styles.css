@@ -5255,9 +5255,37 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
 .jour-releve > summary:hover { color: var(--texte); }
 
+/* LE RELEVÉ EN COLONNES (1er septembre 2026, demande de Noé : « pour les
+   détails il faut que ce soit organisé en plusieurs colonnes pour que ça prenne
+   moins de place en longueur et que ce soit plus lisible »).
+
+   Six blocs empilés faisaient une page à eux seuls, et repoussaient l'écriture
+   — qui est l'objet de la tuile — sous la ligne de flottaison. Ce sont des
+   RELEVÉS : de courtes listes qu'on parcourt du regard, exactement ce qui se
+   met côte à côte.
+
+   `columns` ET NON une grille : le nombre de blocs varie d'un jour à l'autre —
+   une journée sans lecture n'en a que quatre —, et une grille laisserait des
+   cases vides là où une colonne se remplit d'elle-même. `break-inside: avoid`
+   pour qu'aucun bloc ne se coupe en deux au passage d'une colonne, ce qui est
+   le seul vrai défaut de ce mode. */
 .jour-releve-corps {
-  padding-top: var(--espace-8);
+  padding-top: var(--espace-12);
   border-top: 1px solid var(--bordure-douce);
+  columns: 2;
+  column-gap: var(--espace-24);
+}
+
+.jour-releve-corps > * {
+  break-inside: avoid;
+  /* La marge HAUTE d'un premier bloc de colonne se replie en haut de colonne :
+     c'est la marge basse qui tient l'écart, sinon les deux colonnes ne partent
+     pas de la même ligne. */
+  margin: 0 0 var(--espace-16);
+}
+
+@media (max-width: 720px) {
+  .jour-releve-corps { columns: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -5370,6 +5398,35 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
 .jour-gratitude-champ .jour-champ:focus,
 .ajout .jour-gratitude-champ .jour-champ:focus { padding-left: 0; }
+
+/* LA NOTE DE LA JOURNÉE (1er septembre 2026). Elle ferme la tuile : une humeur
+   demandée le matin dit comment on se réveille, demandée après avoir écrit sa
+   journée elle la RÉSUME. Même chiffre, autre question. */
+.jour-note {
+  margin-top: var(--espace-24);
+  padding-top: var(--espace-16);
+  border-top: 1px solid var(--bordure-douce);
+}
+
+.jour-note .echelle-humeur { margin-top: var(--espace-4); }
+
+/* La frimousse choisie ne se dit pas par une couleur — le hub n'en a pas pour
+   juger une journée — mais par un fond doux et sa taille pleine. Les autres
+   s'effacent : c'est ce qui rend la réponse lisible d'un regard. */
+.jour-note .bouton-humeur { opacity: 0.45; }
+.jour-note .bouton-humeur:hover { opacity: 1; }
+
+.jour-note .bouton-humeur.choisi {
+  opacity: 1;
+  background: var(--accent-doux);
+  border-radius: var(--rayon-pastille);
+}
+
+.jour-note-mot {
+  margin: var(--espace-8) 0 0;
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+}
 
 /* CE QUE LE HUB TE REMONTRE. En voix éditoriale et en pied de page : c'est une
    phrase qui passe, pas une donnée qu'on vient consulter. */
@@ -7805,7 +7862,11 @@ body.balaye {
    un texte qui court sur 44 rem se lit mieux qu'un texte qui se replie tous les
    huit mots. Elle reste bornée par la fenêtre, comme les autres. */
 .ajout-volant .jour-tuile {
-  width: min(44rem, calc(100vw - 2 * var(--espace-16)));
+  /* 56 rem (1er septembre 2026, « élargis encore la tuile ») : c'est la largeur
+     que demandent DEUX colonnes de relevés côte à côte — à 44 rem, chacune
+     tombait sous 20 rem et les titres de tâches s'y repliaient mot à mot. La
+     borne de la fenêtre reste la même que pour toutes les tuiles. */
+  width: min(56rem, calc(100vw - 2 * var(--espace-16)));
 }
 
 @media (max-width: 720px) {

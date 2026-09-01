@@ -1046,6 +1046,34 @@ export function construireCalendrierDesJournees(vue, pivot, resumes, choisi) {
     </div>`;
 }
 
+// LA NOTE D'UNE JOURNÉE : les cinq frimousses, et celle qui a été choisie.
+//
+// LE JOUR EST PORTÉ PAR CHAQUE BOUTON, et c'est ce qui permet de noter une
+// journée passée : `enregistrerHumeur` prend déjà une date, seul l'écran ne
+// savait parler que d'aujourd'hui. On peut donc revenir sur hier soir sans
+// mentir sur la date.
+export function construireNoteDuJour(jour, humeur) {
+  const choisi = humeur ? NIVEAUX_HUMEUR.find((n) => n.niveau === humeur.niveau) : null;
+
+  return `
+    <span class="jour-part-titre">${
+      choisi ? 'Ta note du jour' : 'Comment était cette journée ?'
+    }</span>
+    <span class="echelle-humeur" role="group" aria-label="La note de cette journée">
+      ${NIVEAUX_HUMEUR.map(
+        ({ niveau, frimousse, mot }) => `
+        <button type="button" class="bouton-humeur${
+          choisi?.niveau === niveau ? ' choisi' : ''
+        }" data-niveau="${niveau}" data-jour="${echapper(jour)}"
+          aria-pressed="${choisi?.niveau === niveau}"
+          title="${mot}" aria-label="${mot}">${frimousse}</button>`,
+      ).join('')}
+    </span>
+    ${
+      humeur?.note ? `<p class="jour-note-mot">« ${echapper(humeur.note)} »</p>` : ''
+    }`;
+}
+
 export function construireLaJournee(jour, donnees, contexte = {}) {
   const aujourdhui = versDateISO();
   const {
@@ -1053,7 +1081,6 @@ export function construireLaJournee(jour, donnees, contexte = {}) {
   } = donnees ?? {};
   const { habitudes = [], livres = [], relue = null } = contexte;
 
-  const niveau = humeur ? NIVEAUX_HUMEUR.find((n) => n.niveau === humeur.niveau) : null;
   const nomDe = (id, liste, cle = 'nom') => liste.find((x) => x.id === id)?.[cle] ?? '';
   const pagesLues = seances.reduce((somme, seance) => somme + seance.pages, 0);
 
@@ -1089,15 +1116,6 @@ export function construireLaJournee(jour, donnees, contexte = {}) {
       <details class="jour-releve" open>
         <summary>Ce que dit la journée</summary>
         <div class="jour-releve-corps">
-      ${
-            humeur
-              ? `<p class="jour-humeur"><span class="jour-frimousse">${niveau?.frimousse ?? ''}</span>
-                 <span>${echapper(niveau?.mot ?? '')}${
-                   humeur.note ? ` — « ${echapper(humeur.note)} »` : ''
-                 }</span></p>`
-              : ''
-          }
-
           ${bloc_(
             'Habitudes',
             faits.length
@@ -1212,6 +1230,23 @@ export function construireLaJournee(jour, donnees, contexte = {}) {
           data-jour-mot="${echapper(jour)}" rows="12"
           placeholder="Ce que tu veux garder de ce jour-là."
           >${echapper(mot ?? '')}</textarea>
+      </div>
+
+      <!-- LA NOTE DE LA JOURNÉE (1er septembre 2026, demande de Noé : « il
+           manque l'humeur du jour, et cette humeur doit être notée en fin de
+           journée plutôt qu'au début — une note de la journée en quelque
+           sorte »).
+
+           ELLE EST EN BAS, ET C'EST TOUT LE PROPOS : une humeur demandée le
+           matin dit comment on se réveille ; demandée après avoir écrit sa
+           journée, elle la RÉSUME. Le même chiffre, une autre question — et
+           c'est la question qui change ce qu'on répond.
+
+           Elle remplace la ligne muette que le relevé portait : l'humeur s'y
+           LISAIT sans pouvoir s'y écrire, alors que c'est le seul relevé de la
+           tuile que Noé pose lui-même. Tout le reste, le hub le sait déjà. -->
+      <div class="jour-note" data-note-jour>
+        ${construireNoteDuJour(jour, humeur)}
       </div>
 
       ${
@@ -2427,24 +2462,46 @@ export default {
       // question doit pouvoir s'y poser. Elle passait uniquement par l'accueil.
       const niveau = dans('niveau');
       if (niveau) {
-        const avant = etat.humeurDuJour;
-        etat.humeurDuJour = { niveau: Number(niveau.dataset.niveau), note: avant?.note ?? null };
-        rendreHumeurDuJour();
+        // LE JOUR VIENT DU BOUTON (1er septembre 2026) : la note d'une journée
+        // se pose depuis sa tuile, donc pour un jour qui n'est pas forcément
+        // aujourd'hui. Sans `data-jour`, on écrivait la note d'hier sur la date
+        // du jour — un défaut qui ne se voit qu'en relisant la courbe.
+        const jour = niveau.dataset.jour ?? versDateISO();
+        const cejour = jour === versDateISO();
+        const gardee = journeesVues.get(jour);
+        const avant = cejour ? etat.humeurDuJour : (gardee?.humeur ?? null);
+        const pose = { niveau: Number(niveau.dataset.niveau), note: avant?.note ?? null };
+
+        // L'écran d'abord, aux deux endroits qui la montrent.
+        if (cejour) {
+          etat.humeurDuJour = pose;
+          rendreHumeurDuJour();
+        }
+        if (gardee) gardee.humeur = pose;
+        // SEULE LA NOTE SE REDESSINE, pas la tuile entière : le journal juste
+        // au-dessus vient de s'enregistrer sur son `blur`, et l'écriture est
+        // encore en vol. Redessiner remettrait le texte d'avant dans le champ.
+        const cadre = section.querySelector('[data-note-jour]');
+        if (cadre) cadre.innerHTML = construireNoteDuJour(jour, pose);
+
         try {
-          etat.humeurDuJour = await api.enregistrerHumeur(
-            versDateISO(),
-            Number(niveau.dataset.niveau),
-            avant?.note ?? null,
-          );
-          // La courbe gagne son point du jour sans recharger la page.
+          const ecrite = await api.enregistrerHumeur(jour, pose.niveau, avant?.note ?? null);
+          if (cejour) etat.humeurDuJour = ecrite;
+          if (gardee) gardee.humeur = ecrite;
+          // La courbe gagne son point sans recharger la page.
           bloc('humeur').innerHTML = construireCourbeHumeur(
             await api.humeurDepuis(versDateISO(ajouterJours(new Date(), -(JOURS_COURBE - 1)))),
           );
+          // Le calendrier des journées porte la frimousse : elle doit suivre.
+          resumesVus.clear();
+          chargerLesResumes();
         } catch (souci) {
           console.error('Humeur non enregistrée', souci);
-          etat.humeurDuJour = avant;
+          if (cejour) etat.humeurDuJour = avant;
+          if (gardee) gardee.humeur = avant;
+          if (cadre) cadre.innerHTML = construireNoteDuJour(jour, avant);
         }
-        rendreHumeurDuJour();
+        if (cejour) rendreHumeurDuJour();
         return;
       }
 

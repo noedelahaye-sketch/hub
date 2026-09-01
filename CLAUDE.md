@@ -691,9 +691,45 @@ rendrait d'abord l'ancienne.
     comme dans un carnet. **Le focus ne disparaît pas pour autant** : il se dit
     par un filet à gauche, la marge d'un cahier, parce que le hub ne supprime
     jamais l'anneau de focus.
-  - **La tuile passe à 44 rem** : 34 est la mesure d'un FORMULAIRE, six champs
+  - **La tuile passe à 56 rem** : 34 est la mesure d'un FORMULAIRE, six champs
     l'un sous l'autre. Ici c'est un carnet, et un texte qui se replie tous les
-    huit mots ne se lit pas.
+    huit mots ne se lit pas. *Elle est passée par 44 rem une heure plus tôt ;
+    c'est la mise en colonnes du relevé qui a demandé les douze de plus — à
+    44 rem, chaque colonne tombait sous 20 rem et les titres de tâches s'y
+    repliaient mot à mot.*
+  - **LE RELEVÉ EST EN DEUX COLONNES** (1er septembre 2026, demande de Noé :
+    « organisé en plusieurs colonnes pour que ça prenne moins de place en
+    longueur et que ce soit plus lisible »). Six blocs empilés faisaient une page
+    à eux seuls et repoussaient l'écriture sous la ligne de flottaison. Ce sont
+    des RELEVÉS — de courtes listes qu'on parcourt du regard, exactement ce qui
+    se met côte à côte. **`columns` et non une grille** : le nombre de blocs
+    varie d'un jour à l'autre — une journée sans lecture n'en a que quatre —, et
+    une grille laisserait des cases vides là où une colonne se remplit
+    d'elle-même. Une seule colonne sur téléphone.
+
+**LA NOTE DE LA JOURNÉE FERME LA TUILE** (1er septembre 2026, demande de Noé :
+*« il manque l'humeur du jour, et cette humeur doit être notée en fin de journée
+plutôt qu'au début — une note de la journée en quelque sorte »*).
+
+**LE RANG EST TOUT LE PROPOS** : une humeur demandée le matin dit comment on se
+réveille ; demandée **après** avoir écrit sa journée, elle la RÉSUME. Le même
+chiffre, une autre question — et c'est la question qui change ce qu'on répond.
+
+- **Elle remplace une ligne muette** : l'humeur se LISAIT dans le relevé sans
+  pouvoir s'y écrire, alors que c'est le seul relevé de la tuile que Noé pose
+  lui-même. Tout le reste, le hub le sait déjà.
+- **LE JOUR EST PORTÉ PAR CHAQUE BOUTON**, et c'est ce qui permet de noter une
+  journée passée : `enregistrerHumeur` prenait déjà une date, seul l'écran ne
+  savait parler que d'aujourd'hui. *Sans ça, noter hier soir écrivait sur la
+  date du jour — un défaut qui ne se voit qu'en relisant la courbe. Vérifié :
+  noter le 31 août n'a créé aucune ligne au 1er septembre.*
+- **Seule la note se redessine, pas la tuile** : le journal juste au-dessus vient
+  de s'enregistrer sur son `blur`, et l'écriture est encore en vol — redessiner
+  remettrait le texte d'avant dans le champ.
+- **La frimousse choisie ne se dit pas par une couleur** — le hub n'en a pas pour
+  juger une journée — mais par un fond doux et sa pleine opacité, les autres
+  s'effaçant. **Aucune note n'est « mauvaise »** : les cinq restent offertes, et
+  rien ne relance un jour sans réponse.
 
 **UNE CHOSE DONT JE SUIS RECONNAISSANT** (1er septembre 2026, demande de Noé :
 « un espace je suis reconnaissant de… comme sur l'exemple »), colonne
