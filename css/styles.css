@@ -9260,7 +9260,23 @@ body.balaye {
   background: var(--couleur-espace-pleine, var(--accent));
 }
 
-.bilan-detail-valeur { flex: none; color: var(--texte); white-space: nowrap; }
+/* EN GOOGLE SANS, PAS EN GEIST MONO (1er septembre 2026, demande de Noé :
+   « l'espace entre les lettres doit être moins important pour les heures, mets
+   en Google Sans »). La chasse fixe donne à chaque glyphe la même largeur : à
+   11 px, « 1 h 55 » s'étalait, et le « h » flottait entre deux blancs égaux.
+
+   C'est EXACTEMENT l'exception déjà faite au décompte des heures de la grille
+   (`.semaine-compteur .compte-valeur`), et pour la même raison : le hub met en
+   chasse fixe les chiffres qui se COMPARENT — deux durées côte à côte dans une
+   tuile ne se comparent pas, elles se lisent. `.chiffre` reste sur l'élément,
+   il porte aussi l'alignement des chiffres. */
+.bilan-detail-valeur {
+  flex: none;
+  font-family: "Google Sans", var(--police-texte);
+  letter-spacing: 0;
+  color: var(--texte);
+  white-space: nowrap;
+}
 
 /* Ce que le hub IGNORE, à côté de ce qu'il sait — même précaution que la
    première ligne de « Le temps » : sans elle, un total bas se lirait comme une

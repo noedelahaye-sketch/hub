@@ -1407,7 +1407,35 @@ grammaire à trois pixels de là. Un total répond à « combien » ; le dimanch
 demande « où ». Le détail reprend exactement la place que les victoires
 libèrent.
 - **Dans l'ordre des journées de Noé**, et **sans les espaces à zéro** : « Yuno
-  0 h » se lirait comme un reproche là où ce n'est qu'un silence. **Nulle part un taux de réussite, une tâche non faite comptée, ou une
+  0 h » se lirait comme un reproche là où ce n'est qu'un silence.
+- **LA PASTILLE ET LE CHIFFRE, SUR UN SEUL RANG — PAS LE NOM** (1er septembre
+  2026, demande de Noé : *« pas besoin du titre des espaces pour les heures de la
+  semaine passée, et intègre-les mieux pour que les autres tuiles voisines ne
+  soient pas impactées par leur ajout »*).
+  **LES DEUX MOITIÉS DE CETTE DEMANDE N'EN FONT QU'UNE** : c'était le NOM qui
+  imposait une ligne par espace, donc une tuile plus haute — et dans une grille,
+  tout un rang prend la hauteur du plus grand. Deux tuiles voisines s'étiraient
+  pour un détail qui ne les concernait pas. *Mesuré : 106 px le rang, ramené à
+  87 — exactement ce qu'il vaut SANS le détail, zéro pixel d'écart.*
+  - **Aucune marge au-dessus** : le détail prend la place de `.bilan-precision`
+    — « 7 jours notés » sous l'humeur —, donc le seul écart de 2 px que la tuile
+    pose déjà. Quatre pixels de plus, et elle dépassait encore ses voisines.
+  - **La couleur suffit** parce que c'est la MÊME pastille que le décompte des
+    heures. Le sens n'est pas perdu, il est **déplacé** : `title` porte le nom au
+    survol, `aria-label` le donne au lecteur d'écran — qui, lui, ne voit pas la
+    couleur. C'est la parade de la ligne d'une habitude.
+  - **EN GOOGLE SANS, PAS EN GEIST MONO** (même jour, correction de Noé :
+    « l'espace entre les lettres doit être moins important pour les heures »).
+    La chasse fixe donne à chaque glyphe la même largeur : à 11 px, « 1 h 55 »
+    s'étalait et le « h » flottait entre deux blancs égaux. C'est exactement
+    l'exception déjà faite au décompte des heures de la grille — **le hub met en
+    chasse fixe les chiffres qui se COMPARENT**, et deux durées côte à côte dans
+    une tuile ne se comparent pas, elles se lisent. *Le gros chiffre, lui, garde
+    Clash Display : il est serré, c'est le mono qui s'étalait.*
+  - **`flex-direction: row` se redit**, et c'est la troisième fois que ce piège
+    se paie sur cette page : `.bloc ul` pose toutes les listes du hub en COLONNE,
+    et ce qu'on ne redit pas reste. *Mesuré : les deux durées s'empilaient
+    encore, chacune sur 185 px.* **Nulle part un taux de réussite, une tâche non faite comptée, ou une
 comparaison avec la semaine d'avant** : un bilan qui note la semaine passée
 transformerait le rendez-vous du dimanche en examen, et on cesserait très vite
 de l'ouvrir.
