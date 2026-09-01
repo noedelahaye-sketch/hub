@@ -9126,52 +9126,47 @@ body.balaye {
 /* Les chiffres de la semaine passée. C'est la forme des chiffres nus de Yuno,
    et pour la même raison : ce sont des faits, rien ne s'y touche. Ils ouvrent
    la page parce que le hub est d'abord un miroir de ce qui a été accompli. */
-/* `.bloc ul` et non `.bilan-chiffres` : la règle commune pose TOUTES les
-   listes du hub en colonne, et elle pèse une classe et un type — elle
-   l'emportait sur une classe nue. Mesuré : les chiffres s'empilaient, et leur
-   `flex-basis` de 7 rem devenait une HAUTEUR de 105 px. Même idiome que
-   `.bloc ul.chiffres-cles`. */
+/* LE BILAN EST UNE GALERIE DE TUILES (1er septembre 2026, demande de Noé : « la
+   semaine passée, ce n'est pas bien, il faut que ce soit sous la forme de
+   tuiles »).
+
+   CE QUE ÇA REMPLACE : des chiffres posés à même le fond, séparés par un filet
+   vertical. Ils flottaient — rien ne disait où finissait l'un et où commençait
+   l'autre, sinon un trait d'un pixel qui disparaissait dès que la ligne se
+   repliait. Une tuile le dit par sa surface, et c'est la grammaire de tout le
+   reste du hub.
+
+   `.bloc ul` et non `.bilan-chiffres` : la règle commune pose TOUTES les listes
+   du hub en colonne, et elle pèse une classe et un type — elle l'emportait sur
+   une classe nue. Même idiome que `.bloc ul.chiffres-cles`. */
 .bloc ul.bilan-chiffres {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: var(--espace-16) var(--espace-24);
+  display: grid;
+  /* `auto-fit` et non un nombre de colonnes : le bilan en compte quatre
+     aujourd'hui, il en a compté cinq hier. Une grille qui se remplit d'elle-même
+     ne se remesure pas au prochain chiffre. */
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--espace-8);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-/* `.bloc li` habille TOUTES les listes du hub en tuiles — carte, cadre, et une
-   barre de couleur dès qu'il y a un `data-espace`. Ici on ne veut ni l'une ni
-   l'autre : ce sont des chiffres posés, séparés par un filet. D'où l'annulation
-   explicite, comme les trois listes de Yuno et le panneau de choix la font
-   déjà. Le piège est le même que celui des lignes du rendez-vous. */
+/* LA TUILE EST CELLE DE `.bloc li` — on ne l'annule plus, on la redit là où la
+   colonne de chiffres en a besoin. Pas de contour : une tuile posée dans la
+   page se distingue par sa SURFACE, et le filet ne revient que dans une autre
+   tuile (règle du 30 août 2026). `.bloc` n'est pas une carte, seulement une
+   section : ces tuiles-ci sont bien posées sur le fond de la page. */
 .bloc .bilan-chiffres li {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  justify-content: flex-start;
   gap: 2px;
-  /* Ils se partagent la ligne au lieu de s'empiler : sur 375 px, cinq chiffres
-     en colonne coûtaient 500 px avant la grille — ils sont deux par rang. */
-  flex: 1 1 7rem;
   min-width: 0;
-  max-width: 14rem;
-  padding: 0;
-  background: none;
-  border: 0;
-  border-radius: 0;
-}
-
-/* LE FILET N'APPARAÎT QU'UNE FOIS LA LIGNE ENTIÈRE : quand les chiffres
-   passent à la ligne, le premier de chaque rang porterait un séparateur qui ne
-   sépare de rien. */
-@media (min-width: 720px) {
-  .bloc .bilan-chiffres li {
-    padding-left: var(--espace-16);
-    border-left: 1px solid var(--bordure);
-  }
-
-  .bloc .bilan-chiffres li:first-child { padding-left: 0; border-left: none; }
+  padding: var(--espace-12) var(--espace-16);
+  background: var(--fond-carte);
+  border: 1px solid transparent;
+  border-radius: var(--rayon-carte);
 }
 
 .bilan-valeur { font-size: 1.375rem; line-height: 1.1; color: var(--accent); }

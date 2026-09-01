@@ -1377,9 +1377,24 @@ que « 18 victoires » et « 17 tâches terminées » se lisaient côte à côte
 deux mesures alors que la première recopiait presque la seconde. Elles gardent
 **« Le chemin »**, la page faite pour les regarder.
 
+**C'EST UNE GALERIE DE TUILES** (1er septembre 2026, demande de Noé : *« la
+semaine passée, ce n'est pas bien, il faut que ce soit sous la forme de
+tuiles »*). Les chiffres étaient posés à même le fond, séparés par un filet
+vertical : ils flottaient — rien ne disait où finissait l'un et où commençait
+l'autre, sinon un trait d'un pixel qui disparaissait dès que la ligne se
+repliait. **Une tuile le dit par sa surface**, et c'est la grammaire de tout le
+reste du hub.
+- **C'est la tuile de `.bloc li`**, qu'on avait annulée ici et qu'on redit
+  simplement. **Sans contour** : une tuile posée dans la page se distingue par sa
+  surface (règle du 30 août) — et `.bloc` n'est qu'une section, pas une carte,
+  donc celles-ci sont bien posées sur le fond de la page.
+- **Une grille qui se remplit d'elle-même** (`auto-fit`), et non un nombre de
+  colonnes : le bilan en compte quatre aujourd'hui, il en comptait cinq hier.
+  Quatre de front sur grand écran, deux sur un téléphone.
+
 **LES HEURES MESURÉES DISENT OÙ ELLES SONT PARTIES** (même demande), une ligne
-par espace sous le total, avec la pastille du décompte — la même grammaire à
-trois pixels de là. Un total répond à « combien » ; le dimanche soir, on se
+par espace **dans la tuile du total**, avec la pastille du décompte — la même
+grammaire à trois pixels de là. Un total répond à « combien » ; le dimanche soir, on se
 demande « où ». Le détail reprend exactement la place que les victoires
 libèrent.
 - **Dans l'ordre des journées de Noé**, et **sans les espaces à zéro** : « Yuno
