@@ -5281,20 +5281,95 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   resize: vertical;
 }
 
-/* LE GRAND CHAMP, celui de la journée. Il ne diffère du petit — celui du
-   tableau de bord, où l'on note un mot en passant — que par sa TAILLE et son
-   confort de lecture : une hauteur franche, une ligne plus aérée, un corps de
-   texte courant. On n'écrit pas un bilan dans un champ de deux lignes.
+/* LE JOURNAL N'A PAS DE RECTANGLE (1er septembre 2026, demande de Noé : « pas
+   de rectangle visible dans lequel mettre le texte »). Un champ encadré dit
+   « remplis ce formulaire » ; on n'écrit pas sa journée dans un formulaire. Le
+   `textarea` reste — donc tout ce qu'un champ sait faire —, il n'en porte plus
+   l'habit : pas de fond, pas de contour, le texte posé sur la page comme dans
+   un carnet.
 
-   `min-height` en rem plutôt qu'un nombre de lignes seul : `rows` donne la
+   LE FOCUS NE DISPARAÎT PAS POUR AUTANT : le hub ne supprime jamais l'anneau de
+   focus, c'est une règle qui vient de Bac-3. Il se pose sur un filet à gauche —
+   la marge d'un cahier — plutôt que sur un cadre qu'on vient de retirer. */
+/* `.ajout .jour-champ` ET NON `.jour-champ` SEUL : la tuile d'une journée est
+   un `.ajout`, et `.ajout textarea` habille tous les champs des tuiles du hub —
+   fond, cadre, marge basse. Une classe seule pèse moins qu'une classe et une
+   balise, et le journal gardait son rectangle. Sixième fois qu'une spécificité
+   non égalée coûte une règle sur cette session. */
+.jour-champ,
+.ajout .jour-champ {
+  width: 100%;
+  margin-bottom: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-left: 2px solid transparent;
+  border-radius: 0;
+  color: var(--texte);
+  font: inherit;
+  resize: vertical;
+}
+
+.jour-champ:focus,
+.jour-champ:focus-visible,
+.ajout .jour-champ:focus {
+  outline: none;
+  padding-left: var(--espace-12);
+  border-left-color: var(--accent);
+}
+
+/* `min-height` en rem plutôt qu'un nombre de lignes seul : `rows` donne la
    hauteur de départ, mais un champ qu'on redimensionne doit garder un plancher
    qui dise ce qu'il attend. */
 .jour-mot-long {
   min-height: 16rem;
-  padding: var(--espace-16);
   font-size: 1rem;
-  line-height: 1.6;
+  line-height: 1.7;
 }
+
+/* --- UNE CHOSE DONT JE SUIS RECONNAISSANT (1er septembre 2026) --------------
+   Elle GARDE son cadre, à la différence du journal : c'est une case à remplir,
+   et une case doit se voir. Un aplat chaud plutôt qu'un contour — c'est le seul
+   endroit du hub qui INVITE au lieu de ranger, et la couleur le dit mieux qu'un
+   trait.
+
+   Le doré vient de Yuno (#e8b000, relevé sur le logo) : c'est la seule couleur
+   chaude de la palette, et à 12 % elle ne se nomme pas, elle se sent — la dose
+   des tuiles de `#objectifs`. */
+.jour-gratitude { margin-top: var(--espace-24); }
+
+.jour-gratitude-champ {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espace-12);
+  padding: var(--espace-16);
+  background: color-mix(in srgb, #e8b000 12%, var(--fond-carte));
+  border-radius: var(--rayon-controle);
+}
+
+.jour-gratitude-signe { flex: none; line-height: 1.5; }
+
+/* PAS DE POIGNÉE ICI : une gratitude tient en une phrase, et le petit triangle
+   de redimensionnement dans l'aplat ressemblait à une salissure. Le journal, lui,
+   la garde — c'est un texte long, on veut pouvoir l'agrandir. */
+.jour-gratitude-champ .jour-champ,
+.ajout .jour-gratitude-champ .jour-champ {
+  min-height: 1.5rem;
+  border-left: 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  resize: none;
+}
+
+/* Dans l'aplat, le focus ne peut pas se dire par un filet à gauche : il est
+   déjà entouré. Il se dit par un anneau, comme partout ailleurs dans le hub. */
+.jour-gratitude-champ:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.jour-gratitude-champ .jour-champ:focus,
+.ajout .jour-gratitude-champ .jour-champ:focus { padding-left: 0; }
 
 /* CE QUE LE HUB TE REMONTRE. En voix éditoriale et en pied de page : c'est une
    phrase qui passe, pas une donnée qu'on vient consulter. */
@@ -7722,6 +7797,15 @@ body.balaye {
   width: 100%;
   margin-top: var(--espace-16);
   min-height: 2.75rem;
+}
+
+/* LA TUILE D'UNE JOURNÉE EST PLUS LARGE (1er septembre 2026, demande de Noé :
+   « la tuile peut être plus large »). 34 rem est la mesure d'un FORMULAIRE — six
+   champs qu'on remplit l'un sous l'autre ; ici c'est un carnet qu'on écrit, et
+   un texte qui court sur 44 rem se lit mieux qu'un texte qui se replie tous les
+   huit mots. Elle reste bornée par la fenêtre, comme les autres. */
+.ajout-volant .jour-tuile {
+  width: min(44rem, calc(100vw - 2 * var(--espace-16)));
 }
 
 @media (max-width: 720px) {

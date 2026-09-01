@@ -906,7 +906,11 @@ export function resumeParJour({ humeurs = [], taches = [], evenements = [], fait
   // Une habitude cochée n'a pas d'espace : elle vit dans le perso, et c'est là
   // qu'elle se compte.
   for (const fait of faits) pour(fait.jour).espaces.add('perso');
-  for (const ligne of mots) if (ligne.mot?.trim()) pour(ligne.jour).mot = true;
+  // Un jour où l'on a écrit : le journal OU la gratitude. Le point dit qu'on a
+  // posé des mots ce jour-là, pas lequel des deux champs les porte.
+  for (const ligne of mots) {
+    if (ligne.mot?.trim() || ligne.gratitude?.trim()) pour(ligne.jour).mot = true;
+  }
 
   return par;
 }
@@ -1044,8 +1048,9 @@ export function construireCalendrierDesJournees(vue, pivot, resumes, choisi) {
 
 export function construireLaJournee(jour, donnees, contexte = {}) {
   const aujourdhui = versDateISO();
-  const { humeur, taches = [], evenements = [], victoires = [], faits = [], seances = [], mot } =
-    donnees ?? {};
+  const {
+    humeur, taches = [], evenements = [], victoires = [], faits = [], seances = [], mot, gratitude,
+  } = donnees ?? {};
   const { habitudes = [], livres = [], relue = null } = contexte;
 
   const niveau = humeur ? NIVEAUX_HUMEUR.find((n) => n.niveau === humeur.niveau) : null;
@@ -1175,10 +1180,37 @@ export function construireLaJournee(jour, donnees, contexte = {}) {
            limite. Ce qui bridait, c'était le CHAMP — deux lignes, une invite
            qui disait « une ligne, si tu veux ». On n'écrit pas un bilan dans un
            champ qui annonce qu'il n'en attend pas. -->
+      <!-- UNE CHOSE DONT JE SUIS RECONNAISSANT (1er septembre 2026, demande de
+           Noé, qui a montré la page de journal dont elle vient).
+
+           ELLE VIENT AVANT LE JOURNAL, et c'est l'ordre de son exemple : c'est
+           une QUESTION posée, toujours la même, à laquelle on répond en une
+           phrase — on y répond mieux avant d'avoir écrit dix lignes. Le journal,
+           lui, n'attend rien de précis et peut prendre tout le temps qu'il veut.
+
+           ELLE GARDE SON CADRE, à la différence du journal : c'est une case à
+           remplir, et une case doit se voir. Un aplat chaud, pas un contour —
+           c'est le seul endroit du hub qui invite plutôt qu'il ne range. -->
+      <div class="jour-gratitude">
+        <span class="jour-part-titre">Une chose dont je suis reconnaissant</span>
+        <div class="jour-gratitude-champ">
+          <span class="jour-gratitude-signe" aria-hidden="true">⭐</span>
+          <textarea class="jour-champ" data-jour-champ="gratitude" data-jour-mot="${echapper(jour)}"
+            rows="2" placeholder="Écris quelque chose…">${echapper(gratitude ?? '')}</textarea>
+        </div>
+      </div>
+
+      <!-- LE JOURNAL N'A PAS DE RECTANGLE (même demande : « pas de rectangle
+           visible dans lequel mettre le texte »). Un champ encadré dit « remplis
+           ce formulaire » ; on n'écrit pas sa journée dans un formulaire. Il
+           reste un textarea — donc tout ce qu'un champ sait faire — mais il
+           n'en porte plus l'habit : pas de fond, pas de contour, le texte posé
+           sur la page comme dans un carnet. -->
       <div class="jour-mot">
         <span class="jour-part-titre">Ce qui a compté</span>
-        <textarea class="jour-mot-champ jour-mot-long" data-jour-mot="${echapper(jour)}"
-          rows="12" placeholder="Ce que tu veux garder de ce jour-là."
+        <textarea class="jour-champ jour-mot-long" data-jour-champ="mot"
+          data-jour-mot="${echapper(jour)}" rows="12"
+          placeholder="Ce que tu veux garder de ce jour-là."
           >${echapper(mot ?? '')}</textarea>
       </div>
 
@@ -2025,15 +2057,18 @@ export default {
         const champ = evenement.target.closest('[data-jour-mot]');
         if (!champ) return;
         const jour = champ.dataset.jourMot;
-        const mot = champ.value.trim() || null;
+        // La colonne que ce champ écrit. `mot` par défaut : le tableau de bord
+        // n'en a qu'un, et il ne dit pas son nom.
+        const colonne = champ.dataset.jourChamp ?? 'mot';
+        const valeur = champ.value.trim() || null;
         const gardee = journeesVues.get(jour);
-        if (gardee && gardee.mot === mot) return;
+        if (gardee && gardee[colonne] === valeur) return;
 
         try {
-          await api.noterLeMot(jour, mot);
-          if (gardee) gardee.mot = mot;
+          await api.noterLaJournee(jour, colonne, valeur);
+          if (gardee) gardee[colonne] = valeur;
         } catch (souci) {
-          console.error('Mot du jour non enregistré', souci);
+          console.error('Journée non enregistrée', souci);
         }
       },
       // En capture : `blur` ne remonte pas.

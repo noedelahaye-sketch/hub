@@ -1,0 +1,16 @@
+-- UNE CHOSE DONT JE SUIS RECONNAISSANT (1er septembre 2026, demande de Noé, qui
+-- a montré la page de journal dont il vient : « un espace je suis reconnaissant
+-- de… comme sur l'exemple »).
+--
+-- POURQUOI UNE COLONNE À PART ET NON UNE LIGNE DE PLUS DANS `mot` : ce ne sont
+-- pas deux façons d'écrire la même chose. `mot` est libre — ce qu'on veut garder
+-- du jour, long ou court, ou rien. La gratitude est une QUESTION posée, toujours
+-- la même, à laquelle on répond en une phrase. Les mêler rendrait impossible de
+-- les relire séparément, et c'est justement ce qu'on voudra faire un jour :
+-- remonter une année de gratitudes est une chose ; relire une année de journal
+-- en est une autre.
+--
+-- ELLE RESTE FACULTATIVE, comme le mot. Un jour sans réponse est un jour sans
+-- réponse : la page ne relance pas, ne compte pas les jours manqués et n'affiche
+-- aucune série. C'est la règle de tout l'espace perso.
+alter table public.journees add column if not exists gratitude text;

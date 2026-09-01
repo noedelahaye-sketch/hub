@@ -683,6 +683,44 @@ rendrait d'abord l'ancienne.
   - **Un `details` natif, ouvert par défaut** : le repli est un geste rare et
     n'a pas besoin d'un état à tenir — la tuile se redessine à l'ouverture d'un
     jour, pas pendant qu'on la lit.
+  - **PAS DE RECTANGLE AUTOUR DU JOURNAL** (1er septembre 2026, demande de Noé,
+    référence à l'appui : « pas de rectangle visible dans lequel mettre le
+    texte »). **Un champ encadré dit « remplis ce formulaire »** ; on n'écrit pas
+    sa journée dans un formulaire. Le `textarea` reste — donc tout ce qu'un champ
+    sait faire —, il n'en porte plus l'habit : ni fond, ni contour, le texte posé
+    comme dans un carnet. **Le focus ne disparaît pas pour autant** : il se dit
+    par un filet à gauche, la marge d'un cahier, parce que le hub ne supprime
+    jamais l'anneau de focus.
+  - **La tuile passe à 44 rem** : 34 est la mesure d'un FORMULAIRE, six champs
+    l'un sous l'autre. Ici c'est un carnet, et un texte qui se replie tous les
+    huit mots ne se lit pas.
+
+**UNE CHOSE DONT JE SUIS RECONNAISSANT** (1er septembre 2026, demande de Noé :
+« un espace je suis reconnaissant de… comme sur l'exemple »), colonne
+`journees.gratitude`.
+
+**POURQUOI UNE COLONNE À PART et non une ligne de plus dans `mot`** : ce ne sont
+pas deux façons d'écrire la même chose. `mot` est libre — ce qu'on veut garder du
+jour, long ou court, ou rien. La gratitude est une **question posée**, toujours la
+même, à laquelle on répond en une phrase. Les mêler rendrait impossible de les
+relire séparément, et c'est justement ce qu'on voudra faire un jour : remonter
+une année de gratitudes est une chose, relire une année de journal en est une
+autre.
+
+- **Elle vient AVANT le journal**, comme dans l'exemple : on répond mieux à une
+  question précise avant d'avoir écrit dix lignes.
+- **Elle GARDE son cadre**, à la différence du journal : c'est une case à
+  remplir, et une case doit se voir. Un aplat chaud plutôt qu'un contour — le
+  doré de Yuno à 12 %, la dose des tuiles de `#objectifs` : à ce niveau la teinte
+  ne se nomme pas, elle se sent. C'est le seul endroit du hub qui **invite** au
+  lieu de ranger.
+- **Elle reste facultative**, comme le mot : pas de relance, pas de jours
+  manqués comptés, pas de série. C'est la règle de tout l'espace perso.
+- **Un seul chemin d'écriture pour les deux** (`noterLaJournee(jour, colonne,
+  valeur)`), et l'upsert ne pose QUE la colonne donnée : répondre à l'une
+  n'efface pas l'autre. Deux fonctions jumelles auraient fini par diverger sur
+  le `onConflict`, et ça ne se voit qu'une fois qu'un des deux champs a cessé de
+  s'enregistrer.
 - **Le mot s'enregistre quand on quitte le champ**, sans bouton : c'est une
   ligne qu'on écrit en passant, et lui demander un geste de plus la ferait ne
   jamais s'écrire.
@@ -2885,6 +2923,8 @@ de carte dit « écris ici » ; une pastille dit « choisis ».
 - Migrations : toute évolution du schéma passe par un fichier SQL dans supabase/migrations/, versionné dans git.
 - Déploiement : branche main → GitHub Pages. Vérifier que le site fonctionne en local avant de pousser : `node tools/static-server.js`, puis http://localhost:4173 (ouvrir `index.html` en `file://` ne marche pas, les modules ES sont bloqués).
 - **`node tools/verifier-gabarits.js` avant de pousser du HTML dans un gabarit.** Un accent grave nu dans un commentaire HTML, à l'intérieur d'un gabarit JS, ferme la chaîne : le fichier reste valide pour `node --check`, et le module casse au chargement en emportant tout l'écran. Le piège s'est produit quatre fois entre le 13 et le 15 août 2026 ; cet outil le voit, `node --check` non. (Un accent grave échappé, lui, est correct.)
+  - **Y COMPRIS PAR PAIRES** : un commentaire HTML n'existe pas pour JavaScript, et le PREMIER accent grave referme la chaîne — écrire `` `textarea` `` n'est pas plus sûr qu'un accent grave seul.
+  - **L'OUTIL A LUI-MÊME ÉTÉ AVEUGLE, et il a fallu le corriger le 1er septembre 2026.** Il suivait un simple drapeau « dans un gabarit », qui basculait à l'envers au premier gabarit IMBRIQUÉ dans une interpolation — `${rien ? \`<p>… ce n'est pas grave</p>\` : ''}`. À partir de là il lisait le HTML comme du CODE, la première apostrophe française y ouvrait une fausse chaîne, et **tous les commentaires du fichier échappaient au contrôle**. Mesuré sur js/perso.js : l'outil disait « sains » pendant que la page ne se chargeait plus. Il tient maintenant une PILE — `${` empile du code, `}` le dépile —, et il sait distinguer un gabarit d'un autre. *Un outil qui rassure à tort est pire que pas d'outil.*
 - Langue : toute l'interface en français.
 
 ## Méthode de travail

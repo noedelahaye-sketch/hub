@@ -628,7 +628,11 @@ export async function resumeDesJournees(debutISO, finISO) {
       await client.from('habitudes_faits').select('jour').gte('jour', debutISO).lte('jour', finISO),
     ),
     verifier(
-      await client.from('journees').select('jour, mot').gte('jour', debutISO).lte('jour', finISO),
+      await client
+        .from('journees')
+        .select('jour, mot, gratitude')
+        .gte('jour', debutISO)
+        .lte('jour', finISO),
     ),
   ]);
 
@@ -640,7 +644,9 @@ export async function journeeDe(jourISO) {
   const fin = `${jourISO}T23:59:59`;
 
   const [mot, humeur, taches, evenements, victoires, faits, seances] = await Promise.all([
-    verifier(await client.from('journees').select('mot').eq('jour', jourISO).maybeSingle()),
+    verifier(
+      await client.from('journees').select('mot, gratitude').eq('jour', jourISO).maybeSingle(),
+    ),
     verifier(await client.from('humeur').select('*').eq('date', jourISO).maybeSingle()),
     // Les tâches TERMINÉES ce jour-là, pas celles qui y étaient dues : la page
     // regarde en arrière, elle ne redresse pas les comptes.
@@ -673,14 +679,36 @@ export async function journeeDe(jourISO) {
     ),
   ]);
 
-  return { mot: mot?.mot ?? null, humeur, taches, evenements, victoires, faits, seances };
+  return {
+    mot: mot?.mot ?? null,
+    gratitude: mot?.gratitude ?? null,
+    humeur,
+    taches,
+    evenements,
+    victoires,
+    faits,
+    seances,
+  };
 }
 
 // La ligne libre. `upsert` sur la clé du jour : on écrit et on réécrit sans
 // avoir à savoir si la journée existait déjà.
-export async function noterLeMot(jour, mot) {
+// CE QU'ON ÉCRIT D'UN JOUR : le mot libre, et la gratitude (1er septembre 2026).
+//
+// UN SEUL CHEMIN POUR LES DEUX, et le champ dit lequel il écrit. Deux fonctions
+// jumelles auraient fini par diverger sur le `onConflict` ou sur le `null`, et
+// c'est le genre d'écart qu'on ne voit qu'une fois qu'un des deux champs a cessé
+// de s'enregistrer.
+//
+// L'upsert ne pose QUE la colonne donnée : écrire la gratitude ne touche pas au
+// mot du jour, et inversement. Sans ça, répondre à l'une effacerait l'autre.
+export async function noterLaJournee(jour, colonne, valeur) {
   return verifier(
-    await client.from('journees').upsert({ jour, mot }, { onConflict: 'jour' }).select().single(),
+    await client
+      .from('journees')
+      .upsert({ jour, [colonne]: valeur }, { onConflict: 'jour' })
+      .select()
+      .single(),
   );
 }
 

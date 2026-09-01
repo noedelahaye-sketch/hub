@@ -31,8 +31,25 @@ const DOSSIER = join(RACINE, 'js');
 // commentaire JS, et une expression régulière ne le sait pas.
 function commentairesPieges(source) {
   const trouves = [];
-  let dansGabarit = false;
   let ligne = 1;
+
+  // UNE PILE, ET NON UN DRAPEAU (1er septembre 2026). L'automate suivait un
+  // simple booléen `dansGabarit`, et il perdait le fil au premier gabarit
+  // IMBRIQUÉ dans une interpolation :
+  //
+  //     ${rien ? `<p>… ce n'est pas grave</p>` : ''}
+  //
+  // Le premier accent grave le faisait basculer à « dehors », le second à
+  // « dedans » — à l'envers de la vérité. Le texte HTML qui suivait était donc
+  // lu comme du CODE, et la première apostrophe française y ouvrait une fausse
+  // chaîne qui avalait quatre lignes. Mesuré sur js/perso.js : à partir de là,
+  // tous les commentaires du fichier échappaient au contrôle, et l'outil a
+  // laissé passer l'accent grave qu'il est fait pour attraper.
+  //
+  // La pile sait dire un gabarit d'un autre : `${` empile du code, `}` le
+  // dépile, et un accent grave n'ouvre un gabarit que dans du code.
+  const pile = [{ type: 'code', accolades: 0 }];
+  const dessus = () => pile[pile.length - 1];
 
   for (let i = 0; i < source.length; i += 1) {
     const c = source[i];
@@ -44,7 +61,7 @@ function commentairesPieges(source) {
       continue;
     }
 
-    if (!dansGabarit) {
+    if (dessus().type === 'code') {
       // Un commentaire JS ordinaire n'est pas notre affaire : on le saute,
       // sinon un « ` » écrit dedans nous ferait croire à un gabarit.
       if (c === '/' && source[i + 1] === '/') {
@@ -70,7 +87,17 @@ function commentairesPieges(source) {
         }
         continue;
       }
-      if (c === '`') dansGabarit = true;
+      // Les accolades du code, pour savoir laquelle referme l'interpolation.
+      if (c === '{') {
+        dessus().accolades += 1;
+        continue;
+      }
+      if (c === '}') {
+        if (dessus().accolades > 0) dessus().accolades -= 1;
+        else if (pile.length > 1) pile.pop();
+        continue;
+      }
+      if (c === '`') pile.push({ type: 'gabarit' });
       continue;
     }
 
@@ -81,7 +108,9 @@ function commentairesPieges(source) {
       const contenu = source.slice(i, fin === -1 ? source.length : fin);
       // Un accent grave ÉCHAPPÉ (\`) ne ferme rien : c'est même la façon
       // correcte d'en écrire un dans un gabarit, et js/app.js le fait depuis
-      // toujours. Seuls les nus sont un piège.
+      // toujours. Tous les autres sont un piège, y compris PAR PAIRES : le
+      // commentaire HTML n'existe pas pour JavaScript, et le premier accent
+      // grave referme la chaîne quoi qu'il arrive.
       const nu = /(^|[^\\])`/.test(contenu);
       if (nu) {
         trouves.push({ ligne, extrait: contenu.trim().split('\n')[0].slice(0, 72) });
@@ -91,7 +120,14 @@ function commentairesPieges(source) {
       continue;
     }
 
-    if (c === '`') dansGabarit = false;
+    // Une interpolation ouvre du code, où un accent grave ouvrira un gabarit.
+    if (c === '$' && source[i + 1] === '{') {
+      pile.push({ type: 'code', accolades: 0 });
+      i += 1;
+      continue;
+    }
+
+    if (c === '`') pile.pop();
   }
 
   return trouves;
