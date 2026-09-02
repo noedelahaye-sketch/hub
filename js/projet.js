@@ -61,6 +61,7 @@ import {
   dureeLisible,
   echapper,
   echeanceLisible,
+  rangerParEcheance,
 } from './format.js';
 import {
   appliquerAuCalendrier,
@@ -341,7 +342,10 @@ function assembler() {
 // qu'on presse. C'est le même motif un étage plus bas, et deux formes pour deux
 // choses identiques auraient demandé de réapprendre le geste en descendant.
 function friseEtapes(projet) {
-  const etapes = projet.etapes ?? [];
+  // L'ORDRE CHRONOLOGIQUE (2 septembre 2026) : voir `rangerParEcheance`. La date
+  // range, `ordre` range ce qui n'en a pas — et ce qui n'en a pas ferme la
+  // marche. C'est la même règle que les jalons d'un cap, un étage plus haut.
+  const etapes = rangerParEcheance(projet.etapes ?? []);
   const prochaine = etapes.find((etape) => !etape.atteint);
 
   if (!etapes.length) {
@@ -381,7 +385,15 @@ function friseEtapes(projet) {
           }
         </span>
         ${menu('etape', etape.id, {
-          deplacer: { haut: rang > 0, bas: rang < etapes.length - 1 },
+          // DEUX MARCHES DATÉES NE S'ÉCHANGENT PAS À LA MAIN : c'est leur date
+          // qui les range l'une par rapport à l'autre, et le rendu suivant les
+          // remettrait où elles étaient — un bouton dont l'effet s'annule tout
+          // seul est un bouton qui ment. Pour changer leur ordre, on change une
+          // date, d'un glissement sur le calendrier d'à côté.
+          deplacer: {
+            haut: rang > 0 && !(etape.echeance && etapes[rang - 1].echeance),
+            bas: rang < etapes.length - 1 && !(etape.echeance && etapes[rang + 1].echeance),
+          },
         })}
       </li>`;
     })
@@ -1484,14 +1496,21 @@ export default {
       const liste = etat.projet?.etapes;
       if (!liste) return;
 
-      const rang = liste.findIndex((etape) => etape.id === id);
+      // ON DÉPLACE DANS L'ORDRE AFFICHÉ, pas dans celui du tableau : depuis que
+      // la date range la frise, les deux ne coïncident plus, et « Monter » aurait
+      // échangé l'étape avec une voisine que Noé ne voit pas à côté d'elle.
+      const rangees = rangerParEcheance(liste);
+      const rang = rangees.findIndex((etape) => etape.id === id);
       const vers = rang + pas;
-      if (rang === -1 || vers < 0 || vers >= liste.length) return;
+      if (rang === -1 || vers < 0 || vers >= rangees.length) return;
 
       // Sur place, jamais par remplacement : c'est le tableau que tout le monde
       // regarde, et un retour en arrière écrirait dans un tableau orphelin.
       const avant = [...liste];
-      liste.splice(vers, 0, ...liste.splice(rang, 1));
+      rangees.splice(vers, 0, ...rangees.splice(rang, 1));
+      // Le tableau prend l'ordre affiché : c'est lui que `reordonnerEtapes`
+      // renumérote, si bien qu'`ordre` finit par dire ce que l'écran montre.
+      liste.splice(0, liste.length, ...rangees);
       rendre();
 
       try {

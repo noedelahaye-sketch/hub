@@ -334,6 +334,39 @@ déborder. *Le défaut touchait tous les panneaux du hub.*
 d'une habitude, sans fenêtre. Le cumul depuis toujours et un calendrier qu'on
 peut remonter mentiraient tous les deux sur soixante jours.
 
+### 0.1 quater Deux réglages de la fin de session
+
+**LES DURÉES PROPOSÉES EN COCHANT** : *« ajoute une option 5 min dans les
+propositions de durée lorsque je finis une tâche, et enlève 1 h 30 »* —
+`DUREES_FAITES` passe à **5 min · 30 min · 1 h · 2 h · 3 h**. Le pas court
+manquait : beaucoup de ce qu'on coche là ne dure pas une demi-heure, et ces
+tâches repartaient **sans durée**, ce que la première ligne de `#temps` compte
+déjà. *J'ai d'abord modifié `DUREES_PROPOSEES`, la liste de la tuile de capture —
+il y en a deux, et ce sont deux questions : l'une réserve un créneau, l'autre dit
+ce qui a été fait. Vérifié à l'écran avant de conclure.*
+
+**L'ORDRE CHRONOLOGIQUE DES JALONS ET DES ÉTAPES** : *« il faut qu'ils soient
+dans l'ordre chronologique, donc que leur position s'adapte en fonction de la
+date qui leur est attribuée »*. Un jalon glissé au calendrier sur une date plus
+lointaine que son voisin restait devant lui dans la frise — **les deux moitiés de
+la même page se contredisaient**.
+
+`rangerParEcheance` (js/format.js) ne fait bouger que **les marches datées, et
+seulement les unes par rapport aux autres** : elles se rangent dans les places
+qu'elles occupaient déjà, ce qui n'a pas de date ne bouge pas d'un rang.
+
+> *Le tri global par date était mon premier réflexe, et il est faux ici.* Un
+> découpage n'est pas une galerie, c'est un CHEMIN — mesuré sur les données de
+> Noé : « Laisser une com qui tourne sans moi » porte cinq jalons sans date puis
+> un daté au 15 décembre qui en est la **conclusion**, et le tri « datés
+> d'abord » l'aurait mis en tête.
+
+**Vérifié à l'écran** : le cap aux quatre jalons datés se range par date (une
+date poussée à janvier renvoie « 900 abonnés » en fin de frise, puis remise) ; le
+cap aux cinq indatés garde son ordre ; « Monter/Descendre » disparaît entre deux
+marches datées et reste à la frontière avec une indatée. *La base a été remise
+dans son état.*
+
 ### 0.2 Ce qui est parti de `#objectifs`
 
 - le dépliage d'un PROJET : `detailProjet`, `friseEtapes`, `surQuoiIlSeMesure`,

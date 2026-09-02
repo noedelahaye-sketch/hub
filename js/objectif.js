@@ -44,6 +44,7 @@ import {
   dureeLisible,
   echapper,
   echeanceLisible,
+  rangerParEcheance,
 } from './format.js';
 import { argentDeYuno, enEuros } from './photo.js';
 import {
@@ -288,7 +289,10 @@ function assembler() {
 // la déplacer réécrirait une date que le cap a déjà dépassée. Même règle que
 // pour une étape franchie.
 function friseJalons(objectif) {
-  const jalons = objectif.jalons ?? [];
+  // L'ORDRE CHRONOLOGIQUE (2 septembre 2026) : voir `rangerParEcheance`. La date
+  // range, `ordre` range ce qui n'en a pas — et ce qui n'en a pas ferme la
+  // marche.
+  const jalons = rangerParEcheance(objectif.jalons ?? []);
   const prochain = jalons.find((jalon) => !jalon.atteint);
 
   if (!jalons.length) {
@@ -326,7 +330,15 @@ function friseJalons(objectif) {
           }
         </span>
         ${menu('jalon', jalon.id, {
-          deplacer: { haut: rang > 0, bas: rang < jalons.length - 1 },
+          // DEUX MARCHES DATÉES NE S'ÉCHANGENT PAS À LA MAIN : c'est leur date
+          // qui les range l'une par rapport à l'autre, et le rendu suivant les
+          // remettrait où elles étaient — **un bouton dont l'effet s'annule tout
+          // seul est un bouton qui ment**. Pour changer leur ordre, on change une
+          // date, d'un glissement sur le calendrier d'à côté.
+          deplacer: {
+            haut: rang > 0 && !(jalon.echeance && jalons[rang - 1].echeance),
+            bas: rang < jalons.length - 1 && !(jalon.echeance && jalons[rang + 1].echeance),
+          },
         })}
       </li>`;
     })
@@ -1300,14 +1312,21 @@ export default {
       const liste = etat.objectif?.jalons;
       if (!liste) return;
 
-      const rang = liste.findIndex((jalon) => jalon.id === id);
+      // ON DÉPLACE DANS L'ORDRE AFFICHÉ, pas dans celui du tableau : depuis que
+      // la date range la frise, les deux ne coïncident plus, et « Monter » aurait
+      // échangé le jalon avec un voisin que Noé ne voit pas à côté de lui.
+      const rangees = rangerParEcheance(liste);
+      const rang = rangees.findIndex((jalon) => jalon.id === id);
       const vers = rang + pas;
-      if (rang === -1 || vers < 0 || vers >= liste.length) return;
+      if (rang === -1 || vers < 0 || vers >= rangees.length) return;
 
       // Sur place, jamais par remplacement : c'est le tableau que tout le monde
       // regarde, et un retour en arrière écrirait dans un tableau orphelin.
       const avant = [...liste];
-      liste.splice(vers, 0, ...liste.splice(rang, 1));
+      rangees.splice(vers, 0, ...rangees.splice(rang, 1));
+      // Le tableau prend l'ordre affiché : c'est lui que `reordonnerJalons`
+      // renumérote, si bien qu'`ordre` finit par dire ce que l'écran montre.
+      liste.splice(0, liste.length, ...rangees);
       rendre();
 
       try {

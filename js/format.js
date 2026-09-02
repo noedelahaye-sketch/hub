@@ -109,6 +109,54 @@ export const rangDEspace = (espace) => {
   return rang < 0 ? ORDRE_ESPACES.length : rang;
 };
 
+// L'ORDRE CHRONOLOGIQUE D'UN DÉCOUPAGE — jalons d'un cap, étapes d'un projet
+// (2 septembre 2026, demande de Noé : « il faut qu'ils soient dans l'ordre
+// chronologique, donc que leur position s'adapte en fonction de la date qui leur
+// est attribuée »).
+//
+// SEULES LES MARCHES DATÉES BOUGENT, ET SEULEMENT LES UNES PAR RAPPORT AUX
+// AUTRES. Elles se rangent dans les PLACES qu'elles occupaient déjà ; ce qui n'a
+// pas de date ne bouge pas d'un rang.
+//
+// **Le tri global par date était le premier réflexe, et il est faux ici.** Un
+// découpage n'est pas une galerie : c'est un CHEMIN. Mesuré sur les données de
+// Noé — « Laisser une com qui tourne sans moi » a cinq jalons sans date puis un
+// daté au 15 décembre, qui en est la conclusion. Un tri « datés d'abord, indatés
+// ensuite » l'aurait mis EN TÊTE, c'est-à-dire l'arrivée avant le départ. La
+// convention « ce qui n'a pas de date ferme la marche » vaut pour des tuiles
+// qu'on COMPARE, pas pour une suite qu'on LIT.
+//
+// Ce que ça répare, et c'est la demande : un jalon glissé au calendrier sur une
+// date plus lointaine que son voisin restait devant lui dans la frise. Les deux
+// écrans de la même page se contredisaient.
+//
+// `ordre` garde donc le squelette, la date range ce qui, dedans, se compare. Le
+// tri est STABLE : deux marches du même jour gardent l'ordre où Noé les a
+// posées. Et la liste est prise TELLE QUELLE, jamais retriée par `ordre` —
+// après un déplacement à la main, le tableau porte déjà le bon ordre et
+// `ordre` ne le rattrapera qu'à l'aller-retour suivant.
+//
+// Ici plutôt que dans l'orientation : c'est un tri d'affichage, pas une règle du
+// jeu — et les deux pages qui s'en servent importent déjà ce module.
+export function rangerParEcheance(liste = []) {
+  const rangees = [...liste];
+
+  const places = [];
+  for (let rang = 0; rang < rangees.length; rang += 1) {
+    if (rangees[rang].echeance) places.push(rang);
+  }
+
+  const datees = places
+    .map((rang) => rangees[rang])
+    .sort((a, b) => (a.echeance < b.echeance ? -1 : a.echeance > b.echeance ? 1 : 0));
+
+  places.forEach((place, rang) => {
+    rangees[place] = datees[rang];
+  });
+
+  return rangees;
+}
+
 // --- Les familles d'un moment perso ------------------------------------------
 // Ce que sert un moment de l'espace perso — la seule chose qu'on lui demande de
 // dire. Elle se saisit à la pastille « Famille », qui n'apparaît que lorsque
@@ -221,7 +269,24 @@ export const DUREES_PROPOSEES = [60, 90, 120, 150, 180];
 // pris ? ». Ils commencent plus bas que ceux d'une tâche qu'on planifie : on
 // ne se réserve pas un créneau de trente minutes, mais un appel passé en
 // trente minutes, ça arrive tous les jours. Au-delà, on tape les minutes.
-export const DUREES_FAITES = [30, 60, 90, 120, 180];
+//
+// 5 MIN OUVRE LA LISTE, ET 1 H 30 EN SORT (2 septembre 2026, demande de Noé).
+// C'est le bas de l'échelle qui manquait : cette question-ci est posée AU
+// MOMENT OÙ L'ON COCHE, et beaucoup de ce qu'on coche là — un message envoyé,
+// une relance, une case administrative — ne dure pas une demi-heure. Sans un
+// pas aussi court, ces tâches-là repartaient sans durée, et le silence des
+// durées est déjà le premier constat de `#temps`.
+//
+// 1 h 30 cède la place parce que **cinq propositions tiennent sur une ligne et
+// six non** : c'est le pas dont l'absence coûte le moins — il tombe pile entre
+// deux voisins qui restent, et une demi-heure de plus ou de moins sur une
+// tâche d'une heure et demie ne change pas la lecture d'une semaine. Il se tape
+// toujours à la main, comme n'importe quelle autre valeur.
+//
+// LA LISTE DE LA CAPTURE NE BOUGE PAS : ce sont deux questions différentes —
+// celle-ci demande ce qui a été fait, l'autre réserve un créneau, et on ne se
+// réserve pas cinq minutes dans une journée.
+export const DUREES_FAITES = [5, 30, 60, 120, 180];
 
 // La durée en toutes lettres, à partir des minutes. Court, parce que ça
 // s'écrit dans une pastille et dans la ligne de service d'une tâche :

@@ -1045,6 +1045,7 @@ La progression d'un objectif = jalons atteints / jalons totaux (calculée côté
   - **Une seule colonne pour le prévu et le réalisé** (décision de Noé, 27 août 2026) : « j'ajuste en fonction du temps réel que ça m'a pris si j'avais déjà noté un temps prévu ». Contrepartie assumée : sans trace de l'estimation d'origine, le hub ne saura jamais que Noé sous-estime — il calcule avec les chiffres qu'on lui donne.
   - **À la création**, elle ne vaut qu'avec une heure : elle réserve un créneau, et en vue semaine la barre prend sa hauteur. Sans heure, l'écriture l'écarte d'elle-même.
   - **Après coup**, elle vaut sans heure : « ça m'a pris 45 minutes » est vrai d'une tâche qui n'occupait aucun créneau. C'est la question posée **au moment où on coche**, dans la fenêtre de `demanderLaDuree` (js/gabarits.js) — la seule source d'heures du hub. Passer sans répondre ne l'efface pas : ne rien dire n'est pas effacer.
+  - **DEUX LISTES DE RACCOURCIS, ET C'EST VOULU** (`DUREES_PROPOSEES` et `DUREES_FAITES`, js/format.js) : ce sont deux questions différentes. À la capture on RÉSERVE un créneau — de 1 h à 3 h, et l'on ne se réserve pas cinq minutes dans une journée. Au moment de COCHER on dit ce qui a été fait : **5 min · 30 min · 1 h · 2 h · 3 h** depuis le 2 septembre 2026 (demande de Noé). Le pas court manquait — un message envoyé, une relance, une case administrative ne durent pas une demi-heure, et sans lui ces tâches-là repartaient **sans durée**, ce que la première ligne de `#temps` compte déjà. « 1 h 30 » cède la place parce que cinq propositions tiennent sur une ligne et six non : c'est le pas dont l'absence coûte le moins — il tombe pile entre deux voisins qui restent, et il se tape toujours à la main.
 - `priorite` int NOT NULL default 4 CHECK (priorite BETWEEN 1 AND 4) — 1 le plus urgent, 4 le cas ordinaire
 - `famille` text (nullable) CHECK (corps, calme, lien, intendance) — **espace perso seulement** : ce que ce moment sert. Elle se saisit à la **pastille « Famille »**, qui n'apparaît dans la tuile de capture — celle de l'espace Tâches comme celle du calendrier — que lorsque l'espace choisi est perso, juste derrière la pastille d'espace (la bande défile : une pastille en queue n'existe pas). Facultative, et elle le restera : une soirée notée en trois secondes ne s'arrête pas pour être classée. Écrite `null` dès que l'espace n'est plus perso. Les planchers qu'elle alimente sont **comptés en interne, jamais affichés** (voir `PLANCHER_PERSO`, js/orientation.js).
 - `date_fait` timestamptz
@@ -1354,6 +1355,46 @@ qu'on retrouve**.
 
 **Pas de durée ni d'heure, à la différence d'une tâche** : une étape marque un
 passage, elle n'occupe pas de créneau.
+
+### L'ORDRE EST CHRONOLOGIQUE (2 septembre 2026)
+
+**Demande de Noé** : *« pour les jalons et étapes des projets et objectifs, il
+faut qu'ils soient dans l'ordre chronologique, donc que leur position s'adapte en
+fonction de la date qui leur est attribuée »*.
+
+**Ce que ça répare** : un jalon glissé au calendrier sur une date plus lointaine
+que son voisin restait devant lui dans la frise. **Les deux moitiés de la même
+page se contredisaient** — le calendrier disait une chose, la colonne d'à côté
+une autre.
+
+**SEULES LES MARCHES DATÉES BOUGENT, ET SEULEMENT LES UNES PAR RAPPORT AUX
+AUTRES** (`rangerParEcheance`, js/format.js) : elles se rangent dans les PLACES
+qu'elles occupaient déjà ; ce qui n'a pas de date ne bouge pas d'un rang.
+
+> *Le tri global par date était le premier réflexe, et il est faux ici.* **Un
+> découpage n'est pas une galerie, c'est un CHEMIN.** Mesuré sur les données de
+> Noé : « Laisser une com qui tourne sans moi » porte cinq jalons sans date puis
+> un daté au 15 décembre, qui en est la CONCLUSION. Un tri « datés d'abord,
+> indatés ensuite » l'aurait mis **en tête** — l'arrivée avant le départ. La
+> convention « ce qui n'a pas de date ferme la marche » vaut pour des tuiles
+> qu'on COMPARE, pas pour une suite qu'on LIT.
+
+- **`ordre` garde le squelette**, la date range ce qui, dedans, se compare.
+- **Le tri est stable** : deux marches du même jour gardent l'ordre où Noé les a
+  posées.
+- **La liste est prise telle quelle, jamais retriée par `ordre`** : après un
+  déplacement à la main, le tableau porte déjà le bon ordre et la colonne ne le
+  rattrapera qu'à l'aller-retour suivant. La retrier ferait sauter la ligne en
+  arrière sous les yeux.
+- **DEUX MARCHES DATÉES NE S'ÉCHANGENT PLUS À LA MAIN** : « Monter » et
+  « Descendre » disparaissent entre deux voisines qui portent toutes deux un
+  jour — c'est leur date qui les range, et le rendu suivant les remettrait où
+  elles étaient. **Un bouton dont l'effet s'annule tout seul est un bouton qui
+  ment.** Pour changer leur ordre, on change une date, d'un glissement sur le
+  calendrier d'à côté.
+- **On déplace dans l'ordre AFFICHÉ**, pas dans celui du tableau : les deux ne
+  coïncident plus, et « Monter » aurait échangé la marche avec une voisine que
+  Noé ne voit pas à côté d'elle.
 
 **L'ORDRE SE CHANGE — ÉTAPES ET JALONS** (29 août 2026, demande de Noé) : un
 découpage ne se pense pas dans le bon ordre du premier coup — on pose les
