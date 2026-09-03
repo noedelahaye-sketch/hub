@@ -3974,6 +3974,39 @@ de carte dit « écris ici » ; une pastille dit « choisis ».
     `FormData` le lit comme avant, et **un champ requis reste focusable** — un
     champ requis que le navigateur ne peut pas atteindre bloque l'envoi en
     silence, sans un mot.
+
+### CE PIÈGE S'EST PAYÉ POUR DE VRAI, DANS LA TUILE DE CAPTURE (2 septembre 2026)
+
+**Défaut rapporté par Noé depuis son téléphone** : *« je ne peux pas modifier la
+date lorsque je crée une tâche/un événement ; depuis le + de bas de page je peux
+cliquer sur la tuile, sélectionner une date, mais après je suis bloqué, je ne
+peux pas enregistrer. »*
+
+**Le champ « debut » est EXIGÉ et vit dans un panneau REPLIÉ** — pas invisible
+par-dessus une pastille comme celui d'un formulaire, mais dans un
+`.capture-popover[hidden]`. Vide, il rend le formulaire invalide ; et comme sa
+bulle ne peut pas s'ouvrir sur un champ que le navigateur ne peut pas atteindre,
+**celui-ci refuse d'envoyer SANS RIEN DIRE** : le bouton ne répond pas,
+l'événement `submit` ne part même pas, aucun message n'apparaît. *Mesuré :
+`checkValidity()` faux, la ligne d'erreur restant masquée.*
+
+**Et l'écran mentait doublement** : la pastille garde son libellé par défaut, qui
+est le JOUR D'OUVERTURE de la tuile — à l'œil, la date avait l'air posée.
+
+**LA VALIDATION EST REPRISE À LA MAIN** : le formulaire porte `novalidate`, et
+`brancherCapture` (js/calendrier-commun.js) écoute `submit` **en capture** —
+avant l'écriture de l'espace. Le premier champ fautif fait **ouvrir son
+panneau**, prend le focus, et sa bulle a enfin où se poser.
+- **En capture, et une seule fois** : dix écrans écoutent ce formulaire, et une
+  garde recopiée dix fois manquerait dans la copie oubliée.
+- **Les dix appellent `brancherCapture`** — vérifié : sans lui, `novalidate`
+  laisserait passer une écriture sans date.
+
+**Deux autres silences du même genre, corrigés dans la foulée** (js/taches.js) :
+retirer la date écrivait **`0`** dans le champ de durée, qui porte `min="5"` —
+donc invalide, dans un panneau replié, donc le même refus muet ; et un titre vide
+repartait par un `return` nu, sans un mot. Le curseur revient maintenant dans le
+champ avec « Il lui manque son nom. »
   - **La parenthèse d'un libellé ne monte pas dans la pastille** :
     « Jusqu'au (vide = un seul jour) » tenait une ligne à lui seul. C'est une
     explication, pas un nom — elle part vers le `title`. Fait une fois dans le

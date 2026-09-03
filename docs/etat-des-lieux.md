@@ -367,6 +367,35 @@ cap aux cinq indatés garde son ordre ; « Monter/Descendre » disparaît entre 
 marches datées et reste à la frontière avec une indatée. *La base a été remise
 dans son état.*
 
+### 0.1 quinquies Le cul-de-sac de la tuile de capture, sur téléphone
+
+*« Je ne peux pas modifier la date lorsque je crée une tâche/un événement ;
+depuis le + de bas de page je peux cliquer sur la tuile, sélectionner une date,
+mais après je suis bloqué, je ne peux pas enregistrer. »*
+
+**C'EST LE PIÈGE QUE LE CLAUDE.md DÉCRIVAIT DEPUIS LE 30 AOÛT, payé pour de
+vrai.** Le champ `debut` est EXIGÉ et vit dans un `.capture-popover[hidden]`.
+Vide, il rend le formulaire invalide — et comme le navigateur ne sait pas montrer
+sa bulle sur un champ qu'il ne peut pas atteindre, **il refuse d'envoyer sans
+rien dire** : le bouton ne répond pas, l'événement `submit` ne part même pas,
+aucun message n'apparaît.
+
+**Et l'écran mentait doublement** : la pastille garde son libellé par défaut, qui
+est le jour d'ouverture de la tuile — à l'œil, la date avait l'air posée.
+
+**Reproduit à l'écran** avant de corriger (viewport 375 px, `--bas-clavier`
+simulé à 300 px) : `checkValidity()` faux, ligne d'erreur masquée, tuile inerte.
+**Après** : le panneau de la date s'ouvre de lui-même, le champ prend le focus,
+la bulle du navigateur a où se poser. La validation est reprise à la main —
+`novalidate` sur le formulaire, une garde en phase de CAPTURE dans
+`brancherCapture`, écrite une fois pour les **dix écrans** qui portent cette
+tuile (vérifié : tous les dix appellent `brancherCapture`).
+
+**Deux autres silences du même genre, corrigés dans la foulée** : retirer la date
+écrivait `0` dans le champ de durée, qui porte `min="5"` — invalide, dans un
+panneau replié, donc le même refus muet ; et un titre vide repartait par un
+`return` nu. Le curseur y revient maintenant avec « Il lui manque son nom. »
+
 ### 0.2 Ce qui est parti de `#objectifs`
 
 - le dépliage d'un PROJET : `detailProjet`, `friseEtapes`, `surQuoiIlSeMesure`,

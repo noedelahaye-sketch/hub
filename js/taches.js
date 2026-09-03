@@ -1250,8 +1250,21 @@ export default {
       if (!formulaire) return;
       evenement.preventDefault();
 
-      const titre = formulaire.querySelector('#capture-titre').value.trim();
-      if (!titre) return;
+      // UN TITRE MANQUANT SE DIT (2 septembre 2026). Il repartait en silence, et
+      // le bouton d'envoi étant grisé, rien à l'écran n'expliquait pourquoi rien
+      // ne se passait — c'est le cul-de-sac que Noé décrit sur téléphone. On
+      // ramène le curseur là où il manque quelque chose.
+      const champTitre = formulaire.querySelector('#capture-titre');
+      const titre = champTitre.value.trim();
+      if (!titre) {
+        champTitre.focus();
+        const erreur = formulaire.querySelector('[data-erreur]');
+        if (erreur) {
+          erreur.textContent = 'Il lui manque son nom.';
+          erreur.hidden = false;
+        }
+        return;
+      }
 
       const bouton = formulaire.querySelector('button[type="submit"]');
       formulaire.querySelector('[data-erreur]').hidden = true;
@@ -1395,7 +1408,12 @@ export default {
             const heure = section.querySelector('[data-champ-heure]');
             if (heure) heure.value = '';
             const duree = section.querySelector('[data-champ-duree]');
-            if (duree) duree.value = '0';
+            // VIDE, ET NON ZÉRO (2 septembre 2026) : le champ porte min="5", donc
+            // « 0 » le rend INVALIDE — et il vit dans un panneau replié, que le
+            // navigateur ne sait pas atteindre pour y montrer sa bulle. Il aurait
+            // refusé l'envoi sans un mot, exactement comme le champ de date de la
+            // tuile du calendrier. Une durée qu'on retire est une durée absente.
+            if (duree) duree.value = '';
           }
         } else if (champHeure) {
           etat.capture.heure = champHeure.value || null;

@@ -2929,10 +2929,24 @@ export function fenetreCreation({
     );
   }
 
+  // `novalidate` — LE NAVIGATEUR NE SAIT PAS SIGNALER UN CHAMP QU'IL NE PEUT PAS
+  // ATTEINDRE (2 septembre 2026, défaut rapporté par Noé depuis son téléphone :
+  // « je sélectionne une date mais après je suis bloqué, je ne peux pas
+  // enregistrer »).
+  //
+  // Le champ « debut » est EXIGÉ et vit dans un panneau replié. Vide, il rend le
+  // formulaire invalide — et comme sa bulle ne peut pas s'ouvrir sur un champ
+  // caché, le navigateur refuse d'envoyer SANS RIEN DIRE : le bouton ne répond
+  // pas, l'événement submit ne part même pas, aucun message n'apparaît. Pire, la
+  // pastille garde son libellé par défaut, qui est le jour d'ouverture : à
+  // l'écran, la date a l'air posée.
+  //
+  // On reprend donc la validation à la main (voir brancherCapture) : le panneau
+  // fautif s'ouvre, le champ prend le focus, et la bulle a enfin où se poser.
   return `
     <div class="fenetre-fond capture-fond" data-fermer-fenetre></div>
     <form class="capture" data-action="creer-depuis-calendrier" role="dialog" aria-modal="true"
-      aria-label="Poser au calendrier">
+      novalidate aria-label="Poser au calendrier">
       <input type="hidden" name="nature" value="${echapper(nature)}">
       <input type="text" id="cal-titre" name="titre" required class="capture-titre"
         value="${echapper(valeurs.titre ?? '')}"
@@ -3172,6 +3186,44 @@ export function brancherCapture(section, { projets = () => [] } = {}) {
 
   section.addEventListener('input', suivreLaDuree);
   section.addEventListener('change', suivreLaDuree);
+
+  // LA VALIDATION REPRISE À LA MAIN, en capture pour passer AVANT l'écriture de
+  // l'espace — dix écrans écoutent ce même formulaire, et la garde doit être
+  // écrite une fois.
+  //
+  // Un champ exigé qui vit dans un panneau replié n'est pas atteignable : le
+  // navigateur refusait l'envoi en silence. On ouvre son panneau, on lui donne
+  // le focus, et sa bulle a alors où se poser.
+  section.addEventListener(
+    'submit',
+    (evenement) => {
+      const formulaire = evenement.target.closest?.('form.capture');
+      if (!formulaire) return;
+
+      const fautif = [...formulaire.elements].find(
+        (champ) => champ.willValidate && !champ.checkValidity(),
+      );
+      if (!fautif) return;
+
+      evenement.preventDefault();
+      evenement.stopPropagation();
+
+      const panneau = fautif.closest('.capture-popover');
+      if (panneau?.hidden) {
+        fermerLesPanneaux();
+        panneau.hidden = false;
+        section
+          .querySelector(`[data-pastille="${panneau.dataset.panneau}"]`)
+          ?.setAttribute('aria-expanded', 'true');
+      }
+
+      // Le focus AVANT la bulle : sur un champ qu'on vient de révéler, le
+      // navigateur a besoin d'une image pour la placer.
+      fautif.focus();
+      fautif.reportValidity();
+    },
+    true,
+  );
   section.addEventListener(
     'scroll',
     (evenement) => {
