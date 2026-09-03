@@ -1642,6 +1642,23 @@ export function serieDeLHabitude(habitude, faits = [], jour = new Date()) {
       curseur = versDateISO(ajouterJours(depuisDateISO(curseur), 1));
     }
 
+    // MAIS AUJOURD'HUI COMPTE DÈS QU'IL EST COCHÉ (2 septembre 2026, demande de
+    // Noé : « si je coche une case, je dois voir que la série a avancé »).
+    //
+    // La règle du 30 août ne bouge pas d'un pouce — un jour NON coché ne compte
+    // jamais comme manqué tant qu'il n'est pas fini —, elle se complète : ce
+    // qu'on protégeait, c'était le silence d'une journée en cours, pas le fait
+    // accompli. Une fois le rond plein, il n'y a plus rien d'incertain.
+    //
+    // Sans ça, le seul geste quotidien de la page ne produisait AUCUN retour sur
+    // la mesure qu'il sert : on cochait, et le chiffre attendait le lendemain.
+    // C'est déjà ainsi que la flamme se compte (`joursDAffileeDeLHabitude`) —
+    // d'aujourd'hui s'il est coché, d'hier sinon.
+    if (siens.has(aujourdhui)) {
+      serie += 1;
+      record = Math.max(record, serie);
+    }
+
     return {
       unite: 'jour',
       jours: serie,
@@ -1673,6 +1690,15 @@ export function serieDeLHabitude(habitude, faits = [], jour = new Date()) {
     serie = (parSemaine.get(curseur) ?? 0) >= habitude.cadence ? serie + 1 : Math.max(0, serie - 1);
     record = Math.max(record, serie);
     curseur = versDateISO(ajouterJours(depuisDateISO(curseur), 7));
+  }
+
+  // LA SEMAINE EN COURS COMPTE DÈS QU'ELLE EST TENUE — même règle qu'un jour
+  // coché, un cran plus haut. Elle ne peut que faire MONTER la série : une
+  // cadence pas encore atteinte n'est pas une semaine manquée, c'est une semaine
+  // qui n'est pas finie.
+  if ((parSemaine.get(semaineEnCours) ?? 0) >= habitude.cadence) {
+    serie += 1;
+    record = Math.max(record, serie);
   }
 
   return {

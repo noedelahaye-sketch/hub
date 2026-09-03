@@ -332,6 +332,32 @@ manqués donnent une série de 25, et non 8 comme le ferait un compteur qui reme
 en cours : la journée n'est pas finie, et compter un jour non encore vécu comme
 manqué ferait reculer la série chaque matin.
 
+**MAIS AUJOURD'HUI COMPTE DÈS QU'IL EST COCHÉ** (2 septembre 2026, demande de
+Noé : *« il doit y avoir l'évolution en direct — si je coche une case, je dois
+voir que la série a avancé »*).
+
+**La règle ci-dessus ne bouge pas d'un pouce, elle se complète** : ce qu'elle
+protège, c'est le SILENCE d'une journée en cours, pas le fait accompli. Un jour
+non coché ne compte jamais comme manqué tant qu'il n'est pas fini ; une fois le
+rond plein, il n'y a plus rien d'incertain.
+
+*Ce que ça répare* : le seul geste quotidien de la page ne produisait **aucun
+retour sur la mesure qu'il sert** — on cochait, et le chiffre attendait le
+lendemain. C'est déjà ainsi que la flamme se compte
+(`joursDAffileeDeLHabitude`) : d'aujourd'hui s'il est coché, d'hier sinon.
+
+**LA SEMAINE EN COURS SUIT LA MÊME RÈGLE**, un cran plus haut : elle compte dès
+que sa cadence est atteinte, et **elle ne peut que faire monter la série** — une
+cadence pas encore atteinte n'est pas une semaine manquée, c'est une semaine qui
+n'est pas finie. *(Vérifié : 2 pratiques sur 3 laissent la série à 0, la
+troisième la porte à 1.)*
+
+**Les chiffres se redessinent au clic** : `rendreTableau` recalcule
+`etatDesHabitudes` depuis `etat.faits`, qui vient de changer. Rien à câbler de
+plus — les mesures ne sont stockées nulle part, elles se déduisent des faits.
+*Mesuré à l'écran : cocher « Lire un peu » fait passer ses deux chiffres de 3 à
+4 sur-le-champ, décocher les ramène.*
+
 **LES TROIS NATURES SE SÉPARENT À L'ÉCRAN** — « Tous les jours », « Chaque
 semaine », « Quand ça vient ». Elles ne se comptent plus dans la même unité :
 les aligner sans le dire ferait lire « 25 » et « 9 » comme deux valeurs

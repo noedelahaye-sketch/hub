@@ -396,6 +396,26 @@ tuile (vérifié : tous les dix appellent `brancherCapture`).
 panneau replié, donc le même refus muet ; et un titre vide repartait par un
 `return` nu. Le curseur y revient maintenant avec « Il lui manque son nom. »
 
+### 0.1 sexies La série avance quand on coche
+
+*« Pour l'affichage des habitudes dans la page perso, il doit y avoir l'évolution
+en direct : si je coche une case, je dois voir que la série a avancé. »*
+
+**La série s'arrêtait AVANT aujourd'hui** (règle du 30 août), si bien que le seul
+geste quotidien de la page ne produisait **aucun retour sur la mesure qu'il
+sert** — on cochait, et le chiffre attendait le lendemain.
+
+La règle ne bouge pas d'un pouce, **elle se complète** : ce qu'elle protège,
+c'est le SILENCE d'une journée en cours, pas le fait accompli. Un jour non coché
+ne compte toujours jamais comme manqué ; une fois le rond plein, il n'y a plus
+rien d'incertain. C'est déjà ainsi que la flamme se compte. La semaine en cours
+suit la même règle un cran plus haut, et **elle ne peut que faire monter**.
+
+**Vérifié hors écran** (2/3 laisse la série à 0, 3/3 la porte à 1 ; un trou coûte
+toujours un cran, jamais tout) **et à l'écran** : cocher « Lire un peu » fait
+passer ses deux chiffres de 3 à 4 sur-le-champ, décocher les ramène. *La base a
+été remise dans son état — aucun fait du jour.*
+
 ### 0.2 Ce qui est parti de `#objectifs`
 
 - le dépliage d'un PROJET : `detailProjet`, `friseEtapes`, `surQuoiIlSeMesure`,
