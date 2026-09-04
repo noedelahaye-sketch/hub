@@ -6125,8 +6125,8 @@ li.livre-tuile {
    IL NE S'APPLIQUE PAS À LA TUILE POINTILLÉE : son cadre est le signe de ce qui
    manque, et un cadre à moitié effacé se lirait comme un défaut d'affichage. */
 .livre-couverture {
-  -webkit-mask-image: linear-gradient(to bottom, #000 38%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 38%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 20%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 20%, transparent 100%);
 }
 
 .livre-sans-couverture .livre-couverture {
@@ -6188,9 +6188,19 @@ li.livre-tuile {
    se disputent la même hauteur, c'est un de trop.** */
 .livre-tuile-titre {
   min-height: 2.6em;
-  font-size: 0.75rem;
-  /* 700 et non 600 (demande de Noé) : le titre est posé sur la fin de la
-     couverture, et il lui faut de quoi tenir contre une image. */
+  /* EN CLASH DISPLAY (2 septembre 2026, demande de Noé : « je ne la trouve pas
+     assez imposante par rapport au reste »). C'est la police des TITRES du hub,
+     et c'en est un : le nom du livre est ce qu'on lit une fois la couverture
+     reconnue, tout le reste de la tuile — thème, état, auteur — n'est que du
+     service. En police de texte à 700, il pesait le même poids qu'eux.
+
+     Elle est aussi celle du titre écrit dans une tuile pointillée : les deux
+     disent le nom d'un livre, ils ne peuvent pas le dire dans deux polices. */
+  font-family: var(--police-titre);
+  font-size: 0.8125rem;
+  /* 700 et non 600 : le titre est posé sur la fin de la couverture, et il lui
+     faut de quoi tenir contre une image. Clash Display n'a que ces deux
+     graisses — en demander plus la ferait clamper sans que l'écart se voie. */
   font-weight: 700;
   line-height: 1.3;
   display: -webkit-box;

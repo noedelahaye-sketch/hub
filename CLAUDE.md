@@ -811,6 +811,13 @@ gagner.
     d'affichage.
   - *Conséquence assumée : une couverture dont le bas porte du texte le perd.
     C'est la nature de l'effet.*
+- **LE TITRE EST EN CLASH DISPLAY** (2 septembre 2026, demande de Noé : « je ne
+  la trouve pas assez imposante par rapport au reste »). C'est la police des
+  TITRES du hub, et c'en est un : **le nom du livre est ce qu'on lit une fois la
+  couverture reconnue**, tout le reste de la tuile — thème, état, auteur — n'est
+  que du service. En police de texte à 700, il pesait le même poids qu'eux. C'est
+  aussi celle du titre écrit dans une tuile pointillée : les deux disent le nom
+  d'un livre, ils ne peuvent pas le dire dans deux polices.
 - **LES INFOS S'ALIGNENT D'UNE TUILE À L'AUTRE** (même jour, demande de Noé).
   Chaque bloc **réserve sa hauteur** — deux lignes pour le titre, une pastille
   pour le thème —, si bien qu'un titre court et un titre long laissent l'état et
