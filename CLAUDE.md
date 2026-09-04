@@ -798,6 +798,19 @@ gagner.
 - **UN LIVRE SANS COUVERTURE GARDE SA PLACE**, en tuile pointillée avec son
   titre : le pointillé est déjà le signe du hub pour « déclaré, pas encore
   rempli », et une étagère à trous se lirait comme une bibliothèque incomplète.
+- **LA COUVERTURE S'ÉTEINT VERS LE BAS, ET LE TEXTE Y REMONTE** (2 septembre
+  2026, demande de Noé). Le fondu enlève au rectangle son bord net : la vignette
+  ne s'arrête plus, elle se dissout dans la page, et le titre vient s'asseoir
+  dans ce qu'elle laisse. **L'étagère y gagne une allure de rayon plutôt que de
+  catalogue** — et vingt pixels de hauteur par tuile.
+  - **Un MASQUE et non un dégradé par-dessus** : posé en calque, il faudrait lui
+    donner la couleur du fond, et il se trahirait partout où ce fond change. Le
+    masque, lui, efface — c'est la page qui reparaît, quelle qu'elle soit.
+  - **Il ne s'applique pas à la tuile pointillée** : son cadre est le signe de ce
+    qui manque, et un cadre à moitié effacé se lirait comme un défaut
+    d'affichage.
+  - *Conséquence assumée : une couverture dont le bas porte du texte le perd.
+    C'est la nature de l'effet.*
 - **Le livre EN COURS porte sa couverture en grand**, à gauche de tout le reste :
   c'est celui qu'on ouvre ce soir. Les autres tiennent en vignette.
 - **Le menu à trois points se pose SUR la couverture** : sous le texte il aurait

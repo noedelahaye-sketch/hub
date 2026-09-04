@@ -6110,6 +6110,32 @@ li.livre-tuile {
   background: var(--fond-carte);
 }
 
+/* LA COUVERTURE S'ÉTEINT VERS LE BAS, ET LE TEXTE Y REMONTE (2 septembre 2026,
+   demande de Noé). Le fondu enlève au rectangle son bord net : la vignette ne
+   s'arrête plus, elle se dissout dans la page, et le titre vient s'asseoir dans
+   ce qu'elle laisse. L'étagère y gagne une allure de rayon plutôt que de
+   catalogue — et vingt pixels de hauteur par tuile.
+
+   Un MASQUE et non un dégradé par-dessus : posé en calque, il faudrait lui
+   donner la couleur du fond, et il se trahirait partout où ce fond change. Le
+   masque, lui, efface — c'est la page qui reparaît, quelle qu'elle soit.
+
+   IL NE S'APPLIQUE PAS À LA TUILE POINTILLÉE : son cadre est le signe de ce qui
+   manque, et un cadre à moitié effacé se lirait comme un défaut d'affichage. */
+.livre-couverture {
+  -webkit-mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
+}
+
+.livre-sans-couverture .livre-couverture {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+/* Le texte remonte DANS le fondu : c'est là que la couverture n'est plus qu'un
+   voile, et le titre s'y lit sans rien recouvrir. */
+.livre-tuile-titre { margin-top: -1.5rem; }
+
 /* `cover` et non `contain` : une couverture est un rectangle, on la remplit
    quitte à rogner quelques millimètres — un liseré de fond autour de chaque
    image ferait dix cadres dans le cadre. */
