@@ -5697,8 +5697,16 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    qui se remplit d'elle-même plutôt qu'un nombre de colonnes figé : la
    bibliothèque en compte trois aujourd'hui, elle en comptera trente.
 
-   9 rem de large : assez pour reconnaître une couverture, assez étroit pour en
-   aligner quatre sur un téléphone de 375 px. */
+   6,5 REM DE LARGE (2 septembre 2026, demande de Noé : « je préférerais, comme
+   souvent dans le site, que les tuiles soient plus compactes, plus longues que
+   larges, de manière à pouvoir en mettre côte à côte — on optimise mieux la
+   place comme ça »). Elles faisaient 9 rem, et trois tenaient de front là où six
+   tiennent maintenant.
+
+   C'est la mesure d'un DOS DE LIVRE sur une étagère, pas d'une affiche : on
+   reconnaît une couverture à sa couleur et à sa forme bien avant d'en lire le
+   titre, et c'est justement ce qu'on vient chercher ici. Descendre encore ferait
+   des vignettes qu'on ne reconnaîtrait plus. */
 /* `.bloc ul` MET TOUTES LES LISTES DU HUB EN FLEX-COLONNE, et il pèse une balise
    de plus (0-2-0) que le nom de classe seul : sans le préfixe, la grille ne
    s'appliquait pas et l'étagère s'empilait. **Une spécificité qu'on n'égale pas
@@ -5706,8 +5714,10 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    dans ce fichier. */
 .bloc ul.livres-etagere {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr));
-  gap: var(--espace-16);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 6.5rem), 1fr));
+  /* L'écart suit la tuile : 16 px entre des vignettes de 109 px aurait rendu en
+     blanc ce que la compacité vient de gagner. */
+  gap: var(--espace-12);
   margin: 0 0 var(--espace-16);
   padding: 0;
   list-style: none;
@@ -5725,7 +5735,7 @@ li.livre-tuile {
   /* La couverture d'abord, le texte dessous : `min-content` empêche la ligne du
      titre de voler de la hauteur à l'image. */
   grid-template-rows: auto min-content;
-  gap: var(--espace-8);
+  gap: var(--espace-4);
   min-width: 0;
 }
 
@@ -5762,10 +5772,10 @@ li.livre-tuile {
 }
 
 .livre-couverture-mot {
-  padding: var(--espace-8);
+  padding: var(--espace-4);
   font-family: var(--police-titre);
   font-weight: 600;
-  font-size: 0.8125rem;
+  font-size: 0.6875rem;
   line-height: 1.25;
   text-align: center;
   color: var(--texte-discret);
@@ -5779,8 +5789,10 @@ li.livre-tuile {
 
 /* Le titre sous la couverture, sur deux lignes au plus : la vignette le dit
    déjà pour un livre qu'on connaît, le texte n'est là que pour les autres. */
+/* Le corps suit la tuile : à 109 px de large, 13 px coupaient tous les titres
+   au deuxième mot. */
 .livre-tuile-titre {
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 600;
   line-height: 1.3;
   display: -webkit-box;
@@ -5790,7 +5802,7 @@ li.livre-tuile {
 }
 
 .livre-tuile-service {
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   color: var(--texte-discret);
   white-space: nowrap;
   overflow: hidden;
@@ -5802,8 +5814,8 @@ li.livre-tuile {
    d'un tiers pour un geste de second plan. */
 .livre-tuile .cap-menu {
   position: absolute;
-  top: var(--espace-4);
-  right: var(--espace-4);
+  top: 0;
+  right: 0;
 }
 
 .livre-tuile .livre-note { font-size: 0.75rem; }

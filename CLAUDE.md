@@ -780,9 +780,20 @@ bucket privé, adresses signées gardées un mois dans le `localStorage`.
 
 **L'ÉTAGÈRE** remplace la liste de lignes : une liste de titres se parcourt mot à
 mot, une étagère se balaie du regard. **C'est le seul écran du hub où l'image
-passe devant le texte.** Une grille qui se remplit d'elle-même (9 rem par
-couverture), le rapport **2/3** d'un livre de poche pour que les vignettes
-tiennent la même boîte — sans quoi l'étagère ferait des marches d'escalier.
+passe devant le texte.** Une grille qui se remplit d'elle-même, le rapport **2/3**
+d'un livre de poche pour que les vignettes tiennent la même boîte — sans quoi
+l'étagère ferait des marches d'escalier.
+
+**6,5 REM PAR COUVERTURE** (2 septembre 2026, demande de Noé : *« je préférerais,
+comme souvent dans le site, que les tuiles soient plus compactes, plus longues
+que larges, de manière à pouvoir en mettre côte à côte — on optimise mieux la
+place comme ça »*). Elles faisaient 9 rem. **C'est la mesure d'un DOS DE LIVRE
+sur une étagère, pas d'une affiche** : on reconnaît une couverture à sa couleur
+et à sa forme bien avant d'en lire le titre, et c'est ce qu'on vient chercher
+ici. *Mesuré sur une étagère de sept : quatre de front dans une colonne de
+523 px, contre trois avant.* L'écart tombe à 12 px et les corps d'un cran —
+16 px entre des vignettes de 114 rendraient en blanc ce que la compacité vient de
+gagner.
 
 - **UN LIVRE SANS COUVERTURE GARDE SA PLACE**, en tuile pointillée avec son
   titre : le pointillé est déjà le signe du hub pour « déclaré, pas encore

@@ -452,6 +452,11 @@ nombre exact de pages en plus que j'ai lu dans la page perso, pas que +10 et
 vraiment ses pages tous les soirs. Le geste était déjà branché pour les deux
 écrans — rien à câbler, seulement à offrir.
 
+**LES TUILES SONT PASSÉES DE 9 À 6,5 REM** (*« plus compactes, plus longues que
+larges, de manière à pouvoir en mettre côte à côte »*) : c'est la mesure d'un dos
+de livre sur une étagère, pas d'une affiche. *Mesuré sur une étagère de sept :
+quatre de front dans 523 px, contre trois avant.*
+
 **Vérifié à l'écran** : création avec couverture, affichage sur le livre en
 cours et dans l'étagère, tuile pointillée pour un livre sans image, suppression
 qui emporte le fichier, et le Carnet de Yuno qui charge toujours ses photos
