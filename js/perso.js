@@ -114,6 +114,9 @@ const vueEtat = {
   // Le critère dont le panneau est ouvert — un seul à la fois, comme partout.
   chipLivres: null,
   triLivres: { cle: 'defaut', sens: 1 },
+  // La cellule dont le menu est ouvert, dans la vue liste : « etat:<id> » ou
+  // « theme:<id> ». Une seule à la fois, comme partout dans le hub.
+  celluleLivre: null,
 };
 
 // --- Fabrication du HTML ----------------------------------------------------
@@ -849,6 +852,7 @@ export function construireFiltresLivres(
   ouverts = false,
   chip = null,
   tri = { cle: 'defaut', sens: 1 },
+  cellule = null,
 ) {
   const compte = (cle, valeur) =>
     livres.filter((livre) =>
@@ -1116,28 +1120,141 @@ export function livresFiltres(livres, filtres, tri = { cle: 'defaut', sens: 1 })
     });
 }
 
-// LA LISTE : une ligne par livre, les colonnes de sa base Notion — le titre, ses
-// thèmes, son état, sa note, son auteur. Toute la ligne mène à sa fiche.
-function ligneDeLivre(livre) {
+// LES COLONNES DE LA LISTE, NOMMÉES ET TRIABLES (2 septembre 2026, demande de
+// Noé : « rajoute le nom des colonnes dans la vue liste, et en appuyant dessus
+// ça permet de trier par leur type »).
+//
+// UN EN-TÊTE EST LE TRI À PORTÉE DE COLONNE : le panneau de tri existe et
+// couvre les mêmes clés, mais on ne va pas le chercher pour dire « range-moi
+// par auteur » quand le mot « Auteur » est là, en face de la colonne. Les deux
+// chemins écrivent le MÊME état — un tri qui se réglerait à deux endroits sans
+// s'accorder serait pire que pas d'en-tête.
+const COLONNES = [
+  { cle: 'titre', nom: 'Nom' },
+  { cle: 'theme', nom: 'Thème' },
+  { cle: 'statut', nom: 'État' },
+  { cle: 'note', nom: 'Note' },
+  { cle: 'auteur', nom: 'Auteur' },
+];
+
+function enTetesDeListe(tri) {
+  return `<div class="livres-entetes" role="row">
+    ${COLONNES.map(
+      ({ cle, nom }) => `<button type="button" class="livres-entete${
+        tri.cle === cle ? ' actif' : ''
+      }" data-trier="${cle}"
+        aria-label="Trier par ${nom.toLowerCase()}"
+        >${echapper(nom)}${
+          tri.cle === cle ? SIGNE[tri.sens > 0 ? 'monte' : 'descend'] : ''
+        }</button>`,
+    ).join('')}
+    <span class="livres-entete-vide" aria-hidden="true"></span>
+  </div>`;
+}
+
+// LA LISTE : une ligne par livre, les colonnes de sa base Notion — le nom, ses
+// thèmes, son état, sa note, son auteur.
+//
+// TROIS COLONNES SE RÈGLENT SUR PLACE (même demande : « je dois également
+// pouvoir modifier directement depuis la vue liste, l'état, la note et le type
+// de livre »). Ce sont exactement les trois que la fiche laisse changer d'un
+// geste, et pour la même raison : on les corrige souvent, et ouvrir une fiche
+// pour chacune ferait vingt allers-retours.
+//
+// LE NOM RESTE LA PORTE, et lui seul : la ligne entière ne peut plus être un
+// lien depuis qu'elle porte des contrôles — un bouton dans un lien n'est ni
+// valide ni cliquable.
+function ligneDeLivre(livre, menuOuvert) {
+  const themes = livre.themes ?? [];
+
   return `
-    <li class="livre-ligne-liste">
-      <a class="livre-ligne-ouvrir" href="#livre/${encodeURIComponent(livre.id)}">
-        <span class="livre-ligne-nom">${echapper(livre.titre)}</span>
-        <span class="livre-ligne-themes">${(livre.themes ?? [])
-          .map(
-            (theme) => `<span class="livre-theme" data-theme="${echapper(theme)}"
-              >${echapper(THEMES_LIVRE[theme] ?? theme)}</span>`,
-          )
-          .join('')}</span>
-        <span class="livre-ligne-etat" data-etat="${echapper(livre.statut)}">
-          <span class="cap-etat-point" aria-hidden="true"></span>${echapper(
+    <li class="livre-ligne-liste" data-livre="${echapper(livre.id)}">
+      <a class="livre-ligne-nom" href="#livre/${encodeURIComponent(livre.id)}"
+        >${echapper(livre.titre)}</a>
+
+      <span class="livre-ligne-cellule livre-ligne-themes">
+        <button type="button" class="livre-cellule-bouton"
+          data-cellule="theme:${echapper(livre.id)}"
+          aria-expanded="${menuOuvert === `theme:${livre.id}`}" aria-haspopup="listbox"
+          aria-label="Thèmes de « ${echapper(livre.titre)} »">${
+            themes.length
+              ? themes
+                  .map(
+                    (theme) => `<span class="livre-theme" data-theme="${echapper(theme)}"
+                      >${echapper(THEMES_LIVRE[theme] ?? theme)}</span>`,
+                  )
+                  .join('')
+              : '<span class="discret">—</span>'
+          }</button>
+        ${
+          menuOuvert === `theme:${livre.id}`
+            ? `<div class="choix-panneau livres-panneau">
+                <ul class="choix-capture">
+                  ${Object.entries(THEMES_LIVRE)
+                    .map(
+                      ([cle, mot]) => `
+                    <li><button type="button" data-poser-theme="${echapper(livre.id)}"
+                      data-valeur="${echapper(cle)}"
+                      class="${themes.includes(cle) ? 'actif' : ''}"
+                      aria-pressed="${themes.includes(cle)}"
+                      ><span class="livres-coche" aria-hidden="true">${
+                        themes.includes(cle) ? SIGNE.coche : ''
+                      }</span><span>${echapper(mot)}</span></button></li>`,
+                    )
+                    .join('')}
+                </ul>
+              </div>`
+            : ''
+        }
+      </span>
+
+      <span class="livre-ligne-cellule">
+        <button type="button" class="livre-cellule-bouton livre-ligne-etat"
+          data-cellule="etat:${echapper(livre.id)}" data-etat="${echapper(livre.statut)}"
+          aria-expanded="${menuOuvert === `etat:${livre.id}`}" aria-haspopup="listbox"
+          aria-label="État de « ${echapper(livre.titre)} »"
+          ><span class="cap-etat-point" aria-hidden="true"></span>${echapper(
             ETATS_LIVRE[livre.statut] ?? livre.statut,
-          )}</span>
-        <span class="livre-ligne-note">${
-          livre.note ? etoiles(livre.note) : '<span class="discret">—</span>'
-        }</span>
-        <span class="livre-ligne-auteur discret">${echapper(livre.auteur ?? '')}</span>
-      </a>
+          )}</button>
+        ${
+          menuOuvert === `etat:${livre.id}`
+            ? `<div class="choix-panneau livres-panneau">
+                <ul class="choix-capture">
+                  ${Object.entries(ETATS_LIVRE)
+                    .map(
+                      ([cle, mot]) => `
+                    <li><button type="button" data-poser-etat="${echapper(livre.id)}"
+                      data-valeur="${echapper(cle)}"
+                      class="${cle === livre.statut ? 'actif' : ''}"
+                      aria-pressed="${cle === livre.statut}"
+                      ><span class="livre-ligne-etat" data-etat="${echapper(cle)}"
+                        ><span class="cap-etat-point" aria-hidden="true"></span></span>${echapper(
+                          mot,
+                        )}</button></li>`,
+                    )
+                    .join('')}
+                </ul>
+              </div>`
+            : ''
+        }
+      </span>
+
+      <!-- LA NOTE SE POSE À L'ÉTOILE, sans menu : cinq cibles valent mieux qu'un
+           panneau pour un réglage qui tient sur une ligne. La même étoile
+           retouchée l'efface, comme sur la fiche. -->
+      <span class="livre-ligne-note" role="group"
+        aria-label="Note de « ${echapper(livre.titre)} »">
+        ${[1, 2, 3, 4, 5]
+          .map(
+            (rang) => `<button type="button" class="livre-etoile-ligne"
+              data-noter-livre="${echapper(livre.id)}" data-rang="${rang}"
+              aria-pressed="${rang <= (livre.note ?? 0)}"
+              aria-label="${rang} sur 5">${rang <= (livre.note ?? 0) ? '★' : '☆'}</button>`,
+          )
+          .join('')}
+      </span>
+
+      <span class="livre-ligne-auteur discret">${echapper(livre.auteur ?? '')}</span>
       ${menuDiscret('livre', livre.id)}
     </li>`;
 }
@@ -1151,6 +1268,7 @@ export function construireBibliotheque(
   ouverts = false,
   chip = null,
   tri = { cle: 'defaut', sens: 1 },
+  cellule = null,
 ) {
   const ajout = `
     <button type="button" class="cap-ajout-discret" data-ajout="livre">
@@ -1218,7 +1336,10 @@ export function construireBibliotheque(
     ${
       retenus.length
         ? vue === 'liste'
-          ? `<ul class="livres-liste-table">${retenus.map(ligneDeLivre).join('')}</ul>`
+          ? `${enTetesDeListe(tri)}
+             <ul class="livres-liste-table">${retenus
+               .map((livre) => ligneDeLivre(livre, cellule))
+               .join('')}</ul>`
           : `<ul class="livres-etagere">${etagere}</ul>`
         : vide
     }
@@ -2661,6 +2782,7 @@ export default {
         vueEtat.filtresOuverts,
         vueEtat.chipLivres,
         vueEtat.triLivres,
+        vueEtat.celluleLivre,
       );
       // LE CURSEUR RESTE DANS LA RECHERCHE : on redessine à chaque lettre, et
       // sans ça le champ perdait le focus au premier caractère. Il revient au
@@ -2834,6 +2956,64 @@ export default {
     // NOTER DES PAGES : l'écran d'abord, l'écriture derrière. La séance est
     // ajoutée à la liste locale, donc l'avancée et le rythme se recalculent
     // tout seuls — ils ne sont stockés nulle part.
+    // --- LES TROIS ÉCRITURES DE LA LISTE ---
+    //
+    // L'écran d'abord, le réseau ensuite, et la valeur d'avant revient si
+    // l'écriture échoue : la règle du hub (js/ecriture.js). Elles ne passent pas
+    // par `modifierAussitot` parce qu'elles touchent un objet, pas une liste.
+    const ecrireLivre = async (livre, champs, mot) => {
+      const avant = { ...livre };
+      Object.assign(livre, champs);
+      rendreBibliotheque();
+      rendreTableau();
+
+      try {
+        // TERMINER UN LIVRE ÉCRIT UNE VICTOIRE, et c'est `terminerLivre` qui le
+        // sait : passer par `modifierLivre` la ferait manquer, alors que finir un
+        // livre en est une. Même règle que sur sa fiche.
+        if (champs.statut === 'lu') Object.assign(livre, await api.terminerLivre(avant, livre.note));
+        else Object.assign(livre, await api.modifierLivre(livre.id, champs));
+      } catch (souci) {
+        console.error('Livre non modifié', souci);
+        Object.assign(livre, avant);
+        etat.message = `Ça n'a pas pu être enregistré — ${mot} est revenu${
+          mot.startsWith('la') ? 'e' : ''
+        }.`;
+        rendreBibliotheque();
+        rendreTableau();
+      }
+    };
+
+    async function changerEtatDuLivre(id, statut) {
+      const livre = etat.livres.find((l) => l.id === id);
+      if (!livre || statut === livre.statut) return rendreBibliotheque();
+
+      // Le hub pose les dates qu'il peut poser : commencer un livre écrit son
+      // `commence_le`, le finir son `fini_le`.
+      const champs = { statut };
+      if (statut === 'en_cours' && !livre.commence_le) champs.commence_le = versDateISO();
+      if (statut === 'lu' && !livre.fini_le) champs.fini_le = versDateISO();
+      return ecrireLivre(livre, champs, "l'état");
+    }
+
+    async function basculerThemeDuLivre(id, theme) {
+      const livre = etat.livres.find((l) => l.id === id);
+      if (!livre) return;
+      const themes = livre.themes ?? [];
+      return ecrireLivre(
+        livre,
+        { themes: themes.includes(theme) ? themes.filter((t) => t !== theme) : [...themes, theme] },
+        'le thème',
+      );
+    }
+
+    async function noterUnLivre(id, rang) {
+      const livre = etat.livres.find((l) => l.id === id);
+      if (!livre) return;
+      // La même étoile retouchée efface la note, comme sur la fiche.
+      return ecrireLivre(livre, { note: livre.note === rang ? null : rang }, 'la note');
+    }
+
     async function noterDesPages(livreId, pages) {
       if (!pages || Number.isNaN(pages)) return;
       const provisoire = {
@@ -3169,6 +3349,35 @@ export default {
         return;
       }
 
+      // --- LES TROIS COLONNES QUI SE RÈGLENT SUR PLACE ---
+
+      const cellule = dans('cellule');
+      if (cellule) {
+        const cle = cellule.dataset.cellule;
+        vueEtat.celluleLivre = vueEtat.celluleLivre === cle ? null : cle;
+        vueEtat.chipLivres = null;
+        rendreBibliotheque();
+        return;
+      }
+
+      const poserEtat = dans('poser-etat');
+      if (poserEtat) {
+        vueEtat.celluleLivre = null;
+        return changerEtatDuLivre(poserEtat.dataset.poserEtat, poserEtat.dataset.valeur);
+      }
+
+      const poserTheme = dans('poser-theme');
+      if (poserTheme) {
+        // Le panneau RESTE ouvert : un livre porte souvent deux thèmes, et le
+        // rouvrir à chaque coche serait un geste pour rien.
+        return basculerThemeDuLivre(poserTheme.dataset.poserTheme, poserTheme.dataset.valeur);
+      }
+
+      const noterLivre = dans('noter-livre');
+      if (noterLivre) {
+        return noterUnLivre(noterLivre.dataset.noterLivre, Number(noterLivre.dataset.rang));
+      }
+
       const trier = dans('trier');
       if (trier) {
         const cle = trier.dataset.trier;
@@ -3204,8 +3413,12 @@ export default {
       // Un clic AILLEURS referme le panneau ouvert — jamais la rangée, qu'on
       // vient d'ouvrir exprès. Il arrive APRÈS les gestes ci-dessus : ceux-ci se
       // sont déjà servis.
-      if (vueEtat.chipLivres && !evenement.target.closest('.livres-critere')) {
+      if (
+        (vueEtat.chipLivres && !evenement.target.closest('.livres-critere')) ||
+        (vueEtat.celluleLivre && !evenement.target.closest('.livre-ligne-cellule'))
+      ) {
         vueEtat.chipLivres = null;
+        vueEtat.celluleLivre = null;
         rendreBibliotheque();
       }
 

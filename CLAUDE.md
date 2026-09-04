@@ -937,8 +937,41 @@ recherche »). Deux essais avant celui-là, et chacun apprend quelque chose :
   sa boîte à 53 px et posait le cadre sept pixels trop haut, à hauteurs pourtant
   égales. **Une marge héritée d'un autre contexte est une mesure qu'on n'a pas
   choisie.**
-- **Le tri : l'état, puis la note, puis le titre.** On cherche rarement un livre
-  par sa date de saisie.
+- **Le tri par défaut : l'état, puis la note, puis le titre.** On cherche
+  rarement un livre par sa date de saisie.
+
+**LES COLONNES SONT NOMMÉES, ET LEUR NOM TRIE** (2 septembre 2026, demande de
+Noé) — Nom · Thème · État · Note · Auteur. **Un en-tête est le tri à portée de
+colonne** : le panneau de tri couvre les mêmes clés, mais on ne va pas le
+chercher pour dire « range-moi par auteur » quand le mot est là, en face de la
+colonne. **Les deux chemins écrivent le MÊME état** — un tri qui se réglerait à
+deux endroits sans s'accorder serait pire que pas d'en-tête. Presser deux fois
+retourne le sens.
+- **En minuscules, la première lettre exceptée** : les capitales et leur
+  écartement sont le dessin d'un LIBELLÉ DE SECTION dans le hub — « À FAIRE »,
+  « TA LECTURE » —, or ce n'en est pas un ; c'est le nom d'une colonne, qu'on lit
+  à hauteur de ligne et qu'on presse.
+- **Les colonnes sont déclarées UNE fois** (`--colonnes-livres`), et l'en-tête
+  comme les lignes s'y règlent : deux gabarits séparés finiraient par ne plus
+  tomber en face.
+- **L'en-tête disparaît sur téléphone**, où la ligne se replie en trois rangs :
+  un en-tête qui ne coiffe plus de colonnes ne nomme rien. Le tri reste à un
+  geste, dans son panneau.
+
+**TROIS COLONNES SE RÈGLENT SUR PLACE** — l'état, la note, le thème (même
+demande). Ce sont exactement les trois que la fiche laisse changer d'un geste, et
+pour la même raison : on les corrige souvent, et ouvrir une fiche pour chacune
+ferait vingt allers-retours.
+- **Le nom reste la porte, et lui seul** : la ligne entière ne peut plus être un
+  lien depuis qu'elle porte des contrôles — un bouton dans un lien n'est ni
+  valide ni cliquable.
+- **La note se pose à l'étoile, sans menu** : cinq cibles valent mieux qu'un
+  panneau pour un réglage qui tient sur une ligne. La même étoile retouchée
+  l'efface, comme sur la fiche.
+- **Le panneau des thèmes reste ouvert entre deux coches** : un livre en porte
+  souvent deux.
+- **Passer à « lu » écrit une victoire**, ici comme sur la fiche : c'est
+  `terminerLivre` qui le sait.
 
 **LE THÈME SE LIT SUR LA TUILE ET SUR LA FICHE** (2 septembre 2026, demande de
 Noé). Sur la tuile il passe **avant l'état et l'auteur** : c'est ce qui distingue

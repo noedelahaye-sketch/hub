@@ -5876,39 +5876,115 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   list-style: none;
 }
 
+.bloc ul.livres-liste-table li.livre-ligne-liste:last-child { border-bottom: 0; }
+
+/* LES COLONNES SONT DÉCLARÉES UNE FOIS, et l'en-tête comme les lignes s'y
+   règlent : deux gabarits séparés finiraient par ne plus tomber en face. */
+.livres-liste-table,
+.livres-entetes {
+  --colonnes-livres: minmax(0, 2fr) minmax(0, 1.2fr) 7rem 5.5rem minmax(0, 1fr) 2rem;
+}
+
+.livres-entetes {
+  display: grid;
+  grid-template-columns: var(--colonnes-livres);
+  gap: var(--espace-12);
+  padding: 0 0 var(--espace-4);
+  border-bottom: 1px solid var(--bordure);
+}
+
+/* UN EN-TÊTE EST UN BOUTON : presser « Auteur » range par auteur, et le presser
+   de nouveau retourne le sens. Il en a l'allure d'un libellé de colonne, pas
+   celle d'un bouton — c'est la flèche qui dit qu'il a répondu. */
+.livres-entete {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-4);
+  padding: 0;
+  font-family: inherit;
+  /* EN MINUSCULES, la première lettre exceptée (2 septembre 2026, demande de
+     Noé). Les capitales et leur écartement sont le dessin d'un LIBELLÉ DE
+     SECTION dans le hub — « À FAIRE », « TA LECTURE » —, or ce n'en est pas un :
+     c'est le nom d'une colonne, qu'on lit à hauteur de ligne et qu'on presse.
+     Le corps monte d'un cran, les minuscules ayant moins de hauteur d'x que des
+     capitales. */
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: left;
+  color: var(--texte-discret);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.livres-entete:hover { color: var(--texte); }
+.livres-entete.actif { color: var(--accent); }
+
 .bloc ul.livres-liste-table li.livre-ligne-liste {
   position: relative;
-  display: block;
-  padding: 0;
+  display: grid;
+  grid-template-columns: var(--colonnes-livres);
+  align-items: center;
+  gap: var(--espace-12);
+  padding: var(--espace-4) 0;
   background: none;
   border: 0;
   border-bottom: 1px solid var(--bordure-douce);
   border-radius: 0;
 }
 
-.bloc ul.livres-liste-table li.livre-ligne-liste:last-child { border-bottom: 0; }
+.livre-ligne-liste:hover { background: color-mix(in srgb, var(--texte) 4%, transparent); }
 
-.livre-ligne-ouvrir {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1.2fr) auto auto minmax(0, 1fr);
+/* LES CELLULES QUI SE RÈGLENT portent leur menu : il faut donc qu'elles soient
+   le repère de position de leur panneau. */
+.livre-ligne-cellule { position: relative; min-width: 0; }
+
+/* Le bouton d'une cellule n'a l'air de rien tant qu'on ne le survole pas : une
+   liste de vingt lignes avec soixante contours serait un damier. */
+.livre-cellule-bouton {
+  display: flex;
   align-items: center;
-  gap: var(--espace-12);
-  padding: var(--espace-8) 2rem var(--espace-8) 0;
+  flex-wrap: wrap;
+  gap: var(--espace-4);
+  width: 100%;
+  padding: var(--espace-4);
+  margin: calc(-1 * var(--espace-4));
+  font: inherit;
+  text-align: left;
   color: inherit;
-  text-decoration: none;
+  background: none;
+  border: 0;
+  border-radius: var(--rayon-controle);
+  cursor: pointer;
 }
 
-.livre-ligne-ouvrir:hover { background: color-mix(in srgb, var(--texte) 5%, transparent); }
+.livre-cellule-bouton:hover { background: color-mix(in srgb, var(--texte) 8%, transparent); }
+
+.livre-etoile-ligne {
+  padding: 0;
+  font-size: 0.8125rem;
+  line-height: 1;
+  color: var(--texte-discret);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.livre-etoile-ligne[aria-pressed="true"] { color: var(--accent); }
 
 .livre-ligne-nom {
   font-size: 0.875rem;
   font-weight: 600;
+  color: inherit;
+  text-decoration: none;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.livre-ligne-themes { display: flex; flex-wrap: wrap; gap: var(--espace-4); min-width: 0; }
+.livre-ligne-nom:hover { text-decoration: underline; }
+
+
 
 /* UNE COULEUR PAR THÈME, tirée du nom lui-même : le hub n'a pas de palette pour
    ça, et en déclarer une obligerait à la compléter à chaque thème nouveau. La
@@ -5951,23 +6027,25 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   white-space: nowrap;
 }
 
-.livre-ligne-liste > .cap-menu {
-  position: absolute;
-  top: 50%;
-  right: 0;
-  transform: translateY(-50%);
-}
+.livre-ligne-liste > .cap-menu { justify-self: end; }
 
 /* Sur téléphone, la ligne se replie en deux rangs : le nom d'abord, le reste
    dessous. Cinq colonnes dans 343 px feraient soixante pixels chacune, où plus
    rien ne se lit. */
+/* Sur téléphone, la ligne se replie en trois rangs et l'en-tête disparaît : six
+   colonnes dans 343 px feraient cinquante pixels chacune, où plus rien ne se
+   lit — et un en-tête qui ne coiffe plus de colonnes ne nomme rien. Le tri reste
+   à un geste, dans son panneau. */
 @media (max-width: 48rem) {
-  .livre-ligne-ouvrir {
+  .livres-entetes { display: none; }
+
+  .bloc ul.livres-liste-table li.livre-ligne-liste {
     grid-template-columns: minmax(0, 1fr) auto;
     row-gap: var(--espace-4);
+    padding: var(--espace-8) 0;
   }
+
   .livre-ligne-nom { grid-column: 1 / -1; }
-  .livre-ligne-themes { grid-column: 1; }
   .livre-ligne-auteur { grid-column: 1 / -1; }
 }
 
