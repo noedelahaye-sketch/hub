@@ -5688,7 +5688,164 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
 .livre-note { flex: none; font-size: 0.75rem; color: var(--famille-calme); letter-spacing: 1px; }
 
-.livres-liste .perso-ligne-titre { font-size: 0.875rem; }
+/* ---------------------------------------------------------------------------
+   L'ÉTAGÈRE (2 septembre 2026, demande de Noé : « la couverture du livre, ce qui
+   permettrait d'avoir un aperçu visuel dans la bibliothèque »).
+
+   Une liste de titres se parcourt mot à mot ; une étagère se balaie du regard.
+   C'est le seul écran du hub où l'image passe devant le texte — d'où une grille
+   qui se remplit d'elle-même plutôt qu'un nombre de colonnes figé : la
+   bibliothèque en compte trois aujourd'hui, elle en comptera trente.
+
+   9 rem de large : assez pour reconnaître une couverture, assez étroit pour en
+   aligner quatre sur un téléphone de 375 px. */
+/* `.bloc ul` MET TOUTES LES LISTES DU HUB EN FLEX-COLONNE, et il pèse une balise
+   de plus (0-2-0) que le nom de classe seul : sans le préfixe, la grille ne
+   s'appliquait pas et l'étagère s'empilait. **Une spécificité qu'on n'égale pas
+   est une règle qu'on n'écrit pas** — c'est la sixième fois que ce piège se paie
+   dans ce fichier. */
+.bloc ul.livres-etagere {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr));
+  gap: var(--espace-16);
+  margin: 0 0 var(--espace-16);
+  padding: 0;
+  list-style: none;
+}
+
+/* Même chose un cran plus bas : `.bloc li` fait de chaque ligne une tuile, avec
+   son fond et son rembourrage. Ici la COUVERTURE est la tuile — le cadre autour
+   d'elle en ferait deux. */
+li.livre-tuile {
+  position: relative;
+  display: grid;
+  padding: 0;
+  background: none;
+  border: 0;
+  /* La couverture d'abord, le texte dessous : `min-content` empêche la ligne du
+     titre de voler de la hauteur à l'image. */
+  grid-template-rows: auto min-content;
+  gap: var(--espace-8);
+  min-width: 0;
+}
+
+/* LE RAPPORT D'UN LIVRE, ET NON CELUI DE LA PHOTO : 2/3, la proportion d'un
+   livre de poche. Toutes les couvertures tiennent alors la même boîte, et
+   l'étagère garde ses lignes — une grille d'images aux hauteurs libres ferait
+   des marches d'escalier. */
+.livre-couverture {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: var(--rayon-controle);
+  background: var(--fond-carte);
+}
+
+/* `cover` et non `contain` : une couverture est un rectangle, on la remplit
+   quitte à rogner quelques millimètres — un liseré de fond autour de chaque
+   image ferait dix cadres dans le cadre. */
+.livre-couverture img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* UN LIVRE SANS COUVERTURE GARDE SA PLACE : le pointillé est déjà le signe du
+   hub pour « déclaré, pas encore rempli ». Une étagère à trous se lirait comme
+   une bibliothèque incomplète, pas comme des images qui manquent. */
+.livre-sans-couverture .livre-couverture {
+  background: none;
+  border: 1px dashed var(--bordure);
+}
+
+.livre-couverture-mot {
+  padding: var(--espace-8);
+  font-family: var(--police-titre);
+  font-weight: 600;
+  font-size: 0.8125rem;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--texte-discret);
+  /* Quatre lignes au plus : un titre long ne doit pas remplir la tuile jusqu'aux
+     bords, sinon il ne se lit plus comme un pis-aller mais comme un dessin. */
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Le titre sous la couverture, sur deux lignes au plus : la vignette le dit
+   déjà pour un livre qu'on connaît, le texte n'est là que pour les autres. */
+.livre-tuile-titre {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.livre-tuile-service {
+  font-size: 0.6875rem;
+  color: var(--texte-discret);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Le menu à trois points se pose SUR la couverture, en haut à droite : sous le
+   texte il aurait ajouté une ligne à chaque tuile, et l'étagère aurait grandi
+   d'un tiers pour un geste de second plan. */
+.livre-tuile .cap-menu {
+  position: absolute;
+  top: var(--espace-4);
+  right: var(--espace-4);
+}
+
+.livre-tuile .livre-note { font-size: 0.75rem; }
+
+/* LE LIVRE EN COURS PORTE SA COUVERTURE EN GRAND, à gauche du reste : c'est
+   celui qu'on ouvre ce soir. Sans couverture, il garde exactement la mise en
+   page qu'il avait — d'où la classe posée sur lui seulement quand il y en a
+   une. */
+.livre-encours.avec-couverture {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  column-gap: var(--espace-16);
+  align-items: start;
+}
+
+/* LE CORPS EST UNE ENVELOPPE, donc la carte n'a que DEUX éléments : l'image et
+   le texte. Sans elle, les six enfants du bloc étaient six éléments de grille —
+   la couverture ne se posait qu'à côté du PREMIER, et un blanc de cent pixels
+   s'ouvrait sous le titre. Elle existe avec ou sans couverture : deux structures
+   selon les données finissent par diverger. */
+.livre-encours-corps { min-width: 0; }
+
+/* Le menu du livre en cours se pose en haut à droite de sa carte, comme sur une
+   tuile de l'étagère : la carte est déjà pleine, et une ligne de plus sous les
+   gestes l'aurait allongée pour un geste de second plan. */
+.livre-encours { position: relative; }
+.livre-encours > .cap-menu { position: absolute; top: var(--espace-12); right: var(--espace-12); }
+
+.livre-encours-couverture {
+  display: block;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: var(--rayon-controle);
+  background: var(--fond-doux);
+}
+
+.livre-encours-couverture img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 
 /* --- L'espace perso, refondu le 29 août 2026 --------------------------------
    Demande de Noé : « la forme qui correspond à comment a évolué le site ».

@@ -618,12 +618,30 @@ function etoiles(note) {
 
 const MOTS_STATUT = { a_lire: 'à lire', en_cours: 'en cours', lu: 'lu', repose: 'reposé' };
 
-function livreDuHaut(livre, seances) {
+function livreDuHaut(livre, seances, urls = {}) {
   const { lues, part, rythme } = avanceeDuLivre(livre, seances);
   const citation = (livre.citations ?? []).at(-1);
+  const url = livre.couverture ? urls[livre.couverture] : null;
 
   return `
-    <article class="livre-encours" data-livre="${echapper(livre.id)}">
+    <article class="livre-encours${url ? ' avec-couverture' : ''}"
+      data-livre="${echapper(livre.id)}">
+      ${
+        // LE LIVRE EN COURS PORTE SA COUVERTURE EN GRAND, à gauche de tout le
+        // reste : c'est celui qu'on ouvre ce soir, et c'est la seule image de la
+        // page qui mérite d'occuper de la place. Les autres tiennent en vignette
+        // dans l'étagère.
+        url
+          ? `<span class="livre-encours-couverture"><img src="${echapper(url)}"
+              alt="" loading="lazy" decoding="async"></span>`
+          : ''
+      }
+      <!-- TOUT LE RESTE DANS UNE ENVELOPPE, et pas seulement quand il y a une
+           couverture : deux structures selon les données finissent par diverger.
+           Sans elle, les six enfants du bloc étaient six éléments de grille — la
+           couverture ne pouvait pas se poser À CÔTÉ d'eux, seulement à côté du
+           PREMIER, et un blanc de cent pixels s'ouvrait sous le titre. -->
+      <div class="livre-encours-corps">
       <span class="livre-titre">${echapper(livre.titre)}</span>
       ${livre.auteur ? `<span class="livre-auteur">${echapper(livre.auteur)}</span>` : ''}
 
@@ -663,10 +681,51 @@ function livreDuHaut(livre, seances) {
         <button type="button" class="lien-discret" data-livre-fini="${echapper(livre.id)}"
           >Je l'ai fini</button>
       </span>
+      </div>
+      <!-- LE LIVRE EN COURS N'AVAIT PAS DE MENU (2 septembre 2026), et les
+           couvertures l'ont rendu visible : c'est le livre qu'on voudrait
+           illustrer en premier, et il était le seul qu'on ne pouvait ni modifier
+           ni retirer sans le finir d'abord. Tous les autres l'ont depuis le
+           29 août. -->
+      ${menuDiscret('livre', livre.id)}
     </article>`;
 }
 
-export function construireBibliotheque(livres, seances) {
+// L'ÉTAGÈRE (2 septembre 2026, demande de Noé : « j'aimerais pouvoir rajouter la
+// couverture du livre, ce qui permettrait d'avoir un aperçu visuel dans la
+// bibliothèque »).
+//
+// UNE COUVERTURE SE RECONNAÎT AVANT DE SE LIRE, et c'est tout l'objet de la
+// demande : une liste de titres se parcourt mot à mot, une étagère se balaie du
+// regard. C'est le seul écran du hub où l'image passe devant le texte.
+//
+// UN LIVRE SANS COUVERTURE GARDE SA PLACE, en tuile pointillée avec son titre —
+// le pointillé est déjà le signe du hub pour « déclaré, pas encore rempli », et
+// une étagère à trous se lirait comme une bibliothèque incomplète plutôt que
+// comme des couvertures qui manquent.
+function tuileDeLivre(livre, urls, service) {
+  const url = livre.couverture ? urls[livre.couverture] : null;
+
+  return `
+    <li class="livre-tuile${url ? '' : ' livre-sans-couverture'}"
+      data-livre="${echapper(livre.id)}">
+      <span class="livre-couverture">
+        ${
+          url
+            // `loading="lazy"` : une étagère de trente livres ne descend pas
+            // trente images pour en montrer six.
+            ? `<img src="${echapper(url)}" alt="" loading="lazy" decoding="async">`
+            : `<span class="livre-couverture-mot">${echapper(livre.titre)}</span>`
+        }
+      </span>
+      <span class="livre-tuile-titre">${echapper(livre.titre)}</span>
+      <span class="livre-tuile-service">${echapper(service)}</span>
+      ${etoiles(livre.note)}
+      ${menuDiscret('livre', livre.id)}
+    </li>`;
+}
+
+export function construireBibliotheque(livres, seances, urls = {}) {
   const ajout = `
     <button type="button" class="cap-ajout-discret" data-ajout="livre">
       ${SIGNE.plus}<span>Ajouter un livre</span></button>`;
@@ -681,10 +740,10 @@ export function construireBibliotheque(livres, seances) {
   const autres = livres.filter((livre) => livre.id !== encours?.id);
 
   return `
-    ${encours ? livreDuHaut(encours, seances) : ''}
+    ${encours ? livreDuHaut(encours, seances, urls) : ''}
     ${
       autres.length
-        ? `<ul class="perso-lignes livres-liste">${autres
+        ? `<ul class="livres-etagere">${autres
             .map((livre) => {
               const { lues } = avanceeDuLivre(livre, seances);
               const service = [
@@ -693,15 +752,7 @@ export function construireBibliotheque(livres, seances) {
                 livre.statut === 'repose' && lues ? `${lues} pages lues` : '',
               ].filter(Boolean);
 
-              return `
-        <li class="perso-ligne" data-livre="${echapper(livre.id)}">
-          <span class="perso-ligne-corps">
-            <span class="perso-ligne-titre">${echapper(livre.titre)}</span>
-            <span class="perso-ligne-service">${echapper(service.join(' · '))}</span>
-          </span>
-          ${etoiles(livre.note)}
-          ${menuDiscret('livre', livre.id)}
-        </li>`;
+              return tuileDeLivre(livre, urls, service.join(' · '));
             })
             .join('')}</ul>`
         : ''
@@ -801,6 +852,16 @@ export function construireTableauPerso(donnees) {
                          `<button type="button" class="livre-pas-bouton" data-pages="${pas}"
                            data-livre-pages="${echapper(livre.id)}">+${pas}</button>`,
                      ).join('')}
+                     <!-- « autre » ouvre le champ où l'on tape le nombre exact
+                          (2 septembre 2026, demande de Noé). Il existait sur la
+                          bibliothèque depuis le premier jour et manquait ICI,
+                          c'est-à-dire sur l'écran où l'on note vraiment ses
+                          pages tous les soirs : +10 et +25 ne sont que des
+                          raccourcis, et une lecture fait rarement un compte
+                          rond. Le geste est déjà branché pour les deux écrans —
+                          rien à câbler, seulement à offrir. -->
+                     <button type="button" class="livre-pas-bouton"
+                       data-livre-autre="${echapper(livre.id)}">autre</button>
                    </span>
                  </span>
                </div>`
@@ -1769,6 +1830,19 @@ export const FORMULAIRES = {
     champs: (v) => [
       { nom: 'titre', libelle: 'Titre', type: 'text', requis: true, valeur: v.titre },
       { nom: 'auteur', libelle: 'Auteur (facultatif)', type: 'text', valeur: v.auteur },
+      // LA COUVERTURE (2 septembre 2026, demande de Noé) — une photo qu'on
+      // prend, jamais un lien collé : l'image vit dans le hub, elle ne peut pas
+      // disparaître, et regarder sa bibliothèque ne prévient personne.
+      //
+      // `capture` n'est PAS posé : sur téléphone il forcerait l'appareil photo,
+      // alors qu'une couverture se prend aussi bien dans la pellicule. Le
+      // navigateur offre les deux quand on ne choisit pas à sa place.
+      {
+        nom: 'couverture',
+        libelle: v.couverture ? 'Changer la couverture' : 'Couverture (facultatif)',
+        type: 'file',
+        accepte: 'image/*',
+      },
       {
         nom: 'pages',
         libelle: 'Nombre de pages (facultatif)',
@@ -1901,7 +1975,10 @@ export default {
       if (/^\d{4}-\d{2}-\d{2}$/.test(nouvelle?.id ?? '')) ouvrirLaJournee(nouvelle.id);
     };
 
-    const etat = { intentions: [], evenements: [], victoires: [], humeurDuJour: null, habitudes: [], faits: [], livres: [], seances: [] };
+    // `couvertures` : les adresses SIGNÉES des couvertures, par chemin. Elles ne
+    // vivent pas sur le livre — une adresse expire, un chemin non — et se
+    // regarnissent d'un chargement à l'autre (voir `urlsDesCouvertures`).
+    const etat = { intentions: [], evenements: [], victoires: [], humeurDuJour: null, habitudes: [], faits: [], livres: [], seances: [], couvertures: {} };
     const bloc = (nom) => section.querySelector(`[data-bloc="${nom}"]`);
 
     const rendreIntentions = () => {
@@ -2101,7 +2178,11 @@ export default {
     };
 
     const rendreBibliotheque = () => {
-      bloc('bibliotheque').innerHTML = construireBibliotheque(etat.livres, etat.seances);
+      bloc('bibliotheque').innerHTML = construireBibliotheque(
+        etat.livres,
+        etat.seances,
+        etat.couvertures,
+      );
     };
     const rendreHabitudes = () => {
       bloc('habitudes').innerHTML = construireHabitudes(
@@ -2151,6 +2232,21 @@ export default {
       });
       rendreHabitudes();
       rendreBibliotheque();
+
+      // LES COUVERTURES ARRIVENT APRÈS, et l'étagère se redessine quand elles
+      // sont là : signer une poignée d'adresses ne doit pas retarder la page
+      // entière. Sans couverture, pas de requête du tout.
+      const chemins = livres.map((livre) => livre.couverture).filter(Boolean);
+      if (chemins.length) {
+        api
+          .urlsDesCouvertures(chemins)
+          .then((urls) => {
+            Object.assign(etat.couvertures, urls);
+            rendreBibliotheque();
+            rendreTableau();
+          })
+          .catch((souci) => console.error('Couvertures non signées', souci));
+      }
       rendreTableau();
       // La journée d'aujourd'hui nourrit AUSSI le tableau de bord : c'est de là
       // que vient le mot du jour. On la CHARGE sans l'ouvrir — depuis que le
@@ -2338,6 +2434,18 @@ export default {
           note: champs.note ? Number(champs.note) : null,
         };
 
+        // L'ENVOI D'UN FICHIER N'EST PAS OPTIMISTE, et c'est l'exception écrite
+        // dans les conventions : on ne peut pas afficher une image qu'on n'a pas
+        // encore. Le formulaire attend donc, comme celui du Carnet de terrain.
+        //
+        // Un champ vide n'efface rien : ne rien redonner, c'est garder ce qui
+        // est là. C'est la règle de la durée qu'on passe au moment de cocher.
+        const fichier = champs.couverture;
+        const ancienne = id ? etat.livres.find((l) => l.id === id)?.couverture : null;
+        if (fichier instanceof File && fichier.size) {
+          valeurs.couverture = await api.televerserCouverture(fichier);
+        }
+
         if (id) {
           const livre = etat.livres.find((l) => l.id === id);
           Object.assign(livre, await api.modifierLivre(id, valeurs));
@@ -2349,6 +2457,13 @@ export default {
             }),
             ...etat.livres,
           ];
+        }
+
+        if (valeurs.couverture) {
+          Object.assign(etat.couvertures, await api.urlsDesCouvertures([valeurs.couverture]));
+          // L'ancienne n'est plus référencée par personne : elle part, sinon on
+          // paie un fichier qu'on ne reverra jamais.
+          if (ancienne && ancienne !== valeurs.couverture) await api.supprimerCouverture(ancienne);
         }
         rendreBibliotheque();
       }
@@ -2634,9 +2749,22 @@ export default {
         const [liste, effacer] = RETRAITS[forme] ?? [];
         if (!liste) return;
 
-        return retirerAussitot(liste, liste.find((l) => l.id === id), () => effacer(id), {
-          rendre: RENDUS[forme],
-        });
+        const ligne = liste.find((l) => l.id === id);
+
+        // LA COUVERTURE SE LIT AVANT, PAS DANS LE RAPPEL (2 septembre 2026).
+        // `retirerAussitot` sort la ligne de la liste TOUT DE SUITE — c'est le
+        // principe de l'écriture optimiste —, si bien qu'un `liste.find()` fait
+        // au moment de l'écriture ne trouve plus rien : le chemin partait à
+        // `undefined` et le fichier restait dans le stockage, payé et invisible.
+        // *Mesuré : le livre supprimé, son image encore là.*
+        const couverture = forme === 'livre' ? (ligne?.couverture ?? null) : null;
+
+        return retirerAussitot(
+          liste,
+          ligne,
+          () => (forme === 'livre' ? effacer(id, couverture) : effacer(id)),
+          { rendre: RENDUS[forme] },
+        );
       }
 
       // RÉPONDRE À L'HUMEUR ICI (29 août 2026) : c'est la page de l'humeur, la

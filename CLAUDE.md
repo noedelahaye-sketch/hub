@@ -750,6 +750,60 @@ rythme, et servira la page du jour.
   ce qui reste d'un livre six mois après, plus que la note.
 - **Finir un livre écrit une victoire**, au même rang que le reste.
 
+### LA COUVERTURE, ET L'ÉTAGÈRE (2 septembre 2026)
+
+**Demande de Noé** : *« j'aimerais pouvoir rajouter la couverture du livre, ce
+qui permettrait d'avoir un aperçu visuel dans la bibliothèque »*.
+
+**UNE PHOTO QU'ON PREND, ET NON UN LIEN COLLÉ** (choix de Noé entre les deux) :
+l'image vit dans le hub, elle ne peut pas disparaître, et regarder sa
+bibliothèque ne prévient personne. **Rien n'était à écrire** — le hub a la
+machinerie depuis le 21 août pour le Carnet de terrain : réduction avant envoi,
+bucket privé, adresses signées gardées un mois dans le `localStorage`.
+
+- **LE BUCKET EST DEVENU UN PARAMÈTRE** (`televerserImage`, `urlsDesPhotos`,
+  `supprimerImage`, js/api.js) plutôt qu'une seconde copie : deux machineries
+  auraient fini par ne plus réduire de la même façon. Un second bucket
+  **`livres`** — une couverture n'est pas un moment vécu, et le jour où l'on
+  videra l'un on ne touchera pas à l'autre.
+- **La clé du garde-manger porte sa réserve** : deux buckets peuvent contenir un
+  même nom de fichier, et un lien signé ne vaut que pour le sien. *Conséquence
+  assumée : les adresses déjà gardées pour « moments » se resignent une fois.*
+- **Les couvertures arrivent APRÈS le reste** : signer une poignée d'adresses ne
+  doit pas retarder la page, et l'étagère se redessine quand elles sont là. Sans
+  couverture, aucune requête.
+- **L'envoi d'un fichier n'est pas optimiste**, et c'est l'exception déjà écrite
+  dans les conventions : on ne peut pas afficher une image qu'on n'a pas encore.
+- **Un champ vide n'efface rien** : ne rien redonner, c'est garder ce qui est là.
+  Une couverture remplacée fait partir l'ancienne — un fichier que plus personne
+  ne référence est payé sans jamais être revu.
+
+**L'ÉTAGÈRE** remplace la liste de lignes : une liste de titres se parcourt mot à
+mot, une étagère se balaie du regard. **C'est le seul écran du hub où l'image
+passe devant le texte.** Une grille qui se remplit d'elle-même (9 rem par
+couverture), le rapport **2/3** d'un livre de poche pour que les vignettes
+tiennent la même boîte — sans quoi l'étagère ferait des marches d'escalier.
+
+- **UN LIVRE SANS COUVERTURE GARDE SA PLACE**, en tuile pointillée avec son
+  titre : le pointillé est déjà le signe du hub pour « déclaré, pas encore
+  rempli », et une étagère à trous se lirait comme une bibliothèque incomplète.
+- **Le livre EN COURS porte sa couverture en grand**, à gauche de tout le reste :
+  c'est celui qu'on ouvre ce soir. Les autres tiennent en vignette.
+- **Le menu à trois points se pose SUR la couverture** : sous le texte il aurait
+  ajouté une ligne à chaque tuile, et l'étagère aurait grandi d'un tiers pour un
+  geste de second plan.
+
+> **LE LIVRE EN COURS N'AVAIT PAS DE MENU**, et les couvertures l'ont révélé :
+> c'est le livre qu'on voudrait illustrer en premier, et il était **le seul
+> qu'on ne pouvait ni modifier ni retirer sans le finir d'abord**. Tous les
+> autres l'ont depuis le 29 août.
+
+**ON NOTE AUSSI LE NOMBRE EXACT DE PAGES DEPUIS `#perso`** (même jour, demande de
+Noé). Le bouton « autre » existait sur la bibliothèque depuis le premier jour et
+manquait sur le tableau de bord — c'est-à-dire sur l'écran où l'on note vraiment
+ses pages tous les soirs. **+10 et +25 ne sont que des raccourcis, et une lecture
+fait rarement un compte rond.**
+
 **NOTER DES PAGES COCHE L'HABITUDE DE LECTURE.** C'est la preuve qu'on a lu :
 redemander de cocher « lire un peu » juste après serait demander deux fois la
 même chose. L'habitude concernée se DÉCLARE elle-même (`habitudes.automatique`),

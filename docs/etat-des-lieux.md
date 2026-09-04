@@ -416,6 +416,48 @@ toujours un cran, jamais tout) **et à l'écran** : cocher « Lire un peu » fai
 passer ses deux chiffres de 3 à 4 sur-le-champ, décocher les ramène. *La base a
 été remise dans son état — aucun fait du jour.*
 
+### 0.1 septies Les couvertures, et l'étagère
+
+*« J'aimerais pouvoir rajouter la couverture du livre, ce qui permettrait d'avoir
+un aperçu visuel dans la bibliothèque. »* Deux choix tranchés par Noé : **une
+photo qu'on prend** (et non un lien collé — l'image vit dans le hub, elle ne peut
+pas disparaître, et regarder sa bibliothèque ne prévient personne) et **une
+étagère de couvertures** (et non une liste avec vignettes).
+
+**RIEN N'ÉTAIT À ÉCRIRE POUR LE STOCKAGE** : le hub a la machinerie depuis le
+21 août pour le Carnet de terrain. Le bucket est devenu un PARAMÈTRE
+(`televerserImage`, `urlsDesPhotos`, `supprimerImage`) plutôt qu'une seconde
+copie, et un bucket `livres` a été créé avec les quatre mêmes politiques que
+`moments`. *La clé du garde-manger d'adresses signées porte désormais sa réserve
+— conséquence assumée : les adresses déjà gardées pour « moments » se resignent
+une fois.*
+
+**Deux défauts trouvés en éprouvant, et le second était muet** :
+- `.bloc ul` et `.bloc li` mettent toutes les listes du hub en flex ; mes règles
+  de grille, écrites au nom de classe seul, perdaient. **Sixième fois que ce
+  piège se paie.** *Mesuré : l'étagère s'empilait, la tuile se mettait en ligne.*
+- **la couverture d'un livre supprimé restait dans le stockage** :
+  `retirerAussitot` sort la ligne de la liste TOUT DE SUITE, si bien qu'un
+  `liste.find()` fait au moment de l'écriture ne trouvait plus rien et le chemin
+  partait à `undefined`. On lit la couverture AVANT. *Vérifié : deuxième essai,
+  le fichier part avec son livre ; le bucket est revenu à zéro.*
+
+**Et un défaut que la fonctionnalité a RÉVÉLÉ** : le livre en cours n'avait pas
+de menu à trois points — c'est celui qu'on voudrait illustrer en premier, et il
+était le seul qu'on ne pouvait ni modifier ni retirer sans le finir d'abord.
+
+**« autre » arrive sur le tableau de bord** (*« il faut que je puisse noter le
+nombre exact de pages en plus que j'ai lu dans la page perso, pas que +10 et
++25 »*) : le bouton existait sur la bibliothèque et manquait là où l'on note
+vraiment ses pages tous les soirs. Le geste était déjà branché pour les deux
+écrans — rien à câbler, seulement à offrir.
+
+**Vérifié à l'écran** : création avec couverture, affichage sur le livre en
+cours et dans l'étagère, tuile pointillée pour un livre sans image, suppression
+qui emporte le fichier, et le Carnet de Yuno qui charge toujours ses photos
+malgré le changement de clé. *Un livre d'essai a été créé puis supprimé ; la base
+est revenue à un livre et zéro fichier de couverture.*
+
 ### 0.2 Ce qui est parti de `#objectifs`
 
 - le dépliage d'un PROJET : `detailProjet`, `friseEtapes`, `surQuoiIlSeMesure`,

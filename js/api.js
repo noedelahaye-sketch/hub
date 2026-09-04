@@ -781,11 +781,12 @@ export async function creerLivre({
   pages = null,
   statut = 'a_lire',
   commence_le = null,
+  couverture = null,
 }) {
   return verifier(
     await client
       .from('livres')
-      .insert({ titre, auteur, pages, statut, commence_le })
+      .insert({ titre, auteur, pages, statut, commence_le, couverture })
       .select('*, citations:livres_citations(id, texte, page)')
       .single(),
   );
@@ -802,7 +803,10 @@ export async function modifierLivre(id, champs) {
   );
 }
 
-export async function supprimerLivre(id) {
+export async function supprimerLivre(id, couverture = null) {
+  // La couverture part avec son livre : une image que plus personne ne
+  // référence est un fichier qu'on paie sans jamais le revoir.
+  if (couverture) await supprimerCouverture(couverture);
   const { error } = await client.from('livres').delete().eq('id', id);
   if (error) throw error;
 }
@@ -1661,18 +1665,25 @@ export async function reduirePourLeCarnet(fichier) {
   });
 }
 
-export async function televerserPhotoMoment(fichier) {
+// LE BUCKET EST UN PARAMÈTRE depuis le 2 septembre 2026, jour où les couvertures
+// de livres sont arrivées. La machinerie ne change pas d'un trait — réduction
+// avant envoi, nom tiré au sort, bucket privé —, seule la réserve change. Deux
+// copies auraient fini par ne plus réduire de la même façon.
+export async function televerserImage(fichier, reserve = 'moments') {
   const photo = await reduirePourLeCarnet(fichier);
   const extension = photo.name.split('.').pop()?.toLowerCase() || 'jpg';
   const chemin = `${crypto.randomUUID()}.${extension}`;
 
   const { error } = await client.storage
-    .from('moments')
+    .from(reserve)
     .upload(chemin, photo, { contentType: photo.type || undefined });
   if (error) throw error;
 
   return chemin;
 }
+
+export const televerserPhotoMoment = (fichier) => televerserImage(fichier, 'moments');
+export const televerserCouverture = (fichier) => televerserImage(fichier, 'livres');
 
 // Des signatures d'UN MOIS, gardées et réutilisées (décision de Noé, 21 août
 // 2026 — le mail de Supabase). Elles duraient une heure et se redemandaient à
@@ -1700,22 +1711,27 @@ function lireLesSignatures() {
   }
 }
 
-export async function urlsDesPhotos(chemins) {
+export async function urlsDesPhotos(chemins, reserve = 'moments') {
   if (!chemins.length) return {};
 
   const maintenant = Date.now();
   const gardees = lireLesSignatures();
+  // LA CLÉ DU GARDE-MANGER PORTE SA RÉSERVE : deux buckets peuvent contenir un
+  // même nom de fichier, et un lien signé ne vaut que pour le sien. Sans ce
+  // préfixe, une couverture aurait pu ressortir l'adresse d'un moment.
+  const cle = (chemin) => `${reserve}/${chemin}`;
+
   const fraiches = Object.fromEntries(
     chemins
-      .filter((c) => gardees[c] && maintenant - gardees[c].le < REUTILISATION_PHOTOS)
-      .map((c) => [c, gardees[c].url]),
+      .filter((c) => gardees[cle(c)] && maintenant - gardees[cle(c)].le < REUTILISATION_PHOTOS)
+      .map((c) => [c, gardees[cle(c)].url]),
   );
 
   const manquants = chemins.filter((c) => !(c in fraiches));
   if (!manquants.length) return fraiches;
 
   const { data, error } = await client.storage
-    .from('moments')
+    .from(reserve)
     .createSignedUrls(manquants, DUREE_SIGNATURE_PHOTOS);
   if (error) throw error;
 
@@ -1731,7 +1747,7 @@ export async function urlsDesPhotos(chemins) {
     for (const [c, entree] of Object.entries(gardees)) {
       if (maintenant - entree.le < REUTILISATION_PHOTOS) suite[c] = entree;
     }
-    for (const [c, url] of Object.entries(neuves)) suite[c] = { url, le: maintenant };
+    for (const [c, url] of Object.entries(neuves)) suite[cle(c)] = { url, le: maintenant };
     localStorage.setItem(CLE_PHOTOS_SIGNEES, JSON.stringify(suite));
   } catch {
     // Tant pis : la prochaine visite resignera.
@@ -1763,10 +1779,18 @@ export async function modifierSortie(id, champs, titre, dateISO) {
 // photo en remplace une autre : l'ancienne n'est plus référencée par personne.
 // Le bucket s'appelle toujours `moments` — c'est un nom de stockage, pas un mot
 // d'interface, et le renommer casserait les chemins déjà écrits en base.
-export async function supprimerPhotoMoment(chemin) {
-  const { error } = await client.storage.from('moments').remove([chemin]);
-  if (error) console.error('Ancienne photo non supprimée du stockage', error);
+export async function supprimerImage(chemin, reserve = 'moments') {
+  const { error } = await client.storage.from(reserve).remove([chemin]);
+  if (error) console.error('Ancienne image non supprimée du stockage', error);
 }
+
+export const supprimerPhotoMoment = (chemin) => supprimerImage(chemin, 'moments');
+export const supprimerCouverture = (chemin) => supprimerImage(chemin, 'livres');
+
+// Les adresses signées des couvertures. Même garde-manger, même durée : une
+// couverture se regarde autant qu'une photo du carnet, et retélécharger toute
+// une étagère à chaque visite serait le même gâchis.
+export const urlsDesCouvertures = (chemins) => urlsDesPhotos(chemins, 'livres');
 
 // Retirer une sortie DU CARNET, sans la retirer du calendrier (fusion du
 // 14 août 2026). C'est tout l'intérêt de la fusion : l'événement a eu lieu, il
