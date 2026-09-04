@@ -484,6 +484,31 @@ propose ses quatre options avec leurs points de couleur, la note se pose (4 en
 base) et se retire en retouchant la même étoile (null en base). *La base est
 revenue à son état — le livre de Noé est sans note, comme avant.*
 
+### 0.1 nonies Chercher un livre, et filtrer
+
+*« Il faudrait que je puisse avoir une vue de ce type également pour pouvoir
+chercher un livre précis et filtrer selon la note, l'état ou le type de livre »*
+— une capture de sa base Notion à l'appui.
+
+**Deux vues pour deux questions** : l'étagère répond à « qu'est-ce que j'ai lu »,
+la liste à « où est CE livre ». La bascule reprend `.affichages`, le groupe de
+boutons du calendrier.
+
+**Les thèmes sont la donnée qui manquait** — `livres.themes`, un `text[]` : un
+livre en porte plusieurs, et une colonne texte aurait obligé à choisir. La base
+n'impose rien ; la liste de saisie s'allonge sans migration.
+
+**Vérifié à l'écran** sur une bibliothèque d'essai de douze livres reprise de sa
+capture : les filtres sortent avec leurs comptes (À lire 1 / En cours 2 / Lu 10,
+Psycho 6 / Roman 3 / Relation humaine 2…), « levy » ramène ses deux Marc Levy
+sans perdre le curseur, le filtre Roman en ramène trois. *Les douze livres
+d'essai ont été supprimés ; la base est revenue à un livre.*
+
+**Septième fois que la spécificité se paie** : `.bloc ul:not(.liste-jalons)`
+passe toute liste du hub en grille de 21 rem au-delà de 60 rem. Même poids que ma
+règle, mais elle pose `grid-template-columns` que je ne redisais pas — la liste
+se cassait en trois colonnes. *Ce qu'on ne redit pas reste.*
+
 ### 0.2 Ce qui est parti de `#objectifs`
 
 - le dépliage d'un PROJET : `detailProjet`, `friseEtapes`, `surQuoiIlSeMesure`,

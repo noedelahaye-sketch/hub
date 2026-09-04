@@ -815,6 +815,43 @@ manquait sur le tableau de bord — c'est-à-dire sur l'écran où l'on note vra
 ses pages tous les soirs. **+10 et +25 ne sont que des raccourcis, et une lecture
 fait rarement un compte rond.**
 
+### DEUX VUES : L'ÉTAGÈRE ET LA LISTE (2 septembre 2026)
+
+**Demande de Noé**, une capture de sa base Notion à l'appui : *« il faudrait que
+je puisse avoir une vue de ce type également pour pouvoir chercher un livre
+précis et filtrer selon la note, l'état ou le type de livre »*.
+
+**DEUX VUES POUR DEUX QUESTIONS, et c'est ce qui justifie la bascule** :
+l'étagère répond à « qu'est-ce que j'ai lu » — on la balaie du regard, sans rien
+chercher ; la liste répond à « où est CE livre » — on y vient avec un nom ou un
+critère en tête. **Une seule vue aurait mal servi les deux.** La bascule reprend
+`.affichages`, le groupe de boutons du calendrier : même geste, même dessin.
+
+**LES THÈMES sont la donnée qui manquait** (`livres.themes`, un `text[]`). Un
+tableau et non une colonne texte : un livre en porte plusieurs — « The good
+life » est psycho ET relation humaine —, et une colonne unique aurait obligé à
+choisir. **La base n'impose rien** : pas de CHECK, pas de table ; un thème est un
+mot qu'on se donne, et la liste offerte à la saisie (`THEMES_LIVRE`, js/perso.js)
+s'allonge sans migration.
+
+- **ON N'OFFRE QUE CE QUI EXISTE** : les filtres se déduisent des livres, avec
+  leur compte. Un filtre « Biographie » sur une bibliothèque qui n'en compte
+  aucune est une porte sur une pièce vide.
+- **La recherche vit dans LES DEUX vues** : chercher un titre qu'on a en tête n'a
+  pas à commencer par changer de vue. Les filtres, eux, n'existent que dans la
+  liste — c'est là qu'on trie, pas là qu'on regarde.
+- **Elle filtre à la lettre, sans bouton** : une bibliothèque tient en mémoire,
+  il n'y a rien à demander au réseau. Le curseur revient **au bout du mot** — on
+  redessine à chaque frappe, et sans ça le champ perdait le focus au premier
+  caractère.
+- **Elle cherche le titre ET l'auteur** : on cherche « Marc Levy » aussi souvent
+  qu'un titre, et demander lequel des deux serait une question de plus.
+- **La liste ne met personne en vedette**, à la différence de l'étagère : on y
+  vient avec un nom en tête, et sortir le livre en cours du rang le rendrait
+  introuvable là où on le cherche.
+- **Le tri : l'état, puis la note, puis le titre.** On cherche rarement un livre
+  par sa date de saisie.
+
 ### LA FICHE D'UN LIVRE — `#livre/<id>` (2 septembre 2026)
 
 **Demande de Noé** : *« il faut que je puisse cliquer sur chaque livre pour avoir
