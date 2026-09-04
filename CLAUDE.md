@@ -846,11 +846,51 @@ s'allonge sans migration.
   caractère.
 - **Elle cherche le titre ET l'auteur** : on cherche « Marc Levy » aussi souvent
   qu'un titre, et demander lequel des deux serait une question de plus.
-- **La liste ne met personne en vedette**, à la différence de l'étagère : on y
-  vient avec un nom en tête, et sortir le livre en cours du rang le rendrait
-  introuvable là où on le cherche.
+**LES LIVRES EN COURS OUVRENT LES DEUX VUES** (2 septembre 2026, demande de
+Noé : *« les livres en cours doivent apparaître au-dessus de l'étagère et la
+liste ; ils réapparaissent dans l'étagère et dans la liste sous la forme de
+chacune »*). C'est le seul endroit de la page où l'on AGIT — noter des pages,
+garder une phrase, déclarer fini —, et ce sont les seuls livres sur lesquels ces
+gestes aient un sens : les mettre en tête, c'est mettre le geste avant
+l'inventaire.
+
+- **ILS NE SORTENT PLUS DU RANG** : ils reparaissent plus bas, dans la forme de
+  leur vue. *Ce que ça renverse : la vedette EXCLUAIT le livre en cours de
+  l'étagère, et j'avais écrit que la liste ne devait mettre personne en avant.
+  Noé a tranché autrement, et il a raison — une bibliothèque doit être COMPLÈTE
+  là où on la parcourt : chercher « L'homme-dé » et ne pas le trouver dans la
+  liste parce qu'il est en haut, c'est un livre manquant.*
+- **PLUSIEURS, et non un seul** : `livreEnCours` n'en désigne qu'un — celui de ce
+  soir, pour le tableau de bord. Ici on lit vraiment plusieurs livres à la fois,
+  et c'est l'état posé qui le dit. Le plus récemment lu passe devant.
+- **Ils suivent la recherche et les filtres**, comme le reste : montrer une carte
+  qu'on vient d'exclure serait un filtre qui ne filtre pas.
 - **Le tri : l'état, puis la note, puis le titre.** On cherche rarement un livre
   par sa date de saisie.
+
+**LE THÈME SE LIT SUR LA TUILE ET SUR LA FICHE** (2 septembre 2026, demande de
+Noé). Sur la tuile il passe **avant l'état et l'auteur** : c'est ce qui distingue
+deux livres qu'on balaie du regard — on cherche « un roman », rarement « un livre
+à lire ». **Un seul s'y affiche quand il y en a plusieurs**, avec leur compte
+(« Roman +1 ») : la tuile fait 109 px, et deux pastilles y tiendraient à peine
+l'une des deux ; le reste se lit sur la fiche, qui les dit tous.
+- **Ils ne se règlent PAS sur la fiche**, à la différence de l'état et de la
+  note : on change l'état d'un livre à chaque étape de sa lecture, on ne
+  reclasse un thème qu'une fois. Sa place est dans la fenêtre de modification,
+  avec le titre et l'auteur.
+
+**LE MENU À TROIS POINTS SE VOIT** (même jour, défaut rapporté par Noé : *« les
+3 petits points pour modifier ou retirer ne sont pas visibles »*). Les quatre
+conteneurs de la bibliothèque manquaient à la liste de ceux qui le révèlent au
+survol — le bouton répondait au clic, il était seulement INVISIBLE. **C'est la
+seconde fois que ce piège se paie** (la carte d'une habitude, 30 août) : cette
+liste ne se devine pas, elle s'allonge.
+- **Sur la FICHE il est visible en permanence**, comme sur la carte d'une
+  habitude : ailleurs le menu est un geste de second plan ; ici, corriger un
+  titre ou un nombre de pages est une des raisons d'y venir.
+- **Sur une COUVERTURE il porte un disque sombre** : il est posé sur une image
+  dont on ne connaît pas la couleur, et un gris discret disparaît sur un ciel
+  clair comme sur une nuit.
 
 ### LA FICHE D'UN LIVRE — `#livre/<id>` (2 septembre 2026)
 

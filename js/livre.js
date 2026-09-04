@@ -16,7 +16,7 @@
 // derrière un formulaire de six champs serait leur donner le coût d'une
 // correction alors que ce sont des gestes.
 import * as api from './api.js';
-import { ETATS_LIVRE, MOTS_STATUT, FORMULAIRES } from './perso.js';
+import { ETATS_LIVRE, MOTS_STATUT, THEMES_LIVRE, FORMULAIRES } from './perso.js';
 import { avanceeDuLivre } from './orientation.js';
 import {
   basculerChoixDeFormulaire,
@@ -172,6 +172,22 @@ function enTete(livre) {
           ${pastilleEtat(livre)}
           ${notes(livre)}
         </div>
+        <!-- LES THÈMES, TOUS (2 septembre 2026, demande de Noé). La tuile de
+             l'étagère n'en montre qu'un, faute de place ; la fiche les dit tous,
+             c'est son office. Ils ne se règlent PAS ici, à la différence de
+             l'état et de la note : on change l'état d'un livre à chaque étape de
+             sa lecture, on ne reclasse un thème qu'une fois — sa place est dans
+             la fenêtre de modification, avec le titre et l'auteur. -->
+        ${
+          (livre.themes ?? []).length
+            ? `<p class="livre-page-themes">${livre.themes
+                .map(
+                  (theme) => `<span class="livre-theme" data-theme="${echapper(theme)}"
+                    >${echapper(THEMES_LIVRE[theme] ?? theme)}</span>`,
+                )
+                .join('')}</p>`
+            : ''
+        }
       </div>
       ${menu('livre', livre.id)}
     </div>`;

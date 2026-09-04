@@ -765,6 +765,23 @@ function tuileDeLivre(livre, urls, service) {
         }
       </span>
       <span class="livre-tuile-titre">${echapper(livre.titre)}</span>
+      <!-- LE THÈME SUR LA TUILE (2 septembre 2026, demande de Noé). Il passe
+           AVANT l'état et l'auteur : c'est ce qui distingue deux livres qu'on
+           balaie du regard — on cherche « un roman », rarement « un livre à
+           lire ». Un seul thème s'affiche quand il y en a plusieurs, avec leur
+           compte : la tuile fait 109 px, et deux pastilles y tiendraient à peine
+           l'une des deux. Le reste se lit sur la fiche. -->
+      ${
+        (livre.themes ?? []).length
+          ? `<span class="livre-tuile-theme livre-theme"
+              data-theme="${echapper(livre.themes[0])}"
+              title="${echapper(
+                livre.themes.map((t) => THEMES_LIVRE[t] ?? t).join(' · '),
+              )}">${echapper(THEMES_LIVRE[livre.themes[0]] ?? livre.themes[0])}${
+              livre.themes.length > 1 ? ` +${livre.themes.length - 1}` : ''
+            }</span>`
+          : ''
+      }
       <span class="livre-tuile-service">${echapper(service)}</span>
       ${etoiles(livre.note)}
       ${menuDiscret('livre', livre.id)}
@@ -871,6 +888,15 @@ export function construireFiltresLivres(vue, filtres, livres) {
 // livre par sa date de saisie.
 const RANG_STATUT = { en_cours: 0, a_lire: 1, lu: 2, repose: 3 };
 
+// Le dernier soir où l'on a ouvert un livre. Sert à ranger les livres en cours :
+// celui qu'on a lu hier passe devant celui qu'on a laissé il y a un mois. Une
+// chaîne vide pour un livre sans séance — il ferme la marche, ce qui est juste.
+function derniereLecture(livre, seances) {
+  return seances
+    .filter((seance) => seance.livre_id === livre.id)
+    .reduce((plus, seance) => (seance.jour > plus ? seance.jour : plus), '');
+}
+
 export function livresFiltres(livres, filtres) {
   const mot = (filtres.mot ?? '').trim().toLowerCase();
 
@@ -930,49 +956,56 @@ export function construireBibliotheque(livres, seances, urls = {}, vue = 'etager
   }
 
   const barre = construireFiltresLivres(vue, filtres, livres);
+  const retenus = livresFiltres(livres, vue === 'liste' ? filtres : { mot: filtres.mot });
 
-  // LA LISTE NE MET PERSONNE EN VEDETTE : on y vient avec un nom en tête, et
-  // sortir le livre en cours du rang le rendrait introuvable là où on le
-  // cherche. L'étagère, elle, le montre en grand — c'est celui qu'on ouvre ce
-  // soir.
-  if (vue === 'liste') {
-    const retenus = livresFiltres(livres, filtres);
-    return `
-      ${barre}
-      ${
-        retenus.length
-          ? `<ul class="livres-liste-table">${retenus.map(ligneDeLivre).join('')}</ul>`
-          : `<p class="cap-vide">Aucun livre ne répond à ça. Retire un filtre,
-             ou change le mot cherché.</p>`
-      }
-      ${ajout}`;
-  }
+  // LES LIVRES EN COURS OUVRENT LES DEUX VUES (2 septembre 2026, demande de
+  // Noé : « les livres en cours doivent apparaître au-dessus de l'étagère et la
+  // liste ; ils réapparaissent dans l'étagère et dans la liste sous la forme de
+  // chacune »).
+  //
+  // C'est le seul endroit de la page où l'on AGIT — noter des pages, garder une
+  // phrase, déclarer fini —, et ce sont les seuls livres sur lesquels ces gestes
+  // aient un sens. Les mettre en tête, c'est mettre le geste avant l'inventaire.
+  //
+  // ET ILS NE SORTENT PLUS DU RANG : ils reparaissent plus bas, dans la forme de
+  // leur vue. *Ce que ça renverse : la vedette EXCLUAIT le livre en cours de
+  // l'étagère, et j'avais écrit que la liste ne devait mettre personne en avant.
+  // Noé a tranché autrement, et il a raison — une bibliothèque doit être
+  // COMPLÈTE là où on la parcourt : chercher « L'homme-dé » et ne pas le trouver
+  // dans la liste parce qu'il est en haut, c'est un livre manquant.*
+  //
+  // PLUSIEURS, et non un seul : `livreEnCours` n'en désigne qu'un — celui de ce
+  // soir, pour le tableau de bord. Ici on lit vraiment plusieurs livres à la
+  // fois, et c'est l'état posé qui le dit.
+  const enCours = retenus
+    .filter((livre) => livre.statut === 'en_cours')
+    .sort((a, b) => derniereLecture(b, seances).localeCompare(derniereLecture(a, seances)));
 
-  // L'étagère respecte la recherche, elle : chercher un titre n'a pas à obliger
-  // de changer de vue. Les filtres, eux, n'existent que dans la liste — c'est là
-  // qu'on trie, pas là qu'on regarde.
-  const vus = livresFiltres(livres, { mot: filtres.mot });
-  const encours = livreEnCours(vus, seances);
-  const autres = vus.filter((livre) => livre.id !== encours?.id);
+  const etagere = retenus
+    .map((livre) => {
+      const { lues } = avanceeDuLivre(livre, seances);
+      const service = [
+        MOTS_STATUT[livre.statut] ?? livre.statut,
+        livre.auteur ?? '',
+        livre.statut === 'repose' && lues ? `${lues} pages lues` : '',
+      ].filter(Boolean);
+
+      return tuileDeLivre(livre, urls, service.join(' · '));
+    })
+    .join('');
+
+  const vide = `<p class="cap-vide">Aucun livre ne répond à ça. Retire un filtre,
+    ou change le mot cherché.</p>`;
 
   return `
     ${barre}
-    ${encours ? livreDuHaut(encours, seances, urls) : ''}
+    ${enCours.map((livre) => livreDuHaut(livre, seances, urls)).join('')}
     ${
-      autres.length
-        ? `<ul class="livres-etagere">${autres
-            .map((livre) => {
-              const { lues } = avanceeDuLivre(livre, seances);
-              const service = [
-                MOTS_STATUT[livre.statut] ?? livre.statut,
-                livre.auteur ?? '',
-                livre.statut === 'repose' && lues ? `${lues} pages lues` : '',
-              ].filter(Boolean);
-
-              return tuileDeLivre(livre, urls, service.join(' · '));
-            })
-            .join('')}</ul>`
-        : ''
+      retenus.length
+        ? vue === 'liste'
+          ? `<ul class="livres-liste-table">${retenus.map(ligneDeLivre).join('')}</ul>`
+          : `<ul class="livres-etagere">${etagere}</ul>`
+        : vide
     }
     ${ajout}`;
 }

@@ -6001,6 +6001,20 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
 .livre-tuile .cap-menu { z-index: 2; }
 
+/* SUR UNE COUVERTURE, LE MENU A BESOIN D'UN FOND : il est posé sur une image
+   dont on ne connaît pas la couleur, et un gris discret disparaît sur un ciel
+   clair comme sur une nuit. Le petit disque sombre le rend lisible sur les deux
+   sans jamais crier. */
+.livre-tuile .cap-menu-bouton {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: #fff;
+  background: rgb(0 0 0 / 45%);
+  backdrop-filter: blur(2px);
+}
+
+.livre-tuile .cap-menu-bouton:hover { background: rgb(0 0 0 / 65%); }
+
 /* Le titre du livre en cours devient une porte, sans en avoir l'air : le lien
    n'est là que pour le clavier, qui ne peut pas viser une couverture. */
 .livre-titre-porte { color: inherit; text-decoration: none; }
@@ -6052,7 +6066,11 @@ li.livre-tuile {
   border: 0;
   /* La couverture d'abord, le texte dessous : `min-content` empêche la ligne du
      titre de voler de la hauteur à l'image. */
-  grid-template-rows: auto min-content;
+  /* `auto` pour la couverture, le reste au contenu : le titre, le thème et le
+     service prennent chacun ce qu'il leur faut, et la couverture garde son
+     rapport. */
+  grid-template-rows: auto;
+  grid-auto-rows: min-content;
   gap: var(--espace-4);
   min-width: 0;
 }
@@ -6117,6 +6135,24 @@ li.livre-tuile {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Le thème sur la tuile : une seule pastille, alignée à gauche comme le titre.
+   Elle passe AVANT le service — c'est ce qui distingue deux livres qu'on balaie
+   du regard. */
+.livre-tuile-theme {
+  justify-self: start;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Sur la fiche, ils se lisent tous, sous les réglages. */
+.livre-page-themes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-4);
+  margin: var(--espace-12) 0 0;
 }
 
 .livre-tuile-service {
@@ -9234,10 +9270,26 @@ a.cap-ajout-discret { text-decoration: none; }
 .cap-projet:hover .cap-menu-bouton,
 .cap-tache:hover .cap-menu-bouton,
 .hab-carte:hover .cap-menu-bouton,
+.livre-tuile:hover .cap-menu-bouton,
+.livre-ligne-liste:hover .cap-menu-bouton,
+.livre-encours:hover .cap-menu-bouton,
 .cap-menu-bouton:focus-visible,
 .cap-menu.ouvert .cap-menu-bouton {
   opacity: 1;
 }
+
+/* SUR LA FICHE D'UN LIVRE, LE MENU EST VISIBLE EN PERMANENCE (2 septembre 2026,
+   défaut rapporté par Noé : « les 3 petits points pour modifier ou retirer ne
+   sont pas visibles »). C'est la règle déjà posée sur la carte d'une habitude,
+   et pour la même raison : ailleurs le menu est un geste de second plan ; sur une
+   fiche, corriger un titre ou un nombre de pages est une des raisons d'y venir.
+
+   Les quatre conteneurs de la bibliothèque manquaient simplement à la liste
+   ci-dessus — le bouton répondait au clic, il était seulement invisible. C'est
+   la SECONDE fois que ce piège se paie : la liste ne se devine pas, elle
+   s'allonge. */
+.livre-page-tete .cap-menu-bouton { opacity: 0.55; }
+.livre-page-tete .cap-menu-bouton:hover { opacity: 1; }
 
 .cap-menu-bouton:hover { background: var(--surbrillance); }
 
