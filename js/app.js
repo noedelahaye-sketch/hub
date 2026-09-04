@@ -16,6 +16,7 @@ import taches from './taches.js';
 import semaine from './semaine.js';
 import objectifs from './objectifs.js';
 import habitude from './habitude.js';
+import livre from './livre.js';
 import objectif from './objectif.js';
 import projet from './projet.js';
 import calendrier from './calendrier.js';
@@ -34,7 +35,7 @@ import temps from './temps.js';
 // on y vient par la porte du bloc « Tes objectifs », et rarement.
 const espaces = {
   dashboard, taches, objectifs, objectif, projet, calendrier, formation, photo, yuno, fch,
-  hermitage, perso, habitude, chemin, temps, semaine,
+  hermitage, perso, habitude, livre, chemin, temps, semaine,
 };
 
 // Trois pages d'entrée pour trois applications sur l'écran d'accueil :
@@ -155,6 +156,7 @@ const TITRES = {
   objectif: 'Objectif',
   projet: 'Projet',
   habitude: 'Habitude',
+  livre: 'Livre',
   calendrier: 'Calendrier',
   formation: 'Formation',
   photo: 'Yuno',

@@ -463,6 +463,27 @@ qui emporte le fichier, et le Carnet de Yuno qui charge toujours ses photos
 malgré le changement de clé. *Un livre d'essai a été créé puis supprimé ; la base
 est revenue à un livre et zéro fichier de couverture.*
 
+### 0.1 octies La fiche d'un livre
+
+*« Il faut que je puisse cliquer sur chaque livre pour avoir une fiche avec tous
+les détails, et où je peux modifier l'état et la note. »* → `#livre/<id>`, sur le
+modèle de la page d'une habitude.
+
+**Ce qu'elle ajoute et qui n'existait nulle part : le JOURNAL DE LECTURE.** Les
+séances sont en base depuis le premier jour — ce sont elles qui donnent les pages
+lues et le rythme — et on ne les voyait jamais. Elles s'y retirent aussi, seul
+moyen de corriger un « +25 » touché deux fois.
+
+**L'état et la note se règlent SUR PLACE** : ce sont les deux choses qu'on vient
+changer. La pastille d'état est celle d'un projet, au trait près. Passer à « lu »
+passe par `terminerLivre` et non `modifierLivre` — sinon la victoire serait
+manquée.
+
+**Vérifié à l'écran** : la fiche s'ouvre depuis l'étagère, le panneau d'état
+propose ses quatre options avec leurs points de couleur, la note se pose (4 en
+base) et se retire en retouchant la même étoile (null en base). *La base est
+revenue à son état — le livre de Noé est sans note, comme avant.*
+
 ### 0.2 Ce qui est parti de `#objectifs`
 
 - le dépliage d'un PROJET : `detailProjet`, `friseEtapes`, `surQuoiIlSeMesure`,

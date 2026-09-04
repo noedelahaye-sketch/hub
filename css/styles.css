@@ -5689,6 +5689,140 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 .livre-note { flex: none; font-size: 0.75rem; color: var(--famille-calme); letter-spacing: 1px; }
 
 /* ---------------------------------------------------------------------------
+   LA FICHE D'UN LIVRE — `#livre/<id>` (2 septembre 2026).
+
+   La couverture en grand à gauche, le titre et les deux réglages à droite : ce
+   sont les deux choses qu'on vient changer — l'état et la note —, et elles se
+   posent donc au premier regard, pas derrière un formulaire. */
+.livre-page-tete {
+  position: relative;
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: var(--espace-16);
+  align-items: start;
+  margin-bottom: var(--espace-24);
+}
+
+.livre-page-couverture {
+  display: block;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border-radius: var(--rayon-controle);
+  background: var(--fond-carte);
+}
+
+.livre-page-couverture img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Sans couverture, un rectangle pointillé plutôt qu'un vide : la tête garde sa
+   forme, et l'absence se lit comme « à remplir » et non comme un défaut. */
+.livre-page-sans { background: none; border: 1px dashed var(--bordure); }
+
+.livre-page-titres h1 { margin: 0; }
+.livre-page-auteur { margin: var(--espace-4) 0 0; color: var(--texte-discret); }
+
+.livre-page-reglages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-12);
+  margin-top: var(--espace-12);
+}
+
+.livre-page-tete > .cap-menu { position: absolute; top: 0; right: 0; }
+
+/* AUCUNE NOTE N'EST BASSE : le hub ne colore pas un jugement. Les cinq étoiles
+   portent la même encre, seule leur forme change — pleine ou creuse. */
+.livre-notes { display: inline-flex; gap: 2px; }
+
+.livre-etoile {
+  padding: 0 1px;
+  font-size: 1.125rem;
+  line-height: 1;
+  color: var(--texte-discret);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.livre-etoile[aria-pressed="true"] { color: var(--accent); }
+
+.livre-page-dates { margin: var(--espace-12) 0 0; font-size: 0.8125rem; }
+
+/* Deux colonnes sur grand écran : les phrases gardées se LISENT, le journal se
+   PARCOURT — deux natures qui gagnent à se voir ensemble plutôt qu'à s'empiler.
+   Sur téléphone elles se suivent, les phrases d'abord : c'est ce qui reste d'un
+   livre six mois après. */
+.livre-page-duo { display: grid; gap: var(--espace-16); }
+
+@media (min-width: 60rem) {
+  .livre-page-duo { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); align-items: start; }
+}
+
+/* Le journal : un jour, un nombre, une croix. Il se parcourt du regard, il ne se
+   lit pas — d'où des lignes nues plutôt que des tuiles. */
+.bloc ul.livre-journal {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bloc ul.livre-journal li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--espace-12);
+  padding: var(--espace-8) 0;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--bordure-douce);
+  border-radius: 0;
+}
+
+.bloc ul.livre-journal li:last-child { border-bottom: 0; }
+
+.livre-journal-jour { font-size: 0.8125rem; }
+.livre-journal-pages { font-size: 0.8125rem; font-weight: 600; }
+
+.bloc ul.livre-citations {
+  display: grid;
+  gap: var(--espace-8);
+  margin: 0 0 var(--espace-12);
+  padding: 0;
+  list-style: none;
+}
+
+.bloc ul.livre-citations li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--espace-8);
+  padding: 0;
+  background: none;
+  border: 0;
+}
+
+.bloc ul.livre-citations .livre-citation { margin: 0; }
+
+/* TOUTE LA TUILE DE L'ÉTAGÈRE MÈNE À SA FICHE : un lien qui recouvre la
+   couverture, sous le menu à trois points — celui-ci garde son rang au-dessus,
+   sinon on ouvrirait la fiche en voulant modifier. */
+.livre-tuile-ouvrir {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: var(--rayon-controle);
+}
+
+.livre-tuile .cap-menu { z-index: 2; }
+
+/* Le titre du livre en cours devient une porte, sans en avoir l'air : le lien
+   n'est là que pour le clavier, qui ne peut pas viser une couverture. */
+.livre-titre-porte { color: inherit; text-decoration: none; }
+.livre-titre-porte:hover { text-decoration: underline; }
+
+/* ---------------------------------------------------------------------------
    L'ÉTAGÈRE (2 septembre 2026, demande de Noé : « la couverture du livre, ce qui
    permettrait d'avoir un aperçu visuel dans la bibliothèque »).
 

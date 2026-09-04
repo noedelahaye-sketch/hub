@@ -616,7 +616,18 @@ function etoiles(note) {
   )}${'☆'.repeat(5 - note)}</span>`;
 }
 
-const MOTS_STATUT = { a_lire: 'à lire', en_cours: 'en cours', lu: 'lu', repose: 'reposé' };
+// LES MOTS D'UN LIVRE, exportés depuis le 2 septembre 2026 : sa fiche les dit
+// aussi, et deux listes finiraient par ne plus nommer le même état. « Reposé » et
+// non « abandonné » — un livre qu'on lâche n'est pas un échec, et le mot compte.
+export const MOTS_STATUT = { a_lire: 'à lire', en_cours: 'en cours', lu: 'lu', repose: 'reposé' };
+
+// Ce que la fiche offre à changer, dans l'ordre d'une vie de livre.
+export const ETATS_LIVRE = {
+  a_lire: 'À lire',
+  en_cours: 'En cours',
+  lu: 'Lu',
+  repose: 'Reposé',
+};
 
 function livreDuHaut(livre, seances, urls = {}) {
   const { lues, part, rythme } = avanceeDuLivre(livre, seances);
@@ -642,7 +653,8 @@ function livreDuHaut(livre, seances, urls = {}) {
            couverture ne pouvait pas se poser À CÔTÉ d'eux, seulement à côté du
            PREMIER, et un blanc de cent pixels s'ouvrait sous le titre. -->
       <div class="livre-encours-corps">
-      <span class="livre-titre">${echapper(livre.titre)}</span>
+      <a class="livre-titre livre-titre-porte"
+        href="#livre/${encodeURIComponent(livre.id)}">${echapper(livre.titre)}</a>
       ${livre.auteur ? `<span class="livre-auteur">${echapper(livre.auteur)}</span>` : ''}
 
       ${
@@ -709,6 +721,12 @@ function tuileDeLivre(livre, urls, service) {
   return `
     <li class="livre-tuile${url ? '' : ' livre-sans-couverture'}"
       data-livre="${echapper(livre.id)}">
+      <!-- TOUTE LA TUILE MÈNE À SA FICHE (2 septembre 2026, demande de Noé) :
+           l'étagère COMPARE, la fiche dit tout — le journal de lecture, les
+           citations, l'état et la note qu'on y règle. C'est la règle des deux
+           rangs, appliquée un étage plus bas que les caps et les projets. -->
+      <a class="livre-tuile-ouvrir" href="#livre/${encodeURIComponent(livre.id)}"
+        aria-label="Ouvrir « ${echapper(livre.titre)} »"></a>
       <span class="livre-couverture">
         ${
           url

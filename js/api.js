@@ -737,6 +737,18 @@ export async function livresTous() {
   );
 }
 
+// UN SEUL LIVRE, pour sa fiche : `livresTous` en rapporterait trente pour en
+// montrer un. Ses citations viennent avec — elles n'ont de sens qu'avec lui.
+export async function livreParId(id) {
+  return verifier(
+    await client
+      .from('livres')
+      .select('*, citations:livres_citations(id, texte, page)')
+      .eq('id', id)
+      .maybeSingle(),
+  );
+}
+
 export async function livresSeancesDepuis(dateISO) {
   return verifier(
     await client
@@ -830,6 +842,14 @@ export async function terminerLivre(livre, note = null) {
   });
 
   return fini;
+}
+
+// Retirer une séance : c'est le seul moyen de corriger un « +25 » touché deux
+// fois. Les pages lues étant la SOMME des séances, le compte se refait tout
+// seul — il n'y a pas de colonne à rattraper.
+export async function retirerUneSeance(id) {
+  const { error } = await client.from('livres_seances').delete().eq('id', id);
+  if (error) throw error;
 }
 
 export async function garderUneCitation(livre_id, texte, page = null) {

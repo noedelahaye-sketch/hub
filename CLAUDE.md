@@ -815,6 +815,48 @@ manquait sur le tableau de bord — c'est-à-dire sur l'écran où l'on note vra
 ses pages tous les soirs. **+10 et +25 ne sont que des raccourcis, et une lecture
 fait rarement un compte rond.**
 
+### LA FICHE D'UN LIVRE — `#livre/<id>` (2 septembre 2026)
+
+**Demande de Noé** : *« il faut que je puisse cliquer sur chaque livre pour avoir
+une fiche avec tous les détails, et où je peux modifier l'état et la note »*.
+
+**C'est le même mouvement que les caps, les projets et les habitudes** : la
+galerie compare, la page dit tout. L'étagère ne montre qu'une couverture et un
+titre — ce qui se compare d'un livre à l'autre ; le reste vit ici.
+
+**CE QU'ELLE AJOUTE, ET QUI N'EXISTAIT NULLE PART : le JOURNAL DE LECTURE.** Les
+séances sont en base depuis le premier jour — ce sont elles qui donnent les pages
+lues et le rythme — et **on ne les voyait jamais**. Une lecture, c'est d'abord une
+suite de soirs. Une séance s'y **retire** : c'est le seul moyen de corriger un
+« +25 » touché deux fois, et le compte se refait tout seul puisque les pages sont
+la SOMME des séances.
+
+**L'ÉTAT ET LA NOTE SE RÈGLENT SUR PLACE**, sans ouvrir la fenêtre de
+modification : ce sont les deux choses qu'on vient changer, et les enfermer
+derrière un formulaire de six champs leur donnerait le coût d'une correction
+alors que ce sont des gestes.
+- **La pastille d'état est celle d'un PROJET**, au trait près : deux gestes
+  identiques ne portent pas deux dessins. Ses couleurs disent une vie de livre —
+  gris tant qu'il attend, bleu quand il est ouvert, vert quand il est fini — et
+  **le gris revient pour un livre reposé** : « reposé » n'est pas un échec, il ne
+  prendra donc jamais une couleur d'alerte.
+- **Passer à « lu » écrit une victoire**, parce que c'est `terminerLivre` qui le
+  sait — passer par `modifierLivre` la ferait manquer. Et le hub pose les dates
+  qu'il peut poser : commencer un livre écrit son `commence_le`, le finir son
+  `fini_le`.
+- **La même étoile retouchée efface la note** : une note posée par erreur doit
+  pouvoir se retirer, et un bouton « enlever la note » coûterait une ligne pour un
+  cas rare. **Aucune note n'est basse** — les cinq étoiles portent la même encre,
+  seule leur forme change.
+
+**LES PHRASES GARDÉES SE RELISENT TOUTES ICI.** La bibliothèque n'en montrait que
+la dernière ; c'est pourtant « ce qui reste d'un livre six mois après, plus que la
+note » (règle du 29 août).
+
+**On note ses pages d'ici aussi** : c'est l'écran où l'on regarde son avancée, et
+devoir retourner à la bibliothèque pour la faire bouger serait un aller-retour
+pour trois secondes de geste.
+
 **NOTER DES PAGES COCHE L'HABITUDE DE LECTURE.** C'est la preuve qu'on a lu :
 redemander de cocher « lire un peu » juste après serait demander deux fois la
 même chose. L'habitude concernée se DÉCLARE elle-même (`habitudes.automatique`),
