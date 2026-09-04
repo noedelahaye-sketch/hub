@@ -75,6 +75,11 @@ const vueEtat = {
   // à voir d'un coup, et c'est pour voir qu'on ouvre cette page.
   joursVue: 'mois',
   joursPivot: null,
+  // LA BIBLIOTHÈQUE A DEUX VUES (2 septembre 2026) : l'étagère par défaut — on
+  // ouvre cette page pour VOIR ses livres, pas pour en chercher un. La liste
+  // s'atteint d'un geste quand on vient avec un nom en tête.
+  vueLivres: 'etagere',
+  filtresLivres: { mot: '', statut: null, theme: null, note: null },
 };
 
 // --- Fabrication du HTML ----------------------------------------------------
@@ -629,6 +634,29 @@ export const ETATS_LIVRE = {
   repose: 'Reposé',
 };
 
+// LES THÈMES (2 septembre 2026, demande de Noé : « filtrer selon la note, l'état
+// ou le type de livre »). La liste vient de sa bibliothèque Notion, où elle
+// s'était faite d'elle-même : psycho, roman, relation humaine, productivité.
+//
+// UN LIVRE EN PORTE PLUSIEURS — « The good life » est psycho ET relation
+// humaine —, d'où un `text[]` en base et une pastille à choix multiple au
+// formulaire. Une colonne texte aurait obligé à choisir, et on aurait choisi
+// mal.
+//
+// LA BASE N'IMPOSE RIEN : pas de CHECK, pas de table. Un thème est un mot qu'on
+// se donne, et la liste ci-dessous n'est qu'une commodité de saisie — elle
+// s'allonge sans migration.
+export const THEMES_LIVRE = {
+  psycho: 'Psycho',
+  relation: 'Relation humaine',
+  productivite: 'Productivité',
+  roman: 'Roman',
+  essai: 'Essai',
+  biographie: 'Biographie',
+  metier: 'Métier',
+  autre: 'Autre',
+};
+
 function livreDuHaut(livre, seances, urls = {}) {
   const { lues, part, rythme } = avanceeDuLivre(livre, seances);
   const citation = (livre.citations ?? []).at(-1);
@@ -743,7 +771,154 @@ function tuileDeLivre(livre, urls, service) {
     </li>`;
 }
 
-export function construireBibliotheque(livres, seances, urls = {}) {
+// --- LA VUE LISTE : chercher un livre précis --------------------------------
+//
+// Demande de Noé (2 septembre 2026, une capture de sa base Notion à l'appui) :
+// *« il faudrait que je puisse avoir une vue de ce type également pour pouvoir
+// chercher un livre précis et filtrer selon la note, l'état ou le type de
+// livre »*.
+//
+// DEUX VUES POUR DEUX QUESTIONS, et c'est ce qui justifie la bascule : l'étagère
+// répond à « qu'est-ce que j'ai lu » — on la balaie du regard, sans rien
+// chercher ; la liste répond à « où est CE livre » — on y vient avec un nom ou
+// un critère en tête. Une seule vue aurait mal servi les deux.
+//
+// LA BASCULE REPREND `.affichages`, le groupe de boutons du calendrier : c'est
+// le MÊME geste — choisir ce que la liste montre —, et écrire un troisième
+// dessin pour un geste qui en a déjà deux, c'est fabriquer la divergence qu'on
+// passe ensuite à rattraper.
+export function construireFiltresLivres(vue, filtres, livres) {
+  const compte = (cle, valeur) =>
+    livres.filter((livre) =>
+      cle === 'theme' ? (livre.themes ?? []).includes(valeur) : livre[cle] === valeur,
+    ).length;
+
+  // ON N'OFFRE QUE CE QUI EXISTE : un filtre « Biographie » sur une bibliothèque
+  // qui n'en compte aucune est une porte sur une pièce vide. La liste des thèmes
+  // se déduit donc des livres, et non de la liste de saisie.
+  const themes = [...new Set(livres.flatMap((livre) => livre.themes ?? []))].sort(
+    (a, b) => (THEMES_LIVRE[a] ?? a).localeCompare(THEMES_LIVRE[b] ?? b),
+  );
+
+  const groupe = (nom, cle, options, courant) =>
+    options.length
+      ? `<span class="livres-filtre" role="group" aria-label="${echapper(nom)}">
+          <button type="button" class="livres-filtre-bouton${courant ? '' : ' actif'}"
+            data-filtre-livre="${cle}" data-valeur=""
+            aria-pressed="${!courant}">Tous</button>
+          ${options
+            .map(
+              ([valeur, mot, n]) => `<button type="button"
+                class="livres-filtre-bouton${courant === valeur ? ' actif' : ''}"
+                data-filtre-livre="${cle}" data-valeur="${echapper(valeur)}"
+                aria-pressed="${courant === valeur}"
+                >${echapper(mot)} <span class="discret">${n}</span></button>`,
+            )
+            .join('')}
+        </span>`
+      : '';
+
+  return `
+    <div class="livres-barre">
+      <span class="affichages" role="group" aria-label="Comment voir tes livres">
+        <button type="button" class="${vue === 'etagere' ? 'actif' : ''}"
+          data-vue-livres="etagere" aria-pressed="${vue === 'etagere'}">Étagère</button>
+        <button type="button" class="${vue === 'liste' ? 'actif' : ''}"
+          data-vue-livres="liste" aria-pressed="${vue === 'liste'}">Liste</button>
+      </span>
+
+      <!-- LA RECHERCHE EST TOUJOURS LÀ, dans les deux vues : chercher un titre
+           qu'on a en tête n'a pas à commencer par changer de vue. -->
+      <label class="livres-recherche">
+        <span class="hors-ecran">Chercher un livre</span>
+        <input type="search" data-recherche-livre value="${echapper(filtres.mot ?? '')}"
+          placeholder="Chercher un titre, un auteur" autocomplete="off">
+      </label>
+    </div>
+
+    ${
+      vue === 'liste'
+        ? `<div class="livres-filtres">
+            ${groupe(
+              'État',
+              'statut',
+              Object.entries(ETATS_LIVRE)
+                .map(([cle, mot]) => [cle, mot, compte('statut', cle)])
+                .filter(([, , n]) => n),
+              filtres.statut,
+            )}
+            ${groupe(
+              'Thème',
+              'theme',
+              themes.map((cle) => [cle, THEMES_LIVRE[cle] ?? cle, compte('theme', cle)]),
+              filtres.theme,
+            )}
+            ${groupe(
+              'Note',
+              'note',
+              [5, 4, 3, 2, 1]
+                .map((rang) => [String(rang), '★'.repeat(rang), compte('note', rang)])
+                .filter(([, , n]) => n),
+              filtres.note,
+            )}
+          </div>`
+        : ''
+    }`;
+}
+
+// Le tri d'une liste : l'état d'abord — ce qu'on lit, puis ce qui attend, puis
+// ce qui est fini —, la note ensuite, le titre enfin. On cherche rarement un
+// livre par sa date de saisie.
+const RANG_STATUT = { en_cours: 0, a_lire: 1, lu: 2, repose: 3 };
+
+export function livresFiltres(livres, filtres) {
+  const mot = (filtres.mot ?? '').trim().toLowerCase();
+
+  return livres
+    .filter((livre) => {
+      if (filtres.statut && livre.statut !== filtres.statut) return false;
+      if (filtres.theme && !(livre.themes ?? []).includes(filtres.theme)) return false;
+      if (filtres.note && livre.note !== Number(filtres.note)) return false;
+      if (!mot) return true;
+      // Le titre ET l'auteur : on cherche « Marc Levy » aussi souvent qu'un
+      // titre, et demander lequel des deux serait une question de plus.
+      return `${livre.titre} ${livre.auteur ?? ''}`.toLowerCase().includes(mot);
+    })
+    .sort(
+      (a, b) =>
+        (RANG_STATUT[a.statut] ?? 9) - (RANG_STATUT[b.statut] ?? 9) ||
+        (b.note ?? 0) - (a.note ?? 0) ||
+        a.titre.localeCompare(b.titre),
+    );
+}
+
+// LA LISTE : une ligne par livre, les colonnes de sa base Notion — le titre, ses
+// thèmes, son état, sa note, son auteur. Toute la ligne mène à sa fiche.
+function ligneDeLivre(livre) {
+  return `
+    <li class="livre-ligne-liste">
+      <a class="livre-ligne-ouvrir" href="#livre/${encodeURIComponent(livre.id)}">
+        <span class="livre-ligne-nom">${echapper(livre.titre)}</span>
+        <span class="livre-ligne-themes">${(livre.themes ?? [])
+          .map(
+            (theme) => `<span class="livre-theme" data-theme="${echapper(theme)}"
+              >${echapper(THEMES_LIVRE[theme] ?? theme)}</span>`,
+          )
+          .join('')}</span>
+        <span class="livre-ligne-etat" data-etat="${echapper(livre.statut)}">
+          <span class="cap-etat-point" aria-hidden="true"></span>${echapper(
+            ETATS_LIVRE[livre.statut] ?? livre.statut,
+          )}</span>
+        <span class="livre-ligne-note">${
+          livre.note ? etoiles(livre.note) : '<span class="discret">—</span>'
+        }</span>
+        <span class="livre-ligne-auteur discret">${echapper(livre.auteur ?? '')}</span>
+      </a>
+      ${menuDiscret('livre', livre.id)}
+    </li>`;
+}
+
+export function construireBibliotheque(livres, seances, urls = {}, vue = 'etagere', filtres = {}) {
   const ajout = `
     <button type="button" class="cap-ajout-discret" data-ajout="livre">
       ${SIGNE.plus}<span>Ajouter un livre</span></button>`;
@@ -754,10 +929,34 @@ export function construireBibliotheque(livres, seances, urls = {}) {
       ${ajout}`;
   }
 
-  const encours = livreEnCours(livres, seances);
-  const autres = livres.filter((livre) => livre.id !== encours?.id);
+  const barre = construireFiltresLivres(vue, filtres, livres);
+
+  // LA LISTE NE MET PERSONNE EN VEDETTE : on y vient avec un nom en tête, et
+  // sortir le livre en cours du rang le rendrait introuvable là où on le
+  // cherche. L'étagère, elle, le montre en grand — c'est celui qu'on ouvre ce
+  // soir.
+  if (vue === 'liste') {
+    const retenus = livresFiltres(livres, filtres);
+    return `
+      ${barre}
+      ${
+        retenus.length
+          ? `<ul class="livres-liste-table">${retenus.map(ligneDeLivre).join('')}</ul>`
+          : `<p class="cap-vide">Aucun livre ne répond à ça. Retire un filtre,
+             ou change le mot cherché.</p>`
+      }
+      ${ajout}`;
+  }
+
+  // L'étagère respecte la recherche, elle : chercher un titre n'a pas à obliger
+  // de changer de vue. Les filtres, eux, n'existent que dans la liste — c'est là
+  // qu'on trie, pas là qu'on regarde.
+  const vus = livresFiltres(livres, { mot: filtres.mot });
+  const encours = livreEnCours(vus, seances);
+  const autres = vus.filter((livre) => livre.id !== encours?.id);
 
   return `
+    ${barre}
     ${encours ? livreDuHaut(encours, seances, urls) : ''}
     ${
       autres.length
@@ -1868,6 +2067,14 @@ export const FORMULAIRES = {
         valeur: v.pages ?? '',
       },
       {
+        nom: 'themes',
+        libelle: 'Thèmes',
+        mot: 'thème',
+        type: 'choix-multiple',
+        options: THEMES_LIVRE,
+        valeur: v.themes ?? [],
+      },
+      {
         nom: 'statut',
         libelle: 'Où il en est',
         type: 'choix',
@@ -2195,12 +2402,25 @@ export default {
       });
     };
 
-    const rendreBibliotheque = () => {
-      bloc('bibliotheque').innerHTML = construireBibliotheque(
+    const rendreBibliotheque = ({ focusRecherche = false } = {}) => {
+      const hote = bloc('bibliotheque');
+      hote.innerHTML = construireBibliotheque(
         etat.livres,
         etat.seances,
         etat.couvertures,
+        vueEtat.vueLivres,
+        vueEtat.filtresLivres,
       );
+      // LE CURSEUR RESTE DANS LA RECHERCHE : on redessine à chaque lettre, et
+      // sans ça le champ perdait le focus au premier caractère. Il revient au
+      // BOUT du mot, jamais au début — sinon on taperait à l'envers.
+      if (focusRecherche) {
+        const champ = hote.querySelector('[data-recherche-livre]');
+        if (champ) {
+          champ.focus();
+          champ.setSelectionRange(champ.value.length, champ.value.length);
+        }
+      }
     };
     const rendreHabitudes = () => {
       bloc('habitudes').innerHTML = construireHabitudes(
@@ -2450,6 +2670,9 @@ export default {
           pages: champs.pages ? Number(champs.pages) : null,
           statut: champs.statut,
           note: champs.note ? Number(champs.note) : null,
+          // Le champ caché d'un choix multiple porte ses clés séparées par des
+          // virgules : c'est la forme que `FormData` sait transporter.
+          themes: (champs.themes ?? '').split(',').filter(Boolean),
         };
 
         // L'ENVOI D'UN FICHIER N'EST PAS OPTIMISTE, et c'est l'exception écrite
@@ -2542,6 +2765,16 @@ export default {
     // le risque de double traitement qui a fait retirer cet appel du site FCH
     // (deux gestionnaires basculent le panneau deux fois, il reste fermé).
     brancherChoix(section);
+
+    // LA RECHERCHE FILTRE À LA LETTRE, sans bouton : une bibliothèque tient en
+    // mémoire, il n'y a rien à demander au réseau, et un « Chercher » à presser
+    // ferait payer un aller-retour à ce qui doit répondre sous le doigt.
+    section.addEventListener('input', (evenement) => {
+      const champ = evenement.target.closest('[data-recherche-livre]');
+      if (!champ) return;
+      vueEtat.filtresLivres.mot = champ.value;
+      rendreBibliotheque({ focusRecherche: true });
+    });
 
     section.addEventListener('click', async (evenement) => {
       const dans = (nom) => evenement.target.closest(`[data-${nom}]`);
@@ -2651,6 +2884,26 @@ export default {
       // NOTER DES PAGES, le geste du livre en cours. Il coche aussi l'habitude de
       // lecture — noter des pages EST la preuve qu'on a lu, et redemander de
       // cocher juste après serait demander deux fois la même chose.
+      // --- LES DEUX VUES DE LA BIBLIOTHÈQUE ---
+
+      const vueLivres = dans('vue-livres');
+      if (vueLivres) {
+        vueEtat.vueLivres = vueLivres.dataset.vueLivres;
+        rendreBibliotheque();
+        return;
+      }
+
+      const filtreLivre = dans('filtre-livre');
+      if (filtreLivre) {
+        const { filtreLivre: cle, valeur } = filtreLivre.dataset;
+        // Retoucher un filtre déjà posé l'enlève : c'est le geste attendu d'une
+        // pastille, et ça évite un « Tous » qu'il faudrait viser.
+        vueEtat.filtresLivres[cle] =
+          vueEtat.filtresLivres[cle] === valeur || !valeur ? null : valeur;
+        rendreBibliotheque();
+        return;
+      }
+
       const pages = dans('livre-pages');
       if (pages) return noterDesPages(pages.dataset.livrePages, Number(pages.dataset.pages));
 

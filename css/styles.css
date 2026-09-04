@@ -5689,6 +5689,178 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 .livre-note { flex: none; font-size: 0.75rem; color: var(--famille-calme); letter-spacing: 1px; }
 
 /* ---------------------------------------------------------------------------
+   LA BARRE DE LA BIBLIOTHÈQUE : la bascule, puis la recherche (2 septembre
+   2026). Deux vues pour deux questions — l'étagère répond à « qu'est-ce que j'ai
+   lu », la liste à « où est CE livre ». */
+.livres-barre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-12);
+  margin-bottom: var(--espace-12);
+}
+
+/* La recherche prend ce qui reste, et pas moins de 12 rem : un champ de six
+   caractères n'invite pas à écrire. */
+.livres-recherche { flex: 1 1 12rem; min-width: 0; }
+
+.livres-recherche input {
+  width: 100%;
+  padding: var(--espace-8) var(--espace-12);
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: var(--texte);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+}
+
+.livres-recherche input::placeholder { color: var(--texte-discret); }
+
+.livres-filtres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-16);
+  margin-bottom: var(--espace-16);
+}
+
+.livres-filtre { display: flex; flex-wrap: wrap; gap: var(--espace-4); }
+
+/* Le dessin d'une pastille de choix, en plus petit : on en aligne une douzaine,
+   et le contour suffit à dire qu'on peut la prendre. */
+.livres-filtre-bouton {
+  padding: var(--espace-4) var(--espace-8);
+  font-family: inherit;
+  font-size: 0.75rem;
+  color: var(--texte-discret);
+  background: none;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+  cursor: pointer;
+}
+
+.livres-filtre-bouton:hover { color: var(--texte); }
+
+.livres-filtre-bouton.actif {
+  color: var(--fond);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.livres-filtre-bouton.actif .discret { color: inherit; opacity: 0.7; }
+
+/* LA LISTE : les colonnes de sa base Notion — le nom, les thèmes, l'état, la
+   note, l'auteur. Toute la ligne mène à la fiche. */
+.bloc ul.livres-liste-table {
+  display: grid;
+  /* UNE SEULE COLONNE, DITE EXPLICITEMENT : au-delà de 60 rem,
+     `.bloc ul:not(.liste-jalons)` passe toute liste du hub en grille de
+     21 rem — même spécificité que la nôtre, mais elle pose
+     `grid-template-columns` que nous ne redisions pas, et la liste se cassait en
+     trois colonnes. **Ce qu'on ne redit pas reste** : septième fois. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  margin: 0 0 var(--espace-16);
+  padding: 0;
+  list-style: none;
+}
+
+.bloc ul.livres-liste-table li.livre-ligne-liste {
+  position: relative;
+  display: block;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--bordure-douce);
+  border-radius: 0;
+}
+
+.bloc ul.livres-liste-table li.livre-ligne-liste:last-child { border-bottom: 0; }
+
+.livre-ligne-ouvrir {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1.2fr) auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--espace-12);
+  padding: var(--espace-8) 2rem var(--espace-8) 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+.livre-ligne-ouvrir:hover { background: color-mix(in srgb, var(--texte) 5%, transparent); }
+
+.livre-ligne-nom {
+  font-size: 0.875rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.livre-ligne-themes { display: flex; flex-wrap: wrap; gap: var(--espace-4); min-width: 0; }
+
+/* UNE COULEUR PAR THÈME, tirée du nom lui-même : le hub n'a pas de palette pour
+   ça, et en déclarer une obligerait à la compléter à chaque thème nouveau. La
+   teinte se déduit donc du mot — même mot, même couleur, pour toujours. */
+.livre-theme {
+  padding: 1px var(--espace-8);
+  font-size: 0.6875rem;
+  border-radius: var(--rayon-pastille);
+  background: color-mix(in srgb, var(--teinte-theme, var(--texte-discret)) 20%, transparent);
+  color: var(--texte);
+  white-space: nowrap;
+}
+
+.livre-theme[data-theme="psycho"] { --teinte-theme: #c9a227; }
+.livre-theme[data-theme="relation"] { --teinte-theme: var(--famille-corps); }
+.livre-theme[data-theme="productivite"] { --teinte-theme: #5b8dd9; }
+.livre-theme[data-theme="roman"] { --teinte-theme: #b4649a; }
+.livre-theme[data-theme="essai"] { --teinte-theme: #7a8fa6; }
+.livre-theme[data-theme="biographie"] { --teinte-theme: #c98a5a; }
+.livre-theme[data-theme="metier"] { --teinte-theme: #6aa6a0; }
+
+.livre-ligne-etat {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-4);
+  font-size: 0.75rem;
+  color: var(--texte-discret);
+  white-space: nowrap;
+}
+
+.livre-ligne-etat[data-etat="en_cours"] .cap-etat-point { --etat: #5b8dd9; }
+.livre-ligne-etat[data-etat="lu"] .cap-etat-point { --etat: var(--famille-corps); }
+
+.livre-ligne-note { white-space: nowrap; font-size: 0.75rem; }
+
+.livre-ligne-auteur {
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.livre-ligne-liste > .cap-menu {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+}
+
+/* Sur téléphone, la ligne se replie en deux rangs : le nom d'abord, le reste
+   dessous. Cinq colonnes dans 343 px feraient soixante pixels chacune, où plus
+   rien ne se lit. */
+@media (max-width: 48rem) {
+  .livre-ligne-ouvrir {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: var(--espace-4);
+  }
+  .livre-ligne-nom { grid-column: 1 / -1; }
+  .livre-ligne-themes { grid-column: 1; }
+  .livre-ligne-auteur { grid-column: 1 / -1; }
+}
+
+/* ---------------------------------------------------------------------------
    LA FICHE D'UN LIVRE — `#livre/<id>` (2 septembre 2026).
 
    La couverture en grand à gauche, le titre et les deux réglages à droite : ce
@@ -5762,6 +5934,12 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    lit pas — d'où des lignes nues plutôt que des tuiles. */
 .bloc ul.livre-journal {
   display: grid;
+  /* UNE SEULE COLONNE, DITE EXPLICITEMENT : au-delà de 60 rem,
+     `.bloc ul:not(.liste-jalons)` passe toute liste du hub en grille de
+     21 rem — même spécificité que la nôtre, mais elle pose
+     `grid-template-columns` que nous ne redisions pas, et la liste se cassait en
+     trois colonnes. **Ce qu'on ne redit pas reste** : septième fois. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 0;
   margin: 0;
   padding: 0;
@@ -5787,6 +5965,12 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
 .bloc ul.livre-citations {
   display: grid;
+  /* UNE SEULE COLONNE, DITE EXPLICITEMENT : au-delà de 60 rem,
+     `.bloc ul:not(.liste-jalons)` passe toute liste du hub en grille de
+     21 rem — même spécificité que la nôtre, mais elle pose
+     `grid-template-columns` que nous ne redisions pas, et la liste se cassait en
+     trois colonnes. **Ce qu'on ne redit pas reste** : septième fois. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--espace-8);
   margin: 0 0 var(--espace-12);
   padding: 0;

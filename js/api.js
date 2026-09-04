@@ -794,11 +794,12 @@ export async function creerLivre({
   statut = 'a_lire',
   commence_le = null,
   couverture = null,
+  themes = [],
 }) {
   return verifier(
     await client
       .from('livres')
-      .insert({ titre, auteur, pages, statut, commence_le, couverture })
+      .insert({ titre, auteur, pages, statut, commence_le, couverture, themes })
       .select('*, citations:livres_citations(id, texte, page)')
       .single(),
   );
