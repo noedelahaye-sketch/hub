@@ -865,6 +865,24 @@ l'inventaire.
   et c'est l'état posé qui le dit. Le plus récemment lu passe devant.
 - **Ils suivent la recherche et les filtres**, comme le reste : montrer une carte
   qu'on vient d'exclure serait un filtre qui ne filtre pas.
+- **ILS PASSENT DEVANT LA BARRE** (correction de Noé, le même jour) : la barre
+  est un RÉGLAGE — comment je veux voir mes livres —, les cartes sont ce qu'on
+  vient FAIRE. **On ne met pas le mode d'emploi avant l'objet.**
+
+**LA BASCULE ET LA RECHERCHE SE DONNENT LA MÊME HAUTEUR**, elles ne se la
+négocient pas (demande de Noé : « aligne étagère/liste avec la barre de
+recherche »). Deux essais avant celui-là, et chacun apprend quelque chose :
+- `align-items: stretch` fait PIRE — la bascule est un flex dans un flex, ses
+  boutons s'étirent avec elle, et la rangée gonflait à 55 px pendant que le champ
+  restait à 34 ;
+- **l'étiquette qui enveloppait le champ était l'élément de la rangée**, donc
+  c'est ELLE qui s'alignait. Le champ est maintenant l'élément lui-même, et son
+  nom accessible le nomme.
+- **Et le champ portait une marge héritée** : la règle générale des `input` du
+  hub pose 15 px sous chacun, faite pour des formulaires empilés. Elle gonflait
+  sa boîte à 53 px et posait le cadre sept pixels trop haut, à hauteurs pourtant
+  égales. **Une marge héritée d'un autre contexte est une mesure qu'on n'a pas
+  choisie.**
 - **Le tri : l'état, puis la note, puis le titre.** On cherche rarement un livre
   par sa date de saisie.
 

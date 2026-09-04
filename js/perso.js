@@ -845,12 +845,17 @@ export function construireFiltresLivres(vue, filtres, livres) {
       </span>
 
       <!-- LA RECHERCHE EST TOUJOURS LÀ, dans les deux vues : chercher un titre
-           qu'on a en tête n'a pas à commencer par changer de vue. -->
-      <label class="livres-recherche">
-        <span class="hors-ecran">Chercher un livre</span>
-        <input type="search" data-recherche-livre value="${echapper(filtres.mot ?? '')}"
-          placeholder="Chercher un titre, un auteur" autocomplete="off">
-      </label>
+           qu'on a en tête n'a pas à commencer par changer de vue.
+
+           PAS D'ÉTIQUETTE AUTOUR (2 septembre 2026) : l'enveloppe était
+           l'élément de la rangée, et c'est ELLE qui s'alignait — le champ
+           flottait dix pixels plus haut que la bascule d'à côté. Le champ est
+           donc l'élément lui-même, et son nom accessible le nomme : une invite
+           disparaît dès qu'on tape, elle ne peut pas être le seul nom d'un
+           champ. -->
+      <input type="search" class="livres-recherche" data-recherche-livre
+        value="${echapper(filtres.mot ?? '')}" aria-label="Chercher un livre"
+        placeholder="Chercher un titre, un auteur" autocomplete="off">
     </div>
 
     ${
@@ -997,9 +1002,13 @@ export function construireBibliotheque(livres, seances, urls = {}, vue = 'etager
   const vide = `<p class="cap-vide">Aucun livre ne répond à ça. Retire un filtre,
     ou change le mot cherché.</p>`;
 
+  // LES CARTES PASSENT DEVANT LA BARRE (2 septembre 2026, correction de Noé :
+  // « ça doit passer devant ça surtout »). Et c'est plus juste : la barre est un
+  // RÉGLAGE — comment je veux voir mes livres —, les cartes sont ce qu'on vient
+  // FAIRE. On ne met pas le mode d'emploi avant l'objet.
   return `
-    ${barre}
     ${enCours.map((livre) => livreDuHaut(livre, seances, urls)).join('')}
+    ${barre}
     ${
       retenus.length
         ? vue === 'liste'

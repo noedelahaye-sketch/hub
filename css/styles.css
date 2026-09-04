@@ -5695,18 +5695,39 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 .livres-barre {
   display: flex;
   flex-wrap: wrap;
+  /* UNE HAUTEUR DÉCLARÉE, ET NON UN ÉTIREMENT (2 septembre 2026, demande de
+     Noé : « aligne étagère/liste avec la barre de recherche »). Les deux
+     contrôles se mesuraient chacun de son côté — 40 px pour la bascule, 34 pour
+     le champ —, et deux hauteurs voisines qui ne tombent pas d'accord se voient
+     tout de suite.
+
+     `align-items: stretch` a été essayé et fait pire : la bascule est un flex
+     dans un flex, ses boutons s'étirent avec elle, et la rangée gonflait à 55 px
+     pendant que le champ restait à 34. **Deux contrôles côte à côte se donnent
+     la même hauteur, ils ne se la négocient pas.** */
   align-items: center;
   gap: var(--espace-12);
   margin-bottom: var(--espace-12);
 }
 
 /* La recherche prend ce qui reste, et pas moins de 12 rem : un champ de six
-   caractères n'invite pas à écrire. */
-.livres-recherche { flex: 1 1 12rem; min-width: 0; }
+   caractères n'invite pas à écrire. La hauteur est DÉCLARÉE, la même que la
+   bascule — deux contrôles côte à côte se donnent la même mesure, ils ne se la
+   négocient pas. */
+.livres-barre .affichages,
+.livres-recherche { min-height: 2.5rem; }
 
-.livres-recherche input {
-  width: 100%;
-  padding: var(--espace-8) var(--espace-12);
+.livres-recherche {
+  flex: 1 1 12rem;
+  min-width: 0;
+  /* SANS MARGE : la règle générale des champs du hub pose 15 px sous chaque
+     `input`, faite pour des formulaires empilés. Ici le champ est côte à côte
+     avec la bascule, et cette marge gonflait sa boîte à 53 px — centrée, elle
+     posait le cadre sept pixels plus haut que son voisin, à hauteurs pourtant
+     égales. **Une marge héritée d'un autre contexte est une mesure qu'on n'a pas
+     choisie.** */
+  margin: 0;
+  padding: 0 var(--espace-12);
   font-family: inherit;
   font-size: 0.875rem;
   color: var(--texte);
@@ -5715,7 +5736,7 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   border-radius: var(--rayon-controle);
 }
 
-.livres-recherche input::placeholder { color: var(--texte-discret); }
+.livres-recherche::placeholder { color: var(--texte-discret); }
 
 .livres-filtres {
   display: flex;
