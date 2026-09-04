@@ -811,6 +811,16 @@ gagner.
     d'affichage.
   - *Conséquence assumée : une couverture dont le bas porte du texte le perd.
     C'est la nature de l'effet.*
+- **LES INFOS S'ALIGNENT D'UNE TUILE À L'AUTRE** (même jour, demande de Noé).
+  Chaque bloc **réserve sa hauteur** — deux lignes pour le titre, une pastille
+  pour le thème —, si bien qu'un titre court et un titre long laissent l'état et
+  la note sur la même horizontale.
+  - **`subgrid` a été essayé et il se bat avec le retrait du titre** : une marge
+    NÉGATIVE réduit ce que l'élément demande à sa rangée, et la rangée du titre
+    tombait à zéro — le texte débordait sous la couverture. *Deux mécanismes qui
+    se disputent la même hauteur, c'est un de trop.*
+  - *Prix assumé : la tuile passe de 221 à 236 px. Une place réservée coûte de la
+    place, même quand elle sert à un titre d'une seule ligne.*
 - **Le livre EN COURS porte sa couverture en grand**, à gauche de tout le reste :
   c'est celui qu'on ouvre ce soir. Les autres tiennent en vignette.
 - **Le menu à trois points se pose SUR la couverture** : sous le texte il aurait

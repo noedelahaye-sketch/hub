@@ -6090,8 +6090,10 @@ li.livre-tuile {
   /* `auto` pour la couverture, le reste au contenu : le titre, le thème et le
      service prennent chacun ce qu'il leur faut, et la couverture garde son
      rapport. */
+  /* `auto` pour la couverture, le reste au contenu. */
   grid-template-rows: auto;
   grid-auto-rows: min-content;
+  align-content: start;
   gap: var(--espace-4);
   min-width: 0;
 }
@@ -6123,8 +6125,8 @@ li.livre-tuile {
    IL NE S'APPLIQUE PAS À LA TUILE POINTILLÉE : son cadre est le signe de ce qui
    manque, et un cadre à moitié effacé se lirait comme un défaut d'affichage. */
 .livre-couverture {
-  -webkit-mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 58%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 38%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 38%, transparent 100%);
 }
 
 .livre-sans-couverture .livre-couverture {
@@ -6174,9 +6176,22 @@ li.livre-tuile {
    déjà pour un livre qu'on connaît, le texte n'est là que pour les autres. */
 /* Le corps suit la tuile : à 109 px de large, 13 px coupaient tous les titres
    au deuxième mot. */
+/* LES INFOS S'ALIGNENT D'UNE TUILE À L'AUTRE (2 septembre 2026, demande de
+   Noé : « les infos du livre doivent être alignées en haut »). Chaque bloc
+   RÉSERVE sa hauteur — deux lignes pour le titre, une pastille pour le thème —,
+   si bien qu'un titre court et un titre long laissent l'état et la note sur la
+   même horizontale.
+
+   `subgrid` a été essayé, et il se bat avec le retrait du titre : une marge
+   NÉGATIVE réduit ce que l'élément demande à sa rangée, et la rangée du titre
+   tombait à zéro — le texte débordait sous la couverture. **Deux mécanismes qui
+   se disputent la même hauteur, c'est un de trop.** */
 .livre-tuile-titre {
+  min-height: 2.6em;
   font-size: 0.75rem;
-  font-weight: 600;
+  /* 700 et non 600 (demande de Noé) : le titre est posé sur la fin de la
+     couverture, et il lui faut de quoi tenir contre une image. */
+  font-weight: 700;
   line-height: 1.3;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -6187,8 +6202,16 @@ li.livre-tuile {
 /* Le thème sur la tuile : une seule pastille, alignée à gauche comme le titre.
    Elle passe AVANT le service — c'est ce qui distingue deux livres qu'on balaie
    du regard. */
-.livre-tuile-theme {
-  justify-self: start;
+.livre-tuile-theme-place {
+  display: flex;
+  align-items: start;
+  /* La hauteur d'une pastille, thème ou non : c'est elle qui garde l'état et la
+     note sur la même ligne d'un livre à l'autre. */
+  min-height: 1.0625rem;
+  min-width: 0;
+}
+
+.livre-tuile-theme-place .livre-theme {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;

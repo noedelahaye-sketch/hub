@@ -771,9 +771,13 @@ function tuileDeLivre(livre, urls, service) {
            lire ». Un seul thème s'affiche quand il y en a plusieurs, avec leur
            compte : la tuile fait 109 px, et deux pastilles y tiendraient à peine
            l'une des deux. Le reste se lit sur la fiche. -->
-      ${
+      <!-- LA PLACE DU THÈME EXISTE TOUJOURS, même vide (2 septembre 2026) : les
+           tuiles partagent leurs rangées, et un livre sans thème ferait remonter
+           son état et son auteur d'un cran — les colonnes ne tomberaient plus
+           en face les unes des autres. -->
+      <span class="livre-tuile-theme-place">${
         (livre.themes ?? []).length
-          ? `<span class="livre-tuile-theme livre-theme"
+          ? `<span class="livre-theme"
               data-theme="${echapper(livre.themes[0])}"
               title="${echapper(
                 livre.themes.map((t) => THEMES_LIVRE[t] ?? t).join(' · '),
@@ -781,7 +785,7 @@ function tuileDeLivre(livre, urls, service) {
               livre.themes.length > 1 ? ` +${livre.themes.length - 1}` : ''
             }</span>`
           : ''
-      }
+      }</span>
       <span class="livre-tuile-service">${echapper(service)}</span>
       ${etoiles(livre.note)}
       ${menuDiscret('livre', livre.id)}
