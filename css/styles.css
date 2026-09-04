@@ -5738,14 +5738,104 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 
 .livres-recherche::placeholder { color: var(--texte-discret); }
 
-.livres-filtres {
+/* LES DEUX ICÔNES — FILTRER, TRIER — ET LA RANGÉE QU'ELLES OUVRENT (2 septembre
+   2026, forme montrée par Noé). Les filtres tenaient trois rangées de pastilles
+   au-dessus de chaque écran : une douzaine de boutons pour un geste qu'on fait
+   rarement. Ils passent derrière une icône, et chaque critère devient une
+   pastille qui ouvre SON panneau à cocher. */
+.livres-reglages-bouton {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-4);
+  min-height: 2.5rem;
+  padding: 0 var(--espace-12);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--texte-discret);
+  background: var(--fond-carte);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  cursor: pointer;
+}
+
+.livres-reglages-bouton:hover { color: var(--texte); }
+
+/* UN FILTRE POSÉ SE VOIT DE DEHORS : sans ce compte, une bibliothèque filtrée se
+   lirait comme une bibliothèque vide. */
+.livres-reglages-bouton.actif { color: var(--accent); border-color: var(--accent); }
+
+.livres-reglages-compte {
+  min-width: 1.125rem;
+  padding: 0 4px;
+  font-size: 0.6875rem;
+  line-height: 1.125rem;
+  text-align: center;
+  color: var(--fond);
+  background: var(--accent);
+  border-radius: var(--rayon-pastille);
+}
+
+/* LA RANGÉE DES CRITÈRES : le tri d'abord, un filet, puis les filtres. Le tri
+   répond à « dans quel ordre », les filtres à « lesquels » — deux questions
+   voisines, que le filet sépare sans les éloigner. */
+.livres-criteres {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--espace-16);
+  align-items: center;
+  gap: var(--espace-8);
   margin-bottom: var(--espace-16);
 }
 
-.livres-filtre { display: flex; flex-wrap: wrap; gap: var(--espace-4); }
+.livres-separateur {
+  width: 1px;
+  align-self: stretch;
+  min-height: 1.25rem;
+  background: var(--bordure);
+}
+
+.livres-critere { position: relative; }
+
+.livres-critere-bouton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-4);
+  max-width: 100%;
+  padding: var(--espace-4) var(--espace-8);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--texte-discret);
+  background: none;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+  cursor: pointer;
+}
+
+.livres-critere-bouton:hover { color: var(--texte); }
+
+/* UN CRITÈRE QUI RETIENT QUELQUE CHOSE SE VOIT : sans ça, une bibliothèque
+   filtrée se lirait comme une bibliothèque vide. */
+.livres-critere-bouton.actif { color: var(--accent); border-color: var(--accent); }
+
+/* Le panneau reprend `.choix-panneau` — même fond, même ombre, même
+   retournement quand il touche un bord —, il n'en change que le contenu. */
+.livres-panneau { min-width: 12rem; }
+
+/* La coche réserve sa place même vide : sans elle, cocher une ligne décalerait
+   son texte de douze pixels. */
+.livres-coche {
+  display: inline-flex;
+  justify-content: center;
+  width: 12px;
+  flex: none;
+  color: var(--accent);
+}
+
+.livres-panneau .choix-capture button { gap: var(--espace-8); }
+.livres-panneau .choix-capture button .discret { margin-left: auto; }
+
+.livres-tout-voir { font-size: 0.75rem; }
 
 /* Le dessin d'une pastille de choix, en plus petit : on en aligne une douzaine,
    et le contour suffit à dire qu'on peut la prendre. */
@@ -6135,8 +6225,10 @@ li.livre-tuile {
 }
 
 /* Le texte remonte DANS le fondu : c'est là que la couverture n'est plus qu'un
-   voile, et le titre s'y lit sans rien recouvrir. */
-.livre-tuile-titre { margin-top: -1.5rem; }
+   voile, et le titre s'y lit sans rien recouvrir. Il est monté deux fois à la
+   demande de Noé — de 1,5 à 2,25 rem : plus le fondu part haut, plus il y a de
+   voile où s'asseoir. */
+.livre-tuile-titre { margin-top: -2.25rem; }
 
 /* `cover` et non `contain` : une couverture est un rectangle, on la remplit
    quitte à rogner quelques millimètres — un liseré de fond autour de chaque

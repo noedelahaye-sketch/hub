@@ -864,12 +864,36 @@ choisir. **La base n'impose rien** : pas de CHECK, pas de table ; un thème est 
 mot qu'on se donne, et la liste offerte à la saisie (`THEMES_LIVRE`, js/perso.js)
 s'allonge sans migration.
 
+**LES FILTRES ET LE TRI VIVENT DERRIÈRE DEUX ICÔNES** (2 septembre 2026, forme
+montrée par Noé, Notion à l'appui). Ils tenaient trois rangées de pastilles en
+permanence au-dessus de l'écran — une douzaine de boutons pour un geste qu'on
+fait rarement, et qui repoussaient les livres vers le bas. **Le coût d'accès suit
+l'intention** : c'est la règle des deux rangs du hub, appliquée dans une page.
+
+- **L'icône ouvre une RANGÉE DE CRITÈRES**, elle ne les contient pas. Chaque
+  critère est une pastille qui ouvre SON panneau — le tri d'abord, un filet, puis
+  État, Thème, Note.
+- **ON COCHE PLUSIEURS VALEURS PAR CRITÈRE.** « Les 5 étoiles ET les 4 » est une
+  question qu'on se pose, et un choix unique ne savait pas y répondre. Le panneau
+  reste ouvert entre deux coches ; un critère vide ne filtre rien.
+- **Une pastille dit ce qu'elle retient** — le premier en toutes lettres, les
+  suivants comptés (« Note : ★★★★★ +1 »). Trois valeurs écrites feraient une
+  phrase, et une pastille n'est pas une phrase.
+- **Le compte reste DEHORS, sur l'icône** : un filtre posé qu'on ne voit plus est
+  une bibliothèque qui ment sur ce qu'elle contient.
+- **L'icône de tri ouvre son panneau directement** : c'est un réglage unique, et
+  le faire chercher dans une rangée qu'on vient d'ouvrir serait deux gestes pour
+  un. **Le même tri retouché se retourne** — c'est le geste d'un en-tête de
+  colonne, et il évite un second bouton pour le sens.
+- **« Par défaut » n'est pas une absence de tri** : c'est l'ordre du hub — ce
+  qu'on lit, puis ce qui attend, puis ce qui est fini, la note départageant.
 - **ON N'OFFRE QUE CE QUI EXISTE** : les filtres se déduisent des livres, avec
   leur compte. Un filtre « Biographie » sur une bibliothèque qui n'en compte
   aucune est une porte sur une pièce vide.
-- **La recherche vit dans LES DEUX vues** : chercher un titre qu'on a en tête n'a
-  pas à commencer par changer de vue. Les filtres, eux, n'existent que dans la
-  liste — c'est là qu'on trie, pas là qu'on regarde.
+- **La recherche, les filtres et le tri valent pour LES DEUX vues.** Les filtres
+  n'étaient dans la liste que parce qu'ils y occupaient trois rangées ; une fois
+  rangés derrière leur icône, rien ne justifiait que l'étagère s'en passe —
+  « montre-moi mes romans » se demande aussi bien en couvertures qu'en lignes.
 - **Elle filtre à la lettre, sans bouton** : une bibliothèque tient en mémoire,
   il n'y a rien à demander au réseau. Le curseur revient **au bout du mot** — on
   redessine à chaque frappe, et sans ça le champ perdait le focus au premier

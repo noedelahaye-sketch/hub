@@ -54,6 +54,32 @@ const SIGNE = {
   points: `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"
     aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/>
     <circle cx="19" cy="12" r="1.6"/></svg>`,
+  // TROIS CURSEURS PLUTÔT QU'UN ENTONNOIR (2 septembre 2026) : l'entonnoir dit
+  // « on écarte », les curseurs disent « on règle » — et c'est bien ce qu'on
+  // fait ici, on donne trois critères puis on les enlève. Le dessin est du même
+  // trait que les autres signes du hub.
+  // L'ENTONNOIR, ET NON TROIS CURSEURS (2 septembre 2026, forme montrée par
+  // Noé) : c'est le signe que tout le monde reconnaît pour « filtrer », et le
+  // hub n'a pas de raison d'en inventer un autre. Trois traits qui se
+  // raccourcissent — le même dessin, en plus sobre qu'un entonnoir plein.
+  filtre: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16"/>
+    <path d="M7 12h10"/><path d="M10 18h4"/></svg>`,
+  chevron: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+    aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`,
+  coche: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+    stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+    aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>`,
+  tri: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+    aria-hidden="true"><path d="M7 4v16M7 4L4 7M7 4l3 3"/><path d="M17 20V4M17 20l3-3M17 20l-3-3"/></svg>`,
+  monte: `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor"
+    stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"
+    aria-hidden="true"><path d="M12 19V5M12 5l-5 5M12 5l5 5"/></svg>`,
+  descend: `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor"
+    stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"
+    aria-hidden="true"><path d="M12 5v14M12 19l-5-5M12 19l5-5"/></svg>`,
 };
 
 // L'état de l'écran, hors des données : ce qui est déplié, ce qui attend une
@@ -79,7 +105,15 @@ const vueEtat = {
   // ouvre cette page pour VOIR ses livres, pas pour en chercher un. La liste
   // s'atteint d'un geste quand on vient avec un nom en tête.
   vueLivres: 'etagere',
-  filtresLivres: { mot: '', statut: null, theme: null, note: null },
+  // Un TABLEAU par critère : on coche plusieurs valeurs (« les 5 étoiles ET les
+  // 4 »), et un critère vide ne filtre rien.
+  filtresLivres: { mot: '', statut: [], theme: [], note: [] },
+  // La rangée des critères est REPLIÉE par défaut : on ouvre la bibliothèque
+  // pour voir ses livres, pas pour les trier.
+  filtresOuverts: false,
+  // Le critère dont le panneau est ouvert — un seul à la fois, comme partout.
+  chipLivres: null,
+  triLivres: { cle: 'defaut', sens: 1 },
 };
 
 // --- Fabrication du HTML ----------------------------------------------------
@@ -808,10 +842,19 @@ function tuileDeLivre(livre, urls, service) {
 // le MÊME geste — choisir ce que la liste montre —, et écrire un troisième
 // dessin pour un geste qui en a déjà deux, c'est fabriquer la divergence qu'on
 // passe ensuite à rattraper.
-export function construireFiltresLivres(vue, filtres, livres) {
+export function construireFiltresLivres(
+  vue,
+  filtres,
+  livres,
+  ouverts = false,
+  chip = null,
+  tri = { cle: 'defaut', sens: 1 },
+) {
   const compte = (cle, valeur) =>
     livres.filter((livre) =>
-      cle === 'theme' ? (livre.themes ?? []).includes(valeur) : livre[cle] === valeur,
+      cle === 'theme'
+        ? (livre.themes ?? []).includes(valeur)
+        : String(livre[cle] ?? '') === String(valeur),
     ).length;
 
   // ON N'OFFRE QUE CE QUI EXISTE : un filtre « Biographie » sur une bibliothèque
@@ -821,23 +864,120 @@ export function construireFiltresLivres(vue, filtres, livres) {
     (a, b) => (THEMES_LIVRE[a] ?? a).localeCompare(THEMES_LIVRE[b] ?? b),
   );
 
-  const groupe = (nom, cle, options, courant) =>
-    options.length
-      ? `<span class="livres-filtre" role="group" aria-label="${echapper(nom)}">
-          <button type="button" class="livres-filtre-bouton${courant ? '' : ' actif'}"
-            data-filtre-livre="${cle}" data-valeur=""
-            aria-pressed="${!courant}">Tous</button>
-          ${options
-            .map(
-              ([valeur, mot, n]) => `<button type="button"
-                class="livres-filtre-bouton${courant === valeur ? ' actif' : ''}"
-                data-filtre-livre="${cle}" data-valeur="${echapper(valeur)}"
-                aria-pressed="${courant === valeur}"
-                >${echapper(mot)} <span class="discret">${n}</span></button>`,
-            )
-            .join('')}
-        </span>`
-      : '';
+  const CRITERES = [
+    {
+      cle: 'statut',
+      nom: 'État',
+      options: Object.entries(ETATS_LIVRE)
+        .map(([v, mot]) => [v, mot, compte('statut', v)])
+        .filter(([, , n]) => n),
+    },
+    {
+      cle: 'theme',
+      nom: 'Thème',
+      options: themes.map((v) => [v, THEMES_LIVRE[v] ?? v, compte('theme', v)]),
+    },
+    {
+      cle: 'note',
+      nom: 'Note',
+      options: [5, 4, 3, 2, 1]
+        .map((r) => [String(r), '★'.repeat(r), compte('note', r)])
+        .filter(([, , n]) => n),
+    },
+  ];
+
+  // CE QU'UN CRITÈRE DIT QUAND IL EST REPLIÉ : son nom seul tant qu'il ne
+  // filtre rien, et sinon ce qu'il retient — un seul en toutes lettres, les
+  // suivants comptés. Trois valeurs écrites dans une pastille feraient une
+  // phrase, et une pastille n'est pas une phrase.
+  const resume = (critere) => {
+    const choisis = filtres[critere.cle] ?? [];
+    if (!choisis.length) return critere.nom;
+    const premier = critere.options.find(([v]) => v === choisis[0]);
+    const mot = premier ? premier[1] : choisis[0];
+    return `${critere.nom} : ${mot}${choisis.length > 1 ? ` +${choisis.length - 1}` : ''}`;
+  };
+
+  const actifs = CRITERES.filter((c) => (filtres[c.cle] ?? []).length).length;
+
+  // UNE PASTILLE PAR CRITÈRE, ET SON PANNEAU À COCHER (2 septembre 2026, forme
+  // montrée par Noé, Notion à l'appui). Ce que ça remplace, écrit une heure plus
+  // tôt : un seul panneau qui contenait les trois critères, et un seul choix par
+  // critère. Deux choses changent, et la seconde est la vraie : **on coche
+  // PLUSIEURS valeurs** — « les 5 étoiles ET les 4 » est une question qu'on se
+  // pose, et un choix unique ne savait pas y répondre.
+  const critere = (c) => {
+    const choisis = filtres[c.cle] ?? [];
+    const ouvert = chip === c.cle;
+    if (!c.options.length) return '';
+
+    return `<span class="livres-critere">
+      <button type="button" class="livres-critere-bouton${choisis.length ? ' actif' : ''}"
+        data-critere="${c.cle}" aria-expanded="${ouvert}" aria-haspopup="listbox"
+        >${echapper(resume(c))}${SIGNE.chevron}</button>
+      ${
+        ouvert
+          ? `<div class="choix-panneau livres-panneau">
+              <ul class="choix-capture">
+                ${c.options
+                  .map(
+                    ([valeur, mot, n]) => `
+                  <li><button type="button" data-filtre-livre="${c.cle}"
+                    data-valeur="${echapper(valeur)}"
+                    class="${choisis.includes(valeur) ? 'actif' : ''}"
+                    aria-pressed="${choisis.includes(valeur)}"
+                    ><span class="livres-coche" aria-hidden="true">${
+                      choisis.includes(valeur) ? SIGNE.coche : ''
+                    }</span><span>${echapper(mot)}</span>
+                    <span class="discret">${n}</span></button></li>`,
+                  )
+                  .join('')}
+              </ul>
+            </div>`
+          : ''
+      }
+    </span>`;
+  };
+
+  // LE TRI, DANS LA MÊME RANGÉE (2 septembre 2026, demande de Noé : « rajoute le
+  // bouton de tri aussi, accessible sur les 2 vues »). Il vit à côté des filtres
+  // parce que c'est la même question posée deux fois — QUE montre-t-on, et dans
+  // QUEL ordre —, et parce qu'on les règle dans le même mouvement.
+  //
+  // « Par défaut » n'est pas une absence de tri : c'est l'ordre du hub — ce
+  // qu'on lit, puis ce qui attend, puis ce qui est fini, la note départageant.
+  const triChoisi = TRIS_LIVRE[tri.cle] ?? TRIS_LIVRE.defaut;
+  const chipTri = `<span class="livres-critere">
+    <button type="button" class="livres-critere-bouton${
+      tri.cle === 'defaut' ? '' : ' actif'
+    }" data-critere="tri" aria-expanded="${chip === 'tri'}" aria-haspopup="listbox"
+      >${tri.cle === 'defaut' ? '' : SIGNE[tri.sens > 0 ? 'monte' : 'descend']}${echapper(
+        triChoisi.nom,
+      )}${SIGNE.chevron}</button>
+    ${
+      chip === 'tri'
+        ? `<div class="choix-panneau livres-panneau">
+            <ul class="choix-capture">
+              ${Object.entries(TRIS_LIVRE)
+                .map(
+                  ([cle, { nom }]) => `
+                <li><button type="button" data-trier="${cle}"
+                  class="${cle === tri.cle ? 'actif' : ''}"
+                  aria-pressed="${cle === tri.cle}"
+                  ><span class="livres-coche" aria-hidden="true">${
+                    cle === tri.cle ? SIGNE.coche : ''
+                  }</span><span>${echapper(nom)}</span>${
+                    cle === tri.cle && cle !== 'defaut'
+                      ? `<span class="discret">${SIGNE[tri.sens > 0 ? 'monte' : 'descend']}</span>`
+                      : ''
+                  }</button></li>`,
+                )
+                .join('')}
+            </ul>
+          </div>`
+        : ''
+    }
+  </span>`;
 
   return `
     <div class="livres-barre">
@@ -860,42 +1000,66 @@ export function construireFiltresLivres(vue, filtres, livres) {
       <input type="search" class="livres-recherche" data-recherche-livre
         value="${echapper(filtres.mot ?? '')}" aria-label="Chercher un livre"
         placeholder="Chercher un titre, un auteur" autocomplete="off">
+
+      <!-- L'ICÔNE OUVRE LA RANGÉE DES CRITÈRES, elle ne les contient pas : c'est
+           la forme que Noé a montrée. Les filtres tenaient trois rangées de
+           pastilles en permanence au-dessus de chaque écran — une douzaine de
+           boutons pour un geste qu'on fait rarement. **Le coût d'accès suit
+           l'intention** : c'est la règle des deux rangs du hub, appliquée dans
+           une page.
+
+           Le COMPTE reste dehors : un filtre posé qu'on ne voit plus est une
+           bibliothèque qui ment sur ce qu'elle contient. -->
+      <button type="button" class="livres-reglages-bouton${
+        actifs || ouverts ? ' actif' : ''
+      }" data-ouvrir-filtres aria-expanded="${Boolean(ouverts)}"
+        title="Filtrer" aria-label="Filtrer${
+          actifs ? ` — ${actifs} critère${actifs > 1 ? 's' : ''} posé${actifs > 1 ? 's' : ''}` : ''
+        }">${SIGNE.filtre}${
+          actifs ? `<span class="livres-reglages-compte">${actifs}</span>` : ''
+        }</button>
+
+      <button type="button" class="livres-reglages-bouton${
+        tri.cle === 'defaut' && !ouverts ? '' : ' actif'
+      }" data-ouvrir-tri aria-expanded="${chip === 'tri'}"
+        title="Trier" aria-label="Trier${
+          tri.cle === 'defaut' ? '' : ` — par ${triChoisi.nom.toLowerCase()}`
+        }">${SIGNE.tri}</button>
     </div>
 
     ${
-      vue === 'liste'
-        ? `<div class="livres-filtres">
-            ${groupe(
-              'État',
-              'statut',
-              Object.entries(ETATS_LIVRE)
-                .map(([cle, mot]) => [cle, mot, compte('statut', cle)])
-                .filter(([, , n]) => n),
-              filtres.statut,
-            )}
-            ${groupe(
-              'Thème',
-              'theme',
-              themes.map((cle) => [cle, THEMES_LIVRE[cle] ?? cle, compte('theme', cle)]),
-              filtres.theme,
-            )}
-            ${groupe(
-              'Note',
-              'note',
-              [5, 4, 3, 2, 1]
-                .map((rang) => [String(rang), '★'.repeat(rang), compte('note', rang)])
-                .filter(([, , n]) => n),
-              filtres.note,
-            )}
+      ouverts
+        ? `<div class="livres-criteres">
+            ${chipTri}
+            <span class="livres-separateur" aria-hidden="true"></span>
+            ${CRITERES.map(critere).join('')}
+            ${
+              actifs
+                ? `<button type="button" class="lien-discret livres-tout-voir"
+                    data-vider-filtres>Tout revoir</button>`
+                : ''
+            }
           </div>`
         : ''
     }`;
 }
 
-// Le tri d'une liste : l'état d'abord — ce qu'on lit, puis ce qui attend, puis
-// ce qui est fini —, la note ensuite, le titre enfin. On cherche rarement un
-// livre par sa date de saisie.
+// Le tri PAR DÉFAUT : l'état d'abord — ce qu'on lit, puis ce qui attend, puis ce
+// qui est fini —, la note ensuite, le titre enfin. On cherche rarement un livre
+// par sa date de saisie.
 const RANG_STATUT = { en_cours: 0, a_lire: 1, lu: 2, repose: 3 };
+
+// CE QU'ON PEUT DEMANDER AU TRI (2 septembre 2026). Chacun rend une clé
+// comparable ; le sens se retourne d'un second appui sur la même ligne.
+// « Par défaut » garde l'ordre du hub — ce n'est pas une absence de tri.
+export const TRIS_LIVRE = {
+  defaut: { nom: 'Par défaut', cle: null },
+  titre: { nom: 'Titre', cle: (l) => l.titre.toLowerCase() },
+  auteur: { nom: 'Auteur', cle: (l) => (l.auteur ?? 'zzz').toLowerCase() },
+  note: { nom: 'Note', cle: (l) => l.note ?? 0 },
+  statut: { nom: 'État', cle: (l) => RANG_STATUT[l.statut] ?? 9 },
+  theme: { nom: 'Thème', cle: (l) => (l.themes ?? []).map((t) => THEMES_LIVRE[t] ?? t).sort()[0] ?? 'zzz' },
+};
 
 // Le dernier soir où l'on a ouvert un livre. Sert à ranger les livres en cours :
 // celui qu'on a lu hier passe devant celui qu'on a laissé il y a un mois. Une
@@ -906,25 +1070,50 @@ function derniereLecture(livre, seances) {
     .reduce((plus, seance) => (seance.jour > plus ? seance.jour : plus), '');
 }
 
-export function livresFiltres(livres, filtres) {
+export function livresFiltres(livres, filtres, tri = { cle: 'defaut', sens: 1 }) {
   const mot = (filtres.mot ?? '').trim().toLowerCase();
+  // PLUSIEURS VALEURS PAR CRITÈRE (2 septembre 2026) : « les 5 étoiles ET les
+  // 4 » est une question qu'on se pose, et un choix unique ne savait pas y
+  // répondre. Un critère vide ne filtre rien — c'est ce qui permet de les
+  // cumuler sans jamais tout écarter.
+  const retient = (cle, valeur) => {
+    const choisis = filtres[cle] ?? [];
+    return !choisis.length || choisis.includes(String(valeur ?? ''));
+  };
 
   return livres
     .filter((livre) => {
-      if (filtres.statut && livre.statut !== filtres.statut) return false;
-      if (filtres.theme && !(livre.themes ?? []).includes(filtres.theme)) return false;
-      if (filtres.note && livre.note !== Number(filtres.note)) return false;
+      if (!retient('statut', livre.statut)) return false;
+      if (
+        (filtres.theme ?? []).length &&
+        !(livre.themes ?? []).some((t) => filtres.theme.includes(t))
+      ) {
+        return false;
+      }
+      if (!retient('note', livre.note)) return false;
       if (!mot) return true;
       // Le titre ET l'auteur : on cherche « Marc Levy » aussi souvent qu'un
       // titre, et demander lequel des deux serait une question de plus.
       return `${livre.titre} ${livre.auteur ?? ''}`.toLowerCase().includes(mot);
     })
-    .sort(
-      (a, b) =>
+    .sort((a, b) => {
+      const choisi = TRIS_LIVRE[tri.cle]?.cle;
+      if (choisi) {
+        const ga = choisi(a);
+        const gb = choisi(b);
+        const ecart =
+          typeof ga === 'number' ? ga - gb : String(ga).localeCompare(String(gb));
+        // À valeur égale, le titre départage : sans lui, deux livres notés 4
+        // changeraient de place d'un rendu à l'autre.
+        if (ecart) return ecart * tri.sens;
+        return a.titre.localeCompare(b.titre);
+      }
+      return (
         (RANG_STATUT[a.statut] ?? 9) - (RANG_STATUT[b.statut] ?? 9) ||
         (b.note ?? 0) - (a.note ?? 0) ||
-        a.titre.localeCompare(b.titre),
-    );
+        a.titre.localeCompare(b.titre)
+      );
+    });
 }
 
 // LA LISTE : une ligne par livre, les colonnes de sa base Notion — le titre, ses
@@ -953,7 +1142,16 @@ function ligneDeLivre(livre) {
     </li>`;
 }
 
-export function construireBibliotheque(livres, seances, urls = {}, vue = 'etagere', filtres = {}) {
+export function construireBibliotheque(
+  livres,
+  seances,
+  urls = {},
+  vue = 'etagere',
+  filtres = {},
+  ouverts = false,
+  chip = null,
+  tri = { cle: 'defaut', sens: 1 },
+) {
   const ajout = `
     <button type="button" class="cap-ajout-discret" data-ajout="livre">
       ${SIGNE.plus}<span>Ajouter un livre</span></button>`;
@@ -964,8 +1162,12 @@ export function construireBibliotheque(livres, seances, urls = {}, vue = 'etager
       ${ajout}`;
   }
 
-  const barre = construireFiltresLivres(vue, filtres, livres);
-  const retenus = livresFiltres(livres, vue === 'liste' ? filtres : { mot: filtres.mot });
+  const barre = construireFiltresLivres(vue, filtres, livres, ouverts, chip, tri);
+  // LES FILTRES VALENT POUR LES DEUX VUES depuis qu'ils sont derrière une icône
+  // (2 septembre 2026) : ils n'étaient dans la liste que parce qu'ils y
+  // occupaient trois rangées. Une fois rangés, rien ne justifiait que l'étagère
+  // s'en passe — « montre-moi mes romans » se demande aussi en couvertures.
+  const retenus = livresFiltres(livres, filtres, tri);
 
   // LES LIVRES EN COURS OUVRENT LES DEUX VUES (2 septembre 2026, demande de
   // Noé : « les livres en cours doivent apparaître au-dessus de l'étagère et la
@@ -2456,6 +2658,9 @@ export default {
         etat.couvertures,
         vueEtat.vueLivres,
         vueEtat.filtresLivres,
+        vueEtat.filtresOuverts,
+        vueEtat.chipLivres,
+        vueEtat.triLivres,
       );
       // LE CURSEUR RESTE DANS LA RECHERCHE : on redessine à chaque lettre, et
       // sans ça le champ perdait le focus au premier caractère. Il revient au
@@ -2939,15 +3144,69 @@ export default {
         return;
       }
 
+      if (dans('ouvrir-filtres')) {
+        vueEtat.filtresOuverts = !vueEtat.filtresOuverts;
+        vueEtat.chipLivres = null;
+        rendreBibliotheque();
+        return;
+      }
+
+      // L'ICÔNE DE TRI OUVRE SON PANNEAU DIRECTEMENT : c'est un réglage unique,
+      // et le faire chercher dans une rangée qu'on vient d'ouvrir serait deux
+      // gestes pour un.
+      if (dans('ouvrir-tri')) {
+        vueEtat.filtresOuverts = true;
+        vueEtat.chipLivres = vueEtat.chipLivres === 'tri' ? null : 'tri';
+        rendreBibliotheque();
+        return;
+      }
+
+      const critere = dans('critere');
+      if (critere) {
+        const cle = critere.dataset.critere;
+        vueEtat.chipLivres = vueEtat.chipLivres === cle ? null : cle;
+        rendreBibliotheque();
+        return;
+      }
+
+      const trier = dans('trier');
+      if (trier) {
+        const cle = trier.dataset.trier;
+        // LE MÊME TRI RETOUCHÉ SE RETOURNE : c'est le geste d'un en-tête de
+        // colonne, et il évite un second bouton pour le sens.
+        vueEtat.triLivres =
+          vueEtat.triLivres.cle === cle
+            ? { cle, sens: -vueEtat.triLivres.sens }
+            : { cle, sens: cle === 'note' ? -1 : 1 };
+        rendreBibliotheque();
+        return;
+      }
+
+      if (dans('vider-filtres')) {
+        vueEtat.filtresLivres = { ...vueEtat.filtresLivres, statut: [], theme: [], note: [] };
+        rendreBibliotheque();
+        return;
+      }
+
       const filtreLivre = dans('filtre-livre');
       if (filtreLivre) {
         const { filtreLivre: cle, valeur } = filtreLivre.dataset;
-        // Retoucher un filtre déjà posé l'enlève : c'est le geste attendu d'une
-        // pastille, et ça évite un « Tous » qu'il faudrait viser.
-        vueEtat.filtresLivres[cle] =
-          vueEtat.filtresLivres[cle] === valeur || !valeur ? null : valeur;
+        const choisis = vueEtat.filtresLivres[cle] ?? [];
+        // On coche et on décoche : le panneau RESTE ouvert, parce qu'on en
+        // choisit souvent deux d'affilée.
+        vueEtat.filtresLivres[cle] = choisis.includes(valeur)
+          ? choisis.filter((v) => v !== valeur)
+          : [...choisis, valeur];
         rendreBibliotheque();
         return;
+      }
+
+      // Un clic AILLEURS referme le panneau ouvert — jamais la rangée, qu'on
+      // vient d'ouvrir exprès. Il arrive APRÈS les gestes ci-dessus : ceux-ci se
+      // sont déjà servis.
+      if (vueEtat.chipLivres && !evenement.target.closest('.livres-critere')) {
+        vueEtat.chipLivres = null;
+        rendreBibliotheque();
       }
 
       const pages = dans('livre-pages');
