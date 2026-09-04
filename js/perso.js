@@ -12,7 +12,7 @@
 import * as api from './api.js';
 // Ces fonctions ne portent aucune mécanique d'espace : ce sont des gabarits
 // de tuiles et de formulaires, réutilisés tels quels.
-import { construireFormulaire, brancherChoix } from './gabarits.js';
+import { construireFormulaire, brancherChoix, flammeDeSerie } from './gabarits.js';
 import { retirerAussitot } from './ecriture.js';
 import {
   etatDesHabitudes,
@@ -22,6 +22,7 @@ import {
   relecture,
   bilanDesHabitudes,
   estQuotidienne,
+  FLAMME_JOURS,
   rangDeLaSerie,
   historiqueDeLHabitude,
   historiqueQuotidienDeLHabitude,
@@ -497,7 +498,7 @@ export function construireHabitudes(etats, donnees = {}) {
 export function construireHabitudesDuJour(etats = []) {
   if (!etats.length) return '';
 
-  const ligne = ({ habitude, serie, faitAujourdhui }) => {
+  const ligne = ({ habitude, serie, affilee, faitAujourdhui }) => {
       const emoji = (habitude.emoji ?? '').trim();
 
       // LES DEUX SÉRIES, ET LE CODE COULEUR (2 septembre 2026, demande de Noé :
@@ -535,11 +536,28 @@ export function construireHabitudesDuJour(etats = []) {
       //
       // Un zéro dans une colonne qui en compte une autre n'est pas un reproche,
       // c'est une case remplie.
-      const mesure = (valeur, rangCouleur, mot) =>
+      // LA FLAMME SUIT LA SÉRIE EN COURS (2 septembre 2026, demande de Noé) — et
+      // elle ne dit pas la même chose que le chiffre : la série RECULE d'un cran
+      // quand un jour manque, donc « 7 » peut avoir deux trous dedans ; la
+      // flamme, elle, dit CINQ JOURS SANS TROU. L'une protège, l'autre
+      // récompense.
+      //
+      // Elle est dessinée et prend `currentColor`, donc la couleur du rang :
+      // elle brûle en vert, en bleu, en jaune ou dans l'or de l'égalité. Même
+      // dessin que sur la page d'une habitude (`flammeDeSerie`, js/gabarits.js)
+      // — un feu de deux formes selon l'écran n'en serait plus un.
+      const feu =
+        affilee >= FLAMME_JOURS ? `<span class="hab-flamme">${flammeDeSerie(12)}</span>` : '';
+
+      const mesure = (valeur, rangCouleur, mot, signe = '') =>
         `<span class="hab-mesure hab-serie" data-serie="${rangCouleur}"
-           title="${mot} : ${valeur} ${unite}"
-           aria-label="${mot} : ${valeur} ${unite}">
-           <span class="chiffre">${valeur}</span>
+           title="${mot} : ${valeur} ${unite}${
+             signe ? ` — ${affilee} jours d'affilée, sans un trou` : ''
+           }"
+           aria-label="${mot} : ${valeur} ${unite}${
+             signe ? `, ${affilee} jours d'affilée` : ''
+           }">
+           <span class="chiffre">${valeur}</span>${signe}
          </span>`;
 
       // À ÉGALITÉ, LES DEUX CHIFFRES SONT EN OR — la règle de la page d'une
@@ -547,7 +565,7 @@ export function construireHabitudesDuJour(etats = []) {
       // se lisait en or ici et en orange là : c'est exactement la divergence
       // qu'on vient d'éviter en sortant la règle de couleur dans l'orientation.
       const series =
-        mesure(serie?.semaines ?? 0, rang, 'Série en cours') +
+        mesure(serie?.semaines ?? 0, rang, 'Série en cours', feu) +
         mesure(serie?.record ?? 0, rang === 'record' ? 'record' : 'max', 'Série max');
 
       // LE ROND EN PREMIER, TOUT À GAUCHE (demande de Noé, 30 août 2026). C'est

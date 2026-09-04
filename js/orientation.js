@@ -2034,6 +2034,11 @@ export function etatDesHabitudes({ habitudes = [], faits = [] } = {}, jour = new
       elan: elanDeLHabitude(habitude, faits, jour),
       serie: serieDeLHabitude(habitude, faits, jour),
       cumul: cumulDeLHabitude(habitude, faits),
+      // LA FLAMME SE CALCULE ICI depuis le 2 septembre 2026 : la colonne du
+      // tableau de bord la montre aussi, et elle n'a pas les faits bruts sous la
+      // main. Une mesure de plus dans l'état vaut mieux qu'un second chemin qui
+      // la recompte à côté.
+      affilee: joursDAffileeDeLHabitude(habitude, faits, jour),
       faitAujourdhui: faits.some(
         (fait) => fait.habitude_id === habitude.id && fait.jour === aujourdhui,
       ),

@@ -498,6 +498,22 @@ bat le 600 hérité de la ligne.*
 > c'est ce qui fait cocher un soir où l'on n'en a pas envie ; un palier à dix
 > jours de là ne pousse personne.
 
+**LA FLAMME SUIT LA SÉRIE EN COURS** (2 septembre 2026, demande de Noé), à
+cinq jours sans un trou — le même dessin et le même seuil que sur la page d'une
+habitude. Elle ne dit pas la même chose que le chiffre : la série RECULE d'un
+cran quand un jour manque, donc « 7 » peut avoir deux trous dedans ; la flamme
+dit cinq jours **sans** trou. **L'une protège, l'autre récompense.**
+- **Elle prend la couleur du rang** — elle brûle en vert, en bleu, en jaune ou
+  dans l'or de l'égalité. Dessinée et non en émoji, donc `currentColor` suffit
+  (`flammeDeSerie`, js/gabarits.js — posée là parce que la page d'une habitude
+  importe déjà js/perso.js, et que l'inverse ferait un cycle).
+- **Elle colle au chiffre** (2 px) : `.hab-mesure` pose 8 px entre ses enfants —
+  un écart fait pour séparer deux choses, or le feu et le nombre n'en sont
+  qu'une, c'est la série.
+- **`affilee` vit dans `etatDesHabitudes`** : la colonne du tableau de bord n'a
+  pas les faits bruts sous la main, et un second chemin qui recompte à côté
+  finirait par ne plus compter pareil.
+
 **LES MOTS ET LES COULEURS SONT CEUX DE SA PAGE** (`rangDeLaSerie`,
 js/orientation.js — la règle à seuils vit là, donc éprouvable hors écran, et
 *dix cas y sont vérifiés*). **Une même mesure ne change ni de nom ni de teinte

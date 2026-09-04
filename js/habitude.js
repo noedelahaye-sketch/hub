@@ -38,7 +38,7 @@ import {
   signeHabitude,
   sparkline,
 } from './perso.js';
-import { construireFormulaire, construireMenuDiscret } from './gabarits.js';
+import { construireFormulaire, construireMenuDiscret, flammeDeSerie } from './gabarits.js';
 import { retirerAussitot } from './ecriture.js';
 import {
   FAMILLES_PERSO,
@@ -64,11 +64,6 @@ const SIGNE_RETOUR = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none
 // n'écrit qu'en signes tracés : un émoji arriverait avec sa couleur et sa police
 // à lui, alors qu'ici la flamme doit prendre celle de la série — elle brûle en
 // vert, en bleu ou en jaune selon où l'on en est.
-const FLAMME = `<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"
-  aria-hidden="true" focusable="false"><path d="M12 2c.6 3.2-1.2 4.6-2.6 6C7.9 9.5 6.5 11 6.5
-  13.6 6.5 17.1 9 20 12 20s5.5-2.6 5.5-6.1c0-2.6-1.4-4.3-2.6-5.6-.7 1-1.4 1.6-2.2
-  1.9.6-2.6.3-5.7-.7-8.2Z"/></svg>`;
-
 const JOURS_LETTRE = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
 // Les mêmes en-têtes que partout ailleurs dans le hub : la vue mois d'une
@@ -248,7 +243,7 @@ function chiffres(habitude, faits, jour) {
             affilee >= FLAMME_JOURS
               ? `<span class="hab-flamme" title="${echapper(
                   `${affilee} jours d'affilée`,
-                )}">${FLAMME}</span>`
+                )}">${flammeDeSerie()}</span>`
               : ''
           }`,
           'série en cours',

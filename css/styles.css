@@ -4705,6 +4705,11 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    différentes décaleraient les colonnes d'une ligne à l'autre. */
 .hab-serie {
   justify-content: flex-end;
+  /* LA FLAMME COLLE AU CHIFFRE (2 septembre 2026, demande de Noé). `.hab-mesure`
+     pose 8 px entre ses enfants — un écart fait pour séparer deux choses, or ici
+     le feu et le nombre n'en sont qu'une : c'est la série. Ne reste que les 2 px
+     de `.hab-flamme`, assez pour que les deux ne se touchent pas. */
+  gap: 0;
   min-width: 1.5rem;
   font-size: 0.8125rem;
   font-weight: 600;

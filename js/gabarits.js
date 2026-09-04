@@ -429,6 +429,19 @@ export const CHEVRON = `<svg viewBox="0 0 24 24" width="16" height="16" fill="no
   stroke="currentColor" stroke-width="2" stroke-linecap="round"
   stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"></path></svg>`;
 
+// LA FLAMME D'UNE SÉRIE, dessinée et non en émoji : elle prend `currentColor`,
+// donc la couleur du rang où l'on en est — vert, bleu, jaune ou l'or de
+// l'égalité. Un émoji arriverait avec sa propre couleur et sa propre police.
+//
+// Ici plutôt que dans un des deux écrans qui l'affichent : la page d'une
+// habitude importe déjà js/perso.js, et l'inverse ferait un cycle.
+export function flammeDeSerie(taille = 15) {
+  return `<svg viewBox="0 0 24 24" width="${taille}" height="${taille}"
+    fill="currentColor" aria-hidden="true" focusable="false"><path d="M12 2c.6 3.2-1.2 4.6-2.6
+    6C7.9 9.5 6.5 11 6.5 13.6 6.5 17.1 9 20 12 20s5.5-2.6 5.5-6.1c0-2.6-1.4-4.3-2.6-5.6-.7
+    1-1.4 1.6-2.2 1.9.6-2.6.3-5.7-.7-8.2Z"/></svg>`;
+}
+
 // L'ÉMOJI SE PREND DANS UN CARRÉ, À GAUCHE DU TEXTE (2 septembre 2026, demande
 // de Noé, Notion en référence : « pour ajouter un émoji c'est à gauche du texte,
 // avant le texte, un petit carré cliquable qui mène directement sur les émojis
