@@ -4704,11 +4704,18 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    l'autre —, et la largeur est fixe : sans elle, deux chiffres de longueurs
    différentes décaleraient les colonnes d'une ligne à l'autre. */
 .hab-serie {
-  justify-content: flex-end;
-  /* LA FLAMME COLLE AU CHIFFRE (2 septembre 2026, demande de Noé). `.hab-mesure`
-     pose 8 px entre ses enfants — un écart fait pour séparer deux choses, or ici
-     le feu et le nombre n'en sont qu'une : c'est la série. Ne reste que les 2 px
-     de `.hab-flamme`, assez pour que les deux ne se touchent pas. */
+  /* LE CHIFFRE ET SA FLAMME NE FONT QU'UN BLOC, CENTRÉ (2 septembre 2026,
+     demande de Noé). Alignés à droite, le groupe poussait son chiffre vers la
+     gauche : « 5 🔥 » et « 4 » ne tombaient plus sur la même verticale, et le
+     feu se lisait comme s'il appartenait à la colonne d'à côté. Centré, le
+     groupe se pose autour du même axe qu'un chiffre seul — c'est la série,
+     flamme comprise, et ça se lit d'un bloc.
+
+     LA FLAMME COLLE AU CHIFFRE : `.hab-mesure` pose 8 px entre ses enfants — un
+     écart fait pour séparer deux choses, or ici le feu et le nombre n'en sont
+     qu'une. Ne restent que les 2 px de `.hab-flamme`, assez pour que les deux
+     ne se touchent pas. */
+  justify-content: center;
   gap: 0;
   min-width: 1.5rem;
   font-size: 0.8125rem;

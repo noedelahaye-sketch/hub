@@ -507,6 +507,12 @@ dit cinq jours **sans** trou. **L'une protège, l'autre récompense.**
   dans l'or de l'égalité. Dessinée et non en émoji, donc `currentColor` suffit
   (`flammeDeSerie`, js/gabarits.js — posée là parce que la page d'une habitude
   importe déjà js/perso.js, et que l'inverse ferait un cycle).
+- **Le chiffre et sa flamme ne font qu'UN BLOC, CENTRÉ** (demande de Noé).
+  Alignés à droite, le groupe poussait son chiffre vers la gauche : « 5 🔥 » et
+  « 4 » ne tombaient plus sur la même verticale, et le feu se lisait comme s'il
+  appartenait à la colonne d'à côté. Centré, le groupe se pose autour du même axe
+  qu'un chiffre seul. *Mesuré : le centre du contenu tombe au même pixel sur
+  toutes les lignes, avec flamme comme sans.*
 - **Elle colle au chiffre** (2 px) : `.hab-mesure` pose 8 px entre ses enfants —
   un écart fait pour séparer deux choses, or le feu et le nombre n'en sont
   qu'une, c'est la série.
