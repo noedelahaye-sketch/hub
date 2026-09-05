@@ -299,6 +299,48 @@ export function construireMenuDiscret(
     </span>`;
 }
 
+// LES SIGNES DESSINÉS DU HUB, en un seul endroit depuis le 5 septembre 2026 :
+// perso et la bibliothèque en avaient chacun leur copie, et deux jeux de traits
+// pour un même geste finissent par ne plus se ressembler.
+// Les mêmes signes que la galerie du cap, dessinés et non écrits : le hub ne
+// mélange pas les glyphes de police et les icônes.
+export const SIGNES = {
+  plus: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`,
+  points: `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"
+    aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/>
+    <circle cx="19" cy="12" r="1.6"/></svg>`,
+  // TROIS CURSEURS PLUTÔT QU'UN ENTONNOIR (2 septembre 2026) : l'entonnoir dit
+  // « on écarte », les curseurs disent « on règle » — et c'est bien ce qu'on
+  // fait ici, on donne trois critères puis on les enlève. Le dessin est du même
+  // trait que les autres signes du hub.
+  // L'ENTONNOIR, ET NON TROIS CURSEURS (2 septembre 2026, forme montrée par
+  // Noé) : c'est le signe que tout le monde reconnaît pour « filtrer », et le
+  // hub n'a pas de raison d'en inventer un autre. Trois traits qui se
+  // raccourcissent — le même dessin, en plus sobre qu'un entonnoir plein.
+  filtre: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16"/>
+    <path d="M7 12h10"/><path d="M10 18h4"/></svg>`,
+  chevron: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+    aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`,
+  coche: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+    stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+    aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>`,
+  tri: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+    aria-hidden="true"><path d="M7 4v16M7 4L4 7M7 4l3 3"/><path d="M17 20V4M17 20l3-3M17 20l-3-3"/></svg>`,
+  monte: `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor"
+    stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"
+    aria-hidden="true"><path d="M12 19V5M12 5l-5 5M12 5l5 5"/></svg>`,
+  descend: `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor"
+    stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"
+    aria-hidden="true"><path d="M12 5v14M12 19l-5-5M12 19l5-5"/></svg>`,
+  retour: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+    aria-hidden="true" focusable="false"><path d="M15 18l-6-6 6-6"/></svg>`,
+};
+
 export const ICONE_DATE = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none"
   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
   aria-hidden="true" focusable="false">

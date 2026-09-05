@@ -117,8 +117,9 @@ vouloir.** C'est la règle qui commande toute la structure, et elle est de Noé 
 |---|---|
 | **0 geste** | l'accueil — la journée, les pistes, la semaine, le cap gravé |
 | **1 geste** | les onglets — `Accueil · Perso · ▦` |
-| **2 gestes** | le menu — six grands titres |
-| **3 gestes** | la flèche du menu — les sous-pages, en accès direct |
+| **2 gestes** | le menu — quatre grands titres |
+| **3 gestes** | la flèche du menu — les groupes et les pages |
+| **4 gestes** | la flèche d'un groupe — ses pages, en accès direct |
 
 **Ce que ça débloque n'est pas une économie, c'est de la place** : l'accueil
 portait tout parce qu'il n'y avait nulle part où poser le reste. Une page riche
@@ -129,16 +130,87 @@ le hub ce n'est pas pour atteindre le site Yuno et tout ce qu'il contient »*.
 Chaque espace n'offre que **sa porte**, jamais les écrans derrière — d'où
 l'absence d'une entrée « son éditorial », qui vit sur les sites.
 
-**Les rubriques** (`RUBRIQUES`, js/menu.js) — le mot mène à la page, la flèche
-déplie ses sous-pages ; une rubrique sans sous-page n'a pas de flèche, car une
-flèche qui ne s'ouvre sur rien est un mensonge de forme :
+### LE MENU A GAGNÉ UN RANG (5 septembre 2026, demande de Noé)
 
-| **Général** | Objectifs · Projets · Tâches · Périodes · Ma semaine · Le chemin |
+> *« Général et perso doivent être regroupés dans le menu déroulant, avec un
+> sous-titre déroulant "le cap" qui regroupe objectifs, projets, tâches,
+> périodes et le chemin. Il y a un peu trop de sous-pages, il faudrait créer des
+> sous-pages qui regroupent des sous-sous pages. Enfin même pas des sous-pages,
+> juste des titres : quand on clique, ça affiche toutes les sous-pages qu'elles
+> regroupent. »*
+
+**Vingt-quatre liens sous six titres, ça ne se parcourt plus : ça se relit.** Le
+menu replié passe de six lignes à **quatre**, et l'on ne voit plus jamais tout
+d'un coup.
+
+**Les rubriques** (`RUBRIQUES`, js/menu.js) — **le mot mène à la page, la flèche
+déplie**, à TOUS LES RANGS. C'était déjà la règle des grands titres ; le rang des
+groupes la reprend telle quelle plutôt que d'inventer un second geste pour un
+même mouvement. Une entrée sans sous-page n'a pas de flèche, car une flèche qui
+ne s'ouvre sur rien est un mensonge de forme :
+
+| **Général** | **Mon cap** ▾ · Ma semaine · Mes journées · Mes habitudes · Perso · Ma bibliothèque |
+| | ⤷ *Mon cap* : Mes objectifs · Mes projets · Mes tâches · Mes périodes · Mon chemin · Mon temps · Mes intentions |
 | **FC Hermitage** | Ses objectifs · Ses projets · Ses tâches · Le site |
 | **Formation** | Ses objectifs · Ses projets · Ses tâches |
 | **Yuno** | Ses objectifs · Ses projets · Ses tâches · Le site |
-| **Perso** | Les intentions · Les rendez-vous · L'humeur · Les victoires · Mes journées |
-| **Le temps** | *(pas de sous-page)* |
+
+- **« GÉNÉRAL » RÉUNIT LE TRANSVERSE ET LE PERSO** : ce sont les deux rubriques
+  qui ne sont pas des espaces — les deux qui parlent de LUI. Les trois autres
+  grands titres sont ses espaces.
+- **IL N'A PAS D'ADRESSE**, et c'est le symétrique de la règle des flèches : un
+  mot qui ne mène nulle part ne se présente pas comme un lien.
+- **UN SEUL GROUPE, « MON CAP »** — tout le reste est **une page à la suite d'une
+  page** (correction de Noé : *« non, pas de sous-page en dessous de Ma semaine,
+  juste page en dessous de page »*). Un pli de plus se paie d'un geste de plus,
+  et seul le cap en portait assez pour le justifier.
+- **LE MOT « CAP » S'ÉLARGIT.** Il désignait l'ÉTAGE des objectifs ; il désigne
+  désormais tout ce qui vise — ce qu'on se donne, ce qui y mène, ce qu'on a
+  franchi, et où sont parties les heures. **« Mon temps » suit « Mon chemin »**
+  (demande de Noé) : les deux regardent en arrière. **Les intentions ferment la
+  liste** : une intention est un objectif dont on a retiré la mesure, mais elle
+  ne se *fait* pas — elle se relit.
+- **LES JOURNÉES, LES HABITUDES ET LA BIBLIOTHÈQUE ONT QUITTÉ PERSO.** Les deux
+  premières se rangent après « Ma semaine » — ce sont les trois pages du temps
+  qui passe. La bibliothèque monte au même rang que Perso : elle est déjà un hall
+  à deux portes, la ranger sous un pli aurait fait trois gestes pour atteindre ce
+  qu'on lit ce soir.
+- **PERSO GARDE SA PASTILLE VIOLETTE** (demande de Noé) bien qu'il soit devenu
+  une feuille : il a perdu ses sous-pages, pas son espace, et sa couleur est ce
+  qui le fait retrouver du regard dans une liste de sept lignes grises.
+- **LE MENU COUPE L'HÉRITAGE DE COULEUR** (défaut vu par Noé : *« garde la
+  couleur grise pour ce qui concerne général »*). `--couleur-espace` est posée
+  sur le `body` par l'espace courant : ouvrir le menu depuis perso peignait en
+  violet les pastilles de « Général » et de « Mon cap », qui n'ont aucun espace.
+  Une valeur neutre posée sur `.menu` arrête l'héritage — **une pastille dit
+  toujours l'espace de sa LIGNE, jamais celui de l'écran.**
+
+### LA PREMIÈRE PERSONNE (même jour, demande de Noé)
+
+**« Transforme tous les noms des pages à la 1re personne » — et ces noms sont
+AUSSI ceux des pages elles-mêmes** : un nom dans le menu et un autre en tête de
+page, ce serait deux noms pour une page, le défaut corrigé le 28 août. Les `<h1>`
+et les titres du navigateur ont suivi.
+
+| avant | après |
+|---|---|
+| Général *(la page `#objectifs`)* | **Mon cap** |
+| Les objectifs — le cap · Les projets — le comment | **Mes objectifs** · **Mes projets** |
+| Ce que tu attends des mois qui viennent | **Mes périodes** |
+| Tâches · Le chemin · Le temps | **Mes tâches** · **Mon chemin** · **Mon temps** |
+| Tes habitudes · Ta bibliothèque · Tes livres | **Mes habitudes** · **Ma bibliothèque** · **Mes livres** |
+
+- **« GÉNÉRAL » A CHANGÉ DE PORTEUR.** C'était le nom de la page `#objectifs`
+  depuis le 28 août ; c'est désormais le grand titre du menu. Deux choses ne
+  peuvent pas porter le même nom, et c'est la page qui a cédé — « Mon cap » est
+  le mot que Noé a employé pour demander ce groupe.
+- **LE SUFFIXE D'ÉTAGE EST TOMBÉ** (« — le cap », « — le comment ») : sous une
+  page mère qui s'appelle « Mon cap », il ne l'expliquait plus, il le répétait.
+- **ELLE S'ARRÊTE AUX ESPACES** : sous « FC Hermitage », « Ses objectifs »
+  désigne l'espace et non Noé.
+- **ELLE NE TOUCHE PAS LES PHRASES.** Le hub continue de tutoyer partout ailleurs
+  — « Tes habitudes s'écriront ici », « Comment tu te sens ? ». Ce sont les
+  TITRES qui passent à la première personne, pas la voix du hub.
 
 **« Ses objectifs », « ses projets », « ses tâches » ne sont pas de nouveaux
 écrans** : c'est la page transverse **avec son filtre porté par l'adresse**
@@ -172,6 +244,11 @@ l'on est **se déplie d'elle-même**.
 - `#calendrier` — tout ce qui porte une date, tous espaces confondus, filtres par nature (tâches, événements, publications, objectifs)
   - **CE QU'ON POSE EST UNE TÂCHE PAR DÉFAUT** (30 août 2026, décision de Noé), partout où la tuile de capture s'ouvre depuis un calendrier. C'était un événement, sans raison écrite ; or ce qu'on note le plus souvent est une chose à faire — l'espace Tâches et l'accueil posaient déjà une tâche, le calendrier était le seul à ne pas le faire. **La règle du filtre passe avant** : quand une seule nature est cochée, c'est elle qu'on vient poser, et le défaut ne s'applique pas.
 - `#objectif/<id>` — **la page d'un objectif** (2 septembre 2026, demande de Noé) : tous ses détails, ses jalons qu'on pose au calendrier, et les projets qui le servent avec un lien vers chacun. Voir « La page d'un objectif » plus bas.
+- `#livre/<id>` · `#film/<id>` — **la fiche d'une œuvre** : ses détails, son
+  journal, ses phrases gardées, son état et sa note réglables sur place. Une
+  seule page pour les deux rayons (voir « La bibliothèque »).
+- `#perso/livres` · `#perso/films` — **les deux étagères** (5 septembre 2026),
+  atteintes par les deux portes de `#perso/bibliotheque`.
 - `#habitude/<id>` — **la page d'une habitude** (2 septembre 2026, demande de Noé) : depuis quand elle existe, ses chiffres, ses paliers, et le calendrier de ce qui a été fait. Voir « La page d'une habitude » plus bas.
 - `#projet/<id>` — **la page d'un projet** (2 septembre 2026, demande de Noé) : tous ses détails, son calendrier en vue mois et semaine, et la colonne de ce qui attend un jour. Voir « La page d'un projet » plus bas.
 - `#semaine` — **« Ma semaine » : le rendez-vous du dimanche soir, devenu une page** (30 août 2026, demande de Noé). Le bilan de la semaine passée en quelques chiffres, la grille de la semaine qui vient, et à côté d'elle les tâches sans jour, qu'on **glisse dessus** pour les programmer. Voir « Ma semaine » plus bas.
@@ -721,7 +798,141 @@ DOM et se vérifient avec des faits factices.
 > capture, l'appel y est seul — sans le double traitement qui a fait retirer ce
 > même appel du site FCH.
 
-### La bibliothèque (29 août 2026)
+### La bibliothèque : DEUX RAYONS, UN SEUL CODE (5 septembre 2026)
+
+**La demande de Noé** : *« fais la même chose que les livres mais pour les
+films/séries, donc dans la page ma bibliothèque mets 2 entrées, 1 pour les
+livres 1 pour les films/séries »*, puis : *« je préférerais que ce soit vraiment
+2 portes, donc 2 tuiles cliquables qui nous permettent d'aller sur la page des
+livres ou la page des films/séries. Avec un livre en cours sur cette page. »*
+
+**TROIS ÉCRANS, ET LE PREMIER EST UN HALL** :
+
+| Adresse | Ce qu'on y trouve |
+|---|---|
+| `#perso/bibliotheque` | **ce qu'on lit ou regarde en ce moment**, puis deux portes |
+| `#perso/livres` | l'étagère des livres, telle qu'elle était |
+| `#perso/films` | l'étagère des films et des séries |
+
+**DES PORTES ET NON UNE BASCULE, et c'est Noé qui a tranché.** Les deux rayons
+ont vécu une heure en `.affichages` — le geste du calendrier, celui qui choisit
+ce qu'un écran montre. Mais **une bascule dit « la même chose, vue autrement »** :
+l'étagère et la liste, le mois et la semaine. Or ce ne sont pas deux vues d'une
+même chose, **ce sont deux bibliothèques** — une porte le dit, une bascule le
+cachait.
+
+**ET ÇA REND SA PLACE À CE QU'ON FAIT** : la page ne s'ouvre plus sur un
+inventaire de cinquante titres mais sur ce qu'on lit ce soir — le seul endroit où
+l'on AGIT. Le reste est à un geste de là, ce qui est exactement son rang. C'est
+la règle des deux rangs, appliquée dans une page.
+
+- **Une porte montre ce qu'il y a derrière** : quatre couvertures en pile, le nom
+  du rayon, son compte. Deux rectangles nommés « Livres » et « Films » n'auraient
+  rien dit de plus qu'une ligne de menu — et le menu est déjà à un geste.
+- **LE HALL MONTRE LES DEUX RAYONS.** Noé a écrit « un livre en cours » ; c'est
+  la même carte et le même geste pour une série qu'on suit, et une bibliothèque
+  qui cacherait la série en cours mentirait sur ce qu'elle contient. Les livres
+  passent devant — c'est le rayon nommé.
+- **Chaque étagère porte son retour vers le hall** : on y entre par une porte, on
+  doit pouvoir en ressortir. C'est le lien de la fiche d'une œuvre, au trait près.
+- **Le menu ne gagne pas deux lignes** : « La bibliothèque » reste l'entrée, et
+  les rayons se prennent par leurs portes. Un menu qui double ce qu'une page
+  offre déjà à un geste, c'est deux endroits à tenir d'accord.
+
+#### DEUX RÉSERVES EN BASE, UN SEUL JEU DE FONCTIONS
+
+**Les tables sont séparées** (`films`, `films_seances`, `films_citations`, bucket
+`affiches`) : c'est l'argument déjà écrit le 2 septembre pour le bucket des
+couvertures — **deux natures, deux réserves**. Un film n'a ni pages ni auteur, sa
+progression se compte en épisodes ou ne se compte pas du tout, et une table
+nommée « livres » qui porterait des films serait un nom qui ment.
+
+**Le CODE, lui, est écrit une fois** — `js/bibliotheque.js` porte l'étagère, la
+liste, les filtres, le tri, la note, l'image ; `js/fiche-oeuvre.js` porte la page
+d'une œuvre ; `js/api.js` fabrique les deux jeux de fonctions depuis un seul
+patron. Recopier sept cents lignes pour changer « page » en « épisode » aurait
+fabriqué la divergence qu'on passe ensuite à rattraper, et **c'est toujours
+l'écran qu'on regarde le moins qui finit par mentir**.
+
+**CE QUI DIFFÈRE TIENT DANS UN OBJET** (`RAYONS`, js/bibliotheque.js) : les
+tables, les mots, les états, et **cinq noms de colonnes** —
+`auteur`/`realisateur`, `pages`/`episodes`, `couverture`/`affiche`,
+`themes`/`genres`, `page`/`repere`. Tout le reste porte le même nom des deux
+côtés et n'a rien à traduire.
+
+| | livres | films |
+|---|---|---|
+| états | à lire · en cours · **lu** · reposé | à voir · en cours · **vu** · reposé |
+| ce qui se compte | des **pages** | des **épisodes** |
+| ce qu'on garde | une **phrase**, à une page | une **réplique**, à un moment (« S2E4 ») |
+| l'habitude cochée | « lire un peu » | *aucune* |
+| la fiche | `#livre/<id>` | `#film/<id>` |
+
+#### LES AFFICHES (5 septembre 2026, demande de Noé : « rajoute les couvertures
+des films »)
+
+**ELLES SE RAPATRIENT, elles ne se collent pas.** C'est la règle du 2 septembre
+pour les couvertures, et celle du dépôt tout entier — les polices sont dans
+`fonts/`, les écussons dans `img/clubs/`, supabase-js dans `js/vendor/`. Une
+affiche appelée à un site tiers à chaque ouverture, ce serait une dépendance de
+plus, une requête que la coquille hors ligne ne pourrait pas garantir, et
+l'adresse IP de Noé envoyée à un inconnu chaque fois qu'il regarde sa
+bibliothèque.
+
+**WIKIPÉDIA, ET NON TMDB** (`tools/affiches-films.py`). TMDB est la meilleure
+source pour des films français, mais son API exige une clé : un secret à garder
+hors du dépôt, et une inscription. Wikipédia répond **sans clé**, comme ESPN pour
+les écussons. L'affiche y est hébergée au titre du *fair use* ; elle finit dans
+un bucket **privé**, pour cataloguer une collection personnelle — jamais
+republiée.
+
+**LE CHEMIN EST DÉTERMINISTE** : page fr.wikipedia **nommée dans une table
+écrite** → lien de langue → en.wikipedia → **le paramètre `image` de son
+infobox** → vignette 500 px.
+
+- **LA TABLE EST ÉCRITE, PAS DEVINÉE**, et ça s'est vérifié du premier coup : un
+  premier essai cherchait la page par « titre + réalisateur » et donnait *The
+  Odyssey* pour **Oppenheimer**, *Guru* pour **Boîte noire**, *Vive la France*
+  pour **Fatal**. **Un rapprochement rejoué à chaque exécution peut changer une
+  affiche dans le dos de Noé** — c'est la leçon déjà écrite pour les écussons des
+  clubs.
+- **L'IMAGE VIENT DU WIKITEXTE**, jamais d'un filtre sur le nom du fichier :
+  « poster » n'apparaît pas dans tous les noms, et la page d'Oppenheimer porte
+  des photos de Nolan et d'un cinéma qu'un filtre aurait retenues.
+- **L'OUTIL NE TÉLÉVERSE RIEN** : il rend un JSON. Le bucket est privé et RLS ne
+  l'ouvre qu'au rôle `authenticated` — le téléversement se fait donc **depuis le
+  hub connecté**, par `televerserImage` et `modifier` du rayon. Ce sont les
+  fonctions du hub, pas des copies : un second chemin d'écriture finirait par ne
+  plus réduire de la même façon.
+- **500 px de large** : la tuile de l'étagère fait 6,5 rem (~104 px), la vedette
+  guère plus ; 500 couvre les écrans à forte densité sans peser.
+- **UN FILM SANS PAGE ANGLAISE N'A PAS D'AFFICHE**, et l'outil le DIT plutôt que
+  de prendre à peu près. Sa tuile reste pointillée — c'est déjà la règle de
+  l'étagère —, et son affiche se pose à la main par le formulaire.
+
+- **LES CLASSES CSS RESTENT `.livre-*`**, et c'est assumé : ce sont les classes
+  de l'ÉTAGÈRE, pas celles du livre — la tuile, la couverture, la jauge, la note.
+  Les renommer aurait été une refonte de douze mille lignes pour un nom qu'on ne
+  lit jamais.
+- **UN FILM NE SE COMPTE PAS** (`mesurable`) : ni jauge, ni raccourcis « +1 », ni
+  journal sur sa fiche. Lui en poser promettrait une progression qu'il n'a pas —
+  il se voit d'un coup, et c'est son état qui le dit. **Une série se compte comme
+  un livre.** Les répliques, elles, valent pour les deux.
+- **LA NATURE NE S'ÉCRIT QUE POUR UNE SÉRIE** : « Film » se tait. Mesuré sur les
+  trente et un films importés le 5 septembre — le mot s'affichait trente et une
+  fois, ne distinguait rien, et poussait le réalisateur hors de la ligne. C'est
+  la leçon de « en sommeil » sur les habitudes.
+- **ELLE EST UN CRITÈRE DE FILTRE**, et c'est ce qui permet de tenir les deux
+  dans un seul rayon : « montre-moi mes séries » est une question qu'on se pose,
+  et deux entrées de plus auraient coupé en deux ce qui se range ensemble.
+- **LES GENRES SONT LES MOTS DE SA BASE NOTION** — Drame, Comédie, Thriller,
+  Histoire, Biopic, Romance —, importés tels quels : renommer sa table en
+  l'important aurait fait deux vocabulaires pour une même bibliothèque.
+- **Une note reste sur cinq étoiles.** Sa table Notion porte un « GOAT » au-dessus
+  des cinq pour *Le comte de Monte Cristo* ; le hub n'a pas de sixième cran, et
+  lui en inventer un pour un cas ferait une échelle qu'on ne relit plus.
+
+### La bibliothèque, la règle d'origine (29 août 2026)
 
 **La demande** : « un espace qui m'encourage à lire — une bibliothèque où mes
 livres sont recensés, un bouton qui me permet de rajouter rapidement un nombre
@@ -997,7 +1208,7 @@ liste ne se devine pas, elle s'allonge.
   dont on ne connaît pas la couleur, et un gris discret disparaît sur un ciel
   clair comme sur une nuit.
 
-### LA FICHE D'UN LIVRE — `#livre/<id>` (2 septembre 2026)
+### LA FICHE D'UNE ŒUVRE — `#livre/<id>` et `#film/<id>` (2 puis 5 septembre 2026)
 
 **Demande de Noé** : *« il faut que je puisse cliquer sur chaque livre pour avoir
 une fiche avec tous les détails, et où je peux modifier l'état et la note »*.
@@ -1343,7 +1554,7 @@ Ces deux valeurs peuvent figurer dans le code public. Le token d'accès personne
 
 ## Schéma de base de données
 
-**Onze tables décrites ici** (la base en compte davantage : les sites en ont ajouté, voir leurs cahiers des charges). Les six premières sont celles du hub ; les suivantes sont nées avec les sites. Les tables concernées portent une colonne `espace` de type text avec contrainte CHECK (espace IN ('formation', 'photo', 'fch', 'perso')), sauf `jalons` qui hérite de l'espace via son objectif, et `contacts` / `commandes` qui n'en ont pas.
+**Quatorze tables décrites ici** (la base en compte davantage : les sites en ont ajouté, voir leurs cahiers des charges). Les six premières sont celles du hub ; les suivantes sont nées avec les sites. Les tables concernées portent une colonne `espace` de type text avec contrainte CHECK (espace IN ('formation', 'photo', 'fch', 'perso')), sauf `jalons` qui hérite de l'espace via son objectif, et `contacts` / `commandes` / `films` qui n'en ont pas.
 
 Usage de la valeur 'perso' : autorisée dans `objectifs` (= intentions : champs cible et echeance laissés vides, aucune progression affichée), `evenements`, `victoires` et — depuis le 13 août 2026 — `taches`. Jamais dans `jalons` : un jalon mesure une progression, et l'espace perso n'en affiche aucune. Jamais dans `publications` non plus : l'espace perso ne publie pas.
 
@@ -1594,6 +1805,27 @@ c'est le quatrième piège de ce type payé sur cette page.
   *Mesuré à 1920 px : six colonnes de 297 px, toutes les cartes à 49 px, et le
   bloc tombe de 212 px à 106. Quatre colonnes à 1440 et 1200, trois à 1000, deux
   à 800, une sur un téléphone — la même taille partout, à chaque largeur.*
+
+### films / films_seances / films_citations
+
+La bibliothèque des films et des séries (5 septembre 2026). **Les mêmes trois
+tables que les livres**, et pour les mêmes raisons — voir « La bibliothèque :
+deux rayons, un seul code ».
+
+- `films` : `id` · `titre` · `realisateur` · `nature` CHECK (film, serie) ·
+  `episodes` int (NULL pour un film) · `statut` CHECK (a_voir, en_cours, vu,
+  repose) · `note` 1–5 · `commence_le` / `fini_le` · `notes` · `affiche` (chemin
+  dans le bucket `affiches`) · `genres` text[] · `created_at`
+- `films_seances` : `film_id` · `jour` · `episodes` — **les épisodes vus sont la
+  SOMME des séances**, jamais une colonne à part.
+- `films_citations` : `film_id` · `texte` · `repere` — un TEXTE libre et non un
+  entier : une réplique ne se situe pas à une page mais à un moment (« 1 h 12 »,
+  « S2E4 »).
+
+Pas de colonne `espace` : une œuvre est du perso, toujours — comme `livres`, et
+pour la même raison qu'une colonne à valeur unique ne documente rien.
+
+**Déclarer une œuvre vue écrit une victoire**, au même rang que finir un livre.
 
 ### arbitrages
 
@@ -4402,6 +4634,11 @@ champ avec « Il lui manque son nom. »
 - **`node tools/verifier-gabarits.js` avant de pousser du HTML dans un gabarit.** Un accent grave nu dans un commentaire HTML, à l'intérieur d'un gabarit JS, ferme la chaîne : le fichier reste valide pour `node --check`, et le module casse au chargement en emportant tout l'écran. Le piège s'est produit quatre fois entre le 13 et le 15 août 2026 ; cet outil le voit, `node --check` non. (Un accent grave échappé, lui, est correct.)
   - **Y COMPRIS PAR PAIRES** : un commentaire HTML n'existe pas pour JavaScript, et le PREMIER accent grave referme la chaîne — écrire `` `textarea` `` n'est pas plus sûr qu'un accent grave seul.
   - **L'OUTIL A LUI-MÊME ÉTÉ AVEUGLE, et il a fallu le corriger le 1er septembre 2026.** Il suivait un simple drapeau « dans un gabarit », qui basculait à l'envers au premier gabarit IMBRIQUÉ dans une interpolation — `${rien ? \`<p>… ce n'est pas grave</p>\` : ''}`. À partir de là il lisait le HTML comme du CODE, la première apostrophe française y ouvrait une fausse chaîne, et **tous les commentaires du fichier échappaient au contrôle**. Mesuré sur js/perso.js : l'outil disait « sains » pendant que la page ne se chargeait plus. Il tient maintenant une PILE — `${` empile du code, `}` le dépile —, et il sait distinguer un gabarit d'un autre. *Un outil qui rassure à tort est pire que pas d'outil.*
+- **Un accent grave dans un COMMENTAIRE HTML d'un gabarit referme la chaîne**, et
+  `node tools/verifier-gabarits.js` est le seul à le voir. Payé une cinquième
+  fois le 5 septembre 2026, sur un commentaire qui citait deux adresses entre
+  accents graves — le fichier passait `node --check`, la page ne se chargeait
+  plus. Écrire l'adresse sans accents graves.
 - Langue : toute l'interface en français.
 
 ## Méthode de travail

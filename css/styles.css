@@ -790,6 +790,19 @@ a { color: var(--accent); }
 /* UNE colonne (demande de Noé) : six grands titres se lisent d'un regard, deux
    colonnes obligeraient l'œil à choisir par où commencer. */
 .menu {
+  /* LE MENU COUPE L'HÉRITAGE DE COULEUR (5 septembre 2026, défaut vu par Noé :
+     « garde la couleur grise pour ce qui concerne général »).
+
+     `--couleur-espace` est posée sur le `body` par l'espace où l'on se trouve,
+     et `.menu-pastille` la lit. Résultat : ouvrir le menu depuis perso peignait
+     en violet la pastille de « Général » et celle de « Mon cap », qui n'ont
+     aucun espace — le menu changeait de couleur selon la page qu'on quittait,
+     et le violet ne voulait plus rien dire.
+
+     Une valeur neutre posée ICI arrête l'héritage ; chaque `[data-espace]` du
+     menu redéfinit ensuite la sienne. Une pastille dit donc TOUJOURS l'espace de
+     sa ligne, jamais celui de l'écran. */
+  --couleur-espace: var(--texte-discret);
   width: 100%;
   max-width: 400px;
   align-self: flex-start;
@@ -863,8 +876,58 @@ a { color: var(--accent); }
   color: var(--texte);
   background: color-mix(in srgb, var(--texte) 6%, transparent);
 }
+/* UN MOT QUI NE MÈNE NULLE PART NE SE PRÉSENTE PAS COMME UN LIEN (5 septembre
+   2026) : « Général » ne fait que déplier — il regroupe le transverse et le
+   perso, et n'a aucune page à lui. Même géométrie que son voisin cliquable,
+   sans le survol ni le curseur qui promettraient une destination. */
+.menu-titre-seul {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  min-height: 3rem;
+  padding: 0 var(--espace-12);
+  font-family: var(--police-titre);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  color: var(--texte);
+}
+
+/* LE RANG DES GROUPES (5 septembre 2026, demande de Noé : « des titres qui,
+   quand on clique, affichent toutes les sous-pages qu'ils regroupent »).
+
+   LE MÊME GESTE QU'AU-DESSUS — le mot mène à la page, la flèche déplie —, d'un
+   cran plus discret : la police de texte au lieu de celle des titres, 2,75 rem
+   au lieu de 3. C'est ce qui range les rangs sans les séparer. */
+.menu-moyen {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-4);
+}
+.menu-moyen > a,
+.menu-moyen > .menu-titre-seul {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 var(--espace-12);
+  font-family: var(--police-texte);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--texte);
+  text-decoration: none;
+  border-radius: var(--rayon-controle);
+}
+.menu-moyen > a:hover { background: color-mix(in srgb, var(--texte) 6%, transparent); }
+.menu-moyen > a.actif { background: var(--accent-doux); }
+/* La flèche d'un groupe est plus petite que celle d'une rubrique : elle garde
+   sa cible de 44 px en largeur, et rend la hauteur au rang. */
+.menu-moyen > .menu-fleche { height: 2.25rem; }
+
 .menu-fleche svg { display: block; }
-.menu-rubrique.ouverte .menu-fleche svg { transform: rotate(180deg); }
+/* `> .menu-grand >` et `> .menu-moyen >` : sans les enfants directs, une
+   rubrique ouverte ferait tourner AUSSI les flèches de ses groupes repliés. */
+.menu-rubrique.ouverte > .menu-grand > .menu-fleche svg,
+.menu-groupe.ouverte > .menu-moyen > .menu-fleche svg { transform: rotate(180deg); }
 @media (prefers-reduced-motion: no-preference) {
   .menu-fleche svg { transition: transform 0.16s ease; }
 }
@@ -874,11 +937,16 @@ a { color: var(--accent); }
   flex-direction: column;
   padding: 0 var(--espace-4) var(--espace-12) calc(var(--espace-16) + var(--espace-12));
 }
-.menu-rubrique.ouverte .menu-sous { display: flex; }
-/* Un filet continu relie les sous-pages à leur titre : le retrait seul ne dit
-   pas de qui elles dépendent. */
+/* Chaque pli ne commande QUE son propre rang : un groupe replié dans une
+   rubrique ouverte reste replié. */
+.menu-rubrique.ouverte > .menu-sous,
+.menu-groupe.ouverte > .menu-sous { display: flex; }
+
+/* Le rang des groupes respire un peu moins : il porte des titres, pas des
+   pages, et un blanc de fin de liste à chaque groupe hacherait la colonne. */
+.menu-groupe > .menu-sous { padding-bottom: var(--espace-8); }
+
 .menu-sous a {
-  position: relative;
   display: flex;
   align-items: center;
   min-height: 2.75rem;
@@ -888,7 +956,13 @@ a { color: var(--accent); }
   text-decoration: none;
   border-radius: var(--rayon-controle);
 }
-.menu-sous a::before {
+/* Un filet continu relie ce qui est dessous à son titre : le retrait seul ne
+   dit pas de qui ça dépend. Il court le long des ENFANTS DIRECTS — liens comme
+   groupes —, sinon un groupe posé au milieu d'une liste couperait le trait. */
+.menu-sous > a,
+.menu-sous > .menu-groupe { position: relative; }
+.menu-sous > a::before,
+.menu-sous > .menu-groupe::before {
   content: "";
   position: absolute;
   left: calc(-1 * var(--espace-12));
@@ -5689,6 +5763,92 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 .livre-note { flex: none; font-size: 0.75rem; color: var(--famille-calme); letter-spacing: 1px; }
 
 /* ---------------------------------------------------------------------------
+   LES DEUX PORTES DE LA BIBLIOTHÈQUE (5 septembre 2026, demande de Noé : « je
+   préférerais que ce soit vraiment 2 portes, donc 2 tuiles cliquables qui nous
+   permettent d'aller sur la page des livres ou la page des films/séries »).
+
+   CE QUE ÇA REMPLACE : une bascule `.affichages`, essayée une heure. Elle dit
+   « la même chose, vue autrement » — l'étagère et la liste, le mois et la
+   semaine. Ce ne sont pas deux vues d'une même chose, ce sont deux
+   bibliothèques : une porte le dit, une bascule le cachait.
+
+   CÔTE À CÔTE, et une seule colonne sur téléphone : deux portes de 170 px sur
+   375 ne montreraient plus rien de ce qu'il y a derrière. */
+.biblio-portes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: var(--espace-16);
+  margin-top: var(--espace-24);
+}
+
+/* La tuile du hub : sa surface la distingue, pas un contour (règle du 30 août
+   2026). Le survol la soulève d'un ton — c'est une porte, elle doit répondre. */
+.biblio-porte {
+  display: grid;
+  gap: var(--espace-4);
+  padding: var(--espace-16);
+  color: var(--texte);
+  text-decoration: none;
+  background: var(--fond-carte);
+  border-radius: var(--rayon-carte);
+  transition: background 140ms ease, transform 140ms ease;
+}
+
+.biblio-porte:hover { background: color-mix(in srgb, var(--fond-carte) 88%, var(--accent)); }
+.biblio-porte:active { transform: scale(0.995); }
+
+/* UNE PILE DE COUVERTURES, ET NON UNE GRILLE : elles se chevauchent comme des
+   livres serrés sur une étagère. C'est ce qui donne à la porte l'air de ce
+   qu'elle ouvre — deux rectangles nommés « Livres » et « Films » n'auraient rien
+   dit de plus qu'une ligne de menu, et le menu est déjà à un geste. */
+.biblio-porte-pile {
+  display: flex;
+  margin-bottom: var(--espace-12);
+  /* La pile se lit de gauche à droite : le premier passe DEVANT, donc l'ordre
+     d'empilement s'inverse. Sans ça, la dernière vignette recouvrirait les
+     autres et la pile aurait l'air posée à l'envers. */
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+
+.biblio-porte-vignette {
+  /* Le rapport d'un livre de poche, celui de l'étagère : les deux rayons
+     partagent la même boîte, sinon la pile ferait des marches d'escalier. */
+  aspect-ratio: 2 / 3;
+  width: 3.25rem;
+  overflow: hidden;
+  background: var(--fond-doux);
+  border-radius: var(--rayon-controle);
+  box-shadow: -4px 0 10px rgb(0 0 0 / 0.35);
+}
+
+/* Chaque vignette mord sur sa voisine d'un tiers. `--rang` n'entre pas dans le
+   calcul : c'est le chevauchement qui fait la pile, pas la position. */
+.biblio-porte-vignette + .biblio-porte-vignette { margin-right: -1.1rem; }
+
+.biblio-porte-vignette img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Sans image, le pointillé du hub : « déclaré, pas encore rempli ». */
+.biblio-porte-vide {
+  background: none;
+  border: 1px dashed var(--bordure);
+  box-shadow: none;
+}
+
+.biblio-porte-nom {
+  font-family: var(--police-titre);
+  font-weight: 700;
+  font-size: 1.125rem;
+  letter-spacing: -0.01em;
+}
+
+.biblio-porte-compte { font-size: 0.8125rem; color: var(--texte-discret); }
+
+/* LE RETOUR VERS LE HALL, sur chaque étagère : on y entre par une porte, on doit
+   pouvoir en ressortir. C'est le lien de la fiche d'une œuvre, au trait près. */
+.biblio-retour { margin: 0 0 var(--espace-12); }
+
+/* ---------------------------------------------------------------------------
    LA BARRE DE LA BIBLIOTHÈQUE : la bascule, puis la recherche (2 septembre
    2026). Deux vues pour deux questions — l'étagère répond à « qu'est-ce que j'ai
    lu », la liste à « où est CE livre ». */
@@ -6005,6 +6165,23 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 .livre-theme[data-theme="essai"] { --teinte-theme: #7a8fa6; }
 .livre-theme[data-theme="biographie"] { --teinte-theme: #c98a5a; }
 .livre-theme[data-theme="metier"] { --teinte-theme: #6aa6a0; }
+
+/* LES GENRES D'UN FILM prennent la même pastille et la même règle : même mot,
+   même couleur, pour toujours. Aucun n'est une alerte — ce sont des étiquettes,
+   pas des jugements. Un genre sans teinte déclarée retombe sur l'encre discrète,
+   ce qui est un défaut lisible et non un trou. */
+.livre-theme[data-theme="action"] { --teinte-theme: #c96a5a; }
+.livre-theme[data-theme="comedie"] { --teinte-theme: #c9a227; }
+.livre-theme[data-theme="drame"] { --teinte-theme: #b4649a; }
+.livre-theme[data-theme="thriller"] { --teinte-theme: #7a8fa6; }
+.livre-theme[data-theme="policier"] { --teinte-theme: #8a7fb5; }
+.livre-theme[data-theme="sf"] { --teinte-theme: #5b8dd9; }
+.livre-theme[data-theme="animation"] { --teinte-theme: #6aa6a0; }
+.livre-theme[data-theme="documentaire"] { --teinte-theme: #c98a5a; }
+.livre-theme[data-theme="histoire"] { --teinte-theme: #9c8459; }
+.livre-theme[data-theme="biopic"] { --teinte-theme: #c98a5a; }
+.livre-theme[data-theme="romance"] { --teinte-theme: #b4649a; }
+.livre-theme[data-theme="sport"] { --teinte-theme: var(--famille-corps); }
 
 .livre-ligne-etat {
   display: inline-flex;
@@ -6520,28 +6697,7 @@ li.livre-tuile {
   color: var(--texte-discret);
 }
 
-/* DEUX COLONNES SOUS LES INTENTIONS (29 août 2026, choix de Noé) : ce qui vient
-   à gauche, ce qui est passé à droite. C'est la seule division qui tienne ici —
-   il n'y a rien à faire dans cet espace, donc rien à ranger par urgence.
 
-   `minmax(0, 1fr)` et non `1fr` : un élément de grille garde `min-width: auto`
-   et refuse de descendre sous la largeur minimale de son contenu. C'est le
-   piège rencontré quatre fois entre le 28 et le 29 août — la bande d'onglets,
-   la colonne des projets, les deux colonnes de la journée. */
-.perso-colonnes {
-  display: grid;
-  gap: var(--espace-24);
-}
-
-.perso-colonne { min-width: 0; }
-
-@media (min-width: 60rem) {
-  .perso-colonnes {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: var(--espace-32);
-    align-items: start;
-  }
-}
 
 /* Les rendez-vous et les victoires en LIGNES, pas en cartes : ce qu'on vient y
    lire tient en une ligne. Ce sont les intentions qui portent des tuiles, parce
@@ -10213,13 +10369,17 @@ a.cap-ajout-discret { text-decoration: none; }
   }
 }
 
-/* `duo-` ET NON `perso-colonne` : le nom était PRIS. `.perso-colonne` est la
-   colonne de mise en page des sous-vues de perso, et le script la masque quand
-   elle ne porte aucun `[data-vue]` — mes colonnes, qui n'en portent pas, se
+/* `duo-` ET NON `perso-colonne` : le nom était PRIS le 30 août 2026 par la
+   colonne de mise en page des sous-vues de perso, que le script masquait quand
+   elle ne portait aucun `[data-vue]` — mes colonnes, qui n'en portent pas, se
    cachaient donc entières. Le titre était un `<h2>` pour la même raison : le
    script masque le premier `h2` d'une vue affichée seule, et c'est le mien
    qu'il attrapait. Deux collisions pour un nom non vérifié — le grep de trois
-   secondes que le CLAUDE.md réclame. */
+   secondes que le CLAUDE.md réclame.
+
+   `.perso-colonne` a disparu le 5 septembre avec les trois vues qu'elle
+   rangeait ; le nom est libre, et ce commentaire reste parce que la LEÇON, elle,
+   ne l'est pas. */
 .duo-colonne { min-width: 0; }
 
 /* Le titre d'une colonne : la graisse d'un libellé de section, comme « CE QUI A

@@ -112,7 +112,7 @@ export function construireFil(victoires) {
 
 function squelette(victoires) {
   return `
-    <h1>Le chemin</h1>
+    <h1>Mon chemin</h1>
     <p class="discret sous-titre">Ce que tu as fait, tous espaces confondus.
       Le perso au même rang que le reste.</p>
 
@@ -135,7 +135,7 @@ export default {
     } catch (erreur) {
       console.error('Chargement du chemin impossible', erreur);
       section.innerHTML = `
-        <h1>Le chemin</h1>
+        <h1>Mon chemin</h1>
         <p class="vide">Les victoires n'ont pas pu être chargées.</p>
         <button type="button" class="bouton-secondaire" data-action="reessayer">Réessayer</button>`;
       section

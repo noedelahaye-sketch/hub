@@ -12,8 +12,21 @@
 import * as api from './api.js';
 // Ces fonctions ne portent aucune mécanique d'espace : ce sont des gabarits
 // de tuiles et de formulaires, réutilisés tels quels.
-import { construireFormulaire, brancherChoix, flammeDeSerie } from './gabarits.js';
+import {
+  construireFormulaire,
+  brancherChoix,
+  flammeDeSerie,
+  SIGNES as SIGNE,
+} from './gabarits.js';
 import { retirerAussitot } from './ecriture.js';
+import {
+  RAYONS,
+  construireRayon,
+  construireHall,
+  champsDuFormulaire,
+  valeursDuFormulaire,
+  imageDe,
+} from './bibliotheque.js';
 import {
   etatDesHabitudes,
   PALIERS_HABITUDE,
@@ -42,45 +55,8 @@ import {
 } from './format.js';
 
 const ESPACE = 'perso';
-const JOURS_COURBE = 30;
 
 const FRIMOUSSES = { 1: '😔', 2: '😕', 3: '😐', 4: '🙂', 5: '😄' };
-
-// Les mêmes signes que la galerie du cap, dessinés et non écrits : le hub ne
-// mélange pas les glyphes de police et les icônes.
-const SIGNE = {
-  plus: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-    stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`,
-  points: `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"
-    aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/>
-    <circle cx="19" cy="12" r="1.6"/></svg>`,
-  // TROIS CURSEURS PLUTÔT QU'UN ENTONNOIR (2 septembre 2026) : l'entonnoir dit
-  // « on écarte », les curseurs disent « on règle » — et c'est bien ce qu'on
-  // fait ici, on donne trois critères puis on les enlève. Le dessin est du même
-  // trait que les autres signes du hub.
-  // L'ENTONNOIR, ET NON TROIS CURSEURS (2 septembre 2026, forme montrée par
-  // Noé) : c'est le signe que tout le monde reconnaît pour « filtrer », et le
-  // hub n'a pas de raison d'en inventer un autre. Trois traits qui se
-  // raccourcissent — le même dessin, en plus sobre qu'un entonnoir plein.
-  filtre: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
-    stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16"/>
-    <path d="M7 12h10"/><path d="M10 18h4"/></svg>`,
-  chevron: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
-    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-    aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`,
-  coche: `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
-    stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
-    aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>`,
-  tri: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
-    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-    aria-hidden="true"><path d="M7 4v16M7 4L4 7M7 4l3 3"/><path d="M17 20V4M17 20l3-3M17 20l-3-3"/></svg>`,
-  monte: `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor"
-    stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"
-    aria-hidden="true"><path d="M12 19V5M12 5l-5 5M12 5l5 5"/></svg>`,
-  descend: `<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor"
-    stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"
-    aria-hidden="true"><path d="M12 5v14M12 19l-5-5M12 19l5-5"/></svg>`,
-};
 
 // L'état de l'écran, hors des données : ce qui est déplié, ce qui attend une
 // confirmation, ce que la tuile volante corrige. Même trio que dans
@@ -101,23 +77,48 @@ const vueEtat = {
   // à voir d'un coup, et c'est pour voir qu'on ouvre cette page.
   joursVue: 'mois',
   joursPivot: null,
-  // LA BIBLIOTHÈQUE A DEUX VUES (2 septembre 2026) : l'étagère par défaut — on
-  // ouvre cette page pour VOIR ses livres, pas pour en chercher un. La liste
-  // s'atteint d'un geste quand on vient avec un nom en tête.
-  vueLivres: 'etagere',
-  // Un TABLEAU par critère : on coche plusieurs valeurs (« les 5 étoiles ET les
-  // 4 »), et un critère vide ne filtre rien.
-  filtresLivres: { mot: '', statut: [], theme: [], note: [] },
-  // La rangée des critères est REPLIÉE par défaut : on ouvre la bibliothèque
-  // pour voir ses livres, pas pour les trier.
-  filtresOuverts: false,
-  // Le critère dont le panneau est ouvert — un seul à la fois, comme partout.
-  chipLivres: null,
-  triLivres: { cle: 'defaut', sens: 1 },
-  // La cellule dont le menu est ouvert, dans la vue liste : « etat:<id> » ou
-  // « theme:<id> ». Une seule à la fois, comme partout dans le hub.
-  celluleLivre: null,
+  // LA BIBLIOTHÈQUE A DEUX ENTRÉES depuis le 5 septembre 2026 — les livres, les
+  // films et séries — et chacune tient SON réglage. Une note ou un genre coché
+  // d'un côté n'a aucun sens de l'autre : partager l'état aurait fait revenir
+  // sur les livres un filtre « Drame » posé sur les films.
+  rayon: 'livres',
+  rayons: {
+    // `affichage` : l'étagère par défaut — on ouvre cette page pour VOIR, pas
+    // pour chercher. La liste s'atteint d'un geste quand on vient avec un nom en
+    // tête.
+    //
+    // `filtres` : un TABLEAU par critère — on coche plusieurs valeurs (« les 5
+    // étoiles ET les 4 »), et un critère vide ne filtre rien.
+    //
+    // `ouverts` : la rangée des critères est REPLIÉE par défaut.
+    // `chip` : le critère dont le panneau est ouvert, un seul à la fois.
+    // `cellule` : la cellule dont le menu est ouvert dans la vue liste.
+    livres: {
+      affichage: 'etagere',
+      filtres: { mot: '', statut: [], mots: [], note: [] },
+      ouverts: false,
+      chip: null,
+      tri: { cle: 'defaut', sens: 1 },
+      cellule: null,
+    },
+    films: {
+      affichage: 'etagere',
+      filtres: { mot: '', statut: [], mots: [], note: [], nature: [] },
+      ouverts: false,
+      chip: null,
+      tri: { cle: 'defaut', sens: 1 },
+      cellule: null,
+    },
+  },
 };
+
+// Le réglage d'écran du rayon qu'on regarde.
+// LE RAYON D'UNE FORME : « livre » ou « film ». Le hall montre les deux, si bien
+// qu'une carte n'appartient pas forcément au rayon qu'on regarde — s'y fier
+// aurait modifié un livre en croyant modifier un film.
+const rayonDeLaForme = (forme) =>
+  Object.values(RAYONS).find((R) => R.forme === forme) ?? null;
+const vueDuRayon = () => vueEtat.rayons[vueEtat.rayon];
 
 // --- Fabrication du HTML ----------------------------------------------------
 
@@ -649,703 +650,6 @@ export function construireHabitudesDuJour(etats = []) {
   return lot(quotidiennes) + lot(autres, 'hab-colonne-suite');
 }
 
-const PAS_DE_PAGES = [10, 25];
-
-function etoiles(note) {
-  if (!note) return '';
-  return `<span class="livre-note" role="img" aria-label="${note} sur 5">${'★'.repeat(
-    note,
-  )}${'☆'.repeat(5 - note)}</span>`;
-}
-
-// LES MOTS D'UN LIVRE, exportés depuis le 2 septembre 2026 : sa fiche les dit
-// aussi, et deux listes finiraient par ne plus nommer le même état. « Reposé » et
-// non « abandonné » — un livre qu'on lâche n'est pas un échec, et le mot compte.
-export const MOTS_STATUT = { a_lire: 'à lire', en_cours: 'en cours', lu: 'lu', repose: 'reposé' };
-
-// Ce que la fiche offre à changer, dans l'ordre d'une vie de livre.
-export const ETATS_LIVRE = {
-  a_lire: 'À lire',
-  en_cours: 'En cours',
-  lu: 'Lu',
-  repose: 'Reposé',
-};
-
-// LES THÈMES (2 septembre 2026, demande de Noé : « filtrer selon la note, l'état
-// ou le type de livre »). La liste vient de sa bibliothèque Notion, où elle
-// s'était faite d'elle-même : psycho, roman, relation humaine, productivité.
-//
-// UN LIVRE EN PORTE PLUSIEURS — « The good life » est psycho ET relation
-// humaine —, d'où un `text[]` en base et une pastille à choix multiple au
-// formulaire. Une colonne texte aurait obligé à choisir, et on aurait choisi
-// mal.
-//
-// LA BASE N'IMPOSE RIEN : pas de CHECK, pas de table. Un thème est un mot qu'on
-// se donne, et la liste ci-dessous n'est qu'une commodité de saisie — elle
-// s'allonge sans migration.
-export const THEMES_LIVRE = {
-  psycho: 'Psycho',
-  relation: 'Relation humaine',
-  productivite: 'Productivité',
-  roman: 'Roman',
-  essai: 'Essai',
-  biographie: 'Biographie',
-  metier: 'Métier',
-  autre: 'Autre',
-};
-
-function livreDuHaut(livre, seances, urls = {}) {
-  const { lues, part, rythme } = avanceeDuLivre(livre, seances);
-  const citation = (livre.citations ?? []).at(-1);
-  const url = livre.couverture ? urls[livre.couverture] : null;
-
-  return `
-    <article class="livre-encours${url ? ' avec-couverture' : ''}"
-      data-livre="${echapper(livre.id)}">
-      ${
-        // LE LIVRE EN COURS PORTE SA COUVERTURE EN GRAND, à gauche de tout le
-        // reste : c'est celui qu'on ouvre ce soir, et c'est la seule image de la
-        // page qui mérite d'occuper de la place. Les autres tiennent en vignette
-        // dans l'étagère.
-        url
-          ? `<span class="livre-encours-couverture"><img src="${echapper(url)}"
-              alt="" loading="lazy" decoding="async"></span>`
-          : ''
-      }
-      <!-- TOUT LE RESTE DANS UNE ENVELOPPE, et pas seulement quand il y a une
-           couverture : deux structures selon les données finissent par diverger.
-           Sans elle, les six enfants du bloc étaient six éléments de grille — la
-           couverture ne pouvait pas se poser À CÔTÉ d'eux, seulement à côté du
-           PREMIER, et un blanc de cent pixels s'ouvrait sous le titre. -->
-      <div class="livre-encours-corps">
-      <a class="livre-titre livre-titre-porte"
-        href="#livre/${encodeURIComponent(livre.id)}">${echapper(livre.titre)}</a>
-      ${livre.auteur ? `<span class="livre-auteur">${echapper(livre.auteur)}</span>` : ''}
-
-      ${
-        part === null
-          ? ''
-          : `<span class="livre-jauge" role="img" aria-label="${lues} pages sur ${livre.pages}"><i
-               style="width:${Math.round(part * 100)}%"></i></span>`
-      }
-
-      <span class="livre-ligne">
-        <span class="discret">${
-          livre.pages ? `${lues} sur ${livre.pages} pages` : pluriel(lues, 'page')
-        }${rythme ? ` · ${rythme} par jour de lecture` : ''}</span>
-        <span class="livre-pas">
-          ${PAS_DE_PAGES.map(
-            (pas) =>
-              `<button type="button" class="livre-pas-bouton" data-pages="${pas}"
-                data-livre-pages="${echapper(livre.id)}">+${pas}</button>`,
-          ).join('')}
-          <button type="button" class="livre-pas-bouton" data-livre-autre="${echapper(livre.id)}"
-            >autre</button>
-        </span>
-      </span>
-
-      ${
-        citation
-          ? `<p class="livre-citation">« ${echapper(citation.texte)} »${
-              citation.page ? `<span class="discret"> — p. ${citation.page}</span>` : ''
-            }</p>`
-          : ''
-      }
-
-      <span class="livre-gestes">
-        <button type="button" class="lien-discret" data-livre-citation="${echapper(livre.id)}"
-          >Garder une phrase</button>
-        <button type="button" class="lien-discret" data-livre-fini="${echapper(livre.id)}"
-          >Je l'ai fini</button>
-      </span>
-      </div>
-      <!-- LE LIVRE EN COURS N'AVAIT PAS DE MENU (2 septembre 2026), et les
-           couvertures l'ont rendu visible : c'est le livre qu'on voudrait
-           illustrer en premier, et il était le seul qu'on ne pouvait ni modifier
-           ni retirer sans le finir d'abord. Tous les autres l'ont depuis le
-           29 août. -->
-      ${menuDiscret('livre', livre.id)}
-    </article>`;
-}
-
-// L'ÉTAGÈRE (2 septembre 2026, demande de Noé : « j'aimerais pouvoir rajouter la
-// couverture du livre, ce qui permettrait d'avoir un aperçu visuel dans la
-// bibliothèque »).
-//
-// UNE COUVERTURE SE RECONNAÎT AVANT DE SE LIRE, et c'est tout l'objet de la
-// demande : une liste de titres se parcourt mot à mot, une étagère se balaie du
-// regard. C'est le seul écran du hub où l'image passe devant le texte.
-//
-// UN LIVRE SANS COUVERTURE GARDE SA PLACE, en tuile pointillée avec son titre —
-// le pointillé est déjà le signe du hub pour « déclaré, pas encore rempli », et
-// une étagère à trous se lirait comme une bibliothèque incomplète plutôt que
-// comme des couvertures qui manquent.
-function tuileDeLivre(livre, urls, service) {
-  const url = livre.couverture ? urls[livre.couverture] : null;
-
-  return `
-    <li class="livre-tuile${url ? '' : ' livre-sans-couverture'}"
-      data-livre="${echapper(livre.id)}">
-      <!-- TOUTE LA TUILE MÈNE À SA FICHE (2 septembre 2026, demande de Noé) :
-           l'étagère COMPARE, la fiche dit tout — le journal de lecture, les
-           citations, l'état et la note qu'on y règle. C'est la règle des deux
-           rangs, appliquée un étage plus bas que les caps et les projets. -->
-      <a class="livre-tuile-ouvrir" href="#livre/${encodeURIComponent(livre.id)}"
-        aria-label="Ouvrir « ${echapper(livre.titre)} »"></a>
-      <span class="livre-couverture">
-        ${
-          url
-            // `loading="lazy"` : une étagère de trente livres ne descend pas
-            // trente images pour en montrer six.
-            ? `<img src="${echapper(url)}" alt="" loading="lazy" decoding="async">`
-            : `<span class="livre-couverture-mot">${echapper(livre.titre)}</span>`
-        }
-      </span>
-      <span class="livre-tuile-titre">${echapper(livre.titre)}</span>
-      <!-- LE THÈME SUR LA TUILE (2 septembre 2026, demande de Noé). Il passe
-           AVANT l'état et l'auteur : c'est ce qui distingue deux livres qu'on
-           balaie du regard — on cherche « un roman », rarement « un livre à
-           lire ». Un seul thème s'affiche quand il y en a plusieurs, avec leur
-           compte : la tuile fait 109 px, et deux pastilles y tiendraient à peine
-           l'une des deux. Le reste se lit sur la fiche. -->
-      <!-- LA PLACE DU THÈME EXISTE TOUJOURS, même vide (2 septembre 2026) : les
-           tuiles partagent leurs rangées, et un livre sans thème ferait remonter
-           son état et son auteur d'un cran — les colonnes ne tomberaient plus
-           en face les unes des autres. -->
-      <span class="livre-tuile-theme-place">${
-        (livre.themes ?? []).length
-          ? `<span class="livre-theme"
-              data-theme="${echapper(livre.themes[0])}"
-              title="${echapper(
-                livre.themes.map((t) => THEMES_LIVRE[t] ?? t).join(' · '),
-              )}">${echapper(THEMES_LIVRE[livre.themes[0]] ?? livre.themes[0])}${
-              livre.themes.length > 1 ? ` +${livre.themes.length - 1}` : ''
-            }</span>`
-          : ''
-      }</span>
-      <span class="livre-tuile-service">${echapper(service)}</span>
-      ${etoiles(livre.note)}
-      ${menuDiscret('livre', livre.id)}
-    </li>`;
-}
-
-// --- LA VUE LISTE : chercher un livre précis --------------------------------
-//
-// Demande de Noé (2 septembre 2026, une capture de sa base Notion à l'appui) :
-// *« il faudrait que je puisse avoir une vue de ce type également pour pouvoir
-// chercher un livre précis et filtrer selon la note, l'état ou le type de
-// livre »*.
-//
-// DEUX VUES POUR DEUX QUESTIONS, et c'est ce qui justifie la bascule : l'étagère
-// répond à « qu'est-ce que j'ai lu » — on la balaie du regard, sans rien
-// chercher ; la liste répond à « où est CE livre » — on y vient avec un nom ou
-// un critère en tête. Une seule vue aurait mal servi les deux.
-//
-// LA BASCULE REPREND `.affichages`, le groupe de boutons du calendrier : c'est
-// le MÊME geste — choisir ce que la liste montre —, et écrire un troisième
-// dessin pour un geste qui en a déjà deux, c'est fabriquer la divergence qu'on
-// passe ensuite à rattraper.
-export function construireFiltresLivres(
-  vue,
-  filtres,
-  livres,
-  ouverts = false,
-  chip = null,
-  tri = { cle: 'defaut', sens: 1 },
-  cellule = null,
-) {
-  const compte = (cle, valeur) =>
-    livres.filter((livre) =>
-      cle === 'theme'
-        ? (livre.themes ?? []).includes(valeur)
-        : String(livre[cle] ?? '') === String(valeur),
-    ).length;
-
-  // ON N'OFFRE QUE CE QUI EXISTE : un filtre « Biographie » sur une bibliothèque
-  // qui n'en compte aucune est une porte sur une pièce vide. La liste des thèmes
-  // se déduit donc des livres, et non de la liste de saisie.
-  const themes = [...new Set(livres.flatMap((livre) => livre.themes ?? []))].sort(
-    (a, b) => (THEMES_LIVRE[a] ?? a).localeCompare(THEMES_LIVRE[b] ?? b),
-  );
-
-  const CRITERES = [
-    {
-      cle: 'statut',
-      nom: 'État',
-      options: Object.entries(ETATS_LIVRE)
-        .map(([v, mot]) => [v, mot, compte('statut', v)])
-        .filter(([, , n]) => n),
-    },
-    {
-      cle: 'theme',
-      nom: 'Thème',
-      options: themes.map((v) => [v, THEMES_LIVRE[v] ?? v, compte('theme', v)]),
-    },
-    {
-      cle: 'note',
-      nom: 'Note',
-      options: [5, 4, 3, 2, 1]
-        .map((r) => [String(r), '★'.repeat(r), compte('note', r)])
-        .filter(([, , n]) => n),
-    },
-  ];
-
-  // CE QU'UN CRITÈRE DIT QUAND IL EST REPLIÉ : son nom seul tant qu'il ne
-  // filtre rien, et sinon ce qu'il retient — un seul en toutes lettres, les
-  // suivants comptés. Trois valeurs écrites dans une pastille feraient une
-  // phrase, et une pastille n'est pas une phrase.
-  const resume = (critere) => {
-    const choisis = filtres[critere.cle] ?? [];
-    if (!choisis.length) return critere.nom;
-    const premier = critere.options.find(([v]) => v === choisis[0]);
-    const mot = premier ? premier[1] : choisis[0];
-    return `${critere.nom} : ${mot}${choisis.length > 1 ? ` +${choisis.length - 1}` : ''}`;
-  };
-
-  const actifs = CRITERES.filter((c) => (filtres[c.cle] ?? []).length).length;
-
-  // UNE PASTILLE PAR CRITÈRE, ET SON PANNEAU À COCHER (2 septembre 2026, forme
-  // montrée par Noé, Notion à l'appui). Ce que ça remplace, écrit une heure plus
-  // tôt : un seul panneau qui contenait les trois critères, et un seul choix par
-  // critère. Deux choses changent, et la seconde est la vraie : **on coche
-  // PLUSIEURS valeurs** — « les 5 étoiles ET les 4 » est une question qu'on se
-  // pose, et un choix unique ne savait pas y répondre.
-  const critere = (c) => {
-    const choisis = filtres[c.cle] ?? [];
-    const ouvert = chip === c.cle;
-    if (!c.options.length) return '';
-
-    return `<span class="livres-critere">
-      <button type="button" class="livres-critere-bouton${choisis.length ? ' actif' : ''}"
-        data-critere="${c.cle}" aria-expanded="${ouvert}" aria-haspopup="listbox"
-        >${echapper(resume(c))}${SIGNE.chevron}</button>
-      ${
-        ouvert
-          ? `<div class="choix-panneau livres-panneau">
-              <ul class="choix-capture">
-                ${c.options
-                  .map(
-                    ([valeur, mot, n]) => `
-                  <li><button type="button" data-filtre-livre="${c.cle}"
-                    data-valeur="${echapper(valeur)}"
-                    class="${choisis.includes(valeur) ? 'actif' : ''}"
-                    aria-pressed="${choisis.includes(valeur)}"
-                    ><span class="livres-coche" aria-hidden="true">${
-                      choisis.includes(valeur) ? SIGNE.coche : ''
-                    }</span><span>${echapper(mot)}</span>
-                    <span class="discret">${n}</span></button></li>`,
-                  )
-                  .join('')}
-              </ul>
-            </div>`
-          : ''
-      }
-    </span>`;
-  };
-
-  // LE TRI, DANS LA MÊME RANGÉE (2 septembre 2026, demande de Noé : « rajoute le
-  // bouton de tri aussi, accessible sur les 2 vues »). Il vit à côté des filtres
-  // parce que c'est la même question posée deux fois — QUE montre-t-on, et dans
-  // QUEL ordre —, et parce qu'on les règle dans le même mouvement.
-  //
-  // « Par défaut » n'est pas une absence de tri : c'est l'ordre du hub — ce
-  // qu'on lit, puis ce qui attend, puis ce qui est fini, la note départageant.
-  const triChoisi = TRIS_LIVRE[tri.cle] ?? TRIS_LIVRE.defaut;
-  const chipTri = `<span class="livres-critere">
-    <button type="button" class="livres-critere-bouton${
-      tri.cle === 'defaut' ? '' : ' actif'
-    }" data-critere="tri" aria-expanded="${chip === 'tri'}" aria-haspopup="listbox"
-      >${tri.cle === 'defaut' ? '' : SIGNE[tri.sens > 0 ? 'monte' : 'descend']}${echapper(
-        triChoisi.nom,
-      )}${SIGNE.chevron}</button>
-    ${
-      chip === 'tri'
-        ? `<div class="choix-panneau livres-panneau">
-            <ul class="choix-capture">
-              ${Object.entries(TRIS_LIVRE)
-                .map(
-                  ([cle, { nom }]) => `
-                <li><button type="button" data-trier="${cle}"
-                  class="${cle === tri.cle ? 'actif' : ''}"
-                  aria-pressed="${cle === tri.cle}"
-                  ><span class="livres-coche" aria-hidden="true">${
-                    cle === tri.cle ? SIGNE.coche : ''
-                  }</span><span>${echapper(nom)}</span>${
-                    cle === tri.cle && cle !== 'defaut'
-                      ? `<span class="discret">${SIGNE[tri.sens > 0 ? 'monte' : 'descend']}</span>`
-                      : ''
-                  }</button></li>`,
-                )
-                .join('')}
-            </ul>
-          </div>`
-        : ''
-    }
-  </span>`;
-
-  return `
-    <div class="livres-barre">
-      <span class="affichages" role="group" aria-label="Comment voir tes livres">
-        <button type="button" class="${vue === 'etagere' ? 'actif' : ''}"
-          data-vue-livres="etagere" aria-pressed="${vue === 'etagere'}">Étagère</button>
-        <button type="button" class="${vue === 'liste' ? 'actif' : ''}"
-          data-vue-livres="liste" aria-pressed="${vue === 'liste'}">Liste</button>
-      </span>
-
-      <!-- LA RECHERCHE EST TOUJOURS LÀ, dans les deux vues : chercher un titre
-           qu'on a en tête n'a pas à commencer par changer de vue.
-
-           PAS D'ÉTIQUETTE AUTOUR (2 septembre 2026) : l'enveloppe était
-           l'élément de la rangée, et c'est ELLE qui s'alignait — le champ
-           flottait dix pixels plus haut que la bascule d'à côté. Le champ est
-           donc l'élément lui-même, et son nom accessible le nomme : une invite
-           disparaît dès qu'on tape, elle ne peut pas être le seul nom d'un
-           champ. -->
-      <input type="search" class="livres-recherche" data-recherche-livre
-        value="${echapper(filtres.mot ?? '')}" aria-label="Chercher un livre"
-        placeholder="Chercher un titre, un auteur" autocomplete="off">
-
-      <!-- L'ICÔNE OUVRE LA RANGÉE DES CRITÈRES, elle ne les contient pas : c'est
-           la forme que Noé a montrée. Les filtres tenaient trois rangées de
-           pastilles en permanence au-dessus de chaque écran — une douzaine de
-           boutons pour un geste qu'on fait rarement. **Le coût d'accès suit
-           l'intention** : c'est la règle des deux rangs du hub, appliquée dans
-           une page.
-
-           Le COMPTE reste dehors : un filtre posé qu'on ne voit plus est une
-           bibliothèque qui ment sur ce qu'elle contient. -->
-      <button type="button" class="livres-reglages-bouton${
-        actifs || ouverts ? ' actif' : ''
-      }" data-ouvrir-filtres aria-expanded="${Boolean(ouverts)}"
-        title="Filtrer" aria-label="Filtrer${
-          actifs ? ` — ${actifs} critère${actifs > 1 ? 's' : ''} posé${actifs > 1 ? 's' : ''}` : ''
-        }">${SIGNE.filtre}${
-          actifs ? `<span class="livres-reglages-compte">${actifs}</span>` : ''
-        }</button>
-
-      <button type="button" class="livres-reglages-bouton${
-        tri.cle === 'defaut' && !ouverts ? '' : ' actif'
-      }" data-ouvrir-tri aria-expanded="${chip === 'tri'}"
-        title="Trier" aria-label="Trier${
-          tri.cle === 'defaut' ? '' : ` — par ${triChoisi.nom.toLowerCase()}`
-        }">${SIGNE.tri}</button>
-    </div>
-
-    ${
-      ouverts
-        ? `<div class="livres-criteres">
-            ${chipTri}
-            <span class="livres-separateur" aria-hidden="true"></span>
-            ${CRITERES.map(critere).join('')}
-            ${
-              actifs
-                ? `<button type="button" class="lien-discret livres-tout-voir"
-                    data-vider-filtres>Tout revoir</button>`
-                : ''
-            }
-          </div>`
-        : ''
-    }`;
-}
-
-// Le tri PAR DÉFAUT : l'état d'abord — ce qu'on lit, puis ce qui attend, puis ce
-// qui est fini —, la note ensuite, le titre enfin. On cherche rarement un livre
-// par sa date de saisie.
-const RANG_STATUT = { en_cours: 0, a_lire: 1, lu: 2, repose: 3 };
-
-// CE QU'ON PEUT DEMANDER AU TRI (2 septembre 2026). Chacun rend une clé
-// comparable ; le sens se retourne d'un second appui sur la même ligne.
-// « Par défaut » garde l'ordre du hub — ce n'est pas une absence de tri.
-export const TRIS_LIVRE = {
-  defaut: { nom: 'Par défaut', cle: null },
-  titre: { nom: 'Titre', cle: (l) => l.titre.toLowerCase() },
-  auteur: { nom: 'Auteur', cle: (l) => (l.auteur ?? 'zzz').toLowerCase() },
-  note: { nom: 'Note', cle: (l) => l.note ?? 0 },
-  statut: { nom: 'État', cle: (l) => RANG_STATUT[l.statut] ?? 9 },
-  theme: { nom: 'Thème', cle: (l) => (l.themes ?? []).map((t) => THEMES_LIVRE[t] ?? t).sort()[0] ?? 'zzz' },
-};
-
-// Le dernier soir où l'on a ouvert un livre. Sert à ranger les livres en cours :
-// celui qu'on a lu hier passe devant celui qu'on a laissé il y a un mois. Une
-// chaîne vide pour un livre sans séance — il ferme la marche, ce qui est juste.
-function derniereLecture(livre, seances) {
-  return seances
-    .filter((seance) => seance.livre_id === livre.id)
-    .reduce((plus, seance) => (seance.jour > plus ? seance.jour : plus), '');
-}
-
-export function livresFiltres(livres, filtres, tri = { cle: 'defaut', sens: 1 }) {
-  const mot = (filtres.mot ?? '').trim().toLowerCase();
-  // PLUSIEURS VALEURS PAR CRITÈRE (2 septembre 2026) : « les 5 étoiles ET les
-  // 4 » est une question qu'on se pose, et un choix unique ne savait pas y
-  // répondre. Un critère vide ne filtre rien — c'est ce qui permet de les
-  // cumuler sans jamais tout écarter.
-  const retient = (cle, valeur) => {
-    const choisis = filtres[cle] ?? [];
-    return !choisis.length || choisis.includes(String(valeur ?? ''));
-  };
-
-  return livres
-    .filter((livre) => {
-      if (!retient('statut', livre.statut)) return false;
-      if (
-        (filtres.theme ?? []).length &&
-        !(livre.themes ?? []).some((t) => filtres.theme.includes(t))
-      ) {
-        return false;
-      }
-      if (!retient('note', livre.note)) return false;
-      if (!mot) return true;
-      // Le titre ET l'auteur : on cherche « Marc Levy » aussi souvent qu'un
-      // titre, et demander lequel des deux serait une question de plus.
-      return `${livre.titre} ${livre.auteur ?? ''}`.toLowerCase().includes(mot);
-    })
-    .sort((a, b) => {
-      const choisi = TRIS_LIVRE[tri.cle]?.cle;
-      if (choisi) {
-        const ga = choisi(a);
-        const gb = choisi(b);
-        const ecart =
-          typeof ga === 'number' ? ga - gb : String(ga).localeCompare(String(gb));
-        // À valeur égale, le titre départage : sans lui, deux livres notés 4
-        // changeraient de place d'un rendu à l'autre.
-        if (ecart) return ecart * tri.sens;
-        return a.titre.localeCompare(b.titre);
-      }
-      return (
-        (RANG_STATUT[a.statut] ?? 9) - (RANG_STATUT[b.statut] ?? 9) ||
-        (b.note ?? 0) - (a.note ?? 0) ||
-        a.titre.localeCompare(b.titre)
-      );
-    });
-}
-
-// LES COLONNES DE LA LISTE, NOMMÉES ET TRIABLES (2 septembre 2026, demande de
-// Noé : « rajoute le nom des colonnes dans la vue liste, et en appuyant dessus
-// ça permet de trier par leur type »).
-//
-// UN EN-TÊTE EST LE TRI À PORTÉE DE COLONNE : le panneau de tri existe et
-// couvre les mêmes clés, mais on ne va pas le chercher pour dire « range-moi
-// par auteur » quand le mot « Auteur » est là, en face de la colonne. Les deux
-// chemins écrivent le MÊME état — un tri qui se réglerait à deux endroits sans
-// s'accorder serait pire que pas d'en-tête.
-const COLONNES = [
-  { cle: 'titre', nom: 'Nom' },
-  { cle: 'theme', nom: 'Thème' },
-  { cle: 'statut', nom: 'État' },
-  { cle: 'note', nom: 'Note' },
-  { cle: 'auteur', nom: 'Auteur' },
-];
-
-function enTetesDeListe(tri) {
-  return `<div class="livres-entetes" role="row">
-    ${COLONNES.map(
-      ({ cle, nom }) => `<button type="button" class="livres-entete${
-        tri.cle === cle ? ' actif' : ''
-      }" data-trier="${cle}"
-        aria-label="Trier par ${nom.toLowerCase()}"
-        >${echapper(nom)}${
-          tri.cle === cle ? SIGNE[tri.sens > 0 ? 'monte' : 'descend'] : ''
-        }</button>`,
-    ).join('')}
-    <span class="livres-entete-vide" aria-hidden="true"></span>
-  </div>`;
-}
-
-// LA LISTE : une ligne par livre, les colonnes de sa base Notion — le nom, ses
-// thèmes, son état, sa note, son auteur.
-//
-// TROIS COLONNES SE RÈGLENT SUR PLACE (même demande : « je dois également
-// pouvoir modifier directement depuis la vue liste, l'état, la note et le type
-// de livre »). Ce sont exactement les trois que la fiche laisse changer d'un
-// geste, et pour la même raison : on les corrige souvent, et ouvrir une fiche
-// pour chacune ferait vingt allers-retours.
-//
-// LE NOM RESTE LA PORTE, et lui seul : la ligne entière ne peut plus être un
-// lien depuis qu'elle porte des contrôles — un bouton dans un lien n'est ni
-// valide ni cliquable.
-function ligneDeLivre(livre, menuOuvert) {
-  const themes = livre.themes ?? [];
-
-  return `
-    <li class="livre-ligne-liste" data-livre="${echapper(livre.id)}">
-      <a class="livre-ligne-nom" href="#livre/${encodeURIComponent(livre.id)}"
-        >${echapper(livre.titre)}</a>
-
-      <span class="livre-ligne-cellule livre-ligne-themes">
-        <button type="button" class="livre-cellule-bouton"
-          data-cellule="theme:${echapper(livre.id)}"
-          aria-expanded="${menuOuvert === `theme:${livre.id}`}" aria-haspopup="listbox"
-          aria-label="Thèmes de « ${echapper(livre.titre)} »">${
-            themes.length
-              ? themes
-                  .map(
-                    (theme) => `<span class="livre-theme" data-theme="${echapper(theme)}"
-                      >${echapper(THEMES_LIVRE[theme] ?? theme)}</span>`,
-                  )
-                  .join('')
-              : '<span class="discret">—</span>'
-          }</button>
-        ${
-          menuOuvert === `theme:${livre.id}`
-            ? `<div class="choix-panneau livres-panneau">
-                <ul class="choix-capture">
-                  ${Object.entries(THEMES_LIVRE)
-                    .map(
-                      ([cle, mot]) => `
-                    <li><button type="button" data-poser-theme="${echapper(livre.id)}"
-                      data-valeur="${echapper(cle)}"
-                      class="${themes.includes(cle) ? 'actif' : ''}"
-                      aria-pressed="${themes.includes(cle)}"
-                      ><span class="livres-coche" aria-hidden="true">${
-                        themes.includes(cle) ? SIGNE.coche : ''
-                      }</span><span>${echapper(mot)}</span></button></li>`,
-                    )
-                    .join('')}
-                </ul>
-              </div>`
-            : ''
-        }
-      </span>
-
-      <span class="livre-ligne-cellule">
-        <button type="button" class="livre-cellule-bouton livre-ligne-etat"
-          data-cellule="etat:${echapper(livre.id)}" data-etat="${echapper(livre.statut)}"
-          aria-expanded="${menuOuvert === `etat:${livre.id}`}" aria-haspopup="listbox"
-          aria-label="État de « ${echapper(livre.titre)} »"
-          ><span class="cap-etat-point" aria-hidden="true"></span>${echapper(
-            ETATS_LIVRE[livre.statut] ?? livre.statut,
-          )}</button>
-        ${
-          menuOuvert === `etat:${livre.id}`
-            ? `<div class="choix-panneau livres-panneau">
-                <ul class="choix-capture">
-                  ${Object.entries(ETATS_LIVRE)
-                    .map(
-                      ([cle, mot]) => `
-                    <li><button type="button" data-poser-etat="${echapper(livre.id)}"
-                      data-valeur="${echapper(cle)}"
-                      class="${cle === livre.statut ? 'actif' : ''}"
-                      aria-pressed="${cle === livre.statut}"
-                      ><span class="livre-ligne-etat" data-etat="${echapper(cle)}"
-                        ><span class="cap-etat-point" aria-hidden="true"></span></span>${echapper(
-                          mot,
-                        )}</button></li>`,
-                    )
-                    .join('')}
-                </ul>
-              </div>`
-            : ''
-        }
-      </span>
-
-      <!-- LA NOTE SE POSE À L'ÉTOILE, sans menu : cinq cibles valent mieux qu'un
-           panneau pour un réglage qui tient sur une ligne. La même étoile
-           retouchée l'efface, comme sur la fiche. -->
-      <span class="livre-ligne-note" role="group"
-        aria-label="Note de « ${echapper(livre.titre)} »">
-        ${[1, 2, 3, 4, 5]
-          .map(
-            (rang) => `<button type="button" class="livre-etoile-ligne"
-              data-noter-livre="${echapper(livre.id)}" data-rang="${rang}"
-              aria-pressed="${rang <= (livre.note ?? 0)}"
-              aria-label="${rang} sur 5">${rang <= (livre.note ?? 0) ? '★' : '☆'}</button>`,
-          )
-          .join('')}
-      </span>
-
-      <span class="livre-ligne-auteur discret">${echapper(livre.auteur ?? '')}</span>
-      ${menuDiscret('livre', livre.id)}
-    </li>`;
-}
-
-export function construireBibliotheque(
-  livres,
-  seances,
-  urls = {},
-  vue = 'etagere',
-  filtres = {},
-  ouverts = false,
-  chip = null,
-  tri = { cle: 'defaut', sens: 1 },
-  cellule = null,
-) {
-  const ajout = `
-    <button type="button" class="cap-ajout-discret" data-ajout="livre">
-      ${SIGNE.plus}<span>Ajouter un livre</span></button>`;
-
-  if (!livres.length) {
-    return `
-      <p class="vide">Tes livres s'écriront ici. Même ceux que tu n'as pas finis.</p>
-      ${ajout}`;
-  }
-
-  const barre = construireFiltresLivres(vue, filtres, livres, ouverts, chip, tri);
-  // LES FILTRES VALENT POUR LES DEUX VUES depuis qu'ils sont derrière une icône
-  // (2 septembre 2026) : ils n'étaient dans la liste que parce qu'ils y
-  // occupaient trois rangées. Une fois rangés, rien ne justifiait que l'étagère
-  // s'en passe — « montre-moi mes romans » se demande aussi en couvertures.
-  const retenus = livresFiltres(livres, filtres, tri);
-
-  // LES LIVRES EN COURS OUVRENT LES DEUX VUES (2 septembre 2026, demande de
-  // Noé : « les livres en cours doivent apparaître au-dessus de l'étagère et la
-  // liste ; ils réapparaissent dans l'étagère et dans la liste sous la forme de
-  // chacune »).
-  //
-  // C'est le seul endroit de la page où l'on AGIT — noter des pages, garder une
-  // phrase, déclarer fini —, et ce sont les seuls livres sur lesquels ces gestes
-  // aient un sens. Les mettre en tête, c'est mettre le geste avant l'inventaire.
-  //
-  // ET ILS NE SORTENT PLUS DU RANG : ils reparaissent plus bas, dans la forme de
-  // leur vue. *Ce que ça renverse : la vedette EXCLUAIT le livre en cours de
-  // l'étagère, et j'avais écrit que la liste ne devait mettre personne en avant.
-  // Noé a tranché autrement, et il a raison — une bibliothèque doit être
-  // COMPLÈTE là où on la parcourt : chercher « L'homme-dé » et ne pas le trouver
-  // dans la liste parce qu'il est en haut, c'est un livre manquant.*
-  //
-  // PLUSIEURS, et non un seul : `livreEnCours` n'en désigne qu'un — celui de ce
-  // soir, pour le tableau de bord. Ici on lit vraiment plusieurs livres à la
-  // fois, et c'est l'état posé qui le dit.
-  const enCours = retenus
-    .filter((livre) => livre.statut === 'en_cours')
-    .sort((a, b) => derniereLecture(b, seances).localeCompare(derniereLecture(a, seances)));
-
-  const etagere = retenus
-    .map((livre) => {
-      const { lues } = avanceeDuLivre(livre, seances);
-      const service = [
-        MOTS_STATUT[livre.statut] ?? livre.statut,
-        livre.auteur ?? '',
-        livre.statut === 'repose' && lues ? `${lues} pages lues` : '',
-      ].filter(Boolean);
-
-      return tuileDeLivre(livre, urls, service.join(' · '));
-    })
-    .join('');
-
-  const vide = `<p class="cap-vide">Aucun livre ne répond à ça. Retire un filtre,
-    ou change le mot cherché.</p>`;
-
-  // LES CARTES PASSENT DEVANT LA BARRE (2 septembre 2026, correction de Noé :
-  // « ça doit passer devant ça surtout »). Et c'est plus juste : la barre est un
-  // RÉGLAGE — comment je veux voir mes livres —, les cartes sont ce qu'on vient
-  // FAIRE. On ne met pas le mode d'emploi avant l'objet.
-  return `
-    ${enCours.map((livre) => livreDuHaut(livre, seances, urls)).join('')}
-    ${barre}
-    ${
-      retenus.length
-        ? vue === 'liste'
-          ? `${enTetesDeListe(tri)}
-             <ul class="livres-liste-table">${retenus
-               .map((livre) => ligneDeLivre(livre, cellule))
-               .join('')}</ul>`
-          : `<ul class="livres-etagere">${etagere}</ul>`
-        : vide
-    }
-    ${ajout}`;
-}
-
 // LE TABLEAU DE BORD PERSO (30 août 2026, demande de Noé) : « choisir ce qui
 // doit rester dans la page perso et sous quelle forme — les critères sont un
 // peu les mêmes que pour la page d'accueil, des données qui évoluent sur
@@ -1382,7 +686,11 @@ export function construireTableauPerso(donnees) {
 
   return `
     <div class="perso-tableau">
-      ${construireHumeurDuJour(humeurDuJour)}
+      <!-- LA QUESTION SE REDESSINE SEULE, et pas avec la tuile : celle-ci porte
+           « Ce qui a compté aujourd'hui », un champ qui s'enregistre quand on
+           le quitte — redessiner pendant que l'écriture est en vol y remettrait
+           le texte d'avant. -->
+      <div data-bloc="humeur-jour">${construireHumeurDuJour(humeurDuJour)}</div>
 
       <!-- DEUX COLONNES : LES HABITUDES À GAUCHE, LA LECTURE À DROITE (30 août
            2026, demande de Noé — la seconde colonne était à trouver).
@@ -1433,11 +741,19 @@ export function construireTableauPerso(donnees) {
                        : pluriel(avancee.lues, 'page')
                    }</span>
                    <span class="livre-pas">
-                     ${PAS_DE_PAGES.map(
-                       (pas) =>
-                         `<button type="button" class="livre-pas-bouton" data-pages="${pas}"
-                           data-livre-pages="${echapper(livre.id)}">+${pas}</button>`,
-                     ).join('')}
+                     ${
+                       // LES MÊMES ATTRIBUTS QUE L'ÉTAGÈRE (5 septembre 2026) :
+                       // le geste est le même, il n'a pas à être branché deux
+                       // fois. `data-rayon-de` dit à quel rayon la ligne
+                       // appartient — ici toujours les livres, tandis que
+                       // l'étagère suit le rayon qu'on regarde.
+                       RAYONS.livres.pas.map(
+                         (pas) =>
+                           `<button type="button" class="livre-pas-bouton" data-pas="${pas}"
+                             data-rayon-de="livres"
+                             data-oeuvre-quantite="${echapper(livre.id)}">+${pas}</button>`,
+                       ).join('')
+                     }
                      <!-- « autre » ouvre le champ où l'on tape le nombre exact
                           (2 septembre 2026, demande de Noé). Il existait sur la
                           bibliothèque depuis le premier jour et manquait ICI,
@@ -1446,8 +762,8 @@ export function construireTableauPerso(donnees) {
                           raccourcis, et une lecture fait rarement un compte
                           rond. Le geste est déjà branché pour les deux écrans —
                           rien à câbler, seulement à offrir. -->
-                     <button type="button" class="livre-pas-bouton"
-                       data-livre-autre="${echapper(livre.id)}">autre</button>
+                     <button type="button" class="livre-pas-bouton" data-rayon-de="livres"
+                       data-oeuvre-autre="${echapper(livre.id)}">autre</button>
                    </span>
                  </span>
                </div>`
@@ -1516,10 +832,10 @@ export function construireTableauPerso(donnees) {
       }
 
       <nav class="perso-portes">
-        ${porte('#perso/habitudes', 'Tes habitudes')}
-        ${porte('#perso/bibliotheque', 'Ta bibliothèque')}
+        ${porte('#perso/habitudes', 'Mes habitudes')}
+        ${porte('#perso/bibliotheque', 'Ma bibliothèque')}
         ${porte('#perso/journee', 'Mes journées')}
-        ${porte('#perso/intentions', 'Tes intentions')}
+        ${porte('#perso/intentions', 'Mes intentions')}
       </nav>
     </div>`;
 }
@@ -2040,115 +1356,18 @@ export function construireLaJournee(jour, donnees, contexte = {}) {
     </div>`;
 }
 
-// LES RENDEZ-VOUS AVEC SOI-MÊME, en lignes et non en cartes. Ils n'ont pas
-// besoin d'une tuile : ce qu'on vient y lire tient en une ligne — quoi, quand,
-// où. Ce sont les intentions qui portent des tuiles, parce qu'elles portent une
-// phrase à relire.
+// L'ÉCHELLE DE L'HUMEUR, celle de l'accueil au glyphe près — cinq frimousses,
+// puis la seule choisie une fois répondu. Une question posée de deux façons
+// selon l'écran deviendrait deux questions.
 //
-// LA FAMILLE S'AFFICHE ENFIN (29 août 2026). Le formulaire la demandait depuis
-// le 27 août et la page ne la rendait jamais : on posait une question dont on
-// ne faisait rien, ce qui est la meilleure façon d'obtenir des réponses vides.
-// Elle reste en encre discrète, à côté du lieu — un rendez-vous se lit d'abord
-// par son nom.
-//
-// Elle ne compte RIEN, et ne comptera rien ici : les planchers qu'elle alimente
-// sont calculés en interne et ne s'affichent nulle part. Voir `PLANCHER_PERSO`
-// (js/orientation.js) — l'espace perso ne mesure pas.
-export function construireRendezVous(evenements) {
-  const ajout = `
-    <button type="button" class="cap-ajout-discret" data-ajout="rendez-vous">
-      ${SIGNE.plus}<span>Ajouter un rendez-vous</span></button>`;
-
-  if (!evenements.length) {
-    return `
-      <p class="vide">Rien de prévu. Le premier moment que tu te réserves s'écrira ici.</p>
-      ${ajout}`;
-  }
-
-  return `
-    <ul class="perso-lignes">
-      ${evenements
-        .map((rdv) => {
-          const service = [
-            momentLisible(new Date(rdv.date_debut)),
-            rdv.lieu ?? '',
-            FAMILLES_PERSO[rdv.famille] ?? '',
-          ].filter(Boolean);
-
-          return `
-        <li class="perso-ligne">
-          <span class="perso-ligne-corps">
-            <span class="perso-ligne-titre">${echapper(rdv.titre)}</span>
-            <span class="perso-ligne-service">${echapper(service.join(' · '))}</span>
-          </span>
-          ${menuDiscret('rendez-vous', rdv.id, { sansModifier: true })}
-        </li>`;
-        })
-        .join('')}
-    </ul>
-    ${ajout}`;
-}
-
-// LES VICTOIRES, en lignes elles aussi. Elles tenaient dans des cartes hautes
-// de trois lignes pour un mot — « Courir » —, avec leur date perdue en haut à
-// droite. Une victoire perso est courte par nature ; sa forme doit l'être.
-//
-// La date passe À DROITE SUR LA MÊME LIGNE, comme partout ailleurs dans le hub.
-// Et une porte s'ouvre vers « Le chemin » : cette page-là n'existait pas quand
-// ce bloc a été écrit, et elle montre les mêmes victoires au milieu de toutes
-// les autres — le perso au même rang que le pro, ce que la philosophie demande.
-export function construireVictoiresPerso(victoires) {
-  const ajout = `
-    <button type="button" class="cap-ajout-discret" data-ajout="victoire">
-      ${SIGNE.plus}<span>Ajouter une victoire</span></button>`;
-
-  if (!victoires.length) {
-    return `
-      <p class="vide">Tes premières victoires s'afficheront ici. Une belle séance en est une.</p>
-      ${ajout}`;
-  }
-
-  return `
-    <ul class="perso-lignes">
-      ${victoires
-        .map(
-          (victoire) => `
-        <li class="perso-ligne">
-          <span class="perso-ligne-corps">
-            <span class="perso-ligne-titre">${echapper(victoire.titre)}</span>
-          </span>
-          <span class="perso-ligne-date">${echapper(jourCourt(victoire.date))}</span>
-          ${menuDiscret('victoire', victoire.id, { sansModifier: true })}
-        </li>`,
-        )
-        .join('')}
-    </ul>
-    <span class="perso-gestes">
-      ${ajout}
-      <a class="cap-ajout-discret" href="#chemin"><span>Tout le chemin</span></a>
-    </span>`;
-}
-
-function jourCourt(iso) {
-  if (!iso) return '';
-  const date = depuisDateISO(iso);
-  return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-}
-
-// L'HUMEUR, ET ON PEUT ENFIN Y RÉPONDRE ICI (29 août 2026, choix de Noé). La
-// page montrait la courbe sans permettre d'y ajouter un point : pour répondre,
-// il fallait passer par l'accueil. C'est la page de l'humeur, la question doit
-// s'y poser.
-//
-// L'échelle est celle de l'accueil, au glyphe près — cinq frimousses, puis la
-// seule choisie une fois répondu. Une question posée de deux façons selon
-// l'écran deviendrait deux questions.
+// Elle sert la tête du tableau de bord, la tuile d'une journée et le calendrier
+// des journées : c'est le seul endroit qui la déclare.
 const NIVEAUX_HUMEUR = [
   { niveau: 1, frimousse: '😔', mot: 'difficile' },
   { niveau: 2, frimousse: '😕', mot: 'bof' },
   { niveau: 3, frimousse: '😐', mot: 'ça va' },
   { niveau: 4, frimousse: '🙂', mot: 'bien' },
-  { niveau: 5, frimousse: '😄', mot: 'super' },
+  { niveau: 5, frimousse: '😄', mot: 'très bien' },
 ];
 
 export function construireHumeurDuJour(humeur) {
@@ -2177,93 +1396,18 @@ export function construireHumeurDuJour(humeur) {
     </p>`;
 }
 
-// La courbe des 30 derniers jours. Un trait, des points, deux frimousses en
-// guise d'échelle — pas d'axe chiffré, pas de moyenne, pas de verdict : la
-// courbe se regarde, elle ne se note pas.
+// LA PAGE ET SES VUES. Le tableau de bord est ce qu'on voit sans avoir rien
+// demandé ; les autres blocs sont des VUES que le menu offre une à une, et
+// `#perso` seul n'en montre aucune.
 //
-// ELLE OCCUPE VRAIMENT SA PLACE depuis le 29 août : elle tenait dans 320 px de
-// large et 96 de haut, perdue dans une colonne qui en faisait le double. La
-// géométrie est la même, à l'échelle près — un `viewBox` plus grand et une
-// amplitude verticale qui suit, sinon la ligne s'aplatit à mesure qu'on
-// l'agrandit et cesse de dire quoi que ce soit.
-export function construireCourbeHumeur(entrees, maintenant = new Date()) {
-  if (!entrees.length) {
-    return `<p class="vide">Ta courbe se dessinera au fil des matins.</p>`;
-  }
-
-  const largeur = 560;
-  const hauteur = 168;
-  const gauche = 34; // place des frimousses d'échelle
-  const droite = 12;
-  const haut = 22;
-  const bas = 146;
-  const pas = (largeur - gauche - droite) / (JOURS_COURBE - 1);
-  const marche = (bas - haut) / 4; // quatre intervalles pour cinq niveaux
-
-  const debut = ajouterJours(maintenant, -(JOURS_COURBE - 1));
-  debut.setHours(0, 0, 0, 0);
-
-  const points = entrees
-    .map((entree) => {
-      const jour = Math.round((depuisDateISO(entree.date) - debut) / 86400000);
-      if (jour < 0 || jour >= JOURS_COURBE) return null;
-      return {
-        x: gauche + jour * pas,
-        y: bas - (entree.niveau - 1) * marche,
-        entree,
-      };
-    })
-    .filter(Boolean);
-
-  if (!points.length) {
-    return `<p class="vide">Ta courbe se dessinera au fil des matins.</p>`;
-  }
-
-  const trait =
-    points.length > 1
-      ? `<polyline points="${points.map((p) => `${p.x},${p.y}`).join(' ')}"
-           fill="none" stroke="currentColor" stroke-width="2"
-           stroke-linejoin="round" stroke-linecap="round" opacity="0.5" />`
-      : '';
-
-  const ronds = points
-    .map(
-      (p) => `
-      <circle cx="${p.x}" cy="${p.y}" r="4" fill="currentColor">
-        <title>${echapper(p.entree.date)} — ${FRIMOUSSES[p.entree.niveau] ?? ''}${
-          p.entree.note ? ` · ${echapper(p.entree.note)}` : ''
-        }</title>
-      </circle>`,
-    )
-    .join('');
-
-  return `
-    <svg class="courbe-humeur" viewBox="0 0 ${largeur} ${hauteur}"
-      role="img" aria-label="Ton humeur sur les ${JOURS_COURBE} derniers jours">
-      <text x="0" y="${haut + 6}" font-size="16">${FRIMOUSSES[5]}</text>
-      <text x="0" y="${bas + 6}" font-size="16">${FRIMOUSSES[1]}</text>
-      ${trait}
-      ${ronds}
-    </svg>
-    <p class="discret note-courbe">Les ${JOURS_COURBE} derniers jours. Les jours sans réponse restent vides, et c'est très bien comme ça.</p>
-  `;
-}
-
-// LA PAGE EN DEUX TEMPS (29 août 2026, choix de Noé) : la galerie d'intentions
-// prend toute la largeur, puis deux colonnes.
+// TROIS BLOCS SONT PARTIS LE 5 SEPTEMBRE 2026 — les rendez-vous, la courbe
+// d'humeur, les victoires — parce que Noé a retiré leurs pages du menu, et
+// qu'un bloc sans porte est du code mort. Ce qu'ils portaient existe ailleurs :
+// l'humeur se répond en tête de ce tableau de bord, un rendez-vous se pose au
+// calendrier, et « Mon chemin » est la page des victoires.
 //
-// LES INTENTIONS GARDENT LA LARGEUR parce qu'elles sont le cap de perso — ce
-// qu'on relit quand on ne sait plus pourquoi on fait les choses. Les mettre en
-// colonne les aurait rangées au même rang que le reste, or elles ne le sont
-// pas.
-//
-// Dessous : ce qui VIENT à gauche (les rendez-vous), ce qui EST PASSÉ à droite
-// (l'humeur, les victoires). C'est la seule division qui tienne ici — il n'y a
-// rien à faire dans cet espace, donc rien à ranger par urgence.
-//
-// Les quatre blocs empilés pleine largeur laissaient les deux tiers de l'écran
-// vides sur ordinateur, et une courbe de 320 px flottait dans une colonne qui
-// en faisait 750.
+// *Ce qui disparaît vraiment : la COURBE des 30 jours, qu'aucun autre écran ne
+// dessine, et le bouton qui ajoutait une victoire à la main.*
 function squelette() {
   return `
     <h1 data-titre>Perso</h1>
@@ -2271,17 +1415,17 @@ function squelette() {
 
     <!-- LE TABLEAU DE BORD : ce qu'on voit sans avoir rien demandé. Il ne porte
          que ce qui évolue et sur quoi on agit — voir construireTableauPerso.
-         Les six autres blocs sont des VUES : le menu les offre une à une, et
+         Les blocs suivants sont des VUES : le menu les offre une à une, et
          l'adresse #perso seule ne montre que celui-ci. -->
     <div data-bloc="tableau" data-vue="tableau"></div>
 
     <section class="bloc" data-vue="intentions">
-      <h2>Intentions</h2>
+      <h2>Mes intentions</h2>
       <div data-bloc="intentions"><p class="vide">…</p></div>
     </section>
 
     <section class="bloc" data-vue="habitudes">
-      <h2>Tes habitudes</h2>
+      <h2>Mes habitudes</h2>
       <div data-bloc="habitudes"><p class="vide">…</p></div>
     </section>
 
@@ -2300,30 +1444,30 @@ function squelette() {
       <div data-bloc="journee"></div>
     </section>
 
+    <!-- LE HALL, PUIS DEUX SALLES (5 septembre 2026, demande de Noé : « je
+         préférerais que ce soit vraiment 2 portes, donc 2 tuiles cliquables qui
+         nous permettent d'aller sur la page des livres ou la page des
+         films/séries, avec un livre en cours sur cette page »).
+
+         #perso/bibliotheque ne montre plus d'inventaire : ce qu'on lit ou
+         regarde en ce moment, et deux portes. Les étagères vivent une porte plus
+         loin, #perso/livres et #perso/films — c'est la règle des deux rangs,
+         appliquée dans une page : on va voir sa bibliothèque quand on veut la
+         voir, on ouvre celle-ci pour noter ses pages du soir. -->
     <section class="bloc" data-vue="bibliotheque">
-      <h2>Ta bibliothèque</h2>
+      <h2>Ma bibliothèque</h2>
       <div data-bloc="bibliotheque"><p class="vide">…</p></div>
     </section>
 
-    <div class="perso-colonnes">
-      <section class="bloc" data-vue="rendez-vous">
-        <h2>Rendez-vous avec toi-même</h2>
-        <div data-bloc="evenements"><p class="vide">…</p></div>
-      </section>
+    <section class="bloc" data-vue="livres">
+      <h2>Mes livres</h2>
+      <div data-bloc="rayon-livres"><p class="vide">…</p></div>
+    </section>
 
-      <div class="perso-colonne">
-        <section class="bloc" data-vue="humeur">
-          <h2>Ton humeur</h2>
-          <div data-bloc="humeur-jour"></div>
-          <div data-bloc="humeur"><p class="vide">…</p></div>
-        </section>
-
-        <section class="bloc" data-vue="victoires">
-          <h2>Victoires</h2>
-          <div data-bloc="victoires"><p class="vide">…</p></div>
-        </section>
-      </div>
-    </div>
+    <section class="bloc" data-vue="films">
+      <h2>Mes films et séries</h2>
+      <div data-bloc="rayon-films"><p class="vide">…</p></div>
+    </section>
 
     <!-- La tuile volante vit HORS des blocs : elle survit au filtre des vues,
          et une fenêtre cachée par un bloc masqué serait un piège. -->
@@ -2351,24 +1495,6 @@ export const FORMULAIRES = {
         type: 'textarea',
         valeur: v.pourquoi,
       },
-    ],
-  },
-  'rendez-vous': {
-    ajouter: 'Ajouter un rendez-vous',
-    champs: () => [
-      { nom: 'titre', libelle: 'Rendez-vous', type: 'text', requis: true },
-      { nom: 'date_debut', libelle: 'Quand', type: 'datetime-local', requis: true },
-      // Ce que ce moment sert. La même question que la pastille « Famille » de
-      // la tuile de capture : un rendez-vous pris ici ne doit pas rester muet
-      // là où tous les autres parlent.
-      {
-        nom: 'famille',
-        libelle: 'Famille (facultatif)',
-        type: 'choix',
-        options: FAMILLES_PERSO_CHOIX,
-        valeur: '',
-      },
-      { nom: 'lieu', libelle: 'Lieu (facultatif)', type: 'text' },
     ],
   },
   habitude: {
@@ -2410,78 +1536,52 @@ export const FORMULAIRES = {
       { nom: 'pourquoi', libelle: 'Pourquoi ? (facultatif)', type: 'textarea', valeur: v.pourquoi },
     ],
   },
-  livre: {
-    ajouter: 'Ajouter un livre',
-    modifier: 'Modifier le livre',
-    champs: (v) => [
-      { nom: 'titre', libelle: 'Titre', type: 'text', requis: true, valeur: v.titre },
-      { nom: 'auteur', libelle: 'Auteur (facultatif)', type: 'text', valeur: v.auteur },
-      // LA COUVERTURE (2 septembre 2026, demande de Noé) — une photo qu'on
-      // prend, jamais un lien collé : l'image vit dans le hub, elle ne peut pas
-      // disparaître, et regarder sa bibliothèque ne prévient personne.
-      //
-      // `capture` n'est PAS posé : sur téléphone il forcerait l'appareil photo,
-      // alors qu'une couverture se prend aussi bien dans la pellicule. Le
-      // navigateur offre les deux quand on ne choisit pas à sa place.
-      {
-        nom: 'couverture',
-        libelle: v.couverture ? 'Changer la couverture' : 'Couverture (facultatif)',
-        type: 'file',
-        accepte: 'image/*',
-      },
-      {
-        nom: 'pages',
-        libelle: 'Nombre de pages (facultatif)',
-        type: 'number',
-        valeur: v.pages ?? '',
-      },
-      {
-        nom: 'themes',
-        libelle: 'Thèmes',
-        mot: 'thème',
-        type: 'choix-multiple',
-        options: THEMES_LIVRE,
-        valeur: v.themes ?? [],
-      },
-      {
-        nom: 'statut',
-        libelle: 'Où il en est',
-        type: 'choix',
-        // « Reposé » et non « abandonné » : un livre qu'on lâche n'est pas un
-        // échec, et le mot compte.
-        options: { a_lire: 'À lire', en_cours: 'En cours', lu: 'Lu', repose: 'Reposé' },
-        valeur: v.statut ?? 'en_cours',
-      },
-      {
-        nom: 'note',
-        libelle: 'Ta note (une fois lu)',
-        type: 'choix',
-        options: { '': 'Pas encore', 1: '★', 2: '★★', 3: '★★★', 4: '★★★★', 5: '★★★★★' },
-        valeur: v.note ? String(v.note) : '',
-      },
-    ],
-  },
-  citation: {
-    ajouter: 'Garder une phrase',
-    champs: () => [
-      { nom: 'texte', libelle: 'La phrase', type: 'textarea', requis: true },
-      { nom: 'page', libelle: 'Page (facultatif)', type: 'number' },
-    ],
-  },
-  pages: {
-    ajouter: 'Combien de pages',
-    champs: () => [{ nom: 'pages', libelle: 'Pages lues', type: 'number', requis: true }],
-  },
-  victoire: {
-    ajouter: 'Ajouter une victoire',
-    champs: () => [{ nom: 'titre', libelle: 'Victoire', type: 'text', requis: true }],
-  },
 };
+
+// LES FORMULAIRES DE LA BIBLIOTHÈQUE, tirés du rayon lui-même (5 septembre
+// 2026). Ils ne vivent pas dans `FORMULAIRES` : leurs mots changent d'un rayon à
+// l'autre — « Pages lues » ou « Épisodes vus », « La phrase » ou « La réplique »
+// —, et une entrée figée par rayon aurait fait quatre listes de champs à tenir
+// d'accord au lieu d'une.
+function modeleDOeuvre(forme, cleRayon) {
+  const R = RAYONS[cleRayon] ?? RAYONS.livres;
+  const V = R.vocabulaire;
+
+  if (forme === R.forme) {
+    return {
+      ajouter: V.ajouter,
+      modifier: V.modifier,
+      champs: (v) => champsDuFormulaire(R, v),
+    };
+  }
+
+  if (forme === 'citation') {
+    return {
+      ajouter: V.citationAjouter,
+      champs: () => [
+        { nom: 'texte', libelle: V.citationChamp, type: 'textarea', requis: true },
+        // Une page pour un livre, un moment pour un film : le type suit.
+        { nom: 'repere', libelle: V.repereLibelle, type: V.repereType },
+      ],
+    };
+  }
+
+  if (forme === 'quantite') {
+    return {
+      ajouter: V.quantiteTitre,
+      champs: () => [
+        { nom: 'combien', libelle: V.quantiteChamp, type: 'number', requis: true },
+      ],
+    };
+  }
+
+  return null;
+}
 
 function laFenetre() {
   if (!vueEtat.edition) return '';
-  const { forme, id } = vueEtat.edition;
-  const modele = FORMULAIRES[forme];
+  const { forme, id, rayon } = vueEtat.edition;
+  const modele = FORMULAIRES[forme] ?? modeleDOeuvre(forme, rayon);
   if (!modele) return '';
 
   return construireFormulaire({
@@ -2495,6 +1595,7 @@ function laFenetre() {
     // Postgres refusait, ce qui valait mieux qu'une citation orpheline.
     extra: `<input type="hidden" name="forme" value="${echapper(forme)}">
             <input type="hidden" name="id" value="${echapper(id ?? '')}">
+            <input type="hidden" name="rayon" value="${echapper(rayon ?? '')}">
             <input type="hidden" name="parent" value="${echapper(vueEtat.edition.parent ?? '')}">`,
   });
 }
@@ -2502,18 +1603,36 @@ function laFenetre() {
 // LES QUATRE VUES DE PERSO (28 août 2026) — le menu les offre une à une, et
 // c'est la MÊME page dont on cache trois blocs sur quatre. Ni second écran, ni
 // second chargement : les écouteurs sont posés sur la section et survivent.
+// LES VUES DE PERSO, à la première personne depuis le 5 septembre 2026 (demande
+// de Noé) : ce sont AUSSI les mots du menu, et un nom dans le menu avec un autre
+// en tête de page ferait deux noms pour une page.
+//
+// TROIS VUES SONT PARTIES le même jour (« pas besoin de la page l'humeur, tu
+// peux supprimer ; les rendez-vous tu peux supprimer, les victoires aussi ») :
+// l'humeur se répond depuis l'accueil, depuis ce tableau de bord et depuis la
+// tuile d'une journée ; un rendez-vous se pose au calendrier ; et « Mon chemin »
+// est la page des victoires, tous espaces confondus. Aucune des trois n'avait
+// d'écran à elle.
+//
+// LES INTENTIONS RESTENT une vue de perso — c'est ici qu'elles vivent —, mais le
+// menu les offre depuis « Mon cap » : une intention est un objectif dont on a
+// retiré la mesure.
 const VUES = {
-  intentions: ['Les intentions', 'Ce que tu veux tenir, sans mesure ni date.'],
-  habitudes: ['Tes habitudes', "Le rythme que tu tiens, et rien qui puisse s'écrouler."],
-  bibliotheque: ['Ta bibliothèque', 'Ce que tu lis, à ton rythme et sans quota.'],
+  intentions: ['Mes intentions', 'Ce que tu veux tenir, sans mesure ni date.'],
+  habitudes: ['Mes habitudes', "Le rythme que tu tiens, et rien qui puisse s'écrouler."],
+  bibliotheque: ['Ma bibliothèque', 'Ce que tu lis et ce que tu regardes en ce moment.'],
+  livres: ['Mes livres', 'À ton rythme, et sans quota.'],
+  films: ['Mes films et séries', 'Ce que tu as vu, et ce que tu regardes.'],
   journee: ['Mes journées', "Ce qu'il s'est passé, jour après jour. Rien à remplir."],
-  victoires: ['Les victoires', 'Une belle séance compte autant qu\'un post réussi.'],
-  'rendez-vous': ['Les rendez-vous', 'Les moments que tu te réserves.'],
-  humeur: ['Ton humeur', 'Les 30 derniers jours, sans relance ni reproche.'],
 };
 
 function appliquerLaVue(section, route) {
   const vue = route?.vue in VUES ? route.vue : null;
+  // LE RAYON VIENT DE L'ADRESSE : `#perso/livres` et `#perso/films` sont deux
+  // pages, et c'est l'adresse qui dit laquelle — un favori doit rouvrir la
+  // bonne. Le hall, lui, ne change rien : on y revient sans perdre le réglage du
+  // rayon qu'on regardait.
+  if (vue === 'livres' || vue === 'films') vueEtat.rayon = vue;
   // `#perso/journee/2026-08-29` : le troisième niveau du routeur porte le jour.
   if (/^\d{4}-\d{2}-\d{2}$/.test(route?.id ?? '')) vueEtat.jour = route.id;
   const [titre, sous] = VUES[vue] ?? [
@@ -2537,18 +1656,6 @@ function appliquerLaVue(section, route) {
     const nom = bloc.querySelector('h2');
     if (nom) nom.hidden = true;
   }
-
-  // La colonne de droite se retire quand elle ne porte plus rien : sans ça,
-  // demander `#perso/rendez-vous` laisserait une piste de grille vide à côté,
-  // et le bloc restant n'occuperait que la moitié de l'écran pour rien.
-  const colonne = section.querySelector('.perso-colonne');
-  if (colonne) {
-    colonne.hidden = [...colonne.querySelectorAll('[data-vue]')].every((b) => b.hidden);
-  }
-  const colonnes = section.querySelector('.perso-colonnes');
-  if (colonnes) {
-    colonnes.hidden = [...colonnes.querySelectorAll('[data-vue]')].every((b) => b.hidden);
-  }
 }
 
 // --- Montage ----------------------------------------------------------------
@@ -2571,8 +1678,17 @@ export default {
 
     // `couvertures` : les adresses SIGNÉES des couvertures, par chemin. Elles ne
     // vivent pas sur le livre — une adresse expire, un chemin non — et se
-    // regarnissent d'un chargement à l'autre (voir `urlsDesCouvertures`).
-    const etat = { intentions: [], evenements: [], victoires: [], humeurDuJour: null, habitudes: [], faits: [], livres: [], seances: [], couvertures: {} };
+    // regarnissent d'un chargement à l'autre (voir `urlsDesImages` du rayon).
+    const etat = {
+      intentions: [], evenements: [], victoires: [], humeurDuJour: null,
+      habitudes: [], faits: [],
+      // LES DEUX RAYONS DE LA BIBLIOTHÈQUE, chacun avec son journal de séances et
+      // ses adresses signées. `couvertures` et `affiches` ne vivent pas sur
+      // l'œuvre — une adresse expire, un chemin non — et se regarnissent d'un
+      // chargement à l'autre.
+      livres: [], seances: [], couvertures: {},
+      films: [], seancesFilms: [], affiches: {},
+    };
     const bloc = (nom) => section.querySelector(`[data-bloc="${nom}"]`);
 
     const rendreIntentions = () => {
@@ -2603,12 +1719,6 @@ export default {
       fenetre.addEventListener('toggle', () => {
         if (!fenetre.open) vueEtat.edition = null;
       });
-    };
-    const rendreVictoires = () => {
-      bloc('victoires').innerHTML = construireVictoiresPerso(etat.victoires);
-    };
-    const rendreEvenements = () => {
-      bloc('evenements').innerHTML = construireRendezVous(etat.evenements);
     };
     // LA JOURNÉE SE CHARGE À LA DEMANDE, et se garde. Naviguer de jour en jour ne
     // redemande pas ce qui a déjà été lu — on remonte souvent plusieurs jours
@@ -2771,24 +1881,40 @@ export default {
       });
     };
 
+    // CE QUE PORTE CHAQUE RAYON : ses œuvres, son journal, ses images signées.
+    // Un seul endroit qui le dit — deux listes cherchées à la main dans chaque
+    // geste auraient fini par se croiser.
+    const donneesDuRayon = (cle) =>
+      cle === 'films'
+        ? { oeuvres: etat.films, seances: etat.seancesFilms, urls: etat.affiches }
+        : { oeuvres: etat.livres, seances: etat.seances, urls: etat.couvertures };
+
+    // LES TROIS ÉCRANS DE LA BIBLIOTHÈQUE SE REDESSINENT ENSEMBLE, et c'est
+    // voulu : le hall montre ce qui est en cours dans les DEUX rayons, si bien
+    // que noter des pages depuis l'étagère doit bouger le hall aussi. Trois
+    // rendus séparés auraient fait trois occasions d'en oublier un.
     const rendreBibliotheque = ({ focusRecherche = false } = {}) => {
-      const hote = bloc('bibliotheque');
-      hote.innerHTML = construireBibliotheque(
-        etat.livres,
-        etat.seances,
-        etat.couvertures,
-        vueEtat.vueLivres,
-        vueEtat.filtresLivres,
-        vueEtat.filtresOuverts,
-        vueEtat.chipLivres,
-        vueEtat.triLivres,
-        vueEtat.celluleLivre,
+      bloc('bibliotheque').innerHTML = construireHall(
+        { livres: donneesDuRayon('livres'), films: donneesDuRayon('films') },
+        menuDiscret,
       );
+
+      for (const cle of ['livres', 'films']) {
+        bloc(`rayon-${cle}`).innerHTML = construireRayon(
+          RAYONS[cle],
+          donneesDuRayon(cle),
+          vueEtat.rayons[cle],
+          menuDiscret,
+        );
+      }
+
       // LE CURSEUR RESTE DANS LA RECHERCHE : on redessine à chaque lettre, et
       // sans ça le champ perdait le focus au premier caractère. Il revient au
-      // BOUT du mot, jamais au début — sinon on taperait à l'envers.
+      // BOUT du mot, jamais au début — sinon on taperait à l'envers. On le
+      // cherche dans le rayon qu'on regarde : les deux étagères existent dans le
+      // DOM, une seule est visible.
       if (focusRecherche) {
-        const champ = hote.querySelector('[data-recherche-livre]');
+        const champ = bloc(`rayon-${vueEtat.rayon}`).querySelector('[data-recherche-oeuvre]');
         if (champ) {
           champ.focus();
           champ.setSelectionRange(champ.value.length, champ.value.length);
@@ -2813,50 +1939,65 @@ export default {
     const RENDUS = {
       habitude: () => { rendreHabitudes(); rendreTableau(); },
       livre: () => { rendreBibliotheque(); rendreTableau(); },
+      film: () => { rendreBibliotheque(); rendreTableau(); },
       intention: () => rendreIntentions(),
-      'rendez-vous': () => rendreEvenements(),
-      victoire: () => rendreVictoires(),
     };
 
     const charger = async () => {
-      const depuis = versDateISO(ajouterJours(new Date(), -(JOURS_COURBE - 1)));
       // Un an de faits : l'élan n'en demande que soixante jours, la série en
       // veut cinquante-deux semaines. C'est quelques centaines de lignes au
       // plus, et le calcul n'a alors plus rien à redemander.
-      const [intentions, evenements, victoires, humeur, humeurDuJour, habitudes, faits, livres, seances] =
-        await Promise.all([
+      //
+      // LA COURBE DES 30 JOURS A DISPARU avec sa page (5 septembre 2026), et sa
+      // requête avec elle : `humeurDepuis` n'était lue que par elle ici. Les
+      // VICTOIRES et les ÉVÉNEMENTS restent chargés — les premières nourrissent
+      // la relecture du jour, les seconds le prochain rendez-vous du tableau de
+      // bord.
+      const [
+        intentions, evenements, victoires, humeurDuJour, habitudes, faits,
+        livres, seances, films, seancesFilms,
+      ] = await Promise.all([
           api.objectifsActifs({ espace: ESPACE }),
           api.evenementsEntre(new Date().toISOString(), horizon(), { espace: ESPACE }),
           api.victoiresDeLEspace(ESPACE),
-          api.humeurDepuis(depuis),
           api.humeurDuJour(versDateISO()),
           api.habitudesToutes(),
           api.habitudesFaitsDepuis(versDateISO(ajouterJours(new Date(), -366))),
-          api.livresTous(),
+          api.rayonLivres.tous(),
           // Sans borne : l'avancée d'un livre commencé il y a un an doit rester
           // juste, et il n'y en aura jamais des milliers.
-          api.livresSeancesDepuis('2000-01-01'),
+          api.rayonLivres.seancesDepuis('2000-01-01'),
+          api.rayonFilms.tous(),
+          api.rayonFilms.seancesDepuis('2000-01-01'),
         ]);
 
       Object.assign(etat, {
-        intentions, evenements, victoires, humeurDuJour, habitudes, faits, livres, seances,
+        intentions, evenements, victoires, humeurDuJour, habitudes, faits,
+        livres, seances, films, seancesFilms,
       });
       rendreHabitudes();
       rendreBibliotheque();
 
-      // LES COUVERTURES ARRIVENT APRÈS, et l'étagère se redessine quand elles
-      // sont là : signer une poignée d'adresses ne doit pas retarder la page
-      // entière. Sans couverture, pas de requête du tout.
-      const chemins = livres.map((livre) => livre.couverture).filter(Boolean);
-      if (chemins.length) {
-        api
-          .urlsDesCouvertures(chemins)
+      // LES IMAGES ARRIVENT APRÈS, et l'étagère se redessine quand elles sont
+      // là : signer une poignée d'adresses ne doit pas retarder la page entière.
+      // Sans image, pas de requête du tout — et une requête par RÉSERVE, jamais
+      // par œuvre : la clé du garde-manger porte son bucket, sans quoi une
+      // affiche ressortirait l'adresse d'une couverture.
+      for (const [cle, oeuvres, garde] of [
+        ['livres', livres, etat.couvertures],
+        ['films', films, etat.affiches],
+      ]) {
+        const R = RAYONS[cle];
+        const chemins = oeuvres.map((o) => imageDe(R, o)).filter(Boolean);
+        if (!chemins.length) continue;
+        R.api
+          .urlsDesImages(chemins)
           .then((urls) => {
-            Object.assign(etat.couvertures, urls);
+            Object.assign(garde, urls);
             rendreBibliotheque();
             rendreTableau();
           })
-          .catch((souci) => console.error('Couvertures non signées', souci));
+          .catch((souci) => console.error('Images non signées', souci));
       }
       rendreTableau();
       // La journée d'aujourd'hui nourrit AUSSI le tableau de bord : c'est de là
@@ -2873,10 +2014,6 @@ export default {
         chargerLesResumes();
       }
       rendreIntentions();
-      rendreVictoires();
-      rendreEvenements();
-      rendreHumeurDuJour();
-      bloc('humeur').innerHTML = construireCourbeHumeur(humeur);
     };
 
     // Revenir sur l'espace le relit : l'humeur du jour répondue sur l'accueil
@@ -2961,21 +2098,21 @@ export default {
     // L'écran d'abord, le réseau ensuite, et la valeur d'avant revient si
     // l'écriture échoue : la règle du hub (js/ecriture.js). Elles ne passent pas
     // par `modifierAussitot` parce qu'elles touchent un objet, pas une liste.
-    const ecrireLivre = async (livre, champs, mot) => {
-      const avant = { ...livre };
-      Object.assign(livre, champs);
+    const ecrireOeuvre = async (R, oeuvre, champs, mot) => {
+      const avant = { ...oeuvre };
+      Object.assign(oeuvre, champs);
       rendreBibliotheque();
       rendreTableau();
 
       try {
-        // TERMINER UN LIVRE ÉCRIT UNE VICTOIRE, et c'est `terminerLivre` qui le
-        // sait : passer par `modifierLivre` la ferait manquer, alors que finir un
-        // livre en est une. Même règle que sur sa fiche.
-        if (champs.statut === 'lu') Object.assign(livre, await api.terminerLivre(avant, livre.note));
-        else Object.assign(livre, await api.modifierLivre(livre.id, champs));
+        // TERMINER UNE ŒUVRE ÉCRIT UNE VICTOIRE, et c'est `terminer` qui le
+        // sait : passer par `modifier` la ferait manquer, alors que finir un
+        // livre — ou un film — en est une. Même règle que sur sa fiche.
+        if (champs.statut === R.fini) Object.assign(oeuvre, await R.api.terminer(avant, oeuvre.note));
+        else Object.assign(oeuvre, await R.api.modifier(oeuvre.id, champs));
       } catch (souci) {
-        console.error('Livre non modifié', souci);
-        Object.assign(livre, avant);
+        console.error('Œuvre non modifiée', souci);
+        Object.assign(oeuvre, avant);
         etat.message = `Ça n'a pas pu être enregistré — ${mot} est revenu${
           mot.startsWith('la') ? 'e' : ''
         }.`;
@@ -2984,62 +2121,86 @@ export default {
       }
     };
 
-    async function changerEtatDuLivre(id, statut) {
-      const livre = etat.livres.find((l) => l.id === id);
-      if (!livre || statut === livre.statut) return rendreBibliotheque();
+    // L'œuvre qu'un geste vise : toujours celle du rayon qu'on regarde, sauf
+    // quand le bouton dit le sien (la colonne « Ta lecture » du tableau de bord,
+    // qui ne parle que de livres).
+    const oeuvreVisee = (id, cleRayon = vueEtat.rayon) => {
+      const R = RAYONS[cleRayon] ?? RAYONS.livres;
+      return [R, donneesDuRayon(R.cle).oeuvres.find((o) => o.id === id)];
+    };
 
-      // Le hub pose les dates qu'il peut poser : commencer un livre écrit son
-      // `commence_le`, le finir son `fini_le`.
+    async function changerEtatDeLOeuvre(id, statut) {
+      const [R, oeuvre] = oeuvreVisee(id);
+      if (!oeuvre || statut === oeuvre.statut) return rendreBibliotheque();
+
+      // Le hub pose les dates qu'il peut poser : commencer une œuvre écrit son
+      // `commence_le`, la finir son `fini_le`.
       const champs = { statut };
-      if (statut === 'en_cours' && !livre.commence_le) champs.commence_le = versDateISO();
-      if (statut === 'lu' && !livre.fini_le) champs.fini_le = versDateISO();
-      return ecrireLivre(livre, champs, "l'état");
+      if (statut === 'en_cours' && !oeuvre.commence_le) champs.commence_le = versDateISO();
+      if (statut === R.fini && !oeuvre.fini_le) champs.fini_le = versDateISO();
+      return ecrireOeuvre(R, oeuvre, champs, "l'état");
     }
 
-    async function basculerThemeDuLivre(id, theme) {
-      const livre = etat.livres.find((l) => l.id === id);
-      if (!livre) return;
-      const themes = livre.themes ?? [];
-      return ecrireLivre(
-        livre,
-        { themes: themes.includes(theme) ? themes.filter((t) => t !== theme) : [...themes, theme] },
-        'le thème',
+    async function basculerMotDeLOeuvre(id, mot) {
+      const [R, oeuvre] = oeuvreVisee(id);
+      if (!oeuvre) return;
+      const poses = oeuvre[R.champs.mots] ?? [];
+      return ecrireOeuvre(
+        R,
+        oeuvre,
+        {
+          [R.champs.mots]: poses.includes(mot)
+            ? poses.filter((m) => m !== mot)
+            : [...poses, mot],
+        },
+        `le ${R.vocabulaire.motSingulier}`,
       );
     }
 
-    async function noterUnLivre(id, rang) {
-      const livre = etat.livres.find((l) => l.id === id);
-      if (!livre) return;
+    async function noterUneOeuvre(id, rang) {
+      const [R, oeuvre] = oeuvreVisee(id);
+      if (!oeuvre) return;
       // La même étoile retouchée efface la note, comme sur la fiche.
-      return ecrireLivre(livre, { note: livre.note === rang ? null : rang }, 'la note');
+      return ecrireOeuvre(R, oeuvre, { note: oeuvre.note === rang ? null : rang }, 'la note');
     }
 
-    async function noterDesPages(livreId, pages) {
-      if (!pages || Number.isNaN(pages)) return;
+    // NOTER UNE QUANTITÉ — des pages, des épisodes. L'écran d'abord, l'écriture
+    // derrière : la séance est ajoutée à la liste locale, donc l'avancée et le
+    // rythme se recalculent tout seuls, puisqu'ils ne sont stockés nulle part.
+    async function noterUneQuantite(cleRayon, id, combien) {
+      if (!combien || Number.isNaN(combien)) return;
+      const R = RAYONS[cleRayon] ?? RAYONS.livres;
+      const journal = R.cle === 'films' ? 'seancesFilms' : 'seances';
+
       const provisoire = {
-        id: `provisoire-${livreId}`,
-        livre_id: livreId,
+        id: `provisoire-${id}`,
+        [R.champs.parent]: id,
         jour: versDateISO(),
-        pages,
+        [R.champs.quantite]: combien,
       };
-      const avant = [...etat.seances];
-      etat.seances = [...etat.seances, provisoire];
+      const avant = [...etat[journal]];
+      etat[journal] = [...etat[journal], provisoire];
       vueEtat.edition = null;
       rendreFenetre();
       rendreBibliotheque();
+      rendreTableau();
 
       try {
-        const seance = await api.noterDesPages(livreId, pages);
-        etat.seances = [...etat.seances.filter((s) => s.id !== provisoire.id), seance];
+        const seance = await R.api.noter(id, combien);
+        etat[journal] = [...etat[journal].filter((s) => s.id !== provisoire.id), seance];
         // La lecture coche l'habitude : le bloc des habitudes doit le montrer
-        // sans qu'on ait à recharger la page.
+        // sans qu'on ait à recharger la page. Aucune habitude ne se déclare pour
+        // les films — la relecture ne coûte alors qu'une requête de plus, une
+        // fois par soirée.
         etat.faits = await api.habitudesFaitsDepuis(versDateISO(ajouterJours(new Date(), -366)));
         rendreHabitudes();
         rendreBibliotheque();
+        rendreTableau();
       } catch (souci) {
-        console.error('Pages non enregistrées', souci);
-        etat.seances = avant;
+        console.error('Séance non enregistrée', souci);
+        etat[journal] = avant;
         rendreBibliotheque();
+        rendreTableau();
       }
     }
 
@@ -3094,17 +2255,15 @@ export default {
         rendreHabitudes();
       }
 
-      if (forme === 'livre') {
-        const valeurs = {
-          titre: champs.titre.trim(),
-          auteur: champs.auteur?.trim() || null,
-          pages: champs.pages ? Number(champs.pages) : null,
-          statut: champs.statut,
-          note: champs.note ? Number(champs.note) : null,
-          // Le champ caché d'un choix multiple porte ses clés séparées par des
-          // virgules : c'est la forme que `FormData` sait transporter.
-          themes: (champs.themes ?? '').split(',').filter(Boolean),
-        };
+      // --- LA BIBLIOTHÈQUE : un seul chemin pour les deux rayons ---
+      //
+      // `forme` vaut « livre » ou « film » et dit lequel ; le reste est écrit
+      // une fois. Deux branches jumelles auraient fini par ne plus enregistrer
+      // les mêmes champs, et c'est dans la copie oubliée qu'un champ manque.
+      if (forme === 'livre' || forme === 'film') {
+        const R = RAYONS[champs.rayon] ?? RAYONS.livres;
+        const valeurs = valeursDuFormulaire(R, champs);
+        const donnees = donneesDuRayon(R.cle);
 
         // L'ENVOI D'UN FICHIER N'EST PAS OPTIMISTE, et c'est l'exception écrite
         // dans les conventions : on ne peut pas afficher une image qu'on n'a pas
@@ -3112,69 +2271,51 @@ export default {
         //
         // Un champ vide n'efface rien : ne rien redonner, c'est garder ce qui
         // est là. C'est la règle de la durée qu'on passe au moment de cocher.
-        const fichier = champs.couverture;
-        const ancienne = id ? etat.livres.find((l) => l.id === id)?.couverture : null;
+        const fichier = champs.image;
+        const ancienne = id ? imageDe(R, donnees.oeuvres.find((o) => o.id === id) ?? {}) : null;
         if (fichier instanceof File && fichier.size) {
-          valeurs.couverture = await api.televerserCouverture(fichier);
+          valeurs[R.champs.image] = await R.api.televerserImage(fichier);
         }
 
         if (id) {
-          const livre = etat.livres.find((l) => l.id === id);
-          Object.assign(livre, await api.modifierLivre(id, valeurs));
+          const oeuvre = donnees.oeuvres.find((o) => o.id === id);
+          Object.assign(oeuvre, await R.api.modifier(id, valeurs));
         } else {
-          etat.livres = [
-            await api.creerLivre({
-              ...valeurs,
-              commence_le: valeurs.statut === 'en_cours' ? versDateISO() : null,
-            }),
-            ...etat.livres,
-          ];
+          const posee = await R.api.creer({
+            ...valeurs,
+            commence_le: valeurs.statut === 'en_cours' ? versDateISO() : null,
+          });
+          if (R.cle === 'films') etat.films = [posee, ...etat.films];
+          else etat.livres = [posee, ...etat.livres];
         }
 
-        if (valeurs.couverture) {
-          Object.assign(etat.couvertures, await api.urlsDesCouvertures([valeurs.couverture]));
+        const posee = valeurs[R.champs.image];
+        if (posee) {
+          Object.assign(donnees.urls, await R.api.urlsDesImages([posee]));
           // L'ancienne n'est plus référencée par personne : elle part, sinon on
           // paie un fichier qu'on ne reverra jamais.
-          if (ancienne && ancienne !== valeurs.couverture) await api.supprimerCouverture(ancienne);
+          if (ancienne && ancienne !== posee) await R.api.supprimerImage(ancienne);
         }
         rendreBibliotheque();
       }
 
-      if (forme === 'pages') {
-        await noterDesPages(champs.parent, Number(champs.pages));
+      if (forme === 'quantite') {
+        await noterUneQuantite(champs.rayon, champs.parent, Number(champs.combien));
       }
 
       if (forme === 'citation') {
-        const livre = etat.livres.find((l) => l.id === champs.parent);
-        const gardee = await api.garderUneCitation(
+        const R = RAYONS[champs.rayon] ?? RAYONS.livres;
+        const oeuvre = donneesDuRayon(R.cle).oeuvres.find((o) => o.id === champs.parent);
+        const gardee = await R.api.garderCitation(
           champs.parent,
           champs.texte.trim(),
-          champs.page ? Number(champs.page) : null,
+          // Un entier pour une page, un texte libre pour un moment de film.
+          R.vocabulaire.repereType === 'number'
+            ? (champs.repere ? Number(champs.repere) : null)
+            : (champs.repere?.trim() || null),
         );
-        livre.citations = [...(livre.citations ?? []), gardee];
+        oeuvre.citations = [...(oeuvre.citations ?? []), gardee];
         rendreBibliotheque();
-      }
-
-      if (forme === 'victoire') {
-        etat.victoires = [
-          await api.ajouterVictoire({ espace: ESPACE, titre: champs.titre.trim() }),
-          ...etat.victoires,
-        ];
-        rendreVictoires();
-      }
-
-      if (forme === 'rendez-vous') {
-        const rdv = await api.creerEvenement({
-          espace: ESPACE,
-          titre: champs.titre.trim(),
-          date_debut: new Date(champs.date_debut).toISOString(),
-          famille: champs.famille || null,
-          lieu: champs.lieu?.trim() || null,
-        });
-        etat.evenements = [...etat.evenements, rdv].sort(
-          (a, b) => new Date(a.date_debut) - new Date(b.date_debut),
-        );
-        rendreEvenements();
       }
 
       vueEtat.edition = null;
@@ -3201,9 +2342,9 @@ export default {
     // mémoire, il n'y a rien à demander au réseau, et un « Chercher » à presser
     // ferait payer un aller-retour à ce qui doit répondre sous le doigt.
     section.addEventListener('input', (evenement) => {
-      const champ = evenement.target.closest('[data-recherche-livre]');
+      const champ = evenement.target.closest('[data-recherche-oeuvre]');
       if (!champ) return;
-      vueEtat.filtresLivres.mot = champ.value;
+      vueDuRayon().filtres.mot = champ.value;
       rendreBibliotheque({ focusRecherche: true });
     });
 
@@ -3236,7 +2377,13 @@ export default {
 
       const ajout = dans('ajout');
       if (ajout) {
-        vueEtat.edition = { forme: ajout.dataset.ajout, id: null };
+        // Le rayon voyage avec la fenêtre : c'est lui qui décide des mots du
+        // formulaire et de la table où l'on écrit.
+        vueEtat.edition = {
+          forme: ajout.dataset.ajout,
+          id: null,
+          rayon: rayonDeLaForme(ajout.dataset.ajout)?.cle ?? vueEtat.rayon,
+        };
         vueEtat.menu = null;
         rendreFenetre();
         RENDUS[ajout.dataset.ajout]?.();
@@ -3315,18 +2462,26 @@ export default {
       // NOTER DES PAGES, le geste du livre en cours. Il coche aussi l'habitude de
       // lecture — noter des pages EST la preuve qu'on a lu, et redemander de
       // cocher juste après serait demander deux fois la même chose.
-      // --- LES DEUX VUES DE LA BIBLIOTHÈQUE ---
+      // --- LES DEUX ENTRÉES, PUIS LES DEUX VUES DE LA BIBLIOTHÈQUE ---
 
-      const vueLivres = dans('vue-livres');
-      if (vueLivres) {
-        vueEtat.vueLivres = vueLivres.dataset.vueLivres;
+      const rayon = dans('rayon');
+      if (rayon) {
+        vueEtat.rayon = rayon.dataset.rayon;
+        rendreBibliotheque();
+        return;
+      }
+
+      const vueOeuvres = dans('vue-oeuvres');
+      if (vueOeuvres) {
+        vueDuRayon().affichage = vueOeuvres.dataset.vueOeuvres;
         rendreBibliotheque();
         return;
       }
 
       if (dans('ouvrir-filtres')) {
-        vueEtat.filtresOuverts = !vueEtat.filtresOuverts;
-        vueEtat.chipLivres = null;
+        const vue = vueDuRayon();
+        vue.ouverts = !vue.ouverts;
+        vue.chip = null;
         rendreBibliotheque();
         return;
       }
@@ -3335,16 +2490,17 @@ export default {
       // et le faire chercher dans une rangée qu'on vient d'ouvrir serait deux
       // gestes pour un.
       if (dans('ouvrir-tri')) {
-        vueEtat.filtresOuverts = true;
-        vueEtat.chipLivres = vueEtat.chipLivres === 'tri' ? null : 'tri';
+        const vue = vueDuRayon();
+        vue.ouverts = true;
+        vue.chip = vue.chip === 'tri' ? null : 'tri';
         rendreBibliotheque();
         return;
       }
 
       const critere = dans('critere');
       if (critere) {
-        const cle = critere.dataset.critere;
-        vueEtat.chipLivres = vueEtat.chipLivres === cle ? null : cle;
+        const vue = vueDuRayon();
+        vue.chip = vue.chip === critere.dataset.critere ? null : critere.dataset.critere;
         rendreBibliotheque();
         return;
       }
@@ -3353,57 +2509,62 @@ export default {
 
       const cellule = dans('cellule');
       if (cellule) {
-        const cle = cellule.dataset.cellule;
-        vueEtat.celluleLivre = vueEtat.celluleLivre === cle ? null : cle;
-        vueEtat.chipLivres = null;
+        const vue = vueDuRayon();
+        vue.cellule = vue.cellule === cellule.dataset.cellule ? null : cellule.dataset.cellule;
+        vue.chip = null;
         rendreBibliotheque();
         return;
       }
 
       const poserEtat = dans('poser-etat');
       if (poserEtat) {
-        vueEtat.celluleLivre = null;
-        return changerEtatDuLivre(poserEtat.dataset.poserEtat, poserEtat.dataset.valeur);
+        vueDuRayon().cellule = null;
+        return changerEtatDeLOeuvre(poserEtat.dataset.poserEtat, poserEtat.dataset.valeur);
       }
 
-      const poserTheme = dans('poser-theme');
-      if (poserTheme) {
-        // Le panneau RESTE ouvert : un livre porte souvent deux thèmes, et le
+      const poserMot = dans('poser-mot');
+      if (poserMot) {
+        // Le panneau RESTE ouvert : une œuvre porte souvent deux thèmes, et le
         // rouvrir à chaque coche serait un geste pour rien.
-        return basculerThemeDuLivre(poserTheme.dataset.poserTheme, poserTheme.dataset.valeur);
+        return basculerMotDeLOeuvre(poserMot.dataset.poserMot, poserMot.dataset.valeur);
       }
 
-      const noterLivre = dans('noter-livre');
-      if (noterLivre) {
-        return noterUnLivre(noterLivre.dataset.noterLivre, Number(noterLivre.dataset.rang));
+      const noterOeuvre = dans('noter-oeuvre');
+      if (noterOeuvre) {
+        return noterUneOeuvre(noterOeuvre.dataset.noterOeuvre, Number(noterOeuvre.dataset.rang));
       }
 
       const trier = dans('trier');
       if (trier) {
         const cle = trier.dataset.trier;
+        const vue = vueDuRayon();
         // LE MÊME TRI RETOUCHÉ SE RETOURNE : c'est le geste d'un en-tête de
         // colonne, et il évite un second bouton pour le sens.
-        vueEtat.triLivres =
-          vueEtat.triLivres.cle === cle
-            ? { cle, sens: -vueEtat.triLivres.sens }
+        vue.tri =
+          vue.tri.cle === cle
+            ? { cle, sens: -vue.tri.sens }
             : { cle, sens: cle === 'note' ? -1 : 1 };
         rendreBibliotheque();
         return;
       }
 
       if (dans('vider-filtres')) {
-        vueEtat.filtresLivres = { ...vueEtat.filtresLivres, statut: [], theme: [], note: [] };
+        const vue = vueDuRayon();
+        // Le mot cherché SURVIT : on vient de retirer des critères, pas de
+        // renoncer à sa recherche.
+        vue.filtres = { ...vue.filtres, statut: [], mots: [], note: [], nature: [] };
         rendreBibliotheque();
         return;
       }
 
-      const filtreLivre = dans('filtre-livre');
-      if (filtreLivre) {
-        const { filtreLivre: cle, valeur } = filtreLivre.dataset;
-        const choisis = vueEtat.filtresLivres[cle] ?? [];
+      const filtreOeuvre = dans('filtre-oeuvre');
+      if (filtreOeuvre) {
+        const { filtreOeuvre: cle, valeur } = filtreOeuvre.dataset;
+        const vue = vueDuRayon();
+        const choisis = vue.filtres[cle] ?? [];
         // On coche et on décoche : le panneau RESTE ouvert, parce qu'on en
         // choisit souvent deux d'affilée.
-        vueEtat.filtresLivres[cle] = choisis.includes(valeur)
+        vue.filtres[cle] = choisis.includes(valeur)
           ? choisis.filter((v) => v !== valeur)
           : [...choisis, valeur];
         rendreBibliotheque();
@@ -3413,44 +2574,73 @@ export default {
       // Un clic AILLEURS referme le panneau ouvert — jamais la rangée, qu'on
       // vient d'ouvrir exprès. Il arrive APRÈS les gestes ci-dessus : ceux-ci se
       // sont déjà servis.
+      const vueBiblio = vueDuRayon();
       if (
-        (vueEtat.chipLivres && !evenement.target.closest('.livres-critere')) ||
-        (vueEtat.celluleLivre && !evenement.target.closest('.livre-ligne-cellule'))
+        (vueBiblio.chip && !evenement.target.closest('.livres-critere')) ||
+        (vueBiblio.cellule && !evenement.target.closest('.livre-ligne-cellule'))
       ) {
-        vueEtat.chipLivres = null;
-        vueEtat.celluleLivre = null;
+        vueBiblio.chip = null;
+        vueBiblio.cellule = null;
         rendreBibliotheque();
       }
 
-      const pages = dans('livre-pages');
-      if (pages) return noterDesPages(pages.dataset.livrePages, Number(pages.dataset.pages));
+      // NOTER UNE QUANTITÉ, le geste de ce qu'on lit ou regarde. Côté livres il
+      // coche aussi l'habitude de lecture — noter des pages EST la preuve qu'on a
+      // lu, et redemander de cocher juste après serait demander deux fois la même
+      // chose. `data-rayon-de` désigne le rayon quand le bouton ne vit pas dans
+      // l'étagère : la colonne « Ta lecture » du tableau de bord ne parle que de
+      // livres, quel que soit le rayon qu'on regardait en dernier.
+      const quantite = dans('oeuvre-quantite');
+      if (quantite) {
+        return noterUneQuantite(
+          quantite.dataset.rayonDe ?? vueEtat.rayon,
+          quantite.dataset.oeuvreQuantite,
+          Number(quantite.dataset.pas),
+        );
+      }
 
-      const autre = dans('livre-autre');
+      const autre = dans('oeuvre-autre');
       if (autre) {
-        vueEtat.edition = { forme: 'pages', id: null, parent: autre.dataset.livreAutre };
+        vueEtat.edition = {
+          forme: 'quantite',
+          id: null,
+          rayon: autre.dataset.rayonDe ?? vueEtat.rayon,
+          parent: autre.dataset.oeuvreAutre,
+        };
         rendreFenetre();
         return;
       }
 
-      const citation = dans('livre-citation');
+      const citation = dans('oeuvre-citation');
       if (citation) {
-        vueEtat.edition = { forme: 'citation', id: null, parent: citation.dataset.livreCitation };
+        vueEtat.edition = {
+          forme: 'citation',
+          id: null,
+          rayon: citation.dataset.rayonDe ?? vueEtat.rayon,
+          parent: citation.dataset.oeuvreCitation,
+        };
         rendreFenetre();
         return;
       }
 
-      const fini = dans('livre-fini');
+      const fini = dans('oeuvre-fini');
       if (fini) {
-        const livre = etat.livres.find((l) => l.id === fini.dataset.livreFini);
-        if (!livre) return;
-        Object.assign(livre, { statut: 'lu', fini_le: versDateISO() });
+        const [R, oeuvre] = oeuvreVisee(
+          fini.dataset.oeuvreFini,
+          fini.dataset.rayonDe ?? vueEtat.rayon,
+        );
+        if (!oeuvre) return;
+        const avant = { statut: oeuvre.statut, fini_le: oeuvre.fini_le ?? null };
+        Object.assign(oeuvre, { statut: R.fini, fini_le: versDateISO() });
         rendreBibliotheque();
+        rendreTableau();
         try {
-          Object.assign(livre, await api.terminerLivre(livre, livre.note));
+          Object.assign(oeuvre, await R.api.terminer(oeuvre, oeuvre.note));
         } catch (souci) {
-          console.error('Livre non terminé', souci);
-          Object.assign(livre, { statut: 'en_cours', fini_le: null });
+          console.error('Œuvre non terminée', souci);
+          Object.assign(oeuvre, avant);
           rendreBibliotheque();
+          rendreTableau();
         }
         return;
       }
@@ -3493,10 +2683,16 @@ export default {
         const SOURCES_EDITION = {
           habitude: () => etat.habitudes.find((h) => h.id === id),
           livre: () => etat.livres.find((l) => l.id === id),
+          film: () => etat.films.find((f) => f.id === id),
           intention: () => etat.intentions.find((i) => i.id === id),
         };
         const source = (SOURCES_EDITION[forme] ?? SOURCES_EDITION.intention)();
-        vueEtat.edition = { forme, id, valeurs: source };
+        vueEtat.edition = {
+          forme,
+          id,
+          rayon: rayonDeLaForme(forme)?.cle ?? vueEtat.rayon,
+          valeurs: source,
+        };
         vueEtat.menu = null;
         rendreFenetre();
         RENDUS[forme]?.();
@@ -3530,7 +2726,8 @@ export default {
 
         const RETRAITS = {
           habitude: [etat.habitudes, api.supprimerHabitude],
-          livre: [etat.livres, api.supprimerLivre],
+          livre: [etat.livres, api.rayonLivres.supprimer],
+          film: [etat.films, api.rayonFilms.supprimer],
           intention: [etat.intentions, api.supprimerObjectif],
           'rendez-vous': [etat.evenements, api.supprimerEvenement],
           victoire: [etat.victoires, api.supprimerVictoire],
@@ -3540,18 +2737,19 @@ export default {
 
         const ligne = liste.find((l) => l.id === id);
 
-        // LA COUVERTURE SE LIT AVANT, PAS DANS LE RAPPEL (2 septembre 2026).
+        // L'IMAGE SE LIT AVANT, PAS DANS LE RAPPEL (2 septembre 2026).
         // `retirerAussitot` sort la ligne de la liste TOUT DE SUITE — c'est le
         // principe de l'écriture optimiste —, si bien qu'un `liste.find()` fait
         // au moment de l'écriture ne trouve plus rien : le chemin partait à
         // `undefined` et le fichier restait dans le stockage, payé et invisible.
         // *Mesuré : le livre supprimé, son image encore là.*
-        const couverture = forme === 'livre' ? (ligne?.couverture ?? null) : null;
+        const sonRayon = rayonDeLaForme(forme);
+        const image = sonRayon && ligne ? imageDe(sonRayon, ligne) : null;
 
         return retirerAussitot(
           liste,
           ligne,
-          () => (forme === 'livre' ? effacer(id, couverture) : effacer(id)),
+          () => (sonRayon ? effacer(id, image) : effacer(id)),
           { rendre: RENDUS[forme] },
         );
       }
@@ -3586,10 +2784,6 @@ export default {
           const ecrite = await api.enregistrerHumeur(jour, pose.niveau, avant?.note ?? null);
           if (cejour) etat.humeurDuJour = ecrite;
           if (gardee) gardee.humeur = ecrite;
-          // La courbe gagne son point sans recharger la page.
-          bloc('humeur').innerHTML = construireCourbeHumeur(
-            await api.humeurDepuis(versDateISO(ajouterJours(new Date(), -(JOURS_COURBE - 1)))),
-          );
           // Le calendrier des journées porte la frimousse : elle doit suivre.
           resumesVus.clear();
           chargerLesResumes();

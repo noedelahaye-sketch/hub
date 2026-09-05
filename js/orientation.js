@@ -1481,19 +1481,31 @@ export function relecture({ victoires = [], intentions = [] } = {}, jour = new D
 // Ce qu'il montre à la place : où l'on en est dans le livre, et à quel rythme
 // on avance. Le rythme est une observation, pas une cible — il n'y a rien à
 // tenir, et un livre lu lentement reste un livre lu.
-export function avanceeDuLivre(livre, seances = []) {
-  const siennes = seances.filter((seance) => seance.livre_id === livre.id);
-  const lues = siennes.reduce((somme, seance) => somme + seance.pages, 0);
+// L'AVANCÉE D'UNE ŒUVRE — un livre en pages, une série en épisodes (5 septembre
+// 2026). Un seul calcul pour les deux rayons de la bibliothèque : deux copies
+// auraient fini par ne plus compter pareil, et ça ne se voit qu'à côté.
+//
+// Les trois noms de colonnes changent d'un rayon à l'autre (`livre_id`/`film_id`,
+// `pages`/`episodes`), l'état qui vaut « fini » aussi (`lu`/`vu`) : ils se
+// donnent, et rien d'autre ne bouge.
+export function avanceeDeLOeuvre(
+  oeuvre,
+  seances = [],
+  { parent = 'livre_id', quantite = 'pages', total = 'pages', fini = 'lu' } = {},
+) {
+  const siennes = seances.filter((seance) => seance[parent] === oeuvre.id);
+  const lues = siennes.reduce((somme, seance) => somme + seance[quantite], 0);
 
-  // Un livre déclaré lu est fini, même si le compte des pages ne tombe pas
-  // juste : c'est la décision qui dit la vérité, pas l'arithmétique. Même règle
-  // que l'état posé d'un projet.
-  if (livre.statut === 'lu') return { lues, part: 1, jours: null, rythme: null };
+  // Une œuvre déclarée finie l'est, même si le compte ne tombe pas juste : c'est
+  // la décision qui dit la vérité, pas l'arithmétique. Même règle que l'état
+  // posé d'un projet.
+  if (oeuvre.statut === fini) return { lues, part: 1, jours: null, rythme: null };
 
   const jours = new Set(siennes.map((seance) => seance.jour)).size;
+  const attendu = oeuvre[total];
   return {
     lues,
-    part: livre.pages ? Math.min(1, lues / livre.pages) : null,
+    part: attendu ? Math.min(1, lues / attendu) : null,
     jours,
     // Par JOUR DE LECTURE et non par jour de calendrier : sauter trois jours ne
     // doit pas faire chuter un rythme, sinon c'est un reproche déguisé.
@@ -1501,22 +1513,26 @@ export function avanceeDuLivre(livre, seances = []) {
   };
 }
 
-// Le livre qu'on est en train de lire : celui dont la dernière séance est la
-// plus récente. À défaut de séance, le plus récemment commencé — un livre qu'on
-// vient d'ouvrir est en cours même s'il n'a pas encore de page.
-export function livreEnCours(livres = [], seances = []) {
-  const candidats = livres.filter((livre) => livre.statut === 'en_cours');
+export const avanceeDuLivre = (livre, seances = []) => avanceeDeLOeuvre(livre, seances);
+
+// L'œuvre qu'on est en train de lire ou de regarder : celle dont la dernière
+// séance est la plus récente. À défaut de séance, la plus récemment commencée —
+// un livre qu'on vient d'ouvrir est en cours même s'il n'a pas encore de page.
+export function oeuvreEnCours(oeuvres = [], seances = [], { parent = 'livre_id' } = {}) {
+  const candidats = oeuvres.filter((oeuvre) => oeuvre.statut === 'en_cours');
   if (!candidats.length) return null;
 
-  const derniereDe = (livre) =>
+  const derniereDe = (oeuvre) =>
     seances
-      .filter((seance) => seance.livre_id === livre.id)
+      .filter((seance) => seance[parent] === oeuvre.id)
       .map((seance) => seance.jour)
       .sort()
-      .at(-1) ?? livre.commence_le ?? '';
+      .at(-1) ?? oeuvre.commence_le ?? '';
 
   return [...candidats].sort((a, b) => String(derniereDe(b)).localeCompare(String(derniereDe(a))))[0];
 }
+
+export const livreEnCours = (livres = [], seances = []) => oeuvreEnCours(livres, seances);
 
 // --- LES HABITUDES : trois mesures dont aucune ne peut s'effondrer -----------
 //

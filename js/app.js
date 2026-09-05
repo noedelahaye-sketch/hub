@@ -17,6 +17,7 @@ import semaine from './semaine.js';
 import objectifs from './objectifs.js';
 import habitude from './habitude.js';
 import livre from './livre.js';
+import film from './film.js';
 import objectif from './objectif.js';
 import projet from './projet.js';
 import calendrier from './calendrier.js';
@@ -35,7 +36,7 @@ import temps from './temps.js';
 // on y vient par la porte du bloc « Tes objectifs », et rarement.
 const espaces = {
   dashboard, taches, objectifs, objectif, projet, calendrier, formation, photo, yuno, fch,
-  hermitage, perso, habitude, livre, chemin, temps, semaine,
+  hermitage, perso, habitude, livre, film, chemin, temps, semaine,
 };
 
 // Trois pages d'entrée pour trois applications sur l'écran d'accueil :
@@ -148,8 +149,8 @@ monterLeMenu(document.querySelector('.barre-onglets'));
 
 const TITRES = {
   dashboard: 'Accueil',
-  taches: 'Tâches',
-  objectifs: 'Général',
+  taches: 'Mes tâches',
+  objectifs: 'Mon cap',
   // Les pages d'un CAP et d'un PROJET écrivent elles-mêmes leur titre dès
   // qu'elles savent lequel : « Projet — Hub » ne dirait pas duquel. Ceux-ci ne
   // servent que le temps du chargement, et quand l'adresse ne nomme rien.
@@ -157,6 +158,7 @@ const TITRES = {
   projet: 'Projet',
   habitude: 'Habitude',
   livre: 'Livre',
+  film: 'Film',
   calendrier: 'Calendrier',
   formation: 'Formation',
   photo: 'Yuno',
@@ -164,20 +166,22 @@ const TITRES = {
   fch: 'FC Hermitage',
   hermitage: 'FC Hermitage',
   perso: 'Perso',
-  chemin: 'Le chemin',
-  temps: 'Le temps',
+  chemin: 'Mon chemin',
+  temps: 'Mon temps',
   semaine: 'Ma semaine',
 };
 // Une vue a son propre titre quand elle est une page à elle seule : « Le cap »
 // pour les trois étages ensemble, mais « Projets » quand le menu n'a ouvert que
 // celui-là. Sans ça, l'onglet du navigateur mentirait sur ce qu'on regarde.
 const TITRES_VUES = {
-  objectifs: { caps: 'Objectifs', projets: 'Projets', periodes: 'Périodes' },
+  objectifs: { caps: 'Mes objectifs', projets: 'Mes projets', periodes: 'Mes périodes' },
   perso: {
-    intentions: 'Intentions',
-    'rendez-vous': 'Rendez-vous',
-    humeur: 'Humeur',
-    victoires: 'Victoires',
+    intentions: 'Mes intentions',
+    habitudes: 'Mes habitudes',
+    bibliotheque: 'Ma bibliothèque',
+    livres: 'Mes livres',
+    films: 'Mes films et séries',
+    journee: 'Mes journées',
   },
 };
 

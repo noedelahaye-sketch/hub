@@ -986,10 +986,17 @@ function lireLAdresse(route) {
   etat.espaceFiltre = ESPACES.includes(route?.id) ? route.id : null;
 }
 
+// LA PREMIÈRE PERSONNE (5 septembre 2026, demande de Noé) : ces titres sont
+// AUSSI les mots du menu — un nom dans le menu et un autre en tête de page, ce
+// serait deux noms pour une page, le défaut corrigé le 28 août.
+//
+// Le suffixe « — le cap », « — le comment » est tombé avec le renommage : la
+// page mère s'appelle désormais « Mon cap », et redire l'étage sous son propre
+// nom ne l'expliquait plus, ça le répétait.
 const VUES = {
-  caps: 'Les objectifs — le cap',
-  projets: 'Les projets — le comment',
-  periodes: 'Ce que tu attends des mois qui viennent',
+  caps: 'Mes objectifs',
+  projets: 'Mes projets',
+  periodes: 'Mes périodes',
 };
 
 function etageCaps() {
@@ -1013,10 +1020,16 @@ function squelette() {
   const vue = etat.vue in VUES ? etat.vue : null;
   const de = etat.espaceFiltre ? ` — ${NOMS_ESPACES[etat.espaceFiltre]}` : '';
 
-  // Une vue seule porte son propre titre : sans lui, « Les projets » ouvrirait
-  // sur une galerie sans nom. Les trois ensemble gardent « Le cap », et ce sont
-  // les titres d'étage qui les séparent.
-  const titre = `<h1>${vue ? VUES[vue] + de : 'Général' + de}</h1>`;
+  // Une vue seule porte son propre titre : sans lui, « Mes projets » ouvrirait
+  // sur une galerie sans nom. Les trois ensemble s'appellent « Mon cap », et ce
+  // sont les titres d'étage qui les séparent.
+  //
+  // ELLE S'APPELLE « MON CAP » DEPUIS LE 5 SEPTEMBRE 2026, et non plus
+  // « Général » : ce mot est passé au grand titre du menu, celui qui réunit le
+  // transverse et le perso. Deux choses ne peuvent pas porter le même nom, et
+  // c'est la page qui a cédé — « Mon cap » est le mot que Noé a employé pour
+  // demander ce groupe.
+  const titre = `<h1>${vue ? VUES[vue] + de : 'Mon cap' + de}</h1>`;
 
   const etages = vue
     ? { caps: etageCaps(), projets: galerieProjets(true), periodes: bandePeriodes(true) }[vue]
@@ -1089,7 +1102,7 @@ export default {
     } catch (erreur) {
       console.error("Chargement de l'espace Le cap impossible", erreur);
       section.innerHTML = `
-        <h1>Général</h1>
+        <h1>Mon cap</h1>
         <p class="vide">Les données n'ont pas pu être chargées.</p>
         <button type="button" class="bouton-secondaire" data-action="reessayer">Réessayer</button>`;
       section

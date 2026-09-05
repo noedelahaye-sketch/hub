@@ -181,7 +181,7 @@ export function construireCouverture(taches, publications) {
 
 function squelette(donnees, semaine, periode) {
   return `
-    <h1>Le temps</h1>
+    <h1>Mon temps</h1>
     <p class="discret sous-titre">Où partent tes heures. Rien ici ne juge :
       un écart entre ce qui est annoncé et ce qui est mesuré est une information.</p>
 
@@ -232,7 +232,7 @@ export default {
     } catch (erreur) {
       console.error('Chargement du temps impossible', erreur);
       section.innerHTML = `
-        <h1>Le temps</h1>
+        <h1>Mon temps</h1>
         <p class="vide">Les heures n'ont pas pu être chargées.</p>
         <button type="button" class="bouton-secondaire" data-action="reessayer">Réessayer</button>`;
       section

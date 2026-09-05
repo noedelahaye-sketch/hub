@@ -16,7 +16,7 @@
 // Sans ça, chaque session de travail verrait une fois ses modifications
 // ignorées — le piège classique du service worker en développement.
 
-const CACHE = 'hub-coquille-v18';
+const CACHE = 'hub-coquille-v19';
 
 const EN_LOCAL = ['localhost', '127.0.0.1'].includes(self.location.hostname);
 
@@ -45,6 +45,9 @@ const COQUILLE = [
   'js/gabarits.js',
   'js/habitude.js',
   'js/livre.js',
+  'js/film.js',
+  'js/fiche-oeuvre.js',
+  'js/bibliotheque.js',
   'js/fch.js',
   'js/format.js',
   'js/formation.js',

@@ -853,7 +853,7 @@ export function construireCapture(capture, projets = []) {
 
 function squelette(etat) {
   return `
-    <h1>Tâches</h1>
+    <h1>Mes tâches</h1>
     <p class="discret sous-titre">Tout ce qu'il y a à faire, tous espaces — daté ou non.</p>
     <div data-bloc="capture">${construireCapture(etat.capture, etat.projets)}</div>
     ${construireFiltres(etat.espace)}
@@ -1168,7 +1168,7 @@ export default {
     } catch (erreur) {
       console.error('Chargement des tâches impossible', erreur);
       section.innerHTML = `
-        <h1>Tâches</h1>
+        <h1>Mes tâches</h1>
         <p class="vide">Les données n'ont pas pu être chargées.</p>
         <button type="button" class="bouton-secondaire" data-action="reessayer">Réessayer</button>`;
       section

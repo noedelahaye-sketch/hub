@@ -722,147 +722,202 @@ export async function noterLaJournee(jour, colonne, valeur) {
   );
 }
 
-// --- La bibliothèque ---------------------------------------------------------
+// --- La bibliothèque : les livres, et les films/séries ------------------------
 //
-// Les pages lues d'un livre sont la SOMME de ses séances, jamais une colonne à
-// part : deux endroits pour un même nombre finissent toujours par se
-// contredire. Le journal sert aussi le rythme et la page du jour.
+// UN SEUL JEU DE FONCTIONS POUR LES DEUX RAYONS (5 septembre 2026, jour où les
+// films et les séries sont arrivés). Les deux réserves sont distinctes en base —
+// un film n'a ni pages ni auteur, et une table nommée « livres » qui porterait
+// des films serait un nom qui ment —, mais la MÉCANIQUE est la même au trait
+// près : une œuvre, son journal de séances, ses phrases gardées, son image dans
+// un bucket privé.
+//
+// Deux copies de ces dix fonctions auraient fini par ne plus écrire la même
+// chose, et c'est toujours dans la copie oubliée qu'un champ finit par manquer.
+// C'est le motif de `televerserImage`, dont le bucket est un paramètre depuis le
+// 2 septembre.
+//
+// LES QUANTITÉS SONT LA SOMME DES SÉANCES, jamais une colonne à part : deux
+// endroits pour un même nombre finissent toujours par se contredire. Le journal
+// donne aussi le rythme, et il sert la page du jour.
 
-export async function livresTous() {
-  return verifier(
-    await client
-      .from('livres')
-      .select('*, citations:livres_citations(id, texte, page)')
-      .order('created_at', { ascending: false }),
-  );
-}
-
-// UN SEUL LIVRE, pour sa fiche : `livresTous` en rapporterait trente pour en
-// montrer un. Ses citations viennent avec — elles n'ont de sens qu'avec lui.
-export async function livreParId(id) {
-  return verifier(
-    await client
-      .from('livres')
-      .select('*, citations:livres_citations(id, texte, page)')
-      .eq('id', id)
-      .maybeSingle(),
-  );
-}
-
-export async function livresSeancesDepuis(dateISO) {
-  return verifier(
-    await client
-      .from('livres_seances')
-      .select('id, livre_id, jour, pages')
-      .gte('jour', dateISO)
-      .order('jour'),
-  );
-}
-
-// Toutes les séances d'un livre, sans borne de date : l'avancée d'un livre
-// commencé il y a un an doit rester juste.
-export async function seancesDuLivre(livre_id) {
-  return verifier(
-    await client
-      .from('livres_seances')
-      .select('id, livre_id, jour, pages')
-      .eq('livre_id', livre_id),
-  );
-}
-
-// NOTER DES PAGES COCHE L'HABITUDE DE LECTURE. C'est la preuve qu'on a lu :
-// redemander de cocher « lire un peu » juste après serait demander deux fois la
-// même chose. L'habitude concernée se déclare elle-même (`automatique`), donc
-// rien n'est câblé sur un nom.
-export async function noterDesPages(livre_id, pages, jour = versDateISO()) {
-  const seance = verifier(
-    await client.from('livres_seances').insert({ livre_id, pages, jour }).select().single(),
-  );
-
-  const [habitude] = verifier(
-    await client.from('habitudes').select('id').eq('automatique', 'lecture').limit(1),
-  );
-  if (habitude) await marquerHabitude(habitude.id, jour);
-
-  return seance;
-}
-
-export async function creerLivre({
-  titre,
-  auteur = null,
-  pages = null,
-  statut = 'a_lire',
-  commence_le = null,
-  couverture = null,
-  themes = [],
+function fabriquerRayon({
+  table,
+  seances,
+  citations,
+  // La clé étrangère du journal et des citations : `livre_id`, `film_id`.
+  parent,
+  // La colonne qui porte la quantité, des deux côtés : `pages`, `episodes`.
+  quantite,
+  // La colonne qui porte le chemin de l'image, et son bucket.
+  image,
+  reserve,
+  // Le repère d'une phrase gardée : une page (entier) pour un livre, un moment
+  // (texte libre) pour un film.
+  repere,
+  // L'état qui vaut « fini », et le mot de la victoire qu'il écrit.
+  fini,
+  victoire,
+  // L'habitude que noter une quantité coche toute seule, s'il y en a une. Elle
+  // se DÉCLARE (`habitudes.automatique`), donc rien n'est câblé sur un nom.
+  habitudeAuto = null,
 }) {
-  return verifier(
-    await client
-      .from('livres')
-      .insert({ titre, auteur, pages, statut, commence_le, couverture, themes })
-      .select('*, citations:livres_citations(id, texte, page)')
-      .single(),
-  );
+  const avecCitations = `*, citations:${citations}(id, texte, ${repere})`;
+
+  const tous = async () =>
+    verifier(
+      await client.from(table).select(avecCitations).order('created_at', { ascending: false }),
+    );
+
+  // UNE SEULE ŒUVRE, pour sa fiche : `tous` en rapporterait trente pour en
+  // montrer une. Ses citations viennent avec — elles n'ont de sens qu'avec elle.
+  const parId = async (id) =>
+    verifier(await client.from(table).select(avecCitations).eq('id', id).maybeSingle());
+
+  const seancesDepuis = async (dateISO) =>
+    verifier(
+      await client
+        .from(seances)
+        .select(`id, ${parent}, jour, ${quantite}`)
+        .gte('jour', dateISO)
+        .order('jour'),
+    );
+
+  // Toutes les séances d'une œuvre, sans borne de date : l'avancée d'un livre
+  // commencé il y a un an doit rester juste.
+  const seancesDe = async (id) =>
+    verifier(
+      await client.from(seances).select(`id, ${parent}, jour, ${quantite}`).eq(parent, id),
+    );
+
+  // NOTER DES PAGES COCHE L'HABITUDE DE LECTURE. C'est la preuve qu'on a lu :
+  // redemander de cocher « lire un peu » juste après serait demander deux fois
+  // la même chose. Rien de tel côté films — aucune habitude ne s'en déclare, et
+  // le hub n'en invente pas.
+  const noter = async (id, combien, jour = versDateISO()) => {
+    const seance = verifier(
+      await client
+        .from(seances)
+        .insert({ [parent]: id, [quantite]: combien, jour })
+        .select()
+        .single(),
+    );
+
+    if (habitudeAuto) {
+      const [habitude] = verifier(
+        await client.from('habitudes').select('id').eq('automatique', habitudeAuto).limit(1),
+      );
+      if (habitude) await marquerHabitude(habitude.id, jour);
+    }
+
+    return seance;
+  };
+
+  const creer = async (champs) =>
+    verifier(await client.from(table).insert(champs).select(avecCitations).single());
+
+  const modifier = async (id, champs) =>
+    verifier(await client.from(table).update(champs).eq('id', id).select(avecCitations).single());
+
+  const supprimer = async (id, chemin = null) => {
+    // L'image part avec son œuvre : un fichier que plus personne ne référence
+    // est payé sans jamais être revu.
+    if (chemin) await supprimerImage(chemin, reserve);
+    const { error } = await client.from(table).delete().eq('id', id);
+    if (error) throw error;
+  };
+
+  // Terminer une œuvre écrit une victoire : finir un livre en est une, voir un
+  // film aussi, et le perso compte au même rang que le reste (philosophie du
+  // hub).
+  const terminer = async (oeuvre, note = null) => {
+    const acheve = verifier(
+      await client
+        .from(table)
+        .update({ statut: fini, note, fini_le: versDateISO() })
+        .eq('id', oeuvre.id)
+        .select(avecCitations)
+        .single(),
+    );
+
+    await ajouterVictoire({
+      espace: 'perso',
+      titre: `${victoire} « ${oeuvre.titre} »`,
+      source: 'manuel',
+    });
+
+    return acheve;
+  };
+
+  // Retirer une séance : c'est le seul moyen de corriger un « +25 » touché deux
+  // fois. Les quantités étant la SOMME des séances, le compte se refait tout
+  // seul — il n'y a pas de colonne à rattraper.
+  const retirerSeance = async (id) => {
+    const { error } = await client.from(seances).delete().eq('id', id);
+    if (error) throw error;
+  };
+
+  const garderCitation = async (id, texte, ou = null) =>
+    verifier(
+      await client
+        .from(citations)
+        .insert({ [parent]: id, texte, [repere]: ou })
+        .select()
+        .single(),
+    );
+
+  const retirerCitation = async (id) => {
+    const { error } = await client.from(citations).delete().eq('id', id);
+    if (error) throw error;
+  };
+
+  return {
+    tous,
+    parId,
+    seancesDepuis,
+    seancesDe,
+    noter,
+    creer,
+    modifier,
+    supprimer,
+    terminer,
+    retirerSeance,
+    garderCitation,
+    retirerCitation,
+    // L'image : téléversement, adresses signées, suppression. Le bucket est
+    // porté par le rayon — la clé du garde-manger porte sa réserve, sans quoi
+    // une affiche pourrait ressortir l'adresse d'une couverture.
+    televerserImage: (fichier) => televerserImage(fichier, reserve),
+    urlsDesImages: (chemins) => urlsDesPhotos(chemins, reserve),
+    supprimerImage: (chemin) => supprimerImage(chemin, reserve),
+  };
 }
 
-export async function modifierLivre(id, champs) {
-  return verifier(
-    await client
-      .from('livres')
-      .update(champs)
-      .eq('id', id)
-      .select('*, citations:livres_citations(id, texte, page)')
-      .single(),
-  );
-}
+export const rayonLivres = fabriquerRayon({
+  table: 'livres',
+  seances: 'livres_seances',
+  citations: 'livres_citations',
+  parent: 'livre_id',
+  quantite: 'pages',
+  image: 'couverture',
+  reserve: 'livres',
+  repere: 'page',
+  fini: 'lu',
+  victoire: 'Fini',
+  habitudeAuto: 'lecture',
+});
 
-export async function supprimerLivre(id, couverture = null) {
-  // La couverture part avec son livre : une image que plus personne ne
-  // référence est un fichier qu'on paie sans jamais le revoir.
-  if (couverture) await supprimerCouverture(couverture);
-  const { error } = await client.from('livres').delete().eq('id', id);
-  if (error) throw error;
-}
-
-// Terminer un livre écrit une victoire : finir un livre en est une, et le
-// perso compte au même rang que le reste (philosophie du hub).
-export async function terminerLivre(livre, note = null) {
-  const fini = verifier(
-    await client
-      .from('livres')
-      .update({ statut: 'lu', note, fini_le: versDateISO() })
-      .eq('id', livre.id)
-      .select('*, citations:livres_citations(id, texte, page)')
-      .single(),
-  );
-
-  await ajouterVictoire({
-    espace: 'perso',
-    titre: `Fini « ${livre.titre} »`,
-    source: 'manuel',
-  });
-
-  return fini;
-}
-
-// Retirer une séance : c'est le seul moyen de corriger un « +25 » touché deux
-// fois. Les pages lues étant la SOMME des séances, le compte se refait tout
-// seul — il n'y a pas de colonne à rattraper.
-export async function retirerUneSeance(id) {
-  const { error } = await client.from('livres_seances').delete().eq('id', id);
-  if (error) throw error;
-}
-
-export async function garderUneCitation(livre_id, texte, page = null) {
-  return verifier(
-    await client.from('livres_citations').insert({ livre_id, texte, page }).select().single(),
-  );
-}
-
-export async function retirerUneCitation(id) {
-  const { error } = await client.from('livres_citations').delete().eq('id', id);
-  if (error) throw error;
-}
+export const rayonFilms = fabriquerRayon({
+  table: 'films',
+  seances: 'films_seances',
+  citations: 'films_citations',
+  parent: 'film_id',
+  quantite: 'episodes',
+  image: 'affiche',
+  reserve: 'affiches',
+  repere: 'repere',
+  fini: 'vu',
+  victoire: 'Vu',
+});
 
 // --- Les habitudes de l'espace perso -----------------------------------------
 //
@@ -1704,7 +1759,6 @@ export async function televerserImage(fichier, reserve = 'moments') {
 }
 
 export const televerserPhotoMoment = (fichier) => televerserImage(fichier, 'moments');
-export const televerserCouverture = (fichier) => televerserImage(fichier, 'livres');
 
 // Des signatures d'UN MOIS, gardées et réutilisées (décision de Noé, 21 août
 // 2026 — le mail de Supabase). Elles duraient une heure et se redemandaient à
@@ -1806,12 +1860,6 @@ export async function supprimerImage(chemin, reserve = 'moments') {
 }
 
 export const supprimerPhotoMoment = (chemin) => supprimerImage(chemin, 'moments');
-export const supprimerCouverture = (chemin) => supprimerImage(chemin, 'livres');
-
-// Les adresses signées des couvertures. Même garde-manger, même durée : une
-// couverture se regarde autant qu'une photo du carnet, et retélécharger toute
-// une étagère à chaque visite serait le même gâchis.
-export const urlsDesCouvertures = (chemins) => urlsDesPhotos(chemins, 'livres');
 
 // Retirer une sortie DU CARNET, sans la retirer du calendrier (fusion du
 // 14 août 2026). C'est tout l'intérêt de la fusion : l'événement a eu lieu, il
