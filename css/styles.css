@@ -1508,17 +1508,13 @@ a { color: var(--accent); }
   line-height: 1.2;
 }
 
-.humeur-ligne {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: var(--espace-8);
-}
+/* CINQ FRIMOUSSES, sans question écrite : le libellé reste pour les lecteurs
+   d'écran, sur le groupe.
 
-/* CINQ FRIMOUSSES DANS LA LIGNE, sans question écrite : posées à côté d'un
-   « Bonjour Noé », elles se comprennent sans le « Comment tu te sens ? » qui
-   occupait sa propre ligne. Le libellé reste pour les lecteurs d'écran, sur le
-   groupe. */
+   ELLES NE VIVENT PLUS QUE DANS LA TUILE D'UNE JOURNÉE (5 septembre 2026) :
+   l'humeur a quitté la tête de l'accueil et celle de perso, et se note en fin de
+   journée dans le bilan du jour. La règle des 2,25 rem tient toujours — cinq
+   cibles côte à côte ne peuvent pas faire 220 px sur un téléphone de 375. */
 .echelle-humeur {
   display: flex;
   gap: var(--espace-4);
@@ -1543,47 +1539,6 @@ a { color: var(--accent); }
 
 .bouton-humeur:hover { background: var(--accent-doux); border-color: var(--accent); }
 .bouton-humeur.en-cours { opacity: 0.5; }
-
-/* Une fois répondu, il ne reste QUE la frimousse choisie : c'est ce que Noé
-   reprochait le plus — l'humeur prenait plus de place APRÈS avoir répondu
-   qu'avant. On la presse pour changer d'avis. */
-.humeur-choisie {
-  width: 2.25rem;
-  height: 2.25rem;
-  padding: 0;
-  font-size: 1.25rem;
-  line-height: 1;
-  background: none;
-  border: 0;
-  border-radius: var(--rayon-pastille);
-  cursor: pointer;
-}
-.humeur-choisie:hover { background: var(--accent-doux); }
-
-/* « un mot ? » — le champ de note ne s'ouvre que si on le demande. C'est lui
-   qui pesait dans l'ancien bloc, et il sert rarement. Une fois écrit, le mot
-   lui-même sert de bouton : on relit sa note sans rouvrir le champ. */
-.humeur-mot {
-  max-width: 12rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.8125rem;
-}
-
-.note-humeur, .recherche { max-width: 32rem; }
-
-.note-humeur {
-  margin: var(--espace-12) 0 0;
-  font-size: 0.9375rem;
-  background: transparent;
-  border-color: transparent;
-  border-bottom-color: var(--bordure);
-  border-radius: 0;
-  padding-left: 0;
-}
-
-.note-humeur:focus { border-bottom-color: var(--accent); }
 
 /* LE MENU À TROIS POINTS d'une ligne de tâche (29 août 2026, demande de Noé).
    Il ne porte que ce qui n'est pas atteignable autrement depuis l'écran : la
@@ -4227,6 +4182,10 @@ body.fond-fige {
   margin-bottom: var(--espace-12);
 }
 
+/* Sa mesure vivait dans une règle partagée avec `.note-humeur`, partie avec la
+   ligne d'humeur de l'accueil (5 septembre 2026) : un champ de recherche ne
+   s'étire pas au-delà de ce qu'on y tape. */
+.recherche { max-width: 32rem; }
 .barre-base .recherche { flex: 1 1 16rem; margin-bottom: 0; }
 
 .affichages {
@@ -6750,20 +6709,6 @@ li.livre-tuile {
   gap: var(--espace-16);
 }
 
-/* La question du jour, posée ICI et plus seulement sur l'accueil : c'est la
-   page de l'humeur. L'échelle est celle de l'accueil, au glyphe près — une
-   question posée de deux façons selon l'écran deviendrait deux questions. */
-.humeur-jour {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--espace-12);
-  margin: 0 0 var(--espace-16);
-  font-size: 0.875rem;
-  color: var(--texte-discret);
-}
-
-.humeur-jour-frimousse { font-size: 1.25rem; }
 
 .courbe-humeur {
   display: block;

@@ -74,12 +74,6 @@ function verifier({ data, error }) {
 
 // Humeur — une entrée par jour, la contrainte UNIQUE sur `date` fait le reste.
 
-export async function humeurDuJour(dateISO) {
-  return verifier(
-    await client.from('humeur').select('*').eq('date', dateISO).maybeSingle(),
-  );
-}
-
 export async function enregistrerHumeur(dateISO, niveau, note = null) {
   return verifier(
     await client

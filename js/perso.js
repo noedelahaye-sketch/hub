@@ -679,18 +679,18 @@ function porte(adresse, mot) {
 }
 
 export function construireTableauPerso(donnees) {
-  const { humeurDuJour, etatsHabitudes = [], livre, seances = [], rendezVous = [], relue, mot, jour } =
+  const { etatsHabitudes = [], livre, seances = [], rendezVous = [], relue, mot, jour } =
     donnees;
 
   const avancee = livre ? avanceeDuLivre(livre, seances) : null;
 
   return `
     <div class="perso-tableau">
-      <!-- LA QUESTION SE REDESSINE SEULE, et pas avec la tuile : celle-ci porte
-           « Ce qui a compté aujourd'hui », un champ qui s'enregistre quand on
-           le quitte — redessiner pendant que l'écriture est en vol y remettrait
-           le texte d'avant. -->
-      <div data-bloc="humeur-jour">${construireHumeurDuJour(humeurDuJour)}</div>
+      <!-- L'HUMEUR NE SE NOTE PLUS ICI (5 septembre 2026, décision de Noé :
+           « elle n'est notée qu'à la fin de la journée dans le bilan du jour »).
+           Elle ouvrait cette page comme elle ouvrait l'accueil ; la même
+           question posée à trois endroits finit par ne plus être une question.
+           Elle vit désormais dans la tuile d'une journée, et là seulement. -->
 
       <!-- DEUX COLONNES : LES HABITUDES À GAUCHE, LA LECTURE À DROITE (30 août
            2026, demande de Noé — la seconde colonne était à trouver).
@@ -1370,32 +1370,6 @@ const NIVEAUX_HUMEUR = [
   { niveau: 5, frimousse: '😄', mot: 'très bien' },
 ];
 
-export function construireHumeurDuJour(humeur) {
-  if (humeur) {
-    const choisi = NIVEAUX_HUMEUR.find((n) => n.niveau === humeur.niveau);
-    return `
-      <p class="humeur-jour">
-        <span class="humeur-jour-frimousse">${choisi?.frimousse ?? ''}</span>
-        <span>Aujourd'hui, ${echapper(choisi?.mot ?? '')}${
-          humeur.note ? ` — ${echapper(humeur.note)}` : ''
-        }</span>
-        <button type="button" class="lien-discret" data-rouvrir-humeur>Changer</button>
-      </p>`;
-  }
-
-  return `
-    <p class="humeur-jour">
-      <span>Comment tu te sens ?</span>
-      <span class="echelle-humeur" role="group" aria-label="Comment tu te sens ?">
-        ${NIVEAUX_HUMEUR.map(
-          ({ niveau, frimousse, mot }) => `
-          <button type="button" class="bouton-humeur" data-niveau="${niveau}"
-            title="${mot}" aria-label="${mot}">${frimousse}</button>`,
-        ).join('')}
-      </span>
-    </p>`;
-}
-
 // LA PAGE ET SES VUES. Le tableau de bord est ce qu'on voit sans avoir rien
 // demandé ; les autres blocs sont des VUES que le menu offre une à une, et
 // `#perso` seul n'en montre aucune.
@@ -1680,7 +1654,7 @@ export default {
     // vivent pas sur le livre — une adresse expire, un chemin non — et se
     // regarnissent d'un chargement à l'autre (voir `urlsDesImages` du rayon).
     const etat = {
-      intentions: [], evenements: [], victoires: [], humeurDuJour: null,
+      intentions: [], evenements: [], victoires: [],
       habitudes: [], faits: [],
       // LES DEUX RAYONS DE LA BIBLIOTHÈQUE, chacun avec son journal de séances et
       // ses adresses signées. `couvertures` et `affiches` ne vivent pas sur
@@ -1868,7 +1842,6 @@ export default {
       const jour = versDateISO();
       bloc('tableau').innerHTML = construireTableauPerso({
         jour,
-        humeurDuJour: etat.humeurDuJour,
         etatsHabitudes: etatDesHabitudes({ habitudes: etat.habitudes, faits: etat.faits }),
         livre: livreEnCours(etat.livres, etat.seances),
         seances: etat.seances,
@@ -1930,9 +1903,6 @@ export default {
         { habitudes: etat.habitudes, faits: etat.faits },
       );
     };
-    const rendreHumeurDuJour = () => {
-      bloc('humeur-jour').innerHTML = construireHumeurDuJour(etat.humeurDuJour);
-    };
 
     // Quelle liste redessiner après un geste : la clé du menu discret porte
     // déjà la forme, il n'y a donc rien à deviner.
@@ -1954,13 +1924,12 @@ export default {
       // la relecture du jour, les seconds le prochain rendez-vous du tableau de
       // bord.
       const [
-        intentions, evenements, victoires, humeurDuJour, habitudes, faits,
+        intentions, evenements, victoires, habitudes, faits,
         livres, seances, films, seancesFilms,
       ] = await Promise.all([
           api.objectifsActifs({ espace: ESPACE }),
           api.evenementsEntre(new Date().toISOString(), horizon(), { espace: ESPACE }),
           api.victoiresDeLEspace(ESPACE),
-          api.humeurDuJour(versDateISO()),
           api.habitudesToutes(),
           api.habitudesFaitsDepuis(versDateISO(ajouterJours(new Date(), -366))),
           api.rayonLivres.tous(),
@@ -1972,7 +1941,7 @@ export default {
         ]);
 
       Object.assign(etat, {
-        intentions, evenements, victoires, humeurDuJour, habitudes, faits,
+        intentions, evenements, victoires, habitudes, faits,
         livres, seances, films, seancesFilms,
       });
       rendreHabitudes();
@@ -2754,52 +2723,39 @@ export default {
         );
       }
 
-      // RÉPONDRE À L'HUMEUR ICI (29 août 2026) : c'est la page de l'humeur, la
-      // question doit pouvoir s'y poser. Elle passait uniquement par l'accueil.
+      // RÉPONDRE À L'HUMEUR, dans la tuile d'une journée et là seulement
+      // (5 septembre 2026). Elle se posait aussi en tête de cette page et en
+      // tête de l'accueil ; une même question à trois endroits finit par ne plus
+      // en être une, et le soir dit mieux la journée que le matin.
       const niveau = dans('niveau');
       if (niveau) {
-        // LE JOUR VIENT DU BOUTON (1er septembre 2026) : la note d'une journée
-        // se pose depuis sa tuile, donc pour un jour qui n'est pas forcément
-        // aujourd'hui. Sans `data-jour`, on écrivait la note d'hier sur la date
-        // du jour — un défaut qui ne se voit qu'en relisant la courbe.
+        // LE JOUR VIENT DU BOUTON (1er septembre 2026) : on note la journée
+        // qu'on relit, donc pas forcément aujourd'hui. Sans `data-jour`, noter
+        // hier soir écrivait sur la date du jour.
         const jour = niveau.dataset.jour ?? versDateISO();
-        const cejour = jour === versDateISO();
         const gardee = journeesVues.get(jour);
-        const avant = cejour ? etat.humeurDuJour : (gardee?.humeur ?? null);
+        const avant = gardee?.humeur ?? null;
         const pose = { niveau: Number(niveau.dataset.niveau), note: avant?.note ?? null };
 
-        // L'écran d'abord, aux deux endroits qui la montrent.
-        if (cejour) {
-          etat.humeurDuJour = pose;
-          rendreHumeurDuJour();
-        }
         if (gardee) gardee.humeur = pose;
         // SEULE LA NOTE SE REDESSINE, pas la tuile entière : le journal juste
-        // au-dessus vient de s'enregistrer sur son `blur`, et l'écriture est
-        // encore en vol. Redessiner remettrait le texte d'avant dans le champ.
+        // en dessous vient peut-être de s'enregistrer en quittant le champ, et
+        // l'écriture est encore en vol — redessiner y remettrait le texte
+        // d'avant.
         const cadre = section.querySelector('[data-note-jour]');
         if (cadre) cadre.innerHTML = construireNoteDuJour(jour, pose);
 
         try {
           const ecrite = await api.enregistrerHumeur(jour, pose.niveau, avant?.note ?? null);
-          if (cejour) etat.humeurDuJour = ecrite;
           if (gardee) gardee.humeur = ecrite;
           // Le calendrier des journées porte la frimousse : elle doit suivre.
           resumesVus.clear();
           chargerLesResumes();
         } catch (souci) {
           console.error('Humeur non enregistrée', souci);
-          if (cejour) etat.humeurDuJour = avant;
           if (gardee) gardee.humeur = avant;
           if (cadre) cadre.innerHTML = construireNoteDuJour(jour, avant);
         }
-        if (cejour) rendreHumeurDuJour();
-        return;
-      }
-
-      if (dans('rouvrir-humeur')) {
-        etat.humeurDuJour = null;
-        rendreHumeurDuJour();
         return;
       }
 

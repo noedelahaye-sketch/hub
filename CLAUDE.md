@@ -307,7 +307,7 @@ des données qui évoluent sur lesquelles on a une action à faire. »
 
 | Restent | Partent, chacune vers sa page |
 |---|---|
-| l'humeur du jour (elle change, elle se répond d'un doigt) | les intentions |
+| ~~l'humeur du jour~~ *(partie le 5 septembre : elle se note au bilan du jour)* | les intentions |
 | les habitudes du jour (elles se cochent) | la bibliothèque entière |
 | le livre en cours (des pages se notent) | l'historique des journées |
 | le prochain rendez-vous · le mot du jour | la courbe des 30 jours, les victoires |
@@ -347,10 +347,11 @@ Ce que la refonte a corrigé, et qui n'était pas que de la forme :
   une question dont on ne fait rien finit par ne plus recevoir de réponse. Elle
   ne compte toujours **rien** ici — les planchers qu'elle alimente restent
   internes.
-- **l'humeur se répond SUR SA PAGE.** Il fallait passer par l'accueil pour
-  ajouter un point à la courbe qu'on regardait. L'échelle est celle de
-  l'accueil, au glyphe près : une question posée de deux façons selon l'écran
-  deviendrait deux questions.
+- **l'humeur se répondait SUR SA PAGE.** *Renversé le 5 septembre 2026 : elle ne
+  se note plus que dans le bilan du jour — ni sur l'accueil, ni ici. Le motif
+  d'alors tenait (« une question posée de deux façons selon l'écran deviendrait
+  deux questions ») ; il se retourne contre trois endroits comme il valait pour
+  deux.*
 - **les victoires tiennent en une ligne**, avec leur date à droite comme partout
   ailleurs — elles occupaient trois hauteurs de texte pour un mot. Une porte
   s'ouvre vers **« Le chemin »**, qui n'existait pas quand ce bloc a été écrit.
@@ -2191,14 +2192,34 @@ gestes ne doivent jamais porter le même signe.
 ### L'ordre de la page
 
 1. **La ligne de tête** — une ligne, là où il y en avait trois (126 px → 47).
-   La date est partie : « Ta semaine » la dit sept fois plus bas. La salutation
-   devient **l'état du jour**, et le signal de la première ouverture n'est pas
-   l'heure mais **l'humeur non notée** : le hub salue tant qu'on ne lui a pas
-   répondu, puis il dit « Trois choses aujourd'hui », « Il t'en reste une »,
-   « Tout est fait », « Rien de posé aujourd'hui ». Aucun réglage, aucune
-   mémoire à tenir. L'humeur tient au bout de la même ligne — cinq frimousses,
-   puis la seule choisie une fois répondu. Le champ « un mot ? » ne s'ouvre que
-   si on le demande : c'est lui qui pesait.
+   La date est partie : « Ta semaine » la dit sept fois plus bas. Elle dit
+   **« Bonjour Noé » à la première ouverture du jour**, puis **l'état du jour** :
+   « Trois choses aujourd'hui », « Il t'en reste une », « Tout est fait »,
+   « Rien de posé aujourd'hui ».
+
+   **L'HUMEUR A QUITTÉ L'ACCUEIL** (5 septembre 2026, décision de Noé : *« la
+   note d'humeur ne doit plus apparaître en haut à droite de la page d'accueil,
+   elle n'est notée qu'à la fin de la journée dans le bilan du jour »*). Et ça se
+   tient : une humeur demandée le matin dit comment on se réveille ; posée le
+   soir dans la tuile d'une journée qu'on relit, elle la RÉSUME. Le hub avait
+   déjà choisi la seconde question le 1er septembre — la poser aussi le matin en
+   faisait deux. **Elle se note désormais dans le bilan du jour, et là
+   seulement** : ni sur l'accueil, ni en tête de `#perso`.
+
+   **LE SALUT A DONC CHANGÉ DE SIGNAL.** C'était l'humeur non notée — « le hub
+   salue tant qu'on ne lui a pas répondu » —, et ce signal est parti avec elle.
+   C'est maintenant **une ligne dans le navigateur** (`hub-salut`, le jour de la
+   dernière salutation) : pas de colonne en base, parce qu'une commodité
+   d'affichage propre à l'appareil ne dit rien de la vie de Noé. *Conséquence
+   assumée : le hub salue une fois par appareil et par jour — ce qui est
+   exactement ce qu'on attend d'un bonjour.* Si le stockage refuse (navigation
+   privée), **on salue** : mieux vaut un bonjour de trop qu'un accueil qui n'en
+   dit jamais.
+
+   **LA DÉCISION SE PREND UNE FOIS, AU MONTAGE**, et vaut pour toute la session :
+   la relire à chaque rendu ferait basculer « Bonjour Noé » en « Trois choses »
+   sous les yeux, au premier clic. Ce qu'on veut, c'est que ça change à la
+   PROCHAINE ouverture.
 2. **La porte du dimanche** — conditionnelle, dans sa fenêtre (dimanche à
    partir de 20 h, et le lundi) et tant que la semaine n'est pas validée. **Un
    bouton, et rien d'autre** : « Programmer ma semaine », en pastille d'accent,

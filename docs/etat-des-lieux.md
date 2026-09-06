@@ -312,6 +312,39 @@ voulu.*
 > fois sur `NIVEAUX_HUMEUR`. Devant un écran qui n'a pas bougé alors que le code
 > a changé : vider le cache et le service worker AVANT d'accuser le calcul.
 
+### L'HUMEUR QUITTE L'ACCUEIL (fin de session)
+
+**Décision de Noé** : *« la note d'humeur ne doit plus apparaître en haut à
+droite de la page d'accueil, elle n'est notée qu'à la fin de la journée dans le
+bilan du jour. Bonjour Noé apparaît donc que lors de la 1re ouverture, après on
+passe au texte dynamique. »*
+
+**Elle se note maintenant dans la tuile d'une journée, et là seulement** — j'ai
+donc retiré les deux autres endroits : la tête de l'accueil, et celle de
+`#perso`. *C'est une lecture de sa phrase (« qu'à … dans le bilan du jour ») qui
+va un cran plus loin que le mot « accueil » ; à corriger d'une phrase si elle
+dépasse.*
+
+**LE SALUT A CHANGÉ DE SIGNAL.** Depuis le 29 août, le hub saluait tant que
+l'humeur n'était pas notée — le signal est parti avec elle. C'est désormais
+`localStorage['hub-salut']`, le jour de la dernière salutation : une ligne dans
+le navigateur, pas une colonne en base. **La décision se prend une fois, au
+montage**, sinon « Bonjour Noé » basculerait en « 11 choses aujourd'hui » sous
+les yeux au premier clic. *Vérifié : première ouverture → « Bonjour Noé » ;
+rechargement → « 11 choses aujourd'hui. » ; le bilan du jour porte toujours ses
+cinq frimousses, avec celle du jour choisie.*
+
+**Ce qui est parti avec** : `construireHumeurDuJour`, la source `humeur` du
+tableau de bord et son cache daté, les trois gestes de l'accueil (répondre,
+rouvrir, « un mot ? »), `api.humeurDuJour`, et six règles CSS. *Le champ
+« un mot sur ta journée » de l'accueil disparaît aussi — la tuile d'une journée
+a son propre journal, plus grand.*
+
+> **Une régression, et la même leçon pour la troisième fois** : `rendreHumeur`
+> restait appelée au premier rendu, et l'accueil ne montait plus. Trouvée au
+> navigateur. **Et le tampon de la console garde les erreurs des chargements
+> précédents** — c'est un onglet NEUF qui tranche, pas un rechargement.
+
 ### Ce qui attend une réponse de Noé
 
 1. **Les émojis de sa table Notion** — un par film. Faut-il une colonne `emoji`

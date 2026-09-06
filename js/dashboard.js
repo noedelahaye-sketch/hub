@@ -1,6 +1,6 @@
 // Espace tableau de bord — la page de Noé.
 //
-// Ordre voulu : on commence par lui (le jour, son humeur), puis par ce qui est
+// Ordre voulu : on commence par lui (le jour), puis par ce qui est
 // accompli (victoires, progression), et seulement à la fin par ce qu'il reste à
 // faire. Rien ici ne compte les retards.
 //
@@ -87,14 +87,6 @@ const MAX_TACHES = 9; // ce qui tient sans que « Aujourd'hui » devienne une li
 // Même durée que dans les espaces.
 const DUREE_ANNULATION = 6000;
 
-const NIVEAUX_HUMEUR = [
-  { niveau: 1, frimousse: '😔', mot: 'difficile' },
-  { niveau: 2, frimousse: '😕', mot: 'bof' },
-  { niveau: 3, frimousse: '😐', mot: 'ça va' },
-  { niveau: 4, frimousse: '🙂', mot: 'bien' },
-  { niveau: 5, frimousse: '😄', mot: 'super' },
-];
-
 // --- Fabrication du HTML ----------------------------------------------------
 
 // Sur le tableau de bord les espaces se mélangent : chaque tuile porte la
@@ -116,11 +108,45 @@ function enTeteTuile(espace, quand, bouton = '') {
 //
 // LA DATE EST PARTIE : « Ta semaine », juste en dessous, la dit sept fois.
 //
-// LA SALUTATION DEVIENT L'ÉTAT DU JOUR, parce que Noé le demandait ainsi :
-// « bonjour à la première ouverture, mais après il faut que ça change ». Le
-// signal de la première ouverture n'est pas l'heure — c'est l'HUMEUR NON
-// NOTÉE : le hub salue tant qu'on ne lui a pas répondu, puis il dit où en est
-// la journée. Aucun réglage, aucune mémoire à tenir.
+// L'HUMEUR AUSSI, DEPUIS LE 5 SEPTEMBRE 2026 (décision de Noé : « la note
+// d'humeur ne doit plus apparaître en haut à droite de la page d'accueil, elle
+// n'est notée qu'à la fin de la journée dans le bilan du jour »).
+//
+// ET ÇA SE TIENT : une humeur demandée le matin dit comment on se réveille ;
+// posée le soir dans la tuile d'une journée qu'on relit, elle la RÉSUME. C'est
+// la question que le hub a choisie le 1er septembre, et elle ne peut pas se
+// poser deux fois de deux façons — une même question posée à deux moments
+// deviendrait deux questions.
+//
+// LA SALUTATION RESTE À LA PREMIÈRE OUVERTURE, parce que Noé le demandait ainsi
+// dès le 29 août : « bonjour à la première ouverture, mais après il faut que ça
+// change ». Le signal ÉTAIT l'humeur non notée ; il fallait donc lui en trouver
+// un autre — voir `premiereOuverture` plus bas.
+// LA PREMIÈRE OUVERTURE DU JOUR (5 septembre 2026). Le hub saluait tant que
+// l'humeur n'était pas notée ; l'humeur ayant quitté l'accueil, ce signal a
+// disparu avec elle, et Noé veut garder le salut : « Bonjour Noé apparaît donc
+// que lors de la 1re ouverture, après on passe au texte dynamique. »
+//
+// UNE LIGNE DANS LE NAVIGATEUR, ET C'EST TOUT : le jour de la dernière
+// salutation. Pas de colonne en base — c'est une commodité d'affichage, propre
+// à l'appareil, et la noter au serveur ferait voyager une donnée qui ne dit
+// rien de la vie de Noé. Conséquence assumée : le hub salue une fois par
+// appareil et par jour, ce qui est exactement ce qu'on veut d'un « bonjour ».
+//
+// SI LE STOCKAGE REFUSE (navigation privée, site data bloqué), ON SALUE : mieux
+// vaut un bonjour de trop qu'un accueil qui ne dit jamais bonjour.
+const CLE_SALUT = 'hub-salut';
+
+export function premiereOuverture(jour = versDateISO()) {
+  try {
+    if (localStorage.getItem(CLE_SALUT) === jour) return false;
+    localStorage.setItem(CLE_SALUT, jour);
+    return true;
+  } catch {
+    return true;
+  }
+}
+
 const MOTS_NOMBRE = [
   'Rien', 'Une', 'Deux', 'Trois', 'Quatre', 'Cinq',
   'Six', 'Sept', 'Huit', 'Neuf',
@@ -139,48 +165,18 @@ export function etatDuJour({ reste = 0, faites = 0 } = {}) {
   return reste === 1 ? "Une chose aujourd'hui." : `${enLettres(reste)} choses aujourd'hui.`;
 }
 
-export function construireEnTete(
-  maintenant = new Date(),
-  { humeur = null, reste = 0, faites = 0, noteOuverte = false } = {},
-) {
+export function construireEnTete(maintenant = new Date(), { premiere = false, reste = 0, faites = 0 } = {}) {
   const salutation = maintenant.getHours() >= 18 ? 'Bonsoir' : 'Bonjour';
 
-  // Tant que l'humeur n'a pas été notée, le hub salue. C'est aussi ce qui rend
-  // la question visible sans avoir à l'écrire : cinq frimousses posées à côté
-  // d'un « Bonjour Noé » se comprennent sans le « Comment tu te sens ? » qui
-  // occupait sa propre ligne.
-  const mot = humeur ? etatDuJour({ reste, faites }) : `${salutation} ${PRENOM}`;
-
-  const choisi = humeur ? NIVEAUX_HUMEUR.find((n) => n.niveau === humeur.niveau) : null;
-
-  const echelle = humeur
-    ? `<button type="button" class="humeur-choisie" data-action="rouvrir-humeur"
-         title="Changer" aria-label="Humeur : ${choisi?.mot ?? ''} — changer"
-         >${choisi?.frimousse ?? ''}</button>
-       <button type="button" class="lien-discret humeur-mot" data-action="note-humeur"
-         aria-expanded="${noteOuverte}">${humeur.note ? echapper(humeur.note) : 'un mot ?'}</button>`
-    : `<span class="echelle-humeur" role="group" aria-label="Comment tu te sens ?">${NIVEAUX_HUMEUR.map(
-        ({ niveau, frimousse, mot: nom }) => `
-        <button type="button" class="bouton-humeur" data-niveau="${niveau}"
-          aria-label="${nom}" title="${nom}">${frimousse}</button>`,
-      ).join('')}</span>`;
-
-  // Le champ de note ne s'ouvre QUE si on le demande : c'est lui qui pesait
-  // dans l'ancien bloc, et il sert rarement. Le fermer par défaut ne le retire
-  // pas, il le range.
-  const note =
-    humeur && noteOuverte
-      ? `<label class="hors-ecran" for="note-humeur">Un mot sur ta journée (facultatif)</label>
-         <input type="text" id="note-humeur" class="note-humeur" maxlength="140"
-           placeholder="un mot sur ta journée ?" value="${echapper(humeur.note ?? '')}">`
-      : '';
+  // Le salut à la première ouverture du jour, l'état de la journée ensuite. La
+  // fonction reste PURE : c'est l'appelant qui sait s'il ouvre pour la première
+  // fois, et lui seul touche à la mémoire du navigateur.
+  const mot = premiere ? `${salutation} ${PRENOM}` : etatDuJour({ reste, faites });
 
   return `
     <div class="tete-jour">
       <h1 class="salut">${echapper(mot)}</h1>
-      <div class="humeur-ligne">${echelle}</div>
-    </div>
-    ${note}`;
+    </div>`;
 }
 
 export function construireVictoires(victoires) {
@@ -681,7 +677,6 @@ const CLE_CACHE = 'dashboard';
 // l'état, pas une liste nue : la semaine ramène ses quatre tables ensemble, et
 // le reste du code n'a pas à savoir qu'elles voyagent de concert.
 const SOURCES = {
-  humeur: async () => ({ humeur: await api.humeurDuJour(versDateISO()) }),
   ...(VICTOIRES_VISIBLES
     ? { victoires: async () => ({ victoires: await api.dernieresVictoires(MAX_VICTOIRES) }) }
     : {}),
@@ -708,7 +703,6 @@ const SOURCES = {
 // garder que des données — et pour garder l'état VIVANT (une tâche cochée, une
 // victoire retirée) plutôt que ce que le serveur avait répondu.
 const DONNEES = {
-  humeur: ['humeur'],
   ...(VICTOIRES_VISIBLES ? { victoires: ['victoires'] } : {}),
   objectifs: ['objectifs'],
   taches: ['tachesDatees'],
@@ -719,8 +713,9 @@ const DONNEES = {
 
 function squelette() {
   return `
-    <!-- LA LIGNE DE TÊTE porte la salutation, l'état du jour et l'humeur.
-         Trois blocs d'hier en une ligne — voir construireEnTete. -->
+    <!-- LA LIGNE DE TÊTE porte le salut à la première ouverture, puis l'état de
+         la journée. L'humeur l'a quittée le 5 septembre 2026 : elle se note en
+         fin de journée, dans le bilan du jour. Voir construireEnTete. -->
     <header class="jour" id="bloc-jour"></header>
 
     <!-- L'échec de chargement se dit sous l'en-tête, sur une ligne : le reste
@@ -863,7 +858,6 @@ export default {
     // L'état gardé entre deux rendus : ce que l'utilisateur peut modifier sans
     // recharger la page.
     const etat = {
-      humeur: null,
       victoires: [],
       objectifs: [],
       tachesDatees: [],
@@ -871,10 +865,6 @@ export default {
       publications: [],
       commandes: [],
       contacts: [],
-      humeurOuverte: false,
-      // Le champ « un mot sur ta journée » est replié par défaut : c'est lui
-      // qui pesait dans l'ancien bloc, et il sert rarement.
-      humeurNoteOuverte: false,
       annulation: null,
       creation: null,
       // La barre de la semaine touchée, sa fenêtre de détail (demande de Noé,
@@ -914,11 +904,6 @@ export default {
     // juste après, et réécrit dès la première réponse.
     const restaure = lireCache(CLE_CACHE);
     if (restaure) {
-      // L'humeur est datée du jour. Un cache écrit hier soir dirait « Noté,
-      // merci » pour une question qui n'a pas encore été posée aujourd'hui —
-      // et la question du matin serait perdue. Elle repart donc du serveur.
-      if (restaure.jour !== aujourdhui) delete restaure.humeur;
-
       for (const [cle, champs] of Object.entries(DONNEES)) {
         if (!champs.every((champ) => champ in restaure)) continue;
         for (const champ of champs) etat[champ] = restaure[champ];
@@ -927,7 +912,7 @@ export default {
     }
 
     // Ce qu'on remet en cache : les données, jamais l'état d'interface (la
-    // tuile ouverte, l'humeur rouverte, la ligne d'annulation). Rouvrir
+    // tuile ouverte, la ligne d'annulation). Rouvrir
     // l'application doit retrouver le contenu, pas une fenêtre de la veille.
     const aGarder = () => {
       const garde = { jour: aujourdhui };
@@ -1006,19 +991,22 @@ export default {
       rendreDetail();
     };
 
-    // La tête se redessine quand l'humeur change ET quand la journée change :
-    // cocher une tâche fait passer « Trois choses » à « Il t'en reste deux ».
+    // LE SALUT SE DÉCIDE UNE FOIS, AU MONTAGE, et vaut pour toute la session :
+    // le lire à chaque rendu ferait basculer « Bonjour Noé » en « Trois choses »
+    // sous les yeux, au premier clic. Ce qu'on veut, c'est qu'il change à la
+    // PROCHAINE ouverture.
+    const salue = premiereOuverture(aujourdhui);
+
+    // La tête se redessine quand la journée change : cocher une tâche fait
+    // passer « Trois choses » à « Il t'en reste deux ».
     function rendreTete() {
       const journee = journeeDeNoe();
       cible('bloc-jour').innerHTML = construireEnTete(new Date(), {
-        humeur: etat.humeurOuverte ? null : etat.humeur,
+        premiere: salue,
         reste: journee.reste,
         faites: journee.faites,
-        noteOuverte: etat.humeurNoteOuverte,
       });
     }
-
-    const rendreHumeur = rendreTete;
 
     // Ce qui a déjà été vu à l'écran : une ligne absente de ces mémoires vient
     // d'arriver, et elle seule fait son entrée en fondu.
@@ -1250,10 +1238,9 @@ export default {
     }
 
     // Ce que l'arrivée d'une source redessine — et rien d'autre. Redessiner
-    // toute la page à chaque réponse ferait perdre le curseur de la note
-    // d'humeur à qui écrit pendant que le reste charge.
+    // toute la page à chaque réponse ferait sauter ce qu'on est en train de
+    // toucher pendant que le reste charge.
     const APRES = {
-      humeur: rendreHumeur,
       victoires: rendreVictoires,
       // (`victoires` n'est appelé que si la source existe — voir
       // VICTOIRES_VISIBLES.)
@@ -1664,8 +1651,8 @@ export default {
     section.addEventListener('click', async (evenement) => {
       // Prendre une proposition, ou l'écarter. Deux gestes, deux sens : l'un
       // pose une date, l'autre dit « pas aujourd'hui » — et ce refus est une
-      // DONNÉE, pas un échec. Puisque l'humeur n'est qu'observée, c'est le seul
-      // signal qui reste au hub sur l'état du jour.
+      // DONNÉE, pas un échec : c'est le seul signal que l'accueil reçoive sur
+      // l'état du jour.
       const prendre = evenement.target.closest('[data-prendre]');
       const refuser = evenement.target.closest('[data-refuser]');
       if (prendre || refuser) {
@@ -1863,42 +1850,6 @@ export default {
           supprimerElement.disabled = false;
           signalerEcriture();
         }
-        return;
-      }
-
-      // La question du matin doit se répondre en un clic et se refermer aussi
-      // vite : le « Noté, merci » ne passe donc plus par le réseau non plus.
-      const bouton = evenement.target.closest('.bouton-humeur');
-      if (bouton) {
-        const niveau = Number(bouton.dataset.niveau);
-        const avant = etat.humeur;
-        etat.humeur = { date: aujourdhui, niveau, note: avant?.note ?? null };
-        etat.humeurOuverte = false;
-        rendreHumeur();
-
-        try {
-          etat.humeur = await api.enregistrerHumeur(aujourdhui, niveau, avant?.note ?? null);
-        } catch (erreur) {
-          console.error("Enregistrement de l'humeur impossible", erreur);
-          etat.humeur = avant;
-          // La question revient telle quelle : mieux vaut la reposer que
-          // laisser croire qu'elle est enregistrée.
-          rendreHumeur();
-          signalerEcriture();
-        }
-        return;
-      }
-
-      if (evenement.target.closest('[data-action="rouvrir-humeur"]')) {
-        etat.humeurOuverte = true;
-        rendreTete();
-        return;
-      }
-
-      if (evenement.target.closest('[data-action="note-humeur"]')) {
-        etat.humeurNoteOuverte = !etat.humeurNoteOuverte;
-        rendreTete();
-        if (etat.humeurNoteOuverte) section.querySelector('#note-humeur')?.focus();
         return;
       }
 
@@ -2141,41 +2092,6 @@ export default {
       }
     });
 
-    // La note s'enregistre 400 ms après la dernière frappe, comme sur Bac-3 :
-    // on écrit une fois la phrase finie, pas une fois par lettre.
-    let minuteurNote = null;
-    async function enregistrerNote(valeur) {
-      if (!etat.humeur) return;
-      try {
-        etat.humeur = await api.enregistrerHumeur(
-          aujourdhui,
-          etat.humeur.niveau,
-          valeur.trim() || null,
-        );
-      } catch (erreur) {
-        console.error('Enregistrement de la note impossible', erreur);
-      }
-    }
-
-    section.addEventListener('input', (evenement) => {
-      const note = evenement.target.closest('#note-humeur');
-      if (!note) return;
-      clearTimeout(minuteurNote);
-      const valeur = note.value;
-      minuteurNote = setTimeout(() => enregistrerNote(valeur), 400);
-    });
-
-    section.addEventListener('change', async (evenement) => {
-      const note = evenement.target.closest('#note-humeur');
-      if (note) {
-        // Sortie du champ : on n'attend pas le minuteur.
-        clearTimeout(minuteurNote);
-        await enregistrerNote(note.value);
-        return;
-      }
-
-    });
-
     function ouvrirAnnulation(annulation) {
       clearTimeout(minuteurAnnulation);
       etat.annulation = annulation;
@@ -2235,7 +2151,7 @@ export default {
     }
 
     // Le cache est écrit à chaque chargement, mais l'état bouge aussi entre
-    // deux : une tâche cochée, une humeur donnée, une victoire retirée. On le
+    // deux : une tâche cochée, une victoire retirée. On le
     // reprend donc au moment où la page s'efface — le seul instant garanti sur
     // iOS, où une application ajoutée à l'écran d'accueil n'est jamais
     // « fermée », seulement mise de côté.
@@ -2248,7 +2164,7 @@ export default {
     // Le premier rendu vient en dernier, une fois tout branché : sans quoi un
     // clic pendant le chargement tomberait dans le vide. Il ne coûte rien — il
     // sort du cache, ou ce sont les points de suspension du squelette.
-    rendreHumeur();
+    rendreTete();
     rendreVictoires();
     rendreAujourdhui();
     rendreSemaine();
