@@ -3239,6 +3239,36 @@ d'abord — c'est pour elle qu'on est venu.
 Tâches terminées · heures mesurées · humeur moyenne · habitudes tenues
 (`bilanDeLaSemaine`, js/orientation.js — éprouvable hors écran comme le reste).
 
+**LES HEURES MESURÉES COMPTENT CE QUI A EU LIEU** (5 septembre 2026, défaut
+rapporté par Noé : *« j'ai rajouté un événement FCH dans la semaine dernière qui
+n'a pas été ajouté »*). Trois natures, et il en manquait une :
+
+| | ce qui vaut date | ce qui vaut durée |
+|---|---|---|
+| **tâche** terminée | `date_fait` | `duree`, déclarée |
+| **publication** partie | `date_prevue` | `duree`, déclarée |
+| **événement** vécu | `date_debut` | **`date_fin` − `date_debut`, mesurée** |
+
+**Le bilan ne pesait que les durées DÉCLARÉES**, donc pas le terrain — or un
+entraînement de deux heures est le plus gros poste du club. *Mesuré sur la
+semaine du 31 août : 20 h 45 affichées pour 35 h 15 vécues, et le club passait
+de 10 h 10 à 20 h 10.*
+
+**ET LE HUB SE CONTREDISAIT** : `chargeDeLaSemaine` compte le terrain depuis le
+27 août, et « Mon temps » l'affiche. Deux comptes pour une même semaine finissent
+toujours par se croiser, et c'est celui qu'on regarde le dimanche soir qui avait
+tort.
+
+- **Un événement SANS heure de fin n'a pas de durée** : il tient le jour sans
+  occuper de créneau, et le hub ne lui en invente pas une. Même règle que
+  `chargeDeLaSemaine`. Il compte alors dans le dénominateur de « X des Y choses
+  terminées portent une durée », qui est exactement là pour ça.
+- **Le TRAITEMENT n'entre pas** (les 90 min par séance du club) : la tuile dit
+  « mesurées », et le traitement est une estimation. C'est le travail de
+  « Mon temps », pas celui du miroir.
+- **Aucun forfait, aucun quota** : on pèse ce qui a eu lieu, pas ce qui était
+  prévu.
+
 **LES VICTOIRES ONT QUITTÉ LE BILAN** (1er septembre 2026, demande de Noé).
 Elles n'y disaient pas grand-chose : terminer une tâche en écrit une, si bien
 que « 18 victoires » et « 17 tâches terminées » se lisaient côte à côte comme

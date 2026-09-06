@@ -277,6 +277,41 @@ un rendez-vous se pose au calendrier, « Mon chemin » est la page des victoires
 > onglet NEUF : le tampon de la console garde les erreurs des chargements
 > précédents et m'a fait douter deux fois d'un code déjà correct.*
 
+### LES HEURES MESURÉES OUBLIAIENT LE TERRAIN (fin de session)
+
+**Défaut rapporté par Noé** : *« qu'est-ce qui est compté dans ce dashboard ? Ça
+ne me paraît pas juste… j'ai rajouté un événement FCH dans la semaine dernière
+qui n'a pas été ajouté. »*
+
+**Sa question portait sur les publications ; le vrai manque était ailleurs.** Les
+publications ÉTAIENT comptées (statut `publie`, date prévue dans la semaine,
+durée renseignée). Ce qui manquait, ce sont les **ÉVÉNEMENTS** : le bilan ne
+pesait que les durées DÉCLARÉES — tâches et publications — et jamais le temps
+passé sur place, qui se mesure entre `date_debut` et `date_fin`.
+
+**ET LE HUB SE CONTREDISAIT** : `chargeDeLaSemaine` compte le terrain depuis le
+27 août, et « Mon temps » l'affiche. Deux comptes pour une même semaine, et c'est
+celui du dimanche soir qui avait tort.
+
+*Mesuré sur la semaine du 31 août, contre la base : 20 h 45 → **35 h 15**, le
+club de 10 h 10 → 20 h 10, le perso de 7 h → 11 h 30, et le dénominateur du
+silence des durées de 27 → 33 choses terminées. Les cinq événements datés valent
+14 h 30 ; le sixième, un match sans heure de fin, reste sans durée — et c'est
+voulu.*
+
+- **Le TRAITEMENT n'entre pas** (90 min par séance du club) : la tuile dit
+  « mesurées ».
+- **Sur « il faut que ce soit dynamique »** : le bilan se recalcule à chaque
+  ouverture, il n'y a pas de cache de données. Ce qui l'a fait paraître figé,
+  c'est que les événements n'étaient pas dans le calcul — plus le service worker,
+  qui sert la version précédente une fois après un déploiement. **`sw.js` passe
+  en v20** : c'est ce qui fait arriver la correction dès la première ouverture,
+  et c'est à refaire à chaque déploiement qui touche la coquille.
+
+> **Le cache m'a fait douter deux fois dans la même session** — une fois ici, une
+> fois sur `NIVEAUX_HUMEUR`. Devant un écran qui n'a pas bougé alors que le code
+> a changé : vider le cache et le service worker AVANT d'accuser le calcul.
+
 ### Ce qui attend une réponse de Noé
 
 1. **Les émojis de sa table Notion** — un par film. Faut-il une colonne `emoji`

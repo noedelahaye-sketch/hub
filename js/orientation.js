@@ -2313,9 +2313,41 @@ export function bilanDeLaSemaine(
   const parties = publications.filter(
     (pub) => pub.statut === 'publie' && dans(pub.date_prevue, semaine),
   );
+  // CE QUI A EU LIEU COMPTE AUSSI (5 septembre 2026, défaut rapporté par Noé :
+  // « j'ai rajouté un événement FCH dans la semaine dernière qui n'a pas été
+  // ajouté »).
+  //
+  // Le bilan ne pesait que les tâches et les publications, c'est-à-dire les
+  // durées DÉCLARÉES. Or un entraînement de deux heures est du temps passé, et
+  // c'est le plus gros poste du club — le total disait donc une semaine plus
+  // légère qu'elle ne l'était.
+  //
+  // ET SURTOUT, LE HUB SE CONTREDISAIT : `chargeDeLaSemaine` compte le terrain
+  // depuis le 27 août, et « Mon temps » l'affiche. Deux comptes pour une même
+  // semaine finissent toujours par se croiser, et c'est celui qu'on regarde le
+  // dimanche soir qui avait tort.
+  const vecus = evenements.filter((ligne) => dans(jourDeLEvenement(ligne), semaine));
 
-  const terminees = [...faites, ...parties];
-  const chiffrees = terminees.filter((ligne) => ligne.duree);
+  // LA DURÉE D'UN ÉVÉNEMENT EST MESURÉE, elle ne se déclare pas : c'est l'écart
+  // entre son début et sa fin. Un événement SANS FIN n'en a donc pas — il tient
+  // le jour sans occuper de créneau, et le hub ne lui en invente pas une. Même
+  // règle que `chargeDeLaSemaine`.
+  const dureeVecue = (ligne) =>
+    ligne.date_fin
+      ? Math.round((new Date(ligne.date_fin) - new Date(ligne.date_debut)) / 60000)
+      : 0;
+
+  // Tout ce que la semaine a vu s'achever, ramené à deux champs : son espace et
+  // ce qu'on sait de sa durée. Sans cette mise à plat, le total et le détail par
+  // espace liraient trois formes de lignes différentes.
+  const pesees = [
+    ...faites.map((ligne) => ({ espace: ligne.espace, duree: ligne.duree ?? 0 })),
+    ...parties.map((ligne) => ({ espace: ligne.espace, duree: ligne.duree ?? 0 })),
+    ...vecus.map((ligne) => ({ espace: ligne.espace, duree: dureeVecue(ligne) })),
+  ];
+
+  const terminees = pesees;
+  const chiffrees = terminees.filter((ligne) => ligne.duree > 0);
   const minutes = chiffrees.reduce((somme, ligne) => somme + ligne.duree, 0);
 
   // LE DÉTAIL DES HEURES MESURÉES, par espace (1er septembre 2026, demande de
@@ -2371,6 +2403,7 @@ export function bilanDeLaSemaine(
     victoires: victoires.filter((victoire) => dans(victoire.date, semaine)).length,
     taches: faites.length,
     publications: parties.length,
+    evenements: vecus.length,
     minutes,
     detail,
     projetsTouches,
