@@ -763,3 +763,66 @@ reste.
 3. **Les partenaires** : quels statuts de relation te seraient utiles
    (à contacter, en discussion, signé, à relancer) — ou est-ce trop tôt ?
 4. **L'organisation club** : dès que tu sais ce que tu veux y trouver.
+
+## Navigation — 16 septembre 2026
+
+Le site reprend le composant de menu dépliant de Hub et Yuno. Le bouton est
+en tête avec le titre de la page ; les rubriques sont Accueil (calendrier),
+Créer, et Le club (réunions, partenaires). Le mot ouvre la page, la flèche
+déplie ; la rubrique courante se déplie à l'ouverture du menu.
+
+Les six destinations existantes restent accessibles dans le dock flottant
+en bas : Accueil, Créer, Réunions, Partenaires, Club, Calendrier. Elles partagent
+les styles du dock de Hub et Yuno, avec l'écusson à l'accueil et l'actif blanc.
+Le bouton de capture et le bas du contenu sont décalés pour laisser sa place au dock.
+
+### Découpage des contenus — 16 septembre 2026
+
+Cette répartition remplace celle du premier menu ci-dessus. Le site compte
+16 pages, avec cinq destinations dans le dock : Accueil, Créer, Réunions, Club,
+Calendrier. Les partenaires rejoignent le menu du Club.
+
+- Créer : aperçu et portes vers Saison, Calendrier éditorial, Banque d’idées,
+  Publications parues. Le formulaire reste disponible sur Saison, Éditorial
+  et Banque ; les propositions de rythmes continuent de le préremplir sur Saison.
+- Réunions : réunions à préparer ; pages séparées pour Suivi des actions et
+  Réunions passées. Les adresses des fiches restent inchangées.
+- Club : portes vers Qui fait quoi, Projet du club, Entraînements, Chiffres,
+  Partenaires. Les entraînements et chiffres sont directement visibles sur
+  leur page, sans pli supplémentaire.
+
+Les sous-pages gardent l’onglet parent actif et un lien de retour. Le menu
+ouvre leur rubrique automatiquement. Aucun contenu ni opération métier retiré.
+
+### Entraînements — présentation inspirée des affiches, 16 septembre 2026
+
+La page utilise désormais un titre blanc sur bande rouge, des colonnes par jour
+avec bandeaux bleu nuit et des cartes de catégories à liseré bleu, rouge ou jaune.
+Lieu et horaire sont accompagnés de pictogrammes. Cinq colonnes sur grand écran,
+trois sur tablette et deux sur mobile. Les 16 créneaux existants sont conservés ;
+la demande porte sur la forme, pas sur la mise à jour des horaires depuis l’affiche.
+Rendu vérifié dans le navigateur ; à 375 px, aucun débordement horizontal et
+16 cartes présentes. Syntaxe JS et gabarits validés. Modifications non publiées.
+
+### Planning compact et lundi — 16 septembre 2026
+
+Ajout du lundi : Mam’s, Beaumont-Monteux, 19h30–21h, selon l’affiche fournie.
+Le planning comporte désormais 17 créneaux du lundi au samedi. Titre, catégories,
+cartes et espacements fortement réduits ; six colonnes sur grand écran, trois
+sous 900 px et deux sous 560 px. Vérification navigateur : six jours, 17 cartes,
+hauteur de carte mesurée à 71 px. Syntaxe et diff validés ; non publié.
+
+Titres de page FCH : Gilroy Heavy (900), approche resserrée à −0,04 em,
+appliqués à l’en-tête partagé de toutes les pages (16 septembre 2026).
+
+Les titres de page FCH portent désormais un rectangle rouge ajusté au texte,
+comme « Programmation », avec encre blanche et Gilroy Heavy conservé.
+
+### Accueil FCH — tuiles du Hub, 16 septembre 2026
+
+Les tâches, la communication, le cap et les victoires sont regroupés dans des
+tuiles sans contour extérieur, avec titres au-dessus. Réunions et temps forts
+restent en tête sur toute la largeur. Deux colonnes dès 960 px, une sur mobile.
+Les liens de pied de tuile deviennent sobres, sans bande latérale colorée.
+Contenus et gestes existants conservés. Vérifié : gabarits, syntaxe, rendu
+navigateur, deux colonnes à 1200 px et aucun débordement à 375 px. Non publié.

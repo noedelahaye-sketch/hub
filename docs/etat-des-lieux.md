@@ -1,15 +1,282 @@
-# État des lieux — 15 septembre 2026 (soir)
+# État des lieux — 16 septembre 2026
 
-> **REPRISE IMMÉDIATE : la section « Relais — 15 septembre, SOIR » ci-dessous.**
+> **REPRISE IMMÉDIATE : la section « Relais — 16 septembre » ci-dessous.**
 > Elle décrit la dernière session et prime sur tout ce qui la suit. Viennent
-> ensuite « Relais — 15 septembre, après-midi », puis § 0 (15 septembre, matin),
-> puis l'historique par sessions.
+> ensuite « Relais — 15 septembre, SOIR », « Relais — 15 septembre,
+> après-midi », puis § 0 (15 septembre, matin), puis l'historique par sessions.
 
+
+## Relais — 16 septembre (Créer refondue, le morph du « + », le clavier, le dock)
+
+**Cette section prime sur toutes les suivantes.** Sept chantiers, dont quatre
+nés d'un défaut que Noé a vu sur son téléphone. **Tout est commité et poussé**,
+et GitHub Pages a construit chacun des sept.
+
+### État Git et aperçu
+
+- Branche `main`, arbre propre, `main` et `origin/main` au même point.
+- **Sept commits**, dans l'ordre : `bfd1176` (Créer + la forme + le morph),
+  `f6d15dd` puis `d4f38df` (le clavier), `0673769` (la porte du bilan),
+  `1866401` (le rechargement automatique), puis `1bf56f2`, `e8f3da0`, `d9aaa5e`,
+  `f0a605e` (le dock, en quatre passes).
+- **Aucune donnée n'a été écrite en base de toute la session.** Les essais se
+  sont faits en lecture, ou sur des données factices hors écran — rien à défaire.
+- Aperçu : `http://localhost:50648`. Le port change d'une session à l'autre,
+  **vérifier avec `preview_list` plutôt que de supposer**.
+
+### § A — `#yuno/creer` : elle ne gère plus rien, elle inspire et elle ouvre
+
+Le détail, avec ses raisons, est dans **`docs/yuno-spec.md`, « `#yuno/creer` —
+l'atelier d'inspiration »**. Ce qu'il faut savoir ici :
+
+- **LE DIAGNOSTIC EST CE QUI A TRANCHÉ, et il se remesure** : 20 publications —
+  **18 idées sans date, 2 parues, ZÉRO programmée, ZÉRO en chantier**. La page
+  portait trois blocs numérotés et **deux sur trois étaient vides à l'écran**.
+  Le troisième l'était *structurellement* : « En chantier » lit les statuts
+  intermédiaires, et **aucune publication n'en a jamais porté un seul** depuis
+  l'ouverture du site.
+- **L'AUTRE CHIFFRE A DONNÉ SA FORME À LA PAGE** : **27 sorties au carnet**,
+  toutes avec leur photo, et **2 publications en sont sorties**. La matière est
+  là, elle ne devient rien — et la page censée inspirer ne montrait pas une seule
+  image.
+- **Quatre temps** : l'idée du jour (gardée), *De la matière* (trois de ses
+  photos, dont rien n'est sorti), *Tes quatre piliers* (en barres à échelle
+  commune), les deux portes. **La matière passe devant les piliers** parce qu'une
+  photo est concrète et qu'un classement est abstrait.
+- **Le lien sortie → publication existait DÉJÀ en base** (`publications.evenement_id`,
+  posé par le post à J+1 du 29 août) : rien de nouveau à saisir.
+- **Partent avec le pipeline** : `partagerLAVenir`, `enChantier`,
+  `lignePublication`, `construirePiliers`, et leurs styles (`.etape`,
+  `.liste-flux`, `.pub-ligne`, `.vide-dessine`, `.point-pilier`).
+
+### § B — LA FORME PERD SA COULEUR (demande de Noé, le même jour)
+
+> *« J'aime pas que ce soit de couleur, qu'il y ait un contour (et un rectangle
+> de couleur à gauche sur les idées de la banque). Mais je veux quand même
+> qu'elle ressorte un peu. »*
+
+- **LA SOLUTION ÉTAIT DANS LA GRAMMAIRE DU HUB** : *une tuile posée dans la page
+  se distingue par sa SURFACE* (30 août). D'où **`--fond-releve` (#303032)**, le
+  troisième cran de l'échelle des fonds, que **seule la carte de l'idée du jour**
+  porte. Plus le titre à 1,75 rem et un cran d'espace.
+- **PAS D'OMBRE, et ce n'est pas un oubli** : `--ombre` vaut `none` dans tout le
+  hub sombre — une ombre portée ne se voit pas sur un fond presque noir. **Sur
+  fond sombre, c'est la clarté qui soulève.**
+- **Le pilier se dit en POINT, plus en aplat.** Sans ça, son étiquette pleine
+  serait restée **le seul aplat coloré de l'écran** : on n'aurait pas retiré la
+  couleur, on l'aurait concentrée.
+- **Deux défauts trouvés en mesurant** : le titre ne prenait pas (une règle de
+  spécificité supérieure le bloquait à 16,9 px — **huitième fois que ce piège se
+  paie**), et la ligne de preuve tombait à **4,13:1** sur la surface relevée,
+  sous le seuil.
+
+### § C — LE « + » SE MÉTAMORPHOSE EN TUILE (vidéo à l'appui)
+
+Le détail est dans **`CLAUDE.md`, « LE « + » SE MÉTAMORPHOSE EN TUILE »**.
+
+- **C'est un FLIP**, posé **une fois dans la coquille** (`js/app.js`) : dix
+  écrans ouvrent cette tuile, aucun n'a une ligne à changer.
+- **Rien à déplacer** : la tuile est en bas, collée au clavier, depuis le
+  13 août. Il ne manquait que le trajet entre les deux formes.
+- **TROIS PIÈGES DE MESURE, et chacun faussait le repère ENTRE les deux moments
+  d'un même mouvement** : la boîte lue *pendant* l'animation (elle rend sa taille
+  écrasée), le **défilement du focus** (1038 px d'écart), et l'**ancêtre
+  transformé** (un `transform` sur une section fait d'elle le bloc conteneur de
+  ses descendants `fixed`). La parade est `offsetLeft/Top/Width/Height`.
+
+### § D — LE CLAVIER : la tuile était dessous, sur NEUF écrans sur dix
+
+**Défaut rapporté par Noé depuis son téléphone**, capture à l'appui : *« la tuile
+est cachée par le clavier lorsque ça s'ouvre. »*
+
+- **LA CAUSE** : la mesure vivait dans `js/taches.js`, **et seulement là**,
+  branchée sur l'état local de cet écran. Les neuf autres n'avaient donc jamais
+  `--bas-clavier`. **Troisième effet qui remonte dans la coquille pour la même
+  raison** — l'argument y est écrit depuis le 13 août.
+- **LA TUILE MONTE AVEC LE CLAVIER, PAS APRÈS LUI** (seconde demande de Noé) : on
+  n'attend plus que le navigateur l'annonce — `visualViewport` ne prévient pas
+  partout de la même façon —, **on pose la hauteur de la dernière fois**
+  (`hub-clavier`) à l'instant où la tuile naît, puis on recale sur la mesure
+  réelle passé 400 ms. Un clavier **physique** fait ainsi redescendre la tuile au
+  lieu de la laisser flotter.
+- **LES DEUX MOUVEMENTS SONT ACCORDÉS** : même durée et même courbe (260 ms) pour
+  le morph et la montée — *deux gestes simultanés qui finissent ensemble se
+  lisent comme un seul.* **Les deux constantes sont jumelles** (`DUREE_MORPH`
+  dans js/app.js, la transition de `.capture` dans styles.css) : changer l'une
+  sans l'autre les désaccorde.
+- **8 px du clavier au lieu de 16**, et le retrait de sécurité tombe : le clavier
+  couvre déjà la barre d'accueil, il comptait deux fois.
+- **« Préremplir le contact » a disparu** : `autocomplete="off"` **ne suffit pas**
+  sur Safari iOS, qui classe les champs en lisant leur placeholder — « Nom de la
+  tâche » s'y lit comme un champ d'identité. **La parade est dans le libellé.**
+- **LA BARRE ‹ › OK NE SE RETIRE PAS**, et c'est écrit dans `CLAUDE.md` pour ne
+  pas y revenir : c'est une vue **native** de Safari, qu'aucune API web ne masque.
+  Seule une application hybride le peut.
+
+### § E — LA PORTE DU BILAN DÉBORDE SUR LE MATIN
+
+- **20 h → 11 h 59 le lendemain**, tant que ni la gratitude ni le journal ne
+  portent quelque chose. *Renversement assumé du 1er septembre, qui disait « pas
+  de borne haute… un bilan du jour, non » : l'usage a tranché l'inverse.*
+- **LA MOITIÉ QU'ON OUBLIERAIT EN N'ALLONGEANT QUE LA FENÊTRE** : avant midi,
+  c'est la journée **d'HIER** qu'il faut ouvrir. Sinon le bouton du matin mène à
+  une journée vierge.
+- **Une seule fonction dit les deux** (`jourDuBilan`, js/rendez-vous.js) : elle
+  rend le JOUR, ou rien. *Vérifié sur les vingt-quatre heures : aucun trou,
+  aucun recouvrement.*
+
+### § F — LE HUB SE RECHARGE QUAND UNE VERSION FRAÎCHE EST LÀ
+
+**Défaut rapporté par Noé** : *« c'est push là ? parce que je ne vois pas de
+différence. »* Le déploiement était bon — vérifié en ligne — et le cache se
+mettait bien à jour. **Mais la page gardait en mémoire le JavaScript de
+l'ouverture précédente**, et sur iPhone une application installée n'est jamais
+vraiment fermée : « l'ouverture suivante » n'arrivait jamais.
+
+- **LE SIGNAL VIENT DU SERVICE WORKER**, parce que c'est lui qui le voit : sa
+  revalidation compare déjà l'ancienne réponse à la nouvelle. **Aucune version à
+  monter à la main dans `sw.js`** — un numéro qu'il faut penser à incrémenter est
+  un numéro qu'on oublie.
+- **LE RECHARGEMENT SE FAIT AU RETOUR SUR L'APPLICATION**, jamais pendant qu'on
+  écrit : une tuile ouverte, un champ qui a le focus ou une fenêtre le repoussent
+  au retour suivant.
+- *Il s'est déclenché tout seul pendant les essais du dock — le mécanisme
+  fonctionne.*
+
+### § G — LE DOCK, EN QUATRE PASSES (et chacune a sa raison)
+
+Le détail est dans **`CLAUDE.md`, « LE DOCK : PLUS PETIT, ET L'ACTIF PLUS
+GROS »**. Les demandes se sont enchaînées, et **aucune ne contredit la
+précédente** — elles affinent :
+
+1. *« Plus petit, mais l'actif plus gros que les autres. »* → l'écart se creuse
+   des deux côtés (icône 16 → 25 px). **Ce qui l'avait perdue** : le dock de
+   verre du 15 septembre avait gardé le fond et l'encre, mais perdu la taille, et
+   une règle du hub forçait `a` et `a.actif` au même corps.
+2. *« Rapproche-les »*, puis *« pas trop, il faut assez de place pour le
+   texte »* → l'air passe **dans** l'onglet (22 px) et non entre eux.
+3. *« L'onglet choisi doit déborder du rectangle global »*, puis *« centré, qu'il
+   déborde autant en haut qu'en bas »* → le rail a une hauteur **fixe** (pas un
+   minimum, qui se laisserait pousser), l'actif une hauteur **déclarée** (pas un
+   rembourrage, qui varierait avec l'icône). **8 px de chaque côté.**
+4. *« Uni, qu'on ne voie pas la démarcation du rectangle derrière »* → la couche
+   du bas devient **opaque** ; les reflets se reposent dessus. Plus son ombre,
+   *car une pastille opaque sans ombre est un TROU dans le rail.*
+5. *« Que chaque onglet ait la même largeur »* → c'est le **rail** qui porte la
+   largeur, calibrée sur le plus long mot.
+
+**DEUX BORNES QU'IL NE FAUT PAS FRANCHIR** :
+- **Le texte des onglets ordinaires ne descend pas sous 9,4 px.** *Mesuré à un
+  cran de moins : « Calendrier » tombait à 8,4 px, où ce n'est plus un mot mais
+  une trace.* Puisque le corps ne peut plus rétrécir, **c'est l'ICÔNE qui porte
+  l'écart**.
+- **L'encre des voisins ne s'efface pas davantage**, pour la même raison.
+- **La cible tactile reste à 44 px** : ce qui rétrécit est ce qu'on VOIT, pas ce
+  qu'on touche.
+
+**DEUX ESSAIS QUI ONT ÉCHOUÉ, à ne pas refaire :**
+- **La grille à pistes `1fr`** pour que le rail s'ajuste tout seul : elle égalise
+  bien, mais **une piste `1fr` ne contribue pas sa largeur de CONTENU à la taille
+  intrinsèque du conteneur** — le rail tombait à 188 px et « Calendrier » s'y
+  coupait.
+- **L'alignement de la pastille par le BAS** : elle ne sortait que par le haut, et
+  le rail semblait posé de travers. C'est Noé qui a demandé le centrage.
+
+**Et un vrai coupable trouvé en mesurant** : l'onglet du calendrier avait une
+règle à lui, datant du temps où il ne portait qu'une icône. Elle ne faisait plus
+que lui donner quatre pixels de rembourrage de plus — **et c'est cet écart qui
+empêchait les largeurs d'être égales** (94 px contre 86). *Une règle qui survit à
+sa raison finit toujours par en casser une autre.*
+
+### § H — Ce qui a été vérifié, et comment
+
+- **Hors écran** : `matiereLibre` et `reserveParPilier` sur des données factices
+  (sortie déjà exploitée, sans photo, non vécue ; publication datée qui n'est ni
+  idée ni parue) ; `jourDuBilan` sur les **vingt-quatre heures** ; la comparaison
+  de versions du service worker sur **neuf cas** d'en-têtes et six chemins.
+- **À l'écran** : la refonte de Créer et la banque de 375 à 1280 px ; le morph
+  **photographié image par image** en pilotant `currentTime` ; les gardes du
+  rechargement (tuile ouverte → la page survit ; refermée → elle recharge ; cinq
+  retours d'affilée sans nouveauté → rien) ; le dock sur les cinq écrans du hub et
+  sur Yuno, avec la troncature mesurée par `scrollWidth`.
+- **En ligne** : GitHub Pages interrogé par son API (les sept builds `built`), et
+  le contenu réellement servi vérifié fichier par fichier.
+- **JAMAIS VU TOURNER À VITESSE RÉELLE** : le morph et la montée du clavier. Voir
+  « par où reprendre ».
+
+### § I — Les pièges re-payés (ils ne se devinent pas)
+
+- **La spécificité** : `body[data-espace="yuno"] .pub-titre` (0-2-1) bat
+  `.idee-jour-corps .pub-titre` (0-2-0). *Huitième fois.*
+- **Le panneau du navigateur MASQUÉ ne fait pas tourner les animations** :
+  `requestAnimationFrame` ne s'exécute pas, `playState` dit « running » et
+  `currentTime` reste à 0. Pour photographier un morph, on met ses animations en
+  pause et l'on pose `currentTime` à la main.
+- **`getBoundingClientRect` compte les transformations** : mesurer un élément
+  pendant son animation rend sa boîte écrasée.
+- **Un ancêtre transformé change le bloc conteneur des descendants `fixed`.**
+- **`--ombre: none`** : le hub sombre n'a pas d'ombres portées, et ce n'est pas un
+  oubli.
+
+### § J — PAR OÙ REPRENDRE (du plus périssable au moins pressé)
+
+1. **UNE DERNIÈRE FOIS À LA MAIN : tuer l'application et la rouvrir DEUX fois.**
+   Le rechargement automatique est en ligne, mais le téléphone de Noé tourne
+   encore sur du code qui ne le connaît pas — il ne peut pas s'installer
+   lui-même. Après ça, plus jamais.
+2. **REGARDER LE MORPH ET LA MONTÉE DU CLAVIER À VITESSE RÉELLE, sur l'iPhone.**
+   Les valeurs sont justes et les mouvements accordés, **mais rien n'a été vu
+   tourner** : le panneau d'essai était masqué. Si les 260 ms paraissent lents ou
+   rapides, c'est `DUREE_MORPH` (js/app.js) **et** la transition de `.capture`
+   (styles.css) — les deux ensemble, jamais l'une sans l'autre.
+3. **LA PREMIÈRE OUVERTURE APRÈS CE DÉPLOIEMENT MONTERA ENCORE EN RETARD** :
+   aucune hauteur de clavier n'est connue tant qu'elle n'a pas été mesurée une
+   fois. Dès la deuxième, c'est coordonné. *Ne pas conclure à un défaut sur un
+   seul essai.*
+4. **FAIRE VALIDER LES INVITES DE LA TUILE DE CAPTURE.** « La tâche, en quelques
+   mots » et « L'événement, en quelques mots » remplacent « Nom de… » — **c'est un
+   changement de mots, donc l'appel de Noé.** La seule contrainte est d'éviter le
+   mot « Nom », qui rallume l'AutoFill d'iOS.
+5. **DÉCIDER POUR LE DOCK DU FC HERMITAGE.** Il a sa propre classe (`.fch-nav`) et
+   n'a **pas** reçu les quatre passes de ce soir : ni la pastille débordante, ni
+   les largeurs égales, ni l'opacité. Noé n'a rien demandé pour lui.
+6. **`#yuno/creer` UN JOUR ORDINAIRE.** Le bloc « De la matière » a été vu avec
+   les données réelles, mais **le cas « tout exploité » et le cas « rien au
+   carnet » n'existent que dans le code** — ils se liront le jour où ils
+   arriveront.
+7. **REPORTÉ DU 15 SEPTEMBRE, et toujours vrai** : l'accueil de Yuno n'a jamais
+   été vu un jour ordinaire (seuls 2 des 7 rangs de sa cascade ont été vus en
+   vrai) ; les écritures des modèles de messages et de préparation n'ont jamais
+   été éprouvées de bout en bout ; le `+` de la feuille de préparation n'a pas été
+   manipulé debout, au stade.
+8. **Faux positif connu de `tools/verifier-coquille.js`** : une URL `data:` SVG
+   d'une feuille de style, lue comme un chemin de fichier. **Ce n'est pas un
+   fichier manquant** — ne pas chercher à « l'ajouter ». Il vient de
+   `css/styles.css` et précède cette session.
+
+### § K — Ce qui est TRANCHÉ et sort des questions ouvertes
+
+- **« Le cache de la coquille sert l'ancien JS/CSS »** — point n° 1 du relais du
+  15 septembre. **Réglé par le rechargement automatique** (§ F), à la réserve du
+  point 1 ci-dessus. *En développement local, le service worker inverse déjà sa
+  stratégie (réseau d'abord) ; c'est en production que le défaut vivait.*
+- **« On ne voit pas la différence après un push »** — même cause, même
+  correction. La chaîne de vérification reste bonne à connaître : `gh api
+  repos/.../pages/builds` dit si Pages a construit, et `curl` sur le fichier
+  servi dit ce que l'appareil recevra.
+- **La barre ‹ › OK d'iOS** : question fermée, **c'est impossible depuis une page
+  web**. Écrit dans `CLAUDE.md` pour qu'on n'y revienne pas.
+- **Le pipeline éditorial de Yuno** (les statuts « à développer » et
+  « brouillon ») : il n'a **jamais** été exercé en un mois, et la page qui le
+  montrait a disparu. *Les statuts restent dans le CHECK — un CHECK s'élargit, il
+  ne se resserre jamais — mais plus aucun écran ne les met en avant.*
+
+---
 
 ## Relais — 15 septembre, SOIR (l'accueil de Yuno, les modèles, les préparations)
 
-**Cette section prime sur toutes les suivantes.** Quatre chantiers, tous sur le
-site Yuno, tous menés par des demandes de Noé corrigées au fil de l'écran.
+**Elle a été remplacée en tête par « Relais — 16 septembre ».** Quatre chantiers,
+tous sur le site Yuno, tous menés par des demandes de Noé corrigées au fil de l'écran.
 
 ### État Git et aperçu
 
@@ -22,10 +289,10 @@ site Yuno, tous menés par des demandes de Noé corrigées au fil de l'écran.
 - Aperçu : `http://localhost:4173/yuno.html#yuno`. Le port a changé en cours de
   session (61903 puis 4173) — vérifier avec `preview_list` plutôt que de
   supposer.
-- **Le cache de la coquille sert l'ancien JS/CSS** : plusieurs retours de Noé
+- **Le cache de la coquille servait l'ancien JS/CSS** : plusieurs retours de Noé
   portaient sur un défaut déjà corrigé. `sw.js` est passé en **v24** (nouveau
-  module) ; à la reprise, désenregistrer le service worker avant de conclure
-  qu'un défaut persiste.
+  module). *Ce point est réglé depuis le 16 septembre — le hub se recharge seul ;
+  voir « Relais — 16 septembre », § F.*
 
 ### § A — L'ACCUEIL DU SITE YUNO : deux blocs fixes, et un classement
 
@@ -168,9 +435,11 @@ Détail dans **`yuno-spec.md`, « `#yuno/preparations` »**.
 
 ### § G — PAR OÙ REPRENDRE (du plus périssable au moins pressé)
 
-1. **VIDER LE CACHE DE LA COQUILLE AVANT DE JUGER QUOI QUE CE SOIT.** Plusieurs
-   retours de Noé, ce soir, portaient sur des défauts déjà corrigés que son
-   navigateur ne montrait pas encore. `sw.js` est en **v24**.
+1. ~~**VIDER LE CACHE DE LA COQUILLE AVANT DE JUGER QUOI QUE CE SOIT.**~~
+   **TRANCHÉ LE 16 SEPTEMBRE** : le hub se recharge désormais tout seul quand une
+   version fraîche est là — voir « Relais — 16 septembre », § F. Le constat
+   restait juste : plusieurs retours de Noé portaient sur des défauts déjà
+   corrigés que son navigateur ne montrait pas encore.
 2. **REGARDER L'ACCUEIL DE YUNO UN JOUR ORDINAIRE.** Toute la cascade a été
    éprouvée hors écran, mais **un seul de ses sept rangs a été vu en vrai** (la
    fournée, puis le match à couvrir quand Noé a envoyé son message). Les rangs
@@ -7970,3 +8239,61 @@ restaurée par le routeur. Ne pas « simplifier » ces id.
 | `js/hermitage.js` | Le site FC Hermitage |
 | `js/revisions.js` | Lecture du gist Bac-3 — chaque calcul cite sa source |
 | `tools/generer-icones.py` | Les icônes des trois applications |
+
+## Ajout — navigation FCH, 16 septembre 2026
+
+Menu partagé monté dans `js/hermitage.js`, en-tête avec titre, six onglets
+dans un dock flottant utilisant les règles communes de `css/yuno.css`.
+Adaptations FCH dans `css/fch.css` (six cases, écusson, capture au-dessus).
+Vérifiés : syntaxe JS, gabarits, six routes avec un seul onglet actif, rubrique
+de réunion ouverte pour une fiche, diff sans erreur d'espacement.
+Pas de validation visuelle en navigateur pendant cette intervention.
+Le vérificateur de coquille signale un faux chemin de SVG data URI préexistant.
+Modifications locales, non publiées. Les changements déjà présents dans ce
+fichier ont été conservés.
+
+## Ajout — découpage FCH, 16 septembre 2026
+
+Dix pages supplémentaires issues des contenus existants : saison, éditorial,
+banque, publications, actions, archives, commissions, projet-club, entraînements,
+chiffres. Créer et Club deviennent des points d’entrée ; Réunions garde la
+préparation et donne accès au suivi et aux archives. Dock réduit à cinq onglets.
+
+Validation : les 16 routes ont été parcourues dans le navigateur local avec
+titre présent et un seul onglet actif ; menu automatiquement déplié sur
+Entraînements, données de Saison et Éditorial présentes, rendu Club inspecté.
+Syntaxe JavaScript, vérification des gabarits et diff passent. Aucune écriture
+en base effectuée ; modifications locales non publiées.
+
+### Entraînements — présentation inspirée des affiches, 16 septembre 2026
+
+La page utilise désormais un titre blanc sur bande rouge, des colonnes par jour
+avec bandeaux bleu nuit et des cartes de catégories à liseré bleu, rouge ou jaune.
+Lieu et horaire sont accompagnés de pictogrammes. Cinq colonnes sur grand écran,
+trois sur tablette et deux sur mobile. Les 16 créneaux existants sont conservés ;
+la demande porte sur la forme, pas sur la mise à jour des horaires depuis l’affiche.
+Rendu vérifié dans le navigateur ; à 375 px, aucun débordement horizontal et
+16 cartes présentes. Syntaxe JS et gabarits validés. Modifications non publiées.
+
+### Planning compact et lundi — 16 septembre 2026
+
+Ajout du lundi : Mam’s, Beaumont-Monteux, 19h30–21h, selon l’affiche fournie.
+Le planning comporte désormais 17 créneaux du lundi au samedi. Titre, catégories,
+cartes et espacements fortement réduits ; six colonnes sur grand écran, trois
+sous 900 px et deux sous 560 px. Vérification navigateur : six jours, 17 cartes,
+hauteur de carte mesurée à 71 px. Syntaxe et diff validés ; non publié.
+
+Titres de page FCH : Gilroy Heavy (900), approche resserrée à −0,04 em,
+appliqués à l’en-tête partagé de toutes les pages (16 septembre 2026).
+
+Les titres de page FCH portent désormais un rectangle rouge ajusté au texte,
+comme « Programmation », avec encre blanche et Gilroy Heavy conservé.
+
+### Accueil FCH — tuiles du Hub, 16 septembre 2026
+
+Les tâches, la communication, le cap et les victoires sont regroupés dans des
+tuiles sans contour extérieur, avec titres au-dessus. Réunions et temps forts
+restent en tête sur toute la largeur. Deux colonnes dès 960 px, une sur mobile.
+Les liens de pied de tuile deviennent sobres, sans bande latérale colorée.
+Contenus et gestes existants conservés. Vérifié : gabarits, syntaxe, rendu
+navigateur, deux colonnes à 1200 px et aucun débordement à 375 px. Non publié.

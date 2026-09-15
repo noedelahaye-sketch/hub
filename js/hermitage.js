@@ -14,6 +14,7 @@
 // toucher aux autres.
 
 import * as api from './api.js';
+import { monterLeMenu, boutonDuMenu } from './menu.js';
 import {
   modifierAussitot,
   retirerAussitot,
@@ -73,7 +74,6 @@ import {
   deplacerAncre,
   natureParDefaut,
   centrerActif,
-  ongletCalendrier,
   fenetreCreation,
   brancherCapture,
   poserAuCalendrier,
@@ -135,7 +135,9 @@ const SAISON_HEBDO = ['Programmation du week-end', 'Résultats du week-end'];
 // réseau de Yuno, c'est la même matière (docs/fch-spec.md, §5).
 const TYPE_PARTENAIRE = 'marque';
 
-const VUES = ['accueil', 'creer', 'reunions', 'calendrier', 'partenaires', 'club'];
+const VUES = ['accueil', 'creer', 'reunions', 'calendrier', 'partenaires', 'club',
+  'saison', 'editorial', 'banque', 'publications', 'actions', 'archives',
+  'commissions', 'projet-club', 'entrainements', 'chiffres'];
 
 // Les natures que le calendrier du site assemble — ni relance ni commande,
 // elles vivent chez Yuno. La liste sert aux filtres (pas de case sans effet)
@@ -144,37 +146,81 @@ const NATURES_FCH = ['evenement', 'tache', 'publication', 'objectif'];
 
 // --- Fabrication du HTML ----------------------------------------------------
 
+export const RUBRIQUES_FCH = [
+  { nom: 'Accueil', adresse: '#hermitage', pages: [
+    { nom: 'Le calendrier', adresse: '#hermitage/calendrier' },
+  ] },
+  { nom: 'Créer', adresse: '#hermitage/creer', pages: [
+    { nom: 'La saison', adresse: '#hermitage/saison' },
+    { nom: 'Le calendrier éditorial', adresse: '#hermitage/editorial' },
+    { nom: 'La banque d’idées', adresse: '#hermitage/banque' },
+    { nom: 'Les publications parues', adresse: '#hermitage/publications' },
+  ] },
+  { nom: 'Réunions', adresse: '#hermitage/reunions', pages: [
+    { nom: 'Le suivi des actions', adresse: '#hermitage/actions' },
+    { nom: 'Les réunions passées', adresse: '#hermitage/archives' },
+  ] },
+  { nom: 'Le club', adresse: '#hermitage/club', pages: [
+    { nom: 'Qui fait quoi', adresse: '#hermitage/commissions' },
+    { nom: 'Le projet du club', adresse: '#hermitage/projet-club' },
+    { nom: 'Les entraînements', adresse: '#hermitage/entrainements' },
+    { nom: 'Le club en chiffres', adresse: '#hermitage/chiffres' },
+    { nom: 'Les partenaires', adresse: '#hermitage/partenaires' },
+  ] },
+];
+
+const ONGLET_FCH = Object.fromEntries(RUBRIQUES_FCH.flatMap((rubrique) =>
+  (rubrique.pages ?? []).map((page) => [page.adresse.split('/')[1], rubrique.adresse.split('/')[1] ?? 'accueil'])));
+
+function portesDuMenu(nom) {
+  const rubrique = RUBRIQUES_FCH.find((item) => item.nom === nom);
+  return `<section class="bloc fch-portes" aria-label="${nom}">${rubrique.pages.map((page) => `
+    <a class="lien-externe" href="${page.adresse}">
+      <span class="lien-externe-titre">${page.nom}</span>
+      <span class="lien-externe-fleche" aria-hidden="true">→</span>
+    </a>`).join('')}</section>`;
+}
+
+function cheminDuMenu() {
+  const adresse = location.hash.split('/').slice(0, 2).join('/');
+  const rubrique = RUBRIQUES_FCH.find((item) => item.adresse === adresse ||
+    item.pages?.some((page) => page.adresse === adresse));
+  return rubrique ? [rubrique.nom] : [];
+}
+
 function enTete(vueActive) {
-  // Le calendrier n'est plus dans cette liste : il va en bout de barre, en
-  // icône (voir `ongletCalendrier`). « Partenaires » y gagne la place qui lui
-  // manquait sur 375 px.
-  //
-  // Plus de logo en tête de page (demande de Noé, 24 août 2026) : il DEVIENT
-  // l'onglet Accueil — le dessin entier en une seule encre, par un masque CSS
-  // teinté par `currentColor`, qui suit donc les couleurs des autres onglets :
-  // blanc plein quand il est actif, bleu-gris adapté sinon.
   const liens = [
+    ['accueil', 'Accueil', '#hermitage'],
     ['creer', 'Créer', '#hermitage/creer'],
     ['reunions', 'Réunions', '#hermitage/reunions'],
-    ['partenaires', 'Partenaires', '#hermitage/partenaires'],
     ['club', 'Club', '#hermitage/club'],
+    ['calendrier', 'Calendrier', '#hermitage/calendrier'],
   ];
-
+  const icones = {
+    creer: '<path d="m15 4 5 5M4 20l5-1L21 7a2 2 0 0 0-5-5L4 14z"/>',
+    reunions: '<circle cx="8" cy="7" r="3"/><circle cx="17" cy="8" r="2"/><path d="M2 21v-3a6 6 0 0 1 12 0v3M16 14a5 5 0 0 1 6 5v2"/>',
+    partenaires: '<path d="m3 12 5-5 4 2 4-2 5 5-8 8-4-2zM8 7l-3-2-4 6 3 3M16 7l3-2 4 6-3 3"/>',
+    club: '<path d="M4 21V7l8-4 8 4v14H4zM9 21v-6h6v6M8 9h1m6 0h1M8 12h1m6 0h1"/>',
+    calendrier: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4M17 3v4M3 11h18M8 15h3v3H8z"/>',
+  };
+  const titre = RUBRIQUES_FCH.flatMap((item) => item.pages ?? [])
+    .find((page) => page.adresse === `#hermitage/${vueActive}`)?.nom
+    ?? liens.find(([vue]) => vue === vueActive)?.[1] ?? 'FC Hermitage';
+  const onglet = liens.some(([vue]) => vue === vueActive) ? vueActive : ONGLET_FCH[vueActive];
   return `
-    <nav class="fch-nav" aria-label="Le site FC Hermitage">
-      <a href="#hermitage" class="${vueActive === 'accueil' ? 'actif' : ''}"
-        ${vueActive === 'accueil' ? 'aria-current="page"' : ''}
-        title="Accueil" aria-label="Accueil">
-        <span class="fch-logo-onglet" aria-hidden="true"></span>
-      </a>
-      ${liens
-        .map(
-          ([vue, libelle, adresse]) => `
-        <a href="${adresse}" class="${vue === vueActive ? 'actif' : ''}"
-          ${vue === vueActive ? 'aria-current="page"' : ''}>${libelle}</a>`,
-        )
-        .join('')}
-      ${ongletCalendrier('#hermitage/calendrier', vueActive === 'calendrier')}
+    <div class="fch-nav">
+      ${boutonDuMenu('menu-fch')}
+      <h1 class="fch-titre-page"><span>${titre}</span></h1>
+    </div>
+    <nav class="fch-dock" aria-label="Le site FC Hermitage">
+      ${liens.map(([vue, libelle, adresse]) => `
+        <a href="${adresse}" class="${vue === onglet ? 'actif' : ''}"
+          ${vue === onglet ? 'aria-current="page"' : ''}>
+          ${vue === 'accueil' ? '<span class="fch-logo-onglet" aria-hidden="true"></span>' :
+            `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icones[vue]}</svg>`}
+          <span>${libelle}</span>
+        </a>`).join('')}
     </nav>`;
 }
 
@@ -937,20 +983,8 @@ function vueReunions(etat) {
   // qui reste à tenir ; les actions faites racontent leur réunion sur sa fiche.
   const ouvertes = etat.actionsClub.filter((action) => action.statut !== 'fait');
 
-  return `
-    ${enTete('reunions')}
-
-    <section class="bloc">
-      <h2>À préparer</h2>
-      ${
-        aVenir.length
-          ? `<ul class="liste-reunions">${aVenir.map((e) => ligneReunion(e, etat.fiches)).join('')}</ul>`
-          : `<p class="vide">Ta prochaine réunion se note au calendrier : le « + »,
-              nature Événement, pastille Réunion.</p>`
-      }
-    </section>
-
-    <section class="bloc">
+  const vue = etat.vue;
+  const contenu = vue === 'actions' ? `    <section class="bloc">
       <h2>Le tableau des actions</h2>
       <p class="discret">Ce qui a été décidé, qui s'en charge, pour quand — le suivi
         rend les engagements visibles, il n'est pas là pour culpabiliser.</p>
@@ -959,17 +993,21 @@ function vueReunions(etat) {
           ? `<ul class="liste-reunions">${ouvertes.map(ligneAction).join('')}</ul>`
           : `<p class="vide">Les actions décidées en réunion s'inscriront ici.</p>`
       }
-    </section>
-
-    ${
-      passees.length
-        ? `<section class="bloc">
-             <h2>Passées</h2>
-             <ul class="liste-reunions">${passees.map((e) => ligneReunion(e, etat.fiches)).join('')}</ul>
-           </section>`
-        : ''
-    }
-    ${pied()}`;
+    </section>`
+    : vue === 'archives' ? `<section class="bloc"><h2>Les réunions passées</h2>
+      ${passees.length ? `<ul class="liste-reunions">${passees.map((e) => ligneReunion(e, etat.fiches)).join('')}</ul>`
+        : '<p class="vide">Les réunions terminées se retrouveront ici.</p>'}</section>`
+    : `    <section class="bloc">
+      <h2>À préparer</h2>
+      ${
+        aVenir.length
+          ? `<ul class="liste-reunions">${aVenir.map((e) => ligneReunion(e, etat.fiches)).join('')}</ul>`
+          : `<p class="vide">Ta prochaine réunion se note au calendrier : le « + »,
+              nature Événement, pastille Réunion.</p>`
+      }
+    </section>${portesDuMenu('Réunions')}`;
+  return `${enTete(vue)}${contenu}
+    ${vue !== 'reunions' ? '<a class="lien-discret" href="#hermitage/reunions">← Réunions</a>' : ''}${pied()}`;
 }
 
 // LE TEMPS FORT QUI APPROCHE (30 août 2026), sous la réunion du moment.
@@ -1029,7 +1067,7 @@ function blocTempsFort(etat) {
     : '<span class="tf-posees tf-rien">Rien de posé ce jour-là pour l’instant</span>';
 
   return `
-    <section class="bloc">
+    <section class="bloc fch-accueil-tuile fch-accueil-moment">
       <span class="tuile-entete">
         <span class="etiquette">${cEstAujourdhui ? "C'est aujourd'hui" : 'Temps fort'}</span>
         <span class="discret quand">${echapper(echeanceLisible(jour))}</span>
@@ -1039,7 +1077,7 @@ function blocTempsFort(etat) {
         ${evenement.lieu ? `<span>${echapper(evenement.lieu)}</span>` : ''}
         ${quoi}
       </p>
-      <a class="lien-externe" href="#hermitage/creer">
+      <a class="lien-externe" href="#hermitage/editorial">
         <span class="lien-externe-texte">
           <span class="lien-externe-titre">Préparer sa com</span>
           <span class="discret">Poser ce qui sortira avant, pendant et après</span>
@@ -1080,7 +1118,7 @@ function blocReunionDuMoment(etat) {
     : [];
 
   return `
-    <section class="bloc">
+    <section class="bloc fch-accueil-tuile fch-accueil-moment">
       <span class="tuile-entete">
         <span class="etiquette">${PHASES_REUNION[phase]}</span>
         ${etiquettesReunion(reunion)}
@@ -1171,9 +1209,11 @@ function blocAFaire(etat) {
   if (!aFaire.length) {
     return `
     <section class="bloc">
-      <h2>À faire</h2>
+      <h2 class="titre-section">À faire</h2>
+      <div class="fch-accueil-tuile">
       <div data-bloc="taches">
         <p class="vide">Rien à faire pour le club. Le « + » en bas note la prochaine.</p>
+      </div>
       </div>
     </section>`;
   }
@@ -1183,7 +1223,8 @@ function blocAFaire(etat) {
 
   return `
     <section class="bloc">
-      <h2>À faire <span class="chiffre">${aFaire.length}</span></h2>
+      <h2 class="titre-section">À faire <span class="chiffre">${aFaire.length}</span></h2>
+      <div class="fch-accueil-tuile">
       <div data-bloc="taches">
         ${dessiner(tete)}
         ${
@@ -1202,30 +1243,35 @@ function blocAFaire(etat) {
         </span>
         <span class="lien-externe-fleche" aria-hidden="true">→</span>
       </a>
+      </div>
     </section>`;
 }
 
 function vueAccueil(etat) {
   return `
     ${enTete('accueil')}
+    <div class="fch-accueil">
     ${blocReunionDuMoment(etat)}
     ${blocTempsFort(etat)}
     ${blocAFaire(etat)}
 
     <section class="bloc">
-      <h2>La com' à venir</h2>
+      <h2 class="titre-section">La com' à venir</h2>
+      <div class="fch-accueil-tuile">
       <div data-bloc="apercu">${construireApercuCreation(etat.publications)}</div>
-      <a class="lien-externe" href="#hermitage/creer">
+      <a class="lien-externe" href="#hermitage/editorial">
         <span class="lien-externe-texte">
           <span class="lien-externe-titre">Ouvrir le calendrier éditorial</span>
-          <span class="discret">Programmer, piocher dans la banque d'idées</span>
+          <span class="discret">Préparer et programmer les prochaines publications</span>
         </span>
         <span class="lien-externe-fleche" aria-hidden="true">→</span>
       </a>
+      </div>
     </section>
 
     <section class="bloc">
-      <h2>Le cap</h2>
+      <h2 class="titre-section">Le cap</h2>
+      <div class="fch-accueil-tuile">
       <div data-bloc="objectifs">${
         etat.objectifs.length
           ? construireCapGrave(etat.objectifs)
@@ -1238,9 +1284,12 @@ function vueAccueil(etat) {
         </span>
         <span class="lien-externe-fleche" aria-hidden="true">→</span>
       </a>
+      </div>
     </section>
 
     <section class="bloc bloc-discret">
+      <h2 class="titre-section">Les victoires</h2>
+      <div class="fch-accueil-tuile">
       <details class="backlog">
         <summary>Victoires <span class="chiffre">${etat.victoires.length}</span></summary>
         <div data-bloc="victoires">${construireVictoires(etat.victoires)}</div>
@@ -1252,7 +1301,9 @@ function vueAccueil(etat) {
         </span>
         <span class="lien-externe-fleche" aria-hidden="true">→</span>
       </a>
+      </div>
     </section>
+    </div>
     ${pied()}`;
 }
 
@@ -1492,17 +1543,8 @@ export function construireLaSaison(series, publications, aujourdhui = versDateIS
 }
 
 function vueCreer(etat) {
-  return `
-    ${enTete('creer')}
-
-    <section class="bloc">
-      <h2>La saison</h2>
-      <div data-bloc="saison">${construireLaSaison(etat.series, etat.publications)}</div>
-    </section>
-
-    <section class="bloc">
-      <h2>Calendrier éditorial</h2>
-      ${formulaireIdee({
+  const vue = etat.vue;
+  const formulaire = () => `${formulaireIdee({
         id: 'fch-pub',
         publications: etat.publications,
         rubriquesDepart: RUBRIQUES_DEPART,
@@ -1516,28 +1558,25 @@ function vueCreer(etat) {
           { nom: 'recurrence', libelle: 'Se répète', type: 'choix', options: RECURRENCES },
           { nom: 'recurrence_fin', libelle: "Se répète jusqu'au (facultatif)", type: 'date' },
         ],
-      })}
-    </section>
-
-    <section class="bloc">
-      <h2>À venir</h2>
-      <div data-bloc="a-venir">${construireAVenir(etat.publications, {
-        ouvrable: true,
-        // L'état en menu déroulant et les séries repliées : les deux demandes
-        // de Noé du 29 août 2026. Options, et non règle commune — Yuno n'a rien
-        // demandé, et une demande de forme vise l'écran qu'on regarde.
-        pastille: true,
-        series: true,
-      })}</div>
-    </section>
-
-    <section class="bloc">
-      <h2>Banque d'idées</h2>
-      <div data-bloc="banque">${construireBanque(etat.publications)}</div>
-      <div data-bloc="publiees">${construirePubliees(etat.publications)}</div>
-    </section>
-    ${fenetreIdee(etat)}
-    ${pied()}`;
+      })}`;
+  const contenus = {
+    creer: () => `<section class="bloc"><h2>La communication du club</h2>
+      <div data-bloc="apercu">${construireApercuCreation(etat.publications)}</div></section>${portesDuMenu('Créer')}`,
+    saison: () => `<section class="bloc"><h2>La saison</h2>
+      <div data-bloc="saison">${construireLaSaison(etat.series, etat.publications)}</div></section>
+      <section class="bloc">${formulaire()}</section>`,
+    editorial: () => `<section class="bloc"><h2>À venir</h2>
+      <div data-bloc="a-venir">${construireAVenir(etat.publications, { ouvrable: true, pastille: true, series: true })}</div></section>
+      <section class="bloc">${formulaire()}</section>`,
+    banque: () => `<section class="bloc"><h2>Les idées à développer</h2>
+      <div data-bloc="banque">${construireBanque(etat.publications)}</div></section>
+      <section class="bloc">${formulaire()}</section>`,
+    publications: () => `<section class="bloc"><h2>Les publications parues</h2>
+      <div data-bloc="publiees">${construirePubliees(etat.publications)}</div></section>`,
+  };
+  return `${enTete(vue)}${contenus[vue]()}
+    ${vue !== 'creer' ? '<a class="lien-discret" href="#hermitage/creer">← Créer</a>' : ''}
+    ${fenetreIdee(etat)}${pied()}`;
 }
 
 // Une publication s'ouvre au clic et se MODIFIE en fenêtre volante (demande de
@@ -1784,18 +1823,36 @@ function blocCommission(commission) {
     </li>`;
 }
 
-function vueClub() {
-  return `
-    ${enTete('club')}
+function construireEntrainements() {
+  const iconeLieu = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+  const iconeHeure = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>';
+  return `<section class="entrainements" aria-label="Planning des entraînements">
+    <div class="entrainements-semaine">${CRENEAUX.map(([jour, lot]) => `
+      <section class="entrainements-jour" aria-label="${echapper(jour)}">
+        <h3>${echapper(jour)}</h3>
+        <ul>${lot.map(([categorie, lieu, heure]) => {
+          const famille = categorie === 'Mam’s' ? 'mams'
+            : ['U7', 'U9'].includes(categorie) ? 'jeunes'
+            : ['U11', 'U13'].includes(categorie) ? 'formation' : 'competition';
+          return `<li class="entrainement-carte entrainement-${famille}">
+            <h4>${echapper(categorie)}</h4>
+            <p>${iconeLieu}<span>${echapper(lieu)}</span></p>
+            <p>${iconeHeure}<span>${echapper(heure)}</span></p>
+          </li>`;
+        }).join('')}</ul>
+      </section>`).join('')}</div>
+  </section>`;
+}
 
-    <section class="bloc">
+function vueClub(vue = 'club') {
+  const contenus = {
+    'commissions': () => `    <section class="bloc">
       <h2>Qui fait quoi</h2>
       <p class="discret sous-titre">Les neuf commissions du club, telles que le
         document des responsabilités les pose.</p>
       <ul class="club-commissions">${COMMISSIONS.map(blocCommission).join('')}</ul>
-    </section>
-
-    <section class="bloc">
+    </section>`,
+    'projet-club': () => `    <section class="bloc">
       <h2>Le projet</h2>
       <p class="club-mission">${echapper(MISSION)}</p>
       <ul class="club-valeurs">${VALEURS.map(
@@ -1805,35 +1862,10 @@ function vueClub() {
           <span class="club-valeur-mot">${echapper(comportement)}</span>
         </li>`,
       ).join('')}</ul>
-    </section>
-
-    <section class="bloc bloc-discret">
-      <details class="backlog">
-        <summary>Les entraînements de la semaine
-          <span class="chiffre">${CRENEAUX.reduce((total, [, lot]) => total + lot.length, 0)}</span>
-        </summary>
-        <ul class="club-jours">${CRENEAUX.map(
-          ([jour, lot]) => `
-          <li>
-            <p class="club-jour">${echapper(jour)}</p>
-            <ul class="club-creneaux">${lot
-              .map(
-                ([categorie, lieu, heure]) => `
-              <li>
-                <span class="club-categorie">${echapper(categorie)}</span>
-                <span class="club-lieu">${echapper(lieu)}</span>
-                <span class="club-heure chiffre">${echapper(heure)}</span>
-              </li>`,
-              )
-              .join('')}</ul>
-          </li>`,
-        ).join('')}</ul>
-      </details>
-    </section>
-
-    <section class="bloc bloc-discret">
-      <details class="backlog">
-        <summary>Le club en chiffres <span class="chiffre">${REPERES.length}</span></summary>
+    </section>`,
+    'entrainements': () => construireEntrainements(),
+    'chiffres': () => `    <section class="bloc bloc-discret">
+      <h2>Le club en chiffres</h2>
         <ul class="club-reperes">${REPERES.map(
           ([chiffre, quoi]) => `
           <li>
@@ -1841,15 +1873,24 @@ function vueClub() {
             <span class="club-quoi">${echapper(quoi)}</span>
           </li>`,
         ).join('')}</ul>
-      </details>
-    </section>
-    ${pied()}`;
+    </section>`
+  };
+  return `${enTete(vue)}${vue === 'club'
+    ? `<section class="bloc"><h2>Le club</h2><p class="discret">Les personnes, le projet et les repères du FC Hermitage.</p></section>${portesDuMenu('Le club')}`
+    : `${contenus[vue]()}<a class="lien-discret" href="#hermitage/club">← Le club</a>`}${pied()}`;
 }
 
 // --- Montage ----------------------------------------------------------------
 
 export default {
   async monter(section, route) {
+    monterLeMenu(() => section.querySelector('.fch-nav'), {
+      rubriques: RUBRIQUES_FCH,
+      id: 'menu-fch',
+      classe: 'menu-voile-fch',
+      chemin: cheminDuMenu,
+      poserLeBouton: false,
+    });
     const etat = {
       objectifs: [],
       victoires: [],
@@ -1907,11 +1948,11 @@ export default {
     };
 
     const rendre = () => {
-      if (etat.vue === 'creer') section.innerHTML = vueCreer(etat);
-      else if (etat.vue === 'reunions') section.innerHTML = vueReunions(etat);
+      if (['creer', 'saison', 'editorial', 'banque', 'publications'].includes(etat.vue)) section.innerHTML = vueCreer(etat);
+      else if (['reunions', 'actions', 'archives'].includes(etat.vue)) section.innerHTML = vueReunions(etat);
       else if (etat.vue === 'calendrier') section.innerHTML = vueCalendrier(etat);
       else if (etat.vue === 'partenaires') section.innerHTML = vuePartenaires(etat);
-      else if (etat.vue === 'club') section.innerHTML = vueClub();
+      else if (['club', 'commissions', 'projet-club', 'entrainements', 'chiffres'].includes(etat.vue)) section.innerHTML = vueClub(etat.vue);
       else section.innerHTML = vueAccueil(etat);
 
       // Le « + » flottant suit toutes les vues (décision de Noé, 21 août
@@ -1942,7 +1983,6 @@ export default {
           ?.insertAdjacentHTML('afterend', `<p class="vide">${echapper(etat.souci)}</p>`);
       }
 
-      centrerActif(section.querySelector('.fch-nav'));
       centrerActif(section.querySelector('.filtres'));
       // La grille vient d'être réécrite : elle a perdu son point d'entrée
       // clavier, et la tuile ouverte ses libellés de pastilles.
@@ -1978,6 +2018,7 @@ export default {
     };
 
     this.naviguer = (nouvelleRoute) => {
+      etat.ideeOuverte = null;
       etat.vue = VUES.includes(nouvelleRoute?.vue) ? nouvelleRoute.vue : 'accueil';
       // L'adresse porte l'id d'une FICHE — mais le bandeau de l'accueil, lui,
       // ne connaît que l'ÉVÉNEMENT : il n'a pas les préparations sous la main.

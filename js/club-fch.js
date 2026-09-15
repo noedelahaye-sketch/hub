@@ -86,6 +86,9 @@ export const COMMISSIONS = [
 // « Programmation de la semaine » : savoir qui s'entraîne où, et quand, sans
 // rouvrir le visuel de la saison.
 export const CRENEAUX = [
+  ['Lundi', [
+    ['Mam’s', 'Beaumont-Monteux', '19h30–21h'],
+  ]],
   ['Mardi', [
     ['U9', 'Beaumont-Monteux', '18h–19h15'],
     ['U13', 'Chanos-Curson', '18h–19h15'],
