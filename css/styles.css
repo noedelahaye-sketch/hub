@@ -881,7 +881,7 @@ a { color: var(--accent); }
   color: var(--texte);
   background: color-mix(in srgb, var(--texte) 6%, transparent);
 }
-/* UN MOT QUI NE MÈNE NULLE PART NE SE PRÉSENTE PAS COMME UN LIEN (5 septembre
+/* UN MOT QUI NE MÈNE NULLE PART NE SE PRÉSENTE PAS COMME UN LIEN (7 septembre
    2026) : « Général » ne fait que déplier — il regroupe le transverse et le
    perso, et n'a aucune page à lui. Même géométrie que son voisin cliquable,
    sans le survol ni le curseur qui promettraient une destination. */
@@ -4652,83 +4652,6 @@ body[data-espace="hermitage"] .choix-statut-neutre {
    ET ELLE TIENT EN 56 px au lieu de 110 : le nom passe SOUS le jeton, en petit,
    parce qu'il n'est là que pour reconnaître — pas pour lire. Le rond garde donc
    sa taille, donc sa facilité à viser, pendant que l'ensemble rétrécit. */
-/* --- Les habitudes du jour, en COLONNE ----------------------------------------
-   Demande de Noé, 30 août 2026 : « une colonne pour les habitudes, une ligne =
-   une habitude, une ou deux stats à voir facilement chaque jour pour donner
-   envie ». Voir `construireHabitudesDuJour`, js/perso.js.
-
-   CE QUE ÇA REMPLACE : une bande horizontale de jetons ronds, née la veille
-   POUR L'ACCUEIL, où la place était comptée et où elle devait tenir en 56 px.
-   Les habitudes ayant quitté l'accueil, la contrainte est tombée avec lui. */
-
-/* LA GRILLE EST PORTÉE PAR LA COLONNE, PAS PAR CHAQUE LIGNE, et c'est ce qui
-   aligne les mesures entre elles. Chaque ligne était une grille indépendante :
-   « quand ça vient » étant plus court que « 0 sur 5 cette semaine », la
-   cinquième ligne démarrait ses chiffres 160 px plus loin que les autres. Des
-   stats qu'on vient lire d'un coup d'œil doivent tomber sur la même verticale.
-
-   `subgrid` fait hériter les quatre colonnes ; là où il manque, la ligne
-   retombe sur des colonnes automatiques — la mise en page reste lisible, elle
-   perd seulement son alignement. Dégradation douce, aucun repli à écrire. */
-.hab-colonne {
-  display: grid;
-  /* Le rond d'abord : c'est le geste qu'on vient faire (demande de Noé). */
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
-  /* AUCUN ÉCART : la colonne doit tenir DIX habitudes sans devenir longue
-     (demande de Noé). Elle est passée de 64 px par habitude à 46, puis à 32 —
-     10 lignes font 320 px, soit un tiers d'écran de téléphone au lieu de 640.
-     Les lignes se distinguent par le voile d'une habitude faite, pas par du
-     vide entre elles. */
-  gap: 0;
-  margin: 0 0 var(--espace-16);
-  padding: 0;
-  list-style: none;
-}
-
-.hab-ligne {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: subgrid;
-  align-items: center;
-  gap: var(--espace-8);
-  /* Pas de rembourrage vertical : le bouton porte la hauteur. Il en reste sur
-     les côtés pour que le voile d'une habitude faite ne colle pas au texte. */
-  padding: 0 var(--espace-8);
-  border-radius: var(--rayon-controle);
-}
-
-/* Une habitude faite s'éclaire d'un voile de sa famille — pas d'un aplat : la
-   ligne reste lisible, et la colonne ne devient pas un damier. Celles qui
-   restent vides ne sont pas en défaut ; la colonne ne se vide jamais, sinon
-   elle deviendrait un compteur de ce qui manque. */
-.hab-ligne.faite {
-  background: color-mix(in srgb, var(--teinte, var(--accent)) 12%, transparent);
-}
-
-.hab-titre {
-  display: flex;
-  align-items: baseline;
-  gap: var(--espace-8);
-  min-width: 0;
-}
-
-.hab-emoji {
-  flex: none;
-  font-size: 0.9375rem;
-  line-height: 1;
-  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
-}
-
-.hab-nom {
-  /* 13 px : un cran sous le corps courant. Une liste de dix lignes se PARCOURT
-     du regard, elle ne se lit pas — et Noé a autorisé la réduction dans la même
-     phrase que la densité. */
-  font-size: 0.8125rem;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 .hab-mesure {
   display: flex;
@@ -5005,73 +4928,293 @@ body[data-espace="hermitage"] .choix-statut-neutre {
   border-color: var(--teinte, var(--accent));
 }
 
-/* --- Le tableau de bord perso (30 août 2026) ---------------------------------
-   Demande de Noé : « les critères sont un peu les mêmes que pour la page
-   d'accueil, des données qui évoluent sur lesquelles on a une action à faire ».
+/* --- Le hall du perso (15 septembre 2026) --------------------------------------
+   Demande de Noé : « des tuiles cliquables avec des aperçus ou des chiffres des
+   pages vers lesquels elles renvoient », et plus rien à cocher ici — les
+   habitudes se marquent au bilan du jour.
 
-   Ce critère trie dans les deux sens. Restent l'humeur, les habitudes du jour,
-   le livre en cours et le mot du jour — tout ce qui se coche, se note ou se
-   répond. Partent les intentions, la bibliothèque entière, l'historique des
-   journées, la courbe des trente jours : elles ont chacune leur page.
+   UNE PAGE DONT TOUS LES GESTES ONT DÉMÉNAGÉ N'EST PLUS UN TABLEAU DE BORD :
+   c'est un hall. Voir `construireHallPerso`, js/perso.js.
 
-   C'est le même mouvement que l'accueil quand les objectifs l'ont quitté. Mais
-   UNE intention revient en pied, relue : c'est ce qui distingue cette page d'un
-   second accueil — on vient ici pour se recentrer. */
-.perso-tableau { display: block; }
-
-.perso-tuile { margin-bottom: var(--espace-24); }
-
-/* L'élan tient dans la pastille, en petit : il dit que l'habitude vit, sans
-   ramener ici le tableau de bord qui vit sur sa propre page. */
-.pastille-elan {
-  margin-left: var(--espace-8);
-  font-size: 0.625rem;
-  opacity: 0.7;
+   LA TUILE EST CELLE DE LA BIBLIOTHÈQUE (`.biblio-porte`) : fond de carte, sans
+   contour — une tuile posée dans la page se distingue par sa SURFACE (règle du
+   30 août) —, et le fond se mêle d'accent au survol. Deux portes de deux dessins
+   dans la même application n'en feraient plus une. */
+.perso-hall {
+  display: grid;
+  /* DEUX COLONNES DÉCLARÉES, ET NON `auto-fit` : il y a QUATRE tuiles, dont deux
+     qui prennent toute la largeur — une grille qui se remplit d'elle-même en
+     posait trois sur un écran large et laissait la troisième VIDE, mesuré à
+     800 px. `auto-fit` sert les galeries dont on ne connaît pas le nombre ; ici
+     on le connaît, et le rythme large / deux / large est celui qu'on veut à
+     toutes les largeurs. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--espace-16);
+  /* Les tuiles d'un MÊME RANG se donnent la même hauteur — `align-items: start`
+     est posé plus haut sur les listes du hub, et ce qu'on ne redit pas reste.
+     Surtout PAS `grid-auto-rows: 1fr` : celui-ci donne la même hauteur à TOUS
+     les rangs, et la semaine en frimousses héritait des 280 px de la tuile de la
+     bibliothèque — un rang de vide sous sept cases de 40 px. */
+  align-items: stretch;
 }
 
-.perso-lecture { margin-bottom: var(--espace-16); }
-
-.perso-lecture-titre {
-  display: block;
-  margin-bottom: var(--espace-8);
-  font-size: 0.9375rem;
+@media (min-width: 45rem) {
+  .perso-hall { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-/* L'INTENTION RELUE ferme la page, en voix éditoriale : c'est une phrase qu'on
-   relit, pas une donnée qu'on consulte. Elle ne se coche pas, ne se compte pas,
-   et c'est exactement pour ça qu'elle est là. */
-.perso-relue {
-  margin: var(--espace-24) 0 0;
+/* LES DEUX TUILES LARGES tiennent toute la grille : la semaine a besoin de ses
+   sept cases côte à côte, et une intention est une PHRASE — à 17 rem elle se
+   replierait sur quatre lignes pendant que ses voisines en auraient deux. */
+.hall-large { grid-column: 1 / -1; }
+
+.hall-tuile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espace-8);
   padding: var(--espace-16);
-  background: var(--fond-doux);
+  color: var(--texte);
+  text-decoration: none;
+  background: var(--fond-carte);
   border-radius: var(--rayon-carte);
-  font-size: 0.9375rem;
-  line-height: 1.5;
+  transition: background 140ms ease, transform 140ms ease;
+}
+
+.hall-tuile:hover { background: color-mix(in srgb, var(--fond-carte) 88%, var(--accent)); }
+.hall-tuile:active { transform: scale(0.995); }
+
+/* La tuile qui porte des boutons n'est pas un lien (un `<button>` dans un `<a>`
+   n'est ni valide ni cliquable) : c'est un écouteur qui l'ouvre, et le curseur
+   doit le dire quand même. */
+[data-hall-ouvre] { cursor: pointer; }
+
+.hall-nom {
+  font-family: var(--police-titre);
+  font-weight: 700;
+  font-size: 1.125rem;
+  letter-spacing: -0.01em;
+}
+
+/* Le nom de la tuile à geste EST un lien — un écouteur ne se tabule pas, et le
+   clavier doit atteindre ce que la souris atteint —, mais il n'en a pas
+   l'allure : c'est la tuile entière qu'on presse. */
+.hall-nom-lien { color: inherit; text-decoration: none; }
+
+/* LE COMPTE FERME LA TUILE, collé au bas quelle que soit la hauteur du rang :
+   sans `margin-top: auto`, deux tuiles voisines écriraient leur compte à deux
+   hauteurs différentes. */
+.hall-compte {
+  margin-top: auto;
+  padding-top: var(--espace-4);
+  font-size: 0.8125rem;
   color: var(--texte-discret);
 }
 
-.perso-relue b { font-weight: 600; color: var(--texte); }
-.perso-relue .discret { display: block; margin-top: var(--espace-4); font-size: 0.8125rem; }
+/* --- « Mes journées » : la semaine en frimousses ------------------------------
+   Sept cases, aujourd'hui à droite. Elles se partagent la largeur également —
+   une case par jour, et le jour du milieu ne vaut pas plus que celui du bord. */
+.hall-semaine {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--espace-4);
+  width: 100%;
+  max-width: 24rem;
+}
 
-/* Les portes vers les quatre pages. En pied, discrètes : on ne les cherche
-   qu'une fois qu'on a fait ce qu'on avait à faire. */
-.perso-portes {
+.hall-jour {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.hall-jour-lettre {
+  font-size: 0.6875rem;
+  line-height: 1;
+  color: var(--texte-discret);
+}
+
+.hall-jour-frimousse {
+  font-size: 1.125rem;
+  line-height: 1.2;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+}
+
+/* UN JOUR SANS HUMEUR NOTÉE : un cercle creux, jamais une croix ni un rouge.
+   Il occupe exactement la hauteur d'une frimousse, sans quoi la rangée
+   danserait d'une case à l'autre. */
+.hall-jour-rien {
+  width: 0.6875rem;
+  height: 0.6875rem;
+  margin: calc((1.35em - 0.6875rem) / 2) 0;
+  border: 1.5px solid var(--bordure);
+  border-radius: 50%;
+}
+
+/* LE POINT DU BILAN, sous la case : ce jour-là, le soir a été écrit. Il garde sa
+   place même éteint — une rangée dont les cases changent de hauteur selon ce
+   qu'elles portent se lit comme un défaut d'alignement. */
+.hall-jour-bilan {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.hall-jour-bilan.ecrit { background: var(--accent); }
+
+/* AUJOURD'HUI se dit par son initiale en accent, comme la case du calendrier des
+   journées : un cadre de plus entrerait en concurrence avec le point du bilan. */
+.hall-jour-ce-soir .hall-jour-lettre { color: var(--accent); font-weight: 700; }
+
+/* --- « Mes habitudes » : les séries en cours, en barres ------------------------
+   Demande de Noé (15 septembre 2026) : « il faut trouver autre chose de plus
+   visuel », et « rester en jour tout le temps avec la série en cours et la série
+   max comme avant ».
+
+   CHAQUE BARRE COURT VERS SON RECORD : le remplissage est la série en cours, le
+   trait clair est la série max. Une barre qui touche son trait est une habitude à
+   son sommet — ça se voit avant d'être lu. Les chiffres restent à droite : la
+   barre les DESSINE, ils les DISENT.
+
+   Quatre colonnes déclarées sur la LISTE et non sur chaque ligne : sans ça,
+   chaque ligne se calerait seule et ni les barres ni les chiffres ne tomberaient
+   sur la même verticale. C'est la leçon de la colonne d'habitudes du 30 août. */
+.hall-series {
+  display: grid;
+  /* LA BARRE PLAFONNE À 5,5 REM : au-delà elle prenait au NOM, qui se coupait
+     dès « Bilan du jour (Gra… ». Une barre n'a pas besoin d'être longue pour se
+     comparer à sa voisine — elles partagent la même échelle. */
+  grid-template-columns: minmax(0, 1fr) minmax(2.5rem, 5.5rem) auto;
+  align-items: center;
+  gap: 6px var(--espace-8);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* `subgrid` fait hériter les trois colonnes ; là où il manque, la ligne retombe
+   sur des colonnes automatiques — la mise en page reste lisible, elle perd
+   seulement son alignement. Dégradation douce, aucun repli à écrire. */
+.hall-serie {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  align-items: center;
+  font-size: 0.8125rem;
+}
+
+.hall-serie-nom {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espace-4);
+  min-width: 0;
+}
+
+.hall-serie-emoji {
+  flex: none;
+  font-size: 0.875rem;
+  line-height: 1;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+}
+
+/* Un nom trop long s'arrête à l'ellipse plutôt que de pousser sa barre hors de
+   la tuile. Le nom entier reste dans la bulle et le nom accessible. */
+.hall-serie-mot {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* LA BARRE : un lit sombre, un remplissage teinté, un repère clair. Le lit est
+   `--fond-doux` et non un gris franc — il dit la place qui reste sans la
+   compter, et une piste trop visible ferait lire un manque là où il n'y a qu'un
+   chemin. */
+.hall-serie-barre {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--fond-doux);
+  overflow: hidden;
+}
+
+.hall-serie-barre i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--serie, var(--accent));
+  /* Une série d'un jour doit rester visible : sans plancher, 1 sur 30 fait
+     3 px de long, soit la moitié d'un angle arrondi. */
+  min-width: 6px;
+  transition: width 200ms ease;
+}
+
+/* LE REPÈRE DU RECORD, un trait clair posé sur la barre. `overflow: hidden` le
+   garde dans le lit quand le record touche le bout, et `translateX` le centre
+   sur sa position au lieu de le poser à sa droite. */
+.hall-serie-barre b {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--texte-discret);
+  opacity: 0.55;
+  transform: translateX(-1px);
+}
+
+/* La teinte de la barre suit celle de la série, et c'est la MÊME règle que les
+   chiffres (`rangDeLaSerie`) : deux copies d'une règle de couleur finissent par
+   ne plus colorer pareil. L'or de l'égalité n'a pas de dégradé ici — sur 6 px de
+   haut il ne se verrait pas ; il prend le jaune du record. */
+.hall-serie-barre[data-serie="vert"] { --serie: var(--serie-vert); }
+.hall-serie-barre[data-serie="bleu"] { --serie: var(--serie-bleu); }
+.hall-serie-barre[data-serie="jaune"] { --serie: var(--serie-jaune); }
+.hall-serie-barre[data-serie="record"] { --serie: var(--serie-jaune); }
+
+/* LES DEUX CHIFFRES, calés à droite et de largeur fixe : sans elle, « 7 » et
+   « 14 » décaleraient la colonne d'une ligne à l'autre. */
+.hall-serie-mesures {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+/* --- « Ma bibliothèque » : la lecture en cours ---------------------------------
+   Le seul geste qui reste sur cette page — noter ses pages —, parce que le bilan
+   du jour RELÈVE les pages lues sans savoir les noter. */
+.hall-lecture {
+  display: grid;
+  gap: var(--espace-8);
+  width: 100%;
+}
+
+.hall-lecture-titre { font-size: 0.9375rem; }
+
+.hall-lecture-ligne {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--espace-8);
-  margin-top: var(--espace-24);
-}
-
-.perso-porte {
-  padding: var(--espace-8) var(--espace-16);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-pastille);
-  color: var(--texte-discret);
   font-size: 0.8125rem;
-  text-decoration: none;
 }
 
-.perso-porte:hover { border-color: var(--accent); color: var(--accent); }
+/* --- « Mes intentions » : la phrase du jour ------------------------------------
+   Une voix éditoriale, pas une donnée : c'est une phrase qu'on relit. Elle ne se
+   coche pas, ne se compte pas, et c'est exactement pour ça qu'elle est là. */
+.hall-intention {
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--texte);
+}
+
+.hall-intention .discret {
+  display: block;
+  margin-top: var(--espace-4);
+  font-size: 0.8125rem;
+}
 
 /* --- La page du jour ---------------------------------------------------------
    Elle se lit plus qu'elle ne se remplit : le hub connaît déjà tout ce qu'elle
@@ -6662,57 +6805,6 @@ li.livre-tuile {
 }
 
 
-
-/* Les rendez-vous et les victoires en LIGNES, pas en cartes : ce qu'on vient y
-   lire tient en une ligne. Ce sont les intentions qui portent des tuiles, parce
-   qu'elles portent une phrase à relire. */
-.perso-lignes {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--espace-8);
-}
-
-/* La carte vient de `.bloc li`, qui habille toutes les listes du hub — on ne
-   lutte pas contre : une exception locale à cet habillage serait un réglage de
-   plus à tenir d'accord. Ce qui change ici est la DENSITÉ, pas le cadre : ces
-   lignes faisaient trois hauteurs de texte pour un mot (« Courir »), avec la
-   date perdue en haut à droite. Elle revient sur la même ligne, comme partout
-   ailleurs. */
-.perso-ligne {
-  position: relative;
-  display: flex;
-  align-items: baseline;
-  gap: var(--espace-12);
-  padding: var(--espace-12) 2.5rem var(--espace-12) var(--espace-16);
-}
-
-.perso-ligne-corps {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  flex: 1;
-  min-width: 0;
-}
-
-.perso-ligne-titre { font-size: 0.9375rem; line-height: 1.3; }
-
-.perso-ligne-service,
-.perso-ligne-date {
-  font-size: 0.75rem;
-  color: var(--texte-discret);
-}
-
-.perso-ligne-date { flex: none; }
-
-.perso-gestes {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--espace-16);
-}
 
 
 .courbe-humeur {
@@ -10294,76 +10386,6 @@ a.cap-ajout-discret { text-decoration: none; }
   font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
 }
 
-/* --- Le duo de perso : habitudes | lecture -------------------------------------
-   Demande de Noé, 30 août 2026 : les habitudes dans une colonne, une autre à
-   côté. Voir `construireTableauPerso`, js/perso.js — le choix de la lecture y
-   est justifié.
-
-   Les colonnes se DÉFONT sur téléphone : deux colonnes de 180 px y seraient
-   deux listes illisibles, et les habitudes ont besoin de leur largeur pour
-   garder leurs noms entiers — c'est ce qu'on vient de gagner en retirant le
-   texte des mesures, et on ne va pas le reperdre. */
-.perso-duo {
-  display: grid;
-  gap: var(--espace-24);
-  margin-bottom: var(--espace-16);
-}
-
-@media (min-width: 45rem) {
-  .perso-duo {
-    /* Les habitudes prennent plus de place : elles portent dix lignes, la
-       lecture en porte trois. `minmax(0, …)` et non `1fr` — un titre de livre
-       long refuserait de rétrécir. */
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-    align-items: start;
-  }
-}
-
-/* `duo-` ET NON `perso-colonne` : le nom était PRIS le 30 août 2026 par la
-   colonne de mise en page des sous-vues de perso, que le script masquait quand
-   elle ne portait aucun `[data-vue]` — mes colonnes, qui n'en portent pas, se
-   cachaient donc entières. Le titre était un `<h2>` pour la même raison : le
-   script masque le premier `h2` d'une vue affichée seule, et c'est le mien
-   qu'il attrapait. Deux collisions pour un nom non vérifié — le grep de trois
-   secondes que le CLAUDE.md réclame.
-
-   `.perso-colonne` a disparu le 5 septembre avec les trois vues qu'elle
-   rangeait ; le nom est libre, et ce commentaire reste parce que la LEÇON, elle,
-   ne l'est pas. */
-.duo-colonne { min-width: 0; }
-
-/* Le titre d'une colonne : la graisse d'un libellé de section, comme « CE QUI A
-   COMPTÉ AUJOURD'HUI » juste en dessous. Il NOMME, il ne pèse pas — les
-   habitudes en dessous sont le sujet. */
-.duo-titre {
-  margin: 0 0 var(--espace-8);
-  font-family: var(--police-texte);
-  font-size: 0.625rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--texte-discret);
-}
-
-/* La colonne des habitudes n'a plus de marge basse à elle : c'est le duo qui la
-   porte, sinon les deux colonnes ne finissent pas à la même hauteur. */
-.duo-colonne .hab-colonne { margin-bottom: 0; }
-
-/* La colonne de lecture quand aucun livre n'est en cours : une tuile pointillée
-   qui tient sa place et invite, plutôt qu'une phrase perdue à côté de dix
-   habitudes. Même forme que « Déclarer une période » dans #objectifs. */
-.perso-lecture-vide {
-  display: grid;
-  gap: var(--espace-4);
-  padding: var(--espace-16);
-  text-align: center;
-  text-decoration: none;
-  color: var(--texte-discret);
-  border: 1px dashed var(--bordure);
-  border-radius: var(--rayon-carte);
-}
-
-.perso-lecture-vide:hover { border-color: var(--accent); color: var(--texte); }
 
 /* --- La page des habitudes : stats globales et courbes -------------------------
    Demande de Noé, 30 août 2026 : « des stats globales, des graphiques
@@ -10556,14 +10578,6 @@ a.cap-ajout-discret { text-decoration: none; }
 }
 
 .hab-groupe .chiffre { color: var(--texte); letter-spacing: normal; }
-
-/* Sur le tableau de bord, où la place est comptée, un filet remplace le titre :
-   il dit que l'unité change sans coûter une ligne. */
-.hab-colonne-suite {
-  margin-top: var(--espace-8);
-  padding-top: var(--espace-8);
-  border-top: 1px solid var(--bordure);
-}
 
 .hab-groupe-mot {
   margin: calc(var(--espace-8) * -1) 0 var(--espace-8);

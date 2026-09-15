@@ -259,7 +259,7 @@ l'on est **se déplie d'elle-même**.
 - `#yuno` — le SITE Yuno : l'habillage du hub disparaît entièrement, chrome et identité propres (voir docs/yuno-spec.md)
 - `#fch` — la page FC Hermitage du hub (thème : bleu du club) — tableau de bord réduit et porte vers le site
 - `#hermitage` — le SITE FC Hermitage : l'habillage du hub disparaît, chrome et identité propres, fond bleu du club (voir docs/fch-spec.md)
-- `#perso` — espace perso (thème : doux, apaisé, distinct des trois autres). **Quatre vues** depuis le 28 août 2026 — `#perso/intentions`, `/rendez-vous`, `/humeur`, `/victoires` — offertes une à une par le menu : c'est la MÊME page dont on cache trois blocs sur quatre. Ni second écran, ni second chargement, et les écouteurs, posés sur la section, survivent.
+- `#perso` — espace perso (thème : doux, apaisé, distinct des trois autres). **Un HALL depuis le 15 septembre 2026** : quatre portes — `#perso/journee`, `/bibliotheque`, `/habitudes`, `/intentions` —, chacune montrant l'état de la page qu'elle ouvre. Les vues sont des blocs de la MÊME page, offerts un à un par le menu : ni second écran, ni second chargement, et les écouteurs, posés sur la section, survivent. *Les vues `/rendez-vous`, `/humeur` et `/victoires` sont parties le 5 septembre 2026 avec leurs entrées de menu — un bloc sans porte est du code mort.*
 
 **Les trois pages espace du hub sont des BILANS** (refonte du 26 août 2026), et
 elles ont la même forme sans avoir le même contenu. **Elles n'ont plus d'onglet
@@ -284,7 +284,7 @@ répond à « où j'en suis » — c'est une question qu'on se pose, pas un réf
   formation, qui a sa propre page depuis. Il n'en reste que les gabarits que
   tout le monde emprunte — tuiles d'objectif, listes, fenêtres, formulaires.
 
-L'espace perso affiche uniquement : ses intentions, ses prochains rendez-vous avec soi-même, ses victoires, et la courbe d'humeur des 30 derniers jours.
+L'espace perso ouvre sur ses quatre pages — ses journées, sa bibliothèque, ses habitudes, ses intentions — et rien ne s'y coche : ce qui se fait vraiment se fait au bilan du jour ou derrière la porte. Voir « `#perso` EST UN HALL » plus bas.
 
 ### Sa forme, refondue le 29 août 2026
 
@@ -297,64 +297,154 @@ d'intention est une tuile de cap à qui l'on a retiré tout ce qui mesure.** La
 page cesse ainsi d'être la seule du hub à parler une autre langue, sans rien
 céder sur la règle qui la fonde.
 
-### `#perso` EST UN TABLEAU DE BORD, pas une page qu'on fait défiler (30 août 2026)
+### `#perso` EST UN HALL : quatre portes qui montrent ce qu'il y a derrière (15 septembre 2026)
 
-**La demande de Noé** : « choisir ce qui doit rester dans la page perso et sous
-quelle forme — les critères sont un peu les mêmes que pour la page d'accueil,
-des données qui évoluent sur lesquelles on a une action à faire. »
+**La demande de Noé** : *« j'aimerais qu'on y retrouve des tuiles cliquables avec
+des aperçus ou des chiffres des pages vers lesquels elles renvoient (mes
+journées, ma bibliothèque…) »*, puis, dans la foulée : *« finalement pas besoin
+de cocher les habitudes depuis cette page, ça se fera dans le bilan du jour, et
+si vraiment besoin de le faire j'irai dans la page habitudes »*.
 
-**Ce critère trie dans les deux sens, et c'est ce qui le rend utile** :
+**CE QUE ÇA RENVERSE, ET IL FAUT LE DIRE.** La page était un TABLEAU DE BORD
+depuis le 30 août : elle ne portait « que ce qui évolue et sur quoi on a une
+action à faire ». **Ce critère n'a pas changé de valeur — c'est la PAGE qui a
+perdu ses gestes**, un par un : l'humeur est partie au bilan du soir le
+7 septembre, le mot du jour l'a suivie (`journees.mot` est la colonne du journal
+d'une journée, qui pose la même question dans un carnet de 56 rem, à l'heure où
+elle est finie), et les habitudes s'y cochent désormais aussi.
 
-| Restent | Partent, chacune vers sa page |
-|---|---|
-| ~~l'humeur du jour~~ *(partie le 5 septembre : elle se note au bilan du jour)* | les intentions |
-| les habitudes du jour (elles se cochent) | la bibliothèque entière |
-| le livre en cours (des pages se notent) | l'historique des journées |
-| le prochain rendez-vous · le mot du jour | la courbe des 30 jours, les victoires |
+**UNE PAGE DONT TOUS LES GESTES ONT DÉMÉNAGÉ N'EST PLUS UN TABLEAU DE BORD :
+c'est un hall** — on y regarde, et on entre. C'est exactement ce qu'est devenue
+`#perso/bibliotheque` le 7 septembre, et la porte y prend la même forme
+(`.biblio-porte`) : **elle montre ce qu'il y a derrière.**
 
-C'est **le même mouvement que l'accueil le 29 août**, quand les objectifs l'ont
-quitté : ils avaient leur page à deux gestes, et l'accueil répond à « qu'est-ce
-que je fais maintenant », pas à « où je vais ». Les intentions sont le cap de
-perso ; elles partent pour la même raison.
+| Tuile | Son aperçu | Son compte |
+|---|---|---|
+| **Mes journées** | les 7 derniers jours en frimousses, un point sous les soirs écrits | *Bilan du jour écrit ✓* / *à écrire* |
+| **Ma bibliothèque** | 4 vignettes livres et films alternés, le livre en cours et sa jauge | 20 livres · 31 films & séries |
+| **Mes habitudes** | **cinq séries en cours, en barres** — le remplissage dit la série, le trait le record | 9 habitudes |
+| **Mes intentions** | l'intention relue du jour, en toutes lettres | 3 intentions |
 
-**MAIS UNE INTENTION REVIENT, RELUE** — une seule, celle du jour, en pied de
-page. C'est ce qui distingue ce tableau de bord d'un second accueil : on vient
-ici pour se recentrer, et une phrase qu'on relit vaut mieux qu'une liste qu'on
-gère. Elle vient de `relecture` (js/orientation.js), la même qui ferme une
-journée.
+**L'EXIGENCE QUI VIENT AVEC, et c'est elle qui tient la page** : quatre
+rectangles nommés comme quatre lignes de menu seraient un menu dessiné, et le
+menu est déjà à un geste. **Chaque tuile doit dire quelque chose qu'on IGNORE
+avant de l'ouvrir** — l'humeur de la semaine, où j'en suis dans mon livre, mes
+séries vivantes, la phrase du jour. C'est le test à repasser le jour où une
+cinquième se présente.
 
-**SEPT SOUS-PAGES dans le menu**, contre quatre avant : les habitudes, la
-bibliothèque et les journées sont assez grandes pour avoir leur écran. Les
-laisser dans la page en aurait fait une liste de sept blocs qu'on fait défiler —
-l'inverse d'un lieu où l'on vient se recentrer.
+**LE RYTHME EST LARGE / DEUX / LARGE**, et les colonnes sont DÉCLARÉES et non
+`auto-fit` : il y a quatre tuiles, dont deux qui prennent toute la grille — la
+semaine a besoin de ses sept cases côte à côte, et une intention est une PHRASE.
+Une grille qui se remplit d'elle-même en posait trois sur un écran large et
+laissait la troisième vide (mesuré à 800 px). `auto-fit` sert les galeries dont
+on ne connaît pas le nombre ; ici on le connaît.
+- **Surtout pas `grid-auto-rows: 1fr`** : il donne la même hauteur à TOUS les
+  rangs, et la semaine en frimousses héritait des 280 px de la tuile de la
+  bibliothèque — un rang de vide sous sept cases de 40 px. Ce qu'on veut est
+  `align-items: stretch`, qui n'égalise que les tuiles d'un **même** rang.
 
-**Ce que `#perso` seul ne montre plus** : les six autres blocs. Ils existent
-toujours dans la même page et se donnent un à un par le menu — ni second écran,
-ni second chargement, et les écouteurs posés sur la section survivent.
+**LES SÉRIES EN COURS, EN BARRES** (demande de Noé : *« pas la courbe de
+12 semaines, plutôt un aperçu des séries en cours sur certaines habitudes »*,
+puis *« je suis pas fan, il faut trouver autre chose de plus visuel »*).
 
-> *Ce que cette structure a remplacé.* Du 29 au 30 août, `#perso` montrait tout
-> à la suite : la galerie d'intentions pleine largeur, puis deux colonnes — ce
-> qui vient à gauche, ce qui est passé à droite. C'était juste tant qu'il n'y
-> avait que quatre blocs ; les habitudes, la bibliothèque et les journées l'ont
-> fait passer à sept, et la page est devenue un défilement.
+**CHAQUE BARRE COURT VERS SON RECORD** : le remplissage est la série EN COURS, le
+trait clair posé dessus est la série MAX. **Une barre qui touche son trait est une
+habitude à son sommet — ça se voit avant d'être lu.** Les deux mesures sont donc
+dites deux fois : la barre les DESSINE, les deux chiffres à droite les DISENT.
+*Ce que ça remplace : cinq lignes de texte avec un chiffre au bout, qui disaient
+la même chose sans se voir.*
 
-Ce que la refonte a corrigé, et qui n'était pas que de la forme :
+- **TOUT SE COMPTE EN JOURS** (demande de Noé : *« il faut rester en jour tout le
+  temps avec la série en cours et la série max comme avant »*). Une habitude
+  hebdomadaire compte des SEMAINES tenues ; on les rend en jours de rythme —
+  c'est déjà la conversion officielle du hub, celle qui classe la meilleure série
+  dans `bilanDesHabitudes` : « une semaine tenue vaut sept jours de rythme ».
+  Sans elle, « 2 » et « 11 » s'alignaient dans la même colonne sans compter la
+  même chose. L'unité d'origine reste dans la bulle.
+- **L'échelle est COMMUNE** aux barres montrées — le plus grand record de la
+  fournée —, sans quoi chaque barre se mesurerait à elle-même et les longueurs ne
+  voudraient plus rien dire les unes à côté des autres.
+- **Le repère ne se pose que s'il dit quelque chose** : au sommet il tomberait sur
+  le bout de la barre pleine, où il ne serait qu'un trait de plus.
+- **Cinq barres**, et c'est la hauteur de la tuile voisine qui le dit : la
+  bibliothèque porte sa pile et sa lecture, le rang se cale sur elle, et trois
+  barres y laissaient un tiers de vide. Au-delà de cinq, la tuile redeviendrait la
+  LISTE qu'on trouve derrière la porte.
+- **Les plus longues, et non celles qui vont tomber** : un aperçu qui dirait
+  « celle-ci va casser » compterait un manque, et c'est précisément ce qui avait
+  fait écarter la première maquette des habitudes — « ça ne me donne pas envie de
+  les faire ». Le miroir d'abord.
+- **La couleur et la flamme sont celles de sa page** (`rangDeLaSerie`,
+  `flammeDeSerie`), barre comprise : une même mesure ne change ni de teinte ni de
+  dessin d'un écran à l'autre. L'or de l'égalité n'a pas son dégradé sur la barre
+  — sur 6 px de haut il ne se verrait pas —, elle prend le jaune du record.
+- **Le lit de la barre est `--fond-doux`** et non un gris franc : il dit la place
+  qui reste sans la compter, et une piste trop visible ferait lire un manque là
+  où il n'y a qu'un chemin.
+- **Aucune série en cours : l'aperçu se tait**, la tuile ne garde que son compte.
+  Des zéros en vitrine seraient un accueil de reproche.
+
+**LA SEMAINE EN FRIMOUSSES** porte deux signes par jour, et pas trois :
+l'humeur, et un point sous la case quand le bilan a été écrit. Les points
+d'espace du calendrier des journées restent derrière la porte — sur une case de
+20 px ils feraient une constellation, et **cette tuile parle du rituel du soir**,
+pas de ce qui a bougé dans la journée. Un jour sans rien garde un cercle creux,
+jamais une croix ni un rouge.
+- **Un bilan est écrit dès que le journal OU la gratitude porte quelque chose**,
+  jamais la note du jour : celle-ci se répond d'un doigt, et l'avoir touchée ne
+  veut pas dire qu'on a fait son bilan. C'est la règle de la porte du soir de
+  l'accueil, au mot près.
+- **Les deux gestes du bilan tiennent la porte à jour** : noter son humeur ou
+  écrire son journal depuis la tuile d'une journée allume la case sans recharger
+  quoi que ce soit. Deux sources pour un même signe se contrediraient au premier
+  clic.
+
+**LE SEUL GESTE QUI RESTE : les pages lues.** Noé l'a demandé deux fois — dont le
+2 septembre, « l'écran où l'on note vraiment ses pages tous les soirs » — et **le
+bilan du jour ne sait pas le faire** : il RELÈVE les pages lues, il ne les note
+pas. La tuile de la bibliothèque n'est donc pas un lien mais un écouteur qui se
+retire dès que le clic a touché un contrôle, et **son nom est un lien** : un
+écouteur ne se tabule pas. C'est la mécanique de la tuile « Aujourd'hui » de
+l'accueil, garde du glissement comprise. Les trois autres tuiles sont de vrais
+`<a>`.
+
+**CE QUI A QUITTÉ LA PAGE, ET OÙ C'EST PARTI** : les rendez-vous (ils ne vivent
+plus qu'au calendrier), le champ « ce qui a compté » (le journal du soir), les
+habitudes cochables (le bilan du jour, la page des habitudes), et l'anniversaire
+d'une victoire que `relecture` sait rendre — une victoire sous un titre « Mes
+intentions » dirait autre chose que ce que la porte ouvre, et la tuile d'une
+journée la relit déjà. La relecture est donc appelée ici **sans les victoires**,
+ce qui ne laisse que la rotation des intentions.
+
+**ELLE COÛTE DIX REQUÊTES AU LIEU DE VINGT ET UNE**, et c'est la même règle
+partout : *une porte ne paie pas le prix de la page qu'elle ouvre*.
+- la journée d'aujourd'hui n'est plus chargée en arrivant (`journeeDe` en coûte
+  sept) : elle ne servait qu'au mot du jour, qui a quitté la page ;
+- la semaine du hall en coûte **deux** (`humeurDepuis`, `journeesEntre`) là où
+  `resumeDesJournees`, qui sert le calendrier, en coûte cinq et rapporte quatre
+  choses dont la tuile ne ferait rien ;
+- **le calendrier des journées ne se remplit que lorsqu'on pousse la porte**,
+  plus au montage ;
+- les événements ne sont plus lus du tout.
+
+> *Ce que cette structure a remplacé.* Du 30 août au 15 septembre, la page
+> portait les habitudes en colonne (une ligne chacune, avec ses deux séries), la
+> lecture à côté, le champ du mot, les trois prochains rendez-vous, l'intention
+> relue, et **quatre portes en pied qui n'étaient que quatre mots gris**. Le
+> défaut n'était pas la longueur : c'est qu'elle montrait un bout du contenu de
+> ses pages-filles sans en être une, et nommait ces pages sans rien en dire.
+> Partent avec : `construireTableauPerso`, `construireHabitudesDuJour` et
+> vingt-trois règles CSS.
+
+Ce que la refonte du 30 août avait corrigé, et qui tient toujours :
 - **une intention se MODIFIE.** Elle ne portait qu'une croix nue : on ne pouvait
   que la jeter et la réécrire. Le menu discret lui donne « Modifier », et la
   confirmation sur place au lieu d'une suppression au premier appui.
-- **la FAMILLE d'un rendez-vous s'affiche** (corps · calme · lien · intendance).
-  Le formulaire la demandait depuis le 27 août et la page ne la rendait jamais :
-  une question dont on ne fait rien finit par ne plus recevoir de réponse. Elle
-  ne compte toujours **rien** ici — les planchers qu'elle alimente restent
-  internes.
-- **l'humeur se répondait SUR SA PAGE.** *Renversé le 5 septembre 2026 : elle ne
-  se note plus que dans le bilan du jour — ni sur l'accueil, ni ici. Le motif
-  d'alors tenait (« une question posée de deux façons selon l'écran deviendrait
-  deux questions ») ; il se retourne contre trois endroits comme il valait pour
-  deux.*
-- **les victoires tiennent en une ligne**, avec leur date à droite comme partout
-  ailleurs — elles occupaient trois hauteurs de texte pour un mot. Une porte
-  s'ouvre vers **« Le chemin »**, qui n'existait pas quand ce bloc a été écrit.
+- **la FAMILLE d'un rendez-vous s'affiche** (corps · calme · lien · intendance)
+  là où un rendez-vous se lit encore — au calendrier. Elle ne compte **rien** :
+  les planchers qu'elle alimente restent internes.
+- **les victoires tiennent en une ligne** dans **« Le chemin »**, qui n'existait
+  pas quand ce bloc a été écrit.
 - **l'écriture est optimiste** (`js/ecriture.js`) : la page attendait
   l'aller-retour Supabase en désactivant son bouton.
 
@@ -920,7 +1010,7 @@ infobox** → vignette 500 px.
   il se voit d'un coup, et c'est son état qui le dit. **Une série se compte comme
   un livre.** Les répliques, elles, valent pour les deux.
 - **LA NATURE NE S'ÉCRIT QUE POUR UNE SÉRIE** : « Film » se tait. Mesuré sur les
-  trente et un films importés le 5 septembre — le mot s'affichait trente et une
+  trente et un films importés le 7 septembre — le mot s'affichait trente et une
   fois, ne distinguait rien, et poussait le réalisateur hors de la ligne. C'est
   la leçon de « en sommeil » sur les habitudes.
 - **ELLE EST UN CRITÈRE DE FILTRE**, et c'est ce qui permet de tenir les deux

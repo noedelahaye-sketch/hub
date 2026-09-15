@@ -643,6 +643,23 @@ export async function journeeEcrite(jourISO) {
   );
 }
 
+// LES SOIRS ÉCRITS D'UN INTERVALLE, en UNE requête (15 septembre 2026) : le
+// pendant de `journeeEcrite` pour plusieurs jours. La tuile « Mes journées » du
+// hall perso ne montre que deux choses par jour — l'humeur, et si le bilan a
+// été écrit —, or `resumeDesJournees`, qui sert le calendrier, coûte CINQ
+// requêtes et rapporte quatre choses dont elle ne ferait rien. Une porte ne
+// paie pas le prix de la page qu'elle ouvre.
+export async function journeesEntre(debutISO, finISO) {
+  return verifier(
+    await client
+      .from('journees')
+      .select('jour, mot, gratitude')
+      .gte('jour', debutISO)
+      .lte('jour', finISO)
+      .order('jour'),
+  );
+}
+
 export async function journeeDe(jourISO) {
   const debut = `${jourISO}T00:00:00`;
   const fin = `${jourISO}T23:59:59`;

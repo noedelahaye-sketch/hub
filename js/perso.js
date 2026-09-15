@@ -47,7 +47,6 @@ import {
   ajouterJours,
   depuisDateISO,
   echapper,
-  momentLisible,
   NOMS_ESPACES,
   ORDRE_ESPACES,
   FAMILLES_PERSO,
@@ -538,305 +537,368 @@ export function construireHabitudes(etats, donnees = {}) {
     ${ajout}`;
 }
 
-export function construireHabitudesDuJour(etats = []) {
-  if (!etats.length) return '';
+// LE HALL DU PERSO (15 septembre 2026, demande de Noé) : « j'aimerais qu'on y
+// retrouve des tuiles cliquables avec des aperçus ou des chiffres des pages vers
+// lesquels elles renvoient (mes journées, ma bibliothèque…) », puis, dans la
+// foulée : « finalement pas besoin de cocher les habitudes depuis cette page, ça
+// se fera dans le bilan du jour, et si vraiment besoin de le faire j'irai dans la
+// page habitudes ».
+//
+// CE QUE ÇA RENVERSE, ET IL FAUT LE DIRE. `#perso` était un TABLEAU DE BORD
+// depuis le 30 août : il ne portait « que ce qui évolue et sur quoi on a une
+// action à faire ». Ce critère n'a pas changé de valeur — c'est la PAGE qui a
+// perdu ses gestes, un par un : l'humeur est partie au bilan du soir le
+// 7 septembre, le mot du jour l'a suivie (le journal d'une journée pose la même
+// question dans un carnet de 56 rem, à l'heure où elle est finie), et les
+// habitudes s'y cochent désormais aussi.
+//
+// UNE PAGE DONT TOUS LES GESTES ONT DÉMÉNAGÉ N'EST PLUS UN TABLEAU DE BORD :
+// c'est un HALL — on y regarde, et on entre. C'est exactement ce qu'est devenue
+// `#perso/bibliotheque` le 7 septembre, et la porte y prend la même forme : elle
+// MONTRE CE QU'IL Y A DERRIÈRE.
+//
+// L'EXIGENCE QUI VIENT AVEC, et c'est elle qui tient la page : quatre rectangles
+// nommés comme quatre lignes de menu seraient un menu dessiné, et le menu est
+// déjà à un geste. CHAQUE TUILE DOIT DIRE QUELQUE CHOSE QU'ON IGNORE AVANT DE
+// L'OUVRIR — l'humeur de la semaine, où j'en suis dans mon livre, mes séries
+// vivantes, la phrase du jour. C'est le test à repasser le jour où une cinquième
+// se présente.
+//
+// CE QUI A QUITTÉ LA PAGE, ET OÙ C'EST PARTI : les rendez-vous (ils ne vivent
+// plus qu'au calendrier), le champ « ce qui a compté » (c'est `journees.mot`, la
+// colonne du journal du soir — une même question posée à deux endroits finit par
+// ne plus en être une), les habitudes cochables (le bilan du jour, la page des
+// habitudes), et l'anniversaire d'une victoire que `relecture` sait rendre : il
+// se relit dans la tuile d'une journée, qui est l'écran de la relecture.
 
-  const ligne = ({ habitude, serie, affilee, faitAujourdhui }) => {
-      const emoji = (habitude.emoji ?? '').trim();
+const INITIALES_JOURS = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
 
-      // LES DEUX SÉRIES, ET LE CODE COULEUR (2 septembre 2026, demande de Noé :
-      // « les stats présentes doivent être série en cours et série max, avec le
-      // code couleur »).
-      //
-      // CE QUE ÇA REMPLACE : les points de la semaine et le chiffre du prochain
-      // palier — les deux mesures posées le 30 août. Le motif d'alors tient
-      // toujours (« deux mesures, et pas trois »), c'est le CHOIX des deux qui
-      // change : une série est ce qu'on ne veut pas perdre, et c'est ce qui fait
-      // cocher un soir où l'on n'en a pas envie. Un palier à dix jours de là ne
-      // pousse personne.
-      //
-      // LES MOTS SONT CEUX DE SA PAGE, et la couleur aussi (`rangDeLaSerie`,
-      // js/orientation.js) — une même mesure ne change ni de nom ni de teinte
-      // d'un écran à l'autre. Ici il n'y a la place ni pour les mots ni pour la
-      // flamme : ils partent dans la bulle et le nom accessible, la parade de
-      // cette ligne depuis le premier jour.
-      const rang = rangDeLaSerie(serie);
-      const unite = serie?.unite === 'jour' ? 'jours' : 'semaines';
+// LA SEMAINE EN FRIMOUSSES — l'aperçu de « Mes journées ». Sept cases,
+// AUJOURD'HUI À DROITE : on lit de gauche à droite, et la case qui compte est
+// celle où l'on va écrire ce soir.
+//
+// DEUX SIGNES PAR JOUR, ET PAS TROIS : la frimousse de l'humeur, et un point
+// sous la case quand le bilan a été écrit. Les points d'espace du calendrier des
+// journées restent derrière la porte — sur une case de 20 px ils feraient une
+// constellation, et cette tuile-ci parle du RITUEL DU SOIR, pas de ce qui a bougé
+// dans la journée.
+//
+// UN JOUR SANS RIEN RESTE UNE CASE SOBRE : un cercle creux, jamais une croix ni
+// un rouge. C'est la règle de la page qu'elle ouvre — « un jour vide le dit sans
+// reproche ».
+function apercuDesJournees(semaine, aujourdhui) {
+  const notes = semaine.filter((jour) => jour.humeur).length;
+  const ecrits = semaine.filter((jour) => jour.bilan).length;
 
-      // LES DEUX CHIFFRES SONT TOUJOURS LÀ, ZÉRO COMPRIS (2 septembre 2026, deux
-      // corrections de Noé : « je ne vois pas la série max là », et « si la
-      // série en cours est 0 mets 0 »).
-      //
-      // Ce sont DEUX RÈGLES qui tombent, et il a raison sur les deux :
-      //   — le record se taisait quand il égalait la série, au motif que l'or
-      //     disait déjà l'égalité. Mais on ne lit pas une couleur qu'on n'a pas
-      //     encore apprise, et **une colonne vide ne se lit pas comme « c'est
-      //     pareil », elle se lit comme « il n'y a rien »** ;
-      //   — « une série à zéro ne s'affiche pas » datait du 30 août et
-      //     protégeait une habitude neuve d'un « 0 » en guise d'accueil. Dans
-      //     DEUX COLONNES ALIGNÉES, la case vide était pire : elle décalait le
-      //     regard, et on ne savait plus lequel des deux chiffres manquait.
-      //
-      // Un zéro dans une colonne qui en compte une autre n'est pas un reproche,
-      // c'est une case remplie.
-      // LA FLAMME SUIT LA SÉRIE EN COURS (2 septembre 2026, demande de Noé) — et
-      // elle ne dit pas la même chose que le chiffre : la série RECULE d'un cran
-      // quand un jour manque, donc « 7 » peut avoir deux trous dedans ; la
-      // flamme, elle, dit CINQ JOURS SANS TROU. L'une protège, l'autre
-      // récompense.
-      //
-      // Elle est dessinée et prend `currentColor`, donc la couleur du rang :
-      // elle brûle en vert, en bleu, en jaune ou dans l'or de l'égalité. Même
-      // dessin que sur la page d'une habitude (`flammeDeSerie`, js/gabarits.js)
-      // — un feu de deux formes selon l'écran n'en serait plus un.
-      const feu =
-        affilee >= FLAMME_JOURS ? `<span class="hab-flamme">${flammeDeSerie(12)}</span>` : '';
-
-      const mesure = (valeur, rangCouleur, mot, signe = '') =>
-        `<span class="hab-mesure hab-serie" data-serie="${rangCouleur}"
-           title="${mot} : ${valeur} ${unite}${
-             signe ? ` — ${affilee} jours d'affilée, sans un trou` : ''
-           }"
-           aria-label="${mot} : ${valeur} ${unite}${
-             signe ? `, ${affilee} jours d'affilée` : ''
-           }">
-           <span class="chiffre">${valeur}</span>${signe}
-         </span>`;
-
-      // À ÉGALITÉ, LES DEUX CHIFFRES SONT EN OR — la règle de la page d'une
-      // habitude, où « les deux tuiles le prennent ». Sans ça, la même égalité
-      // se lisait en or ici et en orange là : c'est exactement la divergence
-      // qu'on vient d'éviter en sortant la règle de couleur dans l'orientation.
-      const series =
-        mesure(serie?.semaines ?? 0, rang, 'Série en cours', feu) +
-        mesure(serie?.record ?? 0, rang === 'record' ? 'record' : 'max', 'Série max');
-
-      // LE ROND EN PREMIER, TOUT À GAUCHE (demande de Noé, 30 août 2026). C'est
-      // le geste qu'on vient faire : il se trouve sous le pouce dès qu'on ouvre
-      // la page, et l'œil n'a pas à traverser la ligne pour l'atteindre. Le nom
-      // et les mesures suivent — on les lit APRÈS avoir vu où cocher.
+  const cases = semaine
+    .map(({ jour, humeur, bilan }) => {
+      const mot = NIVEAUX_HUMEUR.find((palier) => palier.niveau === humeur)?.mot;
       return `
-      <li class="hab-ligne${faitAujourdhui ? ' faite' : ''}"
-        style="--teinte: var(--famille-${echapper(habitude.famille ?? 'intendance')})">
-        <button type="button" class="hab-rond${faitAujourdhui ? ' faite' : ''}"
-          data-faire-habitude="${echapper(habitude.id)}" aria-pressed="${faitAujourdhui}"
-          aria-label="${faitAujourdhui ? 'Revenir sur' : 'Marquer'} « ${echapper(
-            habitude.nom,
-          )} »"></button>
-        <span class="hab-titre">
-          ${emoji ? `<span class="hab-emoji" aria-hidden="true">${echapper(emoji)}</span>` : ''}
-          <span class="hab-nom">${echapper(habitude.nom)}</span>
+        <span class="hall-jour${jour === aujourdhui ? ' hall-jour-ce-soir' : ''}"
+          title="${echapper(jourEnToutesLettres(jour, aujourdhui))} — ${
+            mot ? echapper(mot) : 'pas noté'
+          }${bilan ? ', bilan écrit' : ''}">
+          <span class="hall-jour-lettre">${INITIALES_JOURS[depuisDateISO(jour).getDay()]}</span>
+          ${
+            humeur
+              ? `<span class="hall-jour-frimousse">${FRIMOUSSES[humeur]}</span>`
+              : '<span class="hall-jour-rien"></span>'
+          }
+          <span class="hall-jour-bilan${bilan ? ' ecrit' : ''}"></span>
+        </span>`;
+    })
+    .join('');
+
+  return `<span class="hall-semaine" role="img"
+    aria-label="Les sept derniers jours : ${pluriel(
+      notes,
+      'humeur notée',
+      'humeurs notées',
+    )}, ${pluriel(ecrits, 'bilan écrit', 'bilans écrits')}.">${cases}</span>`;
+}
+
+// LES SÉRIES EN COURS, EN BARRES — l'aperçu de « Mes habitudes » (15 septembre
+// 2026, demande de Noé : « l'aperçu de la page habitudes ne doit pas être la
+// courbe de 12 semaines, plutôt un aperçu des séries en cours sur certaines
+// habitudes », puis « je suis pas fan, il faut trouver autre chose de plus
+// visuel »).
+//
+// CHAQUE BARRE COURT VERS SON RECORD, et c'est ce qui la rend lisible sans lire :
+// le remplissage est la SÉRIE EN COURS, le trait clair au-dessus est la SÉRIE
+// MAX. Une barre qui touche son trait est une habitude à son sommet — on le voit
+// avant d'avoir lu le chiffre. Les deux mesures que Noé veut garder sont donc
+// dites deux fois : en longueur, et en chiffres.
+//
+// *Ce que ça remplace : trois lignes de texte avec leur chiffre à droite. Elles
+// disaient la même chose et ne se voyaient pas.*
+//
+// L'ÉCHELLE EST COMMUNE aux barres affichées — le plus grand record de la
+// fournée —, sans quoi chaque barre se mesurerait à elle-même et les longueurs
+// ne voudraient plus rien dire les unes à côté des autres.
+//
+// TOUT SE COMPTE EN JOURS (demande de Noé : « il faut rester en jour tout le
+// temps »). Une habitude hebdomadaire compte des SEMAINES tenues ; on les rend
+// en jours de rythme — c'est déjà la conversion officielle du hub, celle qui
+// classe la meilleure série dans `bilanDesHabitudes` : « une semaine tenue vaut
+// sept jours de rythme ». Sans elle, « 2 » et « 11 » s'alignaient dans la même
+// colonne sans compter la même chose. L'unité d'origine reste dans la bulle.
+//
+// LES PLUS LONGUES, ET NON CELLES QUI VONT TOMBER : un aperçu qui dirait
+// « celle-ci va casser » compterait un manque, et c'est précisément ce qui avait
+// fait écarter la toute première maquette des habitudes — « ça ne me donne pas
+// envie de les faire ». Le miroir d'abord.
+//
+// LA COULEUR ET LA FLAMME SONT CELLES DE SA PAGE (`rangDeLaSerie`,
+// `flammeDeSerie`) : une même mesure ne change ni de teinte ni de dessin d'un
+// écran à l'autre — deux copies d'une règle de couleur finissent par ne plus
+// colorer pareil, et ça ne se voit qu'à côté.
+//
+// AUCUNE SÉRIE EN COURS : l'aperçu se tait, la tuile ne garde que son compte.
+// Des zéros en vitrine seraient un accueil de reproche — c'est la règle « une
+// série à zéro ne s'affiche pas », qui vaut là où un chiffre est seul.
+// CINQ, et c'est la hauteur de la tuile voisine qui le dit : la bibliothèque
+// porte sa pile et sa lecture, le rang se cale sur elle, et trois barres y
+// laissaient un tiers de vide. Au-delà de cinq la tuile redeviendrait la LISTE
+// qu'on trouve derrière la porte.
+const SERIES_MONTREES = 5;
+
+// « Une semaine tenue vaut sept jours de rythme » (`bilanDesHabitudes`).
+const joursDeSerie = (combien, unite) => (unite === 'jour' ? combien : combien * 7);
+
+function apercuDesSeries(etats) {
+  const vivantes = etats
+    .filter((etat) => etat.serie?.semaines)
+    .map(({ habitude, serie, affilee }) => ({
+      habitude,
+      serie,
+      affilee,
+      jours: joursDeSerie(serie.semaines, serie.unite),
+      record: joursDeSerie(serie.record ?? serie.semaines, serie.unite),
+    }))
+    .sort((a, b) => b.jours - a.jours)
+    .slice(0, SERIES_MONTREES);
+
+  if (!vivantes.length) return '';
+
+  // L'échelle : le plus grand record montré. Jamais zéro — on ne divise pas par
+  // ce qui n'existe pas, même si la garde ci-dessus le rend improbable.
+  const echelle = Math.max(1, ...vivantes.map((ligne) => ligne.record));
+  const part = (combien) => `${Math.round((combien / echelle) * 100)}%`;
+
+  return `<ul class="hall-series">${vivantes
+    .map(({ habitude, serie, affilee, jours, record }) => {
+      const emoji = (habitude.emoji ?? '').trim();
+      const feu = affilee >= FLAMME_JOURS;
+      const unite = serie.unite === 'jour' ? 'jours' : 'semaines';
+      const dit = `${habitude.nom} : ${jours} jours de série, ${record} au mieux`;
+      return `
+      <li class="hall-serie" title="${echapper(dit)}${
+        serie.unite === 'jour' ? '' : ` (${serie.semaines} ${unite} tenues)`
+      }${feu ? ` — ${affilee} jours d'affilée, sans un trou` : ''}">
+        <span class="hall-serie-nom">
+          ${emoji ? `<span class="hall-serie-emoji" aria-hidden="true">${echapper(emoji)}</span>` : ''}
+          <span class="hall-serie-mot">${echapper(habitude.nom)}</span>
         </span>
-        ${series}
+        <span class="hall-serie-barre" data-serie="${rangDeLaSerie(serie)}"
+          role="img" aria-label="${echapper(dit)}">
+          <i style="width: ${part(jours)}"></i>
+          ${
+            // LE REPÈRE NE SE POSE QUE S'IL DIT QUELQUE CHOSE : au sommet, il
+            // tomberait sur le bout de la barre pleine et n'y serait qu'un trait
+            // de plus.
+            record > jours ? `<b style="left: ${part(record)}"></b>` : ''
+          }
+        </span>
+        <!-- LES DEUX CHIFFRES, COMME AVANT (demande de Noé) : la série en cours
+             dans la couleur de son rang, le record en orange — et tous deux en
+             or quand ils sont égaux, la règle de la page d'une habitude. La
+             barre les DESSINE, les chiffres les DISENT ; l'une se lit d'un
+             regard, les autres se lisent. -->
+        <span class="hall-serie-mesures">
+          <span class="hab-mesure hab-serie" data-serie="${rangDeLaSerie(serie)}">
+            <span class="chiffre">${jours}</span>
+            ${feu ? `<span class="hab-flamme">${flammeDeSerie(11)}</span>` : ''}
+          </span>
+          <span class="hab-mesure hab-serie" data-serie="${
+            rangDeLaSerie(serie) === 'record' ? 'record' : 'max'
+          }"><span class="chiffre">${record}</span></span>
+        </span>
       </li>`;
-  };
-
-  // LES DEUX NATURES SE SÉPARENT ICI AUSSI (30 août 2026). Sur la page des
-  // habitudes elles ont trois titres ; ici, où la place est comptée, un simple
-  // filet suffit à dire que l'unité change — des jours au-dessus, des semaines
-  // en dessous. Sans lui, deux séries incomparables se liraient en enfilade.
-  const quotidiennes = etats.filter((etat) => estQuotidienne(etat.habitude));
-  const autres = etats.filter((etat) => !estQuotidienne(etat.habitude));
-
-  const lot = (liste, classe = '') =>
-    liste.length
-      ? `<ul class="hab-colonne ${classe}" role="group"
-           aria-label="Tes habitudes">${liste.map(ligne).join('')}</ul>`
-      : '';
-
-  // Un seul groupe non vide : pas de filet, il ne séparerait rien.
-  if (!quotidiennes.length || !autres.length) return lot([...quotidiennes, ...autres]);
-
-  return lot(quotidiennes) + lot(autres, 'hab-colonne-suite');
+    })
+    .join('')}</ul>`;
 }
 
-// LE TABLEAU DE BORD PERSO (30 août 2026, demande de Noé) : « choisir ce qui
-// doit rester dans la page perso et sous quelle forme — les critères sont un
-// peu les mêmes que pour la page d'accueil, des données qui évoluent sur
-// lesquelles on a une action à faire ».
+// LA PILE DE LA BIBLIOTHÈQUE : quatre vignettes, LIVRES ET FILMS ALTERNÉS. C'est
+// le dessin des portes du hall de la bibliothèque (`.biblio-porte-pile`), repris
+// tel quel — deux piles de deux formes dans la même application n'en feraient
+// plus une.
 //
-// CE CRITÈRE TRIE TOUT, et il tranche dans les deux sens :
-//
-//   RESTENT   l'humeur (elle change chaque jour, elle se répond d'un doigt),
-//             les habitudes du jour (elles se cochent), le livre en cours (des
-//             pages se notent), le prochain rendez-vous, le mot du jour.
-//   PARTENT   les intentions (rien n'y bouge, rien ne s'y coche — on les relit),
-//             la bibliothèque entière, l'historique des journées, la courbe des
-//             trente jours, la liste des victoires. Toutes ont leur page.
-//
-// C'est le même mouvement que l'accueil le 29 août, quand les objectifs l'ont
-// quitté : ils avaient leur page à deux gestes, et l'accueil répond à « qu'est-ce
-// que je fais maintenant », pas à « où je vais ». Les intentions sont le cap de
-// perso — elles partent pour la même raison.
-//
-// MAIS UNE CHOSE LES SUIT : l'intention RELUE ferme la page, une seule, celle du
-// jour. C'est ce qui distingue ce tableau de bord d'un second accueil — on vient
-// ici pour se recentrer, et une phrase qu'on relit vaut mieux qu'une liste qu'on
-// gère. Elle vient de `relecture` (js/orientation.js), la même qui ferme une
-// journée.
-function porte(adresse, mot) {
-  return `<a class="perso-porte" href="${adresse}">${mot}</a>`;
+// L'ALTERNANCE DIT EN IMAGE CE QUE LE COMPTE DIT EN MOTS : il y a DEUX rayons
+// derrière cette porte. Sans elle, les couvertures des livres passeraient devant
+// toutes les affiches, et la moitié de la bibliothèque serait invisible.
+function pileDesOeuvres(rayons) {
+  const imagesDe = (cle) =>
+    rayons[cle].oeuvres
+      .map((oeuvre) => rayons[cle].urls[imageDe(RAYONS[cle], oeuvre)])
+      .filter(Boolean);
+
+  const livres = imagesDe('livres');
+  const films = imagesDe('films');
+  const pile = [];
+  for (let rang = 0; pile.length < 4 && (rang < livres.length || rang < films.length); rang++) {
+    if (livres[rang] && pile.length < 4) pile.push(livres[rang]);
+    if (films[rang] && pile.length < 4) pile.push(films[rang]);
+  }
+
+  return `<span class="biblio-porte-pile" aria-hidden="true">${
+    pile.length
+      ? pile
+          .map(
+            (url, rang) => `<span class="biblio-porte-vignette" style="--rang: ${rang}"
+              ><img src="${echapper(url)}" alt="" loading="lazy" decoding="async"></span>`,
+          )
+          .join('')
+      : // Sans image, le pointillé du hub : « déclaré, pas encore rempli ».
+        '<span class="biblio-porte-vignette biblio-porte-vide"></span>'
+  }</span>`;
 }
 
-export function construireTableauPerso(donnees) {
-  const { etatsHabitudes = [], livre, seances = [], rendezVous = [], relue, mot, jour } =
-    donnees;
+// L'ENVELOPPE D'UNE TUILE. Un vrai `<a>` dès qu'elle ne porte aucun contrôle : il
+// se tabule, s'ouvre dans un onglet, se copie, et ne demande pas une ligne de
+// script.
+//
+// LA BIBLIOTHÈQUE FAIT EXCEPTION — elle porte ses boutons de pages, et un
+// `<button>` dans un `<a>` n'est ni valide ni cliquable. C'est alors un écouteur
+// qui ouvre la tuile et se retire dès que le clic a touché quelque chose qui fait
+// déjà quelque chose (`brancherLeHall`), et LE NOM DEVIENT UN LIEN : un écouteur
+// ne se tabule pas, et le clavier doit atteindre ce que la souris atteint. C'est
+// la mécanique de la tuile « Aujourd'hui » de l'accueil, au trait près.
+//
+// LE NOM EST EN TÊTE, et c'est la seule divergence avec `.biblio-porte`, qui met
+// son image d'abord : là-bas il n'y a que deux portes et l'image EST le sujet ;
+// ici quatre tuiles de natures différentes se lisent d'un regard, et c'est leur
+// destination qu'on cherche.
+function tuileDuHall({ adresse, nom, apercu = '', compte = '', classe = '', geste = false }) {
+  const dedans = `
+    ${
+      geste
+        ? `<a class="hall-nom hall-nom-lien" href="${adresse}">${nom}</a>`
+        : `<span class="hall-nom">${nom}</span>`
+    }
+    ${apercu}
+    ${compte ? `<span class="hall-compte">${compte}</span>` : ''}`;
+
+  return geste
+    ? `<div class="hall-tuile ${classe}" data-hall-ouvre="${adresse}">${dedans}</div>`
+    : `<a class="hall-tuile ${classe}" href="${adresse}">${dedans}</a>`;
+}
+
+export function construireHallPerso(donnees) {
+  const {
+    aujourdhui,
+    semaine = [],
+    etatsHabitudes = [],
+    rayons,
+    livre = null,
+    seances = [],
+    intention = null,
+    intentions = 0,
+  } = donnees;
 
   const avancee = livre ? avanceeDuLivre(livre, seances) : null;
+  const bilanDuJour = semaine.find((jour) => jour.jour === aujourdhui)?.bilan;
+
+  // CE QU'IL Y A DERRIÈRE LA PORTE, rayon par rayon : « 20 livres · 31 films &
+  // séries ». Le pluriel prend le NOM DU RAYON et non son vocabulaire, qui dit
+  // « titres » — juste sous une porte nommée « Films & séries », illisible ici
+  // où rien ne dit de quoi ces titres sont les titres. Au singulier le
+  // vocabulaire reprend la main : « 1 titre » se lit très bien.
+  const comptes = Object.values(RAYONS)
+    .map((R) => {
+      const combien = rayons[R.cle].oeuvres.length;
+      if (!combien) return '';
+      return `${combien} ${
+        combien > 1 ? R.onglet.toLocaleLowerCase('fr') : R.vocabulaire.singulier
+      }`;
+    })
+    .filter(Boolean)
+    .join(' · ');
+
+  // LE SEUL GESTE QUI RESTE SUR CETTE PAGE, et il y reste pour deux raisons :
+  // Noé l'a demandé deux fois — dont le 2 septembre, « l'écran où l'on note
+  // vraiment ses pages tous les soirs » —, et LE BILAN DU JOUR NE SAIT PAS LE
+  // FAIRE : il RELÈVE les pages lues, il ne les note pas. Sans ces boutons ici,
+  // noter une lecture demanderait d'ouvrir la bibliothèque ou la fiche du livre.
+  const lecture = livre
+    ? `<span class="hall-lecture">
+         <span class="hall-lecture-titre">${echapper(livre.titre)}</span>
+         ${
+           avancee.part === null
+             ? ''
+             : `<span class="livre-jauge"><i style="width:${Math.round(
+                 avancee.part * 100,
+               )}%"></i></span>`
+         }
+         <span class="hall-lecture-ligne">
+           <span class="discret">${
+             livre.pages
+               ? `${avancee.lues} sur ${livre.pages} pages`
+               : pluriel(avancee.lues, 'page')
+           }</span>
+           <span class="livre-pas">
+             ${RAYONS.livres.pas
+               .map(
+                 (pas) =>
+                   `<button type="button" class="livre-pas-bouton" data-pas="${pas}"
+                     data-rayon-de="livres"
+                     data-oeuvre-quantite="${echapper(livre.id)}">+${pas}</button>`,
+               )
+               .join('')}
+             <button type="button" class="livre-pas-bouton" data-rayon-de="livres"
+               data-oeuvre-autre="${echapper(livre.id)}">autre</button>
+           </span>
+         </span>
+       </span>`
+    : '';
 
   return `
-    <div class="perso-tableau">
-      <!-- L'HUMEUR NE SE NOTE PLUS ICI (5 septembre 2026, décision de Noé :
-           « elle n'est notée qu'à la fin de la journée dans le bilan du jour »).
-           Elle ouvrait cette page comme elle ouvrait l'accueil ; la même
-           question posée à trois endroits finit par ne plus être une question.
-           Elle vit désormais dans la tuile d'une journée, et là seulement. -->
+    <div class="perso-hall">
+      ${tuileDuHall({
+        adresse: '#perso/journee',
+        nom: 'Mes journées',
+        classe: 'hall-large',
+        apercu: apercuDesJournees(semaine, aujourdhui),
+        compte: bilanDuJour ? 'Bilan du jour écrit ✓' : 'Bilan du jour à écrire',
+      })}
 
-      <!-- DEUX COLONNES : LES HABITUDES À GAUCHE, LA LECTURE À DROITE (30 août
-           2026, demande de Noé — la seconde colonne était à trouver).
+      ${tuileDuHall({
+        adresse: '#perso/bibliotheque',
+        nom: 'Ma bibliothèque',
+        geste: true,
+        apercu: pileDesOeuvres(rayons) + lecture,
+        compte: comptes,
+      })}
 
-           POURQUOI LA LECTURE, et pas les rendez-vous ni le mot du jour : c'est
-           le SECOND GESTE QUOTIDIEN de cette page. On coche une habitude, on
-           note des pages ; les deux se font en trois secondes, tous les jours,
-           et font avancer quelque chose. Les rendez-vous, eux, se lisent — on
-           n'agit pas dessus.
+      ${tuileDuHall({
+        adresse: '#perso/habitudes',
+        nom: 'Mes habitudes',
+        apercu: apercuDesSeries(etatsHabitudes),
+        compte: etatsHabitudes.length ? pluriel(etatsHabitudes.length, 'habitude') : '',
+      })}
 
-           Et surtout, les deux sont DÉJÀ LIÉES : noter des pages coche
-           l'habitude de lecture (habitudes.automatique). Les poser côte à
-           côte, c'est mettre ensemble ce que le hub relie déjà en base.
-
-           LES HABITUDES RESTENT HORS DE TOUTE TUILE : posées à même le fond,
-           sans carte ni bord — c'est la correction que Noé a faite le matin sur
-           l'accueil, et pour la même raison. Une tuile porte ce qui est POSÉ ;
-           une habitude n'est posée de rien, elle revient. -->
-      <div class="perso-duo">
-        <div class="duo-colonne">
-          <h3 class="duo-titre">Habitudes</h3>
-          ${
-            // L'ÉTAT COMPLET, et non la seule liste des habitudes : la colonne
-            // affiche la semaine en cours et le prochain palier, qui vivent
-            // dans `serie` et `cumul`. C'est déjà calculé par
-            // `etatDesHabitudes` (js/orientation.js) — rien à recompter ici.
-            construireHabitudesDuJour(etatsHabitudes)
-          }
-        </div>
-
-        <div class="duo-colonne">
-          <h3 class="duo-titre">Ta lecture</h3>
-          ${
-            livre
-              ? `<div class="perso-lecture">
-                 <span class="perso-lecture-titre">${echapper(livre.titre)}</span>
-                 ${
-                   avancee.part === null
-                     ? ''
-                     : `<span class="livre-jauge"><i style="width:${Math.round(
-                         avancee.part * 100,
-                       )}%"></i></span>`
-                 }
-                 <span class="livre-ligne">
-                   <span class="discret">${
-                     livre.pages
-                       ? `${avancee.lues} sur ${livre.pages} pages`
-                       : pluriel(avancee.lues, 'page')
-                   }</span>
-                   <span class="livre-pas">
-                     ${
-                       // LES MÊMES ATTRIBUTS QUE L'ÉTAGÈRE (5 septembre 2026) :
-                       // le geste est le même, il n'a pas à être branché deux
-                       // fois. `data-rayon-de` dit à quel rayon la ligne
-                       // appartient — ici toujours les livres, tandis que
-                       // l'étagère suit le rayon qu'on regarde.
-                       RAYONS.livres.pas.map(
-                         (pas) =>
-                           `<button type="button" class="livre-pas-bouton" data-pas="${pas}"
-                             data-rayon-de="livres"
-                             data-oeuvre-quantite="${echapper(livre.id)}">+${pas}</button>`,
-                       ).join('')
-                     }
-                     <!-- « autre » ouvre le champ où l'on tape le nombre exact
-                          (2 septembre 2026, demande de Noé). Il existait sur la
-                          bibliothèque depuis le premier jour et manquait ICI,
-                          c'est-à-dire sur l'écran où l'on note vraiment ses
-                          pages tous les soirs : +10 et +25 ne sont que des
-                          raccourcis, et une lecture fait rarement un compte
-                          rond. Le geste est déjà branché pour les deux écrans —
-                          rien à câbler, seulement à offrir. -->
-                     <button type="button" class="livre-pas-bouton" data-rayon-de="livres"
-                       data-oeuvre-autre="${echapper(livre.id)}">autre</button>
-                   </span>
-                 </span>
-               </div>`
-              // UN VIDE QUI OCCUPE SA COLONNE. Au 30 août 2026 il n'y a aucun
-              // livre en base : une phrase perdue en haut d'une colonne vide,
-              // à côté de cinq habitudes, aurait été un trou. La tuile
-              // pointillée tient la place et invite — c'est la forme de
-              // « Déclarer une période » dans #objectifs, et la règle du hub :
-              // un écran vide ouvre une porte, il ne s'excuse pas.
-              : `<a class="perso-lecture-vide" href="#perso/bibliotheque">
-                   <span>Aucun livre en cours</span>
-                   <span class="discret">Ouvrir ta bibliothèque →</span>
-                 </a>`
-          }
-        </div>
-      </div>
-
-      <div class="tuile-jour perso-tuile">
-        <h3 class="jour-groupe">Ce qui a compté aujourd'hui</h3>
-        <textarea class="jour-mot-champ" data-jour-mot="${echapper(jour)}" rows="2"
-          placeholder="une ligne, si tu veux">${echapper(mot ?? '')}</textarea>
-      </div>
-
-      ${
-        rendezVous.length
-          ? `<section class="bloc">
-               <h2>Ce qui vient</h2>
-               <ul class="perso-lignes">
-                 ${rendezVous
-                   .slice(0, 3)
-                   .map(
-                     (rdv) => `
-                   <li class="perso-ligne">
-                     <span class="perso-ligne-corps">
-                       <span class="perso-ligne-titre">${echapper(rdv.titre)}</span>
-                       <span class="perso-ligne-service">${echapper(
-                         [
-                           momentLisible(new Date(rdv.date_debut)),
-                           rdv.lieu ?? '',
-                           FAMILLES_PERSO[rdv.famille] ?? '',
-                         ]
-                           .filter(Boolean)
-                           .join(' · '),
-                       )}</span>
-                     </span>
-                   </li>`,
-                   )
-                   .join('')}
-               </ul>
-             </section>`
-          : ''
-      }
-
-      ${
-        relue
-          ? `<p class="perso-relue">${
-              relue.quoi === 'victoire'
-                ? `${echapper(relue.mot)}, tu notais <b>${echapper(relue.victoire.titre)}</b>.`
-                : `<b>${echapper(relue.intention.titre)}</b>${
-                    relue.intention.pourquoi
-                      ? `<span class="discret"> ${echapper(relue.intention.pourquoi)}</span>`
-                      : ''
-                  }`
-            }</p>`
-          : ''
-      }
-
-      <nav class="perso-portes">
-        ${porte('#perso/habitudes', 'Mes habitudes')}
-        ${porte('#perso/bibliotheque', 'Ma bibliothèque')}
-        ${porte('#perso/journee', 'Mes journées')}
-        ${porte('#perso/intentions', 'Mes intentions')}
-      </nav>
+      ${tuileDuHall({
+        adresse: '#perso/intentions',
+        nom: 'Mes intentions',
+        classe: 'hall-large',
+        apercu: intention
+          ? `<span class="hall-intention">${echapper(intention.titre)}${
+              intention.pourquoi
+                ? `<span class="discret"> ${echapper(intention.pourquoi)}</span>`
+                : ''
+            }</span>`
+          : '<span class="hall-intention discret">Pose une phrase à relire.</span>',
+        compte: intentions ? pluriel(intentions, 'intention') : '',
+      })}
     </div>`;
 }
 
@@ -1370,15 +1432,15 @@ const NIVEAUX_HUMEUR = [
   { niveau: 5, frimousse: '😄', mot: 'très bien' },
 ];
 
-// LA PAGE ET SES VUES. Le tableau de bord est ce qu'on voit sans avoir rien
-// demandé ; les autres blocs sont des VUES que le menu offre une à une, et
-// `#perso` seul n'en montre aucune.
+// LA PAGE ET SES VUES. Le HALL est ce qu'on voit sans avoir rien demandé ; les
+// autres blocs sont des VUES que le menu offre une à une, et `#perso` seul n'en
+// montre aucune.
 //
 // TROIS BLOCS SONT PARTIS LE 5 SEPTEMBRE 2026 — les rendez-vous, la courbe
 // d'humeur, les victoires — parce que Noé a retiré leurs pages du menu, et
 // qu'un bloc sans porte est du code mort. Ce qu'ils portaient existe ailleurs :
-// l'humeur se répond en tête de ce tableau de bord, un rendez-vous se pose au
-// calendrier, et « Mon chemin » est la page des victoires.
+// l'humeur se note au bilan du jour, un rendez-vous se pose au calendrier, et
+// « Mon chemin » est la page des victoires.
 //
 // *Ce qui disparaît vraiment : la COURBE des 30 jours, qu'aucun autre écran ne
 // dessine, et le bouton qui ajoutait une victoire à la main.*
@@ -1387,10 +1449,11 @@ function squelette() {
     <h1 data-titre>Perso</h1>
     <p class="discret sous-titre" data-sous-titre>La vie hors espaces — sport, sorties, temps pour toi.</p>
 
-    <!-- LE TABLEAU DE BORD : ce qu'on voit sans avoir rien demandé. Il ne porte
-         que ce qui évolue et sur quoi on agit — voir construireTableauPerso.
-         Les blocs suivants sont des VUES : le menu les offre une à une, et
-         l'adresse #perso seule ne montre que celui-ci. -->
+    <!-- LE HALL : ce qu'on voit sans avoir rien demandé. Quatre portes, une par
+         page perso, chacune montrant l'état de ce qu'elle ouvre — voir
+         construireHallPerso. Les blocs suivants sont des VUES : le menu les
+         offre une à une, et l'adresse #perso seule ne montre que celui-ci.
+         Le nom du bloc ne bouge pas : c'est la clé que le routeur connaît. -->
     <div data-bloc="tableau" data-vue="tableau"></div>
 
     <section class="bloc" data-vue="intentions">
@@ -1512,7 +1575,7 @@ export const FORMULAIRES = {
   },
 };
 
-// LES FORMULAIRES DE LA BIBLIOTHÈQUE, tirés du rayon lui-même (5 septembre
+// LES FORMULAIRES DE LA BIBLIOTHÈQUE, tirés du rayon lui-même (7 septembre
 // 2026). Ils ne vivent pas dans `FORMULAIRES` : leurs mots changent d'un rayon à
 // l'autre — « Pages lues » ou « Épisodes vus », « La phrase » ou « La réplique »
 // —, et une entrée figée par rayon aurait fait quatre listes de champs à tenir
@@ -1648,13 +1711,19 @@ export default {
       // `#perso/journee/2026-08-20` depuis la page elle-même changeait l'état
       // sans rien redessiner : le lien menait au bon jour et montrait l'autre.
       if (/^\d{4}-\d{2}-\d{2}$/.test(nouvelle?.id ?? '')) ouvrirLaJournee(nouvelle.id);
+      // LE CALENDRIER DES JOURNÉES SE REMPLIT QUAND ON L'OUVRE, et pas avant
+      // (15 septembre 2026) : `resumeDesJournees` coûte CINQ requêtes, et le
+      // hall ne montre pas ce calendrier. Une porte ne paie pas le prix de la
+      // page qu'elle ouvre. Les résumés se gardent par intervalle, donc y
+      // revenir ne redemande rien.
+      else if (nouvelle?.vue === 'journee') chargerLesResumes();
     };
 
     // `couvertures` : les adresses SIGNÉES des couvertures, par chemin. Elles ne
     // vivent pas sur le livre — une adresse expire, un chemin non — et se
     // regarnissent d'un chargement à l'autre (voir `urlsDesImages` du rayon).
     const etat = {
-      intentions: [], evenements: [], victoires: [],
+      intentions: [], victoires: [],
       habitudes: [], faits: [],
       // LES DEUX RAYONS DE LA BIBLIOTHÈQUE, chacun avec son journal de séances et
       // ses adresses signées. `couvertures` et `affiches` ne vivent pas sur
@@ -1662,6 +1731,12 @@ export default {
       // chargement à l'autre.
       livres: [], seances: [], couvertures: {},
       films: [], seancesFilms: [], affiches: {},
+      // LES SEPT DERNIERS SOIRS, par jour : `{ humeur, bilan }`. C'est l'aperçu
+      // de la tuile « Mes journées », et c'est AUSSI ce que les deux gestes du
+      // bilan tiennent à jour — noter son humeur ou écrire son journal depuis la
+      // tuile d'une journée doit se voir sur la porte, sans recharger. Deux
+      // sources pour un même signe se contrediraient au premier clic.
+      semaine: new Map(),
     };
     const bloc = (nom) => section.querySelector(`[data-bloc="${nom}"]`);
 
@@ -1796,9 +1871,42 @@ export default {
       });
     };
 
-    // CHARGER N'EST PAS OUVRIR (1er septembre 2026). Le tableau de bord a besoin
-    // de la journée d'aujourd'hui — c'est de là que vient le mot du jour — sans
-    // pour autant qu'une tuile s'ouvre sur l'écran au montage.
+    // LA SEMAINE DU HALL : l'humeur et le bilan des sept derniers soirs, en DEUX
+    // requêtes. C'est tout ce que la tuile « Mes journées » montre — et c'est
+    // pourquoi elle ne passe pas par `resumeDesJournees`, qui en coûte cinq et
+    // rapporte quatre choses dont elle ne ferait rien. Une porte ne paie pas le
+    // prix de la page qu'elle ouvre.
+    //
+    // UN BILAN EST ÉCRIT DÈS QUE LE JOURNAL OU LA GRATITUDE PORTE QUELQUE CHOSE,
+    // jamais la note du jour : celle-ci se répond d'un doigt, et l'avoir touchée
+    // ne veut pas dire qu'on a fait son bilan. C'est la règle de la porte du soir
+    // de l'accueil, au mot près — deux écrans qui diraient « écrit » à deux
+    // conditions différentes finiraient par se contredire un soir sur deux.
+    const bilanEcrit = (journee) =>
+      !!((journee?.mot ?? '').trim() || (journee?.gratitude ?? '').trim());
+
+    const poserDansLaSemaine = (jour, champs) =>
+      etat.semaine.set(jour, { ...(etat.semaine.get(jour) ?? {}), ...champs });
+
+    async function chargerLaSemaine() {
+      const fin = versDateISO();
+      const debut = versDateISO(ajouterJours(new Date(), -6));
+      try {
+        const [humeurs, journees] = await Promise.all([
+          api.humeurDepuis(debut),
+          api.journeesEntre(debut, fin),
+        ]);
+        etat.semaine = new Map();
+        for (const jour of humeurs) poserDansLaSemaine(jour.date, { humeur: jour.niveau });
+        for (const jour of journees) poserDansLaSemaine(jour.jour, { bilan: bilanEcrit(jour) });
+        rendreHall();
+      } catch (souci) {
+        console.error('Semaine du hall non chargée', souci);
+      }
+    }
+
+    // CHARGER N'EST PAS OUVRIR (1er septembre 2026) : on charge le détail d'une
+    // journée sans qu'une tuile s'ouvre sur l'écran.
     async function chargerLaJournee(jour) {
       if (journeesVues.has(jour)) return;
       try {
@@ -1838,21 +1946,16 @@ export default {
       return chargerLaJournee(jour);
     }
 
-    const rendreTableau = () => {
-      const jour = versDateISO();
-      bloc('tableau').innerHTML = construireTableauPerso({
-        jour,
-        etatsHabitudes: etatDesHabitudes({ habitudes: etat.habitudes, faits: etat.faits }),
-        livre: livreEnCours(etat.livres, etat.seances),
-        seances: etat.seances,
-        rendezVous: etat.evenements,
-        mot: journeesVues.get(jour)?.mot ?? null,
-        relue: relecture(
-          { victoires: etat.victoires, intentions: etat.intentions },
-          new Date(),
-        ),
+    // LES SEPT DERNIERS JOURS, AUJOURD'HUI EN DERNIER. La liste se refait à
+    // chaque rendu depuis `etat.semaine` : elle porte les jours REÇUS, et un
+    // jour sans humeur ni bilan n'y a simplement pas d'entrée — c'est ici qu'il
+    // reprend sa case, vide.
+    const laSemaine = () =>
+      Array.from({ length: 7 }, (_, rang) => {
+        const jour = versDateISO(ajouterJours(new Date(), rang - 6));
+        const connu = etat.semaine.get(jour);
+        return { jour, humeur: connu?.humeur ?? null, bilan: !!connu?.bilan };
       });
-    };
 
     // CE QUE PORTE CHAQUE RAYON : ses œuvres, son journal, ses images signées.
     // Un seul endroit qui le dit — deux listes cherchées à la main dans chaque
@@ -1861,6 +1964,26 @@ export default {
       cle === 'films'
         ? { oeuvres: etat.films, seances: etat.seancesFilms, urls: etat.affiches }
         : { oeuvres: etat.livres, seances: etat.seances, urls: etat.couvertures };
+
+    const rendreHall = () => {
+      bloc('tableau').innerHTML = construireHallPerso({
+        aujourdhui: versDateISO(),
+        semaine: laSemaine(),
+        etatsHabitudes: etatDesHabitudes({ habitudes: etat.habitudes, faits: etat.faits }),
+        rayons: { livres: donneesDuRayon('livres'), films: donneesDuRayon('films') },
+        livre: livreEnCours(etat.livres, etat.seances),
+        seances: etat.seances,
+        // SANS LES VICTOIRES, ET C'EST VOULU : `relecture` sert d'abord un
+        // anniversaire (« il y a un an, tu notais… ») quand elle en trouve un,
+        // et une victoire sous un titre « Mes intentions » dirait autre chose
+        // que ce que la porte ouvre. La liste vide ne laisse que la rotation des
+        // intentions — même règle, même jour, même phrase toute la journée.
+        // L'anniversaire, lui, n'est pas perdu : la tuile d'une journée le relit.
+        intention: relecture({ intentions: etat.intentions }, new Date())?.intention ?? null,
+        intentions: etat.intentions.length,
+      });
+    };
+
 
     // LES TROIS ÉCRANS DE LA BIBLIOTHÈQUE SE REDESSINENT ENSEMBLE, et c'est
     // voulu : le hall montre ce qui est en cours dans les DEUX rayons, si bien
@@ -1907,9 +2030,9 @@ export default {
     // Quelle liste redessiner après un geste : la clé du menu discret porte
     // déjà la forme, il n'y a donc rien à deviner.
     const RENDUS = {
-      habitude: () => { rendreHabitudes(); rendreTableau(); },
-      livre: () => { rendreBibliotheque(); rendreTableau(); },
-      film: () => { rendreBibliotheque(); rendreTableau(); },
+      habitude: () => { rendreHabitudes(); rendreHall(); },
+      livre: () => { rendreBibliotheque(); rendreHall(); },
+      film: () => { rendreBibliotheque(); rendreHall(); },
       intention: () => rendreIntentions(),
     };
 
@@ -1918,17 +2041,19 @@ export default {
       // veut cinquante-deux semaines. C'est quelques centaines de lignes au
       // plus, et le calcul n'a alors plus rien à redemander.
       //
-      // LA COURBE DES 30 JOURS A DISPARU avec sa page (5 septembre 2026), et sa
-      // requête avec elle : `humeurDepuis` n'était lue que par elle ici. Les
-      // VICTOIRES et les ÉVÉNEMENTS restent chargés — les premières nourrissent
-      // la relecture du jour, les seconds le prochain rendez-vous du tableau de
-      // bord.
+      // LES ÉVÉNEMENTS NE SONT PLUS LUS ICI (15 septembre 2026) : les rendez-vous
+      // ont quitté la page avec le tableau de bord, et ils ne vivent plus qu'au
+      // calendrier. Une requête qui ne nourrit plus aucun écran est une requête
+      // qu'on paie à chaque ouverture pour rien.
+      //
+      // LES VICTOIRES, elles, RESTENT — pas pour le hall, qui ne les montre
+      // nulle part, mais pour la relecture de la tuile d'une journée : c'est
+      // elle qui sert l'anniversaire, « il y a un an, tu notais… ».
       const [
-        intentions, evenements, victoires, habitudes, faits,
+        intentions, victoires, habitudes, faits,
         livres, seances, films, seancesFilms,
       ] = await Promise.all([
           api.objectifsActifs({ espace: ESPACE }),
-          api.evenementsEntre(new Date().toISOString(), horizon(), { espace: ESPACE }),
           api.victoiresDeLEspace(ESPACE),
           api.habitudesToutes(),
           api.habitudesFaitsDepuis(versDateISO(ajouterJours(new Date(), -366))),
@@ -1941,7 +2066,7 @@ export default {
         ]);
 
       Object.assign(etat, {
-        intentions, evenements, victoires, habitudes, faits,
+        intentions, victoires, habitudes, faits,
         livres, seances, films, seancesFilms,
       });
       rendreHabitudes();
@@ -1964,23 +2089,27 @@ export default {
           .then((urls) => {
             Object.assign(garde, urls);
             rendreBibliotheque();
-            rendreTableau();
+            rendreHall();
           })
           .catch((souci) => console.error('Images non signées', souci));
       }
-      rendreTableau();
-      // La journée d'aujourd'hui nourrit AUSSI le tableau de bord : c'est de là
-      // que vient le mot du jour. On la CHARGE sans l'ouvrir — depuis que le
-      // détail est une tuile volante, l'ouvrir ferait s'afficher une fenêtre que
-      // personne n'a demandée en arrivant sur la page.
-      await chargerLaJournee(versDateISO());
-      rendreTableau();
+      rendreHall();
+      // LA JOURNÉE D'AUJOURD'HUI N'EST PLUS CHARGÉE EN ARRIVANT (15 septembre
+      // 2026) : elle ne servait au tableau de bord que pour le mot du jour, et
+      // le mot du jour a quitté la page. `journeeDe` coûte SEPT requêtes ; la
+      // semaine du hall en coûte deux et dit ce qu'il montre. Le détail d'un
+      // jour se charge quand on l'ouvre, comme avant.
+      await chargerLaSemaine();
       // Une adresse qui porte un jour l'ouvre ; `#perso/journee` seul montre son
-      // calendrier et attend qu'on choisisse.
+      // calendrier et attend qu'on choisisse. ARRIVER SUR LE HALL NE CHARGE
+      // AUCUN DES DEUX : la grille est dessinée vide, et ses résumés attendent
+      // qu'on pousse la porte — c'est `naviguer` qui les demande alors.
       if (vueEtat.jour) await ouvrirLaJournee(vueEtat.jour);
       else {
         rendreCalendrierDesJournees();
-        chargerLesResumes();
+        // On regarde le BLOC et non la route : « Réessayer » remonte la page
+        // sans elle, et c'est l'écran affiché qui dit ce qu'il faut charger.
+        if (!bloc('jours-calendrier').closest('[data-vue]').hidden) chargerLesResumes();
       }
       rendreIntentions();
     };
@@ -2051,6 +2180,15 @@ export default {
         try {
           await api.noterLaJournee(jour, colonne, valeur);
           if (gardee) gardee[colonne] = valeur;
+          // LA PORTE SUIT LE GESTE : écrire son journal allume le « bilan écrit »
+          // de la tuile « Mes journées », sans recharger quoi que ce soit. On
+          // relit les deux colonnes de la journée gardée — le bilan vaut par le
+          // journal OU la gratitude, et n'en connaître qu'une l'éteindrait dès
+          // qu'on vide l'autre.
+          poserDansLaSemaine(jour, {
+            bilan: bilanEcrit({ ...(gardee ?? {}), [colonne]: valeur }),
+          });
+          rendreHall();
         } catch (souci) {
           console.error('Journée non enregistrée', souci);
         }
@@ -2071,7 +2209,7 @@ export default {
       const avant = { ...oeuvre };
       Object.assign(oeuvre, champs);
       rendreBibliotheque();
-      rendreTableau();
+      rendreHall();
 
       try {
         // TERMINER UNE ŒUVRE ÉCRIT UNE VICTOIRE, et c'est `terminer` qui le
@@ -2086,7 +2224,7 @@ export default {
           mot.startsWith('la') ? 'e' : ''
         }.`;
         rendreBibliotheque();
-        rendreTableau();
+        rendreHall();
       }
     };
 
@@ -2152,7 +2290,7 @@ export default {
       vueEtat.edition = null;
       rendreFenetre();
       rendreBibliotheque();
-      rendreTableau();
+      rendreHall();
 
       try {
         const seance = await R.api.noter(id, combien);
@@ -2164,12 +2302,12 @@ export default {
         etat.faits = await api.habitudesFaitsDepuis(versDateISO(ajouterJours(new Date(), -366)));
         rendreHabitudes();
         rendreBibliotheque();
-        rendreTableau();
+        rendreHall();
       } catch (souci) {
         console.error('Séance non enregistrée', souci);
         etat[journal] = avant;
         rendreBibliotheque();
-        rendreTableau();
+        rendreHall();
       }
     }
 
@@ -2317,6 +2455,45 @@ export default {
       rendreBibliotheque({ focusRecherche: true });
     });
 
+    // LA TUILE DE LA BIBLIOTHÈQUE S'OUVRE EN ENTIER, boutons de pages compris
+    // (15 septembre 2026). Les trois autres tuiles du hall sont de vrais liens ;
+    // celle-ci porte des contrôles, et un `<button>` dans un `<a>` n'est ni
+    // valide ni cliquable. C'est donc un écouteur qui se retire dès que le clic
+    // a touché quelque chose qui fait déjà quelque chose — la mécanique de la
+    // tuile « Aujourd'hui » de l'accueil, reprise au trait près, garde comprise.
+    //
+    // LA LISTE DES GESTES EST EXPLICITE, et non « tout ce qui a l'air cliquable » :
+    // un sélecteur deviné sur le curseur marcherait ce soir et avalerait
+    // silencieusement le prochain geste posé dans cette tuile.
+    const GESTES = 'a, button, details, summary, input, select, textarea, label, [role="button"]';
+    const TOLERANCE_APPUI = 10; // px — un doigt tremble, il ne balaie pas
+    let appui = null;
+
+    section.addEventListener(
+      'pointerdown',
+      (evenement) => { appui = { x: evenement.clientX, y: evenement.clientY }; },
+      { passive: true },
+    );
+
+    section.addEventListener('click', (evenement) => {
+      const tuile = evenement.target.closest('[data-hall-ouvre]');
+      if (!tuile || evenement.target.closest(GESTES)) return;
+      // Sélectionner un titre pour le copier n'est pas cliquer dessus.
+      if (window.getSelection()?.toString()) return;
+      // UN CLIC ISSU D'UN GLISSEMENT N'EST PAS UN APPUI : un doigt qui traverse
+      // la tuile pour faire défiler la page produit AUSSI le `click` que le
+      // navigateur émet après le geste. `detail === 0` : un clic venu du clavier
+      // n'a pas de position, et n'a pas glissé non plus.
+      if (
+        evenement.detail > 0 &&
+        appui &&
+        Math.hypot(evenement.clientX - appui.x, evenement.clientY - appui.y) > TOLERANCE_APPUI
+      ) {
+        return;
+      }
+      location.hash = tuile.dataset.hallOuvre;
+    });
+
     section.addEventListener('click', async (evenement) => {
       const dans = (nom) => evenement.target.closest(`[data-${nom}]`);
 
@@ -2384,7 +2561,7 @@ export default {
           etat.faits = [...etat.faits, { habitude_id: id, jour }];
         }
         rendreHabitudes();
-        rendreTableau();
+        rendreHall();
         // SEUL LE BLOC DES HABITUDES SE REDESSINE, pas la tuile : le journal
         // vient peut-être de s'enregistrer sur son `blur`, et l'écriture est
         // encore en vol. C'est la même précaution que pour la note du jour.
@@ -2418,7 +2595,7 @@ export default {
           console.error('Habitude non enregistrée', souci);
           etat.faits = avant;
           rendreHabitudes();
-          rendreTableau();
+          rendreHall();
           redessinerLesHabitudes();
         }
         // Le calendrier porte un point par espace : cocher une habitude en
@@ -2602,14 +2779,14 @@ export default {
         const avant = { statut: oeuvre.statut, fini_le: oeuvre.fini_le ?? null };
         Object.assign(oeuvre, { statut: R.fini, fini_le: versDateISO() });
         rendreBibliotheque();
-        rendreTableau();
+        rendreHall();
         try {
           Object.assign(oeuvre, await R.api.terminer(oeuvre, oeuvre.note));
         } catch (souci) {
           console.error('Œuvre non terminée', souci);
           Object.assign(oeuvre, avant);
           rendreBibliotheque();
-          rendreTableau();
+          rendreHall();
         }
         return;
       }
@@ -2698,7 +2875,6 @@ export default {
           livre: [etat.livres, api.rayonLivres.supprimer],
           film: [etat.films, api.rayonFilms.supprimer],
           intention: [etat.intentions, api.supprimerObjectif],
-          'rendez-vous': [etat.evenements, api.supprimerEvenement],
           victoire: [etat.victoires, api.supprimerVictoire],
         };
         const [liste, effacer] = RETRAITS[forme] ?? [];
@@ -2751,6 +2927,11 @@ export default {
           // Le calendrier des journées porte la frimousse : elle doit suivre.
           resumesVus.clear();
           chargerLesResumes();
+          // La tuile du hall aussi — c'est la même frimousse, une semaine plus
+          // loin. Un jour hors des sept derniers ne la concerne pas : la liste
+          // se refait à chaque rendu et ne garde que sa fenêtre.
+          poserDansLaSemaine(jour, { humeur: pose.niveau });
+          rendreHall();
         } catch (souci) {
           console.error('Humeur non enregistrée', souci);
           if (gardee) gardee.humeur = avant;
@@ -2770,9 +2951,3 @@ export default {
     });
   },
 };
-
-function horizon() {
-  const dans3Mois = new Date();
-  dans3Mois.setMonth(dans3Mois.getMonth() + 3);
-  return dans3Mois.toISOString();
-}
