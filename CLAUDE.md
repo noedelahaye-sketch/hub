@@ -274,11 +274,31 @@ couleur.
   demi-point de corps non.
 - **L'ENCRE DES VOISINS NE S'EFFACE PAS DAVANTAGE**, pour la même raison : un
   texte de 9,4 px déjà gris n'a pas de marge à donner. La taille dit tout.
-- **LE DOCK ÉPOUSE SON CONTENU** au lieu de s'étirer : une largeur imposée
-  forçait les trois onglets à se partager 335 px, et les mots se retrouvaient à
-  un pouce les uns des autres. *Mesuré : 238 px pour le hub, 309 pour les cinq
-  onglets de Yuno, contre 335 pour tout le monde avant.* Le plafond ne sert plus
-  qu'à ne jamais toucher les bords.
+- **TOUS LES ONGLETS ONT LA MÊME LARGEUR** (16 septembre 2026, demande de Noé :
+  *« j'aimerais que chaque onglet ait la même largeur, que ce ne soit pas lié à
+  la taille de son titre, sinon "Perso" n'est pas au milieu puisque "Calendrier"
+  prend plus de place »*).
+
+  Chacun prenait la largeur de son mot : le rail restait centré, mais **l'onglet
+  du MILIEU ne tombait pas sur son axe**. *Une barre de navigation se lit comme
+  une rangée de cases, pas comme une phrase.*
+  - **C'EST LE RAIL QUI PORTE LA LARGEUR**, et ses onglets s'y partagent l'espace
+    à parts égales (`flex: 1 1 0`). *Une grille à pistes `1fr` a été essayée pour
+    qu'il s'ajuste tout seul : elle égalise bien, mais **une piste `1fr` ne
+    contribue pas sa largeur de CONTENU à la taille intrinsèque du conteneur** —
+    mesuré, le rail tombait à 188 px et « Calendrier » s'y coupait.*
+  - **ELLE EST CALIBRÉE SUR LE PLUS LONG MOT**, pas choisie au jugé : trois fois
+    « Calendrier » et son rembourrage pour le hub (272 px), cinq fois pour Yuno
+    (360). C'est ce qui la distingue des 335 px d'avant, qui étiraient trois
+    onglets sur toute la place disponible.
+  - **L'ONGLET DU CALENDRIER A PERDU SA RÈGLE À LUI.** Elle datait du temps où il
+    ne portait qu'une icône et devait se dimensionner à part ; depuis qu'il porte
+    son mot comme les autres, elle ne faisait plus que lui donner quatre pixels
+    de rembourrage de plus — et **c'est cet écart qui empêchait les largeurs
+    d'être égales** (94 px contre 86, mesuré). *Une règle qui survit à sa raison
+    finit toujours par en casser une autre.*
+  - *Mesuré après : une seule largeur par dock — 88 px au hub, 67 chez Yuno — et
+    le centre de l'onglet du milieu tombe à un pixel de l'axe du rail.*
 - **L'AIR PASSE DANS L'ONGLET, PAS ENTRE EUX** — 22 px de rembourrage : c'est ce
   qui donne à l'actif un fond assez large pour se voir, sans écarter les mots.
   *Réglé en deux temps : à 14 px, « Perso » demandait 27 px et en avait 26 — le

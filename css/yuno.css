@@ -328,6 +328,26 @@ body[data-espace="yuno"] .ouvrir-capture {
      de sécurité ; un navigateur qui n'en a pas, non. */
   bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
+  /* DES ONGLETS DE MÊME LARGEUR (16 septembre 2026, demande de Noé : « j'aimerais
+     que chaque onglet ait la même largeur, que ce ne soit pas lié à la taille de
+     son titre, sinon "Perso" n'est pas au milieu puisque "Calendrier" prend plus
+     de place »).
+
+     CHACUN PRENAIT LA LARGEUR DE SON MOT : le rail restait centré, mais l'onglet
+     du MILIEU ne tombait pas sur son axe — « Calendrier » poussait tout vers la
+     gauche. **Une barre de navigation se lit comme une rangée de cases, pas
+     comme une phrase.**
+
+     C'EST DONC LE RAIL QUI PORTE LA LARGEUR, et ses onglets s'y partagent
+     l'espace à parts égales (`flex: 1 1 0`). *Une grille à pistes `1fr` a été
+     essayée pour qu'il s'ajuste tout seul : elle égalise bien, mais une piste
+     `1fr` ne contribue pas sa largeur de CONTENU à la taille intrinsèque du
+     conteneur — mesuré, le rail tombait à 188 px et « Calendrier » s'y coupait.*
+
+     LA LARGEUR EST CALIBRÉE SUR LE PLUS LONG MOT, pas choisie au jugé : trois
+     fois « Calendrier » et son rembourrage pour le hub, cinq fois pour Yuno.
+     C'est ce qui la distingue des 335 px d'avant, qui étiraient trois onglets
+     sur toute la place disponible. */
   display: flex;
   justify-content: center;
   /* IL ÉPOUSE SON CONTENU AU LIEU DE S'ÉTIRER (16 septembre 2026, demande de
@@ -336,8 +356,7 @@ body[data-espace="yuno"] .ouvrir-capture {
      se retrouvaient à un pouce les uns des autres. Le dock fait maintenant la
      largeur de ce qu'il porte — trois onglets chez le hub, cinq chez Yuno — et
      le plafond ne sert plus qu'à ne jamais toucher les bords. */
-  width: auto;
-  max-width: min(480px, calc(100% - 32px));
+  width: min(360px, calc(100% - 32px));
   padding: 3px;
   gap: 2px;
   /* LE RAIL A UNE HAUTEUR FIXE, ET L'ACTIF EN DÉBORDE (16 septembre 2026,
@@ -407,9 +426,10 @@ body[data-espace="yuno"] .ouvrir-capture {
    touche ces trois onglets tous les jours. Ce qui rétrécit est ce qu'on VOIT,
    pas ce qu'on touche — le lien garde sa hauteur, son contenu maigrit. */
 :is(.yuno-dock, .navigation.hub-dock) a {
-  /* `0 1 auto` : chacun prend la largeur de son mot, et ne cède que si le dock
-     touche son plafond — le cas des cinq onglets de Yuno sur un téléphone. */
-  flex: 0 1 auto;
+  /* `1 1 0` : tous partent de zéro et se partagent le rail également, donc tous
+     la même largeur quel que soit leur mot. `min-width: 0` va avec — sans lui,
+     un élément de flux refuse de descendre sous la largeur de son contenu. */
+  flex: 1 1 0;
   min-width: 0;
   min-height: 44px;
   display: flex;
@@ -493,7 +513,7 @@ body[data-espace="yuno"] .ouvrir-capture {
 :is(.yuno-dock, .navigation.hub-dock) a:focus-visible { outline: 2px solid #65c8ff; outline-offset: 2px; }
 @media (max-width: 400px) {
   :is(.yuno-dock, .navigation.hub-dock) { gap: 0; height: 48px; }
-  :is(.yuno-dock, .navigation.hub-dock) a { min-height: 44px; padding: 4px 12px; }
+  :is(.yuno-dock, .navigation.hub-dock) a { min-height: 44px; padding: 4px 8px; }
   /* LE HUB A DE LA PLACE QUE LES SITES N'ONT PAS : trois onglets contre cinq, et
      un plafond plus bas. Il garde donc l'air du grand écran là où Yuno doit se
      serrer pour tenir ses cinq mots sur 375 px. */
@@ -3893,17 +3913,21 @@ body:not([data-espace="yuno"]):not([data-espace="hermitage"]) .barre-onglets {
    *mesuré, 335 px de large pour 175 px d'onglets.* Il ne lui reste que son
    plafond, un cran plus serré que celui de Yuno — trois mots n'ont pas besoin de
    la place de cinq. */
+/* TROIS ONGLETS N'ONT PAS BESOIN DE LA PLACE DE CINQ : la largeur du hub est
+   calibrée sur trois fois « Calendrier » et son rembourrage, soit 272 px.
+   *C'est ce qui la distingue des 340 px d'avant, où les trois mots se
+   retrouvaient à un pouce les uns des autres.* */
 .navigation.hub-dock {
-  max-width: min(340px, calc(100% - 40px));
+  width: min(272px, calc(100% - 40px));
   overflow: visible;
 }
-/* ELLE ÉGALISAIT LES DEUX CORPS, et c'est ce qui annulait la différence de
-   taille de l'actif — le défaut que Noé a vu. Les trois mots du hub tiennent
-   sans qu'on force quoi que ce soit ; le dock décide seul. */
-.navigation.hub-dock a.nav-calendrier {
-  width: auto;
-  padding: 4px 22px;
-}
+/* L'ONGLET DU CALENDRIER N'A PLUS DE RÈGLE À LUI (16 septembre 2026). Elle
+   datait du temps où il ne portait qu'une icône et devait donc se dimensionner à
+   part. Depuis qu'il porte son mot comme les autres, elle ne faisait plus que lui
+   donner quatre pixels de rembourrage de plus — et **c'est cet écart qui
+   empêchait les onglets d'avoir tous la même largeur**, le défaut que Noé
+   voulait justement corriger : *mesuré, 94 px contre 86.* Une règle qui survit à
+   sa raison finit toujours par en casser une autre. */
 /* Les huit pixels que le dock vient de rendre (16 septembre 2026) : ce qui se
    cale sur sa hauteur les rend avec lui, sinon il flotterait au-dessus d'un
    blanc que plus rien ne justifie. */
