@@ -19,8 +19,6 @@ import * as api from './api.js';
 import {
   construireFormulaire,
   construireFenetre,
-  construireMenuDiscret,
-  SIGNES,
   CHEVRON,
 } from './gabarits.js';
 import {
@@ -28,7 +26,6 @@ import {
   NOMS_STATUTS,
   construireBanque,
   construirePubliees,
-  construireApercuCreation,
   corpsPublication,
 } from './publications.js';
 import {
@@ -72,6 +69,10 @@ import { construireProgression } from './objectifs-commun.js';
 import { lireCache, ecrireCache } from './cache-session.js';
 import { monterLeMenu, boutonDuMenu } from './menu.js';
 import { versLObjectif } from './cap-adresses.js';
+// L'argent du cap « Rembourser mon matériel », dans son propre module : le lire
+// depuis js/photo.js aurait refermé un cycle — cette page-là importe déjà
+// js/yuno.js pour le mur de photos.
+import { argentDeYuno, mesuresDuCap, COMMANDE_FINIE } from './argent-yuno.js';
 // LES TROIS ÉCRANS DU CAP, tels que le hub les sert. Ils ne sont pas recopiés :
 // le site les MONTE dans un hôte à lui, et `cap-adresses.js` leur dit où mènent
 // leurs liens selon l'écran où ils se dessinent.
@@ -255,7 +256,16 @@ export const RUBRIQUES_YUNO = [
     // Les noms sont ceux du hub : un nom par page, des deux côtés.
     nom: 'Mon cap',
     adresse: '#yuno/cap',
-    pages: [{ nom: 'Mes tâches', adresse: '#yuno/taches' }],
+    // LES TROIS ÉTAGES, CHACUN SA LIGNE (15 septembre 2026 au soir, demande de
+    // Noé). Le grand titre mène à la page entière — les trois galeries d'affilée,
+    // comme `#objectifs` seul chez le hub —, et les deux premières lignes ouvrent
+    // un étage à la fois. Ce sont les noms du hub, au mot près : un nom par page,
+    // des deux côtés.
+    pages: [
+      { nom: 'Mes objectifs', adresse: '#yuno/cap/caps' },
+      { nom: 'Mes projets', adresse: '#yuno/cap/projets' },
+      { nom: 'Mes tâches', adresse: '#yuno/taches' },
+    ],
   },
   {
     nom: 'Créer',
@@ -402,7 +412,14 @@ function enTete(vue, etat = null) {
     modeles: 'Modèle', cap: 'Mon cap', objectif: 'Objectif',
     projet: 'Projet', taches: 'Mes tâches',
   };
-  const titre = titres[vue] ?? 'Yuno';
+  // LA BARRE NOMME L'ÉTAGE DU CAP (15 septembre 2026 au soir) : depuis que le
+  // menu offre « Mes objectifs » et « Mes projets », une barre qui dirait
+  // « Mon cap » sur les trois ferait un nom dans le menu et un autre en tête de
+  // page — le défaut corrigé dans le hub le 28 août. Ce sont les mots de
+  // `VUES`, js/objectifs.js : un nom par page, des deux côtés.
+  const ETAGES = { caps: 'Mes objectifs', projets: 'Mes projets', periodes: 'Mes périodes' };
+  const titre =
+    (vue === 'cap' ? ETAGES[etat?.feuilleOuverte] : null) ?? titres[vue] ?? 'Yuno';
 
   const icones = {
     accueil: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',
@@ -463,14 +480,26 @@ function pied() {
 // `--police-titre`), et `body[data-espace="yuno"]` les a déjà remplacées par
 // celles du site. Ce que les variables ne portent pas se corrige dans css/yuno.css.
 //
-// LA PAGE GÉNÉRALE N'A PAS DE SOUS-VUES : le hub découpe sa galerie en trois
-// (`#objectifs/caps`, `/projets`, `/periodes`) parce qu'il compare six caps et
-// dix projets de quatre espaces. Le site n'en montre que les siens — les trois
-// étages tiennent sur un écran, comme `#objectifs` seul chez le hub.
-function vueDuCap(vue) {
+// LA PAGE GÉNÉRALE A GAGNÉ DEUX SOUS-VUES le 15 septembre 2026 au soir
+// (`#yuno/cap/caps`, `#yuno/cap/projets`), et ça renverse ce qui était écrit ici
+// le matin même — « le site n'en montre que les siens, les trois étages tiennent
+// sur un écran ». Le motif tenait tant que la page était seule dans le menu ;
+// depuis que celui-ci offre « Mes objectifs » et « Mes projets », deux entrées qui
+// mèneraient toutes deux à `#yuno/cap` seraient deux liens identiques — et trois
+// liens identiques ne sont pas un menu. La page entière reste à son adresse nue.
+//
+// Les périodes n'ont pas leur ligne : Noé n'en a pas demandé, et elles ferment
+// déjà la page entière en deux lignes d'encre discrète.
+// L'HÔTE PORTE SA VUE, et ce n'est pas décoratif : c'est ce qui permet à la
+// feuille de style de taire le titre du module sur les deux écrans dont le `h1`
+// n'est QUE le nom de la page — la galerie du cap et les tâches. La barre le dit
+// déjà, et le redire quarante pixels plus bas, c'est deux titres pour un écran.
+// Les deux autres écrans le gardent : leur `h1` porte le nom d'un CAP ou d'un
+// PROJET, ce que la barre ne dit pas.
+function vueDuCap(etat) {
   return `
-    ${enTete(vue)}
-    <div data-hote-cap></div>
+    ${enTete(etat.vue, etat)}
+    <div data-hote-cap="${echapper(etat.vue)}"></div>
     ${pied()}`;
 }
 
@@ -491,14 +520,27 @@ function vueDuCap(vue) {
 // phrases pour la banque, des dates pour l'éditorial, une feuille en cours pour
 // les préparations. Un chiffre unique aurait été plus simple à écrire et
 // n'aurait rien dit de plus que le compte déjà là.
+// LA VITRINE PASSE DEVANT LE TITRE (15 septembre 2026 au soir, demande de Noé :
+// « mets le titre de la tuile en dessous des schémas, logos… »).
+//
+// C'EST LA GRAMMAIRE D'UNE LÉGENDE, et elle dit mieux ce qu'une porte est devenue
+// ce jour-là : **on regarde ce qu'il y a derrière, puis on lit où ça mène.** Le
+// titre en tête faisait de la vitrine une illustration posée sous un libellé —
+// l'ordre exact que la refonte des portes voulait renverser, puisqu'une porte
+// « doit dire quelque chose qu'on IGNORE avant de l'ouvrir ». Son nom, on le
+// connaît déjà.
+//
+// ELLE CHANGE LES CINQ PORTES DU SITE, pas seulement celles de l'accueil : c'est
+// un seul composant, et deux portes de deux dessins n'en feraient plus une
+// grammaire.
 function grandePorte({ adresse, icone = '', titre, service = '', vitrine = '' }) {
   return `
     <a class="grande-porte" href="${adresse}">
+      ${vitrine}
       <span class="grande-porte-tete">
         ${icone ? `<span class="grande-porte-icone" aria-hidden="true">${icone}</span>` : ''}
         <span class="grande-porte-titre">${titre}</span>
       </span>
-      ${vitrine}
       ${service ? `<span class="discret grande-porte-sous">${service}</span>` : ''}
     </a>`;
 }
@@ -570,32 +612,93 @@ function vitrineDeLaBanque(publications) {
     .join('')}</span>`;
 }
 
-// L'ÉDITORIAL : CE QUI PART, dans l'ordre des jours. Une date et un titre — le
-// réseau se lit déjà sur la page, et trois pastilles de plus dans une tuile de
-// cette taille en feraient un tableau.
+// --- LA FRISE DE LA SEMAINE (15 septembre 2026, au soir) ----------------------
 //
-// RIEN À VENIR : la vitrine se tait, et le métier de la porte (« poser sur les
-// jours ») suffit. Un « aucune parution » écrirait un manque là où il n'y a
-// qu'un calendrier à remplir — c'est la règle des écrans vides du hub : un vide
-// ouvre une porte, il ne s'excuse pas.
+// LE DÉFAUT QUE NOÉ A VU : « j'aime pas trop ces tuiles, dans la forme et dans le
+// contenu pour mes tâches et calendrier éditorial qui sont trop vides ; je ne
+// sais pas trop comment améliorer mais que ce ne soit pas que du texte, à l'image
+// du vivier. »
+//
+// Il a raison, et le pire des deux se voyait le mieux : **une porte dont la
+// vitrine est faite de LIGNES DE TEXTE n'a plus rien à montrer dès qu'il n'y a
+// qu'une ligne — ou zéro.** L'éditorial n'affichait rien du tout, et la règle
+// « une vitrine vide se tait » le laissait alors comme une boîte d'air sous son
+// titre. Se taire, c'est bien quand il reste autre chose à regarder ; ici il ne
+// restait rien.
+//
+// LA FRISE DESSINE LE VIDE AU LIEU DE SE TAIRE. Sept cases, les sept jours qui
+// viennent, une marque par chose posée. Une semaine sans rien n'est plus une
+// tuile vide : c'est un calendrier à remplir, et le trou SE VOIT. C'est
+// exactement ce qu'un calendrier éditorial est fait pour montrer.
+//
+// LES DEUX PORTES LA PARTAGENT, et c'est assumé : elles répondent à la MÊME
+// question — qu'est-ce qui est posé sur les jours qui viennent. Ce qui les
+// distingue est la MARQUE, pas le dessin : un trait doré pour une tâche, une
+// pastille à la couleur de son pilier pour une parution. *Ça infléchit la règle
+// des vitrines (« chaque vitrine a la forme de sa page ») : la page des tâches
+// est une liste, pas un calendrier. Mais elle se range par échéance, et une
+// semaine en est une lecture juste — tandis qu'une liste de titres dans une
+// tuile de cette taille n'était qu'une phrase de plus.*
+//
+// `getDay()` rend 0 pour dimanche : la table commence donc par lui.
+const INITIALES_JOURS = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+
+// Au-delà de trois, la case est pleine et un trait de plus ne se compte plus du
+// regard — c'est la règle des quatre points du trimestre, un cran plus bas.
+const MARQUES_PAR_JOUR = 3;
+
+function friseDeLaSemaine(marques, reference = new Date()) {
+  const aujourdhui = versDateISO(reference);
+  const jours = Array.from({ length: 7 }, (_, rang) => {
+    const date = ajouterJours(reference, rang);
+    const iso = versDateISO(date);
+    return {
+      iso,
+      lettre: INITIALES_JOURS[date.getDay()],
+      dessus: marques.filter((marque) => marque.jour === iso),
+    };
+  });
+
+  return `
+    <span class="porte-frise" aria-hidden="true">
+      <span class="porte-frise-rang">
+        ${jours
+          .map(
+            ({ iso, dessus }) => `
+          <span class="porte-frise-jour${iso === aujourdhui ? ' porte-frise-jour-actif' : ''}">
+            ${dessus
+              .slice(0, MARQUES_PAR_JOUR)
+              .map(
+                (marque) =>
+                  `<i${marque.pilier ? ` data-pilier="${echapper(String(marque.pilier))}"` : ''}></i>`,
+              )
+              .join('')}
+          </span>`,
+          )
+          .join('')}
+      </span>
+      <span class="porte-frise-rang porte-frise-lettres">
+        ${jours.map(({ lettre }) => `<span>${lettre}</span>`).join('')}
+      </span>
+    </span>`;
+}
+
+// L'ÉDITORIAL : LA SEMAINE QUI VIENT, une pastille par parution, dans la couleur
+// de son pilier — la palette existait et ne servait qu'aux tuiles de la banque.
+// D'un regard : ce qui part, quels jours, et sur quels axes.
+//
+// ELLE NE SE TAIT PLUS QUAND IL N'Y A RIEN, et c'est le renversement du soir :
+// sept cases vides disent le trou mieux qu'une tuile muette. Ce n'est pas un
+// manque écrit — c'est un calendrier qui attend, et la règle des écrans vides
+// tient toujours : un vide ouvre une porte, il ne s'excuse pas.
+//
+// La MÊME vitrine sert la porte de Créer : une porte ne se dessine pas deux fois.
 function vitrineDeLEditorial(publications) {
-  const aujourdhui = versDateISO();
-  const aVenir = publications
-    .filter((publication) => publication.date_prevue && publication.date_prevue >= aujourdhui)
-    .sort((a, b) => a.date_prevue.localeCompare(b.date_prevue))
-    .slice(0, 3);
+  const marques = publications
+    .filter((publication) => publication.date_prevue && publication.statut !== 'publie')
+    .map((publication) => ({ jour: publication.date_prevue, pilier: publication.pilier }));
 
-  if (!aVenir.length) return '';
-
-  return `<span class="porte-lignes">${aVenir
-    .map(
-      (publication) => `
-      <span class="porte-ligne">
-        <span class="porte-ligne-quand">${echapper(jourCourt(publication.date_prevue))}</span>
-        ${echapper(publication.titre)}
-      </span>`,
-    )
-    .join('')}</span>`;
+  return friseDeLaSemaine(marques);
 }
 
 // LES PRÉPARATIONS : LA FEUILLE DE LA PROCHAINE SORTIE, sa phase et ce qu'il y
@@ -1438,6 +1541,10 @@ const PLUS_PAR_VUE = {
   reseau: { contact: true },
   passerelle: { contact: true },
   carnet: { contact: true },
+  // L'arrière-boutique des modèles : son « + » écrit un modèle. Sans cette
+  // ligne il retombait sur le défaut — « poser une tâche » —, ce qui n'a rien à
+  // faire sur la page où l'on range ses phrases.
+  messages: { modele: true },
   // Chez les Missions, le « + » ouvre une commande — en fenêtre volante,
   // comme tous les ajouts du site (demande de Noé, 21 août au soir).
   missions: { commande: true },
@@ -1475,6 +1582,49 @@ function ecarterPrepa(id) {
     localStorage.setItem(CLE_PREPAS_ECARTEES, JSON.stringify(suite));
   } catch {
     // Tant pis : le bloc reviendra à la prochaine visite.
+  }
+  return suite;
+}
+
+// --- LES MATCHS REFUSÉS (15 septembre 2026 au soir, demande de Noé) ----------
+//
+// « Avoir la possibilité de refuser la proposition pour que ça affiche le cran
+// d'après. » Une proposition qu'on ne peut que subir finit par ne plus se
+// regarder : la croix écarte CE match-là, et la carte en propose un autre — puis,
+// quand le vivier n'en offre plus, la cascade descend d'un rang.
+//
+// ELLE N'ÉCARTE RIEN D'AUTRE : le match reste au calendrier du club, la piste
+// reste au vivier, et la fiche du club continue de le proposer. C'est une place à
+// l'écran qu'on reprend, pas un match qu'on raye — même règle que la croix de la
+// sortie du moment, d'où le `localStorage` plutôt que la base.
+//
+// LA CLÉ PORTE LA DATE (`<piste>:<jour>`) et non le seul club : refuser un match
+// ne doit pas refuser le club pour toujours, et la ligne se périme d'elle-même
+// quand le jour est passé — c'est le ménage fait à la lecture, qui évite qu'une
+// liste de refus grossisse sans fin dans le navigateur.
+
+const CLE_MATCHS_ECARTES = 'yuno-matchs-ecartes';
+
+export const cleDuMatch = (pisteId, jour) => `${pisteId}:${jour}`;
+
+export function matchsEcartes(reference = new Date()) {
+  const aujourdhui = versDateISO(reference);
+  try {
+    const brut = localStorage.getItem(CLE_MATCHS_ECARTES);
+    const liste = brut ? JSON.parse(brut) : [];
+    // Un refus ne survit pas au match qu'il visait.
+    return liste.filter((cle) => String(cle).split(':').pop() >= aujourdhui);
+  } catch {
+    return [];
+  }
+}
+
+function ecarterMatch(cle) {
+  const suite = [...new Set([...matchsEcartes(), cle])];
+  try {
+    localStorage.setItem(CLE_MATCHS_ECARTES, JSON.stringify(suite));
+  } catch {
+    // Tant pis : la proposition reviendra à la prochaine visite.
   }
   return suite;
 }
@@ -1625,162 +1775,654 @@ export function construireSortieDuMoment(
     </section>`;
 }
 
+// --- L'ACCUEIL : DEUX BLOCS FIXES, ET UN CLASSEMENT (15 septembre 2026) ------
+//
+// LE DÉFAUT, MESURÉ AVANT DE TOUCHER À QUOI QUE CE SOIT. Ce 15 septembre, la
+// page affichait : pas de sortie du moment (aucune sortie à venir, la dernière
+// remontait au 28 août), le mur, deux tuiles de cap, et un titre « En création »
+// au-dessus du vide (zéro publication programmée). DEUX BLOCS SUR QUATRE ÉTAIENT
+// VIDES — pendant que le site portait 18 idées, 16 tâches ouvertes, trois
+// feuilles de préparation et 88 clubs jamais contactés, dont l'accueil ne disait
+// rien.
+//
+// Le défaut n'était pas un oubli, il était STRUCTUREL : la page était dessinée
+// autour du terrain, or Yuno vit par PICS — une sortie, le tri, le post, puis
+// trois semaines de silence. `sortieDuMoment` ne regarde d'ailleurs que 48 h
+// devant. Les jours de pic, l'accueil était excellent ; les autres jours, c'est
+// à dire la plupart, il ne disait rien.
+//
+// LA RÈGLE POSÉE : l'accueil n'a que DEUX blocs fixes — le mur et le cap. Tout
+// le reste est un CLASSEMENT. Une carte chaude en tête, tirée d'une cascade ;
+// trois portes choisies dans une réserve, selon ce que les données disent. La
+// page ne change pas de forme, elle change de contenu — c'est ce que faisait
+// déjà la sortie du moment, seule à porter tout le mouvement de l'écran.
+//
+// ET ELLE N'EST JAMAIS MUETTE : le dernier rang de la cascade a toujours quelque
+// chose à dire.
+//
+// CE QUE ÇA RENVERSE, et il faut le dire : « l'accueil ne porte plus aucune
+// porte » (décision du 12 août 2026), au motif que « ces deux lieux sont dans la
+// barre ». Le motif était juste quand la barre nommait tout le site. Depuis le
+// menu de ce matin, le site compte DIX-SEPT écrans pour CINQ onglets — et
+// l'accueil est le seul endroit d'où l'on puisse dire lequel des douze autres
+// compte aujourd'hui. Les portes qu'il ouvre sont justement celles que la barre
+// ne nomme pas.
+//
+// L'ACCUEIL NE GÈRE TOUJOURS RIEN, à l'entorse près qui existait déjà : cocher
+// une ligne de préparation au bord du terrain.
+
+// Les fenêtres de la cascade. Deux jours pour une sortie — c'est `AVANT_MONTE_A`,
+// le seuil du site depuis le 26 août, et Noé l'a maintenu le 15 septembre : la
+// carte de préparation reste le signal du JOUR du match, et ce sont les rangs du
+// dessous qui portent les jours creux.
+const CARTE_A_SEPT_JOURS = 7;
+// UN MATCH QU'ON PROPOSE D'ALLER COUVRIR : plus de SEPT JOURS devant (règle de
+// Noé, 15 septembre 2026 au soir : « il faut que ce soit un match plus loin dans
+// le temps, au moins + de 7 jours »). Trois jours, le réglage d'origine, ne
+// laissaient pas le temps de ce qu'une sortie demande — écrire à un club,
+// demander une place, poser le déplacement. **Une proposition qu'on ne peut pas
+// saisir n'est pas une proposition.**
+//
+// LA BORNE HAUTE RECULE D'AUTANT (14 → 21 jours) : sans elle, la fenêtre serait
+// tombée à une seule semaine de candidats. Trois semaines laissent le choix sans
+// aller chercher des dates que le calendrier officiel n'a pas encore figées.
+const MATCH_AU_PLUS_TOT = 8;
+const MATCH_AU_PLUS_TARD = 21;
+
+
+// LE RITUEL EST FAIT quand les envois de la semaine atteignent l'objectif doux.
+// C'est la règle de la Passerelle, au mot près — son bandeau dit déjà « C'est
+// fait pour cette semaine » sur ce même test. Deux façons de décider qu'une
+// semaine est faite finiraient par ne plus dire la même chose.
+//
+// PAS DE BORNE HAUTE (demande de Noé, 15 septembre 2026 : « chaque lundi ça doit
+// être la fournée de la semaine tant que c'est pas fait ») : la carte est là dès
+// le lundi matin et tous les jours suivants, jusqu'à ce que ce soit fait. Aucune
+// semaine manquée n'est comptée, aucun « trop tard » n'est écrit — le lundi
+// suivant, le compteur repart et la carte revient.
+export function rituelAFaire(envois, objectifDoux, reference = new Date()) {
+  return envoisDeLaSemaine(envois, reference) < objectifDoux;
+}
+
+// Les clubs que la carte montre : ceux de la fournée en cours s'il y en a une,
+// les propositions de la semaine sinon. Dans les deux cas ce sont ceux que la
+// Passerelle montrerait — l'accueil ne tire pas sa propre liste.
+export function clubsDuRituel(pistes, graine, passees = [], nombre = 3) {
+  const fournee = pistes.filter((piste) => piste.en_fournee);
+  if (fournee.length) return fournee.slice(0, nombre);
+  return pistesProposees(pistes, graine, nombre, passees);
+}
+
+// UN MATCH À COUVRIR — le rang qui n'existait pas, et celui qui compte le plus.
+//
+// La table `matchs_pistes` porte trois mille matchs et la vue
+// `prochain_match_par_piste` en sert un par club ; ils ne servaient jusqu'ici
+// qu'à décorer une carte du vivier. Or la PREMIÈRE question d'arbitrage de
+// « Terrain » est « est-ce que ça augmente le temps dehors ou le temps
+// dedans ? » — et un accueil qui, un jour creux, propose un match à aller
+// shooter est la seule chose de ce site qui y réponde oui sans réserve.
+//
+// C'est aussi ce qui remplace, sans jamais l'écrire, le « 18 jours sans sortie »
+// qu'on s'interdit d'afficher : ON NE COMPTE PAS LE CREUX, ON L'OUVRE.
+//
+// Les Léopards d'abord : c'est l'accroche éditoriale du vivier et le pont vers
+// le fil rouge CAN 2027. Puis le tirage du jour — par ordre de table on
+// proposerait le même club jusqu'à la fin des temps.
+//
+// Un match DÉJÀ au calendrier ne se propose pas, et il se reconnaît au club et à
+// la date, jamais au titre : celui-ci a pu être réécrit, et c'est justement ce
+// que le site permet. Même règle que la fiche d'un club.
+//
+// ELLE LIT `matchs_pistes` ET NON `piste.prochain`, et c'est la fenêtre de plus
+// de sept jours qui l'a imposé (15 septembre 2026 au soir). `prochain_match_par_piste`
+// ne sert QUE le match le plus proche de chaque club — or un club joue chaque
+// week-end : **mesuré, la fenêtre J+8 à J+21 ne trouvait AUCUN candidat** parce
+// que tous les « prochains » tombent dans les sept jours. La liste vient donc de
+// `api.matchsEntre`, qui rend un match par affiche (le club qui reçoit).
+//
+// Un match sans piste connue est écarté plutôt que proposé sous son
+// identifiant : une piste supprimée laisserait son calendrier derrière elle.
+export function matchACouvrir(
+  pistes,
+  matchs,
+  evenements,
+  graine,
+  reference = new Date(),
+  ecartes = [],
+) {
+  const auPlusTot = versDateISO(ajouterJours(reference, MATCH_AU_PLUS_TOT));
+  const auPlusTard = versDateISO(ajouterJours(reference, MATCH_AU_PLUS_TARD));
+  const refuses = new Set(ecartes);
+  const parId = new Map(pistes.map((piste) => [piste.id, piste]));
+
+  const libres = matchs
+    .map((match) => ({ piste: parId.get(match.piste_id), match }))
+    .filter(({ piste, match }) => {
+      if (!piste) return false;
+      if (match.date < auPlusTot || match.date > auPlusTard) return false;
+      if (refuses.has(cleDuMatch(piste.id, match.date))) return false;
+      return !evenements.some(
+        (evenement) =>
+          versDateISO(new Date(evenement.date_debut)) === match.date &&
+          (evenement.club_recevant === piste.id || evenement.club_visiteur === piste.id),
+      );
+    });
+
+  if (!libres.length) return null;
+  const leopards = libres.filter(({ piste }) => piste.leopard);
+  return melangeSeme(leopards.length ? leopards : libres, graine)[0] ?? null;
+}
+
+// Le gabarit commun des cartes chaudes. Il reprend `.sortie-moment`, le bloc que
+// l'accueil portait déjà en tête : les six cartes se suivent au même endroit et
+// répondent à la même question — qu'est-ce qui compte maintenant —, elles ne
+// peuvent pas avoir six dessins.
+function carteChaude({ etiquette, quand = '', titre, corps = '', pied: bas = '', retirer = '' }) {
+  return `
+    <section class="bloc sortie-moment carte-chaude">
+      <span class="tuile-entete">
+        <span class="etiquette">${echapper(etiquette)}</span>
+        ${quand ? `<span class="discret quand">${echapper(quand)}</span>` : ''}
+        ${retirer}
+      </span>
+      <h2 class="sortie-moment-titre">${echapper(titre)}</h2>
+      ${corps}
+      ${bas}
+    </section>`;
+}
+
+// RANG 3 — une commande qui attend son livrable, à une semaine. Le client se lit
+// sous le titre : c'est à lui qu'on doit quelque chose.
+function carteDeLaCommande(commandes, reference) {
+  const borne = versDateISO(ajouterJours(reference, CARTE_A_SEPT_JOURS));
+  const [commande] = commandes
+    .filter(
+      (ligne) =>
+        !COMMANDE_FINIE.includes(ligne.statut) && ligne.echeance && ligne.echeance <= borne,
+    )
+    .sort((a, b) => a.echeance.localeCompare(b.echeance));
+
+  if (!commande) return '';
+
+  return carteChaude({
+    etiquette: 'Une commande',
+    quand: echeanceLisible(depuisDateISO(commande.echeance)),
+    titre: commande.titre,
+    corps: commande.client
+      ? `<p class="discret">Pour ${echapper(commande.client)}</p>`
+      : '',
+    pied: `<a class="lien-discret" href="#yuno/missions">Ouvrir les Missions</a>`,
+  });
+}
+
+// RANG 4 — le post qu'un match a fait naître à J+1 (règle du 29 août 2026). Il
+// naît en « idée » : le hub programme la parution, il n'écrit pas à la place de
+// Noé. Cette carte est le seul endroit qui le rappelle avant qu'il se perde dans
+// le flux de Créer.
+function carteDuPost(publications, reference) {
+  const depuis = versDateISO(ajouterJours(reference, -CARTE_A_SEPT_JOURS));
+  const aujourdhui = versDateISO(reference);
+
+  const [post] = publications
+    .filter(
+      (pub) =>
+        pub.origine === 'match' &&
+        pub.statut === 'idee' &&
+        pub.date_prevue &&
+        pub.date_prevue >= depuis &&
+        pub.date_prevue <= aujourdhui,
+    )
+    .sort((a, b) => b.date_prevue.localeCompare(a.date_prevue));
+
+  if (!post) return '';
+
+  return carteChaude({
+    etiquette: 'Une parution',
+    quand: jourCourt(post.date_prevue),
+    titre: post.titre,
+    corps: `<p class="discret">Née du match, en idée — elle attend son texte.</p>`,
+    pied: `<a class="lien-discret" href="#yuno/creer">Ouvrir Créer</a>`,
+  });
+}
+
+// RANG 5 — le rituel de la semaine. Il passe devant le terrain proposé, et c'est
+// une conséquence assumée de la règle de Noé : tant que la fournée n'est pas
+// faite, elle tient la tête de l'accueil. LE TERRAIN DEVIENT LA RÉCOMPENSE DU
+// RITUEL — l'accueil ne propose de sortir qu'une fois la semaine ouverte.
+function carteDuRituel(etat, reference) {
+  if (!etat.pistes.length) return '';
+  if (!rituelAFaire(etat.envois, etat.objectifDoux, reference)) return '';
+
+  const clubs = clubsDuRituel(etat.pistes, etat.grainePropositions, etat.pistesPassees);
+  if (!clubs.length) return '';
+
+  const contactes = etat.pistes.filter((piste) => piste.date_contacte).length;
+
+  return carteChaude({
+    etiquette: 'Le rituel',
+    titre: 'Ta fournée de la semaine',
+    corps: `
+      <ul class="carte-clubs">
+        ${clubs
+          .map(
+            (piste) => `
+          <li>
+            ${ecussonDuClub(piste.nom)}
+            <span class="carte-club-nom">${echapper(piste.nom)}</span>
+          </li>`,
+          )
+          .join('')}
+      </ul>`,
+    // Une part d'un ensemble fini, jamais un taux : « 9 sur 97 » dit le chemin
+    // parcouru et ne peut que monter. C'est le chiffre du bandeau de la
+    // Passerelle, repris tel quel.
+    pied: `<a class="lien-discret" href="#yuno/reseau">Ouvrir la Passerelle ·
+      <span class="chiffre">${contactes}</span> sur
+      <span class="chiffre">${etat.pistes.length}</span> clubs contactés</a>`,
+  });
+}
+
+// RANG 6 — un match à couvrir. Le geste est celui de la fiche d'un club, au
+// trait près (`data-poser-match`) : la tuile s'ouvre déjà remplie, et Noé
+// corrige le jour et l'heure avant de poser. Un match du calendrier officiel n'a
+// souvent pas d'horaire et son jour peut encore glisser — poser directement
+// inventerait une heure.
+function carteDuMatch(etat, reference) {
+  const propose = matchACouvrir(
+    etat.pistes,
+    etat.matchsAVenir,
+    etat.evenements,
+    graineDuJour(),
+    reference,
+    etat.matchsEcartes,
+  );
+  if (!propose) return '';
+
+  const { piste, match } = propose;
+  const affiche = afficheDuMatch(piste, match);
+
+  return carteChaude({
+    etiquette: 'À couvrir',
+    quand: echeanceLisible(depuisDateISO(match.date)),
+    // LA CROIX REFUSE CETTE PROPOSITION-LÀ : le tirage en rend une autre, et
+    // quand le vivier n'en offre plus, la cascade descend d'un rang. Même dessin
+    // et même discrétion que celle de la sortie du moment — franche au survol,
+    // effacée au repos : elle est là quand on la cherche, elle n'appelle pas.
+    retirer: `<button type="button" class="lien-discret bouton-mini bouton-retirer"
+      data-ecarter-match="${echapper(cleDuMatch(piste.id, match.date))}"
+      title="Proposer autre chose"
+      aria-label="Refuser « ${echapper(affiche)} » et voir la proposition suivante">×</button>`,
+    titre: affiche,
+    corps: `
+      <p class="carte-match">
+        ${ecussonDuClub(piste.nom)}
+        <span class="discret">J${echapper(String(match.journee))} ·
+          ${echapper(DIVISIONS[piste.division] ?? '')}</span>
+      </p>`,
+    pied: `<button type="button" class="lien-discret"
+      data-poser-match="${echapper(piste.id)}"
+      data-match-journee="${echapper(String(match.journee))}"
+      data-match-date="${echapper(match.date)}"
+      >Poser au calendrier</button>`,
+  });
+}
+
+// RANG 7 — le repli, et c'est le plus juste des sept : un site de création dont
+// l'accueil s'ouvre sur une idée les jours où il n'y a pas de terrain.
+//
+// LE MÊME TIRAGE QUE CRÉER, et c'est ce qui autorise les deux écrans à la
+// montrer : `ideeDuJour` est UNE fonction, avec la date pour graine — les deux
+// cartes ne peuvent pas dire deux idées différentes. Celle-ci est un aperçu qui
+// ouvre la page ; les gestes (programmer, ouvrir la fiche) vivent là-bas.
+function carteDeLIdee(publications) {
+  const idee = ideeDuJour(publications);
+  if (!idee) return '';
+
+  return carteChaude({
+    etiquette: "L'idée du jour",
+    titre: idee.titre,
+    corps: idee.preuve ? `<p class="discret">${echapper(idee.preuve)}</p>` : '',
+    pied: `<a class="lien-discret" href="#yuno/creer">Ouvrir Créer</a>`,
+  });
+}
+
+// LA CASCADE : le premier rang satisfait gagne, et il est SEUL. C'est la
+// mécanique du bandeau de l'après du hub (« un seul à la fois ») et celle que la
+// sortie du moment appliquait déjà entre ses trois cas. Deux cartes chaudes
+// empilées, ce sont deux interruptions.
+// Exportée pour être vérifiable seule, avec un état factice — comme
+// `construireSortieDuMoment` qu'elle enveloppe : sept rangs qui se bousculent,
+// c'est exactement le genre de règle qu'on ne croit pas sur parole.
+export function carteDuMoment(etat, reference = new Date()) {
+  return (
+    // Rangs 1 et 2 : la sortie en cours, celle qui vient de finir, ou la
+    // prochaine à 48 h. Inchangée.
+    construireSortieDuMoment(
+      etat.evenements,
+      etat.preparations,
+      reference,
+      etat.prepasEcartees,
+    ) ||
+    carteDeLaCommande(etat.commandes, reference) ||
+    carteDuPost(etat.publications, reference) ||
+    carteDuRituel(etat, reference) ||
+    carteDuMatch(etat, reference) ||
+    carteDeLIdee(etat.publications) ||
+    ''
+  );
+}
+
+// --- LES TROIS PORTES DU JOUR -------------------------------------------------
+//
+// Les vitrines sont celles des paliers, EMPRUNTÉES et non recopiées : deux
+// dessins pour une même porte finiraient par ne plus montrer la même chose.
+//
+// TROIS RÈGLES :
+// — une porte qui n'a rien à dire ne monte pas. La rangée du jour est un
+//   classement, pas un inventaire. **Le test porte sur les DONNÉES, jamais sur
+//   la vitrine** : depuis le soir du 15 septembre, la frise de la semaine se
+//   dessine même vide — c'est tout son intérêt —, et elle ne peut donc plus
+//   servir de test à la porte qu'elle habille ;
+// — jamais deux portes de la même rubrique, sinon un jour chargé au Réseau
+//   mangerait la rangée ;
+// — la banque et le réseau ferment la réserve : ce sont les deux qui ont
+//   toujours quelque chose à montrer, donc les deux qui ne doivent jamais passer
+//   devant une urgence.
+//
+// PAS D'ICÔNES, à la différence des portes de Créer : la vitrine EST le visuel
+// de la tuile, et trois icônes au-dessus de trois vitrines feraient deux signes
+// pour une même chose.
+//
+// LE CALENDRIER ÉDITORIAL FIGURE DEUX FOIS, et les deux entrées s'excluent : une
+// semaine SANS rien de programmé est une information qui passe devant presque
+// tout — c'est le trou qu'un calendrier éditorial est fait pour montrer —, une
+// semaine pleine n'est qu'un rappel. C'est la même porte, à deux rangs.
+
+// UNE OCCURRENCE PAR SÉRIE, la plus proche — la règle de l'espace Tâches du hub
+// (27 août 2026), et elle se paie comptant ici : mesuré sur les données de Noé,
+// la vitrine écrivait TROIS FOIS « Contacter les clubs de la semaine », qui est
+// une tâche hebdomadaire. Trois lignes identiques ne disent rien de plus qu'une,
+// et une vitrine doit dire ce qu'on ignore avant d'ouvrir la porte.
+//
+// Le COMPTE suit la même coupe : « 16 ouvertes » dont douze sont la même chose
+// qui revient, ce n'est pas seize choses à faire.
+export function tachesEnTete(taches) {
+  const series = new Set();
+  return taches
+    .filter((tache) => tache.statut !== 'fait' && tache.echeance)
+    .sort((a, b) => a.echeance.localeCompare(b.echeance))
+    .filter((tache) => {
+      if (!tache.serie_id) return true;
+      if (series.has(tache.serie_id)) return false;
+      series.add(tache.serie_id);
+      return true;
+    });
+}
+
+// LES TÂCHES : la même frise, un trait doré par échéance. Elle a porté trois
+// lignes de texte une journée — une date, un titre —, et c'est ce que Noé a
+// renvoyé : avec une seule tâche ouverte, la tuile n'était qu'un titre et un
+// blanc. La frise, elle, montre toujours quelque chose : la semaine, et où
+// tombent les échéances dedans.
+function vitrineDesTaches(taches) {
+  return friseDeLaSemaine(tachesEnTete(taches).map((tache) => ({ jour: tache.echeance })));
+}
+
+const PORTES_AU_PLUS = 3;
+
+// Exportée pour la même raison : un classement se vérifie avec des données
+// factices, pas en regardant l'écran d'un jour particulier.
+export function portesDuJour(etat, reference = new Date()) {
+  const aujourdhui = versDateISO(reference);
+  const borne = versDateISO(ajouterJours(reference, CARTE_A_SEPT_JOURS));
+
+  const ouvertes = tachesEnTete(etat.taches);
+  const commandes = etat.commandes.filter((ligne) => !COMMANDE_FINIE.includes(ligne.statut));
+  const idees = etat.publications.filter((pub) => !pub.date_prevue && pub.statut !== 'publie');
+  const semaine = etat.publications.filter(
+    (pub) =>
+      pub.date_prevue &&
+      pub.statut !== 'publie' &&
+      pub.date_prevue >= aujourdhui &&
+      pub.date_prevue <= borne,
+  );
+  const contactes = etat.pistes.filter((piste) => piste.date_contacte).length;
+
+  const vitrinePrepa = vitrineDesPreparations(etat.preparations, etat.evenements);
+
+  const editorial = () =>
+    grandePorte({
+      adresse: '#yuno/editorial',
+      titre: 'Calendrier éditorial',
+      vitrine: vitrineDeLEditorial(etat.publications),
+      service: 'Poser sur les jours',
+    });
+
+  const reserve = [
+    {
+      rubrique: 'journal',
+      quand: Boolean(vitrinePrepa),
+      porte: () =>
+        grandePorte({
+          adresse: '#yuno/preparations',
+          titre: 'Préparations',
+          vitrine: vitrinePrepa,
+          service: `<span class="chiffre">${etat.preparations.length}</span>
+            feuille${etat.preparations.length > 1 ? 's' : ''}, et leurs modèles`,
+        }),
+    },
+    {
+      rubrique: 'cap',
+      // La CONDITION vient des données, pas de la vitrine : depuis que celle-ci
+      // est une frise, elle montre toujours la semaine — même vide. C'est tout
+      // son intérêt, et c'est pourquoi elle ne peut plus servir de test.
+      quand: ouvertes.length > 0,
+      porte: () =>
+        grandePorte({
+          adresse: '#yuno/taches',
+          titre: 'Mes tâches',
+          vitrine: vitrineDesTaches(etat.taches),
+          service: `<span class="chiffre">${ouvertes.length}</span>
+            ouverte${ouvertes.length > 1 ? 's' : ''}`,
+        }),
+    },
+    // Le trou de la semaine : la porte monte haut, parce que c'est ce qu'un
+    // calendrier éditorial est fait pour montrer.
+    { rubrique: 'creer', quand: !semaine.length, porte: editorial },
+    {
+      rubrique: 'reseau',
+      quand: contactes < etat.pistes.length,
+      porte: () =>
+        grandePorte({
+          adresse: '#yuno/vivier',
+          titre: 'Le vivier',
+          vitrine: vitrineDuVivier(etat.pistes),
+          service: `<span class="chiffre">${etat.pistes.length}</span> clubs ·
+            <span class="chiffre">${contactes}</span> contactés`,
+        }),
+    },
+    {
+      rubrique: 'missions',
+      quand: commandes.length > 0,
+      porte: () =>
+        grandePorte({
+          adresse: '#yuno/missions',
+          titre: 'Missions',
+          vitrine: '',
+          service: `<span class="chiffre">${commandes.length}</span>
+            commande${commandes.length > 1 ? 's' : ''} en cours`,
+        }),
+    },
+    // La même porte, un rang plus bas : la semaine est pleine, il n'y a qu'à
+    // relire ce qui part.
+    { rubrique: 'creer', quand: semaine.length > 0, porte: editorial },
+    {
+      rubrique: 'creer',
+      quand: idees.length > 0,
+      porte: () =>
+        grandePorte({
+          adresse: '#yuno/banque',
+          titre: 'Banque d’idées',
+          vitrine: vitrineDeLaBanque(etat.publications),
+          service: `<span class="chiffre">${idees.length}</span>
+            idée${idees.length > 1 ? 's' : ''} à fouiller`,
+        }),
+    },
+    {
+      rubrique: 'reseau',
+      quand: etat.contacts.length > 0,
+      porte: () =>
+        grandePorte({
+          adresse: '#yuno/carnet',
+          titre: 'Le réseau',
+          vitrine: vitrineDuReseau(etat.contacts),
+          service: `<span class="chiffre">${etat.contacts.length}</span> fiches`,
+        }),
+    },
+  ];
+
+  const prises = new Set();
+  const retenues = [];
+  for (const candidate of reserve) {
+    if (retenues.length === PORTES_AU_PLUS) break;
+    if (!candidate.quand || prises.has(candidate.rubrique)) continue;
+    prises.add(candidate.rubrique);
+    retenues.push(candidate.porte());
+  }
+
+  return retenues.join('');
+}
+
+// --- LE CAP EN PIED, EN GRAVURES (15 septembre 2026, demande de Noé) ----------
+//
+// « Le cap en pied, change un peu la forme par rapport à actuellement pour que
+// ce soit plus visuel. »
+//
+// POURQUOI EN PIED : c'est la leçon que le hub a tranchée deux fois — le cap
+// passé sous la journée le 13 août, les périodes qui ferment #objectifs le
+// 28 — « on relit ce qui cadre quand on lève la tête, pas en ouvrant
+// l'application ». Et depuis ce matin le cap a sa PAGE dans le site
+// (#yuno/cap, #yuno/objectif/<id>) : l'accueil n'a plus à en être la seule vue,
+// il n'en garde que la gravure. Ça ne contredit pas « du cap vers le contenu »
+// (§2 du cahier des charges) : cette règle dit ce que l'espace sert en premier,
+// pas ce qui est en haut de l'écran.
+//
+// CE QUI TUE LA FORME D'AVANT, mesuré : les deux caps de Yuno portent SEPT
+// jalons dont AUCUN n'est atteint, et aucun n'est daté. Deux rangées de marches
+// vides l'une sous l'autre, c'est un accueil qui s'ouvre sur deux zéros. La
+// gravure ne montre donc jamais un pourcentage : elle nomme LA MARCHE SUIVANTE
+// et l'allume — c'est le seul chiffre qui ne juge rien.
+//
+// TROIS CHOSES EN FONT UNE GRAVURE plutôt qu'une tuile :
+// — le titre en Clash Display, grand : c'est la police des noms de créations du
+//   site, et un cap est ce qu'il y a de plus haut sur l'écran ;
+// — une seule marche en or à la fois, la suivante. L'or est déjà « l'état actif,
+//   l'action qui part » chez Yuno : l'œil tombe sur la marche à faire, pas sur
+//   les trois qui manquent ;
+// — et RIEN D'AUTRE : ni pourquoi, ni cible, ni description.
+//
+// LE POURQUOI A VÉCU UNE HEURE ICI, et il est reparti le soir même (Noé : « trop
+// de texte pour les objectifs, pas besoin du texte descriptif, réduis un peu la
+// taille globale »). Le motif d'origine se tenait — il est écrit en base et ne se
+// lit nulle part ailleurs sur le site — mais il se trompait d'écran : **quatre
+// lignes de prose en pied d'un tableau de bord, c'est un paragraphe qu'on ne
+// relit jamais et qui pousse le reste hors de vue.** Un pourquoi se relit les
+// jours sans motivation, c'est-à-dire sur SA page, où l'on est venu exprès. La
+// gravure ne garde que ce qui se COMPARE d'un cap à l'autre : le nom, l'horizon,
+// la marche suivante, et l'argent quand il y en a.
+//
+// PAS DE COMPTE À REBOURS : « juin 2027 » cadre, « dans 288 jours » presse.
+//
+// RIEN NE S'Y RÈGLE, et c'est un retour à la règle de la page : « elle montre et
+// elle ouvre des portes, elle ne gère rien ». Le menu discret et la tuile
+// « Ajouter un objectif » sont partis avec les tuiles — ces gestes vivent sur
+// #yuno/cap, la galerie du hub montée dans le site ce matin, qui les porte tous.
+//
+// L'ARGENT EST DANS LA GRAVURE (demande de Noé, 15 septembre 2026). C'est la
+// seule mesure du cap de Yuno qui ait bougé — 1 255 € encaissés —, et une
+// gravure muette à côté d'une gravure chiffrée aurait été bancale. Il vient de
+// `mesuresDuCap`, la fonction que la page #photo du hub lit déjà : deux calculs
+// pour un même remboursement finiraient par ne plus dire le même reste.
+function graveDuCap(objectif, mesure = null) {
+  const jalons = [...(objectif.jalons ?? [])];
+
+  return `
+    <a class="cap-gravure" href="${versLObjectif(objectif.id)}">
+      <span class="cap-gravure-tete">
+        <span class="cap-gravure-titre">${echapper(objectif.titre)}</span>
+        ${
+          objectif.echeance
+            ? `<span class="discret cap-gravure-horizon">${echapper(
+                depuisDateISO(objectif.echeance).toLocaleDateString('fr-FR', {
+                  month: 'long',
+                  year: 'numeric',
+                }),
+              )}</span>`
+            : ''
+        }
+      </span>
+      ${
+        mesure
+          ? `<p class="cap-gravure-argent">${mesure.texte}
+              ${
+                // LA JAUGE NE SE DESSINE PAS À ZÉRO — règle du hub (« une série à
+                // zéro ne s'affiche pas ») : une barre vide se lit comme un
+                // reproche, là où le texte dit simplement où en est le compte.
+                mesure.part > 0
+                  ? `<span class="cap-gravure-jauge" role="img"
+                      aria-label="${Math.round(mesure.part * 100)} pour cent remboursé"
+                      ><i style="width: ${Math.min(100, Math.round(mesure.part * 100))}%"></i></span>`
+                  : ''
+              }</p>`
+          : ''
+      }
+      ${construireProgression(jalons, { marquerSuivant: true })}
+    </a>`;
+}
+
+function construireGravuresDuCap(etat) {
+  if (!etat.objectifs.length) {
+    return `<p class="vide">Ton cap s'écrira ici.</p>`;
+  }
+
+  // Le TEXTE vient de `mesuresDuCap` — celui que la page #photo du hub affiche
+  // déjà, mot pour mot — et la PART du même calcul, pour que la jauge ne puisse
+  // pas dire autre chose que la phrase posée au-dessus d'elle.
+  const textes = mesuresDuCap(etat.objectifs, etat.commandes, etat.materiel);
+  const { encaisse, cible } = argentDeYuno(etat.commandes, etat.materiel);
+  const part = cible ? encaisse / cible : 0;
+
+  return `<div class="cap-gravures">${etat.objectifs
+    .map((objectif) =>
+      graveDuCap(
+        objectif,
+        textes[objectif.id] ? { texte: textes[objectif.id], part } : null,
+      ),
+    )
+    .join('')}</div>`;
+}
+
 function vueAccueil(etat) {
   return `
     ${enTete('accueil', etat)}
-    ${construireSortieDuMoment(
-      etat.evenements,
-      etat.preparations,
-      new Date(),
-      etat.prepasEcartees,
-    )}
+    ${carteDuMoment(etat)}
 
-    <!-- Ni compteurs, ni bouton de capture ici (demande de Noé, 14 août 2026) :
-         l'accueil s'ouvre directement sur le mur. Les trois compteurs et
-         « Ajouter un moment » restent au Journal, qui EST la page du carnet —
-         et la capture s'atteint toujours de l'accueil par l'invite ou par le
-         « + » flottant, dont la tuile porte la nature Moment. -->
     <section class="bloc">
       ${construireInvite(etat)}
       <!-- Le mur ouvre la page, sans titre au-dessus : dix photos n'ont besoin
-           de personne pour dire ce qu'elles sont. Pas de porte vers le Journal
-           non plus — il est dans la barre, comme Créer. -->
+           de personne pour dire ce qu'elles sont. -->
       <div data-bloc="mur-photos">${construireMurPhotos(etat.evenements, etat.photos)}</div>
     </section>
 
     <section class="bloc">
-      <h2>Objectifs</h2>
-      <div data-bloc="objectifs">${tuilesObjectifs(etat.objectifs, etat)}</div>
+      <div class="portes-jour">${portesDuJour(etat)}</div>
     </section>
 
-    <!-- Ni banque d'idées, ni porte vers Créer : la banque a sa page, et
-         l'onglet Créer est dans la barre. L'accueil ne montre que ce qui est
-         déjà programmé. -->
     <section class="bloc">
-      <h2>En création</h2>
-      <div data-bloc="apercu">${construireApercuCreation(etat.publications, { idees: false })}</div>
+      <div data-bloc="cap">${construireGravuresDuCap(etat)}</div>
     </section>
     ${fenetreMoment(etat)}
-    ${fenetreObjectif(etat)}
     ${pied()}`;
-}
-
-// --- LES OBJECTIFS : LA TUILE COMPARE, LA FENÊTRE DIT TOUT (15 septembre 2026,
-// demande de Noé) ---------------------------------------------------------------
-//
-// CE QUE ÇA REMPLACE : un `<details>` qui se dépliait SUR PLACE — le gabarit
-// partagé `construireObjectifs`, qui reste celui du site FCH. C'est la grammaire
-// que le hub a quittée le 2 septembre, et pour une raison qui vaut ici aussi :
-// une tuile pressée qui s'étale pousse tout le reste de l'écran vers le bas, et
-// l'accueil de Yuno « montre et ouvre des portes, il ne gère rien ».
-//
-// UNE FENÊTRE, ET NON UNE PAGE. Le hub a donné à ses caps une page à eux
-// (`#objectif/<id>`) ; Yuno ne peut pas l'emprunter — on sortirait du site, et
-// tout l'habillage du hub reviendrait avec. Il n'a d'ailleurs que DEUX caps, là
-// où la page du hub porte un calendrier, un rail de projets et des jalons qu'on
-// pose au doigt. La fenêtre volante est la forme que le site emploie déjà
-// partout : une fiche de contact, un moment, une idée s'ouvrent ainsi.
-//
-// LA TUILE NE CHANGE PRESQUE PAS D'ALLURE, et c'est voulu : le titre, la date,
-// les marches et le prochain jalon étaient déjà ce que montrait le sommaire
-// déplié. Ce qui change est le GESTE — presser ouvre au lieu d'étaler.
-// Le menu discret reprend celui du hub, mot pour mot (`js/objectifs.js`) :
-// modifier, marquer atteint, supprimer — la seule chose qui manquait à la
-// tuile depuis que les objectifs ouvrent leur propre page.
-function menuDiscretObjectif(objectif, etat) {
-  const cle = `objectif:${objectif.id}`;
-  return construireMenuDiscret('objectif', objectif.id, {
-    atteindre: true,
-    ouvert: etat.menu === cle,
-    confirmation: etat.confirme === cle,
-    attendrait: etat.confirme === `atteindre:${objectif.id}`,
-  });
-}
-
-function tuileObjectif(objectif, etat) {
-  const jalons = [...(objectif.jalons ?? [])].sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
-
-  return `
-    <article class="objectif-tuile-carte">
-      <a class="objectif-tuile" href="${versLObjectif(objectif.id)}">
-        <span class="objectif-tete">
-          <span class="objectif-titre">${echapper(objectif.titre)}</span>
-          ${
-            objectif.echeance
-              ? `<span class="discret echeance">${echapper(
-                  echeanceLisible(depuisDateISO(objectif.echeance)),
-                )}</span>`
-              : ''
-          }
-        </span>
-        ${construireProgression(jalons)}
-      </a>
-      ${menuDiscretObjectif(objectif, etat)}
-    </article>`;
-}
-
-// « Ajouter un objectif » est une tuile pointillée DANS la grille (règle du
-// hub, `js/objectifs.js` : le coût d'accès suit l'intention, et une galerie de
-// tuiles comparables porte son ajout comme une tuile de plus, pas comme un
-// lien à part en dessous). Aucun message « vide » séparé : la tuile pointillée
-// EST l'invite, seule s'il n'y a encore aucun objectif.
-function tuilesObjectifs(objectifs, etat) {
-  const tuiles = objectifs.map((objectif) => tuileObjectif(objectif, etat)).join('');
-  return `
-    <div class="grille-objectifs">
-      ${tuiles}
-      <button type="button" class="cap-tuile-ajout" data-ouvrir-creation-objectif>
-        ${SIGNES.plus}<span>Ajouter un objectif</span>
-      </button>
-    </div>`;
-}
-
-// Une seule fenêtre pour ajouter et modifier — comme celle d'un moment ou
-// d'une fiche du réseau, entre l'aperçu et l'édition.
-function fenetreObjectif(etat) {
-  if (!etat.creationObjectif && !etat.editionObjectif) return '';
-  const objectif = etat.editionObjectif;
-
-  return construireFenetre(
-    objectif ? "Modifier l'objectif" : 'Ajouter un objectif',
-    construireFormulaire({
-      id: 'objectif-formulaire',
-      libelle: objectif ? "Modifier l'objectif" : 'Ajouter un objectif',
-      action: objectif ? 'modifier-objectif' : 'creer-objectif',
-      bouton: objectif ? 'Enregistrer' : 'Ajouter',
-      avecPli: false,
-      champs: [
-        {
-          nom: 'titre',
-          libelle: 'Objectif',
-          type: 'text',
-          requis: true,
-          valeur: objectif?.titre,
-        },
-        {
-          nom: 'pourquoi',
-          libelle: 'Pourquoi ? (relu les jours sans motivation)',
-          type: 'textarea',
-          valeur: objectif?.pourquoi,
-        },
-        {
-          nom: 'cible',
-          libelle: "À quoi tu sauras que c'est réussi",
-          type: 'text',
-          valeur: objectif?.cible,
-        },
-        {
-          nom: 'echeance',
-          libelle: 'Échéance (facultative)',
-          type: 'date',
-          valeur: objectif?.echeance,
-        },
-      ],
-      extra: objectif
-        ? `<input type="hidden" name="objectif_id" value="${echapper(objectif.id)}">`
-        : '',
-    }),
-  );
 }
 
 // Le Journal — la page source du carnet de terrain : tous les moments, la
@@ -2537,8 +3179,21 @@ function blocBilan(etat, feuille) {
           : ''
       }
       ${dejaAuCarnet ? `<p class="discret">Ce moment est au carnet.</p>` : ''}
-      <form data-action="noter-bilan" class="ajout">
+      <form data-action="noter-bilan" class="ajout prepa-bilan-formulaire">
         <input type="hidden" name="id" value="${echapper(feuille.id)}">
+        <!-- LES DEUX TITRES RESTENT VISIBLES (15 septembre 2026 au soir, correction
+             de Noé : « garde les titres quand même visibles ici »), et il a raison
+             — c'est un défaut que la passe précédente avait introduit.
+
+             Les étiquettes étaient passées DANS les champs, par la règle du
+             journal d'une journée du hub. Elle ne vaut pas ici : le journal pose
+             UNE question qu'on connaît par cœur, le bilan en pose DEUX — et une
+             invite disparaît dès qu'on tape. **Un bilan rempli ne disait donc plus
+             à quelle question il répondait**, ce qui est précisément ce qu'on vient
+             y relire des mois après.
+
+             Le titre visible redevient le nom accessible du champ : pas d'invite
+             en double, qui ferait dire deux fois la même chose. -->
         <label for="prepa-bilan-bien">Ce qui a marché</label>
         <textarea id="prepa-bilan-bien" name="bilan_bien" rows="3">${echapper(
           feuille.bilan_bien ?? '',
@@ -2563,7 +3218,9 @@ function blocBilan(etat, feuille) {
           Noter ce moment au carnet</label>`
             : ''
         }
-        <button type="submit">${feuille.bilan_date ? 'Mettre à jour le bilan' : 'Enregistrer le bilan'}</button>
+        <button type="submit" class="prepa-bilan-bouton">${
+          feuille.bilan_date ? 'Mettre à jour le bilan' : 'Enregistrer le bilan'
+        }</button>
         <p class="message-erreur" data-erreur hidden></p>
       </form>
     </section>`;
@@ -2640,6 +3297,61 @@ function vueFeuille(etat, feuille) {
     ${pied()}`;
 }
 
+// --- LES MODÈLES DE PRÉPARATION PRENNENT LA FORME DES MODÈLES DE MESSAGES -----
+// (15 septembre 2026 au soir, demande de Noé : « reprends à peu près ce modèle
+// pour les modèles de préparations : une tuile cliquable, modifiable une fois
+// cliquée, avec la forme qu'on a mise à jour ici »).
+//
+// C'EST LA MÊME CHOSE, ET ELLE DOIT SE DESSINER PAREIL : deux bibliothèques de
+// modèles dans le même site, l'une en cartes et l'autre en lignes, ce sont deux
+// grammaires pour un seul objet. Les classes sont donc reprises telles quelles
+// (`.grille-modeles`, `.modele-carte`) — leur nom dit « modèle », pas « message ».
+//
+// CE QUI CHANGE, et c'est la nature de l'objet : un modèle de préparation n'a
+// rien à COPIER — on ne colle pas une liste de cases à cocher —, et son contenu
+// ne tient pas dans une fenêtre : ce sont trois phases d'items, qui ont leur PAGE
+// depuis le 21 août. La carte ouvre donc `#yuno/modeles/<id>`, et c'est là que
+// vivent le crayon et la corbeille.
+//
+// L'APERÇU EST LA SUITE DE SES LIGNES, séparées par un point médian : c'est ce
+// qu'on ignore avant d'ouvrir — deux modèles nommés « Match » et « Concert » ne
+// se distinguent que par ce qu'ils font cocher.
+function construireCartesModelesPrepa(modeles = []) {
+  return `
+    <div class="grille-modeles">
+      ${modeles
+        .map(
+          (modele) => `
+        <article class="modele-carte">
+          <a class="modele-ouvrir" href="#yuno/modeles/${echapper(modele.id)}">
+            <span class="modele-nom">${echapper(modele.nom)}</span>
+            <span class="modele-apercu">${echapper(
+              modele.items.map((item) => item.texte).join(' · '),
+            )}</span>
+            <span class="discret modele-compte"><span class="chiffre">${
+              modele.items.length
+            }</span> ligne${modele.items.length > 1 ? 's' : ''}</span>
+          </a>
+        </article>`,
+        )
+        .join('')}
+      ${construireFormulaire({
+        id: 'modele-prepa',
+        libelle: 'Créer un modèle',
+        action: 'creer-modele-prepa',
+        bouton: 'Créer',
+        champs: [
+          {
+            nom: 'nom',
+            libelle: 'Son nom (Match, Concert, Séance…)',
+            type: 'text',
+            requis: true,
+          },
+        ],
+      })}
+    </div>`;
+}
+
 function vuePreparations(etat) {
   // Une adresse qui pointe une feuille connue ouvre la feuille ; sinon, la
   // liste — un identifiant périmé ne mérite pas un écran cassé.
@@ -2677,25 +3389,7 @@ function vuePreparations(etat) {
 
     <section class="bloc">
       <h2>Modèles</h2>
-      ${
-        etat.modelesPrepa.length
-          ? `<ul class="liste-preparations">${etat.modelesPrepa
-              .map(
-                (modele) => `
-              <li><a class="prepa-ligne" href="#yuno/modeles/${echapper(modele.id)}">
-                <span class="prepa-ligne-titre">${echapper(modele.nom)}</span>
-                <span class="discret"><span class="chiffre">${modele.items.length}</span> lignes</span>
-              </a></li>`,
-              )
-              .join('')}</ul>`
-          : ''
-      }
-      <form data-action="creer-modele-prepa" class="prepa-ajout">
-        <input type="text" name="nom" autocomplete="off" required
-          aria-label="Nom du nouveau modèle" placeholder="Nouveau modèle — son nom…">
-        <button type="submit" class="bouton-secondaire bouton-mini">Créer</button>
-        <p class="message-erreur" data-erreur hidden></p>
-      </form>
+      ${construireCartesModelesPrepa(etat.modelesPrepa)}
     </section>
 
     ${pied()}`;
@@ -2706,6 +3400,23 @@ function vuePreparations(etat) {
 // Passerelle : le texte se corrige dans son champ et s'enregistre en le
 // quittant, sans bouton. Modifier un modèle ne touche aucune feuille passée.
 
+// LA PAGE D'UN MODÈLE : UN SEUL DESSIN, TOUJOURS MODIFIABLE (15 septembre 2026 au
+// soir, décision de Noé : « on va faire plus simple, reprends cette forme, et ça
+// va devenir modifiable directement ici, pas besoin d'appuyer sur le bouton en
+// plus »).
+//
+// CE QUE ÇA REPREND, une heure après l'avoir posé : le couple lecture/édition et
+// son crayon. Il venait des modèles de MESSAGES, où il se défend — là-bas le
+// texte est un paragraphe qu'on relit, et un clic mal placé le réécrit. **Ici les
+// deux dessins avaient FINI PAR SE RESSEMBLER** : à force de retirer les cadres,
+// les filets et l'anneau de focus, l'édition ne se distinguait plus de la lecture
+// que par trois invites grises. **Deux états qu'on ne distingue pas ne sont pas
+// deux états, c'est un geste de trop.**
+//
+// LA FORME EST CELLE DE LA LECTURE : une puce, le texte, rien autour. Ce qui
+// change est que le texte EST un champ — il se corrige là où il se lit, et
+// s'enregistre en le quittant, sans bouton. La croix d'une ligne et l'invite
+// d'ajout sont les deux autres gestes ; la corbeille du coin supprime le modèle.
 function blocPhaseModele(modele, phase) {
   const items = modele.items.filter((item) => item.phase === phase);
 
@@ -2717,8 +3428,13 @@ function blocPhaseModele(modele, phase) {
           ? `<ul class="liste-taches-pleine prepa-liste">${items
               .map(
                 (item) => `
-            <li class="tache-ligne">
-              <input type="text" class="modele-item" data-item-modele="${echapper(item.id)}"
+            <li class="tache-ligne modele-ligne">
+              <!-- Le rond d'une case à cocher, mais qui ne se coche pas : un
+                   modèle est le patron d'une feuille, et le rond dit ce que la
+                   ligne DEVIENDRA. Un dessin, pas un bouton — il ne se tabule
+                   pas et ne promet aucun geste. -->
+              <span class="modele-rond" aria-hidden="true"></span>
+              <input type="text" class="champ-vif modele-item" data-item-modele="${echapper(item.id)}"
                 value="${echapper(item.texte)}" aria-label="Texte de la ligne">
               <button type="button" class="lien-discret bouton-mini bouton-retirer"
                 data-retirer-item-modele="${echapper(item.id)}"
@@ -2735,7 +3451,11 @@ function blocPhaseModele(modele, phase) {
         <input type="text" name="texte" autocomplete="off" required
           aria-label="Ajouter à « ${PHASES_PREPA[phase]} »"
           placeholder="${phase === 'pendant' ? 'Ajouter un plan…' : 'Ajouter…'}">
-        <button type="submit" class="bouton-secondaire bouton-mini">Ajouter</button>
+        <!-- UN + ET RIEN D'ÉCRIT : le champ dit déjà « Ajouter… » dans son invite,
+             et le mot répété au bout de la ligne prenait la place de ce qu'on
+             tape. Le nom accessible le garde, lui. -->
+        <button type="submit" class="prepa-ajout-bouton" aria-label="Ajouter cette ligne"
+          title="Ajouter">${SIGNE_PLUS}</button>
         <p class="message-erreur" data-erreur hidden></p>
       </form>
     </section>`;
@@ -2746,10 +3466,22 @@ function vueModele(etat) {
   // Modèle inconnu (supprimé, adresse périmée) : la liste, pas un écran cassé.
   if (!modele) return vuePreparations({ ...etat, feuilleOuverte: null });
 
+  // LA LIGNE DE TÊTE EST CELLE DE LA FICHE D'UN MODÈLE DE MESSAGE : le nom, et ses
+  // gestes poussés au bout. Deux bibliothèques de modèles ne peuvent pas porter
+  // deux dessins. Le nom est un CHAMP, comme les lignes — il se corrige là où il
+  // se lit —, et il ne reste qu'un geste à droite : supprimer le modèle entier.
   return `
     ${enTete('modeles', etat)}
-    <input type="text" class="prepa-modele-nom" data-nom-modele="${echapper(modele.id)}"
-      value="${echapper(modele.nom)}" aria-label="Nom du modèle">
+    <div class="modele-fiche-tete">
+      <input type="text" class="prepa-modele-nom" data-nom-modele="${echapper(modele.id)}"
+        value="${echapper(modele.nom)}" aria-label="Nom du modèle">
+      <span class="fenetre-gestes">
+        <button type="button" class="fenetre-icone fenetre-icone-retirer"
+          data-supprimer-modele-prepa="${echapper(modele.id)}"
+          title="Supprimer ce modèle"
+          aria-label="Supprimer « ${echapper(modele.nom)} »">${CORBEILLE}</button>
+      </span>
+    </div>
     <p class="discret">Il se copie dans chaque nouvelle feuille — le modifier ne
       change pas les feuilles déjà créées.</p>
     <div class="prepa-phases">
@@ -2757,8 +3489,6 @@ function vueModele(etat) {
       ${blocPhaseModele(modele, 'pendant')}
       ${blocPhaseModele(modele, 'apres')}
     </div>
-    <p><button type="button" class="lien-discret" data-supprimer-modele-prepa="${echapper(modele.id)}">
-      Supprimer le modèle</button></p>
     ${pied()}`;
 }
 
@@ -4014,46 +4744,222 @@ export function construireMetrique({
     }`;
 }
 
-export function construireModeles(modeles = []) {
-  const corps = modeles.length
-    ? `<ul class="liste-modeles">${modeles
-        .map(
-          (modele) => `
-        <li>
-          <span class="tuile-entete">
-            <input class="champ-vif modele-titre" type="text" data-modele-titre="${echapper(modele.id)}"
-              value="${echapper(modele.titre)}" aria-label="Titre du modèle">
-            <button type="button" class="lien-discret bouton-mini" data-copier-modele="${echapper(
-              modele.id,
-            )}">Copier</button>
-            <button type="button" class="lien-discret bouton-mini bouton-retirer"
-              data-supprimer-modele="${echapper(modele.id)}"
-              title="Retirer ce modèle" aria-label="Retirer « ${echapper(modele.titre)} »">×</button>
-          </span>
-          <textarea class="champ-vif modele-corps" rows="3" data-modele-corps="${echapper(modele.id)}"
-            aria-label="Texte du modèle">${echapper(modele.corps)}</textarea>
-        </li>`,
-        )
-        .join('')}</ul>`
-    : `<p class="vide">Un premier message coûte moins cher quand la phrase existe déjà.</p>`;
+// --- LES MODÈLES DE MESSAGES, REFONDUS (15 septembre 2026 au soir) -----------
+//
+// LA DEMANDE DE NOÉ : « fais une refonte de la forme de la page des modèles de
+// messages pour que ça colle plus à ce que j'attends. »
+//
+// CE QUI N'ALLAIT PAS, ET ÇA SE COMPTAIT : **le titre était écrit TROIS FOIS** —
+// la barre du site, un `h2` « Les modèles de messages », et le sommaire d'un pli
+// « Modèles de messages 4 » —, et surtout **la page s'ouvrait REPLIÉE SUR
+// ELLE-MÊME** : ses quatre modèles dormaient dans un `<details class="backlog">`,
+// si bien qu'on arrivait sur un écran vide aux quatre cinquièmes.
+//
+// Ce n'était pas un choix, c'était un VESTIGE : ce bloc vivait en bas de la
+// Passerelle, où un pli est juste — il y était le backlog d'un autre écran. Il a
+// pris sa page le 15 août, perdu son entrée de navigation le 21, et **personne
+// n'a jamais redessiné sa forme pour ce qu'il était devenu.** Une page dont c'est
+// le seul contenu n'a rien à replier.
+//
+// CE QUE LA REFONTE POSE :
+// — **les modèles sont dehors, en galerie de cartes** : on fouille du regard et
+//   on prend celle qui va, c'est la grammaire de la banque d'idées ;
+// — **COPIER devient le geste principal**, un vrai bouton et non un lien
+//   discret : c'est ce pour quoi on vient ici, et rien d'autre sur cette page ne
+//   mérite autant de place ;
+// — **le titre ne se dit qu'une fois**, dans la barre ;
+// — **l'ajout est une tuile pointillée DANS la grille**, la règle du hub pour
+//   toute galerie de tuiles comparables ;
+// — **l'édition en place ne bouge pas** : on corrige une phrase en la relisant,
+//   et c'est déjà ce que la page savait faire de mieux.
 
+// L'APERÇU NE SE MODIFIE PAS, ET LA FICHE DIT TOUT (15 septembre 2026 au soir,
+// demande de Noé) : « je préférerais que ce ne soit pas modifiable directement,
+// qu'on doive appuyer ou activer quelque chose pour modifier ; pour copier il
+// devrait suffire d'appuyer sur une icône copie plutôt que le bouton avec le
+// texte. Pas besoin d'avoir le texte en entier du coup, juste un aperçu, et
+// seulement en cliquant sur la tuile on a le texte complet, la possibilité de
+// modifier et supprimer. »
+//
+// C'EST EXACTEMENT LA GRAMMAIRE DE LA BANQUE D'IDÉES, et elle est écrite depuis
+// le 12 août : « la banque se parcourt en aperçus… toute la fiche est dans une
+// fenêtre volante, ouverte au clic sur la tuile, avec TOUS les gestes ». Une page
+// où l'on fouille montre des aperçus ; ce qu'on a choisi s'ouvre.
+//
+// CE QUE ÇA REPREND À LA VERSION DE L'APRÈS-MIDI : le message entier sur la
+// carte, et l'édition en place. Les deux se défendaient une par une et se
+// contredisaient ensemble — **un texte qu'on peut modifier d'un clic est un texte
+// qu'on modifie par accident**, et quatre messages entiers font une page de
+// 1 600 px qu'on parcourt au lieu de la balayer.
+//
+// L'EXCEPTION ASSUMÉE : l'aperçu porte UN bouton, l'icône de copie. La règle de
+// la banque dit « l'aperçu ne porte aucun bouton, la tuile entière est la
+// cible » — mais copier est LE geste de cette page, et devoir l'ouvrir pour
+// copier serait deux gestes pour un. Elle vit donc HORS du bouton d'ouverture,
+// posée sur la carte : un bouton dans un bouton n'est ni valide ni cliquable.
+
+// LA CORBEILLE, ET SURTOUT PAS UNE CROIX. La règle de la fiche d'une idée dit
+// que supprimer s'ÉCRIT, parce que « la croix de fermeture est au même bord, et
+// deux × l'un au-dessus de l'autre, dont l'un est irréversible, est un piège ».
+// Ce qu'elle vise est la CONFUSION DE DESSIN, pas le fait d'être une icône : une
+// corbeille ne se confond avec rien, et la confirmation reste posée derrière.
+// Le « + » d'un ajout en ligne : le même trait que le reste du site, à la taille
+// d'un contrôle de formulaire.
+const SIGNE_PLUS = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round"
+  aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"></path></svg>`;
+
+const CORBEILLE = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+  stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+  stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <path d="M4 7h16M10 11v6M14 11v6"></path>
+  <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"></path>
+  <path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path>
+</svg>`;
+
+const COPIE = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+  stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+  stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <rect x="9" y="9" width="12" height="12" rx="2"></rect>
+  <path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"></path>
+</svg>`;
+
+// L'aperçu tient en trois lignes, coupées par le CSS et non par le texte : une
+// troncature en JS aurait posé des points de suspension au milieu d'un mot, et
+// surtout elle aurait figé un nombre de signes que la largeur de la carte
+// dément — c'est la leçon de la hauteur mesurée, deux heures plus tôt.
+function carteModele(modele) {
   return `
-    <details class="backlog bloc-modeles">
-      <summary>Modèles de messages ${
-        modeles.length ? `<span class="chiffre">${modeles.length}</span>` : ''
-      }</summary>
-      ${corps}
+    <article class="modele-carte">
+      <button type="button" class="modele-ouvrir" data-ouvrir-modele="${echapper(modele.id)}"
+        aria-label="Ouvrir « ${echapper(modele.titre)} »">
+        <span class="modele-nom">${echapper(modele.titre)}</span>
+        <span class="modele-apercu">${echapper(modele.corps)}</span>
+      </button>
+      <button type="button" class="modele-copier" data-copier-modele="${echapper(modele.id)}"
+        title="Copier le message"
+        aria-label="Copier « ${echapper(modele.titre)} »">${COPIE}</button>
+    </article>`;
+}
+
+export function construireModeles(modeles = []) {
+  return `
+    <div class="grille-modeles">
+      ${modeles.map(carteModele).join('')}
       ${construireFormulaire({
         id: 'modele',
         libelle: 'Écrire un modèle',
         action: 'creer-modele',
         bouton: 'Garder ce modèle',
         champs: [
-          { nom: 'titre', libelle: 'Pour quoi ? (accréditation concert, premier contact club…)', type: 'text', requis: true },
-          { nom: 'corps', libelle: 'Le message, à personnaliser à chaque envoi', type: 'textarea', requis: true },
+          {
+            nom: 'titre',
+            libelle: 'Pour quoi ? (accréditation concert, premier contact club…)',
+            type: 'text',
+            requis: true,
+          },
+          {
+            nom: 'corps',
+            libelle: 'Le message, à personnaliser à chaque envoi',
+            type: 'textarea',
+            rangs: 10,
+            requis: true,
+          },
         ],
       })}
-    </details>`;
+    </div>
+    ${
+      modeles.length
+        ? ''
+        : `<p class="vide">Un premier message coûte moins cher quand la phrase existe déjà.</p>`
+    }`;
+}
+
+// LA FICHE D'UN MODÈLE : le texte entier, et les trois gestes. Elle s'ouvre en
+// LECTURE — c'est la demande, « qu'on doive appuyer ou activer quelque chose pour
+// modifier » —, et « Modifier » la bascule en formulaire. Même mécanique que la
+// fiche d'un moment ou d'un contact, qui vivent déjà entre l'aperçu et l'édition.
+//
+// SUPPRIMER S'ÉCRIT, il ne se dit pas par une croix : celle de la fermeture est
+// au même bord, et deux « × » l'un au-dessus de l'autre, dont l'un est
+// irréversible, est un piège. C'est la règle posée pour la fiche d'une idée.
+function fenetreModele(etat) {
+  if (!etat.modeleOuvert) return '';
+  const modele = etat.modeles.find((candidat) => candidat.id === etat.modeleOuvert);
+  if (!modele) return '';
+
+  if (etat.editionModele) {
+    return construireFenetre(
+      modele.titre,
+      `${construireFormulaire({
+        id: 'modele-edition',
+        libelle: 'Modifier le modèle',
+        action: 'modifier-modele',
+        bouton: 'Enregistrer',
+        avecPli: false,
+        champs: [
+          { nom: 'titre', libelle: 'Pour quoi ?', type: 'text', requis: true, valeur: modele.titre },
+          {
+            nom: 'corps',
+            libelle: 'Le message, à personnaliser à chaque envoi',
+            type: 'textarea',
+            rangs: 12,
+            requis: true,
+            valeur: modele.corps,
+          },
+        ],
+        extra: `<input type="hidden" name="modele_id" value="${echapper(modele.id)}">`,
+      })}
+      <button type="button" class="lien-discret" data-annuler-edition-modele>Annuler</button>`,
+      // La MÊME largeur qu'en lecture : changer de taille en pressant le crayon
+      // ferait sauter la fiche sous les doigts.
+      { large: true },
+    );
+  }
+
+  return construireFenetre(
+    modele.titre,
+    // LES TROIS GESTES SUR LA LIGNE DU NOM (demande de Noé, le même soir : « aligne
+    // les icônes au nom du modèle »). Ils étaient posés en ABSOLU dans le coin, et
+    // c'est ce que le retrait de la croix a rendu inutile : sans elle, plus rien à
+    // contourner — le nom et ses gestes tiennent une rangée, et l'un cale l'autre.
+    // **La fiche n'a donc plus que deux choses : sa ligne de tête, et son texte.**
+    //
+    // L'ORDRE EST CELUI DE LA FRÉQUENCE : copier d'abord — c'est le geste de la
+    // page —, modifier ensuite, supprimer en dernier, le plus loin de la main qui
+    // vise le premier.
+    //
+    // SUPPRIMER NE S'ÉCRIT PLUS, et la règle qui l'exigeait tient quand même :
+    // elle visait la CONFUSION DE DESSIN — « deux × l'un au-dessus de l'autre,
+    // dont l'un est irréversible » —, pas le fait d'être une icône. Une CORBEILLE
+    // ne se confond avec rien, la confirmation reste posée derrière, et elle est
+    // la seule à se teinter de rouge sous la main.
+    //
+    // PLUS DE CROIX : le fond assombri et Échap referment la fiche, et c'est
+    // assez. Une quatrième icône dans la même rangée aurait fait un signe de plus
+    // à lire pour la seule sortie qu'on connaît déjà.
+    `<div class="modele-fiche-tete">
+       <h2 class="fenetre-titre">${echapper(modele.titre)}</h2>
+       <span class="fenetre-gestes">
+         <button type="button" class="fenetre-icone" data-copier-modele="${echapper(modele.id)}"
+           title="Copier le message"
+           aria-label="Copier « ${echapper(modele.titre)} »">${COPIE}</button>
+         <button type="button" class="fenetre-icone" data-modifier-modele
+           title="Modifier ce modèle"
+           aria-label="Modifier « ${echapper(modele.titre)} »">${CRAYON}</button>
+         <button type="button" class="fenetre-icone fenetre-icone-retirer"
+           data-supprimer-modele="${echapper(modele.id)}"
+           title="Supprimer ce modèle"
+           aria-label="Supprimer « ${echapper(modele.titre)} »">${CORBEILLE}</button>
+       </span>
+     </div>
+     <p class="modele-texte">${echapper(modele.corps)}</p>`,
+    // LARGE (demande de Noé) : 48 rem au lieu de 28 — c'est la seconde largeur de
+    // fenêtre du hub, pas un troisième nombre inventé. Un modèle est un MESSAGE :
+    // dans 28 rem il montait à plus de six cents pixels et se lisait en colonne
+    // de journal.
+    { fermer: false, large: true },
+  );
 }
 
 // Le prochain match d'une piste, en une phrase courte : « J1 · reçoit LOSC
@@ -4761,16 +5667,19 @@ function vueVivier(etat) {
 // Les modèles de messages ont leur page depuis le 15 août 2026 (demande de
 // Noé) : la friction du premier message se traite à froid, en amont du
 // rituel — pas au bas de l'écran où l'on agit.
+// LE TITRE NE SE DIT QU'UNE FOIS — la barre le porte. Le `h2` et la phrase
+// d'aide sont partis avec la refonte : « la friction du premier message est le
+// principal mur de l'aller-vers » est la raison d'être de la page, pas une chose
+// à relire chaque fois qu'on vient y chercher une phrase. Elle reste écrite dans
+// le cahier des charges, où elle sert.
 function vueMessages(etat) {
   return `
     ${enTete('messages', etat)}
 
     <section class="bloc">
-      <h2>Les modèles de messages</h2>
-      <p class="discret file-aide">La friction du premier message est le principal
-        mur de l'aller-vers : une phrase déjà écrite en abaisse le coût.</p>
       <div data-bloc="contacts">${construireModeles(etat.modeles)}</div>
     </section>
+    ${fenetreModele(etat)}
     ${pied()}`;
 }
 
@@ -4908,8 +5817,14 @@ function fenetreCommande(etat) {
            type: 'text',
            suggestions: aVenir,
          },
+         // Le formulaire n'offre que LE CYCLE, pas la table des libellés : celle-ci
+         // garde « payee » en secours pour lire une ligne ancienne, et l'offrir
+         // au choix écrirait « Livrée » deux fois dans le même menu.
          { nom: 'statut', libelle: 'Où en est-elle', type: 'choix',
-           options: STATUTS_COMMANDE, valeur: 'devis' },
+           options: Object.fromEntries(
+             CYCLE_COMMANDE.map((cle) => [cle, STATUTS_COMMANDE[cle]]),
+           ),
+           valeur: 'devis' },
          { nom: 'echeance', libelle: 'À livrer pour (facultatif)', type: 'date' },
          { nom: 'montant', libelle: 'Montant en euros (facultatif)', type: 'number' },
          { nom: 'lien_livrable', libelle: 'Lien du livrable (facultatif)', type: 'text' },
@@ -5060,20 +5975,30 @@ function optionsBase(etat) {
 // Elles vivent dans Réseau : une commande naît d'une relation, elle n'a pas
 // besoin d'un onglet à elle.
 
-export const CYCLE_COMMANDE = ['devis', 'en_cours', 'livree', 'payee'];
+// LE CYCLE S'ARRÊTE À « LIVRÉE » (15 septembre 2026, décision de Noé : « payée et
+// encaissée c'est la même chose pour moi, garde qu'un statut sur les 2 »).
+//
+// Le cahier des charges l'écrivait déjà sans en tirer la conséquence : « livrer
+// crée une victoire ; encaisser n'en crée pas une seconde — c'est le même
+// travail ». Si c'est le même travail, c'est le même état. Et le cran de trop se
+// payait en euros : `argentDeYuno` ne comptait que les livrées, si bien qu'une
+// commande passée en « payée » SORTAIT du compte au moment où l'argent arrivait.
+export const CYCLE_COMMANDE = ['devis', 'en_cours', 'livree'];
 
 const STATUTS_COMMANDE = {
   devis: 'Devis',
   en_cours: 'En cours',
   livree: 'Livrée',
-  payee: 'Payée',
+  // `payee` garde son libellé sans être dans le cycle : le CHECK l'accepte
+  // toujours (il s'élargit, il ne se resserre jamais), et une ligne ancienne qui
+  // le porterait doit s'afficher en français plutôt qu'en clé de base.
+  payee: 'Livrée',
 };
 
 // Un bouton dit ce qui va se passer.
 const AVANCER_COMMANDE = {
   en_cours: 'Démarrer',
   livree: 'Marquer livrée',
-  payee: 'Marquer payée',
 };
 
 // `preparations` est facultatif : une commande se prépare comme un match, et
@@ -5081,7 +6006,7 @@ const AVANCER_COMMANDE = {
 // dessiner des commandes sans connaître les feuilles.
 export function construireCommandes(commandes, preparations = [], evenements = []) {
   const ouvertes = commandes.filter((commande) => ['devis', 'en_cours'].includes(commande.statut));
-  const closes = commandes.filter((commande) => ['livree', 'payee'].includes(commande.statut));
+  const closes = commandes.filter((commande) => COMMANDE_FINIE.includes(commande.statut));
 
   const tuile = (commande) => {
     const suivant = CYCLE_COMMANDE[CYCLE_COMMANDE.indexOf(commande.statut) + 1];
@@ -5149,12 +6074,12 @@ export function construireCommandes(commandes, preparations = [], evenements = [
     ${
       ouvertes.length
         ? `<ul>${ouvertes.map(tuile).join('')}</ul>`
-        : `<p class="vide">Tes commandes se suivront ici, du devis au paiement.</p>`
+        : `<p class="vide">Tes commandes se suivront ici, du devis à la livraison.</p>`
     }
     ${
       closes.length
         ? `<details class="backlog">
-             <summary>Livrées et payées <span class="chiffre">${closes.length}</span></summary>
+             <summary>Livrées <span class="chiffre">${closes.length}</span></summary>
              <ul>${closes.map(tuile).join('')}</ul>
            </details>`
         : ''
@@ -5193,12 +6118,27 @@ const SOURCES = {
   commandes: async () => ({ commandes: await api.commandesToutes() }),
   envois: async () => ({ envois: await api.envoisTous() }),
   modeles: async () => ({ modeles: await api.modelesTous() }),
+  // Le matériel : la CIBLE du cap « Rembourser mon matériel », que sa gravure
+  // affiche en pied d'accueil depuis le 15 septembre 2026. Une seule lecture, et
+  // seulement pour l'accueil — la page #photo du hub a la sienne.
+  materiel: async () => ({ materiel: await api.materielTout() }),
   // Le prochain match voyage SUR sa piste (`piste.prochain`) : il suit le club
   // partout — cartes, lignes, cache de session — sans clé d'état à part.
   pistes: async () => {
-    const [pistes, prochains] = await Promise.all([
+    // LES MATCHS DE LA FENÊTRE VOYAGENT AVEC LES PISTES (15 septembre 2026 au
+    // soir), et non dans une source à eux : c'est une requête de plus dans une
+    // salve DÉJÀ parallèle — donc aucun aller-retour supplémentaire — et un
+    // match ne se lit jamais sans son club. La carte « À couvrir » de l'accueil
+    // en a besoin ; `prochain_match_par_piste` ne pouvait pas la servir, elle ne
+    // rend que le match le plus proche de chaque club.
+    const maintenant = new Date();
+    const [pistes, prochains, matchsAVenir] = await Promise.all([
       api.pistesToutes(),
       api.prochainsMatchsParPiste(),
+      api.matchsEntre(
+        versDateISO(ajouterJours(maintenant, MATCH_AU_PLUS_TOT)),
+        versDateISO(ajouterJours(maintenant, MATCH_AU_PLUS_TARD)),
+      ),
     ]);
     const parPiste = new Map(prochains.map((match) => [match.piste_id, match]));
     for (const piste of pistes) piste.prochain = parPiste.get(piste.id) ?? null;
@@ -5222,7 +6162,7 @@ const SOURCES = {
       });
     }
 
-    return { pistes };
+    return { pistes, matchsAVenir };
   },
   // Les préparations et modèles du FCH restent chez le club (demande de Noé,
   // 21 août 2026 au soir) : une feuille de réunion et ses six modèles n'ont
@@ -5257,7 +6197,20 @@ const BESOINS = {
   // `commandes` vient avec : la fiche d'une sortie porte désormais sa
   // prestation, et sans cette lecture les deux champs d'argent seraient
   // toujours vides — puis les écraseraient à l'enregistrement.
-  accueil: ['evenements', 'objectifs', 'publications', 'contacts', 'preparations', 'modelesPrepa', 'commandes'],
+  // QUATRE LECTURES DE PLUS DEPUIS LE 15 SEPTEMBRE 2026, et elles servent toutes
+  // à DÉCIDER de ce que la page montre : `pistes` et `envois` disent si le rituel
+  // de la semaine est fait et quels clubs proposer, `taches` remplit la porte de
+  // « Mes tâches », `materiel` donne sa cible au cap du remboursement. Aucune
+  // n'est décorative — sans elles, la cascade et les trois portes ne pourraient
+  // pas se classer.
+  //
+  // Trois de ces quatre étaient DÉJÀ lues par d'autres écrans du site (le
+  // Réseau, le calendrier), et le cache de session vaut pour tout le site : les
+  // payer à l'accueil, c'est les rendre gratuites ensuite.
+  accueil: [
+    'evenements', 'objectifs', 'publications', 'contacts', 'preparations',
+    'modelesPrepa', 'commandes', 'pistes', 'envois', 'taches', 'materiel',
+  ],
   evenement: ['evenements', 'contacts', 'preparations', 'commandes', 'pistes'],
   journal: ['evenements', 'contacts', 'preparations', 'commandes'],
   creer: ['publications'],
@@ -5345,6 +6298,10 @@ export default {
       envois: [],
       modeles: [],
       pistes: [],
+      // Les matchs du vivier dans la fenêtre de la proposition « À couvrir ».
+      // Ils arrivent avec les pistes, jamais seuls.
+      matchsAVenir: [],
+      materiel: [],
       // La graine du tirage des propositions : celle de la semaine par défaut
       // — la dizaine change donc chaque lundi toute seule — et « Proposer
       // d'autres clubs » en prend une neuve.
@@ -5384,8 +6341,10 @@ export default {
       // fenêtre de choix est ouverte tant que c'est posé.
       choixPrepa: null,
       ecartes: evenementsEcartes(),
-      // Les sorties dont la préparation ne s'affiche plus à l'accueil.
+      // Les sorties dont la préparation ne s'affiche plus à l'accueil, et les
+      // matchs proposés que Noé a refusés — deux choix d'écran, deux clés.
       prepasEcartees: prepasEcartees(),
+      matchsEcartes: matchsEcartes(),
       // Le mot dit après une écriture qui a échoué. Il vit dans l'état comme
       // le reste : `rendre()` le pose sous la barre, quelle que soit la vue.
       souci: null,
@@ -5399,21 +6358,17 @@ export default {
       contactNouveau: false,
       // Les identifiants de ce qui est ouvert en fenêtre, jamais leur copie.
       ideeOuverte: null,
+      // Le modèle de message dont la fiche est ouverte, et s'il est en édition :
+      // la fenêtre s'ouvre en LECTURE, « Modifier » la bascule. Même paire que
+      // la fiche d'un moment ou d'un contact.
+      modeleOuvert: null,
+      editionModele: false,
       momentOuvert: null,
       editionMoment: false,
       // La fiche récapitulative, entre l'aperçu et l'édition.
       detailsMoment: false,
       contactOuvert: null,
       editionContact: false,
-      // Le menu discret d'une tuile d'objectif (30 août 2026, règle du hub) :
-      // `objectif:<id>` ouvert, et la suppression ou l'atteinte en attente de
-      // confirmation — même paire que `js/objectifs.js`.
-      menu: null,
-      confirme: null,
-      // L'objectif dont la fenêtre de modification est ouverte, ou la fenêtre
-      // d'ajout (même fenêtre, comme `js/objectifs.js`).
-      editionObjectif: null,
-      creationObjectif: false,
       photos: {},
       objectifDoux: objectifDouxEnregistre(),
       vue: 'accueil',
@@ -5547,8 +6502,12 @@ export default {
       if (etat.vue === 'objectif') return pageObjectif.monter(hote, { vue: etat.feuilleOuverte });
       if (etat.vue === 'projet') return pageProjet.monter(hote, { vue: etat.feuilleOuverte });
       // La galerie, filtrée sur l'espace du site : `id` porte le filtre chez le
-      // hub, et `vue` y choisit un étage — le site les montre tous les trois.
-      return pageDuCap.monter(hote, { id: ESPACE_DU_HUB });
+      // hub, et `vue` y choisit un étage. Le site les montre tous les trois quand
+      // l'adresse n'en nomme aucun, et un seul quand elle le fait — l'étage vit
+      // au TROISIÈME segment ici (`#yuno/cap/caps`), là où le routeur range déjà
+      // l'identifiant d'une page. Un nom d'étage inconnu ne casse rien : la
+      // galerie retombe sur ses trois étages.
+      return pageDuCap.monter(hote, { id: ESPACE_DU_HUB, vue: etat.feuilleOuverte });
     };
 
     const rendre = () => {
@@ -5576,7 +6535,7 @@ export default {
       // écrit dans l'hôte, et il pose SES écouteurs dessus — on ne le remonte
       // donc que si l'hôte est neuf, sinon chaque rendu de Yuno effacerait la
       // page sous les doigts.
-      else if (VUES_DU_CAP.includes(etat.vue)) section.innerHTML = vueDuCap(etat.vue);
+      else if (VUES_DU_CAP.includes(etat.vue)) section.innerHTML = vueDuCap(etat);
       else section.innerHTML = vueAccueil(etat);
 
       // Le message d'échec se pose sous la barre, quelle que soit la vue : les
@@ -5923,6 +6882,9 @@ export default {
       // non plus — on la reprend depuis l'invite si besoin.
       etat.cloture = false;
       etat.prefillMoment = null;
+      // La fiche d'un modèle n'a de sens que sur sa page.
+      etat.modeleOuvert = null;
+      etat.editionModele = false;
       // La fenêtre de commande et son client pré-rempli n'ont de sens que
       // chez les Missions : ailleurs, on les referme.
       if (etat.vue !== 'missions' && etat.vue !== 'commandes') {
@@ -6504,7 +7466,22 @@ export default {
           ordre: etat.modeles.length + 1,
         });
         etat.modeles = [...etat.modeles, modele];
-        rendreContacts();
+        rendre();
+        return;
+      }
+
+      // La fiche d'un modèle, enregistrée. Elle repasse en LECTURE dans le même
+      // geste : on vient de valider, il n'y a plus rien à corriger.
+      if (action === 'modifier-modele') {
+        const modele = etat.modeles.find((m) => m.id === champs.modele_id);
+        if (!modele || estProvisoire(modele.id)) return;
+
+        const valeurs = { titre: champs.titre.trim(), corps: champs.corps.trim() };
+        etat.editionModele = false;
+        await modifierAussitot(modele, valeurs, () => api.modifierModele(modele.id, valeurs), {
+          rendre,
+          echouer: dire,
+        });
         return;
       }
 
@@ -6648,43 +7625,18 @@ export default {
         return;
       }
 
-      if (action === 'creer-objectif') {
-        const objectif = await api.creerObjectif({
-          espace: 'photo',
-          titre: champs.titre.trim(),
-          pourquoi: champs.pourquoi?.trim() || null,
-          cible: champs.cible?.trim() || null,
-          echeance: champs.echeance || null,
-        });
-        etat.objectifs = [...etat.objectifs, { ...objectif, jalons: objectif.jalons ?? [] }];
-        etat.creationObjectif = false;
-        rendre();
-        return;
-      }
-
-      // LES GESTES D'UN JALON ONT QUITTÉ LE SITE (15 septembre 2026) : ils
-      // vivaient dans la fenêtre d'un cap, remplacée par SA PAGE — celle du
-      // hub, montée ici. C'est elle qui les porte désormais, avec son
-      // calendrier et son rail de projets. Restait « creer-objectif », qui a
-      // gardé sa fenêtre sur l'accueil, ouverte depuis la tuile pointillée de
-      // la galerie (règle du hub : le coût d'accès suit l'intention).
-
-      // « Modifier » ouvrait la page entière pour changer un titre : le menu
-      // discret de la tuile le fait sur place, comme sur la galerie du hub.
-      if (action === 'modifier-objectif') {
-        const modifie = await api.modifierObjectif(champs.objectif_id, {
-          titre: champs.titre.trim(),
-          pourquoi: champs.pourquoi?.trim() || null,
-          cible: champs.cible?.trim() || null,
-          echeance: champs.echeance || null,
-        });
-        etat.objectifs = etat.objectifs.map((candidat) =>
-          candidat.id === champs.objectif_id ? { ...candidat, ...modifie } : candidat,
-        );
-        etat.editionObjectif = null;
-        rendre();
-        return;
-      }
+      // LES GESTES D'UN CAP ONT QUITTÉ LE SITE (15 septembre 2026, au soir).
+      // Ils vivaient dans la fenêtre d'un cap, puis sur les tuiles de l'accueil ;
+      // celles-ci sont devenues des GRAVURES quand le cap est passé en pied —
+      // « elle montre et elle ouvre des portes, elle ne gère rien ». Ajouter,
+      // modifier, marquer atteint, supprimer : tout se fait sur #yuno/cap, la
+      // galerie du hub montée dans le site le matin même, qui les porte déjà.
+      //
+      // ET ÇA RÉPARE UN DÉFAUT QU'ON NE VOYAIT PAS : ces écouteurs étaient posés
+      // sur la SECTION, donc ils attrapaient aussi les clics venus des écrans du
+      // cap montés dedans — un menu à trois points pressé sur #yuno/cap
+      // déclenchait le `rendre()` de Yuno, qui réécrit la section et remonte le
+      // module sous les doigts.
     }
 
     // --- Clics ---
@@ -6713,6 +7665,16 @@ export default {
           etat.commandeNouvelle = true;
           rendre();
           section.querySelector('#commande-titre')?.focus();
+          return;
+        }
+
+        // Le modèle n'a pas d'état à lui : sa tuile volante EST un `<details>`,
+        // et l'ouvrir suffit — `app.js` écoute le `toggle` en capture, donc le
+        // fond s'assombrit comme si le sommaire avait été pressé.
+        if (reglages.modele) {
+          const pli = section.querySelector('[data-ajout="modele"]');
+          if (pli) pli.open = true;
+          section.querySelector('#modele-titre')?.focus();
           return;
         }
 
@@ -6751,84 +7713,8 @@ export default {
         etat.choixPrepa = null;
         etat.propositionsOuvertes = false;
         etat.clubOuvert = null;
-        etat.editionObjectif = null;
-        etat.creationObjectif = false;
-        rendre();
-        return;
-      }
-
-      if (evenement.target.closest('[data-ouvrir-creation-objectif]')) {
-        etat.creationObjectif = true;
-        rendre();
-        section.querySelector('#objectif-formulaire-titre')?.focus();
-        return;
-      }
-
-      // --- Le menu discret d'une tuile d'objectif (modifier, marquer atteint,
-      // supprimer) — le même geste et le même gabarit que la galerie du hub. ---
-
-      const menu = evenement.target.closest('[data-menu]');
-      if (menu) {
-        etat.menu = etat.menu === menu.dataset.menu ? null : menu.dataset.menu;
-        etat.confirme = null;
-        rendre();
-        return;
-      }
-
-      const modifierDepuisMenu = evenement.target.closest('[data-modifier]');
-      if (modifierDepuisMenu) {
-        const [, id] = modifierDepuisMenu.dataset.modifier.split(':');
-        etat.editionObjectif = etat.objectifs.find((candidat) => candidat.id === id) ?? null;
-        etat.menu = null;
-        rendre();
-        return;
-      }
-
-      const supprimerDepuisMenu = evenement.target.closest('[data-supprimer]');
-      if (supprimerDepuisMenu) {
-        etat.confirme = supprimerDepuisMenu.dataset.supprimer;
-        rendre();
-        return;
-      }
-
-      const marquerAtteint = evenement.target.closest('[data-atteindre]');
-      if (marquerAtteint) {
-        etat.confirme = `atteindre:${marquerAtteint.dataset.atteindre}`;
-        rendre();
-        return;
-      }
-
-      const confirmerDepuisMenu = evenement.target.closest('[data-confirmer]');
-      if (confirmerDepuisMenu) {
-        const [forme, id] = confirmerDepuisMenu.dataset.confirmer.split(':');
-        etat.menu = null;
-        etat.confirme = null;
-
-        if (forme === 'atteindre') {
-          const objectif = etat.objectifs.find((candidat) => candidat.id === id);
-          if (!objectif) return;
-          etat.objectifs = etat.objectifs.filter((candidat) => candidat.id !== id);
-          rendre();
-          try {
-            await api.atteindreObjectif(objectif);
-          } catch (souci) {
-            console.error('Objectif non marqué atteint', souci);
-            etat.objectifs = [...etat.objectifs, objectif];
-            dire("Ça n'a pas pu être enregistré — l'objectif est revenu.");
-          }
-          return;
-        }
-
-        const objectif = etat.objectifs.find((candidat) => candidat.id === id);
-        await retirerAussitot(etat.objectifs, objectif, () => api.supprimerObjectif(id), {
-          rendre,
-          echouer: dire,
-        });
-        return;
-      }
-
-      if (evenement.target.closest('[data-annuler-confirmation]')) {
-        etat.confirme = null;
+        etat.modeleOuvert = null;
+        etat.editionModele = false;
         rendre();
         return;
       }
@@ -7221,8 +8107,9 @@ export default {
         const suivant = CYCLE_COMMANDE[CYCLE_COMMANDE.indexOf(commande?.statut) + 1];
         if (!commande || !suivant || estProvisoire(commande.id)) return;
 
-        // Livrer crée une victoire : c'en est une. Être payé, non. `avant` part
-        // à l'API — elle lit le statut pour savoir s'il faut la victoire.
+        // Livrer crée une victoire, et c'est le dernier cran du cycle depuis le
+        // 15 septembre 2026. `avant` part à l'API — elle lit le statut pour
+        // savoir s'il faut la victoire.
         const avant = { ...commande };
         await modifierAussitot(
           commande,
@@ -7384,11 +8271,23 @@ export default {
       const poserMatch = evenement.target.closest('[data-poser-match]');
       if (poserMatch) {
         const piste = etat.pistes.find((p) => p.id === poserMatch.dataset.poserMatch);
-        const match = etat.matchsDuClub[piste?.id]?.find(
-          (candidat) =>
-            candidat.date === poserMatch.dataset.matchDate &&
-            String(candidat.journee) === poserMatch.dataset.matchJournee,
-        );
+        // TROIS ORIGINES POUR LE MÊME GESTE (15 septembre 2026) : la fiche d'un
+        // club, qui a chargé tout son calendrier (`matchsDuClub`) ; la carte
+        // « À couvrir » de l'accueil, qui tire dans `matchsAVenir` ; et le match
+        // qui voyage sur la piste (`prochain`), là où c'est tout ce qu'on a.
+        // Un seul gestionnaire les sert : trois jumeaux auraient fini par ne plus
+        // remplir la tuile de la même façon. On vérifie à chaque fois qu'il
+        // s'agit bien du match demandé — la date et la journée, jamais le titre.
+        const correspond = (candidat) =>
+          candidat &&
+          candidat.date === poserMatch.dataset.matchDate &&
+          String(candidat.journee) === poserMatch.dataset.matchJournee;
+        const match =
+          etat.matchsDuClub[piste?.id]?.find(correspond) ??
+          etat.matchsAVenir.find(
+            (candidat) => candidat.piste_id === piste?.id && correspond(candidat),
+          ) ??
+          (correspond(piste?.prochain) ? piste.prochain : null);
         if (!piste || !match) return;
 
         const adversaire = etat.pistes.find((candidat) => candidat.nom === match.adversaire);
@@ -7532,6 +8431,27 @@ export default {
         return;
       }
 
+      const ouvrirModele = evenement.target.closest('[data-ouvrir-modele]');
+      if (ouvrirModele) {
+        etat.modeleOuvert = ouvrirModele.dataset.ouvrirModele;
+        etat.editionModele = false;
+        rendre();
+        return;
+      }
+
+      if (evenement.target.closest('[data-modifier-modele]')) {
+        etat.editionModele = true;
+        rendre();
+        section.querySelector('#modele-edition-titre')?.focus();
+        return;
+      }
+
+      if (evenement.target.closest('[data-annuler-edition-modele]')) {
+        etat.editionModele = false;
+        rendre();
+        return;
+      }
+
       const copierModele = evenement.target.closest('[data-copier-modele]');
       if (copierModele) {
         const modele = etat.modeles.find((m) => m.id === copierModele.dataset.copierModele);
@@ -7552,9 +8472,15 @@ export default {
       if (supprimerModele) {
         const modele = etat.modeles.find((m) => m.id === supprimerModele.dataset.supprimerModele);
         if (!modele || estProvisoire(modele.id)) return;
-        if (!confirm(`Supprimer le modèle « ${modele.nom} » ?`)) return;
+        // `titre`, et non `nom` : la colonne s'appelle `titre` partout ailleurs,
+        // et la confirmation demandait donc « Supprimer le modèle « undefined » ? ».
+        if (!confirm(`Supprimer le modèle « ${modele.titre} » ?`)) return;
+        // La fiche du modèle qu'on retire n'a plus de sujet : elle se referme
+        // avant l'écriture, sinon la fenêtre resterait ouverte sur un vide.
+        etat.modeleOuvert = null;
+        etat.editionModele = false;
         await retirerAussitot(etat.modeles, modele, () => api.supprimerModele(modele.id), {
-          rendre: rendreContacts,
+          rendre,
           echouer: dire,
         });
         return;
@@ -7611,6 +8537,15 @@ export default {
       const ecarterLaPrepa = evenement.target.closest('[data-ecarter-prepa]');
       if (ecarterLaPrepa) {
         etat.prepasEcartees = ecarterPrepa(ecarterLaPrepa.dataset.ecarterPrepa);
+        rendre();
+        return;
+      }
+
+      // Refuser un match proposé : le tirage en rend un autre, et quand le
+      // vivier n'en offre plus, la cascade descend d'un rang toute seule.
+      const ecarterLeMatch = evenement.target.closest('[data-ecarter-match]');
+      if (ecarterLeMatch) {
+        etat.matchsEcartes = ecarterMatch(ecarterLeMatch.dataset.ecarterMatch);
         rendre();
         return;
       }
@@ -7918,14 +8853,6 @@ export default {
         section.querySelector('#contact-nouveau-nom')?.focus();
         return;
       }
-
-      // Un appui ailleurs referme le menu discret d'une tuile d'objectif, s'il
-      // traînait — même règle que `js/objectifs.js`.
-      if (etat.menu || etat.confirme) {
-        etat.menu = null;
-        etat.confirme = null;
-        rendre();
-      }
     });
 
     // Glisser sur les jours du calendrier ouvre le formulaire, rempli de la
@@ -8084,6 +9011,7 @@ export default {
           etat.momentOuvert ||
           etat.contactOuvert ||
           etat.choixPrepa ||
+          etat.modeleOuvert ||
           etat.rechercheClub !== null
         )
       ) {
@@ -8103,6 +9031,8 @@ export default {
       etat.contactOuvert = null;
       etat.editionContact = false;
       etat.choixPrepa = null;
+      etat.modeleOuvert = null;
+      etat.editionModele = false;
       etat.rechercheClub = null;
       rendre();
     });
@@ -8243,20 +9173,11 @@ export default {
         return;
       }
 
-      const modeleTitre = evenement.target.closest('[data-modele-titre]');
-      const modeleCorps = evenement.target.closest('[data-modele-corps]');
-      if (modeleTitre || modeleCorps) {
-        const champ = modeleTitre ?? modeleCorps;
-        const id = champ.dataset.modeleTitre ?? champ.dataset.modeleCorps;
-        const modele = etat.modeles.find((m) => m.id === id);
-        if (!modele || estProvisoire(modele.id)) return;
-
-        const champs = { [modeleTitre ? 'titre' : 'corps']: champ.value.trim() };
-        await modifierAussitot(modele, champs, () => api.modifierModele(id, champs), {
-          echouer: (message) => { rendre(); dire(message); },
-        });
-        return;
-      }
+      // LES CHAMPS VIFS D'UN MODÈLE SONT PARTIS (15 septembre 2026 au soir) : le
+      // titre et le corps ne se modifient plus sur la carte — « je préférerais
+      // que ce ne soit pas modifiable directement » —, mais dans la fiche, et
+      // seulement une fois « Modifier » pressé. C'est `modifier-modele` qui
+      // enregistre ; leur gestionnaire ici serait du code mort.
 
     });
 

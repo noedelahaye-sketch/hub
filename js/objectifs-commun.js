@@ -7,7 +7,12 @@
 
 import { depuisDateISO, echeanceLisible, echapper, NOMS_ESPACES } from './format.js';
 
-export function construireProgression(jalons = []) {
+// `marquerSuivant` : la marche à venir prend une classe à elle. C'est un choix
+// d'écran, pas de mesure — le cap gravé de l'accueil Yuno s'en sert pour
+// l'allumer en or (15 septembre 2026, demande de Noé : « plus visuel »). Il est
+// FACULTATIF pour que rien ne bouge là où la légende suffit : la galerie du hub,
+// le tableau de bord, les caps du FCH.
+export function construireProgression(jalons = [], { marquerSuivant = false } = {}) {
   const tries = [...jalons].sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
 
   if (!tries.length) {
@@ -15,11 +20,18 @@ export function construireProgression(jalons = []) {
   }
 
   const atteints = tries.filter((jalon) => jalon.atteint).length;
+  const prochain = tries.find((jalon) => !jalon.atteint);
+  // La MÊME marche que celle que la légende nomme : une seule recherche, donc
+  // pas de risque que la case allumée et le titre écrit désignent deux jalons.
   const cases = tries
-    .map((jalon) => `<i${jalon.atteint ? ' class="atteint"' : ''}></i>`)
+    .map((jalon) => {
+      const classes = [jalon.atteint ? 'atteint' : '', marquerSuivant && jalon === prochain ? 'suivant' : '']
+        .filter(Boolean)
+        .join(' ');
+      return `<i${classes ? ` class="${classes}"` : ''}></i>`;
+    })
     .join('');
 
-  const prochain = tries.find((jalon) => !jalon.atteint);
   let legende;
   if (!prochain) {
     legende = 'Tous les jalons sont atteints.';

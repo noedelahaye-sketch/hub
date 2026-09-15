@@ -206,13 +206,24 @@ export function construireVictoires(victoires) {
 // ont beaucoup à dire — la fiche d'une sortie Yuno en a douze champs, et à
 // 28 rem ils s'empilaient sur deux écrans de défilement (demande de Noé,
 // 26 août 2026).
-export function construireFenetre(titre, contenu, { large = false } = {}) {
+// `fermer: false` retire la croix (15 septembre 2026 au soir, demande de Noé pour
+// la fiche d'un modèle : « enlève la croix, pas besoin si lorsqu'on clique à côté
+// ça quitte la tuile »). Les DEUX autres sorties restent — le fond assombri, qui
+// porte `data-fermer-fenetre`, et la touche Échap —, et c'est ce qui rend le
+// retrait tenable : une fenêtre sans croix ET sans fond cliquable serait un
+// piège. À n'employer que là où la fenêtre ne porte QUE des icônes, et où une
+// croix de plus ferait un quatrième signe dans le même coin.
+export function construireFenetre(titre, contenu, { large = false, fermer = true } = {}) {
   return `
     <div class="fenetre-fond" data-fermer-fenetre></div>
     <div class="fenetre${large ? ' fenetre-large' : ''}"
       role="dialog" aria-modal="true" aria-label="${echapper(titre)}">
-      <button type="button" class="fenetre-fermer" data-fermer-fenetre
-        aria-label="Fermer">×</button>
+      ${
+        fermer
+          ? `<button type="button" class="fenetre-fermer" data-fermer-fenetre
+        aria-label="Fermer">×</button>`
+          : ''
+      }
       ${contenu}
     </div>`;
 }
@@ -905,7 +916,10 @@ export function construireFormulaire({
     const requis = champ.requis ? 'required' : '';
 
     if (champ.type === 'textarea') {
-      return `<textarea id="${idChamp}" name="${champ.nom}" rows="2" ${requis}>${echapper(
+      // `rangs` : deux lignes suffisent à une note, pas à un MESSAGE. Le champ
+      // en prend autant qu'on lui en demande (15 septembre 2026, pour les
+      // modèles de messages de Yuno) ; sans réglage, rien ne bouge.
+      return `<textarea id="${idChamp}" name="${champ.nom}" rows="${champ.rangs ?? 2}" ${requis}>${echapper(
         champ.valeur ?? '',
       )}</textarea>`;
     }

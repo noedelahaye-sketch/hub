@@ -1,0 +1,28 @@
+-- UNE COMMANDE LIVRÉE EST ENCAISSÉE (15 septembre 2026, décision de Noé :
+-- « payée et encaissée c'est la même chose pour moi, garde qu'un statut sur
+-- les 2 »).
+--
+-- CE QUE ÇA RÉPARE, ET ÇA SE VOYAIT EN EUROS. Le cycle allait de `devis` à
+-- `payee` en passant par `livree`, et `argentDeYuno` (js/argent-yuno.js) ne
+-- comptait QUE les livrées : les deux commandes passées en `payee` — 140 € —
+-- sortaient donc du compte au moment même où l'argent arrivait. L'objectif
+-- « Rembourser mon matériel » affichait 1 115 € au lieu de 1 255 €, et il
+-- l'affichait sur trois écrans. **Un cran de plus après la fin, c'est un cran
+-- où les choses disparaissent.**
+--
+-- C'était déjà écrit dans le cahier des charges sans en tirer la conséquence :
+-- « Livrer crée une victoire ; encaisser n'en crée pas une seconde — c'est le
+-- même travail, et l'argent est une conséquence, pas un juge. » Si c'est le
+-- même travail, c'est le même état.
+--
+-- LE CHECK NE SE RESSERRE PAS, et c'est la règle du dépôt : un CHECK s'élargit,
+-- il ne se resserre jamais (le format `post` d'une publication, l'état `annuel`
+-- d'un projet). `payee` reste donc accepté et lisible ; plus rien ne l'écrit, et
+-- le code le traite comme une commande finie partout où il le rencontre.
+--
+-- CE QUI EST PERDU, ET C'EST ASSUMÉ : la distinction entre « livrée » et
+-- « payée » sur ces deux lignes. Noé l'a tranché — pour lui les deux mots
+-- disaient la même chose, et un état qu'on ne distingue pas est un état qui
+-- finit par mentir.
+
+update commandes set statut = 'livree' where statut = 'payee';

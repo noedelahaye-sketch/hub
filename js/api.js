@@ -2111,8 +2111,12 @@ export async function supprimerCommande(id) {
 
 // Faire avancer une commande d'un cran. Le cycle appartient à l'écran ; ce
 // qu'on sait ici, c'est que livrer crée une victoire, comme une tâche terminée
-// ou un jalon atteint (docs/yuno-spec.md, §4). Encaisser n'en crée pas une
-// seconde : c'est le même travail, et l'argent est une conséquence, pas un juge.
+// ou un jalon atteint (docs/yuno-spec.md, §4).
+//
+// C'est le DERNIER cran depuis le 15 septembre 2026 : « payée » a fusionné avec
+// « livrée » (décision de Noé). La règle qui vivait ici — « encaisser n'en crée
+// pas une seconde, c'est le même travail » — a fini par emporter l'état
+// lui-même : si c'est le même travail, c'est le même état.
 export async function avancerCommande(commande, suivant) {
   const misAJour = await modifierCommande(commande.id, { statut: suivant });
 

@@ -42,6 +42,11 @@ export function lignePreparation(item) {
 // ajout : entrer au modèle est une décision par item, pas un réglage.
 // `invitePendant` : le placeholder de la phase du milieu — les plans photo
 // chez Yuno, rien de spécial ailleurs.
+// Le « + » d'un ajout en ligne : le même trait que partout ailleurs dans le site.
+const SIGNE_PLUS = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+  stroke="currentColor" stroke-width="2" stroke-linecap="round"
+  aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"></path></svg>`;
+
 export function blocPhase(feuille, phase, { auModele = false, invitePendant = 'Ajouter…' } = {}) {
   const items = feuille.items.filter((item) => item.phase === phase);
 
@@ -61,7 +66,14 @@ export function blocPhase(feuille, phase, { auModele = false, invitePendant = 'A
         <input type="text" name="texte" autocomplete="off" required
           aria-label="Ajouter à « ${PHASES_PREPA[phase]} »"
           placeholder="${phase === 'pendant' ? echapper(invitePendant) : 'Ajouter…'}">
-        <button type="submit" class="bouton-secondaire bouton-mini">Ajouter</button>
+        <!-- UN + ET RIEN D'ÉCRIT (15 septembre 2026 au soir, demande de Noé pour
+             les modèles, étendue aux feuilles le même soir) : le champ dit déjà
+             « Ajouter… » dans son invite, et le mot répété au bout de la ligne
+             prenait la place de ce qu'on tape. Le nom accessible le garde.
+             blocPhase ne sert QU'À YUNO — le FC Hermitage n'importe de ce module
+             que finDeLaSortie et phaseDeLaSortie —, donc rien ne bouge chez lui. -->
+        <button type="submit" class="prepa-ajout-bouton" aria-label="Ajouter cette ligne"
+          title="Ajouter">${SIGNE_PLUS}</button>
         ${
           auModele
             ? `<label class="prepa-au-modele discret">

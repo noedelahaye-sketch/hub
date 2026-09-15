@@ -29,14 +29,13 @@ import {
   poserAuCalendrier,
 } from './calendrier-commun.js';
 import { versDateISO, depuisDateISO, echeanceLisible, echapper } from './format.js';
+// L'argent de Yuno vit dans son propre module depuis le 15 septembre 2026 :
+// trois écrans le lisent — cette page, la page d'un objectif et l'accueil du
+// site —, et js/photo.js importe déjà js/yuno.js : un import en retour aurait
+// refermé le cycle.
+import { mesuresDuCap } from './argent-yuno.js';
 
 const MOIS_HISTOGRAMME = 12;
-
-// L'objectif dont le compteur d'euros dit la progression. Reconnu par son
-// titre : c'est le seul lien entre une ligne d'objectif et une mécanique, et
-// l'inscrire en dur vaut mieux qu'une colonne « type » que rien d'autre
-// n'utiliserait.
-const OBJECTIF_MATERIEL = 'Rembourser mon matériel';
 
 const ETATS_RESEAU = [
   ['pas_de_contact', 'sans contact'],
@@ -70,28 +69,6 @@ export function rythmeMensuel(evenements, reference = new Date(), mois = MOIS_HI
   });
 }
 
-// Ce qui est encaissé, et ce qu'il reste à rembourser. Une commande sans
-// montant ne compte pas : elle existe, elle n'est simplement pas chiffrée.
-//
-// LES FRAIS S'AJOUTENT À LA CIBLE, ils ne se retranchent pas des revenus
-// (demande de Noé, 26 août 2026). L'arithmétique est la même — le point
-// d'équilibre ne bouge pas —, la lecture non : ce que Noé a gagné reste ce
-// qu'il a gagné, et c'est la dette qui grossit de l'essence. Un match à 150 €
-// avec 40 € de route se lit « 150 € encaissés, 40 € de plus à rembourser »,
-// et non « 110 € gagnés ».
-export function argentDeYuno(commandes, materiel) {
-  const livrees = commandes.filter((commande) => commande.statut === 'livree');
-
-  const encaisse = livrees.reduce((total, c) => total + Number(c.montant ?? 0), 0);
-  const frais = livrees.reduce((total, c) => total + Number(c.frais ?? 0), 0);
-  const achats = materiel.reduce((total, achat) => total + Number(achat.prix ?? 0), 0);
-  const cible = achats + frais;
-
-  return { encaisse, frais, achats, cible, reste: Math.max(0, cible - encaisse) };
-}
-
-const EUROS = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
-export const enEuros = (montant) => `${EUROS.format(Math.round(montant))} €`;
 
 // --- Fabrication du HTML ----------------------------------------------------
 
@@ -372,23 +349,6 @@ export function construireCap(objectifs, commandes = [], materiel = []) {
   return construireCapGrave(objectifs, { mesures: mesuresDuCap(objectifs, commandes, materiel) });
 }
 
-export function mesuresDuCap(objectifs, commandes, materiel) {
-  const objectif = objectifs.find((candidat) => candidat.titre === OBJECTIF_MATERIEL);
-  if (!objectif) return {};
-
-  const { encaisse, cible } = argentDeYuno(commandes, materiel);
-  // Rien encaissé et rien acheté : l'objectif n'a pas encore de chiffre à dire,
-  // et « 0 € sur 0 € » n'en est pas un.
-  if (!encaisse && !cible) return {};
-
-  const texte = cible
-    ? `<span class="chiffre">${enEuros(encaisse)}</span> sur <span class="chiffre">${enEuros(
-        cible,
-      )}</span>`
-    : `<span class="chiffre">${enEuros(encaisse)}</span> encaissés`;
-
-  return { [objectif.id]: texte };
-}
 
 // --- Montage ----------------------------------------------------------------
 

@@ -47,7 +47,7 @@ import {
   echeanceLisible,
   rangerParEcheance,
 } from './format.js';
-import { argentDeYuno, enEuros } from './photo.js';
+import { argentDeYuno, enEuros, OBJECTIF_MATERIEL } from './argent-yuno.js';
 import {
   appliquerAuCalendrier,
   assemblerCalendrier,
@@ -83,11 +83,6 @@ const SIGNE = {
 const PLUS_ROND = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none"
   stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
   <path d="M12 5v14M5 12h14"/></svg>`;
-
-// L'objectif dont les prestations et le matériel disent la mesure. Reconnu par
-// son titre : c'est le seul du hub qui se mesure en euros, et lui donner une
-// colonne en base pour ça serait payer cher une exception unique.
-const OBJECTIF_MATERIEL = 'Rembourser mon matériel';
 
 // --- Les mots -----------------------------------------------------------------
 

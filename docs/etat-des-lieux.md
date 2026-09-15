@@ -1,4 +1,200 @@
-# État des lieux — 15 septembre 2026
+# État des lieux — 15 septembre 2026 (soir)
+
+> **REPRISE IMMÉDIATE : la section « Relais — 15 septembre, SOIR » ci-dessous.**
+> Elle décrit la dernière session et prime sur tout ce qui la suit. Viennent
+> ensuite « Relais — 15 septembre, après-midi », puis § 0 (15 septembre, matin),
+> puis l'historique par sessions.
+
+
+## Relais — 15 septembre, SOIR (l'accueil de Yuno, les modèles, les préparations)
+
+**Cette section prime sur toutes les suivantes.** Quatre chantiers, tous sur le
+site Yuno, tous menés par des demandes de Noé corrigées au fil de l'écran.
+
+### État Git et aperçu
+
+- Branche `main`. Un seul commit pour la session entière, créé à la demande de
+  Noé à la fin. Douze fichiers touchés, **deux nouveaux** : `js/argent-yuno.js`
+  et `supabase/migrations/20260915200000_commande_payee_fusionne.sql`.
+- **La migration a été APPLIQUÉE en base** (deux lignes de `commandes` passées de
+  `payee` à `livree`). Le fichier SQL n'est donc pas « à jouer », il est le
+  compte rendu de ce qui a déjà été fait.
+- Aperçu : `http://localhost:4173/yuno.html#yuno`. Le port a changé en cours de
+  session (61903 puis 4173) — vérifier avec `preview_list` plutôt que de
+  supposer.
+- **Le cache de la coquille sert l'ancien JS/CSS** : plusieurs retours de Noé
+  portaient sur un défaut déjà corrigé. `sw.js` est passé en **v24** (nouveau
+  module) ; à la reprise, désenregistrer le service worker avant de conclure
+  qu'un défaut persiste.
+
+### § A — L'ACCUEIL DU SITE YUNO : deux blocs fixes, et un classement
+
+Le détail, avec ses raisons, est dans **`docs/yuno-spec.md`, « `#yuno` —
+l'accueil du site »**. Ce qu'il faut savoir ici :
+
+- **Le défaut était structurel, et il a été mesuré** : ce jour-là, deux des
+  quatre blocs de l'accueil étaient VIDES (aucune sortie à venir, aucune
+  publication programmée) pendant que le site portait 18 idées, 16 tâches, trois
+  feuilles et 88 clubs jamais contactés. **Yuno vit par pics ; l'accueil ne
+  savait parler que des pics.**
+- **La règle posée** : le mur et le cap sont les deux seuls blocs fixes ; le
+  reste est un CLASSEMENT — une carte chaude tirée d'une cascade à sept rangs,
+  et trois portes choisies dans une réserve de sept.
+- **Décisions de Noé, et elles ne se re-devinent pas :**
+  - **48 h pour la carte de préparation.** J'avais proposé sept jours ; il a
+    maintenu le seuil. La carte reste le signal du JOUR du match.
+  - **La fournée s'ouvre dès le lundi et ne se ferme que faite.** Conséquence
+    assumée : **le « match à couvrir » ne se montre qu'une fois le rituel passé**
+    — le terrain devient la récompense du rituel. *Si ce rang ne se voit jamais à
+    l'usage, c'est le classement qu'il faut rouvrir, pas la règle du lundi.*
+  - **Le match proposé est à plus de 7 jours** (J+8 à J+21). **Et ça a forcé un
+    changement de source** : `prochain_match_par_piste` ne sert que le match le
+    plus proche de chaque club, or un club joue chaque week-end — la fenêtre ne
+    trouvait AUCUN candidat. La carte lit `api.matchsEntre`, chargé avec les
+    pistes.
+  - **Une croix refuse la proposition** ; la clé porte la date
+    (`<piste>:<jour>`) et se périme d'elle-même.
+  - **Le cap passe EN PIED, en gravures**, et **sans son « pourquoi »** —
+    aller-retour : je l'avais mis en toutes lettres (il ne se lit nulle part
+    ailleurs), Noé l'a retiré le soir même. *Quatre lignes de prose en pied d'un
+    tableau de bord, c'est un paragraphe qu'on ne relit jamais.* **Ne pas le
+    remettre.**
+- **Ce qui a été SUPPRIMÉ** : la machinerie de gestion des objectifs sur
+  l'accueil de Yuno (menu discret, tuile d'ajout, fenêtre, handlers). Ces gestes
+  vivent sur `#yuno/cap`. *Et ça réparait un défaut invisible : ces écouteurs,
+  posés sur la section, attrapaient les clics venus des écrans du cub montés
+  dedans — un menu pressé sur `#yuno/cap` remontait le module sous les doigts.*
+
+### § B — L'ARGENT : « payée » a fusionné avec « livrée »
+
+- **Décision de Noé** : *« payée et encaissée c'est la même chose pour moi, garde
+  qu'un statut sur les 2 »*. Le cycle d'une commande s'arrête à `livree`.
+- **Le cran de trop se payait en euros** : `argentDeYuno` ne comptait que les
+  livrées, donc une commande passée en « payée » **sortait du compte au moment où
+  l'argent arrivait**. Mesuré : 1 115 € affichés au lieu de 1 255 €, sur trois
+  écrans.
+- **Le CHECK ne s'est pas resserré** (règle du dépôt) : `payee` reste accepté et
+  lisible, `COMMANDE_FINIE` le traite comme une livrée, plus rien ne l'écrit.
+- **`js/argent-yuno.js` est né** pour porter `argentDeYuno`, `enEuros`,
+  `mesuresDuCap`, `OBJECTIF_MATERIEL` et `COMMANDE_FINIE` : `js/photo.js` importe
+  déjà `js/yuno.js`, un import en retour aurait refermé le cycle. Au passage,
+  `OBJECTIF_MATERIEL` s'écrivait en double.
+
+### § C — LES MODÈLES DE MESSAGES : aperçus et fiche
+
+Détail dans **`yuno-spec.md`, « `#yuno/messages` »**.
+
+- **Le défaut** : la page écrivait son titre TROIS fois et **s'ouvrait repliée sur
+  elle-même** — vestige du bloc qui vivait en bas de la Passerelle.
+- **Aller-retour important** : j'ai d'abord posé le message ENTIER sur chaque
+  carte, éditable en place. Noé l'a repris : *« un texte qu'on peut modifier d'un
+  clic est un texte qu'on modifie par accident »*, et quatre messages entiers
+  faisaient 1 617 px. **Forme finale : un aperçu de trois lignes, une icône
+  copier, et une fiche qui dit tout.** *(830 px sur téléphone.)*
+- **La fiche n'a plus de croix** : le fond assombri et Échap suffisent, et c'est
+  ce qui a permis de mettre ses trois icônes (copier · crayon · corbeille) **sur
+  la ligne du nom**. `construireFenetre` a gagné `fermer: false` — à n'employer
+  que là où la fenêtre ne porte que des icônes.
+- **Supprimer ne s'écrit plus.** La règle visait la confusion de dessin (deux ×
+  superposés), pas le fait d'être une icône : une CORBEILLE ne se confond avec
+  rien, la confirmation reste, et elle seule rougit sous la main.
+
+### § D — LES PRÉPARATIONS : modèles en cartes, une seule forme
+
+Détail dans **`yuno-spec.md`, « `#yuno/preparations` »**.
+
+- **La liste des modèles devient une grille de cartes**, l'aperçu étant la suite
+  de leurs lignes — deux modèles nommés « Match » et « Concert » ne se
+  distinguent que par ce qu'ils font cocher.
+- **ALLER-RETOUR, et c'est le plus important de la session** : la page d'un
+  modèle a eu un couple lecture/édition avec un crayon, calqué sur les modèles de
+  messages. Noé l'a retiré : *« on va faire plus simple… modifiable directement
+  ici »*. **Les deux dessins avaient fini par se ressembler** à force de retirer
+  les cadres. **Ne pas remettre le crayon.**
+- **Trois retraits successifs, demandés un par un** : les cadres arrondis, puis
+  les filets qui les remplaçaient, puis l'anneau de focus doré. *L'anneau
+  apparaissait malgré `:focus-visible` parce qu'un champ de TEXTE y répond
+  toujours, même pris à la souris.* **C'est la seconde exception du dépôt à
+  WCAG 2.4.7**, justifiée comme la première : le curseur dit où l'on écrit. Elle
+  ne vaut QUE pour les champs de texte de ces pages — les boutons gardent le leur.
+- **Les lignes portent un rond à cocher QUI NE SE COCHE PAS** : un modèle est le
+  patron d'une feuille, le rond dit ce que la ligne deviendra. C'est un `<span>`
+  décoratif, pas un bouton désactivé.
+- **La feuille a pris la même forme**, ce qui renverse ce que j'avais écrit une
+  heure plus tôt (« rien de tout cela ne touche une feuille »). **La limite tient
+  quand même** : le rond d'une feuille reste un bouton de 44 px, sa ligne descend
+  à 6 px de rembourrage et non à zéro — *deux cibles de 44 px sur des lignes de 30
+  se chevaucheraient.*
+- **DERNIER ALLER-RETOUR, à ne pas défaire** : les deux titres du bilan (« Ce qui
+  a marché », « À refaire autrement ») sont passés en invite, puis **remis
+  visibles** par Noé. La règle du journal du hub ne vaut pas ici : le journal pose
+  UNE question qu'on connaît, le bilan en pose DEUX, et **une invite disparaît dès
+  qu'on tape** — un bilan rempli ne disait plus à quelle question il répondait.
+
+### § E — Ce qui a été vérifié, et comment
+
+- `node --check` sur tous les modules, `node tools/verifier-gabarits.js` (39
+  fichiers) après chaque passe.
+- **Le vérificateur de gabarits a servi DEUX FOIS pour de vrai** : des accents
+  graves dans des commentaires HTML de `js/preparations-commun.js` et de
+  `js/yuno.js` refermaient la chaîne. `node --check` passait, la page ne se
+  serait plus chargée. **Sixième et septième fois.**
+- **Les sept rangs de la cascade et le classement des portes sont éprouvés hors
+  écran**, avec des états factices : `carteDuMoment`, `portesDuJour`,
+  `rituelAFaire`, `matchACouvrir`, `tachesEnTete` sont exportées pour ça.
+- **Mesuré au navigateur** à 375 px et à 1240 px : portes, gravures, cartes de
+  modèles, fiches, feuille. Aucun débordement horizontal.
+- **Le geste `data-poser-match` a été éprouvé de bout en bout** depuis l'accueil
+  (tuile de capture pré-remplie avec l'affiche, la date et les deux clubs) — rien
+  n'a été écrit en base.
+- **Quatre refus de match d'essai ont été écrits puis effacés** du `localStorage`
+  de l'aperçu.
+
+### § F — Les pièges re-payés (ils ne se devinent pas)
+
+1. **`.porte-semaine` était DÉJÀ pris** — le bouton doré « Programmer ma
+   semaine » de l'accueil du hub, dans `css/styles.css`, chargée sur les trois
+   pages. La frise en héritait un aplat d'accent et sept cases écrasées à 6 px.
+   **Huitième fois.** Renommée `.porte-frise`.
+2. **`.bloc ul` met les listes en GRILLE (0-2-1) et en COLONNE** : il a fallu
+   `.bloc ul.carte-clubs` pour égaler, PUIS redire `flex-direction: row`.
+   **Deux corrections pour une seule liste.**
+3. **`.bloc .liste-taches-pleine > .tache-ligne::before` pose `content: none`**
+   sur toutes les lignes pleines du hub : une puce plus faible ne s'écrivait
+   jamais. **Neuvième fois.**
+4. **Le titre d'un écran du cap se disait deux fois** (la barre et le module
+   monté) — défaut antérieur, corrigé : le `h1` du module se tait sur la galerie
+   et les tâches, et le garde là où il porte le nom d'un cap ou d'un projet.
+
+### § G — PAR OÙ REPRENDRE (du plus périssable au moins pressé)
+
+1. **VIDER LE CACHE DE LA COQUILLE AVANT DE JUGER QUOI QUE CE SOIT.** Plusieurs
+   retours de Noé, ce soir, portaient sur des défauts déjà corrigés que son
+   navigateur ne montrait pas encore. `sw.js` est en **v24**.
+2. **REGARDER L'ACCUEIL DE YUNO UN JOUR ORDINAIRE.** Toute la cascade a été
+   éprouvée hors écran, mais **un seul de ses sept rangs a été vu en vrai** (la
+   fournée, puis le match à couvrir quand Noé a envoyé son message). Les rangs
+   1 à 4 — sortie, commande, post d'un match — **n'ont jamais été vus à l'écran
+   faute de données ce jour-là**.
+3. **VÉRIFIER QUE « À COUVRIR » APPARAÎT VRAIMENT.** Elle ne se montre qu'une fois
+   la fournée faite. Si elle ne se voit jamais en deux ou trois semaines, c'est le
+   CLASSEMENT qu'il faut rouvrir (§ A), pas la règle du lundi.
+4. **LES ÉCRITURES DES MODÈLES N'ONT PAS ÉTÉ ÉPROUVÉES DE BOUT EN BOUT** :
+   modifier un modèle de message par sa fiche, en supprimer un, ajouter/retirer
+   une ligne de modèle de préparation. Les gestionnaires existaient déjà et n'ont
+   pas changé de forme, **mais rien n'a été écrit en base ce soir** — je n'ai pas
+   voulu toucher aux données de Noé pour un essai.
+5. **`prepa-ajout-bouton` sur la FEUILLE** : le `+` y remplace « Ajouter » depuis
+   ce soir. À regarder au stade, au pouce — c'est le seul écran de cette série qui
+   se manipule debout.
+6. **Défaut ANTÉRIEUR corrigé au passage** : `js/cap-adresses.js` manquait à la
+   coquille de `sw.js` depuis ce matin — hors ligne, un appareil qui ne l'avait
+   jamais chargé ne démarrait pas. Ajouté. *Il reste une alerte de
+   `tools/verifier-coquille.js` : une URL `data:` SVG d'une feuille de style, lue
+   comme un chemin de fichier. **Faux positif de l'outil**, pas un fichier
+   manquant — ne pas chercher à « l'ajouter ».*
+
+---
 
 
 ## Relais — 15 septembre, après-midi (navigation, typographie, événements)
@@ -50,7 +246,7 @@ historiques de navigation et de typographie plus bas dans ce document.
 - Navigation Yuno vérifiée visuellement dans un aperçu isolé puis sur une page connectée. Les derniers ajustements de fiche ont surtout été revus par les captures de Noé ; **pas de validation complète de sauvegarde ni de test de bout en bout** de la nouvelle route.
 - À vérifier en priorité : accès direct/rechargement de la fiche, ouverture depuis l'agrandissement, édition/enregistrement/annulation, remplacement photo, petit écran, état après navigation arrière et éventuels formulaires longs.
 - La fiche exploite les champs déjà disponibles : ne pas prétendre que tous les liens possibles (publications, contacts éditables, plusieurs commandes ou bilans) ont été audités. Elle reprend la première commande et le bilan existant.
-- Le vérificateur de coquille a signalé plus tôt deux problèmes préexistants : `js/cap-adresses.js` absent du cache déclaré et une URL SVG `data:` interprétée comme fichier. Non corrigés dans cette session.
+- Le vérificateur de coquille a signalé plus tôt deux problèmes préexistants : `js/cap-adresses.js` absent du cache déclaré et une URL SVG `data:` interprétée comme fichier. **RÉGLÉS OU CLASSÉS le soir même** — le module a été ajouté à la coquille, et l'URL `data:` est un faux positif de l'outil (voir « Relais — 15 septembre, SOIR », § G.6).
 - Noé a demandé le commit et le push du suivi après la mise à jour de cet état des lieux. Le succès du push ne prouve pas à lui seul que le déploiement du site est terminé.
 
 ---

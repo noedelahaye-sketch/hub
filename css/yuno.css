@@ -882,12 +882,17 @@ body[data-espace="yuno"] .etiquette {
    trois visages, trois idées — et une rangée n'aurait pas su l'accueillir. La
    tête (l'icône et le titre) reste en ligne ; le métier de la porte descend en
    pied, où il ferme la tuile quelle que soit la hauteur de son voisin. */
+/* ELLE A MAIGRI (15 septembre 2026 au soir, demande de Noé : « réduis la taille
+   de ces tuiles »). Ce qui l'a permis : la vitrine passée en tête, qui a rendu
+   au titre sa ligne — une porte n'a plus besoin de respirer autour d'un libellé,
+   elle montre. Rembourrage, écarts, corps : un cran partout, rien de supprimé.
+   *Mesuré : 134 px de haut, ramenés à 107.* */
 .grande-porte {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: var(--espace-8);
-  padding: var(--espace-16);
+  gap: var(--espace-4);
+  padding: var(--espace-12);
   text-decoration: none;
   color: var(--texte);
   background: var(--fond-carte);
@@ -895,10 +900,20 @@ body[data-espace="yuno"] .etiquette {
   border-radius: var(--rayon-carte);
 }
 
+/* LE TITRE EST DESCENDU SOUS LA VITRINE (15 septembre 2026 au soir, demande de
+   Noé : « mets le titre de la tuile en dessous des schémas, logos… »), et c'est
+   LUI qui porte le `margin-top: auto` : le nom et le métier forment un bloc collé
+   au bas de la tuile, la vitrine occupant tout ce qui reste au-dessus. Sans ce
+   report, une vitrine courte laissait un trou SOUS le titre — exactement le vide
+   que la refonte du soir cherchait à combler.
+
+   Un peu d'air entre l'image et sa légende. */
 .grande-porte-tete {
   display: flex;
   align-items: center;
-  gap: var(--espace-12);
+  gap: var(--espace-8);
+  margin-top: auto;
+  padding-top: var(--espace-4);
 }
 
 .grande-porte:hover { border-color: var(--gris-chaud-trait); }
@@ -912,23 +927,33 @@ body[data-espace="yuno"] .etiquette {
 /* Le métier de chaque porte, écrit dessous : « poser sur les jours »,
    « fouiller les 18 ». La distinction ne se lisait pas depuis la page. */
 /* Le métier de chaque porte, en pied : « poser sur les jours », « 53 fiches ».
-   `margin-top: auto` le colle au bas quelle que soit la hauteur de la vitrine —
-   sans lui, deux portes voisines écriraient leur service à deux hauteurs
-   différentes. Aligné à GAUCHE depuis que la porte est une colonne : centré, il
-   ne tombait plus sous rien. */
+   Aligné à GAUCHE depuis que la porte est une colonne : centré, il ne tombait
+   plus sous rien. */
 .grande-porte-sous {
   display: block;
-  margin-top: auto;
-  padding-top: var(--espace-4);
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
 }
 
+/* 800 DEPUIS LE 15 SEPTEMBRE 2026 AU SOIR (demande de Noé en deux temps :
+   « grasse un peu plus le titre des tuiles », puis « encore un peu »). Le nom est
+   descendu SOUS la vitrine le même soir, et d'un corps : il lui fallait de quoi
+   tenir sa ligne face à ce qu'il légende.
+   **Les crans sont réels ici** — Inter est déclarée de 100 à 900, elle ne clampe
+   pas comme Instrument Sans, qui s'arrête à 600 et fait passer un 700 pour un
+   600. C'est le piège documenté pour les onglets ; il ne se produit pas ici.
+
+   ET L'ÉCART DES LETTRES SE RESSERRE (même demande) : une graisse qui monte
+   écarte ses lettres — les fûts grossissent, les blancs entre eux aussi. À 800,
+   « Calendrier éditorial » s'étalait. `-0.02em` lui rend sa compacité ; c'est le
+   réglage que le site pose déjà sur ses autres titres en Inter (`-0.015em`), un
+   demi-cran plus serré parce que la graisse est plus lourde. */
 .grande-porte-titre {
   font-family: "Inter", sans-serif;
   font-style: normal;
-  font-weight: 600;
-  font-size: 1.125rem;
+  font-weight: 800;
+  font-size: 1rem;
   line-height: 1.15;
+  letter-spacing: -0.02em;
 }
 
 /* Sur téléphone, les portes s'empilent : deux vitrines dans 375 px ne
@@ -2380,12 +2405,485 @@ body[data-espace="yuno"] .weekend-jour .contact-nom {
 /* Le seul bouton qui compte, et il ne parle que d'effort. */
 .bouton-envoye { margin-left: auto; }
 
-/* --- Les modèles de messages ------------------------------------------------ */
+/* --- LES MODÈLES DE MESSAGES, REFONDUS (15 septembre 2026 au soir) -----------
+   La page s'ouvrait REPLIÉE sur elle-même — ses quatre modèles dormaient dans un
+   `<details class="backlog">` — et écrivait son titre trois fois. C'était le
+   vestige du bloc qui vivait en bas de la Passerelle, où un pli est juste ; il a
+   pris sa page le 15 août et personne n'a redessiné sa forme.
 
-.bloc-modeles { margin-top: var(--espace-24); }
+   L'APERÇU NE SE MODIFIE PAS, ET LA FICHE DIT TOUT (demande de Noé, le même
+   soir) : la carte montre un nom et trois lignes, l'icône copie fait le geste de
+   la page, et presser la tuile ouvre la fenêtre — texte entier, modifier,
+   supprimer. C'est la grammaire de la banque d'idées, écrite le 12 août.
 
-.liste-modeles .modele-titre { font-weight: 600; flex: 1 1 auto; margin: 0; }
-.liste-modeles .modele-corps { resize: vertical; white-space: pre-wrap; }
+   DES CARTES COURTES, DONC : 20 rem de plancher suffisent à trois lignes
+   d'aperçu, là où le message entier en demandait 28. Quatre modèles tiennent
+   sous les yeux au lieu d'une page de 1 600 px. */
+.grille-modeles {
+  display: grid;
+  gap: var(--espace-12);
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  align-items: stretch;
+}
+
+/* La carte est un CONTENEUR, pas un bouton : elle porte l'icône de copie, et un
+   bouton dans un bouton n'est ni valide ni cliquable. C'est le bouton d'ouverture
+   qui la remplit, et l'icône se pose par-dessus. */
+.modele-carte {
+  position: relative;
+  display: flex;
+  background: var(--fond-carte);
+  border-radius: var(--rayon-carte);
+}
+
+.modele-ouvrir {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-8);
+  /* La place de l'icône, à droite du nom : sans elle, un titre long passerait
+     dessous. */
+  padding: var(--espace-16) var(--espace-48) var(--espace-16) var(--espace-16);
+  font: inherit;
+  color: var(--texte);
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: inherit;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.modele-ouvrir:hover { background: color-mix(in srgb, var(--fond-carte) 88%, var(--accent)); }
+
+.modele-nom {
+  font-family: "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+}
+
+/* TROIS LIGNES, coupées par le CSS et non par le texte : une troncature en JS
+   aurait posé des points de suspension au milieu d'un mot, et surtout elle aurait
+   figé un nombre de signes que la largeur de la carte dément. `pre-wrap` garde
+   les retours à la ligne du message — sans lui, l'aperçu montrerait un
+   paragraphe que le modèle n'a pas. */
+.modele-apercu {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  white-space: pre-wrap;
+  color: var(--texte-discret);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* L'ICÔNE DE COPIE EST LE GESTE DE LA PAGE, et il ne demande plus qu'un appui :
+   c'est ce pour quoi on vient ici, et l'ouvrir pour copier serait deux gestes
+   pour un. Elle se pose en absolu sur la carte, HORS du bouton d'ouverture.
+   44 px de cible, comme partout. */
+.modele-copier {
+  position: absolute;
+  top: var(--espace-8);
+  right: var(--espace-8);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espace-8);
+  width: 44px;
+  height: 44px;
+  color: var(--accent);
+  background: none;
+  border: 0;
+  border-radius: var(--rayon-controle);
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.modele-copier:hover { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+
+/* L'AJOUT EST UNE TUILE DE LA GRILLE, pointillée — la règle du hub pour toute
+   galerie de tuiles comparables : le coût d'accès suit l'intention, et écrire un
+   modèle est une tuile de plus, pas un lien à part en dessous. Le `<details>` est
+   la tuile volante commune ; on n'habille ici que son sommaire. */
+.grille-modeles > .ajout { margin: 0; }
+
+.grille-modeles > .ajout > summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espace-8);
+  height: 100%;
+  min-height: 6rem;
+  padding: var(--espace-16);
+  color: var(--texte-discret);
+  border: 1px dashed var(--bordure);
+  border-radius: var(--rayon-carte);
+  cursor: pointer;
+}
+
+.grille-modeles > .ajout > summary:hover {
+  color: var(--texte);
+  border-color: var(--gris-chaud-trait);
+}
+
+/* Ouverte, la tuile vole au-dessus du fond assombri : son sommaire redevient
+   l'en-tête d'une fenêtre, pas une case pointillée de la grille. */
+.grille-modeles > .ajout[open] > summary {
+  min-height: 0;
+  border: 0;
+}
+
+/* Une carte sans icône de copie n'a pas à réserver sa place : c'est le cas des
+   modèles de PRÉPARATION, qu'on n'a rien à coller. */
+.modele-carte:not(:has(.modele-copier)) .modele-ouvrir {
+  padding-right: var(--espace-16);
+}
+
+/* Le compte de lignes ferme la carte d'un modèle de préparation, collé au bas
+   pour que deux cartes voisines l'écrivent à la même hauteur. */
+.modele-compte {
+  margin-top: auto;
+  padding-top: var(--espace-4);
+  font-size: 0.75rem;
+}
+
+/* UN ROND À COCHER, MAIS QUI NE SE COCHE PAS (15 septembre 2026 au soir, demande
+   de Noé : « plutôt que des points de liste à bulle mets des ronds à cocher, mais
+   non cochable dans les modèles, juste la forme »).
+
+   POURQUOI C'EST JUSTE : un modèle est le PATRON d'une feuille, et sur la feuille
+   ces lignes-là seront des cases à cocher. Le rond dit donc **ce que la ligne
+   deviendra** — on lit le modèle comme on lira la feuille. Cocher ici n'aurait
+   aucun sens : il n'y a rien à faire dans un patron.
+
+   C'EST UN DESSIN, PAS UN BOUTON : un `<span>` décoratif, hors du flux des
+   cibles, invisible au lecteur d'écran (`aria-hidden`). Un vrai bouton désactivé
+   se serait tabulé pour rien et aurait promis un geste qui n'existe pas.
+
+   IL REPREND LE TRAIT DE `.tache-cercle` — 1,25 rem, le rayon d'une pastille —
+   mais dans l'encre discrète : la priorité d'une tâche ne veut rien dire ici, et
+   un anneau coloré aurait laissé croire à un état. */
+.modele-rond {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+}
+
+/* Sa ligne de tête est celle de la fiche d'un modèle de message, mais dans une
+   PAGE et non dans une fenêtre : elle prend donc l'écart qui la sépare du reste. */
+#vue > .modele-fiche-tete { margin-bottom: var(--espace-8); }
+
+/* --- L'ÉDITION D'UN MODÈLE DE PRÉPARATION (15 septembre 2026 au soir) ---------
+   Demande de Noé : « pas de contour arrondi pour les zones de texte, le bouton
+   ajouter simplement un + et pas de cette couleur, moins gros le texte, moins
+   d'espace entre les textes. »
+
+   LA RÈGLE DERRIÈRE : **un champ encadré dit « remplis ce formulaire »**, et on
+   ne remplit pas un formulaire pour corriger une ligne qu'on est en train de
+   relire. C'est mot pour mot ce que le hub a tranché le 1er septembre pour le
+   journal d'une journée — « pas de rectangle visible dans lequel mettre le
+   texte » —, et la parade est la même : le champ reste un champ, il n'en porte
+   plus l'habit, et **le focus se dit par un filet** plutôt que par un cadre.
+
+   TOUT EST CADRÉ SUR LE SITE (`body[data-espace="yuno"]`) : la feuille de
+   préparation du FC Hermitage passe par les mêmes classes, et rien ne lui a été
+   demandé. */
+
+/* Le nom du modèle : un titre qu'on écrit, pas un champ. Même corps qu'en
+   lecture, pour que le crayon ne fasse pas sauter la page. */
+body[data-espace="yuno"] .prepa-modele-nom {
+  max-width: 100%;
+  margin-bottom: var(--espace-8);
+  padding: 0;
+  font-family: "Inter", sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+
+/* NI CONTOUR NI FILET (précision de Noé, le même soir : « pas de contour, ni de
+   ligne en dessous pour les textes, pas besoin, juste le texte en gris qui dit ce
+   qu'il y a à marquer ici »).
+
+   CE QUE ÇA DONNE, ET C'EST LE BON ÉTAT : **l'édition ressemble à la lecture, au
+   curseur près.** Une ligne est une ligne ; ce qui dit qu'on peut écrire, c'est
+   l'invite en gris du champ d'ajout, et rien d'autre. Un filet de plus par ligne,
+   c'est onze traits pour dire onze fois la même chose.
+
+   ET PAS D'ANNEAU DORÉ NON PLUS (précision de Noé : « pas de rectangle surligné
+   en jaune lorsque l'on écrit dans un espace de texte non plus »).
+
+   POURQUOI IL APPARAISSAIT MALGRÉ `:focus-visible` : un CHAMP DE TEXTE y répond
+   toujours, même pris à la souris — les navigateurs le veulent ainsi, parce qu'un
+   champ doit dire où part la frappe. Ici, trois champs nus l'un sous l'autre s'en
+   trouvaient cernés d'un rectangle à chaque clic, ce qui remettait le cadre qu'on
+   venait tout juste de retirer.
+
+   C'EST LA SECONDE EXCEPTION DU DÉPÔT À WCAG 2.4.7, et elle se justifie comme la
+   première (`.capture-titre`, 13 août 2026) : **le curseur qui clignote dit où
+   l'on écrit**, un trait de plus ne l'apprend à personne. Elle ne vaut QUE pour
+   les champs de texte de cette page — le `+`, le crayon et la corbeille gardent
+   le leur : on ne voit pas de curseur sur un bouton, et rien d'autre ne dirait
+   lequel a la main. */
+body[data-espace="yuno"] .prepa-liste .modele-item,
+body[data-espace="yuno"] .prepa-modele-nom,
+body[data-espace="yuno"] [data-action="ajouter-item-modele"] input[type="text"],
+body[data-espace="yuno"] [data-action="ajouter-item-prepa"] input[type="text"] {
+  outline: none;
+}
+
+body[data-espace="yuno"] .prepa-liste .modele-item {
+  padding: 0;
+  font-size: 0.9375rem;
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+
+/* MOINS D'ESPACE ENTRE LES TEXTES, ET PLUS DE SÉPARATEUR : la ligne d'un MODÈLE ne
+   porte qu'un champ, là où celle d'une FEUILLE porte une case à cocher de 44 px et
+   un filet qui sépare deux gestes. D'où le `:has()` — sans lui, la feuille de
+   préparation se serait resserrée avec, et ses cibles tactiles avec elle. */
+/* ELLES SE TOUCHENT PRESQUE (demande de Noé : « resserre les tâches entre
+   elles ») : plus aucun rembourrage, c'est la hauteur de ligne du champ qui
+   sépare. Une liste qu'on relit d'un coup d'œil se lit comme un paragraphe de
+   lignes, pas comme onze blocs. */
+body[data-espace="yuno"] .bloc .prepa-liste > .modele-ligne {
+  /* Le rond se cale sur le milieu du texte, pas sur sa ligne de base : un anneau
+     n'a pas de ligne de base, et `baseline` le posait un cran trop bas. */
+  align-items: center;
+  gap: var(--espace-8);
+  padding: 0;
+  border-bottom: 0;
+}
+
+/* Le champ perd la hauteur d'un contrôle : à 1,5 il respirait comme un
+   paragraphe, et c'est justement ce qu'on vient de retirer. */
+body[data-espace="yuno"] .prepa-liste .modele-item { line-height: 1.7; }
+
+/* La croix d'une ligne est DISPONIBLE, jamais offerte : elle ne paraît qu'au
+   survol de sa ligne ou quand le clavier y arrive. Sans ça, onze croix alignées
+   feraient une colonne de refus le long d'une liste qu'on vient relire. */
+body[data-espace="yuno"] .modele-ligne .bouton-retirer { opacity: 0; }
+
+body[data-espace="yuno"] .modele-ligne:hover .bouton-retirer,
+body[data-espace="yuno"] .modele-ligne:focus-within .bouton-retirer { opacity: 1; }
+
+/* Le champ d'ajout suit la même règle : c'est la ligne suivante, pas un
+   formulaire. LES DEUX FORMULAIRES depuis le 15 septembre au soir — celui d'un
+   modèle et celui d'une FEUILLE (demande de Noé : « applique cette forme aux
+   préparations également ») : c'est le même geste, il ne peut pas avoir deux
+   dessins. */
+body[data-espace="yuno"] [data-action="ajouter-item-modele"] input[type="text"],
+body[data-espace="yuno"] [data-action="ajouter-item-prepa"] input[type="text"] {
+  padding: 0;
+  font-size: 0.9375rem;
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+
+/* UN + ET RIEN D'ÉCRIT, à l'encre discrète : l'aplat d'accent d'un
+   `.bouton-secondaire` faisait du geste le plus répété de la page le plus
+   voyant. Il s'allume sous la main, c'est assez. */
+body[data-espace="yuno"] .prepa-ajout-bouton {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  padding: 0;
+  color: var(--texte-discret);
+  background: none;
+  border: 0;
+  border-radius: var(--rayon-pastille);
+  cursor: pointer;
+}
+
+body[data-espace="yuno"] .prepa-ajout-bouton:hover {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+/* Les trois phases se resserrent d'autant : leurs titres n'ont plus à séparer des
+   blocs hauts. Sur la page d'un MODÈLE seulement — une feuille de préparation
+   qu'on coche au stade garde ses titres à leur taille. */
+body[data-espace="yuno"] .prepa-phase h2 {
+  margin-bottom: var(--espace-4);
+  font-size: 0.9375rem;
+}
+
+/* --- LA FEUILLE PREND LA MÊME FORME QUE SON MODÈLE (15 septembre 2026 au soir,
+   demande de Noé : « applique cette forme aux préparations également ») --------
+
+   C'EST LA MÊME LISTE À UN ÉTAT PRÈS — le modèle est le patron, la feuille est
+   l'exemplaire qu'on coche — et elles ne peuvent donc pas se dessiner autrement
+   l'une que l'autre. Plus de filet entre les lignes, le même corps de texte, le
+   même écart.
+
+   CE QUE ÇA NE TOUCHE PAS, ET C'EST LA LIMITE : **le rond d'une feuille reste un
+   BOUTON de 44 px**, visé au pouce au bord d'un terrain. La ligne descend à
+   6 px de rembourrage et non à zéro comme celle d'un modèle : *deux cibles de
+   44 px sur des lignes de 30 se chevaucheraient, et l'on cocherait la voisine.*
+   Le modèle, lui, n'a rien à viser — c'est ce qui l'autorise à se serrer plus. */
+body[data-espace="yuno"] .bloc .prepa-liste > .tache-ligne:not(.modele-ligne) {
+  padding: 6px 0;
+  border-bottom: 0;
+}
+
+body[data-espace="yuno"] .prepa-liste .tache-titre { font-size: 0.9375rem; }
+
+/* La croix d'une ligne de feuille suit la même règle que celle d'un modèle :
+   disponible au survol, jamais offerte. */
+body[data-espace="yuno"] .prepa-liste > .tache-ligne .bouton-retirer { opacity: 0; }
+
+body[data-espace="yuno"] .prepa-liste > .tache-ligne:hover .bouton-retirer,
+body[data-espace="yuno"] .prepa-liste > .tache-ligne:focus-within .bouton-retirer {
+  opacity: 1;
+}
+
+/* --- LE BILAN PREND LA MÊME FORME (15 septembre 2026 au soir) -----------------
+   Ses deux champs s'encadraient en gros rectangles arrondis au bas d'une page
+   qui n'en a plus un seul, et son bouton portait l'aplat gris d'un contrôle de
+   formulaire. **Un bilan qu'on écrit à chaud n'est pas un formulaire** : c'est la
+   suite de la feuille qu'on vient de cocher.
+
+   LES DEUX TITRES RESTENT, EUX. Ils sont passés dans les champs une heure, par la
+   règle du journal d'une journée du hub ; elle ne vaut pas ici — le journal pose
+   UNE question qu'on connaît par cœur, le bilan en pose DEUX, et une invite
+   disparaît dès qu'on tape. **Un bilan rempli ne disait plus à quelle question il
+   répondait**, ce qui est précisément ce qu'on vient y relire des mois après. */
+
+/* Le titre d'une réponse : discret, collé à son champ — c'est une question, pas
+   un libellé de formulaire. L'écart au champ suivant vient du champ, pas de lui. */
+body[data-espace="yuno"] .prepa-bilan-formulaire label {
+  margin-bottom: 2px;
+  color: var(--texte-discret);
+  font-size: 0.8125rem;
+}
+body[data-espace="yuno"] .prepa-bilan-formulaire textarea {
+  padding: 0;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  resize: none;
+}
+
+/* Un peu d'air entre les deux réponses, puisque plus aucun cadre ne les sépare.
+   Il se pose sur le TITRE de la seconde, qui ouvre désormais le bloc — sur le
+   champ, il serait tombé entre une question et sa réponse. */
+body[data-espace="yuno"] .prepa-bilan-formulaire textarea + label {
+  margin-top: var(--espace-16);
+}
+
+/* LE BOUTON RESTE LISIBLE, MAIS SE TAIT : c'est un enregistrement, pas un ajout
+   d'une ligne — il ne peut pas se réduire à un signe, on doit le trouver. Il perd
+   donc l'aplat gris d'un contrôle pour l'encre et le voile d'accent du site. */
+body[data-espace="yuno"] .prepa-bilan-bouton {
+  align-self: flex-start;
+  margin-top: var(--espace-16);
+  padding: var(--espace-8) var(--espace-16);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 0;
+  border-radius: var(--rayon-controle);
+  cursor: pointer;
+}
+
+body[data-espace="yuno"] .prepa-bilan-bouton:hover {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+/* --- La fiche d'un modèle ---------------------------------------------------
+   Le texte ENTIER, en lecture. `pre-wrap` garde ses retours à la ligne : c'est
+   ce qu'on va coller, il doit s'afficher tel qu'il partira. */
+/* LE FORMULAIRE DE LA FICHE RESTE EN UNE COLONNE. Une règle générale range les
+   champs d'une `.fenetre-large` en DEUX colonnes au-delà de 60 rem — juste pour
+   six champs courts, faux pour un titre suivi d'un message de douze rangs : la
+   colonne de droite aurait porté le message, celle de gauche un champ et du
+   vide. */
+.fenetre-large [data-ajout="modele-edition"] form { display: block; }
+
+.modele-texte {
+  margin: var(--espace-12) 0 0;
+  white-space: pre-wrap;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+/* LES TROIS GESTES SUR LA LIGNE DU NOM (demande de Noé) : copier, modifier,
+   supprimer, poussés au bout par le titre qui prend la place qui reste.
+
+   EN FLUX, PLUS EN ABSOLU, et c'est le retrait de la croix qui l'a permis : il
+   n'y a plus rien à contourner dans le coin. Une rangée où le nom et ses gestes
+   se calent l'un sur l'autre vaut mieux qu'un bloc posé par-dessus, dont il
+   fallait réserver la largeur au titre à la main. */
+.modele-fiche-tete {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-12);
+}
+
+/* Le titre pousse les icônes au bout, et sa marge droite tombe : elle réservait
+   la place d'une croix qui n'est plus là. */
+.modele-fiche-tete .fenetre-titre {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+
+.fenetre-gestes {
+  flex: none;
+  display: flex;
+  align-items: center;
+}
+
+.fenetre-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0;
+  color: var(--texte-discret);
+  background: none;
+  border: none;
+  border-radius: var(--rayon-pastille);
+  cursor: pointer;
+}
+
+.fenetre-icone:hover {
+  color: var(--texte);
+  background: color-mix(in srgb, var(--texte) 8%, transparent);
+}
+
+/* Copier est le geste de la page : il prend l'accent au survol quand les deux
+   autres restent à l'encre. */
+.fenetre-gestes .fenetre-icone:first-child:hover { color: var(--accent); }
+
+/* La corbeille ne crie pas au repos — elle est disponible, jamais offerte —, mais
+   elle se teinte sous la main : c'est le seul geste sans retour de la fenêtre, et
+   il doit se reconnaître AVANT d'être pressé. Le rouge du hub n'existe pas ; on
+   prend celui du club, qui ne sert nulle part ailleurs chez Yuno. */
+.fenetre-icone-retirer:hover {
+  color: var(--club-fch-rouge, #d5343a);
+  background: color-mix(in srgb, #d5343a 14%, transparent);
+}
+
 
 /* --- Les commandes ---------------------------------------------------------- */
 
@@ -2862,54 +3360,13 @@ body[data-espace="yuno"] .cap-tuile-tete:not(:has(> *:not(.cap-tuile-espace))) {
   display: none;
 }
 
-/* --- Les caps en tuiles (15 septembre 2026, demande de Noé) --------------------
-   Ils se dépliaient sur place ; ils ouvrent maintenant une FENÊTRE — la
-   grammaire que le site emploie déjà pour un moment, une fiche, une idée. La
-   tuile garde l'allure du sommaire qu'elle remplace (titre, date, marches,
-   prochain jalon) : ce qui change est le geste, pas le dessin.
-
-   UN VRAI `<button>` et non une tuile cliquable : il se tabule, s'annonce comme
-   un bouton, et répond à Entrée. Il ne reste qu'à lui retirer ce qu'un
-   navigateur lui ajoute. */
-body[data-espace="yuno"] .objectif-tuile {
-  display: block;
-  width: 100%;
-  margin: 0;
-  padding: var(--espace-12) var(--espace-16);
-  font: inherit;
-  color: var(--texte);
-  text-align: left;
-  background: var(--fond-carte);
-  /* Pas de contour : une tuile posée dans la page se distingue par sa surface
-     (règle du 30 août, reprise ici le 15 septembre). */
-  border: 0;
-  border-radius: var(--rayon-carte);
-  cursor: pointer;
-  transition: background 140ms ease, transform 140ms ease;
-}
-
-body[data-espace="yuno"] .objectif-tuile:hover {
-  background: color-mix(in srgb, var(--fond-carte) 88%, var(--accent));
-}
-
-body[data-espace="yuno"] .objectif-tuile:active { transform: scale(0.995); }
-
-/* La légende des marches ferme la tuile : dans un bouton, elle héritait de son
-   alignement. */
-body[data-espace="yuno"] .objectif-tuile .progression-legende { text-align: left; }
-
-/* Le menu discret d'un objectif (modifier, marquer atteint, supprimer — même
-   geste et même gabarit que la galerie du hub, `js/gabarits.js`). La tuile
-   n'est plus SEULE le lien : elle enveloppe le lien et le menu, un bouton dans
-   un lien n'étant ni valide ni cliquable. L'enveloppe ne porte qu'un ancrage —
-   tout le reste de l'allure reste sur `.objectif-tuile`. */
-body[data-espace="yuno"] .objectif-tuile-carte { position: relative; }
-
-/* Le bouton ⋯ ne se révèle qu'au survol de la tuile ou au clavier — la liste
-   du hub (styles.css) ne connaît pas les classes du site. */
-body[data-espace="yuno"] .objectif-tuile-carte:hover .cap-menu-bouton {
-  opacity: 1;
-}
+/* --- Les caps ont quitté l'accueil en tuiles (15 septembre 2026, au soir) ------
+   Ils s'y dépliaient sur place le matin, puis ouvraient une fenêtre, puis leur
+   propre page. Le soir, le cap est passé EN PIED en gravures (demande de Noé :
+   « plus visuel ») : la tuile, son menu discret et la tuile pointillée d'ajout
+   sont partis avec, et ces gestes vivent sur #yuno/cap. Les règles qui les
+   habillaient sont retirées d'ici — du CSS sans balise est du code mort qu'on
+   recopie. Voir `.cap-gravure`, en bas de cette feuille. */
 
 /* --- Les vitrines des portes (15 septembre 2026) -------------------------------
    Une porte montre ce qu'il y a derrière. Chaque vitrine a la FORME de sa page :
@@ -2926,17 +3383,96 @@ body[data-espace="yuno"] .objectif-tuile-carte:hover .cap-menu-bouton {
   justify-content: flex-end;
 }
 
+/* PLUS DE BULLE SOMBRE SOUS L'ÉCUSSON (15 septembre 2026 au soir, demande de
+   Noé : « fais superposer les logos sans qu'ils soient intégrés dans des bulles
+   noires »). Le rond était là pour une raison — les logos sont détourés, et deux
+   blasons clairs qui se touchent ne disent plus où finit le premier —, mais il
+   enfermait chaque club dans une pastille et la rangée se lisait comme six
+   jetons, pas comme une pile d'écussons.
+
+   CE QUI LE REMPLACE : une ombre portée, qui suit la SILHOUETTE du logo au lieu
+   de dessiner un disque autour. Elle sépare deux blasons clairs sans rien
+   ajouter qui ressemble à un cadre — c'est un contour, pas une bulle.
+
+   Et le chevauchement se fait franc (-10 px) : serrés, ils disent « il y en a
+   beaucoup » mieux qu'une rangée espacée, et c'était déjà l'argument du rayon de
+   livres du hub. */
 .porte-ecussons .club-ecusson-grand {
   flex: none;
-  margin-right: -6px;
-  /* Un rond sombre sous chaque écusson : les logos sont découpés, et sans lui
-     deux blasons clairs se toucheraient sans qu'on voie où finit le premier. */
-  padding: 3px;
-  background: var(--fond);
-  border-radius: 50%;
+  margin-right: -10px;
+  filter: drop-shadow(0 0 1.5px var(--fond-carte)) drop-shadow(0 1px 2px rgb(0 0 0 / 0.55));
 }
 
 .porte-ecussons .club-ecusson-grand:first-child { margin-right: 0; }
+
+/* --- LA FRISE DE LA SEMAINE (15 septembre 2026 au soir) ------------------------
+   ELLE S'APPELLE `.porte-frise` ET NON `.porte-semaine`, et ce nom-là a été payé
+   comptant : `.porte-semaine` EST DÉJÀ le bouton doré « Programmer ma semaine »
+   de l'accueil du hub (css/styles.css, chargée sur les trois pages). La frise
+   héritait donc d'un aplat d'accent, d'une hauteur de contrôle et d'un
+   `align-items: center` — mesuré : un bandeau doré plein, les sept cases
+   écrasées à 6 px et les initiales par-dessus. **Huitième fois que ce piège se
+   paie ; le grep de trois secondes n'est toujours pas facultatif.**
+
+   Sept cases, les sept jours qui viennent, une marque par chose posée. Elle
+   habille deux portes — Mes tâches et le calendrier éditorial — parce qu'elles
+   répondent à la même question ; ce qui les distingue est la MARQUE.
+
+   ELLE SE DESSINE MÊME VIDE, et c'est tout son intérêt : une semaine sans rien
+   n'est plus une tuile d'air sous un titre, c'est un calendrier à remplir. */
+.porte-frise {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.porte-frise-rang {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+/* La case est une SURFACE, pas un cadre : le lit dit la place qui reste sans la
+   compter — c'est le fond de la jauge d'une habitude du hub, au motif près. */
+.porte-frise-jour {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 2px;
+  min-height: 1.5rem;
+  padding: 3px;
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  border-radius: 5px;
+}
+
+/* Aujourd'hui se repère sans se nommer : la case est un cran plus claire. Sans
+   elle, sept cases identiques ne diraient pas où l'on se tient dans la semaine. */
+.porte-frise-jour-actif {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+/* UNE MARQUE REMPLIT SA CASE, et se partage quand il y en a plusieurs (`flex: 1`).
+   C'est ce qui rend la frise lisible à cette taille : un jour qui porte quelque
+   chose est PLEIN — ça se voit avant d'être lu —, et les subdivisions disent
+   combien. Un trait de 5 px au fond d'une case de 30, essayé d'abord, se perdait.
+
+   La couleur dit ce que c'est : dorée par défaut — une tâche —, à la couleur de
+   son pilier pour une parution, la cascade `[data-pilier]` de styles.css posant
+   déjà `--pilier` dessus. */
+.porte-frise-jour i {
+  display: block;
+  flex: 1;
+  min-height: 4px;
+  background: var(--pilier, var(--accent));
+  border-radius: 2px;
+}
+
+.porte-frise-lettres {
+  font-size: 0.625rem;
+  line-height: 1;
+  color: var(--texte-discret);
+  text-align: center;
+}
 
 /* LES VISAGES DU RÉSEAU : les pastilles de la fournée, au trait près. Elles
    s'enroulent plutôt que de défiler — une porte ne se parcourt pas, elle se
@@ -3031,7 +3567,10 @@ body[data-espace="yuno"] {
 body[data-espace="yuno"] #vue :is(
   .objectif-titre, .cap-tuile-titre, .projet-nom,
   .moment-titre, .sortie-ligne-titre, .sortie-moment-titre,
-  .pub-titre, .pub-ligne-titre, .tuile-prepa-titre
+  .pub-titre, .pub-ligne-titre, .tuile-prepa-titre,
+  /* Le titre d'une gravure de cap (15 septembre 2026) : un cap est ce qu'il y a
+     de plus haut sur l'écran, il prend la police des noms. */
+  .cap-gravure-titre
 ) {
   font-family: "Clash Display", sans-serif;
   font-weight: 600;
@@ -3101,3 +3640,226 @@ body[data-espace="yuno"] #vue .evenement-entete .moment-titre {
 }
 
 .evenement-grille + .bloc { margin-top: 0; }
+
+/* --- LE TITRE D'UN ÉCRAN DU CAP NE SE DIT PAS DEUX FOIS (15 septembre 2026 au
+   soir) ---------------------------------------------------------------------
+   La barre du site porte le nom de la page, et les modules du hub montés dedans
+   portent le leur. Sur DEUX d'entre eux, c'est le même mot à quarante pixels
+   d'écart — la galerie du cap (« Mes objectifs ») et les tâches (« Mes tâches ») :
+   leur `h1` n'est QUE le nom de la page. *Mesuré avant correction : « Mes tâches »
+   écrit deux fois, l'un sous l'autre.*
+
+   LES DEUX AUTRES LE GARDENT, et c'est ce qui interdit une règle générale :
+   sur `#yuno/objectif/<id>` et `#yuno/projet/<id>`, le `h1` porte le nom du CAP
+   ou du PROJET — ce que la barre ne dit pas, et ce qu'on est venu lire.
+
+   `display: none` et non un retrait hors écran : la barre porte elle-même un
+   `h1` du même texte, la page garde donc son titre pour un lecteur d'écran, et
+   l'entendre deux fois serait le même défaut à l'oreille. */
+#vue [data-hote-cap="cap"] > h1,
+#vue [data-hote-cap="taches"] > h1 {
+  display: none;
+}
+
+/* --- L'ACCUEIL REFONDU : LES PORTES DU JOUR ET LE CAP EN PIED ----------------
+   (15 septembre 2026, demande de Noé)
+
+   TROIS PORTES, choisies dans une réserve selon ce que les données disent.
+   Elles ne peuvent pas emprunter `.portes`, qui est une PAIRE en flex sans
+   retour à la ligne (les deux portes du Réseau, toujours côte à côte) : à trois,
+   sur un téléphone, les vitrines n'auraient plus la place de montrer quoi que ce
+   soit. D'où une grille à elle, qui se remplit d'elle-même. */
+.portes-jour {
+  display: grid;
+  gap: var(--espace-8);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 45rem) {
+  .portes-jour { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Trois de front seulement là où chacune garde de quoi montrer sa vitrine —
+   six écussons, trois lignes de titres. En dessous, deux valent mieux que trois
+   serrées. */
+@media (min-width: 62rem) {
+  .portes-jour { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* --- La carte chaude : six natures, un seul dessin ---------------------------
+   Elle reprend `.sortie-moment`, le bloc que l'accueil portait déjà en tête.
+   Ce qu'elle ajoute lui est propre : la liste des clubs du rituel, et la ligne
+   d'un match proposé. */
+
+/* Les clubs de la fournée : l'écusson devant le nom, comme partout ailleurs
+   dans le site. Ils se replient plutôt que de déborder — une carte de l'accueil
+   ne défile pas. */
+/* `.bloc ul.carte-clubs` et non `.carte-clubs` : au-delà de 60 rem, une règle
+   générale (`.bloc ul:not(.liste-jalons)`, styles.css) passe TOUTES les listes
+   du hub en GRILLE, et elle pèse 0-2-1. Mesuré : les trois clubs s'étalaient en
+   trois colonnes de 394 px sur toute la largeur de la carte. `ul.carte-clubs`
+   (0-1-1) ne suffisait pas non plus — il a fallu ÉGALER la règle, css/yuno.css
+   étant chargée après styles.css. Une spécificité qu'on n'égale pas est une
+   règle qu'on n'écrit pas : septième fois que ce piège se paie. */
+.bloc ul.carte-clubs {
+  display: flex;
+  /* `flex-direction: row` SE REDIT : `.bloc ul` met toutes les listes du hub en
+     COLONNE, et ce qu'on ne redit pas reste. Mesuré : les trois clubs
+     s'empilaient, chacun sur sa ligne, dans une carte large de 1 200 px. */
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: var(--espace-8) var(--espace-16);
+  margin: 0 0 var(--espace-12);
+  padding: 0;
+  list-style: none;
+}
+
+/* Le nom porte sa propre classe, et c'est une leçon payée le jour même :
+   `.contact-nom` est le nom d'une LIGNE de la Passerelle — il vaut
+   `display: block; width: 100%`, et poussait donc chaque écusson sur sa propre
+   ligne. Un nom dans une phrase n'est pas un nom dans une liste. */
+.carte-club-nom { font-weight: 600; }
+
+.bloc ul.carte-clubs li {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  /* La règle générale des listes du site pose une tuile sur chaque `li` ; ici ce
+     sont trois noms dans une phrase, pas trois cartes. */
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+}
+
+.carte-match {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  margin: 0 0 var(--espace-12);
+}
+
+/* Le geste de la carte « À couvrir » est un BOUTON, là où les cinq autres
+   portent un lien : il ouvre la tuile de capture déjà remplie. Il reprend donc
+   l'allure du lien discret, à l'alignement près — un bouton naît avec la sienne. */
+.carte-chaude button.lien-discret {
+  display: inline-block;
+  padding: 0;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+/* --- LE CAP EN PIED, EN GRAVURES --------------------------------------------
+   Deux caps, côte à côte dès qu'il y a la place. `auto-fit` plutôt qu'un nombre
+   de colonnes : il y en a deux aujourd'hui, il y en aura trois un jour. */
+.cap-gravures {
+  display: grid;
+  gap: var(--espace-8);
+  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+}
+
+/* ELLE A MAIGRI LE SOIR MÊME (demande de Noé : « réduis un peu la taille
+   globale »), et c'est le texte descriptif qui a payé le plus — le pourquoi est
+   parti avec. Ce qui reste tient en trois rangs serrés : le nom et l'horizon,
+   l'argent s'il y en a, les marches et leur légende. */
+.cap-gravure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-4);
+  padding: var(--espace-12) var(--espace-16) var(--espace-16);
+  color: var(--texte);
+  background: var(--fond-carte);
+  /* Pas de contour : une tuile posée dans la page se distingue par sa surface
+     (règle du 30 août, reprise par le site le 15 septembre). */
+  border: 0;
+  border-radius: var(--rayon-carte);
+  transition: background 140ms ease;
+}
+
+.cap-gravure:hover { background: color-mix(in srgb, var(--fond-carte) 88%, var(--accent)); }
+
+/* Le titre et l'horizon sur la même ligne, l'horizon poussé au bout. Il se
+   replie sous le titre quand celui-ci prend deux lignes — c'est une mention, pas
+   une colonne. */
+.cap-gravure-tete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espace-12);
+  flex-wrap: wrap;
+}
+
+/* Le titre garde la police des noms, d'un cran plus bas : à 1,375 rem il pesait
+   autant qu'un `h1` de page, pour un bloc qui ferme l'écran. */
+.cap-gravure-titre { font-size: 1.125rem; }
+
+.cap-gravure-horizon {
+  flex: none;
+  font-size: 0.8125rem;
+}
+
+.cap-gravure-argent {
+  margin: var(--espace-4) 0 0;
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+}
+
+/* La jauge suit son texte de près : ce sont une phrase et sa mesure, pas deux
+   informations. */
+
+/* La jauge de l'argent : la seule mesure du cap de Yuno qui ait bougé. Elle
+   porte l'or — « l'état actif, les chiffres, l'action qui part » — et rien
+   d'autre : ni rouge, ni seuil, ni couleur qui change avec le chiffre. */
+.cap-gravure-jauge {
+  display: block;
+  height: 5px;
+  margin-top: var(--espace-4);
+  border-radius: var(--rayon-pastille);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  overflow: hidden;
+}
+
+.cap-gravure-jauge i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+
+/* LES MARCHES, PLUS HAUTES QU'AILLEURS : la gravure est le seul endroit du site
+   où le chemin d'un cap est ce qu'on vient regarder. */
+/* Les marches restent un cran plus hautes qu'ailleurs (9 px dans le hub) : la
+   gravure est le seul endroit du site où le chemin d'un cap est ce qu'on vient
+   regarder. Elles ont fait 12 px une heure — trop, une fois le paragraphe parti
+   et le titre redescendu. */
+.cap-gravure .jalons-chemin {
+  height: 10px;
+  margin-top: var(--espace-8);
+}
+
+/* UNE SEULE MARCHE EN OR À LA FOIS — la suivante, celle que la légende nomme
+   juste en dessous (`marquerSuivant`, js/objectifs-commun.js). L'œil tombe sur
+   la marche à faire, pas sur les trois qui manquent : c'est la philosophie n° 1
+   du hub appliquée à un cap qui n'a encore franchi aucun jalon. */
+.cap-gravure .jalons-chemin i.suivant {
+  background: var(--accent);
+  /* Elle respire, doucement et une seule fois par cycle : c'est une invitation,
+     pas une alerte. Coupée avec le reste des mouvements du site. */
+  animation: gravure-souffle 3.2s ease-in-out infinite;
+}
+
+@keyframes gravure-souffle {
+  0%, 70%, 100% { opacity: 1; }
+  85% { opacity: 0.45; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cap-gravure .jalons-chemin i.suivant { animation: none; }
+}
+
+.cap-gravure .progression-legende {
+  margin-top: var(--espace-4);
+  text-align: left;
+}

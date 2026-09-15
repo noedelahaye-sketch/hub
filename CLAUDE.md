@@ -2226,14 +2226,18 @@ Carnet unique : le réseau de Yuno **et** les partenaires du FCH. Pas de colonne
 
 - `id` uuid PK
 - `titre` text NOT NULL · `client` text · `client_id` uuid (fiche du réseau)
-- `statut` text default 'en_cours' CHECK (en_cours, livree)
+- `statut` text default 'en_cours' CHECK (devis, en_cours, livree, payee) — **le cycle n'en écrit plus que TROIS depuis le 15 septembre 2026** : `devis → en cours → livrée` (décision de Noé, « payée et encaissée c'est la même chose »). `payee` demeure accepté par le CHECK — un CHECK s'élargit, il ne se resserre jamais, comme le format `post` d'une publication — et se lit encore ; plus rien ne l'écrit. *Ce que le cran de trop coûtait : `argentDeYuno` ne comptait que les livrées, donc une commande passée en « payée » sortait du compte au moment même où l'argent arrivait.*
 - `montant` numeric(10,2) — ce que la prestation rapporte
 - `frais` numeric(10,2) — ce que le déplacement a coûté (26 août 2026)
 - `evenement_id` uuid — la sortie à laquelle elle se rattache
 - `echeance` date · `lien_livrable` text · `notes` text
 - `created_at` timestamptz default now()
 
-Livrer une commande insère une victoire, comme une tâche terminée.
+Livrer une commande insère une victoire, comme une tâche terminée — et c'est le
+dernier cran : encaisser n'en crée pas une seconde, c'est le même travail.
+**Ce qui est FINI se teste par `COMMANDE_FINIE` (js/argent-yuno.js), jamais par
+une liste recopiée** : c'est le module qui dit ce qu'encaissé veut dire, et il
+reconnaît encore les lignes anciennes en `payee`.
 
 **C'est ici que vit l'argent de Yuno**, et nulle part ailleurs. Une prestation
 se saisit depuis deux écrans — la fiche d'une sortie sur le site Yuno, le détail
@@ -4761,7 +4765,8 @@ champ avec « Il lui manque son nom. »
   29 août** — la bande d'onglets, la colonne des projets, les deux colonnes de
   la journée — et il ne se voit jamais sur l'écran large où l'on travaille. Pour
   une piste de grille, la même chose s'écrit `minmax(0, 1fr)` et non `1fr`.
-- **Avant de nommer une classe CSS OU UNE FONCTION, vérifier que le nom est libre — ET DANS LES TROIS FEUILLES.** `index.html` charge `css/styles.css`, `css/yuno.css` ET `css/fch.css` : un nom pris par la feuille d'un site s'applique au hub. Le 2 septembre 2026, `.projet-tete` (déjà pris par la tuile de projet du tableau de bord) a mis la tête de la page d'un projet sur une seule ligne, titre compris ; `.fiche-tete`, essayé ensuite, était pris par `css/fch.css`. Deux collisions pour une même tête. Le 1er septembre 2026, `construireHabitudesDuJour` a été écrite une seconde fois dans js/perso.js : le module s'est chargé sur « Identifier has already been declared » et a emporté tout l'écran. `node --check` passe — c'est un fichier valide —, seul le chargement tombe. La leçon est la même que pour `.barre` : un `grep` de trois secondes. `.barre`
+- **Une règle générale qui met les listes en grille ET en colonne se redit DEUX FOIS.** Payé une septième fois le 15 septembre 2026, sur la rangée de clubs de la carte du rituel de Yuno : `.bloc ul:not(.liste-jalons)` passe toutes les listes en GRILLE au-delà de 60 rem (0-2-1) — `ul.carte-clubs` (0-1-1) ne suffisait pas, il a fallu écrire `.bloc ul.carte-clubs` pour égaler —, et `.bloc ul` les met en COLONNE, donc `flex-direction: row` se redit par-dessus. **Deux corrections pour une seule liste, et chacune se voit à l'écran comme un défaut différent** : trois clubs étalés sur toute la largeur, puis trois clubs empilés.
+- **Avant de nommer une classe CSS OU UNE FONCTION, vérifier que le nom est libre — ET DANS LES TROIS FEUILLES.** *Payé une huitième fois le 15 septembre 2026 au soir : `.porte-semaine`, choisie pour la frise d'une porte du site Yuno, EST le bouton doré « Programmer ma semaine » de l'accueil du hub (css/styles.css, chargée sur les trois pages). La frise en héritait un aplat d'accent, une hauteur de contrôle et un `align-items: center` — un bandeau doré plein, les sept cases écrasées à 6 px et les initiales par-dessus.* `index.html` charge `css/styles.css`, `css/yuno.css` ET `css/fch.css` : un nom pris par la feuille d'un site s'applique au hub. Le 2 septembre 2026, `.projet-tete` (déjà pris par la tuile de projet du tableau de bord) a mis la tête de la page d'un projet sur une seule ligne, titre compris ; `.fiche-tete`, essayé ensuite, était pris par `css/fch.css`. Deux collisions pour une même tête. Le 1er septembre 2026, `construireHabitudesDuJour` a été écrite une seconde fois dans js/perso.js : le module s'est chargé sur « Identifier has already been declared » et a emporté tout l'écran. `node --check` passe — c'est un fichier valide —, seul le chargement tombe. La leçon est la même que pour `.barre` : un `grep` de trois secondes. `.barre`
   existait déjà (la progression de la formation) et la barre d'onglets l'a repris :
   déclarée plus bas, l'ancienne gagnait, et la nouvelle héritait de `height: 6px`
   — plus `.barre span` qui peignait les trois traits du menu en un seul bloc. Un

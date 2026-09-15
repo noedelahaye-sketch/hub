@@ -26,9 +26,18 @@
 // sans le dire. Le test porte donc sur le PREMIER SEGMENT du hash.
 export const dansLeSiteYuno = () => /^#yuno(\/|$)/.test(location.hash);
 
-// La galerie. `vue` ne vaut que pour le hub : le site n'en a qu'une.
+// La galerie, et son étage. LE SITE A SES SOUS-VUES DEPUIS LE 15 SEPTEMBRE 2026
+// au soir (demande de Noé : « dans le menu déroulant mon cap, rajoute les pages
+// mes objectifs, mes projets ») : deux entrées de menu qui mèneraient toutes
+// deux à `#yuno/cap` seraient deux liens identiques, et **trois liens identiques
+// ne sont pas un menu** — c'est l'argument qui a découpé `#objectifs` dans le
+// hub le 28 août.
+//
+// L'étage vit au TROISIÈME segment chez Yuno (`#yuno/cap/caps`) là où le hub le
+// porte au second (`#objectifs/caps`) : le site a déjà consommé le premier pour
+// se nommer. C'est la même traduction que pour `#yuno/objectif/<id>`.
 export function versLaGalerieDuCap(vue = '') {
-  if (dansLeSiteYuno()) return '#yuno/cap';
+  if (dansLeSiteYuno()) return vue ? `#yuno/cap/${vue}` : '#yuno/cap';
   return vue ? `#objectifs/${vue}` : '#objectifs';
 }
 

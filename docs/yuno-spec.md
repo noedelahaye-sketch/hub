@@ -444,6 +444,7 @@ le site »*.
 | Adresse | Ce que c'est |
 |---|---|
 | `#yuno/cap` | « Mon cap » — ses objectifs, ses projets, ses périodes |
+| `#yuno/cap/caps` · `#yuno/cap/projets` | un étage à la fois |
 | `#yuno/objectif/<id>` | la page entière d'un cap : jalons, **son calendrier**, le rail de ses projets |
 | `#yuno/projet/<id>` | la page entière d'un projet : étapes, calendrier, tâches |
 | `#yuno/taches` | « Mes tâches », **groupées comme le hub** — une occurrence par série |
@@ -483,10 +484,44 @@ laisse le module écrire dedans (`monterLeCap`). Il n'a fallu que trois choses :
   porte vers un ailleurs qu'il n'ouvre jamais — et son sous-titre dit « pour
   Yuno » plutôt que « tous espaces ».
 
-**LE MENU PORTE UNE RUBRIQUE « MON CAP »**, avec « Mes tâches » dessous : c'est
-la structure du hub, où ces deux écrans sont deux pages réunies par le menu. La
-galerie compare des caps et des projets ; la page des tâches ne cache rien et
-range. Les empiler sur un écran en aurait fait une page qu'on fait défiler.
+**LE MENU PORTE UNE RUBRIQUE « MON CAP »** — c'est la structure du hub, où ces
+écrans sont des pages réunies par le menu. La galerie compare des caps et des
+projets ; la page des tâches ne cache rien et range. Les empiler sur un écran en
+aurait fait une page qu'on fait défiler.
+
+**TROIS LIGNES DESSOUS DEPUIS LE 15 SEPTEMBRE 2026 AU SOIR** (demande de Noé :
+*« dans le menu déroulant mon cap, rajoute les pages mes objectifs, mes
+projets »*) : **Mes objectifs · Mes projets · Mes tâches**. Le grand titre mène
+toujours à la page entière, les trois galeries d'affilée. Ce sont les noms du
+hub, au mot près — un nom par page, des deux côtés.
+
+> *Ce que ça a demandé, et ça renverse une règle écrite le matin même.* La page
+> générale du site **n'avait pas de sous-vues** : « le site n'en montre que les
+> siens — les trois étages tiennent sur un écran ». Le motif tenait tant que la
+> page était seule dans le menu ; **deux entrées qui mèneraient toutes deux à
+> `#yuno/cap` seraient deux liens identiques**, et trois liens identiques ne sont
+> pas un menu — c'est exactement l'argument qui a découpé `#objectifs` dans le hub
+> le 28 août. La page entière reste, à son adresse nue ; les deux étages
+> s'ouvrent chacun à la sienne.
+
+- **L'ÉTAGE VIT AU TROISIÈME SEGMENT** (`#yuno/cap/caps`) là où le hub le porte
+  au second (`#objectifs/caps`) : le site a déjà consommé le premier pour se
+  nommer. Même traduction que pour `#yuno/objectif/<id>`, et `js/cap-adresses.js`
+  la fait — les liens « Tous les objectifs » et « Tous les projets » des pages du
+  cap y mènent donc, comme dans le hub.
+- **RIEN N'EST RECOPIÉ** : c'est la galerie du hub, qui sait découper ses étages
+  depuis le 28 août (`route.vue`). Le site ne fait que lui passer l'étage lu dans
+  l'adresse. Un nom d'étage inconnu ne casse rien — la galerie retombe sur ses
+  trois étages.
+- **LA BARRE NOMME L'ÉTAGE**, elle aussi : sans ça, elle aurait dit « Mon cap »
+  sur les trois, et ç'aurait été un nom dans le menu et un autre en tête de page.
+- **ET LE TITRE NE SE DIT PLUS DEUX FOIS.** *Défaut trouvé en construisant, et
+  antérieur : sur `#yuno/taches`, la barre écrivait « Mes tâches » et le module
+  monté le réécrivait quarante pixels plus bas.* Le `h1` du module se tait sur les
+  deux écrans dont il n'est QUE le nom de la page — la galerie et les tâches. **Les
+  deux autres le gardent** : sur `#yuno/objectif/<id>` et `#yuno/projet/<id>`, il
+  porte le nom du cap ou du projet, ce que la barre ne dit pas et ce qu'on est venu
+  lire.
 
 **CE QUI RESTE À L'ACCUEIL** : les tuiles de cap, inchangées d'allure — titre,
 date, marches, prochain jalon —, mais devenues des LIENS vers leur page.
@@ -521,16 +556,41 @@ quelle idée oubliée remonte, ce qui part cette semaine, quelle feuille attend.
   pays ; et le mot de la banque est « fouiller », ce qu'un tirage fait mieux que
   les trois dernières posées.
 - **LES ÉCUSSONS SE CHEVAUCHENT**, comme les couvertures d'un rayon du hub :
-  serrés, ils disent « il y en a beaucoup » mieux qu'une rangée espacée. Chacun
-  porte un rond sombre — les logos sont détourés, et deux blasons clairs se
-  toucheraient sans qu'on voie où finit le premier.
-- **UNE VITRINE VIDE SE TAIT** : sans parution programmée, sans sortie préparée,
-  la porte ne montre que son métier. Un « aucune parution » écrirait un manque là
-  où il n'y a qu'un calendrier à remplir — un vide ouvre une porte, il ne
-  s'excuse pas.
-- **LA PORTE EST DEVENUE UNE COLONNE** : la tête (icône et titre), la vitrine, et
-  le métier en pied, collé au bas par `margin-top: auto` — sans lui, deux portes
-  voisines écriraient leur service à deux hauteurs différentes. Les portes du
+  serrés, ils disent « il y en a beaucoup » mieux qu'une rangée espacée.
+  **SANS BULLE SOMBRE depuis le 15 septembre 2026 au soir** (demande de Noé :
+  *« fais superposer les logos sans qu'ils soient intégrés dans des bulles
+  noires »*). Le rond était là pour une raison — les logos sont détourés, et deux
+  blasons clairs qui se touchent ne disent plus où finit le premier — mais il
+  enfermait chaque club dans une pastille, et la rangée se lisait comme six
+  jetons plutôt que comme une pile d'écussons. **Ce qui le remplace : une ombre
+  portée**, qui suit la SILHOUETTE du logo au lieu de dessiner un disque autour —
+  un contour, pas une bulle. Et le chevauchement passe de 6 à 10 px.
+- **UNE VITRINE VIDE SE TAIT** : sans sortie préparée, la porte ne montre que son
+  métier. Un « aucune feuille » écrirait un manque là où il n'y a rien à
+  reprocher — un vide ouvre une porte, il ne s'excuse pas.
+  *L'éditorial fait exception depuis le 15 septembre au soir : sa frise se
+  dessine même vide, parce que sept cases vides MONTRENT le trou là où une tuile
+  muette ne montrait rien. Voir « La frise de la semaine » plus bas.*
+- **LA PORTE EST DEVENUE UNE COLONNE**, et **LA VITRINE PASSE DEVANT LE TITRE
+  depuis le 15 septembre 2026 au soir** (demande de Noé : *« mets le titre de la
+  tuile en dessous des schémas, logos… »*). **C'est la grammaire d'une légende**,
+  et elle dit mieux ce qu'une porte est devenue ce jour-là : on regarde ce qu'il y
+  a derrière, puis on lit où ça mène. *Le titre en tête faisait de la vitrine une
+  illustration posée sous un libellé — l'ordre exact que la refonte des portes
+  voulait renverser, puisqu'une porte doit dire ce qu'on IGNORE avant de
+  l'ouvrir ; son nom, on le connaît déjà.*
+  L'ordre est donc : la **vitrine**, la **tête** (icône et titre), le **métier**.
+  C'est la TÊTE qui porte désormais le `margin-top: auto` : le nom et le métier
+  font un bloc collé au bas, la vitrine occupant tout ce qui reste au-dessus —
+  sans ce report, une vitrine courte laissait un trou SOUS le titre, et deux
+  portes voisines écriraient leur nom à deux hauteurs différentes.
+  **Le changement vaut pour les CINQ portes du site** : c'est un seul composant,
+  et deux portes de deux dessins n'en feraient plus une grammaire.
+- **ET LA TUILE A MAIGRI DANS LA FOULÉE** (demande de Noé, le même soir : *« réduis
+  la taille de ces tuiles »*). C'est la vitrine en tête qui l'a permis : **une
+  porte n'a plus besoin de respirer autour d'un libellé, elle montre.**
+  Rembourrage, écarts et corps descendent d'un cran, rien n'est supprimé, et la
+  frise perd 8 px de case. *Mesuré : 134 px de haut, ramenés à 107.* Les portes du
   Réseau et des Missions, qui étaient des liens à filet (`.lien-externe`),
   reprennent cette forme : cinq portes de deux dessins n'en feraient plus une
   grammaire.
@@ -564,7 +624,277 @@ nature. Le hub a le même espace Calendrier, tous espaces confondus
 ### `#yuno` — l'accueil du site
 
 **Elle montre et elle ouvre des portes ; elle ne gère rien** (décision de Noé,
-12 août). Dans l'ordre :
+12 août).
+
+#### REFONDUE LE 15 SEPTEMBRE 2026 : deux blocs fixes, et un classement
+
+**LA DEMANDE DE NOÉ** : *« repense à comment elle doit être organisée, quelles
+informations doivent y être, quels liens il doit y avoir… ça peut être des
+tuiles / des informations dynamiques, qui changent en fonction de ce qui est le
+plus pertinent à tel moment. »*
+
+**LE DÉFAUT, MESURÉ AVANT DE TOUCHER À QUOI QUE CE SOIT.** Ce jour-là, la page
+affichait : **pas de sortie du moment** (aucune sortie à venir, la dernière
+remontant au 28 août), le mur, deux tuiles de cap, et un titre « En création »
+**au-dessus du vide** (zéro publication programmée). *Deux blocs sur quatre
+étaient vides* — pendant que le site portait 18 idées, 16 tâches ouvertes, trois
+feuilles de préparation et 88 clubs jamais contactés sur 97, dont l'accueil ne
+disait rien.
+
+**Le défaut n'était pas un oubli, il était STRUCTUREL** : la page était dessinée
+autour du terrain, or **Yuno vit par PICS** — une sortie, le tri, le post, puis
+trois semaines de silence. `sortieDuMoment` ne regarde que 48 h devant. Les
+jours de pic, l'accueil était excellent ; les autres jours, c'est-à-dire la
+plupart, il ne disait rien.
+
+> **LA RÈGLE : l'accueil n'a que DEUX blocs fixes — le mur et le cap. Tout le
+> reste est un CLASSEMENT.**
+
+Une **carte chaude** en tête, tirée d'une cascade ; **trois portes** choisies
+dans une réserve, selon ce que les données disent. La page ne change pas de
+forme, elle change de contenu — c'est ce que faisait déjà la sortie du moment,
+seule à porter tout le mouvement de l'écran. **Et elle n'est jamais muette** :
+le dernier rang de la cascade a toujours quelque chose à dire.
+
+**CE QUE ÇA RENVERSE, et il faut le dire** : *« l'accueil ne porte plus aucune
+porte »* (12 août 2026), au motif que « ces deux lieux sont dans la barre ». Le
+motif était juste quand la barre nommait tout le site. Depuis le menu du matin
+même, **le site compte dix-sept écrans pour cinq onglets** — et l'accueil est le
+seul endroit d'où l'on puisse dire lequel des douze autres compte aujourd'hui.
+**Les portes qu'il ouvre sont justement celles que la barre ne nomme pas.**
+
+**LA CASCADE — le premier rang satisfait gagne, et il est SEUL** (la mécanique
+du bandeau de l'après du hub : « un seul à la fois »). Deux cartes chaudes
+empilées, ce sont deux interruptions.
+
+| Rang | Elle apparaît quand | Ce qu'elle montre |
+|---|---|---|
+| 1 | une sortie est **en cours**, ou finie depuis < 24 h | *(inchangé)* la phase, les trois lignes qui restent, cochables |
+| 2 | une sortie **dans les 48 h** | sa feuille, ou « Préparer » |
+| 3 | une **commande** non livrée à échéance ≤ 7 j | le livrable qui attend, et pour qui |
+| 4 | un **post né d'un match**, encore en « idée », < 7 j | « il attend son texte » |
+| 5 | **la fournée de la semaine n'est pas faite** | trois clubs · « 9 sur 97 contactés » |
+| 6 | sinon | **un match à couvrir** |
+| 7 | repli | **l'idée du jour** |
+
+- **LES 48 H DU RANG 2 NE BOUGENT PAS** (décision de Noé, le jour même — sept
+  jours avaient été proposés, il a maintenu le seuil). C'est `AVANT_MONTE_A`, le
+  seuil du site depuis le 26 août : **la carte de préparation reste le signal du
+  JOUR du match**, et ce sont les rangs du dessous qui portent les jours creux.
+- **LE RANG 5 OUVRE DÈS LE LUNDI ET NE SE FERME QUE QUAND C'EST FAIT** (règle de
+  Noé : *« chaque lundi ça doit être la fournée de la semaine tant que c'est pas
+  fait, l'objectif de la semaine non-atteint »*). Le test est celui de la
+  Passerelle, au mot près — les envois de la semaine contre l'objectif doux —, et
+  son bandeau dit déjà « C'est fait pour cette semaine » dessus. **Aucune borne
+  haute, aucune semaine manquée comptée** : le lundi suivant, le compteur repart
+  et la carte revient.
+- **CONSÉQUENCE ASSUMÉE, ET ELLE EST BELLE** : la fournée est le rang le plus
+  souvent vrai, donc **le match à couvrir ne se montre qu'une fois le rituel
+  passé**. Ce n'est pas un défaut de l'ordre que Noé a posé, c'est ce qu'il
+  produit — **le terrain devient la récompense du rituel**, et l'accueil ne
+  propose de sortir que quand la semaine a ouvert ses portes. *Si le rang 6 ne se
+  voit jamais à l'usage, c'est ce classement-là qu'il faut rouvrir, pas la règle
+  du lundi.*
+- **LE RANG 6 EST CELUI QUI N'EXISTAIT PAS.** La table `matchs_pistes` porte
+  3 314 matchs ; ils ne servaient qu'à décorer une carte du vivier. Or la
+  **première** question d'arbitrage de « Terrain » est *« est-ce que ça augmente
+  le temps dehors ou le temps dedans ? »* — et un accueil qui, un jour creux,
+  propose un match à aller shooter est la seule chose de ce site qui y réponde oui
+  sans réserve. **C'est aussi ce qui remplace, sans jamais l'écrire, le « 18 jours
+  sans sortie » qu'on s'interdit d'afficher : on ne compte pas le creux, on
+  l'ouvre.** **Les Léopards d'abord** (l'accroche éditoriale du vivier, le pont
+  vers la CAN 2027), puis le tirage du jour. Un match **déjà au calendrier** ne se
+  propose pas, et il se reconnaît au club et à la date, jamais au titre.
+  Son geste est celui de la fiche d'un club, au trait près (`data-poser-match`) :
+  la tuile s'ouvre déjà remplie, Noé corrige le jour et l'heure avant de poser —
+  un match du calendrier officiel n'a souvent pas d'horaire.
+  - **PLUS DE SEPT JOURS DEVANT — J+8 à J+21** (règle de Noé, 15 septembre 2026
+    au soir : *« il faut que ce soit un match plus loin dans le temps, au moins
+    + de 7 jours »*). Trois jours, le réglage d'origine, ne laissaient pas le
+    temps de ce qu'une sortie demande : écrire au club, demander une place, poser
+    le déplacement. **Une proposition qu'on ne peut pas saisir n'est pas une
+    proposition.** La borne haute recule d'autant (14 → 21) : sans elle, la
+    fenêtre serait tombée à une seule semaine de candidats.
+  - **ELLE A CHANGÉ DE SOURCE AU PASSAGE, et c'est la mesure qui l'a dit.** La
+    carte lisait `piste.prochain`, servi par `prochain_match_par_piste` — LE match
+    le plus proche de chaque club. Or **un club joue chaque week-end** : passée à
+    J+8, la fenêtre ne trouvait plus **aucun** candidat, les « prochains » tombant
+    tous dans les sept jours. Elle lit donc `api.matchsEntre`, un match par
+    affiche, **chargé avec les pistes** — une requête de plus dans une salve déjà
+    parallèle, donc aucun aller-retour supplémentaire, et un match ne se lit
+    jamais sans son club.
+  - **UNE CROIX REFUSE LA PROPOSITION** (même demande : *« avoir la possibilité de
+    refuser la proposition pour que ça affiche le cran d'après »*) : le tirage en
+    rend un autre, et **quand le vivier n'en offre plus, la cascade descend d'un
+    rang** toute seule. Elle n'écarte rien d'autre — le match reste au calendrier
+    du club, la piste au vivier, et la fiche du club continue de le proposer :
+    c'est une place à l'écran qu'on reprend, pas un match qu'on raye. D'où le
+    `localStorage` plutôt que la base, comme la croix de la sortie du moment.
+    **La clé porte la DATE** (`<piste>:<jour>`) et non le seul club : refuser un
+    match ne refuse pas le club pour toujours, et la ligne **se périme d'elle-même**
+    quand le jour est passé — le ménage se fait à la lecture, ce qui évite qu'une
+    liste de refus grossisse sans fin dans le navigateur.
+- **LE RANG 7 EST LE MÊME TIRAGE QUE CRÉER**, et c'est ce qui autorise les deux
+  écrans à le montrer : `ideeDuJour` est UNE fonction, avec la date pour graine.
+  Les deux cartes ne peuvent pas dire deux idées différentes. Celle de l'accueil
+  est un aperçu qui ouvre la page ; les gestes vivent là-bas.
+
+**LES TROIS PORTES DU JOUR**, choisies dans une réserve de sept. Les vitrines
+sont **celles des paliers, empruntées et non recopiées**.
+
+| Porte | Elle monte quand |
+|---|---|
+| **Préparations** | une feuille attend pour une sortie à venir |
+| **Mes tâches** | il reste des tâches ouvertes |
+| **Calendrier éditorial** *(le trou)* | **rien n'est programmé à 7 jours** |
+| **Le vivier** | des clubs n'ont jamais été contactés |
+| **Missions** | une commande est ouverte |
+| **Calendrier éditorial** *(ce qui part)* | la semaine porte des parutions |
+| **Banque d'idées** · **Le réseau** | *toujours* |
+
+- **Une porte qui n'a rien à dire ne monte pas** : la rangée du jour est un
+  classement, pas un inventaire. **Le test porte sur les DONNÉES, jamais sur la
+  vitrine** — depuis que la frise se dessine même vide, elle ne peut plus servir
+  de test à la porte qu'elle habille.
+- **Jamais deux portes de la même rubrique**, sinon un jour chargé au Réseau
+  mangerait la rangée.
+- **La banque et le réseau ferment la réserve** : ce sont les deux qui ont
+  toujours quelque chose à montrer, donc les deux qui ne doivent jamais passer
+  devant une urgence.
+- **Le calendrier éditorial figure DEUX FOIS, et les deux s'excluent** : une
+  semaine SANS rien de programmé est une information qui passe devant presque
+  tout — c'est le trou qu'un calendrier éditorial est fait pour montrer —, une
+  semaine pleine n'est qu'un rappel. Même porte, deux rangs.
+- **Pas d'icônes**, à la différence des portes de Créer : la vitrine EST le
+  visuel de la tuile.
+- **La vitrine des tâches replie les séries** — une occurrence par série, la plus
+  proche (règle de l'espace Tâches du hub, 27 août). *Elle se paie comptant :
+  mesuré sur les données de Noé, le compte disait « 16 ouvertes » là où c'est
+  **une** chose qui revient seize fois.*
+
+**LA FRISE DE LA SEMAINE** (15 septembre 2026 au soir, demande de Noé : *« j'aime
+pas trop ces tuiles, dans la forme et dans le contenu pour mes tâches et
+calendrier éditorial qui sont trop vides ; je ne sais pas trop comment améliorer
+mais que ce ne soit pas que du texte, à l'image du vivier »*).
+
+**Il a raison, et le pire des deux se voyait le mieux** : une porte dont la
+vitrine est faite de LIGNES DE TEXTE n'a plus rien à montrer dès qu'il n'y a
+qu'une ligne — ou zéro. L'éditorial n'affichait rien du tout, et la règle « une
+vitrine vide se tait » le laissait comme une boîte d'air sous son titre.
+*Se taire est juste quand il reste autre chose à regarder ; ici il ne restait
+rien.*
+
+**LA FRISE DESSINE LE VIDE AU LIEU DE SE TAIRE** : sept cases, les sept jours qui
+viennent, une marque par chose posée. Une semaine sans rien n'est plus une tuile
+vide, c'est **un calendrier à remplir dont le trou se voit** — ce qu'un
+calendrier éditorial est précisément fait pour montrer.
+
+- **LES DEUX PORTES LA PARTAGENT**, et c'est assumé : elles répondent à la MÊME
+  question — qu'est-ce qui est posé sur les jours qui viennent. **Ce qui les
+  distingue est la MARQUE, pas le dessin** : dorée pour une tâche, à la couleur
+  de son pilier pour une parution. *Ça infléchit la règle des vitrines (« chaque
+  vitrine a la forme de sa page ») : la page des tâches est une liste, pas un
+  calendrier. Mais elle se range par échéance, et une semaine en est une lecture
+  juste — tandis qu'une liste de titres dans une tuile de cette taille n'était
+  qu'une phrase de plus.*
+- **UNE MARQUE REMPLIT SA CASE**, et se partage quand il y en a plusieurs : un
+  jour qui porte quelque chose est PLEIN, ça se voit avant d'être lu, et les
+  subdivisions disent combien. *Un trait de 5 px au fond d'une case de 30,
+  essayé d'abord, se perdait.* Trois au plus : au-delà, la case est pleine et un
+  trait de plus ne se compte plus du regard.
+- **Aujourd'hui se repère sans se nommer** — sa case est un cran plus claire.
+  Sept cases identiques ne diraient pas où l'on se tient dans la semaine.
+- **La MÊME vitrine sert la porte de Créer** : une porte ne se dessine pas deux
+  fois.
+- **Elle s'appelle `.porte-frise` et non `.porte-semaine`**, et ce nom-là a été
+  payé comptant : `.porte-semaine` EST DÉJÀ le bouton doré « Programmer ma
+  semaine » de l'accueil du hub, dans une feuille chargée sur les trois pages.
+  *Mesuré : un bandeau doré plein, les sept cases écrasées à 6 px et les
+  initiales par-dessus.*
+
+**LE CAP EN PIED, EN GRAVURES** (décision de Noé, le même jour : *« le cap en
+pied, change un peu la forme par rapport à actuellement pour que ce soit plus
+visuel »*).
+
+**POURQUOI EN PIED** : la leçon que le hub a tranchée deux fois — le cap passé
+sous la journée le 13 août, les périodes qui ferment `#objectifs` le 28 — *« on
+relit ce qui cadre quand on lève la tête, pas en ouvrant l'application »*. Et
+depuis le matin même, le cap a sa PAGE dans le site : l'accueil n'en garde que la
+gravure. **Ça ne contredit pas « du cap vers le contenu » (§2)** : cette règle
+dit ce que l'espace sert en premier, pas ce qui est en haut de l'écran.
+
+**CE QUI TUE LA FORME D'AVANT, mesuré** : les deux caps de Yuno portent **sept
+jalons dont aucun n'est atteint**, et aucun n'est daté. Deux rangées de marches
+vides l'une sous l'autre, c'est un accueil qui s'ouvre sur deux zéros. **La
+gravure ne montre donc jamais un pourcentage : elle nomme la marche suivante et
+l'allume.**
+
+Trois choses en font une gravure plutôt qu'une tuile :
+
+- **le titre en Clash Display** — la police des noms de créations du site ;
+- **une seule marche en or à la fois, la suivante** — celle que la légende nomme
+  juste en dessous (`marquerSuivant`, js/objectifs-commun.js, une option pour que
+  rien ne bouge dans le hub ni au FCH). L'or est déjà « l'état actif, l'action qui
+  part » chez Yuno : l'œil tombe sur la marche à faire, pas sur les trois qui
+  manquent ;
+- **et RIEN D'AUTRE** : ni pourquoi, ni cible, ni description.
+
+**LE POURQUOI A VÉCU UNE HEURE ICI**, et il est reparti le soir même (Noé :
+*« trop de texte pour les objectifs, pas besoin du texte descriptif, réduis un
+peu la taille globale »*). Le motif d'origine se tenait — il est écrit en base et
+ne se lit nulle part ailleurs sur le site — **mais il se trompait d'écran** :
+quatre lignes de prose en pied d'un tableau de bord, c'est un paragraphe qu'on ne
+relit jamais et qui pousse le reste hors de vue. *Un pourquoi se relit les jours
+sans motivation, c'est-à-dire sur SA page, où l'on est venu exprès.* La gravure
+ne garde que ce qui se **compare** d'un cap à l'autre : le nom, l'horizon, la
+marche suivante, et l'argent quand il y en a.
+
+**ELLE A MAIGRI D'AUTANT** : titre d'un cran plus bas (1,125 rem — à 1,375 il
+pesait autant qu'un `h1` de page), rangs serrés, marches à 10 px au lieu de 12.
+*Mesuré : 286 px de haut à 151.*
+
+**PAS DE COMPTE À REBOURS** : « juin 2027 » cadre, « dans 288 jours » presse.
+
+**L'ARGENT EST DANS LA GRAVURE** (demande de Noé, le même jour) : « 1 115 € sur
+5 155 € », avec sa jauge. C'est la seule mesure du cap de Yuno qui ait bougé, et
+une gravure muette à côté d'une gravure chiffrée aurait été bancale. Le texte
+vient de `mesuresDuCap` — celui que la page `#photo` du hub affiche déjà, mot
+pour mot — et la part du même calcul : deux comptes pour un même remboursement
+finiraient par ne plus dire le même reste. **La jauge ne se dessine pas à zéro**
+(règle du hub : une série à zéro ne s'affiche pas) — une barre vide se lit comme
+un reproche là où le texte dit simplement où en est le compte.
+
+**RIEN NE S'Y RÈGLE, et c'est un retour à la règle de la page.** Le menu discret
+(modifier · marquer atteint · supprimer) et la tuile « Ajouter un objectif » sont
+partis avec les tuiles : **ces gestes vivent sur `#yuno/cap`**, la galerie du hub
+montée dans le site le matin même, qui les porte tous. *Et ça répare un défaut
+qu'on ne voyait pas : ces écouteurs étaient posés sur la SECTION, donc ils
+attrapaient aussi les clics venus des écrans du cap montés dedans — un menu à
+trois points pressé sur `#yuno/cap` déclenchait le rendu de Yuno, qui réécrit la
+section et remonte le module sous les doigts.*
+
+**CE QUE ÇA COÛTE** : quatre lectures de plus à l'accueil — `pistes`, `envois`,
+`taches`, `materiel` —, **et elles servent toutes à DÉCIDER de ce que la page
+montre**, aucune n'est décorative. Trois des quatre étaient déjà lues par
+d'autres écrans du site, et le cache de session vaut pour tout le site : les
+payer à l'accueil, c'est les rendre gratuites ensuite.
+
+**L'ACCUEIL NE GÈRE TOUJOURS RIEN**, à l'entorse près qui existait déjà : cocher
+une ligne de préparation au bord du terrain.
+
+**CE QUI A DISPARU** : le bloc « En création » comme bloc fixe (il redevient la
+porte du calendrier éditorial, qui se tait quand elle n'a rien à dire, au lieu
+d'un titre au-dessus du vide) et le titre « Objectifs » (deux gravures de cap
+n'ont pas besoin qu'on annonce que ce sont des caps).
+
+**LES SEPT RANGS ET LE CLASSEMENT SE VÉRIFIENT HORS ÉCRAN** : `carteDuMoment`,
+`portesDuJour`, `rituelAFaire`, `clubsDuRituel`, `matchACouvrir` et
+`tachesEnTete` sont exportées et ne touchent ni au réseau ni à la session. Sept
+rangs qui se bousculent, c'est exactement le genre de règle qu'on ne croit pas
+sur parole.
+
+#### Le détail des blocs
+
 
 **Ni compteurs, ni bouton de capture depuis le 14 août 2026** (demande de Noé) :
 les compteurs — moments vécus · rencontres, et « œuvres finies » jusqu'au
@@ -574,16 +904,19 @@ page du carnet. L'accueil s'ouvre directement sur le mur. La capture s'y
 atteint toujours par l'invite, ou par le « + » flottant dont la tuile porte la
 nature Moment.
 
-0. **La sortie du moment** — en tête, avant le mur (demande de Noé, 14 août
-   2026). C'est le seul bloc du site **dont le contenu change avec l'heure**, et
-   c'est ce qu'on lui demande : le jour d'un match, ce qui compte n'est ni le
-   mur ni les objectifs, c'est ce qu'il reste à faire.
+0. **La carte du moment** — en tête, avant le mur (demande de Noé, 14 août
+   2026). Elle **change avec l'heure**, et c'est ce qu'on lui demande : le jour
+   d'un match, ce qui compte n'est ni le mur ni les objectifs, c'est ce qu'il
+   reste à faire. *Depuis le 15 septembre 2026, la sortie du moment n'en est que
+   les deux premiers rangs : la cascade en compte sept, et le dernier a toujours
+   quelque chose à dire — voir plus haut.* Ce qui suit décrit ces deux rangs-là.
 
    Il montre la sortie **en cours**, celle qui **vient de finir** (moins de
    24 h) ou la **prochaine** — dans cet ordre, qui est celui du temps : une
    sortie commencée passe devant une sortie à venir, y compris le lendemain
    d'un match, parce que pendant ces 24 h le travail c'est trier et retoucher.
-   Passé ce délai, le bloc disparaît : le carnet a pris le relais.
+   Passé ce délai, **le rang suivant de la cascade prend la place** : le carnet a
+   pris le relais de la sortie, et l'accueil a autre chose à dire.
 
    Avec lui, **la phase courante de sa feuille de préparation** — Avant ·
    Pendant · Après — et **les trois premières lignes qui restent à faire**,
@@ -662,11 +995,15 @@ nature Moment.
 
    **On n'y retire plus rien** (même jour) : la fiche se lit et se corrige, le
    **carnet** est l'écran où l'on range.
-4. **Objectifs** — ceux de l'espace photo, avec pourquoi et jalons.
-5. **En création** — seulement ce qui est programmé. Ni banque d'idées, ni
-   porte vers Créer, ni porte vers le Journal (décision de Noé, 12 août) : ces
-   deux lieux sont dans la barre, et la banque a sa page. L'accueil ne porte
-   plus aucune porte.
+4. **Les trois portes du jour** — voir le classement plus haut.
+5. **Le cap, en gravures** — en pied : le nom, l'horizon, la marche suivante en
+   or, et l'argent du matériel. Voir plus haut.
+
+> *Ce que les points 4 et 5 remplacent, depuis le 15 septembre 2026 :* un bloc
+> « Objectifs » en tuiles au milieu de la page, et un bloc « En création » qui ne
+> montrait que le programmé — donc, ce jour-là, un titre au-dessus du vide. La
+> phrase « l'accueil ne porte plus aucune porte » (12 août) est tombée avec eux :
+> elle valait quand la barre nommait tout le site.
 
 Pas d'écran CAN 2027 : c'est un objectif parmi les gros, pas un lieu.
 
@@ -1626,6 +1963,122 @@ copie le texte pour le coller ailleurs. Quatre modèles de départ, chargés en
 base : accréditation concert, premier contact club, proposition à un média,
 relance courtoise.
 
+#### SA FORME, REFONDUE LE 15 SEPTEMBRE 2026 AU SOIR
+
+**Demande de Noé** : *« fais une refonte de la forme de la page des modèles de
+messages pour que ça colle plus à ce que j'attends. »*
+
+**CE QUI N'ALLAIT PAS, ET ÇA SE COMPTAIT.** Le titre était écrit **trois fois** —
+la barre du site, un `h2` « Les modèles de messages », et le sommaire d'un pli
+« Modèles de messages 4 » — et surtout **la page s'ouvrait REPLIÉE SUR
+ELLE-MÊME** : ses quatre modèles dormaient dans un `<details class="backlog">`,
+si bien qu'on arrivait sur un écran vide aux quatre cinquièmes.
+
+*Ce n'était pas un choix, c'était un VESTIGE* : ce bloc vivait en bas de la
+Passerelle, où un pli est juste — il y était le backlog d'un autre écran. Il a
+pris sa page le 15 août, perdu son entrée de navigation le 21, et **personne n'a
+jamais redessiné sa forme pour ce qu'il était devenu.** *Une page dont c'est le
+seul contenu n'a rien à replier.*
+
+**L'APERÇU NE SE MODIFIE PAS, ET LA FICHE DIT TOUT** (précision de Noé dans la
+foulée : *« je préférerais que ce ne soit pas modifiable directement, qu'on doive
+appuyer ou activer quelque chose pour modifier ; pour copier il devrait suffire
+d'appuyer sur une icône copie plutôt que le bouton avec le texte. Pas besoin
+d'avoir le texte en entier du coup, juste un aperçu, et seulement en cliquant sur
+la tuile on a le texte complet, la possibilité de modifier et supprimer. »*)
+
+**C'est exactement la grammaire de la banque d'idées**, écrite le 12 août : « la
+banque se parcourt en aperçus… toute la fiche est dans une fenêtre volante,
+ouverte au clic sur la tuile, avec TOUS les gestes ». *Une page où l'on fouille
+montre des aperçus ; ce qu'on a choisi s'ouvre.*
+
+> *Ce que ça reprend à la première passe du soir, faite une heure plus tôt : le
+> message entier sur la carte, et l'édition en place. Les deux se défendaient une
+> par une et se contredisaient ensemble — **un texte qu'on peut modifier d'un clic
+> est un texte qu'on modifie par accident**, et quatre messages entiers font une
+> page de 1 600 px qu'on parcourt au lieu de la balayer. Mesuré après la
+> correction : **830 px sur un téléphone, les quatre modèles sous les yeux.***
+
+- **LA CARTE MONTRE UN NOM ET TROIS LIGNES.** La coupe est faite par le CSS et non
+  par le texte : une troncature en JS aurait posé des points de suspension au
+  milieu d'un mot, et surtout elle aurait figé un nombre de signes que la largeur
+  de la carte dément. *C'est la leçon de la hauteur mesurée, une heure plus tôt.*
+- **L'ICÔNE DE COPIE EST LE GESTE DE LA PAGE**, et il ne demande qu'un appui.
+  **C'est l'exception assumée à la règle de la banque** (« l'aperçu ne porte aucun
+  bouton, la tuile entière est la cible ») : copier est ce pour quoi on vient ici,
+  et devoir ouvrir la fiche pour copier serait deux gestes pour un. Elle vit HORS
+  du bouton d'ouverture, posée sur la carte — un bouton dans un bouton n'est ni
+  valide ni cliquable.
+- **LA FICHE S'OUVRE EN LECTURE**, et le crayon la bascule en formulaire : c'est
+  la demande, et c'est déjà la mécanique des fiches d'un moment et d'un contact,
+  qui vivent entre l'aperçu et l'édition. *(Cela vaut pour un modèle de MESSAGE,
+  dont le corps est un paragraphe qu'on relit. Un modèle de PRÉPARATION, lui, est
+  toujours modifiable — voir plus bas : ses lignes sont trop courtes pour qu'un
+  clic de trop coûte quelque chose.)*
+- **MODIFIER EST UNE ICÔNE, EN HAUT À DROITE** (demande de Noé, le même soir :
+  *« pour pouvoir cliquer dessus rapidement »*), **à gauche de la croix de
+  fermeture et au même rang** : ce sont les deux gestes qui ne parlent pas du
+  contenu de la fiche mais de la fiche elle-même — l'un la corrige, l'autre la
+  ferme. Le crayon est celui du site, celui de la fiche d'un moment ; un
+  troisième dessin pour un même geste n'apprendrait rien. Le pied ne garde donc
+  que « Copier » — le geste qui parle du message — et « Supprimer le modèle ».
+- **LES TROIS GESTES SONT SUR LA LIGNE DU NOM** (demande de Noé, le même soir :
+  *« aligne les icônes au nom du modèle »*), poussés au bout par le titre qui
+  prend la place qui reste. **La fiche n'a donc plus que deux choses : sa ligne de
+  tête, et son texte.** **L'ordre est celui de la fréquence** : copier — le geste
+  de la page —, puis modifier, puis supprimer, le plus loin de la main qui vise le
+  premier.
+- **PLUS DE CROIX DE FERMETURE** (même demande : *« enlève la croix, pas besoin si
+  lorsqu'on clique à côté ça quitte la tuile »*). Les DEUX autres sorties restent
+  — le fond assombri, qui porte `data-fermer-fenetre`, et la touche Échap —, et
+  c'est ce qui rend le retrait tenable : une fenêtre sans croix ET sans fond
+  cliquable serait un piège. `construireFenetre` prend donc un `fermer: false`,
+  **à n'employer que là où la fenêtre ne porte QUE des icônes** : une quatrième
+  dans la même rangée aurait fait un signe de plus à lire pour la seule sortie
+  qu'on connaît déjà.
+- **C'est ce retrait qui a mis les icônes EN FLUX**, là où elles étaient posées en
+  absolu dans le coin : il n'y a plus rien à contourner, et le titre n'a plus à se
+  réserver leur largeur à la main.
+- **LA FENÊTRE EST LARGE** (demande de Noé : *« élargis la tuile »*) — 48 rem au
+  lieu de 28, et c'est **la seconde largeur de fenêtre du hub**, pas un troisième
+  nombre inventé. Un modèle est un MESSAGE : dans 28 rem il montait au-delà de six
+  cents pixels et se lisait en colonne de journal. *Mesuré après : 720 × 510, et
+  le message entier tient SANS DÉFILEMENT — du « Bonjour » au « Bien à vous ».*
+  **L'édition prend la même largeur** : changer de taille en pressant le crayon
+  ferait sauter la fiche sous les doigts.
+- **Son formulaire reste en UNE colonne.** Une règle générale range les champs
+  d'une `.fenetre-large` en deux colonnes au-delà de 60 rem — juste pour six
+  champs courts, faux pour un titre suivi d'un message de douze rangs : la colonne
+  de droite aurait porté le message, celle de gauche un champ et du vide.
+- **SUPPRIMER NE S'ÉCRIT PLUS**, et la règle qui l'exigeait tient quand même. Elle
+  visait la **confusion de dessin** — « la croix de fermeture est au même bord, et
+  deux × l'un au-dessus de l'autre, dont l'un est irréversible, est un piège » —,
+  pas le fait d'être une icône. **Une CORBEILLE ne se confond avec rien**, la
+  confirmation reste posée derrière, et elle est la seule des quatre à se teinter
+  de rouge sous la main : c'est le seul geste sans retour de la fenêtre, il doit
+  se reconnaître AVANT d'être pressé.
+  *Les trois icônes font 2,25 rem, la mesure de `.fenetre-fermer` ailleurs dans le
+  site : le hub demande 44 px, mais trois cibles de 44 tiendraient mal sur la
+  ligne d'un titre dans une fenêtre de 345 px — et deux tailles d'icône de fenêtre
+  selon l'écran seraient pires.*
+- **LE TITRE NE SE DIT QU'UNE FOIS**, dans la barre. Le `h2` et la phrase d'aide
+  sont partis : « la friction du premier message est le principal mur de
+  l'aller-vers » est la raison d'être de la page, pas une chose à relire chaque
+  fois qu'on vient y chercher une phrase. Elle reste écrite ici, où elle sert.
+- **L'AJOUT EST UNE TUILE POINTILLÉE DANS LA GRILLE** — la règle du hub pour toute
+  galerie de tuiles comparables. Ouverte, elle redevient la tuile volante commune
+  et perd son pointillé : ce n'est plus une case de la grille, c'est une fenêtre.
+- **Le « + » flottant écrit un MODÈLE**, et non plus une tâche : sans ligne dans
+  `PLUS_PAR_VUE`, il retombait sur le défaut du site — « poser une tâche », ce qui
+  n'a rien à faire sur la page où l'on range ses phrases.
+- **`rangs` est né ici** (js/gabarits.js) : un `textarea` de formulaire prenait
+  deux lignes, ce qui suffit à une note et pas à un MESSAGE. Sans réglage, rien ne
+  bouge ailleurs.
+- *Deux défauts corrigés au passage : la confirmation de suppression lisait
+  `modele.nom` quand la colonne s'appelle `titre` — elle demandait « Supprimer le
+  modèle « undefined » ? » —, et la fiche ne se fermait ni à Échap ni au fond,
+  `modeleOuvert` manquant aux deux listes d'états que ces gestes remettent à zéro.*
+
 **Sans entrée de navigation depuis le 21 août 2026** (demande de Noé) : la
 page est une arrière-boutique, atteinte par un **lien discret « Modèles de
 messages »** posé là où l'on écrit — en bas de la Passerelle et en bas du CRM.
@@ -1737,7 +2190,7 @@ mois »), une préparation le précède, le Journal en garde le vécu. L'onglet
    c'est une commande (étiquette + client) ou une sortie libre (type du
    moment), et porte « Préparer / Ouvrir la préparation ». C'est là que les
    préparations rejoignent les commandes ET les événements sans commande.
-2. **« Les commandes »** — le pipeline (devis → payée, closes repliées),
+2. **« Les commandes »** — le pipeline (devis → livrée, closes repliées),
    chaque commande affichant l'événement qu'elle vise (« Pour X · date »).
 3. **Tuile de fin de page → Préparations** — la page à part entière.
 
@@ -1761,11 +2214,34 @@ moment ») : l'argent reste une conséquence, pas un juge.
 inscrit déjà le moment au carnet — Missions tient l'avant, le Journal garde
 l'après. La porte « Préparations » du Journal est partie (demande de Noé).
 
-Le cycle va du devis au paiement : `devis → en cours → livrée → payée`.
-**Livrer crée une victoire ; encaisser n'en crée pas une seconde** — c'est le
-même travail, et l'argent est une conséquence, pas un juge. Les livrées et
-payées se replient en bas, comme le backlog. Une commande à échéance apparaît
-au calendrier (Yuno et hub).
+**LE CYCLE VA DU DEVIS À LA LIVRAISON : `devis → en cours → livrée`** — et il
+s'arrêtait un cran plus loin, à `payée`, jusqu'au 15 septembre 2026 (décision de
+Noé : *« payée et encaissée c'est la même chose pour moi, garde qu'un statut sur
+les 2 »*).
+
+**La règle qui fondait ce cran a fini par l'emporter.** Elle était écrite ici
+depuis le 21 août : « livrer crée une victoire ; encaisser n'en crée pas une
+seconde — c'est le même travail, et l'argent est une conséquence, pas un juge ».
+*Si c'est le même travail, c'est le même état.*
+
+**ET LE CRAN DE TROP SE PAYAIT EN EUROS.** `argentDeYuno` ne comptait que les
+livrées : une commande passée en « payée » **sortait du compte au moment même où
+l'argent arrivait**. Mesuré ce jour-là : deux prestations à 70 €, et l'objectif
+« Rembourser mon matériel » affichait **1 115 € au lieu de 1 255 €** sur trois
+écrans. *Un cran de plus après la fin, c'est un cran où les choses
+disparaissent.*
+
+- **Le CHECK ne se resserre pas** (règle du dépôt : il s'élargit, jamais
+  l'inverse — le format `post` d'une publication, l'état `annuel` d'un projet).
+  `payee` reste accepté et lisible ; plus rien ne l'écrit, le formulaire ne
+  l'offre plus, et `COMMANDE_FINIE` le traite comme une livrée partout.
+- **Les deux lignes qui le portaient sont passées à `livree`**
+  (`20260915200000_commande_payee_fusionne.sql`). *Ce qui est perdu, et c'est
+  assumé : la distinction entre livrée et payée sur ces deux-là.*
+
+**Livrer crée une victoire**, et c'est le dernier cran. Les livrées se replient
+en bas, comme le backlog. Une commande à échéance apparaît au calendrier (Yuno
+et hub).
 
 ### `#yuno/preparations` — les Préparations *(construites le 14 août 2026)*
 
@@ -1796,12 +2272,139 @@ questions : « Ce qui a marché » et « À refaire autrement ».
 - **Avec plusieurs modèles, le choix s'ouvre en fenêtre volante** — une liste,
   jamais un menu natif — qui offre aussi la feuille vierge. Avec un seul
   modèle (ou aucun), pas de question : la feuille se crée tout de suite.
-- **Les modèles s'éditent depuis le site** (`#yuno/modeles/<id>`, portes en bas
-  de la liste) : le nom et les items se corrigent en place — comme les modèles
-  de messages de la Passerelle —, une ligne s'ajoute par phase, se retire à la
-  croix. Un champ vidé reprend son texte : une ligne sans texte se retire, elle
-  ne se vide pas. Supprimer un modèle laisse les feuilles intactes (copies, et
+- **Les modèles s'éditent depuis le site** (`#yuno/modeles/<id>`) : le nom et les
+  items se corrigent en place, une ligne s'ajoute par phase, se retire à la croix.
+  Un champ vidé reprend son texte : une ligne sans texte se retire, elle ne se
+  vide pas. Supprimer un modèle laisse les feuilles intactes (copies, et
   `modele_id` en SET NULL).
+
+  **ILS ONT PRIS LA FORME DES MODÈLES DE MESSAGES** (15 septembre 2026 au soir,
+  demande de Noé : *« reprends à peu près ce modèle pour les modèles de
+  préparations : une tuile cliquable, modifiable une fois cliquée, avec la forme
+  qu'on a mise à jour ici »*). **C'est la même chose, elle doit se dessiner
+  pareil** : deux bibliothèques de modèles dans le même site, l'une en cartes et
+  l'autre en lignes, ce sont deux grammaires pour un seul objet. Les classes sont
+  donc reprises telles quelles — leur nom dit « modèle », pas « message ».
+
+  - **LA LISTE DEVIENT UNE GRILLE DE CARTES**, et l'aperçu est **la suite de ses
+    lignes**, séparées par un point médian : c'est ce qu'on ignore avant d'ouvrir
+    — deux modèles nommés « Match » et « Concert » ne se distinguent que par ce
+    qu'ils font cocher. Le compte de lignes ferme la carte ; « Créer un modèle »
+    est la tuile pointillée de la grille.
+  - **PAS D'ICÔNE COPIER**, à la différence d'un message : *on ne colle pas une
+    liste de cases à cocher.* La carte ouvre sa PAGE — trois phases d'items ne
+    tiennent pas dans une fenêtre, et cette page existe depuis le 21 août.
+  - **LA PAGE EST TOUJOURS MODIFIABLE, ET N'A QU'UN SEUL DESSIN** (décision de Noé
+    le même soir : *« on va faire plus simple, reprends cette forme, et ça va
+    devenir modifiable directement ici, pas besoin d'appuyer sur le bouton en
+    plus »*).
+
+    > *Ce que ça reprend, une heure après l'avoir posé : le couple
+    > lecture/édition et son crayon. Il venait des modèles de MESSAGES, où il se
+    > défend — là-bas le texte est un paragraphe qu'on relit, et un clic mal placé
+    > le réécrit. **Ici les deux dessins avaient fini par se ressembler** : à force
+    > de retirer les cadres, les filets et l'anneau de focus, l'édition ne se
+    > distinguait plus de la lecture que par trois invites grises. **Deux états
+    > qu'on ne distingue pas ne sont pas deux états, c'est un geste de trop.***
+
+    **La forme est celle de la lecture** — une puce, le texte, rien autour — et ce
+    qui change est que le texte EST un champ : il se corrige là où il se lit, et
+    s'enregistre en le quittant, sans bouton. Trois gestes, et c'est tout : la
+    **croix** d'une ligne, l'**invite d'ajout** de chaque phase avec son `+`, et la
+    **corbeille** du coin pour le modèle entier. Le nom aussi est un champ.
+  - **LA CROIX D'UNE LIGNE NE PARAÎT QU'AU SURVOL** (ou au clavier) : onze croix
+    alignées feraient une colonne de refus le long d'une liste qu'on vient relire.
+  - **LES LIGNES SE TOUCHENT PRESQUE** (demande de Noé : *« resserre les tâches
+    entre elles »*) : plus aucun rembourrage, c'est la hauteur de ligne du champ
+    qui sépare. **Une liste qu'on relit d'un coup d'œil se lit comme un paragraphe
+    de lignes, pas comme onze blocs.** *Mesuré : une ligne passe de 66 px à 30, et
+    le modèle entier de 1 047 px à 910 — les trois phases sous les yeux.*
+  - **CHAQUE LIGNE PORTE UN ROND À COCHER QUI NE SE COCHE PAS** (demande de Noé :
+    *« plutôt que des points de liste à bulle mets des ronds à cocher, mais non
+    cochable dans les modèles, juste la forme »*).
+
+    **Et c'est juste** : un modèle est le PATRON d'une feuille, et sur la feuille
+    ces lignes-là seront des cases à cocher. Le rond dit donc **ce que la ligne
+    deviendra** — on lit le modèle comme on lira la feuille. *Cocher ici n'aurait
+    aucun sens : il n'y a rien à faire dans un patron.*
+
+    **C'est un DESSIN, pas un bouton** : un `<span>` décoratif, hors du parcours
+    du clavier et muet au lecteur d'écran. Un vrai bouton désactivé se serait
+    tabulé pour rien et aurait promis un geste qui n'existe pas. Il reprend le
+    trait de `.tache-cercle` — 1,25 rem, le rayon d'une pastille — mais **dans
+    l'encre discrète** : la priorité d'une tâche ne veut rien dire ici, et un
+    anneau coloré aurait laissé croire à un état. *Il ne coûte pas un pixel à la
+    liste : la ligne reste à 30 px.*
+    *(Il remplace la puce « · » qui avait tenu une heure, et dont le sélecteur
+    avait dû égaler `.bloc .liste-taches-pleine > .tache-ligne::before` — celui-ci
+    pose `content: none` sur toutes les lignes pleines du hub. Neuvième fois que
+    la spécificité se paie ; le rond, lui, est un vrai élément et n'a plus ce
+    problème.)*
+  - **NI CADRE, NI FILET, NI ANNEAU DORÉ** (demandes de Noé en trois temps : *« pas
+    de contour arrondi pour les zones de texte, le bouton ajouter simplement un +
+    et pas de cette couleur, moins gros le texte, moins d'espace entre les
+    textes »*, puis *« pas de contour, ni de ligne en dessous… juste le texte en
+    gris qui dit ce qu'il y a à marquer ici »*, puis *« pas de rectangle surligné
+    en jaune lorsque l'on écrit »*).
+
+    **Un champ encadré dit « remplis ce formulaire »**, et on ne remplit pas un
+    formulaire pour corriger une ligne qu'on est en train de relire — c'est mot
+    pour mot ce que le hub a tranché le 1er septembre pour le journal d'une
+    journée. *Un premier essai a remplacé le cadre par un filet sous le champ ;
+    il est tombé aussi, et à raison : onze traits pour dire onze fois la même
+    chose.*
+
+    **L'anneau doré apparaissait malgré `:focus-visible`** parce qu'un CHAMP DE
+    TEXTE y répond toujours, même pris à la souris — les navigateurs le veulent
+    ainsi, un champ devant dire où part la frappe. Il **remettait le cadre qu'on
+    venait de retirer**. *C'est la seconde exception du dépôt à WCAG 2.4.7*, et
+    elle se justifie comme la première (`.capture-titre`, 13 août 2026) : **le
+    curseur qui clignote dit où l'on écrit**. Elle ne vaut QUE pour les champs de
+    texte de cette page — **le `+` et la corbeille gardent le leur** : on ne voit
+    pas de curseur sur un bouton.
+  - **LE BOUTON D'AJOUT EST UN `+`**, à l'encre discrète : le champ dit déjà
+    « Ajouter… » dans son invite, et le mot répété au bout de la ligne prenait la
+    place de ce qu'on tape. L'aplat d'accent d'un `.bouton-secondaire` faisait du
+    geste le plus répété de la page le plus voyant. Le nom accessible garde le mot.
+  - **LA PUCE A EXIGÉ SA SPÉCIFICITÉ**, et ça s'est vu à l'écran : `.bloc
+    .liste-taches-pleine > .tache-ligne::before` (0-2-2) pose `content: none` sur
+    toutes les lignes pleines du hub, et une règle plus faible ne l'écrivait
+    jamais. *Mesuré : `content` calculé à « none », la liste sans ses puces.*
+    **Neuvième fois que la spécificité se paie dans ce dépôt.**
+  - **ET LA FEUILLE A PRIS LA MÊME FORME** (demande de Noé, dans la foulée :
+    *« applique cette forme aux préparations également »*). **C'est la même liste
+    à un état près** — le modèle est le patron, la feuille l'exemplaire qu'on
+    coche —, et elles ne peuvent pas se dessiner autrement l'une que l'autre :
+    plus de filet entre les lignes, le même corps de texte, le même champ d'ajout
+    nu et le même `+`.
+
+    > *Ce que ça renverse, écrit une heure plus tôt : « rien de tout cela ne touche
+    > une feuille de préparation ». Le cadrage était une prudence, pas une règle —
+    > et Noé a tranché pour la cohérence.*
+
+    **CE QUE ÇA NE TOUCHE PAS, ET C'EST LA LIMITE** : le rond d'une feuille reste
+    un **bouton de 44 px**, visé au pouce au bord d'un terrain. Sa ligne descend
+    donc à 6 px de rembourrage et non à zéro comme celle d'un modèle — *deux
+    cibles de 44 px sur des lignes de 30 se chevaucheraient, et l'on cocherait la
+    voisine.* **Le modèle, lui, n'a rien à viser : c'est ce qui l'autorise à se
+    serrer plus.** *Mesuré : la ligne d'une feuille passe de 47 px à 42, sa cible
+    reste à 43.*
+
+    **Le FC Hermitage ne bouge pas** : il n'importe de `js/preparations-commun.js`
+    que `finDeLaSortie` et `phaseDeLaSortie` — `blocPhase` ne sert qu'à Yuno — et
+    tout le reste est sous `body[data-espace="yuno"]`.
+  - **LE BOUTON D'AJOUT EST UN `+`**, à l'encre discrète : le champ dit déjà
+    « Ajouter… » dans son invite, et le mot répété au bout de la ligne prenait la
+    place de ce qu'on tape. L'aplat d'accent d'un `.bouton-secondaire` faisait du
+    geste le plus répété de la page le plus voyant ; il s'allume sous la main, et
+    c'est assez. Le nom accessible garde le mot.
+  - **RIEN DE TOUT CELA NE TOUCHE UNE FEUILLE DE PRÉPARATION**, et c'est vérifié :
+    les règles sont cadrées sur ce que seule la page d'un modèle contient
+    (`:has(.modele-item)`, `[data-action="ajouter-item-modele"]`). *Une feuille
+    qu'on coche au stade garde ses lignes de 47 px, son champ encadré et son
+    bouton écrit — resserrer ses cibles tactiles aurait été le contraire du
+    service rendu.* Le FC Hermitage, qui passe par les mêmes classes, ne bouge pas
+    non plus : tout est sous `body[data-espace="yuno"]`.
 - **Un item ajouté en cours de feuille peut entrer « aussi au modèle »** : une
   case à côté du champ d'ajout, décochée à chaque fois — entrer au modèle est
   une décision par item, pas un réglage. C'est la boucle d'apprentissage : le
@@ -1816,6 +2419,27 @@ questions : « Ce qui a marché » et « À refaire autrement ».
   rappel du dernier bilan et « aussi au modèle » suivent). Pas d'écriture
   optimiste ici : plusieurs insertions, une liste à moitié appliquée serait
   pire qu'une attente.
+- **LE BILAN A PRIS LA MÊME FORME** (15 septembre 2026 au soir, demande de Noé :
+  *« ça met à jour la forme aussi »*). Ses deux champs s'encadraient en gros
+  rectangles arrondis au bas d'une page qui n'en a plus un seul, et son bouton
+  portait l'aplat gris d'un contrôle de formulaire. **Un bilan qu'on écrit à chaud
+  n'est pas un formulaire** : c'est la suite de la feuille qu'on vient de cocher.
+  - **LES DEUX TITRES RESTENT VISIBLES**, et c'est une correction de Noé sur la
+    passe précédente (*« garde les titres quand même visibles ici »*). Ils étaient
+    passés DANS les champs, par la règle du journal d'une journée du hub — **elle
+    ne vaut pas ici** : le journal pose UNE question qu'on connaît par cœur, le
+    bilan en pose DEUX, et *une invite disparaît dès qu'on tape*. **Un bilan
+    rempli ne disait donc plus à quelle question il répondait**, ce qui est
+    précisément ce qu'on vient y relire des mois après. Le titre visible redevient
+    le nom accessible du champ ; pas d'invite en double.
+  - **Les deux réponses se séparent par un écart** et non par un cadre : sans lui,
+    plus rien ne dirait qu'il y a deux questions. Il se pose sur le TITRE de la
+    seconde, qui ouvre le bloc — sur le champ, il serait tombé entre une question
+    et sa réponse.
+  - **Le bouton reste LISIBLE, mais se tait** : c'est un enregistrement, pas
+    l'ajout d'une ligne — il ne peut pas se réduire à un signe, on doit le
+    trouver. Il perd l'aplat gris d'un contrôle pour l'encre et le voile d'accent
+    du site.
 - **Un item non coché n'est JAMAIS un raté.** Aucun compteur de manqués, aucun
   pourcentage de complétion, nulle part. Le bilan dit d'abord l'obtenu.
 - **Le bilan attend la date de la sortie**, puis s'écrit et se réécrit. À la
