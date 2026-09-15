@@ -3366,9 +3366,26 @@ export function contactsDuClub(piste, contacts = []) {
 
 // Les gens du club, en bande qui défile — la forme des pastilles de la tuile de
 // capture (demande de Noé, 15 août 2026), un petit « + » à droite pour en
-// ajouter, et SOUS la bande le menu de relation de celui qu'on regarde.
+// ajouter, et SOUS la bande le geste de celui qu'on regarde.
 // Chaque pastille porte la couleur de son type : Ewan Schnell est doré parce
 // qu'il est rattaché au type « club ».
+//
+// « Message envoyé » REVIENT CHAQUE SEMAINE, quel que soit le statut (demande
+// de Noé, 7 septembre 2026) : ce n'est plus un geste réservé aux fiches qui
+// n'ont encore rien reçu, c'est le compteur de la Passerelle — et un compteur
+// qu'on ne peut nourrir qu'une fois par relation ne compte plus rien après le
+// premier message. Il vit à côté du menu de relation, jamais à sa place : le
+// menu dit où on EN EST, le bouton dit qu'on vient d'ÉCRIRE, et les deux
+// questions ne se répondent pas l'une l'autre.
+//
+// `statutApresEnvoi` fait déjà tout le travail d'avancée (`js/yuno.js`, plus
+// haut) : elle monte la fiche d'un cran tant qu'elle n'a pas atteint
+// « contact établi », et la laisse telle quelle au-delà — bon contact et
+// opportunité compris. Le bouton n'a donc RIEN à décider lui-même ; il note
+// l'envoi (`enregistrerLEnvoi`, qui écrit toujours au journal) et laisse cette
+// fonction dire si la relation avance ou si elle reste, ce qui répond
+// exactement à « je dois pouvoir noter un message à un contact établi sans
+// faire bouger son état ».
 function bandeContacts(piste, dedans, choisiId) {
   const choisi = dedans.find((contact) => contact.id === choisiId) ?? dedans[0];
 
@@ -3398,6 +3415,21 @@ function bandeContacts(piste, dedans, choisiId) {
         >Ajouter un contact</button>`;
   }
 
+  const action = choisi
+    ? `<span class="fournee-relation" data-statut-de="${echapper(choisi.id)}">${menuChoix({
+        nom: `relation-${choisi.id}`,
+        libelle: `Relation avec ${choisi.nom}`,
+        options: Object.entries(STATUTS_CONTACT).map(([valeur, { nom }]) => [valeur, nom]),
+        valeur: choisi.statut,
+        attribut: 'data-statut',
+        couleurDe: statutLisible,
+      })}</span>
+      <button type="button" class="bouton-secondaire bouton-mini bouton-envoye"
+        data-envoye="${echapper(choisi.id)}"
+        data-piste-du-contact="${echapper(piste.id)}"
+        title="Noter un message envoyé à ${echapper(choisi.nom)}">Message envoyé ✓</button>`
+    : '';
+
   return `
     <span class="fournee-bande">
       <span class="fournee-bande-liste">${pastilles}</span>
@@ -3405,27 +3437,15 @@ function bandeContacts(piste, dedans, choisiId) {
         title="Ajouter un contact"
         aria-label="Ajouter un contact à ${echapper(piste.nom)}">+</button>
     </span>
-    ${
-      choisi
-        ? `<span class="fournee-relation" data-statut-de="${echapper(choisi.id)}">${menuChoix({
-            nom: `relation-${choisi.id}`,
-            libelle: `Relation avec ${choisi.nom}`,
-            options: Object.entries(STATUTS_CONTACT).map(([valeur, { nom }]) => [valeur, nom]),
-            valeur: choisi.statut,
-            attribut: 'data-statut',
-            couleurDe: statutLisible,
-          })}</span>`
-        : ''
-    }`;
+    ${action}`;
 }
 
 function carteFournee(piste, contacts, choisiId = null) {
-  // Les fiches encore à « pas de contact » restent en dehors (demande de Noé,
-  // 15 août 2026) : la carte montre les gens qu'on a touchés, pas les noms
-  // qu'on a notés. Elles sont au carnet, et le « + » les y rejoint.
-  const dedans = contactsDuClub(piste, contacts).filter(
-    (contact) => contact.statut !== 'pas_de_contact',
-  );
+  // Les fiches à « pas de contact » restent DEDANS depuis le 7 septembre 2026
+  // (demande de Noé) : la carte doit montrer les noms qu'on vient de noter
+  // pour ce club, pas seulement ceux qu'on a déjà touchés — sinon un contact
+  // tout juste ajouté disparaissait de la carte, sans bouton pour lui écrire.
+  const dedans = contactsDuClub(piste, contacts);
 
   // Les gestes vivent en colonne (demandes de Noé, 15 août au soir) : plus de
   // rangée d'en-tête, la pastille du championnat suit le nom — la carte tient en
@@ -3464,13 +3484,13 @@ function carteFournee(piste, contacts, choisiId = null) {
               : ''
           }
           ${
-            // Le bouton d'envoi revient pour une relance : le message est de
-            // nouveau dû, et « Envoyé ✓ » le comptera comme tel.
-            !piste.date_contacte || piste.aRelancer
+            // Ce bouton-là ne sert plus que le club SANS AUCUN contact connu —
+            // depuis le 7 septembre 2026, dès qu'un contact existe, c'est SON
+            // propre bouton (dans `bandeContacts`, au-dessus) qui porte l'envoi
+            // ou la relance : les deux ne peuvent plus se doubler.
+            !dedans.length && !piste.date_contacte
               ? `<button type="button" class="bouton-secondaire bouton-mini bouton-envoye"
-                  data-envoye-piste="${echapper(piste.id)}">${
-                    piste.aRelancer ? 'Relancé ✓' : 'Envoyé ✓'
-                  }</button>`
+                  data-envoye-piste="${echapper(piste.id)}">Envoyé ✓</button>`
               : ''
           }
         </span>
@@ -6631,6 +6651,21 @@ export default {
         if (!contact || estProvisoire(contact.id)) return;
         // Deux effets pour un geste : la fiche avance, et le compteur monte.
         await enregistrerLEnvoi(contact);
+
+        // Depuis une carte de la fournée, ce bouton porte aussi la piste du
+        // club (demande de Noé, 7 septembre 2026) : écrire à SON premier
+        // contact vaut pour le club — sans ce second geste, la piste restait
+        // « jamais contactée » et revenait dans les propositions de la semaine
+        // suivante, alors qu'un message venait vraiment de partir.
+        const piste = etat.pistes.find((p) => p.id === envoye.dataset.pisteDuContact);
+        if (piste && !estProvisoire(piste.id) && !piste.date_contacte) {
+          await modifierAussitot(
+            piste,
+            { date_contacte: versDateISO() },
+            () => api.modifierPiste(piste.id, { date_contacte: versDateISO() }),
+            { rendre: rendreContacts, echouer: dire },
+          );
+        }
         return;
       }
 
