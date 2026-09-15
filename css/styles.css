@@ -12219,3 +12219,24 @@ a.hab-carte-nom:hover { color: var(--accent); }
 .projet-page-colonne .cap-tache.colonne-choisie { padding-left: var(--espace-8); }
 
 .projet-page-colonne .en-deplacement { opacity: 0.3; }
+
+/* Les titres du hub partagent la ligne du menu, sans doublon dans le contenu. */
+#hub-titre-page {
+  grid-column: 2 / -1;
+  grid-row: 1;
+  min-width: 0;
+}
+.barre-onglets > .bouton-menu { grid-row: 1; }
+#hub-titre-page h1 {
+  margin: 0;
+  text-align: left;
+  font-family: var(--police-titre);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
+}
+.hub-titre-dans-barre { display: none; }
+.tete-jour:has(> .hub-titre-dans-barre:only-child),
+#bloc-jour:has(> .tete-jour > .hub-titre-dans-barre:only-child) { display: none; }

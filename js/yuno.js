@@ -19,6 +19,8 @@ import * as api from './api.js';
 import {
   construireFormulaire,
   construireFenetre,
+  construireMenuDiscret,
+  SIGNES,
   CHEVRON,
 } from './gabarits.js';
 import {
@@ -62,7 +64,6 @@ import {
   toutesLesNatures,
   natureParDefaut,
   centrerActif,
-  ongletCalendrier,
 } from './calendrier-commun.js';
 // `construireProgression` : les marches d'un cap et sa légende (« 2e jalon sur
 // 4 : … »), le même dessin que partout — deux progressions de deux formes
@@ -386,56 +387,53 @@ export function animerLesCompteurs(section, { remise = false } = {}) {
 
 // --- Fabrication du HTML ----------------------------------------------------
 
-// `etat` : la barre porte la LOUPE depuis le 21 août 2026 au soir (demande de
-// Noé) — visible sur toutes les pages, tout à droite, et elle ne cherche pour
-// l'instant que les clubs du vivier. Ouverte, la barre de recherche prend la
-// ligne des onglets (ils s'effacent le temps de chercher — Échap ou la loupe
-// les ramènent), et les résultats se posent sous la barre. Le squelette la
-// montre fermée : `zoneLoupeClubs` a un défaut pour ça.
+// La loupe et le menu restent en haut. La recherche se déploie sur cette
+// ligne, avec ses résultats dessous ; les destinations restent accessibles
+// dans le dock, même pendant une recherche.
 function enTete(vue, etat = null) {
   const vueActive = ONGLET_DE_LA_VUE[vue] ?? vue;
-  const rechercheOuverte = Boolean(etat) && etat.rechercheClub !== null;
-  // Le calendrier n'est plus dans cette liste : il va en bout de barre, en
-  // icône (voir `ongletCalendrier`). Ce sont les lieux du site qui se nomment.
+  const titres = {
+    accueil: 'Accueil', journal: 'Journal', creer: 'Créer',
+    banque: 'Banque d’idées', editorial: 'Calendrier éditorial',
+    calendrier: 'Calendrier', reseau: 'Réseau', passerelle: 'Réseau',
+    vivier: 'Vivier', messages: 'Modèles de messages', carnet: 'Carnet réseau',
+    missions: 'Missions', commandes: 'Missions', preparations: 'Préparations',
+    modeles: 'Modèle', cap: 'Mon cap', objectif: 'Objectif',
+    projet: 'Projet', taches: 'Mes tâches',
+  };
+  const titre = titres[vue] ?? 'Yuno';
+
+  const icones = {
+    accueil: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',
+    journal: '<path d="M4 4h6a3 3 0 0 1 3 3v14a4 4 0 0 0-4-2H4zM13 7a3 3 0 0 1 3-3h4v15h-3a4 4 0 0 0-4 2"/>',
+    creer: '<path d="m15 4 5 5M4 20l5-1L21 7a2 2 0 0 0-5-5L4 14z"/>',
+    reseau: '<circle cx="9" cy="7" r="3"/><path d="M2 21v-2a7 7 0 0 1 14 0v2zM16 4a3 3 0 0 1 0 6M18 14a5 5 0 0 1 4 5v2h-3"/>',
+    calendrier: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4M17 3v4M3 11h18M8 15h3v3H8z"/>',
+  };
   const liens = [
     ['accueil', 'Accueil', '#yuno'],
     ['journal', 'Journal', '#yuno/journal'],
     ['creer', 'Créer', '#yuno/creer'],
-    // MISSIONS (nom validé par Noé, 21 août 2026) : préparer un événement et
-    // livrer une commande, le même axe du métier. L'onglet ouvre le tableau
-    // de bord — à préparer, puis le pipeline des commandes.
-    ['missions', 'Missions', '#yuno/missions'],
     ['reseau', 'Réseau', '#yuno/reseau'],
+    ['calendrier', 'Calendrier', '#yuno/calendrier'],
   ];
 
   return `
-    <!-- Plus de signature en tête (demande de Noé, 14 août 2026) : elle
-         occupait le haut de chaque page pour redire ce qu'on sait déjà. Le
-         site s'ouvre sur sa barre ; le titre de l'onglet dit « Yuno · yuno_rph »,
-         et la signature reste sur la page #photo du hub, à la porte d'entrée. -->
-    <nav class="yuno-nav" aria-label="Le site Yuno">
-      <!-- LE BOUTON DU MENU EST ÉCRIT ICI, et non posé par le montage comme
-           dans le hub : cette barre est REDESSINÉE à chaque vue, et un bouton
-           inséré après coup disparaîtrait au premier changement d'écran. Le
-           montage ne fait donc que l'écouter, en délégation.
-           Il reste même quand la recherche prend la ligne : la loupe efface les
-           onglets le temps de chercher, pas la porte du site. -->
+    <div class="yuno-nav${etat?.rechercheClub != null ? ' recherche-ouverte' : ''}">
       ${boutonDuMenu('menu-yuno')}
-      ${
-        rechercheOuverte
-          ? ''
-          : `${liens
-              .map(
-                ([vue, libelle, adresse]) => `
-        <a href="${adresse}" class="${vue === vueActive ? 'actif' : ''}"
-          ${vue === vueActive ? 'aria-current="page"' : ''}>${libelle}</a>`,
-              )
-              .join('')}
-      ${ongletCalendrier('#yuno/calendrier', vueActive === 'calendrier')}`
-      }
+      <h1 class="yuno-titre-page" title="${echapper(titre)}">${echapper(titre)}</h1>
       ${zoneLoupeClubs(etat ?? undefined)}
-    </nav>
-    ${etat ? listeResultatsClubs(etat) : ''}`;
+    </div>
+    ${etat ? listeResultatsClubs(etat) : ''}
+    <nav class="yuno-dock" aria-label="Le site Yuno">
+      ${liens.map(([cle, libelle, adresse]) => `
+        <a href="${adresse}" class="${cle === vueActive ? 'actif' : ''}"
+          ${cle === vueActive ? 'aria-current="page"' : ''}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icones[cle]}</svg>
+          <span>${libelle}</span>
+        </a>`).join('')}
+    </nav>`;
 }
 
 // La seule mention du hub sur tout le site, tout en bas : en plein écran sur
@@ -1621,18 +1619,7 @@ function vueAccueil(etat) {
 
     <section class="bloc">
       <h2>Objectifs</h2>
-      <div data-bloc="objectifs">${tuilesObjectifs(etat.objectifs)}</div>
-      ${construireFormulaire({
-        id: 'photo-objectif',
-        libelle: 'Ajouter un objectif',
-        action: 'creer-objectif',
-        champs: [
-          { nom: 'titre', libelle: 'Objectif', type: 'text', requis: true },
-          { nom: 'pourquoi', libelle: 'Pourquoi ? (relu les jours sans motivation)', type: 'textarea' },
-          { nom: 'cible', libelle: "À quoi tu sauras que c'est réussi", type: 'text' },
-          { nom: 'echeance', libelle: 'Échéance (facultative)', type: 'date' },
-        ],
-      })}
+      <div data-bloc="objectifs">${tuilesObjectifs(etat.objectifs, etat)}</div>
     </section>
 
     <!-- Ni banque d'idées, ni porte vers Créer : la banque a sa page, et
@@ -1643,6 +1630,7 @@ function vueAccueil(etat) {
       <div data-bloc="apercu">${construireApercuCreation(etat.publications, { idees: false })}</div>
     </section>
     ${fenetreMoment(etat)}
+    ${fenetreObjectif(etat)}
     ${pied()}`;
 }
 
@@ -1665,30 +1653,103 @@ function vueAccueil(etat) {
 // LA TUILE NE CHANGE PRESQUE PAS D'ALLURE, et c'est voulu : le titre, la date,
 // les marches et le prochain jalon étaient déjà ce que montrait le sommaire
 // déplié. Ce qui change est le GESTE — presser ouvre au lieu d'étaler.
-function tuileObjectif(objectif) {
+// Le menu discret reprend celui du hub, mot pour mot (`js/objectifs.js`) :
+// modifier, marquer atteint, supprimer — la seule chose qui manquait à la
+// tuile depuis que les objectifs ouvrent leur propre page.
+function menuDiscretObjectif(objectif, etat) {
+  const cle = `objectif:${objectif.id}`;
+  return construireMenuDiscret('objectif', objectif.id, {
+    atteindre: true,
+    ouvert: etat.menu === cle,
+    confirmation: etat.confirme === cle,
+    attendrait: etat.confirme === `atteindre:${objectif.id}`,
+  });
+}
+
+function tuileObjectif(objectif, etat) {
   const jalons = [...(objectif.jalons ?? [])].sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
 
   return `
-    <a class="objectif-tuile" href="${versLObjectif(objectif.id)}">
-      <span class="objectif-tete">
-        <span class="objectif-titre">${echapper(objectif.titre)}</span>
-        ${
-          objectif.echeance
-            ? `<span class="discret echeance">${echapper(
-                echeanceLisible(depuisDateISO(objectif.echeance)),
-              )}</span>`
-            : ''
-        }
-      </span>
-      ${construireProgression(jalons)}
-    </a>`;
+    <article class="objectif-tuile-carte">
+      <a class="objectif-tuile" href="${versLObjectif(objectif.id)}">
+        <span class="objectif-tete">
+          <span class="objectif-titre">${echapper(objectif.titre)}</span>
+          ${
+            objectif.echeance
+              ? `<span class="discret echeance">${echapper(
+                  echeanceLisible(depuisDateISO(objectif.echeance)),
+                )}</span>`
+              : ''
+          }
+        </span>
+        ${construireProgression(jalons)}
+      </a>
+      ${menuDiscretObjectif(objectif, etat)}
+    </article>`;
 }
 
-function tuilesObjectifs(objectifs) {
-  if (!objectifs.length) {
-    return `<p class="vide">Aucun objectif pour l'instant. Le premier donne le cap.</p>`;
-  }
-  return `<div class="grille-objectifs">${objectifs.map(tuileObjectif).join('')}</div>`;
+// « Ajouter un objectif » est une tuile pointillée DANS la grille (règle du
+// hub, `js/objectifs.js` : le coût d'accès suit l'intention, et une galerie de
+// tuiles comparables porte son ajout comme une tuile de plus, pas comme un
+// lien à part en dessous). Aucun message « vide » séparé : la tuile pointillée
+// EST l'invite, seule s'il n'y a encore aucun objectif.
+function tuilesObjectifs(objectifs, etat) {
+  const tuiles = objectifs.map((objectif) => tuileObjectif(objectif, etat)).join('');
+  return `
+    <div class="grille-objectifs">
+      ${tuiles}
+      <button type="button" class="cap-tuile-ajout" data-ouvrir-creation-objectif>
+        ${SIGNES.plus}<span>Ajouter un objectif</span>
+      </button>
+    </div>`;
+}
+
+// Une seule fenêtre pour ajouter et modifier — comme celle d'un moment ou
+// d'une fiche du réseau, entre l'aperçu et l'édition.
+function fenetreObjectif(etat) {
+  if (!etat.creationObjectif && !etat.editionObjectif) return '';
+  const objectif = etat.editionObjectif;
+
+  return construireFenetre(
+    objectif ? "Modifier l'objectif" : 'Ajouter un objectif',
+    construireFormulaire({
+      id: 'objectif-formulaire',
+      libelle: objectif ? "Modifier l'objectif" : 'Ajouter un objectif',
+      action: objectif ? 'modifier-objectif' : 'creer-objectif',
+      bouton: objectif ? 'Enregistrer' : 'Ajouter',
+      avecPli: false,
+      champs: [
+        {
+          nom: 'titre',
+          libelle: 'Objectif',
+          type: 'text',
+          requis: true,
+          valeur: objectif?.titre,
+        },
+        {
+          nom: 'pourquoi',
+          libelle: 'Pourquoi ? (relu les jours sans motivation)',
+          type: 'textarea',
+          valeur: objectif?.pourquoi,
+        },
+        {
+          nom: 'cible',
+          libelle: "À quoi tu sauras que c'est réussi",
+          type: 'text',
+          valeur: objectif?.cible,
+        },
+        {
+          nom: 'echeance',
+          libelle: 'Échéance (facultative)',
+          type: 'date',
+          valeur: objectif?.echeance,
+        },
+      ],
+      extra: objectif
+        ? `<input type="hidden" name="objectif_id" value="${echapper(objectif.id)}">`
+        : '',
+    }),
+  );
 }
 
 // Le Journal — la page source du carnet de terrain : tous les moments, la
@@ -2116,7 +2177,6 @@ function vueEditorial(etat) {
 
   return `
     ${enTete('editorial', etat)}
-    <h2 class="titre-page">Calendrier éditorial</h2>
     <!-- Pas de vue « Week-end » ici : l'éditorial programme des publications,
          il n'a rien à faire des rencontres à couvrir. -->
     ${construireBarrePeriode(etat.vueCal, etat.ancreCal, {
@@ -2559,7 +2619,6 @@ function vuePreparations(etat) {
 
   return `
     ${enTete('preparations', etat)}
-    <h2 class="titre-page">Préparations</h2>
     <section class="bloc">
       ${
         // En tuiles compactes, plus hautes que larges, côte à côte (demande
@@ -2658,7 +2717,6 @@ function vueModele(etat) {
 
   return `
     ${enTete('modeles', etat)}
-    <h2 class="titre-page">Modèle</h2>
     <input type="text" class="prepa-modele-nom" data-nom-modele="${echapper(modele.id)}"
       value="${echapper(modele.nom)}" aria-label="Nom du modèle">
     <p class="discret">Il se copie dans chaque nouvelle feuille — le modifier ne
@@ -5315,6 +5373,15 @@ export default {
       detailsMoment: false,
       contactOuvert: null,
       editionContact: false,
+      // Le menu discret d'une tuile d'objectif (30 août 2026, règle du hub) :
+      // `objectif:<id>` ouvert, et la suppression ou l'atteinte en attente de
+      // confirmation — même paire que `js/objectifs.js`.
+      menu: null,
+      confirme: null,
+      // L'objectif dont la fenêtre de modification est ouverte, ou la fenêtre
+      // d'ajout (même fenêtre, comme `js/objectifs.js`).
+      editionObjectif: null,
+      creationObjectif: false,
       photos: {},
       objectifDoux: objectifDouxEnregistre(),
       vue: 'accueil',
@@ -5595,7 +5662,6 @@ export default {
         }
       }
 
-      centrerActif(section.querySelector('.yuno-nav'));
       centrerActif(section.querySelector('.filtres'));
       poserLEntreeClavier?.();
       // La tuile vient d'être réécrite : ses pastilles reprennent le libellé de
@@ -6557,6 +6623,7 @@ export default {
           echeance: champs.echeance || null,
         });
         etat.objectifs = [...etat.objectifs, { ...objectif, jalons: objectif.jalons ?? [] }];
+        etat.creationObjectif = false;
         rendre();
         return;
       }
@@ -6565,7 +6632,25 @@ export default {
       // vivaient dans la fenêtre d'un cap, remplacée par SA PAGE — celle du
       // hub, montée ici. C'est elle qui les porte désormais, avec son
       // calendrier et son rail de projets. Restait « creer-objectif », qui a
-      // gardé son formulaire sur l'accueil.
+      // gardé sa fenêtre sur l'accueil, ouverte depuis la tuile pointillée de
+      // la galerie (règle du hub : le coût d'accès suit l'intention).
+
+      // « Modifier » ouvrait la page entière pour changer un titre : le menu
+      // discret de la tuile le fait sur place, comme sur la galerie du hub.
+      if (action === 'modifier-objectif') {
+        const modifie = await api.modifierObjectif(champs.objectif_id, {
+          titre: champs.titre.trim(),
+          pourquoi: champs.pourquoi?.trim() || null,
+          cible: champs.cible?.trim() || null,
+          echeance: champs.echeance || null,
+        });
+        etat.objectifs = etat.objectifs.map((candidat) =>
+          candidat.id === champs.objectif_id ? { ...candidat, ...modifie } : candidat,
+        );
+        etat.editionObjectif = null;
+        rendre();
+        return;
+      }
     }
 
     // --- Clics ---
@@ -6632,6 +6717,84 @@ export default {
         etat.choixPrepa = null;
         etat.propositionsOuvertes = false;
         etat.clubOuvert = null;
+        etat.editionObjectif = null;
+        etat.creationObjectif = false;
+        rendre();
+        return;
+      }
+
+      if (evenement.target.closest('[data-ouvrir-creation-objectif]')) {
+        etat.creationObjectif = true;
+        rendre();
+        section.querySelector('#objectif-formulaire-titre')?.focus();
+        return;
+      }
+
+      // --- Le menu discret d'une tuile d'objectif (modifier, marquer atteint,
+      // supprimer) — le même geste et le même gabarit que la galerie du hub. ---
+
+      const menu = evenement.target.closest('[data-menu]');
+      if (menu) {
+        etat.menu = etat.menu === menu.dataset.menu ? null : menu.dataset.menu;
+        etat.confirme = null;
+        rendre();
+        return;
+      }
+
+      const modifierDepuisMenu = evenement.target.closest('[data-modifier]');
+      if (modifierDepuisMenu) {
+        const [, id] = modifierDepuisMenu.dataset.modifier.split(':');
+        etat.editionObjectif = etat.objectifs.find((candidat) => candidat.id === id) ?? null;
+        etat.menu = null;
+        rendre();
+        return;
+      }
+
+      const supprimerDepuisMenu = evenement.target.closest('[data-supprimer]');
+      if (supprimerDepuisMenu) {
+        etat.confirme = supprimerDepuisMenu.dataset.supprimer;
+        rendre();
+        return;
+      }
+
+      const marquerAtteint = evenement.target.closest('[data-atteindre]');
+      if (marquerAtteint) {
+        etat.confirme = `atteindre:${marquerAtteint.dataset.atteindre}`;
+        rendre();
+        return;
+      }
+
+      const confirmerDepuisMenu = evenement.target.closest('[data-confirmer]');
+      if (confirmerDepuisMenu) {
+        const [forme, id] = confirmerDepuisMenu.dataset.confirmer.split(':');
+        etat.menu = null;
+        etat.confirme = null;
+
+        if (forme === 'atteindre') {
+          const objectif = etat.objectifs.find((candidat) => candidat.id === id);
+          if (!objectif) return;
+          etat.objectifs = etat.objectifs.filter((candidat) => candidat.id !== id);
+          rendre();
+          try {
+            await api.atteindreObjectif(objectif);
+          } catch (souci) {
+            console.error('Objectif non marqué atteint', souci);
+            etat.objectifs = [...etat.objectifs, objectif];
+            dire("Ça n'a pas pu être enregistré — l'objectif est revenu.");
+          }
+          return;
+        }
+
+        const objectif = etat.objectifs.find((candidat) => candidat.id === id);
+        await retirerAussitot(etat.objectifs, objectif, () => api.supprimerObjectif(id), {
+          rendre,
+          echouer: dire,
+        });
+        return;
+      }
+
+      if (evenement.target.closest('[data-annuler-confirmation]')) {
+        etat.confirme = null;
         rendre();
         return;
       }
@@ -7003,6 +7166,7 @@ export default {
           (c) => c.id === supprimerContact.dataset.supprimerContact,
         );
         if (!contact || estProvisoire(contact.id)) return;
+        if (!confirm(`Supprimer « ${contact.nom} » du réseau ?`)) return;
         await retirerAussitot(etat.contacts, contact, () => api.supprimerContact(contact.id), {
           rendre: rendreContacts,
           echouer: dire,
@@ -7349,6 +7513,7 @@ export default {
       if (supprimerModele) {
         const modele = etat.modeles.find((m) => m.id === supprimerModele.dataset.supprimerModele);
         if (!modele || estProvisoire(modele.id)) return;
+        if (!confirm(`Supprimer le modèle « ${modele.nom} » ?`)) return;
         await retirerAussitot(etat.modeles, modele, () => api.supprimerModele(modele.id), {
           rendre: rendreContacts,
           echouer: dire,
@@ -7362,6 +7527,7 @@ export default {
           (c) => c.id === supprimerCommande.dataset.supprimerCommande,
         );
         if (!commande || estProvisoire(commande.id)) return;
+        if (!confirm(`Supprimer la commande « ${commande.titre} » ?`)) return;
         await retirerAussitot(etat.commandes, commande, () => api.supprimerCommande(commande.id), {
           rendre: rendreCommandes,
           echouer: dire,
@@ -7449,6 +7615,7 @@ export default {
       if (supprimerPub) {
         const pub = trouverPub(supprimerPub.dataset.supprimerPub);
         if (!pub || estProvisoire(pub.id)) return;
+        if (!confirm(`Supprimer « ${pub.titre} » ?`)) return;
         // Supprimée depuis sa propre fiche : la fenêtre n'a plus de sujet.
         if (etat.ideeOuverte === pub.id) etat.ideeOuverte = null;
         await retirerAussitot(etat.publications, pub, () => api.supprimerPublication(pub.id), {
@@ -7713,6 +7880,13 @@ export default {
         return;
       }
 
+      // Un appui ailleurs referme le menu discret d'une tuile d'objectif, s'il
+      // traînait — même règle que `js/objectifs.js`.
+      if (etat.menu || etat.confirme) {
+        etat.menu = null;
+        etat.confirme = null;
+        rendre();
+      }
     });
 
     // Glisser sur les jours du calendrier ouvre le formulaire, rempli de la

@@ -68,7 +68,10 @@ const NOMS_NAV = {
 // Les deux vues du quotidien gardent leur mot : elles se visent mieux qu'un
 // signe à reconnaître. Le calendrier a le sien (`ongletCalendrier`).
 function ongletMot(espace) {
-  return `<a href="#${espace}" data-nav="${espace}">${NOMS_NAV[espace]}</a>`;
+  const dessin = espace === 'dashboard'
+    ? '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>'
+    : '<circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2z"/>';
+  return `<a href="#${espace}" data-nav="${espace}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${dessin}</svg><span>${NOMS_NAV[espace]}</span></a>`;
 }
 
 // --- La coquille -------------------------------------------------------------
@@ -125,9 +128,10 @@ document.body.insertAdjacentHTML(
          défilement, elle se trouvait à moins 553.
          Enfant direct de l'application, elle colle sur toute la page. -->
     <div class="barre-onglets">
-      <nav class="navigation" aria-label="Espaces">
+      <div id="hub-titre-page"></div>
+      <nav class="navigation hub-dock" aria-label="Espaces">
         ${['dashboard', 'perso'].map(ongletMot).join('\n        ')}
-        ${ongletCalendrier('#calendrier', false)}
+        ${ongletCalendrier('#calendrier', false).replace('</a>', '<span>Calendrier</span></a>')}
       </nav>
     </div>
 
@@ -148,6 +152,31 @@ document.body.insertAdjacentHTML(
 // « Général » s'ouvre d'emblée : c'est la rubrique du transverse et du perso,
 // celle qu'on vient chercher le plus souvent.
 monterLeMenu(document.querySelector('.barre-onglets'), { depliees: ['Général'] });
+
+// Le titre suit les rendus asynchrones et les changements de sous-page.
+// Le contenu reste dans son module ; seul son libellé rejoint la barre du hub.
+function actualiserTitreDuHub() {
+  const nom = document.body.dataset.espace;
+  const destination = document.getElementById('hub-titre-page');
+  const section = document.getElementById(`espace-${nom}`);
+  if (!section || ['yuno', 'hermitage'].includes(nom)) {
+    destination.replaceChildren();
+    return;
+  }
+  const source = [...section.querySelectorAll('h1')].find(
+    (element) => !element.closest('.fenetre, .fenetre-fond, [hidden]'),
+  );
+  const texte = source?.textContent.trim() ?? document.title.split(' — ')[0];
+  if (source) source.classList.add('hub-titre-dans-barre');
+  if (destination.textContent === texte) return;
+  const titre = document.createElement('h1');
+  titre.textContent = texte;
+  destination.replaceChildren(titre);
+}
+new MutationObserver(actualiserTitreDuHub).observe(document.getElementById('vue'), {
+  childList: true, subtree: true, characterData: true,
+});
+
 
 const TITRES = {
   dashboard: 'Accueil',
@@ -680,6 +709,7 @@ function afficherEspace() {
 
   // Le thème de l'espace courant colore l'ensemble de la page.
   document.body.dataset.espace = nom;
+  actualiserTitreDuHub();
 
   // Six onglets ne tiennent pas sur 375 px : la barre défile, et on ramène
   // l'onglet actif dans le champ pour qu'il ne reste jamais hors écran.

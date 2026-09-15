@@ -87,6 +87,8 @@ const COQUILLE = [
   'fonts/InstrumentSans-Variable.woff2',
   'fonts/GeistMono-Variable.woff2',
   'fonts/GoogleSans-roman.woff2',
+  'fonts/InterVariable.woff2',
+  'fonts/InterVariable-Italic.woff2',
   'fonts/CanelaDeck-Regular.otf',
   'fonts/CanelaDeck-Bold.otf',
   'fonts/CanelaDeck-RegularItalic.otf',

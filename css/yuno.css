@@ -1,38 +1,23 @@
+/* Inter pour les titres et les noms de contenus ; Gilroy pour le texte.
+   Deux fichiers variables couvrent toutes les graisses, avec de vrais italiques. */
+@font-face {
+  font-family: "Inter";
+  src: url("../fonts/InterVariable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("../fonts/InterVariable-Italic.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
 /* Yuno — la feuille de style de l'espace (docs/yuno-spec.md).
    Tout est cadré par body[data-espace="yuno"] : l'identité Yuno ne déborde
    jamais sur le reste du hub. */
 
-/* --- Polices de la marque ---------------------------------------------------
-   Canela Deck pour les titres, Gilroy pour le texte. Fichiers de Noé. La
-   Belhanda vit dans le logo, en image.
-   Gilroy est servi en WOFF2 ; Canela reste en OTF faute d'avoir été reconverti
-   (quatre fichiers, 300 Ko — le même gain de 70 % l'attend). */
-
-@font-face {
-  font-family: "Canela Deck";
-  src: local("Canela-Regular"), url("../fonts/CanelaDeck-Regular.otf") format("opentype");
-  font-weight: 400; font-style: normal; font-display: swap;
-}
-@font-face {
-  font-family: "Canela Deck";
-  src: local("Canela-Bold"), url("../fonts/CanelaDeck-Bold.otf") format("opentype");
-  font-weight: 700; font-style: normal; font-display: swap;
-}
-/* Les deux italiques (12 août 2026). Sans eux le navigateur fabriquait une
-   inclinaison synthétique, qui décalait l'espacement après chaque lettre
-   accentuée : « Banque d'idé es », « Lé opards ». Sur un site français, c'était
-   visible partout. Un italique de Canela n'est de toute façon pas un romain
-   penché — c'est un autre dessin de lettres. */
-@font-face {
-  font-family: "Canela Deck";
-  src: local("Canela-RegularItalic"), url("../fonts/CanelaDeck-RegularItalic.otf") format("opentype");
-  font-weight: 400; font-style: italic; font-display: swap;
-}
-@font-face {
-  font-family: "Canela Deck";
-  src: local("Canela-BoldItalic"), url("../fonts/CanelaDeck-BoldItalic.otf") format("opentype");
-  font-weight: 700; font-style: italic; font-display: swap;
-}
 /* Gilroy en WOFF2 : 236 Ko de TTF devenus 74 Ko, soit −70 %, à dessin
    identique. Les .ttf restent dans fonts/ comme sources — ils ne sont plus
    servis. On régénère avec `python3 tools/convertir-polices.py`. */
@@ -51,12 +36,7 @@
   src: url("../fonts/Gilroy-SemiBold.woff2") format("woff2");
   font-weight: 600; font-style: normal; font-display: swap;
 }
-/* Le 700, ajouté le 13 août pour les barres du calendrier. Il vient des
-   ressources du FCH — la famille complète y est. Sans ce fichier, demander 700
-   ne faisait STRICTEMENT rien : mesuré, « Red Star - Sochaux » en 40 px faisait
-   358,92 px en 600 comme en 700, le navigateur retombant sur le SemiBold sans
-   rien dire. C'est le même piège que les italiques de Canela, en plus discret :
-   là le navigateur inventait une pente, ici il ignorait la demande. */
+
 @font-face {
   font-family: "Gilroy";
   src: url("../fonts/Gilroy-Bold.woff2") format("woff2");
@@ -78,29 +58,6 @@
   src: url("../fonts/Gilroy-Heavy.woff2") format("woff2");
   font-weight: 900; font-style: normal; font-display: swap;
 }
-
-/* --- Les polices de secours, ajustées ----------------------------------------
-   `font-display: swap` affiche le texte tout de suite dans une police système,
-   puis bascule. Sans réglage, la bascule fait sauter la page : la police
-   système n'a ni la même largeur ni la même hauteur de ligne, et tout se
-   décale sous les yeux au moment où on commence à lire.
-   Ces deux familles ne portent aucun fichier : elles habillent une police déjà
-   présente sur la machine aux mesures de la vraie. Le texte est alors à sa
-   place définitive dès la première image.
-
-   Les chiffres ne sont pas devinés, et surtout pas mesurés sur un pangramme :
-   `size-adjust` = largeur de la vraie police ÷ largeur du secours, sur une
-   dizaine de phrases réellement affichées par le site. Un pangramme donne un
-   ratio faux — il n'a pas la fréquence de lettres du français, et ses chiffres
-   pèsent lourd dans un texte qui n'en contient presque pas. Premier essai fait
-   ainsi : il AGGRAVAIT le saut pour Gilroy.
-
-   Une valeur par graisse et par posture, car le rapport n'est pas le même :
-   Gilroy est plus large que l'Helvetica en 400, plus étroit en 600. Un seul
-   réglage pour les deux se tromperait sur les deux.
-   Les hauteurs viennent des métriques du fichier (`hhea` : Gilroy 920/−240
-   pour 1000, Canela 779/−221), divisées par ce même facteur.
-   Tout est à remesurer si l'on change de police. */
 
 @font-face {
   font-family: "Gilroy secours";
@@ -126,31 +83,9 @@
   line-gap-override: 0%;
 }
 
-@font-face {
-  font-family: "Canela secours";
-  src: local("Georgia"), local("Times New Roman"), local("Times");
-  font-weight: 400;
-  font-style: normal;
-  size-adjust: 97.26%;
-  ascent-override: 80.09%;
-  descent-override: 22.72%;
-  line-gap-override: 0%;
-}
-
-@font-face {
-  font-family: "Canela secours";
-  src: local("Georgia"), local("Times New Roman"), local("Times");
-  font-weight: 700;
-  font-style: italic;
-  size-adjust: 94.72%;
-  ascent-override: 82.24%;
-  descent-override: 23.33%;
-  line-gap-override: 0%;
-}
-
 /* --- L'entrée d'une vue -----------------------------------------------------
    Les vues se remplacent par `innerHTML` : sans rien, changer d'onglet est une
-   coupure sèche. Un fondu et quatre pixels de montée suffisent à dire qu'on a
+   coupure sèche. Un fondu suffit à dire qu'on a
    changé de lieu — c'est ce que fait une application, et c'est tout ce qu'on
    lui demande. 150 ms : assez pour se sentir, trop court pour se remarquer.
    Le mouvement ne joue qu'au changement de vue, jamais aux gestes ordinaires
@@ -158,8 +93,8 @@
    cochée serait pire que pas d'animation. */
 
 @keyframes yuno-entree {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: none; }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Sur la classe et non sur `#vue` : le conteneur que `monter()` reçoit est
@@ -176,60 +111,30 @@ body[data-espace="yuno"] #vue button,
 body[data-espace="yuno"] #vue input,
 body[data-espace="yuno"] #vue select,
 body[data-espace="yuno"] #vue textarea {
-  font-family: "Gilroy", "Gilroy secours", var(--police-texte);
+  font-family: "Inter", sans-serif;
 }
-
-/* --- Les rôles typographiques ------------------------------------------------
-   Trois leviers, et chacun ne dit qu'une chose. Employer les trois partout à la
-   fois ne hiérarchise rien : si tout penche, plus rien ne ressort.
-
-     LA POLICE dit la nature du texte.
-       Canela Deck = ce que le site EST — ses lieux, ses titres, son contenu.
-       Gilroy      = ce que le site FAIT — actions, états, dates, mesures,
-                     précisions. Tout l'utilitaire, sans exception.
-
-     LA POSTURE dit qui parle.
-       Italique = la voix du site — il annonce, il nomme un lieu.
-       Romain   = la voix de Noé — ce qu'il a vécu, écrit, photographié. Le
-                  contenu ne penche pas : il n'annonce rien, il est là.
-
-     LA GRAISSE dit l'importance ou l'état, jamais la décoration.
-       700 = un titre, ou l'onglet où l'on se trouve.
-       400 = tout le reste.
-
-   D'où le tableau :
-
-     Titre de section (h2)      Canela · italique · 700 · 1.375rem
-     Onglet actif, porte        Canela · italique · 700 · 1rem
-     Onglet inactif             Canela · italique · 400 · 1rem
-     Titre de tuile (contenu)   Canela · romain   · 400 · 1.125rem
-     Sous-titre, libellé fort   Gilroy · romain   · 600
-     Corps, date, statut        Gilroy · romain   · 400
-     Chiffre                    Geist Mono, via .chiffre
-
-   Les quatre fichiers Canela nécessaires sont dans fonts/ : Regular, Bold, et
-   leurs deux italiques. Aucune graisse n'est simulée par le navigateur. */
 
 body[data-espace="yuno"] #vue h1,
 body[data-espace="yuno"] #vue h2 {
-  font-family: "Canela Deck", "Canela secours", georgia, serif;
-  font-style: italic;
-  letter-spacing: 0;
+  font-family: "Inter", sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  font-optical-sizing: auto;
 }
 
-/* Tous les titres du site ont baissé d'un cran le 15 août 2026 (demande de
-   Noé). Canela est un romain de labeur : à taille égale il pèse plus qu'un
-   sans-serif, et sur un site qu'on parcourt debout, un titre n'a pas à occuper
-   le tiers de l'écran. La hiérarchie, elle, ne bouge pas — page > section >
-   sous-titre — c'est l'échelle entière qui descend. */
+/* Plus un titre est important, plus sa graisse et son approche se resserrent. */
 body[data-espace="yuno"] #vue h1 {
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: -0.04em;
   font-size: 1.625rem;
 }
 
 /* Le titre d'une page vit hors des blocs : il porte le nom du lieu où l'on
    vient d'entrer, et reste donc au-dessus des titres de section. */
 body[data-espace="yuno"] #vue .titre-page {
+  font-weight: 750;
+  letter-spacing: -0.03em;
   font-size: 1.25rem;
 }
 
@@ -237,54 +142,46 @@ body[data-espace="yuno"] #vue .titre-page {
    l'habillage d'une étiquette en Gilroy, et il rendait un romain incliné de
    11 px illisible. Un titre de section redevient un titre, pas un libellé. */
 body[data-espace="yuno"] #vue .bloc h2 {
-  font-size: 1.125rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   text-transform: none;
-  letter-spacing: 0;
+  letter-spacing: -0.025em;
   color: var(--texte);
 }
 
 /* Le titre d'une fenêtre suit la même baisse. La règle commune vit dans
    styles.css et sert aussi au hub : elle n'est réduite qu'ici. */
 body[data-espace="yuno"] .fenetre-titre {
+  font-family: "Inter", sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.025em;
   font-size: 1.125rem;
 }
 
 /* Les sous-titres sont des libellés fonctionnels : Gilroy, et de la graisse
    plutôt que de la taille pour les détacher. */
 body[data-espace="yuno"] #vue h3 {
-  font-family: "Gilroy", "Gilroy secours", var(--police-texte);
+  font-family: "Inter", sans-serif;
   font-style: normal;
   font-weight: 600;
+  letter-spacing: -0.015em;
 }
 
-/* Les chiffres passent en Gilroy 700 (demande de Noé, 15 août 2026 : « une
-   police un peu plus grasse et qui se marie mieux »). Ils étaient en Geist
-   Mono — la police du hub, et la seule du site qui n'appartienne ni à Canela
-   ni à Gilroy : deux polices se marient, trois se croisent.
-   Le rôle ne change pas pour autant, il se confirme : un compteur est une
-   MESURE, et la mesure est le domaine de Gilroy (« ce que le site FAIT »).
-   Le 700 existe depuis le 13 août — avant, le demander n'aurait rien fait,
-   le navigateur serait retombé sur le SemiBold sans rien dire. */
+
 body[data-espace="yuno"] .chiffre {
-  font-family: "Gilroy", "Gilroy secours", var(--police-texte);
+  font-family: "Inter", sans-serif;
   font-weight: 900;
 }
 
-/* Le titre d'une tuile est du contenu, pas une annonce : le lieu d'un moment,
-   l'idée d'une publication, le nom d'un contact. Canela le range du côté du
-   site, le romain dit que c'est Noé qui parle, et le 400 le laisse au-dessous
-   du titre de section — sans quoi une page de vingt tuiles n'aurait que des
-   titres. Ce qui l'entoure (étiquettes, dates, statuts, notes) reste en Gilroy.
-   Un romain de labeur se lit plus petit qu'un sans-serif : un cran au-dessus
-   du Gilroy qu'il remplace. */
+
 body[data-espace="yuno"] .moment-titre,
 body[data-espace="yuno"] .pub-titre,
 body[data-espace="yuno"] .contact-nom,
 body[data-espace="yuno"] .modele-titre {
-  font-family: "Canela Deck", "Canela secours", georgia, serif;
+  font-family: "Inter", sans-serif;
   font-style: normal;
-  font-weight: 400;
+  font-weight: 550;
+  letter-spacing: -0.01em;
 }
 
 body[data-espace="yuno"] .moment-titre,
@@ -296,9 +193,10 @@ body[data-espace="yuno"] .contact-nom {
 /* Une porte nomme un lieu du site, exactement comme un onglet : même
    traitement, et le 700 parce qu'une porte n'a pas d'état éteint. */
 body[data-espace="yuno"] .lien-externe-titre {
-  font-family: "Canela Deck", "Canela secours", georgia, serif;
-  font-style: italic;
-  font-weight: 700;
+  font-family: "Inter", sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: -0.015em;
 }
 
 /* --- L'en-tête de l'espace --------------------------------------------------
@@ -333,54 +231,31 @@ body[data-espace="yuno"] .lien-externe-titre {
 .yuno-tete h1 { margin-bottom: 0; }
 .yuno-tete .sous-titre { margin: 0; }
 
-/* L'en-tête à signature a disparu (demande de Noé, 14 août 2026) : le site
-   s'ouvre sur sa barre. Centrage par marges automatiques : contrairement à
-   justify-content:center, il n'ampute pas le début de la barre quand elle
-   déborde et défile.
-   Depuis que la LOUPE ferme la rangée (21 août au soir, demande de Noé),
-   c'est SA marge automatique (`.loupe-clubs`) qui fait le pendant de
-   celle-ci : les onglets se centrent entre les deux, la loupe tient le bord
-   droit — sur toutes les pages. */
-.yuno-nav { align-items: center; }
-/* `first-of-type` ET NON `first-child` (15 septembre 2026) : depuis que le
-   bouton du menu ouvre la barre, le premier ENFANT est un `button` — plus aucun
-   lien ne répondait à la règle, et les onglets, privés de leur marge
-   automatique, se collaient au bouton au lieu de rester centrés. */
-.yuno-nav > a:first-of-type { margin-left: auto; }
-
-/* La barre de recherche ouverte prend la ligne des onglets à elle seule :
-   pas de retrait à gauche — il n'y a plus de titre à côté duquel se caler. */
+/* Les outils restent en tête ; la navigation principale vit dans le dock. */
+.yuno-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-16);
+  min-height: 44px;
+  margin-bottom: var(--espace-24);
+}
 .yuno-nav > .barre-loupe { margin-left: 0; }
-
-/* LE BOUTON DU MENU COLLE AU BORD GAUCHE, exactement comme la loupe colle à
-   droite (15 septembre 2026). La barre défile quand elle déborde, et
-   `centrerActif` la fait défiler d'elle-même pour ramener l'onglet actif dans le
-   champ : mesuré sur le vivier, le bouton sortait de l'écran et la porte du site
-   devenait introuvable. C'est la règle du hub, dont le bouton vit hors de la
-   bande qui défile — une chose en queue de bande n'existe pas.
-   Le fond est opaque : les onglets glissent DESSOUS. */
-body[data-espace="yuno"] .yuno-nav > .bouton-menu {
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  flex: none;
-  background: var(--fond);
+.yuno-nav > .bouton-menu { flex: none; width: 2rem; }
+body[data-espace="yuno"] #vue .yuno-titre-page {
+  color: var(--accent);
+  text-align: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+.yuno-nav.recherche-ouverte > .yuno-titre-page { flex: 0 1 35%; }
+.yuno-nav.recherche-ouverte > .barre-loupe { flex: 1 1 0; }
 
-/* L'ÉTAT OUVERT SE REDIT ICI, et il le faut : `.bouton-menu.ouvert` pèse deux
-   classes, la règle du dessus en pèse trois et un attribut — le fond opaque
-   écrasait donc le doré, et le bouton ne disait plus que le menu était ouvert.
-   Une spécificité qu'on n'égale pas est une règle qu'on n'écrit pas. */
-body[data-espace="yuno"] .yuno-nav > .bouton-menu.ouvert { background: var(--accent); }
-
-/* « Visible constamment » vaut aussi sur téléphone, où la barre déborde et
-   défile : la loupe COLLE au bord droit (sticky dans l'axe du défilement),
-   sur le fond de la page — sans lui, les onglets glisseraient sous elle. */
-.yuno-nav > .loupe-clubs {
-  position: sticky;
-  right: 0;
-  background: var(--fond);
-}
 
 /* La seule sortie du site, tout en bas et discrète : en plein écran sur
    téléphone il n'y a pas de barre d'adresse, il faut bien une porte. */
@@ -401,20 +276,27 @@ body[data-espace="yuno"] .yuno-nav > .bouton-menu.ouvert { background: var(--acc
    Deux mécaniques jumelles auraient fini par ne plus se replier pareil ; c'est
    pourquoi Yuno emprunte le composant plutôt que d'en écrire un second. */
 
-/* CANELA POUR LES RANGS DU MENU. Le hub y met Clash Display par
+/* INTER POUR LES RANGS DU MENU. Le hub y met Clash Display par
    `--police-titre` ; Yuno ne redéfinit pas cette variable — il pose sa police
    écran par écran — et le menu serait donc reparti dans la typographie du hub,
    au milieu du site. C'est la première chose qu'on lit en ouvrant : elle doit
    être de la maison. */
 body[data-espace="yuno"] .menu-voile-yuno :is(.menu-grand > a, .menu-titre-seul) {
-  font-family: "Canela Deck", var(--police-titre);
-  font-weight: 400;
-  font-size: 1.1875rem;
+  font-family: "Inter", sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  font-size: 1rem;
 }
 
 body[data-espace="yuno"] .menu-voile-yuno .menu-moyen > a {
-  font-family: "Canela Deck", var(--police-titre);
-  font-weight: 400;
+  font-size: 0.875rem;
+  font-family: "Inter", sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+
+body[data-espace="yuno"] .menu-voile-yuno .menu-sous > a {
+  font-size: 0.8125rem;
 }
 
 /* PAS DE PASTILLE : dans le hub elle dit l'espace d'une ligne — le violet du
@@ -429,49 +311,93 @@ body[data-espace="yuno"] .menu-voile-yuno .menu-pastille { display: none; }
    fond du voile se confondraient et le menu flotterait sans profondeur. */
 body[data-espace="yuno"] .menu-voile-yuno { background: rgb(0 0 0 / 62%); }
 
-/* --- La navigation de l'espace ---------------------------------------------- */
-
-.yuno-nav {
-  display: flex;
-  gap: var(--espace-4);
-  margin: 0 0 var(--espace-24);
-  overflow-x: auto;
-  scrollbar-width: none;
+/* Verre translucide : le contenu derrière colore la navigation. */
+body[data-espace="yuno"] #vue {
+  padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
 }
-
-.yuno-nav::-webkit-scrollbar { display: none; }
-
-/* Les onglets nomment les lieux du site : Canela italique, comme les titres.
-   En 400 au repos — cinq noms en gras côte à côte, ce serait cinq titres et
-   aucune hiérarchie. La graisse est réservée à celui où l'on se trouve. */
-.yuno-nav a {
-  flex: 0 0 auto;
+body[data-espace="yuno"] .ouvrir-capture {
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+}
+:is(.yuno-dock, .navigation.hub-dock) {
+  position: fixed;
+  z-index: 18;
+  left: 50%;
+  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
   display: flex;
+  width: min(480px, calc(100% - 32px));
+  padding: 4px;
+  gap: 2px;
+  border: 0.5px solid rgb(255 255 255 / 12%);
+  border-radius: 36px;
+  background:
+    radial-gradient(ellipse at 18% 0%, rgb(255 255 255 / 13%), transparent 48%),
+    radial-gradient(ellipse at 88% 100%, rgb(166 206 227 / 8%), transparent 42%),
+    linear-gradient(120deg, rgb(16 19 23 / 24%), rgb(8 11 15 / 36%) 55%, rgb(15 18 22 / 22%));
+  box-shadow: 0 8px 24px rgb(0 0 0 / 24%),
+    inset 0 1px 5px rgb(255 255 255 / 7%),
+    inset 0 -3px 8px rgb(0 0 0 / 14%);
+  -webkit-backdrop-filter: blur(10px) saturate(190%) contrast(108%);
+  backdrop-filter: blur(10px) saturate(190%) contrast(108%);
+}
+/* Un reflet irrégulier sur une arête fine donne du relief sans éclaircir
+   toute la surface. Le masque ne laisse apparaître que le bord du verre. */
+:is(.yuno-dock, .navigation.hub-dock)::before {
+  content: "";
+  position: absolute;
+  inset: -0.5px;
+  padding: 0.5px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(125deg,
+    rgb(255 255 255 / 48%), rgb(255 255 255 / 4%) 24%,
+    transparent 48%, rgb(203 229 242 / 28%) 78%, rgb(255 255 255 / 5%));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+:is(.yuno-dock, .navigation.hub-dock) a {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  min-height: 2.5rem;
-  padding: 0 var(--espace-12);
-  font-family: "Canela Deck", "Canela secours", georgia, serif;
-  font-style: italic;
-  font-size: 1rem;
-  font-weight: 400;
+  justify-content: center;
+  gap: 3px;
+  padding: 5px 2px;
+  border-radius: 28px;
+  color: #a9adb3;
+  font-family: "Inter", sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.2;
   text-decoration: none;
-  white-space: nowrap;
-  color: var(--texte-discret);
-  border-radius: var(--rayon-pastille);
+  text-shadow: 0 1px 4px rgb(0 0 0 / 35%);
+  transition: color 180ms ease, background 180ms ease, transform 180ms ease;
 }
-
-.yuno-nav a:hover {
-  color: var(--texte);
-  background: color-mix(in srgb, var(--texte) 8%, transparent);
-}
-
-/* L'onglet où l'on se trouve : la graisse porte l'état, en plus de la pastille.
-   Un seul signal suffirait rarement — la couleur seule ne dit rien à qui ne la
-   distingue pas. */
-.yuno-nav a.actif {
+:is(.yuno-dock, .navigation.hub-dock) svg { width: 22px; height: 22px; flex: none; }
+:is(.yuno-dock, .navigation.hub-dock) a:hover { color: #fff; background: rgb(255 255 255 / 6%); }
+:is(.yuno-dock, .navigation.hub-dock) a:active { transform: scale(0.94); }
+:is(.yuno-dock, .navigation.hub-dock) a.actif {
+  color: #65c8ff;
   font-weight: 700;
-  color: var(--fond-carte);
-  background: var(--accent);
+  background:
+    radial-gradient(ellipse at 25% 0%, rgb(255 255 255 / 19%), transparent 65%),
+    linear-gradient(150deg, rgb(255 255 255 / 5%), rgb(73 186 255 / 5%));
+  box-shadow: inset 0 0.5px 0 rgb(255 255 255 / 26%),
+    inset 0 -0.5px 0 rgb(153 217 255 / 12%), 0 2px 5px rgb(0 0 0 / 12%);
+}
+:is(.yuno-dock, .navigation.hub-dock) a:focus-visible { outline: 2px solid #65c8ff; outline-offset: 2px; }
+@media (max-width: 400px) {
+  :is(.yuno-dock, .navigation.hub-dock) { gap: 0; }
+  :is(.yuno-dock, .navigation.hub-dock) a { font-size: 0.625rem; min-height: 48px; }
+  :is(.yuno-dock, .navigation.hub-dock) svg { width: 20px; height: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.yuno-dock, .navigation.hub-dock) a { transition: none; }
+  :is(.yuno-dock, .navigation.hub-dock) a:active { transform: none; }
 }
 
 /* --- Les portes -------------------------------------------------------------
@@ -998,9 +924,9 @@ body[data-espace="yuno"] .etiquette {
 }
 
 .grande-porte-titre {
-  font-family: "Canela Deck", "Canela secours", georgia, serif;
-  font-style: italic;
-  font-weight: 700;
+  font-family: "Inter", sans-serif;
+  font-style: normal;
+  font-weight: 600;
   font-size: 1.125rem;
   line-height: 1.15;
 }
@@ -1550,7 +1476,7 @@ a.metrique:focus-visible .discret {
   align-items: center;
   gap: var(--espace-8);
   margin: 0 0 2px;
-  font-family: "Gilroy", "Gilroy secours", var(--police-texte);
+  font-family: "Inter", sans-serif;
   font-size: 0.9375rem;
   font-weight: 600;
 }
@@ -1558,7 +1484,7 @@ a.metrique:focus-visible .discret {
 /* Le seul titre de la Passerelle : il ouvre ce sur quoi on agit. */
 .titre-semaine {
   margin: 0 0 var(--espace-8);
-  font-family: "Gilroy", "Gilroy secours", var(--police-texte);
+  font-family: "Inter", sans-serif;
   font-size: 0.9375rem;
   font-weight: 600;
 }
@@ -1675,12 +1601,7 @@ a.metrique:focus-visible .discret {
   white-space: nowrap;
 }
 
-/* Un cran plus petit que le Canela des autres titres depuis que l'écusson est
-   là (demande de Noé, 15 août au soir) : le blason reconnaît le club, le nom
-   n'a plus à le crier. Ce qu'on gagne en corps, on le gagne en NOM ENTIER —
-   « AS Saint-Étienne » ne se coupait plus qu'à cause de ces deux points.
-   Sélecteur en `body[data-espace="yuno"]` comme la règle qu'il corrige : sans
-   ça, le 1.125rem commun l'emporterait en spécificité. */
+
 body[data-espace="yuno"] .proposition .contact-nom,
 body[data-espace="yuno"] .fournee-nom .contact-nom {
   font-size: 1rem;
@@ -2022,18 +1943,10 @@ body[data-espace="yuno"] ul.fournee-liste {
   background: color-mix(in srgb, var(--bleu) 22%, transparent);
 }
 
-/* En Canela ITALIQUE GRAS (demande de Noé, 15 août au soir), comme les titres
-   des deux portes du pied de page : cette porte-ci en est une troisième, elle
-   prend leur traitement. Les quatre coupes existent en fichier
-   (`CanelaDeck-BoldItalic.otf`) : ni l'italique ni le gras ne sont simulés par
-   le navigateur — le site s'y refuse (voir l'en-tête du fichier).
-   Le sélecteur reprend celui qu'il corrige (`#vue button` met tous les
-   contrôles du site en Gilroy) : un ID pèse plus que n'importe quelle classe,
-   il faut le lui reprendre mot pour mot et ajouter la classe. C'est la seule
-   exception à cette règle, et elle se voit. */
+
 body[data-espace="yuno"] #vue button.porte-dizaine {
-  font-family: "Canela Deck", "Canela secours", georgia, serif;
-  font-style: italic;
+  font-family: "Inter", sans-serif;
+  font-style: normal;
 }
 
 /* Sur téléphone, la voisine passe dessous en pleine largeur : deux tuiles
@@ -2109,12 +2022,7 @@ body[data-espace="yuno"] #vue button.porte-dizaine {
    restée exactement là où le bouton était — au bord droit. */
 .barre-loupe .loupe-clubs { margin-left: 0; }
 
-/* Le champ est nu — la barre porte le cadre — et reprend la police du texte :
-   il est DANS un h2, il n'a pas à écrire en Canela italique. Pas d'anneau doré
-   à l'ouverture (demande de Noé, 21 août 2026) : la barre vient d'apparaître
-   avec son cadre et son curseur qui clignote, l'anneau redisait ce qui se voit
-   déjà. Le focus reste dit — la bordure s'éclaircit tant qu'on est dedans, et
-   au clavier c'est le même chemin (`:focus-within`). */
+
 .barre-loupe .recherche-club {
   flex: 1 1 auto;
   min-width: 0;
@@ -2228,7 +2136,7 @@ body[data-espace="yuno"] #vue button.porte-dizaine {
   align-items: center;
   gap: var(--espace-8);
   margin: var(--espace-24) 0 var(--espace-8);
-  font-family: "Gilroy", "Gilroy secours", var(--police-texte);
+  font-family: "Inter", sans-serif;
   font-size: 0.875rem;
   font-weight: 600;
 }
@@ -2391,7 +2299,7 @@ body[data-espace="yuno"] .weekend-jour .contact-nom {
   align-items: baseline;
   gap: var(--espace-8);
   margin: 0 0 var(--espace-4);
-  font-family: "Gilroy", "Gilroy secours", var(--police-texte);
+  font-family: "Inter", sans-serif;
   font-size: 0.875rem;
   font-weight: 600;
   text-transform: capitalize;
@@ -2774,7 +2682,7 @@ body[data-espace="yuno"] .weekend-jour .contact-nom {
 .idee-jour-date { font-size: 0.8125rem; }
 
 .idee-jour-corps .pub-titre {
-  font-family: "Canela Deck", var(--police-titre);
+  font-family: "Inter", sans-serif;
   font-size: 1.375rem;
   line-height: 1.25;
 }
@@ -2954,13 +2862,6 @@ body[data-espace="yuno"] .cap-tuile-tete:not(:has(> *:not(.cap-tuile-espace))) {
   display: none;
 }
 
-/* PAS DE RÈGLE DE POLICE ICI, et c'est la mesure qui l'a dit : le site habille
-   déjà ces pages par ses propres titres — `#vue h1` et `#vue h2` en Canela,
-   `#vue h3` en Gilroy. Une règle de plus sur `.cap-tuile-titre` se battait
-   contre cette grammaire (et perdait : `#vue h3` porte un identifiant, donc
-   pèse plus lourd). Le titre d'un cap est un h3 : il prend Gilroy comme tous
-   les titres de tuile du site, et c'est ce qu'on veut. */
-
 /* --- Les caps en tuiles (15 septembre 2026, demande de Noé) --------------------
    Ils se dépliaient sur place ; ils ouvrent maintenant une FENÊTRE — la
    grammaire que le site emploie déjà pour un moment, une fiche, une idée. La
@@ -2996,6 +2897,19 @@ body[data-espace="yuno"] .objectif-tuile:active { transform: scale(0.995); }
 /* La légende des marches ferme la tuile : dans un bouton, elle héritait de son
    alignement. */
 body[data-espace="yuno"] .objectif-tuile .progression-legende { text-align: left; }
+
+/* Le menu discret d'un objectif (modifier, marquer atteint, supprimer — même
+   geste et même gabarit que la galerie du hub, `js/gabarits.js`). La tuile
+   n'est plus SEULE le lien : elle enveloppe le lien et le menu, un bouton dans
+   un lien n'étant ni valide ni cliquable. L'enveloppe ne porte qu'un ancrage —
+   tout le reste de l'allure reste sur `.objectif-tuile`. */
+body[data-espace="yuno"] .objectif-tuile-carte { position: relative; }
+
+/* Le bouton ⋯ ne se révèle qu'au survol de la tuile ou au clavier — la liste
+   du hub (styles.css) ne connaît pas les classes du site. */
+body[data-espace="yuno"] .objectif-tuile-carte:hover .cap-menu-bouton {
+  opacity: 1;
+}
 
 /* --- Les vitrines des portes (15 septembre 2026) -------------------------------
    Une porte montre ce qu'il y a derrière. Chaque vitrine a la FORME de sa page :
@@ -3101,3 +3015,68 @@ body[data-espace="yuno"] .objectif-tuile .progression-legende { text-align: left
 .passerelle-metrique,
 .tuile-prepa,
 .invite-moment { border-color: transparent; }
+
+/* Les liens de Yuno restent cliquables sans soulignement, même au survol. */
+body[data-espace="yuno"] a,
+body[data-espace="yuno"] a:hover,
+body[data-espace="yuno"] a:focus-visible {
+  text-decoration: none;
+}
+
+/* Yuno : Inter guide la navigation ; Clash nomme les créations et les projets. */
+body[data-espace="yuno"] {
+  --police-texte: "Inter", sans-serif;
+  --police-titre: "Inter", sans-serif;
+}
+body[data-espace="yuno"] #vue :is(
+  .objectif-titre, .cap-tuile-titre, .projet-nom,
+  .moment-titre, .sortie-ligne-titre, .sortie-moment-titre,
+  .pub-titre, .pub-ligne-titre, .tuile-prepa-titre
+) {
+  font-family: "Clash Display", sans-serif;
+  font-weight: 600;
+  font-style: normal;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+}
+body[data-espace="yuno"] #vue [data-hote-cap] h1 {
+  font-family: "Clash Display", sans-serif;
+  font-weight: 700;
+  font-style: normal;
+  letter-spacing: -0.025em;
+}
+
+/* Le hub partage le verre de Yuno ; son menu dépliant reste en haut. */
+body:not([data-espace="yuno"]):not([data-espace="hermitage"]) .barre-onglets {
+  border-bottom: 0;
+}
+.navigation.hub-dock {
+  width: min(340px, calc(100% - 40px));
+  overflow: visible;
+}
+.navigation.hub-dock a,
+.navigation.hub-dock a.actif {
+  font-size: 0.6875rem;
+}
+.navigation.hub-dock a.nav-calendrier {
+  width: auto;
+  padding: 5px 2px;
+}
+body:not([data-espace="yuno"]):not([data-espace="hermitage"]) #vue {
+  padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+}
+body:not([data-espace="yuno"]):not([data-espace="hermitage"]) .ouvrir-capture {
+  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Le verre du hub reprend l'accent de l'espace courant. */
+.navigation.hub-dock a.actif {
+  color: var(--accent);
+  background:
+    radial-gradient(ellipse at 25% 0%, rgb(255 255 255 / 19%), transparent 65%),
+    linear-gradient(150deg, rgb(255 255 255 / 5%), color-mix(in srgb, var(--accent) 9%, transparent));
+  box-shadow: inset 0 0.5px 0 rgb(255 255 255 / 26%),
+    inset 0 -0.5px 0 color-mix(in srgb, var(--accent) 20%, transparent),
+    0 2px 5px rgb(0 0 0 / 12%);
+}
+.navigation.hub-dock a:focus-visible { outline-color: var(--accent); }
