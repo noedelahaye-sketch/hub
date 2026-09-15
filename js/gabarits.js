@@ -104,7 +104,11 @@ function construireObjectif(objectif, { retraitJalon = false, complement = '' } 
     </details>`;
 }
 
-function construireJalon(jalon, { retraitJalon = false } = {}) {
+// EXPORTÉE DEPUIS LE 15 SEPTEMBRE 2026 : le site Yuno montre ses jalons dans une
+// FENÊTRE et non plus dans un dépliage, mais un jalon se coche, se date et se
+// retire de la même façon — deux dessins pour un même geste finiraient par ne
+// plus se ressembler.
+export function construireJalon(jalon, { retraitJalon = false } = {}) {
   // Le retrait vaut pour tous les jalons, atteints compris : un jalon mal
   // découpé se corrige, même après coup.
   const retirer = retraitJalon

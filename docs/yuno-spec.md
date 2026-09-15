@@ -370,6 +370,190 @@ l'onglet Journal. Une barre de navigation ne
 doit pas grandir à chaque écran qu'on ajoute. `ONGLET_DE_LA_VUE`, dans
 `js/yuno.js`, dit quel onglet allumer pour quelle vue.
 
+### LE MENU DU SITE (15 septembre 2026, demande de Noé)
+
+**LA RÈGLE DES DEUX RANGS, APPLIQUÉE À YUNO.** Le paragraphe ci-dessus dit
+comment on n'ajoute pas d'entrée à la barre ; il ne disait pas comment on
+retrouve ce qu'elle ne nomme pas. Mesuré : **six entrées pour treize écrans** —
+sept pages ne s'atteignaient que par une porte posée en PIED de leur onglet.
+Rien ne disait ce que le site contenait.
+
+**Le bouton à trois barres ouvre le second rang**, à gauche de la barre, comme
+dans le hub. Quatre rubriques :
+
+| Rubrique | Ses pages |
+|---|---|
+| **Le journal** (`#yuno/journal`) | Le calendrier · Les préparations · Les modèles de préparation |
+| **Créer** (`#yuno/creer`) | La banque d'idées · Le calendrier éditorial |
+| **Missions** (`#yuno/missions`) | Les commandes |
+| **Réseau** *(un titre seul)* | La Passerelle · Le vivier · Le réseau · Les modèles de messages |
+
+- **LES CINQ ONGLETS NE BOUGENT PAS** : ce sont les cinq gestes quotidiens de
+  l'atelier. Le menu ne les remplace pas, il donne le rang du dessous — c'est la
+  structure du hub, qui garde trois onglets ET vingt-quatre liens dans son menu.
+  Une rubrique porte donc le nom de son onglet et mène à sa page, exactement
+  comme « Perso » est à la fois un onglet et une rubrique du hub.
+- **« RÉSEAU » EST LA SEULE RUBRIQUE QUI NE MÈNE NULLE PART**, et c'est le
+  vocabulaire qui l'impose : « le réseau » désigne la base de fiches
+  (`#yuno/carnet`) — « carnet » ne nomme que le Carnet de terrain. Une rubrique
+  « Réseau » avec sa page ET une entrée « Le réseau » dessous aurait fait deux
+  fois le même mot pour deux écrans. Elle reste un titre, comme « Général » dans
+  le hub, et la Passerelle reprend son nom parmi ses quatre pages.
+- **LE MÊME COMPOSANT QUE LE HUB, UNE AUTRE PEAU** (`monterLeMenu`, js/menu.js) :
+  les plis, la fermeture au fond, Échap et le calage sous la barre sont les mêmes
+  des deux côtés — deux mécaniques jumelles auraient fini par ne plus se replier
+  pareil. Presque tout l'habillage suit tout seul, le menu étant écrit en
+  variables que `body[data-espace="yuno"]` a déjà remplacées ; ne restent que la
+  police (Canela) et la pastille d'espace, masquée — le site n'a qu'un espace, et
+  quatre points de la même couleur ne distinguent rien.
+- **LE MENU DU HUB NE PERCE TOUJOURS PAS LE SITE** : les rubriques de Yuno vivent
+  dans `js/yuno.js`, pas dans `js/menu.js`. Le hub ne connaît pas les écrans du
+  site ; c'est le site qui déclare les siens et emprunte le composant. La règle
+  tient par les données, pas par le code.
+- **LE BOUTON EST ÉCRIT DANS LA BARRE, pas posé après coup** : `.yuno-nav` est
+  redessinée à chaque vue, et un bouton inséré au montage y disparaîtrait au
+  premier changement d'écran. Le composant l'écoute en délégation, et retrouve la
+  barre par une FONCTION — un élément gardé en mémoire et détaché du DOM mesure
+  zéro, et le panneau se poserait alors en haut de l'écran.
+- **IL COLLE AU BORD GAUCHE** (`sticky`), comme la loupe colle à droite : la
+  barre défile quand elle déborde, et `centrerActif` la fait défiler d'elle-même
+  — mesuré sur le vivier, le bouton sortait de l'écran.
+- **CHANGER DE PAGE REFERME LE MENU**, quel que soit le chemin — un onglet, la
+  flèche du navigateur, un balayage. *Le défaut ne s'est vu qu'une fois les deux
+  menus servis par le même composant : celui du site restait déplié en quittant
+  le site et se superposait à celui du hub.*
+
+### LES ÉCRANS DU CAP, EMPRUNTÉS AU HUB (15 septembre 2026, demande de Noé)
+
+**Sa correction, et elle était nette** : *« c'est pas du tout ça le fonctionnement
+des objectifs sur le hub — ils ont une page entière juste pour eux. Il faut
+également rajouter l'accès aux projets, donc ajouter une page dans le menu
+déroulant qui regroupe tout ça. Une page générale avec mes objectifs, mes
+projets, mes tâches, à l'image du hub. »* Puis, sur le comment : *« il faut que
+ce soit mutualisé, mais avec la forme et la DA de Yuno pour ce qui apparaît dans
+le site »*.
+
+> *Ce que ça renverse, deux fois.* Les caps du site se dépliaient sur place — le
+> gabarit partagé `construireObjectifs`, qui reste celui du FCH. Ils ont ensuite
+> passé une heure en FENÊTRE VOLANTE, au motif que Yuno ne pouvait pas emprunter
+> la page du hub sans sortir du site. **Le motif était faux** : on peut monter la
+> page du hub DANS le site. La fenêtre est partie, et avec elle six gestionnaires
+> devenus morts (ajouter, cocher, retirer un jalon ; marquer atteint ; supprimer)
+> — ces gestes vivent maintenant sur la page du cap.
+
+| Adresse | Ce que c'est |
+|---|---|
+| `#yuno/cap` | « Mon cap » — ses objectifs, ses projets, ses périodes |
+| `#yuno/objectif/<id>` | la page entière d'un cap : jalons, **son calendrier**, le rail de ses projets |
+| `#yuno/projet/<id>` | la page entière d'un projet : étapes, calendrier, tâches |
+| `#yuno/taches` | « Mes tâches », **groupées comme le hub** — une occurrence par série |
+
+**CE SONT LES MODULES DU HUB, MONTÉS DANS LE SITE** — `js/objectifs.js`,
+`js/objectif.js`, `js/projet.js`, `js/taches.js`, quatre mille cinq cents lignes
+qu'on ne recopie pas. Le site pose sa barre, un hôte (`vueDuCap`), son pied, et
+laisse le module écrire dedans (`monterLeCap`). Il n'a fallu que trois choses :
+
+- **`js/cap-adresses.js`** : les dix liens que ces modules écrivaient en dur
+  (`#objectif/<id>`, `#objectifs/caps`…) sont devenus des fonctions. Depuis le
+  site elles rendent `#yuno/…`, depuis le hub l'inverse.
+  - **LA BASE SE DÉDUIT DU HASH, ELLE NE SE DÉCLARE PAS.** C'est la leçon de la
+    barre du menu, le même jour : une VARIABLE de module aurait été partagée par
+    les deux montages — le hub et le site vivent dans la même page — et le
+    dernier monté aurait décidé pour l'autre.
+  - **`#yuno` COMPTE AUTANT QUE `#yuno/…`** : l'accueil du site n'a pas de
+    seconde partie, et c'est là que vivent ses tuiles de cap. *Mesuré : avec le
+    seul préfixe `#yuno/`, elles renvoyaient vers le hub — un lien qui fait
+    sortir du site sans le dire.*
+- **Une garde sur l'habillage** : `#objectif/<id>` et `#projet/<id>` écrivent
+  `document.body.dataset.espace` et le titre de l'onglet, pour prendre la couleur
+  de leur espace. Dans le site, **ça faisait revenir tout l'habillage du hub** :
+  elles ne touchent donc à rien tant qu'on y est.
+- **La DA suit toute seule.** Ces écrans sont écrits en variables, et
+  `body[data-espace="yuno"]` les a déjà remplacées par celles du site. Ne restent
+  dans css/yuno.css que deux choses qu'aucune variable ne porte :
+  - **la pastille d'espace se masque** — « Yuno » sur chaque tuile d'une page où
+    tout est Yuno ne distingue rien, c'est le « Film » des fiches de la
+    bibliothèque et le « en sommeil » des habitudes ;
+  - **rien sur les polices**, et c'est la mesure qui l'a dit : le site habille
+    déjà ces pages par ses propres titres (`#vue h1`, `#vue h2` en Canela,
+    `#vue h3` en Gilroy). Une règle de plus se battait contre cette grammaire —
+    et perdait, `#vue h3` portant un identifiant.
+- **La page des tâches ne parle que du site** : montée filtrée sur Yuno, elle y
+  perd sa rangée de filtres — offrir « FC Hermitage » depuis le site serait une
+  porte vers un ailleurs qu'il n'ouvre jamais — et son sous-titre dit « pour
+  Yuno » plutôt que « tous espaces ».
+
+**LE MENU PORTE UNE RUBRIQUE « MON CAP »**, avec « Mes tâches » dessous : c'est
+la structure du hub, où ces deux écrans sont deux pages réunies par le menu. La
+galerie compare des caps et des projets ; la page des tâches ne cache rien et
+range. Les empiler sur un écran en aurait fait une page qu'on fait défiler.
+
+**CE QUI RESTE À L'ACCUEIL** : les tuiles de cap, inchangées d'allure — titre,
+date, marches, prochain jalon —, mais devenues des LIENS vers leur page.
+
+### LES VITRINES DES PORTES (15 septembre 2026, demande de Noé)
+
+**UNE PORTE MONTRE CE QU'IL Y A DERRIÈRE.** C'est la leçon du hall de la
+bibliothèque du hub, puis de celui du perso : « Le vivier · Les 97 clubs, par
+compétition » était une ligne de menu dessinée en grand — le nom de la page et
+son mode d'emploi, deux choses qu'on savait déjà.
+
+| Porte | Sa vitrine | Son compte |
+|---|---|---|
+| **Le vivier** | six **écussons**, tirés du jour | 97 clubs · 9 contactés |
+| **Le réseau** | les **trois dernières fiches**, dans la couleur de leur type | 53 fiches |
+| **La banque d'idées** | trois **idées tirées du fonds** | 18 idées à fouiller |
+| **Le calendrier éditorial** | les **trois prochaines parutions**, date en tête | Poser sur les jours |
+| **Les préparations** | la **feuille de la prochaine sortie**, sa phase, ce qu'il y reste | 3 feuilles, et leurs modèles |
+
+**LE TEST, le même que pour le hall** : une porte doit dire quelque chose qu'on
+IGNORE avant de l'ouvrir — quels clubs dorment au vivier, qui vient d'entrer,
+quelle idée oubliée remonte, ce qui part cette semaine, quelle feuille attend.
+
+- **CHAQUE VITRINE A LA FORME DE SA PAGE**, et c'est ce qui la distingue d'un
+  compteur : des écussons, des visages, des phrases, des dates. Un chiffre de
+  plus aurait été plus simple à écrire et n'aurait rien dit que le compte ne
+  disait déjà.
+- **DEUX VITRINES TIRENT AU SORT** — le vivier et la banque —, avec **la graine
+  du jour du mur de photos** : « le tirage est stable dans la journée, la date
+  sert de graine, rien n'est stocké ». Par ordre alphabétique on verrait l'AC
+  Milan jusqu'à la fin des temps, alors que le vivier compte 97 clubs sur huit
+  pays ; et le mot de la banque est « fouiller », ce qu'un tirage fait mieux que
+  les trois dernières posées.
+- **LES ÉCUSSONS SE CHEVAUCHENT**, comme les couvertures d'un rayon du hub :
+  serrés, ils disent « il y en a beaucoup » mieux qu'une rangée espacée. Chacun
+  porte un rond sombre — les logos sont détourés, et deux blasons clairs se
+  toucheraient sans qu'on voie où finit le premier.
+- **UNE VITRINE VIDE SE TAIT** : sans parution programmée, sans sortie préparée,
+  la porte ne montre que son métier. Un « aucune parution » écrirait un manque là
+  où il n'y a qu'un calendrier à remplir — un vide ouvre une porte, il ne
+  s'excuse pas.
+- **LA PORTE EST DEVENUE UNE COLONNE** : la tête (icône et titre), la vitrine, et
+  le métier en pied, collé au bas par `margin-top: auto` — sans lui, deux portes
+  voisines écriraient leur service à deux hauteurs différentes. Les portes du
+  Réseau et des Missions, qui étaient des liens à filet (`.lien-externe`),
+  reprennent cette forme : cinq portes de deux dessins n'en feraient plus une
+  grammaire.
+- **La phase d'une feuille vient de `phaseDeLaSortie`**, celle qui commande déjà
+  la carte de l'accueil : deux façons de dire où en est une sortie finiraient par
+  ne plus dire la même chose.
+
+### LES TUILES N'ONT PLUS DE CONTOUR (15 septembre 2026, demande de Noé)
+
+La règle du hub, posée le 30 août : **une tuile posée dans la page se distingue
+par sa SURFACE.** `--fond-carte` (#242426) sur `--fond` (#181818) est un écart
+franc ; le filet ne fait que redire ce que la couleur dit déjà, et dix filets
+sur un écran finissent par le quadriller. Cinq familles le perdent : les grandes
+portes, les piliers, la métrique de la Passerelle, les tuiles de préparation et
+l'invite à loguer un moment.
+
+**Ce qui garde son trait**, et chaque cas a sa raison : les tuiles de la fiche
+d'un club, posées DANS une fenêtre où deux surfaces se ressemblent trop pour se
+séparer seules (l'exception du hub) ; `.carte-jour`, dont le contour est DORÉ —
+ce n'est pas le trait neutre que la règle vise, c'est un accent qui dit la
+vedette de l'écran ; les contrôles et les étiquettes, dont le contour EST le
+dessin ; les filets de séparation, qui ne cernent rien mais coupent.
+
 **« Créer » et « Calendrier » sont deux choses (décision du 7 août).**
 « Créer » regroupe le calendrier éditorial et les futurs outils d'aide à la
 création. « Calendrier » recense tout ce qui porte une date chez Yuno —

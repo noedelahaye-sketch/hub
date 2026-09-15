@@ -19,7 +19,6 @@ import * as api from './api.js';
 import {
   construireFormulaire,
   construireFenetre,
-  construireObjectifs,
   CHEVRON,
 } from './gabarits.js';
 import {
@@ -65,7 +64,22 @@ import {
   centrerActif,
   ongletCalendrier,
 } from './calendrier-commun.js';
+// `construireProgression` : les marches d'un cap et sa légende (« 2e jalon sur
+// 4 : … »), le même dessin que partout — deux progressions de deux formes
+// finiraient par ne plus compter pareil.
+import { construireProgression } from './objectifs-commun.js';
 import { lireCache, ecrireCache } from './cache-session.js';
+import { monterLeMenu, boutonDuMenu } from './menu.js';
+import { versLObjectif } from './cap-adresses.js';
+// LES TROIS ÉCRANS DU CAP, tels que le hub les sert. Ils ne sont pas recopiés :
+// le site les MONTE dans un hôte à lui, et `cap-adresses.js` leur dit où mènent
+// leurs liens selon l'écran où ils se dessinent.
+import pageDuCap from './objectifs.js';
+import pageObjectif from './objectif.js';
+import pageProjet from './projet.js';
+// « Mes tâches », filtrée sur l'espace du site : c'est la page du hub, et le
+// filtre voyage déjà par la route (`#taches/photo`).
+import pageTaches from './taches.js';
 import { animerLaCoche } from './mouvements.js';
 import {
   modifierAussitot,
@@ -154,7 +168,20 @@ const VUES = [
   'accueil', 'journal', 'creer', 'banque', 'editorial',
   'calendrier', 'reseau', 'passerelle', 'vivier', 'messages', 'carnet', 'missions',
   'commandes', 'preparations', 'modeles',
+  // LES TROIS ÉCRANS DU CAP, EMPRUNTÉS AU HUB (15 septembre 2026, demande de
+  // Noé : « il faut que ce soit mutualisé, mais avec la forme et la DA de Yuno
+  // pour ce qui apparaît dans le site »). Ce ne sont pas des pages du site :
+  // ce sont les modules du hub — js/objectifs.js, js/objectif.js, js/projet.js —
+  // montés dans un hôte de la section Yuno, habillés par
+  // `body[data-espace="yuno"]`. Quatre mille lignes qu'on ne recopie pas.
+  'cap', 'objectif', 'projet', 'taches',
 ];
+
+// Les trois vues que le site ne dessine pas lui-même, et l'espace sous lequel
+// ses caps vivent en base — « photo », la clé de la contrainte CHECK, là où
+// l'interface dit « Yuno ».
+const VUES_DU_CAP = ['cap', 'objectif', 'projet', 'taches'];
+const ESPACE_DU_HUB = 'photo';
 
 // La banque est une pièce de l'atelier : elle n'a pas son onglet, elle garde
 // celui de Créer allumé. Une barre de navigation ne doit pas grandir à chaque
@@ -1594,7 +1621,7 @@ function vueAccueil(etat) {
 
     <section class="bloc">
       <h2>Objectifs</h2>
-      <div data-bloc="objectifs">${construireObjectifs(etat.objectifs)}</div>
+      <div data-bloc="objectifs">${tuilesObjectifs(etat.objectifs)}</div>
       ${construireFormulaire({
         id: 'photo-objectif',
         libelle: 'Ajouter un objectif',
@@ -1617,6 +1644,51 @@ function vueAccueil(etat) {
     </section>
     ${fenetreMoment(etat)}
     ${pied()}`;
+}
+
+// --- LES OBJECTIFS : LA TUILE COMPARE, LA FENÊTRE DIT TOUT (15 septembre 2026,
+// demande de Noé) ---------------------------------------------------------------
+//
+// CE QUE ÇA REMPLACE : un `<details>` qui se dépliait SUR PLACE — le gabarit
+// partagé `construireObjectifs`, qui reste celui du site FCH. C'est la grammaire
+// que le hub a quittée le 2 septembre, et pour une raison qui vaut ici aussi :
+// une tuile pressée qui s'étale pousse tout le reste de l'écran vers le bas, et
+// l'accueil de Yuno « montre et ouvre des portes, il ne gère rien ».
+//
+// UNE FENÊTRE, ET NON UNE PAGE. Le hub a donné à ses caps une page à eux
+// (`#objectif/<id>`) ; Yuno ne peut pas l'emprunter — on sortirait du site, et
+// tout l'habillage du hub reviendrait avec. Il n'a d'ailleurs que DEUX caps, là
+// où la page du hub porte un calendrier, un rail de projets et des jalons qu'on
+// pose au doigt. La fenêtre volante est la forme que le site emploie déjà
+// partout : une fiche de contact, un moment, une idée s'ouvrent ainsi.
+//
+// LA TUILE NE CHANGE PRESQUE PAS D'ALLURE, et c'est voulu : le titre, la date,
+// les marches et le prochain jalon étaient déjà ce que montrait le sommaire
+// déplié. Ce qui change est le GESTE — presser ouvre au lieu d'étaler.
+function tuileObjectif(objectif) {
+  const jalons = [...(objectif.jalons ?? [])].sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
+
+  return `
+    <a class="objectif-tuile" href="${versLObjectif(objectif.id)}">
+      <span class="objectif-tete">
+        <span class="objectif-titre">${echapper(objectif.titre)}</span>
+        ${
+          objectif.echeance
+            ? `<span class="discret echeance">${echapper(
+                echeanceLisible(depuisDateISO(objectif.echeance)),
+              )}</span>`
+            : ''
+        }
+      </span>
+      ${construireProgression(jalons)}
+    </a>`;
+}
+
+function tuilesObjectifs(objectifs) {
+  if (!objectifs.length) {
+    return `<p class="vide">Aucun objectif pour l'instant. Le premier donne le cap.</p>`;
+  }
+  return `<div class="grille-objectifs">${objectifs.map(tuileObjectif).join('')}</div>`;
 }
 
 // Le Journal — la page source du carnet de terrain : tous les moments, la
@@ -5117,6 +5189,12 @@ const BESOINS = {
   // préparer » et le lien commande → événement), les commandes, et les
   // feuilles avec leurs modèles — « Préparer / Ouvrir » doit savoir si une
   // feuille existe et combien de modèles le choix offrira.
+  // Les écrans du cap ne demandent RIEN à Yuno : le module du hub qu'ils
+  // montent fait ses propres lectures, et une liste ici en ferait deux.
+  cap: [],
+  objectif: [],
+  projet: [],
+  taches: [],
   missions: ['evenements', 'commandes', 'contacts', 'preparations', 'modelesPrepa'],
   commandes: ['evenements', 'commandes', 'contacts', 'preparations', 'modelesPrepa'],
   // La feuille lit aussi les sorties : le bilan propose d'inscrire celle-ci au
@@ -5357,6 +5435,23 @@ export default {
     // que pas d'animation du tout.
     let vueDessinee = null;
 
+    // Quel module pour quelle vue, et la route qu'il attend. Les pages du hub
+    // rangent leur identifiant au NIVEAU DE LA VUE (`#objectif/<id>`) ; le site
+    // le porte un cran plus bas (`#yuno/objectif/<id>`), et c'est ici qu'on
+    // traduit — plutôt que d'apprendre une seconde forme d'adresse à trois
+    // modules qui n'ont pas à connaître le site.
+    const monterLeCap = () => {
+      const hote = section.querySelector('[data-hote-cap]');
+      if (!hote) return;
+
+      if (etat.vue === 'taches') return pageTaches.monter(hote, { vue: ESPACE_DU_HUB });
+      if (etat.vue === 'objectif') return pageObjectif.monter(hote, { vue: etat.feuilleOuverte });
+      if (etat.vue === 'projet') return pageProjet.monter(hote, { vue: etat.feuilleOuverte });
+      // La galerie, filtrée sur l'espace du site : `id` porte le filtre chez le
+      // hub, et `vue` y choisit un étage — le site les montre tous les trois.
+      return pageDuCap.monter(hote, { id: ESPACE_DU_HUB });
+    };
+
     const rendre = () => {
       const pret = pretPour(etat.vue);
 
@@ -5377,6 +5472,11 @@ export default {
       else if (etat.vue === 'carnet') section.innerHTML = vueCarnet(etat);
       else if (etat.vue === 'preparations') section.innerHTML = vuePreparations(etat);
       else if (etat.vue === 'modeles') section.innerHTML = vueModele(etat);
+      // LES ÉCRANS DU CAP : le site ne fait que poser le cadre. Le module du hub
+      // écrit dans l'hôte, et il pose SES écouteurs dessus — on ne le remonte
+      // donc que si l'hôte est neuf, sinon chaque rendu de Yuno effacerait la
+      // page sous les doigts.
+      else if (VUES_DU_CAP.includes(etat.vue)) section.innerHTML = vueDuCap(etat.vue);
       else section.innerHTML = vueAccueil(etat);
 
       // Le message d'échec se pose sous la barre, quelle que soit la vue : les
@@ -5399,6 +5499,14 @@ export default {
           'afterend',
           `<p class="vide">${echapper(etat.souci)}</p>`,
         );
+      }
+
+      // LE MODULE DU CAP S'INSTALLE DANS SON HÔTE, qui vient d'être écrit. Il
+      // apporte ses propres écouteurs, son propre chargement et son propre
+      // « + » — le site n'ajoute donc rien par-dessus.
+      if (VUES_DU_CAP.includes(etat.vue)) {
+        monterLeCap();
+        return;
       }
 
       // Le « + » et la fenêtre du moment suivent toutes les vues. Posés ici
@@ -5767,11 +5875,6 @@ export default {
     };
 
     const trouverPub = (id) => etat.publications.find((pub) => pub.id === id);
-    const ouvrirObjectif = (id) => {
-      const element = section.querySelector(`[data-objectif="${CSS.escape(id)}"]`);
-      if (element) element.open = true;
-    };
-
     // L'argent d'une sortie vit sur sa COMMANDE, reliée par `evenement_id`.
     // Trois cas, et le troisième compte autant que les deux autres : vider les
     // deux champs RETIRE la prestation. Sans ça, une prestation notée par
@@ -6458,32 +6561,11 @@ export default {
         return;
       }
 
-      if (action === 'creer-jalon') {
-        const objectif = etat.objectifs.find((o) => o.id === champs.objectif_id);
-        const jalon = await api.creerJalon({
-          objectif_id: champs.objectif_id,
-          titre: champs.titre.trim(),
-          echeance: champs.echeance || null,
-          ordre: (objectif?.jalons?.length ?? 0) + 1,
-        });
-        objectif.jalons = [...(objectif.jalons ?? []), jalon];
-        rendre();
-        ouvrirObjectif(champs.objectif_id);
-        return;
-      }
-
-      if (action === 'modifier-objectif') {
-        const objectif = etat.objectifs.find((o) => o.id === champs.objectif_id);
-        const misAJour = await api.modifierObjectif(champs.objectif_id, {
-          titre: champs.titre.trim(),
-          pourquoi: champs.pourquoi?.trim() || null,
-          cible: champs.cible?.trim() || null,
-          echeance: champs.echeance || null,
-        });
-        Object.assign(objectif, misAJour);
-        rendre();
-        ouvrirObjectif(objectif.id);
-      }
+      // LES GESTES D'UN JALON ONT QUITTÉ LE SITE (15 septembre 2026) : ils
+      // vivaient dans la fenêtre d'un cap, remplacée par SA PAGE — celle du
+      // hub, montée ici. C'est elle qui les porte désormais, avec son
+      // calendrier et son rail de projets. Restait « creer-objectif », qui a
+      // gardé son formulaire sur l'accueil.
     }
 
     // --- Clics ---
@@ -7376,62 +7458,9 @@ export default {
         return;
       }
 
-      const jalon = evenement.target.closest('[data-jalon]');
-      if (jalon) {
-        const objectif = etat.objectifs.find((candidat) =>
-          candidat.jalons?.some((j) => j.id === jalon.dataset.jalon),
-        );
-        const cible = objectif?.jalons.find((j) => j.id === jalon.dataset.jalon);
-        if (!cible || estProvisoire(cible.id)) return;
 
-        // La barre de progression avance sous le doigt. `avant` part à l'API :
-        // elle relit le jalon pour savoir s'il y a une victoire à créer.
-        const avantJalon = { ...cible };
-        await modifierAussitot(
-          cible,
-          { atteint: true, date_atteint: versDateISO() },
-          async () => (await api.atteindreJalon(avantJalon, 'photo')).jalon,
-          {
-            rendre: () => {
-              rendre();
-              ouvrirObjectif(objectif.id);
-            },
-            echouer: dire,
-          },
-        );
-        return;
-      }
 
-      const atteindre = evenement.target.closest('[data-atteindre]');
-      if (atteindre) {
-        const objectif = etat.objectifs.find((o) => o.id === atteindre.dataset.atteindre);
-        if (!objectif || estProvisoire(objectif.id)) return;
-        if (!confirm(`Marquer « ${objectif.titre} » comme atteint ?`)) return;
 
-        // Un objectif atteint quitte la liste des actifs : il a sa victoire.
-        await retirerAussitot(etat.objectifs, objectif, () => api.atteindreObjectif(objectif), {
-          rendre,
-          echouer: dire,
-        });
-        return;
-      }
-
-      const supprimerObjectif = evenement.target.closest('[data-supprimer-objectif]');
-      if (supprimerObjectif) {
-        const objectif = etat.objectifs.find(
-          (o) => o.id === supprimerObjectif.dataset.supprimerObjectif,
-        );
-        if (!objectif) return;
-        if (!confirm(`Supprimer « ${objectif.titre} » et ses jalons ? Les tâches liées sont conservées.`)) {
-          return;
-        }
-        if (estProvisoire(objectif.id)) return;
-        await retirerAussitot(etat.objectifs, objectif, () => api.supprimerObjectif(objectif.id), {
-          rendre,
-          echouer: dire,
-        });
-        return;
-      }
 
       // « Retirer du carnet » ne supprime plus rien depuis la fusion : la
       // sortie a bien eu lieu, elle reste au calendrier à sa date. C'est sa

@@ -22,6 +22,7 @@
 // a toujours été un point du calendrier, une étape un morceau de travail.
 
 import * as api from './api.js';
+import { versLaGalerieDuCap, versLeProjet, dansLeSiteYuno } from './cap-adresses.js';
 import { avanceeDuProjet } from './orientation.js';
 // LE DESSIN VIENT DE LA GALERIE, il ne se recopie pas : les marches d'un cap et
 // la jauge d'un projet doivent dire la même chose sur tous les écrans.
@@ -183,7 +184,7 @@ function enTete(objectif) {
 
   return `
     <p class="projet-page-retour">
-      <a href="#objectifs/caps">${SIGNE.retour}<span>Tous les objectifs</span></a>
+      <a href="${versLaGalerieDuCap('caps')}">${SIGNE.retour}<span>Tous les objectifs</span></a>
     </p>
 
     <header class="projet-page-tete" data-espace="${echapper(objectif.espace)}">
@@ -406,7 +407,7 @@ function railDesProjets() {
 
       return `
       <article class="projet-tuile" data-espace="${echapper(projet.espace)}">
-        <a class="projet-ouvrir" href="#projet/${encodeURIComponent(projet.id)}"
+        <a class="projet-ouvrir" href="${versLeProjet(projet.id)}"
           aria-label="Ouvrir ${echapper(projet.nom)}">
           <span class="projet-tete">
             <span class="pastille"></span>
@@ -550,7 +551,7 @@ function squelette() {
       <h1>Objectif</h1>
       <p class="vide">${
         etat.id ? "Ce cap n'existe plus, ou il est atteint." : 'Aucun objectif choisi.'
-      } <a href="#objectifs/caps">Voir tous les objectifs</a></p>`;
+      } <a href="${versLaGalerieDuCap('caps')}">Voir tous les objectifs</a></p>`;
   }
 
   return `
@@ -642,6 +643,12 @@ export default {
     // `afficherEspace`, qu'il appelle une seconde fois au démarrage.
     const habiller = () => {
       if (!etat.objectif || section.hidden) return;
+      // DANS LE SITE, ON NE TOUCHE À RIEN (15 septembre 2026) : `data-espace`
+      // vaut « yuno » tant qu'on y est, et c'est lui qui porte toute la DA du
+      // site — le fond chaud, le doré, Canela. L'écrire à « photo » ici aurait
+      // fait revenir l'habillage du hub par-dessous, et le titre de l'onglet
+      // dirait « … — Hub » au milieu du site.
+      if (dansLeSiteYuno()) return;
       document.title = `${etat.objectif.titre} — Hub`;
       document.body.dataset.espace = etat.objectif.espace;
     };
@@ -1389,7 +1396,7 @@ export default {
         try {
           if (forme === 'atteindre') await api.atteindreObjectif(objectif);
           else await api.supprimerObjectif(id);
-          location.hash = '#objectifs/caps';
+          location.hash = versLaGalerieDuCap('caps');
         } catch (souci) {
           console.error('Objectif non modifié', souci);
           signaler("Ça n'a pas pu être enregistré.");

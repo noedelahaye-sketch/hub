@@ -130,6 +130,23 @@ le hub ce n'est pas pour atteindre le site Yuno et tout ce qu'il contient »*.
 Chaque espace n'offre que **sa porte**, jamais les écrans derrière — d'où
 l'absence d'une entrée « son éditorial », qui vit sur les sites.
 
+**LE SITE YUNO A SON PROPRE MENU depuis le 15 septembre 2026** (demande de Noé),
+et ça ne contredit rien : c'est le même COMPOSANT (`monterLeMenu`, js/menu.js,
+paramétré ce jour-là), avec d'autres DONNÉES — `RUBRIQUES_YUNO` vit dans
+js/yuno.js. Le hub ne connaît toujours pas les écrans du site ; c'est le site qui
+déclare les siens. La règle tient par les données, pas par le code. Voir
+docs/yuno-spec.md, « Le menu du site ».
+
+**ET LE SITE MONTE LES ÉCRANS DU CAP** — la galerie, la page d'un objectif, celle
+d'un projet, les tâches — aux adresses `#yuno/cap`, `#yuno/objectif/<id>`,
+`#yuno/projet/<id>` et `#yuno/taches` (même jour, demande de Noé : *« il faut que
+ce soit mutualisé, mais avec la forme et la DA de Yuno »*). **Ce sont les modules
+du hub**, pas des copies : `js/cap-adresses.js` leur dit où mènent leurs liens
+selon l'écran où ils se dessinent, et deux gardes les empêchent de reprendre
+l'habillage du hub quand ils vivent dans le site. Le sens de la règle ne change
+pas : **le menu du hub n'ouvre toujours aucun écran du site** — c'est le site qui
+emprunte, jamais l'inverse.
+
 ### LE MENU A GAGNÉ UN RANG (7 septembre 2026, demande de Noé)
 
 > *« Général et perso doivent être regroupés dans le menu déroulant, avec un

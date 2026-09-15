@@ -37,6 +37,7 @@
 // ouvrant l'application. Et elles ne préviennent de rien : voir `tuilePeriode`.
 
 import * as api from './api.js';
+import { versLObjectif, versLeProjet, dansLeSiteYuno } from './cap-adresses.js';
 // `tensionDeLaPeriode` n'est plus appelée ici : le hub ne prévient plus d'un
 // dépassement voulu (28 août 2026). Elle reste entière dans orientation.js —
 // c'est la règle du jeu, et le diagnostic s'en sert.
@@ -386,7 +387,7 @@ function tuileObjectif(objectif) {
   return `
     <article class="cap-tuile" data-espace="${objectif.espace}"
       data-objectif="${echapper(objectif.id)}">
-      <a class="cap-tuile-ouvrir" href="#objectif/${encodeURIComponent(objectif.id)}">
+      <a class="cap-tuile-ouvrir" href="${versLObjectif(objectif.id)}">
         <span class="cap-tuile-espace"><span class="pastille"></span>${echapper(
           NOMS_ESPACES[objectif.espace] ?? objectif.espace,
         )}</span>
@@ -590,7 +591,7 @@ function tuileProjetGalerie(projet) {
         )}</span>
         ${pastilleEtat(projet)}
       </span>
-      <a class="cap-tuile-ouvrir" href="#projet/${encodeURIComponent(projet.id)}">
+      <a class="cap-tuile-ouvrir" href="${versLeProjet(projet.id)}">
         <h3 class="cap-tuile-titre">${echapper(projet.nom)}</h3>
         ${jaugeDuProjet(avancee)}
         <span class="cap-tuile-pied">
@@ -1018,7 +1019,12 @@ function etageCaps() {
 
 function squelette() {
   const vue = etat.vue in VUES ? etat.vue : null;
-  const de = etat.espaceFiltre ? ` — ${NOMS_ESPACES[etat.espaceFiltre]}` : '';
+  // LE NOM DE L'ESPACE NE SE DIT PAS DANS SON PROPRE SITE (15 septembre 2026) :
+  // « Mon cap — Yuno » chez Yuno répétait ce que toute la page dit déjà — la
+  // barre, le fond, le doré. Dans le hub il reste nécessaire : c'est ce qui
+  // distingue la galerie filtrée de la galerie entière.
+  const de =
+    etat.espaceFiltre && !dansLeSiteYuno() ? ` — ${NOMS_ESPACES[etat.espaceFiltre]}` : '';
 
   // Une vue seule porte son propre titre : sans lui, « Mes projets » ouvrirait
   // sur une galerie sans nom. Les trois ensemble s'appellent « Mon cap », et ce

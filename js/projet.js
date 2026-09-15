@@ -35,6 +35,7 @@
 // reste facultative : un découpage sans jour est un découpage, pas un retard.
 
 import * as api from './api.js';
+import { versLaGalerieDuCap, dansLeSiteYuno } from './cap-adresses.js';
 import { avanceeDuProjet, mouvementDuProjet } from './orientation.js';
 // LE DESSIN VIENT DE LA GALERIE, il ne se recopie pas : la jauge d'un projet
 // doit dire la même chose sur les deux écrans, sans quoi c'est celui qu'on
@@ -231,7 +232,7 @@ function enTete(projet) {
 
   return `
     <p class="projet-page-retour">
-      <a href="#objectifs/projets">${SIGNE.retour}<span>Tous les projets</span></a>
+      <a href="${versLaGalerieDuCap('projets')}">${SIGNE.retour}<span>Tous les projets</span></a>
     </p>
 
     <header class="projet-page-tete" data-espace="${echapper(projet.espace)}">
@@ -622,7 +623,7 @@ function squelette() {
         etat.id
           ? "Ce projet n'existe plus."
           : 'Aucun projet choisi.'
-      } <a href="#objectifs/projets">Voir tous les projets</a></p>`;
+      } <a href="${versLaGalerieDuCap('projets')}">Voir tous les projets</a></p>`;
   }
 
   return `
@@ -734,6 +735,12 @@ export default {
     // projet qu'on ne regarde plus.
     const habiller = () => {
       if (!etat.projet || section.hidden) return;
+      // DANS LE SITE, ON NE TOUCHE À RIEN (15 septembre 2026) : `data-espace`
+      // vaut « yuno » tant qu'on y est, et c'est lui qui porte toute la DA du
+      // site — le fond chaud, le doré, Canela. L'écrire à « photo » ici aurait
+      // fait revenir l'habillage du hub par-dessous, et le titre de l'onglet
+      // dirait « … — Hub » au milieu du site.
+      if (dansLeSiteYuno()) return;
       document.title = `${etat.projet.nom} — Hub`;
       document.body.dataset.espace = etat.projet.espace;
     };
@@ -1569,7 +1576,7 @@ export default {
         // sujet.
         try {
           await api.supprimerProjet(id);
-          location.hash = '#objectifs/projets';
+          location.hash = versLaGalerieDuCap('projets');
         } catch (souci) {
           console.error('Projet non supprimé', souci);
           signaler("Ça n'a pas pu être supprimé.");

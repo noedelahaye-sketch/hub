@@ -17,6 +17,7 @@
 // jalons, ni retard. Le sélecteur d'espace n'en propose pas.
 
 import * as api from './api.js';
+import { dansLeSiteYuno } from './cap-adresses.js';
 import {
   depuisDateISO,
   echeanceLisible,
@@ -852,11 +853,22 @@ export function construireCapture(capture, projets = []) {
 }
 
 function squelette(etat) {
+  // DANS LE SITE, LA PAGE NE PARLE QUE DE LUI (15 septembre 2026) : elle y est
+  // montée filtrée sur Yuno, et « tous espaces » y serait faux. La rangée de
+  // filtres part avec la phrase — offrir « FC Hermitage » depuis le site Yuno
+  // serait une porte vers un ailleurs que le site n'ouvre jamais, sa seule
+  // sortie étant « Quitter le site ».
+  const dansLeSite = dansLeSiteYuno();
+
   return `
     <h1>Mes tâches</h1>
-    <p class="discret sous-titre">Tout ce qu'il y a à faire, tous espaces — daté ou non.</p>
+    <p class="discret sous-titre">${
+      dansLeSite
+        ? 'Tout ce qu’il y a à faire pour Yuno — daté ou non.'
+        : 'Tout ce qu’il y a à faire, tous espaces — daté ou non.'
+    }</p>
     <div data-bloc="capture">${construireCapture(etat.capture, etat.projets)}</div>
-    ${construireFiltres(etat.espace)}
+    ${dansLeSite ? '' : construireFiltres(etat.espace)}
     <div data-bloc="liste"><p class="vide">…</p></div>`;
 }
 
