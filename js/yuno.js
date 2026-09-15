@@ -428,6 +428,185 @@ function pied() {
 // navigation : un lien discret là où l'on s'en sert (Passerelle, CRM), la
 // page `#yuno/messages` restant leur arrière-boutique.
 
+// LES ÉCRANS DU CAP DANS LE SITE (15 septembre 2026, demande de Noé).
+//
+// « Il faut que ce soit mutualisé, mais avec la forme et la DA de Yuno pour ce
+// qui apparaît dans le site. » Le site ne redessine donc RIEN : il pose sa barre,
+// un hôte, son pied, et laisse le module du hub écrire dedans. La DA suit toute
+// seule — ces pages sont écrites en variables (`--fond-carte`, `--accent`,
+// `--police-titre`), et `body[data-espace="yuno"]` les a déjà remplacées par
+// celles du site. Ce que les variables ne portent pas se corrige dans css/yuno.css.
+//
+// LA PAGE GÉNÉRALE N'A PAS DE SOUS-VUES : le hub découpe sa galerie en trois
+// (`#objectifs/caps`, `/projets`, `/periodes`) parce qu'il compare six caps et
+// dix projets de quatre espaces. Le site n'en montre que les siens — les trois
+// étages tiennent sur un écran, comme `#objectifs` seul chez le hub.
+function vueDuCap(vue) {
+  return `
+    ${enTete(vue)}
+    <div data-hote-cap></div>
+    ${pied()}`;
+}
+
+// --- LES PORTES, ET CE QU'ELLES MONTRENT (15 septembre 2026, demande de Noé) --
+//
+// UNE PORTE MONTRE CE QU'IL Y A DERRIÈRE. C'est la leçon du hall de la
+// bibliothèque du hub, puis de celui du perso : « Le vivier · Les 97 clubs, par
+// compétition » était une ligne de menu dessinée en grand — le nom de la page,
+// et son mode d'emploi. On savait déjà les deux.
+//
+// LE TEST, le même que pour le hall : une porte doit dire quelque chose QU'ON
+// IGNORE AVANT DE L'OUVRIR. Les cinq le peuvent — quels clubs dorment au vivier,
+// qui vient d'entrer au réseau, quelle idée oubliée remonte, ce qui part cette
+// semaine, quelle feuille attend d'être remplie.
+//
+// CHAQUE VITRINE A LA FORME DE SA PAGE, et c'est ce qui les distingue d'un
+// compteur : des écussons pour le vivier, des visages pour le réseau, des
+// phrases pour la banque, des dates pour l'éditorial, une feuille en cours pour
+// les préparations. Un chiffre unique aurait été plus simple à écrire et
+// n'aurait rien dit de plus que le compte déjà là.
+function grandePorte({ adresse, icone = '', titre, service = '', vitrine = '' }) {
+  return `
+    <a class="grande-porte" href="${adresse}">
+      <span class="grande-porte-tete">
+        ${icone ? `<span class="grande-porte-icone" aria-hidden="true">${icone}</span>` : ''}
+        <span class="grande-porte-titre">${titre}</span>
+      </span>
+      ${vitrine}
+      ${service ? `<span class="discret grande-porte-sous">${service}</span>` : ''}
+    </a>`;
+}
+
+// LA GRAINE DU JOUR, pour les vitrines qui TIRENT AU SORT. C'est celle du mur de
+// photos de l'accueil, au motif près : « le tirage est stable dans la journée —
+// la date sert de graine, rien n'est stocké — et change à minuit ». Une vitrine
+// qui se rebattrait à chaque rendu ferait clignoter la page sous les yeux.
+const graineDuJour = () => Number(versDateISO().replaceAll('-', ''));
+
+// « 20 sept. » — la date d'une parution dans une vitrine. Ni `echeanceLisible`
+// (« le 20 septembre », trop long à côté d'un titre) ni `momentLisible`, qui
+// porte une heure dont la vitrine ne fait rien.
+const jourCourt = (iso) =>
+  depuisDateISO(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+
+// LE VIVIER : SIX ÉCUSSONS. Ce qu'il y a derrière cette porte, ce sont des
+// CLUBS — et un club se reconnaît à son écusson avant son nom. Le tirage du jour
+// plutôt que les six premiers : par ordre alphabétique on verrait l'AC Milan et
+// l'AJ Auxerre jusqu'à la fin des temps, alors que le vivier en compte
+// quatre-vingt-dix-sept répartis sur huit pays.
+function vitrineDuVivier(pistes) {
+  const tirage = melangeSeme(
+    pistes.filter((piste) => LOGOS_CLUBS[piste.nom]),
+    graineDuJour(),
+  ).slice(0, 6);
+
+  if (!tirage.length) return '';
+
+  return `<span class="porte-ecussons" aria-hidden="true">${tirage
+    .map((piste) => ecussonDuClub(piste.nom, { grand: true }))
+    .join('')}</span>`;
+}
+
+// LE RÉSEAU : LES TROIS DERNIÈRES FICHES, chacune dans la couleur de son type —
+// les pastilles de la fournée, au trait près. C'est la seule chose qui BOUGE
+// dans cette base : on n'y entre pas pour relire les cinquante-trois, on y entre
+// parce qu'on a rencontré quelqu'un.
+function vitrineDuReseau(contacts) {
+  const derniers = [...contacts]
+    .sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))
+    .slice(0, 3);
+
+  if (!derniers.length) return '';
+
+  return `<span class="porte-pastilles">${derniers
+    .map(
+      (contact) => `
+      <span class="pastille-personne" style="--h: ${teinteDuType(contact.type)}"
+        title="${echapper(TYPES_CONTACT[contact.type] ?? contact.type ?? '')}"
+        ><span>${echapper(contact.nom)}</span></span>`,
+    )
+    .join('')}</span>`;
+}
+
+// LA BANQUE : TROIS IDÉES TIRÉES DU FONDS. Le mot de la page est « fouiller »,
+// et c'est exactement ce que fait un tirage : il remonte ce qu'on avait oublié.
+// Les trois dernières posées auraient montré ce qu'on a déjà en tête.
+function vitrineDeLaBanque(publications) {
+  const tirage = melangeSeme(
+    publications.filter((publication) => !publication.date_prevue),
+    graineDuJour(),
+  ).slice(0, 3);
+
+  if (!tirage.length) return '';
+
+  return `<span class="porte-lignes">${tirage
+    .map((idee) => `<span class="porte-ligne">${echapper(idee.titre)}</span>`)
+    .join('')}</span>`;
+}
+
+// L'ÉDITORIAL : CE QUI PART, dans l'ordre des jours. Une date et un titre — le
+// réseau se lit déjà sur la page, et trois pastilles de plus dans une tuile de
+// cette taille en feraient un tableau.
+//
+// RIEN À VENIR : la vitrine se tait, et le métier de la porte (« poser sur les
+// jours ») suffit. Un « aucune parution » écrirait un manque là où il n'y a
+// qu'un calendrier à remplir — c'est la règle des écrans vides du hub : un vide
+// ouvre une porte, il ne s'excuse pas.
+function vitrineDeLEditorial(publications) {
+  const aujourdhui = versDateISO();
+  const aVenir = publications
+    .filter((publication) => publication.date_prevue && publication.date_prevue >= aujourdhui)
+    .sort((a, b) => a.date_prevue.localeCompare(b.date_prevue))
+    .slice(0, 3);
+
+  if (!aVenir.length) return '';
+
+  return `<span class="porte-lignes">${aVenir
+    .map(
+      (publication) => `
+      <span class="porte-ligne">
+        <span class="porte-ligne-quand">${echapper(jourCourt(publication.date_prevue))}</span>
+        ${echapper(publication.titre)}
+      </span>`,
+    )
+    .join('')}</span>`;
+}
+
+// LES PRÉPARATIONS : LA FEUILLE DE LA PROCHAINE SORTIE, sa phase et ce qu'il y
+// reste à cocher. C'est la seule des cinq qui parle d'une chose À FAIRE, et donc
+// la seule qui puisse être vide sans que ce soit un manque : sans sortie
+// préparée, la porte ne montre que son compte.
+//
+// LA PHASE VIENT DE `phaseDeLaSortie`, la même qui commande la carte de
+// l'accueil : deux façons de dire où en est une sortie finiraient par ne plus
+// dire la même chose.
+function vitrineDesPreparations(preparations, evenements) {
+  const maintenant = new Date();
+  const prochaine = evenements
+    .filter((evenement) => new Date(evenement.date_debut) >= maintenant)
+    .sort((a, b) => new Date(a.date_debut) - new Date(b.date_debut))
+    .map((evenement) => ({
+      evenement,
+      feuille: feuilleDeLaSortie(preparations, 'evenement', evenement.id),
+    }))
+    .find(({ feuille }) => feuille);
+
+  if (!prochaine) return '';
+
+  const { evenement, feuille } = prochaine;
+  const phase = phaseDeLaSortie(evenement, maintenant) ?? 'avant';
+  const restent = (feuille.items ?? []).filter(
+    (item) => item.phase === phase && !item.fait,
+  ).length;
+
+  return `
+    <span class="porte-lignes">
+      <span class="porte-ligne">${echapper(evenement.titre)}</span>
+      <span class="porte-ligne discret">${echapper(PHASES_PREPA[phase] ?? '')} ·
+        ${restent ? `${restent} ligne${restent > 1 ? 's' : ''} à cocher` : 'tout est coché'}</span>
+    </span>`;
+}
+
 // --- Le Carnet de terrain ----------------------------------------------------
 // L'accueil du site affiche le vécu, jamais le social : matchs couverts,
 // rencontres, œuvres finies. Aucune métrique de réseau n'entre ici — la
@@ -1709,17 +1888,20 @@ function vueCreer(etat) {
          depuis cette page. Le compte d'idées rend la porte vivante. -->
     <section class="bloc">
       <div class="grandes-portes">
-        <a class="grande-porte" href="#yuno/editorial">
-          <span class="grande-porte-icone" aria-hidden="true">${CALENDRIER}</span>
-          <span class="grande-porte-titre">Calendrier<br>éditorial</span>
-          <span class="discret grande-porte-sous">Poser sur les jours</span>
-        </a>
-        <a class="grande-porte" href="#yuno/banque">
-          <span class="grande-porte-icone" aria-hidden="true">${AMPOULE}</span>
-          <span class="grande-porte-titre">Banque<br>d'idées</span>
-          <span class="discret grande-porte-sous"><span class="chiffre">${idees}</span>
-            idée${idees > 1 ? 's' : ''} à fouiller</span>
-        </a>
+        ${grandePorte({
+          adresse: '#yuno/editorial',
+          icone: CALENDRIER,
+          titre: 'Calendrier éditorial',
+          vitrine: vitrineDeLEditorial(etat.publications),
+          service: 'Poser sur les jours',
+        })}
+        ${grandePorte({
+          adresse: '#yuno/banque',
+          icone: AMPOULE,
+          titre: 'Banque d’idées',
+          vitrine: vitrineDeLaBanque(etat.publications),
+          service: `<span class="chiffre">${idees}</span> idée${idees > 1 ? 's' : ''} à fouiller`,
+        })}
       </div>
     </section>
 
@@ -4380,22 +4562,22 @@ function vuePasserelle(etat) {
          soir — les pastilles de sous-navigation n'ont pas pris) : le CRM et le
          vivier, côte à côte. Les modèles de messages n'ont qu'un lien discret,
          leur page est une arrière-boutique. -->
-    <div class="portes">
-      <a class="lien-externe" href="#yuno/carnet">
-        <span class="lien-externe-texte">
-          <span class="lien-externe-titre">CRM</span>
-          <span class="discret"><span class="chiffre">${etat.contacts.length}</span> fiches ·
-            tableau, fiches, filtres</span>
-        </span>
-      </a>
+    <div class="grandes-portes">
+      ${grandePorte({
+        adresse: '#yuno/carnet',
+        titre: 'Le réseau',
+        vitrine: vitrineDuReseau(etat.contacts),
+        service: `<span class="chiffre">${etat.contacts.length}</span> fiches`,
+      })}
 
-      <a class="lien-externe" href="#yuno/vivier">
-        <span class="lien-externe-texte">
-          <span class="lien-externe-titre">Le vivier</span>
-          <span class="discret">Les <span class="chiffre">${etat.pistes.length}</span> clubs,
-            par compétition</span>
-        </span>
-      </a>
+      ${grandePorte({
+        adresse: '#yuno/vivier',
+        titre: 'Le vivier',
+        vitrine: vitrineDuVivier(etat.pistes),
+        service: `<span class="chiffre">${etat.pistes.length}</span> clubs ·
+          <span class="chiffre">${etat.pistes.filter((piste) => piste.date_contacte).length}</span>
+          contactés`,
+      })}
     </div>
     <p><a class="lien-discret" href="#yuno/messages">Modèles de messages</a></p>
     ${pied()}`;
@@ -4516,13 +4698,16 @@ function vueMissions(etat) {
       )}</div>
     </section>
 
-    <div class="portes">
-      <a class="lien-externe" href="#yuno/preparations">
-        <span class="lien-externe-texte">
-          <span class="lien-externe-titre">Préparations</span>
-          <span class="discret">Toutes les feuilles, et leurs modèles</span>
-        </span>
-      </a>
+    <div class="grandes-portes">
+      ${grandePorte({
+        adresse: '#yuno/preparations',
+        titre: 'Préparations',
+        vitrine: vitrineDesPreparations(etat.preparations, etat.evenements),
+        service: etat.preparations.length
+          ? `<span class="chiffre">${etat.preparations.length}</span>
+             feuille${etat.preparations.length > 1 ? 's' : ''}, et leurs modèles`
+          : 'Toutes les feuilles, et leurs modèles',
+      })}
     </div>
     ${pied()}`;
 }

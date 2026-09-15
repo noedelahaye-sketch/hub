@@ -951,16 +951,28 @@ body[data-espace="yuno"] .etiquette {
   margin-top: var(--espace-16);
 }
 
+/* UNE COLONNE DEPUIS LE 15 SEPTEMBRE 2026, et c'est la vitrine qui l'impose :
+   la porte porte désormais un aperçu de ce qu'il y a derrière — six écussons,
+   trois visages, trois idées — et une rangée n'aurait pas su l'accueillir. La
+   tête (l'icône et le titre) reste en ligne ; le métier de la porte descend en
+   pied, où il ferme la tuile quelle que soit la hauteur de son voisin. */
 .grande-porte {
   display: flex;
-  align-items: center;
-  gap: var(--espace-12);
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--espace-8);
   padding: var(--espace-16);
   text-decoration: none;
   color: var(--texte);
   background: var(--fond-carte);
   border: 1px solid var(--bordure);
   border-radius: var(--rayon-carte);
+}
+
+.grande-porte-tete {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-12);
 }
 
 .grande-porte:hover { border-color: var(--gris-chaud-trait); }
@@ -973,11 +985,16 @@ body[data-espace="yuno"] .etiquette {
 
 /* Le métier de chaque porte, écrit dessous : « poser sur les jours »,
    « fouiller les 18 ». La distinction ne se lisait pas depuis la page. */
+/* Le métier de chaque porte, en pied : « poser sur les jours », « 53 fiches ».
+   `margin-top: auto` le colle au bas quelle que soit la hauteur de la vitrine —
+   sans lui, deux portes voisines écriraient leur service à deux hauteurs
+   différentes. Aligné à GAUCHE depuis que la porte est une colonne : centré, il
+   ne tombait plus sous rien. */
 .grande-porte-sous {
   display: block;
-  margin-top: var(--espace-4);
+  margin-top: auto;
+  padding-top: var(--espace-4);
   font-size: 0.8125rem;
-  text-align: center;
 }
 
 .grande-porte-titre {
@@ -988,14 +1005,10 @@ body[data-espace="yuno"] .etiquette {
   line-height: 1.15;
 }
 
-/* Sur téléphone l'icône passe au-dessus : côte à côte, il ne resterait que
-   deux ou trois lettres par ligne au titre. */
+/* Sur téléphone, les portes s'empilent : deux vitrines dans 375 px ne
+   montreraient ni écusson ni titre d'idée entiers. */
 @media (max-width: 30rem) {
-  .grande-porte {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--espace-8);
-  }
+  .grandes-portes { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* --- Les quatre piliers -----------------------------------------------------
@@ -2917,3 +2930,174 @@ body[data-espace="yuno"] .weekend-jour .contact-nom {
 /* La date se range en pied de tuile : le titre respire, les pieds s'alignent
    d'une tuile à l'autre. */
 .tuile-prepa-date { margin-top: auto; }
+
+/* --- Les écrans du cap, habillés par le site (15 septembre 2026) ---------------
+   La galerie, la page d'un cap et celle d'un projet sont celles du hub, montées
+   dans la section Yuno. Presque tout suit tout seul : elles sont écrites en
+   variables, et `body[data-espace="yuno"]` les a déjà remplacées. Ne restent ici
+   que les choses qu'une variable ne porte pas. */
+
+/* LA PASTILLE D'ESPACE NE DIT RIEN DANS SON PROPRE SITE : « Yuno » sur chaque
+   tuile d'une page où tout est Yuno, c'est le mot « Film » des fiches de la
+   bibliothèque et le « en sommeil » des habitudes — un signe identique partout
+   ne distingue rien, il occupe de la place. Le point de couleur part avec lui :
+   il porte la teinte de l'espace, et il n'y en a qu'un. */
+body[data-espace="yuno"] .cap-tuile-espace {
+  display: none;
+}
+
+/* La tête d'une tuile de projet porte l'espace ET l'état (« En cours », « Pas
+   commencé ») : on ne masque donc que le premier — l'état, lui, classe les
+   projets entre eux, et c'est exactement ce qu'on vient lire. Une tête devenue
+   vide ne doit pas garder son écart. */
+body[data-espace="yuno"] .cap-tuile-tete:not(:has(> *:not(.cap-tuile-espace))) {
+  display: none;
+}
+
+/* PAS DE RÈGLE DE POLICE ICI, et c'est la mesure qui l'a dit : le site habille
+   déjà ces pages par ses propres titres — `#vue h1` et `#vue h2` en Canela,
+   `#vue h3` en Gilroy. Une règle de plus sur `.cap-tuile-titre` se battait
+   contre cette grammaire (et perdait : `#vue h3` porte un identifiant, donc
+   pèse plus lourd). Le titre d'un cap est un h3 : il prend Gilroy comme tous
+   les titres de tuile du site, et c'est ce qu'on veut. */
+
+/* --- Les caps en tuiles (15 septembre 2026, demande de Noé) --------------------
+   Ils se dépliaient sur place ; ils ouvrent maintenant une FENÊTRE — la
+   grammaire que le site emploie déjà pour un moment, une fiche, une idée. La
+   tuile garde l'allure du sommaire qu'elle remplace (titre, date, marches,
+   prochain jalon) : ce qui change est le geste, pas le dessin.
+
+   UN VRAI `<button>` et non une tuile cliquable : il se tabule, s'annonce comme
+   un bouton, et répond à Entrée. Il ne reste qu'à lui retirer ce qu'un
+   navigateur lui ajoute. */
+body[data-espace="yuno"] .objectif-tuile {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: var(--espace-12) var(--espace-16);
+  font: inherit;
+  color: var(--texte);
+  text-align: left;
+  background: var(--fond-carte);
+  /* Pas de contour : une tuile posée dans la page se distingue par sa surface
+     (règle du 30 août, reprise ici le 15 septembre). */
+  border: 0;
+  border-radius: var(--rayon-carte);
+  cursor: pointer;
+  transition: background 140ms ease, transform 140ms ease;
+}
+
+body[data-espace="yuno"] .objectif-tuile:hover {
+  background: color-mix(in srgb, var(--fond-carte) 88%, var(--accent));
+}
+
+body[data-espace="yuno"] .objectif-tuile:active { transform: scale(0.995); }
+
+/* La légende des marches ferme la tuile : dans un bouton, elle héritait de son
+   alignement. */
+body[data-espace="yuno"] .objectif-tuile .progression-legende { text-align: left; }
+
+/* --- Les vitrines des portes (15 septembre 2026) -------------------------------
+   Une porte montre ce qu'il y a derrière. Chaque vitrine a la FORME de sa page :
+   des écussons pour le vivier, des visages pour le réseau, des phrases pour la
+   banque et l'éditorial. Voir `grandePorte`, js/yuno.js. */
+
+/* LES ÉCUSSONS SE CHEVAUCHENT, comme les couvertures d'un rayon du hub : serrés,
+   ils disent « il y en a beaucoup » mieux qu'une rangée espacée — et six tiennent
+   alors dans la moitié d'une tuile. Le premier passe DEVANT, d'où l'ordre
+   d'empilement inversé. */
+.porte-ecussons {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+
+.porte-ecussons .club-ecusson-grand {
+  flex: none;
+  margin-right: -6px;
+  /* Un rond sombre sous chaque écusson : les logos sont découpés, et sans lui
+     deux blasons clairs se toucheraient sans qu'on voie où finit le premier. */
+  padding: 3px;
+  background: var(--fond);
+  border-radius: 50%;
+}
+
+.porte-ecussons .club-ecusson-grand:first-child { margin-right: 0; }
+
+/* LES VISAGES DU RÉSEAU : les pastilles de la fournée, au trait près. Elles
+   s'enroulent plutôt que de défiler — une porte ne se parcourt pas, elle se
+   regarde. */
+/* NI PLAFOND NI `overflow: hidden` : essayés, et ils COUPAIENT la troisième
+   pastille en deux quand elle passait au second rang — une tuile tranchée net se
+   lit comme un défaut d'affichage, pas comme un aperçu. Trois pastilles tiennent
+   sur deux rangs au pire, et c'est la vitrine qui décide de sa hauteur. */
+.porte-pastilles {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: var(--espace-4);
+}
+
+/* Une pastille de vitrine ne se presse pas — c'est la PORTE qu'on presse. */
+.porte-pastilles .pastille-personne { cursor: inherit; }
+
+/* LES PHRASES : une idée, une parution, une feuille — une par ligne, coupée à
+   l'ellipse. Ce qu'on lit ici est un APERÇU : le titre entier vit derrière la
+   porte, et une phrase qui se replie sur trois lignes mangerait la vitrine. */
+.porte-lignes {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.porte-ligne {
+  min-width: 0;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--texte);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La date d'une parution, devant son titre : elle situe, elle ne crie pas. */
+.porte-ligne-quand {
+  margin-right: var(--espace-4);
+  font-family: var(--police-chiffre);
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+
+/* --- Les tuiles n'ont plus de contour (15 septembre 2026, demande de Noé) -----
+   La règle du hub, posée le 30 août et reprise ici : UNE TUILE POSÉE DANS LA
+   PAGE SE DISTINGUE PAR SA SURFACE. `--fond-carte` (#242426) sur `--fond`
+   (#181818) est un écart franc — le filet ne fait que redire ce que la couleur
+   dit déjà, et dix filets sur un écran finissent par le quadriller.
+
+   ELLE VIT EN FIN DE FICHIER, ET CE N'EST PAS UN RANGEMENT : les cinq règles
+   qu'elle corrige sont déclarées plus haut, avec la MÊME spécificité (une
+   classe). À poids égal c'est la dernière déclarée qui gagne — posée en tête,
+   elle ne retirait rien du tout, et la mesure le disait quand l'œil ne le
+   disait pas : un filet de 1 px ne se voit pas sur une capture réduite.
+
+   `border-color: transparent` ET NON `border: 0` : le fond d'un élément est
+   peint SOUS sa bordure, un filet transparent ne laisse donc rien voir — et
+   rien ne bouge d'un pixel. Douze géométries calées sur ce 1 px restent justes,
+   et y remettre une couleur suffit à revenir en arrière.
+
+   CE QUI GARDE SON TRAIT, et chaque cas a sa raison :
+   — les tuiles de la fiche d'un club (`.club-bilan`, `.club-contact`, les
+     matchs) : elles sont posées DANS une fenêtre, où les deux surfaces se
+     ressemblent trop pour se séparer seules. C'est l'exception du hub, mot pour
+     mot ;
+   — `.carte-jour`, dont le contour est DORÉ à 35 % : ce n'est pas le trait
+     neutre que la règle vise, c'est un accent — il dit que cette carte-là est
+     la vedette de l'écran ;
+   — les contrôles (le champ de recherche, la date d'une idée, une prise qu'on
+     glisse) et les étiquettes, dont le contour EST le dessin ;
+   — les filets de séparation, qui ne cernent rien : ils coupent. */
+.grande-porte,
+.piliers,
+.passerelle-metrique,
+.tuile-prepa,
+.invite-moment { border-color: transparent; }
