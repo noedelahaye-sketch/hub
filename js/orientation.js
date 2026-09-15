@@ -1481,7 +1481,7 @@ export function relecture({ victoires = [], intentions = [] } = {}, jour = new D
 // Ce qu'il montre à la place : où l'on en est dans le livre, et à quel rythme
 // on avance. Le rythme est une observation, pas une cible — il n'y a rien à
 // tenir, et un livre lu lentement reste un livre lu.
-// L'AVANCÉE D'UNE ŒUVRE — un livre en pages, une série en épisodes (5 septembre
+// L'AVANCÉE D'UNE ŒUVRE — un livre en pages, une série en épisodes (7 septembre
 // 2026). Un seul calcul pour les deux rayons de la bibliothèque : deux copies
 // auraient fini par ne plus compter pareil, et ça ne se voit qu'à côté.
 //
@@ -2313,7 +2313,7 @@ export function bilanDeLaSemaine(
   const parties = publications.filter(
     (pub) => pub.statut === 'publie' && dans(pub.date_prevue, semaine),
   );
-  // CE QUI A EU LIEU COMPTE AUSSI (5 septembre 2026, défaut rapporté par Noé :
+  // CE QUI A EU LIEU COMPTE AUSSI (7 septembre 2026, défaut rapporté par Noé :
   // « j'ai rajouté un événement FCH dans la semaine dernière qui n'a pas été
   // ajouté »).
   //

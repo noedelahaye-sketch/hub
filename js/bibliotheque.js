@@ -1,4 +1,4 @@
-// LA BIBLIOTHÈQUE — deux rayons, un seul code (5 septembre 2026, demande de
+// LA BIBLIOTHÈQUE — deux rayons, un seul code (7 septembre 2026, demande de
 // Noé : « fais la même chose que les livres mais pour les films/séries, donc
 // dans la page ma bibliothèque mets 2 entrées, 1 pour les livres 1 pour les
 // films/séries »).
@@ -51,7 +51,7 @@ export const THEMES_LIVRE = {
 // LES GENRES D'UN FILM, même statut que les thèmes : une commodité de saisie,
 // rien que la base impose. Un film en porte plusieurs — un policier peut être
 // historique.
-// LES MOTS SONT CEUX DE SA BASE NOTION (5 septembre 2026, capture à l'appui) :
+// LES MOTS SONT CEUX DE SA BASE NOTION (7 septembre 2026, capture à l'appui) :
 // Drame, Comédie, Thriller, Histoire, Biopic. Ce sont les genres que Noé emploie
 // déjà, et importer sa table en les renommant aurait fait deux vocabulaires pour
 // une même bibliothèque. Les six autres complètent, sans rien imposer.
@@ -825,7 +825,7 @@ function ligne(R, oeuvre, menuOuvert, menuDiscret) {
 
       <span class="livre-ligne-cellule">
         <!-- LA COULEUR DE L'ÉTAT EST POSÉE EN LIGNE, et non par une règle CSS
-             par valeur (5 septembre 2026) : les deux rayons n'ont pas les mêmes
+             par valeur (7 septembre 2026) : les deux rayons n'ont pas les mêmes
              états — « lu » d'un côté, « vu » de l'autre —, et une feuille de
              style qui les énumère se met à mentir au premier rayon ajouté. La
              table des teintes vit dans le rayon, à côté des mots qu'elle
@@ -935,7 +935,7 @@ export function construireRayon(R, { oeuvres, seances, urls = {} }, vue, menuDis
       const service = [
         // LA NATURE NE S'ÉCRIT QUE POUR CE QUI N'EST PAS LE CAS ORDINAIRE :
         // « Série » se dit, « Film » se tait. Mesuré sur les seize films
-        // importés le 5 septembre 2026 — le mot s'affichait seize fois et ne
+        // importés le 7 septembre 2026 — le mot s'affichait seize fois et ne
         // distinguait rien, tout en poussant le réalisateur hors de la ligne.
         // C'est la leçon de « en sommeil » sur les habitudes : un mot identique
         // partout est un mot qui occupe de la place.
@@ -973,7 +973,7 @@ export function construireRayon(R, { oeuvres, seances, urls = {} }, vue, menuDis
 //
 // « Je préférerais que ce soit vraiment 2 portes, donc 2 tuiles cliquables qui
 // nous permettent d'aller sur la page des livres ou la page des films/séries.
-// Avec un livre en cours sur cette page. » (Noé, 5 septembre 2026.)
+// Avec un livre en cours sur cette page. » (Noé, 7 septembre 2026.)
 //
 // CE QUE ÇA RENVERSE, ET IL A RAISON. Les deux rayons ont vécu une heure en
 // BASCULE, dans la grammaire de `.affichages` : le geste du calendrier, celui

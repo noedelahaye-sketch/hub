@@ -1,4 +1,4 @@
--- LES FILMS ET LES SÉRIES (5 septembre 2026, demande de Noé : « fais la même
+-- LES FILMS ET LES SÉRIES (7 septembre 2026, demande de Noé : « fais la même
 -- chose que les livres mais pour les films/séries, donc dans la page ma
 -- bibliothèque mets 2 entrées, 1 pour les livres 1 pour les films/séries »).
 --

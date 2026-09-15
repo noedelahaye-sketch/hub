@@ -1,4 +1,4 @@
-# État des lieux — 5 septembre 2026
+# État des lieux — 7 septembre 2026
 
 > **Reprise : § 4 bis, « Par où reprendre ».**
 >
@@ -8,18 +8,24 @@
 > [orientation-spec.md](orientation-spec.md). À relire au début d'une session,
 > à mettre à jour à la fin.
 >
-> **§ 0 raconte la dernière session** (5 septembre), en deux moitiés :
+> **§ 0 raconte la dernière session** (7 septembre), en cinq chantiers :
 >
-> - **les FILMS ET LES SÉRIES** entrent dans la bibliothèque, qui devient un hall
->   à deux portes. Un seul jeu de code sert les deux rayons — 693 lignes de MOINS
->   dans le dépôt malgré une fonctionnalité entière en plus — et 28 affiches sur
->   31 sont rapatriées de Wikipédia ;
-> - **le MENU gagne un rang** : « Général » réunit le transverse et le perso, un
->   seul groupe dépliant (« Mon cap ») range six pages, trois pages de perso
->   disparaissent, et tous les titres passent à la première personne.
+> - **§ 0.1 — les FILMS ET LES SÉRIES** entrent dans la bibliothèque, qui devient
+>   un hall à deux portes. **Un seul jeu de code sert les deux rayons** : 693
+>   lignes de MOINS dans le dépôt malgré une fonctionnalité entière en plus ;
+> - **§ 0.2 — les AFFICHES**, 28 sur 31, rapatriées de Wikipédia sans clé, depuis
+>   une table écrite ;
+> - **§ 0.3 — le MENU gagne un rang** : « Général » réunit le transverse et le
+>   perso, un seul groupe dépliant (« Mon cap »), trois pages de perso
+>   disparaissent, et tous les titres passent à la première personne ;
+> - **§ 0.4 — le BILAN du dimanche** comptait les durées déclarées et pas le
+>   terrain : 20 h 45 affichées pour 35 h 15 vécues ;
+> - **§ 0.5 — l'HUMEUR quitte l'accueil** et ne se note plus qu'au bilan du jour ;
+>   le « bonjour » se souvient du jour dans le navigateur.
 >
-> **Ses cinq corrections en cours de route sont listées au § 0** — à lire avant
-> de « corriger » quoi que ce soit dans le menu.
+> **§ 0.3 liste les CINQ CORRECTIONS que Noé a faites en cours de route** — à
+> lire avant de « corriger » quoi que ce soit dans le menu. **§ 0.7** dit les
+> trois régressions de la session et ce qu'elles enseignent.
 >
 > **§ 0 ante zero raconte la session précédente**, qui court du **2 au 4 septembre** sans
 > coupure — d'où un seul § 0 pour trois jours, et rien qui glisse d'un rang. Elle
@@ -34,7 +40,7 @@
 >   liste devenue un tableau qu'on trie et qu'on corrige, et **vingt livres
 >   importés avec leurs couvertures**.
 >
-> **§ 0.1 septdecies liste les allers-retours de cette session** — les décisions que Noé a
+> **§ 0z.1 septdecies liste les allers-retours de cette session** — les décisions que Noé a
 > renversées en cours de route. À lire avant de « corriger » quoi que ce soit
 > dans la bibliothèque.
 >
@@ -57,7 +63,33 @@
 > le 21, **§ 0 ante quindecies** le 15, **§ 0 ante sexdecies** les 14–15. Les
 > § 1 et suivants décrivent l'état stable et les chantiers antérieurs.
 
-## 0. La session du 5 septembre 2026 — LES FILMS ET LES SÉRIES
+## 0. La session du 7 septembre 2026 — LA BIBLIOTHÈQUE À DEUX RAYONS, ET LE MENU À TROIS RANGS
+
+> **Une erreur de date, corrigée en fin de session** : j'ai daté tout ce travail
+> du 5 septembre — quarante-trois occurrences dans le code, les commentaires,
+> `CLAUDE.md` et ce document — alors qu'on était le 7. Tout est repris, et la
+> migration renommée. *La date du jour est dans le contexte de session : la lire
+> plutôt que de la déduire du dernier commit.*
+
+**Trois commits, tous poussés** : `0911654`, `5e63a77`, `9586d08`.
+
+**UNE MIGRATION, appliquée à la base réelle** :
+
+| | |
+|---|---|
+| `20260907120000_films_series.sql` | `films`, `films_seances`, `films_citations`, le bucket privé `affiches` et ses quatre politiques, RLS et grants |
+
+**UN OUTIL DE PLUS** : `tools/affiches-films.py` — voir § 0.2.
+
+**`sw.js` est passé de v18 à v21**, en trois fois. C'est ce qui fait qu'un
+correctif arrive dès la PREMIÈRE ouverture au lieu de la seconde : la coquille
+est servie « en cache d'abord, revalidation ensuite », donc un nom de cache
+inchangé sert l'ancien JS une fois. **À bumper à chaque déploiement qui touche la
+coquille.**
+
+---
+
+### 0.1 La bibliothèque prend un second rayon
 
 **La demande de Noé, en deux temps** : *« fais la même chose que les livres mais
 pour les films/séries, donc dans la page ma bibliothèque mets 2 entrées, 1 pour
@@ -66,34 +98,17 @@ préférerais que ce soit vraiment 2 portes, donc 2 tuiles cliquables qui nous
 permettent d'aller sur la page des livres ou la page des films/séries. Avec un
 livre en cours sur cette page. »*
 
-**UNE MIGRATION, appliquée à la base réelle** :
+**TROIS ÉCRANS, ET LE PREMIER EST UN HALL** : `#perso/bibliotheque` montre ce
+qu'on lit ou regarde en ce moment, puis deux portes vers `#perso/livres` et
+`#perso/films`.
 
-| | |
-|---|---|
-| `20260905120000_films_series.sql` | `films`, `films_seances`, `films_citations`, le bucket privé `affiches` et ses quatre politiques, RLS et grants |
+**DES PORTES ET NON UNE BASCULE, et c'est lui qui a tranché.** Les deux rayons
+ont vécu une heure en `.affichages`. Mais **une bascule dit « la même chose, vue
+autrement »** — l'étagère et la liste, le mois et la semaine ; or ce sont **deux
+bibliothèques**. Et ça rend sa place à ce qu'on FAIT : la page ne s'ouvre plus
+sur cinquante titres mais sur ce qu'on lit ce soir.
 
-**UN OUTIL DE PLUS** : `tools/affiches-films.py` — voir « Les affiches » plus bas.
-
-**TRENTE ET UN FILMS IMPORTÉS**, depuis deux captures de sa base Notion, avec
-leur réalisateur, leur note, leurs genres et leur état. Deux points à savoir :
-
-- **le « GOAT » du *Comte de Monte Cristo* est devenu 5 étoiles** : le hub n'a
-  pas de sixième cran, et lui en inventer un pour un cas ferait une échelle qu'on
-  ne relit plus. À rouvrir si Noé y tient ;
-- **les émojis de sa table n'ont pas été repris.** Chaque ligne en porte un dans
-  Notion ; le hub met une AFFICHE à cette place, et une œuvre sans affiche prend
-  la tuile pointillée. C'est une décision à prendre, pas un oubli — voir
-  « Ce qui attend une réponse ».
-
-### Ce que la session a construit
-
-**LE HALL, ET DEUX PORTES.** `#perso/bibliotheque` ne montre plus d'inventaire :
-ce qu'on lit ou regarde en ce moment, puis deux tuiles cliquables qui ouvrent
-`#perso/livres` et `#perso/films`. Les deux rayons ont vécu une heure en bascule
-`.affichages` avant que Noé ne tranche — et il a raison : **une bascule dit « la
-même chose, vue autrement », or ce sont deux bibliothèques.**
-
-**UN SEUL CODE POUR LES DEUX RAYONS**, et c'est le vrai travail de la session :
+**UN SEUL CODE POUR LES DEUX RAYONS**, et c'est le vrai travail :
 
 | Fichier | Ce qu'il porte |
 |---|---|
@@ -103,100 +118,78 @@ même chose, vue autrement », or ce sont deux bibliothèques.**
 | `js/api.js` | `fabriquerRayon(...)` — un patron, deux jeux de douze fonctions |
 | `js/orientation.js` | `avanceeDeLOeuvre` et `oeuvreEnCours`, généralisées |
 
+**Les tables, elles, sont SÉPARÉES** (`films`, `films_seances`,
+`films_citations`, bucket `affiches`) : c'est l'argument du 2 septembre pour le
+bucket des couvertures — deux natures, deux réserves. Un film n'a ni pages ni
+auteur, et une table nommée « livres » qui porterait des films serait un nom qui
+ment. **Ce qui diffère tient dans un objet** : les tables, les mots, les états,
+et cinq noms de colonnes.
+
 **BILAN MESURÉ : 1 269 lignes posées, 1 962 retirées.** Une fonctionnalité
 entière en plus, et le dépôt qui maigrit — c'est ce que vaut le partage plutôt
 que la copie.
 
-**LES SIGNES DESSINÉS ONT DÉMÉNAGÉ** dans `js/gabarits.js` (`SIGNES`) : perso et
-la bibliothèque en avaient chacun leur copie.
+**Deux règles propres aux films** :
+- **un FILM ne se compte pas** — ni jauge, ni « +1 », ni journal sur sa fiche :
+  un bloc qu'aucun geste ne peut remplir est une promesse qu'on ne tient pas.
+  Une **série** se compte comme un livre ;
+- **« Film » ne s'écrit pas sur les tuiles.** Mesuré sur les 31 films importés :
+  le mot s'affichait 31 fois, ne distinguait rien, et poussait le réalisateur
+  hors de la ligne. Seule « Série » se dit. *C'est la leçon de « en sommeil » sur
+  les habitudes.*
 
-### Ce qui a été vérifié, et comment
+**31 FILMS IMPORTÉS** depuis deux captures de sa base Notion, avec réalisateur,
+note, genres et état. Les genres reprennent SES mots — Drame, Comédie, Thriller,
+Histoire, Biopic, Romance : renommer sa table en l'important aurait fait deux
+vocabulaires pour une même bibliothèque.
 
-Tout au navigateur, sur la base réelle, puis remis en état :
+---
 
-- **les deux portes** mènent aux deux étagères, et chaque étagère ramène au hall ;
-- **noter des pages depuis le hall** : 72 → 82, le rythme suit, l'habitude
-  « lire un peu » se coche ; la séance retirée depuis la fiche, 82 → 72 ;
-- **la colonne « Ta lecture »** du tableau de bord perso, qui porte désormais les
-  attributs génériques avec `data-rayon-de="livres"` : +10 pris en compte ;
-- **une série créée par le formulaire** (nature = Série, 8 épisodes), « +3 »
-  noté, sa fiche vérifiée (3/8, 38 %, 1 soirée, 3 épisodes par soirée), puis
-  supprimée par le menu de sa fiche. Base revenue à 31 films, 0 séance ;
-- **les filtres du rayon films** : État, **Nature**, Genre, Note — chacun ne
-  propose que ce qui existe, avec son compte (Biopic 2, Comédie 9, Drame 11…) ;
-- **la vue liste** : les cinq colonnes de sa base Notion, triables, l'état et la
-  note réglables sur place ;
-- **téléphone (375 px)** : aucun débordement, les portes s'empilent, l'étagère
-  tient trois de front.
-
-### LES AFFICHES (fin de session)
+### 0.2 Les affiches, rapatriées de Wikipédia
 
 **Demande de Noé** : *« rajoute les couvertures des films »* — le champ existait,
 il fallait le remplir.
 
-**28 affiches sur 31**, rapatriées de Wikipédia et rangées dans le bucket privé
-`affiches` (2,7 Mo, 99 Ko en moyenne). Sans affiche, faute de page anglaise :
-**Fatal**, **Golo et Ritchie**, **Nous, les Leroy** — leur tuile reste
-pointillée, c'est déjà la règle de l'étagère, et leur affiche se pose à la main
-par le formulaire.
+**28 sur 31**, dans le bucket privé `affiches` (2,7 Mo, 99 Ko en moyenne). Sans
+affiche, faute de page anglaise : **Fatal**, **Golo et Ritchie**, **Nous, les
+Leroy** — tuile pointillée, c'est déjà la règle de l'étagère.
 
-**`tools/affiches-films.py`** fait la résolution, sur le motif de
-`telecharger-logos.py` : une TABLE ÉCRITE (film → page fr.wikipedia), le lien de
-langue vers en.wikipedia, puis **le paramètre `image` de son infobox**, lu dans
-le wikitexte. Il rend un JSON ; il ne téléverse rien — le bucket est privé et RLS
-ne l'ouvre qu'à `authenticated`, donc l'envoi se fait depuis le hub connecté par
-`televerserImage` et `modifier` du rayon (le mode d'emploi est en tête du
-fichier).
+**`tools/affiches-films.py`** résout, sur le motif de `telecharger-logos.py` :
+une TABLE ÉCRITE (film → page fr.wikipedia), le lien de langue vers
+en.wikipedia, puis **le paramètre `image` de son infobox**, lu dans le wikitexte.
+Il rend un JSON et ne téléverse rien — le bucket est privé et RLS ne l'ouvre
+qu'à `authenticated`, donc l'envoi se fait depuis le hub connecté par
+`televerserImage` et `modifier` du rayon (mode d'emploi en tête du fichier).
 
 **POURQUOI PAS TMDB** : son API exige une clé, donc un secret. Wikipédia répond
 sans clé, comme ESPN pour les écussons.
 
 > **Le premier essai cherchait la page par « titre + réalisateur », et c'était
-> faux.** Il donnait *The Odyssey* pour **Oppenheimer**, *Guru* pour **Boîte
-> noire**, *Vive la France* pour **Fatal**, *Colours of Time* pour **Ce qui nous
-> lie**. La leçon de `telecharger-logos.py` s'est vérifiée du premier coup : **un
-> rapprochement rejoué à chaque exécution peut changer une affiche dans le dos de
-> Noé.** La table est donc écrite, et trois titres ont dû être corrigés à la main
-> après vérification (`13 jours, 13 nuits`, `À l'abordage (film, 2020)` — la
-> première version tombait sur un film de 1952 —, `Les Petits Princes`).
+> faux** : *The Odyssey* pour **Oppenheimer**, *Guru* pour **Boîte noire**,
+> *Vive la France* pour **Fatal**. La leçon de `telecharger-logos.py` s'est
+> vérifiée du premier coup — **un rapprochement rejoué à chaque exécution peut
+> changer une affiche dans le dos de Noé.** Trois titres ont encore dû être
+> corrigés à la main après vérification (`À l'abordage (film, 2020)` tombait sur
+> un film de 1952).
 
 *Les 28 affiches ont été relues à l'écran, une par une : aucune ne se trompe de
 film.*
 
-### Ce que la session a corrigé en passant
+**UNE ADRESSE DE DÉPÔT DANS LE USER-AGENT, PAS UN E-MAIL.** La première version
+mettait `noedelahaye@gmail.com` dans le User-Agent Wikimedia — repéré avant le
+push. Le dépôt est PUBLIC : y écrire son adresse la donnerait aux moissonneurs.
 
-- **Un film ne se compte pas** : ni jauge, ni « +1 », ni journal sur sa fiche —
-  un bloc qu'aucun geste ne peut remplir est une promesse qu'on ne tient pas.
-  Une SÉRIE, elle, se compte comme un livre.
-- **« Film » ne s'écrit plus sur les tuiles** : le mot s'affichait trente et une
-  fois, ne distinguait rien et poussait le réalisateur hors de la ligne. Seule
-  « Série » se dit.
-- **Le rayon voyage avec la carte** (`data-rayon-de`) : le hall montre les deux
-  rayons, et une carte n'appartient donc pas forcément au rayon qu'on regarde.
-  S'y fier aurait modifié un livre en croyant modifier un film.
-- **La couleur d'un état est posée en ligne**, plus par une règle CSS par
-  valeur : les deux rayons n'ont pas les mêmes états (« lu » / « vu »), et une
-  feuille qui les énumère se met à mentir au premier rayon ajouté.
+---
 
-### Le piège des gabarits, payé une cinquième fois
+### 0.3 Le menu gagne un rang, et les pages passent à la première personne
 
-Un commentaire HTML citait deux adresses **entre accents graves**, à l'intérieur
-d'un gabarit : la chaîne se refermait, `node --check` passait, et la page ne se
-chargeait plus. `node tools/verifier-gabarits.js` l'a vu et nommé la ligne.
-**Le lancer avant de pousser n'est pas facultatif.**
+**Demande de Noé** : *« Général et perso doivent être regroupés dans le menu
+déroulant, avec un sous-titre déroulant "le cap"… il y a un peu trop de
+sous-pages, il faudrait créer des sous-pages qui regroupent des sous-sous pages.
+Enfin même pas des sous-pages, juste des titres. »* Il a demandé une
+**proposition** avant l'implémentation, et tranché quatre arbitrages.
 
-### LE MENU A GAGNÉ UN RANG (fin de session)
-
-**Demande de Noé**, en cinq passes — la première posait le principe, les quatre
-suivantes ont réglé la forme :
-
-> *« Général et perso doivent être regroupés dans le menu déroulant, avec un
-> sous-titre déroulant "le cap"… il y a un peu trop de sous-pages, il faudrait
-> créer des sous-pages qui regroupent des sous-sous pages. Enfin même pas des
-> sous-pages, juste des titres. »*
-
-**Le menu replié passe de six lignes à quatre**, et l'on ne voit plus jamais
-vingt-quatre liens d'un coup :
+**Le menu replié passe de six lignes à quatre** :
 
 ```
 ● Général                     ← un titre, pas un lien : il n'a pas de page
@@ -213,15 +206,12 @@ vingt-quatre liens d'un coup :
 C'était déjà la règle des grands titres ; le rang des groupes la reprend telle
 quelle plutôt que d'inventer un second geste pour un même mouvement.
 
-### Les quatre corrections de Noé, dans l'ordre
-
-À lire avant de « corriger » quoi que ce soit dans le menu :
+#### Les cinq corrections de Noé, dans l'ordre — À LIRE AVANT DE « CORRIGER » LE MENU
 
 1. **« Non, pas de sous-page en dessous de Ma semaine — juste page en dessous de
    page. »** J'avais lu « place-les sous Ma semaine » comme « à l'intérieur » ;
    il voulait dire « en dessous dans la liste ». **Un seul groupe existe,
-   "Mon cap"** — un pli de plus se paie d'un geste de plus, et seul le cap en
-   portait assez pour le justifier.
+   "Mon cap"** — un pli de plus se paie d'un geste de plus.
 2. **« Mes intentions en dernier dans le cap. »** Elles étaient posées après les
    objectifs, par parenté. L'ordre du groupe suit ce qu'on y FAIT, et une
    intention ne se fait pas : elle se relit.
@@ -236,7 +226,7 @@ quelle plutôt que d'inventer un second geste pour un même mouvement.
 5. **« Mets Mon temps dans le cap, au-dessus de Mes intentions. »** Il suit
    « Mon chemin » : les deux regardent en arrière.
 
-### La première personne, et ce qu'elle a entraîné
+#### La première personne, et ce qu'elle a entraîné
 
 **« Transforme tous les noms des pages à la 1re personne »** — et ces noms sont
 AUSSI ceux des pages : un nom dans le menu et un autre en tête de page, ce serait
@@ -245,47 +235,39 @@ deux noms pour une page. Les `<h1>` et les titres du navigateur ont suivi.
 l'onglet disent partout la même chose.*
 
 **« GÉNÉRAL » A CHANGÉ DE PORTEUR**, et c'est la conséquence que Noé n'avait pas
-demandée mais qui découle de son choix : c'était le nom de la page `#objectifs`
-depuis le 28 août, c'est désormais le grand titre du menu. **La page s'appelle
-« Mon cap »** — le mot qu'il a lui-même employé.
+demandée mais qui découle de son choix : c'était le nom de la page `#objectifs`,
+c'est désormais le grand titre du menu. **La page s'appelle « Mon cap »** — son
+propre mot. Le suffixe d'étage (« — le cap », « — le comment ») est tombé avec.
 
 **Elle s'arrête aux espaces** (« Ses objectifs » désigne l'espace) **et ne touche
 pas les phrases** : le hub continue de tutoyer partout ailleurs.
 
-### Trois pages de perso ont disparu
+#### Trois pages de perso ont disparu
 
 **Décision de Noé** : *« pas besoin de la page l'humeur, tu peux supprimer ; les
 rendez-vous tu peux supprimer, les victoires aussi. »* Leurs sections, leurs
 fabriques de HTML et leurs formulaires sont partis avec elles — un bloc sans
 porte est du code mort.
 
-**Ce qui existe ailleurs** : l'humeur se répond en tête du tableau de bord perso,
-un rendez-vous se pose au calendrier, « Mon chemin » est la page des victoires.
+**Ce qui existe ailleurs** : un rendez-vous se pose au calendrier, « Mon chemin »
+est la page des victoires.
 
-**CE QUI DISPARAÎT VRAIMENT, et il faut le savoir** :
-- **la COURBE d'humeur des 30 jours**, qu'aucun autre écran ne dessine ;
-- **le bouton qui ajoutait une victoire à la main** — les victoires
-  automatiques (tâche, jalon, étape, palier, livre, film) continuent de s'écrire.
+**CE QUI DISPARAÎT VRAIMENT** : la **courbe d'humeur des 30 jours**, qu'aucun
+autre écran ne dessine, et le **bouton qui ajoutait une victoire à la main** (les
+victoires automatiques continuent de s'écrire). *Git les garde :
+`construireCourbeHumeur`, `construireVictoiresPerso` et `construireRendezVous`
+se retrouvent au commit `c874fff`.*
 
-*Git les garde : `construireCourbeHumeur`, `construireVictoiresPerso` et
-`construireRendezVous` se retrouvent au commit précédent si l'une manque.*
+---
 
-> **Une régression, trouvée et réparée dans la foulée** : `NIVEAUX_HUMEUR` était
-> déclarée au milieu du bloc de la courbe et est partie avec lui. La page perso
-> ne se chargeait plus (`ReferenceError` au montage). Elle est désormais déclarée
-> devant `construireHumeurDuJour`, la première qui s'en sert. *Vérifié dans un
-> onglet NEUF : le tampon de la console garde les erreurs des chargements
-> précédents et m'a fait douter deux fois d'un code déjà correct.*
-
-### LES HEURES MESURÉES OUBLIAIENT LE TERRAIN (fin de session)
+### 0.4 Les heures mesurées oubliaient le terrain
 
 **Défaut rapporté par Noé** : *« qu'est-ce qui est compté dans ce dashboard ? Ça
 ne me paraît pas juste… j'ai rajouté un événement FCH dans la semaine dernière
 qui n'a pas été ajouté. »*
 
-**Sa question portait sur les publications ; le vrai manque était ailleurs.** Les
-publications ÉTAIENT comptées (statut `publie`, date prévue dans la semaine,
-durée renseignée). Ce qui manquait, ce sont les **ÉVÉNEMENTS** : le bilan ne
+**Sa question portait sur les publications ; le vrai manque était ailleurs.**
+Elles ÉTAIENT comptées. Ce qui manquait, ce sont les **ÉVÉNEMENTS** : le bilan ne
 pesait que les durées DÉCLARÉES — tâches et publications — et jamais le temps
 passé sur place, qui se mesure entre `date_debut` et `date_fin`.
 
@@ -300,63 +282,102 @@ silence des durées de 27 → 33 choses terminées. Les cinq événements datés
 voulu.*
 
 - **Le TRAITEMENT n'entre pas** (90 min par séance du club) : la tuile dit
-  « mesurées ».
+  « mesurées », et le traitement est une estimation. C'est le travail de
+  « Mon temps ».
 - **Sur « il faut que ce soit dynamique »** : le bilan se recalcule à chaque
   ouverture, il n'y a pas de cache de données. Ce qui l'a fait paraître figé,
-  c'est que les événements n'étaient pas dans le calcul — plus le service worker,
-  qui sert la version précédente une fois après un déploiement. **`sw.js` passe
-  en v20** : c'est ce qui fait arriver la correction dès la première ouverture,
-  et c'est à refaire à chaque déploiement qui touche la coquille.
+  c'est l'absence des événements — plus le service worker.
 
-> **Le cache m'a fait douter deux fois dans la même session** — une fois ici, une
-> fois sur `NIVEAUX_HUMEUR`. Devant un écran qui n'a pas bougé alors que le code
-> a changé : vider le cache et le service worker AVANT d'accuser le calcul.
+---
 
-### L'HUMEUR QUITTE L'ACCUEIL (fin de session)
+### 0.5 L'humeur quitte l'accueil, et le bonjour se souvient du jour
 
 **Décision de Noé** : *« la note d'humeur ne doit plus apparaître en haut à
 droite de la page d'accueil, elle n'est notée qu'à la fin de la journée dans le
 bilan du jour. Bonjour Noé apparaît donc que lors de la 1re ouverture, après on
 passe au texte dynamique. »*
 
-**Elle se note maintenant dans la tuile d'une journée, et là seulement** — j'ai
-donc retiré les deux autres endroits : la tête de l'accueil, et celle de
+**Et ça se tient** : une humeur demandée le matin dit comment on se réveille ;
+posée le soir dans une journée qu'on relit, elle la RÉSUME. C'est la question que
+le hub avait choisie le 1er septembre — la poser aussi le matin en faisait deux.
+
+**J'AI RETIRÉ LES DEUX AUTRES ENDROITS** : la tête de l'accueil et celle de
 `#perso`. *C'est une lecture de sa phrase (« qu'à … dans le bilan du jour ») qui
 va un cran plus loin que le mot « accueil » ; à corriger d'une phrase si elle
 dépasse.*
 
 **LE SALUT A CHANGÉ DE SIGNAL.** Depuis le 29 août, le hub saluait tant que
-l'humeur n'était pas notée — le signal est parti avec elle. C'est désormais
+l'humeur n'était pas notée — ce signal est parti avec elle. C'est désormais
 `localStorage['hub-salut']`, le jour de la dernière salutation : une ligne dans
-le navigateur, pas une colonne en base. **La décision se prend une fois, au
-montage**, sinon « Bonjour Noé » basculerait en « 11 choses aujourd'hui » sous
-les yeux au premier clic. *Vérifié : première ouverture → « Bonjour Noé » ;
-rechargement → « 11 choses aujourd'hui. » ; le bilan du jour porte toujours ses
-cinq frimousses, avec celle du jour choisie.*
+le navigateur, pas une colonne en base, parce qu'une commodité d'affichage propre
+à l'appareil ne dit rien de la vie de Noé. **Conséquence assumée : le hub salue
+une fois par jour ET PAR APPAREIL.** Si le stockage refuse (navigation privée),
+on salue.
 
-**Ce qui est parti avec** : `construireHumeurDuJour`, la source `humeur` du
-tableau de bord et son cache daté, les trois gestes de l'accueil (répondre,
-rouvrir, « un mot ? »), `api.humeurDuJour`, et six règles CSS. *Le champ
-« un mot sur ta journée » de l'accueil disparaît aussi — la tuile d'une journée
-a son propre journal, plus grand.*
+**LA DÉCISION SE PREND UNE FOIS, AU MONTAGE** : la relire à chaque rendu ferait
+basculer « Bonjour Noé » en « 11 choses aujourd'hui » sous les yeux, au premier
+clic. *Vérifié : première ouverture → « Bonjour Noé » ; rechargement → « 11
+choses aujourd'hui. » ; le bilan du jour porte toujours ses cinq frimousses.*
 
-> **Une régression, et la même leçon pour la troisième fois** : `rendreHumeur`
-> restait appelée au premier rendu, et l'accueil ne montait plus. Trouvée au
-> navigateur. **Et le tampon de la console garde les erreurs des chargements
-> précédents** — c'est un onglet NEUF qui tranche, pas un rechargement.
+**Sont partis avec** : `construireHumeurDuJour`, la source `humeur` du tableau de
+bord et son cache daté, les trois gestes de l'accueil (répondre, rouvrir, « un
+mot ? »), `api.humeurDuJour`, et six règles CSS — dont le champ « un mot sur ta
+journée », la tuile d'une journée ayant son propre journal, plus grand.
 
-### Ce qui attend une réponse de Noé
+---
 
-1. **Les émojis de sa table Notion** — un par film. Faut-il une colonne `emoji`
-   sur les deux rayons ? L'argument a faibli depuis que les affiches sont là :
-   il ne resterait utile que pour les trois films qui n'en ont pas.
-2. **Le « GOAT »** du *Comte de Monte Cristo*, ramené à 5 étoiles.
-3. **La suite de sa table** : les deux captures s'arrêtaient à *Golo et Ritchie*.
-   S'il en reste, elles s'importent de la même façon.
-4. **Le tableau de bord perso** ne montre que « Ta lecture ». Faut-il une seconde
-   colonne pour ce qu'on regarde, ou la lecture garde-t-elle sa place seule ?
-5. **Les trois affiches manquantes** (Fatal, Golo et Ritchie, Nous les Leroy) :
-   à poser à la main par le formulaire, ou à laisser en pointillé.
+### 0.6 Ce qui a été vérifié, et comment
+
+Tout au navigateur, sur la base réelle, puis remis en état :
+
+- **la bibliothèque** : les deux portes, les deux étagères et leur retour au
+  hall ; noter des pages depuis le hall (72 → 82) et depuis le tableau de bord
+  perso, la séance retirée ensuite (82 → 72) ; **une série créée par le
+  formulaire** (nature = Série, 8 épisodes), « +3 » noté, sa fiche vérifiée
+  (3/8, 38 %, 1 soirée), puis **supprimée par le menu de sa fiche** — base
+  revenue à 31 films, 0 séance ; les filtres du rayon films (État, **Nature**,
+  Genre, Note) avec leurs comptes ; la vue liste et ses réglages sur place ;
+- **le menu** : les trois rangs, les plis, les couleurs de pastilles calculées
+  (gris 139,146,139 pour Général et Mon cap, violet pour Perso) ;
+- **les treize adresses renommées** : `<h1>` et titre d'onglet identiques ;
+- **le bilan** : recalculé contre une requête SQL sur les six événements de la
+  semaine ;
+- **l'accueil** : « Bonjour Noé » puis « 11 choses aujourd'hui. », zéro frimousse
+  sur `#dashboard` et sur `#perso`, cinq dans la tuile d'une journée ;
+- **téléphone (375 px)** : aucun débordement sur le hall, l'étagère ni le menu ;
+- **quinze écrans parcourus** sans une erreur de console.
+
+### 0.7 Trois régressions introduites et réparées dans la session
+
+Elles disent toutes la même chose : **retirer du code demande de relire ce qui
+le référençait.**
+
+1. **`NIVEAUX_HUMEUR`** était déclarée au milieu du bloc de la courbe d'humeur et
+   est partie avec lui : la page perso ne se chargeait plus.
+2. **`rendreHumeur`** restait appelée au premier rendu de l'accueil, qui ne
+   montait plus.
+3. **`.recherche { max-width: 32rem; }`** partageait sa règle avec
+   `.note-humeur` et a disparu avec elle.
+
+> **ET LE TAMPON DE LA CONSOLE M'A FAIT DOUTER TROIS FOIS d'un code déjà
+> correct** : `read_console_messages` garde les erreurs des chargements
+> précédents, même après un rechargement. **C'est un onglet NEUF qui tranche.**
+> Même leçon pour le service worker : devant un écran qui n'a pas bougé alors que
+> le code a changé, vider le cache AVANT d'accuser le calcul.
+
+### 0.8 Le piège des gabarits, payé une cinquième fois
+
+Un commentaire HTML citait deux adresses **entre accents graves**, à l'intérieur
+d'un gabarit : la chaîne se refermait, `node --check` passait, et la page ne se
+chargeait plus. `node tools/verifier-gabarits.js` l'a vu et nommé la ligne.
+**Le lancer avant de pousser n'est pas facultatif.**
+
+
+### 0.9 Ce qui attend une réponse de Noé
+
+Les questions ouvertes vivent au **§ 4 bis**, avec ce que la session a tranché :
+c'est là qu'on reprend, et une liste à deux endroits finit par ne plus dire la
+même chose.
 
 ## 0 ante zero. La session des 2–4 septembre 2026 — LES PAGES DE DÉTAIL, PUIS LA BIBLIOTHÈQUE
 
@@ -380,7 +401,7 @@ a son propre journal, plus grand.*
 quitté. Il ne lui reste que ce pour quoi il est fait — **trois galeries qui
 comparent** (les caps, les projets, les périodes) et les formulaires du hub.
 
-### 0.1 La demande, et les deux choix que Noé a tranchés
+### 0z.1 La demande, et les deux choix que Noé a tranchés
 
 > « Pour les projets, chacun d'eux doit avoir sa propre page (à ouvrir depuis la
 > page projet) dans laquelle un calendrier en vue mois et semaine et une colonne
@@ -414,7 +435,7 @@ Puis, devant la première version, **deux corrections qui ont refait la page** :
    maintenant **disjoints** — à poser · programmées · faites — et, mis bout à
    bout, ils font exactement le projet.
 
-### 0.1 bis La page d'un objectif, dans la foulée
+### 0z.1 bis La page d'un objectif, dans la foulée
 
 **La demande** : *« on va faire pareil pour les objectifs : une page indépendante
 pour chacun avec tous les détails, un calendrier qui permet de poser les jalons.
@@ -450,7 +471,7 @@ assumée**, elles vivent dans l'espace Tâches et au calendrier quand elles ont 
 date. Le calendrier prend la place rendue, et les deux colonnes arrivent dès
 1000 px.
 
-### 0.1 ter Une vue « 3 mois », et sa forme à elle
+### 0z.1 ter Une vue « 3 mois », et sa forme à elle
 
 **La demande** : *« rajoute une vue 3 mois au calendrier »* — puis, devant trois
 grilles de mois empilées : *« les 3 mois doivent être 3 colonnes, ça ne doit pas
@@ -474,7 +495,7 @@ trimestre —, et le nom du mois prend le rang des initiales, qui ne servaient �
 rien : on ne vise pas un mardi dans cette vue. *Mesuré : 274 px pour les trois
 mois, et les colonnes se touchent au pixel.*
 
-### 0.1 quater Et une vue « Année », par semaines
+### 0z.1 quater Et une vue « Année », par semaines
 
 **La demande** : *« crée une vue par année, par 12 mois plutôt (mais appelée
 année) ; tu ne référence pas tous les jours, seulement les semaines… Quand on
@@ -520,7 +541,7 @@ le jour de départ** : depuis le 31 janvier, « mois suivant » donnait le 3 mar
 **février était sauté**, et ça touchait le calendrier plein écran depuis
 toujours, un mois sur sept. L'ancre repart maintenant du 1er du mois.
 
-### 0.1 quinquies Et une page par HABITUDE
+### 0z.1 quinquies Et une page par HABITUDE
 
 **La demande** : *« chaque habitude doit avoir une page dédiée également, avec
 toutes les stats intéressantes et les détails (dont depuis quand je l'ai
@@ -637,7 +658,7 @@ ne savait plus lequel des deux chiffres manquait. En **Google Sans**, comme le
 décompte des heures du bilan : à 13 px, deux chiffres seuls s'étalent en chasse
 fixe au lieu de se lire.
 
-### 0.1 sexies L'émoji d'une habitude ne s'enregistrait pas
+### 0z.1 sexies L'émoji d'une habitude ne s'enregistrait pas
 
 *« Ajouter un émoji ne fonctionne pas pour l'instant. »* **La panne était en deux
 morceaux, et le premier était MUET** : le formulaire le demandait depuis le
@@ -666,7 +687,7 @@ déborder. *Le défaut touchait tous les panneaux du hub.*
 d'une habitude, sans fenêtre. Le cumul depuis toujours et un calendrier qu'on
 peut remonter mentiraient tous les deux sur soixante jours.
 
-### 0.1 septies Les durées en cochant, et l'ordre chronologique d'un découpage
+### 0z.1 septies Les durées en cochant, et l'ordre chronologique d'un découpage
 
 **LES DURÉES PROPOSÉES EN COCHANT** : *« ajoute une option 5 min dans les
 propositions de durée lorsque je finis une tâche, et enlève 1 h 30 »* —
@@ -699,7 +720,7 @@ cap aux cinq indatés garde son ordre ; « Monter/Descendre » disparaît entre 
 marches datées et reste à la frontière avec une indatée. *La base a été remise
 dans son état.*
 
-### 0.1 octies Le cul-de-sac de la tuile de capture, sur téléphone
+### 0z.1 octies Le cul-de-sac de la tuile de capture, sur téléphone
 
 *« Je ne peux pas modifier la date lorsque je crée une tâche/un événement ;
 depuis le + de bas de page je peux cliquer sur la tuile, sélectionner une date,
@@ -728,7 +749,7 @@ tuile (vérifié : tous les dix appellent `brancherCapture`).
 panneau replié, donc le même refus muet ; et un titre vide repartait par un
 `return` nu. Le curseur y revient maintenant avec « Il lui manque son nom. »
 
-### 0.1 nonies La série avance quand on coche, et la flamme passe dans la colonne
+### 0z.1 nonies La série avance quand on coche, et la flamme passe dans la colonne
 
 *« Pour l'affichage des habitudes dans la page perso, il doit y avoir l'évolution
 en direct : si je coche une case, je dois voir que la série a avancé. »*
@@ -767,7 +788,7 @@ alignés à droite, le groupe poussait son chiffre vers la gauche, si bien que
 comme appartenant à la colonne d'à côté. *Mesuré : le centre du contenu tombe au
 même pixel sur toutes les lignes, avec flamme comme sans.*
 
-### 0.1 decies Les couvertures, et l'étagère
+### 0z.1 decies Les couvertures, et l'étagère
 
 *« J'aimerais pouvoir rajouter la couverture du livre, ce qui permettrait d'avoir
 un aperçu visuel dans la bibliothèque. »* Deux choix tranchés par Noé : **une
@@ -814,7 +835,7 @@ qui emporte le fichier, et le Carnet de Yuno qui charge toujours ses photos
 malgré le changement de clé. *Un livre d'essai a été créé puis supprimé ; la base
 est revenue à un livre et zéro fichier de couverture.*
 
-### 0.1 undecies La fiche d'un livre
+### 0z.1 undecies La fiche d'un livre
 
 *« Il faut que je puisse cliquer sur chaque livre pour avoir une fiche avec tous
 les détails, et où je peux modifier l'état et la note. »* → `#livre/<id>`, sur le
@@ -835,7 +856,7 @@ propose ses quatre options avec leurs points de couleur, la note se pose (4 en
 base) et se retire en retouchant la même étoile (null en base). *La base est
 revenue à son état — le livre de Noé est sans note, comme avant.*
 
-### 0.1 duodecies Chercher un livre, et filtrer
+### 0z.1 duodecies Chercher un livre, et filtrer
 
 *« Il faudrait que je puisse avoir une vue de ce type également pour pouvoir
 chercher un livre précis et filtrer selon la note, l'état ou le type de livre »*
@@ -860,7 +881,7 @@ passe toute liste du hub en grille de 21 rem au-delà de 60 rem. Même poids que
 règle, mais elle pose `grid-template-columns` que je ne redisais pas — la liste
 se cassait en trois colonnes. *Ce qu'on ne redit pas reste.*
 
-### 0.1 terdecies Vingt livres entrent dans la bibliothèque, avec leurs couvertures
+### 0z.1 terdecies Vingt livres entrent dans la bibliothèque, avec leurs couvertures
 
 *« Tu peux intégrer ces livres à la bibliothèque, en mettant leur couverture
 également en les trouvant sur internet »* — une capture de sa base Notion à
@@ -901,7 +922,7 @@ sur l'endpoint d'Amazon. **18 sur 19.**
 **Ni dates de lecture, ni nombres de pages** : l'information n'existait pas, et
 elle n'a pas été inventée.
 
-### 0.1 quaterdecies La forme de l'étagère, en quatre passes
+### 0z.1 quaterdecies La forme de l'étagère, en quatre passes
 
 Chacune vient d'une remarque de Noé, et chacune a sa raison :
 
@@ -935,7 +956,7 @@ paie**, après la carte d'une habitude le 30 août. Sur la fiche il est visible 
 permanence ; sur une couverture il porte un disque sombre, l'image pouvant être
 claire comme sombre.
 
-### 0.1 quindecies Les filtres et le tri passent derrière deux icônes
+### 0z.1 quindecies Les filtres et le tri passent derrière deux icônes
 
 *« Ajoute une icône qui permet de rajouter des filtres pour l'étagère, et fais la
 même chose pour la liste »*, puis, capture Notion à l'appui : *« ça doit être
@@ -959,7 +980,7 @@ ne savait pas y répondre.
 - **Tout vaut pour LES DEUX vues.** Les filtres n'étaient dans la liste que parce
   qu'ils y occupaient trois rangées.
 
-### 0.1 sexdecies La liste devient un tableau qu'on trie et qu'on corrige
+### 0z.1 sexdecies La liste devient un tableau qu'on trie et qu'on corrige
 
 *« Rajoute le nom des colonnes dans la vue liste, et en appuyant dessus ça permet
 de trier par leur type ; je dois également pouvoir modifier directement depuis la
@@ -986,7 +1007,7 @@ endroits sans s'accorder serait pire que pas d'en-tête.
 **Vérifié en écrivant pour de vrai puis en remettant** : note 3 → 5 → 3, thème
 « essai » ajouté puis retiré, tri par auteur dans les deux sens.
 
-### 0.1 septdecies LES ALLERS-RETOURS DE CETTE SESSION — à lire avant de « corriger »
+### 0z.1 septdecies LES ALLERS-RETOURS DE CETTE SESSION — à lire avant de « corriger »
 
 | J'avais écrit… | Noé a tranché | Pourquoi il a raison |
 |---|---|---|
@@ -998,7 +1019,7 @@ endroits sans s'accorder serait pire que pas d'en-tête.
 | Le titre en police de texte à 700 | **Clash Display** | Le nom du livre est un titre, le reste de la tuile est du service |
 | `subgrid` pour aligner les infos | **Hauteurs réservées** | Une marge négative et une subgrille se disputent la même rangée |
 
-### 0.2 Ce qui est parti de `#objectifs`
+### 0z.2 Ce qui est parti de `#objectifs`
 
 - le dépliage d'un PROJET : `detailProjet`, `friseEtapes`, `surQuoiIlSeMesure`,
   `capsServis`, `etat.projetGalerie` et les gestes qui les ouvraient ;
@@ -1014,7 +1035,7 @@ leurs jauges, la pastille d'état d'un projet, les menus — modifier, marquer
 atteint, supprimer — et les périodes. **Quatre requêtes au chargement au lieu de
 six.**
 
-### 0.3 Ce qui a été mis en commun plutôt que recopié
+### 0z.3 Ce qui a été mis en commun plutôt que recopié
 
 | Ce qui a bougé | Où | Pourquoi |
 |---|---|---|
@@ -1035,7 +1056,7 @@ du « bloc » de « Ma semaine ». Le reste s'est branché tout seul :
 (`appliquerAuCalendrier`, `effacerDepuisLeCalendrier`) et trois entrées de
 vocabulaire (`TYPES`, `SIGNES`, `VERBE_SUPPRESSION`).
 
-### 0.4 Trois défauts trouvés en vérifiant dans le navigateur
+### 0z.4 Trois défauts trouvés en vérifiant dans le navigateur
 
 1. **`deprogrammer` recevait un objet, `zone.quand` passe une CHAÎNE.** Ramener
    une barre dans la colonne levait une `TypeError` sans un mot à l'écran : le
@@ -1061,7 +1082,7 @@ vocabulaire (`TYPES`, `SIGNES`, `VERBE_SUPPRESSION`).
    315 px dans une colonne de 270, le menu à trois points 45 px hors de l'écran.*
    Il a fallu écrire `ul.cap-taches`.
 
-### 0.5 Ce qui a été vérifié dans le navigateur, sur les vraies données
+### 0z.5 Ce qui a été vérifié dans le navigateur, sur les vraies données
 
 - la galerie ouvre la page, l'onglet prend le nom du projet, la page prend la
   couleur de son espace (mesuré : `fch` → `#7ba5dc`, `formation` → teal) ;
@@ -1148,7 +1169,7 @@ peignait parfois la page à un mauvais décalage de défilement — écran noir 
 que le DOM était juste. **Les mesures du DOM font foi** ; pour une capture
 fidèle, masquer temporairement ce qui précède le bloc à regarder.
 
-### 0.6 Ce qui reste ouvert
+### 0z.6 Ce qui reste ouvert
 
 **Les pages de détail** :
 
@@ -6506,6 +6527,18 @@ La méthode qui a tenu toute la journée — exercer, relire en SQL, défaire, r
 
 ## 3. Ce qui attend une réponse de Noé
 
+**Ce que la session du 7 septembre a CLOS ici** — ne plus le reposer :
+- **Le bilan du dimanche ne comptait pas le terrain** — il pesait les durées
+  déclarées et jamais les événements, alors que `chargeDeLaSemaine` les compte
+  depuis le 27 août. Deux comptes pour une même semaine (§ 0.4).
+- **L'humeur était demandée à trois endroits** — l'accueil, la tête de `#perso`,
+  la tuile d'une journée. Elle ne se note plus qu'au bilan du jour (§ 0.5).
+- **Le menu portait vingt-quatre liens sous six titres** — quatre grands titres,
+  un seul groupe dépliant (§ 0.3).
+- **Une page pouvait porter deux noms** — celui du menu et celui de son `<h1>`.
+  Les treize adresses renommées disent partout la même chose (§ 0.3).
+- **La bibliothèque ne rangeait que des livres** (§ 0.1).
+
 **Ce que la session du 30–31 août (soir) a CLOS ici** — ne plus le reposer :
 - **« Le rendez-vous du dimanche dit la semaine et ne permet d'y rien poser »** —
   c'était le trou le plus visible de l'orientation, il est bouché : « Ma
@@ -6712,83 +6745,86 @@ voir § 4 bis, « Les quatre manques ». Restent des conforts :
 
 ---
 
-## 4 bis. Par où reprendre (fin de la session du 4 septembre 2026)
+## 4 bis. Par où reprendre (fin de la session du 7 septembre 2026)
 
 Dans cet ordre, du plus pressé au moins pressé.
 
 ### 0. L'ÉTAT DU DÉPÔT ET DE LA BASE
 
-**Tout est poussé, l'arbre de travail est propre.** Seize commits de `2432c35` à
-`c874fff` sont sur `main`, et GitHub Pages les sert.
+**Tout est poussé, l'arbre de travail est propre.** Trois commits sur `main` —
+`0911654`, `5e63a77`, `9586d08` — et GitHub Pages les sert.
 
-**TROIS MIGRATIONS ont été appliquées à la base réelle** pendant la session, et
-leurs fichiers SQL sont dans le dépôt pour la trace — **ne pas les rejouer en
-croyant qu'elles manquent** (elles sont en `if not exists`, mais autant le
-savoir) :
+**QUATRE MIGRATIONS sont appliquées à la base réelle** et leurs fichiers sont
+dans le dépôt pour la trace — **ne pas les rejouer en croyant qu'elles
+manquent** :
 
     20260902090000_echeance_etape.sql    projets_etapes.echeance
     20260902140000_couverture_livre.sql  livres.couverture + le bucket « livres »
     20260902160000_themes_livre.sql      livres.themes (text[]) + index GIN
+    20260907120000_films_series.sql      films, films_seances, films_citations
+                                         + le bucket « affiches »
 
-**Un second bucket de stockage existe désormais** — `livres`, privé, avec les
-mêmes quatre politiques que `moments`. Il contient **19 couvertures**.
+**TROIS BUCKETS PRIVÉS** : `moments` (le Carnet de Yuno), `livres` (19
+couvertures), `affiches` (28 affiches, 2,7 Mo).
 
-**`sw.js` est en `v18`.** Quatre versions ont été franchies dans la session,
-parce que des fichiers neufs sont entrés dans la coquille (`js/projet.js`,
-`js/objectif.js`, `js/habitude.js`, `js/livre.js`). Conséquence connue et
-assumée : **un appareil déjà installé affiche une fois la version d'avant** ;
-ouvrir deux fois si l'écran semble d'hier.
+**EN BASE** : 20 livres, **31 films**, 3 séances de lecture, 0 séance de films.
 
-**POUSSER EN RÉPONDANT.** Noé a signalé un « bug mobile » qui n'en était pas
-un : le correctif était commité, pas poussé. *Un correctif non poussé n'existe
-pas pour lui.*
+**`sw.js` est en `v21`.** Trois versions franchies dans la session, parce que des
+fichiers neufs sont entrés dans la coquille (`js/bibliotheque.js`,
+`js/fiche-oeuvre.js`, `js/film.js`) et parce que deux correctifs devaient
+arriver dès la première ouverture. **À BUMPER À CHAQUE DÉPLOIEMENT QUI TOUCHE LA
+COQUILLE** : sans ça, un appareil installé sert l'ancien JS une fois.
 
-**Deux pièges d'outillage à connaître** : `tools/verifier-gabarits.js` a été
-corrigé le 1er septembre (il disait « sains » alors que la page ne se chargeait
-plus) ; et **le panneau du navigateur peint parfois à un mauvais décalage de
-défilement** — écran noir alors que le DOM est juste. Les mesures du DOM font
-foi.
+**QUATRE PIÈGES D'OUTILLAGE, tous payés au moins une fois** :
+
+1. **le tampon de la console** (`read_console_messages`) garde les erreurs des
+   chargements précédents, même après un rechargement. **Un onglet NEUF
+   tranche** ;
+2. **le service worker** sert l'ancien JS : devant un écran qui n'a pas bougé
+   alors que le code a changé, vider cache et SW AVANT d'accuser le calcul ;
+3. **`node tools/verifier-gabarits.js`** voit ce que `node --check` ne voit pas —
+   un accent grave dans un commentaire HTML referme le gabarit ;
+4. **la date du jour est dans le contexte de session** : la lire, pas la déduire
+   du dernier commit. Toute la session a d'abord été datée du 5 septembre.
 
 ### Ce qui est périssable
 
-0 pre pre. **LE RENDEZ-VOUS DU DIMANCHE, LE 6 SEPTEMBRE AU SOIR.** C'est la seule
-   échéance DATÉE de cette liste, et elle tombe dans deux jours — voir 0 bis
-   ci-dessous pour les questions. Tout le reste peut attendre.
+0 pre. **LE RENDEZ-VOUS DU DIMANCHE, LE 13 SEPTEMBRE AU SOIR.** C'est la seule
+   échéance DATÉE de cette liste. Deux nouveautés à juger cette fois : **le bilan
+   compte enfin le terrain** (35 h 15 au lieu de 20 h 45 sur la semaine du
+   31 août) — le chiffre lui paraît-il juste maintenant ? — et **l'arrangement
+   des blocs se garde** d'une visite à l'autre. Les questions de fond restent
+   celles du 0 bis ci-dessous.
 
-0 pre. **LES DEUX PAGES, À L'USAGE.** Elle a été éprouvée geste par geste,
-   jamais vécue. Trois questions : **le glissement se fait-il sans viser** — les
-   colonnes encadrent la grille au-delà de 1200 px et s'empilent en dessous, et
-   c'est là que le geste peut manquer ; **le filtre par défaut est-il le bon**
-   (« À poser » ; « Programmées » serait l'autre candidat si Noé vient surtout
-   relire sa semaine) ; **et les étapes datées servent-elles à quelque chose**,
-   ou continue-t-il de tout passer par des tâches. Si la troisième réponse est
-   « rien », c'est la décision du 2 septembre qu'il faut rouvrir, pas la page.
+0 bis. **LA BIBLIOTHÈQUE À DEUX RAYONS, À L'USAGE.** Elle est née en une session
+   et n'a jamais servi un soir. Quatre questions : **le hall est-il le bon
+   écran** — on l'ouvre pour noter ses pages, l'inventaire est à un geste ;
+   **une série se compte-t-elle vraiment en épisodes**, ou Noé la marquera-t-il
+   « vue » d'un coup comme un film ; **les répliques servent-elles** (aucune n'a
+   été gardée) ; et **les trois films sans affiche** le gênent-ils assez pour
+   qu'il les pose à la main.
 
-0 bis. **LE RENDEZ-VOUS DU DIMANCHE, LE 6 SEPTEMBRE AU SOIR — et cette fois avec
-   les BLOCS.** C'est la première fois que « Ma semaine » servira à ce pour quoi
-   elle est faite, et la première fois que la proposition d'emploi du temps sera
-   jugée sur une vraie semaine. Les questions, dans l'ordre : **la forme
-   proposée ressemble-t-elle à ce qu'il fait** (six jours, formation le matin,
-   club l'après-midi, une pause à 13 h) ; **les gestes se font-ils sans
-   réfléchir** (glisser un bloc, y déposer une tâche) ; et **« C'est ma semaine »
-   écrit-il bien sa ligne** — le bouton n'a **jamais été pressé**, parce
-   qu'aucun écran ne permet de retirer ce qu'il écrit.
-   *Ce rappel a changé le 1er septembre au soir : l'arrangement des blocs SE
-   GARDE maintenant (§ 0.2). Ce qui est déplacé, ajouté ou retiré revient à la
-   visite suivante, et « Reproposer les blocs » efface la ligne pour redonner la
-   main au calcul. Les quotas, eux, tombent juste — club 26 h / 26, formation
-   15 h / 15 — ce qui n'était pas le cas au matin.*
-0 ter. **LE PREMIER BILAN DU SOIR, dès ce soir après 20 h.** Rien de « Mes
-   journées » n'a été vécu : le journal de Noé est **vide**, la gratitude aussi,
-   et la porte du soir n'a jamais été vue à son heure — elle a été éprouvée en
-   forçant l'horloge, pas en attendant 20 h. Les questions : **la porte se
-   remarque-t-elle** au milieu de l'accueil ; **le champ sans rectangle invite-t-il
-   à écrire** ou a-t-il l'air d'un texte à lire ; et **la porte disparaît-elle**
-   une fois le bilan écrit (elle regarde le journal ou la gratitude, pas la note
-   du jour).
+0 ter. **LE PREMIER BILAN DU SOIR AVEC L'HUMEUR DEDANS.** Elle ne se note plus
+   qu'ici depuis aujourd'hui. Deux questions : **la trouve-t-il** dans la tuile
+   d'une journée, alors qu'elle l'attendait sur l'accueil depuis trois semaines ;
+   et **répond-il encore**, ou l'humeur cesse-t-elle d'être notée faute d'être
+   sous les yeux. *Si elle cesse, c'est la décision d'aujourd'hui qu'il faut
+   rouvrir, pas l'écran.*
+
+0 quater. **LE « BONJOUR » UNE FOIS PAR JOUR ET PAR APPAREIL.** Le signal vit
+   dans `localStorage`. À vérifier sur un vrai matin : le salut arrive-t-il bien
+   à la première ouverture du téléphone, et le texte dynamique ensuite ? *Le cas
+   qui n'a pas été vu : ouvrir sur l'ordinateur après avoir déjà ouvert sur le
+   téléphone — le hub saluera deux fois, et c'est assumé.*
+
+0 quinquies. **LE MENU À TROIS RANGS, au doigt.** Il a été vérifié à 375 px, pas
+   vécu. La question : **quatre gestes pour atteindre « Mes objectifs »**,
+   est-ce trop ? Si oui, c'est le pli de « Mon cap » qu'on rouvre — pas la
+   structure.
+
 0 quater. **LA GRILLE AU DOIGT, toujours pas éprouvée** — et elle a changé deux
    fois depuis. Deux points neufs à surveiller : **un bloc court n'est plus une
-   cible de 24 px** (sa hauteur vaut sa durée, décision assumée du § 0.5), et le
+   cible de 24 px** (sa hauteur vaut sa durée, décision assumée du § 0 ante bis, 0.5), et le
    chemin tactile de la programmation (choisir la tâche, puis toucher le jour)
    n'a jamais été essayé. **Un geste tactile ne se vérifie pas en simulant des
    événements** — la leçon du 29 août tient.
@@ -6814,15 +6850,14 @@ foi.
    habitude, en jours pour une quotidienne. Il y a maintenant assez de pratique
    pour juger : est-ce que ça **donne envie**, ou est-ce la maquette en points
    gris que Noé a déjà rejetée une fois ?
-6. **LA BIBLIOTHÈQUE À L'USAGE — vingt livres, dont un en cours.** Elle est née
-   en deux jours et n'a jamais été VÉCUE. Quatre questions : **l'étagère
-   donne-t-elle envie d'y revenir** ou n'est-elle qu'un inventaire ; **la
-   recherche et les filtres servent-ils vraiment** avec vingt livres, ou
-   faudra-t-il en attendre cent ; **le tableau se corrige-t-il d'un doigt sur
-   téléphone** — les trois cellules réglables y vivent dans une ligne repliée en
-   trois rangs ; et **le fondu à 20 % mange-t-il trop les couvertures** (il est
-   monté deux fois, la troisième reste possible).
-   *Et « GOAT » attend une réponse : voir § 0.6.*
+6. **LA BIBLIOTHÈQUE À L'USAGE — vingt livres et trente et un films.** *Le
+   point a doublé le 7 septembre : voir 0 bis pour les questions propres aux
+   films.* Celles des livres tiennent toujours : **l'étagère donne-t-elle envie
+   d'y revenir** ou n'est-elle qu'un inventaire ; **la recherche et les filtres
+   servent-ils** avec cinquante titres ; **le tableau se corrige-t-il d'un doigt
+   sur téléphone** — les trois cellules réglables y vivent dans une ligne
+   repliée en trois rangs ; et **le fondu à 20 % mange-t-il trop les
+   couvertures** (il est monté deux fois, la troisième reste possible).
 7. **LE SITE FCH SUR LE TÉLÉPHONE, en Gilroy et à la charte.** Le service worker
    sert la version précédente au premier lancement — **il faudra sans doute
    ouvrir deux fois** pour voir la bascule. Et c'est la première fois que Noé
@@ -6836,13 +6871,42 @@ foi.
    11 **ou** 18 avril) : ce sont des décisions du club, pas des dates à
    recopier.
 
+### Ce que la session du 7 septembre a TRANCHÉ — retiré de cette liste
+
+Pour qu'une session future ne rouvre pas ce qui vient d'être fermé :
+
+- **~~« Les couvertures des films »~~** — faites, 28 sur 31 (§ 0.2).
+- **~~« Le GOAT du Comte de Monte Cristo »~~** — ramené à 5 étoiles, faute d'un
+  sixième cran. À rouvrir seulement s'il y tient : ce serait une échelle qu'on ne
+  relit plus.
+- **~~« La courbe d'humeur des 30 jours »~~** et **~~« le bouton qui ajoute une
+  victoire à la main »~~** — supprimés avec leur page, sur décision de Noé. Ce ne
+  sont pas des oublis.
+- **~~« Une seconde colonne pour ce qu'on regarde, au tableau de bord perso »~~**
+  — la question ne se pose plus dans les mêmes termes : le hall de la
+  bibliothèque montre déjà les DEUX rayons en cours.
+
+**RESTENT OUVERTES**, et elles attendent une phrase de lui :
+
+- **les émojis de sa table Notion** — un par film. L'argument a faibli depuis que
+  les affiches sont là : il ne servirait plus qu'aux trois films sans affiche ;
+- **la suite de sa table de films**, si les deux captures ne l'épuisaient pas ;
+- **les trois affiches manquantes** (Fatal, Golo et Ritchie, Nous les Leroy) : à
+  poser à la main, ou à laisser en pointillé ;
+- **l'humeur retirée de `#perso`** : c'est une lecture de sa phrase qui va un
+  cran plus loin que le mot « accueil » (§ 0.5). Une phrase suffit à la remettre.
+
 ### Ce qui n'a pas bougé, et qu'il ne faut pas rouvrir
 
 - **Les deux cahiers des charges font autorité sur leurs sites** :
   [yuno-spec.md](yuno-spec.md) et [fch-spec.md](fch-spec.md). **Ils n'ont pas
-  été touchés de la session** — rien de ce qui a été fait ne concerne les deux
-  sites, hormis la barre d'onglets (point 14 ci-dessous), qui est une régression
-  antérieure. Ne pas les recopier ici : les relire là-bas.
+  été touchés depuis le 12 août** — et rien de la session du 7 septembre ne les
+  concerne : la bibliothèque, le menu, le bilan du dimanche et l'humeur sont du
+  hub. Relus ce jour-là, ils restent exacts. Ne pas les recopier ici : les relire
+  là-bas.
+- **`orientation-spec.md` reste exacte elle aussi.** Elle dit que l'humeur est
+  « observée, jamais un levier » (§ 10) : le fait qu'elle ait changé d'ÉCRAN le
+  7 septembre ne touche pas cette règle.
 - **`CLAUDE.md` a été tenu à jour au fil de la session**, règle par règle avec sa
   raison. Il dit ce que le hub DOIT être ; ce document-ci dit où il en est.
 

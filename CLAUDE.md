@@ -130,7 +130,7 @@ le hub ce n'est pas pour atteindre le site Yuno et tout ce qu'il contient »*.
 Chaque espace n'offre que **sa porte**, jamais les écrans derrière — d'où
 l'absence d'une entrée « son éditorial », qui vit sur les sites.
 
-### LE MENU A GAGNÉ UN RANG (5 septembre 2026, demande de Noé)
+### LE MENU A GAGNÉ UN RANG (7 septembre 2026, demande de Noé)
 
 > *« Général et perso doivent être regroupés dans le menu déroulant, avec un
 > sous-titre déroulant "le cap" qui regroupe objectifs, projets, tâches,
@@ -247,7 +247,7 @@ l'on est **se déplie d'elle-même**.
 - `#livre/<id>` · `#film/<id>` — **la fiche d'une œuvre** : ses détails, son
   journal, ses phrases gardées, son état et sa note réglables sur place. Une
   seule page pour les deux rayons (voir « La bibliothèque »).
-- `#perso/livres` · `#perso/films` — **les deux étagères** (5 septembre 2026),
+- `#perso/livres` · `#perso/films` — **les deux étagères** (7 septembre 2026),
   atteintes par les deux portes de `#perso/bibliotheque`.
 - `#habitude/<id>` — **la page d'une habitude** (2 septembre 2026, demande de Noé) : depuis quand elle existe, ses chiffres, ses paliers, et le calendrier de ce qui a été fait. Voir « La page d'une habitude » plus bas.
 - `#projet/<id>` — **la page d'un projet** (2 septembre 2026, demande de Noé) : tous ses détails, son calendrier en vue mois et semaine, et la colonne de ce qui attend un jour. Voir « La page d'un projet » plus bas.
@@ -799,7 +799,7 @@ DOM et se vérifient avec des faits factices.
 > capture, l'appel y est seul — sans le double traitement qui a fait retirer ce
 > même appel du site FCH.
 
-### La bibliothèque : DEUX RAYONS, UN SEUL CODE (5 septembre 2026)
+### La bibliothèque : DEUX RAYONS, UN SEUL CODE (7 septembre 2026)
 
 **La demande de Noé** : *« fais la même chose que les livres mais pour les
 films/séries, donc dans la page ma bibliothèque mets 2 entrées, 1 pour les
@@ -869,7 +869,7 @@ côtés et n'a rien à traduire.
 | l'habitude cochée | « lire un peu » | *aucune* |
 | la fiche | `#livre/<id>` | `#film/<id>` |
 
-#### LES AFFICHES (5 septembre 2026, demande de Noé : « rajoute les couvertures
+#### LES AFFICHES (7 septembre 2026, demande de Noé : « rajoute les couvertures
 des films »)
 
 **ELLES SE RAPATRIENT, elles ne se collent pas.** C'est la règle du 2 septembre
@@ -1209,7 +1209,7 @@ liste ne se devine pas, elle s'allonge.
   dont on ne connaît pas la couleur, et un gris discret disparaît sur un ciel
   clair comme sur une nuit.
 
-### LA FICHE D'UNE ŒUVRE — `#livre/<id>` et `#film/<id>` (2 puis 5 septembre 2026)
+### LA FICHE D'UNE ŒUVRE — `#livre/<id>` et `#film/<id>` (2 puis 7 septembre 2026)
 
 **Demande de Noé** : *« il faut que je puisse cliquer sur chaque livre pour avoir
 une fiche avec tous les détails, et où je peux modifier l'état et la note »*.
@@ -1809,7 +1809,7 @@ c'est le quatrième piège de ce type payé sur cette page.
 
 ### films / films_seances / films_citations
 
-La bibliothèque des films et des séries (5 septembre 2026). **Les mêmes trois
+La bibliothèque des films et des séries (7 septembre 2026). **Les mêmes trois
 tables que les livres**, et pour les mêmes raisons — voir « La bibliothèque :
 deux rayons, un seul code ».
 
@@ -2197,7 +2197,7 @@ gestes ne doivent jamais porter le même signe.
    « Trois choses aujourd'hui », « Il t'en reste une », « Tout est fait »,
    « Rien de posé aujourd'hui ».
 
-   **L'HUMEUR A QUITTÉ L'ACCUEIL** (5 septembre 2026, décision de Noé : *« la
+   **L'HUMEUR A QUITTÉ L'ACCUEIL** (7 septembre 2026, décision de Noé : *« la
    note d'humeur ne doit plus apparaître en haut à droite de la page d'accueil,
    elle n'est notée qu'à la fin de la journée dans le bilan du jour »*). Et ça se
    tient : une humeur demandée le matin dit comment on se réveille ; posée le
@@ -3260,7 +3260,7 @@ d'abord — c'est pour elle qu'on est venu.
 Tâches terminées · heures mesurées · humeur moyenne · habitudes tenues
 (`bilanDeLaSemaine`, js/orientation.js — éprouvable hors écran comme le reste).
 
-**LES HEURES MESURÉES COMPTENT CE QUI A EU LIEU** (5 septembre 2026, défaut
+**LES HEURES MESURÉES COMPTENT CE QUI A EU LIEU** (7 septembre 2026, défaut
 rapporté par Noé : *« j'ai rajouté un événement FCH dans la semaine dernière qui
 n'a pas été ajouté »*). Trois natures, et il en manquait une :
 
@@ -4687,7 +4687,7 @@ champ avec « Il lui manque son nom. »
   - **L'OUTIL A LUI-MÊME ÉTÉ AVEUGLE, et il a fallu le corriger le 1er septembre 2026.** Il suivait un simple drapeau « dans un gabarit », qui basculait à l'envers au premier gabarit IMBRIQUÉ dans une interpolation — `${rien ? \`<p>… ce n'est pas grave</p>\` : ''}`. À partir de là il lisait le HTML comme du CODE, la première apostrophe française y ouvrait une fausse chaîne, et **tous les commentaires du fichier échappaient au contrôle**. Mesuré sur js/perso.js : l'outil disait « sains » pendant que la page ne se chargeait plus. Il tient maintenant une PILE — `${` empile du code, `}` le dépile —, et il sait distinguer un gabarit d'un autre. *Un outil qui rassure à tort est pire que pas d'outil.*
 - **Un accent grave dans un COMMENTAIRE HTML d'un gabarit referme la chaîne**, et
   `node tools/verifier-gabarits.js` est le seul à le voir. Payé une cinquième
-  fois le 5 septembre 2026, sur un commentaire qui citait deux adresses entre
+  fois le 7 septembre 2026, sur un commentaire qui citait deux adresses entre
   accents graves — le fichier passait `node --check`, la page ne se chargeait
   plus. Écrire l'adresse sans accents graves.
 - Langue : toute l'interface en français.

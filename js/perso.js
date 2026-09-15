@@ -77,7 +77,7 @@ const vueEtat = {
   // à voir d'un coup, et c'est pour voir qu'on ouvre cette page.
   joursVue: 'mois',
   joursPivot: null,
-  // LA BIBLIOTHÈQUE A DEUX ENTRÉES depuis le 5 septembre 2026 — les livres, les
+  // LA BIBLIOTHÈQUE A DEUX ENTRÉES depuis le 7 septembre 2026 — les livres, les
   // films et séries — et chacune tient SON réglage. Une note ou un genre coché
   // d'un côté n'a aucun sens de l'autre : partager l'état aurait fait revenir
   // sur les livres un filtre « Drame » posé sur les films.
@@ -1418,7 +1418,7 @@ function squelette() {
       <div data-bloc="journee"></div>
     </section>
 
-    <!-- LE HALL, PUIS DEUX SALLES (5 septembre 2026, demande de Noé : « je
+    <!-- LE HALL, PUIS DEUX SALLES (7 septembre 2026, demande de Noé : « je
          préférerais que ce soit vraiment 2 portes, donc 2 tuiles cliquables qui
          nous permettent d'aller sur la page des livres ou la page des
          films/séries, avec un livre en cours sur cette page »).
@@ -1577,7 +1577,7 @@ function laFenetre() {
 // LES QUATRE VUES DE PERSO (28 août 2026) — le menu les offre une à une, et
 // c'est la MÊME page dont on cache trois blocs sur quatre. Ni second écran, ni
 // second chargement : les écouteurs sont posés sur la section et survivent.
-// LES VUES DE PERSO, à la première personne depuis le 5 septembre 2026 (demande
+// LES VUES DE PERSO, à la première personne depuis le 7 septembre 2026 (demande
 // de Noé) : ce sont AUSSI les mots du menu, et un nom dans le menu avec un autre
 // en tête de page ferait deux noms pour une page.
 //
@@ -2724,7 +2724,7 @@ export default {
       }
 
       // RÉPONDRE À L'HUMEUR, dans la tuile d'une journée et là seulement
-      // (5 septembre 2026). Elle se posait aussi en tête de cette page et en
+      // (7 septembre 2026). Elle se posait aussi en tête de cette page et en
       // tête de l'accueil ; une même question à trois endroits finit par ne plus
       // en être une, et le soir dit mieux la journée que le matin.
       const niveau = dans('niveau');

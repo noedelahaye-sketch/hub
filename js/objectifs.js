@@ -986,7 +986,7 @@ function lireLAdresse(route) {
   etat.espaceFiltre = ESPACES.includes(route?.id) ? route.id : null;
 }
 
-// LA PREMIÈRE PERSONNE (5 septembre 2026, demande de Noé) : ces titres sont
+// LA PREMIÈRE PERSONNE (7 septembre 2026, demande de Noé) : ces titres sont
 // AUSSI les mots du menu — un nom dans le menu et un autre en tête de page, ce
 // serait deux noms pour une page, le défaut corrigé le 28 août.
 //

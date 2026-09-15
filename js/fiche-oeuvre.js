@@ -1,5 +1,5 @@
 // LA FICHE D'UNE ŒUVRE — `#livre/<id>` et `#film/<id>` (2 septembre 2026 pour
-// les livres, 5 septembre pour les films et les séries).
+// les livres, 7 septembre pour les films et les séries).
 //
 // C'EST LE MÊME MOUVEMENT QUE LES CAPS, LES PROJETS ET LES HABITUDES : la
 // galerie compare, la page dit tout. L'étagère ne montre qu'une image et un

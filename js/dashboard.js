@@ -122,7 +122,7 @@ function enTeteTuile(espace, quand, bouton = '') {
 // dès le 29 août : « bonjour à la première ouverture, mais après il faut que ça
 // change ». Le signal ÉTAIT l'humeur non notée ; il fallait donc lui en trouver
 // un autre — voir `premiereOuverture` plus bas.
-// LA PREMIÈRE OUVERTURE DU JOUR (5 septembre 2026). Le hub saluait tant que
+// LA PREMIÈRE OUVERTURE DU JOUR (7 septembre 2026). Le hub saluait tant que
 // l'humeur n'était pas notée ; l'humeur ayant quitté l'accueil, ce signal a
 // disparu avec elle, et Noé veut garder le salut : « Bonjour Noé apparaît donc
 // que lors de la 1re ouverture, après on passe au texte dynamique. »
@@ -714,7 +714,7 @@ const DONNEES = {
 function squelette() {
   return `
     <!-- LA LIGNE DE TÊTE porte le salut à la première ouverture, puis l'état de
-         la journée. L'humeur l'a quittée le 5 septembre 2026 : elle se note en
+         la journée. L'humeur l'a quittée le 7 septembre 2026 : elle se note en
          fin de journée, dans le bilan du jour. Voir construireEnTete. -->
     <header class="jour" id="bloc-jour"></header>
 

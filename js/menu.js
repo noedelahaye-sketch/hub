@@ -54,7 +54,7 @@
 // dire la même chose.
 export const RUBRIQUES = [
   {
-    // GÉNÉRAL RÉUNIT LE TRANSVERSE ET LE PERSO (5 septembre 2026, demande de
+    // GÉNÉRAL RÉUNIT LE TRANSVERSE ET LE PERSO (7 septembre 2026, demande de
     // Noé). Ce sont les deux rubriques qui ne sont pas des espaces — les deux
     // qui parlent de LUI plutôt que d'un domaine. Les trois autres grands
     // titres sont ses espaces ; celui-ci est lui.
@@ -90,7 +90,7 @@ export const RUBRIQUES = [
           { nom: 'Mes tâches', adresse: '#taches', nav: 'taches' },
           { nom: 'Mes périodes', adresse: '#objectifs/periodes' },
           { nom: 'Mon chemin', adresse: '#chemin', nav: 'chemin' },
-          // MON TEMPS ENTRE DANS LE CAP (5 septembre 2026, demande de Noé),
+          // MON TEMPS ENTRE DANS LE CAP (7 septembre 2026, demande de Noé),
           // juste après le chemin : les deux regardent en arrière — l'un ce
           // qu'on a franchi, l'autre où sont parties les heures.
           { nom: 'Mon temps', adresse: '#temps', nav: 'temps' },
@@ -98,7 +98,7 @@ export const RUBRIQUES = [
         ],
       },
       // UN SEUL GROUPE, « MON CAP » — tout le reste est une PAGE À LA SUITE
-      // D'UNE PAGE (5 septembre 2026, correction de Noé : « non, pas de
+      // D'UNE PAGE (7 septembre 2026, correction de Noé : « non, pas de
       // sous-page en dessous de Ma semaine, juste page en dessous de page »).
       //
       // C'était sa demande depuis le début, et il a fallu qu'il la redise :
@@ -119,7 +119,7 @@ export const RUBRIQUES = [
       { nom: 'Mes journées', adresse: '#perso/journee' },
       { nom: 'Mes habitudes', adresse: '#perso/habitudes' },
       {
-        // PERSO N'A PLUS DE SOUS-PAGE (5 septembre 2026) : l'humeur, les
+        // PERSO N'A PLUS DE SOUS-PAGE (7 septembre 2026) : l'humeur, les
         // rendez-vous et les victoires ont perdu leur écran ; les journées et
         // les habitudes sont remontées à côté de la semaine ; la bibliothèque
         // aussi. Il ne reste que son tableau de bord — donc pas de flèche, et
@@ -211,7 +211,7 @@ function tete(item, cle, classe) {
   return `<div class="${classe}">${mot}${fleche}</div>`;
 }
 
-// UNE FEUILLE PORTE SA PASTILLE SI ELLE A UNE COULEUR (5 septembre 2026,
+// UNE FEUILLE PORTE SA PASTILLE SI ELLE A UNE COULEUR (7 septembre 2026,
 // demande de Noé : « garde la petite pastille violette devant Perso »). Perso a
 // perdu ses sous-pages, donc son rang de groupe ; il n'a pas perdu son espace,
 // et sa couleur est ce qui le fait retrouver du regard dans une liste de sept

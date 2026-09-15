@@ -299,7 +299,7 @@ export function construireMenuDiscret(
     </span>`;
 }
 
-// LES SIGNES DESSINÉS DU HUB, en un seul endroit depuis le 5 septembre 2026 :
+// LES SIGNES DESSINÉS DU HUB, en un seul endroit depuis le 7 septembre 2026 :
 // perso et la bibliothèque en avaient chacun leur copie, et deux jeux de traits
 // pour un même geste finissent par ne plus se ressembler.
 // Les mêmes signes que la galerie du cap, dessinés et non écrits : le hub ne

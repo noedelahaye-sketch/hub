@@ -790,7 +790,7 @@ a { color: var(--accent); }
 /* UNE colonne (demande de Noé) : six grands titres se lisent d'un regard, deux
    colonnes obligeraient l'œil à choisir par où commencer. */
 .menu {
-  /* LE MENU COUPE L'HÉRITAGE DE COULEUR (5 septembre 2026, défaut vu par Noé :
+  /* LE MENU COUPE L'HÉRITAGE DE COULEUR (7 septembre 2026, défaut vu par Noé :
      « garde la couleur grise pour ce qui concerne général »).
 
      `--couleur-espace` est posée sur le `body` par l'espace où l'on se trouve,
@@ -892,7 +892,7 @@ a { color: var(--accent); }
   color: var(--texte);
 }
 
-/* LE RANG DES GROUPES (5 septembre 2026, demande de Noé : « des titres qui,
+/* LE RANG DES GROUPES (7 septembre 2026, demande de Noé : « des titres qui,
    quand on clique, affichent toutes les sous-pages qu'ils regroupent »).
 
    LE MÊME GESTE QU'AU-DESSUS — le mot mène à la page, la flèche déplie —, d'un
@@ -1511,7 +1511,7 @@ a { color: var(--accent); }
 /* CINQ FRIMOUSSES, sans question écrite : le libellé reste pour les lecteurs
    d'écran, sur le groupe.
 
-   ELLES NE VIVENT PLUS QUE DANS LA TUILE D'UNE JOURNÉE (5 septembre 2026) :
+   ELLES NE VIVENT PLUS QUE DANS LA TUILE D'UNE JOURNÉE (7 septembre 2026) :
    l'humeur a quitté la tête de l'accueil et celle de perso, et se note en fin de
    journée dans le bilan du jour. La règle des 2,25 rem tient toujours — cinq
    cibles côte à côte ne peuvent pas faire 220 px sur un téléphone de 375. */
@@ -4183,7 +4183,7 @@ body.fond-fige {
 }
 
 /* Sa mesure vivait dans une règle partagée avec `.note-humeur`, partie avec la
-   ligne d'humeur de l'accueil (5 septembre 2026) : un champ de recherche ne
+   ligne d'humeur de l'accueil (7 septembre 2026) : un champ de recherche ne
    s'étire pas au-delà de ce qu'on y tape. */
 .recherche { max-width: 32rem; }
 .barre-base .recherche { flex: 1 1 16rem; margin-bottom: 0; }
@@ -5722,7 +5722,7 @@ body[data-espace="hermitage"] .choix-statut-neutre {
 .livre-note { flex: none; font-size: 0.75rem; color: var(--famille-calme); letter-spacing: 1px; }
 
 /* ---------------------------------------------------------------------------
-   LES DEUX PORTES DE LA BIBLIOTHÈQUE (5 septembre 2026, demande de Noé : « je
+   LES DEUX PORTES DE LA BIBLIOTHÈQUE (7 septembre 2026, demande de Noé : « je
    préférerais que ce soit vraiment 2 portes, donc 2 tuiles cliquables qui nous
    permettent d'aller sur la page des livres ou la page des films/séries »).
 

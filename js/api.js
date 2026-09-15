@@ -718,7 +718,7 @@ export async function noterLaJournee(jour, colonne, valeur) {
 
 // --- La bibliothèque : les livres, et les films/séries ------------------------
 //
-// UN SEUL JEU DE FONCTIONS POUR LES DEUX RAYONS (5 septembre 2026, jour où les
+// UN SEUL JEU DE FONCTIONS POUR LES DEUX RAYONS (7 septembre 2026, jour où les
 // films et les séries sont arrivés). Les deux réserves sont distinctes en base —
 // un film n'a ni pages ni auteur, et une table nommée « livres » qui porterait
 // des films serait un nom qui ment —, mais la MÉCANIQUE est la même au trait
