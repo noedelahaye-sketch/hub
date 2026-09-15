@@ -371,8 +371,14 @@ const hauteurConnue = () => {
   }
 };
 
+// LA CLASSE EN PLUS DE LA VARIABLE, et elle n'est pas redondante : une valeur ne
+// se teste pas en CSS, et la tuile doit se SERRER contre le clavier quand il est
+// là (demande de Noé, 16 septembre 2026) — seize pixels au repos, huit quand le
+// clavier monte, et plus de retrait de sécurité en bas puisque le clavier couvre
+// déjà la barre d'accueil.
 function poserLeClavier(pixels) {
   document.documentElement.style.setProperty('--bas-clavier', `${pixels}px`);
+  document.documentElement.classList.toggle('clavier-ouvert', pixels > 0);
 }
 
 function mesurerLeClavier() {
@@ -392,6 +398,7 @@ function mesurerLeClavier() {
 
 const oublierLeClavier = () => {
   document.documentElement.style.removeProperty('--bas-clavier');
+  document.documentElement.classList.remove('clavier-ouvert');
 };
 
 // Une seule paire d'écouteurs pour tout le hub, et ils ne coûtent rien tant
@@ -402,26 +409,36 @@ const suivreLeClavier = () => {
 fenetreVisuelle?.addEventListener('resize', suivreLeClavier);
 fenetreVisuelle?.addEventListener('scroll', suivreLeClavier);
 
-// LE FILET, pour le cas où le clavier ne s'annonce pas. Tous les navigateurs ne
-// préviennent pas de la même façon : certains émettent `resize` pendant toute la
-// montée, d'autres une seule fois à la fin, d'autres pas du tout quand le champ
-// avait déjà le focus. La tuile resterait alors dessous — le défaut qu'on
-// corrige. Passé le temps d'une montée, si rien n'a été mesuré et qu'on connaît
-// la hauteur de la dernière fois, on la pose : mieux vaut une tuile placée à peu
-// près qu'une tuile invisible.
+// LA TUILE MONTE AVEC LE CLAVIER, PAS APRÈS LUI (16 septembre 2026, demande de
+// Noé : « que l'apparition soit coordonnée entre le clavier et la tuile, là on
+// voit le clavier monter puis la tuile monte ensuite »).
+//
+// CE QUI CAUSAIT LE RETARD : on attendait que le navigateur ANNONCE le clavier.
+// Or `visualViewport` ne prévient pas partout de la même façon — certains
+// émettent `resize` pendant toute la montée, d'autres une seule fois à la FIN.
+// Dans ce second cas la tuile ne bougeait qu'une fois le clavier arrivé, et sa
+// transition de 220 ms se jouait par-dessus : deux mouvements à la suite.
+//
+// LA PARADE : on ne l'attend plus, on le SAIT. La hauteur de la dernière fois
+// est posée à l'instant même où la tuile naît, donc elle part déjà vers sa place
+// pendant que le clavier monte. Le morph la fait apparaître depuis le rond — de
+// bas en haut, et en un seul geste.
+//
+// PUIS ON RECALE SUR LA MESURE RÉELLE. `visualViewport.height` dit toujours la
+// vérité, même quand aucun `resize` n'est émis : passé le temps d'une montée, on
+// la relit et l'on pose ce qu'elle donne. Un clavier plus haut que la dernière
+// fois se rattrape, et un clavier PHYSIQUE — qui ne prend aucune place — fait
+// redescendre la tuile au lieu de la laisser flotter.
 const MONTEE_DU_CLAVIER = 400;
 
 function surveillerLeClavier() {
-  mesurerLeClavier();
+  const connue = hauteurConnue();
+  // Mesurer maintenant rendrait zéro — le clavier n'est pas encore là.
+  if (connue) poserLeClavier(connue);
+  else mesurerLeClavier();
+
   setTimeout(() => {
-    if (!document.querySelector('.espace:not([hidden]) .capture')) return;
-    const pose = Number.parseInt(
-      getComputedStyle(document.documentElement).getPropertyValue('--bas-clavier'),
-      10,
-    );
-    if (pose > 0) return;
-    const connue = hauteurConnue();
-    if (connue) poserLeClavier(connue);
+    if (document.querySelector('.espace:not([hidden]) .capture')) mesurerLeClavier();
   }, MONTEE_DU_CLAVIER);
 }
 
@@ -507,6 +524,10 @@ document.addEventListener(
   true,
 );
 
+// LA COURBE ET LA DURÉE SONT JUMELÉES AVEC LA MONTÉE DE LA TUILE (styles.css,
+// `.capture { transition: bottom }`) : les deux mouvements partent au même
+// instant, et deux gestes simultanés qui finissent ensemble se lisent comme un
+// seul. Changer l'un sans l'autre les désaccorde.
 const COURBE_MORPH = 'cubic-bezier(0.2, 0.9, 0.25, 1)';
 const DUREE_MORPH = 260;
 
@@ -590,12 +611,11 @@ function morpherLaCapture(tuile) {
   if (tuile) {
     if (!tuileOuverte) {
       tuileOuverte = true;
-      // LA TUILE NAÎT EN BAS ET MONTE AVEC LE CLAVIER, et c'est le mouvement que
-      // Noé décrit : « il n'y a pas le mouvement fluide qui fait apparaître de
-      // bas en haut ». C'est aussi celui de la vidéo — la barre et le clavier
-      // montent ENSEMBLE. On ne pose donc rien ici : le morph se joue en bas,
-      // où il est encore visible, puis `--bas-clavier` la fait monter par la
-      // transition de 220 ms que la feuille de style porte déjà.
+      // LA PLACE DU CLAVIER D'ABORD, LE MORPH ENSUITE : elle décide du `bottom`
+      // de la tuile, donc de l'endroit où le mouvement doit arriver. Posée
+      // après, la tuile naîtrait en bas puis remonterait — les deux mouvements
+      // à la suite que Noé a vus. Posée avant, il n'en reste qu'UN : le rond
+      // s'étire depuis son coin jusqu'à la barre, pendant que le clavier monte.
       surveillerLeClavier();
       // PAS D'ALLER, PAS DE RETOUR. La tuile s'ouvre aussi en touchant un jour
       // du calendrier ou une case de « Ma semaine » — le rond n'y est pour rien,

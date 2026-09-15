@@ -3304,12 +3304,20 @@ body.fond-fige {
      Une tuile posée sur le clavier, c'est la place d'un champ qu'on remplit :
      le pouce n'a pas à traverser l'écran entre le mot et la touche. */
   bottom: calc(var(--bas-clavier, 0px) + max(var(--espace-16), env(safe-area-inset-bottom, 0px)));
+  /* voir `.clavier-ouvert` plus bas : la marge se serre quand le clavier est là */
   transform: translateX(-50%);
   /* Elle MONTE, elle ne saute pas. C'est le seul déplacement qui reste : le
      clavier ne se referme plus quand on touche une pastille, donc
      `--bas-clavier` ne change qu'une fois, à l'ouverture.
-     `prefers-reduced-motion` l'annule plus bas, comme tout le reste. */
-  transition: bottom 220ms ease-out;
+     `prefers-reduced-motion` l'annule plus bas, comme tout le reste.
+
+     MÊME DURÉE ET MÊME COURBE QUE LE MORPH (260 ms, 16 septembre 2026) : les
+     deux mouvements partent au même instant — le rond qui s'étire en barre, et
+     la barre qui monte avec le clavier — et **deux gestes simultanés qui
+     finissent ensemble se lisent comme un seul**. À 220 ms contre 260, la
+     montée s'arrêtait avant que la forme soit faite. La constante jumelle vit
+     dans js/app.js, `DUREE_MORPH`. */
+  transition: bottom 260ms cubic-bezier(0.2, 0.9, 0.25, 1);
   width: min(34rem, calc(100vw - 2 * var(--espace-16)));
   /* Ni `overflow`, ni `max-height` : les menus se posent AU-DESSUS de la tuile,
      donc hors de sa boîte. Un conteneur de défilement les découperait. Elle n'en
@@ -3320,6 +3328,21 @@ body.fond-fige {
   border: 0;
   border-radius: var(--rayon-tuile);
   box-shadow: 0 12px 48px rgb(0 0 0 / 45%);
+}
+
+/* ELLE SE SERRE CONTRE LE CLAVIER (16 septembre 2026, demande de Noé : « que la
+   tuile soit plus proche du clavier »). Seize pixels sont la respiration d'une
+   tuile posée au bas d'une PAGE ; contre un clavier, ils font un trou.
+
+   LE RETRAIT DE SÉCURITÉ TOMBE AVEC, et c'est ce qui gagne le plus : `max(…,
+   safe-area-inset-bottom)` protège la barre d'accueil de l'iPhone, or le clavier
+   la couvre déjà — le retrait comptait deux fois.
+
+   `--bas-clavier` mesure la place prise par le clavier ET par sa barre
+   d'accessoires (la fenêtre visuelle exclut les deux) : la tuile se pose donc
+   juste au-dessus de cette barre, sans avoir à la connaître. */
+.clavier-ouvert .capture {
+  bottom: calc(var(--bas-clavier, 0px) + var(--espace-8));
 }
 
 /* Le champ du nom n'a ni cadre ni fond : dans une tuile qui n'existe que pour

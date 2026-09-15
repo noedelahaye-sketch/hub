@@ -4927,6 +4927,61 @@ grammaire, là où deux disaient « Nom de… » et deux décrivaient ce qu'on a
 | tâche | **La tâche, en quelques mots** |
 | publication | L'idée, en une phrase |
 | objectif | L'objectif, formulé de façon mesurable |
+
+**LA BARRE ‹ › OK NE SE RETIRE PAS, et il faut l'écrire pour ne pas y revenir**
+(demande de Noé, 16 septembre 2026 : *« j'aimerais qu'il n'y ait pas la ligne
+avec les 2 flèches et le ok »*). C'est l'**input accessory view** de Safari :
+une vue NATIVE, posée par le système au-dessus du clavier dès qu'un champ prend
+le focus. **Aucune API web ne la masque** — ni attribut, ni CSS, ni JavaScript.
+Seule une application hybride (Capacitor, Cordova) peut la retirer par un plugin
+natif ; le hub est un site statique installé en PWA, et une PWA n'y a pas droit
+non plus. Les recettes qui circulent — un seul élément focusable, `inputmode`,
+sortir du `<form>` — **grisent au mieux les flèches, elles ne suppriment pas la
+barre.** Ce qu'on a pu retirer, c'est la ligne « Préremplir le contact » qui s'y
+affichait ; le reste appartient à iOS.
+
+### LA TUILE MONTE AVEC LE CLAVIER, PAS APRÈS LUI (16 septembre 2026)
+
+**Demande de Noé** : *« que l'apparition soit coordonnée entre le clavier et la
+tuile, là on voit le clavier monter puis la tuile monte ensuite. »*
+
+**CE QUI CAUSAIT LE RETARD** : on attendait que le navigateur ANNONCE le clavier.
+Or `visualViewport` ne prévient pas partout de la même façon — certains émettent
+`resize` pendant toute la montée, d'autres **une seule fois à la fin**. Dans ce
+second cas la tuile ne bougeait qu'une fois le clavier arrivé, et sa transition
+se jouait par-dessus : deux mouvements à la suite.
+
+- **ON NE L'ATTEND PLUS, ON LE SAIT.** La hauteur de la dernière fois
+  (`hub-clavier`) est posée à l'instant où la tuile naît : elle part donc vers sa
+  place **pendant** que le clavier monte.
+- **PUIS ON RECALE SUR LA MESURE RÉELLE**, passé le temps d'une montée.
+  `visualViewport.height` dit toujours la vérité, même quand aucun `resize` n'est
+  émis : un clavier plus haut que la dernière fois se rattrape, et un clavier
+  **physique** — qui ne prend aucune place — fait redescendre la tuile au lieu de
+  la laisser flotter.
+- **LA PLACE DU CLAVIER SE POSE AVANT LE MORPH**, et l'ordre n'est pas
+  indifférent : elle décide du `bottom` de la tuile, donc de l'endroit où le
+  mouvement doit arriver.
+- **MÊME DURÉE ET MÊME COURBE POUR LES DEUX** (260 ms, `cubic-bezier(0.2, 0.9,
+  0.25, 1)`) : le rond qui s'étire en barre et la barre qui monte avec le clavier
+  partent au même instant, et **deux gestes simultanés qui finissent ensemble se
+  lisent comme un seul**. À 220 ms contre 260, la montée s'arrêtait avant que la
+  forme soit faite. Les deux constantes sont jumelles — `DUREE_MORPH` dans
+  js/app.js, la transition de `.capture` dans styles.css — et changer l'une sans
+  l'autre les désaccorde.
+- **PREMIÈRE OUVERTURE SUR UN APPAREIL** : aucune hauteur n'est encore connue, la
+  tuile monte donc après le clavier. Une seule fois, et le recalage l'apprend.
+
+**ELLE SE SERRE CONTRE LE CLAVIER** (même jour, demande de Noé : *« que la tuile
+soit plus proche du clavier »*) : **huit pixels au lieu de seize**, et
+`.clavier-ouvert` porte la règle. Seize pixels sont la respiration d'une tuile
+posée au bas d'une PAGE ; contre un clavier, ils font un trou. **Le retrait de
+sécurité tombe avec**, et c'est ce qui gagne le plus : `max(…,
+safe-area-inset-bottom)` protège la barre d'accueil de l'iPhone, or le clavier la
+couvre déjà — le retrait comptait deux fois. *`--bas-clavier` mesure la place
+prise par le clavier ET par sa barre d'accessoires — la fenêtre visuelle exclut
+les deux —, donc la tuile se pose juste au-dessus de cette barre sans avoir à la
+connaître.*
 - **L'écran d'abord, le réseau ensuite.** Une action de Noé change l'affichage tout de suite ; l'écriture part derrière. Un geste qui attend l'aller-retour Supabase, ce sont 300 à 800 ms de figement sur téléphone. La contrepartie n'est pas facultative : si l'écriture échoue, l'état d'avant est remis ET une ligne le dit — sans ce retour en arrière, l'affichage optimiste est un mensonge. La mécanique vit dans `js/ecriture.js` (`modifierAussitot`, `retirerAussitot`, `ajouterAussitot`) : ne pas la recopier. **Les listes s'y modifient sur place**, jamais par remplacement, sans quoi le retour en arrière écrirait dans un tableau orphelin. Deux exceptions volontaires : les **formulaires** (ils ont un endroit pour dire l'échec, et gardent la saisie) et les écritures qui envoient un fichier.
 - **LA PAGE N'A PLUS DE PLAFOND DE LARGEUR** (30 août 2026, demande de Noé : « sur ordinateur, le site doit utiliser toute la largeur »). Elle en a eu un de 1240 px, hérité de Bac-3 ; sur un écran de 1728 px il laissait 488 px de vide de part et d'autre. Marges de **16/24/32/48 px** (le quatrième palier est né avec la suppression du plafond : toute la largeur ne veut pas dire bord à bord), ruptures à 720 et 1080 px.
   - **La règle, elle, n'a pas changé — et c'est elle qui rend la suppression possible** : **la mise en page prend toute la largeur, le texte jamais.** Sur grand écran les listes passent en colonnes plutôt que de s'étirer (quatre ou cinq au lieu de trois), et le **texte courant porte sa mesure** : sous-titres, phrases d'aide et écrans vides s'arrêtent à 68 caractères (`.espace > p`, `.sous-titre`, `.vide`). Ce qui empêche une ligne de devenir illisible, ce sont ces deux règles, pas une largeur de page.
