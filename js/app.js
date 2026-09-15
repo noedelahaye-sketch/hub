@@ -1190,4 +1190,60 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker
     .register(new URL('../sw.js', import.meta.url))
     .catch((erreur) => console.error('Service worker non enregistré', erreur));
+
+  // --- LE HUB SE RECHARGE QUAND UNE VERSION FRAÎCHE EST LÀ (16 sept. 2026) ---
+  //
+  // LE DÉFAUT, rapporté par Noé : « c'est push là ? parce que je ne vois pas de
+  // différence ». Le déploiement était bon, le cache se mettait bien à jour —
+  // mais la page gardait en mémoire le JavaScript de l'ouverture précédente, et
+  // sur iPhone une application ajoutée à l'écran d'accueil n'est jamais vraiment
+  // fermée : « l'ouverture suivante » n'arrive jamais. Il fallait la tuer, deux
+  // fois de suite.
+  //
+  // QUAND : AU RETOUR SUR L'APPLICATION, et à ce moment-là seulement. C'est
+  // l'instant où un rechargement ne se voit pas — on revient, l'écran se
+  // redessine, c'est ce qu'on attendait de toute façon. Recharger dès que la
+  // nouvelle est là couperait Noé en plein geste, et une application qui se
+  // rafraîchit sous les doigts est pire que le défaut qu'on corrige.
+  //
+  // JAMAIS PENDANT QU'ON ÉCRIT. Le retour sur l'application peut très bien
+  // arriver au milieu d'une saisie — on va chercher une date dans le calendrier
+  // du téléphone, on revient. Trois gardes, et elles se cumulent : une tuile ou
+  // une fenêtre ouverte, un champ qui a le focus, une écriture en vol. Ce qui
+  // n'est pas rechargé maintenant le sera au prochain retour.
+  let versionFraiche = false;
+
+  navigator.serviceWorker.addEventListener('message', (evenement) => {
+    if (evenement.data?.type === 'version-fraiche') versionFraiche = true;
+  });
+
+  // Le service worker vient d'être remplacé : le fichier lui-même a changé, donc
+  // la coquille avec. Même traitement, mêmes gardes.
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    versionFraiche = true;
+  });
+
+  const onEcrit = () => {
+    if (document.querySelector('.capture, .ajout-volant[open], .fenetre')) return true;
+    const actif = document.activeElement;
+    if (!actif) return false;
+    return (
+      actif.isContentEditable ||
+      ['INPUT', 'TEXTAREA', 'SELECT'].includes(actif.tagName)
+    );
+  };
+
+  const reprendreLaVersionFraiche = () => {
+    if (!versionFraiche || document.visibilityState !== 'visible') return;
+    if (onEcrit()) return;
+    // Remis à faux avant de recharger : si le rechargement traîne, on ne le
+    // redemande pas deux fois.
+    versionFraiche = false;
+    location.reload();
+  };
+
+  document.addEventListener('visibilitychange', reprendreLaVersionFraiche);
+  // `pageshow` en plus : un retour depuis le cache de navigation (bfcache) ne
+  // passe pas toujours par `visibilitychange`.
+  window.addEventListener('pageshow', reprendreLaVersionFraiche);
 }

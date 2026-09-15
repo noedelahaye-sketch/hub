@@ -154,6 +154,44 @@ self.addEventListener('fetch', (evenement) => {
   );
 });
 
+// --- PRÉVENIR QUAND UNE VERSION FRAÎCHE EST ARRIVÉE (16 septembre 2026) -------
+//
+// LE DÉFAUT, rapporté par Noé : « c'est push là ? parce que je ne vois pas de
+// différence ». Le déploiement était bon et le cache se mettait bien à jour en
+// arrière-plan — mais la PAGE, elle, gardait en mémoire le JavaScript de
+// l'ouverture précédente. Sur iPhone, une application ajoutée à l'écran d'accueil
+// n'est jamais vraiment fermée : la rouvrir reprend la même instance, et
+// « l'ouverture suivante » n'arrive jamais. Il fallait tuer l'application, deux
+// fois de suite.
+//
+// LE SIGNAL VIENT D'ICI PARCE QUE C'EST ICI QU'ON LE VOIT. La revalidation
+// compare déjà l'ancienne réponse et la nouvelle : il suffit de dire aux pages
+// ouvertes quand elles diffèrent. Aucune version à monter à la main dans ce
+// fichier — un numéro qu'il faut penser à incrémenter est un numéro qu'on
+// oublie.
+//
+// SEULEMENT CE QUI FAIT LA PAGE : du HTML, du CSS, du JavaScript. Une image ou
+// une police qui change ne justifie pas de recharger quoi que ce soit.
+const RECHARGEABLE = /\.(?:html|css|js)$|\/$/;
+
+// L'`ETag` d'abord — GitHub Pages en envoie un, et il change au octet près.
+// `Last-Modified` en second pour les serveurs qui n'en posent pas ; la taille en
+// dernier recours. Deux réponses sans aucun de ces trois repères sont tenues
+// pour identiques : mieux vaut ne pas prévenir que prévenir à tort.
+function memeVersion(ancienne, fraiche) {
+  for (const entete of ['etag', 'last-modified', 'content-length']) {
+    const a = ancienne.headers.get(entete);
+    const b = fraiche.headers.get(entete);
+    if (a || b) return a === b;
+  }
+  return true;
+}
+
+async function direQueCEstFrais() {
+  const clients = await self.clients.matchAll({ type: 'window' });
+  for (const client of clients) client.postMessage({ type: 'version-fraiche' });
+}
+
 // En production : ce qui est en cache part tout de suite, et la version
 // fraîche se télécharge en arrière-plan pour l'ouverture suivante.
 async function cachePuisReseau(evenement, requete) {
@@ -162,7 +200,12 @@ async function cachePuisReseau(evenement, requete) {
 
   const revalidation = fetch(requete)
     .then((reponse) => {
-      if (reponse.ok) cache.put(requete, reponse.clone());
+      if (!reponse.ok) return reponse;
+      // Comparer AVANT de remplacer : après le `put`, l'ancienne est perdue.
+      const neuve =
+        gardee && RECHARGEABLE.test(new URL(requete.url).pathname) && !memeVersion(gardee, reponse);
+      cache.put(requete, reponse.clone());
+      if (neuve) evenement.waitUntil(direQueCEstFrais());
       return reponse;
     })
     .catch(() => null);

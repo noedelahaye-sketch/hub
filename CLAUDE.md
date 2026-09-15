@@ -50,7 +50,52 @@ Le hub existe pour servir Noé, pas l'inverse. Pour éviter que le professionnel
 ## Architecture
 
 - **Frontend** : site statique (HTML/CSS/JS vanilla, pas de framework), déployé sur GitHub Pages.
-- **Coquille en cache** : `sw.js` (service worker) sert HTML, CSS, JS, polices et icônes depuis l'appareil, pour que l'ouverture ne dépende pas du réseau. **Il ne met jamais de données en cache** — Supabase et l'API GitHub lui échappent par un test d'origine. Conséquence assumée : après un déploiement, un appareil peut afficher une fois la version précédente.
+- **Coquille en cache** : `sw.js` (service worker) sert HTML, CSS, JS, polices et icônes depuis l'appareil, pour que l'ouverture ne dépende pas du réseau. **Il ne met jamais de données en cache** — Supabase et l'API GitHub lui échappent par un test d'origine.
+
+### LE HUB SE RECHARGE QUAND UNE VERSION FRAÎCHE EST LÀ (16 septembre 2026)
+
+**Le défaut, rapporté par Noé** : *« c'est push là ? parce que je ne vois pas de
+différence. »* Le déploiement était bon — vérifié en ligne — et le cache se
+mettait bien à jour en arrière-plan. Mais **la page gardait en mémoire le
+JavaScript de l'ouverture précédente**, et sur iPhone une application ajoutée à
+l'écran d'accueil n'est jamais vraiment fermée : la rouvrir reprend la même
+instance, et « l'ouverture suivante » n'arrive jamais. Il fallait tuer
+l'application, **deux fois de suite**.
+
+*La conséquence écrite jusque-là — « après un déploiement, un appareil peut
+afficher une fois la version précédente » — était vraie d'un onglet de
+navigateur, fausse d'une application installée.*
+
+- **LE SIGNAL VIENT DU SERVICE WORKER, parce que c'est lui qui le voit.** Sa
+  revalidation compare déjà l'ancienne réponse à la nouvelle ; il suffit de le
+  dire aux pages ouvertes (`postMessage`). **Aucune version à monter à la main
+  dans `sw.js`** — un numéro qu'il faut penser à incrémenter est un numéro qu'on
+  oublie, et c'est le genre d'oubli qui ne se voit qu'une semaine plus tard.
+- **ON COMPARE L'`ETag` D'ABORD** — GitHub Pages en envoie un, et il change au
+  octet près —, `Last-Modified` ensuite, la taille en dernier recours. **Deux
+  réponses sans aucun de ces trois repères sont tenues pour identiques** : mieux
+  vaut ne pas prévenir que prévenir à tort, un rechargement de trop étant plus
+  gênant qu'un rechargement tardif. *Les neuf cas sont vérifiés hors écran.*
+- **SEULEMENT CE QUI FAIT LA PAGE** : du HTML, du CSS, du JavaScript. Une image
+  ou une police qui change ne justifie pas de recharger quoi que ce soit.
+- **ON COMPARE AVANT DE REMPLACER** : après le `cache.put`, l'ancienne réponse
+  est perdue et il n'y a plus rien à comparer.
+- **LE RECHARGEMENT SE FAIT AU RETOUR SUR L'APPLICATION**, et à ce moment-là
+  seulement. C'est l'instant où il ne se voit pas — on revient, l'écran se
+  redessine, c'est ce qu'on attendait de toute façon. **Recharger dès que la
+  nouvelle arrive couperait Noé en plein geste**, et une application qui se
+  rafraîchit sous les doigts est pire que le défaut qu'on corrige.
+- **JAMAIS PENDANT QU'ON ÉCRIT**, et le retour sur l'application peut très bien
+  arriver au milieu d'une saisie — on va chercher une date dans le calendrier du
+  téléphone, on revient. Trois gardes qui se cumulent : une tuile ou une fenêtre
+  ouverte, un champ qui a le focus, une liste déroulante ouverte. **Ce qui n'est
+  pas rechargé maintenant le sera au prochain retour.** *Vérifié à l'écran : avec
+  une tuile ouverte la page survit au retour ; refermée, elle se recharge.*
+- **`pageshow` EN PLUS DE `visibilitychange`** : un retour depuis le cache de
+  navigation ne passe pas toujours par le second.
+- **PAS DE BOUCLE** : après le rechargement, la revalidation trouve un cache déjà
+  frais, donc ne dit plus rien. *Vérifié : cinq retours d'affilée sans nouvelle
+  version ne rechargent rien.*
 - **Données** : Supabase (PostgreSQL), projet Supabase `noe-hub-project`.
 - **Cas particulier formation** : le site de révision Bac+3 existant (https://noedelahaye-sketch.github.io/Bac-3/) reste indépendant. Il sauvegarde son avancée dans un gist GitHub. Le hub LIT ce gist en lecture seule pour afficher la progression des révisions dans l'espace formation. Ne jamais écrire dans ce gist.
   - **URL du gist** : https://gist.github.com/noedelahaye-sketch/9ffae04009423dd49fe42f39d6a75e75
