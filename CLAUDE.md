@@ -287,11 +287,33 @@ couleur.
 - **LA CIBLE RESTE À 44 px.** Ce qui rétrécit est ce qu'on VOIT, pas ce qu'on
   touche : le lien garde sa hauteur, son contenu maigrit. On touche ces onglets
   tous les jours.
-- **LA HAUTEUR DU DOCK NE DÉPEND PAS DE L'ONGLET ACTIF** (`min-height` sur le
-  conteneur) : l'actif est le plus grand, donc c'est lui qui la donne — et sur
-  les pages du second rang, qui n'allument aucun onglet, le dock aurait rétréci
-  de quatre pixels. **Une barre qui change de taille selon la page n'est plus un
-  repère.**
+- **L'ACTIF DÉBORDE DU RAIL, AUTANT EN HAUT QU'EN BAS** (16 septembre 2026,
+  demande de Noé : *« je préférerais que l'onglet choisi déborde du rectangle
+  global plutôt que le rectangle s'adapte à la hauteur de l'onglet qui
+  grossit »*, puis *« il faut que ça reste centré, que ça déborde autant en haut
+  qu'en bas »*).
+
+  **C'EST CE QUI FAIT DU DOCK UN RAIL** et de l'actif un jeton enfilé dessus :
+  tant que le rectangle s'ajustait, l'actif était CONTENU — plus grand, mais
+  dedans. **C'est le seul des cinq signes qui ne se lise pas dans la
+  comparaison** : on le voit sans regarder ses voisins.
+  - **UNE HAUTEUR FIXE POUR LE RAIL, ET NON UN MINIMUM** : un minimum se
+    laisserait pousser par le contenu, et c'est précisément ce qu'on refuse. Elle
+    vaut celle d'un onglet ORDINAIRE — le rail se règle sur le rang, pas sur
+    l'exception. Ça règle du même coup les pages du second rang, qui n'allument
+    aucun onglet : le dock y garde exactement la même taille, et **une barre qui
+    change de hauteur selon la page n'est plus un repère.**
+  - **UNE HAUTEUR DÉCLARÉE POUR L'ACTIF, ET NON UN REMBOURRAGE** : le
+    débordement vaut alors toujours (68 − 50) / 2, **huit pixels de chaque
+    côté**, quelle que soit la taille de l'icône. Réglé en rembourrage, il aurait
+    changé avec elle.
+  - *Un alignement par le BAS a été essayé d'abord — la pastille ne sortait que
+    par le haut, et le rail semblait posé de travers. Le centrage est la
+    correction de Noé, et il a raison : un jeton se lit centré sur son fil.*
+  - **LE RAIL EST REMONTÉ DE QUATRE PIXELS** : la pastille descend de huit sous
+    lui, et il n'en restait plus que deux jusqu'au bord de l'écran — mesuré. Un
+    iPhone les rattrape par sa zone de sécurité ; un navigateur qui n'en a pas,
+    non.
 - **LE HUB GARDE SON AIR SUR TÉLÉPHONE, LES SITES SE SERRENT** : trois onglets
   contre cinq, et un plafond plus bas. Yuno doit tenir cinq mots sur 375 px.
 - **LE DOCK DU FC HERMITAGE N'EST PAS CONCERNÉ** : il a sa propre classe

@@ -322,7 +322,11 @@ body[data-espace="yuno"] .ouvrir-capture {
   position: fixed;
   z-index: 18;
   left: 50%;
-  bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  /* QUATRE PIXELS DE PLUS DEPUIS QUE L'ACTIF DÉBORDE (16 septembre 2026) : sa
+     pastille descend de huit sous le rail, et le compte n'en laissait plus que
+     deux jusqu'au bord de l'écran — mesuré. Un iPhone les rattrape par sa zone
+     de sécurité ; un navigateur qui n'en a pas, non. */
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
   display: flex;
   justify-content: center;
@@ -336,13 +340,29 @@ body[data-espace="yuno"] .ouvrir-capture {
   max-width: min(480px, calc(100% - 32px));
   padding: 3px;
   gap: 2px;
-  /* SA HAUTEUR NE DÉPEND PAS DE L'ONGLET ACTIF (16 septembre 2026). L'actif est
-     plus grand que ses voisins, donc c'est lui qui donne sa hauteur au dock — et
-     sur les pages du second rang, qui n'allument aucun onglet, le dock aurait
-     rétréci de quatre pixels. Une barre qui change de taille selon la page où
-     l'on est n'est plus un repère. */
-  min-height: 52px;
-  align-items: stretch;
+  /* LE RAIL A UNE HAUTEUR FIXE, ET L'ACTIF EN DÉBORDE (16 septembre 2026,
+     demande de Noé : « je préférerais que l'onglet choisi déborde du rectangle
+     global plutôt que le rectangle s'adapte à la hauteur de l'onglet qui
+     grossit »).
+
+     C'EST CE QUI FAIT DU DOCK UN RAIL et de l'actif une pastille posée dessus :
+     tant que le rectangle s'ajustait, l'actif était CONTENU — plus grand, mais
+     dedans. Il en sort maintenant par le haut, et c'est le signe le plus fort de
+     tous, parce qu'il est le seul qui ne se lise pas dans la comparaison : on le
+     voit même sans regarder ses voisins.
+
+     UNE HAUTEUR FIXE, ET NON UN MINIMUM : un minimum se laisserait pousser par
+     le contenu, et c'est précisément ce qu'on refuse. Elle vaut la hauteur d'un
+     onglet ORDINAIRE — le rail se règle sur le rang, pas sur l'exception. Ça
+     règle aussi le cas des pages du second rang, qui n'allument aucun onglet :
+     le dock y garde exactement la même taille, et **une barre qui change de
+     hauteur selon la page n'est plus un repère.** */
+  height: 50px;
+  /* CENTRÉ : la pastille de l'actif déborde AUTANT EN HAUT QU'EN BAS (16
+     septembre 2026, correction de Noé). Alignée en bas, elle ne sortait que par
+     le haut et le rail semblait posé de travers ; centrée, elle se lit comme un
+     jeton enfilé sur un fil. */
+  align-items: center;
   border: 0.5px solid rgb(255 255 255 / 12%);
   border-radius: 36px;
   background:
@@ -441,7 +461,19 @@ body[data-espace="yuno"] .ouvrir-capture {
 
    Avec le fond, l'encre d'accent et la graisse, l'actif porte de nouveau QUATRE
    signes — c'est ce qui permet de le trouver sans le chercher. */
-:is(.yuno-dock, .navigation.hub-dock) a.actif { font-size: 0.75rem; }
+:is(.yuno-dock, .navigation.hub-dock) a.actif {
+  font-size: 0.75rem;
+  /* UNE HAUTEUR DÉCLARÉE, ET NON UN REMBOURRAGE : le débordement vaut alors
+     toujours (68 − 50) / 2, neuf pixels de chaque côté, quelle que soit la
+     taille de l'icône. Réglé en rembourrage, il aurait changé avec elle — deux
+     pixels de plus sur grand écran, où l'icône de l'actif est plus grande. */
+  height: 68px;
+  /* AU-DESSUS DU REFLET DU BORD : le `::before` du dock est un élément
+     POSITIONNÉ, donc il se peint après les enfants en flux — sans ce z-index, la
+     couture du verre passerait devant la pastille qui déborde. */
+  position: relative;
+  z-index: 1;
+}
 :is(.yuno-dock, .navigation.hub-dock) a.actif svg { width: 25px; height: 25px; }
 :is(.yuno-dock, .navigation.hub-dock) a:hover { color: #fff; background: rgb(255 255 255 / 6%); }
 :is(.yuno-dock, .navigation.hub-dock) a:active { transform: scale(0.94); }
@@ -456,7 +488,7 @@ body[data-espace="yuno"] .ouvrir-capture {
 }
 :is(.yuno-dock, .navigation.hub-dock) a:focus-visible { outline: 2px solid #65c8ff; outline-offset: 2px; }
 @media (max-width: 400px) {
-  :is(.yuno-dock, .navigation.hub-dock) { gap: 0; min-height: 50px; }
+  :is(.yuno-dock, .navigation.hub-dock) { gap: 0; height: 48px; }
   :is(.yuno-dock, .navigation.hub-dock) a { min-height: 44px; padding: 4px 12px; }
   /* LE HUB A DE LA PLACE QUE LES SITES N'ONT PAS : trois onglets contre cinq, et
      un plafond plus bas. Il garde donc l'air du grand écran là où Yuno doit se
@@ -467,6 +499,7 @@ body[data-espace="yuno"] .ouvrir-capture {
      mesuré —, et « Calendrier » n'y est plus un mot, c'est une trace. Sur un
      écran étroit, **c'est l'ICÔNE qui porte l'écart** : trois pixels sur dix-huit
      se voient mieux qu'un demi-point de corps. */
+  :is(.yuno-dock, .navigation.hub-dock) a.actif { height: 64px; }
   :is(.yuno-dock, .navigation.hub-dock) a.actif svg { width: 23px; height: 23px; }
 }
 @media (prefers-reduced-motion: reduce) {
