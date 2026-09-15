@@ -179,6 +179,15 @@ body[data-espace="yuno"] {
      peine, surtout sans ombre pour les décoller. La bordure monte avec elles,
      sinon elle disparaîtrait sous la carte qu'elle est censée cerner. */
   --fond-carte: #242426;
+  /* LE TROISIÈME CRAN (15 septembre 2026, demande de Noé sur l'idée du jour :
+     « j'aime pas que ce soit de couleur, qu'il y ait un contour, mais je veux
+     quand même qu'elle ressorte un peu »). Le hub tient DÉJÀ une échelle de
+     surfaces — `--fond`, `--fond-doux`, `--fond-carte` — et sa règle du 30 août
+     dit qu'« une tuile posée dans la page se distingue par sa SURFACE » : c'est
+     donc la surface qui fait ressortir, pas une teinte ni un filet. Le même
+     écart que le cran précédent (+12), pour que l'échelle reste régulière.
+     Une seule chose le porte : la carte de l'idée du jour. */
+  --fond-releve: #303032;
   --texte: #eceeea;
   --texte-discret: #8b928b;
   --bordure: #3e3e41;
@@ -3224,6 +3233,25 @@ a.cap-grave:focus-visible {
 }
 
 .ouvrir-capture:hover { background: color-mix(in srgb, var(--accent) 80%, var(--texte)); }
+
+/* LE ROND S'EFFACE PENDANT QUE LA TUILE EST OUVERTE (15 septembre 2026) — il ne
+   peut pas rester à côté de ce qu'il vient de DEVENIR. *Mesuré avant : sur
+   l'accueil et sur les Tâches, où le bouton n'est pas retiré du DOM, on voyait
+   la barre s'étirer pendant que le rond restait posé à sa droite : deux objets
+   au lieu d'un mouvement.*
+
+   `opacity` et non `display` : le bouton garde sa place dans la mise en page, ce
+   que l'espace Tâches exige depuis le 13 août — « sans lui, la liste remonterait
+   d'un cran à chaque ouverture ». Et il se retire du doigt en même temps : un
+   bouton invisible qui répond au clic est un piège.
+
+   SANS TRANSITION, et c'est voulu : il doit s'éteindre à l'instant même où la
+   tuile naît de lui, sinon les deux formes cohabitent le temps du fondu — le
+   défaut qu'on vient de corriger.
+
+   `fond-fige` est posé par la coquille exactement quand une tuile ou le menu
+   s'ouvre : c'est le signal déjà là, il n'y en a pas de second à inventer. */
+body.fond-fige .ouvrir-capture { opacity: 0; pointer-events: none; }
 
 /* Le dernier élément de la page doit pouvoir se lire et se toucher sans que le
    bouton flottant lui passe dessus. Les deux espaces qui le portent : les

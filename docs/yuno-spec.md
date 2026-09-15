@@ -326,9 +326,10 @@ Le `local()` cible la coupe **Canela** et non **Canela Deck** : Deck est le
 dessin optimisé pour les tailles moyennes, Canela le dessin d'affiche. La
 différence est mince à ces tailles, et elle vaut mieux qu'un mot à deux fontes.
 
-**Pour vérifier sur un appareil** : ouvrir Créer et regarder « À venir ». Si le
-`À` est incliné comme le reste du mot, la vraie Canela est là ; s'il est droit,
-c'est la police de secours.
+**Pour vérifier sur un appareil** : ouvrir Créer et regarder « De la matière ».
+Si l'accent est incliné comme le reste du mot, la vraie Canela est là ; s'il est
+droit, c'est la police de secours. *(Le repère était « À venir » jusqu'au
+15 septembre 2026 ; ce bloc a quitté la page.)*
 
 ---
 
@@ -1196,25 +1197,181 @@ CLAUDE.md pour les trois automatismes réunis.
   Instagram, mail, téléphone, notes. La fenêtre ne se ferme qu'une fois la
   fiche écrite : un échec réseau garde la saisie, comme tout formulaire.
 
-### `#yuno/creer` — l'outil phare
+### `#yuno/creer` — l'atelier d'inspiration
 
 Le calendrier éditorial et la banque d'idées, une seule matière à deux états :
 **une idée est une publication sans date**. Noter une idée prend cinq
 secondes ; la programmer, c'est juste lui donner une date.
 
+#### ELLE NE GÈRE PLUS RIEN : ELLE INSPIRE, ET ELLE OUVRE (15 septembre 2026)
+
+**La demande de Noé** : *« je déteste la page Créer de Yuno, repense-la plus
+intelligemment par rapport aux modifications qu'on a faites sur les autres pages
+(Yuno et le Hub) pour la forme. Elle doit me servir à donner de l'inspiration,
+avoir un lien vers le calendrier éditorial. »*
+
+**CE QUE LES DONNÉES DISAIENT, ET C'EST ÇA QUI TRANCHE.** Vingt publications :
+**dix-huit idées sans date, deux parues, zéro programmée, zéro en chantier.** La
+page portait trois blocs numérotés — *01 l'idée du jour · 02 cette semaine ·
+03 en chantier* — et **deux sur trois étaient vides à l'écran**. Le troisième
+l'était **structurellement** : « En chantier » lit les statuts intermédiaires (à
+développer, brouillon, prêt), et **aucune publication n'en a jamais porté un
+seul** depuis l'ouverture du site. *La page racontait un chemin que personne ne
+parcourt, et elle le racontait en le numérotant.*
+
+**L'AUTRE CHIFFRE, ET C'EST LUI QUI DONNE SA FORME À LA NOUVELLE PAGE :
+vingt-sept sorties au carnet, toutes avec leur photo, et deux publications en
+sont sorties.** La matière est là, elle ne devient rien — et la page qui doit
+« donner de l'inspiration » ne montrait pas une seule image.
+
+**Quatre temps, dans l'ordre où l'on décide** :
+
+| | |
+|---|---|
+| **L'idée du jour** | gardée telle quelle — le seul objet de la page qui marchait, et il marche parce qu'il ne demande rien |
+| **De la matière** | trois de ses propres photos, tirées du carnet, dont rien n'est encore sorti |
+| **Tes quatre piliers** | ce que la banque porte sur chacun, en barres à échelle commune |
+| **Les deux portes** | le calendrier éditorial et la banque — le lien que Noé demande |
+
+**L'ORDRE N'EST PAS INDIFFÉRENT** : la matière passe devant les piliers parce
+qu'une photo est CONCRÈTE et qu'un classement est ABSTRAIT — on regarde avant de
+ranger.
+
+**LA NUMÉROTATION TOMBE AVEC LE PIPELINE.** « 01 · 02 · 03 » disait un chemin —
+l'étincelle, ce qui part, le chantier ; il n'y a plus de chemin, il y a quatre
+choses à regarder. Partent avec elle : `partagerLAVenir`, `enChantier`,
+`lignePublication`, `construirePiliers`, et leurs styles (`.etape`,
+`.liste-flux`, `.pub-ligne`, `.vide-dessine`, `.point-pilier`).
+
+#### DE LA MATIÈRE — ses propres photos
+
+**Pour un photographe, l'inspiration est dans sa carte mémoire avant d'être dans
+une liste.** Trois sorties du Carnet de terrain, en vignettes ; **presser en une
+ouvre la capture d'une idée, le nom de la sortie déjà écrit dedans**, curseur au
+bout. Ce n'est pas le titre de l'idée, c'est son point de départ : on le
+complète, ou on l'efface.
+
+- **LE LIEN EXISTAIT DÉJÀ EN BASE.** `publications.evenement_id` porte le match
+  qui a fait naître une parution (29 août 2026, le post à J+1) : on sait donc de
+  quelles sorties **quelque chose est sorti**, sans colonne nouvelle et sans le
+  deviner. `matiereLibre` (js/yuno.js) écarte celles-là, plus celles qui n'ont
+  pas de photo — un mur de photos sans photo n'est pas un mur.
+- **LE TIRAGE EST CELUI DU MUR DE PHOTOS ET DE L'IDÉE DU JOUR** (`tirageDuJour`) :
+  la date sert de graine, rien n'est stocké, l'ordre est stable dans la journée
+  et change à minuit. Trois mécaniques de tirage sur une même page finiraient
+  par ne plus se ressembler. Et c'est ce qui remonte ce qu'on avait oublié —
+  *mesuré : le tirage du 15 septembre sort des sorties de février, mars et
+  avril.*
+- **TROIS, et c'est la largeur d'une rangée qui le dit** : trois vignettes
+  tiennent côte à côte sans qu'aucune descende sous la taille où l'on reconnaît
+  une image. Au-delà, le bloc redeviendrait le **mur du Journal**, qui est à un
+  geste et qui, lui, ne cache rien. **Deux sur téléphone** : trois y tomberaient
+  sous 110 px, et une troisième seule sur un second rang ferait un trou.
+- **LE RAPPORT 3/2 D'UNE PHOTO DE REFLEX**, et non un carré : ce sont des images
+  de terrain, elles ont été cadrées dans ce format.
+- **LE NOM D'UNE SORTIE EST EN CLASH DISPLAY**, comme au carnet : c'est un nom de
+  création du site, il ne peut pas changer de police d'un écran à l'autre. Il se
+  **coupe** plutôt que de passer à la ligne — trois tuiles côte à côte doivent
+  garder la même hauteur, sinon la rangée fait des marches.
+- **LE COMPTE DIT L'ACQUIS, JAMAIS LE MANQUE** : « 27 sorties au carnet », et non
+  « 25 dont rien n'est sorti ». C'est un gisement, pas un retard — et c'est le
+  ton de la banque, « elle ne se vide jamais et ne réclame rien ».
+- **TROIS VIDES, ET AUCUN NE S'EXCUSE.** Rien au carnet : la porte est dehors.
+  Tout exploité : c'est une victoire, et elle se dit comme telle.
+
+#### TES QUATRE PILIERS — la boussole dit enfin son état
+
+**CE QUE ÇA RENVERSE, ET IL FAUT LE DIRE.** Les piliers ont été **repliés en pied
+de page le 15 août 2026**, pour un motif qui se tenait : *« c'est la stratégie de
+Noé, il la connaît par cœur ; le tableau des rôles se relit les jours de doute,
+pas à chaque visite »*. **Le motif tombe le jour où le bloc cesse de RÉCITER la
+stratégie pour en DIRE L'ÉTAT** : combien d'idées chaque axe porte, et combien en
+sont parties. Ça, personne ne le connaît par cœur — c'est même la seule chose de
+cette page qu'on ne puisse pas deviner. *C'est le test du hall du perso, au mot
+près : une tuile doit dire quelque chose qu'on IGNORE avant de l'ouvrir.*
+
+- **L'ÉCHELLE EST COMMUNE aux quatre** — la règle des barres de séries du hall du
+  perso —, sans quoi chaque axe se mesurerait à lui-même et les longueurs ne
+  voudraient plus rien dire les unes à côté des autres. *Mesuré sur les données
+  de Noé : 7 idées pour « Dans l'œil du photographe », 3 pour « Bord terrain ».
+  Le déséquilibre se voit avant d'être lu.*
+- **LA BARRE EST UNE RÉSERVE, JAMAIS UN MANQUE**, et la phrase au-dessus donne la
+  clé de lecture : *« Ce que la banque porte sur chacun. Le plus court est celui
+  qui a faim. »* Ni rouge, ni seuil, ni « trop peu » — un axe sans idée n'est pas
+  un retard, c'est un axe à ouvrir.
+- **LE ZÉRO S'AFFICHE**, et c'est la règle du 2 septembre 2026 : « une série à
+  zéro ne s'affiche pas » vaut là où un chiffre est SEUL ; dans une colonne qui
+  en aligne quatre, la case vide est pire — elle décale le regard et l'on ne sait
+  plus lequel manque. Les **parutions**, elles, se taisent à zéro : elles sont
+  seules dans leur coin.
+- **UNE PUBLICATION PROGRAMMÉE N'EST NI DANS L'UN NI DANS L'AUTRE.** Le bloc
+  compte la BANQUE — les idées sans date — et ce qui est parti. Ce qui est posé
+  sur un jour se lit dans la frise de la porte d'à côté, qui est faite pour ça.
+- **PRESSER UN PILIER OUVRE LA BANQUE FILTRÉE DESSUS.** Le filtre existait depuis
+  le 15 août et ne s'atteignait que par un menu, **une fois la banque déjà
+  ouverte**. L'état se pose avant que le lien navigue — un écouteur délégué passe
+  avant le comportement par défaut — et `naviguer` ne touche pas à `etat.pilier` :
+  la banque s'ouvre donc déjà sur le bon axe, sans second rendu.
+- **LES PISTES SONT BORNÉES, ET LA GRILLE SE TASSE À GAUCHE.** Sans plafond, la
+  barre prenait **765 px sur un écran de 1280** — mesuré — pour comparer 3 idées
+  à 7 : une longueur qui ne se compare plus, et un chiffre à un mètre de son nom.
+  Vingt rem suffisent à séparer quatre valeurs. Le filet, lui, reste pleine
+  largeur : c'est le lien qui le porte, pas la grille.
+- **DEUX RANGS SUR TÉLÉPHONE, UN SEUL AU-DELÀ.** Sur 375 px, le nom prend la
+  première ligne, la barre et le compte la seconde — **ensemble**, sur le même
+  rang. Les empiler sur trois rangs portait une ligne à 150 px, donc quatre
+  piliers à 600, et la page s'ouvrait sur un seul d'entre eux. *Mesuré après
+  correction : 82 px par ligne.*
+- **LE LIT DE LA BARRE EST `--fond-carte`**, et non le `--fond-doux` du hall du
+  perso : ce jeton vaut `#191c1d` dans la palette du hub, et sur le fond du site
+  (`#181818`) **il ne se voit pas du tout**, mesuré. La surface « carte » du site
+  est le cran juste au-dessus du fond — de quoi montrer la place qui reste sans
+  la souligner.
+- **LA COULEUR S'ÉCLAIRCIT POUR LA BARRE.** Les quatre piliers sont quatre bleus
+  de plus en plus sombres (`#114ad0` à `#08225e`), choisis pour être des **aplats
+  avec de l'encre blanche dessus** ; en filet de six pixels sur le fond de la
+  page, le quatrième disparaîtrait. `color-mix` lui rend de la clarté sans
+  toucher à sa teinte : c'est la même couleur, pas une seconde palette.
+- **LE NOM D'UN PILIER NE PREND PLUS SA COULEUR** (défaut corrigé le même jour).
+  La règle datait d'une palette où deux des quatre étaient jaune et orange ; avec
+  quatre bleus sombres, **le plus clair plafonne à 1,8:1 sur le fond de la page —
+  illisible**, et « Les Léopards & le foot africain » s'écrivait ainsi. C'est
+  l'argument déjà posé pour `.etiquette-pilier`, et il vaut maintenant pour les
+  quatre : **la couleur se dit en aplat, jamais en lettres.** C'est la pastille du
+  rang qui la porte.
+- **LE TEST ET LE PLANCHER FERMENT LE BLOC**, en une ligne d'encre discrète :
+  « Ça rentre dans un pilier ? Oui → je crée. Plancher : 2 publications par
+  semaine, et les stories restent une zone franche. »
+
+#### CE QUE LA PAGE COÛTE
+
+**Deux lectures au lieu d'une** : `publications` et `evenements` — celle-ci
+apporte les sorties ET signe les adresses de leurs photos dans la foulée. **Et le
+cache de session vaut pour tout le site** : venu de l'accueil, qui les lit déjà,
+le bloc de la matière ne coûte rien.
+
 - Une publication porte : un titre/l'idée, le réseau (**Instagram d'abord,
   TikTok et LinkedIn aussi** — décision du 7 août), le format (post,
   carrousel, réel, story), une date prévue (ou rien), un statut
   (`idée → brouillon → prêt → publié`), des notes (légende, plan, références).
-- **Les deux grandes portes**, côte à côte au milieu de Créer (décision de Noé,
-  12 août 2026) : « Calendrier éditorial » vers `#yuno/editorial`, « Banque
-  d'idées » vers `#yuno/banque`. Une icône de 32 px à gauche, le titre sur deux
-  lignes voulues (un `<br>` dans le balisage, pas un repli de hasard : les deux
-  portes se répondent alors exactement). **Ni titre de section au-dessus, ni
-  sous-titre dedans** — un libellé qui répète le nom de la porte n'apprend rien.
-  Sur téléphone étroit l'icône passe au-dessus du titre.
-- **Vue « À venir »** : les publications datées, dans l'ordre. Le trou de la
-  semaine prochaine se voit — c'est le but d'un calendrier éditorial.
+- **Les deux grandes portes** (décision de Noé, 12 août 2026) : « Calendrier
+  éditorial » vers `#yuno/editorial`, « Banque d'idées » vers `#yuno/banque`.
+  **Elles FERMENT la page depuis le 15 septembre 2026** — elles en occupaient le
+  milieu tant qu'il y avait un pipeline à ouvrir dessous. Ce sont les portes du
+  site, à la forme commune : la vitrine d'abord, le nom en légende. **Ni titre de
+  section au-dessus, ni sous-titre dedans** — un libellé qui répète le nom de la
+  porte n'apprend rien. Sur téléphone elles s'empilent.
+  - **La vitrine du calendrier éditorial est la FRISE DE LA SEMAINE**, et c'est
+    elle qui porte le lien que Noé demande : sept jours, une pastille par
+    parution dans la couleur de son pilier. Elle ne se tait pas quand il n'y a
+    rien — sept cases vides disent le trou mieux qu'une tuile muette, et c'est
+    exactement ce qu'un calendrier éditorial est fait pour montrer.
+  - **La vitrine de la banque est un tirage de trois idées** : le mot de la page
+    est « fouiller », et c'est ce que fait un tirage — il remonte ce qu'on avait
+    oublié.
+- **Vue « À venir »** : les publications datées, dans l'ordre. *Elle a quitté
+  Créer le 15 septembre 2026 : elle y était vide, et la frise de la porte dit la
+  même chose en sept cases. Le calendrier éditorial reste sa page.*
 - **Vue « Banque d'idées »** : les sans-date, les plus récentes d'abord.
   C'est le backlog créatif ; il ne se vide jamais et ne culpabilise pas.
 - **Aide à la création** : des rubriques récurrentes, pré-remplies avec celles
@@ -1226,11 +1383,13 @@ secondes ; la programmer, c'est juste lui donner une date.
   une victoire ? — non : ce serait du bruit à raison de plusieurs par semaine.
   Les victoires restent manuelles ou liées aux jalons et aux moments.
 
-**Les quatre piliers** ouvrent l'écran, en encart : 1. Les Léopards & le foot
-africain (la portée) · 2. Bord terrain (le portfolio) · 3. Dans l'œil du
-photographe (la conversion) · 4. Carte blanche (la différence). Avec le test —
-« ça rentre dans un pilier ? oui → je crée » — le plancher de 2 publications
-par semaine, et le rappel que les stories restent une zone franche.
+**Les quatre piliers** : 1. Les Léopards & le foot africain (la portée) ·
+2. Bord terrain (le portfolio) · 3. Dans l'œil du photographe (la conversion) ·
+4. Carte blanche (la différence). Avec le test — « ça rentre dans un pilier ?
+oui → je crée » — le plancher de 2 publications par semaine, et le rappel que les
+stories restent une zone franche. *Ils ont ouvert l'écran en encart, puis se sont
+repliés en pied le 15 août 2026 ; depuis le 15 septembre ils sont un BLOC qui dit
+leur état — voir « Tes quatre piliers » plus haut.*
 
 **Ils sont là pour FERMER un débat, pas pour ajouter une contrainte.** Le vrai
 frein à la régularité n'était pas le manque d'idées : c'était de re-décider la
@@ -1262,74 +1421,130 @@ Les étiquettes (réseau, format, pilier) sont volontairement **très petites** 
 ce sont des mentions de classement, pas des titres. Elles doivent se lire quand
 on les cherche et disparaître quand on lit le reste.
 
-`construirePublication` (la tuile complète) sert toujours à « À venir » et au
+`construirePublication` (la tuile complète) sert au calendrier éditorial et au
 site du FCH : la banque et « Publiées » sont seules à passer par
 `construireApercuPublication`.
 
-**La page raconte le pipeline, pas les lieux** (réorganisation du 15 août 2026,
-sur analyse validée par Noé — les données disaient 18 idées, zéro programmée,
-zéro publiée : la page savait collecter, rien n'y faisait avancer). Son ordre
-est le chemin d'une idée :
+> **CE QUE LA PAGE A ÉTÉ DU 15 AOÛT AU 15 SEPTEMBRE 2026, et pourquoi elle ne
+> l'est plus.** Elle racontait **le pipeline et non les lieux** : son ordre était
+> le chemin d'une idée — *01 l'idée du jour* (l'étincelle), *02 cette semaine*
+> (ce qui part à sept jours, le reste du daté replié sous « Plus tard »),
+> *03 en chantier* (l'établi : les idées en « à développer », « brouillon » ou
+> « prêt », sans date), puis les deux portes, puis les piliers repliés. Trois
+> familles de formes s'y répondaient : la carte pour le contenu, la **ligne**
+> pour le flux, la tuile pour les portes ; les titres étaient numérotés en gris
+> chaud pour que la page dise visuellement qu'elle était un pipeline ; les vides
+> montraient leur lieu par une grande icône pâle.
+>
+> **Le raisonnement était juste et il s'est vérifié faux à l'usage.** Un mois
+> plus tard, les statuts intermédiaires n'avaient JAMAIS été employés — zéro
+> publication en a porté un —, donc « En chantier » était vide par construction,
+> et rien n'était programmé, donc « Cette semaine » l'était aussi. **Deux blocs
+> sur trois montraient du vide sous un numéro.** Voir « Elle ne gère plus rien »
+> en tête de cette section. Partent avec : `partagerLAVenir`, `enChantier`,
+> `lignePublication`, `construirePiliers`, `.etape`, `.liste-flux`,
+> `.pub-ligne`, `.vide-dessine` et `.point-pilier`.
 
-1. **L'idée du jour** — l'étincelle, avec un champ « La programmer » sous la
-   tuile : l'inspiration du matin se pose sur un jour en deux touches. Une fois
-   datée, l'idée quitte la banque, la tuile en tire une autre, et la programmée
-   réapparaît juste dessous.
-2. **Cette semaine** — ce qui est programmé à 7 jours. Le seul bloc qui serve le
-   plancher des 2 publications par semaine, en montrant **ce qui est prévu** (un
-   effort que Noé contrôle), jamais un compteur de manque. Sans borne basse :
-   une publication datée d'hier et pas publiée y reste, sobrement. Le daté
-   au-delà attend dans « Plus tard », replié. (« À venir » a disparu dans cette
-   coupe.)
-3. **En chantier** — l'établi : les idées en « à développer », « brouillon » ou
-   « prêt », **sans date**. C'est le chaînon entre la banque et le calendrier,
-   et ce qui donne enfin un usage aux statuts intermédiaires. Une idée datée vit
-   dans le flux du calendrier, son statut se lit sur sa tuile — pas de double
-   affichage.
-4. **Les deux portes**, chacune avec son métier écrit : « Poser sur les jours »
-   (éditorial), « N idées à fouiller » (banque, avec le compte).
-5. **Les piliers, repliés en bas** : la phrase-test en résumé (« Ça rentre dans
-   un pilier ? Oui → je crée. »), le tableau des rôles derrière. C'est la
-   stratégie de Noé, il la connaît par cœur — on la relit les jours de doute,
-   pas à chaque visite.
+Les filtres de la banque (pilier, statut) sont passés **en listes** le 15 août
+2026 — les derniers menus natifs de l'atelier, même composant que le CRM.
 
-Les filtres de la banque (pilier, statut) sont passés **en listes** le même
-jour — les derniers menus natifs de l'atelier, même composant que le CRM.
+#### LA CARTE DU JOUR RESSORT PAR SA SURFACE, PLUS PAR SA COULEUR (15 sept. 2026)
 
-**La forme de la page** (proposition validée en bloc par Noé, 15 août 2026) :
+**La demande de Noé** : *« la forme de l'idée du jour et globalement des idées de
+la banque d'idées est pas à mon goût, j'aime pas que ce soit de couleur, qu'il y
+ait un contour (et un rectangle de couleur à gauche sur les idées de la banque).
+Mais je veux quand même qu'elle ressorte un peu (l'idée du jour) donc trouve une
+solution. »*
 
-- **La carte du jour est la seule carte chaude de la page** : un souffle d'or
-  dans le fond (7 % d'accent), une bordure teintée, la date du jour en tête.
-  Tout le reste est froid — c'est ce contraste qui dit « c'est ici que ça
-  commence ». **Son coin porte le geste de programmer** (une icône calendrier
-  avec un « + ») : le re-tirage à la main a été retiré le 15 août 2026, et la
-  ligne « La programmer » qui traînait dessous a disparu avec lui. L'idée du
-  jour reste tirée une fois par jour et change à minuit — c'est une carte qu'on
-  tire, pas une roue qu'on tourne. **Toucher la carte ouvre la fiche** de
-  l'idée, comme partout ailleurs.
+> *Ce que ça remplace :* « la seule carte CHAUDE de la page » (15 août 2026) — un
+> souffle d'or dans le fond (7 % d'accent) et une bordure dorée à 35 %. *Tout le
+> reste était froid, et c'était ce contraste qui disait « c'est ici que ça
+> commence ».*
+
+**LA SOLUTION ÉTAIT DÉJÀ DANS LA GRAMMAIRE DU HUB**, et c'est sa règle du 30 août
+2026 : **une tuile posée dans la page se distingue par sa SURFACE.** Le hub tient
+une échelle de fonds — `--fond`, `--fond-doux`, `--fond-carte` — et il lui
+manquait un cran : **`--fond-releve` (#303032)**, le même écart que le précédent
+(+12) pour que l'échelle reste régulière. **Une seule chose le porte.**
+
+**TROIS LEVIERS, ET AUCUN N'EST UNE COULEUR** :
+
+| | |
+|---|---|
+| **la surface** | un cran au-dessus de tout le reste de la page — *mesuré : 1,35:1 contre la page, là où une carte ordinaire rend 1,18* |
+| **le titre** | 1,75 rem, la plus grosse chose de l'écran : c'est la carte qu'on vient tirer chaque matin |
+| **l'espace** | un cran de rembourrage vertical de plus |
+
+- **PAS D'OMBRE, et ce n'est pas un oubli** : `--ombre` vaut `none` dans tout le
+  hub sombre, et pour une raison écrite dans la palette — « à #222222 les tuiles
+  flottaient à peine, **surtout sans ombre pour les décoller** ». Une ombre
+  portée ne se voit pas sur un fond presque noir. **Sur fond sombre, c'est la
+  clarté qui soulève.**
+- **LE GRAND CORPS N'EST PAS POUR LE TÉLÉPHONE** (1,375 rem sous 40 rem). À
+  375 px, 1,75 rem portait un titre de **cinq lignes et une carte de 530 px** —
+  tout le reste de la page passait sous la ligne de flottaison, ce qui est
+  l'inverse de « ressortir ». Là-bas **la surface suffit** : la carte prend toute
+  la largeur et elle est la seule chose claire de l'écran.
+- **LE SÉLECTEUR DU TITRE PORTE `body[data-espace="yuno"]`**, et ce n'est pas
+  décoratif : `body[data-espace="yuno"] .pub-titre` pose déjà 1,125 rem à tous
+  les titres d'idée (0-2-1), et `.idee-jour-corps .pub-titre` (0-2-0) perdait —
+  *mesuré, le titre restait à 16,9 px*. **Huitième fois que ce piège se paie.**
+- **LA PREUVE PREND LE GRIS CHAUD SUR CETTE CARTE.** `--texte-discret` est réglé
+  pour le fond de la page et pour une carte ordinaire ; sur `--fond-releve` il
+  tombe à **4,13:1**, sous le seuil. Le gris chaud du site y rend 4,64 — et c'est
+  déjà l'encre des étiquettes juste au-dessus.
+- **L'ICÔNE DE PROGRAMMER PERD SON CADRE**, qui était le second contour de la
+  carte. **L'or reste** : chez Yuno il dit « l'état actif, l'action qui part », et
+  programmer une idée est exactement ça. *Ce que Noé refuse, ce sont les SURFACES
+  colorées, pas les signes d'action.*
+
+#### LES IDÉES DE LA BANQUE PERDENT LEUR RECTANGLE DE COULEUR (même jour)
+
+- **LA BARRE GAUCHE DE PILIER EST PARTIE.** Elle portait la couleur du pilier
+  depuis le 15 août, au motif qu'on lisait ainsi « la répartition des 18 idées
+  entre les quatre axes d'un regard ». **Ce motif a trouvé son écran ailleurs**,
+  et c'est ce qui rend le retrait sans perte : le bloc « Tes quatre piliers » de
+  Créer dit cette répartition en chiffres et en longueurs, ce qu'une barre par
+  tuile ne faisait qu'esquisser.
+- **LE PILIER SE DIT EN POINT, PLUS EN APLAT.** Sans cela, l'étiquette pleine
+  serait restée **le seul aplat coloré de l'écran** — donc plus criante qu'avant
+  le retrait : on n'aurait pas retiré la couleur, on l'aurait concentrée. **Ce
+  qui ne change pas** : le pilier garde sa couleur et le classement se voit
+  toujours sans se lire ; c'est la FORME qui change, et c'est le dessin que le
+  site employait déjà pour ça sur ses lignes de flux — « la couleur sans le mot ».
+  **Trois étiquettes homogènes** : réseau, format et pilier se présentent enfin
+  de la même façon, là où la troisième criait au-dessus des deux autres.
+- **LE POINT S'ÉCLAIRCIT**, comme les barres des axes : à 7 px sur le fond d'une
+  carte, le quatrième pilier disparaîtrait.
+- **LE SURVOL SE DIT PAR LA SURFACE, PLUS PAR UN CONTOUR.** Une tuile qui se
+  cerne au passage de la souris est un contour qui apparaît — justement ce dont
+  Noé ne veut pas. Elle s'éclaircit d'un souffle. **Le focus clavier garde son
+  anneau** : il doit se voir sans ambiguïté, et le hub ne le supprime jamais.
+- *Les tuiles n'avaient déjà plus de contour* (`border-color: transparent` depuis
+  la règle du hub du 30 août) : **le seul trait coloré qui restait était cette
+  barre**.
+
+**Ce qui tient toujours de la forme du 15 août** :
+
+- **Le coin de la carte porte le geste de programmer** (une icône calendrier avec
+  un « + ») : le re-tirage à la main a été retiré le 15 août 2026, et la ligne
+  « La programmer » qui traînait dessous a disparu avec lui. L'idée du jour reste
+  tirée une fois par jour et change à minuit — c'est une carte qu'on tire, pas
+  une roue qu'on tourne. **Toucher la carte ouvre la fiche** de l'idée, comme
+  partout ailleurs.
 
   Le champ date est **transparent par-dessus l'icône**, et non déclenché en JS :
   le clic tombe directement sur lui, donc le sélecteur natif s'ouvre partout —
   sans dépendre de la méthode showPicker, que Safari n'a eue que tard.
-- **Trois familles de formes** : la carte pour le contenu, la **ligne** pour le
-  flux (« Cette semaine », « En chantier » — date, point de pilier, titre,
-  statut ; le clic ouvre la fiche où les gestes vivent), la tuile pour les
-  portes. L'œil comprend la page avant de la lire.
-- **Les couleurs de piliers partout où un pilier apparaît** — la palette
-  existait (`--pilier-1…4` + encres + fonds), c'est `data-pilier` qui l'allume,
-  et il manquait sur les pastilles de Yuno. Pastilles pleines sur la carte et
-  dans la banque, **barre gauche des tuiles de la banque** portée par le
-  pilier : d'un regard, la répartition des 18 idées entre les quatre axes. De
-  la couleur qui dit quelque chose, jamais de la décoration.
-- **Les vides montrent leur lieu** : l'icône du bloc, grande et pâle, au-dessus
-  de la phrase — une promesse dessinée, pas une ligne d'excuse.
-- **Le chemin est numéroté** — 01 · 02 · 03 en gris chaud devant les titres :
-  la page dit visuellement qu'elle est un pipeline.
+- **Les couleurs de piliers partout où un pilier apparaît** — la palette existait
+  (`--pilier-1…4` + encres + fonds), c'est `data-pilier` qui l'allume. **En point
+  sur les étiquettes** et **en barre sur les quatre axes de Créer** depuis le
+  15 septembre : d'un regard, la répartition des 18 idées entre les quatre. De la
+  couleur qui dit quelque chose, jamais de la décoration. **Et jamais en
+  lettres** — voir « Tes quatre piliers » plus haut.
 - **Les liens nus prennent l'accent de leur espace** (règle posée dans
   styles.css, un seul `a { color: var(--accent) }`) : avant elle, c'était le
   bleu-violet du navigateur qui sortait — l'intrus repéré par Noé.
-- **La ligne des piliers porte sa légende** : les quatre points colorés dans la
-  phrase repliée, en bas de page.
 
 **L'idée du jour ouvre la page** (demande de Noé, 14 août 2026) : une idée de
 la banque, tirée au sort une fois par jour, offerte en arrivant. Elle ne demande

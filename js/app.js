@@ -320,24 +320,219 @@ function libererLeFond() {
   window.scrollTo(0, defilementFige);
 }
 
+// Le réglage système « réduire les animations ». Déclaré ICI et non plus bas,
+// avec le balayage : le morph du « + » s'en sert et le précède dans le fichier —
+// un `const` lu avant sa déclaration est une zone morte, et le dépôt a déjà payé
+// ce piège une fois (la marge des blocs de « Ma semaine », 31 août 2026).
+const sansAnimation = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// --- LE « + » SE MÉTAMORPHOSE EN TUILE (15 septembre 2026, demande de Noé) ----
+//
+// LA DEMANDE, une vidéo à l'appui : « pour le bouton d'ajout (le + de bas de
+// page sur la page hub et les autres sites) j'aimerais que ce soit cette
+// animation lorsque l'on appuie dessus, qu'on valide une tâche. »
+//
+// CE QUE LA VIDÉO MONTRE : le rond flottant ne disparaît pas pour laisser place
+// à une tuile — **il DEVIENT la tuile.** Il s'étire depuis son coin jusqu'à la
+// barre de saisie, le contenu s'allume dedans, et au moment où la tâche part le
+// mouvement se rejoue à l'envers : la barre se rétracte en rond.
+//
+// RIEN À DÉPLACER, ET C'EST CE QUI REND L'EFFET PEU COÛTEUX : la tuile du hub
+// est DÉJÀ en bas de l'écran, collée au clavier, depuis le 13 août 2026. Il ne
+// manquait que le trajet entre les deux formes.
+//
+// C'EST UN FLIP, pas une transition de vue. On mesure la forme de départ, on
+// pose la forme d'arrivée, et l'on anime l'écart en `transform` — donc sur le
+// compositeur, sans recalcul de mise en page à chaque image. `startViewTransition`
+// aurait fait le même travail en deux lignes, mais en fondu croisé entre deux
+// images figées : ici les deux formes n'ont ni la même couleur ni le même
+// contenu, et c'est le TRAJET qu'on veut voir, pas un fondu.
+//
+// POSÉ ICI, UNE FOIS, comme l'éclair et le fond figé — et pour la raison déjà
+// écrite au-dessus : dix écrans ouvrent cette tuile (l'accueil, les Tâches, Ma
+// semaine, le calendrier, la page d'un cap, celle d'un projet, les deux sites),
+// et dix endroits où penser à l'animer, ce sont neuf oublis en puissance.
+// Aucun d'eux n'a une ligne à changer.
+
+// La géométrie du rond, prise AVANT que le rendu de l'espace ne l'efface. En
+// capture sur `click` : l'écouteur de l'espace écoute en remontée sur sa
+// section, il passe donc après nous. Et `click` plutôt que `pointerdown`, pour
+// que le clavier — qui n'émet pas de pointeur — ouvre la tuile de la même façon.
+let formeDuPlus = null;
+// La géométrie de la tuile, prise à l'ouverture : une fois retirée du DOM, elle
+// n'a plus de forme à donner, et c'est d'elle que part le mouvement inverse.
+let formeDeLaTuile = null;
+// LA TUILE ÉTAIT-ELLE DÉJÀ LÀ AU TOUR D'AVANT ? C'est la seule façon de
+// distinguer une OUVERTURE d'un simple redessin : les écrans réécrivent leur
+// section à chaque geste, et la tuile qui en ressort est un élément NEUF. Un
+// marqueur posé dessus ne survit pas à un `innerHTML` — *mesuré : la tuile se
+// remorphait à chaque frappe, donc restait à la taille d'un rond.*
+let tuileOuverte = false;
+
+// LA GÉOMÉTRIE DE MISE EN PAGE, ET SURTOUT PAS `getBoundingClientRect` — deux
+// pièges se sont payés comptant avec lui, et tous deux faussaient le repère
+// ENTRE les deux mesures d'un même mouvement :
+//
+// — LE DÉFILEMENT DU FOCUS. Donner le focus au champ fait défiler la page, et ce
+//   défilement arrive APRÈS le clic mais AVANT le rendu qu'on observe. *Mesuré :
+//   le rond partait de 1038 px sous la tuile, alors qu'ils sont à 18 px l'un de
+//   l'autre.*
+// — L'ANCÊTRE TRANSFORMÉ. Un `transform` sur une section fait d'elle le bloc
+//   conteneur de ses descendants `position: fixed` : ils cessent d'être ancrés à
+//   la fenêtre et suivent la page. L'animation d'entrée d'un espace en pose un.
+//
+// `offsetLeft/Top/Width/Height` ignorent l'un et l'autre : ils décrivent la
+// boîte dans son bloc conteneur, avant toute transformation. Il faut donc que
+// les deux formes partagent ce conteneur — sinon on ne compare rien, et l'on
+// préfère ne pas animer du tout.
+// ELLE REND LE CENTRE, pas le coin, et elle a besoin qu'on lui dise où tombe ce
+// centre dans la boîte : `offsetLeft` ignore les transformations, y compris
+// celle que l'élément porte À DEMEURE. La tuile est centrée par un
+// `left: 50%` + `translateX(-50%)` — son centre visuel tombe donc EXACTEMENT sur
+// `offsetLeft`, pas à `offsetLeft + largeur / 2`. *Sans cette part, le rond
+// partait de 33 px à gauche de la tuile alors qu'il vit à sa droite.*
+const formeDeMiseEnPage = (element, partX = 0.5) => ({
+  hote: element.offsetParent,
+  centreX: element.offsetLeft + element.offsetWidth * partX,
+  centreY: element.offsetTop + element.offsetHeight / 2,
+  width: element.offsetWidth,
+  height: element.offsetHeight,
+});
+
+document.addEventListener(
+  'click',
+  (evenement) => {
+    const plus = evenement.target.closest('.ouvrir-capture');
+    if (plus) formeDuPlus = formeDeMiseEnPage(plus);
+  },
+  true,
+);
+
+const COURBE_MORPH = 'cubic-bezier(0.2, 0.9, 0.25, 1)';
+const DUREE_MORPH = 260;
+
+// Le morph d'une boîte vers une autre. `avant` est le transform que l'élément
+// porte déjà et qu'il faut garder — la tuile est centrée par un
+// `translateX(-50%)`, et l'écraser la ferait partir d'un demi-écran à droite.
+//
+// LE RAYON PART DE 50 %, et c'est ce qui donne le rond sans calcul : un rayon
+// en pourcentage suit la boîte, donc une fois celle-ci mise à l'échelle du
+// bouton, l'ellipse tombe exactement sur son cercle. Un rayon en pixels aurait
+// été mis à l'échelle lui aussi, et le départ n'aurait pas été rond.
+// Elle REND la forme d'arrivée, mesurée avant d'animer : c'est la seule fenêtre
+// où l'élément est encore au repos, et c'est de cette forme-là que partira le
+// mouvement inverse. *Mesurée pendant l'animation, la tuile rend sa boîte
+// ÉCRASÉE — `getBoundingClientRect` compte les transformations : 53 px de large
+// au lieu de 510, et le retour partait donc d'un rond posé sur un rond.*
+function morpherDepuis(element, depart, { avant = '', partX = 0.5 } = {}) {
+  const arrivee = formeDeMiseEnPage(element, partX);
+  if (sansAnimation() || !depart || !depart.width) return arrivee;
+  if (!arrivee.width || !arrivee.height) return arrivee;
+  // Deux boîtes qui ne pendent pas du même conteneur ne se comparent pas.
+  if (depart.hote !== arrivee.hote) return arrivee;
+
+  const echelleX = depart.width / arrivee.width;
+  const echelleY = depart.height / arrivee.height;
+  const ecartX = depart.centreX - arrivee.centreX;
+  const ecartY = depart.centreY - arrivee.centreY;
+
+  element.animate(
+    [
+      {
+        transform: `${avant} translate(${ecartX}px, ${ecartY}px) scale(${echelleX}, ${echelleY})`,
+        borderRadius: '50%',
+      },
+      { transform: avant || 'none', borderRadius: getComputedStyle(element).borderRadius },
+    ],
+    { duration: DUREE_MORPH, easing: COURBE_MORPH },
+  );
+
+  // LE CONTENU NE S'ÉTIRE PAS AVEC LA BOÎTE, IL S'ALLUME DEDANS. Un champ et
+  // cinq pastilles écrasés à un sixième de leur largeur puis relâchés, c'est
+  // un accordéon de texte — on le voit, et c'est laid. Ils restent invisibles
+  // le temps que la forme se fasse, et arrivent sur la fin.
+  for (const enfant of element.children) {
+    enfant.animate([{ opacity: 0 }, { opacity: 0, offset: 0.45 }, { opacity: 1 }], {
+      duration: DUREE_MORPH,
+      easing: 'linear',
+    });
+  }
+
+  return arrivee;
+}
+
 new MutationObserver(() => {
   // Une tuile qui vit dans un espace MASQUÉ ne compte pas. La capture des
   // Tâches reste ouverte après un envoi — c'est voulu, on en note rarement une
   // seule — et son élément survit dans le DOM quand on change d'onglet. Sans
   // ce `:not([hidden])`, la page entière restait figée sur tous les autres
   // espaces : plus moyen de faire défiler l'accueil après avoir noté une tâche.
-  if (document.querySelector('.espace:not([hidden]) .capture, .menu-voile:not([hidden])'))
-    figerLeFond();
+  const tuile = document.querySelector('.espace:not([hidden]) .capture');
+
+  // LE MORPH PASSE AVANT LE FIGEAGE DU FOND, et l'ordre n'est pas indifférent :
+  // `figerLeFond` sort le corps du flux et `libererLeFond` lui rend son
+  // défilement, ce qui DÉPLACE le repère entre deux mesures. *Mesuré : le retour
+  // partait 1083 px trop bas — exactement le défilement rendu à la page.* Les
+  // deux formes d'un même mouvement se mesurent dans le même repère, donc des
+  // deux côtés de cette bascule, jamais à cheval dessus.
+  morpherLaCapture(tuile);
+
+  if (tuile || document.querySelector('.menu-voile:not([hidden])')) figerLeFond();
   else libererLeFond();
-  // `attributes` en plus de `childList` : changer d'espace ne crée ni ne
-  // détruit de tuile, ça bascule un `hidden` — et c'est justement ce qui doit
-  // libérer le fond.
 }).observe(document.body, {
   childList: true,
   subtree: true,
   attributes: true,
   attributeFilter: ['hidden'],
 });
+
+function morpherLaCapture(tuile) {
+  // L'ALLER : le rond vient d'être remplacé par la tuile.
+  if (tuile) {
+    if (!tuileOuverte) {
+      tuileOuverte = true;
+      // PAS D'ALLER, PAS DE RETOUR. La tuile s'ouvre aussi en touchant un jour
+      // du calendrier ou une case de « Ma semaine » — le rond n'y est pour rien,
+      // et la voir se refermer en rond serait un mouvement venu de nulle part.
+      formeDeLaTuile = formeDuPlus
+        ? morpherDepuis(tuile, formeDuPlus, { avant: 'translateX(-50%)', partX: 0 })
+        : null;
+      formeDuPlus = null;
+      // LA TUILE REMONTE ENSUITE AVEC LE CLAVIER (`--bas-clavier`, une
+      // transition sur `bottom`), et le retour doit partir d'où elle est
+      // VRAIMENT au moment de l'envoi. Sur ordinateur il n'y a pas de clavier
+      // virtuel, la transition ne joue pas, et la première mesure suffit.
+      if (formeDeLaTuile) {
+        tuile.addEventListener('transitionend', (evenement) => {
+          if (evenement.propertyName === 'bottom' && evenement.target === tuile) {
+            formeDeLaTuile = formeDeMiseEnPage(tuile, 0);
+          }
+        });
+      }
+    }
+    return;
+  }
+
+  // LE RETOUR : la tuile est partie — la tâche vient d'être envoyée, ou la
+  // tuile refermée — et le rond réapparaît. Il se rétracte depuis la barre.
+  //
+  // On ne peut pas animer la tuile elle-même : au moment où on l'apprend, elle
+  // n'est plus dans le document. C'est donc le rond qui joue le trajet, et le
+  // mouvement se lit pareil — une forme qui se referme sur l'autre.
+  if (!tuileOuverte) return;
+  tuileOuverte = false;
+  if (!formeDeLaTuile) return;
+  const depart = formeDeLaTuile;
+  formeDeLaTuile = null;
+
+  // LE ROND EST PARFOIS TOUJOURS LÀ, et c'est voulu : sur l'espace Tâches, le
+  // « + » reste en place pendant qu'on écrit — « elle vole au-dessus de la page,
+  // elle ne la remplace pas ». Le mouvement se lit pareil dans les deux cas :
+  // qu'il vienne de réapparaître ou qu'il n'ait jamais bougé, on le voit se
+  // rétracter depuis la barre.
+  const plus = document.querySelector('.espace:not([hidden]) .ouvrir-capture');
+  if (plus) morpherDepuis(plus, depart);
+}
 
 // --- La surbrillance d'un bouton -----------------------------------------
 //
@@ -437,7 +632,6 @@ function unDefileurGardeLeGeste(depuis, dx) {
   return false;
 }
 
-const sansAnimation = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let balayage = null;
 // UN GESTE À LA FOIS. Entre le relâchement et la navigation, il s'écoule le

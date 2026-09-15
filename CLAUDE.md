@@ -4788,6 +4788,85 @@ champ avec « Il lui manque son nom. »
 - **Cocher est une intention, pas un fait acquis** (27 août 2026). Terminer une tâche ouvre une **fenêtre** — même mécanique que la tuile du « + » : fond assombri, et **rien n'est écrit tant qu'on n'a pas confirmé**. Elle demande « combien de temps ça a pris ? », reprend la durée déjà connue et la présélectionne, et offre **trois issues qui ne disent pas la même chose** : *Annuler* n'écrit rien (la tâche reste à faire), *Passer* la termine sans toucher à sa durée — on n'est jamais obligé d'en donner une —, la coche la termine avec la durée affichée. Une publication qui part passe par la même fenêtre : elle ne peut pas vouloir dire deux choses selon l'écran.
 - **Ajouter du contenu ouvre une tuile volante** (27 août 2026) — un objectif, un projet, une période, un jalon, une intention, une idée : le fond s'assombrit, la tuile se centre, et on la referme par la croix, le fond ou Échap. Déplié sur place, un formulaire de six champs poussait la page vers le bas et faisait perdre de vue ce qu'on regardait. C'est `construireFormulaire` (js/gabarits.js) qui le fait, **pour les dix-sept formulaires à la fois** : le `<details>` reste — il porte l'état, donne au sommaire son rôle de bouton, et les écrans qui referment après enregistrement écrivaient déjà `.closest('.ajout').open = false`. Seuls les formulaires `ouvert: true` restent en place : ils vivent déjà dans une fenêtre, et une tuile par-dessus une fenêtre serait une fenêtre de trop.
 - **Un geste répond tout de suite, et se voit.** Toucher un bouton l'éclaire brièvement (`.eclair`, posé par `app.js` sur `pointerdown`) ; cocher une tâche dessine sa coche et la laisse voir 600 ms avant que la ligne ne s'en aille. Un effet de ce genre se pose **une fois, pour tout le monde** — jamais écran par écran — et se coupe sous `prefers-reduced-motion`.
+
+### LE « + » SE MÉTAMORPHOSE EN TUILE (15 septembre 2026, demande de Noé)
+
+**La demande, une vidéo à l'appui** : *« pour le bouton d'ajout (le + de bas de
+page sur la page hub et les autres sites) j'aimerais que ce soit cette animation
+lorsque l'on appuie dessus, qu'on valide une tâche. »*
+
+**CE QUE LA VIDÉO MONTRE** : le rond flottant ne disparaît pas pour laisser place
+à une tuile — **il DEVIENT la tuile.** Il s'étire depuis son coin jusqu'à la
+barre de saisie, le contenu s'allume dedans, et au moment où la tâche part le
+mouvement se rejoue à l'envers : la barre se rétracte en rond.
+
+**RIEN À DÉPLACER, ET C'EST CE QUI REND L'EFFET PEU COÛTEUX** : la tuile du hub
+est DÉJÀ en bas de l'écran, collée au clavier, depuis le 13 août 2026. Il ne
+manquait que le trajet entre les deux formes.
+
+- **C'EST UN FLIP**, pas une transition de vue : on mesure la forme de départ, on
+  pose la forme d'arrivée, et l'on anime l'écart en `transform` — donc sur le
+  compositeur, sans recalcul de mise en page à chaque image.
+  `startViewTransition` aurait fait le même travail en deux lignes, mais en
+  **fondu croisé entre deux images figées** : ici les deux formes n'ont ni la
+  même couleur ni le même contenu, et c'est le TRAJET qu'on veut voir.
+- **POSÉ UNE FOIS, DANS LA COQUILLE** (`js/app.js`), à côté de l'éclair et du
+  fond figé : **dix écrans ouvrent cette tuile** — l'accueil, les Tâches, Ma
+  semaine, le calendrier, la page d'un cap, celle d'un projet, les deux sites —
+  et dix endroits où penser à l'animer, ce sont neuf oublis en puissance. Aucun
+  d'eux n'a une ligne à changer.
+- **LE RAYON PART DE 50 %**, et c'est ce qui donne le rond sans calcul : un rayon
+  en pourcentage suit la boîte, donc une fois celle-ci mise à l'échelle du
+  bouton, l'ellipse tombe exactement sur son cercle.
+- **LE CONTENU NE S'ÉTIRE PAS AVEC LA BOÎTE, IL S'ALLUME DEDANS.** Un champ et
+  cinq pastilles écrasés à un sixième de leur largeur puis relâchés, c'est un
+  accordéon de texte. Ils restent invisibles le temps que la forme se fasse, et
+  arrivent sur la fin.
+- **LE ROND S'EFFACE PENDANT QUE LA TUILE EST OUVERTE** (`body.fond-fige
+  .ouvrir-capture`) : il ne peut pas rester à côté de ce qu'il vient de DEVENIR.
+  *Mesuré avant : sur l'accueil et sur les Tâches, où le bouton n'est pas retiré
+  du DOM, on voyait la barre s'étirer pendant que le rond restait posé à sa
+  droite — deux objets au lieu d'un mouvement.* En `opacity` et non en
+  `display` : l'espace Tâches exige qu'il garde sa place, « sans lui la liste
+  remonterait d'un cran à chaque ouverture ». Et **sans transition** : il doit
+  s'éteindre à l'instant où la tuile naît de lui.
+- **PAS D'ALLER, PAS DE RETOUR.** La tuile s'ouvre aussi en touchant un jour du
+  calendrier ou une case de « Ma semaine » — le rond n'y est pour rien, et la
+  voir se refermer en rond serait un mouvement venu de nulle part.
+- **LE ROND EST PARFOIS TOUJOURS LÀ au retour**, et c'est voulu : sur l'espace
+  Tâches il reste en place pendant qu'on écrit. Le mouvement se lit pareil —
+  qu'il vienne de réapparaître ou qu'il n'ait jamais bougé, on le voit se
+  rétracter depuis la barre.
+
+**TROIS PIÈGES DE MESURE, ET CHACUN FAUSSAIT LE REPÈRE ENTRE LES DEUX MOMENTS
+D'UN MÊME MOUVEMENT** — tous payés à l'écran :
+
+| Le piège | Ce qu'il donnait | La parade |
+|---|---|---|
+| `getBoundingClientRect` **pendant** l'animation | la tuile rend sa boîte ÉCRASÉE — 53 px au lieu de 510, et le retour partait d'un rond posé sur un rond | mesurer la forme d'arrivée **avant** d'animer, et la garder |
+| le **défilement du focus** | donner le focus au champ fait défiler la page entre le clic et le rendu — *le rond partait de 1038 px sous la tuile, alors qu'ils sont à 18 px l'un de l'autre* | `offsetLeft/Top/Width/Height`, qui ignorent le défilement |
+| l'**ancêtre transformé** | un `transform` sur une section en fait le bloc conteneur de ses descendants `position: fixed` : ils cessent d'être ancrés à la fenêtre. L'animation d'entrée d'un espace en pose un | la même géométrie de mise en page, plus un refus d'animer quand les deux boîtes ne pendent pas du même conteneur |
+
+- **ET LE CENTRE N'EST PAS LE MILIEU DE LA BOÎTE** : `offsetLeft` ignore aussi la
+  transformation que l'élément porte **à demeure**. La tuile est centrée par un
+  `left: 50%` + `translateX(-50%)` — son centre visuel tombe donc EXACTEMENT sur
+  `offsetLeft`. *Sans cette part, le rond partait de 33 px à gauche de la tuile
+  alors qu'il vit à sa droite.*
+- **LE MORPH PASSE AVANT LE FIGEAGE DU FOND**, et l'ordre n'est pas indifférent :
+  `figerLeFond` sort le corps du flux et `libererLeFond` lui rend son
+  défilement, ce qui déplace le repère. Les deux formes d'un même mouvement se
+  mesurent des deux côtés de cette bascule, jamais à cheval dessus.
+- **L'OUVERTURE SE DISTINGUE D'UN REDESSIN PAR UN ÉTAT, PAS PAR UN MARQUEUR DANS
+  LE DOM** : les écrans réécrivent leur section à chaque geste, et la tuile qui
+  en ressort est un élément NEUF — un `dataset` posé dessus ne survit pas à un
+  `innerHTML`. *Mesuré : la tuile se remorphait à chaque frappe, donc restait à
+  la taille d'un rond.*
+
+> **Leçon de banc d'essai, à ne pas réapprendre** : quand le panneau du
+> navigateur est MASQUÉ, `requestAnimationFrame` ne tourne pas et **aucune
+> animation ne progresse** — `playState` dit « running » et `currentTime` reste
+> à 0. Pour photographier un morph, on met ses animations en pause et l'on pose
+> `currentTime` à la main.
 - **L'écran d'abord, le réseau ensuite.** Une action de Noé change l'affichage tout de suite ; l'écriture part derrière. Un geste qui attend l'aller-retour Supabase, ce sont 300 à 800 ms de figement sur téléphone. La contrepartie n'est pas facultative : si l'écriture échoue, l'état d'avant est remis ET une ligne le dit — sans ce retour en arrière, l'affichage optimiste est un mensonge. La mécanique vit dans `js/ecriture.js` (`modifierAussitot`, `retirerAussitot`, `ajouterAussitot`) : ne pas la recopier. **Les listes s'y modifient sur place**, jamais par remplacement, sans quoi le retour en arrière écrirait dans un tableau orphelin. Deux exceptions volontaires : les **formulaires** (ils ont un endroit pour dire l'échec, et gardent la saisie) et les écritures qui envoient un fichier.
 - **LA PAGE N'A PLUS DE PLAFOND DE LARGEUR** (30 août 2026, demande de Noé : « sur ordinateur, le site doit utiliser toute la largeur »). Elle en a eu un de 1240 px, hérité de Bac-3 ; sur un écran de 1728 px il laissait 488 px de vide de part et d'autre. Marges de **16/24/32/48 px** (le quatrième palier est né avec la suppression du plafond : toute la largeur ne veut pas dire bord à bord), ruptures à 720 et 1080 px.
   - **La règle, elle, n'a pas changé — et c'est elle qui rend la suppression possible** : **la mise en page prend toute la largeur, le texte jamais.** Sur grand écran les listes passent en colonnes plutôt que de s'étirer (quatre ou cinq au lieu de trois), et le **texte courant porte sa mesure** : sous-titres, phrases d'aide et écrans vides s'arrêtent à 68 caractères (`.espace > p`, `.sous-titre`, `.vide`). Ce qui empêche une ligne de devenir illisible, ce sont ces deux règles, pas une largeur de page.

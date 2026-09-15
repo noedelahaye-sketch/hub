@@ -146,26 +146,6 @@ export const PILIERS = {
   4: { nom: 'Carte blanche', role: 'la différence' },
 };
 
-function construirePiliers() {
-  return `
-    <div class="piliers">
-      <ul class="liste-piliers">
-        ${Object.entries(PILIERS)
-          .map(
-            ([rang, { nom, role }]) => `
-          <li data-pilier="${rang}">
-            <span class="pilier-rang chiffre">${rang}</span>
-            <span class="pilier-nom">${echapper(nom)}</span>
-            <span class="discret pilier-role">${echapper(role)}</span>
-          </li>`,
-          )
-          .join('')}
-      </ul>
-      <p class="discret piliers-test">Plancher : 2 publications par semaine.
-        Les stories restent une zone franche.</p>
-    </div>`;
-}
-
 const VUES = [
   'accueil', 'journal', 'evenement', 'creer', 'banque', 'editorial',
   'calendrier', 'reseau', 'passerelle', 'vivier', 'messages', 'carnet', 'missions',
@@ -2506,7 +2486,7 @@ export function construireIdeeDuJour(publications, { jour = versDateISO() } = {}
   if (!idee) {
     return `
       <section class="bloc idee-jour">
-        <h2><span class="etape chiffre">01</span>L'idée du jour</h2>
+        <h2>L'idée du jour</h2>
         <p class="vide">Ta banque est vide — note une idée, même bancale, et elle reviendra
           t'inspirer un matin.</p>
       </section>`;
@@ -2519,7 +2499,7 @@ export function construireIdeeDuJour(publications, { jour = versDateISO() } = {}
   return `
     <section class="bloc idee-jour">
       <div class="idee-jour-tete">
-        <h2><span class="etape chiffre">01</span>L'idée du jour</h2>
+        <h2>L'idée du jour</h2>
         <span class="discret idee-jour-date">le ${echapper(
           depuisDateISO(jour).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }),
         )}</span>
@@ -2553,86 +2533,229 @@ export function construireIdeeDuJour(publications, { jour = versDateISO() } = {}
     </section>`;
 }
 
-// --- Le pipeline de Créer -----------------------------------------------------
-// La page raconte le chemin d'une idée : l'étincelle (l'idée du jour), le
-// chantier (ce qu'on fabrique), ce qui part (cette semaine), où fouiller (les
-// portes). Réorganisée le 15 août 2026 : les données disaient 18 idées, zéro
-// programmée, zéro publiée — la page savait collecter, rien n'y faisait
-// avancer.
+// --- CRÉER : UNE PAGE QUI INSPIRE, ET QUI OUVRE (15 septembre 2026) ----------
+//
+// LA DEMANDE DE NOÉ : « je déteste la page Créer de Yuno, repense-la plus
+// intelligemment par rapport aux modifications qu'on a faites sur les autres
+// pages (Yuno et le Hub) pour la forme. Elle doit me servir à donner de
+// l'inspiration, avoir un lien vers le calendrier éditorial. »
+//
+// CE QUE LES DONNÉES DISAIENT, ET C'EST ÇA QUI TRANCHE. Vingt publications :
+// DIX-HUIT idées sans date, DEUX parues, ZÉRO programmée, ZÉRO en chantier. La
+// page portait trois blocs numérotés — 01 l'idée du jour, 02 cette semaine,
+// 03 en chantier — et DEUX SUR TROIS ÉTAIENT VIDES À L'ÉCRAN. Le troisième
+// l'était structurellement : « En chantier » lit les statuts intermédiaires (à
+// développer, brouillon, prêt), et AUCUNE publication n'en a jamais porté un
+// seul depuis l'ouverture du site. **La page racontait un chemin que personne ne
+// parcourt**, et elle le racontait en le numérotant.
+//
+// L'AUTRE CHIFFRE, ET C'EST LUI QUI DONNE SA FORME À LA NOUVELLE PAGE :
+// VINGT-SEPT SORTIES AU CARNET, toutes avec leur photo, et DEUX publications en
+// sont sorties. **La matière est là, elle ne devient rien** — et la page qui doit
+// « donner de l'inspiration » ne montrait pas une seule image.
+//
+// ELLE NE GÈRE PLUS RIEN : ELLE INSPIRE, ET ELLE OUVRE. Quatre temps, dans
+// l'ordre où l'on décide :
+//   — L'IDÉE DU JOUR, gardée telle quelle : c'est le seul objet de la page qui
+//     marchait, et il marche parce qu'il ne demande rien ;
+//   — DE LA MATIÈRE : trois de ses propres photos, tirées du carnet, dont rien
+//     n'est encore sorti. Pour un photographe, l'inspiration est dans sa carte
+//     mémoire avant d'être dans une liste ;
+//   — SES QUATRE PILIERS, en barres à échelle commune : ce que la banque porte
+//     sur chacun. La boussole remonte du pied de page, où elle était repliée et
+//     muette ;
+//   — LES DEUX PORTES, inchangées : le calendrier éditorial et la banque. C'est
+//     le lien que Noé demande, et il est déjà à la bonne forme depuis hier.
+//
+// L'ORDRE N'EST PAS INDIFFÉRENT : la matière passe devant les piliers parce
+// qu'une photo est CONCRÈTE et qu'un classement est ABSTRAIT — on regarde avant
+// de ranger.
+//
+// LA NUMÉROTATION TOMBE AVEC LE PIPELINE. « 01 · 02 · 03 » disait un chemin —
+// l'étincelle, ce qui part, le chantier ; il n'y a plus de chemin, il y a quatre
+// choses à regarder. Partent avec elle : `partagerLAVenir`, `enChantier`,
+// `lignePublication`, `construirePiliers` et leurs styles.
 
-// Ce qui est daté, coupé en deux : la semaine qui vient, et le reste. Pas de
-// borne basse — une publication datée d'hier et pas encore publiée reste dans
-// la semaine, sobrement : le hub ne compte pas les retards, il ne les efface
-// pas non plus.
-export function partagerLAVenir(publications, reference = new Date()) {
-  const datees = publications
-    .filter((pub) => pub.date_prevue && pub.statut !== 'publie')
-    .sort((a, b) => a.date_prevue.localeCompare(b.date_prevue));
-  const borne = versDateISO(ajouterJours(reference, 7));
-
-  return {
-    semaine: datees.filter((pub) => pub.date_prevue <= borne),
-    plusTard: datees.filter((pub) => pub.date_prevue > borne),
-  };
+// --- DE LA MATIÈRE ------------------------------------------------------------
+//
+// LA MATIÈRE QU'ON N'A PAS ENCORE PRISE. Le lien existe DÉJÀ en base :
+// `publications.evenement_id` porte le match qui a fait naître une parution
+// (29 août 2026, le post à J+1). On sait donc de quelles sorties quelque chose
+// est sorti — sans colonne nouvelle, et sans le deviner.
+//
+// EXPORTÉE, comme tout ce qui classe dans ce fichier : un tirage se vérifie avec
+// des données factices, pas en regardant l'écran d'un jour particulier.
+export function matiereLibre(evenements, publications, photos = {}) {
+  const prises = new Set(publications.map((pub) => pub.evenement_id).filter(Boolean));
+  return momentsIllustres(evenements, photos).filter((sortie) => !prises.has(sortie.id));
 }
 
-// L'établi : les idées qu'on fait avancer, pas encore posées sur un jour. Une
-// idée datée vit dans le flux du calendrier — c'est « Cette semaine » qui la
-// montre, avec son statut sur la tuile ; la faire figurer deux fois sur la
-// même page ne dirait rien de plus.
-export function enChantier(publications) {
-  return publications.filter(
-    (pub) => !pub.date_prevue && ['a_developper', 'brouillon', 'pret'].includes(pub.statut),
-  );
-}
+// TROIS, et c'est la largeur d'une rangée qui le dit : trois vignettes tiennent
+// côte à côte sur un ordinateur sans qu'aucune descende sous la taille où l'on
+// reconnaît une image. Au-delà, le bloc redeviendrait le MUR du Journal, qui est
+// à un geste et qui, lui, ne cache rien.
+const MATIERE_MONTREE = 3;
 
-// Une ligne du flux : la date quand elle existe, le pilier en point coloré, le
-// titre, le statut. Le clic ouvre la fiche — corrections et avancées y vivent.
-function lignePublication(pub, { avecDate = true } = {}) {
+// LE TIRAGE EST CELUI DU MUR DE PHOTOS ET DE L'IDÉE DU JOUR (`tirageDuJour`) :
+// la date sert de graine, rien n'est stocké, l'ordre est stable dans la journée
+// et change à minuit. Trois mécaniques de tirage sur une même page finiraient
+// par ne plus se ressembler.
+function blocDeLaMatiere(etat) {
+  const sorties = sortiesVecues(etat.evenements ?? []);
+  const libres = matiereLibre(etat.evenements ?? [], etat.publications, etat.photos);
+  const tirees = tirageDuJour(libres, versDateISO()).slice(0, MATIERE_MONTREE);
+  const reference = new Date();
+
+  // TROIS VIDES, ET AUCUN NE S'EXCUSE. Rien au carnet : la porte est dehors, pas
+  // dans l'application. Tout exploité : c'est une victoire, et elle se dit comme
+  // telle — c'est la règle des écrans vides du hub, « un espace vide ouvre une
+  // porte ».
+  const corps = tirees.length
+    ? `<ul class="matiere">${tirees
+        .map((sortie) => {
+          const photo = etat.photos[sortie.photo_chemin];
+          const quand = quandDeLaLigne(depuisDateISO(jourDeLaSortie(sortie)), reference);
+          const nom = (sortie.titre ?? sortie.lieu ?? '').trim() || TYPES_MOMENT.autre;
+          return `
+          <li>
+            <button type="button" class="matiere-tuile" data-tirer-idee="${echapper(sortie.id)}"
+              aria-label="Noter une idée à partir de ${echapper(nom)}">
+              <img src="${echapper(photo)}" alt="" loading="lazy" decoding="async">
+              <span class="matiere-legende">
+                <span class="matiere-titre">${echapper(nom)}</span>
+                <span class="discret matiere-quand${
+                  quand.enChiffres ? ' chiffre' : ''
+                }">${echapper(quand.texte)}${
+                  sortie.type_moment && TYPES_MOMENT[sortie.type_moment]
+                    ? ` · ${echapper(TYPES_MOMENT[sortie.type_moment])}`
+                    : ''
+                }</span>
+              </span>
+            </button>
+          </li>`;
+        })
+        .join('')}</ul>`
+    : `<p class="vide">${
+        sorties.length
+          ? 'Tout ce que tu as photographié a déjà donné quelque chose. Retourne en chercher.'
+          : "Tes photos arriveront ici, et tes idées avec — joins-en une à ta prochaine sortie."
+      }</p>`;
+
   return `
-    <li><button type="button" class="pub-ligne" data-ouvrir-pub="${echapper(pub.id)}"
-      aria-label="Ouvrir « ${echapper(pub.titre)} »">
-      ${
-        avecDate && pub.date_prevue
-          ? `<span class="pub-ligne-quand">${echapper(
-              echeanceLisible(depuisDateISO(pub.date_prevue)),
-            )}</span>`
-          : ''
-      }
-      ${
-        pub.pilier
-          ? `<span class="point-pilier" data-pilier="${echapper(String(pub.pilier))}"
-               aria-hidden="true"></span>`
-          : ''
-      }
-      <span class="pub-ligne-titre">${echapper(pub.titre)}</span>
-      <span class="etiquette">${NOMS_STATUTS[pub.statut] ?? pub.statut}</span>
-    </button></li>`;
+    <section class="bloc">
+      <h2>De la matière</h2>
+      <p class="discret sous-titre sous-bloc">
+        ${
+          sorties.length
+            ? `<span class="chiffre">${sorties.length}</span> sortie${
+                sorties.length > 1 ? 's' : ''
+              } au carnet. Presse-en une, l'idée part avec son nom.`
+            : 'Ce que tu as déjà dans les mains.'
+        }</p>
+      <div data-bloc="matiere">${corps}</div>
+    </section>`;
+}
+
+// --- SES QUATRE PILIERS, EN BARRES --------------------------------------------
+//
+// CE QUE ÇA RENVERSE, ET IL FAUT LE DIRE. Les piliers ont été REPLIÉS en pied de
+// page le 15 août 2026, pour un motif qui se tenait : « c'est la stratégie de
+// Noé, il la connaît par cœur ; le tableau des rôles se relit les jours de
+// doute, pas à chaque visite ». **Le motif tombe le jour où le bloc cesse de
+// RÉCITER la stratégie pour en DIRE L'ÉTAT** : combien d'idées chaque axe porte,
+// et combien en sont parties. Ça, personne ne le connaît par cœur — c'est même
+// la seule chose de cette page qu'on ne puisse pas deviner.
+//
+// C'est le test du hall du perso, au mot près : une tuile doit dire quelque
+// chose QU'ON IGNORE AVANT DE L'OUVRIR.
+//
+// L'ÉCHELLE EST COMMUNE aux quatre — la règle des barres de séries du hall —,
+// sans quoi chaque axe se mesurerait à lui-même et les longueurs ne voudraient
+// plus rien dire les unes à côté des autres. *Mesuré sur les données de Noé :
+// 7 idées pour « Dans l'œil du photographe », 3 pour « Bord terrain ». Le
+// déséquilibre se voit avant d'être lu.*
+//
+// LA BARRE EST UNE RÉSERVE, JAMAIS UN MANQUE, et la phrase au-dessus donne la
+// clé de lecture : le plus court est celui qui a faim. Ni rouge, ni seuil, ni
+// « trop peu » — un axe sans idée n'est pas un retard, c'est un axe à ouvrir.
+//
+// LE ZÉRO S'AFFICHE, et c'est la règle du 2 septembre 2026 : « une série à zéro
+// ne s'affiche pas » vaut là où un chiffre est SEUL ; dans une colonne qui en
+// aligne quatre, la case vide est pire — elle décale le regard et l'on ne sait
+// plus lequel manque.
+//
+// PRESSER UN PILIER OUVRE LA BANQUE FILTRÉE DESSUS. Le filtre existait depuis le
+// 15 août et ne s'atteignait que par un menu, une fois la banque déjà ouverte.
+export function reserveParPilier(publications) {
+  const compte = (liste, rang) =>
+    liste.filter((pub) => String(pub.pilier ?? '') === rang).length;
+  const idees = publications.filter((pub) => !pub.date_prevue && pub.statut !== 'publie');
+  const parues = publications.filter((pub) => pub.statut === 'publie');
+
+  return Object.entries(PILIERS).map(([rang, { nom, role }]) => ({
+    rang,
+    nom,
+    role,
+    idees: compte(idees, rang),
+    parues: compte(parues, rang),
+  }));
+}
+
+function blocDesPiliers(publications) {
+  const axes = reserveParPilier(publications);
+  // Jamais zéro : on ne divise pas par ce qui n'existe pas. Une banque vide rend
+  // alors quatre barres vides, ce qui est exactement la vérité.
+  const echelle = Math.max(1, ...axes.map((axe) => axe.idees));
+
+  return `
+    <section class="bloc">
+      <h2>Tes quatre piliers</h2>
+      <p class="discret sous-titre sous-bloc">Ce que la banque porte sur chacun.
+        Le plus court est celui qui a faim.</p>
+      <ul class="axes">
+        ${axes
+          .map((axe) => {
+            const dit = `${axe.nom} — ${axe.idees} idée${axe.idees > 1 ? 's' : ''} en réserve${
+              axe.parues ? `, ${axe.parues} parue${axe.parues > 1 ? 's' : ''}` : ''
+            }`;
+            return `
+          <li>
+            <a class="axe" href="#yuno/banque" data-vers-pilier="${echapper(axe.rang)}"
+              data-pilier="${echapper(axe.rang)}" title="${echapper(dit)}"
+              aria-label="${echapper(dit)}">
+              <span class="pilier-rang chiffre">${echapper(axe.rang)}</span>
+              <span class="axe-mots">
+                <span class="pilier-nom">${echapper(axe.nom)}</span>
+                <span class="discret pilier-role">${echapper(axe.role)}</span>
+              </span>
+              <span class="axe-barre" aria-hidden="true">
+                <i style="width: ${Math.round((axe.idees / echelle) * 100)}%"></i>
+              </span>
+              <span class="axe-compte" aria-hidden="true">
+                <span class="chiffre">${axe.idees}</span>
+                ${
+                  axe.parues
+                    ? `<span class="discret axe-parues"><span class="chiffre">${axe.parues}</span> parue${
+                        axe.parues > 1 ? 's' : ''
+                      }</span>`
+                    : ''
+                }
+              </span>
+            </a>
+          </li>`;
+          })
+          .join('')}
+      </ul>
+      <p class="discret piliers-test">Ça rentre dans un pilier ? Oui → je crée.
+        Plancher : 2 publications par semaine, et les stories restent une zone
+        franche.</p>
+    </section>`;
 }
 
 function vueCreer(etat) {
-  const { semaine, plusTard } = partagerLAVenir(etat.publications);
-  const chantier = enChantier(etat.publications);
   const idees = etat.publications.filter(
     (pub) => !pub.date_prevue && pub.statut !== 'publie',
   ).length;
-
-  // Le flux se lit en LIGNES, pas en tuiles (forme validée par Noé, 15 août
-  // 2026) : date, point de pilier, titre, statut — et le clic ouvre la fiche,
-  // où tous les gestes vivent déjà. Trois familles de formes sur la page :
-  // la carte pour le contenu, la ligne pour le flux, la tuile pour les portes.
-  const lignes = (liste, reglages = {}) =>
-    `<ul class="liste-flux">${liste
-      .map((pub) => lignePublication(pub, reglages))
-      .join('')}</ul>`;
-
-  // Un vide qui montre son lieu : l'icône du bloc, grande et pâle, au-dessus
-  // de la phrase. Une promesse dessinée, pas une ligne d'excuse.
-  const videDessine = (icone, phrase) => `
-    <p class="vide vide-dessine">
-      <span class="vide-icone" aria-hidden="true">${icone}</span>
-      <span>${phrase}</span>
-    </p>`;
 
   return `
     ${enTete('creer', etat)}
@@ -2644,54 +2767,13 @@ function vueCreer(etat) {
 
     ${construireIdeeDuJour(etat.publications)}
 
-    <!-- « Cette semaine » remplace « À venir » (15 août 2026) : c'est le seul
-         bloc qui serve le plancher des 2 publications par semaine — en montrant
-         CE QUI EST PRÉVU, un effort que Noé contrôle, jamais un compteur de
-         manque. Le reste du daté attend replié : la semaine d'abord. -->
-    <section class="bloc">
-      <h2><span class="etape chiffre">02</span>Cette semaine</h2>
-      <div data-bloc="semaine">
-        ${
-          semaine.length
-            ? lignes(semaine)
-            : videDessine(
-                CALENDRIER,
-                `Rien cette semaine — <a href="#yuno/editorial">pose une idée sur un jour</a>.`,
-              )
-        }
-      </div>
-      ${
-        plusTard.length
-          ? `<details class="backlog">
-               <summary>Plus tard <span class="chiffre">${plusTard.length}</span></summary>
-               ${lignes(plusTard)}
-             </details>`
-          : ''
-      }
-    </section>
+    ${blocDeLaMatiere(etat)}
 
-    <!-- L'établi : le chaînon qui manquait entre la banque et le calendrier.
-         C'est lui qui donne un usage aux statuts intermédiaires (à développer,
-         brouillon, prêt) — jamais exercés jusqu'ici. Une idée qu'on avance
-         depuis sa fiche vient ici, puis se pose sur un jour. -->
-    <section class="bloc">
-      <h2><span class="etape chiffre">03</span>En chantier</h2>
-      <div data-bloc="chantier">
-        ${
-          chantier.length
-            ? lignes(chantier, { avecDate: false })
-            : videDessine(
-                AMPOULE,
-                `L'établi est vide. Fais avancer une idée de la banque :
-                 elle passe ici, puis au calendrier.`,
-              )
-        }
-      </div>
-    </section>
+    ${blocDesPiliers(etat.publications)}
 
-    <!-- Les deux lieux de l'atelier, chacun avec son métier écrit : la
-         distinction (poser sur les jours / fouiller le fonds) ne se lisait pas
-         depuis cette page. Le compte d'idées rend la porte vivante. -->
+    <!-- Les deux lieux de l'atelier, chacun avec son métier écrit. Le calendrier
+         éditorial est le lien que Noé demande ; sa frise montre la semaine qui
+         vient, trous compris. -->
     <section class="bloc">
       <div class="grandes-portes">
         ${grandePorte({
@@ -2712,26 +2794,11 @@ function vueCreer(etat) {
     </section>
 
     ${
-      // La fiche d'une idée, ouverte depuis la carte du jour ou une ligne du
-      // flux. Elle était rendue par la seule banque : depuis Créer, le clic ne
-      // menait nulle part (signalé par Noé, 15 août 2026).
+      // La fiche d'une idée, ouverte depuis la carte du jour. Elle était rendue
+      // par la seule banque : depuis Créer, le clic ne menait nulle part
+      // (signalé par Noé, 15 août 2026).
       fenetreIdee(etat, { cycle: STATUTS_YUNO, checklist: true, piliers: PILIERS })
     }
-
-    <!-- Les piliers, repliés et en bas de page (15 août 2026) : c'est la
-         stratégie de Noé, il la connaît par cœur. La phrase-test suffit au
-         quotidien ; le tableau des rôles se relit les jours de doute, pas à
-         chaque visite. Un écran entier rendu à l'action. -->
-    <section class="bloc piliers-repli">
-      <details>
-        <summary>Ça rentre dans un pilier ?
-          <span class="points-piliers" aria-hidden="true">${[1, 2, 3, 4]
-            .map((rang) => `<span class="point-pilier" data-pilier="${rang}"></span>`)
-            .join('')}</span>
-          Oui → je crée.</summary>
-        ${construirePiliers()}
-      </details>
-    </section>
 
     ${pied()}`;
 }
@@ -6213,7 +6280,12 @@ const BESOINS = {
   ],
   evenement: ['evenements', 'contacts', 'preparations', 'commandes', 'pistes'],
   journal: ['evenements', 'contacts', 'preparations', 'commandes'],
-  creer: ['publications'],
+  // CRÉER LIT LES SORTIES DEPUIS LE 15 SEPTEMBRE 2026 : le bloc « De la matière »
+  // montre ses propres photos, et elles voyagent avec `evenements` (le chargeur
+  // signe leurs adresses dans la foulée). C'est UNE lecture de plus sur une page
+  // qui n'en faisait qu'une — et le cache de session vaut pour tout le site :
+  // venu de l'accueil, qui les lit déjà, le bloc ne coûte rien.
+  creer: ['publications', 'evenements'],
   banque: ['publications'],
   editorial: ['publications'],
   // Le calendrier et le réseau lisent aussi les préparations et leurs
@@ -7716,6 +7788,44 @@ export default {
         etat.modeleOuvert = null;
         etat.editionModele = false;
         rendre();
+        return;
+      }
+
+      // TIRER UNE IDÉE D'UNE PHOTO (15 septembre 2026). La tuile ouvre la MÊME
+      // capture que le « + » de la page — publication, sans date, la nature en
+      // dernier —, le nom de la sortie déjà écrit dedans. Ce n'est pas le titre
+      // de l'idée, c'est son point de départ : on le complète, ou on l'efface.
+      //
+      // `valeurs` est la voie normale de la tuile pour arriver remplie : c'est
+      // par elle qu'une ligne rouverte retrouve son titre. Rien à inventer.
+      const tirerIdee = evenement.target.closest('[data-tirer-idee]');
+      if (tirerIdee) {
+        const sortie = etat.evenements.find(
+          (element) => element.id === tirerIdee.dataset.tirerIdee,
+        );
+        if (!sortie) return;
+        etat.creationCal = {
+          debut: '',
+          fin: '',
+          nature: 'publication',
+          valeurs: { titre: (sortie.titre ?? sortie.lieu ?? '').trim() },
+        };
+        rendre();
+        // Le curseur AU BOUT du nom, et non devant : on vient écrire la suite.
+        const champ = section.querySelector('#cal-titre');
+        champ?.focus();
+        champ?.setSelectionRange(champ.value.length, champ.value.length);
+        return;
+      }
+
+      // UN PILIER OUVRE LA BANQUE FILTRÉE DESSUS. L'état se pose AVANT que le
+      // lien navigue — un écouteur délégué passe avant le comportement par
+      // défaut —, et `naviguer` ne touche pas à `etat.pilier` : la banque
+      // s'ouvre donc déjà sur le bon axe, sans second rendu.
+      const versPilier = evenement.target.closest('[data-vers-pilier]');
+      if (versPilier) {
+        etat.pilier = versPilier.dataset.versPilier;
+        etat.statutIdee = 'tout';
         return;
       }
 

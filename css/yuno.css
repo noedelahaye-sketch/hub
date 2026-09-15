@@ -962,35 +962,12 @@ body[data-espace="yuno"] .etiquette {
   .grandes-portes { grid-template-columns: minmax(0, 1fr); }
 }
 
-/* --- Les quatre piliers -----------------------------------------------------
-   La boussole, posée en tête de Créer. Elle est là pour fermer un débat : on la
-   lit d'un coup d'œil, on ne s'y arrête pas. */
-
-.piliers {
-  padding: var(--espace-16);
-  background: var(--fond-carte);
-  border: 1px solid var(--bordure);
-  border-radius: var(--rayon-carte);
-}
-
-.bloc ul.liste-piliers {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--espace-8);
-}
-
-@media (min-width: 45rem) {
-  .bloc ul.liste-piliers { grid-template-columns: repeat(2, 1fr); }
-}
-
-.bloc ul.liste-piliers li {
-  align-items: baseline;
-  gap: var(--espace-8);
-  padding: 0;
-  background: none;
-  border: none;
-  border-radius: 0;
-}
+/* --- LES QUATRE PILIERS : LE RANG, LE NOM, LE RÔLE --------------------------
+   Ce qui reste de la boussole après le 15 septembre 2026 : ses trois morceaux de
+   ligne, que le bloc des axes de Créer réemploie. La carte `.piliers`, sa liste
+   à deux colonnes et le repli du pied de page sont partis avec
+   `construirePiliers` — le bloc ne récite plus la stratégie, il en dit l'état.
+   Voir le commentaire de tête de `vueCreer`, js/yuno.js. */
 
 /* Les quatre rangs ne sont plus quatre pastilles dorées identiques : chacune
    porte la couleur de son pilier, et la boussole se lit d'un regard. */
@@ -1007,12 +984,12 @@ body[data-espace="yuno"] .etiquette {
   border-radius: var(--rayon-pastille);
 }
 
-/* Le nom du pilier reprend sa couleur quand elle se lit en lettres — le jaune
-   et l'orange seulement. Le bleu et le violet resteraient sous le seuil, et
-   c'est leur pastille qui les dit. */
-[data-pilier="1"] .pilier-nom { color: var(--pilier-1); }
-[data-pilier="2"] .pilier-nom { color: var(--pilier-2); }
-
+/* LE NOM NE PREND PLUS LA COULEUR DE SON PILIER (15 septembre 2026). Les quatre
+   sont aujourd'hui quatre bleus sombres, faits pour porter de l'encre blanche en
+   APLAT ; en lettres sur le fond de la page, le plus clair des quatre plafonne à
+   1,8:1 — illisible. C'est l'argument déjà écrit pour `.etiquette-pilier`, et il
+   vaut maintenant pour les quatre : la couleur se dit en aplat, jamais en
+   lettres. C'est la pastille du rang qui la porte. */
 .pilier-nom { font-weight: 600; font-size: 0.9375rem; }
 .pilier-role { font-size: 0.8125rem; }
 
@@ -1024,15 +1001,40 @@ body[data-espace="yuno"] .etiquette {
   border-top: 1px solid var(--bordure);
 }
 
-/* Le pilier porte sa couleur, en aplat. C'est le classement qui structure tout
-   le site : le voir sans le lire, c'est lire l'équilibre de la banque d'un coup
-   d'œil. En aplat et non en texte parce que deux des quatre couleurs (le bleu,
-   le violet) sont illisibles en lettres sur un fond sombre — et qu'une même
-   chose ne peut pas avoir deux formes selon sa couleur. */
+/* LE PILIER SE DIT EN POINT, PLUS EN APLAT (15 septembre 2026). Noé demande de
+   retirer le rectangle de couleur à gauche des tuiles ; l'étiquette pleine
+   serait alors restée **le seul aplat coloré de l'écran**, donc plus criante
+   qu'avant le retrait — on n'aurait pas retiré la couleur, on l'aurait
+   concentrée.
+
+   CE QUI NE CHANGE PAS : le pilier garde sa couleur, et le classement se voit
+   toujours sans se lire. C'est la FORME qui change — un point au lieu d'un
+   rectangle —, et c'est le dessin que le site employait déjà pour ça sur ses
+   lignes de flux : « la couleur sans le mot ».
+
+   TROIS ÉTIQUETTES HOMOGÈNES : réseau, format et pilier se présentent enfin de
+   la même façon — contour fin, encre discrète —, là où la troisième criait
+   au-dessus des deux autres.
+
+   LE POINT S'ÉCLAIRCIT, comme les barres des axes : les quatre piliers sont
+   quatre bleus sombres faits pour porter de l'encre blanche en aplat ; à 7 px
+   sur le fond d'une carte, le quatrième disparaîtrait. */
 .etiquette-pilier {
-  color: var(--pilier-encre, var(--gris-chaud));
-  background: var(--pilier, transparent);
-  border-color: var(--pilier, var(--gris-chaud-trait));
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--gris-chaud);
+  background: transparent;
+  border-color: var(--bordure);
+}
+
+.etiquette-pilier::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: var(--rayon-pastille);
+  background: color-mix(in oklab, var(--pilier, var(--gris-chaud)) 58%, #ffffff);
 }
 
 /* « Noter une idée », « Je ne sais pas quoi poster » et le tirage de la semaine
@@ -1040,23 +1042,6 @@ body[data-espace="yuno"] .etiquette {
    une idée entière — pilier et notes compris — et l'idée du jour, en tête de
    page, a rendu le tirage à la demande superflu. Leurs styles partent avec eux.
    Voir docs/yuno-spec.md, §4. */
-
-/* Les piliers, repliés en bas de page (15 août 2026) : la phrase-test en
-   résumé, le tableau des rôles derrière. On le rouvre les jours de doute. */
-/* En texte qui coule, pas en flex : une phrase avec ses points colorés au
-   milieu doit se replier comme une phrase — le flex la découpait en morceaux
-   sur téléphone (vu sur capture). La cible tactile vient du rembourrage. */
-.piliers-repli summary {
-  font-weight: 600;
-  cursor: pointer;
-  list-style: none;
-  padding: var(--espace-12) 0;
-}
-
-.piliers-repli summary::-webkit-details-marker { display: none; }
-.piliers-repli summary::after { content: " ›"; margin-left: var(--espace-8); color: var(--gris-chaud); }
-.piliers-repli details[open] summary::after { content: " ⌄"; }
-.piliers-repli details[open] summary { margin-bottom: var(--espace-8); }
 
 /* --- La banque d'idées ------------------------------------------------------ */
 
@@ -1108,8 +1093,20 @@ body[data-espace="yuno"] :is([data-bloc="banque"], [data-bloc="publiees"])
    chose dessous. */
 body[data-espace="yuno"] .tuile-apercu { cursor: pointer; }
 
-body[data-espace="yuno"] .tuile-apercu:hover { border-color: var(--gris-chaud-trait); }
-body[data-espace="yuno"] .tuile-apercu:focus-visible { border-color: var(--accent); }
+/* LE SURVOL SE DIT PAR LA SURFACE, PLUS PAR UN CONTOUR (15 septembre 2026, même
+   demande) : une tuile qui se cerne au passage de la souris est un contour qui
+   apparaît, et c'est justement ce dont Noé ne veut pas. Elle s'éclaircit d'un
+   souffle — le même geste que la surface qui distingue déjà une tuile de la
+   page. Le FOCUS CLAVIER, lui, garde son anneau : il doit se voir sans
+   ambiguïté, et le hub ne le supprime jamais. */
+body[data-espace="yuno"] .tuile-apercu:hover {
+  background: color-mix(in srgb, var(--texte) 5%, var(--fond-carte));
+}
+
+body[data-espace="yuno"] .tuile-apercu:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 
 /* La fenêtre d'une idée : la même matière que la tuile, en entier. Les listes
    qu'elle contient ne sont pas des grilles de tuiles — elles se rangent. */
@@ -3114,15 +3111,38 @@ body[data-espace="yuno"] .prepa-bilan-bouton:hover {
 /* Le titre de l'idée porte la voix du site : c'est du contenu, pas un libellé
    d'interface. */
 /* --- La carte du jour ---------------------------------------------------------
-   La seule carte CHAUDE de la page (forme validée par Noé, 15 août 2026) : un
-   souffle d'or dans le fond, une bordure teintée, le re-tirage dans son coin,
-   et le geste de programmer dans son pied. Tout le reste de la page est froid —
-   c'est ce contraste qui dit « c'est ici que ça commence ». */
+   ELLE RESSORT PAR SA SURFACE, PLUS PAR SA COULEUR (15 septembre 2026, demande
+   de Noé : « j'aime pas que ce soit de couleur, qu'il y ait un contour… mais je
+   veux quand même qu'elle ressorte un peu, donc trouve une solution »).
+
+   *Ce que ça remplace : un souffle d'or dans le fond (7 % d'accent) et une
+   bordure dorée à 35 %, validés le 15 août — « la seule carte CHAUDE de la
+   page ».*
+
+   LA SOLUTION EST DÉJÀ DANS LA GRAMMAIRE DU HUB, et c'est la règle du 30 août
+   2026 : **une tuile posée dans la page se distingue par sa SURFACE.** La carte
+   monte donc d'un cran sur l'échelle des fonds — `--fond-releve`, le troisième
+   après `--fond` et `--fond-carte` — au lieu de se teinter.
+
+   TROIS LEVIERS, ET AUCUN N'EST UNE COULEUR :
+   — la SURFACE, un cran au-dessus de tout le reste de la page ;
+   — le TITRE, nettement plus grand que partout ailleurs : c'est la carte qu'on
+     vient tirer chaque matin, elle a le droit d'être la plus grosse chose de
+     l'écran ;
+   — l'ESPACE autour d'elle, un cran de rembourrage de plus.
+
+   PAS D'OMBRE, et ce n'est pas un oubli : `--ombre` vaut `none` dans tout le
+   hub sombre, et pour une bonne raison — une ombre portée ne se voit pas sur
+   un fond presque noir. C'est justement ce que dit le commentaire de
+   `--fond-carte` : « à #222222 les tuiles flottaient à peine, surtout sans
+   ombre pour les décoller ». Sur fond sombre, c'est la clarté qui soulève. */
 .carte-jour {
   position: relative;
-  padding: var(--espace-16);
-  background: color-mix(in srgb, var(--accent) 7%, var(--fond-carte));
-  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  padding: var(--espace-24) var(--espace-16);
+  /* Le jeton n'est posé que par la palette de Yuno — la seule qui ait cette
+     carte. Le repli sur `--fond-carte` évite un fond transparent si la classe
+     est un jour empruntée ailleurs. */
+  background: var(--fond-releve, var(--fond-carte));
   border-radius: var(--rayon-carte);
 }
 
@@ -3140,6 +3160,10 @@ body[data-espace="yuno"] .prepa-bilan-bouton:hover {
   height: 2.9375rem;
 }
 
+/* PLUS DE CADRE AUTOUR DE L'ICÔNE (15 septembre 2026, même demande) : c'était le
+   second contour de la carte. L'OR RESTE — chez Yuno il dit « l'état actif,
+   l'action qui part », et programmer une idée est exactement ça. Ce que Noé
+   refuse, ce sont les SURFACES colorées, pas les signes d'action. */
 .carte-jour-icone {
   display: flex;
   align-items: center;
@@ -3147,7 +3171,6 @@ body[data-espace="yuno"] .prepa-bilan-bouton:hover {
   width: 100%;
   height: 100%;
   color: var(--accent);
-  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
   border-radius: var(--rayon-controle);
 }
 
@@ -3179,13 +3202,40 @@ body[data-espace="yuno"] .prepa-bilan-bouton:hover {
 /* La date du jour, à droite du titre : la carte se tire chaque matin. */
 .idee-jour-date { font-size: 0.8125rem; }
 
-.idee-jour-corps .pub-titre {
+/* LE PLUS GROS TITRE DE LA PAGE (15 septembre 2026), et c'est le levier qui
+   porte le plus une fois la couleur partie : 1,75 rem contre 1,125 pour une
+   idée de la banque et 0,9375 pour un nom de sortie. C'est le levier de la
+   gravure du cap sur l'accueil — « le titre en Clash Display, grand ».
+
+   LE SÉLECTEUR PORTE `body[data-espace="yuno"]`, ET CE N'EST PAS DÉCORATIF :
+   `body[data-espace="yuno"] .pub-titre` pose déjà 1,125 rem à tous les titres
+   d'idée (spécificité 0-2-1), et `.idee-jour-corps .pub-titre` (0-2-0) perdait.
+   *Mesuré : le titre restait à 16,9 px.* C'est le piège de spécificité que le
+   dépôt a déjà payé sept fois — une règle qu'on n'égale pas est une règle qu'on
+   n'écrit pas. */
+body[data-espace="yuno"] .idee-jour-corps .pub-titre {
   font-family: "Inter", sans-serif;
   font-size: 1.375rem;
-  line-height: 1.25;
+  line-height: 1.2;
+}
+
+/* LE GRAND CORPS N'EST PAS POUR LE TÉLÉPHONE. À 375 px, 1,75 rem portait un
+   titre de cinq lignes et une carte de 530 px — tout le reste de la page passait
+   sous la ligne de flottaison, ce qui est l'inverse de « ressortir ». Là-bas la
+   SURFACE suffit : la carte prend toute la largeur et elle est la seule chose
+   claire de l'écran. */
+@media (min-width: 40rem) {
+  body[data-espace="yuno"] .idee-jour-corps .pub-titre { font-size: 1.75rem; }
 }
 
 .idee-jour-corps:hover .pub-titre { color: var(--accent); }
+
+/* LA PREUVE PREND LE GRIS CHAUD SUR CETTE CARTE (15 septembre 2026), et c'est
+   la conséquence directe de la surface relevée : `--texte-discret` est réglé
+   pour le fond de la page et pour une carte ordinaire ; sur `--fond-releve` il
+   tombe à 4,13:1 — sous le seuil, mesuré. Le gris chaud du site y rend 4,64, et
+   c'est déjà l'encre des étiquettes juste au-dessus. */
+.carte-jour .pub-preuve { color: var(--gris-chaud); }
 
 
 /* --- Le flux en lignes, les vides dessinés, le chemin numéroté ---------------
@@ -3193,46 +3243,57 @@ body[data-espace="yuno"] .prepa-bilan-bouton:hover {
    la LIGNE pour le flux, la tuile pour les portes. L'œil comprend la page avant
    de la lire. */
 
-/* Le numéro d'étape : le pipeline se lit 01 · 02 · 03. Dans la TROISIÈME
-   couleur depuis le 15 août 2026 — elle dit la matière créative, et le chemin
-   d'une idée en fait partie. Jamais l'or : celui-ci dit l'état actif et les
-   chiffres qui comptent, un numéro d'étape n'est ni l'un ni l'autre. */
-.etape {
-  margin-right: var(--espace-8);
-  font-size: 0.8125rem;
-  color: var(--bleu);
+/* --- CRÉER : LA MATIÈRE, ET LES QUATRE AXES (15 septembre 2026) -------------
+   Ce qui part avec le pipeline : `.etape` (les numéros 01 · 02 · 03), les lignes
+   de flux (`.liste-flux`, `.pub-ligne`), le vide dessiné et les points de
+   pilier de la ligne repliée. Leurs gabarits ont disparu de js/yuno.js le même
+   jour — voir le commentaire de tête de `vueCreer`. */
+
+/* LE SOUS-TITRE D'UN BLOC. `.sous-titre` porte déjà la mesure de 68 caractères
+   du hub et sa couleur ; il vit ici sous un `h2` et non sous un `h1`, d'où une
+   marge basse d'un cran au lieu de trois. */
+.sous-bloc {
+  margin: calc(-1 * var(--espace-8)) 0 var(--espace-12);
+  font-size: 0.875rem;
 }
 
-/* Les lignes du flux : même famille que le carnet et les tâches. `.bloc li`
-   est annulé, comme partout où une liste remplace des cartes. */
-.bloc .liste-flux {
-  gap: 0;
+/* --- DE LA MATIÈRE -----------------------------------------------------------
+   Trois de ses propres photos. C'est le SEUL bloc de la page où l'image passe
+   devant le texte — comme l'étagère de la bibliothèque du hub, et pour la même
+   raison : on reconnaît une sortie à son image bien avant d'en lire le nom.
+
+   La grille est DÉCLARÉE et non `auto-fit` : il y en a trois, on le sait. Une
+   grille qui se remplit d'elle-même en poserait quatre sur un écran large et
+   laisserait la quatrième vide — le défaut mesuré sur le hall du perso. */
+.bloc ul.matiere {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--espace-12);
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.bloc .liste-flux > li {
+/* `.bloc li` habille toutes les listes du hub en tuile : ici c'est le BOUTON
+   qui est la tuile, l'item n'est qu'une case de la grille. */
+.bloc ul.matiere > li {
   display: block;
+  min-width: 0;
   padding: 0;
   background: none;
   border: 0;
-  border-bottom: 1px solid var(--bordure);
   border-radius: 0;
 }
 
-.bloc .liste-flux > li::before { content: none; }
-.bloc .liste-flux > li:last-child { border-bottom: none; }
+.bloc ul.matiere > li::before { content: none; }
 
-.pub-ligne {
+.matiere-tuile {
   display: flex;
-  align-items: center;
-  gap: var(--espace-12);
+  flex-direction: column;
+  gap: var(--espace-8);
   width: 100%;
-  min-height: 2.9375rem;
-  padding: var(--espace-8) 0;
-  font-family: inherit;
-  font-size: 1rem;
+  padding: 0;
+  font: inherit;
   text-align: left;
   color: inherit;
   background: none;
@@ -3240,60 +3301,184 @@ body[data-espace="yuno"] .prepa-bilan-bouton:hover {
   cursor: pointer;
 }
 
-.pub-ligne:hover .pub-ligne-titre { color: var(--accent); }
-
-.pub-ligne-quand {
-  flex: none;
-  min-width: 5.25rem;
-  font-size: 0.8125rem;
-  color: var(--texte-discret);
+/* LE RAPPORT 3/2 D'UNE PHOTO DE REFLEX, et non un carré : ce sont des images de
+   terrain, elles ont été cadrées dans ce format. */
+.matiere-tuile img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  max-width: 100%;
+  object-fit: cover;
+  border-radius: var(--rayon-carte);
+  transition: opacity 140ms ease;
 }
 
-.pub-ligne-titre {
-  flex: 1;
+@media (prefers-reduced-motion: reduce) {
+  .matiere-tuile img { transition: none; }
+}
+
+/* Le geste répond : l'image s'éclaircit à peine, le nom prend l'or. Pas de
+   déplacement — une rangée de photos qui bougent au survol est un tapis
+   roulant. */
+.matiere-tuile:hover img { opacity: 0.82; }
+.matiere-tuile:hover .matiere-titre { color: var(--accent); }
+
+.matiere-legende {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
+}
+
+/* Le nom se COUPE plutôt que de passer à la ligne : trois tuiles côte à côte
+   doivent garder la même hauteur, sinon la rangée fait des marches. */
+/* La police vient de la liste des noms de créations, plus bas dans la feuille :
+   Clash Display, comme le titre d'une sortie au carnet. */
+.matiere-titre {
+  font-size: 0.9375rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* Le point de pilier : la couleur sans le mot. Sur une ligne, le nom entier
-   serait du bruit — le point suffit, la fiche dit le reste. */
-.point-pilier {
-  flex: none;
-  display: inline-block;
-  width: 0.625rem;
-  height: 0.625rem;
+.matiere-quand { font-size: 0.75rem; }
+
+/* Sur téléphone, DEUX de front : une seule prendrait toute la largeur pour une
+   vignette qu'on ne fait que reconnaître, et trois tomberaient sous 110 px. */
+@media (max-width: 40rem) {
+  .bloc ul.matiere { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bloc ul.matiere > li:nth-child(3) { display: none; }
+}
+
+/* --- SES QUATRE PILIERS, EN BARRES --------------------------------------------
+   Une ligne par axe : le rang en pastille de sa couleur, le nom et son rôle, la
+   barre de sa réserve, le compte. La ligne entière ouvre la banque filtrée.
+
+   EN GRILLE ET NON EN FLEX, avec des pistes déclarées : les quatre barres
+   doivent partir de la même verticale et les quatre chiffres tomber dans la
+   même colonne — c'est ce qui rend les longueurs comparables. Un flex les
+   calerait chacune sur la largeur de son propre nom. */
+.bloc ul.axes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.bloc ul.axes > li {
+  display: block;
+  min-width: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+
+.bloc ul.axes > li::before { content: none; }
+
+/* DEUX RANGS SUR TÉLÉPHONE, UN SEUL AU-DELÀ. Sur 375 px, un nom de pilier et sa
+   barre sur la même ligne ne laissaient ni l'un ni l'autre lisibles : les mots
+   prennent donc la première ligne, la barre et le compte la seconde — mais
+   ENSEMBLE, sur le même rang. Les empiler sur trois rangs portait une ligne à
+   150 px, donc quatre piliers à 600, et la page s'ouvrait sur un seul d'entre
+   eux. La pastille du rang enjambe les deux. */
+.axe {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: var(--espace-4) var(--espace-12);
+  min-height: 2.75rem;
+  padding: var(--espace-8) 0;
+  text-decoration: none;
+  color: inherit;
+  border-bottom: 1px solid var(--bordure);
+}
+
+.axe .pilier-rang { grid-area: 1 / 1 / 3 / 2; }
+.axe-mots { grid-area: 1 / 2 / 2 / 4; }
+.axe-barre { grid-area: 2 / 2 / 3 / 3; }
+.axe-compte { grid-area: 2 / 3 / 3 / 4; }
+
+.bloc ul.axes > li:last-child .axe { border-bottom: 0; }
+.axe:hover .pilier-nom { color: var(--accent); }
+
+.axe-mots { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+
+.pilier-nom {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* LES PISTES SONT BORNÉES, ET LA GRILLE SE TASSE À GAUCHE. Sans plafond, la
+   barre prenait 765 px sur un écran de 1280 — mesuré — pour comparer 3 idées à
+   7 : une longueur qui ne se compare plus, et un chiffre à un mètre de son nom.
+   Vingt rem suffisent à séparer quatre valeurs, et `justify-content: start`
+   empêche les pistes de s'étirer jusqu'au bord. Le filet, lui, reste pleine
+   largeur : c'est le lien qui le porte, pas la grille. */
+@media (min-width: 34rem) {
+  .axe {
+    grid-template-columns: auto minmax(8rem, 16rem) minmax(5rem, 20rem) 3rem;
+    grid-template-rows: auto;
+    justify-content: start;
+  }
+  .axe .pilier-rang { grid-area: 1 / 1 / 2 / 2; }
+  .axe-mots { grid-area: 1 / 2 / 2 / 3; }
+  .axe-barre { grid-area: 1 / 3 / 2 / 4; }
+  .axe-compte { grid-area: 1 / 4 / 2 / 5; }
+}
+
+/* LE LIT DIT LA PLACE QUI RESTE SANS LA COMPTER, et c'est `--fond-carte` : le
+   hall du perso emploie `--fond-doux` pour ça, mais ce jeton vaut #191c1d dans
+   la palette du hub — sur le fond du site (#181818) il ne se voit PAS du tout,
+   mesuré. La surface « carte » du site est le cran juste au-dessus du fond : de
+   quoi montrer la place qui reste sans la souligner. Une piste plus franche
+   ferait lire un manque là où il n'y a qu'une réserve. */
+.axe-barre {
+  position: relative;
+  height: 6px;
   border-radius: var(--rayon-pastille);
-  background: var(--pilier, var(--gris-chaud-trait));
+  background: var(--fond-carte);
+  overflow: hidden;
 }
 
-/* La légende des piliers, dans la ligne repliée du bas. */
-.points-piliers {
-  display: inline-flex;
-  gap: var(--espace-4);
-  margin: 0 var(--espace-8);
-  vertical-align: middle;
+/* LA COULEUR S'ÉCLAIRCIT POUR LA BARRE, et c'est nécessaire : les quatre piliers
+   sont quatre bleus de plus en plus sombres (#114ad0 à #08225e), choisis pour
+   être des APLATS avec de l'encre blanche dessus. En filet de six pixels sur le
+   fond de la page, le quatrième disparaîtrait. `color-mix` lui rend de la clarté
+   sans toucher à sa teinte : c'est la même couleur, pas une seconde palette. */
+.axe-barre i {
+  display: block;
+  height: 100%;
+  min-width: 0;
+  border-radius: inherit;
+  background: color-mix(in oklab, var(--pilier, var(--accent)) 58%, #ffffff);
 }
 
-/* Un vide qui montre son lieu : l'icône du bloc, grande et pâle, au-dessus de
-   sa phrase. Une promesse dessinée, pas une ligne d'excuse. */
-.vide-dessine {
+.axe-compte {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  align-items: baseline;
   gap: var(--espace-8);
+  justify-content: flex-end;
+  font-size: 0.9375rem;
+  font-weight: 500;
 }
 
-.vide-icone { color: var(--gris-chaud-trait); }
-.vide-icone svg { width: 40px; height: 40px; }
+.axe-parues { font-size: 0.75rem; }
 
-/* La tuile de la banque porte la couleur de son pilier en barre, à gauche —
-   comme les tuiles d'espace du hub. D'un regard : la répartition des idées
-   entre les quatre axes. La cascade [data-pilier] pose déjà --pilier dessus. */
-.bloc li.tuile-apercu[data-pilier] {
-  border-left: 3px solid var(--pilier);
-}
+/* LA BARRE GAUCHE DE PILIER EST PARTIE (15 septembre 2026, demande de Noé :
+   « j'aime pas […] qu'il y ait un rectangle de couleur à gauche sur les idées de
+   la banque »). Elle portait la couleur du pilier depuis le 15 août, au motif
+   qu'on lisait ainsi « la répartition des 18 idées entre les quatre axes d'un
+   regard ».
+
+   CE MOTIF A TROUVÉ SON ÉCRAN AILLEURS, et c'est ce qui rend le retrait sans
+   perte : le bloc « Tes quatre piliers » de Créer dit cette répartition en
+   chiffres et en longueurs, ce qu'une barre par tuile ne faisait qu'esquisser.
+   Sur la tuile, la couleur reste — en POINT, dans l'étiquette du pilier. */
 
 /* --- Les feuilles en tuiles compactes -----------------------------------------
    Demande de Noé, 21 août 2026 au soir : plus hautes que larges, côte à côte —
@@ -3567,7 +3752,10 @@ body[data-espace="yuno"] {
 body[data-espace="yuno"] #vue :is(
   .objectif-titre, .cap-tuile-titre, .projet-nom,
   .moment-titre, .sortie-ligne-titre, .sortie-moment-titre,
-  .pub-titre, .pub-ligne-titre, .tuile-prepa-titre,
+  .pub-titre, .tuile-prepa-titre,
+  /* Le nom d'une sortie dans « De la matière » (15 septembre 2026) : c'est un
+     nom de sortie comme celui du carnet, il prend la même police. */
+  .matiere-titre,
   /* Le titre d'une gravure de cap (15 septembre 2026) : un cap est ce qu'il y a
      de plus haut sur l'écran, il prend la police des noms. */
   .cap-gravure-titre
