@@ -313,10 +313,10 @@ body[data-espace="yuno"] .menu-voile-yuno { background: rgb(0 0 0 / 62%); }
 
 /* Verre translucide : le contenu derrière colore la navigation. */
 body[data-espace="yuno"] #vue {
-  padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
 }
 body[data-espace="yuno"] .ouvrir-capture {
-  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 }
 :is(.yuno-dock, .navigation.hub-dock) {
   position: fixed;
@@ -325,9 +325,24 @@ body[data-espace="yuno"] .ouvrir-capture {
   bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
   display: flex;
-  width: min(480px, calc(100% - 32px));
-  padding: 4px;
+  justify-content: center;
+  /* IL ÉPOUSE SON CONTENU AU LIEU DE S'ÉTIRER (16 septembre 2026, demande de
+     Noé : « pas besoin d'autant d'espace entre eux, rapproche-les »). Une
+     largeur imposée forçait les trois onglets à se partager 335 px, et les mots
+     se retrouvaient à un pouce les uns des autres. Le dock fait maintenant la
+     largeur de ce qu'il porte — trois onglets chez le hub, cinq chez Yuno — et
+     le plafond ne sert plus qu'à ne jamais toucher les bords. */
+  width: auto;
+  max-width: min(480px, calc(100% - 32px));
+  padding: 3px;
   gap: 2px;
+  /* SA HAUTEUR NE DÉPEND PAS DE L'ONGLET ACTIF (16 septembre 2026). L'actif est
+     plus grand que ses voisins, donc c'est lui qui donne sa hauteur au dock — et
+     sur les pages du second rang, qui n'allument aucun onglet, le dock aurait
+     rétréci de quatre pixels. Une barre qui change de taille selon la page où
+     l'on est n'est plus un repère. */
+  min-height: 52px;
+  align-items: stretch;
   border: 0.5px solid rgb(255 255 255 / 12%);
   border-radius: 36px;
   background:
@@ -357,27 +372,77 @@ body[data-espace="yuno"] .ouvrir-capture {
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
 }
+/* PLUS PETIT, MAIS L'ACTIF PLUS GROS QUE LES AUTRES (16 septembre 2026, demande
+   de Noé). L'écart se creuse par le BAS : ce sont les onglets ordinaires qui
+   maigrissent — icône, texte, écart — pendant que l'actif garde sa taille. Le
+   dock y perd huit pixels de haut et l'actif se détache enfin d'un coup d'œil.
+
+   *Ce que ça répare : la barre d'avant portait « quatre signes à la fois — le
+   fond, l'encre, la taille (17 contre 14 px) et la graisse ». Le dock du
+   15 septembre a gardé les deux premiers et perdu la taille ; pire, une règle du
+   hub forçait `a` et `a.actif` au MÊME corps, ce qui annulait aussi ce que le
+   dock de Yuno prévoyait.*
+
+   LA CIBLE RESTE À 44 px. C'est la règle du hub, et elle ne cède pas ici : on
+   touche ces trois onglets tous les jours. Ce qui rétrécit est ce qu'on VOIT,
+   pas ce qu'on touche — le lien garde sa hauteur, son contenu maigrit. */
 :is(.yuno-dock, .navigation.hub-dock) a {
-  flex: 1 1 0;
+  /* `0 1 auto` : chacun prend la largeur de son mot, et ne cède que si le dock
+     touche son plafond — le cas des cinq onglets de Yuno sur un téléphone. */
+  flex: 0 1 auto;
   min-width: 0;
-  min-height: 52px;
+  min-height: 44px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 5px 2px;
-  border-radius: 28px;
+  gap: 2px;
+  /* L'air passe DANS l'onglet et non entre eux : c'est ce qui donne à l'actif
+     un fond assez large pour se voir, sans écarter les mots.
+
+     DIX-HUIT ET NON QUATORZE (16 septembre 2026, correction de Noé : « pas trop
+     non plus, il faut qu'il y ait assez de place pour le texte »). *Mesuré à
+     quatorze : « Perso » demandait 27 px et en avait 26 — le mot tenait au pixel
+     près, donc plus du tout dès qu'une police de secours ou un réglage de taille
+     système s'en mêle.* Puis vingt-deux (« un peu plus d'espace encore »). */
+  padding: 4px 22px;
+  border-radius: 24px;
+  /* Un onglet ne se coupe jamais en deux lignes : il grandirait le dock, et un
+     mot sur deux rangs dans une pastille de 44 px ne se lit pas. */
+  white-space: nowrap;
   color: #a9adb3;
   font-family: "Inter", sans-serif;
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   font-weight: 600;
   line-height: 1.2;
   text-decoration: none;
   text-shadow: 0 1px 4px rgb(0 0 0 / 35%);
-  transition: color 180ms ease, background 180ms ease, transform 180ms ease;
+  transition: color 180ms ease, background 180ms ease, transform 180ms ease,
+    font-size 180ms ease;
 }
-:is(.yuno-dock, .navigation.hub-dock) svg { width: 22px; height: 22px; flex: none; }
+:is(.yuno-dock, .navigation.hub-dock) svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  transition: width 180ms ease, height 180ms ease;
+}
+
+/* L'ÉCART SE CREUSE DES DEUX CÔTÉS (16 septembre 2026, demande de Noé : « la
+   différence entre un onglet sélectionné et non sélectionné doit être plus
+   visible ; les autres doivent rétrécir pendant que celui sélectionné
+   grossit »). L'icône passe de 16 à 25 px — **une fois et demie** —, le corps
+   d'un cran et demi, et l'encre des voisins s'efface encore un peu.
+
+   LE TEXTE DES VOISINS NE DESCEND PAS PLUS BAS, et c'est la borne de tout ce
+   réglage : *mesuré à un cran de moins, « Calendrier » tombait à 8,4 px, où ce
+   n'est plus un mot mais une trace.* Puisque le corps ne peut plus rétrécir,
+   **c'est l'ICÔNE qui porte l'écart** — neuf pixels de différence se voient de
+   loin, un demi-point de corps non.
+
+   Avec le fond, l'encre d'accent et la graisse, l'actif porte de nouveau QUATRE
+   signes — c'est ce qui permet de le trouver sans le chercher. */
+:is(.yuno-dock, .navigation.hub-dock) a.actif { font-size: 0.75rem; }
+:is(.yuno-dock, .navigation.hub-dock) a.actif svg { width: 25px; height: 25px; }
 :is(.yuno-dock, .navigation.hub-dock) a:hover { color: #fff; background: rgb(255 255 255 / 6%); }
 :is(.yuno-dock, .navigation.hub-dock) a:active { transform: scale(0.94); }
 :is(.yuno-dock, .navigation.hub-dock) a.actif {
@@ -391,9 +456,18 @@ body[data-espace="yuno"] .ouvrir-capture {
 }
 :is(.yuno-dock, .navigation.hub-dock) a:focus-visible { outline: 2px solid #65c8ff; outline-offset: 2px; }
 @media (max-width: 400px) {
-  :is(.yuno-dock, .navigation.hub-dock) { gap: 0; }
-  :is(.yuno-dock, .navigation.hub-dock) a { font-size: 0.625rem; min-height: 48px; }
-  :is(.yuno-dock, .navigation.hub-dock) svg { width: 20px; height: 20px; }
+  :is(.yuno-dock, .navigation.hub-dock) { gap: 0; min-height: 50px; }
+  :is(.yuno-dock, .navigation.hub-dock) a { min-height: 44px; padding: 4px 12px; }
+  /* LE HUB A DE LA PLACE QUE LES SITES N'ONT PAS : trois onglets contre cinq, et
+     un plafond plus bas. Il garde donc l'air du grand écran là où Yuno doit se
+     serrer pour tenir ses cinq mots sur 375 px. */
+  .navigation.hub-dock a { padding: 4px 18px; }
+  :is(.yuno-dock, .navigation.hub-dock) svg { width: 16px; height: 16px; }
+  /* LE CORPS NE DESCEND PAS PLUS BAS. Un cran de moins le mettait à 8,4 px —
+     mesuré —, et « Calendrier » n'y est plus un mot, c'est une trace. Sur un
+     écran étroit, **c'est l'ICÔNE qui porte l'écart** : trois pixels sur dix-huit
+     se voient mieux qu'un demi-point de corps. */
+  :is(.yuno-dock, .navigation.hub-dock) a.actif svg { width: 23px; height: 23px; }
 }
 @media (prefers-reduced-motion: reduce) {
   :is(.yuno-dock, .navigation.hub-dock) a { transition: none; }
@@ -3777,23 +3851,30 @@ body[data-espace="yuno"] #vue [data-hote-cap] h1 {
 body:not([data-espace="yuno"]):not([data-espace="hermitage"]) .barre-onglets {
   border-bottom: 0;
 }
+/* ELLE IMPOSAIT 340 px AU DOCK DU HUB, et c'est elle qui écartait encore les
+   trois onglets après que le dock commun eut appris à épouser son contenu :
+   *mesuré, 335 px de large pour 175 px d'onglets.* Il ne lui reste que son
+   plafond, un cran plus serré que celui de Yuno — trois mots n'ont pas besoin de
+   la place de cinq. */
 .navigation.hub-dock {
-  width: min(340px, calc(100% - 40px));
+  max-width: min(340px, calc(100% - 40px));
   overflow: visible;
 }
-.navigation.hub-dock a,
-.navigation.hub-dock a.actif {
-  font-size: 0.6875rem;
-}
+/* ELLE ÉGALISAIT LES DEUX CORPS, et c'est ce qui annulait la différence de
+   taille de l'actif — le défaut que Noé a vu. Les trois mots du hub tiennent
+   sans qu'on force quoi que ce soit ; le dock décide seul. */
 .navigation.hub-dock a.nav-calendrier {
   width: auto;
-  padding: 5px 2px;
+  padding: 4px 22px;
 }
+/* Les huit pixels que le dock vient de rendre (16 septembre 2026) : ce qui se
+   cale sur sa hauteur les rend avec lui, sinon il flotterait au-dessus d'un
+   blanc que plus rien ne justifie. */
 body:not([data-espace="yuno"]):not([data-espace="hermitage"]) #vue {
-  padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
 }
 body:not([data-espace="yuno"]):not([data-espace="hermitage"]) .ouvrir-capture {
-  bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 }
 
 /* Le verre reprend l'accent de l'espace : jaune Yuno, couleurs du hub. */

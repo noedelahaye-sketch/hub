@@ -247,6 +247,57 @@ ne s'ouvre sur rien est un mensonge de forme :
   Une valeur neutre posée sur `.menu` arrête l'héritage — **une pastille dit
   toujours l'espace de sa LIGNE, jamais celui de l'écran.**
 
+### LE DOCK : PLUS PETIT, ET L'ACTIF PLUS GROS (16 septembre 2026)
+
+**Trois demandes de Noé, dans l'ordre où elles sont venues** : *« ce menu doit
+être plus petit mais par contre lorsqu'un onglet est actif il doit apparaître
+plus gros que les autres »*, puis *« pas besoin d'autant d'espace entre eux,
+rapproche-les »*, puis *« un peu plus d'espace encore, et la différence doit être
+plus visible — les autres doivent rétrécir pendant que celui sélectionné
+grossit »*.
+
+**CE QUI L'AVAIT PERDUE.** La barre d'onglets portait « QUATRE signes à la fois —
+le fond plein et l'encre inversée, la taille et la graisse » (28 août 2026). Le
+dock de verre du 15 septembre a gardé les deux premiers et **perdu la taille** ;
+pire, une règle propre au hub forçait `a` et `a.actif` au MÊME corps, ce qui
+annulait aussi ce que le dock de Yuno prévoyait. Il ne restait qu'un fond et une
+couleur.
+
+- **L'ÉCART SE CREUSE DES DEUX CÔTÉS** : l'icône passe de **16 à 25 px** — une
+  fois et demie — et le corps d'un cran et demi. Les voisins maigrissent pendant
+  que l'actif grossit, ce qui donne le double d'écart pour la même hauteur de
+  dock.
+- **LE TEXTE DES VOISINS NE DESCEND PAS PLUS BAS**, et c'est la borne de tout ce
+  réglage : *mesuré à un cran de moins, « Calendrier » tombait à 8,4 px, où ce
+  n'est plus un mot mais une trace.* Puisque le corps ne peut plus rétrécir,
+  **c'est l'ICÔNE qui porte l'écart** — neuf pixels se voient de loin, un
+  demi-point de corps non.
+- **L'ENCRE DES VOISINS NE S'EFFACE PAS DAVANTAGE**, pour la même raison : un
+  texte de 9,4 px déjà gris n'a pas de marge à donner. La taille dit tout.
+- **LE DOCK ÉPOUSE SON CONTENU** au lieu de s'étirer : une largeur imposée
+  forçait les trois onglets à se partager 335 px, et les mots se retrouvaient à
+  un pouce les uns des autres. *Mesuré : 238 px pour le hub, 309 pour les cinq
+  onglets de Yuno, contre 335 pour tout le monde avant.* Le plafond ne sert plus
+  qu'à ne jamais toucher les bords.
+- **L'AIR PASSE DANS L'ONGLET, PAS ENTRE EUX** — 22 px de rembourrage : c'est ce
+  qui donne à l'actif un fond assez large pour se voir, sans écarter les mots.
+  *Réglé en deux temps : à 14 px, « Perso » demandait 27 px et en avait 26 — le
+  mot tenait au pixel près, donc plus du tout dès qu'une police de secours s'en
+  mêle.*
+- **LA CIBLE RESTE À 44 px.** Ce qui rétrécit est ce qu'on VOIT, pas ce qu'on
+  touche : le lien garde sa hauteur, son contenu maigrit. On touche ces onglets
+  tous les jours.
+- **LA HAUTEUR DU DOCK NE DÉPEND PAS DE L'ONGLET ACTIF** (`min-height` sur le
+  conteneur) : l'actif est le plus grand, donc c'est lui qui la donne — et sur
+  les pages du second rang, qui n'allument aucun onglet, le dock aurait rétréci
+  de quatre pixels. **Une barre qui change de taille selon la page n'est plus un
+  repère.**
+- **LE HUB GARDE SON AIR SUR TÉLÉPHONE, LES SITES SE SERRENT** : trois onglets
+  contre cinq, et un plafond plus bas. Yuno doit tenir cinq mots sur 375 px.
+- **LE DOCK DU FC HERMITAGE N'EST PAS CONCERNÉ** : il a sa propre classe
+  (`.fch-nav`) et son identité. *Vérifié : aucun onglet tronqué sur le hub ni sur
+  Yuno, à 375 px comme à 1100.*
+
 ### LA PREMIÈRE PERSONNE (même jour, demande de Noé)
 
 **« Transforme tous les noms des pages à la 1re personne » — et ces noms sont
