@@ -4867,6 +4867,66 @@ D'UN MÊME MOUVEMENT** — tous payés à l'écran :
 > animation ne progresse** — `playState` dit « running » et `currentTime` reste
 > à 0. Pour photographier un morph, on met ses animations en pause et l'on pose
 > `currentTime` à la main.
+
+### LA PLACE DU CLAVIER, ET LE MOUVEMENT DE BAS EN HAUT (16 septembre 2026)
+
+**Le défaut, rapporté par Noé depuis son téléphone** : *« la tuile est cachée par
+le clavier lorsque ça s'ouvre, il faut descendre pour voir la tuile et commencer
+à écrire. On ne voit pas l'animation du coup, il n'y a pas le mouvement fluide
+qui fait apparaître de bas en haut. »*
+
+**LA CAUSE : la mesure vivait dans `js/taches.js`, ET SEULEMENT LÀ**, branchée
+sur l'état local de cet écran (`etat.capture.ouverte`). Les **neuf autres** qui
+ouvrent la même tuile — l'accueil, le calendrier, Ma semaine, la page d'un cap,
+celle d'un projet, les deux sites — n'avaient donc **jamais** `--bas-clavier`, et
+leur tuile restait à seize pixels du bas, sous le clavier.
+
+*C'est le troisième effet qui remonte dans la coquille pour la même raison, et
+l'argument y est écrit depuis le 13 août au-dessus du fond figé : « quatre
+endroits où penser à figer ET à libérer, c'est trois oublis en puissance ». La
+règle valait déjà ; c'est la mesure du clavier qui ne l'avait pas suivie.*
+
+- **LA TUILE NAÎT EN BAS ET MONTE AVEC LE CLAVIER**, et c'est exactement le
+  mouvement que Noé décrit — et celui de la vidéo, où la barre et le clavier
+  montent ensemble. On ne pose donc rien à l'ouverture : le morph se joue en bas,
+  **où il est encore visible**, puis `--bas-clavier` la fait monter par la
+  transition de 220 ms que la feuille de style porte déjà. *Mesuré : la tuile
+  passe de `bottom: 16px` à `316px` en 220 ms.*
+- **UN FILET, POUR LE CAS OÙ LE CLAVIER NE S'ANNONCE PAS.** Tous les navigateurs
+  ne préviennent pas de la même façon : certains émettent `resize` pendant toute
+  la montée, d'autres une seule fois à la fin, d'autres pas du tout quand le
+  champ avait déjà le focus. Passé 400 ms, si rien n'a été mesuré et qu'on
+  connaît la hauteur de la dernière fois, on la pose — **mieux vaut une tuile
+  placée à peu près qu'une tuile invisible.**
+- **LA HAUTEUR SE GARDE DANS LE NAVIGATEUR** (`hub-clavier`), jamais en base :
+  c'est une commodité propre à l'APPAREIL — le clavier d'un iPhone n'a pas la
+  taille de celui d'un iPad — et elle ne dit rien de la vie de Noé. Même motif
+  que `hub-salut`. **On ne retient que ce qui ressemble à un clavier** (plus de
+  120 px) : sur ordinateur la mesure vaut zéro, et une barre d'adresse qui se
+  replie ne fait pas 150 px.
+
+### « PRÉREMPLIR LE CONTACT » : `autocomplete="off"` NE SUFFIT PAS (16 sept. 2026)
+
+**Défaut rapporté par Noé** : *« pourquoi ça me met la ligne préremplir le
+contact ? »*, capture à l'appui — iOS proposait « Delahaye » au-dessus du
+clavier, dans la barre de la tuile de capture.
+
+**Safari iOS classe les champs par HEURISTIQUE** : il lit le placeholder et le
+nom accessible, et **« Nom de la tâche » se lit comme un champ d'identité**.
+L'attribut `autocomplete="off"` était posé depuis toujours et n'y change rien —
+Safari l'honore pour les mots de passe, pas pour l'AutoFill des contacts.
+
+**LA PARADE EST DANS LE LIBELLÉ, PAS DANS UN ATTRIBUT** : on retire le mot qui
+déclenche la lecture. Les quatre invites (`INVITE_TITRE`, js/calendrier-commun.js
+— et sa jumelle en dur dans js/taches.js) se retrouvent du même coup dans la même
+grammaire, là où deux disaient « Nom de… » et deux décrivaient ce qu'on attend :
+
+| | |
+|---|---|
+| événement | **L'événement, en quelques mots** |
+| tâche | **La tâche, en quelques mots** |
+| publication | L'idée, en une phrase |
+| objectif | L'objectif, formulé de façon mesurable |
 - **L'écran d'abord, le réseau ensuite.** Une action de Noé change l'affichage tout de suite ; l'écriture part derrière. Un geste qui attend l'aller-retour Supabase, ce sont 300 à 800 ms de figement sur téléphone. La contrepartie n'est pas facultative : si l'écriture échoue, l'état d'avant est remis ET une ligne le dit — sans ce retour en arrière, l'affichage optimiste est un mensonge. La mécanique vit dans `js/ecriture.js` (`modifierAussitot`, `retirerAussitot`, `ajouterAussitot`) : ne pas la recopier. **Les listes s'y modifient sur place**, jamais par remplacement, sans quoi le retour en arrière écrirait dans un tableau orphelin. Deux exceptions volontaires : les **formulaires** (ils ont un endroit pour dire l'échec, et gardent la saisie) et les écritures qui envoient un fichier.
 - **LA PAGE N'A PLUS DE PLAFOND DE LARGEUR** (30 août 2026, demande de Noé : « sur ordinateur, le site doit utiliser toute la largeur »). Elle en a eu un de 1240 px, hérité de Bac-3 ; sur un écran de 1728 px il laissait 488 px de vide de part et d'autre. Marges de **16/24/32/48 px** (le quatrième palier est né avec la suppression du plafond : toute la largeur ne veut pas dire bord à bord), ruptures à 720 et 1080 px.
   - **La règle, elle, n'a pas changé — et c'est elle qui rend la suppression possible** : **la mise en page prend toute la largeur, le texte jamais.** Sur grand écran les listes passent en colonnes plutôt que de s'étirer (quatre ou cinq au lieu de trois), et le **texte courant porte sa mesure** : sous-titres, phrases d'aide et écrans vides s'arrêtent à 68 caractères (`.espace > p`, `.sous-titre`, `.vide`). Ce qui empêche une ligne de devenir illisible, ce sont ces deux règles, pas une largeur de page.

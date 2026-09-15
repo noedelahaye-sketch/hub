@@ -326,6 +326,105 @@ function libererLeFond() {
 // ce piège une fois (la marge des blocs de « Ma semaine », 31 août 2026).
 const sansAnimation = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// --- LA PLACE DU CLAVIER (16 septembre 2026) ---------------------------------
+//
+// LE DÉFAUT, rapporté par Noé depuis son téléphone : « la tuile est cachée par
+// le clavier lorsque ça s'ouvre, il faut descendre pour la voir et commencer à
+// écrire. On ne voit pas l'animation du coup. »
+//
+// LA CAUSE : cette mesure vivait dans js/taches.js, ET SEULEMENT LÀ, branchée
+// sur l'état local de cet écran (`etat.capture.ouverte`). Sur les NEUF autres
+// qui ouvrent la même tuile — l'accueil, le calendrier, Ma semaine, la page d'un
+// cap, celle d'un projet, les deux sites — `--bas-clavier` n'était jamais posée,
+// donc la tuile restait à seize pixels du bas, sous le clavier.
+//
+// C'est le troisième effet qui remonte ici pour la même raison, et l'argument
+// est écrit depuis le 13 août au-dessus du fond figé : « quatre endroits où
+// penser à figer ET à libérer, c'est trois oublis en puissance. Un observateur
+// regarde `.capture` apparaître. » La règle valait déjà ; c'est la mesure du
+// clavier qui ne l'avait pas suivie.
+//
+// COMMENT ON LA CONNAÎT : `visualViewport` est le seul moyen fiable. La fenêtre
+// de mise en page (`innerHeight`) ne bouge pas quand le clavier monte, seule la
+// fenêtre VISUELLE rétrécit — la différence entre les deux EST la hauteur du
+// clavier. Le résultat sort en variable CSS : c'est la feuille de style qui
+// décide quoi en faire, et sur grand écran elle n'en fait rien.
+const fenetreVisuelle = window.visualViewport;
+
+// LA DERNIÈRE HAUTEUR CONNUE, gardée d'une fois sur l'autre. Sans elle, la tuile
+// naît TOUJOURS en bas puis remonte quand le clavier s'annonce : deux mouvements
+// au lieu d'un, et le premier se joue sous le clavier — c'est-à-dire invisible.
+// Avec elle, elle naît déjà à sa place dès la deuxième ouverture, et le morph se
+// voit en entier.
+//
+// Dans le navigateur et non en base : c'est une commodité d'affichage propre à
+// l'APPAREIL — le clavier d'un iPhone n'a pas la taille de celui d'un iPad —, et
+// elle ne dit rien de la vie de Noé. Même motif que `hub-salut`.
+const CLE_CLAVIER = 'hub-clavier';
+
+const hauteurConnue = () => {
+  try {
+    const garde = Number(localStorage.getItem(CLE_CLAVIER));
+    return Number.isFinite(garde) && garde > 0 ? garde : 0;
+  } catch {
+    return 0;
+  }
+};
+
+function poserLeClavier(pixels) {
+  document.documentElement.style.setProperty('--bas-clavier', `${pixels}px`);
+}
+
+function mesurerLeClavier() {
+  if (!fenetreVisuelle) return;
+  const pris = Math.max(Math.round(window.innerHeight - (fenetreVisuelle.height + fenetreVisuelle.offsetTop)), 0);
+  poserLeClavier(pris);
+  // On ne retient que ce qui ressemble à un clavier : sur ordinateur la mesure
+  // vaut zéro, et une barre d'adresse qui se replie ne fait pas 150 px.
+  if (pris > 120) {
+    try {
+      localStorage.setItem(CLE_CLAVIER, String(pris));
+    } catch {
+      // Navigation privée : on se passe de mémoire, la mesure vive suffit.
+    }
+  }
+}
+
+const oublierLeClavier = () => {
+  document.documentElement.style.removeProperty('--bas-clavier');
+};
+
+// Une seule paire d'écouteurs pour tout le hub, et ils ne coûtent rien tant
+// qu'aucune tuile n'est ouverte : sans elle, la variable ne sert à personne.
+const suivreLeClavier = () => {
+  if (document.querySelector('.espace:not([hidden]) .capture')) mesurerLeClavier();
+};
+fenetreVisuelle?.addEventListener('resize', suivreLeClavier);
+fenetreVisuelle?.addEventListener('scroll', suivreLeClavier);
+
+// LE FILET, pour le cas où le clavier ne s'annonce pas. Tous les navigateurs ne
+// préviennent pas de la même façon : certains émettent `resize` pendant toute la
+// montée, d'autres une seule fois à la fin, d'autres pas du tout quand le champ
+// avait déjà le focus. La tuile resterait alors dessous — le défaut qu'on
+// corrige. Passé le temps d'une montée, si rien n'a été mesuré et qu'on connaît
+// la hauteur de la dernière fois, on la pose : mieux vaut une tuile placée à peu
+// près qu'une tuile invisible.
+const MONTEE_DU_CLAVIER = 400;
+
+function surveillerLeClavier() {
+  mesurerLeClavier();
+  setTimeout(() => {
+    if (!document.querySelector('.espace:not([hidden]) .capture')) return;
+    const pose = Number.parseInt(
+      getComputedStyle(document.documentElement).getPropertyValue('--bas-clavier'),
+      10,
+    );
+    if (pose > 0) return;
+    const connue = hauteurConnue();
+    if (connue) poserLeClavier(connue);
+  }, MONTEE_DU_CLAVIER);
+}
+
 // --- LE « + » SE MÉTAMORPHOSE EN TUILE (15 septembre 2026, demande de Noé) ----
 //
 // LA DEMANDE, une vidéo à l'appui : « pour le bouton d'ajout (le + de bas de
@@ -491,6 +590,13 @@ function morpherLaCapture(tuile) {
   if (tuile) {
     if (!tuileOuverte) {
       tuileOuverte = true;
+      // LA TUILE NAÎT EN BAS ET MONTE AVEC LE CLAVIER, et c'est le mouvement que
+      // Noé décrit : « il n'y a pas le mouvement fluide qui fait apparaître de
+      // bas en haut ». C'est aussi celui de la vidéo — la barre et le clavier
+      // montent ENSEMBLE. On ne pose donc rien ici : le morph se joue en bas,
+      // où il est encore visible, puis `--bas-clavier` la fait monter par la
+      // transition de 220 ms que la feuille de style porte déjà.
+      surveillerLeClavier();
       // PAS D'ALLER, PAS DE RETOUR. La tuile s'ouvre aussi en touchant un jour
       // du calendrier ou une case de « Ma semaine » — le rond n'y est pour rien,
       // et la voir se refermer en rond serait un mouvement venu de nulle part.
@@ -521,6 +627,7 @@ function morpherLaCapture(tuile) {
   // mouvement se lit pareil — une forme qui se referme sur l'autre.
   if (!tuileOuverte) return;
   tuileOuverte = false;
+  oublierLeClavier();
   if (!formeDeLaTuile) return;
   const depart = formeDeLaTuile;
   formeDeLaTuile = null;

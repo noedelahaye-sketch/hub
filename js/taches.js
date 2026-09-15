@@ -780,8 +780,8 @@ export function construireCapture(capture, projets = []) {
     <form class="capture" data-action="creer-tache" role="dialog" aria-modal="true"
       aria-label="Ajouter une tâche">
       <input type="text" id="capture-titre" name="titre" required
-        class="capture-titre" placeholder="Nom de la tâche" autocomplete="off"
-        aria-label="Nom de la tâche" value="${echapper(capture.titre)}">
+        class="capture-titre" placeholder="La tâche, en quelques mots" autocomplete="off"
+        aria-label="La tâche, en quelques mots" value="${echapper(capture.titre)}">
 
       <div class="capture-pastilles">
         <!-- Les pastilles vivent dans une bande qui défile latéralement, jamais
@@ -922,7 +922,6 @@ export default {
       if (!captureRemplie()) {
         etat.capture = captureVierge(etat.espace);
         rendreCapture();
-        oublierLeClavier();
         return;
       }
       etat.capture.titre = section.querySelector('#capture-titre')?.value ?? etat.capture.titre;
@@ -1197,38 +1196,17 @@ export default {
 
     // --- Le clavier du téléphone ---
     //
-    // Sur mobile la tuile est collée en bas, et le clavier viendrait la couvrir.
-    // `visualViewport` est le seul moyen fiable de savoir combien de place il
-    // prend : la fenêtre de mise en page (`innerHeight`) ne bouge pas quand le
-    // clavier monte, seule la fenêtre VISUELLE rétrécit. La différence entre
-    // les deux EST la hauteur du clavier.
+    // LA MESURE A DÉMÉNAGÉ DANS LA COQUILLE (16 septembre 2026, défaut rapporté
+    // par Noé : « la tuile est cachée par le clavier lorsque ça s'ouvre »). Elle
+    // vivait ici ET SEULEMENT ICI, branchée sur `etat.capture.ouverte` — l'état
+    // local de cet écran. Les NEUF autres qui ouvrent la même tuile n'avaient
+    // donc jamais `--bas-clavier`, et leur tuile restait sous le clavier.
     //
-    // Le résultat sort en variable CSS plutôt qu'en style direct : c'est la
-    // feuille de style qui décide quoi en faire, et sur grand écran elle n'en
-    // fait rien — la tuile y est centrée, un clavier physique ne prend pas de
-    // place.
-    const fenetreVisuelle = window.visualViewport;
-
-    const mesurerLeClavier = () => {
-      if (!fenetreVisuelle) return;
-      const pris = window.innerHeight - (fenetreVisuelle.height + fenetreVisuelle.offsetTop);
-      // Arrondi et plancher à zéro : les navigateurs rendent des fractions, et
-      // une valeur négative (barre d'adresse qui se replie) n'a pas de sens ici.
-      document.documentElement.style.setProperty('--bas-clavier', `${Math.max(Math.round(pris), 0)}px`);
-    };
-
-    const oublierLeClavier = () => {
-      document.documentElement.style.removeProperty('--bas-clavier');
-    };
-
-    // Écoutés en permanence, mais ils ne coûtent rien tant que la tuile est
-    // fermée : sans elle, la variable ne sert à personne.
-    fenetreVisuelle?.addEventListener('resize', () => {
-      if (etat.capture.ouverte) mesurerLeClavier();
-    });
-    fenetreVisuelle?.addEventListener('scroll', () => {
-      if (etat.capture.ouverte) mesurerLeClavier();
-    });
+    // `js/app.js` la pose désormais pour tout le monde, sur la présence d'une
+    // `.capture` : c'est la règle déjà écrite pour le fond figé et pour l'éclair
+    // — un effet de ce genre se pose une fois, jamais écran par écran. Les
+    // appels qui restaient ici sont partis avec : deux endroits qui écrivent la
+    // même variable finissent par ne plus écrire la même chose.
 
     // La bande de pastilles déborde ou non selon la largeur : ses fondus se
     // recalculent donc quand la fenêtre change de taille, sinon ils restent
@@ -1313,7 +1291,6 @@ export default {
         etat.capture = captureVierge(etat.espace);
         etat.message = null;
         rendreCapture();
-        oublierLeClavier();
         rendreListe();
 
         try {
@@ -1456,7 +1433,6 @@ export default {
       if (evenement.target.closest('[data-ouvrir-capture]')) {
         etat.capture = { ...captureVierge(etat.espace), ouverte: true };
         rendreCapture({ focus: true });
-        mesurerLeClavier();
         return;
       }
 
@@ -1485,7 +1461,6 @@ export default {
           famille: tache.famille ?? null,
         };
         rendreCapture({ focus: true });
-        mesurerLeClavier();
         return;
       }
 
@@ -1499,7 +1474,6 @@ export default {
       if (evenement.target.closest('[data-abandonner-capture]')) {
         etat.capture = captureVierge(etat.espace);
         rendreCapture();
-        oublierLeClavier();
         return;
       }
 

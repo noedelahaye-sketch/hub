@@ -2238,9 +2238,23 @@ const FLECHE_ENVOI = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none
 
 // Ce que le titre demande, selon ce qu'on pose. « Quoi » convenait à tout et ne
 // disait rien : le mot juste rappelle à lui seul ce qu'on est en train de créer.
+// LE MOT « NOM » A DISPARU DES INVITES (16 septembre 2026, défaut rapporté par
+// Noé depuis son téléphone : « pourquoi ça me met la ligne préremplir le
+// contact ? », capture à l'appui — iOS proposait « Delahaye » au-dessus du
+// clavier).
+//
+// LA CAUSE : `autocomplete="off"` NE SUFFIT PAS sur Safari iOS. Le système
+// classe les champs par HEURISTIQUE — il lit le placeholder et le nom
+// accessible — et « Nom de la tâche » se lit comme un champ d'identité. D'où la
+// barre « Préremplir le contact ».
+//
+// LA PARADE EST DANS LE LIBELLÉ, pas dans un attribut : on retire le mot qui
+// déclenche la lecture. Et les quatre invites se retrouvent enfin dans la même
+// grammaire — « la chose, en quelques mots » — là où deux disaient « Nom de… »
+// et deux décrivaient ce qu'on attend.
 const INVITE_TITRE = {
-  evenement: "Nom de l'événement",
-  tache: 'Nom de la tâche',
+  evenement: "L'événement, en quelques mots",
+  tache: 'La tâche, en quelques mots',
   publication: "L'idée, en une phrase",
   objectif: "L'objectif, formulé de façon mesurable",
 };
