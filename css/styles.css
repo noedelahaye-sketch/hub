@@ -481,9 +481,14 @@ button:active { transform: scale(0.97); }
 .haut { padding-top: env(safe-area-inset-top); }
 
 /* Sur les sites Yuno et FC Hermitage, tout l'habillage du hub disparaît : ni
-   « Hub », ni onglets, ni autres espaces. On est ailleurs. */
+   « Hub », ni onglets, ni autres espaces. On est ailleurs.
+   La barre d'onglets est sortie de `.haut` le 29 août 2026 (pour rester
+   collante sur toute la page) sans que cette règle la suive : elle continuait
+   à s'afficher sur les deux sites. Elle se masque désormais à côté. */
 body[data-espace="yuno"] .haut,
-body[data-espace="hermitage"] .haut { display: none; }
+body[data-espace="hermitage"] .haut,
+body[data-espace="yuno"] .barre-onglets,
+body[data-espace="hermitage"] .barre-onglets { display: none; }
 
 body[data-espace="yuno"] #vue,
 body[data-espace="hermitage"] #vue {
