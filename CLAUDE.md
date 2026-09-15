@@ -2342,17 +2342,31 @@ gestes ne doivent jamais porter le même signe.
    derrière, puis le bouton. Trois lignes au-dessus de la journée pour un seul
    geste (correction de Noé). Le nom du bouton dit ce que la phrase disait, et
    les dates s'écrivent en tête de la page qui s'ouvre.
-3. **La porte du soir** — conditionnelle, **tous les jours à partir de 20 h**
-   (1er septembre 2026, demande de Noé). Un bouton, « Faire le bilan du jour »,
-   qui mène à `#perso/journee/<aujourd'hui>`.
-   - **La même heure que le rendez-vous du dimanche**, et ce n'est pas un
-     hasard : c'est l'heure où la journée est finie. Un seul nombre pour les deux
-     portes — deux heures d'ouverture finiraient par se contredire, et rien ne
-     justifie qu'un dimanche soir commence plus tôt qu'un mardi.
-   - **Pas de borne haute** : elle reste jusqu'à minuit, puis la journée change
-     et c'est celle du lendemain qu'elle ouvrira. Le rendez-vous du dimanche
-     déborde sur le lundi parce qu'une semaine se programme encore le lendemain
-     matin ; un bilan du jour, non.
+3. **La porte du soir** — conditionnelle, **tous les jours de 20 h au lendemain
+   à 11 h 59** (1er septembre 2026, prolongée le 16). Un bouton, « Faire le bilan
+   du jour », qui mène à `#perso/journee/<le jour dont on fait le bilan>`.
+   - **La même heure d'ouverture que le rendez-vous du dimanche**, et ce n'est
+     pas un hasard : c'est l'heure où la journée est finie. Un seul nombre pour
+     les deux portes — deux heures d'ouverture finiraient par se contredire, et
+     rien ne justifie qu'un dimanche soir commence plus tôt qu'un mardi.
+   - **ELLE DÉBORDE SUR LE MATIN** (16 septembre 2026, demande de Noé :
+     « prolonge le bouton jusqu'à 11 h 59 du matin, il doit apparaître tant que
+     rien n'est écrit dans les gratitudes ou dans ma journée en quelques mots »).
+     *Ce que ça renverse : « pas de borne haute, elle reste jusqu'à minuit puis
+     c'est celle du lendemain qu'elle ouvrira » — on ajoutait qu'« une semaine se
+     programme encore le lendemain matin ; un bilan du jour, non ». L'usage a
+     tranché l'inverse : on se couche sans avoir écrit, et c'est au café du matin
+     que ça se rattrape.*
+   - **AVANT MIDI, ELLE OUVRE LA JOURNÉE D'HIER** — celle qu'on n'a pas fermée.
+     C'est la moitié de la règle qu'on oublierait en n'allongeant que la fenêtre,
+     et la porte mènerait alors à une journée vierge.
+   - **UNE SEULE FONCTION DIT LES DEUX** (`jourDuBilan`, js/rendez-vous.js) : elle
+     rend le JOUR, ou rien quand la porte est fermée. Savoir si elle s'ouvre,
+     c'est savoir de quelle journée on fait le bilan — une fonction qui dirait
+     seulement « c'est ouvert » laisserait l'appelant deviner laquelle, et deux
+     endroits qui compteraient cette bascule finiraient par ne plus ouvrir la
+     même page. C'est le motif de `pivotDeLaSemaine`, un cran plus haut.
+     *Vérifié sur les vingt-quatre heures : aucun trou, aucun recouvrement.*
    - **Elle mène au jour NOMMÉ**, pas à `#perso/journee` : l'adresse porte la
      date, si bien qu'ouvrir la porte à 23 h 50 et écrire à 00 h 05 écrit
      toujours dans la journée qu'on est en train de fermer.

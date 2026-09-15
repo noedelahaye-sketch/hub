@@ -46,7 +46,7 @@ import {
   projetsEnCours,
   suiteDuJour,
 } from './orientation.js';
-import { fenetreOuverte, soireeOuverte } from './rendez-vous.js';
+import { fenetreOuverte, jourDuBilan } from './rendez-vous.js';
 import { lireCache, ecrireCache } from './cache-session.js';
 import { marquerLesEntrantes, animerLaCoche } from './mouvements.js';
 import { modifierAussitot, retirerAussitot } from './ecriture.js';
@@ -735,8 +735,10 @@ function squelette() {
     <div id="bloc-rdv" hidden></div>
 
     <!-- LA PORTE DU SOIR (1er septembre 2026, demande de Noé). Tous les jours à
-         partir de 20 h, et jusqu'à minuit : l'heure où la journée est finie.
-         Masquée dès que le bilan est écrit — le hub ne relance pas. -->
+         partir de 20 h, et JUSQU'AU LENDEMAIN MIDI (16 septembre 2026) : on se
+         couche parfois sans avoir écrit, et ça se rattrape au café du matin.
+         Avant midi elle ouvre donc la journée d'HIER. Masquée dès que le bilan
+         est écrit — le hub ne relance pas. -->
     <div id="bloc-bilan-jour" hidden></div>
 
     <!-- LE BANDEAU DE L'APRÈS. Conditionnel, un seul à la fois — voir
@@ -1352,13 +1354,16 @@ export default {
       const bloc = section.querySelector('#bloc-bilan-jour');
       if (!bloc) return;
 
-      const maintenant = new Date();
-      if (!soireeOuverte(maintenant)) {
+      // LE JOUR DONT ON FAIT LE BILAN, ou rien si la porte est fermée. Avant
+      // midi c'est celui d'HIER — la journée qu'on n'a pas fermée —, et c'est
+      // `jourDuBilan` qui le sait : deux endroits qui compteraient cette
+      // bascule finiraient par ne plus ouvrir la même page.
+      const jour = jourDuBilan();
+      if (!jour) {
         bloc.hidden = true;
         return;
       }
 
-      const jour = versDateISO(maintenant);
       try {
         // DÉJÀ ÉCRIT : le bilan est fait, la porte n'a plus rien à dire. On
         // regarde ce qui S'ÉCRIT — le journal ou la gratitude —, pas la note du

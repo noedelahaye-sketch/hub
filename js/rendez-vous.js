@@ -18,6 +18,8 @@ import {
   dureeLisible,
   echeanceLisible,
   depuisDateISO,
+  versDateISO,
+  ajouterJours,
   rangDEspace,
 } from './format.js';
 
@@ -37,21 +39,35 @@ import { PLANCHER_PERSO } from './orientation.js';
 
 const HEURE_OUVERTURE = 20;
 
-// LE SOIR, À PARTIR DE 20 H, TOUS LES JOURS (1er septembre 2026, demande de
-// Noé : « un bouton sur la page d'accueil qui apparaît quotidiennement à partir
-// de 20 h et qui mène à la page du jour pour en faire son bilan »).
+// LE SOIR À PARTIR DE 20 H, ET JUSQU'AU LENDEMAIN MIDI (16 septembre 2026,
+// demande de Noé : « prolonge le bouton jusqu'à 11 h 59 du matin, il doit
+// apparaître tant que rien n'est écrit dans les gratitudes ou dans ma journée en
+// quelques mots »).
 //
-// LA MÊME HEURE QUE LE RENDEZ-VOUS DU DIMANCHE, et ce n'est pas un hasard :
-// c'est l'heure où la journée est finie. Un seul nombre pour les deux portes —
-// deux heures d'ouverture différentes finiraient par se contredire, et il n'y
-// a aucune raison qu'un dimanche soir commence plus tôt qu'un mardi.
+// L'HEURE D'OUVERTURE EST CELLE DU RENDEZ-VOUS DU DIMANCHE, et ce n'est pas un
+// hasard : c'est l'heure où la journée est finie. Un seul nombre pour les deux
+// portes — deux heures d'ouverture différentes finiraient par se contredire.
 //
-// PAS DE BORNE HAUTE : la porte reste jusqu'à minuit, puis la journée change et
-// c'est celle du lendemain qu'elle ouvrira. Le rendez-vous du dimanche, lui,
-// déborde sur le lundi parce qu'une semaine se programme encore le lendemain
-// matin ; un bilan du jour, non.
-export function soireeOuverte(jour = new Date()) {
-  return jour.getHours() >= HEURE_OUVERTURE;
+// *Ce que ça renverse, et il faut le dire : « pas de borne haute, la porte reste
+// jusqu'à minuit puis c'est celle du lendemain qu'elle ouvrira » (1er septembre
+// 2026). On y ajoutait que « le rendez-vous du dimanche déborde sur le lundi
+// parce qu'une semaine se programme encore le lendemain matin ; un bilan du
+// jour, non ». L'usage a tranché l'inverse — on se couche sans avoir écrit, et
+// c'est au café du matin que ça se rattrape.*
+//
+// ELLE REND LE JOUR, PAS UN OUI-NON, et les deux questions ne se séparent pas :
+// savoir si la porte s'ouvre, c'est savoir DE QUELLE JOURNÉE on fait le bilan.
+// Avant midi, c'est celle d'HIER — celle qu'on n'a pas fermée —, et une fonction
+// qui dirait seulement « c'est ouvert » laisserait l'appelant deviner laquelle.
+// C'est le motif de `pivotDeLaSemaine`, qui fait la même bascule d'un cran plus
+// haut.
+const FIN_DU_BILAN = 12;
+
+export function jourDuBilan(maintenant = new Date()) {
+  const heure = maintenant.getHours();
+  if (heure >= HEURE_OUVERTURE) return versDateISO(maintenant);
+  if (heure < FIN_DU_BILAN) return versDateISO(ajouterJours(maintenant, -1));
+  return null;
 }
 
 // Dimanche à partir de 20 h, ou lundi. `getDay()` : 0 = dimanche, 1 = lundi.
