@@ -180,6 +180,102 @@ const ONGLET_DE_LA_VUE = {
   modeles: 'missions',
 };
 
+// --- LE MENU DU SITE (15 septembre 2026, demande de Noé) ----------------------
+//
+// LA RÈGLE DES DEUX RANGS, APPLIQUÉE À YUNO : « le coût d'accès d'une page est
+// proportionnel à l'intention qu'il faut pour la vouloir » (Noé, 28 août, pour
+// le hub). Le site comptait SIX entrées de navigation pour treize écrans : sept
+// pages — la banque, le calendrier éditorial, le vivier, le carnet réseau, les
+// modèles de messages, les préparations et leurs modèles — ne s'atteignaient que
+// par une porte posée en PIED de l'onglet dont elles dépendent. Rien ne disait
+// ce que le site contenait.
+//
+// LES CINQ ONGLETS NE BOUGENT PAS : ce sont les cinq gestes quotidiens de
+// l'atelier. Le menu ne les remplace pas, il donne le second rang — c'est la
+// structure du hub, qui garde trois onglets ET vingt-quatre liens dans son menu.
+//
+// LE MENU DU HUB NE PERCE TOUJOURS PAS LE SITE, et c'est pour ça que ces
+// rubriques vivent ICI et non dans js/menu.js : le hub ne connaît pas les
+// écrans de Yuno, c'est Yuno qui déclare les siens et emprunte le composant. La
+// règle tient par les données, pas par le code.
+//
+// CHAQUE RUBRIQUE PORTE LE NOM DE SON ONGLET et mène à sa page : le menu double
+// donc la barre sur quatre lignes, exactement comme « Perso » est à la fois un
+// onglet et une rubrique du hub. On l'ouvre sans y penser, mais ses pages
+// doivent s'atteindre comme les autres.
+export const RUBRIQUES_YUNO = [
+  {
+    nom: 'Le journal',
+    adresse: '#yuno/journal',
+    pages: [
+      // Le calendrier n'a qu'une icône dans la barre : le menu lui redonne un
+      // nom. Il est du terrain, comme les feuilles de préparation.
+      { nom: 'Le calendrier', adresse: '#yuno/calendrier' },
+      { nom: 'Les préparations', adresse: '#yuno/preparations' },
+      { nom: 'Les modèles de préparation', adresse: '#yuno/modeles' },
+    ],
+  },
+  {
+    // MON CAP, en tête du menu (15 septembre 2026, demande de Noé : « une page
+    // générale avec mes objectifs, mes projets, mes tâches, à l'image du hub »).
+    //
+    // UNE RUBRIQUE, COMME DANS LE HUB, et pour la même raison : là-bas « Mon
+    // cap » réunit la galerie et les tâches, qui sont DEUX pages — la galerie
+    // compare des caps et des projets, la page des tâches ne cache rien et range.
+    // Les empiler sur un écran en aurait fait une page qu'on fait défiler.
+    // Les noms sont ceux du hub : un nom par page, des deux côtés.
+    nom: 'Mon cap',
+    adresse: '#yuno/cap',
+    pages: [{ nom: 'Mes tâches', adresse: '#yuno/taches' }],
+  },
+  {
+    nom: 'Créer',
+    adresse: '#yuno/creer',
+    pages: [
+      { nom: 'La banque d’idées', adresse: '#yuno/banque' },
+      { nom: 'Le calendrier éditorial', adresse: '#yuno/editorial' },
+    ],
+  },
+  {
+    nom: 'Missions',
+    adresse: '#yuno/missions',
+    pages: [{ nom: 'Les commandes', adresse: '#yuno/commandes' }],
+  },
+  {
+    // LA SEULE RUBRIQUE QUI NE MÈNE NULLE PART, et c'est le vocabulaire qui
+    // l'impose : « le réseau » désigne la base de fiches (`#yuno/carnet`) —
+    // « carnet » ne nomme que le Carnet de terrain, celui des moments. Une
+    // rubrique « Réseau » qui aurait sa page ET une entrée « Le réseau » en
+    // dessous aurait fait deux fois le même mot pour deux écrans différents.
+    // Elle reste donc un TITRE, comme « Général » dans le hub, et la Passerelle
+    // reprend son nom parmi ses quatre pages. L'onglet, lui, y mène toujours en
+    // un geste.
+    nom: 'Réseau',
+    pages: [
+      { nom: 'La Passerelle', adresse: '#yuno/reseau' },
+      { nom: 'Le vivier', adresse: '#yuno/vivier' },
+      { nom: 'Le réseau', adresse: '#yuno/carnet' },
+      { nom: 'Les modèles de messages', adresse: '#yuno/messages' },
+    ],
+  },
+];
+
+// LA RUBRIQUE DE L'ÉCRAN OÙ L'ON EST SE DÉPLIE D'ELLE-MÊME — ouvrir le menu
+// depuis le vivier doit montrer les pages du Réseau, pas les faire chercher.
+// Elle se DÉDUIT des rubriques plutôt que d'une seconde table : `ONGLET_DE_LA_VUE`
+// dit déjà quel onglet s'allume, et deux tables à tenir d'accord finissent par ne
+// plus dire la même chose. Les deux premiers segments suffisent — une adresse qui
+// porte un identifiant (`#yuno/preparations/<id>`) reste sa page.
+function cheminDuMenu() {
+  const adresse = `#${location.hash.replace(/^#/, '').split('/').slice(0, 2).join('/')}`;
+  const trouvee = RUBRIQUES_YUNO.find(
+    (rubrique) =>
+      rubrique.adresse === adresse ||
+      (rubrique.pages ?? []).some((page) => page.adresse === adresse),
+  );
+  return trouvee ? [trouvee.nom] : [];
+}
+
 // --- Les trois mouvements du site --------------------------------------------
 // Trois, et pas un de plus. Chacun sert à quelque chose : dire qu'on a changé
 // de lieu, éviter que dix photos surgissent d'un coup, et faire d'un compteur
@@ -291,6 +387,13 @@ function enTete(vue, etat = null) {
          site s'ouvre sur sa barre ; le titre de l'onglet dit « Yuno · yuno_rph »,
          et la signature reste sur la page #photo du hub, à la porte d'entrée. -->
     <nav class="yuno-nav" aria-label="Le site Yuno">
+      <!-- LE BOUTON DU MENU EST ÉCRIT ICI, et non posé par le montage comme
+           dans le hub : cette barre est REDESSINÉE à chaque vue, et un bouton
+           inséré après coup disparaîtrait au premier changement d'écran. Le
+           montage ne fait donc que l'écouter, en délégation.
+           Il reste même quand la recherche prend la ligne : la loupe efface les
+           onglets le temps de chercher, pas la porte du site. -->
+      ${boutonDuMenu('menu-yuno')}
       ${
         rechercheOuverte
           ? ''
@@ -4862,6 +4965,23 @@ function squelette(vue) {
 
 export default {
   async monter(section, route) {
+    // LE MENU DU SITE, monté UNE FOIS : son panneau vit dans la coquille, hors
+    // de la section, donc il survit aux changements d'écran et ses écouteurs se
+    // posent une seule fois. Le bouton, lui, est réécrit à chaque vue par
+    // `enTete` — le composant l'écoute en délégation.
+    //
+    // La barre est passée en FONCTION et non en élément : `.yuno-nav` est
+    // remplacée à chaque rendu, et un élément détaché du DOM mesure zéro — le
+    // panneau se poserait alors en haut de l'écran au lieu de tomber sous la
+    // barre.
+    monterLeMenu(() => section.querySelector('.yuno-nav'), {
+      rubriques: RUBRIQUES_YUNO,
+      id: 'menu-yuno',
+      classe: 'menu-voile-yuno',
+      chemin: cheminDuMenu,
+      poserLeBouton: false,
+    });
+
     const etat = {
       objectifs: [],
       publications: [],

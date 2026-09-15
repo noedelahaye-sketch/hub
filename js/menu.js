@@ -183,13 +183,15 @@ const FLECHE = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"
   stroke-linejoin="round" aria-hidden="true" focusable="false">
   <path d="m6 9 6 6 6-6"></path></svg>`;
 
-// Ce qui est déplié, à tous les rangs. La clé d'un groupe porte sa rubrique
+// CE QUI EST DÉPLIÉ, PAR MENU. La clé d'un groupe porte sa rubrique
 // (« Général/Mon cap ») : deux groupes de deux rubriques pourraient partager un
-// nom, et se déplieraient alors ensemble.
+// nom, et se déplieraient alors ensemble. Le Map en fait autant d'un menu à
+// l'autre depuis le 15 septembre 2026 — Yuno a le sien, et « Créer » ne doit
+// pas déplier une rubrique du hub qui porterait le même nom.
 //
 // Retenu d'une ouverture à l'autre : rouvrir le menu pour retrouver tout replié
 // ferait refaire le même geste à chaque fois.
-const depliees = new Set(['Général']);
+const PLIS = new Map();
 
 // LE MOT ET LA FLÈCHE, à n'importe quel rang. Le mot mène à la page quand il y
 // en a une ; sinon c'est un simple titre — un mot qui ne mène nulle part ne se
@@ -262,8 +264,8 @@ function rubrique(item) {
 // LE CHEMIN JUSQU'À UN ESPACE, pour que le menu s'ouvre déjà déplié dessus.
 // Perso vit maintenant sous « Général » : sans ce chemin, ouvrir le menu depuis
 // perso ne montrerait rien de perso.
-function cheminVers(nav) {
-  for (const item of RUBRIQUES) {
+function cheminVers(nav, rubriques = RUBRIQUES) {
+  for (const item of rubriques) {
     if (item.nav === nav) return (item.pages ?? []).length ? [item.nom] : [];
     for (const entree of item.entrees ?? []) {
       if (entree.nav !== nav) continue;
@@ -282,26 +284,72 @@ function cheminVers(nav) {
 // Le menu vit dans la coquille, hors des espaces : il survit aux changements
 // d'écran, ses écouteurs sont donc posés une seule fois.
 
-export function monterLeMenu(barre) {
-  barre.insertAdjacentHTML(
-    'afterbegin',
-    `<button type="button" id="bouton-menu" class="bouton-menu"
-       aria-label="Toutes les pages" aria-expanded="false" aria-controls="menu-voile">
-       <span></span><span></span><span></span>
-     </button>`,
-  );
+// LE GABARIT DU BOUTON, à part depuis le 15 septembre 2026 : le hub le fait
+// poser par le montage — sa barre est écrite une fois pour toutes —, le site
+// Yuno l'écrit dans la sienne, qui est redessinée à chaque vue. Un bouton
+// inséré après coup y disparaîtrait au premier changement d'écran.
+export function boutonDuMenu(id = 'menu') {
+  return `<button type="button" class="bouton-menu" data-bouton-menu="${id}"
+     aria-label="Toutes les pages" aria-expanded="false" aria-controls="${id}-voile">
+     <span></span><span></span><span></span>
+   </button>`;
+}
 
-  document.getElementById('app').insertAdjacentHTML(
+// LE MÊME COMPOSANT, DEUX PEAUX (15 septembre 2026, demande de Noé : le site
+// Yuno veut « quelque chose de plus proche de la logique du hub » pour son
+// menu). Tout ce qui était écrit en dur se paramètre — les rubriques, l'endroit
+// où le voile se pose, la façon de retrouver la barre — et rien d'autre ne
+// bouge : les plis, la fermeture au fond, Échap et le calage sous la barre sont
+// les mêmes des deux côtés. Deux mécaniques jumelles auraient fini par ne plus
+// se replier pareil.
+//
+// CE QUE ÇA NE CHANGE PAS : le menu du hub ne perce toujours pas les sites. Il
+// ne connaît pas les écrans de Yuno — c'est Yuno qui déclare les siens et
+// emprunte le composant. La règle tient par les données, pas par le code.
+//
+// `barre` accepte un élément (le hub, dont la barre ne bouge pas) ou une
+// FONCTION qui le retrouve (Yuno, qui redessine la sienne) : un élément gardé
+// en mémoire et détaché du DOM mesure zéro, et le panneau se poserait alors en
+// haut de l'écran.
+export function monterLeMenu(barre, options = {}) {
+  const {
+    rubriques = RUBRIQUES,
+    id = 'menu',
+    classe = '',
+    hote = document.getElementById('app'),
+    // Ce qui se déplie tout seul à l'ouverture. Le hub suit l'espace courant ;
+    // Yuno suit sa vue, et le dit lui-même.
+    chemin = () => cheminVers(document.body.dataset.espace, rubriques),
+    // Le hub pose son bouton ici ; Yuno l'écrit dans son gabarit et ne demande
+    // qu'à être écouté.
+    poserLeBouton = true,
+  } = options;
+
+  const laBarre = () => (typeof barre === 'function' ? barre() : barre);
+
+  // LES PLIS SONT PROPRES À CHAQUE MENU, et retenus d'une ouverture à l'autre :
+  // rouvrir pour retrouver tout replié ferait refaire le même geste à chaque
+  // fois. Deux menus partageant un Set se déplieraient l'un l'autre au premier
+  // nom de rubrique commun.
+  if (!PLIS.has(id)) PLIS.set(id, new Set(options.depliees ?? []));
+  const depliees = PLIS.get(id);
+
+  if (poserLeBouton) laBarre()?.insertAdjacentHTML('afterbegin', boutonDuMenu(id));
+
+  hote.insertAdjacentHTML(
     'beforeend',
-    `<div id="menu-voile" class="menu-voile" hidden>
+    `<div id="${id}-voile" class="menu-voile ${classe}" hidden>
        <nav class="menu" aria-label="Toutes les pages">
-         ${RUBRIQUES.map(rubrique).join('')}
+         ${rubriques.map(rubrique).join('')}
        </nav>
      </div>`,
   );
 
-  const bouton = document.getElementById('bouton-menu');
-  const voile = document.getElementById('menu-voile');
+  // LE BOUTON SE RETROUVE À CHAQUE FOIS, jamais gardé : celui de Yuno est
+  // réécrit à chaque vue, et l'ancien serait un élément mort dont on
+  // basculerait les classes sans que rien ne bouge à l'écran.
+  const leBouton = () => document.querySelector(`[data-bouton-menu="${id}"]`);
+  const voile = document.getElementById(`${id}-voile`);
 
   function appliquerLesPlis() {
     // `.menu-rubrique` et `.menu-groupe` portent tous deux `data-rubrique` :
@@ -323,7 +371,7 @@ export function monterLeMenu(barre) {
     // chemin qui y mène : ouvrir le menu depuis Yuno doit montrer les pages de
     // Yuno, pas les faire chercher. Depuis perso, il faut ouvrir « Général »
     // puis « Perso » — deux plis, pas un.
-    for (const cle of cheminVers(document.body.dataset.espace)) depliees.add(cle);
+    for (const cle of chemin()) depliees.add(cle);
 
     appliquerLesPlis();
     // Le panneau tombe sous la barre, mesurée à l'instant. Le fond est figé au
@@ -331,22 +379,28 @@ export function monterLeMenu(barre) {
     // donc stable tant qu'il est ouvert.
     voile.style.setProperty(
       '--sous-la-barre',
-      `${Math.round(barre.getBoundingClientRect().bottom)}px`,
+      `${Math.round(laBarre()?.getBoundingClientRect().bottom ?? 0)}px`,
     );
     voile.hidden = false;
-    bouton.classList.add('ouvert');
-    bouton.setAttribute('aria-expanded', 'true');
-    bouton.setAttribute('aria-label', 'Fermer le menu');
+    const bouton = leBouton();
+    bouton?.classList.add('ouvert');
+    bouton?.setAttribute('aria-expanded', 'true');
+    bouton?.setAttribute('aria-label', 'Fermer le menu');
   }
 
   function fermer() {
     voile.hidden = true;
-    bouton.classList.remove('ouvert');
-    bouton.setAttribute('aria-expanded', 'false');
-    bouton.setAttribute('aria-label', 'Toutes les pages');
+    const bouton = leBouton();
+    bouton?.classList.remove('ouvert');
+    bouton?.setAttribute('aria-expanded', 'false');
+    bouton?.setAttribute('aria-label', 'Toutes les pages');
   }
 
-  bouton.addEventListener('click', () => {
+  // EN DÉLÉGATION, et non sur le bouton lui-même : celui de Yuno est réécrit à
+  // chaque vue, et un écouteur posé sur l'ancien serait perdu au premier
+  // changement d'écran.
+  document.addEventListener('click', (evenement) => {
+    if (!evenement.target.closest(`[data-bouton-menu="${id}"]`)) return;
     if (voile.hidden) ouvrir();
     else fermer();
   });
@@ -371,8 +425,20 @@ export function monterLeMenu(barre) {
   document.addEventListener('keydown', (evenement) => {
     if (evenement.key === 'Escape' && !voile.hidden) {
       fermer();
-      bouton.focus();
+      leBouton()?.focus();
     }
+  });
+
+  // CHANGER DE PAGE REFERME LE MENU, quel que soit le chemin pris : un onglet,
+  // la flèche du navigateur, un balayage entre espaces. Cliquer un lien DU menu
+  // le fermait déjà ; tout le reste le laissait ouvert.
+  //
+  // Le défaut ne s'est vu qu'une fois Yuno servi par le même composant, et il
+  // était gros : le menu du site restait déplié en quittant le site, et se
+  // superposait à celui du hub — deux menus ouverts l'un sur l'autre, chacun
+  // avec ses rubriques.
+  window.addEventListener('hashchange', () => {
+    if (!voile.hidden) fermer();
   });
 
   appliquerLesPlis();

@@ -145,7 +145,9 @@ document.body.insertAdjacentHTML(
   </div>`,
 );
 
-monterLeMenu(document.querySelector('.barre-onglets'));
+// « Général » s'ouvre d'emblée : c'est la rubrique du transverse et du perso,
+// celle qu'on vient chercher le plus souvent.
+monterLeMenu(document.querySelector('.barre-onglets'), { depliees: ['Général'] });
 
 const TITRES = {
   dashboard: 'Accueil',

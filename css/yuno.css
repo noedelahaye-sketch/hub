@@ -342,11 +342,36 @@ body[data-espace="yuno"] .lien-externe-titre {
    celle-ci : les onglets se centrent entre les deux, la loupe tient le bord
    droit — sur toutes les pages. */
 .yuno-nav { align-items: center; }
-.yuno-nav > a:first-child { margin-left: auto; }
+/* `first-of-type` ET NON `first-child` (15 septembre 2026) : depuis que le
+   bouton du menu ouvre la barre, le premier ENFANT est un `button` — plus aucun
+   lien ne répondait à la règle, et les onglets, privés de leur marge
+   automatique, se collaient au bouton au lieu de rester centrés. */
+.yuno-nav > a:first-of-type { margin-left: auto; }
 
 /* La barre de recherche ouverte prend la ligne des onglets à elle seule :
    pas de retrait à gauche — il n'y a plus de titre à côté duquel se caler. */
 .yuno-nav > .barre-loupe { margin-left: 0; }
+
+/* LE BOUTON DU MENU COLLE AU BORD GAUCHE, exactement comme la loupe colle à
+   droite (15 septembre 2026). La barre défile quand elle déborde, et
+   `centrerActif` la fait défiler d'elle-même pour ramener l'onglet actif dans le
+   champ : mesuré sur le vivier, le bouton sortait de l'écran et la porte du site
+   devenait introuvable. C'est la règle du hub, dont le bouton vit hors de la
+   bande qui défile — une chose en queue de bande n'existe pas.
+   Le fond est opaque : les onglets glissent DESSOUS. */
+body[data-espace="yuno"] .yuno-nav > .bouton-menu {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  flex: none;
+  background: var(--fond);
+}
+
+/* L'ÉTAT OUVERT SE REDIT ICI, et il le faut : `.bouton-menu.ouvert` pèse deux
+   classes, la règle du dessus en pèse trois et un attribut — le fond opaque
+   écrasait donc le doré, et le bouton ne disait plus que le menu était ouvert.
+   Une spécificité qu'on n'égale pas est une règle qu'on n'écrit pas. */
+body[data-espace="yuno"] .yuno-nav > .bouton-menu.ouvert { background: var(--accent); }
 
 /* « Visible constamment » vaut aussi sur téléphone, où la barre déborde et
    défile : la loupe COLLE au bord droit (sticky dans l'axe du défilement),
@@ -365,6 +390,44 @@ body[data-espace="yuno"] .lien-externe-titre {
   border-top: 1px solid var(--bordure);
   text-align: center;
 }
+
+/* --- Le menu du site (15 septembre 2026) ---------------------------------------
+   LE MÊME COMPOSANT QUE LE HUB, UNE AUTRE PEAU. Presque tout arrive tout seul :
+   `.menu-voile`, `.menu` et leurs rangs sont écrits en variables — `--fond-carte`,
+   `--bordure`, `--accent` —, et `body[data-espace="yuno"]` les a déjà remplacées
+   par celles du site. Il ne reste ici que ce qu'une variable ne porte pas : la
+   police des titres, et une pastille qui n'a rien à dire.
+
+   Deux mécaniques jumelles auraient fini par ne plus se replier pareil ; c'est
+   pourquoi Yuno emprunte le composant plutôt que d'en écrire un second. */
+
+/* CANELA POUR LES RANGS DU MENU. Le hub y met Clash Display par
+   `--police-titre` ; Yuno ne redéfinit pas cette variable — il pose sa police
+   écran par écran — et le menu serait donc reparti dans la typographie du hub,
+   au milieu du site. C'est la première chose qu'on lit en ouvrant : elle doit
+   être de la maison. */
+body[data-espace="yuno"] .menu-voile-yuno :is(.menu-grand > a, .menu-titre-seul) {
+  font-family: "Canela Deck", var(--police-titre);
+  font-weight: 400;
+  font-size: 1.1875rem;
+}
+
+body[data-espace="yuno"] .menu-voile-yuno .menu-moyen > a {
+  font-family: "Canela Deck", var(--police-titre);
+  font-weight: 400;
+}
+
+/* PAS DE PASTILLE : dans le hub elle dit l'espace d'une ligne — le violet du
+   perso, le bleu du club. Le site n'a qu'un seul espace, donc quatre points de
+   la même couleur qui ne distinguent rien. C'est la leçon de « en sommeil » sur
+   les habitudes : un signe identique partout est un signe qui occupe de la
+   place. Le retrait rend son alignement au texte. */
+body[data-espace="yuno"] .menu-voile-yuno .menu-pastille { display: none; }
+
+/* Le panneau se pose sous la barre, comme dans le hub, mais le site est plus
+   sombre que lui : le voile se fonce d'autant, sans quoi le fond de page et le
+   fond du voile se confondraient et le menu flotterait sans profondeur. */
+body[data-espace="yuno"] .menu-voile-yuno { background: rgb(0 0 0 / 62%); }
 
 /* --- La navigation de l'espace ---------------------------------------------- */
 
