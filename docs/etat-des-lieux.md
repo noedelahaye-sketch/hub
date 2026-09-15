@@ -1,6 +1,62 @@
 # État des lieux — 15 septembre 2026
 
-> **Reprise : § 4 bis, « Par où reprendre ».**
+
+## Relais — 15 septembre, après-midi (navigation, typographie, événements)
+
+Cette section décrit la session la plus récente et prime sur les descriptions
+historiques de navigation et de typographie plus bas dans ce document.
+
+### État Git et aperçu
+
+- Branche : `main`. Commit **`ad5a782`** créé et poussé sur `origin/main` à la demande de Noé : navigation liquide, titres et typographie du hub/Yuno.
+- **Commit de suivi demandé par Noé** : fiche complète d’événement, ajustements photo, jaune du dock Yuno et présent état des lieux sont regroupés dans le commit « Add full Yuno event pages and update project handoff ». Vérifier `git log` et `git status` à la reprise pour son identifiant et les éventuels changements ultérieurs.
+- Aperçus : `http://localhost:4173/index.html#dashboard` et `http://localhost:4173/yuno.html#yuno`. Un serveur occupait déjà le port 4173 ; ne pas en démarrer un deuxième inutilement.
+- Les captures et retours de Noé viennent de ces aperçus locaux. La connexion était initialement nécessaire, puis les pages ont été accessibles dans le navigateur intégré.
+
+### Navigation : décisions validées
+
+- **Yuno** : dock fixe en bas, compact, translucide et sombre, flou et reflets fins donnant une impression de verre liquide. Ne pas revenir à une grosse capsule opaque ou à un contour blanc épais.
+- Cinq destinations : Accueil, Journal, Créer, Réseau, Calendrier. **Missions reste uniquement dans le menu dépliant.**
+- Loupe et menu dépliant restent en haut, avec le titre de page **centré et jaune**.
+- **Hub** : même dock avec Accueil, Perso, Calendrier. Menu dépliant en haut ; titre de chaque page sur la même ligne, **aligné à gauche** (centrage essayé puis annulé).
+- Les couleurs actives suivent `--accent` : Perso violet/rose ; Yuno jaune. Le bleu fixe de la première version a été remplacé.
+- Le bouton flottant « + » et le bas du contenu sont remontés/dégagés pour laisser la place au dock et à la zone de geste des téléphones.
+- Styles du verre partagés dans `css/yuno.css` via `:is(.yuno-dock, .navigation.hub-dock)` ; cette feuille est aussi chargée par le hub. `js/app.js` crée les icônes du hub.
+- `actualiserTitreDuHub()` dans `js/app.js` observe les rendus sous `#vue`, reprend le texte du premier h1 non masqué/non modal dans `#hub-titre-page`, et masque le titre d'origine avec `.hub-titre-dans-barre`. Les sites Yuno/FCH sont exclus. À vérifier notamment pour les pages à titres éditables ou avec plusieurs h1.
+
+### Typographie : règle désormais choisie
+
+- **Canela abandonnée.** Inter pour navigation, titres de page/section et informations pratiques ; Clash Display pour noms d'objectifs/projets et titres de sorties/publications/préparations.
+- Clash : 600 par défaut, 700 sur un titre majeur de détail, romain, approche légèrement resserrée (`-0.015em`, `-0.025em` en gras).
+- Inter : titre de page 800 et approche `-0.04em`, sections 700 et `-0.025em`, niveaux secondaires plus légers. Noé veut une hiérarchie de graisses nette, pas tous les titres en 600.
+- Sections comme « Objectifs » réduites à **15 px**. Rubriques principales du menu à **16 px**, sous-pages à **13 px**.
+- Libellés du dock également en Inter. Liens de Yuno sans soulignement, y compris au survol, toujours cliquables.
+- Inter variable romain et italique installés localement dans `fonts/`, avec licence, préchargement dans `yuno.html` et entrées dans `sw.js`. Clash 600/700 était déjà présent.
+
+### Fiche complète des événements Yuno (commit de suivi)
+
+- L'aperçu photo reste une fenêtre. **Le crayon est remplacé par une icône d'agrandissement** (lien accessible) ouvrant `#yuno/evenement/<id>` ; le bouton « Tous les détails » est retiré.
+- Nouvelle vue `vueEvenement(etat)` dans `js/yuno.js`, route ajoutée à `VUES`, onglet Journal actif. `BESOINS.evenement` charge événements, contacts, préparations, commandes et pistes : ouverture directe prévue.
+- Page pleine largeur disponible : nom, type, date/lieu, photo entière, informations, préparation/bilan et prestation liée. L'argent continue de venir de la commande reliée par `evenement_id`.
+- Lecture détaillée réutilise `ficheCompleteMoment()`. Édition directement dans la page via `formulaireModifierMoment()` et le gestionnaire existant : date, **heure ajoutée**, type, titre, lieu, clubs, montant/frais, note, photo, état d'œuvre si activé. Enregistrer revient à la lecture ; Annuler quitte l'édition.
+- Le titre de préparation qui répétait le nom de l'événement sous « Préparation et bilan » a été supprimé. Le lien fourni par `bilanDeLaSortie()` reste accessible.
+- Photo réduite : largeur intrinsèque, maximum 280 px dans sa colonne et hauteur 36vh ; **coins arrondis 16 px, sans bordure ni fond ni ombre**. `width:auto; height:auto` évite le rectangle vide de `object-fit:contain`, qui empêchait les arrondis de suivre la photo visible.
+- Dernière demande appliquée : **20 px** entre photo et informations, et entre la grille photo/informations et Préparation/bilan (`gap:20px`, `margin-bottom:20px`, marge supérieure de la section suivante annulée). Si les informations sont plus hautes que la photo, la section suivante reste naturellement sous la grille entière : l'écart réel au bas de la photo peut alors être plus grand.
+- En dessous de 720 px, grille sur une colonne. Aucun changement de schéma ni migration de base.
+
+### Vérifications et limites pour la reprise
+
+- Syntaxe JS (`node --check`) et `git diff --check` vérifiés après les modifications concernées ; `node tools/verifier-gabarits.js` réussit (38 fichiers).
+- Navigation Yuno vérifiée visuellement dans un aperçu isolé puis sur une page connectée. Les derniers ajustements de fiche ont surtout été revus par les captures de Noé ; **pas de validation complète de sauvegarde ni de test de bout en bout** de la nouvelle route.
+- À vérifier en priorité : accès direct/rechargement de la fiche, ouverture depuis l'agrandissement, édition/enregistrement/annulation, remplacement photo, petit écran, état après navigation arrière et éventuels formulaires longs.
+- La fiche exploite les champs déjà disponibles : ne pas prétendre que tous les liens possibles (publications, contacts éditables, plusieurs commandes ou bilans) ont été audités. Elle reprend la première commande et le bilan existant.
+- Le vérificateur de coquille a signalé plus tôt deux problèmes préexistants : `js/cap-adresses.js` absent du cache déclaré et une URL SVG `data:` interprétée comme fichier. Non corrigés dans cette session.
+- Noé a demandé le commit et le push du suivi après la mise à jour de cet état des lieux. Le succès du push ne prouve pas à lui seul que le déploiement du site est terminé.
+
+---
+
+
+> **Reprise immédiate : section « Relais — 15 septembre, après-midi » ci-dessous, puis § 4 bis pour les chantiers antérieurs.**
 >
 > Ce document dit **où en est le hub** — `CLAUDE.md` dit ce qu'il doit être, et
 > les deux cahiers des charges (`yuno-spec.md`, `fch-spec.md`) font autorité sur

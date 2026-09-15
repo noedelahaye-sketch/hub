@@ -3069,8 +3069,8 @@ body:not([data-espace="yuno"]):not([data-espace="hermitage"]) .ouvrir-capture {
   bottom: calc(88px + env(safe-area-inset-bottom, 0px));
 }
 
-/* Le verre du hub reprend l'accent de l'espace courant. */
-.navigation.hub-dock a.actif {
+/* Le verre reprend l'accent de l'espace : jaune Yuno, couleurs du hub. */
+:is(.yuno-dock, .navigation.hub-dock) a.actif {
   color: var(--accent);
   background:
     radial-gradient(ellipse at 25% 0%, rgb(255 255 255 / 19%), transparent 65%),
@@ -3079,4 +3079,25 @@ body:not([data-espace="yuno"]):not([data-espace="hermitage"]) .ouvrir-capture {
     inset 0 -0.5px 0 color-mix(in srgb, var(--accent) 20%, transparent),
     0 2px 5px rgb(0 0 0 / 12%);
 }
-.navigation.hub-dock a:focus-visible { outline-color: var(--accent); }
+:is(.yuno-dock, .navigation.hub-dock) a:focus-visible { outline-color: var(--accent); }
+
+/* Fiche complète d'un événement : photo entière et informations côte à côte. */
+.evenement-page { width: 100%; max-width: none; }
+.evenement-entete { margin-block: 24px; }
+body[data-espace="yuno"] #vue .evenement-entete .moment-titre {
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  margin-block: 12px 8px;
+}
+.evenement-grille { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px; align-items: start; margin-bottom: 20px; }
+.evenement-grille > div:first-child { max-width: 280px; }
+.evenement-photo { display: block; width: auto; height: auto; max-width: 100%; max-height: 36vh; margin: 0; border: 0; border-radius: 16px; box-shadow: none; background: transparent; }
+.evenement-informations .fenetre-titre { display: none; }
+.evenement-informations .fiche-details { margin-top: 0; }
+.evenement-preparation { display: block; margin-block: 12px; }
+@media (max-width: 720px) {
+  .evenement-grille { grid-template-columns: 1fr; gap: 20px; }
+}
+
+.evenement-grille + .bloc { margin-top: 0; }

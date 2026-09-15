@@ -166,7 +166,7 @@ function construirePiliers() {
 }
 
 const VUES = [
-  'accueil', 'journal', 'creer', 'banque', 'editorial',
+  'accueil', 'journal', 'evenement', 'creer', 'banque', 'editorial',
   'calendrier', 'reseau', 'passerelle', 'vivier', 'messages', 'carnet', 'missions',
   'commandes', 'preparations', 'modeles',
   // LES TROIS ÉCRANS DU CAP, EMPRUNTÉS AU HUB (15 septembre 2026, demande de
@@ -188,6 +188,7 @@ const ESPACE_DU_HUB = 'photo';
 // celui de Créer allumé. Une barre de navigation ne doit pas grandir à chaque
 // écran qu'on ajoute.
 const ONGLET_DE_LA_VUE = {
+  evenement: 'journal',
   banque: 'creer',
   editorial: 'creer',
   passerelle: 'reseau',
@@ -393,7 +394,7 @@ export function animerLesCompteurs(section, { remise = false } = {}) {
 function enTete(vue, etat = null) {
   const vueActive = ONGLET_DE_LA_VUE[vue] ?? vue;
   const titres = {
-    accueil: 'Accueil', journal: 'Journal', creer: 'Créer',
+    evenement: 'Événement', accueil: 'Accueil', journal: 'Journal', creer: 'Créer',
     banque: 'Banque d’idées', editorial: 'Calendrier éditorial',
     calendrier: 'Calendrier', reseau: 'Réseau', passerelle: 'Réseau',
     vivier: 'Vivier', messages: 'Modèles de messages', carnet: 'Carnet réseau',
@@ -862,12 +863,10 @@ function corpsMoment(sortie, photos = {}, { fenetre = false, preparations = [] }
         // milieu du reste.
         fenetre
           ? `<span class="moment-actions">
-               <button type="button" class="lien-discret bouton-mini"
-                 data-details-moment="${echapper(sortie.id)}">Tous les détails</button>
-               <button type="button" class="bouton-icone"
-                 data-modifier-moment="${echapper(sortie.id)}"
-                 title="Modifier cette sortie"
-                 aria-label="Modifier « ${echapper(titreDuMoment(sortie))} »">${CRAYON}</button>
+               <a class="bouton-icone" href="#yuno/evenement/${echapper(sortie.id)}"
+                 title="Ouvrir la fiche complète" aria-label="Agrandir : ${echapper(titreDuMoment(sortie))}">
+                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7M21 3l-8 8M10 21H3v-7M3 21l8-8"/></svg>
+               </a>
              </span>`
           : ''
       }`;
@@ -930,7 +929,8 @@ export function ficheCompleteMoment(sortie, { pistes = [], commande = null } = {
   const aUneHeure = debut.getHours() || debut.getMinutes();
 
   const lignes = [
-    ['Quand', echeanceLisible(depuisDateISO(jourDeLaSortie(sortie)))],
+    ['Quand', debut.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })],
+    ['Fin', sortie.date_fin ? new Date(sortie.date_fin).toLocaleString('fr-FR') : null],
     ['À quelle heure', aUneHeure ? momentLisible(debut).split(', ').pop() : null],
     ['Quoi', TYPES_MOMENT[sortie.type_moment] ?? TYPES_MOMENT.autre],
     ['Son nom', sortie.titre],
@@ -988,6 +988,7 @@ function formulaireModifierMoment(sortie, pistes = [], commande = null) {
     champs: [
       { type: 'titre', libelle: 'La sortie' },
       { nom: 'date', libelle: 'Quand', type: 'date', valeur: jourDeLaSortie(sortie), requis: true },
+      { nom: 'heure', libelle: 'Heure', type: 'time', valeur: `${String(new Date(sortie.date_debut).getHours()).padStart(2, '0')}:${String(new Date(sortie.date_debut).getMinutes()).padStart(2, '0')}` },
       {
         nom: 'type_moment',
         libelle: 'Quoi',
@@ -1217,6 +1218,36 @@ export function construireMurPhotos(evenements, photos = {}, jour = versDateISO(
 // Le moment ouvert depuis une vignette. Comme pour les idées, on le retrouve
 // par son identifiant à chaque rendu : la fenêtre suit l'état, elle n'en garde
 // pas une copie figée.
+function vueEvenement(etat) {
+  const sortie = etat.evenements.find((element) => element.id === etat.feuilleOuverte);
+  if (!sortie) return `${enTete('evenement', etat)}<p class="vide">Cet événement est introuvable.</p><a href="#yuno/journal">Retour au journal</a>`;
+  const photo = etat.photos[sortie.photo_chemin];
+  const commande = commandeDeLaSortie(etat.commandes, sortie.id);
+  const feuilles = etat.preparations.filter((element) => element.evenement_id === sortie.id);
+  return `${enTete('evenement', etat)}
+    <article class="evenement-page">
+      <a class="lien-discret" href="#yuno/journal">← Journal</a>
+      <header class="evenement-entete">
+        <span class="etiquette">${echapper(TYPES_MOMENT[sortie.type_moment] ?? TYPES_MOMENT.autre)}</span>
+        <h2 class="moment-titre">${echapper(titreDuMoment(sortie))}</h2>
+        <p class="discret">${echapper(dateLongue(new Date(sortie.date_debut)))}${sortie.lieu ? ` · ${echapper(sortie.lieu)}` : ''}</p>
+      </header>
+      <div class="evenement-grille">
+        <div>${photo ? `<a href="${echapper(photo)}" target="_blank" rel="noopener"><img class="evenement-photo" src="${echapper(photo)}" alt="${echapper(titreDuMoment(sortie))}"></a>` : '<p class="vide">Aucune photo pour cet événement.</p>'}</div>
+        <section class="bloc evenement-informations">
+          ${etat.editionMoment
+            ? `<h2>Modifier les informations</h2>${formulaireModifierMoment(sortie, etat.pistes, commande)}<button type="button" class="lien-discret" data-annuler-edition-evenement>Annuler</button>`
+            : `<h2>Informations</h2>${ficheCompleteMoment(sortie, { pistes: etat.pistes, commande })}`}
+        </section>
+      </div>
+      <section class="bloc"><h2>Préparation et bilan</h2>
+        ${feuilles.length ? '' : '<p class="discret">Aucune préparation liée.</p>'}
+        ${bilanDeLaSortie(sortie, etat.preparations)}
+      </section>
+      ${commande ? `<section class="bloc"><h2>Prestation liée</h2><p>${echapper(commande.titre ?? 'Prestation')} · ${echapper(commande.statut ?? '')}</p><a href="#yuno/missions">Gérer la prestation</a></section>` : ''}
+    </article>${pied()}`;
+}
+
 function fenetreMoment(etat) {
   if (!etat.momentOuvert) return '';
 
@@ -5227,6 +5258,7 @@ const BESOINS = {
   // prestation, et sans cette lecture les deux champs d'argent seraient
   // toujours vides — puis les écraseraient à l'enregistrement.
   accueil: ['evenements', 'objectifs', 'publications', 'contacts', 'preparations', 'modelesPrepa', 'commandes'],
+  evenement: ['evenements', 'contacts', 'preparations', 'commandes', 'pistes'],
   journal: ['evenements', 'contacts', 'preparations', 'commandes'],
   creer: ['publications'],
   banque: ['publications'],
@@ -5523,6 +5555,7 @@ export default {
       const pret = pretPour(etat.vue);
 
       if (!pret) section.innerHTML = squelette(etat.vue);
+      else if (etat.vue === 'evenement') section.innerHTML = vueEvenement(etat);
       else if (etat.vue === 'journal') section.innerHTML = vueJournal(etat);
       else if (etat.vue === 'creer') section.innerHTML = vueCreer(etat);
       else if (etat.vue === 'banque') section.innerHTML = vueBanque(etat);
@@ -5880,6 +5913,7 @@ export default {
     this.naviguer = async (nouvelleRoute) => {
       etat.vue = VUES.includes(nouvelleRoute?.vue) ? nouvelleRoute.vue : 'accueil';
       etat.feuilleOuverte = nouvelleRoute?.id ?? null;
+      etat.editionMoment = false;
       // Au Carnet, l'id de l'adresse ouvre la SORTIE et non une feuille : c'est
       // ainsi que le bandeau de l'accueil y envoie (29 août 2026). Ailleurs il
       // ne veut rien dire, et la fiche ouverte se referme.
@@ -6054,7 +6088,7 @@ export default {
           : '00:00';
 
         const modifs = {
-          date_debut: new Date(`${champs.date}T${heure}`).toISOString(),
+          date_debut: new Date(`${champs.date}T${champs.heure || heure}`).toISOString(),
           type_moment: champs.type_moment,
           titre: champs.titre.trim(),
           lieu: champs.lieu?.trim() || null,
@@ -6844,6 +6878,11 @@ export default {
 
       // Le crayon retourne la fenêtre : la fiche laisse la place au formulaire,
       // sans changer de fenêtre ni de contexte.
+      if (evenement.target.closest('[data-annuler-edition-evenement]')) {
+        etat.editionMoment = false;
+        rendre();
+        return;
+      }
       if (evenement.target.closest('[data-details-moment]')) {
         etat.detailsMoment = true;
         rendre();
