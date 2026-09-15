@@ -314,6 +314,28 @@ couleur.
     lui, et il n'en restait plus que deux jusqu'au bord de l'écran — mesuré. Un
     iPhone les rattrape par sa zone de sécurité ; un navigateur qui n'en a pas,
     non.
+  - **LA PASTILLE EST OPAQUE** (demande de Noé, le même jour : *« il faut que ce
+    soit uni, qu'on ne voie pas que ça déborde — moins transparent, ou trouver
+    une autre solution pour qu'on ne voie pas la démarcation du rectangle global
+    derrière celui de l'onglet sélectionné »*). Son fond n'était fait que de
+    voiles — des blancs à 19 % et 5 %, l'accent à 9 % de la TRANSPARENCE : le
+    bord du rail et la couture de son verre se lisaient au travers, et la
+    pastille avait l'air **découpée dedans plutôt que posée dessus**. *Un
+    débordement ne vaut que si l'on ne voit pas ce qu'il recouvre.*
+    - **SEULE LA COUCHE DU BAS CHANGE** : deux teintes pleines, bâties sur la
+      couleur du verre et relevées d'un soupçon d'accent, sur lesquelles les
+      reflets d'avant se reposent tels quels. La pastille garde donc exactement
+      son allure, sans plus rien laisser passer.
+    - **ELLE PORTE SON OMBRE**, et c'est le second signe qu'elle est POSÉE : une
+      pastille opaque sans ombre est un TROU dans le rail ; avec, c'est un jeton
+      dessus. C'est la seule ombre portée du hub sombre, où `--ombre` vaut
+      `none` — mais le dock en a déjà trois, et ici elle ne sépare pas une carte
+      de la page : **elle décolle un objet d'un autre.**
+    - **LES DEUX DÉCLARATIONS DISENT LA MÊME CHOSE.** Le fond par défaut (bleu)
+      et celui que l'accent de l'espace reprend en fin de feuille sont tous deux
+      opaques : deux déclarations pour un même objet ne peuvent pas différer sur
+      ce qui le fonde — la première resterait seule le jour où l'autre bougerait,
+      et la démarcation reparaîtrait au travers.
 - **LE HUB GARDE SON AIR SUR TÉLÉPHONE, LES SITES SE SERRENT** : trois onglets
   contre cinq, et un plafond plus bas. Yuno doit tenir cinq mots sur 375 px.
 - **LE DOCK DU FC HERMITAGE N'EST PAS CONCERNÉ** : il a sa propre classe
