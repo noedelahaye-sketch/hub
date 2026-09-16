@@ -14,6 +14,7 @@
 // toucher aux autres.
 
 import * as api from './api.js';
+import { construireOrganigramme, rechercherOrganigramme } from './organigramme-fch.js';
 import { monterLeMenu, boutonDuMenu } from './menu.js';
 import {
   modifierAussitot,
@@ -45,7 +46,7 @@ import {
   RECURRENCES,
 } from './format.js';
 import { finDeLaSortie, phaseDeLaSortie } from './preparations-commun.js';
-import { REPERES, MISSION, VALEURS, COMMISSIONS, CRENEAUX } from './club-fch.js';
+import { REPERES, MISSION, VALEURS, CRENEAUX } from './club-fch.js';
 import {
   trierTaches,
   construireLignesTaches,
@@ -1067,7 +1068,7 @@ function blocTempsFort(etat) {
     : '<span class="tf-posees tf-rien">Rien de posé ce jour-là pour l’instant</span>';
 
   return `
-    <section class="bloc fch-accueil-tuile fch-accueil-moment">
+    <section class="bloc fch-tuile fch-accueil-moment">
       <span class="tuile-entete">
         <span class="etiquette">${cEstAujourdhui ? "C'est aujourd'hui" : 'Temps fort'}</span>
         <span class="discret quand">${echapper(echeanceLisible(jour))}</span>
@@ -1118,7 +1119,7 @@ function blocReunionDuMoment(etat) {
     : [];
 
   return `
-    <section class="bloc fch-accueil-tuile fch-accueil-moment">
+    <section class="bloc fch-tuile fch-accueil-moment">
       <span class="tuile-entete">
         <span class="etiquette">${PHASES_REUNION[phase]}</span>
         ${etiquettesReunion(reunion)}
@@ -1210,7 +1211,7 @@ function blocAFaire(etat) {
     return `
     <section class="bloc">
       <h2 class="titre-section">À faire</h2>
-      <div class="fch-accueil-tuile">
+      <div class="fch-tuile">
       <div data-bloc="taches">
         <p class="vide">Rien à faire pour le club. Le « + » en bas note la prochaine.</p>
       </div>
@@ -1224,7 +1225,7 @@ function blocAFaire(etat) {
   return `
     <section class="bloc">
       <h2 class="titre-section">À faire <span class="chiffre">${aFaire.length}</span></h2>
-      <div class="fch-accueil-tuile">
+      <div class="fch-tuile">
       <div data-bloc="taches">
         ${dessiner(tete)}
         ${
@@ -1257,7 +1258,7 @@ function vueAccueil(etat) {
 
     <section class="bloc">
       <h2 class="titre-section">La com' à venir</h2>
-      <div class="fch-accueil-tuile">
+      <div class="fch-tuile">
       <div data-bloc="apercu">${construireApercuCreation(etat.publications)}</div>
       <a class="lien-externe" href="#hermitage/editorial">
         <span class="lien-externe-texte">
@@ -1271,7 +1272,7 @@ function vueAccueil(etat) {
 
     <section class="bloc">
       <h2 class="titre-section">Le cap</h2>
-      <div class="fch-accueil-tuile">
+      <div class="fch-tuile">
       <div data-bloc="objectifs">${
         etat.objectifs.length
           ? construireCapGrave(etat.objectifs)
@@ -1289,7 +1290,7 @@ function vueAccueil(etat) {
 
     <section class="bloc bloc-discret">
       <h2 class="titre-section">Les victoires</h2>
-      <div class="fch-accueil-tuile">
+      <div class="fch-tuile">
       <details class="backlog">
         <summary>Victoires <span class="chiffre">${etat.victoires.length}</span></summary>
         <div data-bloc="victoires">${construireVictoires(etat.victoires)}</div>
@@ -1795,34 +1796,6 @@ function vuePartenaires(etat) {
 // (c'est la question qu'on se pose en semaine), la mission ensuite (on la relit
 // avant d'écrire), les créneaux et les chiffres pour finir.
 
-function blocCommission(commission) {
-  const gens = commission.gens.join(' · ');
-  // La part de Noé se dit, et elle se dit avec NUANCE : la Communication est sa
-  // commission, il ne fait que contribuer aux Partenaires. Sans cette
-  // distinction, l'écran laisserait croire que la prospection est son travail.
-  const marque = commission.noe === 'responsable'
-    ? '<span class="club-part club-part-mienne">ta commission</span>'
-    : commission.noe === 'contribue'
-      ? '<span class="club-part">tu y contribues</span>'
-      : '';
-
-  const missions = commission.missions
-    ? `<ul class="club-missions">${commission.missions
-        .map((mission) => `<li>${echapper(mission)}</li>`)
-        .join('')}</ul>`
-    : '';
-
-  return `
-    <li class="club-commission${commission.noe ? ' club-commission-mienne' : ''}">
-      <p class="club-commission-tete">
-        <span class="club-commission-nom">${echapper(commission.nom)}</span>
-        ${marque}
-      </p>
-      <p class="club-gens">${echapper(gens)}</p>
-      ${missions}
-    </li>`;
-}
-
 function construireEntrainements() {
   const iconeLieu = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>';
   const iconeHeure = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></svg>';
@@ -1844,14 +1817,9 @@ function construireEntrainements() {
   </section>`;
 }
 
-function vueClub(vue = 'club') {
+function vueClub(vue = 'club', personne = null) {
   const contenus = {
-    'commissions': () => `    <section class="bloc">
-      <h2>Qui fait quoi</h2>
-      <p class="discret sous-titre">Les neuf commissions du club, telles que le
-        document des responsabilités les pose.</p>
-      <ul class="club-commissions">${COMMISSIONS.map(blocCommission).join('')}</ul>
-    </section>`,
+    'commissions': () => construireOrganigramme(personne),
     'projet-club': () => `    <section class="bloc">
       <h2>Le projet</h2>
       <p class="club-mission">${echapper(MISSION)}</p>
@@ -1878,6 +1846,22 @@ function vueClub(vue = 'club') {
   return `${enTete(vue)}${vue === 'club'
     ? `<section class="bloc"><h2>Le club</h2><p class="discret">Les personnes, le projet et les repères du FC Hermitage.</p></section>${portesDuMenu('Le club')}`
     : `${contenus[vue]()}<a class="lien-discret" href="#hermitage/club">← Le club</a>`}${pied()}`;
+}
+
+// Habillage commun des sections : le titre reste au-dessus de la surface.
+// Déplacer les nœuds conserve les champs, identifiants et gestes délégués.
+function habillerLesSections(section) {
+  for (const bloc of section.querySelectorAll(':scope > section.bloc:not(.fch-portes)')) {
+    if (bloc.classList.contains('fch-tuile') || bloc.querySelector(':scope > .fch-tuile')) continue;
+    const titre = bloc.querySelector(':scope > h2');
+    titre?.classList.add('titre-section');
+    const tuile = document.createElement('div');
+    tuile.className = 'fch-tuile';
+    for (const noeud of [...bloc.childNodes]) {
+      if (noeud !== titre) tuile.append(noeud);
+    }
+    bloc.append(tuile);
+  }
 }
 
 // --- Montage ----------------------------------------------------------------
@@ -1952,8 +1936,9 @@ export default {
       else if (['reunions', 'actions', 'archives'].includes(etat.vue)) section.innerHTML = vueReunions(etat);
       else if (etat.vue === 'calendrier') section.innerHTML = vueCalendrier(etat);
       else if (etat.vue === 'partenaires') section.innerHTML = vuePartenaires(etat);
-      else if (['club', 'commissions', 'projet-club', 'entrainements', 'chiffres'].includes(etat.vue)) section.innerHTML = vueClub(etat.vue);
+      else if (['club', 'commissions', 'projet-club', 'entrainements', 'chiffres'].includes(etat.vue)) section.innerHTML = vueClub(etat.vue, etat.personneClub);
       else section.innerHTML = vueAccueil(etat);
+      habillerLesSections(section);
 
       // Le « + » flottant suit toutes les vues (décision de Noé, 21 août
       // 2026) : une réunion se note en sortant de la salle, pas en pensant à
@@ -2018,6 +2003,7 @@ export default {
     };
 
     this.naviguer = (nouvelleRoute) => {
+      etat.personneClub = nouvelleRoute?.id ?? null;
       etat.ideeOuverte = null;
       etat.vue = VUES.includes(nouvelleRoute?.vue) ? nouvelleRoute.vue : 'accueil';
       // L'adresse porte l'id d'une FICHE — mais le bandeau de l'accueil, lui,
@@ -2156,6 +2142,12 @@ export default {
     // écoute `data-cocher-tache`. Deux attributs voisins, deux gestes distincts
     // — sans cet écouteur, les cercles de « À faire » auraient été des boutons
     // morts, exactement ce que la page du hub prend soin d'éviter.
+    section.addEventListener('input', (evenement) => {
+      if (evenement.target.matches('[data-recherche-organigramme]')) {
+        rechercherOrganigramme(section, evenement.target.value);
+      }
+    });
+
     section.addEventListener('click', (evenement) => {
       const cercle = evenement.target.closest('[data-cocher]');
       if (!cercle) return;

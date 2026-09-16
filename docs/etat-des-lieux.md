@@ -1,14 +1,74 @@
 # État des lieux — 16 septembre 2026
 
-> **REPRISE IMMÉDIATE : la section « Relais — 16 septembre » ci-dessous.**
-> Elle décrit la dernière session et prime sur tout ce qui la suit. Viennent
-> ensuite « Relais — 15 septembre, SOIR », « Relais — 15 septembre,
-> après-midi », puis § 0 (15 septembre, matin), puis l'historique par sessions.
+> **REPRISE IMMÉDIATE : « Relais — FCH, tuiles et organigrammes » ci-dessous.**
+> Ce relais prime sur les notes historiques suivantes.
 
+## Relais — FCH, tuiles et organigrammes
+
+### État final — 16 septembre 2026
+
+Le précédent lot FCH (navigation, découpage, entraînements, titres et accueil)
+a été commité et poussé sur `main` dans **`0029e86`**. Le présent lot étend
+les tuiles aux autres pages et refond « Qui fait quoi ». Noé a demandé sa
+mise en documentation, son commit et son push ; ce relais accompagne ce lot.
+
+### Pages et présentation
+
+- Les sections de Créer, Réunions, Club et leurs sous-pages reprennent les
+  surfaces sans contour extérieur de l’accueil, avec les titres au-dessus.
+- Les portes sont des tuiles sobres, sans bande latérale colorée.
+- Calendrier et entraînements gardent leurs grilles dédiées.
+- `habillerLesSections` déplace les nœuds existants dans `.fch-tuile` après le
+  rendu : champs, identifiants et délégation des événements sont conservés.
+
+### Qui fait quoi
+
+- Trois vues : **Bureau et référents**, **Commissions**, **Équipes sportives**.
+- **45 personnes, 23 groupes**, avec portraits des documents du club.
+- Une fiche par personne : `#hermitage/commissions/<id>`, réunissant ses
+  missions individuelles et ses rôles sportifs ; liens vers ses collègues.
+- Recherche transversale par nom, catégorie ou mission, sans doublons.
+- Les responsables sont explicitement nommés sous les portraits.
+- **Emma = Emma Liconnet**, confirmé par Noé : Partenaires, Manifestations et
+  U15 réunis dans une seule fiche. **Lina Amine** : photo retrouvée dans
+  l’export des commissions 2026–2027.
+
+### Sources et limites
+
+- Missions : `Responsabilités FCH.pdf`, répartition individuelle pages 1–3.
+- Identités, portraits et rôles sportifs : exports des organigrammes
+  **2026–2027**. Les premières versions 2025–2026 consultées ont été écartées.
+- Les contributions du PDF et des organigrammes récents sont réunies. Leurs
+  différences et les noms exacts des fichiers sont documentés dans
+  `docs/fch-organigramme-sources.md`.
+- Aucune mission individuelle inventée lorsque les documents donnent seulement
+  une fonction : la fiche précise cette limite.
+- Les images originales sont copiées dans `img/organigramme` et cadrées en SVG.
+  Aucun visage généré ni retouché. Modules et images ajoutés au service worker.
+- Aucune écriture en base pendant les essais.
+
+### Fichiers et vérifications
+
+- `js/organigramme-fch-data.js` : personnes, groupes, missions, cadrages.
+- `js/organigramme-fch.js` : vues, fiches et recherche.
+- `js/hermitage.js`, `css/fch.css` : intégration et présentation.
+- `node tools/verifier-organigramme-fch.js` : 45 fiches / 23 groupes ;
+  appartenances, responsables, portraits, cadrages, cache et fiches valides.
+- `node tools/verifier-gabarits.js` : 41 fichiers sains ; syntaxe JS et
+  `git diff --check` validés.
+- Navigateur : trois vues, recherche « licences », Lina et Emma, fiches Benoit,
+  Lina et Aurélien, navigation aller-retour ; absence de débordement à 375 px.
+- Le contrôle global de coquille conserve un **faux positif préexistant** :
+  il traite un SVG `data:` comme un chemin de fichier. Les nouveaux actifs
+  sont contrôlés séparément par le vérificateur d’organigramme.
+- Aperçu local : `http://localhost:4173/index.html#hermitage/commissions`.
+  Le déploiement GitHub Pages de ce lot reste à vérifier après le push.
+
+### Historique précédent
 
 ## Relais — 16 septembre (Créer refondue, le morph du « + », le clavier, le dock)
 
-**Cette section prime sur toutes les suivantes.** Sept chantiers, dont quatre
+**Historique antérieur au relais FCH ci-dessus.** Sept chantiers, dont quatre
 nés d'un défaut que Noé a vu sur son téléphone. **Tout est commité et poussé**,
 et GitHub Pages a construit chacun des sept.
 
@@ -8297,3 +8357,31 @@ restent en tête sur toute la largeur. Deux colonnes dès 960 px, une sur mobile
 Les liens de pied de tuile deviennent sobres, sans bande latérale colorée.
 Contenus et gestes existants conservés. Vérifié : gabarits, syntaxe, rendu
 navigateur, deux colonnes à 1200 px et aucun débordement à 375 px. Non publié.
+
+### Tuiles sur les autres pages FCH — 16 septembre 2026
+
+Le style partagé `.fch-tuile` habille les sections de Créer, Réunions, Club
+et leurs sous-pages, dont Partenaires et les fiches de réunion. Les titres
+restent au-dessus ; les portes perdent leur bande latérale et leur contour.
+Le calendrier et le planning des entraînements conservent leurs grilles dédiées.
+Les nœuds sont déplacés dans les surfaces après rendu, sans changer les champs
+ou les attributs des actions. Les 16 routes ont été parcourues dans le navigateur :
+titres présents et aucun identifiant dupliqué. Gabarits et syntaxe validés.
+Modifications locales, non commitées et non poussées à ce stade.
+
+### Qui fait quoi — organigrammes interactifs, 16 septembre 2026
+
+La liste des neuf commissions est remplacée par trois vues : Bureau et référents,
+Commissions, Équipes sportives. Recherche transversale par nom, rôle ou mission.
+45 fiches individuelles réunissent les appartenances et missions documentées.
+Portraits repris des exports 2026–2027 ; Lina retrouvée ; Emma Liconnet unifiée
+après confirmation de Noé. Sources et arbitrages : `docs/fch-organigramme-sources.md`.
+
+Données et rendu dans `js/organigramme-fch-data.js` et `js/organigramme-fch.js`.
+Les documents n’attribuant pas de missions individuelles détaillées à tous les
+éducateurs, leurs fiches restent limitées aux rôles attestés. Vérification des
+45 fiches et 23 groupes via `tools/verifier-organigramme-fch.js`, gabarits sains,
+recherche et fiches vérifiées dans le navigateur, pas de débordement à 375 px.
+Le vérificateur de coquille conserve son faux positif préexistant sur un SVG
+data URI ; les nouveaux modules et portraits sont bien dans la coquille.
+Modifications locales, non commitées et non poussées. Aucune écriture en base.

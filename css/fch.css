@@ -929,24 +929,104 @@ body[data-espace="hermitage"] #vue .entrainement-carte h4 {
   display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--espace-24);
 }
 .fch-accueil > .bloc { min-width: 0; margin: 0; }
-.fch-accueil-tuile {
+.fch-tuile {
   padding: var(--espace-16); background: var(--fond-carte);
   border: 0; border-radius: var(--rayon-carte);
 }
 .fch-accueil .titre-section { margin-bottom: var(--espace-12); }
-.fch-accueil-tuile .lien-externe {
+.fch-tuile .lien-externe {
   background: transparent; border: 0; border-radius: 0;
   padding: var(--espace-12) 0 0; margin: var(--espace-16) 0 0;
   border-top: 1px solid var(--bordure);
 }
-.fch-accueil-tuile .lien-externe:hover { color: var(--accent); }
-.fch-accueil-tuile li {
+.fch-tuile .lien-externe:hover { color: var(--accent); }
+.fch-tuile li {
   background: color-mix(in srgb, var(--fond-carte) 82%, #fff);
   border-color: var(--bordure);
 }
-.fch-accueil-tuile > :last-child { margin-bottom: 0; }
+.fch-tuile > :last-child { margin-bottom: 0; }
 @media (min-width: 60rem) {
   .fch-accueil { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
-  .fch-accueil-tuile { padding: var(--espace-24); }
+  .fch-tuile { padding: var(--espace-24); }
   .fch-accueil-moment { grid-column: 1 / -1; }
+}
+
+/* Les portes sont des tuiles simples, comme celles du Hub. */
+.fch-portes .lien-externe {
+  padding: var(--espace-16); background: var(--fond-carte);
+  border: 0; border-radius: var(--rayon-carte); color: var(--texte);
+}
+.fch-portes .lien-externe:hover {
+  background: color-mix(in srgb, var(--fond-carte) 90%, #fff);
+}
+@media (min-width: 45rem) {
+  .fch-portes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+/* Les listes imbriquées restent légères dans leur tuile principale. */
+.fch-tuile .club-missions li,
+.fch-tuile .club-valeurs li { background: transparent; }
+
+/* Qui fait quoi : les portraits et les cartouches des organigrammes 2026–2027. */
+.orga-intro { color: var(--texte-discret); margin: 0 0 20px; }
+.orga-recherche { display: block; max-width: 560px; font-size: 0.8125rem; }
+.orga-recherche input { display: block; width: 100%; margin-top: 8px; }
+.orga-domaines { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 8px; }
+.orga-domaines a {
+  padding: 10px 16px; border-radius: 999px; color: var(--texte);
+  text-decoration: none; background: #152342; font-weight: 700; font-size: 0.875rem;
+}
+.orga-domaines a[aria-current="page"] { background: var(--club-rouge); color: #fff; }
+.orga-compteur { color: var(--texte-discret); font-size: 0.875rem; margin: 12px 0; }
+.orga-compteur:empty { display: none; }
+.orga-grille { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 36px 20px; margin-top: 36px; }
+.orga-groupe {
+  position: relative; min-width: 0; padding: 30px 16px 20px;
+  border-radius: 24px; background: var(--fond-carte);
+  border-top: 3px solid var(--orga-couleur, #5888db);
+}
+body[data-espace="hermitage"] #vue .orga-groupe > h2 {
+  display: table; max-width: calc(100% - 16px); margin: -48px auto 20px;
+  padding: 7px 18px; border-radius: 999px; background: #142343;
+  color: #fff; font-size: 1.1rem; line-height: 1.15; font-weight: 900;
+  letter-spacing: -0.035em; text-transform: none; text-align: center;
+}
+.orga-service { margin: -8px 0 18px; text-align: center; font-size: 0.8125rem; color: var(--texte-discret); }
+.orga-personnes { display: flex; justify-content: center; flex-wrap: wrap; gap: 22px 12px; }
+.orga-personne {
+  flex: 0 1 128px; min-width: 0; display: flex; align-items: center; flex-direction: column;
+  text-decoration: none; text-align: center; color: #fff; border-radius: 14px; padding: 4px;
+}
+.orga-personne:hover { background: rgb(255 255 255 / 7%); text-decoration: none; }
+.orga-personne:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
+.orga-photo { display: block; flex: none; width: 94px; height: 110px; border-radius: 48%; overflow: hidden; }
+.orga-nom { margin-top: 9px; font-size: 0.875rem; line-height: 1.2; }
+.orga-nom strong { display: block; text-transform: uppercase; font-weight: 900; font-size: 0.8125rem; }
+.orga-role { margin-top: 5px; color: var(--texte-discret); font-size: 0.6875rem; line-height: 1.3; }
+.orga-large { grid-column: 1/-1; }
+.orga-large .orga-personne { flex-basis: 138px; }
+.orga-note { margin-top: 24px; font-size: 0.8125rem; }
+.orga-initiales { display: grid; place-items: center; background: #152342; font-size: 2rem; }
+.orga-identite { display: flex; align-items: center; gap: 24px; margin: 28px 0; }
+.orga-identite .orga-photo { width: 140px; height: 166px; }
+body[data-espace="hermitage"] #vue .orga-identite h2 {
+  margin: 6px 0 10px; color: #fff; font-weight: 900; letter-spacing: -0.04em;
+  font-size: clamp(1.7rem, 4vw, 2.5rem); text-transform: none; line-height: 1.05;
+}
+.orga-identite p { margin: 0; font-size: 0.875rem; line-height: 1.5; }
+.orga-missions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; margin-bottom: 28px; }
+.orga-missions h4 { margin: 0 0 16px; font-weight: 900; font-size: 1.2rem; letter-spacing: -0.035em; color: #fff; }
+.orga-missions h4 span { background: color-mix(in srgb, var(--orga-couleur) 55%, #142343); padding: 2px 6px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.orga-missions ul { padding-left: 18px; margin: 0; }
+.orga-missions .fch-tuile li { background: transparent; padding: 0; margin: 0 0 12px; line-height: 1.5; font-size: 0.9375rem; }
+.orga-missions a { color: #fff; }
+.orga-sources { font-size: 0.8125rem; color: var(--texte-discret); margin: 24px 0; }
+.orga-sources summary { cursor: pointer; }
+#orga-resultats { padding: 20px; border-radius: var(--rayon-carte); background: var(--fond-carte); margin-top: 20px; }
+#orga-resultats[hidden], .orga-grille[hidden] { display: none; }
+@media (max-width: 720px) {
+  .orga-grille, .orga-missions { grid-template-columns: minmax(0,1fr); }
+  .orga-identite { gap: 16px; align-items: flex-start; }
+  .orga-identite .orga-photo { width: 96px; height: 114px; }
+  .orga-domaines a { padding: 10px 12px; font-size: 0.75rem; }
+  .orga-personne, .orga-large .orga-personne { flex-basis: 120px; }
 }

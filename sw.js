@@ -39,6 +39,8 @@ const COQUILLE = [
   'js/cache-session.js',
   'js/calendrier-commun.js',
   'js/club-fch.js',
+  'js/organigramme-fch.js',
+  'js/organigramme-fch-data.js',
   'js/calendrier.js',
   'js/dashboard.js',
   'js/ecriture.js',
@@ -109,6 +111,12 @@ const COQUILLE = [
   'img/yuno-signature.png',
   'img/yuno-logo.jpg',
   'img/fch-logo.png',
+  'img/organigramme/bureau.jpg',
+  'img/organigramme/commissions.jpg',
+  'img/organigramme/entente.jpg',
+  'img/organigramme/jeunes.jpg',
+  'img/organigramme/kepo.png',
+  'img/organigramme/seniors.jpg',
   // Le pochoir de l'écusson : depuis que la barre du hub porte des signes, il
   // n'est plus seulement au site du club (27 août 2026).
   'img/fch-logo-pochoir.png',

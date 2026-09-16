@@ -826,3 +826,31 @@ restent en tête sur toute la largeur. Deux colonnes dès 960 px, une sur mobile
 Les liens de pied de tuile deviennent sobres, sans bande latérale colorée.
 Contenus et gestes existants conservés. Vérifié : gabarits, syntaxe, rendu
 navigateur, deux colonnes à 1200 px et aucun débordement à 375 px. Non publié.
+
+### Tuiles sur les autres pages FCH — 16 septembre 2026
+
+Le style partagé `.fch-tuile` habille les sections de Créer, Réunions, Club
+et leurs sous-pages, dont Partenaires et les fiches de réunion. Les titres
+restent au-dessus ; les portes perdent leur bande latérale et leur contour.
+Le calendrier et le planning des entraînements conservent leurs grilles dédiées.
+Les nœuds sont déplacés dans les surfaces après rendu, sans changer les champs
+ou les attributs des actions. Les 16 routes ont été parcourues dans le navigateur :
+titres présents et aucun identifiant dupliqué. Gabarits et syntaxe validés.
+Modifications locales, non commitées et non poussées à ce stade.
+
+### Qui fait quoi — organigrammes interactifs, 16 septembre 2026
+
+La liste des neuf commissions est remplacée par trois vues : Bureau et référents,
+Commissions, Équipes sportives. Recherche transversale par nom, rôle ou mission.
+45 fiches individuelles réunissent les appartenances et missions documentées.
+Portraits repris des exports 2026–2027 ; Lina retrouvée ; Emma Liconnet unifiée
+après confirmation de Noé. Sources et arbitrages : `docs/fch-organigramme-sources.md`.
+
+Données et rendu dans `js/organigramme-fch-data.js` et `js/organigramme-fch.js`.
+Les documents n’attribuant pas de missions individuelles détaillées à tous les
+éducateurs, leurs fiches restent limitées aux rôles attestés. Vérification des
+45 fiches et 23 groupes via `tools/verifier-organigramme-fch.js`, gabarits sains,
+recherche et fiches vérifiées dans le navigateur, pas de débordement à 375 px.
+Le vérificateur de coquille conserve son faux positif préexistant sur un SVG
+data URI ; les nouveaux modules et portraits sont bien dans la coquille.
+Modifications locales, non commitées et non poussées. Aucune écriture en base.
