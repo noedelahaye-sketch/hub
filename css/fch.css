@@ -1344,27 +1344,41 @@ body[data-espace="hermitage"] #vue .suivi-chantier h4 {
 .suivi-filtres a:hover { text-decoration: none; background: #1b2c52; }
 .suivi-filtres a.actif { background: var(--club-rouge); color: #fff; }
 
-.bloc ul.suivi-partenaires { display: grid; gap: var(--espace-8); margin: 0; }
+/* UNE GALERIE DE TUILES, pas une liste de lignes : on reconnaît un partenaire à
+   son logo avant de lire son nom. Une grille qui se remplit d'elle-même — on ne
+   sait pas combien d'entreprises signeront d'ici la fin de la saison. */
+.bloc ul.suivi-partenaires {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 11.5rem), 1fr));
+  gap: var(--espace-12); margin: 0;
+}
 .bloc li.suivi-partenaire {
   display: block; padding: 0; overflow: hidden;
   border-radius: 16px; background: var(--fond-carte); border: 0;
 }
-.suivi-tete {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center;
-  gap: 2px 10px; width: 100%; padding: var(--espace-12); text-align: left;
-  background: none; border: 0; color: #fff; cursor: pointer; font: inherit;
+.suivi-tuile {
+  display: grid; gap: 3px; align-content: start; height: 100%;
+  padding: var(--espace-12); color: #fff; text-decoration: none;
 }
-.suivi-tete:hover { background: rgb(255 255 255 / 5%); }
-.suivi-tete:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
-.suivi-nom { grid-column: 1; font-weight: 800; font-size: 1rem; line-height: 1.2; }
-.suivi-offre { grid-column: 1; font-size: 0.75rem; color: var(--texte-discret); }
-.suivi-montant { grid-column: 2; grid-row: 1; justify-self: end; font-size: 0.9375rem; font-weight: 700; }
+.suivi-tuile:hover { background: rgb(255 255 255 / 6%); text-decoration: none; }
+.suivi-tuile:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
+.suivi-tuile .suivi-logo { width: 100%; height: 66px; padding: 6px; margin-bottom: 6px; }
+/* La plaque d'un partenaire sans logo : le pointillé dit « déclaré, pas encore
+   rempli », et le nom tient lieu d'image. */
+.suivi-logo.est-vide {
+  background: transparent; border: 1px dashed var(--bordure);
+  font-size: 0.8125rem; font-weight: 800; line-height: 1.2; text-align: center;
+  color: var(--texte-discret); padding: 6px; overflow: hidden;
+}
+.suivi-nom { font-weight: 800; font-size: 0.9375rem; line-height: 1.2; }
+.suivi-offre { font-size: 0.6875rem; color: var(--texte-discret); }
+.suivi-bas { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 6px; }
+.suivi-montant { font-size: 0.9375rem; font-weight: 700; }
 .suivi-etat {
-  grid-column: 2; grid-row: 2; justify-self: end;
-  padding: 2px 9px; border-radius: 999px; font-size: 0.625rem; font-weight: 700; color: #fff;
+  padding: 2px 8px; border-radius: 999px; font-size: 0.5625rem; font-weight: 700; color: #fff;
+  line-height: 1.5; white-space: nowrap;
   background: color-mix(in srgb, var(--etat-couleur) 48%, #142343);
 }
-.suivi-avancee { grid-column: 1 / -1; margin-top: 4px; font-size: 0.6875rem; color: var(--texte-discret); }
+.suivi-avancee { margin-top: 3px; font-size: 0.6875rem; color: var(--texte-discret); }
 
 .suivi-detail-partenaire { padding: 0 var(--espace-12) var(--espace-12); }
 .suivi-faits { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0 0 8px; }
@@ -1384,6 +1398,70 @@ body[data-espace="hermitage"] #vue .suivi-chantier h4 {
   flex: none; padding: 0 14px; border-radius: var(--rayon-controle);
   background: #152342; color: var(--texte); border: 0; font-size: 0.8125rem; font-weight: 700; cursor: pointer;
 }
+
+/* --- Le hall : trois portes ----------------------------------------------------
+   UNE PORTE MONTRE CE QU'IL Y A DERRIÈRE. Trois rectangles nommés comme trois
+   lignes de menu seraient un menu dessiné — et le menu est déjà à un geste. */
+.suivi-portes {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: var(--espace-12); align-items: stretch;
+}
+.suivi-porte {
+  display: flex; flex-direction: column; gap: 10px; min-width: 0;
+  padding: var(--espace-16); border-radius: 18px; background: var(--fond-carte);
+  color: #fff; text-decoration: none;
+}
+.suivi-porte:hover { background: rgb(255 255 255 / 7%); text-decoration: none; }
+.suivi-porte:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.suivi-porte-tete { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.suivi-porte-nom { font-weight: 800; font-size: 1.0625rem; line-height: 1.2; }
+.suivi-porte-compte {
+  flex: none; font-family: var(--police-chiffre); font-size: 0.75rem; color: var(--texte-discret);
+}
+.suivi-porte-apercu { display: flex; flex-direction: column; gap: 6px; }
+.suivi-porte-mots { display: flex; flex-wrap: wrap; gap: 4px; }
+.suivi-porte-mots span {
+  padding: 3px 9px; border-radius: 999px; font-size: 0.6875rem; font-weight: 700;
+  background: #152342;
+}
+.suivi-porte-plus { color: var(--texte-discret); }
+.suivi-porte-quoi { font-size: 0.75rem; color: var(--texte-discret); line-height: 1.35; }
+.suivi-porte-lots { display: grid; gap: 3px; list-style: none; padding: 0; margin: 0; }
+.suivi-porte-lots li {
+  display: flex; justify-content: space-between; gap: 8px;
+  font-size: 0.75rem; line-height: 1.3;
+}
+.suivi-porte-lots li > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* LE LOGO SUR UNE PLAQUE BLANCHE : ceux du club sont dessinés pour du papier —
+   fond clair, encre sombre. Posés à même le bleu du site, la moitié
+   disparaîtrait. `contain` parce qu'ils n'ont pas deux fois le même format. */
+/* LA PLAQUE EST UN BLOC, PAS UNE GRILLE CENTRÉE, et c'est ce qui fait tenir
+   l'image. Dans une grille, la zone d'un élément centré est dimensionnée par
+   son CONTENU : un pourcentage n'y a rien contre quoi se résoudre, et l'image
+   gardait sa hauteur naturelle — 120 px dans une plaque de 66, rognés par
+   l'overflow. `max-height` ne suffisait pas davantage, pour la même raison.
+   Sur un bloc de hauteur définie, `height: 100%` résout, et `object-fit`
+   centre et met à l'échelle tout seul. */
+.suivi-logo {
+  display: block; flex: none;
+  background: #fff; border-radius: 10px; overflow: hidden;
+}
+.suivi-logo img { display: block; width: 100%; height: 100%; object-fit: contain; }
+/* La plaque vide, elle, centre du TEXTE : la grille y est le bon outil. */
+.suivi-logo.est-vide { display: grid; place-items: center; }
+.suivi-fiche-tete .suivi-logo { width: 132px; height: 84px; padding: 6px; margin-bottom: var(--espace-12); }
+.suivi-porte-logos { display: flex; flex-wrap: wrap; gap: 5px; }
+.suivi-porte-logos .suivi-logo { width: 48px; height: 32px; padding: 3px; border-radius: 7px; }
+
+/* La tête d'une fiche : le nom en grand, son offre et son état sous lui. */
+.suivi-fiche-tete { margin: var(--espace-16) 0 var(--espace-24); }
+body[data-espace="hermitage"] #vue .suivi-fiche-tete h2 {
+  margin: 0 0 4px; color: #fff; font-weight: 900; letter-spacing: -0.04em;
+  font-size: clamp(1.6rem, 4.5vw, 2.4rem); text-transform: none; line-height: 1.05;
+}
+.suivi-fiche-tete p { margin: 0 0 8px; font-size: 0.9375rem; color: var(--texte-discret); }
+.suivi-pris { margin: 10px 0 0; font-size: 0.6875rem; font-weight: 700; color: var(--texte-discret); }
 
 .suivi-repli { margin-top: var(--espace-24); font-size: 0.875rem; }
 .suivi-repli summary { cursor: pointer; color: var(--texte-discret); }

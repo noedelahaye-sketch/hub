@@ -864,14 +864,53 @@ de Yuno, qui est la même table.
   un partenariat est un engagement d'UNE SAISON. La même entreprise peut revenir
   l'an prochain avec une autre offre sans écraser son histoire.
 
-#### Ce que la page montre
+#### C'est un HALL, pas une page (16 septembre 2026, demande de Noé)
 
-**ELLE RÉPOND À DEUX QUESTIONS ET LES SÉPARE.** « Qu'est-ce qu'on doit à CETTE
-entreprise » se lit sur sa fiche ; « qu'est-ce qu'il me reste à faire » se lit
-**par chantier**, et c'est cette vue-là qui ouvre la page : *on ne fait pas les
-vignettes de l'album partenaire par partenaire, on les fait toutes le même
-soir.* Les chantiers sont rangés par moment de la saison — à la rentrée, avec
-l'album, dans la saison, au Tournoi Rose, à la soirée.
+*« Il faut que ce soit mieux organisé, pas tout sur la même page, donc des
+tuiles portes… On garde le dashboard de haut de page, c'est très bien. »*
+
+Le tableau de bord reste en tête, et trois portes mènent chacune à une question :
+
+| Adresse | Sa question |
+|---|---|
+| `/liste` puis `/<id>` | qui sont nos partenaires, et que doit-on à celui-ci |
+| `/engagements` | qu'est-ce qu'il me reste à faire |
+| `/offres` | qu'est-ce qu'on promet, au juste |
+
+**UNE PORTE MONTRE CE QU'IL Y A DERRIÈRE**, c'est la règle du hall de `#perso` :
+trois rectangles nommés comme trois lignes de menu seraient un menu dessiné, et
+le menu est déjà à un geste. Chacune dit donc quelque chose qu'on **ignore**
+avant de l'ouvrir — les logos qu'on a et qui n'a pas encore viré, les trois
+chantiers qui pèsent le plus, les offres que personne n'a prises.
+
+**LA LISTE EST UNE GALERIE DE TUILES** (demande de Noé) : une liste de lignes se
+parcourt mot à mot, une galerie de logos se balaie du regard — c'est l'argument
+de l'étagère de la bibliothèque, et il vaut ici pour la même raison. **Sans
+logo, la tuile garde sa place**, en plaque pointillée avec le nom dedans : le
+pointillé est le signe du hub pour « déclaré, pas encore rempli », et une
+galerie à trous se lirait comme une liste incomplète.
+
+**LA FICHE EST UNE PAGE**, plus un dépliage : c'est la règle des deux rangs —
+la galerie ne dit que ce qui se COMPARE, la page dit tout.
+
+**LES ENGAGEMENTS SE RANGENT PAR CHANTIER**, pas par partenaire : *on ne fait
+pas les vignettes de l'album une par une en rouvrant chaque fiche, on les fait
+toutes le même soir.* Les chantiers sont groupés par moment de la saison — à la
+rentrée, avec l'album, dans la saison, au Tournoi Rose, à la soirée.
+
+#### Les logos
+
+**DANS LE DÉPÔT, jamais à un CDN** — c'est la règle des écussons des clubs et
+des polices. Ils sont ramenés à 320 px de large et posés sur une **plaque
+blanche** : ceux du club sont dessinés pour du papier, fond clair et encre
+sombre ; à même le bleu du site, la moitié disparaîtrait.
+
+*Sept sur vingt au 16 septembre 2026.* Deux pièges écartés en les rapprochant :
+« MENELEC » n'est pas MAX ELEC et « SOLUVIA » n'est pas SOLUWASTE — des noms
+voisins ne sont pas le même partenaire. Et le fichier `STURM.pdf` n'est pas un
+logo mais un flyer : il n'a pas été retenu.
+
+#### Ce que la page montre
 
 - **L'OFFRE FAIT NAÎTRE SES ENGAGEMENTS** : prendre un pack, c'est s'engager à
   une liste de choses qu'on n'a pas à retaper.

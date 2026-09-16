@@ -93,3 +93,14 @@ create policy "engagements authentifies" on partenaires_engagements
 -- ne s'était encore jamais vu. `anon` n'a rien, comme partout ailleurs.
 grant select, insert, update, delete on table partenaires to authenticated;
 grant select, insert, update, delete on table partenaires_engagements to authenticated;
+
+-- LE LOGO D'UN PARTENAIRE (16 septembre 2026, Noé ayant fourni le dossier des
+-- logos). Un CHEMIN dans le dépôt, pas un fichier en base ni un lien externe :
+-- c'est la règle du hub — les polices sont dans `fonts/`, les écussons des
+-- clubs dans `img/clubs/`, et un logo appelé à un site tiers serait une requête
+-- que la coquille hors ligne ne peut pas garantir.
+--
+-- LA COLONNE EST NULLABLE et le restera : le club n'a pas le logo de tout le
+-- monde, et une tuile sans logo porte le nom de l'entreprise — c'est déjà ce
+-- que fait l'étagère de la bibliothèque pour un livre sans couverture.
+alter table partenaires add column if not exists logo text;

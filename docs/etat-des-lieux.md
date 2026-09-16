@@ -31,8 +31,13 @@ mise en documentation, son commit et son push ; ce relais accompagne ce lot.
   le hub reprend la suite.
 - Tables `partenaires` et `partenaires_engagements` ; catalogue des offres dans
   `js/partenaires-fch.js` (public, c'est le dossier qu'on envoie).
-- **EN ATTENTE DE NOÉ** : les logos des partenaires. Ils se poseront comme les
-  écussons des clubs — dans le dépôt, jamais à un CDN.
+- **Un HALL à trois portes** (16 septembre 2026) : le tableau de bord en tête,
+  puis `/liste` (galerie de tuiles, une par entreprise) → `/<id>` (la fiche),
+  `/engagements` (les chantiers à cocher) et `/offres` (le dossier).
+- **7 logos sur 20**, dans `img/partenaires/`. Les autres attendent : la tuile
+  porte alors le nom sur une plaque pointillée.
+  - **À NE PAS RAPPROCHER À LA LÉGÈRE** : « MENELEC » n'est pas MAX ELEC,
+    « SOLUVIA » n'est pas SOLUWASTE. Et `STURM.pdf` est un flyer, pas un logo.
 - **PIÈGE PAYÉ** : RLS ne suffit pas, il faut aussi le `grant` à `authenticated`.
   Sans lui Postgres refuse avant de regarder la politique, et l'écran entier ne
   se charge plus.

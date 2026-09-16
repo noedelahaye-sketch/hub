@@ -48,7 +48,7 @@ import {
 import { finDeLaSortie, phaseDeLaSortie } from './preparations-commun.js';
 import { REPERES, CRENEAUX } from './club-fch.js';
 import { construireProjetClub, titreDuProjet } from './projet-club.js';
-import { construireSuiviPartenaires } from './partenaires-suivi.js';
+import { construireSuiviPartenaires, titreDuSuivi } from './partenaires-suivi.js';
 import { OFFRES_FCH, ETATS_PARTENAIRE, engagementsDeLOffre, offreDe } from './partenaires-fch.js';
 import {
   trierTaches,
@@ -212,6 +212,7 @@ function enTete(vueActive, selection = null) {
     calendrier: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4M17 3v4M3 11h18M8 15h3v3H8z"/>',
   };
   const titre = (vueActive === 'projet-club' ? titreDuProjet(selection) : null)
+    ?? (vueActive === 'partenaires' ? titreDuSuivi(selection?.liste ?? [], selection?.vue) : null)
     ?? RUBRIQUES_FCH.flatMap((item) => item.pages ?? [])
       .find((page) => page.adresse === `#hermitage/${vueActive}`)?.nom
     ?? liens.find(([vue]) => vue === vueActive)?.[1] ?? 'FC Hermitage';
@@ -1774,7 +1775,7 @@ async function effacerDuCalendrier(type, id) {
 // page-ci pose — « qu'est-ce qu'on leur doit, et qu'est-ce qui reste à faire ».
 function vuePartenaires(etat) {
   return `
-    ${enTete('partenaires')}
+    ${enTete('partenaires', { liste: etat.partenairesSuivi ?? [], vue: etat.partenaireOuvert })}
     ${construireSuiviPartenaires(etat.partenairesSuivi ?? [], etat.partenaireOuvert, etat.engagementAConfirmer)}
     ${construireFormulaire({
       id: 'partenaire',

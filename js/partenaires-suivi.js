@@ -3,12 +3,19 @@
 // choses que l'on doit faire de notre côté (vignette album, panneau…) pour
 // assurer un bon suivi ».
 //
-// LA PAGE RÉPOND À DEUX QUESTIONS, ET ELLE LES SÉPARE :
-//   — « qu'est-ce qu'on doit à CETTE entreprise ? » → la liste par partenaire ;
-//   — « qu'est-ce qu'il me reste à faire ? » → la même chose rangée PAR CHANTIER,
-//     parce qu'on ne fait pas les vignettes d'album partenaire par partenaire :
-//     on les fait toutes le même soir. **C'est la vue qui fait gagner du temps**,
-//     et c'est pour ça qu'elle ouvre la page.
+// C'EST UN HALL, PAS UNE PAGE (16 septembre 2026, demande de Noé : « il faut que
+// ce soit mieux organisé, pas tout sur la même page, donc des tuiles portes »).
+// Le tableau de bord reste en tête — c'est ce qu'on vient voir sans y penser —
+// et trois portes mènent chacune à une question :
+//
+//   `/liste`        « qui sont nos partenaires ? »   puis `/<id>` pour un seul
+//   `/engagements`  « qu'est-ce qu'il me reste à faire ? »
+//   `/offres`       « qu'est-ce qu'on promet, au juste ? »
+//
+// UNE PORTE MONTRE CE QU'IL Y A DERRIÈRE, c'est la règle du hall de `#perso` :
+// trois rectangles nommés comme trois lignes de menu seraient un menu dessiné.
+// Chacune doit dire quelque chose qu'on IGNORE avant de l'ouvrir — qui n'a pas
+// encore viré, quel chantier pèse le plus, quel pack personne n'a pris.
 //
 // LE CATALOGUE EST DANS LE DÉPÔT, LES ENGAGEMENTS EN BASE. Le premier est
 // public — c'est le dossier qu'on envoie aux entreprises ; les seconds portent
@@ -122,13 +129,14 @@ function ligneEngagement(e, avecPartenaire, aConfirmer) {
 const quandFait = (jour) => new Date(`${jour}T12:00:00`)
   .toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 
-function chantiers(partenaires) {
+function pageEngagements(partenaires) {
   const lots = parChantier(partenaires);
   const parMoment = MOMENTS_FCH
     .map(([id, nom]) => [nom, lots.filter((l) => l.quand === id)])
     .filter(([, l]) => l.length);
-  return `<section class="bloc">
-    <h2>Ce qu’on doit faire</h2>
+  return `${retour()}
+  <section class="bloc">
+    <h2>Nos engagements</h2>
     <p class="suivi-service">Rangé par chantier, pas par partenaire : les vignettes de l’album se font toutes le même soir, pas une par une.</p>
     ${parMoment.map(([moment, lot]) => `
       <h3 class="suivi-moment">${echapper(moment)}</h3>
@@ -153,20 +161,68 @@ function pastilleEtat(statut) {
   return `<span class="suivi-etat" style="--etat-couleur:${couleur}">${echapper(nom)}</span>`;
 }
 
-function carteP(p, ouvert, aConfirmer) {
+// LA CARTE EST UN LIEN, plus un dépliage (demande de Noé) : la fiche a sa page.
+// C'est la règle des deux rangs du hub — la liste ne dit que ce qui se COMPARE,
+// la page dit tout.
+// LE LOGO SUR UNE PLAQUE BLANCHE : ceux du club sont dessinés pour du papier,
+// fond clair et encre sombre. Posés à même le bleu du site, la moitié
+// disparaîtrait. C'est le même choix que les écussons du vivier de Yuno.
+function logo(p) {
+  return p.logo
+    ? `<span class="suivi-logo"><img src="${echapper(p.logo)}" alt="" loading="lazy"></span>`
+    : '';
+}
+
+// UNE TUILE PAR ENTREPRISE, EN GALERIE (demande de Noé). Une liste de lignes se
+// parcourt mot à mot ; une galerie de logos se balaie du regard — c'est
+// l'argument de l'étagère de la bibliothèque, et il vaut ici pour la même
+// raison : on reconnaît un partenaire à son logo bien avant de lire son nom.
+//
+// SANS LOGO, LA TUILE GARDE SA PLACE, en plaque pointillée avec le nom dedans :
+// le pointillé est déjà le signe du hub pour « déclaré, pas encore rempli », et
+// une galerie à trous se lirait comme une liste incomplète.
+// « 0 tenus » n'est pas une réponse pour un mécène qui ne doit rien : c'est un
+// compte, là où il faudrait une phrase. Un don est sans contrepartie, et
+// l'écran doit le dire.
+function motDeLAvancee(p) {
+  const total = (p.engagements ?? []).length;
+  if (!total) return 'Rien n’est dû';
+  const a = reste(p);
+  return a ? `${a} à faire` : 'Tout est tenu';
+}
+
+function carteP(p) {
   const offre = offreDe(p.offre);
   const a = reste(p);
-  return `<li class="suivi-partenaire" id="partenaire-${p.id}">
-    <button type="button" class="suivi-tete" data-ouvrir-partenaire="${p.id}"
-      aria-expanded="${ouvert ? 'true' : 'false'}">
+  return `<li class="suivi-partenaire">
+    <a class="suivi-tuile" href="${ADRESSE}/${p.id}">
+      ${p.logo
+        ? `<span class="suivi-logo"><img src="${echapper(p.logo)}" alt="" loading="lazy"></span>`
+        : `<span class="suivi-logo est-vide">${echapper(p.nom)}</span>`}
       <span class="suivi-nom">${echapper(p.nom)}</span>
       <span class="suivi-offre">${echapper(offre?.nom ?? 'Offre à préciser')}</span>
-      <span class="suivi-montant chiffre">${echapper(euros(p.montant))}</span>
-      ${pastilleEtat(p.statut)}
-      <span class="suivi-avancee">${a ? `${a} à faire` : `${faits(p)} tenus`}</span>
-    </button>
-    ${ouvert ? detailP(p, offre, aConfirmer) : ''}
+      <span class="suivi-bas">
+        <span class="suivi-montant chiffre">${echapper(euros(p.montant))}</span>
+        ${pastilleEtat(p.statut)}
+      </span>
+      <span class="suivi-avancee">${motDeLAvancee(p)}</span>
+    </a>
   </li>`;
+}
+
+function pageFiche(p, aConfirmer) {
+  const offre = offreDe(p.offre);
+  return `${retour()}
+    <header class="suivi-fiche-tete">
+      ${logo(p)}
+      <h2>${echapper(p.nom)}</h2>
+      <p>${echapper(offre?.nom ?? 'Offre à préciser')} · <span class="chiffre">${echapper(euros(p.montant))}</span></p>
+      ${pastilleEtat(p.statut)}
+    </header>
+    <section class="bloc">
+      <h3>Ce qu’on lui doit</h3>
+      ${detailP(p, offre, aConfirmer)}
+    </section>`;
 }
 
 function detailP(p, offre, aConfirmer) {
@@ -198,36 +254,42 @@ function detailP(p, offre, aConfirmer) {
   </div>`;
 }
 
-function partenaires(liste, ouvert, filtre, aConfirmer) {
+const retour = () => `<a class="lien-discret" href="${ADRESSE}">← Les partenaires</a>`;
+
+function pageListe(liste, filtre) {
   const vus = filtre ? liste.filter((p) => p.statut === filtre) : liste;
   // Ce qui reste à faire d'abord : la page sert le suivi, pas l'annuaire.
   const ranges = vus.slice().sort((a, b) => reste(b) - reste(a)
     || a.nom.localeCompare(b.nom, 'fr'));
-  const onglet = (id, nom, n) => `<a href="${ADRESSE}${id ? `/etat-${id}` : ''}"
+  const onglet = (id, nom, n) => `<a href="${ADRESSE}/liste${id ? `-${id}` : ''}"
     class="${filtre === id ? 'actif' : ''}" ${filtre === id ? 'aria-current="page"' : ''}
     >${echapper(nom)} <span class="suivi-compte">${n}</span></a>`;
-  return `<section class="bloc">
-    <h2>Les partenaires</h2>
+  return `${retour()}
+  <section class="bloc">
+    <h2>Tous les partenaires</h2>
     <nav class="suivi-filtres" aria-label="Filtrer les partenaires">
       ${onglet(null, 'Tous', liste.length)}
       ${ETATS_PARTENAIRE.map(([id, nom]) =>
         onglet(id, nom, liste.filter((p) => p.statut === id).length)).join('')}
     </nav>
     ${ranges.length
-      ? `<ul class="suivi-partenaires">${ranges.map((p) => carteP(p, p.id === ouvert, aConfirmer)).join('')}</ul>`
+      ? `<ul class="suivi-partenaires">${ranges.map(carteP).join('')}</ul>`
       : '<p class="vide">Aucun partenaire dans cet état.</p>'}
   </section>`;
 }
 
 // ── LE CATALOGUE ──────────────────────────────────────────────────────────────
 
-// LE DOSSIER, EN PIED ET REPLIÉ : on vient ici pour suivre, pas pour relire
-// l'offre. Mais il faut pouvoir la relire — c'est ce qui permet de vérifier
-// qu'un engagement négocié est bien un ajout et non un oubli.
-function catalogue() {
-  return `<details class="suivi-repli">
-    <summary>Ce que contient chaque offre</summary>
-    <p class="discret">Dossier partenaires 2026-2027. Les conditions sont parfois ajustées : c’est la fiche du partenaire qui fait foi.</p>
+// LE DOSSIER A SA PAGE : on ne vient pas ici pour suivre, mais pour vérifier ce
+// qu'on a promis — et c'est ce qui permet de savoir qu'un engagement négocié est
+// bien un ajout et non un oubli. Chaque offre dit COMBIEN de partenaires l'ont
+// prise : c'est ce qu'on ne sait pas en lisant le dossier.
+function pageOffres(liste) {
+  const pris = (id) => liste.filter((p) => p.offre === id).length;
+  return `${retour()}
+  <section class="bloc">
+    <h2>Nos offres</h2>
+    <p class="suivi-service">Dossier partenaires 2026-2027. Les conditions sont parfois ajustées : c’est la fiche du partenaire qui fait foi.</p>
     <div class="suivi-offres">${OFFRES_FCH.map((o) => `
       <section class="suivi-offre-carte">
         <h4>${echapper(o.nom)} <span class="chiffre">${echapper(o.montant ? euros(o.montant) : 'libre')}</span></h4>
@@ -237,26 +299,89 @@ function catalogue() {
           ? `<ul>${engagementsDeLOffre(o.id).map((e) => `<li>${echapper(e.libelle)}${
               e.detail ? ` <span class="suivi-detail">${echapper(e.detail)}</span>` : ''}</li>`).join('')}</ul>`
           : ''}
+        <p class="suivi-pris">${pris(o.id)
+          ? `${pris(o.id)} partenaire${pris(o.id) > 1 ? 's' : ''} l’${pris(o.id) > 1 ? 'ont' : 'a'} prise`
+          : 'Personne ne l’a prise cette saison'}</p>
       </section>`).join('')}</div>
-  </details>`;
+  </section>`;
 }
 
-// ── L'ASSEMBLAGE ──────────────────────────────────────────────────────────────
+// ── LE HALL ───────────────────────────────────────────────────────────────────
+
+// CHAQUE PORTE DIT CE QU'ON IGNORE AVANT DE L'OUVRIR, c'est l'exigence du hall
+// de `#perso` : qui n'a pas encore viré, quel chantier pèse le plus, quel pack
+// personne n'a pris. Trois rectangles nommés seraient un menu dessiné.
+function porte(adresse, titre, compte, apercu) {
+  return `<a class="suivi-porte" href="${adresse}">
+    <span class="suivi-porte-tete">
+      <span class="suivi-porte-nom">${echapper(titre)}</span>
+      <span class="suivi-porte-compte">${echapper(compte)}</span>
+    </span>
+    <span class="suivi-porte-apercu">${apercu}</span>
+  </a>`;
+}
+
+const mots = (liste, n) => liste.slice(0, n).map((t) => `<span>${echapper(t)}</span>`).join('')
+  + (liste.length > n ? `<span class="suivi-porte-plus">+${liste.length - n}</span>` : '');
+
+function hall(liste) {
+  const attente = liste.filter((p) => p.statut === 'virement_attendu');
+  const avecLogo = liste.filter((p) => p.logo);
+  const lots = parChantier(liste).filter((l) => l.reste);
+  const prises = OFFRES_FCH.filter((o) => liste.some((p) => p.offre === o.id));
+  const jamais = OFFRES_FCH.filter((o) => !liste.some((p) => p.offre === o.id));
+  return `<div class="suivi-portes">
+    ${porte(`${ADRESSE}/liste`, 'Tous les partenaires', `${liste.length}`,
+      `${avecLogo.length ? `<span class="suivi-porte-logos">${avecLogo.slice(0, 5).map(logo).join('')}</span>` : ''}
+       ${attente.length
+        ? `<span class="suivi-porte-quoi">${echapper(attente.map((p) => p.nom).slice(0, 3).join(', '))}${
+            attente.length > 3 ? ` et ${attente.length - 3} autre${attente.length > 4 ? 's' : ''}` : ''
+          } n’${attente.length > 1 ? 'ont' : 'a'} pas encore viré</span>`
+        : '<span class="suivi-porte-quoi">Tout est encaissé.</span>'}`)}
+    ${porte(`${ADRESSE}/engagements`, 'Nos engagements',
+      `${liste.flatMap((p) => p.engagements ?? []).filter((e) => !e.fait_le).length} à faire`,
+      lots.length
+        ? `<ul class="suivi-porte-lots">${lots.slice(0, 3).map((l) => `<li>
+            <span>${echapper(l.libelle)}</span>
+            <span class="suivi-porte-compte">${l.reste}</span></li>`).join('')}</ul>`
+        : '<span class="suivi-porte-quoi">Tout est tenu.</span>')}
+    ${porte(`${ADRESSE}/offres`, 'Nos offres', `${OFFRES_FCH.length}`,
+      `<span class="suivi-porte-mots">${mots(prises.map((o) => o.nom), 4)}</span>
+       <span class="suivi-porte-quoi">${jamais.length
+         ? `${jamais.length} offre${jamais.length > 1 ? 's' : ''} que personne n’a prise${jamais.length > 1 ? 's' : ''}`
+         : 'Toutes ont trouvé preneur.'}</span>`)}
+  </div>`;
+}
+
+// ── L'AIGUILLAGE ──────────────────────────────────────────────────────────────
 
 export function construireSuiviPartenaires(liste, selection, aConfirmer = null) {
-  const ouvert = typeof selection === 'string' && !selection.startsWith('etat-')
-    ? selection : null;
-  const filtre = typeof selection === 'string' && selection.startsWith('etat-')
-    ? selection.slice(5) : null;
   if (!liste.length) {
     return `<p class="vide">Les partenaires du club s’ajouteront ici.</p>`;
   }
+  const vue = typeof selection === 'string' ? selection : null;
+  if (vue === 'engagements') return pageEngagements(liste);
+  if (vue === 'offres') return pageOffres(liste);
+  if (vue === 'liste' || vue?.startsWith('liste-')) {
+    const filtre = vue.startsWith('liste-') ? vue.slice(6) : null;
+    return pageListe(liste, etatDe(filtre) ? filtre : null);
+  }
+  const p = liste.find((candidat) => candidat.id === vue);
+  if (p) return pageFiche(p, aConfirmer);
+  // LE TABLEAU DE BORD RESTE EN TÊTE (demande de Noé) : c'est ce qu'on vient
+  // voir sans y penser, et il ne coûte rien — les données sont déjà là.
   return `<div class="suivi-partenaires-page">
     ${bilan(liste)}
-    ${chantiers(liste)}
-    ${partenaires(liste, ouvert, etatDe(filtre) ? filtre : null, aConfirmer)}
-    ${catalogue()}
+    ${hall(liste)}
   </div>`;
+}
+
+// LE NOM DE LA PAGE OUVERTE, pour le grand titre du site : une page, un nom.
+export function titreDuSuivi(liste, selection) {
+  if (selection === 'engagements') return 'Nos engagements';
+  if (selection === 'offres') return 'Nos offres';
+  if (selection === 'liste' || selection?.startsWith?.('liste-')) return 'Tous les partenaires';
+  return liste.find((p) => p.id === selection)?.nom ?? null;
 }
 
 // Les engagements que l'offre choisie fait naître — c'est `engagementsDeLOffre`,
