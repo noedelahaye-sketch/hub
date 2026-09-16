@@ -1012,6 +1012,12 @@ galerie à trous se lirait comme une liste incomplète.
 **LA FICHE EST UNE PAGE**, plus un dépliage : c'est la règle des deux rangs —
 la galerie ne dit que ce qui se COMPARE, la page dit tout.
 
+**SA TÊTE MET LE LOGO À GAUCHE ET TOUT LE TEXTE À SA DROITE** (16 septembre
+2026, demande de Noé). Empilés, la plaque, le nom, l'offre et l'état
+occupaient trois cents pixels de haut **avant le premier engagement** — or
+c'est la liste qu'on vient lire. *Mesuré après : 94 px sur ordinateur, 81 sur
+téléphone, où la plaque se resserre pour laisser sa place à un nom long.*
+
 **UNE GALERIE N'A PAS DE SURFACE SOUS ELLE** (16 septembre 2026, demande de
 Noé : *« enlève la tuile de fond sur cette page, il faut que chaque tuile
 d'entreprise soit indépendante »*, puis *« fais pareil pour la page des offres,

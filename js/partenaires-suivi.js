@@ -251,9 +251,11 @@ function pageFiche(p, aConfirmer) {
   return `${retour()}
     <header class="suivi-fiche-tete">
       ${logo(p)}
-      <h2>${echapper(p.nom)}</h2>
-      <p>${echapper(offre?.nom ?? 'Offre à préciser')} · <span class="chiffre">${echapper(euros(p.montant))}</span></p>
-      ${pastilleEtat(p)}
+      <div class="suivi-fiche-texte">
+        <h2>${echapper(p.nom)}</h2>
+        <p>${echapper(offre?.nom ?? 'Offre à préciser')} · <span class="chiffre">${echapper(euros(p.montant))}</span></p>
+        ${pastilleEtat(p)}
+      </div>
     </header>
     <section class="bloc">
       <h3>Ce qu’on lui doit</h3>

@@ -1302,8 +1302,13 @@ body[data-espace="hermitage"] #vue .suivi-chantier h4 {
 .suivi-chantier .discret { margin: 0 0 8px; font-size: 0.75rem; }
 
 .bloc ul.suivi-lignes { display: grid; gap: 2px; margin: 8px 0 0; }
+/* `flex-wrap: nowrap` SE REDIT, et ce n'est pas décoratif : une règle plus
+   générale passe les lignes du hub en `wrap`, et le texte, qui prend toute la
+   place restante, se jetait alors sur sa propre ligne — le rond restait seul en
+   haut, la croix seule en bas. *Mesuré à 375 px : un texte de 287 px dans une
+   ligne de 287.* Ce qu'on ne redit pas reste. */
 .bloc li.suivi-ligne {
-  display: flex; align-items: flex-start; gap: 8px; flex-direction: row;
+  display: flex; align-items: flex-start; gap: 8px; flex-direction: row; flex-wrap: nowrap;
   padding: 5px 0; background: transparent; border: 0; border-radius: 0;
   font-size: 0.8125rem; line-height: 1.35;
 }
@@ -1528,12 +1533,31 @@ body[data-espace="hermitage"] #vue .suivi-chantier h4 {
 .suivi-logo img { display: block; width: 100%; height: 100%; object-fit: contain; }
 /* La plaque vide, elle, centre du TEXTE : la grille y est le bon outil. */
 .suivi-logo.est-vide { display: grid; place-items: center; }
-.suivi-fiche-tete .suivi-logo { width: 132px; height: 84px; padding: 6px; margin-bottom: var(--espace-12); }
+/* La marge basse tombe : elle séparait le logo du nom quand ils étaient l'un
+   sous l'autre, et c'est `gap` qui le fait maintenant. */
+.suivi-fiche-tete .suivi-logo { width: 132px; height: 84px; padding: 6px; margin-bottom: 0; }
+/* Sur téléphone la plaque se resserre : à 132 px elle ne laissait que 195 px au
+   nom, et « INFORMATIQUE CHEZ VOUS » s'y repliait sur quatre lignes. */
+@media (max-width: 30rem) {
+  .suivi-fiche-tete { gap: var(--espace-12); }
+  .suivi-fiche-tete .suivi-logo { width: 96px; height: 62px; }
+}
 .fch-hall-logos { display: flex; flex-wrap: wrap; gap: 5px; }
 .fch-hall-logos .suivi-logo { width: 48px; height: 32px; padding: 3px; border-radius: 7px; }
 
-/* La tête d'une fiche : le nom en grand, son offre et son état sous lui. */
-.suivi-fiche-tete { margin: var(--espace-16) 0 var(--espace-24); }
+/* La tête d'une fiche : LE LOGO À GAUCHE, TOUT LE TEXTE À SA DROITE (16 septembre
+   2026, demande de Noé). Empilés, la plaque et le nom occupaient trois cents
+   pixels de haut avant le premier engagement — or c'est la liste qu'on vient
+   lire. Côte à côte, la tête tient sur la hauteur du logo.
+
+   `min-width: 0` SUR LA COLONNE DE TEXTE : un élément de flux refuse de
+   descendre sous la largeur minimale de son contenu, et un nom long aurait
+   poussé la tête hors de l'écran au lieu de se replier. */
+.suivi-fiche-tete {
+  display: flex; align-items: center; gap: var(--espace-16);
+  margin: var(--espace-16) 0 var(--espace-24);
+}
+.suivi-fiche-texte { min-width: 0; }
 body[data-espace="hermitage"] #vue .suivi-fiche-tete h2 {
   margin: 0 0 4px; color: #fff; font-weight: 900; letter-spacing: -0.04em;
   font-size: clamp(1.6rem, 4.5vw, 2.4rem); text-transform: none; line-height: 1.05;
