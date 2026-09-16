@@ -721,37 +721,214 @@ body[data-espace="hermitage"] .saison-poser {
   list-style: disc;
 }
 
-/* --- Le projet --------------------------------------------------------------- */
+/* --- Le projet du club --------------------------------------------------------
+   Trois étages : la mission dit POURQUOI, les valeurs COMMENT on se tient, les
+   objectifs VERS QUOI on va. C'est l'ordre dans lequel le club les a écrits. */
 
-.club-mission {
-  margin: 0 0 var(--espace-16);
+.projet-club-phrase {
+  margin: 0 0 var(--espace-12);
   font-family: var(--police-titre);
-  font-size: 1.375rem;
+  font-size: clamp(1.5rem, 4vw, 2.1rem);
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
   color: var(--accent);
 }
 
-.bloc ul.club-valeurs {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
-  gap: var(--espace-8);
+.projet-club-developpee { margin: 0 0 var(--espace-16); max-width: 46rem; line-height: 1.55; }
+.projet-club-service {
+  margin: -4px 0 var(--espace-16); max-width: 46rem;
+  font-size: 0.8125rem; color: var(--texte-discret);
 }
 
-.bloc li.club-valeurs > li,
-.club-valeurs li {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-  padding: var(--espace-12);
+/* Les quatre piliers de la mission : des phrases, pas des cartes — on les lit
+   d'une traite, comme un refrain. Le filet de gauche les relie sans les
+   enfermer. */
+.bloc ul.projet-club-piliers {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: var(--espace-8); margin: 0;
+}
+.projet-club-piliers li {
+  padding: var(--espace-8) 0 var(--espace-8) var(--espace-12);
+  background: transparent; border: 0; border-left: 2px solid var(--club-rouge);
+  border-radius: 0; font-weight: 600; line-height: 1.3;
 }
 
-.club-valeur-nom { font-weight: 600; }
+.projet-club-repli { margin-top: var(--espace-16); font-size: 0.875rem; }
+.projet-club-repli summary { cursor: pointer; color: var(--texte-discret); }
+.projet-club-repli[open] summary { margin-bottom: var(--espace-12); }
+.projet-club-criteres { display: grid; gap: var(--espace-8); margin: 0 0 var(--espace-12); }
+.projet-club-criteres dt { font-weight: 700; color: #fff; }
+.projet-club-criteres dd { margin: 0; color: var(--texte-discret); line-height: 1.5; }
 
-.club-valeur-mot {
-  font-size: 0.8125rem;
+/* --- Les six valeurs ----------------------------------------------------------
+   LA COULEUR NE PORTE PAS L'IDENTITÉ, le rang et le nom la portent : les six
+   couleurs du club vont par paires — deux bleus, deux rouges, deux ors —, ce
+   qui ne se voit pas sur Instagram où elles passent une par une, mais se
+   verrait ici. Elle tient donc le filet et le chiffre, pas la tuile entière. */
+.projet-club-valeurs {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: var(--espace-12);
+}
+.projet-club-valeur {
+  position: relative; display: grid; gap: 3px; align-content: start;
+  min-width: 0; padding: var(--espace-16) var(--espace-12) var(--espace-12);
+  border-radius: 16px; background: var(--fond-carte);
+  border-top: 3px solid var(--valeur-couleur); color: #fff; text-decoration: none;
+}
+.projet-club-valeur:hover { background: rgb(255 255 255 / 7%); text-decoration: none; }
+.projet-club-valeur:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.projet-club-rang {
+  font-family: var(--police-titre); font-size: 1.75rem; font-weight: 700;
+  line-height: 1; letter-spacing: -0.04em;
+  color: color-mix(in srgb, var(--valeur-couleur) 72%, #fff);
+}
+.projet-club-valeur-nom { font-weight: 800; font-size: 1.0625rem; line-height: 1.2; }
+.projet-club-valeur-idee { font-size: 0.8125rem; color: var(--texte-discret); line-height: 1.35; }
+.projet-club-etoile {
+  margin-top: 4px; font-size: 0.6875rem; font-weight: 700;
+  color: color-mix(in srgb, var(--valeur-couleur) 72%, #fff);
+}
+
+/* --- Les objectifs ------------------------------------------------------------
+   Groupés par HORIZON, parce que c'est la question qu'on se pose devant un
+   projet de club : qu'est-ce qui doit avancer cette année, et qu'est-ce qui
+   attend. Le filtre par pôle répond à l'autre question. */
+.projet-club-filtres { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--espace-16); }
+.projet-club-filtres a {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 12px; border-radius: 999px; background: #152342;
+  color: var(--texte); text-decoration: none; font-size: 0.75rem; font-weight: 700;
+}
+.projet-club-filtres a:hover { text-decoration: none; background: #1b2c52; }
+.projet-club-filtres a.actif {
+  background: color-mix(in srgb, var(--pole-couleur, var(--club-rouge)) 48%, #142343);
+  color: #fff;
+}
+.projet-club-compte { font-family: var(--police-chiffre); font-size: 0.6875rem; opacity: 0.7; }
+
+.projet-club-horizons {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+  gap: var(--espace-24) var(--espace-16); align-items: start;
+}
+.projet-club-horizon { min-width: 0; }
+body[data-espace="hermitage"] #vue .projet-club-horizon > h3 {
+  display: flex; align-items: baseline; gap: 8px; margin: 0 0 6px;
+  font-size: 0.8125rem; font-weight: 600; color: var(--texte-discret);
+  text-transform: none; letter-spacing: 0;
+}
+.projet-club-horizon-nom {
+  font-family: var(--police-titre); font-size: 1.25rem; font-weight: 700;
+  letter-spacing: -0.03em; color: #fff;
+}
+.projet-club-priorite {
+  margin: 0 0 var(--espace-12); font-size: 0.75rem; font-weight: 700;
+  color: color-mix(in srgb, var(--club-rouge) 55%, #fff);
+}
+
+.bloc ul.projet-club-objectifs { display: grid; gap: var(--espace-8); margin: 0; }
+/* `.bloc li` met TOUTES les listes du hub en flex-rangée, et styles.css est
+   chargée sur les trois pages : sans ce rappel, le pôle, l'axe et l'indicateur
+   se rangeaient sur une seule ligne à la suite du titre. Il faut égaler sa
+   spécificité (0-1-1), d'où le `li.` — c'est le piège déjà payé sept fois. */
+.bloc li.projet-club-objectif {
+  display: block;
+  padding: var(--espace-12) var(--espace-12) var(--espace-12) var(--espace-16);
+  border: 0; border-left: 3px solid var(--axe-couleur); border-radius: 0 12px 12px 0;
+  background: var(--fond-carte);
+}
+.projet-club-objectif-titre { margin: 0; font-weight: 700; line-height: 1.3; }
+.projet-club-axe { margin: 4px 0 0; font-size: 0.6875rem; color: var(--texte-discret); }
+.projet-club-marques { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 0; }
+.projet-club-pole {
+  display: inline-flex; padding: 3px 9px; border-radius: 999px;
+  font-size: 0.6875rem; font-weight: 700; color: #fff;
+  background: color-mix(in srgb, var(--pole-couleur) 45%, #142343);
+}
+.projet-club-aussi {
+  display: inline-flex; padding: 3px 9px; border-radius: 999px;
+  font-size: 0.6875rem; color: var(--texte-discret); border: 1px solid var(--bordure);
+}
+/* « Ce qu'on regarde » : l'indicateur n'existe que sur les objectifs de N+1,
+   les seuls que le club ait outillés. */
+.projet-club-indicateur {
+  margin: 10px 0 0; font-size: 0.75rem; color: var(--texte-discret); line-height: 1.45;
+}
+.projet-club-indicateur span {
+  display: block; font-size: 0.625rem; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--texte-discret);
+}
+.bloc ul.projet-club-projets { display: grid; gap: 2px; margin: 10px 0 0; padding-left: 14px; }
+.projet-club-projets li {
+  display: list-item; list-style: disc; padding: 0; background: transparent;
+  border: 0; border-radius: 0; font-size: 0.8125rem; line-height: 1.4;
   color: var(--texte-discret);
 }
+
+.bloc ul.projet-club-ag { display: grid; gap: var(--espace-8); margin: 0; }
+.projet-club-ag li {
+  padding: var(--espace-12); border: 0; border-left: 3px solid var(--axe-couleur);
+  border-radius: 0 12px 12px 0; background: var(--fond-carte);
+}
+.bloc ul.projet-club-libres { display: grid; gap: var(--espace-8); margin: 0; }
+/* En grille, l'émoji et le titre deviennent deux rangs : un nœud de texte est
+   un élément de grille comme un autre. En flux, ils restent une phrase. */
+.bloc li.projet-club-libres-item { display: block; font-size: 0.875rem; line-height: 1.35; }
+.projet-club-libres-item .discret { display: block; font-size: 0.75rem; margin-top: 2px; }
+
+/* --- La page d'une valeur -----------------------------------------------------
+   La couleur peut être FRANCHE ici : une valeur à la fois, donc rien à
+   confondre avec sa jumelle de teinte. */
+.valeur-fiche { margin-top: var(--espace-16); }
+.valeur-tete {
+  margin: var(--espace-16) 0 var(--espace-24);
+  /* --espace-20 n'existe pas : l'échelle va de 4 à 48 par sauts nommés, et un
+     var() sur un jeton inconnu annule TOUTE la déclaration — le bandeau est
+     tombé à zéro de rembourrage sans qu'aucune erreur ne le dise. */
+  padding: var(--espace-16) var(--espace-24);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--valeur-couleur) 30%, #142343);
+  border-left: 5px solid var(--valeur-couleur);
+}
+.valeur-rang {
+  margin: 0 0 4px; font-size: 0.75rem; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: color-mix(in srgb, var(--valeur-couleur) 40%, #fff);
+}
+.valeur-principale { color: #fff; }
+body[data-espace="hermitage"] #vue .valeur-tete h2 {
+  margin: 0; color: #fff; font-weight: 900; letter-spacing: -0.04em;
+  font-size: clamp(1.8rem, 5vw, 2.8rem); text-transform: none; line-height: 1.02;
+}
+.valeur-idees {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: var(--espace-8); list-style: none; padding: 0; margin: 0 0 var(--espace-24);
+}
+.valeur-idees li {
+  padding: var(--espace-12); border-radius: 14px; font-weight: 700; line-height: 1.25;
+  background: color-mix(in srgb, var(--valeur-couleur) 16%, #142343);
+}
+.valeur-definition p { margin: 0 0 var(--espace-12); max-width: 46rem; line-height: 1.6; }
+.valeur-bas {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: var(--espace-16); margin: var(--espace-24) 0;
+}
+.valeur-bas h4 {
+  margin: 0 0 10px; font-size: 0.75rem; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--texte-discret);
+}
+.valeur-comportement { margin: 0 0 8px; font-size: 1.0625rem; font-weight: 700; line-height: 1.3; }
+.valeur-mots { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 0 0 8px; }
+.valeur-mots li {
+  padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 700;
+  background: color-mix(in srgb, var(--valeur-couleur) 26%, #142343);
+}
+.valeur-suite { display: flex; flex-wrap: wrap; gap: 6px; margin: var(--espace-24) 0; }
+.valeur-suite a {
+  padding: 6px 12px; border-radius: 999px; font-size: 0.75rem; font-weight: 700;
+  color: #fff; text-decoration: none; border: 1.5px solid var(--valeur-couleur);
+}
+.valeur-suite a:hover { text-decoration: none; background: color-mix(in srgb, var(--valeur-couleur) 30%, transparent); }
 
 /* --- Les créneaux et les chiffres, repliés ------------------------------------
    Ils se consultent rarement : ils ferment la page et ne s'imposent pas. */

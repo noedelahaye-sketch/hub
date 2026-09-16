@@ -40,6 +40,8 @@ const COQUILLE = [
   'js/calendrier-commun.js',
   'js/club-fch.js',
   'js/organigramme-fch.js',
+  'js/projet-fch.js',
+  'js/projet-club.js',
   'js/organigramme-fch-data.js',
   'js/calendrier.js',
   'js/dashboard.js',

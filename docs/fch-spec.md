@@ -593,10 +593,10 @@ Quatre blocs, du plus souvent consulté au plus rare :
    qui en découle suffisent. Un filet d'accent a existé une heure, retiré le
    jour même — un quatrième signe ne distinguait plus rien, il décorait, et une
    bordure de côté simule une hiérarchie que le contenu portait déjà.
-2. **Le projet** — la mission « transmettre l'envie de jouer » et les six
-   valeurs, avec le comportement de chacune. C'est la référence de la ligne
-   éditoriale, et l'une des missions écrites de Noé : elles sont là pour être
-   RELUES avant d'écrire.
+2. **Le projet du club** — la mission, les valeurs et les objectifs. C'est la
+   référence de la ligne éditoriale, et l'une des missions écrites de Noé :
+   elles sont là pour être RELUES avant d'écrire. Voir « Le projet du club »
+   plus bas.
 3. **Les entraînements de la semaine** — 16 créneaux, trois sites. Repliés.
 4. **Le club en chiffres** — les huit repères du dossier partenaires. Repliés.
 
@@ -837,6 +837,87 @@ Les nœuds sont déplacés dans les surfaces après rendu, sans changer les cham
 ou les attributs des actions. Les 16 routes ont été parcourues dans le navigateur :
 titres présents et aucun identifiant dupliqué. Gabarits et syntaxe validés.
 Modifications locales, non commitées et non poussées à ce stade.
+
+### Le projet du club — mission, valeurs, objectifs (16 septembre 2026)
+
+**La demande de Noé** : *« pour la page le projet du club, je te joins tous les
+docs nécessaires pour que ce soit complet. Chaque valeur doit avoir sa page de
+détail. Il doit y avoir un espace par rapport aux objectifs par commissions, en
+fonction de la deadline visée (N+1, N+3, N+5…). »*
+
+**TROIS ÉTAGES, ET C'EST LA STRUCTURE DU CLUB LUI-MÊME** : la mission dit
+POURQUOI, les valeurs COMMENT on se tient, les objectifs VERS QUOI on va. Le
+club les a construits dans cet ordre, en quatre réunions de projet ; l'écran les
+rend dans le même. *Ce que ça remplace : une phrase de mission et six lignes de
+valeur résumées, tout ce que `js/club-fch.js` en gardait.*
+
+**LES DONNÉES VIVENT DANS `js/projet-fch.js`**, pas en base — c'est l'argument
+de `js/club-fch.js` : rien ne change plus d'une fois par an, rien ne se coche.
+Chaque bloc porte sa source dans le fichier, dossier `Club/Projet club/`.
+
+#### La mission
+
+La phrase, sa formulation complète, ses **quatre piliers** (le visuel de la
+mission), et un repli « pourquoi cette phrase-là » qui donne les quatre critères
+que le club s'était fixés et les **trois missions écartées**. Celles-ci disent
+ce que la mission a choisi de ne PAS être, et c'est la moitié de son sens.
+
+#### Les six valeurs, et la page de chacune — `#hermitage/projet-club/<id>`
+
+**LA COULEUR NE PORTE PAS L'IDENTITÉ dans la galerie, le rang et le nom la
+portent.** Les six couleurs relevées dans les carrousels du club vont par
+paires — deux bleus, deux rouges, deux ors : sur Instagram les valeurs passent
+une par une, la répétition ne se voit pas ; six tuiles côte à côte, si. La
+couleur tient donc le filet du haut et le chiffre, comme la tuile d'un groupe de
+l'organigramme. **Seul l'esprit collectif est éclairci** — le club a `#003090`,
+plus sombre que le fond du site, où il aurait disparu.
+
+**SUR SA PAGE, LA COULEUR PEUT ÊTRE FRANCHE** : une valeur à la fois, donc rien
+à confondre avec sa jumelle de teinte. La page reprend la forme du carrousel —
+le rang, le nom en grand sur un bandeau teinté, les trois idées — puis la
+définition publique du club, le comportement qu'elle demande, ses mots associés
+et la famille de mots dont elle est née. **Les trois valeurs principales sont
+marquées** : ce sont celles que la réunion n° 2 a retenues comme portant la
+mission.
+
+*La transmission n'a pas de carrousel exporté, à la différence des cinq autres :
+sa définition vient de la réunion n° 2. C'est la même parole du club, écrite un
+cran plus tôt.*
+
+#### Les objectifs, par horizon et par pôle
+
+**GROUPÉS PAR HORIZON — N+1, N+3, N+5 —, parce que c'est la question qu'on se
+pose devant un projet de club** : qu'est-ce qui doit avancer cette année, et
+qu'est-ce qui attend. **Le filtre par pôle répond à l'autre question**, celle de
+Noé : les objectifs d'une commission donnée.
+
+- **Le filet de gauche dit l'AXE, la pastille dit le PÔLE.** Deux canaux, chacun
+  son travail : l'axe est la grande famille (quatre), le pôle est le sujet
+  (neuf). Les mêler sur un seul signe aurait demandé treize couleurs.
+- **UN PÔLE N'EST PAS UNE COMMISSION**, même s'ils se ressemblent : l'éducatif,
+  la cohésion et l'identité n'ont pas de commission ; le secrétariat, la
+  trésorerie, la buvette et la présidence n'ont pas de pôle. Les cinq qui portent
+  le même nom qu'une commission en reprennent la couleur, pour qu'un pôle se
+  reconnaisse d'un écran à l'autre.
+- **UN OBJECTIF PEUT PORTER PLUSIEURS HORIZONS**, et sa carte le dit (« aussi à
+  N+3 et N+5 ») : « augmenter le nombre de bénévoles » est visé aux trois. C'est
+  un objectif qui court, pas trois objectifs.
+- **L'INDICATEUR N'EXISTE QUE SUR LES OBJECTIFS DE N+1** — les seuls que le club
+  ait outillés. Ne pas en inventer pour les autres : un indicateur non décidé est
+  un indicateur que personne ne relèvera.
+- **ON N'OFFRE QUE LES PÔLES QUI PORTENT UN OBJECTIF** : un filtre sur une liste
+  vide est une porte sur une pièce vide. C'est la règle des filtres de la
+  bibliothèque.
+- **LES PROJETS SANS OBJECTIF SONT GARDÉS TELS QUELS**, repliés en pied : une
+  idée qui attend son objectif est une idée, pas une erreur, et la ranger de
+  force sous un objectif serait décider à la place du club.
+- **LES TROIS OBJECTIFS DE L'AG SONT À PART**, repliés eux aussi : leurs mots ne
+  sont pas ceux du tableau (« anticiper davantage nos manifestations » y devient
+  « augmenter le nombre de bénévoles et de participants »). On garde les deux —
+  l'un est ce qui a été DIT à l'assemblée, l'autre ce qui est SUIVI.
+
+*Mesuré à 375 px comme à 800 : aucun débordement horizontal, aucun titre ni
+aucune pastille tronqués.*
 
 ### Les organigrammes interactifs, 16 septembre 2026
 

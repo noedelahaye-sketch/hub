@@ -34,19 +34,11 @@ export const REPERES = [
   ['8', 'événements par saison'],
 ];
 
-// LA MISSION ET LES VALEURS : la référence de la ligne éditoriale, et l'une des
-// missions écrites de Noé — « mettre en place une ligne éditoriale cohérente
-// avec le projet du club ». Elles sont ici pour être RELUES avant d'écrire.
-export const MISSION = 'Transmettre l’envie de jouer.';
-
-export const VALEURS = [
-  ['Esprit collectif', 'Penser et agir pour le groupe avant soi.'],
-  ['Transmission', 'Partager son expérience et apprendre des autres.'],
-  ['Respect', 'Parler et agir avec considération, quelles que soient les situations.'],
-  ['Chaleur humaine', 'Accueillir chaque personne avec simplicité et bienveillance.'],
-  ['Émotions', 'Exprimer ses émotions et respecter celles des autres.'],
-  ['Investissement', 'S’investir activement dans la vie du club.'],
-];
+// LA MISSION ET LES VALEURS ONT DÉMÉNAGÉ dans `js/projet-fch.js` (16 septembre
+// 2026). Elles tenaient ici en six lignes résumées ; elles portent désormais la
+// définition du club, ses trois idées, ses mots associés et son comportement —
+// et chaque valeur a sa page. Deux sources pour une même phrase finissent par
+// se contredire, donc il n'en reste qu'une.
 
 // LES NEUF COMMISSIONS, et qui les porte. L'ordre est celui du document du
 // club. `noe` marque celles où Noé a une mission écrite : la Communication est

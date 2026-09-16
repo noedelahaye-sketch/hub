@@ -21,6 +21,23 @@ mise en documentation, son commit et son push ; ce relais accompagne ce lot.
 - `habillerLesSections` déplace les nœuds existants dans `.fch-tuile` après le
   rendu : champs, identifiants et délégation des événements sont conservés.
 
+### Le projet du club
+
+- **Trois étages** (16 septembre 2026) : la mission dit POURQUOI, les valeurs
+  COMMENT on se tient, les objectifs VERS QUOI on va — l'ordre dans lequel le
+  club les a écrits en quatre réunions.
+- **Chaque valeur a sa page** : `#hermitage/projet-club/<id>`, avec sa définition
+  publique, ses trois idées, son comportement et ses mots associés.
+- **Les objectifs sont groupés par horizon** (N+1, N+3, N+5), filtrables par
+  pôle : `#hermitage/projet-club/pole-<id>`.
+- Données dans `js/projet-fch.js`, écran dans `js/projet-club.js`. Sources : le
+  dossier `FCH/Communication/Club/Projet club/` — deux PDF et quatre
+  présentations, citées bloc par bloc dans le fichier de données.
+- **À VÉRIFIER AVEC LE CLUB** : la transmission est la seule valeur dont le
+  carrousel n'a pas été exporté en image ; sa définition vient de la réunion
+  n° 2, un cran plus tôt dans le travail. Si le carrousel existe, sa définition
+  publique doit remplacer celle-là.
+
 ### Les organigrammes
 
 - Trois vues : **Bureau et référents**, **Commissions**, **Équipes sportives**.

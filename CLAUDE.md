@@ -4945,6 +4945,13 @@ champ avec « Il lui manque son nom. »
   déclarée plus bas, l'ancienne gagnait, et la nouvelle héritait de `height: 6px`
   — plus `.barre span` qui peignait les trois traits du menu en un seul bloc. Un
   `grep` de trois secondes contre une soirée de forme qu'on croit ratée.
+- **Un `var()` sur un jeton INEXISTANT annule toute la déclaration, en silence.**
+  L'échelle d'espacement va de 4 à 48 par sauts nommés — 4, 8, 12, 16, 24, 32,
+  48 — et `--espace-20` n'existe pas : `padding: var(--espace-16) var(--espace-20)`
+  n'est pas « la moitié appliquée », c'est un rembourrage à ZÉRO. Rien ne le dit,
+  ni la console ni `node --check` ; le bandeau d'une valeur du FCH est tombé à
+  0 px le 16 septembre 2026, et seule la mesure du style calculé l'a montré.
+  `getComputedStyle(el).padding` tranche en trois secondes.
 - **Un point de rupture mesure la FENÊTRE, pas le conteneur.** Une règle écrite
   quand un bloc occupait toute la page devient fausse le jour où on le met dans
   une colonne. Le 29 août, les deux colonnes de la journée débordaient à 1000 px

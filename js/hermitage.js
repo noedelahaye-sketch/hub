@@ -46,7 +46,8 @@ import {
   RECURRENCES,
 } from './format.js';
 import { finDeLaSortie, phaseDeLaSortie } from './preparations-commun.js';
-import { REPERES, MISSION, VALEURS, CRENEAUX } from './club-fch.js';
+import { REPERES, CRENEAUX } from './club-fch.js';
+import { construireProjetClub, titreDuProjet } from './projet-club.js';
 import {
   trierTaches,
   construireLignesTaches,
@@ -189,7 +190,7 @@ function cheminDuMenu() {
   return rubrique ? [rubrique.nom] : [];
 }
 
-function enTete(vueActive) {
+function enTete(vueActive, selection = null) {
   const liens = [
     ['accueil', 'Accueil', '#hermitage'],
     ['creer', 'Créer', '#hermitage/creer'],
@@ -204,8 +205,9 @@ function enTete(vueActive) {
     club: '<path d="M4 21V7l8-4 8 4v14H4zM9 21v-6h6v6M8 9h1m6 0h1M8 12h1m6 0h1"/>',
     calendrier: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4M17 3v4M3 11h18M8 15h3v3H8z"/>',
   };
-  const titre = RUBRIQUES_FCH.flatMap((item) => item.pages ?? [])
-    .find((page) => page.adresse === `#hermitage/${vueActive}`)?.nom
+  const titre = (vueActive === 'projet-club' ? titreDuProjet(selection) : null)
+    ?? RUBRIQUES_FCH.flatMap((item) => item.pages ?? [])
+      .find((page) => page.adresse === `#hermitage/${vueActive}`)?.nom
     ?? liens.find(([vue]) => vue === vueActive)?.[1] ?? 'FC Hermitage';
   const onglet = liens.some(([vue]) => vue === vueActive) ? vueActive : ONGLET_FCH[vueActive];
   return `
@@ -1820,17 +1822,7 @@ function construireEntrainements() {
 function vueClub(vue = 'club', personne = null) {
   const contenus = {
     'commissions': () => construireOrganigramme(personne),
-    'projet-club': () => `    <section class="bloc">
-      <h2>Le projet</h2>
-      <p class="club-mission">${echapper(MISSION)}</p>
-      <ul class="club-valeurs">${VALEURS.map(
-        ([nom, comportement]) => `
-        <li>
-          <span class="club-valeur-nom">${echapper(nom)}</span>
-          <span class="club-valeur-mot">${echapper(comportement)}</span>
-        </li>`,
-      ).join('')}</ul>
-    </section>`,
+    'projet-club': () => construireProjetClub(personne),
     'entrainements': () => construireEntrainements(),
     'chiffres': () => `    <section class="bloc bloc-discret">
       <h2>Le club en chiffres</h2>
@@ -1843,7 +1835,7 @@ function vueClub(vue = 'club', personne = null) {
         ).join('')}</ul>
     </section>`
   };
-  return `${enTete(vue)}${vue === 'club'
+  return `${enTete(vue, personne)}${vue === 'club'
     ? `<section class="bloc"><h2>Le club</h2><p class="discret">Les personnes, le projet et les repères du FC Hermitage.</p></section>${portesDuMenu('Le club')}`
     : `${contenus[vue]()}<a class="lien-discret" href="#hermitage/club">← Le club</a>`}${pied()}`;
 }
