@@ -22,7 +22,7 @@
 // a toujours été un point du calendrier, une étape un morceau de travail.
 
 import * as api from './api.js';
-import { versLaGalerieDuCap, versLeProjet, dansLeSiteYuno } from './cap-adresses.js';
+import { versLaGalerieDuCap, versLeProjet, dansUnSite } from './cap-adresses.js';
 import { avanceeDuProjet } from './orientation.js';
 // LE DESSIN VIENT DE LA GALERIE, il ne se recopie pas : les marches d'un cap et
 // la jauge d'un projet doivent dire la même chose sur tous les écrans.
@@ -643,7 +643,7 @@ export default {
       // site — le fond chaud, le doré, Canela. L'écrire à « photo » ici aurait
       // fait revenir l'habillage du hub par-dessous, et le titre de l'onglet
       // dirait « … — Hub » au milieu du site.
-      if (dansLeSiteYuno()) return;
+      if (dansUnSite()) return;
       document.title = `${etat.objectif.titre} — Hub`;
       document.body.dataset.espace = etat.objectif.espace;
     };

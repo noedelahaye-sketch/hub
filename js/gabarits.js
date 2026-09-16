@@ -9,6 +9,7 @@
 
 import {
   versDateISO,
+  ajouterJours,
   depuisDateISO,
   echeanceLisible,
   momentLisible,
@@ -18,6 +19,70 @@ import {
   dureeLisible,
 } from './format.js';
 import { construireProgression } from './objectifs-commun.js';
+
+// --- LA FRISE DE LA SEMAINE -------------------------------------------------
+//
+// Sept cases, les sept jours qui viennent, une marque par chose posée. Née le
+// 15 septembre 2026 pour les portes de l'accueil Yuno (demande de Noé : « que ce
+// ne soit pas que du texte »), et posée ICI depuis le 16 septembre parce que
+// l'accueil du FCH la reprend : **une vitrine ne se dessine pas deux fois**, et
+// c'est toujours la copie qu'on regarde le moins qui finit par ne plus montrer
+// la même chose.
+//
+// CE QU'ELLE RÉPARE, et qui vaut pour les deux sites : une vitrine faite de
+// LIGNES DE TEXTE n'a plus rien à montrer dès qu'il n'y a qu'une ligne — ou
+// zéro. La frise, elle, **dessine le vide au lieu de se taire** : une semaine
+// sans rien n'est pas une tuile d'air sous un titre, c'est un calendrier à
+// remplir dont le trou se voit. La règle des écrans vides tient — un vide ouvre
+// une porte, il ne s'excuse pas.
+//
+// ELLE PREND LA COULEUR DE SON SITE sans rien savoir de lui : la case et la
+// marque sont peintes à `--accent`, que chaque site pose — doré chez Yuno, le
+// jaune du club au FCH. Une marque peut porter sa propre teinte (`pilier`), la
+// cascade `[data-pilier]` de styles.css posant `--pilier` dessus.
+//
+// `getDay()` rend 0 pour dimanche : la table commence donc par lui.
+const INITIALES_JOURS_FRISE = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+
+// Au-delà de trois, la case est pleine et un trait de plus ne se compte plus du
+// regard — c'est la règle des quatre points du trimestre, un cran plus bas.
+const MARQUES_PAR_JOUR = 3;
+
+export function friseDeLaSemaine(marques, reference = new Date()) {
+  const aujourdhui = versDateISO(reference);
+  const jours = Array.from({ length: 7 }, (_, rang) => {
+    const date = ajouterJours(reference, rang);
+    const iso = versDateISO(date);
+    return {
+      iso,
+      lettre: INITIALES_JOURS_FRISE[date.getDay()],
+      dessus: marques.filter((marque) => marque.jour === iso),
+    };
+  });
+
+  return `
+    <span class="porte-frise" aria-hidden="true">
+      <span class="porte-frise-rang">
+        ${jours
+          .map(
+            ({ iso, dessus }) => `
+          <span class="porte-frise-jour${iso === aujourdhui ? ' porte-frise-jour-actif' : ''}">
+            ${dessus
+              .slice(0, MARQUES_PAR_JOUR)
+              .map(
+                (marque) =>
+                  `<i${marque.pilier ? ` data-pilier="${echapper(String(marque.pilier))}"` : ''}></i>`,
+              )
+              .join('')}
+          </span>`,
+          )
+          .join('')}
+      </span>
+      <span class="porte-frise-rang porte-frise-lettres">
+        ${jours.map(({ lettre }) => `<span>${lettre}</span>`).join('')}
+      </span>
+    </span>`;
+}
 
 // --- Fabrication du HTML ----------------------------------------------------
 

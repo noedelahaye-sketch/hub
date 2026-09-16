@@ -20,6 +20,7 @@ import {
   construireFormulaire,
   construireFenetre,
   CHEVRON,
+  friseDeLaSemaine,
 } from './gabarits.js';
 import {
   STATUTS_YUNO,
@@ -623,48 +624,11 @@ function vitrineDeLaBanque(publications) {
 // semaine en est une lecture juste — tandis qu'une liste de titres dans une
 // tuile de cette taille n'était qu'une phrase de plus.*
 //
-// `getDay()` rend 0 pour dimanche : la table commence donc par lui.
-const INITIALES_JOURS = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
-
-// Au-delà de trois, la case est pleine et un trait de plus ne se compte plus du
-// regard — c'est la règle des quatre points du trimestre, un cran plus bas.
-const MARQUES_PAR_JOUR = 3;
-
-function friseDeLaSemaine(marques, reference = new Date()) {
-  const aujourdhui = versDateISO(reference);
-  const jours = Array.from({ length: 7 }, (_, rang) => {
-    const date = ajouterJours(reference, rang);
-    const iso = versDateISO(date);
-    return {
-      iso,
-      lettre: INITIALES_JOURS[date.getDay()],
-      dessus: marques.filter((marque) => marque.jour === iso),
-    };
-  });
-
-  return `
-    <span class="porte-frise" aria-hidden="true">
-      <span class="porte-frise-rang">
-        ${jours
-          .map(
-            ({ iso, dessus }) => `
-          <span class="porte-frise-jour${iso === aujourdhui ? ' porte-frise-jour-actif' : ''}">
-            ${dessus
-              .slice(0, MARQUES_PAR_JOUR)
-              .map(
-                (marque) =>
-                  `<i${marque.pilier ? ` data-pilier="${echapper(String(marque.pilier))}"` : ''}></i>`,
-              )
-              .join('')}
-          </span>`,
-          )
-          .join('')}
-      </span>
-      <span class="porte-frise-rang porte-frise-lettres">
-        ${jours.map(({ lettre }) => `<span>${lettre}</span>`).join('')}
-      </span>
-    </span>`;
-}
+// ELLE VIT DANS js/gabarits.js DEPUIS LE 16 SEPTEMBRE 2026, parce que l'accueil
+// du FCH la reprend pour ses propres portes : une vitrine ne se dessine pas deux
+// fois, et c'est toujours la copie qu'on regarde le moins qui finit par ne plus
+// montrer la même chose. Rien n'a changé de son dessin — elle se peint à
+// `--accent`, doré ici, jaune du club là-bas.
 
 // L'ÉDITORIAL : LA SEMAINE QUI VIENT, une pastille par parution, dans la couleur
 // de son pilier — la palette existait et ne servait qu'aux tuiles de la banque.

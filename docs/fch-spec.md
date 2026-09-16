@@ -180,55 +180,443 @@ la couleur, à la mise en page et au logo.
 
 ### `#hermitage` — l'accueil
 
-0. **La réunion du moment** (21 août 2026) — en tête quand une réunion est en
-   cours, vient de finir (moins de 24 h) ou approche : sa phase (Avant ·
-   Pendant · Après), jusqu'à trois lignes de sa préparation encore à faire,
-   cochables d'ici, et la porte vers la feuille. Le pendant de « la sortie du
-   moment » chez Yuno : le jour d'un conseil, ce qui compte n'est ni la com'
-   ni les objectifs.
-0 bis. **LE TEMPS FORT QUI APPROCHE** (30 août 2026) — juste sous la réunion.
-   Le club tient huit à neuf temps forts par saison ; ils portent l'essentiel
-   de la com événementielle, et l'accueil ne les voyait pas venir — ils
-   dormaient au calendrier, à deux gestes de là.
+#### REFONDU LE 16 SEPTEMBRE 2026 : une carte, un bloc, trois portes, le cap
 
-   **Il SITUE, il ne réclame pas** : pas de compte à rebours, pas de « plus que
-   3 jours ! », pas de liste de ce qui n'est pas fait. Il dit ce qui vient, le
-   lieu, et **ce qui est déjà posé pour ce jour-là** — la seule question qui
-   vaille devant un temps fort. « Rien de posé » s'écrit dans la MÊME encre que
-   le reste : cinq semaines avant, c'est un fait ordinaire, et le distinguer
-   même en plus pâle en aurait fait un reproche silencieux.
+**LA DEMANDE DE NOÉ** : *« pour l'accueil du FCH, il faut réorganiser les infos
+qui doivent y être et la forme. Pour cela il faut s'appuyer sur ce qu'on a fait
+sur le hub et yuno. »*
 
-   **Horizon de cinq semaines**, et il reste jusqu'au SOIR du jour : la com
-   d'un temps fort se fait aussi pendant. Plus loin, il n'appelle encore aucun
-   geste et deviendrait un meuble qu'on ne lit plus.
+**LE DÉFAUT, MESURÉ AVANT DE TOUCHER À QUOI QUE CE SOIT.** La page faisait
+**2 018 px** et empilait cinq blocs fixes :
 
-   **`temps_fort` est une DÉCLARATION, et il a fallu le MESURER.** Au 30 août,
-   les sept événements FCH à venir — trois entraînements, une séance photo,
-   trois temps forts — étaient rigoureusement **indistinguables en base** : ni
-   série, ni `avec_photos`, ni présence d'un créneau ne les séparaient. Ne
-   restait que le titre, et deviner sur un titre libre est ce que le hub
-   refuse. D'où la colonne et sa pastille, sur le motif exact de
-   `reunion_objet` et d'`avec_photos`. Les trois déjà posés sont marqués depuis
-   le calendrier officiel du club, « Nos Évènements 2026/2027 », qui est aussi
-   la source de leurs dates.
+| Bloc | Hauteur | Ce qu'il valait |
+|---|---|---|
+| Le temps fort | 179 px | utile — et le seul qui bouge d'un jour à l'autre |
+| **À faire (13)** | **644 px** | un tiers de la page pour un mur de lignes |
+| La com' à venir | 376 px | trois lignes |
+| Le cap | 358 px | **huit jalons, aucun atteint** — trois rangées de points vides |
+| Les victoires | 186 px | replié |
 
-   **La pastille passe par un DRAPEAU de l'appelant** (`tempsFort: true`),
-   comme `reunion` et `typeMoment` — pas par `espaceInitial`. Sur un SITE il
-   n'y a qu'un espace : `espacesOfferts` est nul et `espaceInitial` avec lui.
-   Tester `espaceInitial === 'fch'` ne donnait rien, mesuré — la pastille
-   n'apparaissait jamais. **C'est le site qui sait qu'il est le club.**
-   *(Au passage : « Photos » teste `espaceInitial === 'photo'` et n'apparaît
-   donc pas non plus sur `#hermitage`, alors que le CLAUDE.md la dit offerte au
-   FCH. Défaut préexistant, non corrigé ici.)*
+Deux de ces cinq sont du **bilan** sur un écran dont le §1 dit qu'il est
+l'**atelier**. Et pendant ce temps, l'accueil ne disait **rien** de ce que le
+site charge déjà à l'ouverture : **65 engagements partenaires sur 69** restaient
+à tenir, **7 partenaires sur 20** n'avaient pas viré, et les **54 parutions
+posées devant étaient toutes encore « à préparer »**, zéro en « à programmer ».
+La chaîne éditoriale était bouchée à son premier cran et la page l'ignorait.
 
-1. **À FAIRE** — les tâches du club, cochables ici (30 août 2026).
-2. **La com' à venir** — les prochaines publications programmées, avec la
-   porte vers Créer.
-3. **Le cap** — les objectifs en version GRAVÉE (`construireCapGrave`) et une
-   porte vers `#objectifs/fch`. On les relit, on ne les règle pas ici.
-4. **Victoires** — repliées, avec la porte vers « Le chemin ».
+**C'EST LE DÉFAUT QUE YUNO AVAIT LE 15 SEPTEMBRE**, et la réponse est la sienne :
+
+> **L'accueil n'a qu'UN bloc fixe — le travail à faire. Tout le reste est un
+> CLASSEMENT : une carte chaude tirée d'une cascade, trois portes tirées d'une
+> réserve, et le cap en pied.**
+
+La page ne change pas de **forme**, elle change de **contenu**. *Mesuré après :
+**927 px** sur ordinateur, 1 566 sur téléphone.*
+
+#### LA CASCADE — le premier rang satisfait gagne, et il est SEUL
+
+C'est la mécanique du bandeau de l'après du hub (« un seul à la fois ») : deux
+cartes chaudes empilées, ce sont deux interruptions.
+
+| Rang | Elle apparaît quand | Ce qu'elle montre |
+|---|---|---|
+| 1 | une **réunion** est en cours, finie depuis < 24 h, ou à venir | sa phase, les trois points qui restent, la feuille |
+| 2 | un **temps fort** à cinq semaines | le lieu, et ce qui est déjà posé ce jour-là |
+| 3 | une **parution sort dans 48 h** et est encore « à préparer » | son réseau, sa rubrique, et combien suivent |
+| 4 | des **virements partenaires** sont attendus | la somme, et qui n'a pas encore viré |
+| 5 | repli | **où en est la chaîne éditoriale** sur quinze jours |
+
+- **L'ORDRE EST CELUI QUE NOÉ A CHOISI**, entre trois propositions : **le moment
+  d'abord**. Ce qui a une heure passe devant, puis ce qui part, puis l'argent.
+  *« La com' d'abord » a été proposée et écartée : la spec dit « la communication
+  d'abord » du SITE entier (§2), pas de sa carte du jour — et le jour d'un
+  conseil d'administration, ce n'est pas la story du week-end qui compte.*
+- **LES 48 H DU RANG 3 NE S'INVENTENT PAS** : c'est `AVANT_MONTE_A`, le seuil du
+  site depuis le 26 août, celui à partir duquel une chose qui vient devient une
+  chose à faire. **Seul le premier cran déclenche** : une parution « à
+  programmer » a son visuel, il ne reste qu'à poser la date — ce n'est pas une
+  interruption. Une parution « à préparer » la veille de sa sortie, si.
+- **SON BOUTON MÈNE À LA PAGE DE L'ÉVÈNEMENT** (16 septembre 2026, demande de
+  Noé : *« le lien de préparer sa com doit mener à la page de l'évènement »*), et
+  non plus au calendrier éditorial : **c'est là que vit sa com** — son calendrier,
+  ses idées à poser, ses publications écrites. L'éditorial, lui, montre TOUT le
+  club ; il fallait y retrouver son évènement à la main.
+
+  **CE SONT DEUX CHOSES, et c'est ce qui rend le rapprochement nécessaire** : le
+  TEMPS FORT est une ligne de `evenements` — elle porte `temps_fort`, elle a un
+  créneau, elle vit au calendrier ; la FICHE est une entrée du planning officiel,
+  écrite dans le dépôt, et c'est elle qui porte la communication.
+
+  **LE TITRE EST EXCLU COMME CLÉ, et il a fallu le MESURER** :
+
+  | Temps fort (base) | Fiche (planning) |
+  |---|---|
+  | « Tournoi **de** pétanque » · 26 sept. | « Concours **de** pétanque » · 26 sept. |
+  | « Tournoi **R**ose » · 17 oct. | « Tournoi **r**ose » · 17 oct. |
+  | « Goûter de Noël… » · **18 déc.** | « Goûter de Noël… » · **19 déc.** |
+
+  *Deviner sur un titre libre est ce que le hub refuse* — la règle posée pour
+  `temps_fort` le 30 août, et celle des écussons de clubs : **un rapprochement
+  rejoué à chaque exécution peut changer une destination dans le dos de Noé.**
+
+  - **LA DATE EXACTE D'ABORD.** Aucune fiche de la saison ne partage son jour avec
+    une autre — *vérifié sur les neuf* —, donc c'est une clé sûre.
+  - **PUIS UNE FENÊTRE DE TROIS JOURS, MAIS SEULEMENT SI ELLE NE TROUVE QU'UNE
+    SEULE FICHE.** Le goûter de Noël est au **18** en base et au **19** au
+    planning ; le bouton ne doit pas attendre qu'on tranche cet écart pour
+    marcher. **La garde d'unicité est ce qui empêche de deviner** : les deux
+    tournois futsal tombent les 9 et 10 janvier, et un temps fort posé entre eux
+    trouverait DEUX candidates — on rend alors `null` plutôt que de choisir à la
+    place de Noé.
+  - **LE REPLI RESTE L'ÉDITORIAL** quand rien ne se rapproche : un bouton qui ne
+    mène nulle part serait pire que celui qui mène un cran trop haut.
+  - *Onze cas éprouvés hors écran (`tools/essai-fiche-evenement.mjs`), dont les
+    deux qui doivent REFUSER.*
+
+- **LE RANG 4 NE PARLE QUE DES VIREMENTS, et c'est ce qui le rend tenable.** Les
+  65 engagements qui restent sont une vérité **permanente** : une carte qui les
+  afficherait tous les jours pendant six mois deviendrait un meuble, et elle
+  mangerait à jamais le rang du dessous — c'est l'écueil que Yuno a documenté
+  avec sa fournée du lundi. **Un virement, lui, arrive** : la carte disparaît
+  quand l'argent est là. Les engagements gardent leur **porte**, qui est leur
+  juste place — une liste se parcourt, elle n'interrompt pas.
+  **Elle ne compte aucun retard** : un engagement n'a pas d'échéance, seulement
+  un moment de saison. Le club n'a pas de mauvais payeurs, il a des virements qui
+  n'ont pas encore été faits.
+- **LE RANG 5 N'EST JAMAIS MUET**, et c'est sa fonction — le dernier rang d'une
+  cascade ne peut pas se taire, sinon l'accueil se tait aussi. C'est le rôle que
+  « l'idée du jour » tient chez Yuno. **Ce qu'il dit est le fait du club**, et il
+  a fallu le mesurer pour le voir : le calendrier éditorial montre les parutions
+  une à une, il ne dit jamais que la chaîne est bouchée à son premier cran.
+  *Aucun reproche, aucune couleur : « 6 posées, aucune encore prête » est un
+  constat.*
+- **Le dessin est écrit UNE fois** (`carteChaude`) : il vivait en double, mot
+  pour mot, dans la réunion du moment et le temps fort ; il sert cinq rangs
+  maintenant.
+- **SA PORTE EST UNE TUILE** (demande de Noé, en deux temps : « un bouton de
+  couleur pour la tuile dynamique du haut », puis « non, un bouton sous forme de
+  tuile dans le même style que ce qu'on fait chez Yuno »). C'est le dessin des
+  **portes du site** (`.fch-hall-porte`), en compact — celui des deux halls et
+  des trois portes du jour, quarante pixels plus bas : *une porte ne se dessine
+  pas deux fois*, et la rangée du dessous l'aurait sinon contredite à l'écran.
+  Elle est **un cran plus claire que la carte** — deux surfaces `--fond-carte` ne
+  se distinguent pas, c'est la règle du hub pour une tuile posée dans une autre.
+  *Ce qu'elle remplace : un `lien-externe` pleine largeur, son filet, son titre et
+  sa ligne de service — **trois lignes et 70 px pour un seul geste, soit autant
+  que la carte qu'elle ferme**. Un aplat d'accent a été essayé et écarté par Noé :
+  une pastille jaune pleine criait plus fort que la carte qui la porte.* Le
+  service part dans le `title`, où il ne coûte pas une ligne.
+- *La cascade est exportée (`carteDuMoment`) et **ses neuf cas sont éprouvés hors
+  écran**, avec des états factices : cinq rangs qui se bousculent, c'est
+  exactement le genre de règle qu'on ne croit pas sur parole.*
+
+#### LES TROIS PORTES DU JOUR
+
+**LE DESSIN EST CELUI DES DEUX HALLS DU SITE** (`porte`, js/partenaires-suivi.js)
+et il n'est **pas recopié** : une porte ne se dessine pas deux fois.
+
+| Porte | Elle monte quand | Ce qu'elle montre |
+|---|---|---|
+| **Nos engagements** | il en reste à tenir | « 65 à faire », et les trois chantiers qui pèsent le plus |
+| **La com' de la semaine** *(le trou)* | **rien n'est programmé à 7 jours** | la frise des sept jours |
+| **Les réunions** | une réunion approche, ou une action attend | la prochaine, et ce qui reste à tenir |
+| **Les évènements** | un évènement de saison à six semaines | le prochain, son lieu, sa com écrite |
+| **La com' de la semaine** *(ce qui part)* | la semaine porte des parutions | la même frise |
+| **Les évènements** | *toujours* | *idem* |
+
+- **Une porte qui n'a rien à dire ne monte pas** : la rangée du jour est un
+  classement, pas un inventaire. **Le test porte sur les DONNÉES, jamais sur la
+  vitrine** — la frise se dessine même vide, c'est tout son intérêt, elle ne peut
+  donc pas servir de test à la porte qu'elle habille.
+- **Jamais deux portes de la même rubrique**, sinon un jour chargé aux
+  partenaires mangerait la rangée.
+- **Les évènements ferment la réserve** : la saison en compte neuf, c'est la
+  seule porte qui ait toujours quelque chose à montrer, donc celle qui ne doit
+  jamais passer devant une urgence.
+- **La com' figure deux fois, et les deux s'excluent** : une semaine SANS rien de
+  programmé est une information qui passe devant presque tout — c'est le trou
+  qu'un calendrier éditorial est fait pour montrer —, une semaine pleine n'est
+  qu'un rappel. Même porte, deux rangs.
+- **LA FRISE VIENT DE `js/gabarits.js`**, empruntée à l'accueil Yuno et **non
+  recopiée** — elle y a déménagé le même jour. Elle se peint à `--accent` sans
+  rien savoir de son site : doré chez Yuno, **le jaune du club ici**. *Mesuré :
+  lit à 7 %, marque pleine, aujourd'hui à 16 %.*
+- **LA DATE D'UN ÉVÈNEMENT DE SAISON SE LIT, ELLE N'EST PAS STOCKÉE DEUX FOIS**
+  (`dateDeLEvenement`, js/evenements-club.js). La table les écrit en toutes
+  lettres — c'est la forme du planning officiel et c'est ainsi qu'elles
+  s'affichent ; l'accueil a besoin de savoir laquelle approche, on lit donc la
+  chaîne plutôt que d'ajouter une colonne ISO à côté. **Deux écritures d'une même
+  date finissent toujours par se contredire.** Une date incertaine prend son
+  **premier** jour : se tromper d'une semaine en avance sur un loto est sans
+  conséquence, l'annoncer une semaine trop tard l'est. *Les neuf dates sont
+  vérifiées hors écran.*
+- *`portesDuJour` est exportée et son classement est éprouvé hors écran, pour la
+  même raison que la cascade.*
+
+#### « À FAIRE » RESTE UN BLOC, ET IL RESTE COCHABLE
+
+**Décision de Noé**, là où Yuno en a fait une porte. C'est juste : le site est
+l'**atelier** du club, et cocher une tâche en sortant du stade est le geste pour
+lequel on l'ouvre.
+
+**TROIS LIGNES AU LIEU DE SEPT.** Mesuré, il occupait 644 px — un tiers d'une
+page qui en faisait 2 018 : c'était le mur que l'espace Tâches a appris à ne pas
+dresser. **Le reste se déplie, rien n'est caché** ; c'est la place qui change de
+propriétaire. La règle d'**une seule occurrence par série** (`separerLesSeries`,
+27 août) ne bouge pas, ni le geste — `cocherDepuisTableauDeBord`, qui ouvre la
+fenêtre de durée et écrit la victoire.
+
+**LA TUILE ENTIÈRE MÈNE AUX TÂCHES** (demande de Noé : « simplement appuyer sur
+la tuile des tâches pour aller à toutes les tâches »), et le `lien-externe` qui
+la fermait est parti avec — il pesait trois lignes pour dire ce qu'elle fait
+désormais d'un doigt.
+
+- **PAS un lien qui enveloppe** : elle porte une quinzaine de contrôles, et un
+  `<button>` dans un `<a>` n'est ni valide ni cliquable. C'est un **écouteur qui
+  se retire** dès que le clic a touché quelque chose qui fait déjà quelque chose,
+  et `GESTES_TUILE` est une liste **explicite** — un sélecteur deviné sur le
+  curseur marcherait ce soir et avalerait silencieusement le prochain contrôle
+  posé sur la tuile. *C'est la mécanique de la tuile d'un partenaire et de celle
+  d'« Aujourd'hui » sur l'accueil du hub ; elle est désormais générale au site
+  (`data-tuile-vers`).*
+- **Le titre porte le lien**, sans en avoir l'air : un écouteur ne se tabule pas,
+  et le clavier doit atteindre ce que la souris atteint.
+- **Une sélection de texte en cours ne navigue pas** : copier un titre n'est pas
+  cliquer dessus.
+- *Vérifié à l'écran : la tuile mène à `#hermitage/taches`, et le rond d'une
+  tâche ouvre la fenêtre de durée **sans** naviguer.*
+
+#### LE CAP EN PIED, ET IL NOMME LA MARCHE SUIVANTE
+
+**POURQUOI EN PIED** : c'est la leçon que le hub a tranchée deux fois — le cap
+passé sous la journée le 13 août, les périodes qui ferment `#objectifs` le 28 —
+*« on relit ce qui cadre quand on lève la tête, pas en ouvrant l'application »*.
+Yuno l'a fait le 15 septembre ; le club suit.
+
+**CE QUI TUE LA FORME D'AVANT, mesuré** : les trois caps du club portent **huit
+jalons dont aucun n'est atteint**. Trois rangées de points éteints, c'est un
+accueil qui s'ouvre sur trois zéros. **La marche à venir s'allume au jaune du
+club et se lit en toutes lettres** (`marquerSuivant`, js/objectifs-commun.js) :
+l'œil tombe sur ce qu'il y a à faire, pas sur ce qui manque. C'est la
+philosophie n° 1 du hub appliquée à un cap qui n'a encore rien franchi.
+
+- **Le compte ne s'écrit que lorsqu'il a quelque chose à dire** — dès qu'une
+  marche est franchie. « 0 sur 4 » ne dirait qu'un manque, et la règle du hub est
+  qu'une série à zéro ne s'affiche pas.
+- **Il mène à `#objectifs/fch`** et non à `#objectifs` : on reste dans le filtre
+  du club — sortir vers les quatre espaces depuis l'accueil du site serait
+  quitter le site pour voir moins précis.
+- **L'option est facultative** : rien ne bouge au tableau de bord du hub ni sur
+  les pages espace, où le cap se lit en balayant quatre espaces d'un coup.
+  *Vérifié : `#dashboard` et `#fch` sont inchangés, aucune marche allumée.*
+
+#### LES VICTOIRES ONT QUITTÉ CET ÉCRAN
+
+Elles étaient du **bilan** sur l'**atelier**, et elles ont déjà deux pages qui
+les portent : **`#fch`**, la page bilan du hub, et **« Le chemin »**, faite pour
+les regarder. C'est la division que le §1 pose lui-même, et Yuno n'en montre pas
+davantage à son accueil. *Décidé sans qu'il le demande, à dire à Noé.*
+
+#### LES LIENS VERS UNE PAGE PÈSENT UN CRAN DE MOINS
+
+**Demande de Noé** : *« les liens vers page ne doivent pas être aussi gros. »*
+Le titre d'un `lien-externe` passe du corps courant à 0,875 rem et sa flèche
+suit : ce sont des **sorties de tuile**, pas des titres de section, et à taille
+égale ils pesaient autant que le contenu qu'ils ferment.
+
+**La règle est portée par le SITE**, jamais par `.lien-externe` : celui-ci sert
+aussi le hub, où rien n'a demandé à rétrécir. *Les deux liens Drive des fiches de
+réunion — « Ouvrir la présentation », « Ouvrir le compte-rendu » — gardent leur
+ligne de service : ils nomment un fichier, ce que leur titre ne dit pas.*
+
+#### LES TUILES DE L'ACCUEIL FLOTTENT
+
+**Demande de Noé** (16 septembre 2026) : *« diminue un peu l'opacité des fonds de
+tuiles dans la page d'accueil, et rajoute une légère ombre portée vers le bas à
+droite. »*
+
+**CE QUE ÇA CHANGE.** Le fond du site est un **dégradé** — il rayonne du bleu vif
+au coin haut droit vers le bleu nuit au coin opposé (§3). Une tuile opaque le
+masque ; une tuile qui le laisse passer **en prend la pente**, et deux tuiles
+éloignées sur l'écran ne se ressemblent plus tout à fait. *C'est le motif du fond
+des tuiles de `#objectifs` teinté à 5 % : à cette dose la nuance ne se nomme pas,
+elle se sent.*
+
+**L'OMBRE EST CE QUI LES DÉCOLLE.** Sans elle, une tuile translucide se lit comme
+un voile POSÉ SUR le fond, pas comme un objet DEVANT lui — c'est exactement
+l'argument de la pastille du dock, la seule autre ombre portée du dépôt : *elle ne
+sépare pas une carte de la page, elle décolle un objet d'un autre.* **Vers le bas
+à droite** parce que la lumière du site vient du coin haut droit, et qu'une ombre
+qui contredit sa source se voit comme une erreur.
+
+- **82 %, et c'est le plus haut des deux crans essayés.** À 72 %, le bleu nuit du
+  pied de page traversait assez pour que deux tuiles d'une même rangée n'aient
+  plus la même valeur — *la page se lisait en diagonale*.
+- **LE CONTRASTE S'AMÉLIORE, et il a été mesuré** : le dégradé qui passe au
+  travers est plus sombre que la tuile, donc l'encre ressort mieux.
+
+  | | texte blanc | encre discrète |
+  |---|---|---|
+  | avant (opaque) | 8,18:1 | 4,72:1 |
+  | après, haut de page | 8,69:1 | **5,01:1** |
+  | après, pied de page | 9,74:1 | **5,62:1** |
+
+- **LE SURVOL EST UNE VITRE, ET IL ASSOMBRIT** — `rgb(255 255 255 / 7%)` : le
+  fond bleu de la tuile **s'efface entièrement**, et il ne reste qu'un voile blanc
+  sur le dégradé de la page. C'est le geste que les portes du site ont toujours
+  porté, et celui que Noé a reconnu : *« j'aime que ça fasse cet effet lorsque
+  l'on passe le doigt dessus. »*
+  - **Il assombrit parce que le dégradé est plus sombre que `--fond-carte`** :
+    une tuile qui le laisse voir ENTIÈREMENT descend en clarté. *Mesuré au milieu
+    de page : 0,0591 contre 0,0709 au repos.*
+  - ⚠️ **UN VOILE POSÉ PAR-DESSUS FAIT L'INVERSE, et le prix est mesurable.** En
+    passant la translucidité, le survol a été réécrit en voile blanc SUR la tuile
+    à 82 % : elle montait à 0,0944 et **l'encre discrète tombait à 4,20:1**, sous
+    le seuil AA. Le survol d'origine la porte à **5,55:1**. *Ne pas le
+    « corriger » : c'est le fond qui s'efface, pas un voile qui s'ajoute.*
+  - **L'ombre reste au survol** : la tuile devient une vitre, l'ombre dit qu'elle
+    est toujours devant la page. Les deux ne se contredisent pas.
+- **LA PORTE D'UNE CARTE CHAUDE N'AJOUTE PAS SON OMBRE** : elle vit dans une tuile
+  déjà translucide, et deux ombres emboîtées à trois pixels l'une de l'autre font
+  une tache, pas un relief. Elle garde son cran d'écart, opaque.
+- **PORTÉE : TOUT LE SITE** (17 septembre 2026, demande de Noé : *« applique ce
+  style aux autres tuiles du site »*). Né à l'accueil la veille, l'effet a été
+  étendu le lendemain — *les portes de l'accueil et celles des halls ne peuvent
+  pas avoir deux apparences.*
+
+  **LE CRITÈRE EST CELUI DU 30 AOÛT** — *une tuile posée dans la page se distingue
+  par sa SURFACE ; le filet ne redevient utile que lorsqu'une tuile est posée DANS
+  une autre* —, et il tranche ici pour une raison mécanique :
+
+  | | ce qu'il y a derrière | ce qu'on fait |
+  |---|---|---|
+  | une tuile **sur la page** | le dégradé | elle le laisse passer, l'ombre la décolle |
+  | une tuile **dans une autre** | sa parente | rien : la transparence ne montrerait rien de plus, et l'ombre ferait une tache à trois pixels d'une autre |
+
+  **Sont retenues** : `.fch-tuile`, `.fch-hall-porte`, `.suivi-bilan-tuile`,
+  `.suivi-chantier`, `.suivi-partenaire`, `.suivi-offre-carte`, `.orga-groupe`,
+  `#orga-resultats`. *Inventorié à l'écran sur les dix-sept pages du site, en
+  comparant chaque surface à celle de son parent.*
+
+  **Sont écartées** : `.ajout-tuile`, la tuile de CAPTURE — *elle ne se pose pas
+  dans la page, elle vole au-dessus d'un fond assombri, et sa présence vient de
+  là* ; les contrôles (`.affichages`, `.cal-fleche`, les champs, les panneaux de
+  choix) ; `.fch-portes .lien-externe`, une navigation de pied ; et tout ce qui
+  vit dans une autre surface.
+
+  - **UNE TUILE DANS UNE TUILE REDEVIENT OPAQUE ET PERD SON OMBRE.** La règle vise
+    des classes, pas des positions : `.fch-tuile` peut vivre dans une `.fch-tuile`,
+    et **deux translucidités superposées donnent une valeur qu'aucune des deux n'a
+    choisie.**
+  - ⚠️ **`#orga-resultats.orga-personnes` ET NON `.orga-personnes`.** La classe est
+    portée par TOUS les conteneurs de portraits d'un organigramme — des flex NUS,
+    sans fond —, et l'écrire seule leur en donnait un : *c'est le rectangle que
+    Noé a vu apparaître entre la tuile d'un groupe et ses photos.* Seul le
+    conteneur des résultats de recherche est une tuile, et il se nomme par son id.
+  - ⚠️ **DEUX SÉLECTEURS PORTENT UNE SPÉCIFICITÉ QU'IL FAUT ÉGALER**, et les deux
+    se sont vus à l'écran — *la tuile portait l'ombre SANS la transparence* :
+    `.bloc li.suivi-partenaire` (0-2-1) et `#orga-resultats` (1-0-0). Chacun a été
+    trouvé en demandant au navigateur quelle règle gagnait, pas « au cas où ».
+
+  *Vérifié : **98 tuiles sur 21 pages**, aucune sans sa transparence, aucun
+  conteneur de photos avec un fond, aucun débordement, aucune erreur console.*
+
+#### LA MISE EN PAGE
+
+Sur ordinateur, la carte chaude et le cap prennent **les deux colonnes**, et pour
+des raisons opposées : la première est la seule **interruption** de la page —
+elle se lit avant qu'on ait choisi de regarder quoi que ce soit ; le second
+**ferme**, et un pied qui ne tiendrait qu'une moitié d'écran ne fermerait rien.
+Entre les deux, **le travail à gauche et les propositions à droite**. Tout
+s'empile sur téléphone, dans cet ordre.
+
+### LE SITE MONTE LES ÉCRANS DU CAP — `#hermitage/cap`, `/objectif/<id>`, `/projet/<id>`, `/taches`
+
+**Demande de Noé** (16 septembre 2026) : *« il faut d'ailleurs créer une page
+tâches dans le site FCH comme c'est fait sur Yuno, et une page objectif, et
+projet, comme chez Yuno. »*
+
+**CE SONT LES MODULES DU HUB, PAS DES COPIES** — `js/objectifs.js`,
+`js/objectif.js`, `js/projet.js`, `js/taches.js`, soit 4 400 lignes qu'on ne
+recopie pas. Et surtout : **deux galeries de caps finiraient par ne plus montrer
+la même chose**, et c'est toujours celle qu'on regarde le moins qui ment. Le site
+ne redessine RIEN — il pose sa barre, un hôte, son pied, et laisse le module
+écrire dedans. C'est exactement ce que Yuno a fait la veille.
+
+**LA DA SUIT TOUTE SEULE.** Ces pages sont écrites en variables (`--fond-carte`,
+`--accent`, `--police-titre`), et `body[data-espace="hermitage"]` les a déjà
+remplacées par celles du club. *Vérifié : sur `#hermitage/projet/<id>`, le fond
+des tuiles vaut `#324c8f`, l'accent `#f4c900`, la police Gilroy — le bleu du
+club, son jaune, sa typo, sans une ligne de CSS en plus.*
+
+| Adresse | Ce qu'on y trouve |
+|---|---|
+| `#hermitage/cap` | les trois étages — caps, projets, périodes |
+| `#hermitage/cap/caps` · `/projets` | un seul étage |
+| `#hermitage/objectif/<id>` | la page d'un cap : ses jalons, son calendrier, ses projets |
+| `#hermitage/projet/<id>` | la page d'un projet : ses étapes, son calendrier, ses tâches |
+| `#hermitage/taches` | toutes les tâches du club |
+
+- **L'IDENTIFIANT VIT UN CRAN PLUS BAS.** Le hub range le sien au niveau de la
+  vue (`#objectif/<id>`) ; le site a déjà consommé le premier segment pour se
+  nommer. C'est le routeur du site qui traduit, **plutôt que d'apprendre une
+  seconde forme d'adresse à quatre modules qui n'ont pas à connaître le site.**
+- **LES LIENS NE SORTENT JAMAIS DU SITE** (`js/cap-adresses.js`). La base se
+  déduit de l'adresse courante et ne se déclare pas : une VARIABLE de module
+  serait partagée par les deux montages — le hub et les sites vivent dans la même
+  page —, et le dernier monté déciderait pour l'autre. *Vérifié : les dix liens de
+  la galerie montée dans le club pointent tous `#hermitage/…`, et la page d'un
+  projet revient sur `#hermitage/cap/projets`.*
+- **LE TEST PORTE SUR LE PREMIER SEGMENT**, pas sur un préfixe : `#hermitagexyz`
+  n'est pas le site. *Éprouvé hors écran (`tools/essai-cap-adresses.mjs`), avec le
+  hub, les deux sites et ce cas piège.*
+- **DEUX GARDES, ET LA SECONDE EST LA PLUS IMPORTANTE** (`dansUnSite`). La page
+  d'un objectif et celle d'un projet posent le titre du navigateur **et**
+  `body.dataset.espace`, pour prendre la couleur de leur espace. Depuis un site,
+  la seconde remplacerait `hermitage` par `fch` : **le site perdrait son bleu, sa
+  police et son dock d'un coup**, au milieu d'une navigation. *Mesuré avant
+  correction : `--fond-carte` retombé à `#212426`, le sombre du hub.* La garde
+  existait pour Yuno seul depuis le 15 septembre ; une seule fonction la porte
+  maintenant, pour que le troisième site n'ait rien à réapprendre.
+- **LA PAGE DES TÂCHES NE PARLE QUE DU CLUB** : « Tout ce qu'il y a à faire pour
+  FC Hermitage », sans la rangée de filtres par espace — offrir « Yuno » depuis le
+  site du club serait une porte vers un ailleurs qu'il n'ouvre jamais. **Le nom
+  vient de l'espace filtré**, il ne s'écrit pas en dur : une phrase qui nommerait
+  Yuno depuis le club est le genre de faute qu'on ne voit que sur l'écran qu'on
+  regarde le moins.
+- **LE CAP NE REDIT PAS SON ESPACE** : « Mon cap — FC Hermitage » répétait ce que
+  la barre, le fond et la couleur disent déjà.
+
+#### LES NOMS, DANS LE MENU ET DANS LA BARRE
+
+**Quatre entrées sous « Accueil »** — *Le cap · Ses objectifs · Ses projets ·
+Ses tâches* —, avant « Le calendrier ». Les deux étages sont deux entrées, comme
+chez Yuno : **deux liens qui mèneraient tous deux à `#hermitage/cap` seraient
+deux liens identiques**, et trois liens identiques ne sont pas un menu.
+
+- **LA BARRE NOMME L'ÉTAGE** (`ETAGES_DU_CAP`) : sans cela, « Ses objectifs » et
+  « Ses projets » ouvriraient deux écrans coiffés du même « Le cap » — le défaut
+  des *trois noms pour une page*, corrigé dans le hub le 28 août. **Ce sont les
+  mots du menu, à la lettre.**
+- **LES DEUX PAGES À IDENTIFIANT N'ONT PAS D'ENTRÉE DE MENU** : un menu ne nomme
+  pas une page dont l'adresse porte un identifiant. On y entre depuis la galerie
+  ou depuis le cap gravé de l'accueil, et la barre les dit génériquement — *Un
+  objectif*, *Un projet*. **Le `h1` du module, juste en dessous, porte le nom du
+  cap ou du projet, et lui n'est pas masqué** : un nom précis dans la barre le
+  redirait quarante pixels plus haut.
+- **LE `h1` EST TU SUR LA GALERIE ET SUR LES TÂCHES**, où il n'est QUE le nom de
+  la page — la barre le dit déjà. C'est la règle de Yuno, et **sa feuille de style
+  la porte déjà pour les deux sites** : rien à réécrire.
+- **LE CAP GRAVÉ DE L'ACCUEIL MÈNE À `#hermitage/cap`** et non plus à
+  `#objectifs/fch` : depuis que le site a sa galerie, sortir pour la voir serait
+  quitter le site pour montrer ce que le site montre.
 
 #### CE QUE LA RESTRUCTURATION DU 30 AOÛT A CORRIGÉ
+
+> **Historique.** La colonne « Après » de son tableau décrit la page telle qu'elle
+> a vécu du 30 août au 16 septembre. Ce qu'elle a posé n'a pas été défait — les
+> tâches sur l'atelier, les objectifs qui s'en vont, la coupe des séries : tout
+> cela tient. C'est la FORME qui a changé, et le §ci-dessus fait foi.
 
 Demande de Noé : « restructure la page d'accueil du site fch ». Le défaut était
 structurel, et c'est **la spec elle-même qui le disait** (§1) : *« le site est
@@ -272,6 +660,90 @@ passe avant — une seule nature cochée, c'est elle qu'on vient poser.
 Le site a gagné **le « + » flottant** le même jour (décision de Noé) : la
 tuile du hub, ouverte sur la nature Événement — une réunion se note en sortant
 de la salle. La pastille « Réunion » y est toujours offerte.
+
+### `#hermitage/creer` — un HALL (refondu le 16 septembre 2026)
+
+**Demande de Noé** : *« fais une refonte de la page communication du FCH, en
+ajoutant un lien ou une page pour gérer la communication des évènements. »*
+
+**LE DÉFAUT.** La page portait trois prochaines publications, puis **quatre
+rectangles avec un nom et une flèche** — La saison, Le calendrier éditorial, La
+banque d'idées, Les publications parues. *Quatre lignes de menu redessinées, et
+le menu est déjà à un geste.* C'est ce que les deux autres halls du site ont
+corrigé le matin même, et la règle du hall de `#perso` vaut ici mot pour mot :
+**une porte doit dire quelque chose qu'on IGNORE avant de l'ouvrir.**
+
+**LES CHIFFRES ONT DONNÉ SA FORME À LA PAGE**, et ils se remesurent. Sur
+**79 publications** :
+
+| Ce qui a été mesuré | Ce que ça décide |
+|---|---|
+| **zéro idée sans date** | la banque est STRUCTURELLEMENT vide — sa porte ouvrait sur rien sans le dire |
+| **56 programmées, toutes « à préparer », zéro « à programmer »** | la chaîne est bouchée à son premier cran |
+| **3 séries hebdomadaires portent 48 des 79** | la com du club est CYCLIQUE — le fait que le dossier FCH avait révélé |
+| **27 sans rubrique**, une sur trois | ce qui empêche de compter par rubrique, et que « La saison » corrige |
+| **un seul évènement sur neuf a de la com** | et **rien ne menait de la communication vers eux** — le manque que Noé a nommé |
+
+**LE BILAN EN TÊTE, PUIS LE HALL.** Garder le tableau de bord au-dessus des
+portes est la décision que Noé a déjà prise pour les partenaires — *« on garde le
+dashboard de haut de page, c'est très bien »*. On regarde, puis on entre. Le
+dessin est celui du bilan des partenaires (`suivi-bilan`), **emprunté et non
+recopié** : deux tableaux de chiffres dans le même site ne peuvent pas avoir deux
+dessins.
+
+**Quatre chiffres** : les parutions de la semaine · les rythmes qui tournent ·
+les publications parues · ce qui reste sans rubrique. *Le dernier est le seul qui
+compte un manque, et il est là parce qu'il appelle un geste précis — « La
+saison » le range. Aucune couleur, aucun seuil.*
+
+**CINQ PORTES, dans l'ordre de ce qu'on vient faire** — ce qui part, puis les
+deux chantiers, puis ce qu'on relit :
+
+| Porte | Ce qu'elle montre |
+|---|---|
+| **Le calendrier éditorial** | la **frise de la semaine** et les deux prochains titres, avec leur réseau |
+| **Les évènements** | le prochain de la saison, sa date, son lieu, et **combien de publications lui sont écrites** |
+| **La saison** | les rubriques du club, en pastilles |
+| **La banque d'idées** | les deux dernières idées — ou son vide, en toutes lettres |
+| **Les publications parues** | leur nombre, et la dernière parue |
+
+- **LA PORTE DES ÉVÈNEMENTS EST LA DEMANDE**, et son compte est un rapport —
+  « 1/9 » : combien d'évènements ont une com écrite. Ils vivaient sous « Le
+  club », où l'on va voir ce que le club EST ; leur **communication** est un
+  chantier, et elle se prend d'ici.
+  - **C'est une porte du hall, PAS une entrée de menu** : le menu garde « Les
+    évènements » sous « Le club », son rangement du 16 septembre. Deux entrées de
+    menu pour une page, ce seraient deux endroits à tenir d'accord ; une porte
+    dans un hall, c'est justement ce que le second rang permet.
+  - **Elle porte le nom de sa page** — « Les évènements » et non « La com des
+    évènements » : un nom sur la porte et un autre en tête de page, ce sont deux
+    noms pour une page. **C'est le contexte qui dit de quoi on parle** — elle vit
+    dans le hall de la Communication, et son aperçu ne parle que de com.
+  - *Conséquence assumée : on arrive sur une page dont l'onglet du dock est
+    « Club » et dont le retour dit « ← Le club ». C'est son rangement vrai, et le
+    dock dit toujours où l'on EST, pas d'où l'on vient.*
+- **LA FRISE EST CELLE DE L'ACCUEIL** (`vitrineDeLaCom`), empruntée : une vitrine
+  ne se dessine pas deux fois. Elle dit la **forme** de la semaine — où sont les
+  trous —, les deux titres disent **quoi**. Deux lignes au plus : au-delà, la
+  porte redirait la page qu'elle ouvre.
+- **LA SAISON NE COMPTE QUE LES RUBRIQUES ÉDITORIALES.** Une rubrique d'évènement
+  (« Évènement · Concours de pétanque · 26 septembre 2026 ») n'en est pas une :
+  c'est le marqueur qui relie une publication à son évènement, et la porte d'à
+  côté le dit déjà. *Mesuré : elle s'affichait en toutes lettres sur trois lignes
+  et faisait compter quatre rubriques au lieu de trois.* `estRubriqueEvenement`
+  existe exactement pour ça.
+- **LA BANQUE DIT SON VIDE** — « Rien en réserve. Une idée notée ici attend son
+  jour. » C'est une information (elle n'a jamais rien contenu) et une invitation :
+  un vide ouvre une porte, il ne s'excuse pas.
+
+**CE QUI EST PARTI** : l'aperçu des trois prochaines publications et la rangée de
+liens. Le premier disait ce que la porte du calendrier éditorial montre désormais
+— la semaine, ses trous et ses deux prochains titres —, et **deux endroits pour
+une même chose finissent par se contredire**. `portesDuMenu` part avec, faute
+d'appelant ; `portes()` reste, les réunions s'en servent.
+
+*Les quatre sous-pages ne changent pas — elles gardent leur formulaire et leur
+retour « ← Communication ».*
 
 ### `#hermitage/creer` — l'outil phare
 
@@ -1222,6 +1694,92 @@ priorités de saison) avec les tuiles communes `fch-hall`. Mission, valeurs,
 objectifs et projets ont leurs pages. Les 18 objectifs et 28 projets possèdent
 des fiches documentaires reliées ; pas de suivi d'avancement ni d'édition à ce stade.
 Le bloc « Pourquoi cette phrase-là » et le panneau dépliant de l'AG sont retirés.
+
+#### LA FICHE D'UN ÉVÈNEMENT PORTE SON CALENDRIER (16 septembre 2026)
+
+**Demande de Noé** : *« pour les évènements, dans leur page, je dois avoir un
+calendrier sur lequel je peux prévoir la communication. »*
+
+**CE QU'IL RÉPARE.** La page listait ses publications en trois piles — à venir,
+les idées, les parues — et un formulaire pour en ajouter. On y voyait **ce qu'il
+y a**, jamais **quand** : or la com d'un évènement est d'abord une affaire de
+dates — l'annonce trois semaines avant, le rappel la veille, le bilan le
+lendemain. Une date se posait dans un champ, à l'aveugle, sans voir ce qui
+l'entoure.
+
+**C'EST LA PAGE D'UN PROJET, appliquée ici** : une colonne de ce qui attend un
+jour, un calendrier à côté, et l'on glisse de l'une à l'autre. Même dessin, même
+geste, mêmes classes — *un geste qui existe ne se réinvente pas.* Deux colonnes
+à partir de 1000 px, comme la page d'un cap et pour la même raison : il n'y en a
+que deux, donc 18 rem de moins à trouver.
+
+- **LE CALENDRIER S'OUVRE SUR LE MOIS DE L'ÉVÈNEMENT**, et c'est tout son
+  intérêt : la com du Tournoi Rose se prépare autour du 17 octobre, pas autour
+  d'aujourd'hui. *Sans ça, on arriverait sur le mois courant et il faudrait
+  avancer de trois crans avant de voir la date qu'on vient préparer.* L'ancre ne
+  se repose **qu'en changeant d'évènement** : revenir sur la fiche après avoir
+  promené la grille ne défait pas ce qu'on regardait.
+- **SA VUE ET SON ANCRE SONT À LUI**, jamais celles de la page Calendrier :
+  programmer la pétanque ne doit pas déplacer le mois qu'on regardait dans
+  l'autre onglet. C'est déjà la règle de la page d'un projet. *Vérifié : après un
+  passage sur octobre depuis la fiche, `#hermitage/calendrier` est resté sur
+  septembre.*
+- **SEMAINE · MOIS · 3 MOIS.** Pas d'année — la com d'un évènement se joue sur
+  quelques semaines autour de lui, et une case par semaine ne saurait pas dire
+  lequel des trois posts du samedi on regarde. Pas d'agenda non plus : il
+  répéterait la liste qui vit juste à côté.
+- **LE JOUR DE L'ÉVÈNEMENT EST LE PIVOT**, posé sur sa propre grille en **tuile
+  pleine à l'accent**, encre sombre. C'est autour de lui qu'on place tout le
+  reste, et il doit se voir avant tout. *Le jaune parce que c'est la seule
+  couleur qui ressorte sur ce bleu (§3) — et que la couleur d'espace du club EST
+  ce bleu : une tuile bleue sur fond bleu n'aurait rien dit.* **Il ne se coche ni
+  ne se glisse** : c'est une date du planning officiel, pas une ligne de base —
+  `barreDeLEvenement` ne lui donne pas de `source`, et `brancherDeplacement`
+  abandonne sans elle.
+  - *Il faut le fabriquer à la main :* `assemblerCalendrier` ne connaît que les
+    tables du hub, et un évènement de saison vit dans une table **écrite**
+    (`EVENEMENTS_CLUB`). Sans lui, on programmerait autour d'un jour qu'on ne voit
+    pas.
+- **LA COLONNE NE PORTE QUE LES IDÉES** — celles de cet évènement, sans date. Une
+  publication déjà datée est **sur** la grille ; la redire dans la colonne ferait
+  deux endroits pour une même chose. **Les idées ont donc quitté la liste du
+  bas**, qui ne garde que ce qui est daté et ce qui est paru.
+- **DEUX CHEMINS POUR POSER, et c'est la règle du hub** : on **glisse** une tuile
+  sur un jour à la souris ; **au doigt on la choisit, puis on touche le jour** —
+  sur une liste verticale, un glissement ne se distingue pas d'un défilement. Un
+  second appui repose l'idée : *un choix qu'on ne peut pas défaire est un piège.*
+  Les jours s'allument tant qu'on tient quelque chose.
+- **UN JOUR TOUCHÉ FAIT DEUX CHOSES, jamais les deux à la fois** : il POSE l'idée
+  qu'on a en main s'il y en a une, sinon il OUVRE la tuile de capture — en nature
+  **publication**, et **déjà rattachée à l'évènement**. C'est la règle de « Ma
+  semaine », au mot près, et celle du « + » de la page d'un projet : *ce qu'on
+  note depuis la page d'une chose sert cette chose.*
+- **LA RUBRIQUE SE POSE À L'ÉCRITURE, PAS DANS LA TUILE.** Celle-ci n'a pas de
+  champ rubrique, et lui en ajouter un pour ce seul besoin l'aurait posé aux
+  quatre espaces — c'est déjà l'argument qui a tenu « La saison » hors du « + »
+  le 29 août. **C'est l'écran qui sait ce qu'il crée.** *Il a fallu ajouter la
+  colonne à `poserAuCalendrier` : elle ne recopie que ce qu'on lui nomme, et sans
+  cette ligne la rubrique serait partie à la poubelle sans erreur ni signe — le
+  piège qui a fait naître une parution rattachée à rien chez Yuno la veille.*
+- **L'écriture est optimiste** : l'idée quitte la colonne et apparaît sur la
+  grille sans attendre l'aller-retour ; si elle échoue, l'état d'avant revient et
+  une ligne le dit.
+
+**LA MÉCANIQUE DU GLISSEMENT A DÉMÉNAGÉ DANS `js/calendrier-commun.js`**
+(`brancherPriseEnMain`). Elle était écrite **trois fois**, mot pour mot — « Ma
+semaine », la page d'un projet, celle d'un objectif —, et cette page en aurait
+fait un quatrième exemplaire : cent cinquante lignes recopiées, c'est-à-dire la
+divergence qu'on passe ensuite à rattraper. *Les trois écrans d'origine n'ont pas
+été touchés — ils tournent sur leur copie, et les faire basculer est un chantier
+à part.*
+
+> **Le piège de nommage, payé une ONZIÈME fois.** La section du calendrier s'est
+> d'abord appelée `.evenement-grille` — un nom **déjà pris par la fiche d'un
+> moment du site Yuno**, dans `css/yuno.css`, *chargée sur les trois pages*. Elle
+> en héritait `grid-template-columns: auto minmax(0, 1fr)` : **mesuré, la barre de
+> période écrasée à 145 px dans une section de 743, et son contenu débordant de la
+> page de 107 px.** Elle s'appelle `.evenement-calendrier`. *Le grep de trois
+> secondes n'est toujours pas facultatif, et il doit couvrir les trois feuilles.*
 
 La rubrique Club inclut `#hermitage/evenements` et neuf fiches de saison issues
 du planning fourni. Le loto et la matinée saucisses conservent leurs dates

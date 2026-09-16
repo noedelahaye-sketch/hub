@@ -1761,6 +1761,108 @@ export function viserLeJour(section, cle) {
   }
 }
 
+// GLISSER UNE LIGNE D'UNE COLONNE VERS UN JOUR (16 septembre 2026).
+//
+// POURQUOI ELLE VIT ICI. Ce geste était écrit TROIS FOIS, mot pour mot — « Ma
+// semaine », la page d'un projet, celle d'un objectif — et la page d'un
+// évènement du club en aurait fait un quatrième. Cent cinquante lignes
+// recopiées, c'est la divergence qu'on passe ensuite à rattraper : *un jour l'une
+// des quatre cessera d'avaler le clic qui suit un glissement, et ça ne se verra
+// que sur l'écran qu'on regarde le moins.* Les briques qu'elle assemble
+// (`prendreEnMain`, `suivreLaMain`, `jourSousLePoint`, `viserLeJour`) étaient
+// déjà communes ; il ne manquait que le geste.
+//
+// À LA SOURIS SEULEMENT, et c'est la règle du hub depuis « Ma semaine » : sur une
+// liste verticale, un glissement au doigt ne se distingue pas d'un défilement.
+// Le toucher a son chemin à lui — on choisit la ligne, puis on touche le jour —,
+// et il vit dans l'écran, qui seul sait ce qu'il tient en main.
+//
+// `quand` dit ce qui se glisse : l'attribut est posé par l'écran sur ce qui PEUT
+// se poser, et lui seul — une étape franchie ou une tâche faite ne l'ont pas,
+// puisque leur ligne n'affiche plus d'échéance et qu'un glissement y écrirait une
+// date qu'on ne verrait pas changer.
+export function brancherPriseEnMain(section, poser, { selecteur = '[data-poser]' } = {}) {
+  let prise = null;
+
+  const lacher = () => {
+    prise?.ligne.classList.remove('en-deplacement');
+    prise?.fantome?.remove();
+    viserLeJour(section, null);
+    prise = null;
+  };
+
+  section.addEventListener('pointerdown', (evenement) => {
+    const ligne = evenement.target.closest(selecteur);
+    if (!ligne || evenement.pointerType === 'touch') return;
+    // Le point d'une étape, le cercle d'une tâche, le menu à trois points : ce
+    // sont des gestes à eux, et les saisir comme une poignée avalerait leur clic
+    // au premier tremblement de main.
+    if (evenement.target.closest('button:not([data-choisir])')) return;
+
+    evenement.preventDefault();
+    prise = {
+      ligne,
+      cle: ligne.dataset.poser,
+      x: evenement.clientX,
+      y: evenement.clientY,
+      bouge: false,
+      fantome: null,
+      pointeur: evenement.pointerId,
+    };
+  });
+
+  section.addEventListener('pointermove', (evenement) => {
+    if (!prise) return;
+
+    if (!prise.bouge) {
+      // Quelques pixels de tolérance : un clic tremblant reste un clic, et c'est
+      // lui qui choisit la ligne.
+      if (Math.hypot(evenement.clientX - prise.x, evenement.clientY - prise.y) < 5) return;
+      prise.bouge = true;
+      prise.ligne.classList.add('en-deplacement');
+      prise.fantome = prendreEnMain(prise.ligne, evenement.clientX, evenement.clientY);
+      try {
+        prise.ligne.setPointerCapture(prise.pointeur);
+      } catch {
+        // Une capture ratée ne doit pas emporter le glissement : il marche
+        // encore, il perd seulement le suivi hors de la ligne.
+      }
+    }
+
+    suivreLaMain(prise.fantome, evenement.clientX, evenement.clientY);
+    viserLeJour(section, jourSousLePoint(evenement.clientX, evenement.clientY));
+  });
+
+  section.addEventListener('pointerup', (evenement) => {
+    if (!prise) return;
+
+    const { ligne, cle, bouge, pointeur } = prise;
+    try {
+      ligne.releasePointerCapture(pointeur);
+    } catch {
+      // Le pointeur n'était plus à capturer : rien à relâcher.
+    }
+    const arrivee = jourSousLePoint(evenement.clientX, evenement.clientY);
+    lacher();
+
+    if (!bouge) return;
+
+    // UN VRAI GLISSEMENT NE DOIT PAS CHOISIR LA LIGNE DERRIÈRE LUI : on avale le
+    // clic qui suit, et lui seul. Le désarmement différé est une ceinture, pour
+    // que le piège ne reste pas tendu si aucun clic ne vient.
+    const avaler = (clic) => {
+      clic.stopPropagation();
+      clic.preventDefault();
+    };
+    section.addEventListener('click', avaler, { capture: true, once: true });
+    setTimeout(() => section.removeEventListener('click', avaler, { capture: true }), 400);
+
+    if (arrivee) poser(cle, arrivee);
+  });
+
+  section.addEventListener('pointercancel', lacher);
+}
+
 // `zones` : des cibles de dépôt HORS de la grille (30 août 2026). La page de
 // programmation s'en sert pour son vivier — y ramener une barre déprogramme la
 // tâche. Chacune est un `{ selecteur, quand }` ; sans elles, rien ne change du
@@ -3890,8 +3992,15 @@ export async function poserAuCalendrier(champs, { espaceParDefaut = 'photo' } = 
       recurrence: (champs.debut && champs.recurrence) || null,
       recurrence_fin: (champs.debut && champs.recurrence && champs.recurrence_fin) || null,
       projet_id: champs.projet_id || null,
-      // Les deux pastilles de Yuno. Le hub ne les offre pas : `champs` ne les
-      // porte alors pas, et les colonnes restent nulles.
+      // LA RUBRIQUE VIENT DE L'ÉCRAN, jamais de la tuile (16 septembre 2026) :
+      // celle-ci n'a pas de champ rubrique — lui en ajouter un pour ce seul
+      // besoin l'aurait posé aux quatre espaces —, mais la fiche d'un évènement
+      // du club SAIT que ce qu'on y pose sert cet évènement, et l'ajoute aux
+      // champs avant l'envoi. Sans cette ligne, elle partirait à la poubelle sans
+      // erreur ni signe : `creerPublication` ne recopie que ce qu'on lui nomme,
+      // et c'est le piège qui a fait naître une parution rattachée à rien chez
+      // Yuno la veille.
+      rubrique: champs.rubrique?.trim() || null,
       pilier: champs.pilier ? Number(champs.pilier) : null,
       notes: champs.notes?.trim() || null,
     });

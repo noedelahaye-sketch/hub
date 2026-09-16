@@ -35,7 +35,7 @@
 // reste facultative : un découpage sans jour est un découpage, pas un retard.
 
 import * as api from './api.js';
-import { versLaGalerieDuCap, dansLeSiteYuno } from './cap-adresses.js';
+import { versLaGalerieDuCap, dansUnSite } from './cap-adresses.js';
 import { avanceeDuProjet, mouvementDuProjet } from './orientation.js';
 // LE DESSIN VIENT DE LA GALERIE, il ne se recopie pas : la jauge d'un projet
 // doit dire la même chose sur les deux écrans, sans quoi c'est celui qu'on
@@ -740,7 +740,7 @@ export default {
       // site — le fond chaud, le doré, Canela. L'écrire à « photo » ici aurait
       // fait revenir l'habillage du hub par-dessous, et le titre de l'onglet
       // dirait « … — Hub » au milieu du site.
-      if (dansLeSiteYuno()) return;
+      if (dansUnSite()) return;
       document.title = `${etat.projet.nom} — Hub`;
       document.body.dataset.espace = etat.projet.espace;
     };

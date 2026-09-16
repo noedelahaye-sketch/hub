@@ -73,26 +73,69 @@ export function construireProgression(jalons = [], { marquerSuivant = false } = 
 // identifiant. Yuno s'en sert pour dire les euros de « Rembourser mon
 // matériel » — les jalons y disent le chemin, les euros disent l'argent, et les
 // deux se lisent au même endroit (demande de Noé, 26 août 2026).
-export function construireCapGrave(objectifs, { montrerEspace = false, mesures = {} } = {}) {
+// `marquerSuivant` : la marche à venir s'allume, et la ligne du dessous la NOMME.
+// C'est la réponse au défaut que l'accueil du FCH a montré le 16 septembre 2026,
+// mesuré avant d'y toucher : ses trois caps portent HUIT jalons dont AUCUN n'est
+// atteint — trois rangées de points vides l'une sous l'autre, c'est-à-dire un
+// accueil qui s'ouvre sur trois zéros. Yuno avait tranché la même chose le
+// 15 septembre pour ses gravures : **on ne montre jamais un pourcentage, on nomme
+// la marche suivante et on l'allume.** L'œil tombe sur ce qu'il y a à faire, pas
+// sur les sept qui manquent.
+//
+// Il est FACULTATIF, comme celui de `construireProgression` et pour la même
+// raison : rien ne bouge là où le compte suffit — le tableau de bord du hub et
+// les pages espace, où le cap est lu en balayant quatre espaces d'un coup.
+//
+// `adresse` : le cap gravé menait toujours à `#objectifs`, l'adresse du hub. Les
+// deux sites ont désormais la leur (`#hermitage/…`, `#yuno/cap`), et une porte
+// qui sort du site pour montrer ce que le site sait montrer est une porte de
+// trop.
+export function construireCapGrave(
+  objectifs,
+  { montrerEspace = false, mesures = {}, marquerSuivant = false, adresse = '#objectifs' } = {},
+) {
   const colonnes = objectifs
-    .map((objectif) => colonne(objectif, montrerEspace, mesures[objectif.id]))
+    .map((objectif) => colonne(objectif, montrerEspace, mesures[objectif.id], marquerSuivant))
     .join('');
-  return `<a class="cap-grave" href="#objectifs" aria-label="Voir tous tes objectifs">${colonnes}</a>`;
+  return `<a class="cap-grave" href="${adresse}" aria-label="Voir tous tes objectifs">${colonnes}</a>`;
 }
 
 // Aller voir ses objectifs ne contredit pas le « rien ne s'y touche » du cap
 // gravé : y aller n'est pas le modifier. Rien ici ne coche ni n'enregistre.
-function colonne(objectif, montrerEspace, mesure) {
+function colonne(objectif, montrerEspace, mesure, marquerSuivant = false) {
   const jalons = [...(objectif.jalons ?? [])].sort((a, b) => (a.ordre ?? 0) - (b.ordre ?? 0));
   const atteints = jalons.filter((jalon) => jalon.atteint).length;
+  // La MÊME marche que celle que la ligne du dessous nomme : une seule recherche,
+  // donc pas de risque que le point allumé et le titre écrit désignent deux
+  // jalons différents. C'est la précaution déjà prise dans `construireProgression`.
+  const prochain = jalons.find((jalon) => !jalon.atteint);
 
   // Les jalons se réduisent à leur compte : des points, pleins ou vides. Leurs
-  // titres et leurs dates appartiennent à #objectifs.
+  // titres et leurs dates appartiennent à #objectifs — sauf celui qui vient,
+  // quand l'écran le demande.
   const points = jalons.length
     ? `<span class="cap-jalons" role="img"
          aria-label="${atteints} jalon${atteints > 1 ? 's' : ''} sur ${jalons.length}">${jalons
-           .map((jalon) => `<i${jalon.atteint ? ' class="atteint"' : ''}></i>`)
+           .map((jalon) => {
+             const classes = [
+               jalon.atteint ? 'atteint' : '',
+               marquerSuivant && jalon === prochain ? 'suivant' : '',
+             ]
+               .filter(Boolean)
+               .join(' ');
+             return `<i${classes ? ` class="${classes}"` : ''}></i>`;
+           })
            .join('')}</span>`
+    : '';
+
+  // ELLE NOMME LA MARCHE, ELLE NE COMPTE PAS LE RESTE : « Poser les rubriques »
+  // dit quoi faire, « 0 sur 4 » ne dit qu'un manque. Le compte ne s'écrit que
+  // lorsqu'il a quelque chose à dire, c'est-à-dire dès qu'une marche est
+  // franchie — c'est la règle du hub, une série à zéro ne s'affiche pas.
+  const suite = marquerSuivant && prochain
+    ? `<span class="discret cap-suivant">${
+        atteints ? `<span class="chiffre">${atteints}</span>/<span class="chiffre">${jalons.length}</span> · ` : ''
+      }${echapper(prochain.titre)}</span>`
     : '';
 
   return `
@@ -106,6 +149,7 @@ function colonne(objectif, montrerEspace, mesure) {
       }
       <p class="cap-titre">${echapper(objectif.titre)}</p>
       ${points}
+      ${suite}
       ${mesure ? `<span class="cap-mesure">${mesure}</span>` : ''}
       ${
         objectif.echeance

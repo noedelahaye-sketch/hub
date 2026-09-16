@@ -890,7 +890,7 @@ export const GROUPES = [
       "cedric"
     ],
     "type": "bureau",
-    "aide": "Projet du club, décisions et coordination"
+    "aide": ""
   },
   {
     "id": "secretariat",

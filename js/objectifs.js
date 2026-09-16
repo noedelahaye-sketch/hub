@@ -37,7 +37,7 @@
 // ouvrant l'application. Et elles ne préviennent de rien : voir `tuilePeriode`.
 
 import * as api from './api.js';
-import { versLObjectif, versLeProjet, dansLeSiteYuno } from './cap-adresses.js';
+import { versLObjectif, versLeProjet, dansUnSite } from './cap-adresses.js';
 // `tensionDeLaPeriode` n'est plus appelée ici : le hub ne prévient plus d'un
 // dépassement voulu (28 août 2026). Elle reste entière dans orientation.js —
 // c'est la règle du jeu, et le diagnostic s'en sert.
@@ -1019,12 +1019,13 @@ function etageCaps() {
 
 function squelette() {
   const vue = etat.vue in VUES ? etat.vue : null;
-  // LE NOM DE L'ESPACE NE SE DIT PAS DANS SON PROPRE SITE (15 septembre 2026) :
-  // « Mon cap — Yuno » chez Yuno répétait ce que toute la page dit déjà — la
-  // barre, le fond, le doré. Dans le hub il reste nécessaire : c'est ce qui
-  // distingue la galerie filtrée de la galerie entière.
+  // LE NOM DE L'ESPACE NE SE DIT PAS DANS SON PROPRE SITE (15 septembre 2026 pour
+  // Yuno, le 16 pour le club) : « Mon cap — Yuno » chez Yuno, « — FC Hermitage »
+  // au club, répète ce que toute la page dit déjà — la barre, le fond, la
+  // couleur. Dans le hub il reste nécessaire : c'est ce qui distingue la galerie
+  // filtrée de la galerie entière.
   const de =
-    etat.espaceFiltre && !dansLeSiteYuno() ? ` — ${NOMS_ESPACES[etat.espaceFiltre]}` : '';
+    etat.espaceFiltre && !dansUnSite() ? ` — ${NOMS_ESPACES[etat.espaceFiltre]}` : '';
 
   // Une vue seule porte son propre titre : sans lui, « Mes projets » ouvrirait
   // sur une galerie sans nom. Les trois ensemble s'appellent « Mon cap », et ce

@@ -1157,11 +1157,81 @@ body[data-espace="hermitage"] #vue .entrainement-carte h4 {
   border: 0; border-radius: var(--rayon-carte);
 }
 .fch-accueil .titre-section { margin-bottom: var(--espace-12); }
+/* LA PORTE D'UNE CARTE CHAUDE EST UNE TUILE (16 septembre 2026, demande de Noé :
+   « un bouton sous forme de tuile dans le même style que ce qu'on fait chez
+   Yuno »).
+
+   CE QU'ELLE REMPLACE : un `lien-externe` pleine largeur, son filet, son titre et
+   sa ligne de service — trois lignes et 70 px pour un seul geste, *soit autant
+   que la carte qu'elle ferme.*
+
+   C'EST LE DESSIN DES PORTES DU SITE (`.fch-hall-porte`), en compact : même
+   rayon, même fond, même survol, et les trois portes du jour sont quarante pixels
+   plus bas. **Une porte ne se dessine pas deux fois.** *Un aplat d'accent a été
+   essayé et écarté par Noé : une pastille jaune pleine criait plus fort que la
+   carte qui la porte.*
+
+   ELLE EST PLUS CLAIRE QUE LA CARTE, et c'est la règle du hub : une tuile POSÉE
+   DANS une autre ne se distingue plus par sa surface — les deux valent
+   `--fond-carte` —, il lui faut donc son propre cran. C'est la teinte que
+   `.fch-tuile li` emploie déjà à trois pixels de là. */
+.fch-carte-porte {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--espace-12);
+  min-height: 2.75rem; margin-top: var(--espace-16);
+  padding: var(--espace-8) var(--espace-16);
+  color: #fff; text-decoration: none;
+  background: color-mix(in srgb, var(--fond-carte) 82%, #fff);
+  border-radius: 18px;
+}
+.fch-carte-porte:hover { background: rgb(255 255 255 / 14%); text-decoration: none; }
+.fch-carte-porte:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+/* Le nom porte le poids d'un nom de porte (`.fch-hall-nom`), un cran plus bas :
+   c'est un geste, pas un titre de section. */
+.fch-carte-porte-nom { font-weight: 800; font-size: 0.9375rem; line-height: 1.2; }
+/* La flèche prend l'accent, comme celle d'un `lien-externe` : c'est le signe du
+   site pour « ça emmène ailleurs ». */
+.fch-carte-porte-fleche { flex: none; color: var(--accent); font-size: 1.0625rem; }
+
+/* LE TITRE D'UNE TUILE EST SA PORTE (16 septembre 2026, demande de Noé :
+   « simplement appuyer sur la tuile des tâches pour aller à toutes les tâches »).
+   La tuile entière ouvre — par un écouteur, puisqu'elle porte des contrôles et
+   qu'un bouton dans un lien n'est ni valide ni cliquable —, mais **un écouteur ne
+   se tabule pas** : le titre reste un vrai lien pour que le clavier atteigne ce
+   que la souris atteint. Il n'en a pas l'air, et c'est voulu : le geste est la
+   tuile, pas le mot. */
+.fch-titre-porte { color: inherit; text-decoration: none; }
+.fch-titre-porte:hover { color: var(--accent); text-decoration: none; }
+.fch-accueil .fch-tuile[data-tuile-vers] { cursor: pointer; }
+/* LE SURVOL EST UNE VITRE : le fond bleu de la tuile S'EFFACE, et il ne reste
+   qu'un voile blanc sur le dégradé de la page. C'est le geste que Noé a
+   reconnu — *« j'aime que ça fasse cet effet lorsque l'on passe le doigt
+   dessus »* — et c'est celui que les portes du site ont toujours porté.
+
+   IL ASSOMBRIT, il n'éclaircit pas, et c'est ce qui m'avait échappé : le
+   dégradé est plus sombre que `--fond-carte`, donc une tuile qui le laisse voir
+   ENTIÈREMENT descend en clarté. *Mesuré au milieu de page : 0,0591 contre
+   0,0709 au repos.*
+
+   UN VOILE POSÉ PAR-DESSUS FAIT L'INVERSE, et le prix est mesurable : la tuile
+   montait à 0,0944 et **l'encre discrète tombait à 4,20:1**, sous le seuil AA.
+   Le survol d'origine, lui, la porte à **5,55:1**. Ne pas le « corriger ». */
+.fch-accueil .fch-tuile[data-tuile-vers]:hover {
+  background: rgb(255 255 255 / 7%);
+}
+
+/* LES LIENS VERS UNE PAGE PESENT UN CRAN DE MOINS DANS LE SITE (même demande :
+   « les liens vers page ne doivent pas être aussi gros »). Le titre passe du
+   corps courant à 0,875 rem et la flèche le suit : ce sont des SORTIES de tuile,
+   pas des titres de section, et à taille égale ils pesaient autant que le contenu
+   qu'ils ferment. La règle est portée par le SITE — `.lien-externe` sert aussi le
+   hub, où rien n'a demandé à rétrécir. */
 .fch-tuile .lien-externe {
   background: transparent; border: 0; border-radius: 0;
   padding: var(--espace-12) 0 0; margin: var(--espace-16) 0 0;
   border-top: 1px solid var(--bordure);
 }
+.fch-tuile .lien-externe-titre { font-size: 0.875rem; }
+.fch-tuile .lien-externe-fleche { font-size: 1rem; }
 .fch-tuile .lien-externe:hover { color: var(--accent); }
 .fch-tuile li {
   background: color-mix(in srgb, var(--fond-carte) 82%, #fff);
@@ -1172,6 +1242,12 @@ body[data-espace="hermitage"] #vue .entrainement-carte h4 {
   .fch-accueil { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
   .fch-tuile { padding: var(--espace-24); }
   .fch-accueil-moment { grid-column: 1 / -1; }
+  /* LA CARTE CHAUDE ET LE CAP PRENNENT LES DEUX COLONNES, et pour deux raisons
+     opposées : la première est la seule interruption de la page — elle se lit
+     avant qu'on ait choisi de regarder quoi que ce soit ; le second FERME, et un
+     pied qui ne tiendrait qu'une moitié d'écran ne fermerait rien. Entre les
+     deux, le travail à gauche et les propositions à droite. */
+  .fch-accueil > .fch-cap { grid-column: 1 / -1; }
 }
 
 /* Les portes sont des tuiles simples, comme celles du Hub. */
@@ -1509,7 +1585,20 @@ body[data-espace="hermitage"] #vue .suivi-chantier h4 {
   color: #fff; text-decoration: none;
 }
 .fch-hall-illustration { order: -1; }
-.fch-hall-porte:hover { background: rgb(255 255 255 / 7%); text-decoration: none; }
+/* LE SURVOL EST UNE VITRE, ET IL ASSOMBRIT : le fond de la tuile s'efface
+   entièrement, et il ne reste qu'un voile blanc sur le dégradé de la page — qui
+   est plus sombre que `--fond-carte`. C'est l'effet que Noé a nommé (« j'aime que
+   ça fasse cet effet lorsque l'on passe le doigt dessus »).
+   ⚠️ NE PAS le réécrire en voile POSÉ SUR la tuile : *mesuré, la tuile montait à
+   0,0944 de clarté au lieu de descendre à 0,0591, et l'encre discrète tombait à
+   4,20:1 — sous le seuil AA. Le survol d'origine la porte à 5,55:1.*
+   L'OMBRE RESTE : la tuile devient une vitre, l'ombre dit qu'elle est toujours
+   devant la page. Les deux ne se contredisent pas. */
+.fch-hall-porte:hover {
+  background: rgb(255 255 255 / 7%);
+  box-shadow: 4px 6px 16px rgb(4 10 28 / 15%);
+  text-decoration: none;
+}
 .fch-hall-porte:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 .fch-hall-tete { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .fch-hall-nom { font-weight: 800; font-size: 1.0625rem; line-height: 1.2; }
@@ -1555,7 +1644,29 @@ body[data-espace="hermitage"] #vue .suivi-chantier h4 {
    la différence du service en dessous — c'est la seule porte du site dont
    l'aperçu soit une phrase. */
 .fch-hall-phrase { font-size: 0.875rem; line-height: 1.35; font-weight: 600; }
-.fch-hall-lots { display: grid; gap: 3px; list-style: none; padding: 0; margin: 0; }
+/* LA PISTE S'ÉCRIT `minmax(0, 1fr)` ET NON `auto` (16 septembre 2026). Une piste
+   de grille implicite vaut `auto` : elle REFUSE de descendre sous la largeur
+   minimale de son contenu, et déborde son parent au lieu de rétrécir — l'ellipse
+   posée sur le premier span ne s'applique jamais, puisque la piste lui donne
+   toute la place qu'il demande. *Mesuré dans la porte des engagements, colonne de
+   282 px : 315 px de contenu dans 250, « Intégrer l'entreprise au réseau
+   partenaires » poussant son compte hors de la tuile.* C'est le piège documenté
+   dans les conventions, et il ne se voit jamais sur l'écran large où l'on
+   travaille — ici il a fallu une colonne étroite et un libellé long pour qu'il
+   sorte. Corrigé à la source : les trois halls du site en profitent. */
+/* ELLE S'ÉCRIT `.bloc ul.fch-hall-lots` ET NON `.fch-hall-lots`, et ce n'est pas
+   de la superstition : `.bloc ul:not(.liste-jalons)` passe TOUTES les listes du
+   hub en grille de 21 rem au-delà de 60 rem, et pèse 0-2-1 contre 0-1-0. *Mesuré
+   dans la porte des engagements de l'accueil : une piste de 315 px dans une
+   colonne de 250, et le compte poussé hors de la tuile.* Les deux autres halls
+   du site y échappaient en vivant HORS des blocs — celui-ci porte un titre de
+   section, donc il y vit. **Une spécificité qu'on n'égale pas est une règle qu'on
+   n'écrit pas** : dixième fois. */
+.fch-hall-lots,
+.bloc ul.fch-hall-lots {
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 3px;
+  list-style: none; padding: 0; margin: 0;
+}
 .fch-hall-lots li {
   display: flex; justify-content: space-between; gap: 8px;
   font-size: 0.75rem; line-height: 1.3;
@@ -1643,4 +1754,198 @@ body[data-espace="hermitage"] #vue .suivi-offre-carte h4 {
 .suivi-retirer.est-sure {
   opacity: 1; padding: 1px 9px; border-radius: 999px; font-size: 0.6875rem; font-weight: 700;
   color: #fff; background: color-mix(in srgb, var(--club-rouge) 55%, #142343);
+}
+
+/* --- LE CALENDRIER D'UN ÉVÈNEMENT (16 septembre 2026, demande de Noé : « pour
+   les évènements, dans leur page, je dois avoir un calendrier sur lequel je peux
+   prévoir la communication ») ------------------------------------------------
+
+   C'EST LA MISE EN PAGE DE LA PAGE D'UN PROJET, à deux colonnes : ce qui attend
+   un jour à gauche, la grille à droite — et l'on glisse de l'une à l'autre.
+   *Une page qui fait le même geste ne se dessine pas autrement.*
+
+   DEUX COLONNES À 1000 px, comme la page d'un cap et pour la même raison : il
+   n'y en a que deux, donc 18 rem de moins à trouver que sur la page d'un projet.
+   En dessous, tout s'empile dans l'ordre du DOM — ce qui attend, puis quand. */
+.evenement-programmation {
+  display: grid; gap: var(--espace-24); align-items: start;
+  margin-top: var(--espace-24);
+}
+@media (min-width: 1000px) {
+  .evenement-programmation { grid-template-columns: minmax(0, 16rem) minmax(0, 1fr); }
+  /* `min-width: 0` sur la colonne de la grille : sans lui, un item de grille
+     refuse de descendre sous la largeur minimale de son contenu — et une grille
+     de sept jours en demande beaucoup. */
+  .evenement-calendrier { min-width: 0; }
+  /* LA COLONNE NE DÉPASSE PAS LE CALENDRIER, sinon on perd de vue les jours où
+     poser pendant qu'on cherche quoi poser. Le défilement est DANS la colonne,
+     pas dans la page. En dessous de 1000 px il tombe : rien ne lui fait plus
+     face. */
+  .evenement-liste { max-height: 30rem; overflow-y: auto; }
+}
+
+.evenement-vivier { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--espace-8); list-style: none; padding: 0; margin: 0; }
+.bloc ul.evenement-vivier { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--espace-8); }
+
+/* UNE TUILE D'IDÉE EST UNE POIGNÉE, et c'est un vrai `<button>` : le glissement
+   est un geste de souris, et sans lui le clavier n'aurait aucun moyen de prendre
+   la ligne en main. Un `role` posé sur un `span` aurait fait un faux bouton, ce
+   que le hub ne fabrique pas. */
+.evenement-tuile {
+  background: color-mix(in srgb, var(--fond-carte) 82%, #fff);
+  border-radius: 14px; border: 0; padding: 0;
+}
+.evenement-tuile-prendre {
+  display: flex; flex-direction: column; gap: 2px; width: 100%;
+  padding: var(--espace-12); background: none; border: 0; border-radius: 14px;
+  color: #fff; text-align: left; font: inherit; cursor: grab;
+}
+.evenement-tuile-titre { font-weight: 700; font-size: 0.875rem; line-height: 1.25; }
+/* L'invite ne se dit qu'une fois : sur la tuile CHOISIE, elle devient inutile —
+   les jours sont allumés, on sait quoi faire. */
+.evenement-tuile .discret { font-size: 0.6875rem; line-height: 1.3; }
+.evenement-tuile.choisie { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.evenement-tuile.choisie .evenement-tuile-prendre { cursor: pointer; }
+.evenement-tuile-prendre:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* LA SECTION DU CALENDRIER S'APPELLE `.evenement-calendrier` ET NON
+   `.evenement-grille`, ET CE NOM-LÀ S'EST PAYÉ COMPTANT : `.evenement-grille`
+   EST DÉJÀ la fiche d'un moment du site Yuno (css/yuno.css), **chargée sur les
+   trois pages**. Ma section en héritait `grid-template-columns: auto minmax(0,
+   1fr)` — *mesuré : la barre de période écrasée à 145 px dans une section de
+   743, et son contenu débordant de la page de 107 px.* **Onzième fois que ce
+   piège se paie ; le grep de trois secondes n'est toujours pas facultatif, et il
+   doit couvrir les TROIS feuilles.** */
+.evenement-calendrier { display: block; }
+
+/* LE JOUR DE L'ÉVÈNEMENT EST LE PIVOT DE LA PAGE, et il doit se voir avant tout
+   le reste : c'est autour de lui qu'on pose l'annonce, le rappel et le bilan.
+
+   UNE TUILE PLEINE À L'ACCENT, et l'encre sombre dessus — la règle du hub pour
+   un aplat d'accent. C'est la seule couleur qui ressorte sur ce bleu (§3 de la
+   spec), et la couleur d'espace du club EST ce bleu : une tuile bleue sur fond
+   bleu n'aurait rien dit. *Sans cette règle, le type retombait sur le gris par
+   défaut d'un type inconnu — mesuré.*
+
+   ELLE NE SE COCHE NI NE SE GLISSE : c'est une date du planning officiel du
+   club, pas une ligne de base. `barreDeLEvenement` ne lui donne pas de `source`,
+   et `brancherDeplacement` abandonne sans elle — le curseur le dit. */
+.cal-type-evenement-club {
+  background: var(--accent);
+  border-left-color: var(--accent);
+  color: var(--club-bleu-5, #15213d);
+  font-weight: 700;
+  cursor: default;
+}
+.cal-type-evenement-club .cal-barre-titre { color: inherit; }
+
+/* LES JOURS S'ALLUMENT TANT QU'ON TIENT QUELQUE CHOSE — c'est le seul retour qui
+   dise « lâche ici ». La classe vient de « Ma semaine », qui a perdu son préfixe
+   le 2 septembre pour servir les pages du cap ; elle sert ici sans une ligne de
+   plus. */
+.evenement-programmation.en-main .cal-jour {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+/* --- LES TUILES DE L'ACCUEIL FLOTTENT (16 septembre 2026, demande de Noé :
+   « diminue un peu l'opacité des fonds de tuiles dans la page d'accueil, et
+   rajoute une légère ombre portée vers le bas à droite ») -------------------
+
+   CE QUE ÇA CHANGE : le fond du site est un DÉGRADÉ — il rayonne du bleu vif au
+   coin haut droit vers le bleu nuit au coin opposé (§3). Une tuile opaque le
+   masque ; une tuile qui le laisse passer **en prend la pente**, et deux tuiles
+   éloignées sur l'écran ne se ressemblent plus tout à fait. *C'est le même motif
+   que le fond des tuiles de `#objectifs` teinté à 5 % : à cette dose la nuance ne
+   se nomme pas, elle se sent.*
+
+   L'OMBRE EST CE QUI LES DÉCOLLE. Sans elle, une tuile translucide se lit comme
+   un voile POSÉ SUR le fond, pas comme un objet DEVANT lui — c'est exactement
+   l'argument de la pastille du dock, la seule autre ombre portée du dépôt : elle
+   ne sépare pas une carte de la page, **elle décolle un objet d'un autre**.
+   Vers le bas à droite parce que la lumière du site vient du coin haut droit, et
+   qu'une ombre qui contredit sa source se voit comme une erreur.
+
+   PORTÉE : L'ACCUEIL SEUL, et c'est ce que Noé a demandé — « dans la page
+   d'accueil ». `.fch-tuile` et `.fch-hall-porte` servent tout le site ; les
+   toucher à la racine aurait changé les trois halls, les fiches et le calendrier
+   d'un coup. *Si l'effet plaît, l'étendre est l'affaire d'un sélecteur.* */
+/* LES TUILES POSÉES SUR LA PAGE, ET ELLES SEULES. L'effet est né à l'accueil le
+   16 septembre 2026 ; Noé l'a étendu au site le lendemain — « applique ce style
+   aux autres tuiles du site ».
+
+   LE CRITÈRE EST CELUI QUE LE DÉPÔT A DÉJÀ POSÉ le 30 août : *une tuile posée
+   dans la page se distingue par sa SURFACE ; le filet ne redevient utile que
+   lorsqu'une tuile est posée DANS une autre.* Ici il tranche pareil, pour une
+   raison mécanique :
+
+     — UNE TUILE SUR LA PAGE a le dégradé derrière elle. La laisser passer lui en
+       donne la pente, et l'ombre la décolle du fond ;
+     — UNE TUILE DANS UNE AUTRE n'a que sa parente derrière elle. La transparence
+       ne montrerait donc rien de plus, et l'ombre ferait une tache à trois pixels
+       d'une autre ombre.
+
+   CE QUI EST ÉCARTÉ, ET POURQUOI — *inventorié à l'écran sur les dix-sept pages
+   du site, en comparant chaque surface à celle de son parent* :
+     — `.ajout-tuile`, la tuile de CAPTURE : elle ne se pose pas dans la page,
+       **elle vole au-dessus d'un fond assombri**. Sa présence vient de là, et la
+       rendre translucide la ferait lire à travers le voile ;
+     — `.affichages`, `.cal-fleche`, les `input`, les `select`, les
+       `.choix-panneau` : ce sont des CONTRÔLES, pas des surfaces de page ;
+     — `.fch-portes .lien-externe` : une navigation de pied de page ;
+     — tout ce qui vit DANS une autre surface (les `li` d'une liste, les panneaux
+       d'un menu, les objectifs d'un projet de club). */
+/* DEUX SÉLECTEURS PORTENT UNE SPÉCIFICITÉ QU'IL FAUT ÉGALER, et c'est le piège
+   qui se paie à chaque fois qu'on l'oublie — *ici, les deux se sont vus à
+   l'écran : la tuile portait l'ombre SANS la transparence.*
+     — `.bloc li.suivi-partenaire` (0-2-1) bat `.suivi-partenaire` (0-1-0) ;
+     — `#orga-resultats` (1-0-0) bat n'importe quelle classe.
+   On les réécrit donc à leur poids, et non « au cas où » : chacun a été trouvé en
+   demandant au navigateur quelle règle gagnait. */
+.fch-tuile,
+.fch-hall-porte,
+li.suivi-bilan-tuile,
+.suivi-chantier,
+.bloc li.suivi-partenaire,
+.suivi-offre-carte,
+.orga-groupe,
+/* `#orga-resultats.orga-personnes` ET NON `.orga-personnes` : la classe est
+   portée par TOUS les conteneurs de portraits d'un organigramme — des flex NUS,
+   sans fond —, et l'écrire seule leur en donnait un. *C'est le rectangle que Noé
+   a vu apparaître entre la tuile d'un groupe et ses photos.* Seul le conteneur
+   des RÉSULTATS de recherche est une tuile, et il se nomme par son id. */
+#orga-resultats.orga-personnes {
+  background: color-mix(in srgb, var(--fond-carte) 82%, transparent);
+  /* 15 % : l'ombre POSE la tuile, elle ne la creuse pas. Elle est partie de 22 %
+     et Noé l'a fait reculer d'un cran — sur un fond bleu nuit, une ombre trop
+     dense se lit comme un contour, or ce qu'on veut est un décollement. La
+     valeur est écrite DEUX FOIS, ici et au survol : **deux déclarations d'une
+     même ombre ne peuvent pas différer**, sinon elle sauterait sous la main. */
+  box-shadow: 4px 6px 16px rgb(4 10 28 / 15%);
+}
+
+/* UNE TUILE QUI SE RETROUVE DANS UNE AUTRE REDEVIENT OPAQUE ET PERD SON OMBRE.
+   La règle ci-dessus vise des classes, pas des positions : `.fch-tuile` peut
+   vivre dans une `.fch-tuile` (les deux colonnes d'une fiche de réunion), et deux
+   translucidités superposées donnent une valeur qu'aucune des deux n'a choisie.
+   *C'est la même logique que le filet du 30 août, à l'envers.* */
+.fch-tuile .fch-tuile,
+.fch-tuile .fch-hall-porte,
+.fch-hall-porte .fch-tuile {
+  background: color-mix(in srgb, var(--fond-carte) 82%, #fff);
+  box-shadow: none;
+}
+
+/* La porte d'une carte chaude est DANS une tuile déjà translucide : elle garde
+   son cran d'écart par rapport à elle, et n'ajoute PAS sa propre ombre — deux
+   ombres emboîtées à trois pixels l'une de l'autre font une tache, pas un
+   relief. */
+.fch-carte-porte {
+  background: color-mix(in srgb, var(--fond-carte) 92%, #fff);
+  box-shadow: none;
+}
+
+
+
+@media (prefers-reduced-motion: no-preference) {
+  .fch-hall-porte { transition: box-shadow 160ms ease, background 160ms ease; }
 }

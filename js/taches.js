@@ -17,7 +17,7 @@
 // jalons, ni retard. Le sélecteur d'espace n'en propose pas.
 
 import * as api from './api.js';
-import { dansLeSiteYuno } from './cap-adresses.js';
+import { dansUnSite } from './cap-adresses.js';
 import {
   depuisDateISO,
   echeanceLisible,
@@ -853,18 +853,24 @@ export function construireCapture(capture, projets = []) {
 }
 
 function squelette(etat) {
-  // DANS LE SITE, LA PAGE NE PARLE QUE DE LUI (15 septembre 2026) : elle y est
-  // montée filtrée sur Yuno, et « tous espaces » y serait faux. La rangée de
-  // filtres part avec la phrase — offrir « FC Hermitage » depuis le site Yuno
-  // serait une porte vers un ailleurs que le site n'ouvre jamais, sa seule
-  // sortie étant « Quitter le site ».
-  const dansLeSite = dansLeSiteYuno();
+  // DANS UN SITE, LA PAGE NE PARLE QUE DE LUI (15 septembre 2026 pour Yuno, le 16
+  // pour le club) : elle y est montée filtrée sur son espace, et « tous espaces »
+  // y serait faux. La rangée de filtres part avec la phrase — offrir
+  // « FC Hermitage » depuis le site Yuno serait une porte vers un ailleurs que le
+  // site n'ouvre jamais, sa seule sortie étant « Quitter le site ».
+  //
+  // LE NOM VIENT DE L'ESPACE FILTRÉ, il ne s'écrit pas en dur : c'est le site qui
+  // dit lequel il est en montant la page, et une phrase qui nommerait Yuno depuis
+  // le club serait le genre de faute qu'on ne voit que sur l'écran qu'on regarde
+  // le moins.
+  const dansLeSite = dansUnSite();
+  const nom = NOMS_ESPACES[etat.espace] ?? null;
 
   return `
     <h1>Mes tâches</h1>
     <p class="discret sous-titre">${
-      dansLeSite
-        ? 'Tout ce qu’il y a à faire pour Yuno — daté ou non.'
+      dansLeSite && nom
+        ? `Tout ce qu’il y a à faire pour ${nom} — daté ou non.`
         : 'Tout ce qu’il y a à faire, tous espaces — daté ou non.'
     }</p>
     <div data-bloc="capture">${construireCapture(etat.capture, etat.projets)}</div>

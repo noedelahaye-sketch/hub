@@ -26,19 +26,19 @@ import {
   construireFormulaire,
   construireFenetre,
   construireObjectifs,
-  construireVictoires,
+  friseDeLaSemaine,
 } from './gabarits.js';
 import {
   STATUTS_FCH,
   construireAVenir,
   construireBanque,
   construirePubliees,
-  construireApercuCreation,
   formulaireIdee,
   rubriquesProposees,
 } from './publications.js';
 import {
   depuisDateISO,
+  ajouterJours,
   echeanceLisible,
   momentLisible,
   echapper,
@@ -50,9 +50,12 @@ import { REPERES, CRENEAUX } from './club-fch.js';
 import { GROUPES, PERSONNES } from './organigramme-fch-data.js';
 import { MISSION_FCH, VALEURS_FCH, OBJECTIFS_FCH } from './projet-fch.js';
 import { construireProjetClub, titreDuProjet } from './projet-club.js';
-import { construireEvenementsClub, estRubriqueEvenement, EVENEMENTS_CLUB } from './evenements-club.js';
 import {
-  construireSuiviPartenaires, titreDuSuivi, porte, mots,
+  construireEvenementsClub, estRubriqueEvenement, EVENEMENTS_CLUB, prochainEvenementClub,
+  dateDeLEvenement, rubriqueEvenement, ficheDeLEvenement,
+} from './evenements-club.js';
+import {
+  construireSuiviPartenaires, titreDuSuivi, porte, mots, parChantier,
 } from './partenaires-suivi.js';
 import { OFFRES_FCH, ETATS_PARTENAIRE, engagementsDeLOffre, offreDe } from './partenaires-fch.js';
 import {
@@ -62,6 +65,22 @@ import {
   separerLesSeries,
 } from './taches.js';
 import { construireCapGrave } from './objectifs-commun.js';
+
+// LES ÉCRANS DU CAP, MONTÉS DANS LE SITE (16 septembre 2026, demande de Noé :
+// « il faut d'ailleurs créer une page tâches dans le site FCH comme c'est fait
+// sur yuno, et une page objectif, et projet, comme chez yuno »).
+//
+// CE SONT LES MODULES DU HUB, PAS DES COPIES — 4 400 lignes qu'on ne recopie
+// pas, et surtout deux galeries de caps qui finiraient par ne plus montrer la
+// même chose. Le site ne redessine RIEN : il pose sa barre, un hôte, son pied, et
+// laisse le module écrire dedans. **La DA suit toute seule** : ces pages sont
+// écrites en variables (`--fond-carte`, `--accent`, `--police-titre`), et
+// `body[data-espace="hermitage"]` les a déjà remplacées par celles du club.
+// C'est exactement ce que Yuno a fait la veille.
+import pageDuCap from './objectifs.js';
+import pageObjectif from './objectif.js';
+import pageProjet from './projet.js';
+import pageTaches from './taches.js';
 
 import {
   assemblerCalendrier,
@@ -78,6 +97,7 @@ import {
   brancherSelection,
   brancherClavier,
   brancherDeplacement,
+  brancherPriseEnMain,
   appliquerAuCalendrier,
   champsApresDeplacement,
   deplacerAncre,
@@ -155,7 +175,17 @@ const SAISON_PARTENAIRES = '2026-2027';
 
 const VUES = ['accueil', 'creer', 'reunions', 'calendrier', 'partenaires', 'club',
   'saison', 'editorial', 'banque', 'publications', 'actions', 'archives',
-  'commissions', 'projet-club', 'entrainements', 'chiffres', 'evenements'];
+  'commissions', 'projet-club', 'entrainements', 'chiffres', 'evenements',
+  'cap', 'objectif', 'projet', 'taches'];
+
+// LES QUATRE ÉCRANS QUE LE SITE EMPRUNTE AU HUB. Ils ne demandent RIEN au
+// chargement du site : le module qu'ils montent fait ses propres lectures, et
+// une liste ici en ferait deux.
+const VUES_DU_CAP = ['cap', 'objectif', 'projet', 'taches'];
+
+// L'espace du hub que le site filtre. `photo` chez Yuno, `fch` ici — et c'est la
+// clé de la contrainte CHECK, pas le nom affiché.
+const ESPACE_DU_HUB = ESPACE;
 
 // Les natures que le calendrier du site assemble — ni relance ni commande,
 // elles vivent chez Yuno. La liste sert aux filtres (pas de case sans effet)
@@ -181,7 +211,20 @@ const PAGES_REUNIONS = [
 ];
 
 export const RUBRIQUES_FCH = [
+  // LE CAP ENTRE DANS LE MENU (16 septembre 2026). Ses trois pages sont celles
+  // du hub, montées dans le site : la galerie compare, `#hermitage/objectif/<id>`
+  // et `#hermitage/projet/<id>` disent tout. **Elles n'ont pas d'entrée de menu**
+  // — on y entre depuis la galerie ou depuis le cap gravé de l'accueil, et un
+  // menu ne nomme pas une page dont l'adresse porte un identifiant.
+  //
+  // LES DEUX ÉTAGES SONT DEUX ENTRÉES, comme chez Yuno : deux liens qui
+  // mèneraient tous deux à `#hermitage/cap` seraient deux liens identiques, et
+  // trois liens identiques ne sont pas un menu.
   { nom: 'Accueil', adresse: '#hermitage', pages: [
+    { nom: 'Le cap', adresse: '#hermitage/cap' },
+    { nom: 'Ses objectifs', adresse: '#hermitage/cap/caps' },
+    { nom: 'Ses projets', adresse: '#hermitage/cap/projets' },
+    { nom: 'Ses tâches', adresse: '#hermitage/taches' },
     { nom: 'Le calendrier', adresse: '#hermitage/calendrier' },
   ] },
   { nom: 'Communication', adresse: '#hermitage/creer', pages: [
@@ -211,9 +254,6 @@ export const RUBRIQUES_FCH = [
 const ONGLET_FCH = Object.fromEntries(RUBRIQUES_FCH.flatMap((rubrique) =>
   (rubrique.pages ?? []).map((page) => [page.adresse.split('/')[1], rubrique.adresse.split('/')[1] ?? 'accueil'])));
 
-const portesDuMenu = (nom) => portes(
-  RUBRIQUES_FCH.find((item) => item.nom === nom).pages, nom);
-
 function portes(pages, nom = 'Pages') {
   return `<section class="bloc fch-portes" aria-label="${nom}">${pages.map((page) => `
     <a class="lien-externe" href="${page.adresse}">
@@ -228,6 +268,24 @@ function cheminDuMenu() {
     item.pages?.some((page) => page.adresse === adresse));
   return rubrique ? [rubrique.nom] : [];
 }
+
+// LES ÉTAGES DE LA GALERIE. Le site ne montre qu'une page (`#hermitage/cap`) là
+// où le hub en a trois vues, et l'étage vit au troisième segment
+// (`#hermitage/cap/projets`) : c'est donc la BARRE qui doit le nommer, sans quoi
+// deux entrées de menu différentes ouvriraient un écran au même titre — le
+// défaut des « trois noms pour une page » corrigé le 28 août. Les mots sont ceux
+// du menu, à la lettre : un nom dans le menu et un autre en tête de page, ce
+// serait deux noms pour une page.
+const ETAGES_DU_CAP = { caps: 'Ses objectifs', projets: 'Ses projets', periodes: 'Ses périodes' };
+
+// LES DEUX PAGES QUI N'ONT PAS D'ENTRÉE DE MENU. Leur adresse porte un
+// identifiant, donc le menu ne peut pas les nommer — et la barre doit tout de
+// même dire où l'on est. Le mot est GÉNÉRIQUE, et c'est voulu : le `h1` du
+// module, juste en dessous, porte le nom du cap ou du projet, **et lui n'est pas
+// masqué** (à la différence de la galerie et des tâches, dont le `h1` ne serait
+// que le nom de la page). Un nom précis dans la barre le redirait quarante
+// pixels plus haut.
+const TITRES_DU_CAP = { objectif: 'Un objectif', projet: 'Un projet' };
 
 function enTete(vueActive, selection = null) {
   const liens = [
@@ -250,6 +308,8 @@ function enTete(vueActive, selection = null) {
   };
   const titre = (vueActive === 'projet-club' ? titreDuProjet(selection) : null)
     ?? (vueActive === 'partenaires' ? titreDuSuivi(selection?.liste ?? [], selection?.vue) : null)
+    ?? (vueActive === 'cap' ? ETAGES_DU_CAP[selection] : null)
+    ?? TITRES_DU_CAP[vueActive]
     ?? RUBRIQUES_FCH.flatMap((item) => item.pages ?? [])
       .find((page) => page.adresse === `#hermitage/${vueActive}`)?.nom
     ?? liens.find(([vue]) => vue === vueActive)?.[3]
@@ -1058,7 +1118,153 @@ function vueReunions(etat) {
     <a class="lien-discret" href="${vue === 'reunions' ? '#hermitage/club">← Le club' : '#hermitage/reunions">← Les réunions'}</a>${pied()}`;
 }
 
-// LE TEMPS FORT QUI APPROCHE (30 août 2026), sous la réunion du moment.
+// --- L'ACCUEIL DU SITE : une carte chaude, un bloc, trois portes, le cap -----
+//
+// REFONDU LE 16 SEPTEMBRE 2026 (demande de Noé : « pour l'accueil du FCH, il
+// faut réorganiser les infos qui doivent y être et la forme ; pour cela il faut
+// s'appuyer sur ce qu'on a fait sur le hub et yuno »).
+//
+// LE DÉFAUT, MESURÉ AVANT DE TOUCHER À QUOI QUE CE SOIT. La page faisait
+// 2 018 px et empilait CINQ blocs fixes : le temps fort (179 px), « À faire »
+// (644 px — un tiers de la page), la com' à venir (376), le cap (358), les
+// victoires (186). Deux d'entre eux sont du BILAN sur un écran dont la spec dit
+// qu'il est l'ATELIER, et le cap s'ouvrait sur TROIS RANGÉES DE POINTS VIDES —
+// ses trois objectifs portent huit jalons dont aucun n'est atteint.
+//
+// Et surtout : pendant ce temps, l'accueil ne disait RIEN de ce que le site
+// charge déjà à l'ouverture — 65 engagements partenaires sur 69 restaient à
+// tenir, 7 partenaires sur 20 n'avaient pas viré, et les 54 parutions posées
+// étaient TOUTES encore « à préparer », zéro en « à programmer ». La chaîne
+// éditoriale était bouchée à son premier cran et la page n'en savait rien.
+//
+// C'EST LE MÊME DÉFAUT QUE YUNO AVAIT LE 15 SEPTEMBRE, et la réponse est la
+// sienne : une page ne change pas de FORME, elle change de CONTENU.
+//
+//   > L'accueil n'a qu'UN bloc fixe — le travail à faire. Le reste est un
+//   > CLASSEMENT : une carte chaude tirée d'une cascade, trois portes tirées
+//   > d'une réserve, et le cap en pied.
+//
+// CE QUE LE FCH NE COPIE PAS DE YUNO, et c'est une décision de Noé :
+// « À faire » RESTE un bloc fixe et cochable, là où Yuno en a fait une porte.
+// C'est juste — le site est l'atelier du club, et cocher une tâche en sortant du
+// stade est le geste pour lequel on l'ouvre. Il se plafonne à TROIS lignes au
+// lieu de sept, le reste se dépliant : rien n'est caché, c'est la place qui
+// change de propriétaire.
+//
+// LES VICTOIRES ONT QUITTÉ CET ÉCRAN. Elles étaient du bilan sur l'atelier, et
+// elles ont déjà DEUX pages qui les portent : `#fch`, la page bilan du hub, et
+// « Le chemin », faite pour les regarder. C'est la division que la spec pose
+// elle-même — « le site répond à qu'est-ce que je fais maintenant, la page du
+// hub à où j'en suis » —, et Yuno n'en montre pas davantage à son accueil.
+
+// --- LA CARTE CHAUDE ---------------------------------------------------------
+
+// Le dessin était écrit DEUX FOIS, mot pour mot, dans la réunion du moment et
+// dans le temps fort. Il sert cinq rangs maintenant : il n'a plus le droit de
+// vivre en double.
+function carteChaude({ etiquette, etiquettes = '', quand = '', titre, corps = '', pied: bas = '' }) {
+  return `
+    <section class="bloc fch-tuile fch-accueil-moment">
+      <span class="tuile-entete">
+        <span class="etiquette">${echapper(etiquette)}</span>
+        ${etiquettes}
+        ${quand ? `<span class="discret quand">${echapper(quand)}</span>` : ''}
+      </span>
+      <h2 class="tf-titre">${echapper(titre)}</h2>
+      ${corps}
+      ${bas}
+    </section>`;
+}
+
+// LA PORTE D'UNE CARTE CHAUDE EST UNE TUILE (16 septembre 2026, demande de Noé
+// en deux temps : « un bouton de couleur pour la tuile dynamique du haut », puis
+// « non, un bouton sous forme de tuile dans le même style que ce qu'on fait chez
+// Yuno »).
+//
+// CE QUE ÇA REMPLACE : un `lien-externe` pleine largeur, avec son filet, son
+// titre et sa ligne de service — trois lignes et 70 px pour un seul geste, *soit
+// autant que la carte qu'il ferme.* Or la carte chaude est la SEULE interruption
+// de l'accueil : ce qu'elle propose doit se prendre d'un doigt, pas se lire.
+//
+// C'EST LE DESSIN DES PORTES DU SITE (`.fch-hall-porte`), en compact — celui des
+// deux halls et des trois portes du jour, quarante pixels plus bas. **Une porte
+// ne se dessine pas deux fois**, et la rangée du dessous l'aurait sinon
+// contredite à l'écran. *Un aplat d'accent a été essayé d'abord et Noé l'a
+// écarté : une pastille jaune pleine dans une carte bleue criait plus fort que
+// la carte, et elle n'avait la grammaire de rien sur cette page.*
+//
+// LE SERVICE PART DANS LE `title`. « Poser ce qui sortira avant, pendant et
+// après » expliquait un bouton qui dit déjà ce qu'il fait ; il ne coûte plus une
+// ligne. C'est la parade employée sur la ligne d'une habitude et sur les cartes
+// du rendez-vous du dimanche.
+function porteDeCarte(adresse, titre, service) {
+  return `
+    <a class="fch-carte-porte" href="${adresse}" title="${echapper(service)}">
+      <span class="fch-carte-porte-nom">${echapper(titre)}</span>
+      <span class="fch-carte-porte-fleche" aria-hidden="true">→</span>
+    </a>`;
+}
+
+// RANG 1 — LA RÉUNION DU MOMENT (21 août 2026), le pendant de « la sortie du
+// moment » chez Yuno : le jour d'un conseil, ce qui compte n'est ni la com' ni
+// les objectifs, c'est la fiche.
+const PHASES_REUNION = { avant: 'À préparer', pendant: 'En ce moment', apres: 'À conclure' };
+
+function carteDeLaReunion(etat, maintenant) {
+  const reunions = etat.evenements.filter(estReunion);
+
+  const enCours = reunions
+    .filter((e) => {
+      const phase = phaseDeLaSortie(e, maintenant);
+      return phase === 'pendant' || phase === 'apres';
+    })
+    .sort((a, b) => new Date(b.date_debut) - new Date(a.date_debut))[0];
+  const prochaine = reunions
+    .filter((e) => new Date(e.date_debut) > maintenant)
+    .sort((a, b) => new Date(a.date_debut) - new Date(b.date_debut))[0];
+
+  const reunion = enCours ?? prochaine;
+  if (!reunion) return '';
+
+  const phase = phaseDeLaSortie(reunion, maintenant) ?? 'avant';
+  const fiche = ficheDeLaReunion(etat.fiches, reunion.id);
+  // Ce que le moment demande : avant, le contrat ; pendant, l'ordre du jour
+  // sous les yeux ; après, le compte-rendu à chaud.
+  const restants = fiche
+    ? fiche.points.filter((point) => point.statut === 'a_venir').slice(0, 3)
+    : [];
+
+  return carteChaude({
+    etiquette: PHASES_REUNION[phase],
+    etiquettes: etiquettesReunion(reunion),
+    quand: momentLisible(new Date(reunion.date_debut)),
+    titre: reunion.titre,
+    corps: `${
+      fiche?.objectif
+        ? `<p class="discret reunion-objectif">À la fin : ${echapper(fiche.objectif)}</p>`
+        : ''
+    }${
+      phase === 'apres' && fiche && !fiche.cr_date
+        ? `<p class="discret">Le compte-rendu s'écrit à chaud — sous 48 h il devient
+             une habitude.</p>`
+        : restants.length
+          ? `<ul class="liste-reunions accueil-odj">${restants
+              .map(
+                (point) => `
+            <li><span class="reunion-titre">${echapper(point.titre)}</span>${
+              point.minutes
+                ? ` <span class="discret"><span class="chiffre">${point.minutes}</span> min</span>`
+                : ''
+            }</li>`,
+              )
+              .join('')}</ul>`
+          : ''
+    }`,
+    pied: boutonFiche(fiche, reunion),
+  });
+}
+
+// RANG 2 — LE TEMPS FORT QUI APPROCHE (30 août 2026).
 //
 // CE QU'IL RÉPOND. Le club tient huit à neuf temps forts par saison — pétanque,
 // Tournoi Rose, goûter de Noël, loto, tournois, journée du club. Ils portent
@@ -1076,8 +1282,7 @@ function vueReunions(etat) {
 // la com d'un temps fort se fait aussi pendant.
 const HORIZON_TEMPS_FORT_JOURS = 35;
 
-function blocTempsFort(etat) {
-  const maintenant = new Date();
+function carteDuTempsFort(etat, maintenant) {
   const horizon = new Date(maintenant);
   horizon.setDate(horizon.getDate() + HORIZON_TEMPS_FORT_JOURS);
 
@@ -1114,128 +1319,330 @@ function blocTempsFort(etat) {
     // rien de posé cinq semaines avant est parfaitement normal.
     : '<span class="tf-posees tf-rien">Rien de posé ce jour-là pour l’instant</span>';
 
-  return `
-    <section class="bloc fch-tuile fch-accueil-moment">
-      <span class="tuile-entete">
-        <span class="etiquette">${cEstAujourdhui ? "C'est aujourd'hui" : 'Temps fort'}</span>
-        <span class="discret quand">${echapper(echeanceLisible(jour))}</span>
-      </span>
-      <h2 class="tf-titre">${echapper(evenement.titre)}</h2>
-      <p class="tf-service">
+  return carteChaude({
+    etiquette: cEstAujourdhui ? "C'est aujourd'hui" : 'Temps fort',
+    quand: echeanceLisible(jour),
+    titre: evenement.titre,
+    corps: `<p class="tf-service">
         ${evenement.lieu ? `<span>${echapper(evenement.lieu)}</span>` : ''}
         ${quoi}
-      </p>
-      <a class="lien-externe" href="#hermitage/editorial">
-        <span class="lien-externe-texte">
-          <span class="lien-externe-titre">Préparer sa com</span>
-          <span class="discret">Poser ce qui sortira avant, pendant et après</span>
-        </span>
-        <span class="lien-externe-fleche" aria-hidden="true">→</span>
-      </a>
-    </section>`;
+      </p>`,
+    // LE BOUTON MÈNE À LA PAGE DE L'ÉVÈNEMENT (16 septembre 2026, demande de
+    // Noé), et non plus au calendrier éditorial : c'est là que vit sa com — son
+    // calendrier, ses idées à poser, ses publications écrites. L'éditorial, lui,
+    // montre TOUT le club ; il fallait y retrouver son évènement à la main.
+    //
+    // LE REPLI RESTE L'ÉDITORIAL quand aucune fiche ne se rapproche sans
+    // ambiguïté (`ficheDeLEvenement`) : un bouton qui ne mène nulle part serait
+    // pire que celui qui mène un cran trop haut.
+    pied: (() => {
+      const fiche = ficheDeLEvenement(evenement);
+      return fiche
+        ? porteDeCarte(`#hermitage/evenements/${fiche.id}`, 'Préparer sa com',
+          'Son calendrier, ses idées et ce qui est déjà écrit')
+        : porteDeCarte('#hermitage/editorial', 'Préparer sa com',
+          'Poser ce qui sortira avant, pendant et après');
+    })(),
+  });
 }
 
-// La réunion du moment, en tête de l'accueil (demande de Noé, 21 août 2026) —
-// le pendant de « la sortie du moment » chez Yuno : le jour d'un conseil, ce
-// qui compte n'est ni la com' ni les objectifs, c'est la fiche.
-const PHASES_REUNION = { avant: 'À préparer', pendant: 'En ce moment', apres: 'À conclure' };
+// RANG 3 — UNE PARUTION SORT DANS 48 H ET N'EST PAS PRÊTE.
+//
+// LES 48 H SONT CELLES DU SITE, et elles ne s'inventent pas ici : c'est
+// `AVANT_MONTE_A` chez Yuno depuis le 26 août, le seuil à partir duquel une
+// chose qui vient devient une chose à faire. Au-delà, une parution est
+// programmée — c'est le calendrier éditorial qui la porte, pas une carte
+// chaude.
+//
+// SEUL LE PREMIER CRAN DÉCLENCHE. Une parution « à programmer » a son visuel :
+// il ne reste qu'à poser la date dans l'outil, et ce n'est pas une
+// interruption. Une parution « à préparer » la veille de sa sortie, si.
+const PARUTION_CHAUDE_HEURES = 48;
 
-function blocReunionDuMoment(etat) {
-  const maintenant = new Date();
+function carteDeLaParution(etat, maintenant) {
+  const borne = versDateISO(new Date(maintenant.getTime() + PARUTION_CHAUDE_HEURES * 3600 * 1000));
+  const aujourdhui = versDateISO(maintenant);
+
+  const parution = etat.publications
+    .filter((pub) => pub.statut === 'idee' && pub.date_prevue)
+    .filter((pub) => pub.date_prevue >= aujourdhui && pub.date_prevue <= borne)
+    .sort((a, b) => a.date_prevue.localeCompare(b.date_prevue))[0];
+
+  if (!parution) return '';
+
+  const jour = depuisDateISO(parution.date_prevue);
+  const suite = etat.publications.filter(
+    (pub) => pub.statut === 'idee' && pub.date_prevue
+      && pub.date_prevue >= aujourdhui && pub.date_prevue <= borne,
+  ).length - 1;
+
+  return carteChaude({
+    etiquette: 'À préparer',
+    etiquettes: `<span class="etiquette">${echapper(RESEAUX_FCH[parution.reseau] ?? parution.reseau)}</span>`,
+    quand: echeanceLisible(jour),
+    titre: parution.titre,
+    corps: `<p class="tf-service">
+      ${parution.rubrique ? `<span>${echapper(parution.rubrique)}</span>` : ''}
+      <span class="tf-posees">${
+        suite > 0
+          ? `<span class="chiffre">${suite}</span> autre${suite > 1 ? 's' : ''} dans les deux jours`
+          : 'La seule des deux prochains jours'
+      }</span></p>`,
+    pied: porteDeCarte('#hermitage/editorial', 'Ouvrir le calendrier éditorial',
+      'Préparer le visuel, puis la passer à programmer'),
+  });
+}
+
+// RANG 4 — L'ARGENT DES PARTENAIRES QUI N'EST PAS RENTRÉ.
+//
+// C'EST LE SEUL CHANTIER PARTENAIRE QUI S'OUVRE ET SE FERME, et c'est pour ça
+// qu'il est ici plutôt qu'un autre. Les 65 engagements qui restent à tenir sont
+// une vérité PERMANENTE : une carte chaude qui les afficherait tous les jours
+// pendant six mois deviendrait un meuble, et elle mangerait à jamais le rang du
+// dessous — c'est exactement l'écueil que Yuno a documenté avec sa fournée du
+// lundi. Un virement, lui, arrive : la carte disparaît quand l'argent est là.
+// **Les engagements gardent leur porte**, qui est leur juste place — une liste
+// se parcourt, elle n'interrompt pas.
+//
+// ELLE NE COMPTE AUCUN RETARD, et c'est ce qui la sépare d'une relance :
+// l'engagement n'a pas de date d'échéance, seulement un moment de saison. Elle
+// dit qui, combien, et ouvre la porte. Le club n'a pas de mauvais payeurs, il a
+// des virements qui n'ont pas encore été faits.
+function carteDesVirements(etat) {
+  // `partenairesSuivi` ET NON `partenaires` : l'état porte les deux, et ce ne
+  // sont pas les mêmes gens. `partenaires` sont les CONTACTS de type partenaire
+  // (le carnet) ; `partenairesSuivi` sont les partenaires DE LA SAISON, avec
+  // leur offre, leur montant et leurs engagements. Deux noms voisins pour deux
+  // tables, et c'est le genre d'erreur qui ne se voit qu'à une porte muette.
+  const attente = (etat.partenairesSuivi ?? []).filter((p) => p.statut === 'virement_attendu');
+  if (!attente.length) return '';
+
+  const somme = attente.reduce((total, p) => total + Number(p.montant ?? 0), 0);
+  const nommes = attente.slice(0, 3).map((p) => p.nom);
+
+  return carteChaude({
+    etiquette: 'Partenaires',
+    titre: somme
+      ? `${somme.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} € attendent`
+      : `${attente.length} virement${attente.length > 1 ? 's' : ''} attendu${attente.length > 1 ? 's' : ''}`,
+    corps: `<p class="tf-service"><span>${echapper(nommes.join(', '))}${
+      attente.length > 3
+        ? ` et ${attente.length - 3} autre${attente.length > 4 ? 's' : ''}`
+        : ''
+    }</span></p>`,
+    pied: porteDeCarte('#hermitage/partenaires/liste', 'Voir les partenaires',
+      'Leur offre, leur montant, et où en est chacun'),
+  });
+}
+
+// RANG 5 — LE REPLI : OÙ EN EST LA CHAÎNE ÉDITORIALE.
+//
+// IL A TOUJOURS QUELQUE CHOSE À DIRE, et c'est sa fonction : le dernier rang
+// d'une cascade ne peut pas être muet, sinon l'accueil l'est aussi. C'est le
+// rôle que « l'idée du jour » tient chez Yuno.
+//
+// CE QU'IL DIT EST LE FAIT DU CLUB, et il a fallu le mesurer pour le voir : au
+// 16 septembre 2026, les 54 parutions posées devant étaient TOUTES en « à
+// préparer » et AUCUNE en « à programmer ». Le calendrier éditorial montre les
+// parutions une à une ; il ne dit jamais que la chaîne est bouchée à son premier
+// cran. Deux semaines de fenêtre : c'est ce qu'on peut préparer d'avance.
+//
+// AUCUN REPROCHE, AUCUNE COULEUR. « 6 posées, aucune encore prête » est un
+// constat, pas un retard — la règle du hub tient ici comme partout.
+const FENETRE_CHAINE_JOURS = 14;
+
+function carteDeLaChaine(etat, maintenant) {
+  const aujourdhui = versDateISO(maintenant);
+  const borne = versDateISO(ajouterJours(maintenant, FENETRE_CHAINE_JOURS));
+  const devant = etat.publications.filter(
+    (pub) => pub.date_prevue && pub.date_prevue >= aujourdhui && pub.date_prevue <= borne
+      && pub.statut !== 'publie',
+  );
+
+  const pretes = devant.filter((pub) => pub.statut === 'pret').length;
+  const aPreparer = devant.length - pretes;
+
+  return carteChaude({
+    etiquette: 'La com’',
+    titre: devant.length
+      ? `${devant.length} parution${devant.length > 1 ? 's' : ''} sur les quinze jours`
+      : 'Rien de posé sur les quinze jours',
+    corps: `<p class="tf-service">${
+      devant.length
+        ? `<span class="tf-posees"><span class="chiffre">${aPreparer}</span> à préparer${
+            pretes ? ` · <span class="chiffre">${pretes}</span> prête${pretes > 1 ? 's' : ''} à programmer` : ''
+          }</span>`
+        : '<span class="tf-posees tf-rien">Le calendrier attend ses premières dates</span>'
+    }</p>`,
+    pied: porteDeCarte('#hermitage/saison', 'Voir ce qui tourne',
+      'Les rubriques du club, leurs rythmes et ce qui manque'),
+  });
+}
+
+// LA CASCADE : le premier rang satisfait gagne, et il est SEUL. C'est la
+// mécanique du bandeau de l'après du hub (« un seul à la fois ») — deux cartes
+// chaudes empilées, ce sont deux interruptions.
+//
+// L'ORDRE EST CELUI QUE NOÉ A CHOISI, le 16 septembre 2026, entre trois
+// propositions : LE MOMENT D'ABORD. Ce qui a une heure passe devant — une
+// réunion, un temps fort —, puis ce qui part, puis l'argent. *La com' d'abord a
+// été proposée et écartée : la spec dit « la communication d'abord » du SITE
+// entier, pas de sa carte du jour, et le jour d'un conseil d'administration ce
+// n'est pas la story du week-end qui compte.*
+//
+// EXPORTÉE pour être vérifiable seule, avec un état factice : cinq rangs qui se
+// bousculent, c'est exactement le genre de règle qu'on ne croit pas sur parole.
+export function carteDuMoment(etat, reference = new Date()) {
+  return (
+    carteDeLaReunion(etat, reference) ||
+    carteDuTempsFort(etat, reference) ||
+    carteDeLaParution(etat, reference) ||
+    carteDesVirements(etat) ||
+    carteDeLaChaine(etat, reference) ||
+    ''
+  );
+}
+
+// --- LES TROIS PORTES DU JOUR ------------------------------------------------
+//
+// LE DESSIN EST CELUI DES DEUX HALLS DU SITE (`porte`, js/partenaires-suivi.js),
+// et il n'est pas recopié : le hall du club et celui des partenaires s'en
+// servent déjà. Une porte ne se dessine pas deux fois.
+//
+// TROIS RÈGLES, celles de Yuno :
+// — une porte qui n'a rien à dire ne monte pas. La rangée du jour est un
+//   classement, pas un inventaire. **Le test porte sur les DONNÉES, jamais sur
+//   la vitrine** : la frise de la semaine se dessine même vide — c'est tout son
+//   intérêt —, elle ne peut donc pas servir de test à la porte qu'elle habille ;
+// — jamais deux portes de la même rubrique, sinon un jour chargé aux partenaires
+//   mangerait la rangée ;
+// — les évènements ferment la réserve : la saison en compte neuf, c'est la seule
+//   porte qui ait toujours quelque chose à montrer, donc celle qui ne doit
+//   jamais passer devant une urgence.
+//
+// LA COM' FIGURE DEUX FOIS, et les deux entrées s'excluent : une semaine SANS
+// rien de programmé est une information qui passe devant presque tout — c'est le
+// trou qu'un calendrier éditorial est fait pour montrer —, une semaine pleine
+// n'est qu'un rappel. Même porte, deux rangs.
+const PORTES_AU_PLUS = 3;
+
+// LA VITRINE DE LA COM' : la semaine qui vient, une marque par parution posée.
+// Elle vient de js/gabarits.js — c'est celle de l'accueil Yuno, empruntée et non
+// recopiée —, et elle se peint à `--accent`, c'est-à-dire au jaune du club.
+function vitrineDeLaCom(publications) {
+  return friseDeLaSemaine(
+    publications
+      .filter((pub) => pub.date_prevue && pub.statut !== 'publie')
+      .map((pub) => ({ jour: pub.date_prevue })),
+  );
+}
+
+// LA VITRINE DES ÉVÈNEMENTS : le prochain de la saison et ce qui est écrit pour
+// lui. Le compte des communications vient de la rubrique, comme sur sa page —
+// deux façons de compter finiraient par ne plus dire le même nombre.
+function vitrineDesEvenements(publications, reference) {
+  const suivant = prochainEvenementClub(reference);
+  if (!suivant) return '<span class="fch-hall-quoi">La saison est passée.</span>';
+  const liees = publications.filter(
+    (pub) => pub.rubrique === `Évènement · ${suivant.evenement.titre} · ${suivant.evenement.date}`,
+  ).length;
+  return `<span class="fch-hall-phrase">${echapper(suivant.evenement.titre)}</span>
+    <span class="fch-hall-quoi">${echapper(suivant.evenement.date)} · ${echapper(suivant.evenement.lieu)}</span>
+    <span class="fch-hall-quoi">${
+      liees ? `${liees} communication${liees > 1 ? 's' : ''} écrite${liees > 1 ? 's' : ''}` : 'Communication à préparer'
+    }</span>`;
+}
+
+// EXPORTÉE pour la même raison que la cascade : un classement se vérifie avec
+// des données factices, pas en regardant l'écran d'un jour particulier.
+export function portesDuJour(etat, reference = new Date()) {
+  const aujourdhui = versDateISO(reference);
+  const borne = versDateISO(ajouterJours(reference, 7));
+
+  const partenaires = etat.partenairesSuivi ?? [];
+  const engagements = partenaires.flatMap((p) => p.engagements ?? []);
+  const restants = engagements.filter((e) => !e.fait_le).length;
+  const lots = parChantier(partenaires).filter((l) => l.reste);
+
+  const semaine = etat.publications.filter(
+    (pub) => pub.date_prevue && pub.statut !== 'publie'
+      && pub.date_prevue >= aujourdhui && pub.date_prevue <= borne,
+  );
+
   const reunions = etat.evenements.filter(estReunion);
-
-  const enCours = reunions
-    .filter((e) => {
-      const phase = phaseDeLaSortie(e, maintenant);
-      return phase === 'pendant' || phase === 'apres';
-    })
-    .sort((a, b) => new Date(b.date_debut) - new Date(a.date_debut))[0];
-  const prochaine = reunions
-    .filter((e) => new Date(e.date_debut) > maintenant)
+  const actionsOuvertes = (etat.actionsClub ?? []).filter((a) => a.statut !== 'fait');
+  const prochaineReunion = reunions
+    .filter((e) => finDeLaSortie(e) >= reference)
     .sort((a, b) => new Date(a.date_debut) - new Date(b.date_debut))[0];
 
-  const reunion = enCours ?? prochaine;
-  if (!reunion) return '';
+  const evenementProche = prochainEvenementClub(reference);
+  const dansSixSemaines = evenementProche
+    && evenementProche.quand <= ajouterJours(reference, 42);
 
-  const phase = phaseDeLaSortie(reunion, maintenant) ?? 'avant';
-  const fiche = ficheDeLaReunion(etat.fiches, reunion.id);
-  // Ce que le moment demande : avant, le contrat ; pendant, l'ordre du jour
-  // sous les yeux ; après, le compte-rendu à chaud.
-  const restants = fiche
-    ? fiche.points.filter((point) => point.statut === 'a_venir').slice(0, 3)
-    : [];
+  const laCom = () =>
+    porte('#hermitage/editorial', 'La com’ de la semaine',
+      `${semaine.length}`,
+      vitrineDeLaCom(etat.publications));
 
-  return `
-    <section class="bloc fch-tuile fch-accueil-moment">
-      <span class="tuile-entete">
-        <span class="etiquette">${PHASES_REUNION[phase]}</span>
-        ${etiquettesReunion(reunion)}
-        <span class="discret quand">${echapper(
-          momentLisible(new Date(reunion.date_debut)),
-        )}</span>
-      </span>
-      <h2 class="reunion-moment-titre">${echapper(reunion.titre)}</h2>
-      ${
-        fiche?.objectif
-          ? `<p class="discret reunion-objectif">À la fin : ${echapper(fiche.objectif)}</p>`
-          : ''
-      }
-      ${
-        phase === 'apres' && fiche && !fiche.cr_date
-          ? `<p class="discret">Le compte-rendu s'écrit à chaud — sous 48 h il devient
-               une habitude.</p>`
-          : restants.length
-            ? `<ul class="liste-reunions accueil-odj">${restants
-                .map(
-                  (point) => `
-              <li><span class="reunion-titre">${echapper(point.titre)}</span>${
-                point.minutes
-                  ? ` <span class="discret"><span class="chiffre">${point.minutes}</span> min</span>`
-                  : ''
-              }</li>`,
-                )
-                .join('')}</ul>`
-            : ''
-      }
-      ${boutonFiche(fiche, reunion)}
-    </section>`;
+  const lesEvenements = () =>
+    porte('#hermitage/evenements', 'Les évènements', `${EVENEMENTS_CLUB.length}`,
+      vitrineDesEvenements(etat.publications, reference));
+
+  const reserve = [
+    {
+      rubrique: 'partenaires',
+      quand: restants > 0,
+      porte: () => porte('#hermitage/partenaires/engagements', 'Nos engagements',
+        `${restants} à faire`,
+        lots.length
+          ? `<ul class="fch-hall-lots">${lots.slice(0, 3).map((l) => `<li>
+              <span>${echapper(l.libelle)}</span>
+              <span class="fch-hall-compte">${l.reste}</span></li>`).join('')}</ul>`
+          : '<span class="fch-hall-quoi">Tout est tenu.</span>'),
+    },
+    // Le trou de la semaine : la porte monte haut, parce que c'est ce qu'un
+    // calendrier éditorial est fait pour montrer.
+    { rubrique: 'com', quand: !semaine.length, porte: laCom },
+    {
+      rubrique: 'reunions',
+      quand: Boolean(prochaineReunion) || actionsOuvertes.length > 0,
+      porte: () => porteDesReunions(etat),
+    },
+    { rubrique: 'evenements', quand: Boolean(dansSixSemaines), porte: lesEvenements },
+    // La même porte, un rang plus bas : la semaine est pleine, il n'y a qu'à
+    // relire ce qui part.
+    { rubrique: 'com', quand: semaine.length > 0, porte: laCom },
+    { rubrique: 'evenements', quand: true, porte: lesEvenements },
+  ];
+
+  const prises = new Set();
+  const retenues = [];
+  for (const candidate of reserve) {
+    if (retenues.length === PORTES_AU_PLUS) break;
+    if (!candidate.quand || prises.has(candidate.rubrique)) continue;
+    prises.add(candidate.rubrique);
+    retenues.push(candidate.porte());
+  }
+
+  return retenues.join('');
 }
 
-// --- Les vues ----------------------------------------------------------------
-
-// L'ACCUEIL DU SITE : L'ATELIER (restructuré le 30 août 2026, demande de Noé).
+// --- LE BLOC FIXE : À FAIRE --------------------------------------------------
 //
-// CE QUI N'ALLAIT PAS, et c'est la spec elle-même qui le dit : « le site est
-// l'ATELIER — il répond à "qu'est-ce que je fais maintenant" ; la page du hub
-// est le BILAN — elle répond à "où j'en suis". C'est la seule division qui
-// justifie deux écrans. »
+// IL RESTE UN BLOC ET IL RESTE COCHABLE (décision de Noé, 16 septembre 2026),
+// là où Yuno en a fait une porte. C'est juste : le site est l'ATELIER du club,
+// et cocher une tâche en sortant du stade est le geste pour lequel on l'ouvre.
 //
-// Or les deux rôles étaient inversés sur les deux points qui comptent :
-//   — le site — l'atelier — n'affichait AUCUNE tâche, ouvrait sur trois grosses
-//     tuiles d'objectifs suivies d'un formulaire « Ajouter un objectif », et
-//     fermait sur les victoires. Deux blocs de bilan, zéro travail ;
-//   — la page `#fch` du hub — le bilan — avait, elle, un panneau « À faire ».
+// TROIS LIGNES AU LIEU DE SEPT. Mesuré, il occupait 644 px — un tiers d'une page
+// qui en faisait 2 018 : c'était le mur que l'espace Tâches a appris à ne pas
+// dresser. Le reste se déplie, rien n'est caché ; c'est la place qui change de
+// propriétaire.
 //
-// L'accueil du HUB a tranché la même question le 29 août : « Les objectifs ont
-// quitté l'accueil. Ils ont leur page à deux gestes, et l'accueil répond à
-// "qu'est-ce que j'ai à faire", pas à "où je vais". » Le site suit, avec un
-// retard d'un jour et pour la même raison.
-//
-// L'ORDRE, du plus urgent au plus lointain :
-//   1. ce qui approche — une réunion, un temps fort ;
-//   2. À FAIRE — le travail, qui manquait ;
-//   3. la com à venir ;
-//   4. le cap, en tuile-PORTE : on le relit, on ne le règle pas ici ;
-//   5. les victoires, repliées.
-//
-// AJOUTER UN OBJECTIF A QUITTÉ CET ÉCRAN. Un objectif de fin d'alternance se
-// décide trois fois dans une année : le formulaire pesait tous les jours pour
-// un geste triennal, et il vit dans `#objectifs`, là où l'on décide.
-
-// Ce qu'on montre d'un coup. Au-delà, une colonne d'accueil cesse d'être un
-// atelier et devient un mur — celui que l'espace Tâches a appris à ne pas
-// dresser. Le reste se déplie : rien n'est caché.
-const TACHES_EN_TETE = 7;
+// AJOUTER UN OBJECTIF A QUITTÉ CET ÉCRAN le 30 août 2026. Un objectif de fin
+// d'alternance se décide trois fois dans une année : le formulaire pesait tous
+// les jours pour un geste triennal, et il vit dans `#objectifs`, là où l'on
+// décide.
+const TACHES_EN_TETE = 3;
 
 function blocAFaire(etat) {
   // UNE SEULE OCCURRENCE PAR SÉRIE, la règle de l'espace Tâches
@@ -1254,11 +1661,25 @@ function blocAFaire(etat) {
   const dessiner = (lot) =>
     construireLignesTaches(lot, { ouvrable: false, supprimable: false, espace: false });
 
+  // LE TITRE EST LA PORTE, et la tuile entière l'ouvre (16 septembre 2026,
+  // demande de Noé : « simplement appuyer sur la tuile des tâches pour aller à
+  // toutes les tâches »). Le `lien-externe` qui fermait la tuile est donc parti :
+  // il pesait trois lignes pour dire ce que la tuile fait désormais d'un doigt.
+  //
+  // LE TITRE RESTE UN VRAI LIEN parce qu'un écouteur ne se tabule pas : le
+  // clavier doit atteindre ce que la souris atteint. Voir `data-tuile-vers`, plus
+  // bas dans le gestionnaire de clic.
+  const titre = (compte) => `<h2 class="titre-section">
+      <a class="fch-titre-porte" href="#hermitage/taches">À faire${
+        compte ? ` <span class="chiffre">${compte}</span>` : ''
+      }</a>
+    </h2>`;
+
   if (!aFaire.length) {
     return `
     <section class="bloc">
-      <h2 class="titre-section">À faire</h2>
-      <div class="fch-tuile">
+      ${titre(0)}
+      <div class="fch-tuile" data-tuile-vers="#hermitage/taches">
       <div data-bloc="taches">
         <p class="vide">Rien à faire pour le club. Le « + » en bas note la prochaine.</p>
       </div>
@@ -1271,8 +1692,8 @@ function blocAFaire(etat) {
 
   return `
     <section class="bloc">
-      <h2 class="titre-section">À faire <span class="chiffre">${aFaire.length}</span></h2>
-      <div class="fch-tuile">
+      ${titre(aFaire.length)}
+      <div class="fch-tuile" data-tuile-vers="#hermitage/taches">
       <div data-bloc="taches">
         ${dessiner(tete)}
         ${
@@ -1284,73 +1705,67 @@ function blocAFaire(etat) {
             : ''
         }
       </div>
-      <a class="lien-externe" href="#taches/fch">
-        <span class="lien-externe-texte">
-          <span class="lien-externe-titre">Toutes les tâches du club</span>
-          <span class="discret">Créer, régler la priorité, voir ce qui revient</span>
-        </span>
-        <span class="lien-externe-fleche" aria-hidden="true">→</span>
-      </a>
       </div>
     </section>`;
+}
+
+// --- LE CAP, EN PIED ---------------------------------------------------------
+//
+// POURQUOI EN PIED : c'est la leçon que le hub a tranchée deux fois — le cap
+// passé sous la journée le 13 août, les périodes qui ferment `#objectifs` le
+// 28 — « on relit ce qui cadre quand on lève la tête, pas en ouvrant
+// l'application ». Yuno l'a fait le 15 septembre ; le FCH suit.
+//
+// IL NOMME LA MARCHE SUIVANTE (`marquerSuivant`), et c'est ce qui le sauve :
+// mesuré le 16 septembre, les trois caps du club portent huit jalons dont AUCUN
+// n'est atteint. Trois rangées de points vides, c'est un accueil qui s'ouvre sur
+// trois zéros. La marche à venir s'allume au jaune du club et se lit en toutes
+// lettres : l'œil tombe sur ce qu'il y a à faire, pas sur ce qui manque.
+//
+// IL MÈNE À `#objectifs/fch` et non à `#objectifs` : on reste dans le filtre du
+// club — sortir vers les quatre espaces depuis l'accueil du site serait quitter
+// le site pour voir moins précis.
+function blocLeCap(etat) {
+  if (!etat.objectifs.length) return '';
+  return `
+    <section class="bloc bloc-discret fch-cap">
+      <h2 class="titre-section">Le cap</h2>
+      <div data-bloc="objectifs">${construireCapGrave(etat.objectifs, {
+        marquerSuivant: true,
+        adresse: '#hermitage/cap',
+      })}</div>
+    </section>`;
+}
+
+// LE SITE NE POSE QUE LE CADRE : sa barre, un hôte, son pied. Le module du hub
+// écrit dedans et y pose SES écouteurs.
+//
+// L'HÔTE PORTE SA VUE, et ce n'est pas décoratif : c'est ce qui permet à la
+// feuille de style de taire le titre du module sur les deux écrans dont le `h1`
+// n'est QUE le nom de la page — la galerie et les tâches. La barre le dit déjà,
+// et le redire quarante pixels plus bas, c'est deux titres pour un écran. Les
+// deux autres le gardent : leur `h1` porte le nom d'un CAP ou d'un PROJET, ce que
+// la barre ne dit pas.
+function vueDuCap(etat) {
+  return `
+    ${enTete(etat.vue, etat.capOuvert)}
+    <div data-hote-cap="${echapper(etat.vue)}"></div>
+    ${pied()}`;
 }
 
 function vueAccueil(etat) {
   return `
     ${enTete('accueil')}
     <div class="fch-accueil">
-    ${blocReunionDuMoment(etat)}
-    ${blocTempsFort(etat)}
+    ${carteDuMoment(etat)}
     ${blocAFaire(etat)}
 
-    <section class="bloc">
-      <h2 class="titre-section">La com' à venir</h2>
-      <div class="fch-tuile">
-      <div data-bloc="apercu">${construireApercuCreation(etat.publications)}</div>
-      <a class="lien-externe" href="#hermitage/editorial">
-        <span class="lien-externe-texte">
-          <span class="lien-externe-titre">Ouvrir le calendrier éditorial</span>
-          <span class="discret">Préparer et programmer les prochaines publications</span>
-        </span>
-        <span class="lien-externe-fleche" aria-hidden="true">→</span>
-      </a>
-      </div>
+    <section class="bloc fch-sans-tuile">
+      <h2 class="titre-section">Aujourd’hui au club</h2>
+      <div class="fch-hall fch-hall-jour">${portesDuJour(etat)}</div>
     </section>
 
-    <section class="bloc">
-      <h2 class="titre-section">Le cap</h2>
-      <div class="fch-tuile">
-      <div data-bloc="objectifs">${
-        etat.objectifs.length
-          ? construireCapGrave(etat.objectifs)
-          : '<p class="vide">Ton cap s’écrira ici.</p>'
-      }</div>
-      <a class="lien-externe" href="#objectifs/fch">
-        <span class="lien-externe-texte">
-          <span class="lien-externe-titre">Régler le cap</span>
-          <span class="discret">Objectifs, jalons, projets du club</span>
-        </span>
-        <span class="lien-externe-fleche" aria-hidden="true">→</span>
-      </a>
-      </div>
-    </section>
-
-    <section class="bloc bloc-discret">
-      <h2 class="titre-section">Les victoires</h2>
-      <div class="fch-tuile">
-      <details class="backlog">
-        <summary>Victoires <span class="chiffre">${etat.victoires.length}</span></summary>
-        <div data-bloc="victoires">${construireVictoires(etat.victoires)}</div>
-      </details>
-      <a class="lien-externe" href="#chemin">
-        <span class="lien-externe-texte">
-          <span class="lien-externe-titre">Le chemin</span>
-          <span class="discret">Tout ce qui a été accompli, mois par mois</span>
-        </span>
-        <span class="lien-externe-fleche" aria-hidden="true">→</span>
-      </a>
-      </div>
-    </section>
+    ${blocLeCap(etat)}
     </div>
     ${pied()}`;
 }
@@ -1590,6 +2005,177 @@ export function construireLaSaison(series, publications, aujourdhui = versDateIS
   return `${galerie}${aRattacher}`;
 }
 
+// --- LA PAGE COMMUNICATION : UN HALL (16 septembre 2026, demande de Noé) ------
+//
+// « Fais une refonte de la page communication du FCH, en ajoutant un lien ou une
+// page pour gérer la communication des évènements. »
+//
+// LE DÉFAUT, MESURÉ AVANT DE TOUCHER À QUOI QUE CE SOIT. La page portait trois
+// prochaines publications, puis **quatre rectangles avec un nom et une flèche** —
+// La saison, Le calendrier éditorial, La banque d'idées, Les publications parues.
+// *Quatre lignes de menu redessinées, et le menu est déjà à un geste.* C'est
+// exactement ce que les deux autres halls du site ont corrigé le matin même, et
+// la règle est celle du hall de `#perso` : **une porte doit dire quelque chose
+// qu'on IGNORE avant de l'ouvrir.**
+//
+// ET LES CHIFFRES ONT DONNÉ SA FORME À LA PAGE. Sur 79 publications :
+//   — **ZÉRO idée sans date** : la banque est STRUCTURELLEMENT vide, et sa porte
+//     ouvrait sur rien sans le dire ;
+//   — **56 programmées, toutes en « à préparer », ZÉRO en « à programmer »** : la
+//     chaîne est bouchée à son premier cran ;
+//   — **trois séries hebdomadaires portent 48 des 79** — la com du club est
+//     CYCLIQUE, c'est le fait que le dossier FCH avait révélé ;
+//   — **27 sans rubrique**, soit une sur trois : c'est ce qui empêche de compter
+//     par rubrique, et c'est ce que « La saison » sert à corriger ;
+//   — **un seul évènement sur neuf a de la com écrite** — et rien, nulle part, ne
+//     menait de la communication vers eux. C'est le manque que Noé a nommé.
+//
+// LE BILAN RESTE EN TÊTE, et c'est la décision que Noé a déjà prise pour le hall
+// des partenaires : « on garde le dashboard de haut de page, c'est très bien ».
+// On regarde, puis on entre.
+
+// Le dessin est celui du bilan des partenaires (`suivi-bilan`), emprunté et non
+// recopié : deux tableaux de chiffres dans le même site ne peuvent pas avoir deux
+// dessins. Ce sont les classes du SUIVI, pas des partenaires — comme
+// `fch-hall-*` sert deux halls.
+function bilanDeLaCom(etat) {
+  const aujourdhui = versDateISO(new Date());
+  const borne = versDateISO(ajouterJours(new Date(), 7));
+  const pubs = etat.publications;
+
+  const semaine = pubs.filter(
+    (p) => p.date_prevue && p.statut !== 'publie'
+      && p.date_prevue >= aujourdhui && p.date_prevue <= borne,
+  ).length;
+  const parues = pubs.filter((p) => p.statut === 'publie').length;
+  // Une publication rattachée à un ÉVÈNEMENT est rangée : sa rubrique la relie à
+  // lui. Elle ne compte donc pas parmi celles « à ranger ».
+  const sansRubrique = pubs.filter((p) => !(p.rubrique ?? '').trim()).length;
+  // Les rythmes qui TOURNENT : une série arrêtée ne tient plus rien.
+  const rythmes = (etat.series ?? []).filter(
+    (serie) => serie.espace === ESPACE && serie.nature === 'publication' && !serie.arretee,
+  ).length;
+
+  const tuile = (chiffre, quoi, precision) => `<li class="suivi-bilan-tuile">
+    <span class="suivi-chiffre">${echapper(String(chiffre))}</span>
+    <span class="suivi-quoi">${echapper(quoi)}</span>
+    ${precision ? `<span class="suivi-precision">${echapper(precision)}</span>` : ''}</li>`;
+
+  return `<ul class="suivi-bilan">
+    ${tuile(semaine, semaine > 1 ? 'parutions cette semaine' : 'parution cette semaine',
+      semaine ? 'Sur les sept jours qui viennent' : 'Rien de posé pour l’instant')}
+    ${tuile(rythmes, rythmes > 1 ? 'rythmes qui tournent' : 'rythme qui tourne',
+      'Programmation et résultats du week-end')}
+    ${tuile(parues, 'publications parues', 'Depuis le début de la saison')}
+    ${tuile(sansRubrique, 'sans rubrique',
+      sansRubrique ? 'À ranger depuis La saison' : 'Tout est rangé.')}
+  </ul>`;
+}
+
+// LA PORTE DES ÉVÈNEMENTS — la demande de Noé, et le manque que le chiffre
+// dit : **un seul évènement sur neuf a de la com écrite**, et rien ne menait de
+// la communication vers eux. Ils vivaient sous « Le club », où l'on va voir ce
+// que le club EST ; leur COMMUNICATION est un chantier, et elle se prend d'ici.
+//
+// ELLE EST UNE PORTE DU HALL, PAS UNE ENTRÉE DE MENU : le menu garde « Les
+// évènements » sous « Le club », son rangement du 16 septembre. Deux entrées de
+// menu pour une page, ce serait deux endroits à tenir d'accord ; une porte dans
+// un hall, c'est justement ce que le second rang permet.
+//
+// CE QU'ELLE MONTRE : le prochain de la saison, sa date, et **combien de
+// publications lui sont écrites** — la seule question qui vaille devant un
+// évènement qui approche.
+function porteDesEvenements(etat) {
+  const suivant = prochainEvenementClub(new Date());
+  const compte = (evenement) => etat.publications.filter(
+    (p) => p.rubrique === `Évènement · ${evenement.titre} · ${evenement.date}`,
+  ).length;
+  const couverts = EVENEMENTS_CLUB.filter((e) => compte(e) > 0).length;
+
+  // ELLE PORTE LE NOM DE SA PAGE — « Les évènements » —, et non « La com des
+  // évènements » : un nom sur la porte et un autre en tête de page, ce sont deux
+  // noms pour une page, le défaut corrigé dans le hub le 28 août. **C'est le
+  // CONTEXTE qui dit de quoi on parle** : la porte vit dans le hall de la
+  // Communication, et son aperçu ne parle que de com.
+  if (!suivant) {
+    return porte('#hermitage/evenements', 'Les évènements', `${EVENEMENTS_CLUB.length}`,
+      '<span class="fch-hall-quoi">La saison est passée.</span>');
+  }
+
+  const n = compte(suivant.evenement);
+  return porte('#hermitage/evenements', 'Les évènements',
+    `${couverts}/${EVENEMENTS_CLUB.length}`,
+    `<span class="fch-hall-phrase">${echapper(suivant.evenement.titre)}</span>
+     <span class="fch-hall-quoi">${echapper(suivant.evenement.date)} · ${echapper(suivant.evenement.lieu)}</span>
+     <span class="fch-hall-quoi">${
+       n
+         ? `${n} publication${n > 1 ? 's' : ''} écrite${n > 1 ? 's' : ''}`
+         // Un vide ouvre une porte, il ne s'excuse pas : c'est un fait, pas un
+         // reproche — et c'est justement ce qu'on vient faire ici.
+         : 'Sa communication est à écrire'
+     }</span>`);
+}
+
+// LE HALL DE LA COMMUNICATION. L'ordre suit ce qu'on vient faire : ce qui part,
+// puis les deux chantiers (les évènements, les rythmes), puis ce qu'on relit.
+function hallDeLaCom(etat) {
+  const aujourdhui = versDateISO(new Date());
+  const borne = versDateISO(ajouterJours(new Date(), 7));
+  const pubs = etat.publications;
+
+  const semaine = pubs
+    .filter((p) => p.date_prevue && p.statut !== 'publie'
+      && p.date_prevue >= aujourdhui && p.date_prevue <= borne)
+    .sort((a, b) => a.date_prevue.localeCompare(b.date_prevue));
+  const idees = pubs.filter((p) => !p.date_prevue && p.statut !== 'publie');
+  const parues = pubs.filter((p) => p.statut === 'publie');
+  const derniere = [...parues].sort((a, b) =>
+    (b.date_prevue ?? '').localeCompare(a.date_prevue ?? ''))[0];
+  // LES RUBRIQUES DU CLUB, ET PAS CELLES DES ÉVÈNEMENTS. Une rubrique d'évènement
+  // (« Évènement · Concours de pétanque · 26 septembre 2026 ») n'est pas une
+  // rubrique ÉDITORIALE : c'est le marqueur qui relie une publication à son
+  // évènement, et la porte d'à côté le dit déjà. *Mesuré : elle s'affichait en
+  // toutes lettres dans la pastille, sur trois lignes, et faisait compter 4
+  // rubriques au lieu de 3.* `estRubriqueEvenement` existe exactement pour ça.
+  const rubriques = new Set(
+    pubs.map((p) => (p.rubrique ?? '').trim())
+      .filter((rubrique) => rubrique && !estRubriqueEvenement(rubrique)),
+  );
+
+  return `<section class="fch-hall" aria-label="La communication">
+    ${porte('#hermitage/editorial', 'Le calendrier éditorial', `${semaine.length}`,
+      // LA FRISE ET DEUX TITRES. La frise dit la FORME de la semaine — où sont
+      // les trous —, les titres disent QUOI. Deux lignes au plus : au-delà, la
+      // porte redirait la page qu'elle ouvre.
+      `<ul class="fch-hall-lots">${semaine.slice(0, 2).map((p) => `<li>
+          <span>${echapper(p.titre)}</span>
+          <span class="fch-hall-compte">${echapper(RESEAUX_FCH[p.reseau] ?? p.reseau)}</span></li>`).join('')
+        || '<li><span class="fch-hall-quoi">Rien de posé cette semaine.</span></li>'}</ul>`,
+      vitrineDeLaCom(pubs))}
+
+    ${porteDesEvenements(etat)}
+
+    ${porte('#hermitage/saison', 'La saison', `${rubriques.size}`,
+      `<span class="fch-hall-quoi">Les rubriques du club, leurs rythmes et ce qui manque.</span>
+       <span class="fch-hall-mots">${mots([...rubriques], 3)}</span>`)}
+
+    ${porte('#hermitage/banque', 'La banque d’idées', `${idees.length}`,
+      idees.length
+        ? `<ul class="fch-hall-lots">${idees.slice(0, 2).map((p) => `<li>
+            <span>${echapper(p.titre)}</span></li>`).join('')}</ul>`
+        // ELLE DIT SON VIDE, et c'est une information : la banque n'a jamais rien
+        // contenu — mesuré, zéro idée sans date sur 79 publications. La porte
+        // invite au lieu de s'excuser, c'est la règle des écrans vides.
+        : '<span class="fch-hall-quoi">Rien en réserve. Une idée notée ici attend son jour.</span>')}
+
+    ${porte('#hermitage/publications', 'Les publications parues', `${parues.length}`,
+      derniere
+        ? `<span class="fch-hall-phrase">${echapper(derniere.titre)}</span>
+           <span class="fch-hall-quoi">La dernière parue</span>`
+        : '<span class="fch-hall-quoi">Les premières parutions s’inscriront ici.</span>')}
+  </section>`;
+}
+
 function vueCreer(etat) {
   const vue = etat.vue;
   const formulaire = () => `${formulaireIdee({
@@ -1608,8 +2194,13 @@ function vueCreer(etat) {
         ],
       })}`;
   const contenus = {
-    creer: () => `<section class="bloc"><h2>La communication du club</h2>
-      <div data-bloc="apercu">${construireApercuCreation(etat.publications)}</div></section>${portesDuMenu('Communication')}`,
+    // LE BILAN, PUIS LE HALL. L'aperçu des trois prochaines publications est parti
+    // avec la rangée de liens : il disait ce que la porte du calendrier éditorial
+    // montre désormais — la semaine, ses trous et ses deux prochains titres —, et
+    // deux endroits pour une même chose finissent par se contredire.
+    creer: () => `<section class="bloc fch-sans-tuile"><h2>La communication du club</h2>
+      ${bilanDeLaCom(etat)}
+      ${hallDeLaCom(etat)}</section>`,
     saison: () => `<section class="bloc"><h2>La saison</h2>
       <div data-bloc="saison">${construireLaSaison(etat.series, etat.publications)}</div></section>
       <section class="bloc">${formulaire()}</section>`,
@@ -2021,7 +2612,10 @@ function vueClub(etat) {
   const contenus = {
     'commissions': () => construireOrganigramme(personne),
     'projet-club': () => construireProjetClub(personne),
-    'evenements': () => construireEvenementsClub(personne, etat.publications, RESEAUX_FCH, FORMATS),
+    'evenements': () => construireEvenementsClub(personne, etat.publications, RESEAUX_FCH, FORMATS,
+      // La GALERIE des évènements n'a pas de calendrier — il n'y a rien à
+      // programmer devant neuf portes. Seule la fiche d'un évènement en porte un.
+      personne ? { vue: etat.vueEvenement, ancre: etat.ancreEvenement, enMain: etat.ideeEnMain } : null),
     'entrainements': () => construireEntrainements(),
     'chiffres': () => `    <section class="bloc bloc-discret">
       <h2>Le club en chiffres</h2>
@@ -2102,6 +2696,18 @@ export default {
       // La fiche de réunion ouverte : son id vient de l'adresse
       // (#hermitage/reunions/<id>), jamais d'un état d'interface.
       reunionOuverte: null,
+      // L'identifiant d'un cap ou d'un projet ouvert, ou l'étage de la galerie.
+      capOuvert: null,
+      // LE CALENDRIER D'UN ÉVÈNEMENT a sa vue et son ancre À LUI, jamais celles
+      // de la page Calendrier : programmer la com de la pétanque ne doit pas
+      // déplacer le mois qu'on regardait dans l'autre onglet. C'est déjà la règle
+      // de la page d'un projet. `enMain` est l'idée choisie au doigt.
+      vueEvenement: 'mois',
+      ancreEvenement: new Date(),
+      ideeEnMain: null,
+      // L'évènement sur lequel l'ancre a été calée : c'est ce qui distingue
+      // « on vient d'arriver » de « on est déjà là ».
+      evenementAncre: null,
       // La tuile de capture du « + » : le site en a une depuis le 21 août 2026
       // (décision de Noé) — une réunion se note en sortant de la salle.
       creationCal: null,
@@ -2139,12 +2745,41 @@ export default {
       }, 6000);
     };
 
+    // QUEL MODULE POUR QUELLE VUE, et la route qu'il attend. Les pages du hub
+    // rangent leur identifiant au NIVEAU DE LA VUE (`#objectif/<id>`) ; le site
+    // le porte un cran plus bas (`#hermitage/objectif/<id>`), et c'est ici qu'on
+    // traduit — plutôt que d'apprendre une seconde forme d'adresse à quatre
+    // modules qui n'ont pas à connaître le site.
+    const monterLeCap = () => {
+      const hote = section.querySelector('[data-hote-cap]');
+      if (!hote) return;
+
+      if (etat.vue === 'taches') return pageTaches.monter(hote, { vue: ESPACE_DU_HUB });
+      if (etat.vue === 'objectif') return pageObjectif.monter(hote, { vue: etat.capOuvert });
+      if (etat.vue === 'projet') return pageProjet.monter(hote, { vue: etat.capOuvert });
+      // La galerie, filtrée sur l'espace du site : `id` porte le filtre chez le
+      // hub, et `vue` y choisit un étage. Le site les montre tous les trois quand
+      // l'adresse n'en nomme aucun, et un seul quand elle le fait — l'étage vit
+      // au TROISIÈME segment ici (`#hermitage/cap/projets`), là où le routeur
+      // range déjà l'identifiant d'une page. Un nom d'étage inconnu ne casse
+      // rien : la galerie retombe sur ses trois étages.
+      return pageDuCap.monter(hote, { id: ESPACE_DU_HUB, vue: etat.capOuvert });
+    };
+
     const rendre = () => {
       if (['creer', 'saison', 'editorial', 'banque', 'publications'].includes(etat.vue)) section.innerHTML = vueCreer(etat);
       else if (['reunions', 'actions', 'archives'].includes(etat.vue)) section.innerHTML = vueReunions(etat);
       else if (etat.vue === 'calendrier') section.innerHTML = vueCalendrier(etat);
       else if (etat.vue === 'partenaires') section.innerHTML = vuePartenaires(etat);
       else if (['club', 'commissions', 'projet-club', 'entrainements', 'chiffres', 'evenements'].includes(etat.vue)) section.innerHTML = vueClub(etat);
+      // LES ÉCRANS DU CAP : le site ne pose que le cadre, le module du hub écrit
+      // dans l'hôte et y pose SES écouteurs, son propre chargement et son propre
+      // « + ». Le site n'ajoute donc rien par-dessus — d'où le `return` sec.
+      else if (VUES_DU_CAP.includes(etat.vue)) {
+        section.innerHTML = vueDuCap(etat);
+        monterLeCap();
+        return;
+      }
       else section.innerHTML = vueAccueil(etat);
       habillerLesSections(section);
 
@@ -2221,6 +2856,27 @@ export default {
       // (29 août 2026). Sans ça, « Écrire le bilan » ouvrirait la liste.
       etat.reunionOuverte =
         etat.vue === 'reunions' ? ficheDeLAdresse(nouvelleRoute?.id ?? null) : null;
+      // LES ÉCRANS DU CAP rangent leur identifiant au NIVEAU DE LA VUE chez le
+      // hub (`#objectif/<id>`) ; le site le porte un cran plus bas
+      // (`#hermitage/objectif/<id>`), et c'est le routeur qui le lit — c'est la
+      // même case que celle d'une fiche de réunion ou d'une personne du club.
+      // Pour la galerie, cet identifiant est un ÉTAGE (`#hermitage/cap/projets`).
+      etat.capOuvert = VUES_DU_CAP.includes(etat.vue) ? nouvelleRoute?.id ?? null : null;
+      // L'ANCRE S'OUVRE SUR LE MOIS DE L'ÉVÈNEMENT, et c'est tout l'intérêt : la
+      // com du Tournoi Rose se prépare autour du 17 octobre, pas autour
+      // d'aujourd'hui. Sans ça, on arriverait sur le mois courant et il faudrait
+      // avancer de trois crans avant de voir la date qu'on vient préparer.
+      // Elle ne se repose QU'EN CHANGEANT d'évènement : revenir sur la fiche
+      // après avoir promené la grille ne doit pas défaire ce qu'on regardait.
+      if (etat.vue === 'evenements' && nouvelleRoute?.id && nouvelleRoute.id !== etat.evenementAncre) {
+        const jour = dateDeLEvenement(EVENEMENTS_CLUB.find((e) => e.id === nouvelleRoute.id) ?? {});
+        etat.ancreEvenement = jour ?? new Date();
+        etat.vueEvenement = 'mois';
+        etat.evenementAncre = nouvelleRoute.id;
+      }
+      // Ce qu'on tenait en main ne survit pas au changement de page : garder une
+      // idée choisie sur un écran où l'on ne peut plus la poser est un piège.
+      if (etat.vue !== 'evenements') etat.ideeEnMain = null;
       rendre();
     };
 
@@ -2317,13 +2973,56 @@ export default {
     });
     poserLEntreeClavier();
 
-    // Glisser sur un jour — ou une série de jours — ouvre la tuile, dates déjà
-    // posées. Même geste que dans le hub et chez Yuno.
+    // PROGRAMMER UNE IDÉE : lui donner un jour, et la retirer de la main.
+    //
+    // L'ÉCRITURE EST OPTIMISTE (`modifierAussitot`) : l'idée quitte la colonne et
+    // apparaît sur la grille sans attendre l'aller-retour. Si l'écriture échoue,
+    // l'état d'avant revient ET une ligne le dit — sans ce retour en arrière,
+    // l'affichage optimiste est un mensonge.
+    const programmerLIdee = async (id, jour) => {
+      const pub = etat.publications.find((candidat) => candidat.id === id);
+      if (!pub) return;
+      etat.ideeEnMain = null;
+      await modifierAussitot(
+        pub,
+        { date_prevue: jour },
+        () => api.modifierPublication(pub.id, { date_prevue: jour }),
+        { rendre, echouer: () => dire("La date n'a pas pu être enregistrée.") },
+      );
+    };
+
+    // UN JOUR TOUCHÉ FAIT DEUX CHOSES, jamais les deux à la fois : il POSE
+    // l'idée qu'on a en main s'il y en a une, sinon il OUVRE la tuile. C'est la
+    // règle de « Ma semaine », au mot près — et les deux passent par le MÊME
+    // geste, parce que la sélection appelle `preventDefault` au poser du doigt et
+    // avalerait le clic sur lequel un second chemin se serait appuyé.
     brancherSelection(section, ({ debut, fin }) => {
+      if (etat.ideeEnMain) {
+        programmerLIdee(etat.ideeEnMain, debut);
+        return;
+      }
       etat.detailCal = null;
-      etat.creationCal = { debut, fin, nature: natureParDefaut(etat.natures) };
+      // DEPUIS LA FICHE D'UN ÉVÈNEMENT, ce qu'on pose est une PUBLICATION et elle
+      // arrive DÉJÀ RATTACHÉE à sa rubrique : c'est la règle du « + » de la page
+      // d'un projet — ce qu'on note depuis la page d'une chose sert cette chose.
+      // Ailleurs, le défaut du site reste ce que les filtres disent.
+      const evenement = etat.vue === 'evenements' && etat.personneClub
+        ? EVENEMENTS_CLUB.find((item) => item.id === etat.personneClub)
+        : null;
+      etat.creationCal = evenement
+        ? { debut, fin, nature: 'publication', rubrique: rubriqueEvenement(evenement) }
+        : { debut, fin, nature: natureParDefaut(etat.natures) };
       rendre();
       section.querySelector('#cal-titre')?.focus();
+    });
+
+    // GLISSER UNE IDÉE DE LA COLONNE VERS UN JOUR, à la souris. La mécanique vit
+    // dans `calendrier-commun.js` depuis le 16 septembre 2026 — elle était écrite
+    // trois fois ailleurs, et la recopier ici en aurait fait un quatrième
+    // exemplaire. L'écran ne dit que ce qu'il pose.
+    brancherPriseEnMain(section, (cle, jour) => {
+      const [, id] = cle.split(':');
+      programmerLIdee(id, jour);
     });
 
     // Glisser une barre la reporte : l'action la plus fréquente après créer.
@@ -2555,7 +3254,18 @@ export default {
     async function appliquer(action, champs) {
       // La tuile du « + » : tout passe par le circuit commun, espace fch.
       if (action === 'creer-depuis-calendrier') {
-        await poserAuCalendrier(champs, { espaceParDefaut: ESPACE });
+        // LA RUBRIQUE SE POSE À L'ÉCRITURE, PAS DANS LA TUILE. Celle-ci n'a pas
+        // de champ rubrique, et lui en ajouter un pour ce seul besoin l'aurait
+        // posé aux quatre espaces — c'est déjà l'argument qui a tenu « La saison »
+        // hors du « + » le 29 août. **C'est l'ÉCRAN qui sait ce qu'il crée** :
+        // une publication posée depuis la fiche d'un évènement sert cet
+        // évènement, sans quoi elle naîtrait orpheline et n'apparaîtrait ni dans
+        // sa colonne, ni sur son calendrier, ni dans son compte.
+        const rubrique = etat.creationCal?.rubrique;
+        await poserAuCalendrier(
+          rubrique && champs.nature === 'publication' ? { ...champs, rubrique } : champs,
+          { espaceParDefaut: ESPACE },
+        );
         etat.creationCal = null;
         await charger();
         rendre();
@@ -2905,9 +3615,17 @@ export default {
         return;
       }
 
+      // LA BARRE DE PÉRIODE SERT DEUX GRILLES, et c'est l'ÉCRAN qui dit
+      // laquelle : la page Calendrier a la sienne, la fiche d'un évènement la
+      // sienne. Un seul couple vue/ancre pour les deux ferait qu'ouvrir la
+      // pétanque déplacerait le mois qu'on regardait dans l'autre onglet.
+      const surUnEvenement = etat.vue === 'evenements' && Boolean(etat.personneClub);
+      const litLaVue = () => (surUnEvenement ? etat.vueEvenement : etat.vueCal);
+
       const vueCal = evenement.target.closest('[data-vue-cal]');
       if (vueCal) {
-        etat.vueCal = vueCal.dataset.vueCal;
+        if (surUnEvenement) etat.vueEvenement = vueCal.dataset.vueCal;
+        else etat.vueCal = vueCal.dataset.vueCal;
         rendre();
         return;
       }
@@ -2916,7 +3634,23 @@ export default {
       if (periode) {
         const sens = Number(periode.dataset.periode);
         // 0 = « Aujourd'hui » : on ne se perd jamais longtemps dans un calendrier.
-        etat.ancreCal = sens === 0 ? new Date() : deplacerAncre(etat.ancreCal, etat.vueCal, sens);
+        const ancre = surUnEvenement ? etat.ancreEvenement : etat.ancreCal;
+        const neuve = sens === 0 ? new Date() : deplacerAncre(ancre, litLaVue(), sens);
+        if (surUnEvenement) etat.ancreEvenement = neuve;
+        else etat.ancreCal = neuve;
+        rendre();
+        return;
+      }
+
+      // PRENDRE UNE IDÉE EN MAIN, puis toucher un jour. C'est le chemin TACTILE
+      // de « Ma semaine » et de la page d'un projet : sur une liste verticale, un
+      // glissement au doigt ne se distingue pas d'un défilement. Il marche aussi
+      // à la souris, et c'est voulu — un second appui repose l'idée, car un choix
+      // qu'on ne peut pas défaire est un piège.
+      const choisir = evenement.target.closest('[data-choisir]');
+      if (choisir) {
+        const id = choisir.dataset.choisir;
+        etat.ideeEnMain = etat.ideeEnMain === id ? null : id;
         rendre();
         return;
       }
@@ -3032,6 +3766,27 @@ export default {
         // Sélectionner un nom pour le copier n'est pas cliquer dessus.
         if (window.getSelection()?.toString()) return;
         location.hash = `#hermitage/partenaires/${tuilePartenaire.dataset.tuilePartenaire}`;
+        return;
+      }
+
+      // TOUTE TUILE QUI MÈNE QUELQUE PART (16 septembre 2026, demande de Noé :
+      // « simplement appuyer sur la tuile des tâches pour aller à toutes les
+      // tâches »). C'est la MÊME mécanique que la tuile d'un partenaire juste
+      // au-dessus, et que celle d'« Aujourd'hui » sur l'accueil du hub :
+      //
+      //   — PAS un lien qui enveloppe. La tuile des tâches porte une quinzaine
+      //     de contrôles, et un `<button>` dans un `<a>` n'est ni valide ni
+      //     cliquable ;
+      //   — l'écouteur SE RETIRE dès que le clic a touché quelque chose qui fait
+      //     déjà quelque chose, et `GESTES_TUILE` est une liste EXPLICITE : un
+      //     sélecteur deviné sur le curseur marcherait ce soir et avalerait
+      //     silencieusement le prochain contrôle posé sur la tuile ;
+      //   — le TITRE porte le lien, sans en avoir l'air : un écouteur ne se
+      //     tabule pas, et le clavier doit atteindre ce que la souris atteint.
+      const tuileVers = evenement.target.closest('[data-tuile-vers]');
+      if (tuileVers && !evenement.target.closest(GESTES_TUILE)) {
+        if (window.getSelection()?.toString()) return;
+        location.hash = tuileVers.dataset.tuileVers;
         return;
       }
 

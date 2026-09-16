@@ -2341,6 +2341,35 @@ a { color: var(--accent); }
 
 .cap-jalons i.atteint { background: var(--couleur-espace-pleine); }
 
+/* UNE SEULE MARCHE ALLUMÉE À LA FOIS — la suivante, celle que la ligne du
+   dessous nomme (`marquerSuivant`, js/objectifs-commun.js). Elle est née pour
+   l'accueil du site FCH le 16 septembre 2026, et elle y répond à un fait mesuré :
+   ses trois caps portent huit jalons dont AUCUN n'est atteint. Sans elle, la
+   rangée n'est qu'une file de points éteints — un accueil qui s'ouvre sur un
+   zéro. L'œil tombe ainsi sur la marche à faire, pas sur celles qui manquent.
+
+   Elle prend `--accent` et non la couleur de l'espace : sur un site, l'accent EST
+   l'identité (le jaune du club, le doré de Yuno), et c'est la seule couleur qui
+   ressorte sur son fond. Le contour la tient visible même quand l'accent est
+   proche du fond. */
+.cap-jalons i.suivant {
+  background: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+/* Elle NOMME la marche, elle ne compte pas le reste : « Poser les rubriques »
+   dit quoi faire, « 0 sur 4 » ne dit qu'un manque. Deux lignes au plus — un
+   titre de jalon peut être long, et le cap est en pied d'écran : ce qui dépasse
+   s'arrête, il ne pousse pas le reste. */
+.cap-suivant {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
 .cap-echeance { font-size: 0.75rem; }
 
 /* SUR L'ACCUEIL SEULEMENT, le cap tient en LIGNES et non en colonnes (28 août

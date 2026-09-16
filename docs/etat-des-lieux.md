@@ -1,7 +1,370 @@
 # État des lieux — 16 septembre 2026
 
-> **REPRISE IMMÉDIATE : « § 0 — Relais du 16 septembre, NUIT » ci-dessous.**
+> **REPRISE IMMÉDIATE : « § A — L'accueil du club » ci-dessous.**
 > Ce relais prime sur tous les suivants.
+
+## § A — Relais du 16 septembre (l'accueil du site FC Hermitage)
+
+**RIEN N'EST COMMITÉ NI POUSSÉ** — Noé ne l'a pas demandé. Quinze fichiers
+modifiés, trois nouveaux (`tools/essai-accueil-fch.mjs`,
+`tools/essai-cap-adresses.mjs`, `tools/essai-fiche-evenement.mjs`). *`git status` fait foi.*
+
+**LA SESSION A SEPT TOURS** : la refonte de l'accueil (§ A.1 à A.6), la forme et
+les quatre pages empruntées au hub (§ A.7), le calendrier d'un évènement (§ A.8),
+la page Communication en hall (§ A.9), le lien « Préparer sa com » (§ A.10), puis
+les tuiles translucides
+étendues à tout le site (§ A.11), et la phrase de la Présidence (§ A.12).
+
+**Le détail vit dans `docs/fch-spec.md`**, § « `#hermitage` — l'accueil », qui
+fait autorité et a été écrit au fur et à mesure. Ce relais dit ce qui a été
+DÉCIDÉ, ce qui a été VÉRIFIÉ, et ce qui reste ouvert.
+
+### § A.1 — La demande, et le défaut mesuré
+
+Noé : *« pour l'accueil du FCH, il faut réorganiser les infos qui doivent y être
+et la forme. Pour cela il faut s'appuyer sur ce qu'on a fait sur le hub et
+yuno. »*
+
+**C'EST LE DÉFAUT DE L'ACCUEIL YUNO DU 15 SEPTEMBRE, à l'identique.** Mesuré
+avant d'y toucher : **2 018 px**, cinq blocs fixes, dont « À faire » à 644 px et
+un cap qui s'ouvrait sur **trois rangées de points vides** (huit jalons, aucun
+atteint). Pendant ce temps l'accueil ne disait **rien** de ce que le site charge
+déjà : **65 engagements partenaires sur 69**, **7 partenaires sur 20** sans
+virement, et **54 parutions toutes en « à préparer », zéro en « à programmer »**.
+
+**Réponse : la règle de Yuno.** Un bloc fixe (le travail), le reste est un
+classement. *Mesuré après : **927 px** sur ordinateur, 1 566 sur téléphone, et
+**aucune requête de plus** — tout était déjà chargé.*
+
+### § A.2 — Les trois décisions de Noé (elles ne se re-devinent pas)
+
+1. **L'ORDRE DE LA CASCADE : le moment d'abord** — réunion, temps fort, parution
+   à 48 h, virements, puis le repli. *« La com' d'abord » lui a été proposée et
+   écartée.*
+2. **« À faire » RESTE un bloc fixe et cochable**, à **trois** lignes au lieu de
+   sept, là où Yuno en a fait une porte. Le site est l'atelier : on y coche.
+3. **Les quatre portes de la réserve** : engagements · com' (frise) · réunions ·
+   évènements.
+
+### § A.3 — Ce qui a été décidé SANS lui demander (à lui dire)
+
+- **LES VICTOIRES ONT QUITTÉ L'ACCUEIL.** Elles étaient du bilan sur l'atelier, et
+  `#fch` comme « Le chemin » les portent déjà. C'est la division que la spec pose
+  elle-même, et Yuno n'en montre pas davantage. **C'est la seule décision de la
+  session qui ne soit pas la sienne.**
+- **Le rang 4 ne parle que des VIREMENTS**, pas des 65 engagements. Ceux-ci sont
+  une vérité permanente : une carte qui les afficherait six mois durant
+  deviendrait un meuble et mangerait à jamais le rang 5 — l'écueil que Yuno a
+  documenté avec sa fournée du lundi. **Ils gardent leur porte.** *Si « un
+  chantier partenaires qui arrive » voulait dire autre chose pour lui, c'est ce
+  rang-là qu'il faut rouvrir.*
+
+### § A.4 — Ce qui a été mis en commun plutôt que recopié
+
+- **`friseDeLaSemaine` a déménagé dans `js/gabarits.js`** ; `js/yuno.js`
+  l'importe de là. Elle se peint à `--accent` sans rien savoir de son site — doré
+  chez Yuno, jaune du club au FCH. *Vérifié : l'accueil Yuno rend toujours ses
+  2 frises, 14 cases, 2 gravures, sans une erreur.*
+- **`construireCapGrave` a gagné `marquerSuivant` et `adresse`**
+  (js/objectifs-commun.js), par symétrie exacte avec `construireProgression`.
+  *Vérifié : `#dashboard` et `#fch` sont inchangés — aucune marche allumée,
+  le lien pointe toujours `#objectifs`.*
+- **`dateDeLEvenement` / `prochainEvenementClub`** (js/evenements-club.js) lisent
+  la date écrite en toutes lettres plutôt que d'ajouter une colonne ISO : deux
+  écritures d'une même date finissent par se contredire. *Les neuf dates
+  vérifiées hors écran.*
+- **Les portes réutilisent `porte()` des halls du site.** Aucun dessin nouveau.
+
+### § A.5 — Ce qui a été vérifié, et comment
+
+- **`node tools/essai-accueil-fch.mjs`** — **quatorze cas** : les cinq rangs de la
+  cascade (y compris ceux qui doivent SE TAIRE), le plafond de trois portes, la
+  règle « jamais deux de la même rubrique », le repli jamais muet. **Tout passe.**
+- **À l'écran, à 375 px et à 1 240** : aucun débordement, aucune erreur console.
+  Les cinq onglets du site (accueil, com', partenaires, club, calendrier) et le
+  hall du club répondent.
+- **Le geste de l'accueil** : cocher une tâche ouvre bien la fenêtre de durée
+  (`cocherDepuisTableauDeBord`). **Annulé — rien n'a été écrit en base**, le
+  compte est resté à 13.
+
+### § A.6 — Les pièges payés (ils ne se devinent pas)
+
+- **`node --check` NE VÉRIFIE PAS UN MODULE ES.** Une virgule en trop dans une
+  liste d'import (`{ CHEVRON,, friseDeLaSemaine }`) **est passée sans un mot** —
+  le module ne se serait pas chargé, emportant tout l'écran. La vérification
+  juste est `node --input-type=module --check < fichier`. *Consigné dans
+  CLAUDE.md.*
+- **LA SPÉCIFICITÉ, UNE DIXIÈME FOIS.** `.bloc ul:not(.liste-jalons)` (0-2-1) bat
+  `.fch-hall-lots` (0-1-0) : la piste valait la largeur de son contenu et
+  l'ellipse ne s'appliquait jamais. *Mesuré : 315 px dans une colonne de 250.*
+  Les deux autres halls y échappaient en vivant **hors** des blocs ; celui-ci
+  porte un titre, donc il y vit. Écrit `.bloc ul.fch-hall-lots` — **les trois
+  halls du site en profitent.**
+- **DEUX NOMS VOISINS POUR DEUX TABLES** : `etat.partenaires` sont les CONTACTS,
+  `etat.partenairesSuivi` les partenaires DE LA SAISON avec leurs engagements.
+  J'ai pris le premier — la porte des engagements est restée muette, et **le banc
+  d'essai est passé au vert en ne testant rien**. Corrigé des deux côtés, et le
+  banc le dit maintenant en commentaire.
+- **LE CACHE A MENTI UNE FOIS DE PLUS** : le CSS était à jour sur le serveur et la
+  page appliquait l'ancien. `caches.delete` + désinscription du service worker.
+  *Mais attention : la deuxième fois, ce n'était PAS le cache — c'était la
+  spécificité. Vider le cache avant d'avoir mesuré la règle gagnante fait perdre
+  du temps et accuser le mauvais coupable.*
+
+### § A.7 — SECOND TOUR : la forme, et les quatre pages empruntées
+
+**Quatre demandes de Noé après avoir vu l'accueil**, dont une qui en corrige une
+autre en cours de route :
+
+1. *« les liens vers page ne doivent pas être aussi gros »* ;
+2. *« un bouton de couleur pour la tuile dynamique du haut »*, **puis** ⚠️ *« non,
+   un bouton sous forme de tuile dans le même style que ce qu'on fait chez
+   Yuno »* — *l'aplat d'accent a donc vécu dix minutes : une pastille jaune
+   pleine criait plus fort que la carte qui la porte. **Ne pas y revenir.*** La
+   porte est maintenant le dessin des portes du site (`.fch-hall-porte`), en
+   compact ;
+3. *« simplement appuyer sur la tuile des tâches pour aller à toutes les
+   tâches »* — la tuile entière mène, le gros lien qui la fermait est parti, et
+   `data-tuile-vers` généralise au site la mécanique de la tuile d'un partenaire ;
+4. *« créer une page tâches dans le site FCH comme c'est fait sur Yuno, et une
+   page objectif, et projet »*.
+
+**LES QUATRE PAGES SONT LES MODULES DU HUB**, montés dans le site comme chez
+Yuno — `#hermitage/cap`, `/cap/caps`, `/cap/projets`, `/objectif/<id>`,
+`/projet/<id>`, `/taches`. Rien n'a été recopié. Le détail vit dans
+`docs/fch-spec.md`, § « Le site monte les écrans du cap ».
+
+**LE PIÈGE QUI SE SERAIT VU TOUT DE SUITE, et qui a été mesuré** : la page d'un
+objectif et celle d'un projet posent `body.dataset.espace` pour prendre la
+couleur de leur espace. Depuis un site, ça remplace `hermitage` par `fch` — *le
+site perdait son bleu, sa police et son dock d'un coup*, `--fond-carte` retombant
+à `#212426`. La garde existait pour Yuno seul (`dansLeSiteYuno`) ; elle est
+devenue **`dansUnSite`**, une seule fonction pour les deux sites et le prochain.
+
+**DEUX AUTRES GARDES ONT SUIVI**, et elles disaient Yuno en dur : la page des
+tâches (« Tout ce qu'il y a à faire pour Yuno ») et le titre de la galerie
+(« Mon cap — Yuno »). Le nom vient désormais de l'espace filtré. *Sans ça, le
+site du club aurait nommé Yuno — le genre de faute qu'on ne voit que sur l'écran
+qu'on regarde le moins.*
+
+**`tools/essai-cap-adresses.mjs` est né** : il éprouve hors écran où mènent les
+liens depuis le hub, depuis Yuno et depuis le club, **`#hermitagexyz` compris** —
+le test porte sur le premier segment, pas sur un préfixe.
+
+**LE CACHE M'A FAIT ACCUSER MON PROPRE CODE.** Le fichier servi était à jour
+(vérifié par `fetch`), le comportement ancien : ce n'était ni le service worker
+(désinscrit) ni la spécificité, mais **le cache HTTP du navigateur sur les
+modules ES**. Un paramètre dans l'URL (`?v=2`) tranche en trois secondes.
+*Vérifier le style calculé OU recharger avec un paramètre avant de soupçonner le
+code — c'est la troisième cause possible, et elle ne se devine pas.*
+
+**Vérifié à l'écran** : les neuf adresses du site répondent, toutes en bleu du
+club, aucun débordement de 375 à 935 px, aucune erreur console. Les liens de la
+galerie montée dans le club pointent tous `#hermitage/…`. **Yuno et le hub sont
+intacts** — accent doré et frises d'un côté, « tous espaces » et ses filtres de
+l'autre. La tuile des tâches mène aux tâches ; le rond d'une tâche ouvre la
+fenêtre de durée **sans** naviguer.
+
+### § A.8 — TROISIÈME TOUR : le calendrier d'un évènement
+
+**Demande de Noé** : *« pour les évènements, dans leur page, je dois avoir un
+calendrier sur lequel je peux prévoir la communication. »*
+
+**C'EST LA PAGE D'UN PROJET, appliquée à un évènement du club** : une colonne de
+ce qui attend un jour, un calendrier à côté, et l'on glisse de l'une à l'autre.
+Le détail vit dans `docs/fch-spec.md`, § « La fiche d'un évènement porte son
+calendrier ».
+
+**Ce qui a été décidé, et qu'on ne re-devine pas :**
+
+- **Le calendrier s'ouvre sur le mois de l'ÉVÈNEMENT**, pas sur aujourd'hui — et
+  son ancre est à lui, jamais celle de la page Calendrier.
+- **Le jour de l'évènement est le pivot**, en tuile pleine à l'accent : c'est
+  autour de lui qu'on place tout le reste. Il ne se coche ni ne se glisse — c'est
+  une date du planning officiel, pas une ligne de base.
+- **Les idées ont quitté la liste du bas** : elles sont dans la colonne, où elles
+  se posent. Deux listes pour une même chose finissent par se contredire.
+- **Un jour touché POSE ce qu'on a en main, sinon il OUVRE la tuile** — en nature
+  publication, déjà rattachée à l'évènement.
+
+**`brancherPriseEnMain` EST NÉE dans `js/calendrier-commun.js`** : le glissement
+« d'une colonne vers un jour » était écrit **trois fois**, mot pour mot, et cette
+page en aurait fait un quatrième. ⚠️ **Les trois écrans d'origine — « Ma
+semaine », la page d'un projet, celle d'un objectif — tournent encore sur leur
+copie.** Les faire basculer est un chantier à part, et c'est le genre de dette
+qui se paie quand l'une des quatre cesse d'avaler le clic qui suit un glissement.
+
+**LE PIÈGE DE NOMMAGE, PAYÉ UNE ONZIÈME FOIS.** `.evenement-grille` EST la fiche
+d'un moment du site Yuno (`css/yuno.css`, chargée sur les trois pages). *Mesuré :
+barre de période écrasée à 145 px dans une section de 743, contenu débordant de
+107 px.* Renommée `.evenement-calendrier`.
+
+**ET `poserAuCalendrier` NE RECOPIE QUE CE QU'ON LUI NOMME** : sans la ligne
+`rubrique`, la publication créée depuis un jour serait née **rattachée à rien**,
+sans erreur ni signe. C'est le piège payé chez Yuno la veille, évité ici parce
+qu'on l'a cherché.
+
+**Vérifié à l'écran, de bout en bout** : une idée d'essai créée, choisie, posée
+au 15 octobre — la date est en base, elle quitte la colonne et apparaît sur la
+grille. Puis une seconde créée depuis un jour vide : elle arrive avec sa
+rubrique. **Les deux ont été supprimées** (76 publications avant, 76 après).
+Aucun débordement à 375, 791 et 1240 px ; « La saison », le calendrier du site et
+la fiche d'un moment de Yuno sont intacts.
+
+### § A.9 — QUATRIÈME TOUR : la page Communication devient un hall
+
+**Demande de Noé** : *« fais une refonte de la page communication du FCH, en
+ajoutant un lien ou une page pour gérer la communication des évènements. »*
+
+**LE DÉFAUT ÉTAIT LE MÊME QUE CELUI DES DEUX AUTRES HALLS** : quatre rectangles
+avec un nom et une flèche — quatre lignes de menu redessinées, et le menu est à
+un geste. Le détail vit dans `docs/fch-spec.md`, § « `#hermitage/creer` — un
+HALL ».
+
+**LES CHIFFRES QUI ONT DÉCIDÉ DE LA FORME**, sur 79 publications : **zéro idée
+sans date** (la banque est structurellement vide), **56 programmées toutes en « à
+préparer » et zéro « à programmer »**, **3 séries qui portent 48 des 79**, **27
+sans rubrique**, et **un seul évènement sur neuf a de la com écrite** — le manque
+que Noé a nommé.
+
+**Le bilan reste en tête, puis cinq portes** : le calendrier éditorial (la frise
+de l'accueil + les deux prochains titres), **les évènements** (le prochain et sa
+com, « 1/9 »), la saison, la banque, les parues.
+
+**Décisions, avec leur raison :**
+
+- **La porte des évènements est une PORTE, pas une entrée de menu.** Le menu
+  garde « Les évènements » sous « Le club », son rangement du 16 septembre : deux
+  entrées de menu pour une page seraient deux endroits à tenir d'accord.
+- **Elle porte le nom de sa page** (« Les évènements »), pas « La com des
+  évènements » : deux noms pour une page est le défaut corrigé le 28 août. C'est
+  le contexte — le hall de la Communication — qui dit de quoi on parle.
+  ⚠️ **Conséquence assumée** : on arrive sur une page dont l'onglet du dock est
+  « Club » et dont le retour dit « ← Le club ». *Si ça gêne à l'usage, c'est le
+  RANGEMENT des évènements qu'il faut rouvrir, pas la porte.*
+- **La saison ne compte que les rubriques ÉDITORIALES** : `estRubriqueEvenement`
+  écarte les marqueurs d'évènement. *Mesuré : « Évènement · Concours de pétanque ·
+  26 septembre 2026 » s'affichait en toutes lettres sur trois lignes et faisait
+  compter 4 rubriques au lieu de 3.*
+- **L'aperçu des trois publications est parti** avec la rangée de liens : il
+  disait ce que la porte du calendrier éditorial montre désormais.
+  `portesDuMenu` part avec, faute d'appelant ; `portes()` reste pour les réunions.
+
+**Vérifié** : les 14 écrans du site répondent, aucun vide, aucun débordement de
+375 à 1240 px, aucune erreur console. Les cinq portes mènent où elles disent, et
+le retour « ← Communication » tient sur les quatre sous-pages.
+
+### § A.10 — CINQUIÈME TOUR : « Préparer sa com » mène à la fiche
+
+**Demande de Noé** : *« le lien de préparer sa com doit mener à la page de
+l'évènement. »*
+
+**IL A FALLU UN RAPPROCHEMENT, parce que ce sont deux choses** : le temps fort est
+une ligne de `evenements`, la fiche est une entrée du planning officiel écrite
+dans le dépôt. **Le titre est exclu comme clé, et c'est mesuré** — « Tournoi de
+pétanque » en base contre « Concours de pétanque » au planning, « Tournoi Rose »
+contre « Tournoi rose ».
+
+`ficheDeLEvenement` (js/evenements-club.js) : **la date exacte d'abord** (aucune
+des neuf fiches ne partage son jour), **puis une fenêtre de trois jours à
+condition qu'elle ne trouve qu'UNE candidate**. *La garde d'unicité est ce qui
+empêche de deviner : les deux futsal sont les 9 et 10 janvier.* Repli sur
+l'éditorial quand rien ne se rapproche.
+
+**Onze cas éprouvés** — `tools/essai-fiche-evenement.mjs`, dont les deux ambigus
+qui doivent refuser. *Vérifié à l'écran : le bouton mène à
+`#hermitage/evenements/petanque-septembre-2026`, qui s'ouvre sur septembre avec
+son calendrier.*
+
+### ⚠️ DEUX ÉCARTS DE DONNÉES RÉVÉLÉS, à faire trancher par Noé
+
+Ils ne sont **pas** corrigés — ce sont ses données, et le planning officiel fait
+foi :
+
+1. **Le goûter de Noël est au 18 décembre en base et au 19 au planning.** Le
+   rapprochement le rattrape (fenêtre de trois jours), mais l'un des deux est
+   faux. *`EVENEMENTS_CLUB` dit « 19 décembre 2026 », transcrit du planning du
+   club.*
+2. **Le temps fort du 26 septembre s'appelle « Tournoi de pétanque » en base**,
+   alors que le planning dit « **Concours** de pétanque ». Sans conséquence pour
+   le lien, mais l'accueil et la fiche affichent donc deux noms pour la même
+   soirée.
+
+### § A.11 — SIXIÈME TOUR : les tuiles de l'accueil flottent
+
+**Demande de Noé** : *« diminue un peu l'opacité des fonds de tuiles dans la page
+d'accueil, et rajoute une légère ombre portée vers le bas à droite. »*
+
+Fonds à **82 %** (le fond du site est un dégradé : les tuiles en prennent la
+pente) et **ombre `4px 6px 16px` à 22 %**, vers le bas à droite — *la lumière du
+site vient du coin haut droit, et une ombre qui contredit sa source se voit comme
+une erreur*. Détail dans `docs/fch-spec.md`, § « Les tuiles de l'accueil
+flottent ».
+
+- **LE CONTRASTE S'AMÉLIORE**, mesuré : le dégradé qui traverse est plus sombre
+  que la tuile. Texte blanc 8,18 → 8,69–9,74 ; encre discrète **4,72 → 5,01–5,62**.
+- ⚠️ **LE SURVOL EST UNE VITRE, ET IL ASSOMBRIT** — `rgb(255 255 255 / 7%)`, le
+  voile qui EFFACE le fond de la tuile. C'est l'effet que Noé a reconnu (*« j'aime
+  que ça fasse cet effet lorsque l'on passe le doigt dessus »*), et celui que les
+  portes du site ont toujours porté. **En passant la translucidité, je l'avais
+  réécrit en voile blanc POSÉ SUR la tuile à 82 %** : elle s'éclaircissait au lieu
+  de s'assombrir, et **l'encre discrète tombait à 4,20:1**, sous le seuil AA.
+  Rétabli — le survol d'origine la porte à **5,55:1**. *Ne pas le « corriger » en
+  croyant bien faire : c'est le fond qui s'efface, pas un voile qui s'ajoute.*
+- **L'ombre reste au survol** : la tuile devient une vitre, l'ombre dit qu'elle
+  est toujours devant la page.
+- **PORTÉE : TOUT LE SITE** depuis le 17 septembre (*« applique ce style aux
+  autres tuiles du site »*). Le critère qui décide est celui du 30 août : **une
+  tuile sur la PAGE** a le dégradé derrière elle (elle le laisse passer, l'ombre
+  la décolle) ; **une tuile DANS une autre** n'a que sa parente (la transparence
+  ne montrerait rien, et l'ombre ferait une tache). Écartées : la tuile de
+  capture — *elle vole au-dessus d'un fond assombri* —, les contrôles, la
+  navigation de pied.
+- ⚠️ **`#orga-resultats.orga-personnes` ET NON `.orga-personnes`** : la classe est
+  portée par tous les conteneurs de portraits, qui sont des flex NUS. L'écrire
+  seule leur donnait un fond — *le rectangle que Noé a vu entre la tuile d'un
+  groupe et ses photos*. Corrigé.
+- ⚠️ **Deux spécificités à égaler**, trouvées à l'écran (la tuile portait l'ombre
+  SANS la transparence) : `.bloc li.suivi-partenaire` (0-2-1) et `#orga-resultats`
+  (1-0-0).
+- **Vérifié : 98 tuiles sur 21 pages**, aucune fautive, aucun débordement, aucune
+  erreur console.
+- *Leçon de mesure : lire l'alpha d'un fond avec `includes('0.82')` MENT — le
+  navigateur rend `oklab(…)` pendant une transition et `color(srgb …)` au repos.
+  On peint la couleur dans un canevas et on lit son alpha. Six « fautives »
+  fantômes trouvées ainsi.*
+
+### § A.12 — La phrase de la Présidence
+
+**Demande de Noé** : *« enlève cette petite phrase »* — « Projet du club,
+décisions et coordination », sous le titre du groupe Présidence.
+
+**CE QU'ELLE ÉTAIT** : `aide`, le sous-titre d'un groupe d'organigramme. **Il est
+INÉGAL, et c'est mesuré** — une tuile sur trois au Bureau, trois sur quatorze aux
+Équipes, mais **six sur six aux Commissions**, où il dit ce que fait la
+commission (« Photos, réseaux sociaux et informations du club »).
+
+**SEULE CELLE DE LA PRÉSIDENCE A ÉTÉ VIDÉE**, pas le mécanisme : les six phrases
+des commissions et les trois des pôles apprennent quelque chose ; celle-ci ne
+disait rien que le mot « Présidence » ne dise déjà, **et elle était la seule de sa
+rangée** — *mesuré, les deux tuiles du haut font maintenant la même hauteur,
+196 px.* Elle rejoint les onze groupes dont l'`aide` est déjà vide.
+
+*Vérifié : la recherche fonctionne toujours (elle indexe `aide` parmi d'autres
+champs — « Lionel » sort avec ses trois rôles), et
+`node tools/verifier-organigramme-fch.js` passe : 44 fiches, 23 groupes.*
+
+### § A.13 — PAR OÙ REPRENDRE
+
+1. **Montrer l'accueil à Noé** et lui dire les deux décisions du § A.3.
+2. **Commiter** si ça lui convient — rien n'est poussé.
+3. Les points ouverts du FCH n'ont pas bougé : voir § 2.6 (les logos manquants,
+   la modification d'un partenaire, la porte partenaires du hall du club).
+
+---
+
+> **Les relais ci-dessous sont ANTÉRIEURS.** Le § 0 était la reprise immédiate
+> jusqu'à celui-ci.
 
 ## § 0 — Relais du 16 septembre, NUIT (Yuno : une idée est un FORMAT)
 
