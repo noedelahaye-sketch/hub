@@ -1251,3 +1251,170 @@ body[data-espace="hermitage"] #vue .orga-identite h2 {
   .orga-domaines a { padding: 10px 12px; font-size: 0.75rem; }
   .orga-personne, .orga-large .orga-personne { flex-basis: 104px; }
 }
+
+/* --- Le suivi des engagements partenaires (16 septembre 2026) ------------------
+   La page répond à deux questions et les sépare : « qu'est-ce qu'on doit à
+   CETTE entreprise » (la fiche) et « qu'est-ce qu'il me reste à faire » (les
+   chantiers). La seconde ouvre la page, parce que c'est elle qui fait gagner du
+   temps : on ne fait pas les vignettes d'album une par une.
+   Les `li.` sont là pour égaler `.bloc li`, qui met toutes les listes du hub en
+   flex-rangée — le piège documenté dans les conventions. */
+
+.suivi-service { margin: -4px 0 var(--espace-16); max-width: 46rem; font-size: 0.8125rem; color: var(--texte-discret); }
+
+/* Le bilan ouvre la page, HORS de toute `.bloc` : préfixer ses règles par
+   `.bloc` les rendait sans effet, et les quatre tuiles s'empilaient sur toute
+   la largeur. Une règle qui suppose un parent qu'elle n'a pas est une règle
+   qu'on n'écrit pas. */
+ul.suivi-bilan {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  gap: var(--espace-8); margin: 0 0 var(--espace-24); padding: 0; list-style: none;
+}
+li.suivi-bilan-tuile {
+  display: block; padding: var(--espace-12); border-radius: 14px;
+  background: var(--fond-carte); border: 0;
+}
+.suivi-chiffre {
+  display: block; font-family: var(--police-titre); font-weight: 700;
+  font-size: 1.5rem; line-height: 1.05; letter-spacing: -0.03em; color: #fff;
+}
+.suivi-quoi { display: block; margin-top: 2px; font-size: 0.8125rem; }
+.suivi-precision { display: block; margin-top: 2px; font-size: 0.6875rem; color: var(--texte-discret); }
+
+body[data-espace="hermitage"] #vue .suivi-moment {
+  margin: var(--espace-24) 0 var(--espace-8); font-size: 0.6875rem; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--texte-discret);
+}
+.suivi-chantiers {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+  gap: var(--espace-12); align-items: start;
+}
+.suivi-chantier { padding: var(--espace-12); border-radius: 16px; background: var(--fond-carte); }
+/* Un chantier bouclé s'efface, il ne disparaît pas : on doit pouvoir vérifier
+   qu'il l'est. Aucun vert de récompense — c'est un travail fait, pas un score. */
+.suivi-chantier.est-boucle { opacity: 0.55; }
+body[data-espace="hermitage"] #vue .suivi-chantier h4 {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+  margin: 0 0 6px; font-size: 0.9375rem; font-weight: 800; color: #fff;
+  text-transform: none; letter-spacing: -0.01em;
+}
+.suivi-compte { flex: none; font-size: 0.6875rem; font-weight: 700; color: var(--texte-discret); }
+.suivi-chantier .discret { margin: 0 0 8px; font-size: 0.75rem; }
+
+.bloc ul.suivi-lignes { display: grid; gap: 2px; margin: 8px 0 0; }
+.bloc li.suivi-ligne {
+  display: flex; align-items: flex-start; gap: 8px; flex-direction: row;
+  padding: 5px 0; background: transparent; border: 0; border-radius: 0;
+  font-size: 0.8125rem; line-height: 1.35;
+}
+.suivi-ligne.est-fait .suivi-ligne-texte { color: var(--texte-discret); }
+.suivi-ligne-texte { min-width: 0; flex: 1 1 auto; }
+.suivi-detail { color: var(--texte-discret); font-size: 0.75rem; }
+/* « négocié » : la ligne ne vient pas du dossier. C'est ce qu'il faut savoir
+   quand on se demande si on peut la justifier au partenaire. */
+.suivi-ajout {
+  display: inline-block; margin-left: 5px; padding: 1px 7px; border-radius: 999px;
+  font-size: 0.625rem; font-weight: 700; color: var(--texte-discret);
+  border: 1px solid var(--bordure);
+}
+.suivi-date { flex: none; font-size: 0.6875rem; color: var(--texte-discret); }
+
+/* LE ROND FAIT 16 px, LA CIBLE 36 : c'est la séparation de la ligne d'habitude
+   du hub — le rond est ce qu'on VOIT, le bouton ce qu'on TOUCHE. */
+.suivi-coche {
+  flex: none; display: grid; place-items: center;
+  width: 36px; height: 24px; margin: -2px 0 0 -10px; padding: 0;
+  background: none; border: 0; cursor: pointer;
+}
+.suivi-coche span {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid var(--texte-discret); transition: background 140ms, border-color 140ms;
+}
+.suivi-coche[aria-pressed="true"] span {
+  background: var(--famille-corps, #5aa66f); border-color: var(--famille-corps, #5aa66f);
+}
+.suivi-coche:focus-visible { outline: 2px solid #fff; outline-offset: 2px; border-radius: 8px; }
+
+.suivi-filtres { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--espace-12); }
+.suivi-filtres a {
+  display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px;
+  border-radius: 999px; background: #152342; color: var(--texte);
+  text-decoration: none; font-size: 0.75rem; font-weight: 700;
+}
+.suivi-filtres a:hover { text-decoration: none; background: #1b2c52; }
+.suivi-filtres a.actif { background: var(--club-rouge); color: #fff; }
+
+.bloc ul.suivi-partenaires { display: grid; gap: var(--espace-8); margin: 0; }
+.bloc li.suivi-partenaire {
+  display: block; padding: 0; overflow: hidden;
+  border-radius: 16px; background: var(--fond-carte); border: 0;
+}
+.suivi-tete {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center;
+  gap: 2px 10px; width: 100%; padding: var(--espace-12); text-align: left;
+  background: none; border: 0; color: #fff; cursor: pointer; font: inherit;
+}
+.suivi-tete:hover { background: rgb(255 255 255 / 5%); }
+.suivi-tete:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
+.suivi-nom { grid-column: 1; font-weight: 800; font-size: 1rem; line-height: 1.2; }
+.suivi-offre { grid-column: 1; font-size: 0.75rem; color: var(--texte-discret); }
+.suivi-montant { grid-column: 2; grid-row: 1; justify-self: end; font-size: 0.9375rem; font-weight: 700; }
+.suivi-etat {
+  grid-column: 2; grid-row: 2; justify-self: end;
+  padding: 2px 9px; border-radius: 999px; font-size: 0.625rem; font-weight: 700; color: #fff;
+  background: color-mix(in srgb, var(--etat-couleur) 48%, #142343);
+}
+.suivi-avancee { grid-column: 1 / -1; margin-top: 4px; font-size: 0.6875rem; color: var(--texte-discret); }
+
+.suivi-detail-partenaire { padding: 0 var(--espace-12) var(--espace-12); }
+.suivi-faits { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0 0 8px; }
+.suivi-faits div { min-width: 0; }
+.suivi-faits dt { font-size: 0.625rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--texte-discret); }
+.suivi-faits dd { margin: 0; font-size: 0.8125rem; }
+.suivi-notes { margin: 0 0 8px; font-size: 0.8125rem; line-height: 1.45; color: var(--texte-discret); }
+/* « Ne souhaite pas être mentionné » se lit AVANT la liste : c'est la seule
+   ligne de la page qui dise ce qu'il ne faut PAS faire. */
+.suivi-discret {
+  margin: 0 0 8px; padding: 8px 10px; border-radius: 10px; font-size: 0.8125rem;
+  background: color-mix(in srgb, var(--club-rouge) 22%, #142343);
+}
+.suivi-ajouter { display: flex; gap: 6px; margin-top: var(--espace-12); }
+.suivi-ajouter input { flex: 1 1 auto; min-width: 0; margin: 0; font-size: 0.8125rem; }
+.suivi-ajouter button {
+  flex: none; padding: 0 14px; border-radius: var(--rayon-controle);
+  background: #152342; color: var(--texte); border: 0; font-size: 0.8125rem; font-weight: 700; cursor: pointer;
+}
+
+.suivi-repli { margin-top: var(--espace-24); font-size: 0.875rem; }
+.suivi-repli summary { cursor: pointer; color: var(--texte-discret); }
+.suivi-offres {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: var(--espace-12); margin-top: var(--espace-12);
+}
+/* `.suivi-offre` nomme déjà l'offre d'un partenaire, deux lignes plus haut :
+   la carte du catalogue s'appelle donc autrement. Le grep de trois secondes
+   vaut aussi à l'intérieur d'un fichier qu'on vient d'écrire. */
+.suivi-offre-carte { padding: var(--espace-12); border-radius: 14px; background: var(--fond-carte); }
+body[data-espace="hermitage"] #vue .suivi-offre-carte h4 {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+  margin: 0 0 6px; font-size: 0.875rem; font-weight: 800; color: #fff;
+  text-transform: none; letter-spacing: -0.01em;
+}
+.suivi-offre-carte ul { display: grid; gap: 2px; margin: 8px 0 0; padding-left: 15px; list-style: none; }
+.suivi-offre-carte li {
+  display: list-item; list-style: disc; padding: 0; background: transparent; border: 0;
+  border-radius: 0; font-size: 0.75rem; line-height: 1.35; color: var(--texte-discret);
+}
+/* La croix d'un engagement : discrète au repos, elle devient un mot au premier
+   appui. Le mot est le second geste — ce qui ne se défait pas ne s'obtient pas
+   d'un doigt qui dérape. */
+.suivi-retirer {
+  flex: none; padding: 0 6px; background: none; border: 0; cursor: pointer;
+  color: var(--texte-discret); font: inherit; font-size: 0.875rem; line-height: 1.35;
+  opacity: 0.55;
+}
+.suivi-retirer:hover, .suivi-retirer:focus-visible { opacity: 1; }
+.suivi-retirer.est-sure {
+  opacity: 1; padding: 1px 9px; border-radius: 999px; font-size: 0.6875rem; font-weight: 700;
+  color: #fff; background: color-mix(in srgb, var(--club-rouge) 55%, #142343);
+}

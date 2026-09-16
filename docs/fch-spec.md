@@ -838,6 +838,69 @@ ou les attributs des actions. Les 16 routes ont été parcourues dans le navigat
 titres présents et aucun identifiant dupliqué. Gabarits et syntaxe validés.
 Modifications locales, non commitées et non poussées à ce stade.
 
+### Le suivi des engagements partenaires (16 septembre 2026)
+
+**La demande de Noé** : *« pour un partenaire qui a pris un pack Esprit
+Collectif, avoir la liste des choses que l'on doit faire de notre côté (vignette
+album, panneau…) pour assurer un bon suivi »*, avec les vingt entreprises notées
+« partenaire du club » ou « virement en attente » dans son tableau de
+prospection.
+
+**CE QUE ÇA REMPLACE** : un annuaire. La page listait les contacts de type
+« marque » avec leur e-mail — elle ne disait rien de ce que le club DOIT à
+chacun. Le carnet n'a pas disparu : ces contacts vivent toujours dans le réseau
+de Yuno, qui est la même table.
+
+#### La ligne entre le dépôt et la base
+
+- **Le CATALOGUE des offres est dans le dépôt** (`js/partenaires-fch.js`) : il
+  change une fois par an avec le dossier, rien ne s'y coche, et il est déjà
+  public — c'est le document qu'on envoie aux entreprises.
+- **Les PARTENAIRES et leurs engagements sont en base** (`partenaires`,
+  `partenaires_engagements`). Deux raisons qui vont dans le même sens : **ça se
+  coche**, et **ce dépôt est public** — les montants, les CERFA et les notes de
+  négociation ne le sont pas.
+- **Une table à part de `contacts`** : un contact est une structure du carnet,
+  un partenariat est un engagement d'UNE SAISON. La même entreprise peut revenir
+  l'an prochain avec une autre offre sans écraser son histoire.
+
+#### Ce que la page montre
+
+**ELLE RÉPOND À DEUX QUESTIONS ET LES SÉPARE.** « Qu'est-ce qu'on doit à CETTE
+entreprise » se lit sur sa fiche ; « qu'est-ce qu'il me reste à faire » se lit
+**par chantier**, et c'est cette vue-là qui ouvre la page : *on ne fait pas les
+vignettes de l'album partenaire par partenaire, on les fait toutes le même
+soir.* Les chantiers sont rangés par moment de la saison — à la rentrée, avec
+l'album, dans la saison, au Tournoi Rose, à la soirée.
+
+- **L'OFFRE FAIT NAÎTRE SES ENGAGEMENTS** : prendre un pack, c'est s'engager à
+  une liste de choses qu'on n'a pas à retaper.
+- **CE QUI A ÉTÉ NÉGOCIÉ SE DISTINGUE** (`origine`) : MG+ prend le pack Ambition
+  et obtient en plus le naming du Tournoi Rose ; MAX ELEC échange son jeu de
+  maillots contre le naming du tournoi futsal. La mention « négocié » dit ce
+  qu'on ne peut pas justifier par le dossier.
+- **LE MONTANT CONVENU N'EST PAS CELUI DU TARIF**, et l'écart se dit : La
+  Milanaise donne 650 € pour un pack à 800, Le BM 500 € pour un pack à 250. Sans
+  un mot, on croit chaque fois à une erreur de saisie.
+- **« NE SOUHAITE PAS ÊTRE MENTIONNÉ »** est une colonne (`discret`) : deux
+  mécènes le demandent. C'est la seule ligne de la page qui dise ce qu'il ne
+  faut PAS faire, et elle se lit avant la liste.
+- **RIEN N'EST DÛ À UN MÉCÈNE** : un don est sans contrepartie. Ses engagements
+  sont donc toujours des ajouts.
+- **AUCUN RETARD N'EST COMPTÉ** : un engagement n'a pas d'échéance, seulement un
+  moment de la saison. Un chantier bouclé s'efface, il ne se félicite pas.
+- **LE LIBELLÉ EST STOCKÉ, pas déduit du catalogue** : ce qu'on a promis cette
+  année ne doit pas changer de mots le jour où le dossier de la saison suivante
+  reformule ses lignes.
+- **RETIRER DEMANDE UN SECOND APPUI**, et la croix ne s'offre que sur la fiche :
+  dans une liste de douze vignettes, un doigt qui dérape effacerait la mauvaise.
+
+*Mesuré : 20 partenaires, 70 engagements, 17 330 € — les chiffres du tableau de
+Noé, au centime près. Aucun débordement à 375 px comme à 900.*
+
+**À VENIR** : les logos, que Noé fournira. Ils se poseront comme les écussons
+des clubs — rapatriés dans le dépôt, jamais appelés à un CDN.
+
 ### Le projet du club — mission, valeurs, objectifs (16 septembre 2026)
 
 **La demande de Noé** : *« pour la page le projet du club, je te joins tous les

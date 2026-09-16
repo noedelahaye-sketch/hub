@@ -21,6 +21,22 @@ mise en documentation, son commit et son push ; ce relais accompagne ce lot.
 - `habillerLesSections` déplace les nœuds existants dans `.fch-tuile` après le
   rendu : champs, identifiants et délégation des événements sont conservés.
 
+### Les partenaires
+
+- **La page est un SUIVI D'ENGAGEMENTS** (16 septembre 2026), plus un annuaire :
+  ce que le club doit faire pour chaque entreprise, rangé par chantier.
+- **20 partenaires, 70 engagements, 17 330 €** repris du tableau de prospection
+  de Noé (Google Sheets « Listing entreprise 2026-2027 »), états « partenaire du
+  club » et « virement en attente ». Le tableau reste l'outil de PROSPECTION ;
+  le hub reprend la suite.
+- Tables `partenaires` et `partenaires_engagements` ; catalogue des offres dans
+  `js/partenaires-fch.js` (public, c'est le dossier qu'on envoie).
+- **EN ATTENTE DE NOÉ** : les logos des partenaires. Ils se poseront comme les
+  écussons des clubs — dans le dépôt, jamais à un CDN.
+- **PIÈGE PAYÉ** : RLS ne suffit pas, il faut aussi le `grant` à `authenticated`.
+  Sans lui Postgres refuse avant de regarder la politique, et l'écran entier ne
+  se charge plus.
+
 ### Le projet du club
 
 - **Trois étages** (16 septembre 2026) : la mission dit POURQUOI, les valeurs

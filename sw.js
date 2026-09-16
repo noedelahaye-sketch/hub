@@ -42,6 +42,8 @@ const COQUILLE = [
   'js/organigramme-fch.js',
   'js/projet-fch.js',
   'js/projet-club.js',
+  'js/partenaires-fch.js',
+  'js/partenaires-suivi.js',
   'js/organigramme-fch-data.js',
   'js/calendrier.js',
   'js/dashboard.js',

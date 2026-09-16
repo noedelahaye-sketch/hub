@@ -1943,6 +1943,72 @@ export async function supprimerContact(id) {
   if (error) throw error;
 }
 
+// --- Les partenaires du club et leurs engagements (FCH) ----------------------
+// CE QUE LE CLUB DOIT FAIRE quand une entreprise signe. Le CATALOGUE des offres
+// vit dans le dépôt (`js/partenaires-fch.js`) : il est public, c'est le dossier
+// qu'on envoie. Les montants, les CERFA et les notes de négociation vivent ici,
+// derrière RLS — le dépôt, lui, est servi par GitHub Pages.
+
+export async function partenairesDeLaSaison(saison = '2026-2027') {
+  return verifier(
+    await client
+      .from('partenaires')
+      .select('*, engagements:partenaires_engagements(*)')
+      .eq('saison', saison)
+      .order('nom'),
+  );
+}
+
+export async function creerPartenaire(champs, engagements = []) {
+  const partenaire = await verifier(
+    await client.from('partenaires').insert(champs).select().single(),
+  );
+  if (!engagements.length) return { ...partenaire, engagements: [] };
+  const poses = await verifier(
+    await client
+      .from('partenaires_engagements')
+      .insert(engagements.map((e) => ({ ...e, partenaire_id: partenaire.id })))
+      .select(),
+  );
+  return { ...partenaire, engagements: poses };
+}
+
+export async function modifierPartenaire(id, champs) {
+  return verifier(
+    await client.from('partenaires').update(champs).eq('id', id).select().single(),
+  );
+}
+
+export async function supprimerPartenaire(id) {
+  const { error } = await client.from('partenaires').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// COCHER, C'EST POSER UNE DATE, et décocher c'est la retirer : on ne garde pas
+// un booléen à côté: deux colonnes pour un même fait finiraient par se
+// contredire, et la date répond en plus à « quand l'a-t-on fait ».
+export async function marquerEngagement(id, fait) {
+  return verifier(
+    await client
+      .from('partenaires_engagements')
+      .update({ fait_le: fait ? new Date().toISOString().slice(0, 10) : null })
+      .eq('id', id)
+      .select()
+      .single(),
+  );
+}
+
+export async function ajouterEngagement(champs) {
+  return verifier(
+    await client.from('partenaires_engagements').insert(champs).select().single(),
+  );
+}
+
+export async function supprimerEngagement(id) {
+  const { error } = await client.from('partenaires_engagements').delete().eq('id', id);
+  if (error) throw error;
+}
+
 // --- La Passerelle (Yuno) ----------------------------------------------------
 // L'aller-vers se muscle par micro-doses. On mesure ce que Noé contrôle — ce
 // qu'il envoie — et jamais ce qu'il subit : cette table n'a pas de colonne

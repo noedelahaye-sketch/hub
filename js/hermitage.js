@@ -48,6 +48,8 @@ import {
 import { finDeLaSortie, phaseDeLaSortie } from './preparations-commun.js';
 import { REPERES, CRENEAUX } from './club-fch.js';
 import { construireProjetClub, titreDuProjet } from './projet-club.js';
+import { construireSuiviPartenaires } from './partenaires-suivi.js';
+import { OFFRES_FCH, ETATS_PARTENAIRE, engagementsDeLOffre, offreDe } from './partenaires-fch.js';
 import {
   trierTaches,
   construireLignesTaches,
@@ -136,6 +138,10 @@ const SAISON_HEBDO = ['Programmation du week-end', 'Résultats du week-end'];
 // Les partenaires sont des contacts de type 'marque' : même table que le
 // réseau de Yuno, c'est la même matière (docs/fch-spec.md, §5).
 const TYPE_PARTENAIRE = 'marque';
+// UNE SEULE SAISON POUR L'INSTANT. Le jour où la suivante arrive, c'est ici
+// qu'elle se déclare — les lignes de cette année restent lisibles, et un
+// partenaire peut revenir avec une autre offre sans écraser son historique.
+const SAISON_PARTENAIRES = '2026-2027';
 
 const VUES = ['accueil', 'creer', 'reunions', 'calendrier', 'partenaires', 'club',
   'saison', 'editorial', 'banque', 'publications', 'actions', 'archives',
@@ -1759,26 +1765,44 @@ async function effacerDuCalendrier(type, id) {
   throw new Error(`Nature inconnue : ${type}`);
 }
 
+// LA PAGE EST DEVENUE UN SUIVI D'ENGAGEMENTS (16 septembre 2026, demande de
+// Noé). Elle listait les contacts de type « marque » avec leur e-mail : un
+// annuaire, qui ne disait rien de ce que le club DOIT à chacun.
+//
+// LE CARNET N'A PAS DISPARU : ces contacts vivent toujours dans le réseau de
+// Yuno, qui est la même table. Ce qui change, c'est la question que cette
+// page-ci pose — « qu'est-ce qu'on leur doit, et qu'est-ce qui reste à faire ».
 function vuePartenaires(etat) {
   return `
     ${enTete('partenaires')}
-
-    <section class="bloc">
-      <h2>Partenaires</h2>
-      <div data-bloc="partenaires">${construirePartenaires(etat.partenaires)}</div>
-      ${construireFormulaire({
-        id: 'partenaire',
-        libelle: 'Ajouter un partenaire',
-        action: 'creer-partenaire',
-        champs: [
-          { nom: 'structure', libelle: 'Entreprise', type: 'text', requis: true },
-          { nom: 'nom', libelle: 'Interlocuteur', type: 'text', requis: true },
-          { nom: 'email', libelle: 'E-mail', type: 'text' },
-          { nom: 'telephone', libelle: 'Téléphone', type: 'text' },
-          { nom: 'notes', libelle: 'Notes — où en est la discussion', type: 'textarea' },
-        ],
-      })}
-    </section>
+    ${construireSuiviPartenaires(etat.partenairesSuivi ?? [], etat.partenaireOuvert, etat.engagementAConfirmer)}
+    ${construireFormulaire({
+      id: 'partenaire',
+      libelle: 'Ajouter un partenaire',
+      action: 'creer-partenaire',
+      champs: [
+        { nom: 'nom', libelle: 'Entreprise', type: 'text', requis: true },
+        {
+          nom: 'offre',
+          libelle: 'Offre',
+          type: 'choix',
+          options: OFFRES_FCH.map((offre) => [offre.id, offre.nom]),
+          defaut: 'coup-denvoi',
+        },
+        {
+          nom: 'statut',
+          libelle: 'État',
+          type: 'choix',
+          options: ETATS_PARTENAIRE.map(([id, nom]) => [id, nom]),
+          defaut: 'virement_attendu',
+        },
+        { nom: 'montant', libelle: 'Montant convenu (€)', type: 'number' },
+        { nom: 'commune', libelle: 'Commune', type: 'text' },
+        { nom: 'referents', libelle: 'Référent', type: 'text' },
+        { nom: 'cerfa', libelle: 'CERFA', type: 'text' },
+        { nom: 'notes', libelle: 'Notes', type: 'textarea' },
+      ],
+    })}
     ${pied()}`;
 }
 
@@ -1874,6 +1898,10 @@ export default {
       taches: [],
       evenements: [],
       partenaires: [],
+      partenairesSuivi: [],
+      partenaireOuvert: null,
+      // Le retrait d'un engagement demande un second appui : il ne se défait pas.
+      engagementAConfirmer: null,
       // Les séries du club : c'est ce qui permet à « La saison » de dire quels
       // rythmes tournent. Petite table (4 lignes au 29 août 2026).
       series: [],
@@ -1996,6 +2024,7 @@ export default {
 
     this.naviguer = (nouvelleRoute) => {
       etat.personneClub = nouvelleRoute?.id ?? null;
+      etat.partenaireOuvert = nouvelleRoute?.id ?? null;
       etat.ideeOuverte = null;
       etat.vue = VUES.includes(nouvelleRoute?.vue) ? nouvelleRoute.vue : 'accueil';
       // L'adresse porte l'id d'une FICHE — mais le bandeau de l'accueil, lui,
@@ -2016,7 +2045,7 @@ export default {
     const charger = async () => {
       const [
         objectifs, victoires, publications, taches, evenements, contacts,
-        fiches, actionsClub, modeles, projets, series,
+        fiches, actionsClub, modeles, projets, series, partenairesSuivi,
       ] = await Promise.all([
         api.objectifsActifs({ espace: ESPACE }),
         api.victoiresDeLEspace(ESPACE),
@@ -2032,6 +2061,7 @@ export default {
         api.modelesPreparationTous(),
         api.projetsTous(),
         api.chargerLesSeries(),
+        api.partenairesDeLaSaison(),
       ]);
       // Les projets du club, pour la pastille de rattachement de la tuile.
       etat.projets = projets.filter((projet) => projet.espace === ESPACE);
@@ -2043,6 +2073,7 @@ export default {
         taches,
         evenements,
         partenaires: contacts.filter((contact) => contact.type === TYPE_PARTENAIRE),
+        partenairesSuivi,
         fiches,
         actionsClub,
         series,
@@ -2274,6 +2305,35 @@ export default {
 
     // --- Formulaires ---
 
+    // AJOUTER CE QU'ON A PROMIS EN PLUS. C'est la moitié du suivi : les
+    // conditions sont souvent ajustées — une entreprise prend un pack et obtient
+    // en plus le naming d'un tournoi, ou échange une ligne contre une autre. La
+    // ligne naît en `ajout`, ce qui la distingue de ce que le dossier prévoit.
+    //
+    // CES EXEMPLES RESTENT VAGUES À DESSEIN : ce fichier part sur GitHub Pages.
+    // Les noms d'entreprises et les montants convenus vivent en base, pas ici.
+    section.addEventListener('submit', async (evenement) => {
+      const ajout = evenement.target.closest('form[data-ajouter-engagement]');
+      if (!ajout) return;
+      evenement.preventDefault();
+      const libelle = new FormData(ajout).get('libelle')?.toString().trim();
+      if (!libelle) return;
+      const id = ajout.dataset.ajouterEngagement;
+      const partenaire = etat.partenairesSuivi.find((p) => p.id === id);
+      if (!partenaire) return;
+      try {
+        const ligne = await api.ajouterEngagement({
+          partenaire_id: id, cle: null, libelle, origine: 'ajout',
+        });
+        partenaire.engagements = [...(partenaire.engagements ?? []), ligne];
+        ajout.reset();
+        rendre();
+      } catch (souci) {
+        console.error('Engagement non ajouté', souci);
+        dire("L'engagement n'a pas pu être ajouté.");
+      }
+    });
+
     section.addEventListener('submit', async (evenement) => {
       const formulaire = evenement.target.closest('form[data-action]');
       if (!formulaire) return;
@@ -2471,19 +2531,29 @@ export default {
         return;
       }
 
+      // L'OFFRE FAIT NAÎTRE SES ENGAGEMENTS, et c'est tout l'intérêt : prendre
+      // un pack, c'est s'engager à une liste de choses, qu'on n'a pas à
+      // retaper. Ce qui a été négocié en plus s'ajoute ensuite à la main, sur
+      // la fiche — et se reconnaît à son origine.
       if (action === 'creer-partenaire') {
-        const partenaire = await api.creerContact({
-          nom: champs.nom.trim(),
-          type: TYPE_PARTENAIRE,
-          structure: champs.structure.trim(),
-          email: champs.email?.trim() || null,
-          telephone: champs.telephone?.trim() || null,
-          notes: champs.notes?.trim() || null,
-        });
-        etat.partenaires = [...etat.partenaires, partenaire].sort((a, b) =>
-          (a.structure ?? '').localeCompare(b.structure ?? ''),
+        const partenaire = await api.creerPartenaire(
+          {
+            nom: champs.nom.trim(),
+            saison: SAISON_PARTENAIRES,
+            offre: champs.offre || null,
+            nature: offreDe(champs.offre)?.nature ?? 'autre',
+            montant: champs.montant ? Number(champs.montant) : null,
+            statut: champs.statut || 'virement_attendu',
+            commune: champs.commune?.trim() || null,
+            referents: champs.referents?.trim() || null,
+            cerfa: champs.cerfa?.trim() || null,
+            notes: champs.notes?.trim() || null,
+          },
+          engagementsDeLOffre(champs.offre),
         );
-        rendrePartenaires();
+        etat.partenairesSuivi = [...etat.partenairesSuivi, partenaire]
+          .sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+        rendre();
         return;
       }
 
@@ -2681,6 +2751,71 @@ export default {
           console.error('Création de la fiche impossible', souci);
           dire("La fiche n'a pas pu être créée.");
         }
+        return;
+      }
+
+      // ── Le suivi des partenaires ────────────────────────────────────────
+      // COCHER, C'EST POSER UNE DATE. L'écriture est optimiste : la coche se
+      // dessine tout de suite, le réseau suit. Si elle échoue, la ligne revient
+      // à son état d'avant ET un mot le dit — un geste défait en silence
+      // ressemble à une panne.
+      const basculer = evenement.target.closest('[data-basculer-engagement]');
+      if (basculer) {
+        const id = basculer.dataset.basculerEngagement;
+        const partenaire = etat.partenairesSuivi.find(
+          (p) => (p.engagements ?? []).some((e) => e.id === id),
+        );
+        const ligne = partenaire?.engagements.find((e) => e.id === id);
+        if (!ligne) return;
+        const fait = !ligne.fait_le;
+        await modifierAussitot(
+          ligne,
+          { fait_le: fait ? new Date().toISOString().slice(0, 10) : null },
+          () => api.marquerEngagement(id, fait),
+          { rendre, echouer: dire },
+        );
+        return;
+      }
+
+      // Retirer un engagement : premier appui, la croix devient « Retirer ? » ;
+      // second appui, la ligne part. Un clic ailleurs annule — c'est le geste
+      // des menus discrets du hub.
+      const retirer = evenement.target.closest('[data-retirer-engagement]');
+      if (retirer) {
+        const id = retirer.dataset.retirerEngagement;
+        if (etat.engagementAConfirmer !== id) {
+          etat.engagementAConfirmer = id;
+          rendre();
+          return;
+        }
+        etat.engagementAConfirmer = null;
+        const partenaire = etat.partenairesSuivi.find(
+          (p) => (p.engagements ?? []).some((e) => e.id === id),
+        );
+        const ligne = partenaire?.engagements.find((e) => e.id === id);
+        if (!ligne) return;
+        await retirerAussitot(
+          partenaire.engagements,
+          ligne,
+          () => api.supprimerEngagement(id),
+          { rendre, echouer: dire },
+        );
+        return;
+      }
+      if (etat.engagementAConfirmer) {
+        etat.engagementAConfirmer = null;
+        rendre();
+      }
+
+      // La fiche d'un partenaire s'ouvre dans l'ADRESSE, pas dans un état :
+      // un engagement qu'on vient de cocher se retrouve en revenant sur la page,
+      // et le lien se partage.
+      const ouvrirPartenaire = evenement.target.closest('[data-ouvrir-partenaire]');
+      if (ouvrirPartenaire) {
+        const id = ouvrirPartenaire.dataset.ouvrirPartenaire;
+        location.hash = etat.partenaireOuvert === id
+          ? '#hermitage/partenaires'
+          : `#hermitage/partenaires/${id}`;
         return;
       }
 
