@@ -72,7 +72,7 @@ function fiche(id) {
   const sportifs = groupes.filter((g) => g.type === 'sportif');
   const domaine = groupes.some((g) => g.type === 'bureau') ? 'bureau' : missions.length ? 'commissions' : 'sportif';
   return `<article class="orga-fiche">
-    <a class="lien-discret" href="${ADRESSE}/${domaine}">← Qui fait quoi</a>
+    <a class="lien-discret" href="${ADRESSE}/${domaine}">← Les organigrammes</a>
     <header class="orga-identite">${portrait(p)}<div><p class="etiquette">Au FC Hermitage</p>
       <h2>${echapper(p.nom)}</h2><p>${groupes.map((g) => echapper(fonctionDans(g,id))).join('<br>')}</p></div></header>
     ${missions.length ? `<h3 class="titre-section">Ses missions au club</h3><div class="orga-missions">${missions.map(([cle,items]) => {

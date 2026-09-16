@@ -1,4 +1,4 @@
-# Qui fait quoi — sources et organisation
+# Les organigrammes — sources et organisation
 
 ## Lecture proposée
 

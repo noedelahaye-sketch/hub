@@ -111,7 +111,7 @@ const COQUILLE = [
   'img/yuno-signature.png',
   'img/yuno-logo.jpg',
   'img/fch-logo.png',
-  // Les portraits de « Qui fait quoi » : un fichier par personne, 1,6 Mo en tout.
+  // Les portraits des organigrammes : un fichier par personne, 1,6 Mo en tout.
   'img/organigramme/portraits/alexandre.png',
   'img/organigramme/portraits/alyssa.png',
   'img/organigramme/portraits/anais.png',

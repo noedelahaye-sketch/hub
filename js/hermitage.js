@@ -162,7 +162,7 @@ export const RUBRIQUES_FCH = [
     { nom: 'Les réunions passées', adresse: '#hermitage/archives' },
   ] },
   { nom: 'Le club', adresse: '#hermitage/club', pages: [
-    { nom: 'Qui fait quoi', adresse: '#hermitage/commissions' },
+    { nom: 'Les organigrammes', adresse: '#hermitage/commissions' },
     { nom: 'Le projet du club', adresse: '#hermitage/projet-club' },
     { nom: 'Les entraînements', adresse: '#hermitage/entrainements' },
     { nom: 'Le club en chiffres', adresse: '#hermitage/chiffres' },
@@ -1792,7 +1792,7 @@ function vuePartenaires(etat) {
 // doit savoir à qui s'adresser et sur quoi s'aligner. Rien ne s'y coche, rien
 // ne s'y compte, aucune donnée n'y est saisie.
 //
-// L'ordre va du plus souvent consulté au plus rarement : qui fait quoi d'abord
+// L'ordre va du plus souvent consulté au plus rarement : les organigrammes d'abord
 // (c'est la question qu'on se pose en semaine), la mission ensuite (on la relit
 // avant d'écrire), les créneaux et les chiffres pour finir.
 

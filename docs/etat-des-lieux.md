@@ -9,7 +9,7 @@
 
 Le précédent lot FCH (navigation, découpage, entraînements, titres et accueil)
 a été commité et poussé sur `main` dans **`0029e86`**. Le présent lot étend
-les tuiles aux autres pages et refond « Qui fait quoi ». Noé a demandé sa
+les tuiles aux autres pages et refond « Les organigrammes ». Noé a demandé sa
 mise en documentation, son commit et son push ; ce relais accompagne ce lot.
 
 ### Pages et présentation
@@ -21,7 +21,7 @@ mise en documentation, son commit et son push ; ce relais accompagne ce lot.
 - `habillerLesSections` déplace les nœuds existants dans `.fch-tuile` après le
   rendu : champs, identifiants et délégation des événements sont conservés.
 
-### Qui fait quoi
+### Les organigrammes
 
 - Trois vues : **Bureau et référents**, **Commissions**, **Équipes sportives**.
 - **44 personnes, 23 groupes**, avec un **portrait individuel par personne**
@@ -8382,7 +8382,7 @@ ou les attributs des actions. Les 16 routes ont été parcourues dans le navigat
 titres présents et aucun identifiant dupliqué. Gabarits et syntaxe validés.
 Modifications locales, non commitées et non poussées à ce stade.
 
-### Qui fait quoi — organigrammes interactifs, 16 septembre 2026
+### Les organigrammes interactifs, 16 septembre 2026
 
 La liste des neuf commissions est remplacée par trois vues : Bureau et référents,
 Commissions, Équipes sportives. Recherche transversale par nom, rôle ou mission.

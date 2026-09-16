@@ -582,7 +582,7 @@ s'adresser et sur quoi s'aligner.
 
 Quatre blocs, du plus souvent consulté au plus rare :
 
-1. **Qui fait quoi** — les neuf commissions et leurs porteurs
+1. **Les organigrammes** — les neuf commissions et leurs porteurs
    (`Responsabilités FCH.pdf`). **Les deux commissions de Noé se distinguent, et
    avec NUANCE** : la Communication est LA SIENNE (cinq axes, ses missions
    écrites en toutes lettres) ; côté Partenaires il ne fait que **contribuer** —
@@ -787,7 +787,7 @@ Calendrier. Les partenaires rejoignent le menu du Club.
   et Banque ; les propositions de rythmes continuent de le préremplir sur Saison.
 - Réunions : réunions à préparer ; pages séparées pour Suivi des actions et
   Réunions passées. Les adresses des fiches restent inchangées.
-- Club : portes vers Qui fait quoi, Projet du club, Entraînements, Chiffres,
+- Club : portes vers Les organigrammes, Projet du club, Entraînements, Chiffres,
   Partenaires. Les entraînements et chiffres sont directement visibles sur
   leur page, sans pli supplémentaire.
 
@@ -838,7 +838,7 @@ ou les attributs des actions. Les 16 routes ont été parcourues dans le navigat
 titres présents et aucun identifiant dupliqué. Gabarits et syntaxe validés.
 Modifications locales, non commitées et non poussées à ce stade.
 
-### Qui fait quoi — organigrammes interactifs, 16 septembre 2026
+### Les organigrammes interactifs, 16 septembre 2026
 
 La liste des neuf commissions est remplacée par trois vues : Bureau et référents,
 Commissions, Équipes sportives. Recherche transversale par nom, rôle ou mission.

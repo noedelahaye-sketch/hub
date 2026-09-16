@@ -966,7 +966,7 @@ body[data-espace="hermitage"] #vue .entrainement-carte h4 {
 .fch-tuile .club-missions li,
 .fch-tuile .club-valeurs li { background: transparent; }
 
-/* Qui fait quoi : les portraits et les cartouches des organigrammes 2026–2027. */
+/* Les organigrammes : les portraits et les cartouches des organigrammes 2026–2027. */
 .orga-intro { color: var(--texte-discret); font-size: 0.875rem; margin: 0 0 16px; }
 .orga-recherche { display: block; max-width: 560px; font-size: 0.8125rem; }
 .orga-recherche input { display: block; width: 100%; margin-top: 8px; }
