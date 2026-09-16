@@ -967,7 +967,7 @@ body[data-espace="hermitage"] #vue .entrainement-carte h4 {
 .fch-tuile .club-valeurs li { background: transparent; }
 
 /* Qui fait quoi : les portraits et les cartouches des organigrammes 2026–2027. */
-.orga-intro { color: var(--texte-discret); margin: 0 0 20px; }
+.orga-intro { color: var(--texte-discret); font-size: 0.875rem; margin: 0 0 16px; }
 .orga-recherche { display: block; max-width: 560px; font-size: 0.8125rem; }
 .orga-recherche input { display: block; width: 100%; margin-top: 8px; }
 .orga-domaines { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 8px; }
@@ -976,41 +976,41 @@ body[data-espace="hermitage"] #vue .entrainement-carte h4 {
   text-decoration: none; background: #152342; font-weight: 700; font-size: 0.875rem;
 }
 .orga-domaines a[aria-current="page"] { background: var(--club-rouge); color: #fff; }
-.orga-compteur { color: var(--texte-discret); font-size: 0.875rem; margin: 12px 0; }
+.orga-compteur { color: var(--texte-discret); font-size: 0.8125rem; margin: 10px 0; }
 .orga-compteur:empty { display: none; }
-.orga-grille { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 36px 20px; margin-top: 36px; }
+.orga-grille { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 30px 16px; margin-top: 30px; }
 .orga-groupe {
-  position: relative; min-width: 0; padding: 30px 16px 20px;
-  border-radius: 24px; background: var(--fond-carte);
+  position: relative; min-width: 0; padding: 26px 14px 16px;
+  border-radius: 20px; background: var(--fond-carte);
   border-top: 3px solid var(--orga-couleur, #5888db);
 }
 body[data-espace="hermitage"] #vue .orga-groupe > h2 {
-  display: table; max-width: calc(100% - 16px); margin: -48px auto 20px;
-  padding: 7px 18px; border-radius: 999px; background: #142343;
-  color: #fff; font-size: 1.1rem; line-height: 1.15; font-weight: 900;
+  display: table; max-width: calc(100% - 16px); margin: -42px auto 16px;
+  padding: 6px 15px; border-radius: 999px; background: #142343;
+  color: #fff; font-size: 1rem; line-height: 1.15; font-weight: 900;
   letter-spacing: -0.035em; text-transform: none; text-align: center;
 }
-.orga-service { margin: -8px 0 18px; text-align: center; font-size: 0.8125rem; color: var(--texte-discret); }
-.orga-personnes { display: flex; justify-content: center; flex-wrap: wrap; gap: 22px 12px; }
+.orga-service { margin: -6px 0 14px; text-align: center; font-size: 0.75rem; color: var(--texte-discret); }
+.orga-personnes { display: flex; justify-content: center; flex-wrap: wrap; gap: 18px 10px; }
 .orga-personne {
-  flex: 0 1 128px; min-width: 0; display: flex; align-items: center; flex-direction: column;
-  text-decoration: none; text-align: center; color: #fff; border-radius: 14px; padding: 4px;
+  flex: 0 1 110px; min-width: 0; display: flex; align-items: center; flex-direction: column;
+  text-decoration: none; text-align: center; color: #fff; border-radius: 12px; padding: 4px;
 }
 .orga-personne:hover { background: rgb(255 255 255 / 7%); text-decoration: none; }
 .orga-personne:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
 /* Le portrait est rond : l'export du club est une pastille ronde, et un cadre
    ovale l'aurait étiré. Le cadre du dessin s'arrête à la pastille, la bande
    du nom restant hors champ — la carte écrit déjà le nom dessous. */
-.orga-photo { display: block; flex: none; width: 104px; height: 104px; border-radius: 50%; overflow: hidden; }
-.orga-nom { margin-top: 9px; font-size: 0.875rem; line-height: 1.2; }
-.orga-nom strong { display: block; text-transform: uppercase; font-weight: 900; font-size: 0.8125rem; }
-.orga-role { margin-top: 5px; color: var(--texte-discret); font-size: 0.6875rem; line-height: 1.3; }
+.orga-photo { display: block; flex: none; width: 88px; height: 88px; border-radius: 50%; overflow: hidden; }
+.orga-nom { margin-top: 7px; font-size: 0.8125rem; line-height: 1.2; }
+.orga-nom strong { display: block; text-transform: uppercase; font-weight: 900; font-size: 0.75rem; }
+.orga-role { margin-top: 4px; color: var(--texte-discret); font-size: 0.625rem; line-height: 1.3; }
 .orga-large { grid-column: 1/-1; }
-.orga-large .orga-personne { flex-basis: 138px; }
-.orga-note { margin-top: 24px; font-size: 0.8125rem; }
+.orga-large .orga-personne { flex-basis: 118px; }
+.orga-note { margin-top: 20px; font-size: 0.75rem; }
 .orga-initiales { display: grid; place-items: center; background: #152342; font-size: 2rem; }
-.orga-identite { display: flex; align-items: center; gap: 24px; margin: 28px 0; }
-.orga-identite .orga-photo { width: 150px; height: 150px; }
+.orga-identite { display: flex; align-items: center; gap: 20px; margin: 24px 0; }
+.orga-identite .orga-photo { width: 128px; height: 128px; }
 body[data-espace="hermitage"] #vue .orga-identite h2 {
   margin: 6px 0 10px; color: #fff; font-weight: 900; letter-spacing: -0.04em;
   font-size: clamp(1.7rem, 4vw, 2.5rem); text-transform: none; line-height: 1.05;
@@ -1029,7 +1029,7 @@ body[data-espace="hermitage"] #vue .orga-identite h2 {
 @media (max-width: 720px) {
   .orga-grille, .orga-missions { grid-template-columns: minmax(0,1fr); }
   .orga-identite { gap: 16px; align-items: flex-start; }
-  .orga-identite .orga-photo { width: 104px; height: 104px; }
+  .orga-identite .orga-photo { width: 92px; height: 92px; }
   .orga-domaines a { padding: 10px 12px; font-size: 0.75rem; }
-  .orga-personne, .orga-large .orga-personne { flex-basis: 120px; }
+  .orga-personne, .orga-large .orga-personne { flex-basis: 104px; }
 }
