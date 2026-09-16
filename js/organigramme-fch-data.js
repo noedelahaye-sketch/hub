@@ -1,5 +1,8 @@
 // Sources : Responsabilités FCH.pdf p. 1–3 et organigrammes 2026–2027.
 // Emma = Emma Liconnet : confirmé par Noé le 16 septembre 2026.
+// Kepo = Thibault Carteron : une seule fiche, celle de Thibault (Noé, 16 septembre 2026).
+// Portraits : exports individuels du club, un fichier par personne. Le cadre
+// est la pastille ronde du portrait, la bande du nom restant hors champ.
 export const PERSONNES = {
   "lionel": {
     "id": "lionel",
@@ -18,14 +21,14 @@ export const PERSONNES = {
       ]
     },
     "photo": {
-      "src": "img/organigramme/bureau.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/lionel.png",
+      "largeur": 128,
+      "hauteur": 191,
       "cadre": [
-        402,
-        390,
-        132,
-        153
+        -9,
+        -5,
+        146,
+        146
       ]
     }
   },
@@ -43,14 +46,14 @@ export const PERSONNES = {
       ]
     },
     "photo": {
-      "src": "img/organigramme/bureau.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/cedric.png",
+      "largeur": 128,
+      "hauteur": 196,
       "cadre": [
-        550,
-        390,
-        131,
-        153
+        -9,
+        -1,
+        146,
+        146
       ]
     }
   },
@@ -68,14 +71,14 @@ export const PERSONNES = {
       ]
     },
     "photo": {
-      "src": "img/organigramme/bureau.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/remy.png",
+      "largeur": 129,
+      "hauteur": 195,
       "cadre": [
-        319,
-        665,
-        131,
-        157
+        -10,
+        -6,
+        149,
+        149
       ]
     }
   },
@@ -97,14 +100,14 @@ export const PERSONNES = {
       ]
     },
     "photo": {
-      "src": "img/organigramme/bureau.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/benoit.png",
+      "largeur": 140,
+      "hauteur": 197,
       "cadre": [
-        485,
-        665,
-        132,
-        157
+        -4,
+        -5,
+        149,
+        149
       ]
     }
   },
@@ -127,14 +130,14 @@ export const PERSONNES = {
       ]
     },
     "photo": {
-      "src": "img/organigramme/bureau.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/noe.png",
+      "largeur": 129,
+      "hauteur": 207,
       "cadre": [
-        480,
-        1132,
-        132,
-        159
+        -10,
+        -8,
+        149,
+        149
       ]
     }
   },
@@ -151,14 +154,14 @@ export const PERSONNES = {
       ]
     },
     "photo": {
-      "src": "img/organigramme/bureau.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/djamel.png",
+      "largeur": 141,
+      "hauteur": 211,
       "cadre": [
-        229,
-        922,
-        132,
-        157
+        -4,
+        -7,
+        149,
+        149
       ]
     }
   },
@@ -182,14 +185,14 @@ export const PERSONNES = {
       ]
     },
     "photo": {
-      "src": "img/organigramme/bureau.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/hicham.png",
+      "largeur": 133,
+      "hauteur": 207,
       "cadre": [
-        726,
-        923,
-        132,
-        156
+        -10,
+        -6,
+        149,
+        149
       ]
     }
   },
@@ -205,14 +208,14 @@ export const PERSONNES = {
       ]
     },
     "photo": {
-      "src": "img/organigramme/bureau.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/sandrine.png",
+      "largeur": 138,
+      "hauteur": 208,
       "cadre": [
-        396,
-        922,
-        132,
-        157
+        -3,
+        -5,
+        149,
+        149
       ]
     }
   },
@@ -236,14 +239,14 @@ export const PERSONNES = {
       ]
     },
     "photo": {
-      "src": "img/organigramme/commissions.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/lina.png",
+      "largeur": 100,
+      "hauteur": 131,
       "cadre": [
-        110,
-        596,
-        106,
-        123
+        -8,
+        -7,
+        116,
+        116
       ]
     }
   },
@@ -271,14 +274,14 @@ export const PERSONNES = {
       ]
     },
     "photo": {
-      "src": "img/organigramme/bureau.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/sandy.png",
+      "largeur": 129,
+      "hauteur": 192,
       "cadre": [
-        632,
-        665,
-        132,
-        157
+        -10,
+        -6,
+        149,
+        149
       ]
     }
   },
@@ -300,14 +303,14 @@ export const PERSONNES = {
       ]
     },
     "photo": {
-      "src": "img/organigramme/bureau.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/loic.png",
+      "largeur": 149,
+      "hauteur": 206,
       "cadre": [
-        315,
-        1133,
-        133,
-        158
+        12,
+        -5,
+        146,
+        146
       ]
     }
   },
@@ -324,35 +327,14 @@ export const PERSONNES = {
       ]
     },
     "photo": {
-      "src": "img/organigramme/bureau.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/lorenzo.png",
+      "largeur": 170,
+      "hauteur": 205,
       "cadre": [
-        558,
-        924,
-        132,
-        155
-      ]
-    }
-  },
-  "kepo": {
-    "id": "kepo",
-    "nom": "Kepo",
-    "missions": {
-      "manifestations": [
-        "Contribuer à l’esprit familial du club.",
-        "Échanger avec les responsables sportifs pour adapter l’organisation."
-      ]
-    },
-    "photo": {
-      "src": "img/organigramme/kepo.png",
-      "largeur": 2160,
-      "hauteur": 1080,
-      "cadre": [
-        320,
-        170,
-        710,
-        680
+        11,
+        -3,
+        145,
+        145
       ]
     }
   },
@@ -372,14 +354,14 @@ export const PERSONNES = {
       ]
     },
     "photo": {
-      "src": "img/organigramme/bureau.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/christophe.png",
+      "largeur": 179,
+      "hauteur": 176,
       "cadre": [
-        635,
-        1133,
-        132,
-        158
+        15,
+        -4,
+        149,
+        149
       ]
     }
   },
@@ -388,14 +370,14 @@ export const PERSONNES = {
     "nom": "Aurélien Bourre",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/jeunes.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/aurelien.png",
+      "largeur": 171,
+      "hauteur": 198,
       "cadre": [
-        511,
-        497,
-        129,
-        150
+        20,
+        -1,
+        125,
+        125
       ]
     }
   },
@@ -404,14 +386,14 @@ export const PERSONNES = {
     "nom": "Philippe Cancellier",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/jeunes.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/philippe.png",
+      "largeur": 158,
+      "hauteur": 178,
       "cadre": [
-        182,
-        787,
-        131,
-        159
+        6,
+        -4,
+        146,
+        146
       ]
     }
   },
@@ -420,14 +402,14 @@ export const PERSONNES = {
     "nom": "Alexandre Caso",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/entente.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/alexandre.png",
+      "largeur": 129,
+      "hauteur": 172,
       "cadre": [
-        540,
-        1080,
-        137,
-        163
+        -5,
+        -7,
+        143,
+        143
       ]
     }
   },
@@ -436,14 +418,14 @@ export const PERSONNES = {
     "nom": "Jules Maisonneuve",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/jeunes.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/jules.png",
+      "largeur": 156,
+      "hauteur": 175,
       "cadre": [
-        150,
-        493,
-        131,
-        155
+        5,
+        -5,
+        145,
+        145
       ]
     }
   },
@@ -452,14 +434,14 @@ export const PERSONNES = {
     "nom": "Elliot Chardon",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/jeunes.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/elliot.png",
+      "largeur": 126,
+      "hauteur": 187,
       "cadre": [
-        302,
-        490,
-        130,
-        158
+        -9,
+        2,
+        144,
+        144
       ]
     }
   },
@@ -468,14 +450,14 @@ export const PERSONNES = {
     "nom": "Julien Fontaine",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/jeunes.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/julien.png",
+      "largeur": 126,
+      "hauteur": 169,
       "cadre": [
-        660,
-        498,
-        126,
-        151
+        -9,
+        -6,
+        144,
+        144
       ]
     }
   },
@@ -484,14 +466,14 @@ export const PERSONNES = {
     "nom": "Stéphane Coissard",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/jeunes.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/stephane-c.png",
+      "largeur": 159,
+      "hauteur": 174,
       "cadre": [
-        809,
-        498,
-        132,
-        151
+        6,
+        -1,
+        145,
+        145
       ]
     }
   },
@@ -500,14 +482,14 @@ export const PERSONNES = {
     "nom": "Cyril Bonnot",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/jeunes.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/cyril.png",
+      "largeur": 127,
+      "hauteur": 176,
       "cadre": [
-        337,
-        790,
-        133,
-        156
+        -9,
+        -6,
+        145,
+        145
       ]
     }
   },
@@ -516,14 +498,14 @@ export const PERSONNES = {
     "nom": "Grégory Mellarin",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/jeunes.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/gregory-m.png",
+      "largeur": 140,
+      "hauteur": 180,
       "cadre": [
-        487,
-        789,
-        132,
-        157
+        -2,
+        -3,
+        145,
+        145
       ]
     }
   },
@@ -532,14 +514,14 @@ export const PERSONNES = {
     "nom": "Stéphane Fetter",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/jeunes.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/stephane-f.png",
+      "largeur": 132,
+      "hauteur": 174,
       "cadre": [
-        635,
-        790,
-        132,
-        157
+        -7,
+        -5,
+        145,
+        145
       ]
     }
   },
@@ -548,14 +530,14 @@ export const PERSONNES = {
     "nom": "Lilian Charre",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/jeunes.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/lilian.png",
+      "largeur": 126,
+      "hauteur": 177,
       "cadre": [
-        787,
-        790,
-        132,
-        157
+        -9,
+        -2,
+        144,
+        144
       ]
     }
   },
@@ -564,14 +546,14 @@ export const PERSONNES = {
     "nom": "Nordine Guerrouche",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/jeunes.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/nordine.png",
+      "largeur": 171,
+      "hauteur": 176,
       "cadre": [
-        247,
-        1076,
-        132,
-        162
+        7,
+        -4,
+        145,
+        145
       ]
     }
   },
@@ -580,14 +562,14 @@ export const PERSONNES = {
     "nom": "Mahé Ranc",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/jeunes.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/mahe.png",
+      "largeur": 126,
+      "hauteur": 175,
       "cadre": [
-        399,
-        1080,
-        132,
-        158
+        -9,
+        -5,
+        144,
+        144
       ]
     }
   },
@@ -596,14 +578,14 @@ export const PERSONNES = {
     "nom": "Robin Guinet",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/jeunes.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/robin.png",
+      "largeur": 127,
+      "hauteur": 177,
       "cadre": [
-        548,
-        1076,
-        132,
-        163
+        -9,
+        -6,
+        145,
+        145
       ]
     }
   },
@@ -621,14 +603,14 @@ export const PERSONNES = {
       ]
     },
     "photo": {
-      "src": "img/organigramme/entente.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/emma-liconnet.png",
+      "largeur": 102,
+      "hauteur": 135,
       "cadre": [
-        334,
-        499,
-        126,
-        147
+        -7,
+        -6,
+        116,
+        116
       ]
     }
   },
@@ -637,14 +619,14 @@ export const PERSONNES = {
     "nom": "Alyssa Naviel",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/entente.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/alyssa.png",
+      "largeur": 124,
+      "hauteur": 178,
       "cadre": [
-        474,
-        497,
-        127,
-        150
+        -9,
+        -4,
+        142,
+        142
       ]
     }
   },
@@ -653,14 +635,14 @@ export const PERSONNES = {
     "nom": "Léo Granjon",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/entente.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/leo.png",
+      "largeur": 124,
+      "hauteur": 176,
       "cadre": [
-        615,
-        499,
-        132,
-        147
+        -9,
+        -4,
+        142,
+        142
       ]
     }
   },
@@ -669,14 +651,14 @@ export const PERSONNES = {
     "nom": "Melvin Rothenmund",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/entente.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/melvin.png",
+      "largeur": 160,
+      "hauteur": 176,
       "cadre": [
-        757,
-        496,
-        131,
-        151
+        9,
+        -2,
+        142,
+        142
       ]
     }
   },
@@ -685,14 +667,14 @@ export const PERSONNES = {
     "nom": "Tom Heriaud",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/entente.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/tom.png",
+      "largeur": 124,
+      "hauteur": 174,
       "cadre": [
-        334,
-        793,
-        127,
-        153
+        -9,
+        -5,
+        142,
+        142
       ]
     }
   },
@@ -701,14 +683,14 @@ export const PERSONNES = {
     "nom": "Antoine Barral",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/entente.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/antoine.png",
+      "largeur": 124,
+      "hauteur": 180,
       "cadre": [
-        476,
-        793,
-        131,
-        153
+        -9,
+        -6,
+        142,
+        142
       ]
     }
   },
@@ -717,14 +699,14 @@ export const PERSONNES = {
     "nom": "Gregory Balayn",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/entente.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/gregory-b.png",
+      "largeur": 125,
+      "hauteur": 184,
       "cadre": [
-        616,
-        787,
-        130,
-        159
+        -8,
+        -6,
+        142,
+        142
       ]
     }
   },
@@ -733,14 +715,14 @@ export const PERSONNES = {
     "nom": "Hubert Poinot",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/entente.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/hubert.png",
+      "largeur": 126,
+      "hauteur": 170,
       "cadre": [
-        401,
-        1083,
-        131,
-        155
+        -9,
+        -5,
+        144,
+        144
       ]
     }
   },
@@ -749,14 +731,14 @@ export const PERSONNES = {
     "nom": "Mounir Ayach",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/seniors.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/mounir.png",
+      "largeur": 128,
+      "hauteur": 175,
       "cadre": [
-        335,
-        490,
-        130,
-        157
+        -9,
+        -5,
+        146,
+        146
       ]
     }
   },
@@ -765,14 +747,14 @@ export const PERSONNES = {
     "nom": "Quentin Sottet",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/seniors.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/quentin.png",
+      "largeur": 124,
+      "hauteur": 178,
       "cadre": [
-        476,
-        490,
-        129,
-        157
+        -9,
+        -6,
+        142,
+        142
       ]
     }
   },
@@ -781,14 +763,14 @@ export const PERSONNES = {
     "nom": "Chadi Stiti",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/seniors.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/chadi.png",
+      "largeur": 124,
+      "hauteur": 180,
       "cadre": [
-        617,
-        487,
-        131,
-        160
+        -9,
+        -6,
+        142,
+        142
       ]
     }
   },
@@ -797,14 +779,14 @@ export const PERSONNES = {
     "nom": "Axel Bravais",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/seniors.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/axel.png",
+      "largeur": 124,
+      "hauteur": 183,
       "cadre": [
-        757,
-        488,
-        132,
-        159
+        -9,
+        -4,
+        142,
+        142
       ]
     }
   },
@@ -813,14 +795,14 @@ export const PERSONNES = {
     "nom": "Anaïs Chardon",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/seniors.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/anais.png",
+      "largeur": 125,
+      "hauteur": 184,
       "cadre": [
-        184,
-        783,
-        132,
-        161
+        -9,
+        -5,
+        142,
+        142
       ]
     }
   },
@@ -829,14 +811,14 @@ export const PERSONNES = {
     "nom": "Jean-Christophe Fabre",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/seniors.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/jean-christophe.png",
+      "largeur": 181,
+      "hauteur": 191,
       "cadre": [
-        756,
-        783,
-        132,
-        161
+        20,
+        -4,
+        142,
+        142
       ]
     }
   },
@@ -845,14 +827,14 @@ export const PERSONNES = {
     "nom": "Clément Revillard",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/seniors.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/clement.png",
+      "largeur": 133,
+      "hauteur": 148,
       "cadre": [
-        415,
-        1119,
-        111,
-        128
+        4,
+        -5,
+        125,
+        125
       ]
     }
   },
@@ -861,30 +843,35 @@ export const PERSONNES = {
     "nom": "Florian Royol",
     "missions": {},
     "photo": {
-      "src": "img/organigramme/commissions.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/florian.png",
+      "largeur": 100,
+      "hauteur": 134,
       "cadre": [
-        858,
-        441,
-        108,
-        122
+        -8,
+        -4,
+        116,
+        116
       ]
     }
   },
   "thibaut": {
     "id": "thibaut",
-    "nom": "Thibaut Carteron",
-    "missions": {},
+    "nom": "Thibault Carteron",
+    "missions": {
+      "manifestations": [
+        "Contribuer à l’esprit familial du club.",
+        "Échanger avec les responsables sportifs pour adapter l’organisation."
+      ]
+    },
     "photo": {
-      "src": "img/organigramme/commissions.jpg",
-      "largeur": 1080,
-      "hauteur": 1440,
+      "src": "img/organigramme/portraits/thibaut.png",
+      "largeur": 119,
+      "hauteur": 140,
       "cadre": [
-        439,
-        595,
-        104,
-        121
+        2,
+        1,
+        113,
+        113
       ]
     }
   }
@@ -989,7 +976,6 @@ export const GROUPES = [
       "sandy",
       "emma-liconnet",
       "loic",
-      "kepo",
       "thibaut"
     ],
     "responsables": [

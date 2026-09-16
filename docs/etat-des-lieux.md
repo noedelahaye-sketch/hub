@@ -24,7 +24,11 @@ mise en documentation, son commit et son push ; ce relais accompagne ce lot.
 ### Qui fait quoi
 
 - Trois vues : **Bureau et référents**, **Commissions**, **Équipes sportives**.
-- **45 personnes, 23 groupes**, avec portraits des documents du club.
+- **44 personnes, 23 groupes**, avec un **portrait individuel par personne**
+  (`img/organigramme/portraits/<id>.png`, 16 septembre 2026) : les exports
+  découpés du club remplacent les fenêtres taillées dans les photos de groupe.
+  Le portrait est **rond** — la pastille du club, la bande du nom hors champ,
+  la carte écrivant déjà le nom dessous.
 - Une fiche par personne : `#hermitage/commissions/<id>`, réunissant ses
   missions individuelles et ses rôles sportifs ; liens vers ses collègues.
 - Recherche transversale par nom, catégorie ou mission, sans doublons.
@@ -32,6 +36,12 @@ mise en documentation, son commit et son push ; ce relais accompagne ce lot.
 - **Emma = Emma Liconnet**, confirmé par Noé : Partenaires, Manifestations et
   U15 réunis dans une seule fiche. **Lina Amine** : photo retrouvée dans
   l’export des commissions 2026–2027.
+- **Kepo = Thibault Carteron**, confirmé par Noé le 16 septembre 2026 : une
+  seule fiche, celle de Thibault, qui reprend les missions de Kepo aux
+  manifestations. Le prénom s’écrit **Thibault**, comme sur les portraits.
+- **À faire trancher par le club** : deux portraits différents portent le nom
+  « Christophe Lucchetta » — celui du bureau et celui du sportif. Le hub garde
+  celui du bureau, qui est aussi celui qu’affichait la découpe précédente.
 
 ### Sources et limites
 
