@@ -56,6 +56,38 @@ exports 2026–2027 du bureau et des commissions ont été retrouvés.
 - **Deux portraits différents portent le nom « Christophe Lucchetta »** : celui du bureau et des commissions (cheveux courts et sombres) et celui du sportif (barbe et cheveux blancs). Le hub retient celui du bureau, qui est aussi celui que montrait la découpe précédente. À faire trancher par le club.
 - Les responsables de catégories sportives sont ceux entourés de rouge sur les affiches. Les couleurs des groupes ne constituent pas à elles seules le libellé du rôle.
 
+## La fiche d'une personne : ses rôles en pastilles
+
+Ses appartenances étaient trois lignes de texte sous son nom, précédées d'une
+pastille « Au FC Hermitage » qui ne disait rien qu'on ne sût déjà. Elles sont
+désormais **une pastille par groupe**, et le rang se lit dans le dessin.
+
+- **Le remplissage dit le rang** : pleine pour un responsable, cerclée pour un
+  membre. C'est l'échelle de présence du hub, celle qui distingue déjà un
+  événement d'une tâche au calendrier — on ne réinvente pas un alphabet pour le
+  même geste.
+- **Une étoile le redouble**, et c'est elle qui rend la pastille lisible sans
+  légende : un fond plein ne se comprend qu'en le comparant à un voisin creux,
+  or une fiche peut n'en porter qu'une seule. Elle est dessinée et non en émoji,
+  donc elle prend la couleur de son texte.
+- **Les responsabilités d'abord**, les simples appartenances ensuite (demande de
+  Noé). Le tri est **stable** : à rang égal, l'ordre de l'organigramme tient.
+- **L'étiquette est le nom du groupe**, sans le mot qui disait le rang. Une
+  fonction du bureau garde son NOM — Coprésident, Trésorier, Vice-secrétaire,
+  Référent U7–U9 — parce que ce n'est pas un rang mais un titre, et que rien
+  d'autre ne le dirait.
+- **Le fond mêle la couleur du groupe au bleu du site, à 48 %** et non aux 55 %
+  des titres de mission : ceux-ci s'écrivent en 19 px gras, qui se lisent à
+  partir de 3:1 ; une pastille écrit en 12 px, et il lui en faut 4,5. *Mesuré à
+  55 %, le jaune des séniors tombait à 4,34 ; à 48 %, le pire des vingt-huit cas
+  est à 5,12.*
+- **Le mot reste, hors écran et dans la bulle** : une couleur ne se lit pas au
+  lecteur d'écran.
+- **La tuile d'un rôle sportif ne réécrit plus son rang** : « Responsable · U15 ·
+  Entente FCH–COC » sous un titre qui disait déjà « U15 · Entente FCH–COC »
+  écrivait le nom du groupe deux fois dans la même tuile. Il ne reste que ce que
+  le titre ne dit pas.
+
 ## La largeur d'une tuile suit ce qu'elle porte
 
 Une grille à deux colonnes donnait la même largeur à tout le monde : les trois

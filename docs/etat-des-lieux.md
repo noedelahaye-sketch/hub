@@ -32,6 +32,10 @@ mise en documentation, son commit et son push ; ce relais accompagne ce lot.
 - **La largeur d'une tuile suit son effectif** (16 septembre 2026) : les trois
   référents de pôle sont côte à côte dans un rang à eux, et chaque groupe tient
   sur un seul rang de portraits. Voir `docs/fch-organigramme-sources.md`.
+- **Les rôles d'une fiche sont des pastilles** (16 septembre 2026) : pleine avec
+  une étoile pour un responsable, cerclée pour un membre, les responsabilités
+  d'abord. La pastille « Au FC Hermitage » est partie — elle ne disait rien
+  qu'on ne sût déjà.
 - Une fiche par personne : `#hermitage/commissions/<id>`, réunissant ses
   missions individuelles et ses rôles sportifs ; liens vers ses collègues.
 - Recherche transversale par nom, catégorie ou mission, sans doublons.

@@ -23,6 +23,29 @@ function fonctionDans(g, id) {
   if (g.id === 'gardiens') return 'Entraîneur des gardiens';
   return `${responsable(g, id) ? 'Responsable' : g.type === 'sportif' ? 'Encadrement' : 'Membre'} · ${g.nom}`;
 }
+// L'ÉTIQUETTE D'UNE PASTILLE DE RÔLE : le nom du groupe, sans le mot qui dit
+// le rang — c'est le dessin de la pastille qui le dit maintenant. Une fonction
+// du bureau, elle, porte un NOM (Coprésident, Trésorier) : il reste, parce que
+// ce n'est pas un rang mais un titre, et que rien d'autre ne le dirait.
+const RANGS = ['Responsable', 'Encadrement', 'Membre'];
+function etiquetteDe(g, id) {
+  const dit = fonctionDans(g, id);
+  const coupe = dit.indexOf(' · ');
+  return coupe > 0 && RANGS.includes(dit.slice(0, coupe)) ? dit.slice(coupe + 3) : dit;
+}
+// L'étoile est le second signe du responsable, et c'est elle qui rend la
+// pastille lisible sans légende : un fond plein ne se comprend qu'en le
+// comparant à un voisin creux, une étoile se comprend seule. Dessinée et non
+// en émoji, donc elle prend la couleur de son texte.
+const ETOILE = '<svg class="orga-etoile" viewBox="0 0 24 24" aria-hidden="true" focusable="false">'
+  + '<path d="m12 3 2.6 6.1 6.6.6-5 4.3 1.5 6.5L12 17l-5.7 3.5 1.5-6.5-5-4.3 6.6-.6z"/></svg>';
+function pastilleDeRole(g, id) {
+  const chef = responsable(g, id);
+  const dit = `${chef ? 'Responsable' : 'Membre'} · ${g.nom}`;
+  return `<li><span class="orga-role-pastille${chef ? ' est-responsable' : ''}"
+    style="--orga-couleur:${g.couleur}" title="${echapper(dit)}">${chef ? ETOILE : ''}<span
+    class="hors-ecran">${echapper(chef ? 'Responsable · ' : 'Membre · ')}</span>${echapper(etiquetteDe(g, id))}</span></li>`;
+}
 function portrait(p) {
   if (!p.photo) return `<span class="orga-photo orga-initiales" aria-hidden="true">${echapper(p.nom[0])}</span>`;
   const { src, cadre, largeur, hauteur } = p.photo;
@@ -73,8 +96,14 @@ function fiche(id) {
   const domaine = groupes.some((g) => g.type === 'bureau') ? 'bureau' : missions.length ? 'commissions' : 'sportif';
   return `<article class="orga-fiche">
     <a class="lien-discret" href="${ADRESSE}/${domaine}">← Les organigrammes</a>
-    <header class="orga-identite">${portrait(p)}<div><p class="etiquette">Au FC Hermitage</p>
-      <h2>${echapper(p.nom)}</h2><p>${groupes.map((g) => echapper(fonctionDans(g,id))).join('<br>')}</p></div></header>
+    <header class="orga-identite">${portrait(p)}<div>
+      <h2>${echapper(p.nom)}</h2>
+      ${/* CE QU'ELLE PORTE D'ABORD (demande de Noé) : responsable en tête, membre
+           ensuite. Le tri est STABLE, donc à rang égal l'ordre de l'organigramme
+           tient — on range les rangs sans mélanger ce qu'ils contiennent. */''}
+      <ul class="orga-roles">${[...groupes]
+        .sort((a, b) => responsable(b, id) - responsable(a, id))
+        .map((g) => pastilleDeRole(g, id)).join('')}</ul></div></header>
     ${missions.length ? `<h3 class="titre-section">Ses missions au club</h3><div class="orga-missions">${missions.map(([cle,items]) => {
       const g = GROUPES.find((g) => g.id === cle);
       return `<section class="fch-tuile"><h4><span style="--orga-couleur:${g.couleur}">${echapper(g.nom)}</span></h4>
@@ -82,8 +111,12 @@ function fiche(id) {
     }).join('')}</div>` : ''}
     ${sportifs.length ? `<h3 class="titre-section">Ses rôles sportifs</h3><div class="orga-missions">${sportifs.map((g) => `<section class="fch-tuile">
       <h4><span style="--orga-couleur:${g.couleur}">${echapper(g.nom)}</span></h4>
-      <p>${echapper(fonctionDans(g,id))}</p>
-      ${g.aide && g.aide !== fonctionDans(g,id) ? `<p class="discret">${echapper(g.aide)}</p>` : ''}
+      ${/* Le rang ne se réécrit plus ici : la pastille de la tête le dit, et « Responsable ·
+            U15 · Entente FCH–COC » sous un titre qui dit déjà « U15 · Entente FCH–COC »
+            écrivait le nom du groupe deux fois dans la même tuile. Ce qui reste est ce
+            que le titre ne dit PAS — « Référent U7–U9 », « Entraîneur des gardiens ». */
+        etiquetteDe(g,id) !== g.nom ? `<p>${echapper(etiquetteDe(g,id))}</p>` : ''}
+      ${g.aide && g.aide !== etiquetteDe(g,id) ? `<p class="discret">${echapper(g.aide)}</p>` : ''}
       <p class="discret">${g.membres.length > 1 ? 'Avec ' + g.membres.filter((autre) => autre !== id).map((autre) => `<a href="${ADRESSE}/${autre}">${echapper(PERSONNES[autre].nom)}</a>`).join(', ') + '.' : 'Référent de ce pôle dans l’organigramme sportif.'}</p>
       <a class="lien-discret" href="#hermitage/entrainements">Voir les entraînements →</a>
     </section>`).join('')}</div>` : ''}

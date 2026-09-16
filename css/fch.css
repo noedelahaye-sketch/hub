@@ -1030,6 +1030,31 @@ body[data-espace="hermitage"] #vue .orga-identite h2 {
   font-size: clamp(1.7rem, 4vw, 2.5rem); text-transform: none; line-height: 1.05;
 }
 .orga-identite p { margin: 0; font-size: 0.875rem; line-height: 1.5; }
+/* LES RÔLES SONT DES PASTILLES, et le rang se lit dans leur REMPLISSAGE :
+   pleine pour un responsable, cerclée pour un membre. C'est l'échelle de
+   présence du hub, celle qui distingue déjà un événement d'une tâche au
+   calendrier — on ne réinvente pas un alphabet pour le même geste. L'étoile
+   redouble le signe, parce qu'un fond plein ne se comprend qu'en le comparant
+   à un voisin creux, et qu'une fiche peut n'en porter qu'une seule.
+   Le mot reste, hors écran et dans la bulle : la couleur ne se lit pas au
+   lecteur d'écran. */
+.orga-roles { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; padding: 0; margin: 10px 0 0; }
+.orga-role-pastille {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 11px; border-radius: 999px; font-size: 0.75rem; font-weight: 600;
+  line-height: 1.25; color: #fff; border: 1.5px solid var(--orga-couleur);
+}
+/* Le fond reprend la recette des titres de mission : la couleur MÊLÉE au bleu
+   du site, sans quoi un jaune de catégorie ne tiendrait pas du texte blanc. */
+/* 48 % et non les 55 % des titres de mission : ceux-ci sont écrits en 19 px
+   gras, qui se lisent à partir de 3:1 ; une pastille écrit en 12 px, et il lui
+   en faut 4,5. Mesuré à 55 %, le jaune des séniors tombait à 4,34. */
+.orga-role-pastille.est-responsable {
+  background: color-mix(in srgb, var(--orga-couleur) 48%, #142343);
+  border-color: color-mix(in srgb, var(--orga-couleur) 70%, #142343);
+  font-weight: 800;
+}
+.orga-etoile { flex: none; width: 12px; height: 12px; fill: currentColor; }
 .orga-missions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; margin-bottom: 28px; }
 .orga-missions h4 { margin: 0 0 16px; font-weight: 900; font-size: 1.2rem; letter-spacing: -0.035em; color: #fff; }
 .orga-missions h4 span { background: color-mix(in srgb, var(--orga-couleur) 55%, #142343); padding: 2px 6px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
