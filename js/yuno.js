@@ -25,8 +25,10 @@ import {
   STATUTS_YUNO,
   NOMS_STATUTS,
   construireBanque,
+  construireBarreIdees,
   construirePubliees,
   corpsPublication,
+  ideesFiltrees,
 } from './publications.js';
 import {
   depuisDateISO,
@@ -51,6 +53,7 @@ import {
   finDeLEvenement,
   passageDePublication,
   brancherEtatPublication,
+  fermerLesChoix,
   brancherSelection,
   brancherClavier,
   brancherDeplacement,
@@ -1514,9 +1517,14 @@ const PLUS_PAR_VUE = {
   // date — l'ouvrir sur aujourd'hui la programmait pour le jour même, et il
   // fallait ensuite la déprogrammer pour qu'elle rejoigne la banque.
   // L'éditorial garde sa date : c'est un calendrier, on y pose sur un jour.
-  creer: { nature: 'publication', natureEnDernier: true, sansDate: true },
-  banque: { nature: 'publication', natureEnDernier: true, sansDate: true },
-  editorial: { nature: 'publication', natureEnDernier: true },
+  // LA NATURE EST FIGÉE sur les trois écrans de l'atelier (16 septembre 2026,
+  // demande de Noé) : on n'y pose qu'une publication, et une pastille qui
+  // n'offre qu'un chemin est un choix qui n'en est pas un. LA RÉPÉTITION part
+  // des deux qui ouvrent SANS DATE — une idée n'a pas de jour qui revienne, et
+  // le réglage n'écrivait rien. L'éditorial la garde : on y pose sur un jour.
+  creer: { nature: 'publication', natureFigee: true, repetition: false, sansDate: true },
+  banque: { nature: 'publication', natureFigee: true, repetition: false, sansDate: true },
+  editorial: { nature: 'publication', natureFigee: true },
   calendrier: { nature: 'evenement' },
   reseau: { contact: true },
   passerelle: { contact: true },
@@ -2435,21 +2443,107 @@ function vueJournal(etat) {
     ${pied()}`;
 }
 
-export function filtrerBanque(publications, { pilier = 'tout', statutIdee = 'tout' } = {}) {
-  return publications.filter((pub) => {
-    if (pilier !== 'tout' && String(pub.pilier ?? '') !== pilier) return false;
-    if (statutIdee !== 'tout' && pub.statut !== statutIdee) return false;
-    return true;
-  });
+// --- UNE IDÉE EST UN FORMAT, PAS UN CONTENU À FAIRE UNE FOIS -------------------
+//
+// Règle posée par Noé le 16 septembre 2026 : *« une idée doit être
+// reproductible, ce n'est pas seulement un contenu à faire une fois — par
+// exemple le avant/après est reproductible plusieurs fois, donc une fois qu'il a
+// été fait il ne doit pas disparaître. Cependant il peut y avoir des
+// publications qui sont moins répétables, par exemple mon histoire, mon
+// matériel. »*
+//
+// CE QUE ÇA RÉPARE, ET C'ÉTAIT UNE CONFUSION DE MODÈLE : programmer une idée
+// posait sa date SUR SA PROPRE LIGNE. L'idée DEVENAIT la parution, donc elle
+// quittait la banque, et une fois publiée elle n'y revenait jamais. « How I
+// edited this pic » sortait de la réserve à sa première sortie.
+//
+// LA RÉPONSE EST CELLE DES SÉRIES DU HUB : « les occurrences sont de VRAIES
+// lignes ». Programmer un format fabrique une PARUTION — une publication datée,
+// ordinaire, qui vit au calendrier, compte dans les bilans et porte son lien —
+// et le format reste dans la banque, intact.
+//
+// REPRODUCTIBLE PAR DÉFAUT, et c'est l'ordre des mots de Noé : une idée EST un
+// format ; celle qui ne se refait pas est l'exception qu'on déclare.
+
+// Ce qu'une parution reprend de sa mère. `statut` n'en est PAS : la parution
+// naît en « idée », c'est-à-dire à fabriquer — le format peut être rodé, la
+// photo de la semaine reste à faire. C'est la règle du post d'un match du hub :
+// « le hub programme la parution, il n'écrit pas à la place de Noé ».
+const REPRIS_DE_LA_MERE = ['titre', 'reseau', 'format', 'espace', 'pilier', 'rubrique',
+  'preuve', 'pourquoi_moi', 'notes', 'projet_id'];
+
+// Les parutions d'un format, la plus récente d'abord.
+export function parutionsDuFormat(publications, idee) {
+  return publications
+    .filter((pub) => pub.idee_mere_id === idee.id)
+    .sort((a, b) => String(b.date_prevue ?? '').localeCompare(String(a.date_prevue ?? '')));
+}
+
+// CE QU'UN FORMAT A DÉJÀ DONNÉ, en une phrase — et RIEN tant qu'il n'a rien
+// donné : « 0 fois parue » serait la première chose qu'on lirait d'une idée
+// neuve, et c'est la règle des séries à zéro du hub.
+export function traceDuFormat(publications, idee, { jour = versDateISO() } = {}) {
+  const parutions = parutionsDuFormat(publications, idee);
+  if (!parutions.length) return null;
+
+  // PARUE ET PROGRAMMÉE NE SE COMPTENT PAS ENSEMBLE, et c'est le premier défaut
+  // qu'a montré l'essai : une parution posée au 24 septembre se disait « 1 fois
+  // parue · la dernière le 24 sept. », c'est-à-dire au FUTUR. Une chose qui
+  // n'a pas eu lieu ne se compte pas comme si elle avait eu lieu.
+  //
+  // ET LA PROCHAINE DATE VAUT LE DÉTOUR : c'est elle qui empêche de programmer
+  // deux fois le même format dans la même semaine sans le savoir.
+  const faites = parutions.filter((pub) => pub.statut === 'publie'
+    || (pub.date_prevue && pub.date_prevue < jour));
+  const aVenir = parutions
+    .filter((pub) => !faites.includes(pub) && pub.date_prevue)
+    .sort((a, b) => a.date_prevue.localeCompare(b.date_prevue))[0];
+
+  // « PARUE » ET NON « SORTIE » : chez Yuno, une sortie est un moment au carnet.
+  // Le mot est déjà celui du bloc des piliers, qui compte les idées « parues ».
+  const dites = faites.length
+    ? `${faites.length} fois parue${faites.length > 1 ? 's' : ''}`
+    : '';
+  const prochaine = aVenir
+    ? `${dites ? 'la prochaine' : 'programmée'} le ${jourCourt(aVenir.date_prevue)}`
+    : '';
+  return [dites, prochaine].filter(Boolean).join(' · ') || null;
+}
+
+// Ce que les gabarits d'une idée ont besoin de savoir chez Yuno. `formats` et
+// `trace` n'existent QUE d'ici : le site du FCH partage les mêmes gabarits mais
+// n'a pas le geste qui fabrique une parution, et lui montrer le signe d'un
+// format serait une promesse qu'il ne tient pas.
+function optionsDIdee(etat) {
+  return {
+    cycle: STATUTS_YUNO,
+    checklist: true,
+    piliers: PILIERS,
+    formats: true,
+    trace: (pub) => traceDuFormat(etat.publications, pub),
+    // L'état se règle sur la tuile de la banque comme sur la fiche : c'est la
+    // même pastille, et c'est le geste qu'on vient faire le plus souvent.
+    pastille: true,
+    // L'ÉTAT EST UNE PASTILLE, COMME PARTOUT AILLEURS (16 septembre 2026,
+    // demande de Noé : « cette partie ne correspond pas aux critères qu'on
+    // s'était fixés pour les boutons, les tuiles »). Yuno gardait le trio
+    // « statut : idée » + un bouton doré « Passer en à développer » — un
+    // libellé, une action et un réglage mêlés dans la même rangée. La pastille
+    // est celle du calendrier et du FCH, dessinée une seule fois, et elle sait
+    // en plus ce que le bouton ne savait pas : sauter un cran, et revenir.
+    pastille: true,
+  };
 }
 
 // `data-pilier` est ce qui ALLUME la couleur : la cascade de styles.css pose
 // `--pilier` et son encre dessus. Sans lui, la pastille restait un contour
 // gris — le système de couleurs existait, personne ne l'appelait.
 function etiquettePilier(rang) {
-  return `<span class="etiquette etiquette-pilier" data-pilier="${echapper(String(rang))}">${echapper(
-    `${rang}. ${PILIERS[rang]?.nom ?? ''}`,
-  )}</span>`;
+  const nom = `${rang}. ${PILIERS[rang]?.nom ?? ''}`;
+  // LE MOT DANS UN SPAN : c'est lui que l'ellipse tronque, le point de couleur
+  // restant entier. Le nom complet part dans le `title`.
+  return `<span class="etiquette etiquette-pilier" data-pilier="${echapper(String(rang))}"
+    title="${echapper(nom)}"><span>${echapper(nom)}</span></span>`;
 }
 
 // --- L'idée du jour -----------------------------------------------------------
@@ -2482,6 +2576,7 @@ const PROGRAMMER = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"
 // tourne.
 export function construireIdeeDuJour(publications, { jour = versDateISO() } = {}) {
   const idee = ideeDuJour(publications, jour);
+  const trace = idee ? traceDuFormat(publications, idee) : null;
 
   if (!idee) {
     return `
@@ -2527,6 +2622,13 @@ export function construireIdeeDuJour(publications, { jour = versDateISO() } = {}
             <span class="etiquette">${echapper(FORMATS[idee.format] ?? idee.format)}</span>
           </span>
           <span class="pub-titre">${echapper(idee.titre)}</span>
+          ${
+            // CE QUE LE FORMAT A DÉJÀ DONNÉ. C'est la seule chose de cette carte
+            // qu'on ne puisse pas deviner en lisant le titre, et elle change ce
+            // qu'on en fait : un format sorti trois fois se refait de confiance,
+            // un format jamais sorti demande qu'on l'essaie.
+            trace ? `<span class="discret pub-trace">${echapper(trace)}</span>` : ''
+          }
           ${idee.preuve ? `<span class="discret pub-preuve">${echapper(idee.preuve)}</span>` : ''}
         </button>
       </div>
@@ -2797,7 +2899,7 @@ function vueCreer(etat) {
       // La fiche d'une idée, ouverte depuis la carte du jour. Elle était rendue
       // par la seule banque : depuis Créer, le clic ne menait nulle part
       // (signalé par Noé, 15 août 2026).
-      fenetreIdee(etat, { cycle: STATUTS_YUNO, checklist: true, piliers: PILIERS })
+      fenetreIdee(etat, optionsDIdee(etat))
     }
 
     ${pied()}`;
@@ -2807,8 +2909,13 @@ function vueCreer(etat) {
 // dépasse pour atteindre autre chose. Elle garde l'onglet Créer allumé —
 // c'est une pièce de l'atelier, pas un lieu de plus.
 function vueBanque(etat) {
-  const options = { cycle: STATUTS_YUNO, checklist: true, piliers: PILIERS };
-  const retenues = filtrerBanque(etat.publications, etat);
+  const options = optionsDIdee(etat);
+  // LE COMPTE SE FAIT SUR LA BANQUE, pas sur toutes les publications : « 3 sur
+  // 20 » se lit mal quand deux des vingt sont des parutions passées.
+  const enBanque = etat.publications.filter(
+    (pub) => !pub.date_prevue && pub.statut !== 'publie',
+  );
+  const retenues = ideesFiltrees(enBanque, etat.filtresIdees, etat.triIdees);
 
   return `
     ${enTete('banque', etat)}
@@ -2818,45 +2925,26 @@ function vueBanque(etat) {
       <p class="discret banque-intro">Le backlog créatif. Il ne se vide jamais,
         et il ne réclame rien.</p>
 
-      <div class="barre-banque">
-        <!-- En listes depuis le 15 août 2026 : les deux derniers menus natifs
-             de l'atelier. Comme au CRM, choisir AGIT — la valeur vit sur
-             l'option, pas dans un champ. -->
-        <span class="filtre-banque">
-          <span class="discret">Pilier</span>
-          ${menuChoix({
-            nom: 'filtre-pilier',
-            libelle: 'Filtrer par pilier',
-            options: [
-              ['tout', 'Tous'],
-              ...Object.entries(PILIERS).map(([rang, { nom }]) => [rang, `${rang}. ${nom}`]),
-              ['', 'Sans pilier'],
-            ],
-            valeur: etat.pilier,
-            attribut: 'data-filtre-pilier-valeur',
-          })}
-        </span>
-        <span class="filtre-banque">
-          <span class="discret">Statut</span>
-          ${menuChoix({
-            nom: 'filtre-statut-idee',
-            libelle: 'Filtrer par statut',
-            options: [
-              ['tout', 'Tous'],
-              ...STATUTS_YUNO.filter((statut) => statut !== 'publie').map((statut) => [
-                statut,
-                NOMS_STATUTS[statut],
-              ]),
-            ],
-            valeur: etat.statutIdee,
-            attribut: 'data-filtre-statut-idee-valeur',
-          })}
-        </span>
-        <span class="discret compte-base"><span class="chiffre">${retenues.length}</span> sur
-          <span class="chiffre">${etat.publications.length}</span></span>
-      </div>
+      <!-- LA BARRE DE LA BIBLIOTHÈQUE, au trait près (16 septembre 2026,
+           demande de Noé) : une recherche, deux icônes, et la rangée de
+           critères qui se déplie. Elle remplace deux menus natifs à choix
+           UNIQUE — « les réels ET les stories » est une question qu'on se pose,
+           et le réseau, le format et la nature d'une idée n'étaient filtrables
+           nulle part. -->
+      ${construireBarreIdees({
+        idees: enBanque,
+        filtres: etat.filtresIdees,
+        tri: etat.triIdees,
+        ouverts: etat.filtresIdeesOuverts,
+        chip: etat.chipIdees,
+        piliers: Object.fromEntries(
+          Object.entries(PILIERS).map(([rang, { nom }]) => [rang, `${rang}. ${nom}`]),
+        ),
+      })}
+      <p class="discret compte-base"><span class="chiffre">${retenues.length}</span> sur
+        <span class="chiffre">${enBanque.length}</span></p>
 
-      <div data-bloc="banque">${construireBanque(retenues, options)}</div>
+      <div data-bloc="banque">${construireBanque(retenues, { ...options, ordreDonne: true })}</div>
       <div data-bloc="publiees">${construirePubliees(etat.publications, options)}</div>
     </section>
     ${fenetreIdee(etat, options)}
@@ -6451,8 +6539,13 @@ export default {
       detailCal: null,
       editionCal: false,
       jourOuvertCal: null,
-      pilier: 'tout',
-      statutIdee: 'tout',
+      // LES FILTRES DE LA BANQUE : plusieurs valeurs par critère, plus une
+      // recherche et un tri. Ils vivent dans l'état de l'espace et non dans
+      // l'adresse — on filtre pour chercher, pas pour partager un lien.
+      filtresIdees: {},
+      triIdees: { cle: 'defaut', sens: 1 },
+      filtresIdeesOuverts: false,
+      chipIdees: null,
       cloture: false,
       rechercheContact: '',
       filtresOuverts: false,
@@ -6674,6 +6767,8 @@ export default {
               projets: etat.projets ?? [],
               naturesEnPlus: NATURE_MOMENT,
               natureEnDernier: reglagesDuPlus(etat.vue).natureEnDernier ?? false,
+              natureFigee: reglagesDuPlus(etat.vue).natureFigee ?? false,
+              repetition: reglagesDuPlus(etat.vue).repetition ?? true,
               // Chez Yuno tout est photo : un événement porte toujours sa
               // pastille de type de moment.
               typeMoment: true,
@@ -6689,6 +6784,10 @@ export default {
                 Object.entries(PILIERS).map(([rang, { nom }]) => [rang, `${rang}. ${nom}`]),
               ),
               notes: true,
+              // Et sa NATURE : reproductible ou non, la preuve, le pourquoi.
+              // La tuile est le seul endroit où une idée s'écrit ; ce qu'elle
+              // n'y porte pas ne se dit nulle part.
+              formats: true,
             }),
           );
         }
@@ -7009,6 +7108,46 @@ export default {
     };
 
     const trouverPub = (id) => etat.publications.find((pub) => pub.id === id);
+
+    // PROGRAMMER UN FORMAT FABRIQUE UNE PARUTION ; programmer une idée unique
+    // pose sa date sur sa propre ligne, comme avant. UN SEUL CHEMIN pour les
+    // trois gestes qui datent une idée — le coin de la carte du jour, le champ
+    // de sa fiche, le glissement dans le calendrier éditorial : trois copies
+    // auraient fini par ne plus dupliquer de la même façon, et c'est dans la
+    // copie oubliée qu'un format se mettrait à disparaître.
+    //
+    // LA CONDITION PORTE SUR L'ABSENCE DE DATE, et pas seulement sur le
+    // drapeau : une PARUTION qu'on déplace n'a pas à se dupliquer, et elle
+    // porte déjà `reproductible = false`. La double garde rend le geste sûr
+    // même sur une ligne ancienne, écrite avant que la colonne existe.
+    const poserUneDate = async (pub, jour) => {
+      if (!jour) return;
+      if (!pub.reproductible || pub.date_prevue) {
+        await modifierAussitot(
+          pub,
+          { date_prevue: jour },
+          () => api.modifierPublication(pub.id, { date_prevue: jour }),
+          { rendre, echouer: dire },
+        );
+        return;
+      }
+      const parution = {
+        ...Object.fromEntries(REPRIS_DE_LA_MERE.map((champ) => [champ, pub[champ] ?? null])),
+        statut: 'idee',
+        date_prevue: jour,
+        // UNE PARUTION N'EST PAS UN FORMAT : sans ce `false`, la déprogrammer
+        // la renverrait dans la banque comme un second format, jumeau du
+        // premier — et la banque doublerait à chaque aller-retour.
+        reproductible: false,
+        idee_mere_id: pub.id,
+      };
+      await ajouterAussitot(
+        etat.publications,
+        parution,
+        () => api.creerPublication(parution),
+        { rendre, echouer: dire },
+      );
+    };
     // L'argent d'une sortie vit sur sa COMMANDE, reliée par `evenement_id`.
     // Trois cas, et le troisième compte autant que les deux autres : vider les
     // deux champs RETIRE la prestation. Sans ça, une prestation notée par
@@ -7338,6 +7477,39 @@ export default {
             }),
           );
         } else if (champs.nature === 'publication') {
+          // UNE CORRECTION N'AJOUTE RIEN : la tuile a été rouverte sur une idée
+          // existante, elle la met à jour. La date et la répétition ne sont pas
+          // touchées ici — elles se règlent sur la fiche, où la pastille de
+          // date vit, et les réécrire depuis la tuile déprogrammerait une idée
+          // qu'on venait seulement renommer.
+          const corrige = etat.creationCal?.modifie
+            ? etat.publications.find((pub) => pub.id === etat.creationCal.modifie)
+            : null;
+          if (corrige) {
+            const champsCorriges = {
+              titre,
+              reseau: champs.reseau,
+              format: champs.format,
+              pilier: champs.pilier ? Number(champs.pilier) : null,
+              notes: champs.notes?.trim() || null,
+              reproductible: champs.reproductible !== '',
+              // NI LA PREUVE NI LE « POURQUOI CHEZ MOI » : la tuile ne les
+              // demande plus (16 septembre 2026), donc `champs` ne les porte
+              // pas — les écrire depuis ici les mettrait à NULL. **Rouvrir une
+              // idée pour corriger son titre lui aurait effacé sa preuve, en
+              // silence.** C'est la règle du hub : ne rien redonner, c'est
+              // garder ce qui est là.
+            };
+            await modifierAussitot(
+              corrige,
+              champsCorriges,
+              () => api.modifierPublication(corrige.id, champsCorriges),
+              { rendre, echouer: dire },
+            );
+            etat.creationCal = null;
+            rendre();
+            return;
+          }
           etat.publications.unshift(
             await api.creerPublication({
               espace: 'photo',
@@ -7358,6 +7530,11 @@ export default {
               // notes, et ils doivent donc arriver jusqu'ici.
               pilier: champs.pilier ? Number(champs.pilier) : null,
               notes: champs.notes?.trim() || null,
+              // UNE IDÉE EST UN FORMAT, et c'est le défaut : la pastille rend
+              // « oui » tant qu'on ne dit pas le contraire. Le test porte sur la
+              // valeur VIDE — c'est ainsi que `champChoix` écrit « non », comme
+              // pour toutes les pastilles booléennes de la tuile.
+              reproductible: champs.reproductible !== '',
             }),
           );
         } else if (champs.nature === 'objectif') {
@@ -7824,16 +8001,25 @@ export default {
       // s'ouvre donc déjà sur le bon axe, sans second rendu.
       const versPilier = evenement.target.closest('[data-vers-pilier]');
       if (versPilier) {
-        etat.pilier = versPilier.dataset.versPilier;
-        etat.statutIdee = 'tout';
+        // La banque s'ouvre filtrée sur CE pilier, et sur lui seul : le geste
+        // vient d'une barre où l'on a pressé un axe, pas d'une recherche.
+        etat.filtresIdees = { pilier: [versPilier.dataset.versPilier] };
+        etat.triIdees = { cle: 'defaut', sens: 1 };
+        etat.filtresIdeesOuverts = true;
         return;
       }
 
       // Ouvrir la fiche d'une idée depuis son aperçu. La tuile entière est le
       // bouton : rien d'autre n'est cliquable dedans, l'aperçu ne porte plus
       // aucun geste.
+      // LA TUILE D'UNE IDÉE PORTE DES CONTRÔLES depuis que sa pastille d'état s'y
+      // règle (16 septembre 2026) : le clic qui les touche ne doit pas ouvrir la
+      // fiche par-dessus. LA LISTE EST EXPLICITE — les rôles natifs —, et non
+      // « tout ce qui a l'air cliquable » : un sélecteur deviné avalerait
+      // silencieusement le prochain contrôle posé ici. C'est la garde de la
+      // tuile « Aujourd'hui » du hub, au mot près.
       const apercuIdee = evenement.target.closest('[data-ouvrir-pub]');
-      if (apercuIdee) {
+      if (apercuIdee && !evenement.target.closest('button, a, input, select, textarea')) {
         etat.ideeOuverte = apercuIdee.dataset.ouvrirPub;
         rendre();
         section.querySelector('.fenetre-fermer')?.focus();
@@ -8138,19 +8324,72 @@ export default {
         return;
       }
 
-      // Les filtres de la banque : la valeur vit sur l'option choisie.
-      const choixPilier = evenement.target.closest('[data-filtre-pilier-valeur]');
-      if (choixPilier) {
-        etat.pilier = choixPilier.dataset.filtrePilierValeur;
+      // LES FILTRES DE LA BANQUE, dans la grammaire de la bibliothèque : une
+      // icône ouvre la rangée, chaque critère son panneau, et l'on COCHE
+      // plusieurs valeurs. Le panneau reste ouvert entre deux coches — une idée
+      // se cherche souvent sur deux formats à la fois.
+      if (evenement.target.closest('[data-ouvrir-filtres-idees]')) {
+        etat.filtresIdeesOuverts = !etat.filtresIdeesOuverts;
+        etat.chipIdees = null;
         rendre();
         return;
       }
 
-      const choixStatutIdee = evenement.target.closest('[data-filtre-statut-idee-valeur]');
-      if (choixStatutIdee) {
-        etat.statutIdee = choixStatutIdee.dataset.filtreStatutIdeeValeur;
+      // L'ICÔNE DE TRI OUVRE SON PANNEAU DIRECTEMENT : c'est un réglage unique,
+      // et le faire chercher dans une rangée qu'on vient d'ouvrir serait deux
+      // gestes pour un.
+      if (evenement.target.closest('[data-ouvrir-tri-idees]')) {
+        etat.filtresIdeesOuverts = true;
+        etat.chipIdees = etat.chipIdees === 'tri' ? null : 'tri';
         rendre();
         return;
+      }
+
+      const critereIdee = evenement.target.closest('[data-critere-idee]');
+      if (critereIdee) {
+        const cle = critereIdee.dataset.critereIdee;
+        etat.chipIdees = etat.chipIdees === cle ? null : cle;
+        rendre();
+        return;
+      }
+
+      const filtreIdee = evenement.target.closest('[data-filtre-idee]');
+      if (filtreIdee) {
+        const { filtreIdee: cle, valeur } = filtreIdee.dataset;
+        const choisis = etat.filtresIdees[cle] ?? [];
+        etat.filtresIdees = {
+          ...etat.filtresIdees,
+          [cle]: choisis.includes(valeur)
+            ? choisis.filter((v) => v !== valeur)
+            : [...choisis, valeur],
+        };
+        rendre();
+        return;
+      }
+
+      // LE MÊME TRI RETOUCHÉ SE RETOURNE — c'est le geste d'un en-tête de
+      // colonne, et il évite un second bouton pour le sens.
+      const trierIdee = evenement.target.closest('[data-trier-idee]');
+      if (trierIdee) {
+        const cle = trierIdee.dataset.trierIdee;
+        etat.triIdees = etat.triIdees.cle === cle && cle !== 'defaut'
+          ? { cle, sens: -etat.triIdees.sens }
+          : { cle, sens: 1 };
+        etat.chipIdees = null;
+        rendre();
+        return;
+      }
+
+      if (evenement.target.closest('[data-vider-filtres-idees]')) {
+        etat.filtresIdees = etat.filtresIdees.mot ? { mot: etat.filtresIdees.mot } : {};
+        rendre();
+        return;
+      }
+
+      // Un clic ailleurs referme la pastille ouverte : c'est le geste d'un menu.
+      if (etat.chipIdees && !evenement.target.closest('.livres-critere')) {
+        etat.chipIdees = null;
+        rendre();
       }
 
       // Un filtre du CRM : la valeur est sur l'option, la colonne sur la puce.
@@ -8695,6 +8934,58 @@ export default {
         return;
       }
 
+      // REPRODUCTIBLE OU UNE SEULE FOIS. Le réglage se pose en écrivant l'idée
+      // et ne se retouche presque jamais ; il vit donc dans sa fiche, pas sur
+      // la ligne de la banque. L'écriture est optimiste : le libellé du bouton
+      // change sous le doigt.
+      const basculerFormat = evenement.target.closest('[data-basculer-format]');
+      if (basculerFormat) {
+        const pub = trouverPub(basculerFormat.dataset.basculerFormat);
+        if (!pub || estProvisoire(pub.id)) return;
+        const reproductible = !pub.reproductible;
+        await modifierAussitot(
+          pub,
+          { reproductible },
+          () => api.modifierPublication(pub.id, { reproductible }),
+          { rendre, echouer: dire },
+        );
+        return;
+      }
+
+      // MODIFIER, C'EST ROUVRIR LA TUILE OÙ L'IDÉE A ÉTÉ ÉCRITE (16 septembre
+      // 2026, demande de Noé). C'est la mécanique de l'espace Tâches du hub —
+      // « rouvrir une tâche : la tuile revient avec son projet » — et elle vaut
+      // d'autant plus ici que la tuile porte désormais TOUS les paramètres
+      // d'une idée. Un second formulaire aurait été un second endroit où une
+      // idée s'écrit, donc deux listes de champs à tenir d'accord.
+      const modifierPub = evenement.target.closest('[data-modifier-pub]');
+      if (modifierPub) {
+        const pub = trouverPub(modifierPub.dataset.modifierPub);
+        if (!pub || estProvisoire(pub.id)) return;
+        etat.ideeOuverte = null;
+        etat.creationCal = {
+          nature: 'publication',
+          debut: pub.date_prevue ?? '',
+          fin: pub.date_prevue ?? '',
+          // `modifie` est ce qui distingue une correction d'une création : la
+          // tuile ne le sait pas, c'est l'espace qui le sait à l'envoi.
+          modifie: pub.id,
+          valeurs: {
+            titre: pub.titre,
+            reseau: pub.reseau,
+            format: pub.format,
+            pilier: pub.pilier,
+            notes: pub.notes,
+            preuve: pub.preuve,
+            pourquoi_moi: pub.pourquoi_moi,
+            reproductible: pub.reproductible,
+          },
+        };
+        rendre();
+        section.querySelector('#cal-titre')?.focus();
+        return;
+      }
+
       const supprimerPub = evenement.target.closest('[data-supprimer-pub]');
       if (supprimerPub) {
         const pub = trouverPub(supprimerPub.dataset.supprimerPub);
@@ -9096,12 +9387,7 @@ export default {
       // serait le contraire du geste.
       const pub = trouverPub(tuile.dataset.poserIdee);
       if (!pub || estProvisoire(pub.id)) return;
-      await modifierAussitot(
-        pub,
-        { date_prevue: jour },
-        () => api.modifierPublication(pub.id, { date_prevue: jour }),
-        { rendre, echouer: dire },
-      );
+      await poserUneDate(pub, jour);
     });
 
     section.addEventListener('pointercancel', lacherLIdee);
@@ -9208,6 +9494,22 @@ export default {
 
     // La recherche du carnet filtre à la frappe, sans bouton.
     section.addEventListener('input', (evenement) => {
+      // LA RECHERCHE FILTRE À LA LETTRE, sans bouton : la banque tient en
+      // mémoire, il n'y a rien à demander au réseau. LE CURSEUR REVIENT AU BOUT
+      // DU MOT — on redessine à chaque frappe, et sans ça le champ perdrait le
+      // focus au premier caractère. C'est la parade de la bibliothèque.
+      const rechercheIdee = evenement.target.closest('[data-recherche-idee]');
+      if (rechercheIdee) {
+        etat.filtresIdees = { ...etat.filtresIdees, mot: rechercheIdee.value };
+        rendre();
+        const champ = section.querySelector('[data-recherche-idee]');
+        if (champ) {
+          champ.focus();
+          champ.setSelectionRange(champ.value.length, champ.value.length);
+        }
+        return;
+      }
+
       const rechercheDeClub = evenement.target.closest('[data-recherche-club]');
       if (rechercheDeClub) {
         etat.rechercheClub = rechercheDeClub.value;
@@ -9227,13 +9529,7 @@ export default {
       if (programmer && programmer.value) {
         const pub = trouverPub(programmer.dataset.programmer);
         if (!pub || estProvisoire(pub.id)) return;
-        const jour = programmer.value;
-        await modifierAussitot(
-          pub,
-          { date_prevue: jour },
-          () => api.modifierPublication(pub.id, { date_prevue: jour }),
-          { rendre, echouer: dire },
-        );
+        await poserUneDate(pub, programmer.value);
         return;
       }
 

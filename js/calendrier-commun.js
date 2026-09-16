@@ -2168,6 +2168,15 @@ const ICONE = {
     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <path d="M17 2l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
     <path d="M7 22l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>`,
+  // LE FORMAT D'UNE IDÉE : une pile de feuilles. Exportée plus bas
+  // (`ICONE_FORMAT_IDEE`) — la fiche d'une idée porte le MÊME réglage, et deux
+  // dessins pour un même bouton finiraient par ne plus se ressembler. Surtout PAS la boucle de la
+  // répétition, qui vit dans la même rangée et dit autre chose — une récurrence
+  // est un rythme du calendrier, un format est une nature de contenu.
+  formatIdee: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <rect x="8" y="3" width="13" height="13" rx="2"></rect>
+    <path d="M16 20v.5a1.5 1.5 0 0 1-1.5 1.5h-9A2.5 2.5 0 0 1 3 19.5v-9A1.5 1.5 0 0 1 4.5 9H5"></path></svg>`,
   reseau: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18"></path></svg>`,
@@ -2384,6 +2393,10 @@ function pastilleCapture({
   };
 }
 
+// Le dessin du réglage « reproductible », partagé par la tuile de capture et la
+// fiche d'une idée.
+export const ICONE_FORMAT_IDEE = ICONE.formatIdee;
+
 export function fenetreCreation({
   debut,
   fin,
@@ -2434,6 +2447,23 @@ export function fenetreCreation({
   // endroit où l'on écrit une idée : ce qu'on avait à dire de plus doit tenir
   // ici, sinon il ne se dit nulle part.
   notes = false,
+  // UNE IDÉE EST UN FORMAT (16 septembre 2026) : la pastille qui dit si elle se
+  // refait, et les deux textes qui ferment le débat — la preuve et le « pourquoi
+  // chez moi ». Comme les piliers, ils appartiennent à Yuno : le geste qui
+  // fabrique une parution n'existe que là-bas, et montrer ailleurs un réglage
+  // dont l'écran ne sait rien faire serait une promesse qu'il ne tient pas.
+  formats = false,
+  // LA NATURE FIGÉE (16 septembre 2026, demande de Noé sur la tuile d'une idée :
+  // « le type non plus — publication obligatoirement, donc pas besoin de pouvoir
+  // changer »). Depuis la banque et depuis Créer, il n'y a qu'une chose à poser,
+  // et une pastille qui n'offre qu'un chemin est un choix qui n'en est pas un.
+  // Le champ caché reste : c'est lui que l'envoi lit.
+  natureFigee = false,
+  // LA RÉPÉTITION, retirée là où elle ne peut rien écrire (même demande : « le
+  // une seule fois n'est pas nécessaire ici »). Une idée n'a pas de jour qui
+  // revienne — l'écriture l'écartait déjà d'elle-même —, donc la pastille
+  // promettait un réglage sans effet.
+  repetition = true,
   // Ce que la tuile porte DÉJÀ. Vide à la création — c'est le cas ordinaire —,
   // rempli quand on rouvre une ligne pour la corriger : le titre dans le champ,
   // l'espace et la priorité sur leurs pastilles. La tuile ne sait pas si elle
@@ -2456,6 +2486,22 @@ export function fenetreCreation({
 
   const pastilles = [];
 
+  // LES TEXTES D'UNE IDÉE SONT DES CHAMPS, PAS DES PASTILLES (16 septembre 2026,
+  // demande de Noé : « les champs pourquoi elle et notes, rajoute-les dans la
+  // même forme que l'idée en une phrase mais en plus petit et sous les
+  // pastilles »).
+  //
+  // ET C'EST LA RÈGLE DU 30 AOÛT, appliquée dans le bon sens : *« tout ce qui se
+  // RÈGLE devient une pastille, en respectant ce qui nécessite un espace de
+  // texte »*. Une preuve et des notes s'ÉCRIVENT — les enfermer derrière une
+  // pastille demandait d'ouvrir un panneau pour taper une phrase, et une
+  // pastille grise ne disait pas si quelque chose avait été écrit dedans.
+  //
+  // ILS PRENNENT LA FORME DU TITRE, en plus petit : sans cadre, une invite en
+  // encre de service. La tuile se lit alors en trois temps — ce qu'on écrit, ce
+  // qu'on règle, ce qu'on précise.
+  const textes = [];
+
   // 1. La nature. En tête d'ordinaire — c'est elle qui commande tout le reste —
   // et en queue quand l'appelant sait déjà ce qu'on vient poser.
   const pastilleNature =
@@ -2477,7 +2523,7 @@ export function fenetreCreation({
         .join('')}</ul>`,
     });
 
-  if (!natureEnDernier) pastilles.push(pastilleNature);
+  if (!natureEnDernier && !natureFigee) pastilles.push(pastilleNature);
 
   // 2. Quand. Les dates se montrent et se corrigent : le glissement les
   // pré-remplit, il ne les impose pas — sans ça, un événement de plusieurs
@@ -2521,7 +2567,17 @@ export function fenetreCreation({
                : ''
            }`;
 
-  pastilles.push(
+  // LA DATE PASSE EN DERNIER QUAND LA TUILE S'OUVRE SANS ELLE (16 septembre
+  // 2026, demande de Noé sur la tuile d'une idée : « la date doit être en
+  // dernier »).
+  //
+  // ET C'EST `sansDate` QUI LE DIT, pas l'écran : là où la tuile s'ouvre sans
+  // jour — la banque, Créer —, une date est RARE et facultative ; la plupart des
+  // idées restent en réserve. La mettre en tête donnait le premier rang au
+  // réglage qu'on pose le moins. Là où la tuile s'ouvre SUR un jour — le
+  // calendrier, l'éditorial —, la date est au contraire ce qu'on vient poser, et
+  // elle garde sa place.
+  const pastilleQuand =
     pastilleCapture({
       nom: 'quand',
       icone: ICONE.quand,
@@ -2541,8 +2597,9 @@ export function fenetreCreation({
             )} — seul un événement s'étend sur plusieurs jours.</p>`
           : ''
       }`,
-    }),
-  );
+    });
+
+  if (dateFournie) pastilles.push(pastilleQuand);
 
   // 3. L'espace, quand l'espace en offre le choix. Le site Yuno n'en propose
   // pas : on y est déjà chez Yuno.
@@ -2857,24 +2914,30 @@ export function fenetreCreation({
       pastilleCapture({
         nom: 'reseau',
         icone: ICONE.reseau,
-        defaut: RESEAUX.instagram,
+        defaut: RESEAUX[valeurs.reseau ?? 'instagram'] ?? RESEAUX.instagram,
         source: 'reseau',
         rempli: true,
-        contenu: champChoix({ nom: 'reseau', options: RESEAUX, valeur: 'instagram' }),
+        contenu: champChoix({
+          nom: 'reseau', options: RESEAUX, valeur: valeurs.reseau ?? 'instagram',
+        }),
       }),
       pastilleCapture({
         nom: 'format',
         icone: ICONE.format,
-        defaut: FORMATS.carrousel,
+        defaut: FORMATS[valeurs.format ?? 'carrousel'] ?? FORMATS.carrousel,
         source: 'format',
         rempli: true,
-        contenu: champChoix({ nom: 'format', options: FORMATS, valeur: 'carrousel' }),
+        contenu: champChoix({
+          nom: 'format', options: FORMATS, valeur: valeurs.format ?? 'carrousel',
+        }),
       }),
       // La répétition, la même que partout (demande de Noé, 26 août 2026) :
       // une rubrique qui revient chaque lundi se pose une fois. Elle n'a de
       // sens qu'avec une date — une idée sans jour reste dans la banque —, et
-      // l'écriture l'écarte d'elle-même le cas échéant.
-      pastilleCapture({
+      // l'écriture l'écarte d'elle-même le cas échéant. Là où la tuile ne pose
+      // QUE des idées, elle ne s'affiche donc pas du tout : promettre un
+      // réglage sans effet est pire que de ne rien proposer.
+      ...(repetition ? [pastilleCapture({
         nom: 'repetition',
         icone: ICONE.repetition,
         defaut: 'Une seule fois',
@@ -2890,7 +2953,7 @@ export function fenetreCreation({
             type: 'date',
             valeur: valeurs.recurrence_fin ?? '',
           })}`,
-      }),
+      })] : []),
     );
 
     // Le pilier ferme un débat : « ça rentre dans un pilier ? oui → je crée ».
@@ -2907,28 +2970,55 @@ export function fenetreCreation({
           contenu: champChoix({
             nom: 'pilier',
             options: { '': 'Sans pilier', ...piliers },
-            valeur: '',
+            valeur: valeurs.pilier != null ? String(valeurs.pilier) : '',
           }),
         }),
       );
     }
 
-    if (notes) {
-      pastilles.push(
-        pastilleCapture({
-          nom: 'notes',
-          icone: ICONE.texte,
-          defaut: 'Notes',
-          source: 'notes',
-          contenu: champCapture({
-            nom: 'notes',
-            libelle: "Ce qu'il faut se rappeler de l'idée",
-            type: 'textarea',
-          }),
-        }),
-      );
+    if (formats) {
+      // UN SEUL CHAMP, ET C'EST « NOTES » (16 septembre 2026, décision de Noé :
+      // « fais qu'un champ notes ici finalement »). La preuve et le « pourquoi
+      // chez moi » ont vécu vingt minutes en champs nus sous les pastilles :
+      // trois invites empilées dans une tuile qu'on ouvre pour noter une idée en
+      // cinq secondes, c'était un formulaire déguisé. **Les deux colonnes
+      // restent en base et se lisent sur la fiche** — ce qui change, c'est qu'on
+      // ne les demande plus au moment de la capture, quand on ne les a pas
+      // encore.
+      // UN INTERRUPTEUR, PAS UN MENU (16 septembre 2026, demande de Noé :
+      // « reproductible ou non, je dois simplement devoir appuyer sur le bouton
+      // pour activer, pas sélectionner reproductible ou contenu unique »).
+      //
+      // CE QUE ÇA RENVERSE, ET IL FAUT LE DIRE : la convention du 29 août 2026
+      // dit qu'« une pastille booléenne se fait avec un champ de choix à deux
+      // options ». Elle avait une raison — *une pastille affiche la VALEUR de sa
+      // source, et une case à cocher vaut « oui » qu'elle soit cochée ou non,
+      // donc le libellé disait « oui » en permanence.* **Ce défaut-là se règle
+      // autrement** : le libellé ne bouge pas, c'est l'ÉTAT DE LA PASTILLE qui
+      // dit tout — allumée quand c'est un format, éteinte sinon. Un mot pour
+      // nommer, une apparence pour dire. La convention reste juste là où les
+      // deux valeurs ont chacune un nom qu'on doit lire.
+      pastilles.push({
+        pastille: `<button type="button"
+          class="pastille-capture pastille-bascule${
+            valeurs.reproductible === false ? '' : ' active'}"
+          data-bascule="reproductible" data-pastille="format-idee"
+          aria-pressed="${valeurs.reproductible === false ? 'false' : 'true'}"
+          title="Reproductible — un format se refait, il reste dans la banque après chaque parution"
+          aria-label="Reproductible"
+          >${ICONE.formatIdee}</button>
+          <input type="hidden" name="reproductible" value="${
+            valeurs.reproductible === false ? '' : 'oui'}">`,
+        panneau: '',
+      });
     }
+
+    if (notes) textes.push(['notes', "Ce qu'il faut se rappeler de l'idée"]);
   }
+
+  // La date ferme la rangée quand la tuile s'est ouverte sans elle : c'est le
+  // réglage le plus rare d'une idée, il se pose en dernier.
+  if (!dateFournie) pastilles.push(pastilleQuand);
 
   if (nature === 'objectif') {
     pastilles.push(
@@ -2970,7 +3060,7 @@ export function fenetreCreation({
       <div class="capture-pastilles">
         <div class="capture-pastilles-liste">${[
           ...pastilles,
-          ...(natureEnDernier ? [pastilleNature] : []),
+          ...(natureEnDernier && !natureFigee ? [pastilleNature] : []),
         ]
           .map((p) => p.pastille)
           .join('')}</div>
@@ -2978,9 +3068,19 @@ export function fenetreCreation({
           title="Poser au calendrier">${FLECHE_ENVOI}</button>
       </div>
 
+      ${textes.length
+        ? `<div class="capture-textes">${textes
+            .map(
+              ([nom, invite]) => `<textarea name="${echapper(nom)}" rows="1"
+                class="capture-texte" placeholder="${echapper(invite)}"
+                aria-label="${echapper(invite)}">${echapper(valeurs[nom] ?? '')}</textarea>`,
+            )
+            .join('')}</div>`
+        : ''}
+
       <!-- Les panneaux vivent ici, hors de la bande : elle défile, et son
            débordement masqué les découperait. Ils se posent au-dessus. -->
-      ${[...pastilles, ...(natureEnDernier ? [pastilleNature] : [])]
+      ${[...pastilles, ...(natureEnDernier && !natureFigee ? [pastilleNature] : [])]
         .map((p) => p.panneau)
         .join('')}
 
@@ -3165,6 +3265,20 @@ export function brancherCapture(section, { projets = () => [] } = {}) {
 
       fermerLesPanneaux();
       rafraichirLesLibelles();
+      return;
+    }
+
+    // UN INTERRUPTEUR N'OUVRE RIEN : il bascule son champ caché et change
+    // d'allure. Il passe AVANT la recherche de panneau — il porte
+    // `data-pastille` comme ses voisines, pour que la bande le range pareil,
+    // mais il n'a pas de panneau à ouvrir.
+    const bascule = evenement.target.closest('.capture-pastilles [data-bascule]');
+    if (bascule) {
+      const champ = section.querySelector(`.capture [name="${bascule.dataset.bascule}"]`);
+      const actif = !bascule.classList.contains('active');
+      bascule.classList.toggle('active', actif);
+      bascule.setAttribute('aria-pressed', String(actif));
+      if (champ) champ.value = actif ? 'oui' : '';
       return;
     }
 
@@ -3516,17 +3630,31 @@ export function fenetreJour(cle, elements, { montrerEspace = false } = {}) {
 // lui, avance d'un cran : c'est le geste rapide ; celui-ci est le geste complet
 // — n'importe quel état, y compris en arrière.
 
-// La couleur de l'étape. Trois arrêts — rouge, ambre, vert — et ce qu'il y a
-// entre eux si le cycle compte plus de trois pas (Yuno en a cinq). Seule la
-// TEINTE voyage jusqu'au CSS : la saturation et la clarté y sont réglées une
-// fois par thème, sinon la même pastille serait illisible en clair ou en
-// sombre.
+// La couleur de l'étape. Trois arrêts et ce qu'il y a entre eux si le cycle
+// compte plus de trois pas (Yuno en a cinq). Seule la TEINTE voyage jusqu'au
+// CSS : la saturation et la clarté y sont réglées une fois par thème, sinon la
+// même pastille serait illisible en clair ou en sombre.
 //
-// Rouge et vert dans un hub qui refuse les couleurs d'alerte : ce n'est pas
-// une contradiction. Ces couleurs ne jugent pas une échéance et ne bougent pas
-// toutes seules — elles disent une étape de fabrication, celle que Noé a posée
-// lui-même. Aucune date, aucun compteur ne les porte.
-const TEINTES_ETAPE = [8, 38, 145];
+// PLUS DE ROUGE AU DÉPART (16 septembre 2026, demande de Noé : « j'aime pas que
+// "idée" soit en rouge, change le dégradé de couleur de l'état »).
+//
+// CE QUE ÇA RENVERSE : la rampe était rouge → ambre → vert, et sa raison était
+// écrite — *« ces couleurs ne jugent pas une échéance et ne bougent pas toutes
+// seules, elles disent une étape de fabrication »*. L'argument tenait pour le
+// MÉCANISME ; il ne tenait pas pour le PREMIER CRAN. **Une banque d'idées est
+// une réserve, pas un retard** : dix-huit idées en rouge, c'est un écran qui
+// s'ouvre sur dix-huit alertes.
+//
+// ET LE HUB AVAIT DÉJÀ TRANCHÉ CE POINT AILLEURS, mot pour mot, sur l'état d'un
+// PROJET (28 août 2026) : *« pas le rouge → ambre → vert d'une publication,
+// essayé d'abord et écarté — un projet pas commencé n'est pas en défaut, il
+// attend son tour »*. Une idée non plus.
+//
+// LA NOUVELLE RAMPE EST FROIDE, D'INDIGO À VERT : 248° → 200° → 145°. Cinq
+// crans chez Yuno (indigo, bleu, cyan, teal, vert), trois au club. Le vert
+// d'arrivée ne bouge pas — c'est la seule couleur du hub qui dise « c'est
+// fait », et elle le dit partout.
+const TEINTES_ETAPE = [248, 200, 145];
 
 function teinteDeLEtape(rang, total) {
   if (total <= 1) return TEINTES_ETAPE[TEINTES_ETAPE.length - 1];
@@ -3547,10 +3675,18 @@ function teinteDeLEtape(rang, total) {
 // `data-pub` porte l'identifiant : hors du calendrier, il n'y a pas d'« élément
 // ouvert » pour dire de quelle publication on parle. `brancherEtatPublication`
 // le lit en priorité et retombe sur la tuile ouverte quand il est absent.
+// LA MAJUSCULE SE POSE ICI, ET NON EN CSS (16 septembre 2026, demande de Noé :
+// « texte en minuscule, sauf la 1re lettre »). `::first-letter` ne s'applique
+// pas à un élément `inline-flex`, et `capitalize` mettrait une majuscule à
+// CHAQUE mot — « À Développer ». Les noms restent en minuscules dans
+// `NOMS_STATUTS_BASE` : ce sont les mots de l'interface, et ils s'écrivent au
+// fil du texte ailleurs (« Passer en à développer »).
+const majusculeInitiale = (mot) => mot.charAt(0).toUpperCase() + mot.slice(1);
+
 export function pastilleStatutPublication(pub, espace = pub.espace) {
   const cycle = cyclePublication(espace);
   const rang = Math.max(cycle.indexOf(pub.statut), 0);
-  const nom = (statut) => echapper(nomDuStatut(espace, statut));
+  const nom = (statut) => echapper(majusculeInitiale(nomDuStatut(espace, statut)));
   const teinte = (etape) => teinteDeLEtape(etape, cycle.length);
 
   return `
@@ -3588,14 +3724,17 @@ function reglageStatut(element) {
 // toutes lettres pesaient plus lourd que ce qu'ils faisaient, dans une fenêtre
 // dont le sujet est le titre. Le mot n'est pas perdu — il reste dans `title` au
 // survol et dans `aria-label` pour qui écoute.
-const CRAYON_DETAIL = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none"
+// Exportées : la fiche d'une idée pose les deux mêmes gestes (16 septembre
+// 2026), et deux dessins de crayon dans le même site finiraient par ne plus se
+// ressembler.
+export const CRAYON_DETAIL = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none"
   stroke="currentColor" stroke-width="2" stroke-linecap="round"
   stroke-linejoin="round" aria-hidden="true" focusable="false">
   <path d="M12 20h9"></path>
   <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
 </svg>`;
 
-const CORBEILLE = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none"
+export const CORBEILLE = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none"
   stroke="currentColor" stroke-width="2" stroke-linecap="round"
   stroke-linejoin="round" aria-hidden="true" focusable="false">
   <path d="M4 7h16M10 4h4M9 7v12M15 7v12"></path>

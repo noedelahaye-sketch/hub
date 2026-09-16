@@ -1569,10 +1569,19 @@ export async function creerPublication({
   preuve = null,
   pourquoi_moi = null,
   projet_id = null,
+  // UNE IDÉE EST UN FORMAT (16 septembre 2026) : `reproductible` dit qu'elle se
+  // refait — c'est le défaut —, `idee_mere_id` relie une PARUTION au format
+  // dont elle sort. Les deux passent par ici, et il a fallu les ajouter à la
+  // liste : la fonction ne recopie QUE les champs qu'elle nomme, et un champ
+  // oublié part à la poubelle sans une erreur. *Mesuré : la première parution
+  // est née avec `idee_mere_id` à NULL, donc rattachée à rien.*
+  reproductible = true,
+  idee_mere_id = null,
 }) {
   const champs = {
     espace, titre, reseau, format, rubrique, notes,
     date_prevue, heure, pilier, preuve, pourquoi_moi, projet_id,
+    reproductible, idee_mere_id,
   };
 
   // Sans date, c'est une idée dans la banque : il n'y a rien à répéter.

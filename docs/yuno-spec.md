@@ -1203,6 +1203,480 @@ Le calendrier éditorial et la banque d'idées, une seule matière à deux état
 **une idée est une publication sans date**. Noter une idée prend cinq
 secondes ; la programmer, c'est juste lui donner une date.
 
+#### UNE IDÉE EST UN FORMAT, PAS UN CONTENU À FAIRE UNE FOIS (16 septembre 2026)
+
+**La règle, posée par Noé** : *« une idée doit être reproductible, ce n'est pas
+seulement un contenu à faire une fois — par exemple le avant/après est
+reproductible plusieurs fois, donc une fois qu'il a été fait il ne doit pas
+disparaître. Cependant il peut y avoir des publications qui sont moins
+répétables, par exemple mon histoire, mon matériel. »*
+
+**CE QUE ÇA RÉPARE, ET C'ÉTAIT UNE CONFUSION DE MODÈLE.** Programmer une idée
+posait sa date **sur sa propre ligne** : l'idée DEVENAIT la parution, donc elle
+quittait la banque, et une fois publiée elle n'y revenait jamais. « How I edited
+this pic : avant / après » se refait dix fois ; il sortait de la réserve à la
+première. *La phrase « une idée est une publication sans date » reste vraie de
+ce qu'on ÉCRIT — elle était fausse de ce qu'on FAIT.*
+
+**LA RÉPONSE EST CELLE DES SÉRIES DU HUB** (27 août 2026) : *« les occurrences
+sont de VRAIES lignes »*. Programmer un format fabrique une **parution** — une
+publication datée, ordinaire, qui vit au calendrier, compte dans les bilans et
+porte son lien — et **le format reste dans la banque, intact**. `idee_mere_id`
+relie les deux.
+
+- **POURQUOI PAS UNE TABLE DE PARUTIONS À PART** : le calendrier éditorial, le
+  bilan du dimanche et « Mon temps » lisent tous `publications.date_prevue`. Une
+  seconde table aurait demandé de les réécrire tous pour un gain nul — **une
+  parution EST une publication, elle a juste une mère.**
+- **REPRODUCTIBLE PAR DÉFAUT**, et c'est l'ordre des mots de Noé : une idée EST
+  un format ; celle qui ne se refait pas est l'exception qu'on déclare. Les
+  lignes existantes passent donc toutes à `true` — sans effet, le drapeau ne se
+  lisant que sur une ligne SANS date.
+- **SEULE L'EXCEPTION PORTE UN MOT** — une étiquette creuse « une seule fois ».
+  Écrire « reproductible » sur dix-huit idées ne distinguerait rien : c'est la
+  leçon d'« en sommeil », qui s'affichait sur les neuf habitudes à la fois.
+- **LE RÉGLAGE VIT DANS LA FICHE**, pas sur la ligne de la banque : on le pose
+  en écrivant l'idée et on n'y revient presque jamais. Il ne s'offre pas sur une
+  ligne DATÉE — une parution n'est pas un format.
+- **LA PARUTION NAÎT EN « IDÉE »**, jamais au statut de sa mère : le format peut
+  être rodé, la photo de la semaine reste à faire. C'est la règle du post d'un
+  match — *« le hub programme la parution, il n'écrit pas à la place de Noé »*.
+- **ELLE PORTE `reproductible = false`.** Sans ça, la déprogrammer la renverrait
+  dans la banque comme un second format, jumeau du premier, et **la banque
+  doublerait à chaque aller-retour.** *Conséquence assumée : « Repasser en idée »
+  sur une parution la ramène bien en banque, marquée « une seule fois », à côté
+  de son format. Elle s'y supprime.*
+- **UN SEUL CHEMIN POUR LES TROIS GESTES** qui datent une idée — le coin de la
+  carte du jour, le champ de sa fiche, le glissement dans le calendrier
+  éditorial. Trois copies auraient fini par ne plus dupliquer de la même façon,
+  et c'est dans la copie oubliée qu'un format se remettrait à disparaître.
+- **PARUE ET PROGRAMMÉE NE SE COMPTENT PAS ENSEMBLE**, et c'est le premier
+  défaut qu'a montré l'essai : une parution posée au 24 septembre se disait
+  « 1 fois parue · la dernière le 24 sept. », **au futur**. La trace dit donc
+  « 3 fois parue · la prochaine le 24 sept. », et elle se tait tant qu'un format
+  n'a rien donné — *« 0 fois parue » serait la première chose qu'on lirait d'une
+  idée neuve.*
+#### LA BANQUE SE TRIE ET SE FILTRE (16 septembre 2026)
+
+**Demande de Noé** : *« rajoute un mode de tri et de filtre comme on a fait
+ailleurs, par rapport aux différents paramètres. »*
+
+**C'EST LA BARRE DE LA BIBLIOTHÈQUE, au trait près** — une recherche, deux
+icônes, et la rangée de critères qui se déplie. *Écrire un troisième dessin pour
+un geste qui en a déjà un, c'est fabriquer la divergence qu'on passe ensuite à
+rattraper.* Les classes restent `.livres-*` : ce sont celles de la BARRE, pas
+celles d'un livre — même argument que `.livre-*` gardé pour l'étagère des films.
+
+**CE QUE ÇA REMPLACE** : deux menus natifs, « Pilier » et « Statut », à choix
+**unique**. « Les réels ET les stories » est une question qu'on se pose, et un
+choix unique ne savait pas y répondre ; **le réseau, le format et la nature d'une
+idée n'étaient filtrables nulle part.**
+
+| Critère | Ce qu'il retient |
+|---|---|
+| **État** | idée · à développer · brouillon · prêt |
+| **Pilier** | les quatre axes, plus « sans pilier » |
+| **Réseau** | Instagram, TikTok… |
+| **Format** | carrousel · réel · story |
+| **Nature** | reproductible · contenu unique |
+
+Et cinq tris : **par défaut · titre · pilier · état · format**.
+
+- **ON N'OFFRE QUE CE QUI EXISTE**, avec son compte : un critère à une seule
+  valeur ne filtre rien et ne s'affiche pas. *Au 16 septembre, la banque ne
+  montre que trois critères — les vingt idées sont toutes sur Instagram, toutes
+  au statut « idée » et toutes reproductibles.* Un filtre « TikTok » sur une
+  banque qui n'en a aucun serait une porte sur une pièce vide.
+- **« PAR DÉFAUT » EST UN ORDRE**, pas une absence de tri : la dernière notée en
+  tête, parce qu'une idée fraîche est celle qu'on vient d'avoir et qu'on veut
+  retrouver.
+- **LE MÊME TRI RETOUCHÉ SE RETOURNE** — le geste d'un en-tête de colonne, qui
+  évite un second bouton pour le sens.
+- **LA RECHERCHE COURT SUR LE TITRE, LES NOTES ET LA PREUVE** : on cherche
+  « presets » aussi souvent qu'un titre exact. Elle filtre à la lettre, sans
+  bouton, et **le curseur revient au bout du mot** — on redessine à chaque
+  frappe, et sans ça le champ perdrait le focus au premier caractère.
+- **LE COMPTE RESTE DEHORS, sur l'icône** : *vérifié — un filtre posé puis la
+  rangée refermée, l'icône porte toujours son « 1 ».* Un filtre qu'on ne voit
+  plus est une banque qui ment sur ce qu'elle contient.
+- **UN PIÈGE PAYÉ EN ROUTE** : `construireBanque` reclassait la liste par date
+  juste après le tri choisi. **Le tri par titre ne se voyait pas du tout**, et le
+  geste paraissait sans effet. Une option `ordreDonne` dit désormais que
+  l'appelant a déjà trié.
+
+#### LA TUILE D'UNE IDÉE SE LIT DU HAUT VERS LE BAS (16 septembre 2026)
+
+**Demande de Noé** : *« je préférerais que les pastilles des piliers, du réseau
+et du type de publication soient en dessous du titre, et que la pastille d'état
+soit au-dessus, avec un bouton pour programmer — et lorsque c'est programmé ça
+affiche la date. »*
+
+    « How I edited this pic »           ← ce qu'elle EST
+    Instagram · Carrousel               ← ce qui la CLASSE
+    (3) Dans l'œil du photographe
+    programmée le 25 sept.
+    [Idée]  [Programmer]                ← ce qui se RÈGLE
+
+**ET ÇA RANGE LA TUILE PAR CE QU'ON EN FAIT.** Avant, les trois mentions de
+classement ouvraient la tuile et repoussaient le titre : **on lisait « INSTAGRAM
+CARROUSEL 3. DANS L'ŒIL… » avant de savoir de quelle idée il s'agissait.**
+
+- **LE BOUTON ANNONCE ET REND COMPTE** : vide il dit « Programmer », posé il dit
+  le jour. C'est **la pastille de date de la fiche**, partagée — un même geste ne
+  se dessine pas de deux façons. Le champ natif est transparent par-dessus, donc
+  le sélecteur s'ouvre partout sans `showPicker()`.
+- **ET IL FABRIQUE UNE PARUTION** quand l'idée est un format : *vérifié depuis la
+  tuile — la parution part au 25 septembre, le format reste en banque et affiche
+  « programmée le 25 sept. ».*
+- **LA CASSE SUIT CELLE DE L'ÉTAT** — bas-de-casse, sans écartement. Noé n'a
+  demandé que l'état ; mais les deux sont des CONTRÔLES posés côte à côte, et
+  deux casses voisines pour deux boutons de même rang seraient le défaut qu'on
+  vient de corriger. **Les étiquettes du bas gardent leurs capitales** : on les
+  lit, on ne les presse pas.
+- **LE CLASSEMENT COLLE AU TITRE** (correction de Noé, le même jour) : il dit ce
+  que cette idée EST, et ça se lit dans la foulée du nom. *Poussé au bas de la
+  tuile, il devenait un pied de page dont on ne savait plus qu'il qualifiait le
+  titre — cette place-là revient aux RÉGLAGES.* Huit pixels l'en séparent — à quatre, la première étiquette se collait
+  à la dernière ligne du titre et se lisait comme un mot de plus.
+- **PLUS DE ROUGE SUR « IDÉE »** (16 septembre 2026, demande de Noé : « j'aime
+  pas que idée soit en rouge, change le dégradé de couleur de l'état »). La rampe
+  passe de **rouge → ambre → vert** à **indigo → cyan → vert** : cinq crans chez
+  Yuno (indigo, bleu, cyan, teal, vert), trois au club.
+  - **CE QUE ÇA RENVERSE** : la raison d'alors était écrite — *« ces couleurs ne
+    jugent pas une échéance et ne bougent pas toutes seules, elles disent une
+    étape de fabrication »*. Elle tenait pour le MÉCANISME ; **elle ne tenait pas
+    pour le premier cran.** Une banque d'idées est une réserve, pas un retard, et
+    dix-huit idées en rouge font un écran qui s'ouvre sur dix-huit alertes.
+  - **LE HUB AVAIT DÉJÀ TRANCHÉ CE POINT**, mot pour mot, sur l'état d'un PROJET
+    (28 août 2026) : *« pas le rouge → ambre → vert d'une publication, essayé
+    d'abord et écarté — un projet pas commencé n'est pas en défaut, il attend son
+    tour »*. **Une idée non plus.**
+  - **LE VERT D'ARRIVÉE NE BOUGE PAS** : c'est la seule couleur du hub qui dise
+    « c'est fait », et elle le dit partout.
+- **PLUS DE TROIS CADRES GRIS** (16 septembre 2026, retour de Noé : *« j'aime
+  pas la forme de ces pastilles en fait, elles ne donnent pas d'info assez
+  rapidement, on s'ennuie en les voyant, ça ne donne pas vie à l'idée »*).
+
+  **CE QUE ÇA RENVERSE, ET IL FAUT LE DIRE** : le 15 septembre, les trois
+  étiquettes ont été rendues HOMOGÈNES — *« réseau, format et pilier se
+  présentent enfin de la même façon, contour fin et encre discrète, là où la
+  troisième criait au-dessus des deux autres »*. La correction était juste contre
+  le bruit ; **elle a coûté toute la vie de la rangée.**
+
+  Trois défauts, et le troisième est le pire : trois cadres de même dessin, donc
+  rien ne distingue ce qu'on regarde ; des capitales espacées, qui se lisent
+  lettre à lettre ; et surtout **« INSTAGRAM » est vrai de dix-neuf idées sur
+  vingt** — un mot identique partout ne distingue rien, c'est la leçon d'« en
+  sommeil » sur les habitudes et de « Film » dans la bibliothèque.
+
+  **LA RÉPONSE : ce qui se RÉPÈTE passe en service, ce qui STRUCTURE prend la
+  couleur.** « Instagram · Carrousel » devient du texte gris sans cadre ; le
+  pilier prend la **pastille ronde de son rang**, celle que la page « Tes quatre
+  piliers » emploie déjà. **Un chiffre coloré se reconnaît avant d'être lu ; un
+  contour gris, jamais.** Et le nom du pilier se lit enfin en entier, en
+  bas-de-casse.
+  - **LA COULEUR S'ÉCLAIRCIT, sans quoi la pastille ne se VOIT PAS** : les quatre
+    piliers sont quatre bleus de plus en plus sombres, choisis pour porter de
+    l'encre blanche en grand aplat. *Mesuré sur le fond d'une tuile : 1,03:1 pour
+    le quatrième, 1,29 pour le troisième — invisibles.* `color-mix` leur rend de
+    la clarté sans toucher à leur teinte, comme le font déjà les barres des axes,
+    et l'encre passe au sombre — la règle du hub pour tout aplat clair.
+  - **PAS D'APLAT SUR LE NOM** en revanche : en lettres sur le fond, le plus
+    clair des quatre plafonne à 1,8:1. **C'est la pastille du rang qui porte la
+    couleur, et sur ce point la règle du 15 septembre n'est pas renversée.**
+  - **La rubrique rejoint le service** (« Instagram · Carrousel · Raw to edit ») :
+    c'en est une, et elle n'a plus à ouvrir une ligne à elle.
+- **DEUX RANGS, ET PAS UN** : le réseau et le format côte à côte — ce sont les
+  deux moitiés d'une même décision, « où je poste » et « sous quelle forme » —,
+  puis **le pilier SEUL en dessous**, où il a toute la largeur. C'est ce qui lui
+  permet de se lire en entier là où, partagé avec deux voisines, il s'arrêtait à
+  « 3. DANS L'ŒIL… ».
+- **LE TITRE RESSORT, PAR LES DEUX BOUTS** (*« le titre de l'idée doit ressortir
+  un peu plus, donc agrandis-le ou diminue un peu les pastilles »*) : il monte de
+  15 à 17 px, les pastilles de tête descendent de 10,3 à 9,4. **L'écart passe de
+  1,45× à 1,8×** — c'est le RAPPORT qui fait ressortir un titre, pas sa taille
+  seule. Les étiquettes du bas ne bougent pas : elles sont déjà les plus
+  discrètes, et 9 px est le plancher en dessous duquel un mot n'est plus qu'une
+  trace. *Prix assumé : à corps plus grand, la coupe à deux lignes tombe plus
+  tôt — « Reel-diaporama "fierté Léopards" sur musique… ». Le titre entier se lit
+  sur la fiche.*
+- **LES DEUX RÉGLAGES FERMENT LA TUILE** (correction de Noé, le même jour :
+  « repasse l'état et programmer en bas de tuile, en dessous des détails en tout
+  cas »). En tête, ils étaient **la première chose lue de chaque tuile, alors
+  qu'ils disent la même chose sur dix-huit d'entre elles** — « Idée ·
+  Programmer », vingt fois. *Ce qu'on lit d'abord doit être ce qui distingue.*
+  Collés au bas de la hauteur commune, ils alignent en plus leurs vingt paires
+  sur une seule ligne — **c'est la seule chose qui justifie le vide que
+  `grid-auto-rows: 1fr` laisse dans les tuiles courtes.**
+- **LES DEUX PASTILLES DE RÉGLAGE SONT ALIGNÉES**, et il a fallu rattraper deux
+  écarts. Le premier est invisible dans le code : les éléments de la ligne ne
+  sont pas les pastilles mais leurs CONTENEURS (`.choix-champ`), et celui-ci
+  porte 12 px de marge basse — la respiration des formulaires. Celui de l'état
+  l'annule depuis toujours, celui de la date non : centrée, sa boîte de 35 px
+  remontait la pastille de six pixels. *Mesuré : deux bords hauts à 205 et 211.*
+  Le second est une question de corps — 8,4 px contre 10,3 : **deux boutons de
+  même rang posés côte à côte ne se lisent pas dans deux tailles.**
+- **SANS LA PASTILLE, L'ANCIEN EN-TÊTE REVIENT** : c'est le même gabarit pour
+  deux sites, et l'un ne dicte pas la forme de l'autre. Le FCH ne l'a pas
+  demandée.
+
+#### LES TUILES DE LA BANQUE FONT TOUTES LA MÊME TAILLE (16 septembre 2026)
+
+**Demande de Noé** : *« pour ces tuiles, elles doivent toutes faire la même
+taille, pas d'espace vide plus grand par moment. Le statut doit être modifiable
+directement depuis cette vue, sous forme de pastille. »*
+
+**DEUX RÉGLAGES, ET IL FAUT LES DEUX.** `align-items: start` laissait chaque
+tuile prendre la hauteur de son titre — une ligne ici, deux là —, et le trou se
+voyait entre les rangs. `stretch` égalise les tuiles d'un MÊME rang ;
+`grid-auto-rows: 1fr` égalise les rangs entre eux. *Mesuré : 124 px partout, sur
+ordinateur comme sur téléphone.*
+
+- **ET C'EST ICI QUE `grid-auto-rows: 1fr` EST JUSTE**, là où il était faux dans
+  le hall de `#perso` : là-bas les quatre tuiles portaient des choses de natures
+  différentes — sept frimousses de 40 px sous une pile de couvertures de 280 —,
+  **ici ce sont vingt tuiles de la même nature**, et c'est justement leur
+  comparaison qui compte.
+- **LE TITRE S'ARRÊTE À DEUX LIGNES**, sans quoi une idée de trois lignes
+  imposerait sa hauteur aux dix-neuf autres : `grid-auto-rows: 1fr` cale TOUS les
+  rangs sur le plus grand. C'est la règle de l'étagère de la bibliothèque, où
+  chaque bloc réserve sa hauteur. Le titre entier se lit sur la fiche.
+- **LA TUILE DEVIENT UNE COLONNE**, et sa pastille d'état descend au bas de la
+  hauteur commune (`margin-top: auto`) : c'est ce qui fait que vingt pastilles
+  tombent sur la même ligne quelle que soit la longueur des titres.
+
+**L'ÉTAT SE RÈGLE DEPUIS LA GALERIE** : c'est la pastille du calendrier et de la
+fiche, dessinée une seule fois. Elle remplace « statut : idée », qui DISAIT sans
+laisser rien faire — et faisait ouvrir une fiche pour un geste d'un doigt.
+**LA PASTILLE D'ÉTAT SE LIT EN BAS-DE-CASSE, ET ELLE RESPIRE** (16 septembre
+2026, demande de Noé : *« plus de place à droite et à gauche du texte dans la
+pastille, et texte en minuscule sauf la 1re lettre »*).
+
+C'est l'argument des en-têtes de colonnes de la bibliothèque, au mot près : *« les
+capitales et leur écartement sont le dessin d'un LIBELLÉ DE SECTION dans le hub,
+or ce n'en est pas un »*. Une pastille d'état n'est pas une mention de classement
+qu'on balaie comme « INSTAGRAM » ou « CARROUSEL » — **on la PRESSE**, et ce qu'on
+presse se lit comme un mot. *Ses voisines gardent leurs capitales : ce sont des
+étiquettes qu'on lit, pas des boutons.*
+- **PORTÉE : la pastille d'état, PARTOUT** — le calendrier, le FCH, la banque, la
+  fiche. C'est un seul objet ; deux casses pour une même pastille serait
+  exactement le défaut qu'on corrige. *Vérifié : le club dit toujours « À
+  préparer » et « À programmer », avec ses mots à lui.*
+- **LA MAJUSCULE VIENT DU JS** : `::first-letter` ne s'applique pas à un
+  `inline-flex`, et `capitalize` mettrait une majuscule à chaque mot — « À
+  Développer ». Les noms restent en minuscules dans `NOMS_STATUTS_BASE`, où ils
+  s'écrivent au fil du texte ailleurs (« Passer en à développer »).
+- **LE PIÈGE DE SPÉCIFICITÉ, PAYÉ UNE FOIS DE PLUS** : `body[data-espace="yuno"]
+  .etiquette` vaut (0,2,1) et écrase `.etiquette.cal-statut-pastille` (0,2,0) de
+  `styles.css` — **à poids égal, c'est le dernier fichier chargé qui gagne, et
+  `yuno.css` vient après**. Le rembourrage et l'écartement se redisent donc dans
+  `yuno.css`.
+
+**ET LE MENU S'EST RETROUVÉ ÉTIRÉ** (*« moins d'espace entre les états ici »*),
+régression du même jour : depuis que la pastille se règle sur la tuile, **son
+menu est une liste DANS la banque** — il recevait donc la grille de 16 rem et,
+pire, le `grid-auto-rows: 1fr` qui venait d'égaliser les tuiles. *Chaque option
+s'étirait à la hauteur d'une tuile : 139 px entre « idée » et « à développer »,
+ramenés à 46.* `:not(.choix-capture)` l'exclut, comme `:not(.liste-checklist)` le
+fait depuis toujours pour la checklist d'un carrousel. **Une règle qui vise « les
+listes de ce bloc » finit toujours par attraper une liste qu'on n'avait pas
+prévue.**
+
+- **LA TUILE PORTE DÉSORMAIS UN CONTRÔLE**, donc le clic qui le touche ne doit
+  pas ouvrir la fiche par-dessus. La garde liste les rôles natifs, **et non « tout
+  ce qui a l'air cliquable »** : un sélecteur deviné avalerait silencieusement le
+  prochain contrôle posé ici. C'est la garde de la tuile « Aujourd'hui » du hub,
+  au mot près. *Vérifié : choisir « brouillon » écrit en base et n'ouvre pas la
+  fiche.*
+
+#### LA RANGÉE DE GESTES D'UNE IDÉE : TROIS PASTILLES ET UN LIEN (16 septembre 2026)
+
+**La demande de Noé**, capture à l'appui : *« cette partie n'est pas bonne et ne
+correspond pas aux critères qu'on s'était fixés pour les boutons, les tuiles. »*
+
+**CE QUI CLOCHAIT : cinq objets de cinq natures dans la même rangée** —
+« statut : idée » en texte nu, un bouton doré plein « Passer en à développer »,
+un champ de date natif encadré (« jj/mm/aaaa »), un lien « Une seule fois », et
+« Supprimer l'idée ». *Mesuré : 18, 30, 27, 30 et 30 px de haut, et le dernier à
+16,9 px de corps contre 12,2 pour tous les autres — **le geste le plus
+irréversible de la rangée en était le plus gros**.*
+
+**LA GRAMMAIRE DU HUB EST ÉCRITE DEPUIS LE 30 AOÛT** : *tout ce qui se RÈGLE
+devient une pastille ; un champ de texte reste un champ de texte.* Ce qui se
+règle ici, c'est l'état, la date et la nature du contenu — trois pastilles.
+
+| | avant | après |
+|---|---|---|
+| l'état | « statut : idée » + un bouton doré | **la pastille d'état**, celle du calendrier |
+| la date | un champ natif encadré | **une pastille** à icône de calendrier, le champ transparent par-dessus |
+| le format | un lien « Une seule fois » | **une pastille** à deux valeurs |
+| supprimer | un lien de 16,9 px | un lien discret, **au corps de ses voisines** |
+
+- **LA RÉFÉRENCE EST LA PASTILLE D'ÉTAT**, parce qu'elle vient du calendrier et
+  qu'elle était déjà là : petites capitales, 1,5 rem de haut, un filet fin, pas
+  de chevron. Les deux autres s'y calent. *Mesuré après : 23 px pour les trois.*
+- **YUNO PASSE À `pastille: true`**, l'option que le FCH activait seul. Le bouton
+  « Passer en à développer » disparaît avec : le menu sait ce que le bouton ne
+  savait pas — sauter un cran, et revenir en arrière.
+- **LA PASTILLE DU FORMAT N'A PAS DE TEINTE**, et c'est voulu : reproductible et
+  « une seule fois » ne sont pas deux étapes d'un cycle, ce sont deux NATURES.
+  Le rouge → ambre → vert de l'état dit un chemin ; inventer ici un cinquième
+  vocabulaire de couleur pour une opposition sans progression ferait une couleur
+  à apprendre pour rien.
+- **ELLE AFFICHE LA VALEUR, PAS LE GESTE.** Un lien qui dit « Une seule fois »
+  quand l'idée est reproductible annonce ce qui va se passer — c'est le rôle
+  d'un bouton, pas d'un réglage.
+- **DEUX OPTIONS DANS UN MENU, et non une bascule au clic** : c'est la convention
+  du 29 août 2026, *« une pastille booléenne se fait avec un champ de choix à
+  deux options »*. On voit les deux valeurs avant de choisir.
+- **L'ÉTIQUETTE « UNE SEULE FOIS » NE S'AFFICHE PLUS DANS LA FENÊTRE** : la
+  pastille le dit déjà, et le règle. Elle reste sur l'aperçu de la banque, où
+  rien ne se règle.
+
+#### LA TUILE PORTE TOUS LES PARAMÈTRES D'UNE IDÉE (16 septembre 2026)
+
+**Demande de Noé** : *« modifie la tuile qui permet d'ajouter une idée, pas
+besoin que ça tienne sur 2 lignes seulement, et ajoute tous les paramètres
+importants (reproductible ou non…) »*, puis *« il faut que ce soit aligné,
+supprimer doit être une icône, et il doit y avoir une icône pour pouvoir
+modifier »*.
+
+**LA BANDE DE PASTILLES SE REPLIE, ELLE NE DÉFILE PLUS** — chez Yuno seulement.
+Le dépôt sait depuis le 30 août qu'*« une pastille en queue n'existe pas »* ;
+avec sept pastilles c'était tendu, avec neuf la moitié des réglages d'une idée
+vivaient hors de l'écran. **On ne peut pas à la fois demander qu'une tuile porte
+tous ses paramètres et les cacher derrière un défilement.** Ailleurs le
+défilement reste juste : une tuile qui grandit sous le pouce au calendrier du hub
+serait une régression.
+
+**CINQ PASTILLES, PUIS UN CHAMP** (forme arrêtée le 16 septembre 2026 par Noé,
+en quatre corrections) :
+
+    L'idée, en une phrase
+    [Instagram] [Carrousel] [Pilier] [Reproductible] [Quand]
+    Ce qu'il faut se rappeler de l'idée
+
+**LA TUILE SE LIT EN TROIS TEMPS** : ce qu'on écrit, ce qu'on règle, ce qu'on
+précise.
+
+- **LA NATURE DISPARAÎT** des trois écrans de l'atelier (*« le type non plus —
+  publication obligatoirement, donc pas besoin de pouvoir changer »*) : on n'y
+  pose qu'une publication, et **une pastille qui n'offre qu'un chemin est un
+  choix qui n'en est pas un.** Le champ caché reste — c'est lui que l'envoi lit.
+- **LA RÉPÉTITION DISPARAÎT des deux écrans qui ouvrent SANS DATE** (*« le "une
+  seule fois" n'est pas nécessaire ici »*), Créer et la banque : une idée n'a pas
+  de jour qui revienne, et `creerPublication` l'écartait déjà d'elle-même.
+  **Promettre un réglage sans effet est pire que de ne rien proposer.**
+  *L'éditorial la garde : on y pose sur un jour.*
+- **LA DATE FERME LA RANGÉE** (*« la date doit être en dernier »*), et c'est
+  `sansDate` qui le décide, pas l'écran : **là où la tuile s'ouvre sans jour, une
+  date est rare et facultative** — la plupart des idées restent en réserve, et la
+  mettre en tête donnait le premier rang au réglage qu'on pose le moins. Là où la
+  tuile s'ouvre SUR un jour, elle reste en tête : c'est ce qu'on vient poser.
+- **« REPRODUCTIBLE » EST UN INTERRUPTEUR** (*« je dois simplement devoir appuyer
+  sur le bouton pour activer, pas sélectionner reproductible ou contenu
+  unique »*). **Ça renverse la convention du 29 août 2026** — *« une pastille
+  booléenne se fait avec un champ de choix à deux options »* —, qui avait sa
+  raison : une pastille affiche la VALEUR de sa source, et une case à cocher vaut
+  « oui » qu'elle soit cochée ou non, donc le libellé disait « oui » en
+  permanence. **Ce défaut-là se règle autrement** : le libellé ne bouge pas,
+  c'est l'ÉTAT de la pastille qui dit tout — allumée, elle reprend le dessin
+  d'une pastille remplie. **Un mot pour nommer, une apparence pour dire.** La
+  convention reste juste là où les deux valeurs ont chacune un nom qu'on doit
+  lire, comme l'état d'une publication.
+- **L'ICÔNE SEULE, SANS LE MOT** (*« pour le reproductible ou non, mets que
+  l'icône, pas de texte »*), **des deux côtés** — la tuile de capture et la fiche
+  d'une idée. Un réglage qui se pose à deux endroits ne peut pas s'y dessiner de
+  deux façons, et c'est ce qui a fait exporter l'icône plutôt que d'en redessiner
+  une. Le mot part dans le `title` et dans le nom accessible, comme pour le
+  crayon et la corbeille de la même rangée. *Gain mesuré : la rangée de la tuile
+  repasse sur UNE ligne.*
+  - **Une pastille sans mot se carre**, elle ne s'étire pas : le rembourrage
+    d'un libellé laissait deux blancs autour d'un dessin de douze pixels. Elle
+    garde en revanche la hauteur de ses voisines — c'est ce qui la maintient dans
+    la rangée. *Mesuré : 34 px comme les quatre autres dans la tuile, 23 px comme
+    les deux autres sur la fiche.*
+  - **Ce qui reste pour la lire** : l'état allumé/éteint dit si le réglage est
+    posé, l'infobulle dit lequel. *Risque assumé : une icône seule s'apprend, et
+    celle-ci ne se devine pas au premier regard.*
+- **UN SEUL CHAMP, ET C'EST « NOTES »** (*« fais qu'un champ notes ici
+  finalement »*). La preuve et le « pourquoi chez moi » ont vécu vingt minutes en
+  champs nus sous les pastilles : trois invites empilées dans une tuile qu'on
+  ouvre pour noter une idée en cinq secondes, **c'était un formulaire déguisé**.
+  Les deux colonnes restent en base et se lisent sur la fiche ; ce qui change,
+  c'est qu'on ne les demande plus au moment de la capture, quand on ne les a pas
+  encore. *Conséquence à connaître : elles ne se saisissent plus depuis l'écran —
+  à rouvrir si l'usage les réclame.*
+- **LE CHAMP EST DES CHAMPS, PAS UNE PASTILLE**, et c'est la règle du 30 août lue
+  dans le bon sens : *« tout ce qui se RÈGLE devient une pastille, en respectant
+  ce qui nécessite un espace de texte »*. Une note s'ÉCRIT — l'enfermer derrière
+  une pastille demandait d'ouvrir un panneau pour taper une phrase, et une
+  pastille grise ne disait pas si quelque chose avait été écrit dedans.
+- **QUATORZE PIXELS CONTRE DIX-SEPT** (*« la police doit être plus petite »*). À
+  seize contre dix-sept, l'écart ne se voyait pas — deux champs de même taille se
+  lisent comme deux champs de même rang, alors que l'un porte l'idée et l'autre
+  ce qu'on veut s'en rappeler. **PRIX ASSUMÉ : sous 16 px, Safari iOS zoome quand
+  le champ prend le focus**, ce qui est le piège qui fait écrire le titre en
+  17 px durs. Il ne s'agit que d'un champ facultatif, ouvert après le titre ; si
+  le zoom gêne à l'usage, c'est cette ligne qu'il faut rouvrir.
+
+**LA FICHE D'UNE IDÉE SE FERME SUR DEUX ICÔNES** — le crayon et la corbeille du
+détail d'un élément du calendrier, repris tels quels. « Supprimer l'idée » était
+le seul texte long de la rangée et la déséquilibrait ; *mesuré à 16,9 px de corps
+contre 12,2 pour tout le reste, le geste le plus irréversible en était le plus
+gros*. Le mot reste dans `title` et dans le nom accessible.
+
+**MODIFIER, C'EST ROUVRIR LA TUILE OÙ L'IDÉE A ÉTÉ ÉCRITE.** C'est la mécanique
+de l'espace Tâches du hub — *« rouvrir une tâche : la tuile revient avec son
+projet »* — et elle vaut d'autant plus ici que la tuile porte désormais TOUS les
+paramètres. Un second formulaire aurait été un second endroit où une idée
+s'écrit, donc deux listes de champs à tenir d'accord.
+- **`modifie` distingue la correction de la création** : la tuile ne sait pas ce
+  qu'elle fait, c'est l'espace qui le sait à l'envoi. *C'était prévu depuis le
+  premier jour — « la tuile ne sait pas si elle crée ou si elle corrige ».*
+- **LA DATE ET LA RÉPÉTITION NE SONT PAS RÉÉCRITES** par une correction : elles
+  se règlent sur la fiche, où vit la pastille de date, et les reprendre depuis la
+  tuile déprogrammerait une idée qu'on venait seulement renommer.
+- **LES PASTILLES REPRENNENT CE QUE LA LIGNE PORTE DÉJÀ** (réseau, format,
+  pilier, notes, preuve, pourquoi, format d'idée) — sans quoi rouvrir une idée
+  l'aurait remise à Instagram / carrousel / sans pilier.
+
+**LES TROIS PASTILLES DE LA FICHE SONT ALIGNÉES.** Deux réglages y concouraient :
+la pastille d'ÉTAT porte le rembourrage serré des étiquettes de Yuno — fait pour
+des mentions de classement qu'on ne touche pas —, et `.choix-champ` porte 12 px
+de marge basse, la respiration des FORMULAIRES. *Mesuré : trois bords hauts à
+429, 423 et 422 ; après, trois centres au même pixel.* C'est le piège de la marge
+héritée d'un autre contexte, payé une seconde fois après `.cap-etat`.
+
+#### L'ÉTIQUETTE D'UN PILIER TIENT SUR UNE LIGNE (16 septembre 2026)
+
+**Demande de Noé** : *« cet espace sur les tuiles des idées ne rend pas bien, ça
+prend trop de place en haut et en bas ; juste le numéro si c'est trop grand, ou
+mettre … »*
+
+« 3. DANS L'ŒIL DU PHOTOGRAPHE » fait vingt-cinq caractères en capitales
+espacées : sur une tuile de banque il se repliait sur **trois lignes** et
+poussait le titre d'autant. *Mesuré : l'en-tête passe de 45 px à 15, et la tuile
+de 120 à 97.*
+
+- **L'ELLIPSE PLUTÔT QUE LE NUMÉRO SEUL**, entre les deux que Noé propose :
+  « 3. » ne dit rien sans la légende des quatre piliers, qui n'est pas sur cet
+  écran, tandis que « 3. DANS L'ŒIL… » se reconnaît. Le nom entier part dans le
+  `title` et dans le nom accessible — la parade de la ligne d'une habitude.
+- **DIX-HUIT CARACTÈRES, ET C'EST MESURÉ** : à onze, « 3. DA… » ne se
+  reconnaissait plus. Il faut que le premier mot du pilier survive à la coupe.
+- **LE MOT EST DANS UN SPAN**, et ce n'est pas décoratif : dans un conteneur
+  flex, un nœud de texte nu devient un élément anonyme, et `text-overflow` posé
+  sur le conteneur ne l'atteint pas. Le point de couleur, lui, reste HORS de ce
+  span : c'est lui qui dit le pilier quand le mot est coupé, il ne doit jamais
+  être rogné.
+
+- **LE SITE DU FCH N'EN SAIT RIEN**, et c'est volontaire : il partage les mêmes
+  gabarits mais n'a pas le geste qui fabrique une parution. `formats` est une
+  OPTION, activée chez Yuno seulement — lui montrer le signe d'un format serait
+  une promesse qu'il ne tient pas. **C'est l'échantillon : à généraliser quand
+  Noé le demandera.**
+
 #### ELLE NE GÈRE PLUS RIEN : ELLE INSPIRE, ET ELLE OUVRE (15 septembre 2026)
 
 **La demande de Noé** : *« je déteste la page Créer de Yuno, repense-la plus

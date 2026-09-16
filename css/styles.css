@@ -3363,6 +3363,60 @@ body.fond-fige {
 }
 
 .capture-titre::placeholder { color: var(--texte-discret); }
+
+/* LES TEXTES D'UNE IDÉE, SOUS LES PASTILLES (16 septembre 2026, demande de
+   Noé) : la forme du titre, en plus petit. Sans cadre — un champ encadré dit
+   « remplis ce formulaire », or ce sont des précisions qu'on ajoute si on les a.
+   La tuile se lit en trois temps : ce qu'on écrit, ce qu'on règle, ce qu'on
+   précise. */
+/* UN INTERRUPTEUR DANS LA BANDE (16 septembre 2026) : il a l'allure d'une
+   pastille, il n'ouvre rien. ALLUMÉ, il reprend le dessin d'une pastille
+   remplie — c'est le même signal, « ce réglage est posé » ; éteint, il garde
+   l'encre de service. Le libellé ne bouge pas : un mot pour nommer, une
+   apparence pour dire. */
+/* Sans mot, l'interrupteur se carre : son rembourrage était celui d'un libellé,
+   et il laissait deux blancs autour d'un dessin de quatorze pixels. */
+.pastille-bascule { cursor: pointer; padding-inline: var(--espace-8); }
+.pastille-bascule.active { color: var(--texte); border-color: var(--texte-discret); }
+
+.capture-textes {
+  display: grid;
+  gap: var(--espace-4);
+  margin-top: var(--espace-12);
+}
+
+.capture-texte {
+  width: 100%;
+  margin: 0;
+  padding: var(--espace-4) 0;
+  font-family: inherit;
+  /* PLUS PETIT QUE LE TITRE, et nettement (16 septembre 2026, demande de Noé) :
+     à 16 px contre 17, l'écart ne se voyait pas — deux champs de même taille
+     l'un sous l'autre se lisent comme deux champs de même rang, alors que l'un
+     porte l'idée et l'autre ce qu'on veut s'en rappeler.
+
+     PRIX ASSUMÉ, ET IL FAUT LE SAVOIR : sous 16 px, Safari iOS ZOOME quand le
+     champ prend le focus — c'est le piège qui fait écrire le titre en 17 px
+     durs. Il ne s'agit ici que d'un champ facultatif, ouvert après le titre,
+     et la page revient d'elle-même à son échelle en le quittant ; mais si le
+     zoom gêne à l'usage, c'est CETTE ligne qu'il faut rouvrir. */
+  font-size: 14px;
+  line-height: 1.4;
+  /* Une ligne qui grandit avec le texte plutôt qu'une boîte de trois lignes
+     réservée d'avance : la plupart des idées n'en auront pas besoin. */
+  min-height: 0;
+  /* Le champ grandit avec ce qu'on tape là où le navigateur sait le faire, et
+     la poignée de redimensionnement reste en secours ailleurs : sans elle, un
+     `rows="1"` enfermerait un texte de cinq lignes dans une fenêtre d'une. */
+  field-sizing: content;
+  resize: vertical;
+  color: var(--texte);
+  background: none;
+  border: 0;
+}
+
+.capture-texte::placeholder { color: var(--texte-discret); }
+.capture-texte:focus-visible { outline: 0; }
 /* Le champ n'a AUCUNE décoration de focus (demande de Noé, 25 août 2026, en
    deux temps : d'abord la couleur, puis le trait lui-même). Il a porté un trait
    d'accent sous le texte, puis un trait gris ; les deux pesaient plus que ce
@@ -7422,12 +7476,33 @@ li.livre-tuile {
 /* Deux classes, et non une : `.etiquette` est déclarée dans yuno.css, chargée
    APRÈS celle-ci — à égalité de poids, c'est le dernier fichier qui gagne, et
    la pastille repartait en gris. */
+/* ELLE SE LIT EN BAS-DE-CASSE, ET ELLE RESPIRE (16 septembre 2026, demande de
+   Noé : « plus de place à droite et à gauche du texte dans la pastille, et texte
+   en minuscule sauf la 1re lettre »).
+
+   C'EST L'ARGUMENT DES EN-TÊTES DE COLONNES DE LA BIBLIOTHÈQUE, au mot près :
+   *« les capitales et leur écartement sont le dessin d'un LIBELLÉ DE SECTION
+   dans le hub, or ce n'en est pas un ».* Une pastille d'état n'est pas une
+   mention de classement qu'on balaie comme « INSTAGRAM » ou « CARROUSEL » — **on
+   la PRESSE**, et ce qu'on presse se lit comme un mot.
+
+   PORTÉE : la pastille d'état, partout — le calendrier, le FCH, la banque, la
+   fiche d'une idée. C'est un seul objet ; deux casses pour une même pastille
+   serait exactement le défaut qu'on corrige. Ses voisines, elles, gardent leurs
+   capitales : ce sont des étiquettes qu'on lit, pas des boutons.
+
+   LA MAJUSCULE VIENT DU JS (`majusculeInitiale`) : `::first-letter` ne
+   s'applique pas à un `inline-flex`, et `capitalize` mettrait une majuscule à
+   chaque mot — « À Développer ». */
 .etiquette.cal-statut-pastille {
   display: inline-flex;
   align-items: center;
   gap: var(--espace-4);
   min-height: 1.5rem;
+  padding: 0 var(--espace-12);
   font-family: inherit;
+  text-transform: none;
+  letter-spacing: normal;
   cursor: pointer;
   color: hsl(var(--teinte) 70% 72%);
   background: hsl(var(--teinte) 35% 16%);

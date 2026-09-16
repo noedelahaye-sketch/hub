@@ -1125,9 +1125,11 @@ body[data-espace="yuno"] .etiquette {
 .pilier-role { font-size: 0.8125rem; }
 
 /* Le test tient en une ligne : c'est tout l'intérêt. */
+/* La note de pied du bloc : un cran d'air en moins au-dessus de son filet
+   (16 septembre 2026, même demande). */
 .piliers-test {
-  margin: var(--espace-16) 0 0;
-  padding-top: var(--espace-12);
+  margin: var(--espace-12) 0 0;
+  padding-top: var(--espace-8);
   font-size: 0.8125rem;
   border-top: 1px solid var(--bordure);
 }
@@ -1150,13 +1152,47 @@ body[data-espace="yuno"] .etiquette {
    LE POINT S'ÉCLAIRCIT, comme les barres des axes : les quatre piliers sont
    quatre bleus sombres faits pour porter de l'encre blanche en aplat ; à 7 px
    sur le fond d'une carte, le quatrième disparaîtrait. */
+/* ELLE TIENT SUR UNE LIGNE, ET SE COUPE À L'ELLIPSE (16 septembre 2026, demande
+   de Noé : « cet espace sur les tuiles des idées ne rend pas bien, ça prend trop
+   de place en haut et en bas ; juste le numéro si c'est trop grand, ou mettre
+   … »).
+
+   « 3. DANS L'ŒIL DU PHOTOGRAPHE » fait vingt-cinq caractères en capitales
+   espacées : sur une tuile de banque, il se repliait sur TROIS lignes et
+   poussait le titre d'autant. L'en-tête d'une idée pesait alors plus que l'idée.
+
+   L'ELLIPSE PLUTÔT QUE LE NUMÉRO SEUL, entre les deux que Noé propose : « 3. »
+   ne dit rien sans la légende des quatre piliers, qui n'est pas sur cet écran,
+   tandis que « 3. DANS L'ŒIL… » se reconnaît. Le nom entier reste dans le
+   `title` et dans le nom accessible — c'est la parade de la ligne d'une
+   habitude du hub.
+
+   LA LARGEUR EST BORNÉE EN `ch`, et c'est ce qui rend le réglage lisible : une
+   longueur de mot, quelle que soit la taille du texte. Sans borne, `nowrap`
+   seul aurait poussé l'étiquette hors de la tuile au lieu de la couper.
+   *Dix-huit et non onze : à onze, « 3. DA… » ne se reconnaissait plus — il faut
+   que le premier mot du pilier survive à la coupe.* */
 .etiquette-pilier {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  max-width: 18ch;
+  white-space: nowrap;
+  overflow: hidden;
   color: var(--gris-chaud);
   background: transparent;
   border-color: var(--bordure);
+}
+
+/* LE MOT EST DANS UN SPAN, et ce n'est pas décoratif : dans un conteneur flex,
+   un nœud de texte nu devient un élément anonyme, et `text-overflow` posé sur le
+   conteneur ne l'atteint pas. Il faut un vrai élément pour que l'ellipse ait
+   prise. Le point, lui, reste hors de ce span : c'est LUI qui dit le pilier
+   quand le mot est coupé, il ne doit jamais être rogné. */
+.etiquette-pilier > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .etiquette-pilier::before {
@@ -1196,22 +1232,195 @@ body[data-espace="yuno"] .etiquette {
    page se verraient. */
 
 /* `:not(.liste-checklist)` : la checklist d'un carrousel est une liste dans la
-   tuile. Sans l'exclure, elle recevrait la grille et la mesure des tuiles. */
+   tuile. Sans l'exclure, elle recevrait la grille et la mesure des tuiles.
+   `:not(.choix-capture)` POUR LA MÊME RAISON, et c'est une régression payée le
+   16 septembre : depuis que la pastille d'état se règle sur la tuile, son MENU
+   est une liste DANS la banque — il recevait donc la grille de 16 rem et, pire,
+   le `grid-auto-rows: 1fr` posé le même jour. *Chaque option s'étirait à la
+   hauteur d'une tuile : 139 px entre « idée » et « à développer ».* */
+/* TOUTES LES TUILES FONT LA MÊME HAUTEUR (16 septembre 2026, demande de Noé :
+   « elles doivent toutes faire la même taille, pas d'espace vide plus grand par
+   moment »).
+
+   DEUX RÉGLAGES, ET IL FAUT LES DEUX. `align-items: start` laissait chaque
+   tuile prendre la hauteur de son titre — une ligne ici, deux là —, et le trou
+   se voyait entre les rangs. `stretch` égalise les tuiles d'un MÊME rang ;
+   `grid-auto-rows: 1fr` égalise les rangs entre eux.
+
+   ET C'EST ICI QUE `grid-auto-rows: 1fr` EST JUSTE, là où il était faux dans le
+   hall de `#perso` : là-bas les quatre tuiles portaient des choses de natures
+   différentes — sept frimousses de 40 px sous une pile de couvertures de 280 —,
+   ici ce sont vingt tuiles de la même nature, et c'est justement leur
+   comparaison qui compte. */
 body[data-espace="yuno"]
-  :is([data-bloc="banque"], [data-bloc="publiees"]) ul:not(.liste-checklist) {
+  :is([data-bloc="banque"], [data-bloc="publiees"]) ul:not(.liste-checklist):not(.choix-capture) {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-  align-items: start;
+  align-items: stretch;
+  grid-auto-rows: 1fr;
   gap: var(--espace-8);
 }
 
+/* La tuile devient une colonne : c'est ce qui permet à sa pastille d'état de
+   descendre au bas de la hauteur commune (`margin-top: auto`), et donc à vingt
+   pastilles de tomber sur la même ligne quelle que soit la longueur des
+   titres. */
 body[data-espace="yuno"]
-  :is([data-bloc="banque"], [data-bloc="publiees"]) ul:not(.liste-checklist) > li {
+  :is([data-bloc="banque"], [data-bloc="publiees"]) ul:not(.liste-checklist):not(.choix-capture) > li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espace-4);
   padding: var(--espace-12);
 }
 
+/* CE QUI SE RÈGLE FERME LA TUILE (correction de Noé, 16 septembre 2026 :
+   « repasse l'état et programmer en bas de tuile, en dessous des détails »), et
+   les deux pastilles y sont ALIGNÉES.
+
+   DEUX ÉCARTS À RATTRAPER, et le premier est invisible dans le code : les
+   éléments de la ligne ne sont pas les pastilles mais leurs CONTENEURS
+   (`.choix-champ`), et celui-ci porte 12 px de marge basse — la respiration des
+   formulaires. Celui de l'état l'annule depuis toujours, celui de la date non :
+   centrée, sa boîte de 35 px remontait la pastille de six pixels. *Mesuré : deux
+   bords hauts à 205 et 211.* C'est le piège déjà payé sur `.pub-actions`, et
+   c'est la troisième fois qu'une marge héritée d'un autre contexte décale une
+   rangée.
+
+   LE SECOND EST UNE QUESTION DE CORPS : 8,4 px contre 10,3. Deux boutons de même
+   rang posés côte à côte ne se lisent pas dans deux tailles. */
+.pub-reglages {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--espace-8);
+  /* COLLÉES AU BAS DE LA HAUTEUR COMMUNE : les vingt paires de pastilles
+     s'alignent alors sur une seule ligne, quelle que soit la longueur des
+     titres. C'est ce que `grid-auto-rows: 1fr` rend possible, et c'est la seule
+     chose qui justifie le vide qu'il laisse dans les tuiles courtes. */
+  margin-top: auto;
+  padding-top: var(--espace-8);
+}
+.pub-reglages .choix-champ { margin: 0; }
+/* Le corps se redit avec `body[data-espace="yuno"]` DEVANT, sans quoi il perd :
+   `body[data-espace="yuno"] .etiquette` vaut (0,2,1) et écrase un (0,2,0). *Le
+   piège de spécificité, quatrième fois sur cette page.* */
+body[data-espace="yuno"] .pub-reglages .cal-statut-pastille,
+body[data-espace="yuno"] .pub-reglages .choix-declencheur { font-size: 0.625rem; }
+
+/* LE CLASSEMENT COLLE AU TITRE, en deux rangs (correction de Noé, 16 septembre
+   2026) : le réseau et le format côte à côte, le pilier seul en dessous. Il n'a
+   PLUS de `margin-top: auto` — poussé au bas de la tuile, il devenait un pied de
+   page dont on ne savait plus qu'il qualifiait le titre.
+
+   *Prix assumé : le vide passe en bas de la tuile. Il est le même partout, et
+   c'était bien ça la demande — « pas d'espace vide plus grand par moment »
+   parlait de tuiles de hauteurs INÉGALES, pas de la place qui reste dedans.* */
+.pub-classement {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espace-4);
+  /* Un peu d'air entre le titre et ce qui le qualifie (demande de Noé, 16
+     septembre 2026) : à 4 px, la première ligne se collait à la dernière ligne
+     du titre et se lisait comme un mot de plus. */
+  margin-top: var(--espace-4);
+}
+
+/* --- CE QUI CLASSE UNE IDÉE, SANS TROIS CADRES GRIS -------------------------
+   (16 septembre 2026, retour de Noé : *« j'aime pas la forme de ces pastilles en
+   fait, elles ne donnent pas d'info assez rapidement, on s'ennuie en les voyant,
+   ça ne donne pas vie à l'idée »*.)
+
+   CE QUE ÇA RENVERSE, ET IL FAUT LE DIRE : le 15 septembre, les trois étiquettes
+   ont été RENDUES HOMOGÈNES — *« réseau, format et pilier se présentent enfin de
+   la même façon, contour fin et encre discrète, là où la troisième criait
+   au-dessus des deux autres »*. La correction était juste contre le bruit ; elle
+   a coûté toute la VIE de la rangée. Trois contours identiques ne disent rien
+   avant d'être lus.
+
+   TROIS DÉFAUTS, ET LE TROISIÈME EST LE PIRE :
+   — trois cadres de même dessin, donc rien ne distingue ce qu'on regarde ;
+   — des capitales espacées, qui se lisent lettre à lettre ;
+   — **« INSTAGRAM » est vrai de dix-neuf idées sur vingt.** Un mot identique
+     partout ne distingue rien — c'est la leçon d'« en sommeil » sur les
+     habitudes, et de « Film » dans la bibliothèque.
+
+   LA RÉPONSE : ce qui se RÉPÈTE passe en service (« Instagram · Carrousel », du
+   texte gris, sans cadre) et ce qui STRUCTURE prend la couleur — le rang du
+   pilier, dans la pastille ronde que la page « Tes quatre piliers » emploie
+   déjà. **Un chiffre coloré se reconnaît avant d'être lu ; un contour gris,
+   jamais.** Et le nom du pilier se lit enfin en bas-de-casse, en entier.
+
+   PAS D'APLAT SUR LE NOM, en revanche : les quatre piliers sont quatre bleus
+   sombres faits pour porter de l'encre blanche, et le plus clair plafonne à
+   1,8:1 en lettres sur le fond. C'est la pastille du rang qui porte la couleur —
+   la règle du 15 septembre tient sur ce point, et elle n'est pas renversée. */
+.pub-service { font-size: 0.75rem; color: var(--gris-chaud); }
+
+.pub-pilier { display: inline-flex; align-items: center; gap: var(--espace-4); min-width: 0; }
+
+/* Plus petite que celle de la page des piliers : ici elle légende une tuile,
+   là-bas elle ouvre une ligne.
+
+   ET SA COULEUR S'ÉCLAIRCIT, sans quoi elle ne se VOIT PAS : les quatre piliers
+   sont quatre bleus de plus en plus sombres, choisis pour porter de l'encre
+   blanche en grand aplat. *Mesuré sur le fond d'une tuile : 1,03:1 pour le
+   quatrième, 1,29 pour le troisième — c'est-à-dire invisibles.* `color-mix` leur
+   rend de la clarté sans toucher à leur teinte : c'est la même couleur, pas une
+   seconde palette, et c'est déjà ce que font les barres des axes de Créer.
+
+   L'ENCRE PASSE DONC AU SOMBRE, comme partout où le hub pose un aplat clair. */
+.pub-pilier .pilier-rang {
+  width: 1rem;
+  height: 1rem;
+  font-size: 0.5625rem;
+  background: color-mix(in oklab, var(--pilier, var(--accent)) 58%, #ffffff);
+  color: var(--fond);
+}
+
+/* LE PILIER RESTE DU CLASSEMENT, IL NE CONCOURT PAS AVEC LE TITRE (correction de
+   Noé, 16 septembre 2026 : « là ça prend presque le dessus sur le titre de
+   l'idée »). Le nom prenait 12,2 px en graisse 600 et en encre pleine, avec une
+   pastille colorée à côté : trois signes forts sous un titre qui n'en a qu'un.
+
+   IL SE RANGE DONC AU NIVEAU DU SERVICE juste au-dessus — même corps, même
+   encre, graisse normale : les deux lignes disent la même chose, où se range
+   cette idée. **SEUL LE RANG GARDE SA COULEUR**, et c'est lui qui donne le
+   repère ; un chiffre de quinze pixels se reconnaît sans rien voler au titre. */
+.pub-pilier-nom {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  color: var(--gris-chaud);
+}
+
+/* SEUL SUR SA LIGNE, LE PILIER PREND LA LARGEUR QU'IL TROUVE : la borne de
+   18 caractères a été posée quand il partageait son rang avec deux voisines ;
+   ici il a toute la tuile, et se couper d'avance serait perdre un mot pour
+   rien. */
+.pub-classement .etiquette-pilier { max-width: 100%; }
+
+
+/* LE TITRE S'ARRÊTE À DEUX LIGNES. Sans borne, une idée de trois lignes
+   imposerait sa hauteur aux dix-neuf autres — `grid-auto-rows: 1fr` cale TOUS
+   les rangs sur le plus grand. C'est la règle de l'étagère de la bibliothèque,
+   où chaque bloc réserve sa hauteur. Le titre entier se lit sur la fiche. */
+/* LE TITRE RESSORT (16 septembre 2026, demande de Noé : « le titre de l'idée
+   doit ressortir un peu plus, donc agrandis-le ou diminue un peu les
+   pastilles »). LES DEUX, d'un demi-cran chacun : le titre monte de 15 à 17 px,
+   les pastilles de tête descendent de 10,3 à 9,4. **L'écart passe de 1,45× à
+   1,8×** — c'est le rapport qui fait ressortir un titre, pas sa taille seule.
+   Les étiquettes du bas ne bougent pas : elles sont déjà les plus discrètes, et
+   9 px est le plancher en dessous duquel un mot n'est plus qu'une trace. */
 body[data-espace="yuno"] :is([data-bloc="banque"], [data-bloc="publiees"]) .pub-titre {
-  font-size: 1rem;
+  font-size: 1.125rem;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 body[data-espace="yuno"] :is([data-bloc="banque"], [data-bloc="publiees"])
@@ -1393,6 +1602,165 @@ body[data-espace="yuno"] .bouton-icone:hover {
 }
 
 .pub-preuve strong { color: var(--accent); font-weight: 600; }
+
+/* CE QU'UN FORMAT A DÉJÀ DONNÉ — « 3 fois parue · la dernière le 12 sept. »
+   (16 septembre 2026). Elle se lit à la suite du titre, dans l'encre du
+   service : c'est un fait sur l'idée, pas un jugement sur elle. */
+.pub-trace {
+  display: block;
+  width: 100%;
+  font-size: 0.75rem;
+}
+
+/* « UNE SEULE FOIS » : l'exception, et elle seule, porte un mot — une idée EST
+   un format, écrire « reproductible » sur dix-huit lignes ne distinguerait
+   rien. L'étiquette reste CREUSE, comme ses voisines : elle dit la nature du
+   contenu, elle ne signale pas un manque. */
+/* LA BANDE DE PASTILLES SE REPLIE, ELLE NE DÉFILE PLUS (16 septembre 2026,
+   demande de Noé : « modifie la tuile qui permet d'ajouter une idée, pas besoin
+   que ça tienne sur 2 lignes seulement, et ajoute tous les paramètres
+   importants »).
+
+   CE QUE ÇA RÉPARE : la bande défile horizontalement, et le dépôt le sait
+   depuis le 30 août — « une pastille en queue n'existe pas ». Avec sept
+   pastilles c'était déjà tendu ; avec neuf, la moitié des réglages d'une idée
+   vivaient hors de l'écran. **On ne peut pas à la fois demander qu'une tuile
+   porte tous ses paramètres et les cacher derrière un défilement.**
+
+   CHEZ YUNO SEULEMENT : c'est sa tuile qui a neuf pastilles, et le défilement
+   reste juste partout où il y en a trois ou quatre — une tuile qui grandit sous
+   le pouce au calendrier du hub serait une régression, pas une correction.
+
+   Le bouton d'envoi garde sa place : il est hors de la liste, dans
+   `.capture-pastilles`. */
+body[data-espace="yuno"] .capture-pastilles-liste {
+  flex-wrap: wrap;
+  overflow-x: visible;
+  /* Le fondu du bord et l'arrêt sur une pastille n'ont plus d'objet : rien ne
+     défile. Les laisser poserait un dégradé sur une bande qui tient entière. */
+  scroll-snap-type: none;
+}
+/* Le fondu du bord est un MASQUE posé en JS quand la bande déborde ; repliée,
+   elle ne déborde jamais, mais la classe peut rester d'un rendu précédent — et
+   un masque sur une bande entière rognerait la dernière pastille de chaque
+   ligne. On l'annule ici plutôt que de compter sur le JS pour la retirer. */
+body[data-espace="yuno"] .capture-pastilles-liste.deborde-avant,
+body[data-espace="yuno"] .capture-pastilles-liste.deborde-apres,
+body[data-espace="yuno"] .capture-pastilles-liste.deborde-avant.deborde-apres {
+  mask-image: none;
+}
+
+/* LES TROIS PASTILLES D'UNE RANGÉE DE GESTES ONT LE MÊME DESSIN (16 septembre
+   2026, demande de Noé : « cette partie ne correspond pas aux critères qu'on
+   s'était fixés pour les boutons, les tuiles »).
+
+   LA RÉFÉRENCE EST LA PASTILLE D'ÉTAT, parce qu'elle vient du calendrier et
+   qu'elle est déjà là : petites capitales, 1,5 rem de haut, un filet fin, pas de
+   chevron. *Mesuré avant : 23 px pour l'état, 34 pour la date — qui portait le
+   dessin des pastilles de FORMULAIRE, deux fois plus grosses — et 12 pour le
+   format, qui n'avait aucun rembourrage vertical. Trois hauteurs pour trois
+   choses de même nature.* */
+.pub-format { position: relative; }
+/* UNE PASTILLE QUI N'A QU'UNE ICÔNE SE CARRE, elle ne s'étire pas : le
+   rembourrage d'un mot laisserait deux blancs de part et d'autre d'un dessin de
+   onze pixels. Elle garde la hauteur de ses voisines — c'est ce qui la maintient
+   dans la rangée. */
+.pub-format-pastille { padding: 0; width: 1.75rem; justify-content: center; }
+.pub-format-pastille svg { width: 12px; height: 12px; }
+
+/* LA PASTILLE DE DATE SUIT LA CASSE DE CELLE DE L'ÉTAT — bas-de-casse, sans
+   écartement (16 septembre 2026). Noé n'a demandé que l'état ; mais les deux
+   sont des CONTRÔLES posés côte à côte, et deux casses voisines pour deux
+   boutons de même rang seraient le défaut qu'on vient de corriger. Les
+   étiquettes du bas, elles, gardent leurs capitales : on les lit, on ne les
+   presse pas. */
+.pub-format-pastille,
+.pub-date .choix-declencheur {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-4);
+  min-height: 1.5rem;
+  padding: 0 var(--espace-12);
+  font-family: inherit;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  background: none;
+  color: var(--gris-chaud);
+  border: 1px solid var(--gris-chaud-trait);
+  border-radius: var(--rayon-pastille);
+}
+.pub-format-pastille { cursor: pointer; }
+
+/* ALLUMÉE OU ÉTEINTE, ET C'EST LE SEUL SIGNE : le libellé ne bouge pas —
+   « Reproductible » nomme le réglage, l'apparence dit s'il est posé. C'est ce
+   qui permet à un interrupteur de tenir dans une pastille sans tomber dans le
+   piège du 29 août, où un libellé fixe laissait croire à une valeur figée. */
+.pub-format-pastille.active {
+  color: var(--texte);
+  border-color: var(--gris-chaud);
+}
+
+/* LES TROIS PASTILLES SONT ALIGNÉES (16 septembre 2026, demande de Noé : « il
+   faut que ce soit aligné »). La pastille d'ÉTAT porte le rembourrage serré des
+   étiquettes de Yuno — 0 4px, fait pour des mentions de classement qu'on ne
+   touche pas —, les deux autres celui d'un contrôle. *Mesuré : leurs bords
+   verticaux ne tombaient pas sur la même ligne.* Dans une rangée de GESTES,
+   c'est le rembourrage du contrôle qui gagne : on vise ces trois-là au doigt. */
+body[data-espace="yuno"] .pub-actions .etiquette { padding: 0 var(--espace-8); }
+
+/* LA PASTILLE D'ÉTAT RESPIRE, CHEZ YUNO AUSSI (16 septembre 2026, demande de
+   Noé). Le piège de spécificité, payé une fois de plus : `body[data-espace=
+   "yuno"] .etiquette` vaut (0,2,1) et écrase `.etiquette.cal-statut-pastille`
+   (0,2,0) de styles.css — **à poids égal c'est le dernier fichier chargé qui
+   gagne, et yuno.css vient après**. Le rembourrage et l'écartement des lettres
+   se redisent donc ici, où ils peuvent l'emporter. */
+body[data-espace="yuno"] .cal-statut-pastille {
+  padding: 0 var(--espace-12);
+  letter-spacing: normal;
+}
+.pub-actions { align-items: center; }
+
+/* ET LEUR MARGE TOMBE. `.choix-champ` porte 12 px sous lui — la respiration des
+   FORMULAIRES, où les champs s'empilent. Dans une rangée centrée, cette marge
+   entre dans la boîte : les deux pastilles qui la portaient remontaient de six
+   pixels par rapport à celle de l'état, qui l'annule depuis toujours.
+   *Mesuré : trois bords hauts à 429, 423 et 422.* C'est le même piège que
+   `.cap-etat` dans la tête d'une tuile du hub, payé une seconde fois. */
+.pub-actions .choix-champ { margin: 0; }
+
+/* Les deux icônes ferment la rangée, poussées à droite : ce sont les gestes
+   qu'on ne cherche pas, et la corbeille ne doit jamais tomber sous le doigt qui
+   visait un réglage. */
+.pub-gestes { display: inline-flex; align-items: center; gap: var(--espace-4); margin-left: auto; }
+.pub-format-pastille:hover,
+.pub-date:hover .choix-declencheur { color: var(--texte); }
+.pub-format .choix-panneau { min-width: 12rem; }
+
+/* L'icône suit le corps du mot : à 14 px elle pesait plus que les neuf pixels
+   de texte qu'elle accompagne. */
+.pub-date .choix-declencheur svg { width: 11px; height: 11px; }
+
+/* ÉCRITE, LA SUPPRESSION REPREND LE CORPS DE SES VOISINES : `.bouton-retirer`
+   pose 1,125 rem POUR LA CROIX, et le libellé en héritait — le geste le plus
+   irréversible de la rangée en était le plus gros. Elle garde en revanche
+   l'opacité pleine : dans une fenêtre, il n'y a pas de survol de ligne pour la
+   révéler. */
+.pub-supprimer { flex: none; }
+
+.etiquette-unique {
+  display: inline-block;
+  margin-top: var(--espace-4);
+  padding: 1px var(--espace-8);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gris-chaud);
+  border: 1px dashed var(--gris-chaud-trait, var(--bordure));
+  border-radius: var(--rayon-pastille);
+}
 
 /* La checklist d'un carrousel : un aide-mémoire dans la tuile, replié. */
 .checklist-carrousel { width: 100%; margin-top: var(--espace-4); }
@@ -3269,7 +3637,10 @@ body[data-espace="yuno"] .prepa-bilan-bouton:hover {
    ombre pour les décoller ». Sur fond sombre, c'est la clarté qui soulève. */
 .carte-jour {
   position: relative;
-  padding: var(--espace-24) var(--espace-16);
+  /* UN CRAN DE MOINS (16 septembre 2026, demande de Noé : « tout est un peu trop
+     gros dans la page Créer »). Vingt-quatre pixels en haut et en bas étaient la
+     respiration d'une carte qui portait un titre de 28 px ; il en fait 24. */
+  padding: var(--espace-16);
   /* Le jeton n'est posé que par la palette de Yuno — la seule qui ait cette
      carte. Le repli sur `--fond-carte` évite un fond transparent si la classe
      est un jour empruntée ailleurs. */
@@ -3355,8 +3726,12 @@ body[data-espace="yuno"] .idee-jour-corps .pub-titre {
    sous la ligne de flottaison, ce qui est l'inverse de « ressortir ». Là-bas la
    SURFACE suffit : la carte prend toute la largeur et elle est la seule chose
    claire de l'écran. */
+/* 1,5 REM ET NON 1,75 (16 septembre 2026, même demande). Il reste de très loin
+   le plus gros titre de la page — 24 px contre 18 pour une idée de la banque et
+   15 pour un nom de sortie —, et c'est ce rapport qui compte, pas la valeur
+   absolue. *Mesuré : la carte passe de 128 px à 96.* */
 @media (min-width: 40rem) {
-  body[data-espace="yuno"] .idee-jour-corps .pub-titre { font-size: 1.75rem; }
+  body[data-espace="yuno"] .idee-jour-corps .pub-titre { font-size: 1.5rem; }
 }
 
 .idee-jour-corps:hover .pub-titre { color: var(--accent); }
@@ -3403,6 +3778,26 @@ body[data-espace="yuno"] .idee-jour-corps .pub-titre {
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+/* LES PISTES SONT BORNÉES SUR GRAND ÉCRAN (16 septembre 2026, demande de Noé :
+   « tout est un peu trop gros dans la page Créer »). Étirées sur toute la
+   largeur, trois photos faisaient 261 px de large et 174 de haut — l'objet le
+   plus gros de la page, pour ce que la règle d'à côté appelle « une vignette
+   qu'on ne fait que reconnaître ». *Mesuré : 192 × 128 après, et le bloc passe
+   de 271 px à 225.* C'est le raisonnement déjà tenu pour les barres des piliers,
+   bornées à 20 rem le 16 septembre au matin, et pour la même raison : une piste
+   `1fr` s'étire jusqu'au bord même quand ça ne sert plus à rien. */
+/* LE SEUIL EST 45 REM, ET IL A ÉTÉ MESURÉ : à 60 rem la borne ne jouait pas sur
+   un écran de 800 px — les photos y faisaient encore 174 px de haut. Trois
+   pistes de 12 rem et leurs deux écarts demandent 600 px, que 45 rem (720)
+   offrent largement. En dessous, la règle des deux colonnes pleine largeur
+   reprend la main. */
+@media (min-width: 45rem) {
+  .bloc ul.matiere {
+    grid-template-columns: repeat(3, minmax(0, 12rem));
+    justify-content: start;
+  }
 }
 
 /* `.bloc li` habille toutes les listes du hub en tuile : ici c'est le BOUTON
@@ -3521,8 +3916,13 @@ body[data-espace="yuno"] .idee-jour-corps .pub-titre {
   grid-template-rows: auto auto;
   align-items: center;
   gap: var(--espace-4) var(--espace-12);
+  /* UN CRAN DE MOINS (16 septembre 2026, même demande) : quatre lignes à 54 px
+     faisaient du bloc le plus haut de la page. La CIBLE ne bouge pas — 44 px de
+     haut, c'est la règle du hub et on presse ces lignes pour ouvrir la banque
+     filtrée ; c'est le rembourrage AUTOUR qui cède. *Mesuré : 54 px par ligne,
+     ramenés à 46.* */
   min-height: 2.75rem;
-  padding: var(--espace-8) 0;
+  padding: var(--espace-4) 0;
   text-decoration: none;
   color: inherit;
   border-bottom: 1px solid var(--bordure);
