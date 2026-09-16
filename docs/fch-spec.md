@@ -828,8 +828,25 @@ reste.
    logo posé sur la mauvaise fiche se verrait au stade.*
 6. **Deux portraits différents portent le nom « Christophe Lucchetta »** dans
    les exports du club. Le hub garde celui du bureau. À faire trancher.
+7. **Un partenaire ne se MODIFIE ni ne se SUPPRIME depuis l'écran.** Son ÉTAT se
+   change d'un geste depuis le 16 septembre 2026 — c'était la moitié urgente de
+   la question, celle d'un virement qui arrive. Le reste ne bouge pas : ni le
+   montant, ni l'offre, ni la commune, ni le CERFA, ni les notes, et la ligne ne
+   s'efface pas. `modifierPartenaire` et `supprimerPartenaire` existent dans
+   `js/api.js` et ne sont appelées nulle part pour ça ; le formulaire de création
+   porte déjà tous les champs. **À faire quand l'usage le demandera** — corriger
+   un montant négocié est plus fréquent qu'il n'y paraît (l'écart au tarif du
+   dossier est déjà affiché sur la fiche, justement parce qu'on l'oublie).
+8. **Le hall du club n'a plus de porte vers les partenaires**, depuis qu'ils ont
+   pris un onglet du dock : une porte vers un voisin du dock ferait deux chemins
+   pour un geste. **Décidé sans que Noé le demande, dit, non contesté — mais non
+   confirmé.** La remettre coûte une ligne.
 
 ## Navigation — 16 septembre 2026
+
+> **LES DEUX PARAGRAPHES QUI SUIVENT SONT DÉPASSÉS** sur le NOMBRE et le NOM des
+> destinations : lire « LE DOCK, REFONDU LE 16 SEPTEMBRE 2026 » plus bas, qui
+> fait autorité. Ce qu'ils disent du COMPOSANT de menu, lui, tient toujours.
 
 Le site reprend le composant de menu dépliant de Hub et Yuno. Le bouton est
 en tête avec le titre de la page ; les rubriques sont Accueil (calendrier),
@@ -844,17 +861,21 @@ Le bouton de capture et le bas du contenu sont décalés pour laisser sa place a
 ### Découpage des contenus — 16 septembre 2026
 
 Cette répartition remplace celle du premier menu ci-dessus. Le site compte
-16 pages, avec cinq destinations dans le dock : Accueil, Créer, Réunions, Club,
-Calendrier. Les partenaires rejoignent le menu du Club.
+16 pages. *(Les destinations et les noms ont changé le soir même : voir « LE
+DOCK, REFONDU LE 16 SEPTEMBRE 2026 » ci-dessous. Ce qui suit décrit ce que
+chaque page CONTIENT, et reste vrai.)*
 
 - Créer : aperçu et portes vers Saison, Calendrier éditorial, Banque d’idées,
   Publications parues. Le formulaire reste disponible sur Saison, Éditorial
   et Banque ; les propositions de rythmes continuent de le préremplir sur Saison.
 - Réunions : réunions à préparer ; pages séparées pour Suivi des actions et
   Réunions passées. Les adresses des fiches restent inchangées.
-- Club : portes vers Les organigrammes, Projet du club, Entraînements, Chiffres,
-  Partenaires. Les entraînements et chiffres sont directement visibles sur
-  leur page, sans pli supplémentaire.
+- Club : portes vers Les organigrammes, Projet du club, Entraînements, Chiffres
+  et, depuis le soir du 16 septembre, **Les réunions** — *les partenaires, eux,
+  sont partis prendre leur propre onglet.* Les entraînements et chiffres sont
+  directement visibles sur leur page, sans pli supplémentaire. **Ces portes ne
+  sont plus des liens nus mais un HALL** : voir « LA PAGE EST UN HALL » plus
+  haut.
 
 Les sous-pages gardent l’onglet parent actif et un lien de retour. Le menu
 ouvre leur rubrique automatiquement. Aucun contenu ni opération métier retiré.
@@ -924,9 +945,14 @@ navigateur, deux colonnes à 1200 px et aucun débordement à 375 px. Non publi�
 
 ### Tuiles sur les autres pages FCH — 16 septembre 2026
 
-Le style partagé `.fch-tuile` habille les sections de Créer, Réunions, Club
-et leurs sous-pages, dont Partenaires et les fiches de réunion. Les titres
-restent au-dessus ; les portes perdent leur bande latérale et leur contour.
+Le style partagé `.fch-tuile` habille les sections de Communication, du Club et
+de leurs sous-pages, dont les fiches de réunion. Les titres restent au-dessus ;
+les portes perdent leur bande latérale et leur contour.
+
+**SAUF CELLES QUI NE PORTENT QUE DES CARTES** (`fch-sans-tuile`, 16 septembre
+2026) — la galerie des partenaires, le catalogue des offres, les chantiers, et
+le hall du club, qui n'est pas dans un `.bloc` du tout. Voir « UNE GALERIE N'A
+PAS DE SURFACE SOUS ELLE ».
 Le calendrier et le planning des entraînements conservent leurs grilles dédiées.
 Les nœuds sont déplacés dans les surfaces après rendu, sans changer les champs
 ou les attributs des actions. Les 16 routes ont été parcourues dans le navigateur :
@@ -1177,7 +1203,9 @@ Noé : les objectifs d'une commission donnée.
 - **LES PROJETS SANS OBJECTIF SONT GARDÉS TELS QUELS**, repliés en pied : une
   idée qui attend son objectif est une idée, pas une erreur, et la ranger de
   force sous un objectif serait décider à la place du club.
-- **LES TROIS OBJECTIFS DE L'AG SONT À PART**, repliés eux aussi : leurs mots ne
+- **LES TROIS OBJECTIFS DE L'AG SONT AFFICHÉS SUR L'ACCUEIL DU PROJET**, en tuiles
+  cliquables vers les objectifs encadrement, bénévoles et sponsors. Le panneau
+  dépliant de l'AG a été supprimé à la demande de Noé. Leurs mots ne
   sont pas ceux du tableau (« anticiper davantage nos manifestations » y devient
   « augmenter le nombre de bénévoles et de participants »). On garde les deux —
   l'un est ce qui a été DIT à l'assemblée, l'autre ce qui est SUIVI.
@@ -1186,6 +1214,30 @@ Noé : les objectifs d'une commission donnée.
 aucune pastille tronqués.*
 
 ### Les organigrammes interactifs, 16 septembre 2026
+
+### Mise à jour : projet du club et évènements — 16 septembre 2026
+
+Le projet du club est désormais un résumé (mission, six valeurs et trois
+priorités de saison) avec les tuiles communes `fch-hall`. Mission, valeurs,
+objectifs et projets ont leurs pages. Les 18 objectifs et 28 projets possèdent
+des fiches documentaires reliées ; pas de suivi d'avancement ni d'édition à ce stade.
+Le bloc « Pourquoi cette phrase-là » et le panneau dépliant de l'AG sont retirés.
+
+La rubrique Club inclut `#hermitage/evenements` et neuf fiches de saison issues
+du planning fourni. Le loto et la matinée saucisses conservent leurs dates
+alternatives. Chaque fiche propose le lien général du rétroplanning Drive et
+un formulaire de publication réutilisant les actions du calendrier éditorial.
+La rubrique de publication identifie l'évènement et reste protégée en édition.
+Les communications se répartissent en idées, prévues et publiées. Les évènements
+eux-mêmes restent un catalogue local, sans insertion automatique au calendrier.
+Les dates du catalogue ne doivent pas changer sans préserver le rattachement
+des publications (actuellement basé sur la rubrique contenant titre et date).
+
+Vérifiés : syntaxe, gabarits et navigation navigateur. Sauvegarde Supabase non
+testée par une écriture réelle. Le contrôle de coquille signale uniquement son
+faux positif préexistant sur un SVG data URI ; le nouveau module est en cache v25.
+
+### Historique des organigrammes
 
 La liste des neuf commissions est remplacée par trois vues : Bureau et référents,
 Commissions, Équipes sportives. Recherche transversale par nom, rôle ou mission.

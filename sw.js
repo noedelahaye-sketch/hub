@@ -16,7 +16,7 @@
 // Sans ça, chaque session de travail verrait une fois ses modifications
 // ignorées — le piège classique du service worker en développement.
 
-const CACHE = 'hub-coquille-v24';
+const CACHE = 'hub-coquille-v25';
 
 const EN_LOCAL = ['localhost', '127.0.0.1'].includes(self.location.hostname);
 
@@ -42,6 +42,7 @@ const COQUILLE = [
   'js/organigramme-fch.js',
   'js/projet-fch.js',
   'js/projet-club.js',
+  'js/evenements-club.js',
   'js/partenaires-fch.js',
   'js/partenaires-suivi.js',
   // Les logos des partenaires : ils sont dans le dépôt, jamais à un CDN.

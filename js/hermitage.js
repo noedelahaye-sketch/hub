@@ -50,6 +50,7 @@ import { REPERES, CRENEAUX } from './club-fch.js';
 import { GROUPES, PERSONNES } from './organigramme-fch-data.js';
 import { MISSION_FCH, VALEURS_FCH, OBJECTIFS_FCH } from './projet-fch.js';
 import { construireProjetClub, titreDuProjet } from './projet-club.js';
+import { construireEvenementsClub, estRubriqueEvenement, EVENEMENTS_CLUB } from './evenements-club.js';
 import {
   construireSuiviPartenaires, titreDuSuivi, porte, mots,
 } from './partenaires-suivi.js';
@@ -154,7 +155,7 @@ const SAISON_PARTENAIRES = '2026-2027';
 
 const VUES = ['accueil', 'creer', 'reunions', 'calendrier', 'partenaires', 'club',
   'saison', 'editorial', 'banque', 'publications', 'actions', 'archives',
-  'commissions', 'projet-club', 'entrainements', 'chiffres'];
+  'commissions', 'projet-club', 'entrainements', 'chiffres', 'evenements'];
 
 // Les natures que le calendrier du site assemble — ni relance ni commande,
 // elles vivent chez Yuno. La liste sert aux filtres (pas de case sans effet)
@@ -192,6 +193,7 @@ export const RUBRIQUES_FCH = [
   { nom: 'Le club', adresse: '#hermitage/club', pages: [
     { nom: 'Les organigrammes', adresse: '#hermitage/commissions' },
     { nom: 'Le projet du club', adresse: '#hermitage/projet-club' },
+    { nom: 'Les évènements', adresse: '#hermitage/evenements' },
     { nom: 'Les entraînements', adresse: '#hermitage/entrainements' },
     { nom: 'Le club en chiffres', adresse: '#hermitage/chiffres' },
     { nom: 'Les réunions', adresse: '#hermitage/reunions' },
@@ -1645,7 +1647,7 @@ function fenetreIdee(etat) {
        action: 'modifier-idee',
        bouton: 'Enregistrer',
        avecPli: false,
-       extra: `<input type="hidden" name="id" value="${echapper(pub.id)}">`,
+       extra: `<input type="hidden" name="id" value="${echapper(pub.id)}">${estRubriqueEvenement(pub.rubrique) ? `<input type="hidden" name="rubrique" value="${echapper(pub.rubrique)}">` : ''}`,
        champs: [
          { nom: 'titre', libelle: "L'idée, en une phrase", type: 'text', requis: true,
            valeur: pub.titre },
@@ -1655,9 +1657,9 @@ function fenetreIdee(etat) {
          // présente sous le format qui reste.
          { nom: 'format', libelle: 'Format', type: 'choix', options: FORMATS,
            valeur: pub.format === 'post' ? 'carrousel' : pub.format },
-         { nom: 'rubrique', libelle: 'Rubrique (facultative)', type: 'text',
+         ...(!estRubriqueEvenement(pub.rubrique) ? [{ nom: 'rubrique', libelle: 'Rubrique (facultative)', type: 'text',
            valeur: pub.rubrique ?? '',
-           suggestions: rubriquesProposees(etat.publications, RUBRIQUES_DEPART) },
+           suggestions: rubriquesProposees(etat.publications, RUBRIQUES_DEPART) }] : []),
          { nom: 'date_prevue', libelle: "Prévue le (vide = banque d'idées)", type: 'date',
            valeur: pub.date_prevue ?? '' },
          // La répétition, pour la rubrique qui revient chaque semaine (demande
@@ -1976,6 +1978,7 @@ function hallDuClub(etat) {
           <span class="fch-hall-compte">${echapper(chiffre)}</span></li>`).join('')}</ul>`)}
 
     ${porteDesReunions(etat)}
+    ${porte('#hermitage/evenements', 'Les évènements', `${EVENEMENTS_CLUB.length}`, '<span class="fch-hall-quoi">La saison 2026/2027, la communication de chaque évènement et son rétroplanning.</span>')}
   </section>`;
 }
 
@@ -2018,6 +2021,7 @@ function vueClub(etat) {
   const contenus = {
     'commissions': () => construireOrganigramme(personne),
     'projet-club': () => construireProjetClub(personne),
+    'evenements': () => construireEvenementsClub(personne, etat.publications, RESEAUX_FCH, FORMATS),
     'entrainements': () => construireEntrainements(),
     'chiffres': () => `    <section class="bloc bloc-discret">
       <h2>Le club en chiffres</h2>
@@ -2036,7 +2040,7 @@ function vueClub(etat) {
   // des deux autres halls du hub — `#perso` et celui des partenaires.
   return `${enTete(vue, personne)}${vue === 'club'
     ? hallDuClub(etat)
-    : `${contenus[vue]()}<a class="lien-discret" href="#hermitage/club">← Le club</a>`}${pied()}`;
+    : `${contenus[vue]()}<a class="lien-discret" href="#hermitage/club">← Le club</a>`}${vue === 'evenements' ? fenetreIdee(etat) : ''}${pied()}`;
 }
 
 // Habillage commun des sections : le titre reste au-dessus de la surface.
@@ -2140,7 +2144,7 @@ export default {
       else if (['reunions', 'actions', 'archives'].includes(etat.vue)) section.innerHTML = vueReunions(etat);
       else if (etat.vue === 'calendrier') section.innerHTML = vueCalendrier(etat);
       else if (etat.vue === 'partenaires') section.innerHTML = vuePartenaires(etat);
-      else if (['club', 'commissions', 'projet-club', 'entrainements', 'chiffres'].includes(etat.vue)) section.innerHTML = vueClub(etat);
+      else if (['club', 'commissions', 'projet-club', 'entrainements', 'chiffres', 'evenements'].includes(etat.vue)) section.innerHTML = vueClub(etat);
       else section.innerHTML = vueAccueil(etat);
       habillerLesSections(section);
 

@@ -1,107 +1,299 @@
 # État des lieux — 16 septembre 2026
 
-> **REPRISE IMMÉDIATE : « § 00 — Relais du 16 septembre, TARD » ci-dessous.**
-> Ce relais prime sur tous les suivants, y compris ceux du même jour.
+## Relais actuel — projet du club et évènements
 
-## § 00 — Relais du 16 septembre, TARD (le site du club se range en halls)
+Ce relais prime sur les descriptions antérieures de ces pages. Livraison préparée
+sur `main` à la demande de Noé ; le résultat du push est communiqué dans la tâche.
 
-**Commité ET POUSSÉ sur `main`** (demande de Noé) : le dépôt est servi par
-GitHub Pages, donc tout ceci est **en ligne**. Le § 0 ci-dessous disait « rien
-n'est poussé » — c'était vrai à l'heure où il a été écrit, ça ne l'est plus, et
-ses huit commits partent avec celui-ci.
+- Le projet du club présente la mission, les six valeurs et trois priorités de
+  saison cliquables. Les accès reprennent le composant des tuiles partenaires.
+- Les 18 objectifs et 28 projets documentaires ont une fiche dédiée, des liens
+  entre eux et des retours. Aucun responsable, jalon ou avancement n'est inventé.
+- Club et le menu donnent accès aux neuf évènements de l'affiche 2026/2027.
+  Loto : 13 ou 20 février ; matinée saucisses : 11 ou 18 avril, à confirmer.
+- Chaque fiche permet d'ajouter et modifier une communication via les publications
+  Supabase existantes. Une date la fait apparaître au calendrier éditorial.
+  Le rattachement utilise une rubrique réservée (titre et date de l'évènement),
+  conservée dans le formulaire d'édition. Modifier les dates du catalogue imposera
+  de conserver ou migrer cette rubrique pour ne pas perdre le rattachement.
+- Le rétroplanning fourni est lié depuis chaque fiche. Son contenu et ses onglets
+  n'ont pas été consultés : il s'agit du lien général, pas d'une synchronisation.
+- Habillage : repère de date, tuiles communication/rétroplanning, publications
+  regroupées en idées, prévues et publiées. Les listes vides inutiles sont masquées.
+- Le module évènements est ajouté à la coquille hors ligne (cache v25).
 
-### Ce que Noé a demandé, dans l'ordre, et ce que ça a donné
+Vérifications : syntaxe et diff, parcours navigateur accueil → objectif → projet,
+galerie évènements et formulaire de communication. Aucune publication de test
+n'a été enregistrée ; le cycle d'écriture en base n'a pas été testé de bout en bout.
+Les évènements du catalogue ne sont pas automatiquement créés dans la table des
+évènements du calendrier. Les fiches objectifs/projets restent documentaires,
+sans les outils d'édition et de suivi complet des objectifs du hub.
+
+Les modifications documentaires déjà présentes ont été conservées dans cette livraison.
+
+> Historique précédent : « § 0 — Relais du 16 septembre, TARD » ci-dessous.
+
+## § 0 — Relais du 16 septembre, TARD (le site du club se range en halls)
+
+**Commité ET POUSSÉ sur `main`** (demande de Noé), donc **en ligne** — le dépôt
+est servi par GitHub Pages. Le § 1 ci-dessous disait « rien n'est poussé » :
+c'était vrai à l'heure où il a été écrit, ça ne l'est plus, et ses huit commits
+sont partis avec les deux de cette session.
+
+    77e80a6  Le site du club se range en halls
+    a11904a  Le logo d'un partenaire passe à gauche de son texte
+
+**Le détail de chaque écran vit dans `docs/fch-spec.md`**, qui fait autorité et
+a été mis à jour à chaque étape. Ce relais ne le recopie pas : il dit ce qui a
+été DÉCIDÉ, ce qui a été VÉRIFIÉ, et ce qui reste ouvert.
+
+### § 0.1 — Ce que Noé a demandé, dans l'ordre
+
+Sept demandes, dont **trois se sont corrigées en cours de route** — elles sont
+signalées, parce que c'est exactement ce qu'une session future « corrigerait »
+en croyant bien faire.
 
 1. **« enlève la tuile de fond, chaque tuile d'entreprise doit être
    indépendante »**, puis *« pareil pour la page des offres »*, puis *« pareil
-   pour nos engagements »*. `habillerLesSections` posait une `.fch-tuile` sous
-   chaque section du site ; **une section qui ne porte QUE des cartes n'a rien à
-   poser dessous** — les deux surfaces sont le même `--fond-carte`, et vingt
-   entreprises se lisaient comme un seul bloc. D'où `fch-sans-tuile`, sur les
-   trois pages qui comparent. *Le critère est le CONTENU, pas la page : une
-   section qui porte du texte garde sa surface.*
-2. **« ajoute la possibilité de modifier l'état »** — la pastille d'un
-   partenaire devient un bouton qui ouvre le menu dessiné du hub, sur la tuile
-   comme sur la fiche. Elle GARDE son aplat coloré : il n'y a que deux états, et
-   c'est la couleur qui les sépare dans une galerie de vingt. La tuile a donc
-   cessé d'être un lien qui enveloppe (un bouton dans un lien n'est ni valide ni
-   cliquable) : c'est un écouteur, et **le nom porte le lien**.
-3. **« modifie la forme des tuiles de la page club… comme ma bibliothèque dans
-   perso »** — la page devient un HALL de cinq portes, et il a fallu trouver
-   quoi montrer derrière chacune. Voir `docs/fch-spec.md`, §
-   « `#hermitage/club` ».
-4. **« inverse l'illustration et le titre »**, puis **« par contre le titre est
-   au-dessus des autres textes »** — une porte a maintenant TROIS étages :
-   l'illustration, le nom, le reste. L'illustration remonte par `order`, jamais
-   dans le DOM.
-5. **« pour les organigrammes mets des photos l'une sur l'autre »** — six
-   visages en pile, le bureau devant, puis « +38 ».
-6. **« intègre réunions à club »**, **« ajoute un onglet pour les partenaires »**,
-   **« change créer en communication »** puis **« Com’ au lieu de
-   communication »** — le dock devient **Accueil · Com’ · Partenaires · Club ·
-   Calendrier**.
+   pour nos engagements »*.
+2. **« ajoute la possibilité de modifier l'état »** (partenaire du club /
+   virement en attente).
+3. **« modifie la forme des tuiles de la page club pour que ça ressemble
+   davantage à ce style — comme ma bibliothèque dans perso, ou le vivier dans
+   Yuno »**.
+4. **« inverse l'illustration/les logos et le texte/titre de la tuile »**, PUIS,
+   aussitôt après : **« non par contre le titre de la tuile est au-dessus des
+   autres textes »**. ⚠️ *Le second corrige le premier : ce n'est pas une simple
+   inversion, c'est un ordre à trois étages.*
+5. **« pour les organigrammes mets des photos l'une sur l'autre plutôt que les
+   pastilles présidence… »**.
+6. **« intègre réunions à club »**, puis **« change créer en communication, et
+   ajoute un onglet pour les partenaires (qui remplace donc réunions) »**, puis
+   **« Com' au lieu de communication »**. ⚠️ *Trois demandes qui se suivent et se
+   complètent ; la troisième arbitre un problème de place, voir § 0.3.*
+7. **« le texte doit être à la droite du logo partenaire »** (la fiche).
 
-### Ce qui a été TRANCHÉ, et qu'il ne faut pas refaire à l'envers
+### § 0.2 — Ce qui a été construit
 
-- **Le hall du club N'A PLUS de porte partenaires.** Décidé sans le demander
-  quand les partenaires ont pris un onglet : une porte vers un voisin du dock
-  ferait deux chemins pour un geste. **Dit à Noé, il ne s'y est pas opposé — mais
-  il ne l'a pas confirmé non plus.**
-- **Plus de phrase d'introduction sur la page du club.** Elle nommait les portes
-  juste en dessous.
-- **`suivi-porte-*` est devenu `fch-hall-*`** : le dessin sert deux halls, et un
-  second l'aurait recopié. *À ne pas confondre avec `.fch-portes`, la rangée de
-  liens qui ferme Communication et Les réunions.*
-- **« Com’ » est une ABRÉVIATION, pas un second nom** : la page et le menu disent
-  « Communication ». *Mesuré à 375 px : cinq onglets à 67 px, « Communication »
-  en demandait 72 — il débordait sur « Partenaires ».* C'est ce qui sauve la
-  règle des largeurs égales.
+**UNE SECTION QUI NE PORTE QUE DES CARTES N'A RIEN À POSER DESSOUS.**
+`habillerLesSections` (js/hermitage.js) enveloppe chaque `section.bloc` du site
+dans une `.fch-tuile` — juste pour une section qui porte du TEXTE, faux pour une
+qui ne porte que des cartes : **les deux surfaces sont le même `--fond-carte`**,
+et vingt entreprises se lisaient comme un seul bloc. Seul le survol trahissait
+qu'il y avait des tuiles dessous. D'où **`fch-sans-tuile`**, une sortie déclarée
+par la section, posée sur les **trois pages qui comparent** — la galerie des
+partenaires, le catalogue des offres, les chantiers.
+- **Le critère est le CONTENU, pas la page.** Une section qui porte du texte
+  garde sa surface : un paragraphe a besoin d'être posé sur quelque chose. Le
+  hall des partenaires la garde aussi — ses portes ne sont pas des cartes.
+- **Le titre s'habille quand même** (`titre-section`) : il reste le nom de la
+  section, tuile ou pas.
 
-### Les pièges payés (ils ne se devinent pas)
+**L'ÉTAT D'UN PARTENAIRE SE CHANGE SUR PLACE**, sur la tuile de la galerie comme
+sur la fiche : c'est le menu dessiné du hub, celui de l'état d'un PROJET, ouvert
+par `data-ouvrir-choix` — que `brancherCapture` écoute déjà sur ce site (ce
+site-ci n'appelle pas `brancherChoix`, les deux ensemble traiteraient chaque clic
+deux fois).
+- **La pastille GARDE son aplat coloré** et ne devient pas le mot gris d'un
+  projet : il n'y a que DEUX états, et c'est la couleur qui les sépare d'un coup
+  d'œil dans une galerie de vingt. Elle change de nature, pas d'allure.
+- **La tuile a donc cessé d'être un lien qui enveloppe** — un bouton dans un lien
+  n'est ni valide ni cliquable. C'est un écouteur qui se retire dès que le clic a
+  touché un contrôle (`GESTES_TUILE`, liste EXPLICITE), **et le nom porte le
+  lien** : un écouteur ne se tabule pas.
+- **L'écriture est optimiste** : la pastille change de mot et les comptes des
+  filtres suivent avant que le réseau ait répondu.
 
-- **La spécificité, une neuvième fois.** Le hall du club, posé d'abord dans une
+**LA PAGE DU CLUB EST UN HALL DE CINQ PORTES.** Elle portait cinq rectangles
+avec un nom et une flèche : cinq lignes de menu redessinées, et le menu est déjà
+à un geste. La règle du hall de `#perso` vaut ici mot pour mot — **chaque porte
+doit dire quelque chose qu'on IGNORE avant de l'ouvrir**, et c'est le test à
+repasser le jour où une sixième arrive. Le tableau des cinq est dans
+`docs/fch-spec.md`.
+
+**UNE PORTE A TROIS ÉTAGES : l'illustration, le nom, le reste.** C'est l'ordre
+d'une tuile de livre. L'illustration est un **emplacement déclaré**
+(`porte(adresse, titre, compte, apercu, illustration)`) et non le premier élément
+de l'aperçu : sans lui, le nom ne pourrait pas se poser ENTRE les deux.
+
+**LE DOCK DEVIENT `Accueil · Com' · Partenaires · Club · Calendrier`.** Voir
+§ 0.3 pour les trois décisions qui l'ont fait.
+
+**LA TÊTE D'UNE FICHE MET LE LOGO À GAUCHE ET LE TEXTE À SA DROITE.** Empilés,
+la plaque, le nom, l'offre et l'état occupaient trois cents pixels **avant le
+premier engagement** — or c'est la liste qu'on vient lire.
+
+### § 0.3 — Les décisions de Noé, avec leur raison
+
+**À NE PAS « CORRIGER » EN CROYANT BIEN FAIRE** — chacune renverse quelque chose
+qui était écrit ailleurs, ou arbitre entre deux options.
+
+- **L'ORDRE D'UNE PORTE EST : illustration, nom, reste.** Noé a d'abord demandé
+  d'inverser l'illustration et le titre ; la première version a donc mis TOUT
+  l'aperçu au-dessus du nom (`column-reverse`). **Il a corrigé aussitôt** : le
+  titre passe entre les deux. *Ne pas revenir à `column-reverse` au motif que
+  « l'illustration doit être en haut » — elle l'est, et le nom aussi est monté.*
+- **L'ILLUSTRATION REMONTE PAR `order`, JAMAIS DANS LE DOM.** Le nom accessible
+  d'un lien est la suite de son contenu dans l'ordre du DOM : déplacée là, la
+  porte des partenaires s'annoncerait par ses cinq logos avant de dire ce qu'elle
+  ouvre. Rien ne se tabule à l'intérieur d'un lien, donc l'écart entre l'ordre lu
+  et l'ordre vu ne coûte rien. *Vérifié : « Tous les partenaires 20 ATOL
+  Valence… ».*
+- **LES ORGANIGRAMMES MONTRENT DES VISAGES, PAS LES NOMS DES GROUPES.**
+  « Présidence, Secrétariat, Trésorerie » sont les mots du MENU de cette page,
+  pas ce qu'on ignore avant de l'ouvrir — **on y vient chercher des gens.** Six
+  portraits qui se chevauchent, le bureau devant, puis « +38 ».
+  - `portrait()` est désormais **exportée** de `js/organigramme-fch.js` : une
+    seconde fenêtre SVG écrite à côté finirait par ne plus cadrer les visages
+    pareil.
+  - **L'anneau est une OMBRE PORTÉE et non une bordure** : elle ne prend pas de
+    place dans la boîte, donc le chevauchement se règle au seul `margin-left`.
+    Il suit la couleur de la porte au survol.
+- **LES RÉUNIONS SONT DU CLUB, PAS UNE DESTINATION.** Ce que leurs pages disent
+  — qui décide quoi, ce qui a été décidé, ce qui reste à tenir — est de la même
+  nature que l'organigramme et le projet : c'est la VIE du club. Elles deviennent
+  une porte du hall ; **leurs deux sous-pages restent derrière elles** (le hall à
+  deux gestes, les réunions à trois, les archives à quatre).
+- **LES PARTENAIRES SONT UNE DESTINATION**, et prennent l'onglet libéré. **Le
+  Club est ce que le club EST** — ses gens, son projet, ses créneaux, ses
+  décisions ; **les partenaires sont un CHANTIER de Noé**, avec ses engagements à
+  tenir et son argent.
+  - ⚠️ **CONSÉQUENCE DÉCIDÉE SANS LUI DEMANDER : le hall du club n'a plus de
+    porte partenaires.** Une porte vers un voisin du dock ferait deux chemins
+    pour un geste, et c'est le dock qui le porte. **Dit à Noé, qui ne s'y est pas
+    opposé — mais ne l'a pas confirmé non plus.** C'est la seule décision de la
+    session qui ne soit pas la sienne.
+- **« Com' » EST UNE ABRÉVIATION, PAS UN SECOND NOM** : la page et le menu disent
+  « Communication », comme l'onglet « Club » ouvre la rubrique « Le club ».
+  `liens` porte donc un quatrième champ facultatif, le titre de la page.
+  - **ET C'EST CE QUI SAUVE LA RÈGLE DES LARGEURS ÉGALES.** *Mesuré à 375 px :
+    cinq onglets reçoivent 67 px chacun et « Communication » en demandait 72 — le
+    mot débordait de son onglet et chevauchait « Partenaires ».* Les deux autres
+    sorties étaient de descendre le corps sous 9 px, où un mot n'est plus qu'une
+    trace, ou de laisser chaque onglet prendre la largeur de son mot — ce qui
+    aurait sorti ce dock de la grammaire des deux autres. *Une version avec
+    `flex: 0 1 auto` a existé dix minutes, retirée quand « Com' » est arrivé :
+    ne pas la remettre sans rouvrir cette question.*
+- **PLUS DE PHRASE D'INTRODUCTION sur la page du club.** « Les personnes, le
+  projet et les repères du FC Hermitage » nommait les portes juste en dessous, et
+  une porte qui montre ce qu'il y a derrière n'a plus besoin qu'on l'annonce.
+  *Décidé sans qu'il le demande, dit, non contesté.*
+- **`suivi-porte-*` EST DEVENU `fch-hall-*`** : le dessin sert deux halls, et un
+  second l'aurait recopié — c'est toujours la copie qu'on regarde le moins qui
+  finit par diverger. La porte des partenaires elle-même se dessine dans **une
+  seule fonction** (`porteDesPartenaires`), dont l'adresse et le nom sont les
+  seuls paramètres. *À ne pas confondre avec `.fch-portes`, la rangée de liens
+  qui ferme Communication et Les réunions : c'est une navigation de pied de page,
+  pas un hall.*
+- **LA PORTE DES RÉUNIONS MONTRE LA DERNIÈRE TENUE à défaut d'une prochaine.**
+  Elle a dit « Aucune réunion au calendrier » avec « 2 » juste à côté : vrai, et
+  deux lignes qui se contredisent dans la même tuile.
+
+### § 0.4 — Ce qui a été vérifié, et comment
+
+- **À l'écran, de 375 px à 935** : les trois pages partenaires, la fiche d'un
+  partenaire, le hall du club, ses cinq écrans, les quatre pages des réunions, le
+  menu du site, le dock. **Aucun onglet tronqué, aucun débordement, aucune erreur
+  console.**
+- **L'état d'un partenaire, en base** : MG+ passé en « virement en attente » (les
+  filtres sont passés de 7/13 à 8/12), rechargé, puis remis. Persisté des deux
+  côtés.
+- **Le nom accessible d'une porte**, après le passage par `order` : « Tous les
+  partenaires 20 ATOL Valence… » — le nom avant l'aperçu.
+- **`prochainEntrainement`, hors écran, sur les sept jours** : dimanche renvoie
+  au lundi, les six autres tombent sur « Aujourd'hui ».
+- **LE DÉPLOIEMENT GITHUB PAGES, en ligne** (ce qui clôt le point 7 du § 1.7) :
+  `https://noedelahaye-sketch.github.io/hub/` répond 200, `fch-hall` apparaît
+  17 fois dans `js/hermitage.js` servi, `suivi-fiche-texte` dans
+  `js/partenaires-suivi.js`, `flex-wrap: nowrap` deux fois dans `css/fch.css`.
+  **Les deux commits de la session sont publiés.**
+
+### § 0.5 — Les pièges payés (ils ne se devinent pas)
+
+- **LA SPÉCIFICITÉ, UNE NEUVIÈME FOIS.** Le hall du club, posé d'abord dans une
   `section.bloc` : au-delà de 60 rem, `.bloc ul` passe toute liste en grille de
-  21 rem et `.bloc li` dessine chaque ligne en carte — les créneaux et les
-  repères s'écartaient et s'indentaient dans leur porte. **Le hall EST la
-  section.**
-- **`overflow: hidden` sur une tuile de partenaire** coupait son menu d'état en
-  deux. La plaque du logo se découpe déjà seule ; le rayon est passé sur la
-  surface.
-- **Le menu d'état calé à droite** sortait de l'écran sur la fiche, où la
-  pastille est au ras de la marge (*mesuré : −83 px*). `placerLePanneau` sait
-  déjà le retourner : on lui rend la main.
+  21 rem et `.bloc li` dessine chaque ligne comme une carte — **les créneaux et
+  les repères s'écartaient et s'indentaient dans leur porte.** Le hall EST la
+  section (`<section class="fch-hall">`), et c'est déjà pour ça que celui des
+  partenaires vit hors des blocs.
+- **`flex-wrap` SE REDIT AUSSI.** La ligne d'un engagement déclarait
+  `flex-direction: row` mais pas `nowrap` : une règle plus générale passe les
+  lignes du hub en `wrap`, et le texte, qui prend toute la place restante, se
+  jetait sur sa propre ligne — le rond seul en haut, la croix seule en bas.
+  *Mesuré à 375 px : un texte de 287 px dans une ligne de 287.* **Le défaut
+  existait avant la session et ne se voyait que sur téléphone.**
+- **`overflow: hidden` SUR UNE TUILE DE PARTENAIRE** coupait son menu d'état en
+  deux — une option visible sur les deux. La plaque du logo se découpe déjà
+  toute seule ; le rayon est passé sur la surface, pour que le survol garde les
+  angles.
+- **LE MENU D'ÉTAT CALÉ À DROITE sortait de l'écran sur la fiche**, où la
+  pastille est au ras de la marge. *Mesuré : `left: −83 px`.* `placerLePanneau`
+  sait déjà retourner un panneau qui déborde : on lui rend la main plutôt que de
+  forcer un alignement.
+- **UN NOM QUI SE RÉPÈTE N'IDENTIFIE PAS UNE LIGNE** — erreur de MÉTHODE, pas de
+  code. En vérifiant la coche d'un engagement, mon script de nettoyage cherchait
+  la ligne par le nom de l'entreprise, et « CARROSSERIE SAVIN » apparaît dans
+  douze chantiers : il a décoché une AUTRE ligne que celle qu'il venait de
+  cocher, laissant **deux engagements cochés en base**. Remis à zéro et
+  revérifié (`0/70`).
 
-### Ce qui a été vérifié, et comment
+### § 0.6 — PAR OÙ REPRENDRE (du plus périssable au moins pressé)
 
-- **À l'écran, de 375 px à 935** : les trois pages partenaires, le hall du club,
-  ses cinq écrans, les quatre pages des réunions, le menu du site. Aucun onglet
-  tronqué, aucun débordement, aucune erreur console.
-- **L'état d'un partenaire, en base** : MG+ passé en « virement en attente »
-  (les filtres sont passés de 7/13 à 8/12), rechargé, puis remis. Persisté des
-  deux côtés.
-- **`prochainEntrainement`, hors écran, sur les sept jours** — dimanche renvoie
-  au lundi.
-- **Une bavure de test, réparée** : en vérifiant la coche d'un engagement, mon
-  script de nettoyage cherchait la ligne par le nom de l'entreprise, et
-  « CARROSSERIE SAVIN » apparaît dans douze chantiers — il a décoché une autre
-  ligne que celle qu'il venait de cocher, laissant **deux engagements cochés en
-  base**. Remis à zéro et revérifié (`0/70`). *Chercher une ligne par un nom qui
-  se répète est une erreur de méthode, pas de code.*
+**Ce qui était périssable l'est moins : tout est poussé et vérifié en ligne.**
+Les points 1 et 7 du § 1.7 sont clos. Restent, du plus pressé au moins :
 
-### À SAVOIR POUR LA SUITE
+1. **CONFIRMER AVEC NOÉ : le hall du club n'a plus de porte partenaires.**
+   C'est la seule décision de la session qui ne soit pas la sienne (§ 0.3). La
+   remettre coûte une ligne — `porteDesPartenaires(etat.partenairesSuivi, …)`
+   dans `hallDuClub`.
+2. **QUATRE ENGAGEMENTS SONT COCHÉS EN BASE, datés du 16 septembre** — « Publier
+   le post dédié sur les réseaux », « Faire poser le panneau autour du stade »
+   (deux fois), « Donner le naming principal du Tournoi Rose ». **Ce ne sont PAS
+   les miens** : j'avais revérifié `0/70` après mon nettoyage, et les libellés
+   diffèrent. Ils viennent vraisemblablement de Noé, qui cochait pendant la
+   session. **Ne pas les décocher sans lui demander.**
+3. **LES LOGOS MANQUANTS — 13 SUR 20**, *recompté en base le 16 septembre au
+   soir.* Sept en ont un : ATOL Valence, CARROSSERIE SAVIN, INFORMATIQUE CHEZ
+   VOUS, MAX ELEC, MG+, PROCLEAR, Sovanet. Manquent : BIA, Domaine Du Murinais,
+   Emma Liconnet EI, GESTAL, L'Échappée Fleurie, La Milanaise, Le BM, Le Domaine
+   les Alexandrins, Netto Tain-l'Hermitage, NEVIM, SOLUWASTE, STURM, VERDEIS. **Deux rapprochements ont
+   été ÉCARTÉS plutôt que devinés** et attendent sa réponse : « MENELEC » n'est
+   pas MAX ELEC, « SOLUVIA » n'est pas SOLUWASTE. `STURM.pdf` est un flyer, pas
+   un logo.
+4. **LE SUIVI DES PARTENAIRES N'A TOUJOURS NI MODIFICATION NI SUPPRESSION.** Le
+   point 6 du § 1.7 est **à moitié clos** : l'état se change désormais d'un
+   geste. **Le montant, l'offre, la commune, le CERFA et les notes ne se
+   corrigent toujours pas**, et un partenaire ne se supprime pas depuis l'écran.
+   `modifierPartenaire` et `supprimerPartenaire` existent dans `js/api.js` et ne
+   sont appelées nulle part pour ça ; `FORMULAIRES` du site porte déjà les champs
+   de création.
+5. **La valeur « Transmission » n'a pas de carrousel exporté.** Sa définition
+   vient de la réunion n° 2 ; les cinq autres viennent du carrousel public.
+   *`Slide 2 _ Transmission.png` est un doublon de celui du Respect, au octet
+   près.*
+6. **Deux portraits différents portent le nom « Christophe Lucchetta »** (bureau
+   et sportif). Le hub garde celui du bureau. **À faire trancher par le club.**
+7. **Les trois portraits « Thibault CARTERON » ne se ressemblent pas** non plus.
+   Noé a confirmé que Kepo EST Thibault ; le hub garde celui des commissions.
 
-**Le hash de la page a changé trois fois entre deux appels d'outil sans que je
-navigue** — de la liste au hall, puis aux offres. Si c'était Noé qui pilotait
-l'aperçu en même temps, c'est normal ; sinon, ça vaut un coup d'œil. Ça m'a fait
-mesurer « 0 coché » sur une page déjà quittée et conclure un instant, à tort, que
-l'écran mentait.
+### § 0.7 — Ce qui est TRANCHÉ et sort des questions ouvertes
 
----
+- **Le point 1 du § 1.7 (« pousser ») est clos** : poussé le 16 septembre au
+  soir, et le déploiement est vérifié en ligne (§ 0.4).
+- **Le point 7 du § 1.7 (« vérifier GitHub Pages ») est clos**, pour la même
+  raison.
+- **Le point 6 du § 1.7 est à moitié clos** : l'état se change, le reste non
+  (voir § 0.6, point 4). *Il reste donc dans les questions ouvertes, reformulé.*
+- **La forme des halls du site n'est plus à inventer** : `fch-hall-*` est le
+  dessin, et il sert les deux. Une troisième porte ailleurs le reprend.
+- **La question du nombre d'onglets du dock FCH est tranchée** : cinq, et
+  lesquels. *`docs/fch-spec.md` § « LE DOCK, REFONDU LE 16 SEPTEMBRE 2026 » porte
+  les trois décisions et leur raison.*
 
-## § 0 — Relais du 16 septembre au SOIR (organigrammes, projet du club, partenaires)
+## § 1 — Relais du 16 septembre au SOIR (organigrammes, projet du club, partenaires)
 
 **Tout est commité sur `main`.** Huit commits, de `b79e124` à `0994277`.
-*(Ils ont été poussés depuis, avec la session du § 00 — la phrase d'origine,
+*(Ils ont été poussés depuis, avec la session du § 0 — la phrase d'origine,
 « rien n'est poussé », ne vaut plus.)*
 
     b79e124  Un portrait individuel par personne dans « Qui fait quoi »
@@ -117,7 +309,7 @@ Le détail de chaque écran vit dans **`docs/fch-spec.md`**, qui fait autorité 
 a été mis à jour à chaque commit. Ce relais ne le recopie pas : il dit ce qui a
 été DÉCIDÉ, ce qui a été VÉRIFIÉ, et ce qui reste ouvert.
 
-### § 0.1 — Les organigrammes (ex-« Qui fait quoi »)
+### § 1.1 — Les organigrammes (ex-« Qui fait quoi »)
 
 - **Un portrait individuel par personne**, pris dans les exports découpés du
   club, à la place des fenêtres SVG taillées dans les photos de groupe.
@@ -144,7 +336,7 @@ a été mis à jour à chaque commit. Ce relais ne le recopie pas : il dit ce qu
   du bureau (Coprésident, Trésorier), qui est un TITRE et que rien d'autre ne
   dirait.
 
-### § 0.2 — Le projet du club
+### § 1.2 — Le projet du club
 
 Trois étages, dans l'ordre où le club les a écrits en quatre réunions : la
 mission dit POURQUOI, les valeurs COMMENT on se tient, les objectifs VERS QUOI
@@ -162,7 +354,7 @@ on va. Données dans `js/projet-fch.js`, écran dans `js/projet-club.js`.
   quels. Les trois objectifs de l'AG restent à part, leurs mots n'étant pas ceux
   du tableau.
 
-### § 0.3 — Les partenaires : un hall à trois portes
+### § 1.3 — Les partenaires : un hall à trois portes
 
 **La page n'est plus un annuaire, c'est un suivi d'engagements.** Le carnet n'a
 pas disparu : ces contacts vivent toujours dans le réseau de Yuno, qui est la
@@ -191,7 +383,7 @@ même table.
   plaque BLANCHE (ceux du club sont dessinés pour du papier). Sans logo, la
   tuile porte le nom sur une plaque pointillée.
 
-### § 0.4 — Les décisions de Noé, avec leur raison
+### § 1.4 — Les décisions de Noé, avec leur raison
 
 **Celles qui ont fait un aller-retour sont marquées ⟲ : une session future ne
 doit pas les « corriger » en croyant bien faire.**
@@ -221,7 +413,7 @@ doit pas les « corriger » en croyant bien faire.**
   n'ont pas de commission ; le secrétariat, la trésorerie, la buvette et la
   présidence n'ont pas de pôle.
 
-### § 0.5 — Ce qui a été vérifié, et comment
+### § 1.5 — Ce qui a été vérifié, et comment
 
 - `node tools/verifier-organigramme-fch.js` — **44 fiches, 23 groupes** :
   photos, cadrages carrés, rôles, cache, un portrait par personne, absence de
@@ -239,7 +431,7 @@ doit pas les « corriger » en croyant bien faire.**
 - **Aucun logo ni montant privé dans le code public** : contrôlé par `grep`
   avant chaque commit.
 
-### § 0.6 — Les pièges payés (ils ne se devinent pas)
+### § 1.6 — Les pièges payés (ils ne se devinent pas)
 
 1. **`var()` sur un jeton INEXISTANT annule toute la déclaration, en silence.**
    `--espace-20` n'existe pas (l'échelle est 4, 8, 12, 16, 24, 32, 48) :
@@ -263,7 +455,11 @@ doit pas les « corriger » en croyant bien faire.**
    désignait à la fois l'offre d'un partenaire et une carte du catalogue. Le
    grep de trois secondes vaut aussi à l'intérieur d'un fichier neuf.
 
-### § 0.7 — PAR OÙ REPRENDRE (du plus périssable au moins pressé)
+### § 1.7 — PAR OÙ REPRENDRE (du plus périssable au moins pressé)
+
+> **DÉPASSÉ — lire le § 0.6.** Les points 1 et 7 sont clos (poussé, déploiement
+> vérifié), le point 6 est à moitié clos (l'état d'un partenaire se change
+> désormais). Les autres restent ouverts et sont repris là-haut.
 
 1. **POUSSER, si Noé le demande.** Huit commits attendent sur `main`. Le dépôt
    est servi par GitHub Pages : pousser publie. *Rien n'a été poussé de la
@@ -297,7 +493,7 @@ doit pas les « corriger » en croyant bien faire.**
    de « virement en attente » à « partenaire du club ».
 7. **Le déploiement GitHub Pages reste à vérifier** après le push.
 
-### § 0.8 — Ce qui est TRANCHÉ et sort des questions ouvertes
+### § 1.8 — Ce qui est TRANCHÉ et sort des questions ouvertes
 
 - **« Qui fait quoi » n'est plus une question ouverte de nommage** : la page
   s'appelle « Les organigrammes », partout.
@@ -312,7 +508,7 @@ doit pas les « corriger » en croyant bien faire.**
 - **Les portraits de l'organigramme ne sont plus des découpes** : les cinq
   photos de groupe et `kepo.png` ont été supprimées du dépôt.
 
-## § 1 — Relais du 16 septembre, APRÈS-MIDI (FCH, tuiles et organigrammes)
+## § 2 — Relais du 16 septembre, APRÈS-MIDI (FCH, tuiles et organigrammes)
 
 ### État final — 16 septembre 2026
 
@@ -396,7 +592,7 @@ mise en documentation, son commit et son push ; ce relais accompagne ce lot.
 
 ### Historique précédent
 
-## § 2 — Relais du 16 septembre, MATIN (Créer refondue, le morph du « + », le clavier, le dock)
+## § 3 — Relais du 16 septembre, MATIN (Créer refondue, le morph du « + », le clavier, le dock)
 
 **Historique antérieur au relais FCH ci-dessus.** Sept chantiers, dont quatre
 nés d'un défaut que Noé a vu sur son téléphone. **Tout est commité et poussé**,
@@ -663,7 +859,7 @@ sa raison finit toujours par en casser une autre.*
 
 ---
 
-## § 3 — Relais du 15 septembre, SOIR (l'accueil de Yuno, les modèles, les préparations)
+## § 4 — Relais du 15 septembre, SOIR (l'accueil de Yuno, les modèles, les préparations)
 
 **Elle a été remplacée en tête par « Relais — 16 septembre ».** Quatre chantiers,
 tous sur le site Yuno, tous menés par des demandes de Noé corrigées au fil de l'écran.
@@ -856,7 +1052,7 @@ Détail dans **`yuno-spec.md`, « `#yuno/preparations` »**.
 ---
 
 
-## § 4 — Relais du 15 septembre, après-midi (navigation, typographie, événements)
+## § 5 — Relais du 15 septembre, après-midi (navigation, typographie, événements)
 
 Cette section décrit la session la plus récente et prime sur les descriptions
 historiques de navigation et de typographie plus bas dans ce document.

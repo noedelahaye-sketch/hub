@@ -725,6 +725,60 @@ body[data-espace="hermitage"] .saison-poser {
    Trois étages : la mission dit POURQUOI, les valeurs COMMENT on se tient, les
    objectifs VERS QUOI on va. C'est l'ordre dans lequel le club les a écrits. */
 
+.evenement-repere { display: flex; flex-direction: column; gap: 4px; color: var(--texte-discret); font-size: 0.75rem; }
+.evenement-jour { color: var(--accent); font-family: var(--police-titre); font-weight: 800; font-size: 2rem; line-height: 1.1; }
+.evenement-entete { display: flex; align-items: center; gap: 24px; margin: 8px 0 24px; }
+.evenement-entete > .evenement-repere { flex: none; padding-right: 24px; border-right: 1px solid var(--bordure); }
+body[data-espace="hermitage"] #vue .evenement-entete h2 { margin: 0; font-size: clamp(1.3rem, 3vw, 1.8rem); line-height: 1.2; text-transform: none; letter-spacing: -0.02em; color: #fff; }
+.evenement-entete p { margin: 8px 0 0; color: var(--texte-discret); font-size: 0.875rem; }
+.evenement-bilan { display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.8125rem; color: var(--texte-discret); }
+.evenement-bilan strong { color: #fff; font-family: var(--police-chiffre); }
+.evenement-outils { margin-bottom: 24px; }
+.evenement-fiche .evenement-communication { margin-top: 24px; }
+.evenement-publications { margin-top: 20px; }
+.evenement-vide { padding: 16px; border: 1px dashed var(--bordure); border-radius: 18px; line-height: 1.5; }
+@media (max-width: 420px) {
+  .evenement-entete { align-items: flex-start; gap: 16px; }
+  .evenement-entete > .evenement-repere { padding-right: 12px; max-width: 7rem; }
+}
+.projet-club-accueil { display: grid; gap: var(--espace-16); }
+.projet-club-resume { margin-bottom: 0; }
+.projet-club-surtitre {
+  margin: 0 0 var(--espace-8); font-size: 0.6875rem; font-weight: 800;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--texte-discret);
+}
+.projet-club-resume > p:last-child {
+  max-width: 42rem; margin: 0; color: var(--texte-discret); line-height: 1.55;
+}
+.projet-club-accueil > .bloc { margin: 0; }
+.bloc li.projet-club-objectif-lien { display: block; padding: 0; border: 0; background: none; }
+.projet-club .fch-hall-porte { height: 100%; box-sizing: border-box; }
+.projet-club .fch-hall-tete { flex-wrap: wrap; }
+.projet-club-valeurs-resume { display: flex; flex-wrap: wrap; gap: 8px; }
+.projet-club-valeurs-resume a {
+  padding: 7px 11px; border-radius: 10px; background: var(--fond-carte);
+  font-size: 0.8125rem; color: var(--texte); text-decoration: none;
+}
+.projet-club-valeurs-resume a.principale { color: var(--accent); font-weight: 700; }
+.projet-club-valeurs-resume a:hover { background: rgb(255 255 255 / 12%); }
+.projet-club-valeurs-resume a:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.bloc ol.projet-club-priorites-resume {
+  display: grid; gap: 10px; list-style: none; margin: 0; padding: 0;
+}
+.bloc .projet-club-priorites-resume li {
+  display: flex; align-items: baseline; gap: 12px; padding: 0;
+  background: none; border: 0; font-size: 0.875rem; line-height: 1.4;
+}
+.projet-club-priorites-resume li > span {
+  color: var(--accent); font-family: var(--police-chiffre); font-size: 0.75rem;
+}
+.fch-portes.projet-club-acces { grid-template-columns: 1fr; }
+.fch-portes.projet-club-acces .lien-externe { padding: 12px 16px; font-size: 0.8125rem; }
+@media (min-width: 60rem) {
+  .fch-portes.projet-club-acces { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+.projet-club-retour { display: inline-block; margin: var(--espace-12) 0 var(--espace-16); }
+
 .projet-club-phrase {
   margin: 0 0 var(--espace-12);
   font-family: var(--police-titre);
@@ -757,9 +811,6 @@ body[data-espace="hermitage"] .saison-poser {
 .projet-club-repli { margin-top: var(--espace-16); font-size: 0.875rem; }
 .projet-club-repli summary { cursor: pointer; color: var(--texte-discret); }
 .projet-club-repli[open] summary { margin-bottom: var(--espace-12); }
-.projet-club-criteres { display: grid; gap: var(--espace-8); margin: 0 0 var(--espace-12); }
-.projet-club-criteres dt { font-weight: 700; color: #fff; }
-.projet-club-criteres dd { margin: 0; color: var(--texte-discret); line-height: 1.5; }
 
 /* --- Les six valeurs ----------------------------------------------------------
    LA COULEUR NE PORTE PAS L'IDENTITÉ, le rang et le nom la portent : les six
@@ -865,11 +916,6 @@ body[data-espace="hermitage"] #vue .projet-club-horizon > h3 {
   color: var(--texte-discret);
 }
 
-.bloc ul.projet-club-ag { display: grid; gap: var(--espace-8); margin: 0; }
-.projet-club-ag li {
-  padding: var(--espace-12); border: 0; border-left: 3px solid var(--axe-couleur);
-  border-radius: 0 12px 12px 0; background: var(--fond-carte);
-}
 .bloc ul.projet-club-libres { display: grid; gap: var(--espace-8); margin: 0; }
 /* En grille, l'émoji et le titre deviennent deux rangs : un nœud de texte est
    un élément de grille comme un autre. En flux, ils restent une phrase. */

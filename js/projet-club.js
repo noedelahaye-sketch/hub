@@ -13,11 +13,95 @@ import {
   OBJECTIFS_FCH, PROJETS_LIBRES_FCH, AG_2026,
 } from './projet-fch.js';
 import { echapper } from './format.js';
+import { porte } from './partenaires-suivi.js';
 
 const ADRESSE = '#hermitage/projet-club';
 const axeDe = (id) => AXES_FCH.find((a) => a.id === id);
 const poleDe = (id) => POLES_FCH.find((p) => p.id === id);
 export const valeurDe = (id) => VALEURS_FCH.find((v) => v.id === id);
+const objectifDe = (id) => OBJECTIFS_FCH.find((o) => `objectif-${o.id}` === id);
+const slugProjet = (titre) => titre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const projetsDuClub = [
+  ...OBJECTIFS_FCH.flatMap((o) => o.projets.map((titre) => ({
+    id: `${o.id}-${slugProjet(titre)}`, titre, objectif: o.id, poles: o.poles, echeances: o.echeances,
+  }))),
+  ...PROJETS_LIBRES_FCH.map((p) => ({ ...p, id: `libre-${slugProjet(p.titre)}`, echeances: p.echeance ? [p.echeance] : [] })),
+];
+const projetDe = (id) => projetsDuClub.find((p) => `projet-${p.id}` === id);
+const horizons = (item) => ECHEANCES_FCH.filter((e) => item.echeances.includes(e.id)).map((e) => `${e.nom} · ${e.quand}`).join(' / ');
+function tuileObjectif(o, titre = o.titre) {
+  return porte(`${ADRESSE}/objectif-${o.id}`, titre, `${o.projets.length} projet${o.projets.length > 1 ? 's' : ''}`,
+    `<span class="fch-hall-quoi">${echapper(o.indicateur || o.axes.map(axeDe).map((a) => a.nom).join(' · '))}</span>`);
+}
+function tuileProjet(p) {
+  return porte(`${ADRESSE}/projet-${p.id}`, p.titre, '',
+    `<span class="fch-hall-quoi">${echapper(p.objectif ? OBJECTIFS_FCH.find((o) => o.id === p.objectif).titre : 'Projet à rattacher à un objectif')}</span>`);
+}
+function ficheObjectif(o) {
+  const projets = projetsDuClub.filter((p) => p.objectif === o.id);
+  return `<article class="projet-club">
+    <a class="lien-discret projet-club-retour" href="${ADRESSE}/objectifs">← Tous les objectifs</a>
+    <header class="valeur-tete" style="--valeur-couleur:${axeDe(o.axes[0]).couleur}">
+      <p class="valeur-rang">Objectif du club · ${echapper(horizons(o))}</p>
+      <h2>${echapper(o.titre)}</h2>
+      <p class="projet-club-marques">${o.poles.map(pastillePole).join('')}</p>
+    </header>
+    <section class="bloc"><h2>Le cap</h2><p>${o.axes.map(axeDe).map((a) => echapper(a.nom)).join(' · ')}</p>
+      ${o.indicateur ? `<h3>Ce qu’on regarde</h3><p>${echapper(o.indicateur)}</p>` : ''}</section>
+    <section class="bloc fch-sans-tuile"><h2>Les projets associés</h2>
+      ${projets.length ? `<div class="fch-hall">${projets.map(tuileProjet).join('')}</div>` : '<p class="discret">Aucun projet associé pour le moment.</p>'}</section>
+    ${retourAuProjet()}</article>`;
+}
+function ficheProjet(p) {
+  const o = OBJECTIFS_FCH.find((o) => o.id === p.objectif);
+  return `<article class="projet-club">
+    <a class="lien-discret projet-club-retour" href="${ADRESSE}/${o ? `objectif-${o.id}` : 'projets'}">← ${o ? 'L’objectif associé' : 'Tous les projets'}</a>
+    <header class="valeur-tete" style="--valeur-couleur:${o ? axeDe(o.axes[0]).couleur : '#4070e0'}">
+      <p class="valeur-rang">Projet du club</p><h2>${echapper(p.titre)}</h2>
+      ${p.echeances.length ? `<p>${echapper(horizons(p))}</p>` : ''}
+      <p class="projet-club-marques">${p.poles.map(pastillePole).join('')}</p></header>
+    ${p.note ? `<section class="bloc"><h2>Repères</h2><p>${echapper(p.note)}</p></section>` : ''}
+    <section class="bloc fch-sans-tuile"><h2>L’objectif auquel il contribue</h2>
+      ${o ? tuileObjectif(o) : '<p class="discret">Ce projet n’est pas encore rattaché à un objectif.</p>'}</section>
+    <section class="bloc"><h2>Organisation</h2><p class="discret">Responsable, étapes et dates de réalisation restent à préciser.</p></section>
+    ${retourAuProjet()}</article>`;
+}
+
+function retourAuProjet() {
+  return `<a class="lien-discret projet-club-retour" href="${ADRESSE}">← Le projet du club</a>`;
+}
+
+// La première page ne cherche plus à tout raconter. Elle donne le cap, puis
+// laisse choisir le niveau de détail : pourquoi, comment, vers quoi.
+function accueilDuProjet() {
+  return `<div class="projet-club projet-club-accueil">
+    <section class="bloc projet-club-resume">
+      <p class="projet-club-surtitre">Notre cap</p>
+      <p class="projet-club-phrase">${echapper(MISSION_FCH.phrase)}</p>
+      <p>Le jeu nous permet de grandir et de nous épanouir. Le plaisir est au centre
+        de tout, notre histoire nous rassemble et nos valeurs guident nos actions.</p>
+    </section>
+    <section class="bloc projet-club-essentiel">
+      <h2>Les valeurs qui nous guident</h2>
+      <p class="projet-club-service">★ Nos trois valeurs principales</p>
+      <div class="projet-club-valeurs-resume">${VALEURS_FCH.map((v) => `
+        <a href="${ADRESSE}/${v.id}" class="${v.principale ? 'principale' : ''}">
+          ${v.principale ? '<span aria-label="Valeur principale">★</span> ' : ''}${echapper(v.nom)}</a>`).join('')}
+      </div>
+    </section>
+    <section class="bloc projet-club-essentiel">
+      <h2>Les trois priorités de cette saison</h2>
+      <div class="fch-hall">${AG_2026.retenus.map(([titre], i) =>
+        tuileObjectif(OBJECTIFS_FCH.find((o) => o.id === ['encadrement', 'benevoles', 'sponsors'][i]), titre)).join('')}</div>
+    </section>
+    <nav class="fch-hall" aria-label="Le projet en détail">
+      ${porte(`${ADRESSE}/mission`, 'La mission', '', '<span class="fch-hall-quoi">Transmettre l’envie de jouer et les quatre piliers qui nous guident.</span>')}
+      ${porte(`${ADRESSE}/valeurs`, 'Les valeurs', '6', '<span class="fch-hall-quoi">Leur sens au club et les comportements qui les font vivre.</span>')}
+      ${porte(`${ADRESSE}/objectifs`, 'Tous les objectifs', `${OBJECTIFS_FCH.length}`, '<span class="fch-hall-quoi">Les caps du club à un, trois et cinq ans.</span>')}
+      ${porte(`${ADRESSE}/projets`, 'Les projets', `${projetsDuClub.length}`, '<span class="fch-hall-quoi">Les actions prévues pour concrétiser le projet du club.</span>')}
+    </nav>
+  </div>`;
+}
 
 // ── LA MISSION ────────────────────────────────────────────────────────────────
 
@@ -28,14 +112,6 @@ function mission() {
     <p class="projet-club-phrase">${echapper(m.phrase)}</p>
     <p class="projet-club-developpee">${echapper(m.developpee)}</p>
     <ul class="projet-club-piliers">${m.piliers.map((p) => `<li>${echapper(p)}</li>`).join('')}</ul>
-    <details class="projet-club-repli">
-      <summary>Pourquoi cette phrase-là</summary>
-      <dl class="projet-club-criteres">${m.criteres.map(([nom, quoi]) => `
-        <div><dt>${echapper(nom)}</dt><dd>${echapper(quoi)}</dd></div>`).join('')}</dl>
-      <p class="discret">Trois autres missions étaient en balance, une par priorité possible :</p>
-      <dl class="projet-club-criteres">${m.ecartees.filter((e) => !e[0].includes('associative')).map(([nom, quoi]) => `
-        <div><dt>${echapper(nom)}</dt><dd>${echapper(quoi)}</dd></div>`).join('')}</dl>
-    </details>
   </section>`;
 }
 
@@ -73,19 +149,8 @@ function pastillePole(id) {
 // LE FILET DE GAUCHE DIT L'AXE, la pastille dit le pôle. Deux canaux, chacun
 // son travail : l'axe est la grande famille (quatre), le pôle est le sujet
 // (neuf). Les mêler sur un seul signe aurait demandé treize couleurs.
-function carteObjectif(o, echeance) {
-  const axes = o.axes.map(axeDe).filter(Boolean);
-  const autres = o.echeances.filter((e) => e !== echeance);
-  const horizon = ECHEANCES_FCH.filter((e) => autres.includes(e.id)).map((e) => e.nom);
-  return `<li class="projet-club-objectif" style="--axe-couleur:${axes[0]?.couleur ?? '#8d93a3'}">
-    <p class="projet-club-objectif-titre">${o.emoji ? `<span aria-hidden="true">${o.emoji}</span> ` : ''}${echapper(o.titre)}</p>
-    <p class="projet-club-marques">${o.poles.map(pastillePole).join('')}${
-      horizon.length ? `<span class="projet-club-aussi">aussi à ${echapper(horizon.join(' et '))}</span>` : ''}</p>
-    <p class="projet-club-axe">${axes.map((a) => echapper(a.nom)).join(' · ')}</p>
-    ${o.indicateur ? `<p class="projet-club-indicateur"><span>Ce qu’on regarde</span> ${echapper(o.indicateur)}</p>` : ''}
-    ${o.projets.length ? `<ul class="projet-club-projets">${
-      o.projets.map((p) => `<li>${echapper(p)}</li>`).join('')}</ul>` : ''}
-  </li>`;
+function carteObjectif(o) {
+  return `<li class="projet-club-objectif-lien">${tuileObjectif(o)}</li>`;
 }
 
 function colonneEcheance(e, pole) {
@@ -105,12 +170,16 @@ function colonneEcheance(e, pole) {
 // bibliothèque, appliquée ici.
 function filtres(pole) {
   const vivants = POLES_FCH.filter((p) => OBJECTIFS_FCH.some((o) => o.poles.includes(p.id)));
-  const bouton = (id, nom, compte) => `<a href="${ADRESSE}${id ? `/pole-${id}` : ''}"
-      class="${pole === id ? 'actif' : ''}" ${pole === id ? 'aria-current="page"' : ''}
-      ${id ? `style="--pole-couleur:${poleDe(id).couleur}"` : ''}>${echapper(nom)}${
+  const bouton = (id, nom, compte) => {
+    const tous = id === 'objectifs';
+    const actif = tous ? !pole : pole === id;
+    return `<a href="${ADRESSE}/${tous ? 'objectifs' : `pole-${id}`}"
+      class="${actif ? 'actif' : ''}" ${actif ? 'aria-current="page"' : ''}
+      ${tous ? '' : `style="--pole-couleur:${poleDe(id).couleur}"`}>${echapper(nom)}${
       compte === null ? '' : ` <span class="projet-club-compte">${compte}</span>`}</a>`;
+  };
   return `<nav class="projet-club-filtres" aria-label="Filtrer les objectifs par pôle">
-    ${bouton(null, 'Tous les pôles', OBJECTIFS_FCH.length)}
+    ${bouton('objectifs', 'Tous les pôles', OBJECTIFS_FCH.length)}
     ${vivants.map((p) => bouton(p.id, p.nom, OBJECTIFS_FCH.filter((o) => o.poles.includes(p.id)).length)).join('')}
   </nav>`;
 }
@@ -122,17 +191,10 @@ function objectifs(pole) {
     ${filtres(pole)}
     <div class="projet-club-horizons">${ECHEANCES_FCH.map((e) => colonneEcheance(e, pole)).join('')}</div>
     <details class="projet-club-repli">
-      <summary>Les trois objectifs présentés à l’assemblée générale</summary>
-      <p class="discret">${echapper(AG_2026.quand)}.</p>
-      <ul class="projet-club-ag">${AG_2026.retenus.map(([titre, axe]) => `
-        <li style="--axe-couleur:${axeDe(axe).couleur}"><strong>${echapper(titre)}</strong>
-        <span class="projet-club-axe">${echapper(axeDe(axe).nom)}</span></li>`).join('')}</ul>
-    </details>
-    <details class="projet-club-repli">
       <summary>Les projets qui n’ont pas encore d’objectif <span class="projet-club-compte">${PROJETS_LIBRES_FCH.length}</span></summary>
       <p class="discret">Des idées posées au tableau, gardées telles quelles : une idée qui attend son objectif reste une idée.</p>
       <ul class="projet-club-libres">${PROJETS_LIBRES_FCH.map((p) => `
-        <li class="projet-club-libres-item">${p.emoji ? `<span aria-hidden="true">${p.emoji}</span> ` : ''}${echapper(p.titre)}
+        <li class="projet-club-libres-item"><a href="${ADRESSE}/projet-libre-${slugProjet(p.titre)}">${echapper(p.titre)}</a>
           <span class="projet-club-marques">${p.poles.map(pastillePole).join('')}${
             p.echeance ? `<span class="projet-club-aussi">${echapper(ECHEANCES_FCH.find((e) => e.id === p.echeance).nom)}</span>` : ''}</span>
           ${p.note ? `<span class="discret">${echapper(p.note)}</span>` : ''}</li>`).join('')}</ul>
@@ -181,19 +243,37 @@ function ficheValeur(v) {
 // ── L'ASSEMBLAGE ──────────────────────────────────────────────────────────────
 
 export function construireProjetClub(selection) {
+  const objectif = objectifDe(selection);
+  if (objectif) return ficheObjectif(objectif);
+  const projet = projetDe(selection);
+  if (projet) return ficheProjet(projet);
+  if (selection === 'projets') return `<div class="projet-club">${retourAuProjet()}
+    <section class="bloc fch-sans-tuile"><h2>Les projets du club</h2><div class="fch-hall">${projetsDuClub.map(tuileProjet).join('')}</div></section></div>`;
   const v = valeurDe(selection);
   if (v) return ficheValeur(v);
   const pole = typeof selection === 'string' && selection.startsWith('pole-')
     ? selection.slice(5) : null;
-  return `<div class="projet-club">
-    ${mission()}
-    ${valeurs()}
-    ${objectifs(poleDe(pole) ? pole : null)}
-  </div>`;
+  if (!selection) return accueilDuProjet();
+  if (selection === 'mission') return `<div class="projet-club">${retourAuProjet()}${mission()}</div>`;
+  if (selection === 'valeurs') return `<div class="projet-club">${retourAuProjet()}${valeurs()}</div>`;
+  if (selection === 'objectifs' || poleDe(pole)) {
+    return `<div class="projet-club">${retourAuProjet()}${objectifs(poleDe(pole) ? pole : null)}</div>`;
+  }
+  return accueilDuProjet();
 }
 
 // Le titre du navigateur et celui de la barre : une valeur ouverte porte son
 // nom, comme une fiche de personne porte le sien.
 export function titreDuProjet(selection) {
-  return valeurDe(selection)?.nom ?? null;
+  if (objectifDe(selection)) return 'Objectif du club';
+  if (projetDe(selection)) return 'Projet du club';
+  if (selection === 'projets') return 'Les projets';
+  const valeur = valeurDe(selection);
+  if (valeur) return valeur.nom;
+  if (selection === 'mission') return 'La mission';
+  if (selection === 'valeurs') return 'Les valeurs';
+  if (selection === 'objectifs' || (typeof selection === 'string' && selection.startsWith('pole-'))) {
+    return 'Les objectifs';
+  }
+  return null;
 }
