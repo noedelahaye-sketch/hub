@@ -46,7 +46,10 @@ function pastilleDeRole(g, id) {
     style="--orga-couleur:${g.couleur}" title="${echapper(dit)}">${chef ? ETOILE : ''}<span
     class="hors-ecran">${echapper(chef ? 'Responsable · ' : 'Membre · ')}</span>${echapper(etiquetteDe(g, id))}</span></li>`;
 }
-function portrait(p) {
+// EXPORTÉ parce que le hall du club en montre une pile (16 septembre 2026) : un
+// portrait se découpe d'une seule façon, et une seconde fenêtre SVG écrite à
+// côté finirait par ne plus cadrer les visages pareil.
+export function portrait(p) {
   if (!p.photo) return `<span class="orga-photo orga-initiales" aria-hidden="true">${echapper(p.nom[0])}</span>`;
   const { src, cadre, largeur, hauteur } = p.photo;
   // Fenêtre SVG sur le portrait original : aucun visage retouché ni recomposé.

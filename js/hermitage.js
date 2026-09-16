@@ -14,7 +14,7 @@
 // toucher aux autres.
 
 import * as api from './api.js';
-import { construireOrganigramme, rechercherOrganigramme } from './organigramme-fch.js';
+import { construireOrganigramme, rechercherOrganigramme, portrait } from './organigramme-fch.js';
 import { monterLeMenu, boutonDuMenu } from './menu.js';
 import {
   modifierAussitot,
@@ -47,8 +47,12 @@ import {
 } from './format.js';
 import { finDeLaSortie, phaseDeLaSortie } from './preparations-commun.js';
 import { REPERES, CRENEAUX } from './club-fch.js';
+import { GROUPES, PERSONNES } from './organigramme-fch-data.js';
+import { MISSION_FCH, VALEURS_FCH, OBJECTIFS_FCH } from './projet-fch.js';
 import { construireProjetClub, titreDuProjet } from './projet-club.js';
-import { construireSuiviPartenaires, titreDuSuivi } from './partenaires-suivi.js';
+import {
+  construireSuiviPartenaires, titreDuSuivi, porte, mots,
+} from './partenaires-suivi.js';
 import { OFFRES_FCH, ETATS_PARTENAIRE, engagementsDeLOffre, offreDe } from './partenaires-fch.js';
 import {
   trierTaches,
@@ -81,11 +85,16 @@ import {
   fenetreCreation,
   brancherCapture,
   poserAuCalendrier,
+  fermerLesChoix,
   REUNION_OBJETS,
   FORMATS,
 } from './calendrier-commun.js';
 
 const ESPACE = 'fch';
+
+// Ce qui, sur une tuile de partenaire, fait déjà quelque chose : les rôles
+// natifs suffisent ici — la pastille d'état est un bouton, le nom un lien.
+const GESTES_TUILE = 'a, button, input, select, textarea, label, [role="button"]';
 
 // Les réseaux du club. Facebook d'abord : c'est celui des clubs amateurs, des
 // parents et des bénévoles, avant Instagram.
@@ -154,35 +163,57 @@ const NATURES_FCH = ['evenement', 'tache', 'publication', 'objectif'];
 
 // --- Fabrication du HTML ----------------------------------------------------
 
+// LES RÉUNIONS SONT DU CLUB (16 septembre 2026, décision de Noé : « intègre
+// réunions à club »). C'était une rubrique à elle, donc un onglet du dock ; mais
+// ce que ses pages disent — qui décide quoi, ce qui a été décidé, ce qui reste à
+// tenir — est de la même nature que l'organigramme et le projet : c'est la VIE
+// du club, pas une cinquième destination. Le dock retombe à quatre onglets, et
+// c'est l'accueil du site qui porte la réunion du moment, comme avant.
+//
+// SES DEUX SOUS-PAGES RESTENT DERRIÈRE ELLE, et ne montent pas dans le hall :
+// le suivi des actions et les réunions passées se prennent depuis la page des
+// réunions. C'est la règle des deux rangs — le hall est à deux gestes, les
+// réunions à trois, leurs archives à quatre.
+const PAGES_REUNIONS = [
+  { nom: 'Le suivi des actions', adresse: '#hermitage/actions' },
+  { nom: 'Les réunions passées', adresse: '#hermitage/archives' },
+];
+
 export const RUBRIQUES_FCH = [
   { nom: 'Accueil', adresse: '#hermitage', pages: [
     { nom: 'Le calendrier', adresse: '#hermitage/calendrier' },
   ] },
-  { nom: 'Créer', adresse: '#hermitage/creer', pages: [
+  { nom: 'Communication', adresse: '#hermitage/creer', pages: [
     { nom: 'La saison', adresse: '#hermitage/saison' },
     { nom: 'Le calendrier éditorial', adresse: '#hermitage/editorial' },
     { nom: 'La banque d’idées', adresse: '#hermitage/banque' },
     { nom: 'Les publications parues', adresse: '#hermitage/publications' },
-  ] },
-  { nom: 'Réunions', adresse: '#hermitage/reunions', pages: [
-    { nom: 'Le suivi des actions', adresse: '#hermitage/actions' },
-    { nom: 'Les réunions passées', adresse: '#hermitage/archives' },
   ] },
   { nom: 'Le club', adresse: '#hermitage/club', pages: [
     { nom: 'Les organigrammes', adresse: '#hermitage/commissions' },
     { nom: 'Le projet du club', adresse: '#hermitage/projet-club' },
     { nom: 'Les entraînements', adresse: '#hermitage/entrainements' },
     { nom: 'Le club en chiffres', adresse: '#hermitage/chiffres' },
-    { nom: 'Les partenaires', adresse: '#hermitage/partenaires' },
+    { nom: 'Les réunions', adresse: '#hermitage/reunions' },
+    ...PAGES_REUNIONS,
   ] },
+  // LES PARTENAIRES SONT UNE DESTINATION (16 septembre 2026, décision de Noé :
+  // « ajoute un onglet pour les partenaires, qui remplace donc réunions »). Ils
+  // étaient une page du Club ; ils prennent la place que les réunions viennent
+  // de libérer dans le dock. La bascule se tient : le Club est ce que le club
+  // EST — ses gens, son projet, ses créneaux, ses décisions ; les partenaires
+  // sont un CHANTIER de Noé, avec ses engagements à tenir et son argent.
+  { nom: 'Partenaires', adresse: '#hermitage/partenaires' },
 ];
 
 const ONGLET_FCH = Object.fromEntries(RUBRIQUES_FCH.flatMap((rubrique) =>
   (rubrique.pages ?? []).map((page) => [page.adresse.split('/')[1], rubrique.adresse.split('/')[1] ?? 'accueil'])));
 
-function portesDuMenu(nom) {
-  const rubrique = RUBRIQUES_FCH.find((item) => item.nom === nom);
-  return `<section class="bloc fch-portes" aria-label="${nom}">${rubrique.pages.map((page) => `
+const portesDuMenu = (nom) => portes(
+  RUBRIQUES_FCH.find((item) => item.nom === nom).pages, nom);
+
+function portes(pages, nom = 'Pages') {
+  return `<section class="bloc fch-portes" aria-label="${nom}">${pages.map((page) => `
     <a class="lien-externe" href="${page.adresse}">
       <span class="lien-externe-titre">${page.nom}</span>
       <span class="lien-externe-fleche" aria-hidden="true">→</span>
@@ -199,14 +230,18 @@ function cheminDuMenu() {
 function enTete(vueActive, selection = null) {
   const liens = [
     ['accueil', 'Accueil', '#hermitage'],
-    ['creer', 'Créer', '#hermitage/creer'],
-    ['reunions', 'Réunions', '#hermitage/reunions'],
+    // L'ONGLET DIT « Com’ », LA PAGE DIT « Communication » (16 septembre 2026,
+    // décision de Noé). Ce n'est pas un second nom mais une abréviation, et
+    // c'est ce qui sauve la règle des largeurs égales : à cinq onglets sur un
+    // écran de 375 px, chacun reçoit 67 px et « Communication » en demandait
+    // 72 — *mesuré* : le mot débordait de son onglet sur « Partenaires ».
+    ['creer', 'Com’', '#hermitage/creer', 'Communication'],
+    ['partenaires', 'Partenaires', '#hermitage/partenaires'],
     ['club', 'Club', '#hermitage/club'],
     ['calendrier', 'Calendrier', '#hermitage/calendrier'],
   ];
   const icones = {
     creer: '<path d="m15 4 5 5M4 20l5-1L21 7a2 2 0 0 0-5-5L4 14z"/>',
-    reunions: '<circle cx="8" cy="7" r="3"/><circle cx="17" cy="8" r="2"/><path d="M2 21v-3a6 6 0 0 1 12 0v3M16 14a5 5 0 0 1 6 5v2"/>',
     partenaires: '<path d="m3 12 5-5 4 2 4-2 5 5-8 8-4-2zM8 7l-3-2-4 6 3 3M16 7l3-2 4 6-3 3"/>',
     club: '<path d="M4 21V7l8-4 8 4v14H4zM9 21v-6h6v6M8 9h1m6 0h1M8 12h1m6 0h1"/>',
     calendrier: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4M17 3v4M3 11h18M8 15h3v3H8z"/>',
@@ -215,6 +250,7 @@ function enTete(vueActive, selection = null) {
     ?? (vueActive === 'partenaires' ? titreDuSuivi(selection?.liste ?? [], selection?.vue) : null)
     ?? RUBRIQUES_FCH.flatMap((item) => item.pages ?? [])
       .find((page) => page.adresse === `#hermitage/${vueActive}`)?.nom
+    ?? liens.find(([vue]) => vue === vueActive)?.[3]
     ?? liens.find(([vue]) => vue === vueActive)?.[1] ?? 'FC Hermitage';
   const onglet = liens.some(([vue]) => vue === vueActive) ? vueActive : ONGLET_FCH[vueActive];
   return `
@@ -1015,9 +1051,9 @@ function vueReunions(etat) {
           : `<p class="vide">Ta prochaine réunion se note au calendrier : le « + »,
               nature Événement, pastille Réunion.</p>`
       }
-    </section>${portesDuMenu('Réunions')}`;
+    </section>${portes(PAGES_REUNIONS)}`;
   return `${enTete(vue)}${contenu}
-    ${vue !== 'reunions' ? '<a class="lien-discret" href="#hermitage/reunions">← Réunions</a>' : ''}${pied()}`;
+    <a class="lien-discret" href="${vue === 'reunions' ? '#hermitage/club">← Le club' : '#hermitage/reunions">← Les réunions'}</a>${pied()}`;
 }
 
 // LE TEMPS FORT QUI APPROCHE (30 août 2026), sous la réunion du moment.
@@ -1571,7 +1607,7 @@ function vueCreer(etat) {
       })}`;
   const contenus = {
     creer: () => `<section class="bloc"><h2>La communication du club</h2>
-      <div data-bloc="apercu">${construireApercuCreation(etat.publications)}</div></section>${portesDuMenu('Créer')}`,
+      <div data-bloc="apercu">${construireApercuCreation(etat.publications)}</div></section>${portesDuMenu('Communication')}`,
     saison: () => `<section class="bloc"><h2>La saison</h2>
       <div data-bloc="saison">${construireLaSaison(etat.series, etat.publications)}</div></section>
       <section class="bloc">${formulaire()}</section>`,
@@ -1585,7 +1621,7 @@ function vueCreer(etat) {
       <div data-bloc="publiees">${construirePubliees(etat.publications)}</div></section>`,
   };
   return `${enTete(vue)}${contenus[vue]()}
-    ${vue !== 'creer' ? '<a class="lien-discret" href="#hermitage/creer">← Créer</a>' : ''}
+    ${vue !== 'creer' ? '<a class="lien-discret" href="#hermitage/creer">← Communication</a>' : ''}
     ${fenetreIdee(etat)}${pied()}`;
 }
 
@@ -1844,7 +1880,141 @@ function construireEntrainements() {
   </section>`;
 }
 
-function vueClub(vue = 'club', personne = null) {
+// LE CLUB EST UN HALL (16 septembre 2026, demande de Noé : « modifie la forme
+// des tuiles de la page club pour que ça ressemble davantage à ce style — comme
+// ma bibliothèque dans perso, ou le vivier dans Yuno »).
+//
+// CE QUE ÇA REMPLACE, ET LA RÈGLE QUI LE CONDAMNAIT : cinq rectangles portant un
+// nom et une flèche, c'est-à-dire cinq lignes de menu redessinées — et le menu
+// est déjà à un geste. La règle du hall de `#perso` vaut ici mot pour mot :
+// CHAQUE PORTE DOIT DIRE QUELQUE CHOSE QU'ON IGNORE AVANT DE L'OUVRIR — qui est
+// là, ce qu'on s'est promis, qui s'entraîne ce soir, ce que le club pèse, qui
+// n'a pas encore viré. C'est le test à repasser le jour où une sixième arrive.
+//
+// LA PORTE DES PARTENAIRES VIENT DU HALL DES PARTENAIRES, telle quelle : deux
+// écrans qui dessineraient la même porte chacun de leur côté finiraient par ne
+// plus montrer la même chose, et c'est celui qu'on regarde le moins qui mentirait.
+
+const JOURS_SEMAINE = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+
+// LE PROCHAIN JOUR QUI PORTE DES ENTRAÎNEMENTS, à partir d'aujourd'hui. C'est ce
+// qu'on ignore en regardant la page, et c'est la seule chose de cette porte qui
+// change d'un jour à l'autre. Pure : elle prend sa date, donc elle s'éprouve
+// hors écran.
+export function prochainEntrainement(maintenant = new Date()) {
+  for (let i = 0; i < 7; i += 1) {
+    const nom = JOURS_SEMAINE[(maintenant.getDay() + i) % 7];
+    const jour = CRENEAUX.find(([j]) => j === nom);
+    if (jour) return { quand: i === 0 ? 'Aujourd’hui' : i === 1 ? 'Demain' : nom, creneaux: jour[1] };
+  }
+  return null;
+}
+
+// UN REPÈRE SE COUPE À SA PREMIÈRE VIRGULE dans une porte : « licenciés, des U7
+// aux vétérans » ne tient pas sur une ligne de 16 rem et s'arrêterait à une
+// ellipse, ce qui fait lire une phrase inachevée là où il y a un fait entier.
+// Sa page, elle, les donne en entier.
+const courtRepere = (quoi) => quoi.split(/\s*[,:]\s*/)[0];
+
+// LES VISAGES EN PILE plutôt que les noms des groupes (16 septembre 2026,
+// demande de Noé : « pour les organigrammes mets des photos l'une sur l'autre
+// plutôt que les pastilles présidence… »). Et il a raison : « Présidence,
+// Secrétariat, Trésorerie » sont les mots du MENU de cette page, pas ce qu'on
+// ignore avant de l'ouvrir — on y vient chercher des GENS.
+//
+// LE BUREAU D'ABORD, puis le reste : ce sont les visages qu'on cherche en
+// premier, et la pile ne peut en montrer que six.
+function visagesDuClub(combien) {
+  const bureau = GROUPES.filter((g) => g.type === 'bureau').flatMap((g) => g.membres);
+  const ordre = [...new Set([...bureau, ...Object.keys(PERSONNES)])];
+  const avecPhoto = ordre.map((id) => PERSONNES[id]).filter((p) => p?.photo);
+  const montres = avecPhoto.slice(0, combien);
+  const reste = avecPhoto.length - montres.length;
+  return `<span class="fch-hall-visages">${montres.map(portrait).join('')}${
+    reste ? `<span class="fch-hall-visage-plus">+${reste}</span>` : ''}</span>`;
+}
+
+function hallDuClub(etat) {
+  const bureau = GROUPES.filter((g) => g.type === 'bureau');
+  const commissions = GROUPES.filter((g) => g.type === 'commissions');
+  const equipes = GROUPES.filter((g) => g.type === 'sportif');
+  const prochain = prochainEntrainement();
+  const creneaux = CRENEAUX.reduce((total, [, lot]) => total + lot.length, 0);
+  const principales = VALEURS_FCH.filter((v) => v.principale).map((v) => v.nom);
+
+  // LE HALL EST LA SECTION, et surtout pas le contenu d'une `.bloc` : au-delà de
+  // 60 rem, `.bloc ul` passe toute liste en grille de 21 rem et `.bloc li`
+  // dessine chaque ligne comme une carte — les créneaux et les repères
+  // s'écartaient et s'indentaient dans leur porte. Le hall des partenaires vit
+  // déjà hors des blocs, et c'est pour la même raison.
+  return `<section class="fch-hall" aria-label="Le club">
+    ${porte('#hermitage/commissions', 'Les organigrammes', `${Object.keys(PERSONNES).length} personnes`,
+      `<span class="fch-hall-quoi">${bureau.length} au bureau, ${commissions.length} commissions,
+         ${equipes.length} équipes et leur encadrement</span>`,
+      visagesDuClub(6))}
+
+    ${porte('#hermitage/projet-club', 'Le projet du club', `${OBJECTIFS_FCH.length} objectifs`,
+      `<span class="fch-hall-phrase">${echapper(MISSION_FCH.phrase)}</span>
+       <span class="fch-hall-mots">${mots(principales, 3)}</span>`)}
+
+    ${porte('#hermitage/entrainements', 'Les entraînements', `${creneaux} créneaux`,
+      prochain
+        // LE JOUR SE LIT AVANT SES CRÉNEAUX : mis en dessous, on lisait trois
+        // horaires sans savoir de quel jour ils parlaient, puis le jour après
+        // coup — c'est le sujet qui arrivait après son complément.
+        ? `<span class="fch-hall-quoi">${echapper(prochain.quand)}${prochain.creneaux.length > 3
+             ? `, et ${prochain.creneaux.length - 3} autre${prochain.creneaux.length > 4 ? 's' : ''}`
+             : ''}</span>
+           <ul class="fch-hall-lots">${prochain.creneaux.slice(0, 3).map(([categorie, lieu, heure]) => `<li>
+            <span>${echapper(`${categorie} · ${lieu}`)}</span>
+            <span class="fch-hall-compte">${echapper(heure)}</span></li>`).join('')}</ul>`
+        : '<span class="fch-hall-quoi">Aucun créneau déclaré.</span>')}
+
+    ${porte('#hermitage/chiffres', 'Le club en chiffres', `${REPERES.length} repères`,
+      `<ul class="fch-hall-lots">${REPERES.slice(0, 3).map(([chiffre, quoi]) => `<li>
+          <span>${echapper(courtRepere(quoi))}</span>
+          <span class="fch-hall-compte">${echapper(chiffre)}</span></li>`).join('')}</ul>`)}
+
+    ${porteDesReunions(etat)}
+  </section>`;
+}
+
+// LA PORTE DES RÉUNIONS. Ce qu'on ignore avant de l'ouvrir : quand tombe la
+// prochaine, et ce qui reste à tenir de la dernière. Son compte est celui des
+// ACTIONS OUVERTES et non des réunions : le nombre de réunions passées ne
+// demande rien à personne, une action qui attend si.
+function porteDesReunions(etat) {
+  const reunions = (etat.evenements ?? []).filter(estReunion);
+  const maintenant = new Date();
+  const prochaine = reunions
+    .filter((e) => finDeLaSortie(e) >= maintenant)
+    .sort((a, b) => new Date(a.date_debut) - new Date(b.date_debut))[0];
+  // À DÉFAUT DE PROCHAINE, LA DERNIÈRE TENUE. « Aucune réunion au calendrier »
+  // était vrai et inutile : il y en avait deux, derrière la porte, et le compte
+  // à côté le disait déjà — deux lignes qui se contredisent dans la même tuile.
+  const derniere = reunions
+    .filter((e) => finDeLaSortie(e) < maintenant)
+    .sort((a, b) => new Date(b.date_debut) - new Date(a.date_debut))[0];
+  const dite = prochaine ?? derniere;
+  const ouvertes = (etat.actionsClub ?? []).filter((action) => action.statut !== 'fait');
+  return porte('#hermitage/reunions', 'Les réunions',
+    ouvertes.length ? `${ouvertes.length} à tenir` : `${reunions.length}`,
+    `${dite
+      ? `<span class="fch-hall-phrase">${echapper(dite.titre)}</span>
+         <span class="fch-hall-quoi">${prochaine ? '' : 'La dernière · '}${
+           echapper(REUNION_OBJETS[dite.reunion_objet] ?? 'Réunion')}
+           · ${echapper(momentLisible(new Date(dite.date_debut)))}</span>`
+      : '<span class="fch-hall-quoi">Aucune réunion notée.</span>'}
+     ${ouvertes.length
+      ? `<ul class="fch-hall-lots">${ouvertes.slice(0, 2).map((action) => `<li>
+          <span>${echapper(action.titre)}</span>
+          <span class="fch-hall-compte">${echapper(action.responsable ?? '')}</span></li>`).join('')}</ul>`
+      : ''}`);
+}
+
+function vueClub(etat) {
+  const vue = etat.vue ?? 'club';
+  const personne = etat.personneClub ?? null;
   const contenus = {
     'commissions': () => construireOrganigramme(personne),
     'projet-club': () => construireProjetClub(personne),
@@ -1860,18 +2030,31 @@ function vueClub(vue = 'club', personne = null) {
         ).join('')}</ul>
     </section>`
   };
+  // PAS DE PHRASE D'INTRODUCTION : « les personnes, le projet et les repères du
+  // FC Hermitage » nommait les portes qu'on a juste en dessous, et une porte qui
+  // MONTRE ce qu'il y a derrière n'a plus besoin qu'on l'annonce. C'est la forme
+  // des deux autres halls du hub — `#perso` et celui des partenaires.
   return `${enTete(vue, personne)}${vue === 'club'
-    ? `<section class="bloc"><h2>Le club</h2><p class="discret">Les personnes, le projet et les repères du FC Hermitage.</p></section>${portesDuMenu('Le club')}`
+    ? hallDuClub(etat)
     : `${contenus[vue]()}<a class="lien-discret" href="#hermitage/club">← Le club</a>`}${pied()}`;
 }
 
 // Habillage commun des sections : le titre reste au-dessus de la surface.
 // Déplacer les nœuds conserve les champs, identifiants et gestes délégués.
+//
+// UNE SECTION PEUT REFUSER LA SURFACE (`fch-sans-tuile`, 16 septembre 2026,
+// demande de Noé sur la galerie des partenaires : « enlève la tuile de fond,
+// il faut que chaque tuile d'entreprise soit indépendante »). Une section qui
+// ne porte QUE des tuiles n'a rien à poser dessous : les deux surfaces sont le
+// même `--fond-carte`, et la galerie disparaissait dans son propre fond —
+// vingt entreprises se lisaient comme un seul bloc. Le titre, lui, s'habille
+// quand même : il reste le nom de la section, tuile ou pas.
 function habillerLesSections(section) {
   for (const bloc of section.querySelectorAll(':scope > section.bloc:not(.fch-portes)')) {
     if (bloc.classList.contains('fch-tuile') || bloc.querySelector(':scope > .fch-tuile')) continue;
     const titre = bloc.querySelector(':scope > h2');
     titre?.classList.add('titre-section');
+    if (bloc.classList.contains('fch-sans-tuile')) continue;
     const tuile = document.createElement('div');
     tuile.className = 'fch-tuile';
     for (const noeud of [...bloc.childNodes]) {
@@ -1957,7 +2140,7 @@ export default {
       else if (['reunions', 'actions', 'archives'].includes(etat.vue)) section.innerHTML = vueReunions(etat);
       else if (etat.vue === 'calendrier') section.innerHTML = vueCalendrier(etat);
       else if (etat.vue === 'partenaires') section.innerHTML = vuePartenaires(etat);
-      else if (['club', 'commissions', 'projet-club', 'entrainements', 'chiffres'].includes(etat.vue)) section.innerHTML = vueClub(etat.vue, etat.personneClub);
+      else if (['club', 'commissions', 'projet-club', 'entrainements', 'chiffres'].includes(etat.vue)) section.innerHTML = vueClub(etat);
       else section.innerHTML = vueAccueil(etat);
       habillerLesSections(section);
 
@@ -2806,6 +2989,46 @@ export default {
       if (etat.engagementAConfirmer) {
         etat.engagementAConfirmer = null;
         rendre();
+      }
+
+      // L'ÉTAT D'UN PARTENAIRE SE CHANGE SUR PLACE (16 septembre 2026, demande
+      // de Noé) : « partenaire du club » ou « virement en attente », depuis la
+      // galerie comme depuis la fiche. Le menu se referme dans tous les cas —
+      // même sur l'état déjà posé : un menu qui reste ouvert après un choix
+      // donne l'impression que le geste n'a pas été reçu.
+      const etatPartenaire = evenement.target.closest('[data-etat-partenaire]');
+      if (etatPartenaire) {
+        fermerLesChoix(section);
+        const { etatPartenaire: statut, partenaire: id } = etatPartenaire.dataset;
+        const partenaire = etat.partenairesSuivi.find((p) => p.id === id);
+        if (!partenaire || partenaire.statut === statut) {
+          if (partenaire) rendre();
+          return;
+        }
+        await modifierAussitot(
+          partenaire,
+          { statut },
+          () => api.modifierPartenaire(id, { statut }),
+          { rendre, echouer: dire },
+        );
+        return;
+      }
+      // Un clic ailleurs referme le menu : c'est le geste attendu. La garde
+      // porte sur le GROUPE et non sur le déclencheur, pour ne pas refermer
+      // dans le même clic celui que `brancherCapture` vient d'ouvrir.
+      if (!evenement.target.closest('[data-choix-champ]')) fermerLesChoix(section);
+
+      // LA TUILE ENTIÈRE MÈNE À LA FICHE, mais l'écouteur se retire dès que le
+      // clic a touché quelque chose qui fait déjà quelque chose. LA LISTE DES
+      // GESTES EST EXPLICITE, et non « tout ce qui a l'air cliquable » : un
+      // sélecteur deviné sur le curseur marcherait ce soir et avalerait
+      // silencieusement le prochain contrôle posé sur la tuile.
+      const tuilePartenaire = evenement.target.closest('[data-tuile-partenaire]');
+      if (tuilePartenaire && !evenement.target.closest(GESTES_TUILE)) {
+        // Sélectionner un nom pour le copier n'est pas cliquer dessus.
+        if (window.getSelection()?.toString()) return;
+        location.hash = `#hermitage/partenaires/${tuilePartenaire.dataset.tuilePartenaire}`;
+        return;
       }
 
       // La fiche d'un partenaire s'ouvre dans l'ADRESSE, pas dans un état :

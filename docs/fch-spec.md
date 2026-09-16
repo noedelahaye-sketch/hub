@@ -562,12 +562,15 @@ site.
 ### `#hermitage/partenaires` — les partenaires
 
 Le seul contenu certain de la « partie marketing » : les partenariats sont
-l'un des quatre objectifs de fin d'alternance. Une fiche par partenaire —
-nom, contact, statut de la relation, notes, date du dernier échange.
+l'un des quatre objectifs de fin d'alternance.
 
-**Réutilise la table `contacts`** (créée pour le carnet réseau Yuno) : c'est
-la même matière — des gens et des structures avec qui on échange. Le
-rattachement (`structure`) et le type suffisent à séparer les deux carnets.
+**CE N'EST PLUS UN ANNUAIRE depuis le 16 septembre 2026, c'est un SUIVI
+D'ENGAGEMENTS** — voir « Le suivi des engagements partenaires » plus bas, qui
+fait autorité. *Ce que ça remplace : une fiche par partenaire (nom, contact,
+statut de la relation, notes), tirée de la table `contacts` du carnet réseau de
+Yuno. Le carnet n'a pas disparu — ces contacts y vivent toujours ; ce qui change
+est la question que cette page pose : non plus « qui sont-ils » mais « qu'est-ce
+qu'on leur doit, et qu'est-ce qui reste à faire ».*
 
 ### `#hermitage/club` — L'AIDE-MÉMOIRE (rempli le 29 août 2026)
 
@@ -580,7 +583,57 @@ s'y compte, aucune donnée n'y est saisie. Il sert l'objectif du 15 décembre �
 « laisser une com qui tourne sans moi » : celui qui reprend doit savoir à qui
 s'adresser et sur quoi s'aligner.
 
-Quatre blocs, du plus souvent consulté au plus rare :
+**LA PAGE EST UN HALL** (16 septembre 2026, demande de Noé : *« modifie la forme
+des tuiles de la page club pour que ça ressemble davantage à ce style — comme ma
+bibliothèque dans perso, ou le vivier dans Yuno »*). Elle portait cinq
+rectangles, chacun un nom et une flèche : **cinq lignes de menu redessinées**, et
+le menu est déjà à un geste. La règle du hall de `#perso` vaut ici mot pour mot —
+**chaque porte doit dire quelque chose qu'on IGNORE avant de l'ouvrir**, et c'est
+le test à repasser le jour où une sixième arrive.
+
+| Porte | Son compte | Son aperçu |
+|---|---|---|
+| **Les organigrammes** | 44 personnes | **une pile de visages**, puis « 4 au bureau, 5 commissions, 14 équipes » |
+| **Le projet du club** | 18 objectifs | **la mission en toutes lettres** — « Transmettre l'envie de jouer » —, puis les trois valeurs principales |
+| **Les entraînements** | 17 créneaux | **le prochain jour qui en porte**, et ses trois premiers avec leurs horaires |
+| **Le club en chiffres** | 8 repères | les trois premiers, leur chiffre à droite |
+| **Les réunions** | ce qui reste à tenir | la prochaine réunion — à défaut la dernière tenue —, puis les actions ouvertes |
+
+- **LES VISAGES, ET NON LES NOMS DES GROUPES** (16 septembre 2026, demande de
+  Noé : *« pour les organigrammes mets des photos l'une sur l'autre plutôt que
+  les pastilles présidence… »*). Et c'est plus juste : « Présidence,
+  Secrétariat, Trésorerie » sont les mots du MENU de cette page, pas ce qu'on
+  ignore avant de l'ouvrir — **on y vient chercher des gens.** Six portraits qui
+  se chevauchent, **le bureau d'abord**, puis le compte de ceux qui restent.
+  - **Le portrait se découpe par `portrait()`**, la fonction de l'organigramme :
+    une seconde fenêtre SVG écrite à côté finirait par ne plus cadrer les
+    visages pareil.
+  - **L'anneau est une OMBRE PORTÉE et non une bordure** : elle ne prend pas de
+    place dans la boîte, donc le chevauchement se règle au seul `margin-left`.
+    Il prend la couleur de la porte, survol compris — sinon la pile garderait un
+    liseré de l'ancienne teinte.
+- **LE PROCHAIN ENTRAÎNEMENT EST LA SEULE CHOSE QUI CHANGE D'UN JOUR À L'AUTRE**,
+  et c'est ce qui fait de cette porte autre chose qu'une étiquette :
+  « Aujourd'hui », « Demain », sinon le nom du jour. `prochainEntrainement` prend
+  sa date en paramètre, donc elle s'éprouve hors écran — *les sept jours sont
+  vérifiés, dimanche compris, qui renvoie au lundi*.
+- **LE JOUR SE LIT AVANT SES CRÉNEAUX** : mis en dessous, on lisait trois
+  horaires sans savoir de quel jour ils parlaient.
+- **UN REPÈRE SE COUPE À SA PREMIÈRE VIRGULE** : « licenciés, des U7 aux
+  vétérans » s'arrêterait à une ellipse, ce qui fait lire une phrase inachevée là
+  où il y a un fait entier. Sa page les donne en entier.
+- **LA PHRASE DE LA MISSION GARDE L'ENCRE PLEINE** : c'est la seule porte du site
+  dont l'aperçu soit une phrase, et on vient la relire — pas la balayer.
+- **PLUS DE PHRASE D'INTRODUCTION.** « Les personnes, le projet et les repères du
+  FC Hermitage » nommait les portes qu'on a juste en dessous ; une porte qui
+  montre ce qu'il y a derrière n'a plus besoin qu'on l'annonce.
+- **LE HALL EST LA SECTION, et surtout pas le contenu d'une `.bloc`** : au-delà
+  de 60 rem, `.bloc ul` passe toute liste en grille de 21 rem et `.bloc li`
+  dessine chaque ligne comme une carte — les créneaux et les repères
+  s'écartaient et s'indentaient dans leur porte. *Le piège de la spécificité,
+  payé une neuvième fois.*
+
+Derrière ces portes, quatre écrans, du plus souvent consulté au plus rare :
 
 1. **Les organigrammes** — les neuf commissions et leurs porteurs
    (`Responsabilités FCH.pdf`). **Les deux commissions de Noé se distinguent, et
@@ -758,11 +811,23 @@ reste.
    `CLAUDE.md` les mentionne sans les nommer. *(Le document « Objectifs et
    planification Alternance FCH Noé 2025/2026 » du Drive est celui de l'AN
    DERNIER — obsolète, ne pas s'en servir. Ce qui est acquis : la cible de
-   revenus partenaires de la saison est de **26 000 €**, et le Google Sheet
-   « Listing entreprise 2026-2027 » en comptait 12 050 au 29 août.)*
-3. **Les partenaires** : quels statuts de relation te seraient utiles
-   (à contacter, en discussion, signé, à relancer) — ou est-ce trop tôt ?
-4. **L'organisation club** : dès que tu sais ce que tu veux y trouver.
+   revenus partenaires de la saison est de **26 000 €**, et le hub en compte
+   **17 330 € engagés** au 16 septembre 2026, soit 67 %.)*
+3. ~~**Les partenaires : quels statuts de relation te seraient utiles**~~ —
+   **RÉPONDU le 16 septembre 2026.** Le hub n'en garde que DEUX, la fin de la
+   chaîne : « virement en attente » et « partenaire du club ». « À relancer »,
+   « en discussion » et « refus » restent dans le tableau de Noé, qui est
+   l'outil de PROSPECTION — le hub reprend la suite, c'est-à-dire ce qui est
+   signé et ce qu'on doit faire pour l'honorer.
+4. ~~**L'organisation club : dès que tu sais ce que tu veux y trouver**~~ —
+   **RÉPONDU le 16 septembre 2026** par le dossier du projet que Noé a fourni.
+   Voir « Le projet du club — mission, valeurs, objectifs ».
+5. **Les 13 logos de partenaires qui manquent**, et deux rapprochements que le
+   club doit confirmer ou infirmer : « MENELEC » est-il MAX ELEC ? « SOLUVIA »
+   est-il SOLUWASTE ? *Des noms voisins ne sont pas le même partenaire, et un
+   logo posé sur la mauvaise fiche se verrait au stade.*
+6. **Deux portraits différents portent le nom « Christophe Lucchetta »** dans
+   les exports du club. Le hub garde celui du bureau. À faire trancher.
 
 ## Navigation — 16 septembre 2026
 
@@ -793,6 +858,36 @@ Calendrier. Les partenaires rejoignent le menu du Club.
 
 Les sous-pages gardent l’onglet parent actif et un lien de retour. Le menu
 ouvre leur rubrique automatiquement. Aucun contenu ni opération métier retiré.
+
+### LE DOCK, REFONDU LE 16 SEPTEMBRE 2026 (trois décisions de Noé)
+
+**Accueil · Com’ · Partenaires · Club · Calendrier.** Toujours cinq
+destinations, mais ce ne sont plus les mêmes.
+
+1. **« intègre réunions à club »** — les réunions étaient une rubrique à elles,
+   donc un onglet. Mais ce que leurs pages disent — qui décide quoi, ce qui a été
+   décidé, ce qui reste à tenir — est **de la même nature que l'organigramme et
+   le projet : c'est la vie du club**, pas une cinquième destination. Elles
+   deviennent une porte du hall, et **leurs deux sous-pages restent derrière
+   elles** : le hall à deux gestes, les réunions à trois, les archives à quatre.
+2. **« ajoute un onglet pour les partenaires, qui remplace donc réunions »** —
+   ils étaient une page du Club et prennent la place libérée. La bascule se
+   tient : **le Club est ce que le club EST** — ses gens, son projet, ses
+   créneaux, ses décisions ; **les partenaires sont un CHANTIER de Noé**, avec
+   ses engagements à tenir et son argent. *Conséquence assumée : le hall du club
+   perd sa porte partenaires — une porte vers un voisin du dock ferait deux
+   chemins pour un geste, et c'est le dock qui le porte.*
+3. **« change créer en communication »**, puis **« Com’ au lieu de
+   communication »** — **l'onglet dit « Com’ », la page et le menu disent
+   « Communication ».** Ce n'est pas un second nom mais une abréviation, comme
+   l'onglet « Club » ouvre la rubrique « Le club ».
+   - **ET C'EST CE QUI SAUVE LA RÈGLE DES LARGEURS ÉGALES.** *Mesuré à 375 px :
+     cinq onglets reçoivent 67 px chacun, et « Communication » en demandait
+     72 — le mot débordait de son onglet et chevauchait « Partenaires ».* Les
+     deux seules autres sorties étaient de descendre le corps sous 9 px, où un
+     mot n'est plus qu'une trace, ou de laisser chaque onglet prendre la largeur
+     de son mot — ce qui aurait sorti ce dock de la grammaire des deux autres.
+     *Vérifié après : aucun onglet tronqué, de 375 px à 935.*
 
 ### Entraînements — présentation inspirée des affiches, 16 septembre 2026
 
@@ -883,6 +978,30 @@ le menu est déjà à un geste. Chacune dit donc quelque chose qu'on **ignore**
 avant de l'ouvrir — les logos qu'on a et qui n'a pas encore viré, les trois
 chantiers qui pèsent le plus, les offres que personne n'a prises.
 
+**UNE PORTE A TROIS ÉTAGES** (16 septembre 2026, demande de Noé en deux temps :
+*« inverse l'illustration/les logos et le texte/titre de la tuile »*, puis *« par
+contre le titre de la tuile est au-dessus des autres textes »*) —
+**l'illustration, le nom, puis le reste**. C'est l'ordre d'une tuile de livre :
+on voit, on lit son nom, on lit le reste.
+- **L'ILLUSTRATION EST UN EMPLACEMENT DÉCLARÉ**, pas le premier élément de
+  l'aperçu : sans lui, le nom ne pourrait pas se poser ENTRE les deux. Deux
+  portes en ont une — les logos des partenaires, les visages du club ; les autres
+  n'en ont pas, et se lisent alors nom puis textes.
+- **ELLE REMONTE PAR `order`, JAMAIS DANS LE DOM** : le nom accessible d'un lien
+  est la suite de son contenu dans l'ordre du DOM, et la porte des partenaires
+  s'annoncerait par ses cinq logos avant de dire ce qu'elle ouvre. Rien ne se
+  tabule à l'intérieur d'un lien, donc l'écart entre l'ordre lu et l'ordre vu ne
+  coûte rien. *Vérifié : « Tous les partenaires 20 ATOL Valence… ».*
+
+**LE DESSIN EST COMMUN AU SITE** (`fch-hall-*`, 16 septembre 2026) : il sert ce
+hall-ci et celui du **Club**. Il s'appelait `suivi-porte-*` quand il n'y en avait
+qu'un ; un second l'aurait recopié, et c'est toujours la copie qu'on regarde le
+moins qui finit par diverger. **La porte des partenaires, elle, se dessine dans
+une seule fonction** (`porteDesPartenaires`) dont les deux halls se servent — ce
+qu'elle montre ne change pas d'un écran à l'autre, seuls son adresse et son nom.
+*À ne pas confondre avec `.fch-portes`, la rangée de liens qui ferme les pages
+Créer et Réunions : celle-là est une navigation de pied de page, pas un hall.*
+
 **LA LISTE EST UNE GALERIE DE TUILES** (demande de Noé) : une liste de lignes se
 parcourt mot à mot, une galerie de logos se balaie du regard — c'est l'argument
 de l'étagère de la bibliothèque, et il vaut ici pour la même raison. **Sans
@@ -892,6 +1011,45 @@ galerie à trous se lirait comme une liste incomplète.
 
 **LA FICHE EST UNE PAGE**, plus un dépliage : c'est la règle des deux rangs —
 la galerie ne dit que ce qui se COMPARE, la page dit tout.
+
+**UNE GALERIE N'A PAS DE SURFACE SOUS ELLE** (16 septembre 2026, demande de
+Noé : *« enlève la tuile de fond sur cette page, il faut que chaque tuile
+d'entreprise soit indépendante »*, puis *« fais pareil pour la page des offres,
+pas de tuile globale, une tuile par pack »*, puis *« pareil pour nos
+engagements »*).
+
+`habillerLesSections` pose une `.fch-tuile` sous chaque section du site — ce
+qui est juste d'une section qui porte du TEXTE, et faux d'une section qui ne
+porte que des tuiles : **les deux surfaces sont le même `--fond-carte`**, et
+vingt entreprises se lisaient comme un seul bloc. Seul le survol révélait qu'il
+y avait des tuiles là-dessous. La section le refuse donc par `fch-sans-tuile`,
+et le titre s'habille quand même — il reste le nom de la section, tuile ou pas.
+- **LES TROIS PAGES CONCERNÉES SONT CELLES QUI N'ONT QUE DES CARTES** : la
+  galerie des partenaires, le catalogue des offres, les chantiers. C'est le
+  critère, pas la page : une section qui porte du texte garde sa surface, parce
+  qu'un paragraphe a besoin d'être posé sur quelque chose. Le hall, lui, la
+  garde aussi — ses portes ne sont pas des cartes, ce sont des portes.
+- **Pas d'`overflow: hidden` sur une tuile de partenaire**, et ce n'est pas un
+  oubli : son menu d'état s'y faisait couper. La plaque du logo se découpe déjà
+  toute seule, et c'est la seule chose qui avait besoin d'être rognée.
+
+**L'ÉTAT SE CHANGE SUR PLACE** (même jour, demande de Noé : « ajoute la
+possibilité de modifier l'état ») — sur la tuile de la galerie comme sur la
+fiche. Un virement arrive, on le note d'un doigt : ouvrir la fiche pour un seul
+mot donnerait à ce geste le coût d'une correction. C'est le raisonnement déjà
+tenu pour l'état d'un PROJET, et c'est donc son dessin — le menu dessiné du hub.
+- **LA PASTILLE GARDE SON APLAT**, elle ne devient pas le mot gris d'un projet :
+  il n'y a ici que DEUX états, et c'est la couleur qui les sépare d'un coup
+  d'œil dans une galerie de vingt tuiles. Elle change de nature, pas d'allure.
+- **LA TUILE N'EST PLUS UN LIEN QUI ENVELOPPE** : un bouton dans un lien n'est
+  ni valide ni cliquable. C'est un écouteur qui se retire dès que le clic a
+  touché un contrôle — la mécanique de la tuile « Aujourd'hui » de l'accueil —,
+  **et le nom porte le lien** : un écouteur ne se tabule pas.
+- **Le menu garde son alignement par défaut**, à gauche : calé à droite, il
+  sortait de l'écran sur la fiche, où la pastille est au ras de la marge.
+  `placerLePanneau` sait déjà le retourner quand il déborde.
+- **L'écriture est optimiste** : la pastille change de mot et les comptes des
+  filtres suivent avant que le réseau ait répondu.
 
 **LES ENGAGEMENTS SE RANGENT PAR CHANTIER**, pas par partenaire : *on ne fait
 pas les vignettes de l'album une par une en rouvrant chaque fiche, on les fait

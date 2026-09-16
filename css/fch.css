@@ -1351,16 +1351,28 @@ body[data-espace="hermitage"] #vue .suivi-chantier h4 {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 11.5rem), 1fr));
   gap: var(--espace-12); margin: 0;
 }
+/* PAS D'`overflow: hidden` ICI, et ce n'est pas un oubli : le menu d'état
+   s'ouvre DANS la tuile et s'y faisait couper — une seule ligne visible sur
+   deux. La plaque du logo se découpe déjà toute seule, et c'est la seule chose
+   qui avait besoin d'être rognée ; le rayon passe donc sur la surface
+   elle-même, pour que le survol garde les angles. */
 .bloc li.suivi-partenaire {
-  display: block; padding: 0; overflow: hidden;
+  display: block; padding: 0;
   border-radius: 16px; background: var(--fond-carte); border: 0;
 }
+/* La tuile n'est plus un lien mais une surface qu'on presse : c'est son NOM qui
+   porte le lien, et le clic de la tuile est un écouteur (js/hermitage.js). Le
+   curseur le dit, faute de quoi rien ne signale qu'elle s'ouvre. */
 .suivi-tuile {
   display: grid; gap: 3px; align-content: start; height: 100%;
-  padding: var(--espace-12); color: #fff; text-decoration: none;
+  padding: var(--espace-12); border-radius: 16px; color: #fff; cursor: pointer;
 }
-.suivi-tuile:hover { background: rgb(255 255 255 / 6%); text-decoration: none; }
-.suivi-tuile:focus-visible { outline: 2px solid #fff; outline-offset: -3px; }
+.suivi-tuile:hover { background: rgb(255 255 255 / 6%); }
+.suivi-nom a { color: inherit; text-decoration: none; }
+.suivi-nom a:hover { color: inherit; text-decoration: none; }
+/* L'anneau se pose sur la TUILE quand son nom a le focus : c'est la tuile qu'on
+   voit, le lien n'est que son texte. */
+.suivi-tuile:focus-within { outline: 2px solid #fff; outline-offset: -3px; }
 .suivi-tuile .suivi-logo { width: 100%; height: 66px; padding: 6px; margin-bottom: 6px; }
 /* La plaque d'un partenaire sans logo : le pointillé dit « déclaré, pas encore
    rempli », et le nom tient lieu d'image. */
@@ -1373,11 +1385,28 @@ body[data-espace="hermitage"] #vue .suivi-chantier h4 {
 .suivi-offre { font-size: 0.6875rem; color: var(--texte-discret); }
 .suivi-bas { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 6px; }
 .suivi-montant { font-size: 0.9375rem; font-weight: 700; }
+/* La pastille d'état est un BOUTON depuis le 16 septembre 2026 : elle ouvre le
+   menu dessiné du hub. Son allure ne bouge pas d'un pixel — ce qui change est
+   ce qu'on peut en faire. */
 .suivi-etat {
-  padding: 2px 8px; border-radius: 999px; font-size: 0.5625rem; font-weight: 700; color: #fff;
-  line-height: 1.5; white-space: nowrap;
+  padding: 2px 8px; border: 0; border-radius: 999px;
+  font-family: inherit; font-size: 0.5625rem; font-weight: 700; color: #fff;
+  line-height: 1.5; white-space: nowrap; cursor: pointer;
   background: color-mix(in srgb, var(--etat-couleur) 48%, #142343);
 }
+.suivi-etat:hover { background: color-mix(in srgb, var(--etat-couleur) 68%, #142343); }
+.suivi-etat:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+/* `.choix-champ` porte la marge basse des FORMULAIRES, et `display: block` avec
+   elle : dans une ligne de tuile, les deux cassaient l'alignement du montant et
+   de l'état. */
+.suivi-etat-champ { display: inline-flex; margin: 0; }
+/* Le menu se pose sa propre mesure : à 12 rem, « Virement en attente » se
+   repliait sur deux lignes, ce qui fait lire deux options là où il n'y en a
+   qu'une. Il garde en revanche son alignement PAR DÉFAUT, à gauche — le caler à
+   droite le sortait de l'écran sur la fiche, où la pastille est au ras de la
+   marge, et `placerLePanneau` sait déjà le retourner quand il déborde. */
+.suivi-etat-champ .choix-panneau { min-width: 13rem; }
+.suivi-etat-champ .choix-capture button { display: flex; align-items: center; gap: var(--espace-8); }
 .suivi-avancee { margin-top: 3px; font-size: 0.6875rem; color: var(--texte-discret); }
 
 .suivi-detail-partenaire { padding: 0 var(--espace-12) var(--espace-12); }
@@ -1399,39 +1428,88 @@ body[data-espace="hermitage"] #vue .suivi-chantier h4 {
   background: #152342; color: var(--texte); border: 0; font-size: 0.8125rem; font-weight: 700; cursor: pointer;
 }
 
-/* --- Le hall : trois portes ----------------------------------------------------
-   UNE PORTE MONTRE CE QU'IL Y A DERRIÈRE. Trois rectangles nommés comme trois
-   lignes de menu seraient un menu dessiné — et le menu est déjà à un geste. */
-.suivi-portes {
+/* --- Les halls du site ---------------------------------------------------------
+   UNE PORTE MONTRE CE QU'IL Y A DERRIÈRE. Des rectangles nommés comme des
+   lignes de menu seraient un menu dessiné — et le menu est déjà à un geste.
+
+   LE DESSIN EST COMMUN AU SITE (`fch-hall-*`, 16 septembre 2026) : le hall des
+   partenaires et celui du club sont le même geste — on regarde, et on entre.
+   Il s'appelait `suivi-porte-*` quand il n'y en avait qu'un ; un second l'aurait
+   recopié, et c'est toujours la copie qu'on regarde le moins qui finit par
+   diverger. À ne pas confondre avec `.fch-portes`, la rangée de liens qui FERME
+   les pages Créer et Réunions : celle-là est une navigation de pied de page,
+   pas un hall. */
+.fch-hall {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
   gap: var(--espace-12); align-items: stretch;
 }
-.suivi-porte {
+/* TROIS ÉTAGES : l'illustration, le nom, puis le reste (16 septembre 2026,
+   demande de Noé). C'est l'ordre d'une tuile de livre — on voit, on lit son nom,
+   on lit le reste. Une porte se reconnaît à ce qu'elle MONTRE avant de se lire.
+
+   L'ILLUSTRATION REMONTE PAR `order` ET NON DANS LE DOM, et ce n'est pas un
+   détail : le nom accessible d'un lien est la suite de son contenu dans l'ordre
+   du DOM. Posée là, la porte des partenaires s'annoncerait par ses cinq logos
+   avant de dire ce qu'elle ouvre. Rien ne se tabule à l'intérieur d'un lien,
+   donc l'écart entre l'ordre lu et l'ordre vu ne coûte rien. */
+.fch-hall-porte {
   display: flex; flex-direction: column; gap: 10px; min-width: 0;
   padding: var(--espace-16); border-radius: 18px; background: var(--fond-carte);
   color: #fff; text-decoration: none;
 }
-.suivi-porte:hover { background: rgb(255 255 255 / 7%); text-decoration: none; }
-.suivi-porte:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
-.suivi-porte-tete { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.suivi-porte-nom { font-weight: 800; font-size: 1.0625rem; line-height: 1.2; }
-.suivi-porte-compte {
+.fch-hall-illustration { order: -1; }
+.fch-hall-porte:hover { background: rgb(255 255 255 / 7%); text-decoration: none; }
+.fch-hall-porte:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.fch-hall-tete { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.fch-hall-nom { font-weight: 800; font-size: 1.0625rem; line-height: 1.2; }
+.fch-hall-compte {
   flex: none; font-family: var(--police-chiffre); font-size: 0.75rem; color: var(--texte-discret);
 }
-.suivi-porte-apercu { display: flex; flex-direction: column; gap: 6px; }
-.suivi-porte-mots { display: flex; flex-wrap: wrap; gap: 4px; }
-.suivi-porte-mots span {
+.fch-hall-apercu { display: flex; flex-direction: column; gap: 6px; }
+/* LA PILE DE VISAGES : les portraits se chevauchent, comme on tient des photos
+   en éventail. L'anneau est une OMBRE PORTÉE et non une bordure — elle ne prend
+   pas de place dans la boîte, donc le chevauchement se règle au seul
+   `margin-left` et ne se décale pas quand la couleur du fond change. Sa teinte
+   est celle de la porte : c'est ce qui sépare deux visages voisins. */
+.fch-hall-visages { display: flex; align-items: center; }
+.fch-hall-visages .orga-photo {
+  width: 38px; height: 38px;
+  box-shadow: 0 0 0 2px var(--fond-carte);
+}
+.fch-hall-visages > :not(:first-child) { margin-left: -12px; }
+/* Le compte ferme la pile, et il est DANS le rang : posé après, il aurait
+   ressemblé à une légende. */
+.fch-hall-visage-plus {
+  display: grid; place-items: center; flex: none;
+  width: 38px; height: 38px; border-radius: 50%;
+  background: #152342; box-shadow: 0 0 0 2px var(--fond-carte);
+  font-family: var(--police-chiffre); font-size: 0.6875rem; color: var(--texte-discret);
+}
+/* Le survol de la porte éclaircit son fond : l'anneau doit suivre, sinon la
+   pile garde un liseré de l'ancienne couleur. */
+.fch-hall-porte:hover .fch-hall-visages .orga-photo,
+.fch-hall-porte:hover .fch-hall-visage-plus {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--fond-carte) 100%, #fff 7%);
+}
+
+.fch-hall-mots { display: flex; flex-wrap: wrap; gap: 4px; }
+.fch-hall-mots span {
   padding: 3px 9px; border-radius: 999px; font-size: 0.6875rem; font-weight: 700;
   background: #152342;
 }
-.suivi-porte-plus { color: var(--texte-discret); }
-.suivi-porte-quoi { font-size: 0.75rem; color: var(--texte-discret); line-height: 1.35; }
-.suivi-porte-lots { display: grid; gap: 3px; list-style: none; padding: 0; margin: 0; }
-.suivi-porte-lots li {
+.fch-hall-plus { color: var(--texte-discret); }
+.fch-hall-quoi { font-size: 0.75rem; color: var(--texte-discret); line-height: 1.35; }
+/* LA MISSION SE LIT EN TOUTES LETTRES dans sa porte : c'est une phrase qu'on
+   vient relire, pas un compte qu'on balaie. Elle garde donc l'encre pleine, à
+   la différence du service en dessous — c'est la seule porte du site dont
+   l'aperçu soit une phrase. */
+.fch-hall-phrase { font-size: 0.875rem; line-height: 1.35; font-weight: 600; }
+.fch-hall-lots { display: grid; gap: 3px; list-style: none; padding: 0; margin: 0; }
+.fch-hall-lots li {
   display: flex; justify-content: space-between; gap: 8px;
   font-size: 0.75rem; line-height: 1.3;
 }
-.suivi-porte-lots li > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fch-hall-lots li > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* LE LOGO SUR UNE PLAQUE BLANCHE : ceux du club sont dessinés pour du papier —
    fond clair, encre sombre. Posés à même le bleu du site, la moitié
@@ -1451,8 +1529,8 @@ body[data-espace="hermitage"] #vue .suivi-chantier h4 {
 /* La plaque vide, elle, centre du TEXTE : la grille y est le bon outil. */
 .suivi-logo.est-vide { display: grid; place-items: center; }
 .suivi-fiche-tete .suivi-logo { width: 132px; height: 84px; padding: 6px; margin-bottom: var(--espace-12); }
-.suivi-porte-logos { display: flex; flex-wrap: wrap; gap: 5px; }
-.suivi-porte-logos .suivi-logo { width: 48px; height: 32px; padding: 3px; border-radius: 7px; }
+.fch-hall-logos { display: flex; flex-wrap: wrap; gap: 5px; }
+.fch-hall-logos .suivi-logo { width: 48px; height: 32px; padding: 3px; border-radius: 7px; }
 
 /* La tête d'une fiche : le nom en grand, son offre et son état sous lui. */
 .suivi-fiche-tete { margin: var(--espace-16) 0 var(--espace-24); }
