@@ -6,12 +6,20 @@ const ADRESSE = '#hermitage/commissions';
 const domaines = [['bureau', 'Bureau et référents'], ['commissions', 'Commissions'], ['sportif', 'Équipes sportives']];
 const groupesDe = (id) => GROUPES.filter((g) => g.membres.includes(id));
 const responsable = (g, id) => g.responsables.includes(id);
+// Les trois référents de pôle encadrent les catégories qui suivent : ils font
+// un rang à eux, et une équipe assise à côté d'eux brouillerait la lecture.
+const POLES = ['ecole', 'preformation', 'formation'];
+// Ils sont donc réunis dans un RANG, et non séparés par un saut de ligne : un
+// élément de pleine largeur et de hauteur nulle finit la ligne, mais fabrique
+// deux écarts de ligne au lieu d'un, et sa marge négative ne les rattrape pas —
+// elle déplace l'élément, pas la ligne. Le rang, lui, donne l'écart juste.
+const rang = (dedans) => `<div class="orga-rang">${dedans}</div>`;
 function fonctionDans(g, id) {
   if (g.id === 'presidence') return 'Coprésident';
   if (g.id === 'secretariat') return id === 'benoit' ? 'Secrétaire' : 'Vice-secrétaire';
   if (g.id === 'tresorerie') return 'Trésorier';
   if (g.id === 'sportif') return 'Responsable sportif';
-  if (['ecole', 'preformation', 'formation'].includes(g.id)) return g.aide;
+  if (POLES.includes(g.id)) return g.aide;
   if (g.id === 'gardiens') return 'Entraîneur des gardiens';
   return `${responsable(g, id) ? 'Responsable' : g.type === 'sportif' ? 'Encadrement' : 'Membre'} · ${g.nom}`;
 }
@@ -29,8 +37,21 @@ function carte(id, role) {
     ${portrait(p)}<span class="orga-nom">${echapper(morceaux.shift())} <strong>${echapper(morceaux.join(' '))}</strong></span>
     <span class="orga-role">${echapper(role)}</span></a>`;
 }
+// La largeur d'une tuile suit ce qu'elle porte : trois pôles à une personne
+// tiennent sur une ligne, un groupe de cinq prend la place qu'il lui faut.
+// C'est une BASE, pas une largeur — les tuiles d'une ligne s'y partagent le
+// reste, donc une ligne se remplit toujours jusqu'au bord.
+// La base est CE QU'IL FAUT POUR TENIR L'EFFECTIF SUR UN RANG : un portrait fait
+// 110 px, l'écart au voisin 10, la tuile 14 de chaque côté. Une base plus courte
+// promettrait un groupe qu'elle ne sait pas montrer — mesuré avant correction,
+// U9 et ses trois éducateurs se repliaient en deux rangs plus un.
+// Le plancher de 220 px est celui du titre : « Pôle école de foot » ne se coupe
+// pas en deux, et trois tuiles à une personne tiennent encore de front sur 800.
+// Le plafond de cinq garde le reste : au-delà, la tuile prend la ligne entière
+// et ses rangs se justifient d'eux-mêmes.
+const baseDuGroupe = (n) => Math.max(220, 120 * Math.min(n, 5) + 18);
 function groupe(g) {
-  return `<section class="orga-groupe" style="--orga-couleur:${g.couleur}">
+  return `<section class="orga-groupe" style="--orga-couleur:${g.couleur};--orga-base:${baseDuGroupe(g.membres.length)}px">
     <h2>${echapper(g.nom)}</h2>${g.aide ? `<p class="orga-service">${echapper(g.aide)}</p>` : ''}
     <div class="orga-personnes">${g.membres.map((id) => carte(id, fonctionDans(g,id))).join('')}</div>
   </section>`;
@@ -39,7 +60,7 @@ function bureau() {
   const pres = GROUPES.find((g) => g.id === 'presidence');
   const admin = ['remy','benoit','sandy'];
   const refs = ['djamel','sandrine','lorenzo','hicham','loic','noe','christophe'];
-  return groupe(pres) + `<section class="orga-groupe" style="--orga-couleur:#b83f4b"><h2>Administration</h2>
+  return groupe(pres) + `<section class="orga-groupe" style="--orga-couleur:#b83f4b;--orga-base:${baseDuGroupe(admin.length)}px"><h2>Administration</h2>
     <div class="orga-personnes">${admin.map((id) => carte(id, id === 'remy' ? 'Trésorier' : id === 'benoit' ? 'Secrétaire' : 'Vice-secrétaire')).join('')}</div></section>
     <section class="orga-groupe orga-large" style="--orga-couleur:#d8a333"><h2>Responsables des commissions</h2>
     <div class="orga-personnes">${refs.map((id) => carte(id, groupesDe(id).filter((g) => g.type !== 'sportif' && responsable(g,id)).map((g) => fonctionDans(g,id)).join(' · '))).join('')}</div></section>`;
@@ -84,7 +105,12 @@ export function construireOrganigramme(selection) {
     <nav class="orga-domaines" aria-label="Parcourir l’organigramme">${domaines.map(([id,nom]) => `<a href="${ADRESSE}/${id}" ${domaine===id?'aria-current="page"':''}>${nom}</a>`).join('')}</nav>
     <p class="orga-compteur" role="status" aria-live="polite" data-compteur-organigramme></p>
     <div id="orga-resultats" class="orga-personnes" hidden></div>
-    <div class="orga-grille" data-organigramme-groupes>${domaine === 'bureau' ? bureau() : GROUPES.filter((g) => domaine === 'commissions' ? ['commissions','bureau'].includes(g.type) && !['presidence','secretariat','tresorerie'].includes(g.id) : g.type === domaine).map(groupe).join('')}</div>
+    <div class="orga-grille" data-organigramme-groupes>${domaine === 'bureau' ? bureau() : (() => {
+      const retenus = GROUPES.filter((g) => domaine === 'commissions' ? ['commissions','bureau'].includes(g.type) && !['presidence','secretariat','tresorerie'].includes(g.id) : g.type === domaine);
+      const poles = retenus.filter((g) => POLES.includes(g.id));
+      return (poles.length ? rang(poles.map(groupe).join('')) : '')
+        + retenus.filter((g) => !POLES.includes(g.id)).map(groupe).join('');
+    })()}</div>
     <p class="discret orga-note">Saison 2026–2027 · Les responsables sont nommés sous leur portrait. Une personne peut contribuer à plusieurs équipes.</p>
   </div>`;
 }

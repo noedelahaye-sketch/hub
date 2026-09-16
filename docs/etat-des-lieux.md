@@ -29,6 +29,9 @@ mise en documentation, son commit et son push ; ce relais accompagne ce lot.
   découpés du club remplacent les fenêtres taillées dans les photos de groupe.
   Le portrait est **rond** — la pastille du club, la bande du nom hors champ,
   la carte écrivant déjà le nom dessous.
+- **La largeur d'une tuile suit son effectif** (16 septembre 2026) : les trois
+  référents de pôle sont côte à côte dans un rang à eux, et chaque groupe tient
+  sur un seul rang de portraits. Voir `docs/fch-organigramme-sources.md`.
 - Une fiche par personne : `#hermitage/commissions/<id>`, réunissant ses
   missions individuelles et ses rôles sportifs ; liens vers ses collègues.
 - Recherche transversale par nom, catégorie ou mission, sans doublons.
