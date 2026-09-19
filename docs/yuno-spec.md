@@ -807,6 +807,12 @@ calendrier éditorial est précisément fait pour montrer.
   Sept cases identiques ne diraient pas où l'on se tient dans la semaine.
 - **La MÊME vitrine sert la porte de Créer** : une porte ne se dessine pas deux
   fois.
+- **ELLE VIT DANS `js/gabarits.js` DEPUIS LE 16 SEPTEMBRE 2026**, et non plus dans
+  `js/yuno.js` : l'accueil du site du club la reprend pour ses propres portes, et
+  **une vitrine ne se dessine pas deux fois**. Rien n'a changé de son dessin — elle
+  se peint à `--accent`, doré ici, jaune du club là-bas, *sans rien savoir de son
+  site*. Le nom de la fonction ne bouge pas (`friseDeLaSemaine`) ; seul son import
+  change.
 - **Elle s'appelle `.porte-frise` et non `.porte-semaine`**, et ce nom-là a été
   payé comptant : `.porte-semaine` EST DÉJÀ le bouton doré « Programmer ma
   semaine » de l'accueil du hub, dans une feuille chargée sur les trois pages.
