@@ -29,7 +29,9 @@ import {
   dureeLisible,
   FAMILLES_PERSO_CHOIX,
 } from './format.js';
-import { champDuree, marquerLaDuree, demanderLaDuree, fermerLaDuree } from './gabarits.js';
+import {
+  PLUS_FLOTTANT as PLUS, champDuree, marquerLaDuree, demanderLaDuree, fermerLaDuree,
+} from './gabarits.js';
 import { marquerLesEntrantes, animerLaCoche } from './mouvements.js';
 import { ajouterAussitot, retirerAussitot, modifierAussitot } from './ecriture.js';
 
@@ -534,10 +536,6 @@ const DRAPEAU = (rempli, taille = 18) => `<svg viewBox="0 0 24 24"
 </svg>`;
 
 const PASTILLE_PRIORITE = DRAPEAU(false, 14);
-
-const PLUS = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none"
-  stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-  aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"></path></svg>`;
 
 const FLECHE = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"
   stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"

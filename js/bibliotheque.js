@@ -24,7 +24,7 @@
 // (l'étagère) et js/fiche-oeuvre.js (la page d'une œuvre).
 
 import * as api from './api.js';
-import { SIGNES as SIGNE } from './gabarits.js';
+import { SIGNES as SIGNE, PLUS_FLOTTANT } from './gabarits.js';
 import { avanceeDeLOeuvre } from './orientation.js';
 import { echapper } from './format.js';
 
@@ -899,6 +899,36 @@ export function construireRayon(R, { oeuvres, seances, urls = {} }, vue, menuDis
     <button type="button" class="cap-ajout-discret" data-ajout="${R.forme}">
       ${SIGNE.plus}<span>${echapper(V.ajouter)}</span></button>`;
 
+  // LE « + » FLOTTANT DU HUB, SUR LES DEUX ÉTAGÈRES (19 septembre 2026, demande
+  // de Noé : « rajoute le même plus en bas de page qu'il y a sur la page
+  // d'accueil du hub, sur les pages mes livres et films séries, pour rajouter
+  // un livre ou un film/série EN FONCTION DE LA PAGE dans laquelle je suis,
+  // UNIQUEMENT »).
+  //
+  // C'EST LE BOUTON DE PIED, MAIS SOUS LE POUCE. Le pied d'une étagère de
+  // trente et un films est à un écran et demi de défilement : ajouter un titre
+  // demandait d'abord de traverser toute la collection. Le rond, lui, « ne
+  // prend que très peu de place, mais ultra accessible et utile » (Noé, à sa
+  // naissance le 13 août 2026).
+  //
+  // IL N'OUVRE QUE SON RAYON, et ce n'est pas une restriction qu'on lui pose :
+  // il porte `data-ajout` comme le bouton de pied, donc **le même geste, déjà
+  // écrit** — `R` est le rayon de la page, et la fenêtre qui s'ouvre parle
+  // livres ou films selon l'étagère où l'on est. Rien à brancher : un second
+  // chemin vers le même formulaire aurait fini par ne plus ouvrir le même.
+  //
+  // *À la différence du « + » de l'accueil, il n'ouvre PAS la tuile de capture
+  // (une tâche, un événement) : sur une étagère, la seule chose qu'on vient
+  // poser est un titre.*
+  //
+  // IL VIT DANS LE BLOC DE SON RAYON, et c'est ce qui fait le « uniquement » :
+  // `appliquerLaVue` masque les blocs des autres vues, et un `hidden` emporte
+  // tout son sous-arbre. Le rond n'existe donc ni au hall, ni aux journées, ni
+  // aux habitudes — sans une ligne pour le dire.
+  const rond = `
+    <button type="button" class="ouvrir-capture" data-ajout="${R.forme}"
+      title="${echapper(V.ajouter)}" aria-label="${echapper(V.ajouter)}">${PLUS_FLOTTANT}</button>`;
+
   // LE RETOUR VERS LE HALL : on entre ici par une porte, on doit pouvoir en
   // ressortir. C'est le lien de la fiche d'une œuvre, au trait près — cette page
   // est au troisième rang, et la barre d'onglets n'en dit rien.
@@ -911,7 +941,8 @@ export function construireRayon(R, { oeuvres, seances, urls = {} }, vue, menuDis
     return `
       ${retour}
       <p class="vide">${echapper(V.vide)}</p>
-      ${ajout}`;
+      ${ajout}
+      ${rond}`;
   }
 
   const barre = construireBarre(R, affichage, filtres, oeuvres, ouverts, chip, tri);
@@ -966,7 +997,8 @@ export function construireRayon(R, { oeuvres, seances, urls = {} }, vue, menuDis
           : `<ul class="livres-etagere">${etagere}</ul>`
         : `<p class="cap-vide">${echapper(V.videFiltre)}</p>`
     }
-    ${ajout}`;
+    ${ajout}
+    ${rond}`;
 }
 
 // --- LE HALL : ce qu'on lit, puis deux portes ---------------------------------

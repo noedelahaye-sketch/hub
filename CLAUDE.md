@@ -1116,6 +1116,64 @@ la règle des deux rangs, appliquée dans une page.
   les rayons se prennent par leurs portes. Un menu qui double ce qu'une page
   offre déjà à un geste, c'est deux endroits à tenir d'accord.
 
+#### CHAQUE ÉTAGÈRE A LE « + » FLOTTANT DU HUB (19 septembre 2026)
+
+**Demande de Noé** : *« rajoute le même plus en bas de page qu'il y a sur la page
+d'accueil du hub, sur les pages mes livres et films séries, pour rajouter un
+livre ou un film/série (en fonction de la page dans laquelle je suis)
+uniquement. »*
+
+**C'EST LE BOUTON DE PIED, MAIS SOUS LE POUCE.** Le pied d'une étagère de
+trente et un films est à un écran et demi de défilement : ajouter un titre
+demandait de traverser toute la collection d'abord. Le rond est ce que Noé
+disait de lui à sa naissance — *« ne prend que très peu de place, mais ultra
+accessible et utile »*.
+
+- **IL N'OUVRE QUE SON RAYON, et ce n'est pas une restriction qu'on lui pose** :
+  il porte `data-ajout` comme le bouton de pied, donc **le même geste, déjà
+  écrit**. Le rayon vient de la page où l'on est, et la fenêtre parle livres ou
+  films en conséquence. *Un second chemin vers le même formulaire aurait fini
+  par ne plus ouvrir le même.*
+- **À la différence du « + » de l'accueil, il n'ouvre PAS la tuile de capture** :
+  sur une étagère, la seule chose qu'on vient poser est un titre.
+- **LE « UNIQUEMENT » NE COÛTE PAS UNE LIGNE** : le rond vit DANS le bloc de son
+  rayon, et `appliquerLaVue` masque les blocs des autres vues — un `hidden`
+  emporte tout son sous-arbre. Il n'existe donc ni au hall, ni aux journées, ni
+  aux habitudes, ni aux intentions. *Vérifié sur les cinq.*
+- **LE RETRAIT DE BAS DE PAGE SUIT LE ROND**, par un `:has` plutôt que par une
+  liste de vues : celle-ci vieillirait au premier rayon ajouté.
+- **IL S'EFFACE DEVANT LA TUILE VOLANTE**, ce que `body.fond-fige` ne faisait pas
+  — la coquille ne le pose que pour la tuile de CAPTURE et pour le menu. Sans la
+  règle, le rond restait allumé derrière le voile assombri.
+- **IL PASSE DEVANT LE CONTENU, SUR TOUTES LES PAGES** (19 septembre 2026,
+  demande de Noé : *« sur toutes les pages il doit passer au-dessus de tout ;
+  s'il y a un conflit entre le + et un lien vers un film ou une tâche, le +
+  doit passer devant »*). Voir la règle de `.ouvrir-capture` dans
+  css/styles.css : **il n'avait aucun `z-index`, et la raison écrite pour ça
+  était tombée le 15 septembre** — le rond s'éteint désormais pendant que la
+  tuile est ouverte, il n'a donc plus besoin de passer sous son voile.
+  *Ce que ça coûtait était pire qu'un défaut d'allure : le rond ne recevait
+  plus le clic du tout là où quelque chose de positionné traînait dessous.
+  Mesuré sur les cinq pages qui le portent, et un vrai clic au centre exact du
+  « + » des Tâches n'ouvrait pas la tuile.*
+- **LE SIGNE NE SE DESSINE PLUS TROIS FOIS** : il était déclaré mot pour mot dans
+  js/dashboard.js ET js/taches.js. Il vit désormais dans js/gabarits.js
+  (`PLUS_FLOTTANT`), et les trois écrans y pointent.
+- *Le bouton de pied reste, et fait donc doublon avec le rond sur ces deux pages.
+  Il est le seul chemin quand on arrive en bas de l'étagère ; s'il gêne, c'est
+  lui qui part, pas le rond.*
+
+> **UN « + » QUI N'OUVRE PAS LA TUILE DE CAPTURE NE DOIT PAS LAISSER SA FORME
+> DERRIÈRE LUI** — défaut trouvé en posant celui-ci, et il touchait la coquille.
+> Le clic mémorise la forme du rond (`formeDuPlus`, js/app.js) sans savoir ce
+> qu'il va ouvrir, et seule l'ouverture d'une `.capture` la consommait. Une
+> forme périmée survivait donc à la page et servait de départ au morph suivant —
+> celui d'une tuile ouverte par un tout autre geste, en touchant un jour du
+> calendrier. C'est **« PAS D'ALLER, PAS DE RETOUR »** qui tombait, et le
+> mouvement venait alors de nulle part. *Mesuré : une animation parasite sans la
+> garde, zéro avec.* On l'oublie dans le MutationObserver, le seul endroit où
+> l'on SAIT qu'aucune tuile n'est apparue.
+
 #### DEUX RÉSERVES EN BASE, UN SEUL JEU DE FONCTIONS
 
 **Les tables sont séparées** (`films`, `films_seances`, `films_citations`, bucket

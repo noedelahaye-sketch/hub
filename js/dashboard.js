@@ -38,7 +38,7 @@ import {
   effacerDepuisLeCalendrier,
 } from './calendrier-commun.js';
 import { construireLignesTaches, trierTaches } from './taches.js';
-import { demanderLaDuree, fermerLaDuree } from './gabarits.js';
+import { PLUS_FLOTTANT as PLUS, demanderLaDuree, fermerLaDuree } from './gabarits.js';
 import {
   pivotDeLaSemaine,
   semaineDe,
@@ -64,10 +64,6 @@ const ESPACES = {
 // depuis l'accueil, neuf fois sur dix ce qu'on note est une chose à faire.
 // Les autres natures restent à une pastille.
 const NATURE_PAR_DEFAUT = 'tache';
-
-const PLUS = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none"
-  stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-  aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"></path></svg>`;
 
 const PRENOM = 'Noé';
 const MAX_VICTOIRES = 5;

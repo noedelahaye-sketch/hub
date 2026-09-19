@@ -3241,11 +3241,49 @@ a.cap-grave:focus-visible {
 
 /* Le bouton flotte en bas à droite de l'écran, dans un rond plein (demande de
    Noé, 13 août 2026) : il est là où le pouce arrive, et il ne bouge pas quand
-   la liste défile. Pas de `z-index` : le fond assombri de la tuile est à 40, il
-   passe donc devant lui dès qu'on ouvre — ce qui est juste, on n'ajoute pas une
-   tâche pendant qu'on en écrit une. */
+   la liste défile.
+
+   IL PASSE DEVANT LE CONTENU (19 septembre 2026, demande de Noé : « sur toutes
+   les pages il doit passer au-dessus de tout ; s'il y a un conflit entre le +
+   et un lien vers un film ou une tâche, le + doit passer devant »).
+
+   IL N'AVAIT AUCUN `z-index`, ET CE N'ÉTAIT PAS UN OUBLI : la règle disait
+   « le fond assombri de la tuile est à 40, il passe donc devant lui dès qu'on
+   ouvre — on n'ajoute pas une tâche pendant qu'on en écrit une ». **Cette
+   raison est tombée le 15 septembre 2026**, le jour où le rond s'est mis à
+   s'ÉTEINDRE pendant que la tuile est ouverte : il n'a plus besoin de passer
+   dessous, puisqu'il n'est plus là. *Une règle qui survit à sa raison finit
+   toujours par en casser une autre* — et celle-ci en cassait une grosse.
+
+   CE QU'ELLE COÛTAIT, ET C'EST PIRE QU'UN DÉFAUT D'ALLURE : un élément
+   positionné à `z-index: 1` passe devant un élément positionné à `auto`, même
+   plus loin dans le document. Le rond était donc RECOUVERT par ce qui traînait
+   dessous — et il ne recevait plus le clic du tout. *Mesuré sur les cinq pages
+   qui le portent : trois points sur trois volés aux Tâches et sur les deux
+   étagères, deux sur trois à l'accueil et sur « Ma semaine ». Un vrai clic au
+   centre exact du « + » des Tâches n'ouvrait pas la tuile.*
+
+   15, ET NON « AU-DESSUS DE TOUT » AU SENS LITTÉRAL. Il passe devant tout le
+   contenu (qui plafonne à 10) et reste derrière la navigation — le dock est à
+   18, la barre d'onglets à 20 —, puis derrière les voiles (40) et le fantôme du
+   glissement (60). **Le choix est sans effet à l'écran** : mesuré à 375 comme à
+   788 px, le rond finit seize à dix-huit pixels AU-DESSUS du dock, les deux ne
+   se rencontrent jamais. Ce que Noé vise, c'est le conflit avec un lien de
+   contenu, et un bouton d'ajout qui recouvrirait la navigation permanente
+   serait un choix qu'il n'a pas demandé.
+
+   LA BORNE, PARCE QU'ELLE EXISTE : un panneau ouvert dans le contenu passe
+   désormais SOUS le rond — le menu à trois points d'une tuile vit dans un
+   `.cap-menu` à z-index 2. *Cherché et non trouvé : le panneau s'ouvre vers le
+   haut et vers la gauche de son bouton, et le retrait de bas de page tient le
+   contenu à distance — aucune des tuiles visibles d'une étagère de trente et un
+   films n'y arrive, défilement compris.* Le jour où un panneau s'y logerait, ce
+   n'est pas ce `z-index` qu'il faudra baisser : c'est le panneau qu'il faudra
+   monter, ou le rond qu'il faudra éteindre comme il s'éteint déjà devant une
+   tuile volante. */
 .ouvrir-capture {
   position: fixed;
+  z-index: 15;
   right: max(var(--marge-cote), env(safe-area-inset-right, 0px));
   bottom: max(var(--espace-24), env(safe-area-inset-bottom, 0px));
   display: grid;
@@ -3282,12 +3320,34 @@ a.cap-grave:focus-visible {
    s'ouvre : c'est le signal déjà là, il n'y en a pas de second à inventer. */
 body.fond-fige .ouvrir-capture { opacity: 0; pointer-events: none; }
 
+/* ET IL S'EFFACE AUSSI DEVANT UNE TUILE VOLANTE (19 septembre 2026, le jour où
+   les deux étagères de la bibliothèque ont gagné leur « + »). `fond-fige` ne
+   couvre pas ce cas : la coquille ne le pose que pour la tuile de CAPTURE et
+   pour le menu — une tuile volante a son propre voile et fige la page
+   elle-même. Sans cette règle, le rond doré restait allumé DERRIÈRE le voile
+   assombri, ce qui ne se lit ni comme un bouton ni comme rien.
+
+   Il n'est pas cliquable pour autant — le voile est à 40, le rond à 15 —, mais
+   un bouton qu'on voit sans pouvoir l'atteindre est le même piège à l'envers. */
+#espace-perso:has(.ajout-volant[open]) .ouvrir-capture {
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* Le dernier élément de la page doit pouvoir se lire et se toucher sans que le
    bouton flottant lui passe dessus. Les deux espaces qui le portent : les
    Tâches et l'accueil. */
 body[data-espace="taches"] #espace-taches,
 body[data-espace="semaine"] #espace-semaine,
 body[data-espace="dashboard"] #espace-dashboard { padding-bottom: 5.5rem; }
+
+/* PERSO NE LE PREND QUE SUR SES DEUX ÉTAGÈRES, parce que le rond n'y est que
+   là : il vit DANS le bloc de son rayon, et `appliquerLaVue` masque les autres.
+   Le `:has` lit donc la même vérité que l'écran — pas une liste de vues à tenir
+   à jour, qui vieillirait au premier rayon ajouté. Le `:not([hidden])` n'est
+   pas décoratif : un bloc masqué garde son bouton dans le DOM, et sans lui le
+   hall et les journées auraient hérité d'un retrait pour un rond absent. */
+#espace-perso:has([data-vue]:not([hidden]) .ouvrir-capture) { padding-bottom: 5.5rem; }
 
 /* Le fond des autres fenêtres du hub est à 45 % : assez pour une fiche qu'on
    consulte, pas pour celle-ci. Sur le thème sombre, l'onglet actif et le filtre

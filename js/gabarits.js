@@ -384,6 +384,15 @@ export function construireMenuDiscret(
 // pour un même geste finissent par ne plus se ressembler.
 // Les mêmes signes que la galerie du cap, dessinés et non écrits : le hub ne
 // mélange pas les glyphes de police et les icônes.
+// LE « + » DU BOUTON FLOTTANT, une seule fois (19 septembre 2026). Il était
+// déclaré mot pour mot dans js/dashboard.js ET js/taches.js ; la bibliothèque
+// en aurait fait une troisième copie. Il vit ici, avec les autres signes du
+// hub — le même dessin que `SIGNES.plus`, au corps du rond (24 px et non 14) :
+// c'est la SEULE différence, et c'est la taille de sa cible qui la dicte.
+export const PLUS_FLOTTANT = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none"
+  stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+  aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"></path></svg>`;
+
 export const SIGNES = {
   plus: `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
     stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`,

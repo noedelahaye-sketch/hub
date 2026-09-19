@@ -645,6 +645,21 @@ function morpherLaCapture(tuile) {
   // On ne peut pas animer la tuile elle-même : au moment où on l'apprend, elle
   // n'est plus dans le document. C'est donc le rond qui joue le trajet, et le
   // mouvement se lit pareil — une forme qui se referme sur l'autre.
+  // UN « + » QUI N'OUVRE PAS LA TUILE DE CAPTURE NE LAISSE PAS SA FORME
+  // DERRIÈRE LUI (19 septembre 2026). Le clic mémorise la forme du rond en
+  // capture, sans savoir ce qu'il va ouvrir ; elle n'était consommée que par
+  // l'ALLER. Depuis que les étagères de la bibliothèque portent un « + » qui
+  // ouvre une tuile VOLANTE, une forme périmée pouvait survivre à la page et
+  // servir de départ au morph suivant — celui d'une tuile ouverte par un tout
+  // autre geste, en touchant un jour du calendrier. C'est « PAS D'ALLER, PAS DE
+  // RETOUR » qui tombait, et le mouvement venait alors de nulle part.
+  //
+  // ON L'OUBLIE ICI, et pas ailleurs : c'est le seul endroit où l'on SAIT
+  // qu'aucune tuile n'est apparue. Les mutations d'un clic sont groupées en une
+  // seule passe de l'observateur, donc un gestionnaire synchrone — les quatre
+  // le sont — a déjà posé sa tuile quand on arrive ici.
+  formeDuPlus = null;
+
   if (!tuileOuverte) return;
   tuileOuverte = false;
   oublierLeClavier();
