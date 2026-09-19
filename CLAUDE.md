@@ -1985,6 +1985,7 @@ Règle métier : maximum 3 tâches en statut 'actif' par espace. L'UI doit empê
 - `reunion_objet` text (nullable) CHECK (ca, alternance, communication, partenariat, autre) — FCH seulement : non nul = cet événement est une réunion (21 août 2026). `reunion_animee` boolean NOT NULL default false — Noé anime ou participe. La préparation et le bilan vivent dans les tables `preparations`/`modeles_preparation` (voir docs/fch-spec.md).
 - `avec_photos` boolean NOT NULL default false — **cet événement produit des photos à trier** (29 août 2026). Une DÉCLARATION, faite à la création par la pastille « Photos », exactement comme `reunion_objet` dit qu'un événement est une réunion : le hub ne peut pas le deviner, une réunion n'est pas une séance et une sortie n'est pas toujours un shooting. **Offerte au FCH et à Yuno**, décochée par défaut des deux côtés ; jamais au perso ni à la formation. Elle fait naître la tâche de tri à J+1.
 - `temps_fort` boolean NOT NULL default false — **ce rassemblement est un temps fort du club** (30 août 2026) : tournoi, loto, goûter, journée du club. Une DÉCLARATION, faite à la pastille « Temps fort » de la tuile de capture, comme `reunion_objet` et `avec_photos` — et il a fallu la mesurer pour s'en convaincre : les sept événements FCH à venir ce jour-là, trois entraînements et trois temps forts compris, étaient **indistinguables en base**. Ni série, ni photos, ni créneau ne les séparaient ; ne restait que le titre. **FCH seulement.** L'accueil du site l'annonce cinq semaines avant (`carteDuTempsFort`, js/hermitage.js — le rang 2 de sa cascade).
+- `suite_de_id` uuid REFERENCES evenements(id) ON DELETE SET NULL — **la réunion dont celle-ci est la suite** (20 septembre 2026), née du `cr_suivi` de son compte-rendu. FCH seulement. C'est elle qui porte la CHAÎNE : le titre de la racine donne le nom, la longueur donne le numéro (« Réunion Lina 2 »), et la fiche de la suite y remonte pour relire le compte-rendu précédent. Voir docs/fch-spec.md.
 - `refusee_le` date (nullable) · `sans_suite` boolean NOT NULL default false — **les deux refus du bandeau de l'après** (29 août 2026), et ils ne disent pas la même chose. `refusee_le` est le « pas maintenant » : il vaut pour la journée et le message revient demain — même nom et même mécanique que sur `taches` et `projets`, où c'est le « pas aujourd'hui » des pistes du matin. `sans_suite` est la croix : cet événement n'a besoin de rien, et on ne le redemandera jamais. Sans le second, une suite qu'on ne veut pas faire deviendrait un reproche permanent.
 - `created_at` timestamptz default now()
 
@@ -2723,6 +2724,16 @@ gestes ne doivent jamais porter le même signe.
    se met à jour au retour du site, sans rechargement.
 
    *Trente et un cas éprouvés hors écran : `node tools/essai-message-du-jour.mjs`.*
+
+   ### ET LA CARTE DU SITE DU CLUB SE TAIT AUSSI (20 septembre 2026, demande de
+   Noé : *« une fois que le compte-rendu est écrit il faut aussi que le message
+   sur la page d'accueil FC Hermitage s'enlève »*)
+
+   **C'est la même règle, et désormais la même colonne** : `cr_date`. Deux
+   écrans qui posent la même question et cessent de la poser à des moments
+   différents, ce sont deux écrans dont un ment. La réunion sort de « en
+   cours » ; **la cascade retombe sur la suivante** — l'accueil du club n'est
+   jamais muet. Voir docs/fch-spec.md.
 5. **Les habitudes ont QUITTÉ l'accueil** (30 août 2026, décision de Noé le
    soir même où elles y étaient arrivées). Elles vivent dans perso, seul écran
    qui les montre — voir « Les habitudes » plus haut. L'accueil porte ce qui est

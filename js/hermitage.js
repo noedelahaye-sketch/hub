@@ -26,6 +26,7 @@ import {
   construireFormulaire,
   construireFenetre,
   construireObjectifs,
+  COPIE,
   friseDeLaSemaine,
 } from './gabarits.js';
 import {
@@ -462,6 +463,79 @@ function ficheDeLaReunion(fiches, evenementId) {
   return fiches.find((fiche) => fiche.evenement_id === evenementId) ?? null;
 }
 
+// --- LA CHAÎNE DES RÉUNIONS (20 septembre 2026, demande de Noé) --------------
+//
+// « Dans le compte rendu, lorsque je mets une date de prochaine réunion, il
+// faut que ça crée l'évènement à cette date avec le même nom que la dernière
+// réunion + le numéro — pour la réunion Lina du 18 septembre, j'ai mis que la
+// prochaine serait le 25, donc au 25 un évènement "Réunion Lina 2" doit être
+// créé, et donc être lié à la réunion du 18 pour que ma préparation soit aidée
+// par le compte-rendu de la dernière réunion. »
+//
+// LE NUMÉRO VIENT DE LA CHAÎNE, JAMAIS DU TITRE, et c'est ce qui rend la règle
+// sûre. Lire le nombre écrit à la fin d'un nom pour l'incrémenter marche sur
+// « Réunion Lina 2 » et se trompe sur « Réunion CA 2026 », qui deviendrait
+// « Réunion CA 2027 » — une année prise pour un rang, et personne ne le verrait
+// avant d'ouvrir le calendrier. On remonte donc les maillons : le titre de la
+// RACINE porte le nom, la LONGUEUR porte le rang, et aucun texte n'est
+// interprété.
+//
+// *Conséquence assumée : renommer une suite à la main ne renomme pas celles qui
+// viendront après elle — elles repartent du nom de la racine. C'est le prix de
+// ne rien deviner, et il se corrige d'un titre.*
+export function chaineDeLaReunion(evenements, reunion) {
+  const chaine = [reunion];
+  const vus = new Set([reunion.id]);
+  let courant = reunion;
+
+  // LA BORNE N'EST PAS DE LA PRUDENCE DÉCORATIVE : le CHECK de la base
+  // n'interdit que le cycle à UN maillon (`suite_de_id <> id`) — un CHECK ne
+  // sait pas voir plus loin. Deux réunions qui se pointeraient l'une l'autre
+  // feraient tourner cette boucle pour toujours, et l'écran serait blanc.
+  while (courant.suite_de_id && !vus.has(courant.suite_de_id)) {
+    const mere = evenements.find((e) => e.id === courant.suite_de_id);
+    if (!mere) break;
+    chaine.unshift(mere);
+    vus.add(mere.id);
+    courant = mere;
+  }
+
+  return chaine;
+}
+
+// Le nom de la suite : celui de la racine, et son rang. La racine seule donne
+// donc « Réunion Lina 2 », et « Réunion Lina 2 » donne « Réunion Lina 3 ».
+export function titreDeLaSuite(evenements, reunion) {
+  const chaine = chaineDeLaReunion(evenements, reunion);
+  return `${chaine[0].titre} ${chaine.length + 1}`;
+}
+
+// La suite DÉJÀ POSÉE, s'il y en a une. C'est elle qui rend le geste rejouable :
+// réenregistrer un compte-rendu ne pose pas une seconde réunion, il déplace
+// celle qui existe. Même motif que l'index unique `(evenement_id, origine)` qui
+// rend le rattrapage des tâches inoffensif à chaque ouverture.
+export function suiteDeLaReunion(evenements, reunionId) {
+  return evenements.find((e) => e.suite_de_id === reunionId) ?? null;
+}
+
+// LE COMPTE-RENDU DE LA PRÉCÉDENTE — l'autre moitié de la demande : « pour que
+// ma préparation soit aidée par le compte-rendu de la dernière réunion ». On
+// remonte d'un maillon et l'on prend sa fiche, si elle en a une.
+//
+// PAR LA CHAÎNE ET NON PAR L'OBJET DE RÉUNION, à la différence de
+// `dernierRegardAnimation` juste en dessous : celui-ci cherche « une réunion du
+// même objet », ce qui est un rapprochement flou — il rend n'importe quelle
+// réunion « communication », fût-elle d'un autre cycle. Ici le lien est EXPLICITE,
+// posé au moment où Noé a daté la suite. *Les deux coexistent parce qu'ils ne
+// répondent pas à la même question : l'un cherche un regard sur l'animation, où
+// qu'il soit ; l'autre cherche LA réunion d'avant.*
+export function precedenteDeLaReunion(evenements, fiches, reunion) {
+  if (!reunion?.suite_de_id) return null;
+  const mere = evenements.find((e) => e.id === reunion.suite_de_id);
+  if (!mere) return null;
+  return { evenement: mere, fiche: ficheDeLaReunion(fiches, mere.id) };
+}
+
 // PAS de checklist sur les fiches de réunion (24 août 2026 au soir, après un
 // aller-retour complet le jour même) : l'avant et l'après doublonnaient « Ta
 // préparation » et « Conclure », le pendant a suivi, puis « ce principe »
@@ -590,7 +664,44 @@ function ligneReunion(evenement, fiches) {
 // en cours → fait → à faire), l'action se retire d'une croix. Une action faite
 // reste visible sur sa fiche — elle raconte la réunion — mais quitte le
 // tableau, qui ne montre que ce qui reste à tenir.
-function ligneAction(action) {
+// D'OÙ ELLE VIENT, ET SI ELLE EST FAITE (20 septembre 2026, demande de Noé :
+// « pour le suivi des actions, je dois savoir de quelle réunion elles
+// proviennent et pouvoir noter si elle a été faite »).
+//
+// LES DEUX EXISTAIENT DÉJÀ EN BASE et manquaient à l'ÉCRAN — `actions_club`
+// porte `fiche_id` et `statut` depuis le premier jour :
+//
+//   — LA RÉUNION D'ORIGINE ne s'écrivait nulle part. Sur le tableau permanent,
+//     qui mélange les réunions, « Créer le compte LinkedIn FCH » ne disait pas
+//     d'où il sortait — et c'est la première question qu'on se pose devant un
+//     engagement qu'on ne se rappelle plus avoir pris. **Elle est un LIEN** :
+//     savoir d'où vient une action et pouvoir y retourner sont la même envie.
+//
+//   — NOTER QU'ELLE EST FAITE se faisait déjà, en pressant l'étiquette de
+//     statut — mais **une étiquette ne se présente pas comme un geste**. Elle
+//     a la forme d'un libellé, et Noé ne l'a pas trouvée. Le hub a pourtant
+//     UN signe pour « c'est fait », qu'il emploie partout : **le rond d'une
+//     tâche**. C'est celui-là, au trait près (`.tache-cercle`), comme les
+//     feuilles de préparation l'ont repris avant.
+//
+// LES DEUX GESTES COEXISTENT, et ce n'est pas un doublon : le ROND fait
+// l'aller-retour « fait / pas fait », qui est le geste quotidien ; l'ÉTIQUETTE
+// garde son cycle à trois crans, seul chemin vers « en cours ». C'est déjà la
+// grammaire d'une publication au calendrier — le rond avance d'un cran, la
+// pastille ouvre le choix complet.
+//
+// `fiches` EST FACULTATIF, et c'est ce qui décide de l'affichage du nom : sur
+// la fiche d'une réunion, ses PROPRES actions n'ont pas à répéter son titre
+// trois fois. Les deux autres listes — le tableau permanent et « Ouvrir par le
+// suivi » — mélangent les réunions et le passent.
+//
+// ATTENTION AUX APPELS : `.map(ligneAction)` passerait l'INDEX en second
+// argument, donc un nombre là où l'on attend des fiches. Les trois appels
+// écrivent leur lambda.
+function ligneAction(action, fiches = null) {
+  const fiche = fiches?.find((candidate) => candidate.id === action.fiche_id) ?? null;
+  const faite = action.statut === 'fait';
+
   return `
     <li>
       <span class="tuile-entete">
@@ -600,6 +711,12 @@ function ligneAction(action) {
           aria-label="Statut : ${STATUTS_ACTION[action.statut]} — changer">${
             STATUTS_ACTION[action.statut]
           }</button>
+        ${
+          fiche
+            ? `<a class="discret action-reunion" href="#hermitage/reunions/${echapper(fiche.id)}"
+                 title="Ouvrir la fiche de cette réunion">${echapper(fiche.titre)}</a>`
+            : ''
+        }
         ${action.responsable ? `<span class="action-responsable">${echapper(action.responsable)}</span>` : ''}
         ${
           action.echeance
@@ -612,9 +729,14 @@ function ligneAction(action) {
           data-retirer-action="${echapper(action.id)}"
           title="Retirer" aria-label="Retirer « ${echapper(action.texte)} »">×</button>
       </span>
-      <span class="${action.statut === 'fait' ? 'action-faite' : ''}">${echapper(action.texte)}${
-        action.tache_id ? ` <span class="discret">· aussi une tâche</span>` : ''
-      }</span>
+      <span class="action-corps">
+        <button type="button" class="tache-cercle" data-cocher-action="${echapper(action.id)}"
+          aria-pressed="${faite}"
+          aria-label="${faite ? 'Rouvrir' : 'Marquer faite'} « ${echapper(action.texte)} »"></button>
+        <span class="${faite ? 'action-faite' : ''}">${echapper(action.texte)}${
+          action.tache_id ? ` <span class="discret">· aussi une tâche</span>` : ''
+        }</span>
+      </span>
     </li>`;
 }
 
@@ -633,7 +755,7 @@ function ligneAction(action) {
 function blocContrat(fiche, animee) {
   if (!animee) {
     return `
-    <section class="bloc">
+    <section class="bloc fch-tuile">
       <h2>Ta préparation</h2>
       ${construireFormulaire({
         id: 'fiche-contrat',
@@ -667,10 +789,8 @@ function blocContrat(fiche, animee) {
   }
 
   return `
-    <section class="bloc">
+    <section class="bloc fch-tuile">
       <h2>Le contrat</h2>
-      <p class="discret">Si personne ne peut compléter « à la fin, nous devons
-        avoir… », la réunion n'est pas encore prête.</p>
       ${construireFormulaire({
         id: 'fiche-contrat',
         libelle: 'Le contrat',
@@ -716,57 +836,73 @@ function blocContrat(fiche, animee) {
 }
 
 // L'ordre du jour orienté action : des résultats à produire, pas des thèmes.
-function blocOrdreDuJour(fiche) {
+function blocOrdreDuJour(fiche, pointEnEdition = null) {
   const total = fiche.points.reduce((somme, point) => somme + (point.minutes ?? 0), 0);
+  const enEdition = fiche.points.find((point) => point.id === pointEnEdition) ?? null;
 
   const lignes = fiche.points
     .map(
+      // LA TUILE D'UN POINT, REVUE (20 septembre 2026, demande de Noé, capture
+      // à l'appui) : « le nom doit être davantage mis en avant, le temps estimé
+      // plus petit, la sortie attendue en dessous du titre (pas de texte
+      // "sortie attendue", juste la sortie elle-même), pas de bouton traité et
+      // reporté, moins d'espace entre le nom et la pastille "décider" ».
+      //
+      // LE NOM EST LE SUJET, TOUT LE RESTE EST DU SERVICE — c'est la règle de
+      // la tuile d'un livre, et celle qu'on vient d'appliquer à la ligne d'une
+      // action du suivi.
+      //
+      // « SORTIE ATTENDUE : » DISPARAÎT, PAS LA SORTIE. Le libellé expliquait
+      // un champ dont le contenu se comprend seul — *« ce qui se montre n'a pas
+      // à se nommer »*, la règle qui vient de faire tomber quatre phrases
+      // d'aide de cette page. Elle se lit sous le titre, en encre discrète.
       (point) => `
-    <li>
+    <li class="odj-point" data-modifier-point="${echapper(point.id)}">
       <span class="tuile-entete">
         ${
           point.type_point
             ? `<span class="etiquette">${TYPES_POINT[point.type_point] ?? ''}</span>`
             : ''
         }
-        ${point.minutes ? `<span class="discret"><span class="chiffre">${point.minutes}</span> min</span>` : ''}
-        <button type="button" class="lien-discret bouton-mini bouton-retirer"
+        <button type="button" class="lien-discret bouton-mini bouton-retirer odj-croix"
           data-retirer-point="${echapper(point.id)}"
           title="Retirer" aria-label="Retirer « ${echapper(point.titre)} »">×</button>
       </span>
-      <span class="reunion-titre">${echapper(point.titre)}</span>
+      <button type="button" class="odj-nom" data-modifier-point="${echapper(point.id)}"
+        >${echapper(point.titre)}</button>
       ${
-        point.sortie
-          ? `<span class="discret">Sortie attendue : ${echapper(point.sortie)}</span>`
+        // LE TEMPS SUIT LE TITRE, SUR SA LIGNE (20 septembre 2026, demande de
+        // Noé : « le temps doit être sur la même ligne que le titre, en jaune
+        // et italique »). Il vivait dans l'en-tête, à côté de la pastille de
+        // type ; il dit maintenant ce que CE point coûte, juste après ce qu'il
+        // est. *Le `<li>` enroule, donc il se pose à la suite du nom et la
+        // sortie passe seule à la ligne — il n'y a pas de conteneur à ajouter.*
+        point.minutes
+          ? `<span class="odj-duree"><span class="chiffre">${point.minutes}</span> min</span>`
           : ''
       }
-      <span class="odj-statuts">
-        <button type="button" class="lien-discret bouton-mini ${point.statut === 'traite' ? 'actif' : ''}"
-          data-point-statut="${echapper(point.id)}:traite"
-          aria-pressed="${point.statut === 'traite'}">${
-            point.statut === 'traite' ? '✓ Traité' : 'Traité'
-          }</button>
-        <button type="button" class="lien-discret bouton-mini ${point.statut === 'reporte' ? 'actif' : ''}"
-          data-point-statut="${echapper(point.id)}:reporte"
-          aria-pressed="${point.statut === 'reporte'}">${
-            point.statut === 'reporte' ? '→ Reporté' : 'Reporté'
-          }</button>
-      </span>
+      ${point.sortie ? `<span class="discret odj-sortie">${echapper(point.sortie)}</span>` : ''}
     </li>`,
     )
     .join('');
 
   return `
-    <section class="bloc">
+    <section class="bloc fch-tuile">
       <h2>L'ordre du jour</h2>
-      <p class="discret">Chaque point commence par un verbe et annonce sa sortie.
-        Pendant la réunion, chaque point se clôt : traité, ou reporté — explicitement.${
-          total ? ` <span class="chiffre">${total}</span> min prévues.` : ''
-        }</p>
       ${
-        fiche.points.length
-          ? `<ul class="liste-reunions">${lignes}</ul>`
-          : `<p class="vide">Le premier point donne le ton : « Décider… », « Répartir… », « Valider… »</p>`
+        // LE TOTAL RESTE, L'AIDE PART (20 septembre 2026, demande de Noé). Il
+        // vivait À LA FIN de la phrase de conseil — « chaque point commence par
+        // un verbe… X min prévues » —, et la retirer l'aurait emporté avec
+        // elle. Ce n'est pas du conseil : c'est ce que la réunion pèse.
+        total ? `<p class="discret"><span class="chiffre">${total}</span> min prévues.</p>` : ''
+      }
+      ${
+        // ET L'ÉCRAN VIDE AVEC : « le premier point donne le ton » était un
+        // exemple, pas une porte. Le bouton « Ajouter un point » juste en
+        // dessous EST la porte, et *« un espace vide ouvre une porte, il ne
+        // s'excuse pas »* — il n'a pas besoin qu'on lui explique ce qu'on
+        // écrira dedans.
+        fiche.points.length ? `<ul class="liste-reunions">${lignes}</ul>` : ''
       }
       ${
         fiche.points.length > 3
@@ -774,24 +910,65 @@ function blocOrdreDuJour(fiche) {
                lesquels peuvent attendre ?</p>`
           : ''
       }
-      ${construireFormulaire({
-        id: 'fiche-point',
-        libelle: 'Ajouter un point',
-        action: 'ajouter-point-reunion',
-        bouton: 'Ajouter',
-        extra: `<input type="hidden" name="fiche_id" value="${echapper(fiche.id)}">`,
-        champs: [
-          {
-            nom: 'titre',
-            libelle: 'Le point — un verbe d\'action : décider, valider, répartir…',
-            type: 'text',
-            requis: true,
-          },
-          { nom: 'type_point', libelle: 'Pour quoi faire', type: 'choix', options: { '': '—', ...TYPES_POINT } },
-          { nom: 'minutes', libelle: 'Temps prévu (minutes)', type: 'number' },
-          { nom: 'sortie', libelle: 'La sortie attendue — un résultat, pas un thème', type: 'text' },
-        ],
-      })}
+      ${
+        // ON MODIFIE EN CLIQUANT SUR LA TUILE (20 septembre 2026, demande de
+        // Noé), et c'est LE MÊME FORMULAIRE qui sert : un second, posé à côté,
+        // finirait par ne plus demander les mêmes champs. Il change de mots et
+        // reçoit l'identifiant du point ; l'écriture décide ensuite si elle
+        // pose ou si elle corrige. C'est la mécanique de la tuile de capture du
+        // hub — « la tuile ne sait pas si elle crée ou si elle corrige, c'est
+        // l'envoi qui le sait ».
+        //
+        // IL RESTE VOLANT, ET C'EST TOUTE LA DEMANDE (correction de Noé :
+        // « en appuyant ça doit rouvrir la tuile volante de la création afin
+        // de pouvoir modifier »).
+        //
+        // `ouvert: true` AURAIT FAIT L'INVERSE : dans `construireFormulaire`,
+        // `volant = !ouvert` — cette option sert aux formulaires qui vivent
+        // DÉJÀ dans une fenêtre, et « une tuile par-dessus une fenêtre serait
+        // une fenêtre de trop ». Le passer à vrai dépliait donc le formulaire
+        // dans le flux, sous la liste. *Mesuré : c'est ce qui se produisait.*
+        //
+        // On le laisse volant et **c'est le geste qui l'ouvre**, juste après
+        // le rendu — voir `data-modifier-point` dans le gestionnaire de clic.
+        construireFormulaire({
+          id: 'fiche-point',
+          libelle: enEdition ? 'Modifier le point' : 'Ajouter un point',
+          action: 'ajouter-point-reunion',
+          bouton: enEdition ? 'Enregistrer' : 'Ajouter',
+          extra: `<input type="hidden" name="fiche_id" value="${echapper(fiche.id)}">${
+            enEdition ? `<input type="hidden" name="point_id" value="${echapper(enEdition.id)}">` : ''
+          }`,
+          champs: [
+            {
+              nom: 'titre',
+              libelle: 'Le point — un verbe d\'action : décider, valider, répartir…',
+              type: 'text',
+              requis: true,
+              valeur: enEdition?.titre ?? '',
+            },
+            {
+              nom: 'type_point',
+              libelle: 'Pour quoi faire',
+              type: 'choix',
+              options: { '': '—', ...TYPES_POINT },
+              valeur: enEdition?.type_point ?? '',
+            },
+            {
+              nom: 'minutes',
+              libelle: 'Temps prévu (minutes)',
+              type: 'number',
+              valeur: enEdition?.minutes ?? '',
+            },
+            {
+              nom: 'sortie',
+              libelle: 'La sortie attendue — un résultat, pas un thème',
+              type: 'text',
+              valeur: enEdition?.sortie ?? '',
+            },
+          ],
+        })
+      }
     </section>`;
 }
 
@@ -806,15 +983,16 @@ function blocOrdreDuJour(fiche) {
 // coché ne bouge, une ligne en trop se retire de sa croix.
 // Le suivi : la réunion s'ouvre en relisant ce qui était prévu. « Qu'est-ce qui
 // était prévu ? Qu'est-ce qui a été fait ? Qu'est-ce qui bloque ? »
-function blocSuivi(actionsOuvertes) {
+function blocSuivi(actionsOuvertes, fiches) {
   if (!actionsOuvertes.length) return '';
 
   return `
-    <section class="bloc">
-      <h2>Ouvrir par le suivi</h2>
+    <div class="reunion-suivi">
       <p class="discret">Ce qui était prévu aux réunions d'avant — fait, en cours, bloqué ?</p>
-      <ul class="liste-reunions">${actionsOuvertes.map(ligneAction).join('')}</ul>
-    </section>`;
+      <ul class="liste-reunions">${actionsOuvertes
+        .map((action) => ligneAction(action, fiches))
+        .join('')}</ul>
+    </div>`;
 }
 
 // La présentation, sur le Drive du club.
@@ -832,10 +1010,16 @@ function blocPresentation(fiche) {
                </span>
                <span class="lien-externe-fleche" aria-hidden="true">→</span>
              </a>`
+          // « COPIER LE TITRE » DEVIENT UNE ICÔNE (20 septembre 2026, demande de
+          // Noé) : trois mots pour un geste qu'un dessin dit mieux, au bout
+          // d'une phrase déjà longue. Le mot part dans `title` et dans le nom
+          // accessible — c'est la parade du hub, celle de la ligne d'une
+          // habitude et des cartes du dimanche.
           : `<p class="discret">Copier la dernière garde les couleurs du club. Renomme la
-               copie « ${echapper(titreDrive(fiche))} » —
-               <button type="button" class="lien-discret bouton-mini"
-                 data-copier-titre="${echapper(titreDrive(fiche))}">copier le titre</button></p>`
+               copie « ${echapper(titreDrive(fiche))} »
+               <button type="button" class="lien-discret bouton-mini bouton-copie"
+                 data-copier-titre="${echapper(titreDrive(fiche))}"
+                 title="Copier le titre" aria-label="Copier le titre">${COPIE}</button></p>`
       }
       <p class="reunion-portes">
         <a class="bouton-secondaire bouton-mini" href="${DRIVE_REUNIONS.modelePresentation}"
@@ -890,13 +1074,11 @@ function blocConclure(fiche, animee, actionsDeLaFiche) {
   return `
     <section class="bloc">
       <h2>Conclure</h2>
-      <p class="discret">À chaud, sous 48 h — c'est l'après-réunion qui transforme
-        la discussion en fonctionnement du club.</p>
 
       <h3 class="reunion-sous-titre">Les actions décidées</h3>
       ${
         actionsDeLaFiche.length
-          ? `<ul class="liste-reunions">${actionsDeLaFiche.map(ligneAction).join('')}</ul>`
+          ? `<ul class="liste-reunions">${actionsDeLaFiche.map((a) => ligneAction(a)).join('')}</ul>`
           : `<p class="vide">Chaque action décidée s'inscrit ici : quoi, qui, pour quand.</p>`
       }
       ${construireFormulaire({
@@ -1017,6 +1199,125 @@ function dernierRegardAnimation(etat, fiche, evenement) {
   );
 }
 
+// --- DEUX BLOCS CÔTE À CÔTE, ET QUI SE REPLIENT (20 septembre 2026) ---------
+//
+// Demande de Noé : « pour la préparation, sur ordinateur il doit y avoir des
+// blocs côte à côte plutôt que tout ligne par ligne. Le récap de la dernière
+// réunion et les tâches du suivi doivent être en haut côte à côte et
+// facilement masquables. Le contrat et l'ordre du jour côte à côte, le reste
+// on est bon. »
+//
+// CE QUE ÇA RANGE : la fiche était une colonne de sept blocs, donc un écran et
+// demi de défilement avant d'atteindre le contrat — alors qu'un ordinateur a
+// de la largeur à ne plus savoir qu'en faire. Les deux blocs du haut sont de la
+// RELECTURE (ce qui s'est dit, ce qui reste à tenir), les deux suivants du
+// TRAVAIL (ce qu'on se donne, comment on le mène) : les apparier deux à deux,
+// c'est mettre ensemble ce qui se lit ensemble.
+//
+// UN DUO NE SE FORME QU'À DEUX. Un seul bloc présent reste pleine largeur — une
+// carte solitaire dans une grille à deux colonnes laisserait une demi-page
+// vide, et c'est exactement ce que `auto-fit` fabrique quand on le laisse
+// faire. La réunion à laquelle on N'ASSISTE PAS n'a pas d'ordre du jour, et une
+// première réunion n'a pas de précédente : les deux cas arrivent.
+const duo = (a, b) => {
+  const parts = [a, b].filter((part) => part && part.trim());
+  if (!parts.length) return '';
+  return parts.length === 2 ? `<div class="reunion-duo">${parts.join('')}</div>` : parts[0];
+};
+
+// CE QUI VIENT D'AVANT : UNE SEULE GRANDE TUILE, UN SEUL PLI (20 septembre
+// 2026, correction de Noé : *« les 2 blocs "ce que disait la précédente" et
+// "ouvrir par le suivi" doivent être une grande tuile, et je dois pouvoir les
+// masquer ensemble, pas l'un puis l'autre — les 2 en même temps »*).
+//
+// *Ce que ça renverse, et il a raison : ils ont eu un pli CHACUN pendant une
+// heure, au motif qu'ils ne servent pas au même moment — le récap se lit avant,
+// le suivi se coche pendant. Mais ce ne sont pas deux blocs qu'on range l'un
+// après l'autre : c'est UNE chose, ce qui vient de la réunion d'avant, et on la
+// range d'un geste pour atteindre le travail.*
+//
+// LE PLI EST UN `<details>` NATIF, et son état VIT DANS L'ÉTAT DE LA PAGE.
+// C'est la différence avec le relevé d'une journée, où le hub s'en passe :
+// là-bas « la tuile se redessine à l'ouverture d'un jour, pas pendant qu'on la
+// lit ». Ici, **on coche une action DANS le bloc du suivi**, et cocher
+// redessine la fiche entière — un `<details>` rouvert à chaque coche serait
+// insupportable au moment précis où l'on s'en sert.
+//
+// OUVERT PAR DÉFAUT, parce que le guide du club demande qu'une réunion
+// « s'ouvre par le suivi du précédent », et parce qu'un bloc qu'on ne voit pas
+// ne se replie pas.
+//
+// LE TITRE DE LA TUILE EST LE SEUL (correction de Noé, le même jour : « enlève
+// les titres "ce que disait la précédente" et "ouvrir par le suivi" »). Les
+// deux colonnes en ont porté un pendant une heure ; **ce qui se montre n'a pas
+// à se nommer** — c'est la règle qui a fait tomber quatre titres de la tuile
+// d'une journée, le 1er septembre. Chaque colonne se dit déjà toute seule : à
+// gauche le NOM de la réunion d'avant, en lien et en tête ; à droite la phrase
+// qui demande « fait, en cours, bloqué ? ». Deux titres de plus auraient coûté
+// deux lignes pour redire ce qui se voit.
+function blocDAvant(recap, suivi, plis) {
+  const parts = [recap, suivi].filter((part) => part && part.trim());
+  if (!parts.length) return '';
+
+  return `
+    <details class="bloc fch-tuile reunion-pli" data-pli="avant"${plis?.avant ? '' : ' open'}>
+      <summary class="reunion-pli-tete"><h2>Ce qui vient d'avant</h2></summary>
+      ${parts.length === 2 ? `<div class="reunion-duo">${parts.join('')}</div>` : parts[0]}
+    </details>`;
+}
+
+// CE QUE DISAIT LA PRÉCÉDENTE — la seconde moitié de la demande du
+// 20 septembre 2026 : « être lié à la réunion du 18 pour que ma préparation
+// soit aidée par le compte-rendu de la dernière réunion ».
+//
+// C'EST LE GUIDE « RÉUNIONS EFFICACES » QUI LE DEMANDAIT DÉJÀ — « chaque
+// réunion s'ouvre par le suivi du précédent » (migration du 21 août 2026) —, et
+// il n'y avait rien pour le faire : le tableau des actions suivait bien les
+// engagements, mais les POINTS EN ATTENTE et les DÉCISIONS restaient enfermés
+// dans la fiche d'avant, qu'il fallait aller rouvrir.
+//
+// LES POINTS EN ATTENTE D'ABORD : ce sont eux qui appellent une suite —
+// « reportés, arbitrages à venir ». Les décisions viennent après, comme rappel
+// de ce qui est tranché et n'a pas à être rouvert.
+//
+// IL NE S'AFFICHE QUE S'IL A QUELQUE CHOSE À DIRE : une réunion précédente sans
+// compte-rendu ne laisse qu'un lien vers elle, et une chaîne qui commence n'a
+// pas de précédente du tout. *Un bloc vide sous un titre est pire que pas de
+// bloc : il se lit comme une panne.*
+// LE TEXTE GARDE SES RETOURS À LA LIGNE, LE LIBELLÉ NON, et il a fallu le
+// séparer pour de bon : `white-space: pre-wrap` préserve TOUT l'espace du
+// gabarit — l'indentation comprise. *Mesuré à l'écran : un libellé écrit sur
+// deux lignes de source s'affichait « RESTÉ » puis « EN ATTENTE » décalé de
+// quinze espaces.* Le libellé vit donc hors du `pre-wrap`, et le texte dedans.
+const part = (quoi, texte) =>
+  texte
+    ? `<p class="reunion-precedente-part"><span class="reunion-precedente-quoi">${echapper(
+        quoi,
+      )}</span><span class="reunion-precedente-texte">${echapper(texte)}</span></p>`
+    : '';
+
+function rappelDeLaPrecedente(etat, evenement) {
+  const avant = precedenteDeLaReunion(etat.evenements, etat.fiches, evenement);
+  if (!avant?.fiche) return '';
+
+  const { evenement: mere, fiche } = avant;
+  if (!fiche.cr_decisions && !fiche.cr_en_attente) return '';
+
+  const quand = mere.date_debut
+    ? echeanceLisible(new Date(mere.date_debut))
+    : '';
+
+  return `
+    <div>
+      <p class="reunion-precedente-titre">
+        <a href="#hermitage/reunions/${echapper(fiche.id)}">${echapper(fiche.titre)}</a>
+        ${quand ? `<span class="discret"> · ${echapper(quand)}</span>` : ''}
+      </p>
+      ${part('Resté en attente', fiche.cr_en_attente)}
+      ${part('Ce qui avait été décidé', fiche.cr_decisions)}
+    </div>`;
+}
+
 function vueFicheReunion(etat, fiche) {
   const evenement = etat.evenements.find((e) => e.id === fiche.evenement_id) ?? null;
   const animee = Boolean(evenement?.reunion_animee);
@@ -1056,15 +1357,23 @@ function vueFicheReunion(etat, fiche) {
              à refaire autrement : « ${echapper(precedent.bilan_animation)} »</p>`
         : ''
     }
-    ${blocContrat(fiche, animee)}
     ${
-      // L'ordre du jour et la présentation appartiennent à qui TIENT la
+      // EN HAUT, CÔTE À CÔTE, ET MASQUABLES (demande de Noé, 20 septembre
+      // 2026) : les deux blocs de RELECTURE. Le suivi vivait en cinquième
+      // position, sous la présentation — donc après tout le travail de
+      // préparation, alors que le guide du club demande qu'une réunion
+      // « s'ouvre par le suivi du précédent ».
+      blocDAvant(rappelDeLaPrecedente(etat, evenement), blocSuivi(suivi, etat.fiches), etat.plis)
+    }
+    ${
+      // PUIS LES DEUX BLOCS DE TRAVAIL : ce qu'on se donne, et comment on le
+      // mène. L'ordre du jour et la présentation appartiennent à qui TIENT la
       // réunion (précision de Noé, 24 août 2026) : quand il y assiste, ce ne
-      // sont pas ses décisions — la fiche ne les lui demande pas.
-      animee ? blocOrdreDuJour(fiche) : ''
+      // sont pas ses décisions — la fiche ne les lui demande pas, et le duo se
+      // défait alors tout seul.
+      duo(blocContrat(fiche, animee), animee ? blocOrdreDuJour(fiche, etat.pointEnEdition) : '')
     }
     ${animee ? blocPresentation(fiche) : ''}
-    ${blocSuivi(suivi)}
     ${animee ? blocKitAnimation() : ''}
     ${blocConclure(fiche, animee, actionsDeLaFiche)}
     <p><button type="button" class="lien-discret" data-supprimer-fiche="${echapper(fiche.id)}">
@@ -1098,7 +1407,9 @@ function vueReunions(etat) {
         rend les engagements visibles, il n'est pas là pour culpabiliser.</p>
       ${
         ouvertes.length
-          ? `<ul class="liste-reunions">${ouvertes.map(ligneAction).join('')}</ul>`
+          ? `<ul class="liste-reunions">${ouvertes
+              .map((action) => ligneAction(action, etat.fiches))
+              .join('')}</ul>`
           : `<p class="vide">Les actions décidées en réunion s'inscriront ici.</p>`
       }
     </section>`
@@ -1213,8 +1524,29 @@ const PHASES_REUNION = { avant: 'À préparer', pendant: 'En ce moment', apres: 
 function carteDeLaReunion(etat, maintenant) {
   const reunions = etat.evenements.filter(estReunion);
 
+  // LA CARTE SE TAIT QUAND LE COMPTE-RENDU EST ÉCRIT (20 septembre 2026,
+  // demande de Noé : « une fois que le compte-rendu est écrit il faut aussi que
+  // le message sur la page d'accueil FC Hermitage s'enlève »).
+  //
+  // C'EST LA MÊME RÈGLE QUE LE BANDEAU DU HUB, corrigé la veille — *la question
+  // se tait quand elle a sa réponse* —, et les deux écrans la tiennent
+  // désormais par la même colonne, `fiches_reunion.cr_date`. Deux écrans qui
+  // poseraient la même question et cesseraient de la poser à des moments
+  // différents, ce sont deux écrans dont un ment.
+  //
+  // ELLE SORT DE « EN COURS », ELLE NE VIDE PAS LA CARTE : la cascade retombe
+  // alors sur la PROCHAINE réunion, ou sur le rang suivant s'il n'y en a pas.
+  // Une réunion conclue n'a plus rien à demander, mais l'accueil a toujours
+  // quelque chose à montrer.
+  //
+  // LA PHASE « PENDANT » EN FAIT PARTIE, et ce n'est pas un excès de zèle : une
+  // réunion qui finit tôt se conclut avant l'heure de fin qu'on lui avait
+  // donnée, et sa carte resterait « En ce moment » alors que tout est écrit.
+  const conclue = (e) => Boolean(ficheDeLaReunion(etat.fiches, e.id)?.cr_date);
+
   const enCours = reunions
     .filter((e) => {
+      if (conclue(e)) return false;
       const phase = phaseDeLaSortie(e, maintenant);
       return phase === 'pendant' || phase === 'apres';
     })
@@ -2689,6 +3021,16 @@ export default {
       series: [],
       fiches: [],
       actionsClub: [],
+      // LES BLOCS REPLIÉS de la fiche d'une réunion (20 septembre 2026). De
+      // l'état d'INTERFACE : il ne va pas au cache, et rouvrir le site retrouve
+      // les blocs ouverts. Il existe parce que cocher une action du suivi
+      // redessine la fiche — sans lui, le `<details>` se rouvrirait à chaque
+      // coche, au moment précis où l'on s'en sert.
+      plis: {},
+      // LE POINT DE L'ORDRE DU JOUR qu'on est en train de modifier (20
+      // septembre 2026). De l'état d'INTERFACE, comme les plis : il ne va pas
+      // au cache, et rouvrir la fiche repart du formulaire vide.
+      pointEnEdition: null,
       modelesPrepa: [],
       // La publication ouverte en fenêtre d'édition, sur Créer.
       ideeOuverte: null,
@@ -2735,6 +3077,24 @@ export default {
     let rafraichirLaCapture = null;
 
     let minuteurSouci = null;
+    // RETENIR CE QUI EST REPLIÉ. `toggle` NE BULLE PAS — c'est pour ça que
+    // l'écouteur est en CAPTURE, posé une fois sur la section plutôt que sur
+    // chaque `<details>` : ceux-ci sont recréés à chaque rendu, et un écouteur
+    // posé dessus mourrait avec eux.
+    //
+    // ON N'APPELLE PAS `rendre()` : le navigateur a déjà ouvert ou fermé le
+    // bloc tout seul. Redessiner ne ferait que refaire ce qui est fait, en
+    // perdant le focus au passage.
+    section.addEventListener(
+      'toggle',
+      (evenement) => {
+        const bloc = evenement.target;
+        if (!bloc.dataset?.pli) return;
+        etat.plis[bloc.dataset.pli] = !bloc.open;
+      },
+      true,
+    );
+
     const dire = (message) => {
       etat.souci = message;
       rendre();
@@ -3251,6 +3611,80 @@ export default {
       }
     });
 
+    // POSER (OU DÉPLACER) LA RÉUNION SUIVANTE, d'après le `cr_suivi` du
+    // compte-rendu (20 septembre 2026, demande de Noé).
+    //
+    // C'EST LA RÈGLE DU HUB À LA LETTRE : « ce qu'il a DÉCLARÉ devient une
+    // vraie ligne ». Poser une date de prochain point de contrôle est une
+    // déclaration — personne ne la devine —, elle donne donc un VRAI évènement,
+    // qui se déplace, se prépare, porte sa fiche et apparaît au calendrier.
+    //
+    // REJOUABLE, comme le rattrapage des séries et celui des tâches d'un
+    // évènement : réenregistrer le compte-rendu ne pose pas une seconde
+    // réunion. La suite se reconnaît à son `suite_de_id`, et l'on DÉPLACE au
+    // lieu de recréer — sans quoi la fiche qu'on aurait déjà préparée pour elle
+    // se retrouverait accrochée à un fantôme.
+    //
+    // ON NE SUPPRIME JAMAIS, et c'est une règle du hub, pas une paresse :
+    // effacer la date d'un compte-rendu laisse la réunion au calendrier. Elle a
+    // pu recevoir une fiche, des actions, une préparation ; « le hub ne
+    // supprime pas ce que Noé pourrait vouloir voir ». Il la retire lui-même au
+    // calendrier, où ce geste existe et demande confirmation.
+    //
+    // SANS ÉVÈNEMENT, PAS DE SUITE : une fiche sans réunion n'a ni heure, ni
+    // objet, ni chaîne à prolonger. Le cas est marginal — une fiche naît
+    // toujours d'un évènement — mais il ne doit pas fabriquer un rendez-vous
+    // orphelin à minuit.
+    async function poserLaSuite(fiche) {
+      const mere = etat.evenements.find((e) => e.id === fiche.evenement_id);
+      if (!mere || !fiche.cr_suivi) return;
+
+      // L'HEURE ET LA DURÉE SONT CELLES DE LA PRÉCÉDENTE : un cycle de réunions
+      // garde son créneau, et le compte-rendu ne demande qu'un JOUR. Lui
+      // inventer 9 h du matin serait poser un horaire que personne n'a dit.
+      const debutMere = new Date(mere.date_debut);
+      const debut = depuisDateISO(fiche.cr_suivi);
+      debut.setHours(debutMere.getHours(), debutMere.getMinutes(), 0, 0);
+      const duree = mere.date_fin ? new Date(mere.date_fin) - debutMere : null;
+      const fin = duree ? new Date(debut.getTime() + duree) : null;
+
+      const suite = suiteDeLaReunion(etat.evenements, mere.id);
+
+      try {
+        if (suite) {
+          // LE TITRE NE SE RÉÉCRIT PAS en déplaçant : Noé a pu le corriger, et
+          // une date changée n'est pas une raison de lui reprendre son mot.
+          if (new Date(suite.date_debut).getTime() === debut.getTime()) return;
+          const champs = { date_debut: debut.toISOString() };
+          if (fin) champs.date_fin = fin.toISOString();
+          Object.assign(suite, await api.modifierEvenement(suite.id, champs));
+          return;
+        }
+
+        const posee = await api.creerEvenement({
+          espace: ESPACE,
+          titre: titreDeLaSuite(etat.evenements, mere),
+          date_debut: debut.toISOString(),
+          date_fin: fin ? fin.toISOString() : null,
+          lieu: mere.lieu ?? null,
+          // L'OBJET SUIT, ET L'ANIMATION AUSSI : c'est le même cycle de
+          // réunions. Ce sont deux pastilles qu'on décoche en un geste si la
+          // suivante change de nature ; les deviner autrement demanderait de
+          // poser une question à un moment où l'on écrit un compte-rendu.
+          reunion_objet: mere.reunion_objet,
+          reunion_animee: mere.reunion_animee,
+          suite_de_id: mere.id,
+        });
+        etat.evenements.push(posee);
+      } catch (souci) {
+        // ON LE DIT, ET LE COMPTE-RENDU RESTE ENREGISTRÉ : il est déjà parti,
+        // et le perdre parce qu'une seconde écriture a échoué serait le pire
+        // des deux maux.
+        console.error('Réunion suivante impossible', souci);
+        dire("Le compte-rendu est enregistré, mais la réunion suivante n'a pas pu être posée.");
+      }
+    }
+
     async function appliquer(action, champs) {
       // La tuile du « + » : tout passe par le circuit commun, espace fch.
       if (action === 'creer-depuis-calendrier') {
@@ -3306,18 +3740,40 @@ export default {
         return;
       }
 
+      // POSER OU CORRIGER, selon que le formulaire porte un `point_id` : c'est
+      // l'ENVOI qui le sait, pas la tuile. Même formulaire, mêmes champs — deux
+      // chemins séparés auraient fini par ne plus demander la même chose.
       if (action === 'ajouter-point-reunion') {
         const fiche = etat.fiches.find((f) => f.id === champs.fiche_id);
         if (!fiche) return;
-        const point = await api.ajouterPointReunion({
-          fiche_id: champs.fiche_id,
+
+        const valeurs = {
           titre: champs.titre.trim(),
           type_point: champs.type_point || null,
           minutes: Number(champs.minutes) || null,
           sortie: champs.sortie?.trim() || null,
-          ordre: fiche.points.length + 1,
-        });
-        fiche.points.push(point);
+        };
+
+        if (champs.point_id) {
+          const point = fiche.points.find((candidat) => candidat.id === champs.point_id);
+          if (point) {
+            Object.assign(point, await api.modifierPointReunion(champs.point_id, valeurs));
+          }
+          // ON REFERME L'ÉDITION, sans quoi le formulaire reviendrait ouvert et
+          // rempli au rendu suivant — par-dessus ce qu'on vient d'enregistrer.
+          // C'est le défaut que `#objectifs` a rencontré le premier.
+          etat.pointEnEdition = null;
+          rendre();
+          return;
+        }
+
+        fiche.points.push(
+          await api.ajouterPointReunion({
+            fiche_id: champs.fiche_id,
+            ...valeurs,
+            ordre: fiche.points.length + 1,
+          }),
+        );
         rendre();
         return;
       }
@@ -3365,6 +3821,7 @@ export default {
             : {}),
         });
         Object.assign(fiche, misAJour);
+        await poserLaSuite(fiche);
         rendre();
         return;
       }
@@ -3808,24 +4265,48 @@ export default {
         return;
       }
 
-      // Un point de l'ordre du jour se clôt : traité, ou reporté. Recliquer le
-      // même statut le retire — un geste se défait par le même geste.
-      const pointStatut = evenement.target.closest('[data-point-statut]');
-      if (pointStatut) {
-        const [id, statut] = pointStatut.dataset.pointStatut.split(':');
-        for (const fiche of etat.fiches) {
-          const point = fiche.points.find((candidat) => candidat.id === id);
-          if (!point) continue;
-          const suivant = point.statut === statut ? 'a_venir' : statut;
-          await modifierAussitot(
-            point,
-            { statut: suivant },
-            () => api.modifierPointReunion(id, { statut: suivant }),
-            { rendre, echouer: dire },
-          );
+      // LES DEUX BOUTONS « TRAITÉ » ET « REPORTÉ » ONT QUITTÉ LA TUILE D'UN
+      // POINT (20 septembre 2026, demande de Noé), et leur gestionnaire est
+      // parti avec : plus rien ne l'appelait, et le garder aurait fait du code
+      // mort qu'on recopie. Git en garde la trace.
+      //
+      // CE QUE ÇA RETIRE, ET IL FAUT LE DIRE : `fiches_reunion_points.statut`
+      // ne se change plus nulle part. La colonne reste, et la carte de
+      // l'accueil du club continue de la lire — elle montre « les trois points
+      // qui restent », donc elle montrera désormais les trois PREMIERS, pour
+      // toujours. *Si le geste manque, sa place est le menu discret de la
+      // ligne, pas deux boutons dans la tuile.*
+      // MODIFIER UN POINT EN TOUCHANT SA TUILE (20 septembre 2026, demande de
+      // Noé). Le formulaire juste en dessous s'ouvre, rempli.
+      //
+      // LE NOM EST UN VRAI `<button>` ET LA TUILE UN ÉCOUTEUR : l'un pour le
+      // clavier, l'autre pour le doigt. C'est la mécanique de la tuile
+      // « Aujourd'hui » de l'accueil — *« un écouteur ne se tabule pas, et le
+      // clavier doit atteindre ce que la souris atteint »*.
+      //
+      // LA CROIX EST EXCLUE, et tout ce qui fait déjà quelque chose avec :
+      // sans cette garde, retirer un point ouvrirait d'abord son édition. La
+      // liste est EXPLICITE plutôt que devinée sur le curseur — c'est la leçon
+      // de la tuile de l'accueil, au mot près.
+      const modifierPoint = evenement.target.closest('[data-modifier-point]');
+      if (modifierPoint && !evenement.target.closest('a, input, select, textarea, [data-retirer-point]')) {
+        // Une sélection de texte en cours n'est pas un appui : copier le nom
+        // d'un point ne doit pas ouvrir son formulaire.
+        if (!window.getSelection()?.toString()) {
+          etat.pointEnEdition = modifierPoint.dataset.modifierPoint;
+          rendre();
+          // ON OUVRE LA TUILE VOLANTE, et le focus part dans le premier champ.
+          // `gabarits.js` ne le fait que sur un clic du sommaire ; ici c'est
+          // nous qui ouvrons. Le geste vient de l'utilisateur, donc le clavier
+          // monte aussi sur iPhone — un focus posé hors d'un geste ne le lève
+          // pas.
+          const volante = section.querySelector('[data-ajout="fiche-point"]');
+          if (volante) {
+            volante.open = true;
+            volante.querySelector('.champ-titre, input[name="titre"]')?.focus();
+          }
           return;
         }
-        return;
       }
 
       const retirerPoint = evenement.target.closest('[data-retirer-point]');
@@ -3890,6 +4371,30 @@ export default {
           // Le texte reste dans le champ : « Enregistrer » le gardera.
           dire("Le modèle est dans le champ mais n'a pas pu s'enregistrer — touche Enregistrer.");
         }
+        return;
+      }
+
+      // LE ROND D'UNE ACTION : fait ↔ à faire, l'aller-retour direct
+      // (20 septembre 2026). Il ne passe PAS par `ACTION_SUIVANT` — le cycle à
+      // trois crans est le geste de l'étiquette ; celui-ci répond à une seule
+      // question, « est-ce fait ? », et il doit y répondre en un appui depuis
+      // n'importe quel cran, « en cours » compris.
+      //
+      // DÉCOCHER REND « À FAIRE » et non « en cours » : on rouvre ce qu'on
+      // avait fermé par erreur, on ne devine pas où ça en était.
+      const cocherAction = evenement.target.closest('[data-cocher-action]');
+      if (cocherAction) {
+        const actionClub = etat.actionsClub.find(
+          (candidat) => candidat.id === cocherAction.dataset.cocherAction,
+        );
+        if (!actionClub || estProvisoire(actionClub.id)) return;
+        const statut = actionClub.statut === 'fait' ? 'a_faire' : 'fait';
+        await modifierAussitot(
+          actionClub,
+          { statut },
+          () => api.modifierActionClub(actionClub.id, { statut }),
+          { rendre, echouer: dire },
+        );
         return;
       }
 

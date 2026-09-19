@@ -974,9 +974,317 @@ La fiche complète (j'anime) suit le déroulé du guide, dans cet ordre :
 avec son responsable et son échéance, **survit à sa fiche** (`ON DELETE SET
 NULL`) et se suit d'un clic : à faire → en cours → fait. L'écran Réunions le
 montre en entier ; une fiche montre les siennes plus le suivi des autres.
+
+##### D'OÙ ELLE VIENT, ET SI ELLE EST FAITE (20 septembre 2026)
+
+Demande de Noé : *« pour le suivi des actions, je dois savoir de quelle réunion
+elles proviennent et pouvoir noter si elle a été faite. »*
+
+**LES DEUX EXISTAIENT EN BASE ET MANQUAIENT À L'ÉCRAN** — `actions_club` porte
+`fiche_id` et `statut` depuis le premier jour.
+
+- **La réunion d'origine ne s'écrivait nulle part.** Sur le tableau permanent,
+  qui mélange les réunions, « Créer le compte LinkedIn FCH » ne disait pas d'où
+  il sortait — et c'est la première question qu'on se pose devant un engagement
+  qu'on ne se rappelle plus avoir pris. **Elle est un LIEN** : savoir d'où vient
+  une action et pouvoir y retourner sont la même envie.
+- **Elle ne s'affiche que là où elle apprend quelque chose** : le tableau
+  permanent et « Ouvrir par le suivi ». Sur la fiche d'une réunion, ses propres
+  actions ne répètent pas son titre.
+- **Noter qu'elle est faite se faisait DÉJÀ**, en pressant l'étiquette de
+  statut — mais **une étiquette ne se présente pas comme un geste**. Elle a la
+  forme d'un libellé, et Noé ne l'a pas trouvée. Le hub a pourtant UN signe pour
+  « c'est fait », qu'il emploie partout : **le rond d'une tâche**. C'est
+  celui-là, au trait près, comme les feuilles de préparation l'ont repris avant.
+- **Les deux gestes coexistent, et ce n'est pas un doublon** : le ROND fait
+  l'aller-retour « fait / pas fait », qui est le geste quotidien ; l'ÉTIQUETTE
+  garde son cycle à trois crans, seul chemin vers « en cours ». C'est déjà la
+  grammaire d'une publication au calendrier.
+- **Décocher rend « à faire » et non « en cours »** : on rouvre ce qu'on avait
+  fermé par erreur, on ne devine pas où ça en était.
+- *Ce qui ne change pas : une action cochée quitte le tableau permanent — il ne
+  montre que ce qui reste à tenir — et reste sur sa fiche, barrée, où elle
+  raconte sa réunion.*
+
+#### LA CHAÎNE DES RÉUNIONS — `cr_suivi` POSE LA SUIVANTE (20 septembre 2026)
+
+Demande de Noé : *« dans le compte rendu, lorsque je mets une date de prochaine
+réunion, il faut que ça crée l'évènement à cette date avec le même nom que la
+dernière réunion + le numéro — pour la réunion Lina du 18 septembre, j'ai mis
+que la prochaine serait le 25, donc au 25 un évènement "Réunion Lina 2" doit
+être créé, et donc être lié à la réunion du 18 pour que ma préparation soit
+aidée par le compte-rendu de la dernière réunion. »*
+
+**C'EST LA RÈGLE DU HUB À LA LETTRE** — *ce qu'il a DÉCLARÉ devient une vraie
+ligne*. Poser une date de prochain point de contrôle est une déclaration :
+elle donne donc un VRAI évènement, qui se déplace, se prépare, porte sa fiche
+et apparaît au calendrier. `cr_suivi` garde son sens ; ce qui change, c'est
+qu'elle POSE ce rendez-vous au lieu de l'annoncer.
+
+- **LE NUMÉRO VIENT DE LA CHAÎNE, JAMAIS DU TITRE**, et c'est ce qui rend la
+  règle sûre. Lire le nombre écrit à la fin d'un nom marche sur « Réunion
+  Lina 2 » et se trompe sur « Réunion CA 2026 », qui deviendrait « Réunion CA
+  2027 » — une année prise pour un rang, invisible avant d'ouvrir le
+  calendrier. On remonte donc les maillons : le titre de la **racine** porte le
+  nom, la **longueur** porte le rang, et aucun texte n'est interprété.
+- **LE LIEN EST SUR `evenements.suite_de_id`, PAS SUR LA FICHE** : au moment où
+  la suite naît, elle n'a pas encore de fiche — celle-ci se créera quand Noé
+  appuiera sur « Préparer ». Une chaîne accrochée aux fiches aurait un maillon
+  manquant précisément là où on en a besoin. Et elle survit à la suppression
+  d'une fiche : la suite des réunions est une histoire du club.
+- **L'HEURE ET LA DURÉE SONT CELLES DE LA PRÉCÉDENTE**, comme l'objet et
+  l'animation : un cycle garde son créneau, et le compte-rendu ne demande qu'un
+  JOUR. Lui inventer 9 h du matin serait poser un horaire que personne n'a dit.
+- **REJOUABLE** : réenregistrer un compte-rendu ne pose pas une seconde
+  réunion, et changer la date **déplace** celle qui existe — sans quoi une fiche
+  déjà préparée se retrouverait accrochée à un fantôme. **Le titre ne se
+  réécrit pas en déplaçant** : Noé a pu le corriger.
+- **ON NE SUPPRIME JAMAIS** : effacer la date laisse la réunion au calendrier.
+  Elle a pu recevoir une fiche, des actions, une préparation — *« le hub ne
+  supprime pas ce que Noé pourrait vouloir voir »*. Il la retire lui-même au
+  calendrier, où ce geste demande confirmation.
+- **Sans évènement, pas de suite** : une fiche sans réunion n'a ni heure, ni
+  objet, ni chaîne à prolonger.
+
+**CE QUE DISAIT LA PRÉCÉDENTE**, sur la fiche de la suite : ses **points en
+attente** d'abord — ce sont eux qui appellent une suite —, puis ses
+**décisions**, et un lien vers elle. *C'est le guide qui le demandait déjà —
+« chaque réunion s'ouvre par le suivi du précédent » — et il n'y avait rien pour
+le faire : le tableau des actions suivait les engagements, mais le compte-rendu
+restait enfermé dans la fiche d'avant.* Le rapprochement se fait **par la
+chaîne**, à la différence du « dernier regard sur l'animation » juste au-dessus,
+qui cherche une réunion du même OBJET — un rapprochement flou qui rend
+n'importe quelle réunion « communication ». Les deux coexistent parce qu'ils ne
+répondent pas à la même question.
+
+#### LA FICHE SE LIT EN BLOCS, PAS EN COLONNE (20 septembre 2026)
+
+Demande de Noé : *« pour la préparation, sur ordinateur il doit y avoir des
+blocs côte à côte plutôt que tout ligne par ligne. Le récap de la dernière
+réunion et les tâches du suivi doivent être en haut côte à côte et facilement
+masquables. Le contrat et l'ordre du jour côte à côte, le reste on est bon. »*
+
+**CE QUE ÇA RANGE** : la fiche était une colonne de sept blocs — un écran et
+demi de défilement avant d'atteindre le contrat, sur un écran qui a de la
+largeur à revendre. Les deux blocs du haut sont de la RELECTURE (ce qui s'est
+dit, ce qui reste à tenir), les deux suivants du TRAVAIL (ce qu'on se donne,
+comment on le mène) : les apparier deux à deux, c'est mettre ensemble ce qui se
+lit ensemble.
+
+**« CE QUI VIENT D'AVANT » EST UNE SEULE GRANDE TUILE, AVEC UN SEUL PLI**
+(correction de Noé, le même jour : *« les 2 blocs doivent être une grande
+tuile, et je dois pouvoir les masquer ensemble, pas l'un puis l'autre »*).
+*Ils ont eu un pli chacun pendant une heure, au motif qu'ils ne servent pas au
+même moment — le récap se lit avant, le suivi se coche pendant. Mais ce ne sont
+pas deux blocs qu'on range l'un après l'autre : c'est UNE chose, ce qui vient
+de la réunion d'avant, et on la range d'un geste pour atteindre le travail.*
+
+- **LE TITRE DE LA TUILE EST LE SEUL** (correction de Noé, le même jour : *« enlève
+  les titres "ce que disait la précédente" et "ouvrir par le suivi" »*). Les deux
+  colonnes en ont porté un pendant une heure ; **ce qui se montre n'a pas à se
+  nommer** — la règle qui a fait tomber quatre titres de la tuile d'une journée,
+  le 1er septembre. Chaque colonne se dit déjà toute seule : à gauche le NOM de
+  la réunion d'avant, en lien et en tête ; à droite la phrase qui demande
+  « fait, en cours, bloqué ? ».
+- **Le suivi a changé de rang au passage** : il vivait en cinquième position,
+  sous la présentation — donc après tout le travail de préparation, alors que le
+  guide demande qu'une réunion « s'ouvre par le suivi du précédent ».
+- **L'ÉTAT DU PLI VIT DANS L'ÉTAT DE LA PAGE**, et ce n'est pas un luxe : on
+  coche une action DANS le bloc du suivi, et cocher redessine la fiche entière.
+  Un `<details>` rouvert à chaque coche serait insupportable au moment précis où
+  l'on s'en sert. *C'est la différence avec le relevé d'une journée, qui s'en
+  passe parce qu'il ne se redessine pas pendant qu'on le lit.* De l'état
+  d'INTERFACE : il ne va pas au cache.
+- **`toggle` NE BULLE PAS** — l'écouteur est en CAPTURE, posé une fois sur la
+  section plutôt que sur chaque `<details>`, qui sont recréés à chaque rendu.
+- **UN DUO NE SE FORME QU'À DEUX** : un seul bloc présent reste pleine largeur.
+  Une réunion à laquelle on N'ASSISTE PAS n'a pas d'ordre du jour, et une
+  première réunion n'a pas de précédente — les deux cas arrivent.
+- **Le seuil est à 60 rem**, celui des deux colonnes du hub : en dessous, deux
+  colonnes de moins de 30 rem replieraient les lignes d'action mot à mot.
+- **`minmax(0, 1fr)` et non `1fr`** — le piège des conventions, qui ne se voit
+  jamais sur l'écran large où l'on travaille.
+
+**LE CONTRAT ET L'ORDRE DU JOUR SONT DES TUILES, TOUJOURS** (demande de Noé, le
+même jour). Ils étaient **les deux seuls blocs de la fiche à ne pas l'être** —
+la présentation, le kit d'animation et « Conclure » portaient déjà
+`.fch-tuile`. Ils l'empruntent donc plutôt que d'en dessiner une seconde, et
+« toujours » veut dire à toutes les largeurs : une tuile dit par sa surface où
+elle commence, et c'est vrai côte à côte comme empilé.
+
+**LES LIGNES DU SUIVI SE SERRENT** (demande de Noé, le même jour : *« réduis la
+taille des tuiles des tâches dans ce qui était prévu »*). *Mesuré avant : 91 px
+par ligne* — la taille d'une tâche qu'on vient FAIRE, alors que celles-ci sont
+un RELEVÉ qu'on parcourt en ouvrant la fiche. C'est le précédent des feuilles de
+préparation, au mot près : « une checklist qu'on parcourt d'un œil ».
+**Seulement ici** : le tableau permanent (`#hermitage/actions`) est la page où
+l'on vient les TRAITER, ses lignes gardent leur air.
+
+- **LE NOM DE LA TÂCHE RESTE CE QU'ON VOIT LE PLUS** (correction de Noé, dans la
+  foulée). *Ce que le resserrement avait cassé : le titre était descendu à
+  12,2 px pendant que le responsable restait à 13 px EN GRAISSE 600 — le service
+  criait plus fort que le sujet.* **On ne remonte pas le titre, on descend le
+  service** : le remonter défaisait le resserrement qu'on venait de demander.
+  C'est la règle de la tuile d'un livre — le titre porte seul le poids.
+- **LA CIBLE DU ROND RESTE À 44 px**, alors que son glyphe descend à 16 : elle
+  vit dans le rembourrage, pas dans le dessin. *Mesuré sans cette part : 39 px,
+  sous le minimum du hub.* Et `.tache-cercle` est en `rem`, pas en `em` — il ne
+  suit donc PAS le corps du texte, il faut le régler.
+
+**LA HIÉRARCHIE FINALE D'UNE LIGNE DU SUIVI** (demande de Noé, dans la
+foulée : *« augmente la taille du nom des tâches et réduis un peu l'état »*) :
+
+| | |
+|---|---|
+| le nom de la tâche | **14,1 px**, graisse 500 |
+| la réunion, le responsable, la date | 10,3 px |
+| l'état | **9,4 px** |
+
+**9,4 px EST LE PLANCHER, et il est connu** : c'est la mesure à laquelle le dock
+s'est arrêté le 16 septembre — *« à un cran de moins, "Calendrier" tombait à
+8,4 px, où ce n'est plus un mot mais une trace »*. On n'ira pas plus bas, et
+l'étiquette garde ses capitales, qui se lisent mieux en petit.
+
+**LES PHRASES D'AIDE DE LA FICHE SONT PARTIES** (demandes de Noé, captures à
+l'appui) — « si personne ne peut compléter "à la fin, nous devons avoir…" »,
+« chaque point commence par un verbe », « le premier point donne le ton », « à
+chaud, sous 48 h — c'est l'après-réunion qui transforme la discussion en
+fonctionnement du club ». Elles expliquaient des champs dont l'invite dit déjà
+la même chose deux lignes plus bas. C'est la coupe déjà faite sur la tuile
+d'une journée.
+
+##### LA TUILE D'UN POINT DE L'ORDRE DU JOUR (20 septembre 2026)
+
+Demande de Noé, capture à l'appui : *« le nom doit être davantage mis en avant,
+le temps estimé plus petit, la sortie attendue en dessous du titre (pas de texte
+"sortie attendue", juste la sortie elle-même), pas de bouton traité et reporté,
+moins d'espace entre le nom et la pastille "décider" »*.
+
+| | avant | après |
+|---|---|---|
+| le nom du point | 15 px / 400 | **17,8 px / 600** |
+| le temps estimé | 15 px, dans l'en-tête | **13 px, à droite, sur la ligne du titre, en jaune et en italique** |
+| la sortie attendue | « Sortie attendue : … », à la suite | sous le titre, sans libellé |
+| la pastille de type | 10,3 px | 9,4 px |
+| la croix | après la durée, à gauche | à droite de la tuile |
+| l'écart pastille → titre | 12 px | 4 px |
+| l'écart titre → sortie | 12 px | **0 px** |
+
+**DEUX ÉCARTS, ET PAS UN** (demande de Noé : *« l'espace entre la sortie
+attendue et le titre doit être moins important qu'entre la pastille décider et
+le titre »*) — et c'est juste : **la sortie est la PRÉCISION du titre**, elle
+lui colle ; la pastille est d'une autre nature, elle respire.
+
+- **Un `gap` ne sait pas faire ça** : il vaut pour tous les rangs à la fois. Le
+  `row-gap` tombe à zéro et la marge de l'en-tête porte seule l'écart du haut ;
+  le `column-gap` reste, il sépare le titre de la durée sur leur ligne commune.
+- **ET LES DEUX DEMANDES TIRENT EN SENS CONTRAIRE** : ajouter quatre pixels
+  AU-DESSUS du titre le faisait descendre d'autant, alors qu'on venait de le
+  centrer. On les rend en dessous, par un rembourrage déséquilibré — *au-dessus
+  8 + 16 + 4, en dessous 16 + 12 : les deux font 28.* **Mesuré : écart au
+  centre, 0 px.**
+
+**ON MODIFIE UN POINT EN TOUCHANT SA TUILE** (demande de Noé), et **la tuile
+VOLANTE de la création se rouvre, remplie** — pas un second formulaire posé à
+côté, qui finirait par ne plus demander les mêmes champs. Elle change de mots
+(« Modifier le point », « Enregistrer ») et reçoit l'identifiant ; **c'est
+l'ENVOI qui décide** s'il pose ou s'il corrige. C'est la mécanique de la tuile
+de capture du hub, au mot près.
+
+- **`ouvert: true` AURAIT FAIT L'INVERSE** : dans `construireFormulaire`,
+  `volant = !ouvert` — cette option sert aux formulaires qui vivent DÉJÀ dans
+  une fenêtre. *Mesuré : le formulaire se dépliait dans le flux, sous la liste.*
+  On le laisse volant, et **c'est le geste qui l'ouvre**.
+- **LE NOM EST UN VRAI `<button>`, LA TUILE UN ÉCOUTEUR** : l'un pour le
+  clavier, l'autre pour le doigt — *« un écouteur ne se tabule pas »*. La croix
+  est exclue de l'écouteur, sinon retirer un point ouvrirait d'abord son
+  édition.
+- **ON REFERME L'ÉDITION À L'ENREGISTREMENT**, sans quoi le formulaire
+  reviendrait ouvert et rempli au rendu suivant, par-dessus ce qu'on vient
+  d'écrire. C'est le défaut que `#objectifs` a rencontré le premier.
+
+> **9,4 px EST LE PLANCHER, ET JE L'AI FRANCHI UNE FOIS** : le réglage de
+> l'étiquette de Yuno (0,5625 rem), repris tel quel, descend à **8,44 px** sur
+> ce site — exactement la valeur que le dock a refusée le 16 septembre. *Mesuré,
+> puis remonté d'un cran.* Un réglage copié d'un site à l'autre se mesure dans
+> celui où on le pose.
+
+- **« SORTIE ATTENDUE : » DISPARAÎT, PAS LA SORTIE** : le libellé expliquait un
+  champ dont le contenu se comprend seul. C'est la règle qui vient de faire
+  tomber quatre phrases d'aide de cette page.
+- **L'ÉCART VENAIT DE DEUX SOURCES** : `.tuile-entete` pose 4 px sous elle, et
+  le `gap` du `<li>` en ajoute 8. La marge tombe, le gap suffit. *Et il a fallu
+  écrire `.bloc li.odj-point` pour que le gap réduit gagne — `.bloc li` pèse
+  0-1-1, la douzième fois que ce piège se paie ici.*
+
+> **CE QUE LES DEUX BOUTONS EMPORTENT EN PARTANT**, et il faut le dire :
+> `fiches_reunion_points.statut` ne se change plus nulle part. La colonne reste,
+> et la carte de l'accueil du club continue de la lire — elle montre « les trois
+> points qui restent », donc elle montrera désormais les trois PREMIERS, pour
+> toujours. Le guide du club demandait ce geste (« chaque point se clôt : traité,
+> ou reporté — explicitement ») ; **si le geste manque à l'usage, sa place est le
+> menu discret de la ligne, pas deux boutons dans la tuile.** Le gestionnaire est
+> parti avec eux : plus rien ne l'appelait, et le garder aurait fait du code mort.
+
+**LA MÊME PHRASE RESTE SUR LA CARTE DE L'ACCUEIL**, et ce n'est pas un oubli :
+là-bas (« le compte-rendu s'écrit à chaud — sous 48 h il devient une
+habitude ») elle ne s'affiche QUE dans la phase « après » d'une réunion sans
+compte-rendu. Elle n'explique pas un champ, elle dit pourquoi y aller
+maintenant.
+
+> **LE TOTAL DES MINUTES RESTE, et il a failli partir avec** : il vivait À LA
+> FIN de la phrase de conseil — « chaque point commence par un verbe… 25 min
+> prévues » —, et retirer la phrase l'aurait emporté. Ce n'est pas du conseil :
+> c'est ce que la réunion pèse. Il a désormais sa ligne. *Vérifié en posant un
+> point de 25 minutes.*
+
+> **L'ÉCRAN VIDE DE L'ORDRE DU JOUR EST PARTI AUSSI** : « le premier point donne
+> le ton : Décider…, Répartir…, Valider… » était un EXEMPLE, pas une porte. Le
+> bouton « Ajouter un point » juste en dessous EST la porte, et *« un espace
+> vide ouvre une porte, il ne s'excuse pas »* — il n'a pas besoin qu'on lui
+> explique ce qu'on écrira dedans.
+
+> **La tuile garde `bloc` EN PLUS de `fch-tuile`, et c'est mesuré** : c'est
+> `.bloc ul` (styles.css) qui remet à zéro les listes du hub — marge, retrait et
+> puces. Sortie de `.bloc` une première fois, la liste du suivi retrouvait ses
+> puces de navigateur et quarante pixels de retrait.
+
+**LA CARTE DE L'ACCUEIL SE TAIT QUAND LE COMPTE-RENDU EST ÉCRIT** (même jour,
+demande de Noé). C'est la règle du bandeau du hub, corrigé la veille — *la
+question se tait quand elle a sa réponse* —, et les deux écrans la tiennent
+désormais par la même colonne, `fiches_reunion.cr_date`. Deux écrans qui
+poseraient la même question et cesseraient de la poser à des moments différents,
+ce sont deux écrans dont un ment. **La réunion sort de « en cours », elle ne
+vide pas la carte** : la cascade retombe sur la prochaine réunion, ou sur le
+rang suivant — l'accueil n'est jamais muet.
 Cochée « c'est pour moi », l'action devient **aussi une tâche fch** — les deux
 restent reliées par `tache_id`, et ce qui se décide en réunion entre dans le
 circuit (« Aujourd'hui », l'espace Tâches) au lieu de dormir dans une note.
+
+##### LES DEUX PORTES DU DRIVE (20 septembre 2026)
+
+Demande de Noé : *« aligne les 2 boutons, enlève leur ligne blanche en dessous
+du texte, change "copier le titre" par une icône, réduis un peu l'espace entre
+les 2 boutons et le texte du dessus »*.
+
+- **ELLES N'ÉTAIENT PAS ALIGNÉES À CAUSE D'UNE MARGE HÉRITÉE** :
+  `.bouton-secondaire` porte `margin-top: 15px`, faite pour un bouton posé SOUS
+  un formulaire. Dans une rangée, elle poussait le premier de quinze pixels et
+  gonflait la ligne à 45 px pour des boutons de 30. *Mesuré : 8 px d'écart.*
+  C'est le piège déjà payé sur la barre de recherche de la bibliothèque —
+  **une marge héritée d'un autre contexte est une mesure qu'on n'a pas
+  choisie.**
+- **LE SOULIGNEMENT PART** : ce sont des BOUTONS, l'un plein, l'autre discret.
+  Le trait est celui d'un lien de texte.
+- **« COPIER LE TITRE » DEVIENT UNE ICÔNE** : trois mots pour un geste qu'un
+  dessin dit mieux, au bout d'une phrase déjà longue. Le mot part dans `title`
+  et dans le nom accessible. *Le dessin vivait dans js/yuno.js, pour ses
+  modèles de messages ; il est passé dans js/gabarits.js — pour une icône dont
+  le sujet EST la copie, en faire une seconde aurait été presque drôle.*
+- **ET C'EST LA MARGE DU DESSUS QU'IL FAUT RÉDUIRE**, pas celle de la rangée :
+  des marges verticales adjacentes FUSIONNENT, donc la plus grande gagne — la
+  rangée pouvait descendre à 4 px, l'écart restait à 14. *Mesuré, puis corrigé
+  sur le paragraphe qui précède : 14 px → 4.*
 
 **Le Drive porte les documents, la fiche porte les portes.** Les présentations
 vivent dans *L'Administratif du FCH › Réunions CA*, les comptes-rendus avec
@@ -1686,6 +1994,168 @@ Noé : les objectifs d'une commission donnée.
 aucune pastille tronqués.*
 
 ### Les organigrammes interactifs, 16 septembre 2026
+
+#### LES AXES ET LES PÔLES ONT LEUR PAGE (20 septembre 2026)
+
+Demande de Noé : *« il faut rajouter une page sur nos 4 axes, puis des pages sur
+nos commissions avec les données que tu as déjà, crée les liens nécessaires
+entre toutes les pages »*.
+
+**LES PÔLES ET LES COMMISSIONS SONT LA MÊME CHOSE** — décision de Noé, la
+question posée : *« il faut fusionner les 2, certaines n'ont pas de responsable
+ni de membre mais ce n'est pas grave, ça arrivera plus tard »*.
+
+*Ce que ça renverse : `js/projet-fch.js` disait « les pôles ne sont PAS les
+commissions ». C'était vrai des DONNÉES — cinq noms communs sur quatorze — et
+Noé tranche sur le SENS : un pôle et sa commission sont le même DOMAINE du
+club, vu depuis le projet d'un côté et depuis les gens de l'autre.*
+
+| l'écran | ce qu'il montre |
+|---|---|
+| `…/axes` | les quatre axes, en tuiles de cap |
+| `…/axe-<id>` | ses pôles, ses objectifs, ses projets |
+| `…/poles` | les dix domaines, **rangés en quatre blocs, un par axe** |
+| `…/pole-<id>` | ce qu'il sert, **qui le porte**, ses objectifs, ses projets |
+
+- **DIX DOMAINES**, et ce sont exactement les dix entrées de l'arborescence de
+  Noé : les neuf pôles, plus la **Buvette** — une commission sans pôle, parce
+  qu'elle ne porte aucun objectif. Les trois groupes du bureau (présidence,
+  secrétariat, trésorerie) n'en sont pas : ce sont des fonctions.
+- **LA LISTE SE DÉDUIT DES DEUX SOURCES**, elle ne se recopie pas : une liste
+  écrite à la main serait un troisième endroit à tenir d'accord, et c'est
+  toujours celui qu'on oublie qui ment le jour où une commission naît. **Les
+  deux tables restent séparées** — l'une porte ce qu'on VISE, l'autre QUI le
+  porte ; les fondre demanderait de décider aujourd'hui ce que Noé a dit qui
+  viendrait plus tard.
+- **LA PAGE SE RANGE EN QUATRE BLOCS, UN PAR AXE** (demande de Noé : *« trie
+  par axe en rajoutant un petit titre en dehors des tuiles »*). Dix tuiles à la
+  suite étaient un inventaire ; quatre blocs de deux ou trois sont une
+  STRUCTURE — celle du projet du club, qu'on lit sans avoir à la reconstituer.
+  **Le titre est un lien vers l'axe**, et c'est gratuit : la page existe, et
+  nommer une famille sans pouvoir l'ouvrir serait une porte peinte. Il porte la
+  couleur de l'axe **par le texte et non par un aplat** — les tuiles ont déjà
+  chacune leur pastille, et un bandeau coloré ferait deux couleurs qui se
+  disputent le même bloc.
+- **L'AXE D'UN DOMAINE SE DÉCLARE, IL NE SE DÉDUIT PAS** (`AXE_DU_DOMAINE`,
+  js/projet-club.js) — correction de Noé : *« buvette fait partie de l'axe vie
+  du club »*, puis *« éducatif ne fait pas partie de la vie du club, uniquement
+  le terrain, et cohésion l'inverse »*.
+
+  **CE QUE ÇA RÉPARE ÉTAIT UN DÉFAUT DE MODÈLE.** Je déduisais « ce pôle
+  appartient à cet axe » en CROISANT les axes et les pôles d'un même objectif.
+  Or un objectif porte parfois plusieurs des deux : « Intégrer les éducateurs à
+  la vie du club, cohésion Coachs-CA » sert le terrain ET la vie, et relève de
+  l'éducatif ET de la cohésion. Le croisement fabriquait donc les QUATRE paires,
+  dont deux qui n'existent pas. *Mesuré : onze paires produites, deux fausses —
+  exactement celles que Noé a vues.* **Un produit cartésien n'est pas une
+  vérité** : que deux listes se croisent dans une même ligne ne dit rien de ce
+  qui va avec quoi.
+
+  **L'arborescence de Noé est EXCLUSIVE — un pôle, un axe — et c'est elle qui
+  fait foi.** Elle tient en dix lignes et se relit d'un coup d'œil ; la relation
+  inverse (les pôles d'un axe) lit la même table, car deux listes séparées
+  finiraient par ne plus dire la même chose.
+
+  **UN OBJECTIF, LUI, GARDE SES PLUSIEURS AXES** : la note de `projet-fch.js` le
+  dit depuis le premier jour. Ce sont deux relations différentes — celle d'un
+  OBJECTIF à ses axes, celle d'un DOMAINE au sien — et les confondre est
+  précisément ce qui a produit les paires fausses.
+- **L'ÉQUIPE EST CELLE DE L'ORGANIGRAMME**, empruntée et non recopiée
+  (`portrait`) : responsables d'abord, et chaque visage mène à sa fiche.
+- **LES VISAGES PASSENT DEVANT LE NOM, SUR LA TUILE** (demande de Noé : *« mets
+  les photos des personnes qui y participent avec le responsable en 1er et un
+  peu plus gros que les autres, puis en dessous le titre de la commission »*).
+  La tuile disait un domaine ; elle dit maintenant une ÉQUIPE. *C'est
+  l'argument de l'étagère de la bibliothèque — « le seul écran du hub où
+  l'image passe devant le texte » — et il vaut ici pour la même raison : on
+  cherche « qui s'occupe de ça », et un portrait y répond plus vite qu'un nom
+  de pôle.*
+  - **LE RESPONSABLE EST PLUS GROS, ET C'EST LE SEUL SIGNE** — 40 px contre 30,
+    pas d'étiquette ni de couronne. C'est la mesure du dock, où « les voisins
+    maigrissent pendant que l'actif grossit ». *Une commission à deux
+    responsables en montre deux gros : c'est ce que disent les données.*
+  - **ILS SE CHEVAUCHENT COMME UNE PILE DE JETONS** : six portraits à plat
+    prendraient toute la largeur d'une tuile de 18 rem. Chacun garde un liseré
+    de la couleur du fond, qui dit où finit l'un et où commence l'autre.
+  - **LE RESPONSABLE PASSE DEVANT AU SENS PROPRE** (`z-index`) : la pile se
+    peint dans l'ordre du document, et sans lui le premier serait le plus
+    enfoui sous son voisin.
+  - **SIX AU PLUS, ET LE RESTE SE COMPTE** (« +2 ») : les manifestations en
+    réunissent huit, et alignés ils tomberaient à la taille d'un bouton. C'est
+    la coupe du « +N » d'un jour trop chargé au calendrier.
+  - **LA TUILE S'EST DÉPOUILLÉE AUTOUR D'EUX** (demande de Noé) : « pôle et
+    commission » disparaît — neuf tuiles sur dix le disaient, et *ce qui ne
+    distingue rien occupe de la place* —, la mission aussi (elle reste sur la
+    page du pôle), et **le nombre de personnes** : les visages le disent, et
+    mieux, on les compte du regard. **La pastille migre dans le titre** — un
+    signe suit ce qu'il qualifie — et le nom monte d'un cran, devenu le seul
+    texte de la tuile.
+  - **LA RANGÉE GARDE SA PLACE, MÊME VIDE** (demande de Noé : *« garde de
+    l'espace pour de potentielles futures personnes »*). C'est la règle de
+    l'étagère de la bibliothèque — un bloc réserve sa hauteur —, et le vide dit
+    ici quelque chose de vrai : la place attend quelqu'un.
+
+> **DEUX PIÈGES DE MISE EN PAGE, PAYÉS SUR CETTE TUILE, et aucun ne se voyait
+> sans mesurer :**
+>
+> **`align-self` BAT `align-items`.** Une règle générale pose `align-self:
+> center` sur toutes les pastilles du hub ; posé sur le conteneur, mon
+> `align-items` ne la touchait pas. *Mesuré : sur un titre étiré à 62 px par la
+> grille, la pastille se centrait sur 62 et tombait 23 px sous le nom — mais
+> seulement sur les tuiles SANS équipe, les seules à être étirées.*
+>
+> **UNE GRILLE RÉPARTIT SA PLACE EN TROP.** `.cap-tuile-ouvrir` est une grille,
+> et les tuiles d'une rangée ont toutes la hauteur de la plus haute : elle
+> écartait donc ses rangs pour combler. La Buvette, qui n'a pas de pied (aucun
+> objectif), n'en avait que deux à écarter — *son titre tombait 16 px sous celui
+> de sa voisine*. `align-content: start` colle les rangs en haut, et chaque
+> écart se règle alors à la main : 4 px sous les photos, 2 px sous le nom.
+- **AUCUN ZÉRO EN VITRINE** : un domaine sans équipe dit « personne n'y est
+  encore nommé — ça viendra », un domaine sans objectif ne dit rien. C'est la
+  règle du hub, celle qui fait taire une série à zéro sur une habitude neuve.
+- **LES « FILTRES » DE LA PAGE DES OBJECTIFS SONT DEVENUS DES PORTES.**
+  `pole-<id>` rechargeait la même page en ne montrant qu'un pôle ; elle ouvre
+  maintenant la PAGE du pôle, qui montre les mêmes objectifs **plus** son
+  équipe, ses projets et ses axes. *L'adresse ne change pas — un favori se
+  casse, pas un nom — et le filtrage a disparu du code : garder les deux aurait
+  fait deux écrans pour une même liste.*
+- *Vérifié à l'écran : la chaîne axe → pôle → objectif → retour à l'axe, les
+  dix domaines, et un domaine sans équipe.*
+
+#### LES TUILES D'OBJECTIF PRENNENT LA FORME D'UN CAP DU HUB (20 septembre 2026)
+
+Demande de Noé : *« ces tuiles objectifs doivent avoir plutôt la forme des
+objectifs du hub »*.
+
+**ELLES EMPRUNTENT `.cap-tuile`, ELLES NE LA RECOPIENT PAS** — mêmes classes,
+même géométrie, même teinte de fond à 5 %. C'est la règle du site depuis qu'il
+monte les écrans du cap : *« ce sont les modules du hub, pas des copies »*.
+
+**CE QUI CHANGE, C'EST CE QUE CHAQUE PLACE PORTE**, parce que les objectifs du
+club ne sont pas ceux de la base — ils n'ont ni jalons ni échéance :
+
+| la place | dans le hub | ici |
+|---|---|---|
+| la pastille | l'espace | **l'AXE** et sa couleur |
+| les marches | les jalons franchis | **l'INDICATEUR** — ce qu'on regarde |
+| le pied | « 3 projets · 23 tâches » et l'échéance | ses **projets** et son **horizon** |
+
+- **UNE RANGÉE DE MARCHES VIDES AURAIT ÉTÉ UN BRUIT PERMANENT** : c'est déjà
+  l'argument du pointillé d'un projet qui n'a rien déclaré — on ne dessine pas
+  une jauge pour une mesure qui n'existe pas.
+- **LES DEUX VARIABLES DE COULEUR SE POSENT ENSEMBLE** : `--couleur-espace`
+  tient la pastille, `--couleur-espace-pleine` la teinte du fond. La seconde
+  existe parce que `color-mix` jette la déclaration entière s'il reçoit un
+  dégradé — le piège documenté à sa définition.
+- **L'HORIZON NE S'ÉCRIT QUE LÀ OÙ IL APPREND QUELQUE CHOSE.** Sur la page
+  « Les objectifs », les colonnes SONT les horizons, et le répéter sur chaque
+  tuile le dirait deux fois. *Et il le disait FAUX : un objectif porte parfois
+  plusieurs horizons, et la tuile prenait toujours le premier — « la saison qui
+  vient » s'affichait en colonne N+3.* **Le défaut n'existait pas avant : c'est
+  moi qui l'ai introduit en ajoutant cette place, et la mesure l'a montré.**
+- *Vérifié : les trois priorités sur un rang à 1280 px, hauteurs égales ; les
+  trois colonnes d'horizon sans aucune répétition ; le lien mène toujours à la
+  fiche de l'objectif.*
 
 ### Mise à jour : projet du club et évènements — 16 septembre 2026
 

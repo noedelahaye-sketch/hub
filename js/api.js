@@ -1497,6 +1497,10 @@ export async function creerEvenement({
   // pour l'heure et la priorité.
   avec_photos = false,
   reunion_animee = false,
+  // FCH seulement : la réunion dont celle-ci est la suite (20 septembre 2026).
+  // Encore la liste blanche, et c'est la troisième fois que ce commentaire se
+  // répète — un champ absent d'ICI s'écrit à l'écran et jamais en base.
+  suite_de_id = null,
   projet_id = null,
   // Espace perso seulement : la famille du moment. Même liste blanche, même
   // piège — un champ oublié ici s'écrit à l'écran et jamais en base.
@@ -1505,7 +1509,7 @@ export async function creerEvenement({
   const champs = {
     espace, titre, date_debut, date_fin, lieu, notes,
     type_moment, club_recevant, club_visiteur, reunion_objet, reunion_animee, projet_id,
-    avec_photos,
+    avec_photos, suite_de_id,
     famille: espace === 'perso' ? famille : null,
   };
 

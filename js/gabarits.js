@@ -384,6 +384,17 @@ export function construireMenuDiscret(
 // pour un même geste finissent par ne plus se ressembler.
 // Les mêmes signes que la galerie du cap, dessinés et non écrits : le hub ne
 // mélange pas les glyphes de police et les icônes.
+// COPIER, une seule fois (20 septembre 2026). Le dessin vivait dans
+// js/yuno.js, pour ses modèles de messages ; la fiche de réunion du club en
+// aurait fait une seconde copie — pour une icône dont le sujet EST la copie,
+// ce serait presque drôle. Il vit ici, avec les autres signes du hub.
+export const COPIE = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+  stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+  stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <rect x="9" y="9" width="12" height="12" rx="2"></rect>
+  <path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"></path>
+</svg>`;
+
 // LE « + » DU BOUTON FLOTTANT, une seule fois (19 septembre 2026). Il était
 // déclaré mot pour mot dans js/dashboard.js ET js/taches.js ; la bibliothèque
 // en aurait fait une troisième copie. Il vit ici, avec les autres signes du

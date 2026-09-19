@@ -13,7 +13,10 @@
 // leur montant et leurs engagements) sont dans `partenairesSuivi` ; `partenaires`
 // sont les CONTACTS de type partenaire. Un banc qui se trompe de nom passe au
 // vert en ne testant rien.
-import { carteDuMoment, portesDuJour } from '../js/hermitage.js';
+import {
+  carteDuMoment, portesDuJour, chaineDeLaReunion, titreDeLaSuite, suiteDeLaReunion,
+  precedenteDeLaReunion,
+} from '../js/hermitage.js';
 
 const LE_JOUR = new Date('2026-09-16T10:00:00');
 const iso = (d) => new Date(LE_JOUR.getTime() + d * 864e5).toISOString().slice(0, 10);
@@ -92,6 +95,64 @@ verifier('trois au plus', String(noms(portesDuJour({ ...vide,
 verifier('jamais deux fois la com’', String(new Set(noms(portesDuJour({ ...vide,
   publications: uneParution }, LE_JOUR))).size),
   String(noms(portesDuJour({ ...vide, publications: uneParution }, LE_JOUR)).length));
+
+console.log('\n=== LA CARTE SE TAIT QUAND LE COMPTE-RENDU EST ÉCRIT ===');
+// La réunion d'HIER : sa phase est « apres », elle tient donc la carte — sauf
+// si sa fiche porte une date de compte-rendu.
+const hier = { id: 'rh', titre: 'CA de rentrée', date_debut: inst(-1), reunion_objet: 'ca' };
+const plusTard = { id: 'rp', titre: 'Point com', date_debut: inst(4), reunion_objet: 'communication' };
+
+verifier('à conclure tant que rien n’est écrit',
+  carte({ ...vide, evenements: [hier] }), '[À conclure] CA de rentrée');
+verifier('une fiche SANS cr_date ne la tait pas',
+  carte({ ...vide, evenements: [hier], fiches: [{ id: 'f', evenement_id: 'rh', points: [] }] }),
+  '[À conclure] CA de rentrée');
+verifier('le compte-rendu écrit la fait taire',
+  carte({ ...vide, evenements: [hier],
+    fiches: [{ id: 'f', evenement_id: 'rh', cr_date: iso(0), points: [] }] }),
+  '[La com’] Rien de posé sur les quinze jours');
+verifier('et la suivante prend la place',
+  carte({ ...vide, evenements: [hier, plusTard],
+    fiches: [{ id: 'f', evenement_id: 'rh', cr_date: iso(0), points: [] }] }),
+  '[À préparer] Point com');
+
+console.log('\n=== LA CHAÎNE DES RÉUNIONS ===');
+// Le numéro vient de la CHAÎNE, jamais du titre : « Réunion CA 2026 » ne doit
+// pas devenir « Réunion CA 2027 ».
+const un = { id: 'c1', titre: 'Réunion Lina', date_debut: inst(-2) };
+const deux = { id: 'c2', titre: 'Réunion Lina 2', date_debut: inst(5), suite_de_id: 'c1' };
+const trois = { id: 'c3', titre: 'Réunion Lina 3', date_debut: inst(12), suite_de_id: 'c2' };
+const chaine = [un, deux, trois];
+
+verifier('la racine seule', titreDeLaSuite([un], un), 'Réunion Lina 2');
+verifier('le deuxième maillon', titreDeLaSuite(chaine, deux), 'Réunion Lina 3');
+verifier('le troisième', titreDeLaSuite(chaine, trois), 'Réunion Lina 4');
+verifier('une année dans le titre n’est pas un rang',
+  titreDeLaSuite([{ id: 'a', titre: 'Réunion CA 2026' }], { id: 'a', titre: 'Réunion CA 2026' }),
+  'Réunion CA 2026 2');
+verifier('la longueur de la chaîne', String(chaineDeLaReunion(chaine, trois).length), '3');
+verifier('une mère absente coupe la chaîne',
+  String(chaineDeLaReunion([deux], deux).length), '1');
+
+// La borne : le CHECK de la base n'interdit que le cycle à UN maillon.
+const boucleA = { id: 'ba', titre: 'A', suite_de_id: 'bb' };
+const boucleB = { id: 'bb', titre: 'B', suite_de_id: 'ba' };
+verifier('un cycle ne fait pas tourner la boucle',
+  String(chaineDeLaReunion([boucleA, boucleB], boucleA).length), '2');
+
+verifier('la suite déjà posée se reconnaît',
+  suiteDeLaReunion(chaine, 'c1')?.id ?? 'aucune', 'c2');
+verifier('une réunion sans suite', suiteDeLaReunion(chaine, 'c3')?.id ?? 'aucune', 'aucune');
+
+console.log('\n=== LE COMPTE-RENDU DE LA PRÉCÉDENTE ===');
+const fichesChaine = [{ id: 'f1', evenement_id: 'c1', cr_decisions: 'LinkedIn plutôt que TikTok.',
+  cr_en_attente: 'TikTok, plus tard.', points: [] }];
+verifier('la deuxième remonte à la première',
+  precedenteDeLaReunion(chaine, fichesChaine, deux)?.fiche?.id ?? 'aucune', 'f1');
+verifier('la racine n’a pas de précédente',
+  precedenteDeLaReunion(chaine, fichesChaine, un)?.fiche?.id ?? 'aucune', 'aucune');
+verifier('une précédente sans fiche',
+  precedenteDeLaReunion(chaine, [], deux)?.fiche?.id ?? 'aucune', 'aucune');
 
 console.log(echecs ? `\n${echecs} ÉCHEC(S).` : '\nTout passe.');
 process.exit(echecs ? 1 : 0);

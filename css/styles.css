@@ -8804,11 +8804,18 @@ body.balaye {
 .prepa-date { margin: calc(var(--espace-8) * -1) 0 var(--espace-16); }
 
 /* Le dernier « à refaire autrement » : un rappel qu'on lit en préparant, pas
-   une consigne. Gris chaud, comme tout ce qui accompagne sans commander. */
+   une consigne. Gris chaud, comme tout ce qui accompagne sans commander.
+
+   LE REPLI, TROUVÉ LE 20 SEPTEMBRE 2026 en posant le rappel de la réunion
+   précédente juste au-dessus : `--gris-chaud-trait` n'est défini QUE sous
+   `body[data-espace="yuno"]`, et ce bloc s'affiche aussi sur la fiche de
+   réunion du site du club. Un `var()` sur un jeton inexistant annule toute la
+   déclaration, en silence — *ce rappel n'avait donc aucun filet sur le site du
+   club, et personne ne pouvait le voir sans le mesurer.* */
 .prepa-rappel {
   margin: 0 0 var(--espace-16);
   padding: var(--espace-8) var(--espace-12);
-  border-left: 3px solid var(--gris-chaud-trait);
+  border-left: 3px solid var(--gris-chaud-trait, var(--bordure));
 }
 
 /* Les lignes d'une feuille sont plus serrées que celles des tâches (demande de

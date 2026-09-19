@@ -20,6 +20,7 @@ import {
   construireFormulaire,
   construireFenetre,
   CHEVRON,
+  COPIE,
   friseDeLaSemaine,
 } from './gabarits.js';
 import {
@@ -4934,13 +4935,6 @@ const CORBEILLE = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"
   <path d="M4 7h16M10 11v6M14 11v6"></path>
   <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"></path>
   <path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path>
-</svg>`;
-
-const COPIE = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"
-  stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
-  stroke-linejoin="round" aria-hidden="true" focusable="false">
-  <rect x="9" y="9" width="12" height="12" rx="2"></rect>
-  <path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"></path>
 </svg>`;
 
 // L'aperçu tient en trois lignes, coupées par le CSS et non par le texte : une

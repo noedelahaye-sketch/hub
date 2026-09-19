@@ -193,9 +193,27 @@ export const AXES_FCH = [
   { id: 'organisation', nom: 'Organisation du club', couleur: '#8d93a3' },
 ];
 
-// LES PÔLES — ce dont on parle. Ce ne sont PAS les commissions, même s'ils leur
-// ressemblent : l'éducatif, la cohésion et l'identité n'ont pas de commission,
-// le secrétariat, la trésorerie, la buvette et la présidence n'ont pas de pôle.
+// LES PÔLES — ce dont on parle, et DEPUIS LE 20 SEPTEMBRE 2026 la même chose
+// qu'une commission (décision de Noé : « il faut fusionner les 2, les pôles et
+// les commissions c'est la même chose, certaines n'ont pas de responsable ni de
+// membre mais ce n'est pas grave, ça arrivera plus tard »).
+//
+// *Ce que ça renverse : cette note disait « ce ne sont PAS les commissions ».
+// C'était vrai des DONNÉES — cinq noms communs sur quatorze —, et Noé tranche
+// sur le SENS. Un pôle et sa commission sont le même DOMAINE du club, vu depuis
+// le projet d'un côté et depuis les gens de l'autre.*
+//
+// LES DEUX LISTES RESTENT SÉPARÉES, et c'est voulu : celle-ci porte ce qu'on
+// VISE, `organigramme-fch-data.js` porte QUI le porte. Elles se rejoignent à
+// l'écran — `DOMAINES` (js/projet-club.js) les marie par leur identifiant — et
+// nulle part ailleurs. Les fondre en base demanderait de décider aujourd'hui
+// ce que Noé a dit qui viendrait plus tard.
+//
+// CE QUI MANQUE DE CHAQUE CÔTÉ, sans que ce soit un défaut : l'éducatif, la
+// cohésion, l'identité et l'organisation n'ont pas encore de commission ; la
+// buvette n'a pas d'objectif ; le secrétariat, la trésorerie et la présidence
+// sont des fonctions du bureau et ne sont pas des domaines.
+//
 // Les cinq qui portent le même nom qu'une commission en reprennent la couleur,
 // pour qu'un pôle se reconnaisse d'un écran à l'autre.
 export const POLES_FCH = [

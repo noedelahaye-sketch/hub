@@ -201,25 +201,208 @@ button.action-statut {
   color: var(--texte-discret);
 }
 
+/* LE ROND D'UNE ACTION (20 septembre 2026) — « pouvoir noter si elle a été
+   faite ». C'est le cercle d'une tâche, repris tel quel : le hub n'a qu'UN
+   signe pour « c'est fait », et les feuilles de préparation l'empruntent déjà
+   (`.prepa-liste > .tache-ligne`). Le texte s'aligne sur sa première ligne, et
+   non au milieu : une action de deux lignes verrait sinon son rond flotter. */
+.action-corps {
+  display: flex;
+  gap: var(--espace-8);
+  align-items: baseline;
+}
+
+/* Le cercle est dessiné pour une ligne de tâche, où il se cale seul ; ici il
+   vit dans un flex qui l'étirerait. `flex: none` le garde rond. */
+.action-corps > .tache-cercle { flex: none; align-self: flex-start; }
+
+/* LA RÉUNION D'ORIGINE, et c'est un LIEN : savoir d'où vient une action et
+   pouvoir y retourner sont la même envie. En encre discrète — c'est du
+   service, pas le sujet de la ligne —, et il ne prend jamais plus d'une ligne :
+   sur le tableau permanent, un titre long pousserait la date et la croix hors
+   de la tuile. */
+.action-reunion {
+  overflow: hidden;
+  max-width: 14rem;
+  font-size: 0.8125rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .reunion-objectif { display: block; }
 
 /* Traité / Reporté : deux petits gestes sous le point, l'actif prend l'accent. */
-.odj-statuts {
-  display: flex;
-  gap: var(--espace-12);
-  margin-top: var(--espace-4);
+/* LA TUILE D'UN POINT DE L'ORDRE DU JOUR (20 septembre 2026, demande de Noé,
+   capture à l'appui) : « le nom doit être davantage mis en avant, le temps
+   estimé plus petit, la sortie attendue en dessous du titre, pas de bouton
+   traité et reporté, moins d'espace entre le nom et la pastille "décider" ».
+
+   LE NOM EST LE SUJET, TOUT LE RESTE EST DU SERVICE. C'est la règle de la tuile
+   d'un livre, et celle qu'on vient d'appliquer à la ligne d'une action du
+   suivi : on ne monte pas le titre en écrasant ses voisins, on descend les
+   voisins. */
+/* LE NOM EST UN VRAI `<button>` (20 septembre 2026) : on modifie un point en
+   touchant sa tuile, et un écouteur ne se tabule pas — le clavier doit
+   atteindre ce que la souris atteint. Le CSS lui retire tout ce que le
+   navigateur ajoute à un bouton, mais PAS sa taille de texte : elle vient de sa
+   propre règle, et un `font: inherit` la lui volerait. */
+.odj-nom {
+  padding: 0;
+  color: inherit;
+  font-family: inherit;
+  font-size: 1.1875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
 }
 
-.odj-statuts .actif { color: var(--accent); }
+/* LA SORTIE ATTENDUE PASSE SOUS LE TITRE, et perd son libellé : « sortie
+   attendue : » expliquait un champ dont le contenu se comprend seul. `width:
+   100%` la met à la ligne — le `<li>` est un flex qui enroule, et sans ça elle
+   se collerait à la suite du nom. */
+/* MOINS D'ESPACE ENTRE LES TEXTES (demande de Noé, le même jour) : la sortie
+   suit le nom de près — c'est sa précision, pas un second paragraphe. Sa marge
+   tombe, le `gap` de 2 px du `<li>` suffit. */
+.odj-sortie {
+  width: 100%;
+  font-size: 0.8125rem;
+  line-height: 1.3;
+}
+
+/* LE TEMPS SUIT LE TITRE, EN JAUNE ET EN ITALIQUE (20 septembre 2026, demande
+   de Noé). Il quitte l'en-tête : il ne dit pas ce que le point EST — ça, c'est
+   la pastille —, il dit ce qu'il COÛTE, et ça se lit avec son nom.
+
+   `align-self: baseline` le pose sur la ligne de base du titre : sans ça, le
+   `<li>` l'aligne sur la sienne et le chiffre flotte au-dessus du mot. */
+.odj-duree {
+  /* À DROITE DE LA TUILE, SUR LA LIGNE DU TITRE (demande de Noé, le même
+     jour) : `margin-left: auto` le pousse au bout du rang sans le faire
+     changer de ligne — c'est ce que `.tuile-entete .quand` fait de la date, et
+     ce que la croix fait juste au-dessus. La sortie, qui prend toute la
+     largeur, passe seule au rang suivant. */
+  align-self: baseline;
+  margin-left: auto;
+  color: var(--accent);
+  font-size: 0.8125rem;
+  font-style: italic;
+}
+
+/* MOINS D'ESPACE ENTRE LA PASTILLE ET LE NOM (même demande) : les deux
+   s'additionnaient — 4 px de marge sous `.tuile-entete` PLUS les 8 px de `gap`
+   du `<li>`, soit douze pixels entre une étiquette et le mot qu'elle qualifie.
+   Depuis que le `row-gap` est à zéro (voir plus bas), cette marge est le SEUL
+   écart du haut, et c'est elle qu'on règle. */
+.odj-point > .tuile-entete { margin-bottom: var(--espace-4); }
+
+/* `.bloc li` (styles.css) pose un `gap` de 8 px et pèse 0-1-1 : `.odj-point`
+   seul (0-1-0) perdait. *Mesuré : l'écart restait à 8 px.* Une spécificité
+   qu'on n'égale pas est une règle qu'on n'écrit pas — c'est la douzième fois
+   que ce piège se paie dans ce dépôt. */
+/* DEUX ÉCARTS, ET PAS UN (20 septembre 2026, demande de Noé : « l'espace entre
+   la sortie attendue et le titre doit être moins important qu'entre la pastille
+   décider et le titre »). Et c'est juste : la sortie est la PRÉCISION du titre,
+   elle lui colle ; la pastille est d'une autre nature, elle respire.
+
+   UN `gap` NE SAIT PAS FAIRE ÇA — il vaut pour tous les rangs à la fois. Le
+   `row-gap` tombe donc à zéro, et c'est la marge de l'en-tête qui porte le
+   seul écart qu'on veut. Le `column-gap` reste : il sépare le titre de la
+   durée sur leur ligne commune.
+
+   ET LE REMBOURRAGE SE DÉSÉQUILIBRE POUR GARDER LE TITRE AU CENTRE — l'autre
+   demande, d'il y a dix minutes, et les deux tirent en sens contraire : ajouter
+   quatre pixels AU-DESSUS du titre l'aurait fait descendre d'autant. On les
+   rend en dessous. *Au-dessus : 8 + 16 + 4 ; en dessous : 16 + 12. Les deux
+   font 28.* */
+.bloc li.odj-point {
+  row-gap: 0;
+  column-gap: var(--espace-8);
+  padding: var(--espace-8) var(--espace-12) var(--espace-12);
+}
+
+/* LA PASTILLE DE TYPE SE FAIT PLUS PETITE (demande de Noé, le même jour) :
+   elle dit ce que le point EST — décider, informer, valider —, ce qui se lit
+   une fois. Le sujet, c'est le nom juste en dessous.
+
+   9,4 px, ET PAS LE RÉGLAGE DE YUNO : celui-ci (0,5625 rem) descend à 8,44 px
+   sur ce site, et c'est exactement la valeur que le dock a REFUSÉE le
+   16 septembre — « à un cran de moins, ce n'est plus un mot mais une trace ».
+   *Copié tel quel, il l'avait franchie ; mesuré, puis remonté d'un cran.* Le
+   rembourrage, lui, se resserre : c'est de la place autour, pas de la lecture. */
+.odj-point .etiquette {
+  padding: 0 var(--espace-4);
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+}
+
+/* LA CROIX PART À DROITE (demande de Noé, le même jour) : un geste de retrait
+   ne se met pas entre l'étiquette et la durée, où il coupe la lecture.
+
+   ET ELLE SORT DU FLUX, ce qui n'est pas de la coquetterie — c'est ce qui met
+   LA LIGNE DU TITRE AU MILIEU DE LA TUILE (demande de Noé, dans la foulée).
+   *Mesuré avant : le rang du haut faisait 30 px contre 16 pour la sortie,
+   parce que la croix est une CIBLE TACTILE de 30 px de haut ; la ligne du
+   titre tombait donc 7 px sous le centre.* Posée en absolu, elle garde sa
+   cible entière et l'en-tête se réduit à sa pastille — les deux rangs qui
+   encadrent le titre s'équilibrent alors d'eux-mêmes.
+
+   `.bloc li` est déjà `position: relative` : il n'y a rien à ajouter pour
+   l'ancrer. */
+.odj-point .odj-croix {
+  position: absolute;
+  top: var(--espace-4);
+  right: var(--espace-4);
+}
 
 /* Les portes vers le Drive, côte à côte. */
+/* LES DEUX PORTES DU DRIVE, ALIGNÉES (20 septembre 2026, demande de Noé :
+   « aligne les 2 boutons, enlève leur ligne blanche en dessous du texte,
+   réduis un peu l'espace entre les 2 boutons et le texte du dessus »).
+
+   ELLES NE L'ÉTAIENT PAS À CAUSE D'UNE MARGE HÉRITÉE : `.bouton-secondaire`
+   porte `margin-top: 15px`, faite pour un bouton posé SOUS un formulaire. Dans
+   une rangée, elle poussait le premier de quinze pixels et gonflait la ligne à
+   45 px pour des boutons de 30. *Mesuré : 8 px d'écart entre les deux.* C'est
+   le piège déjà payé sur la barre de recherche de la bibliothèque — **une marge
+   héritée d'un autre contexte est une mesure qu'on n'a pas choisie.**
+
+   LE SOULIGNEMENT PART : ce sont des BOUTONS, l'un plein, l'autre discret. Le
+   trait est celui d'un lien de texte, et le hub ne le pose pas sous ce qui a
+   déjà la forme d'un bouton. */
 .reunion-portes {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--espace-8);
-  margin: var(--espace-8) 0;
+  margin: var(--espace-4) 0 var(--espace-8);
 }
+
+.reunion-portes > * {
+  margin-top: 0;
+  text-decoration: none;
+}
+
+/* ET C'EST LA MARGE DU DESSUS QU'IL FAUT RÉDUIRE, pas celle de la rangée : des
+   marges verticales adjacentes FUSIONNENT, donc la plus grande gagne — la
+   rangée pouvait descendre à 4 px, l'écart restait à 14. *Mesuré.* Ce qui
+   précède est soit la phrase « copier la dernière… », soit le lien vers la
+   présentation déjà collée : les deux cas s'écrivent. */
+.bloc p:has(+ .reunion-portes),
+.bloc .lien-externe:has(+ .reunion-portes) { margin-bottom: var(--espace-4); }
+
+/* L'ICÔNE DE COPIE se pose dans la ligne de texte : elle prend la taille du
+   mot qu'elle remplace, et non les 18 px qu'elle vaut dans une fenêtre. */
+.bouton-copie {
+  display: inline-flex;
+  vertical-align: -0.2em;
+  align-items: center;
+  padding: 0 var(--espace-4);
+}
+
+.bouton-copie svg { width: 1em; height: 1em; }
 
 .reunion-sous-titre {
   margin: var(--espace-24) 0 var(--espace-8);
@@ -1949,3 +2132,412 @@ li.suivi-bilan-tuile,
 @media (prefers-reduced-motion: no-preference) {
   .fch-hall-porte { transition: box-shadow 160ms ease, background 160ms ease; }
 }
+
+/* CE QUE DISAIT LA PRÉCÉDENTE (20 septembre 2026) — le compte-rendu de la
+   réunion d'avant, relu en préparant celle-ci.
+
+   C'EST LA GRAMMAIRE DE `.prepa-rappel` (styles.css), le « dernier regard sur
+   l'animation » : même filet à gauche, même gris chaud, même rôle — « un rappel
+   qu'on lit en préparant, pas une consigne ». Les deux vivent sur la même page
+   et ne peuvent pas se présenter de deux façons.
+
+   IL NE LA REPREND PAS PAR UNE CLASSE COMMUNE, et c'est assumé : `.prepa-rappel`
+   porte UNE phrase, celui-ci porte deux blocs de texte libre avec leurs
+   libellés. Partager la règle aurait demandé d'y ajouter ce dont l'autre n'a
+   pas besoin.
+
+   `pre-wrap` : un compte-rendu s'écrit en lignes — « les décisions prises, une
+   par ligne » le dit dans le formulaire. Les aplatir en un paragraphe rendrait
+   illisible ce qu'on vient relire. */
+/* LE RÉCAP N'A PLUS DE CONTENEUR À LUI depuis qu'il vit dans un bloc repliable
+   (20 septembre 2026) : la carte porte la surface, et le filet à gauche qu'il
+   avait quelques heures ne servait qu'à le détacher de la page. C'est la règle
+   du 30 août — le filet est réservé à une tuile DANS une tuile. */
+.reunion-precedente-titre { margin: 0 0 var(--espace-8); font-weight: 600; }
+
+.reunion-precedente-part { margin: 0 0 var(--espace-8); }
+
+/* SEUL LE TEXTE GARDE SES RETOURS À LA LIGNE : un compte-rendu s'écrit en
+   lignes — « les décisions prises, une par ligne » le dit dans le formulaire —
+   et les aplatir rendrait illisible ce qu'on vient relire. Posé sur le
+   paragraphe entier, le `pre-wrap` préservait aussi l'indentation du gabarit
+   autour du libellé. */
+.reunion-precedente-texte { white-space: pre-wrap; }
+
+.reunion-precedente-part:last-child { margin-bottom: 0; }
+
+/* Le libellé dit de quoi il s'agit sans voler la ligne au texte : petites
+   capitales, sur son propre rang. C'est le dessin des libellés de section du
+   hub — « À FAIRE », « TA LECTURE ». */
+.reunion-precedente-quoi {
+  display: block;
+  margin-bottom: var(--espace-4);
+  color: var(--texte-discret);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* DEUX BLOCS CÔTE À CÔTE SUR ORDINATEUR (20 septembre 2026, demande de Noé :
+   « pour la préparation, sur ordinateur il doit y avoir des blocs côte à côte
+   plutôt que tout ligne par ligne »).
+
+   La fiche était une colonne de sept blocs — un écran et demi de défilement
+   avant d'atteindre le contrat, sur un écran qui a de la largeur à revendre.
+
+   `minmax(0, 1fr)` ET NON `1fr` : une piste `1fr` garde la largeur MINIMALE de
+   son contenu et refuse de descendre en dessous, donc elle déborde au lieu de
+   rétrécir. C'est le piège documenté dans les conventions, et il ne se voit
+   jamais sur l'écran large où l'on travaille.
+
+   LE SEUIL EST À 60 rem, celui des deux colonnes du hub : en dessous, deux
+   cartes côte à côte donneraient deux colonnes de moins de 30 rem, où les
+   lignes d'action se replieraient mot à mot.
+
+   `align-items: start` : deux blocs de hauteurs différentes ne s'étirent pas
+   l'un sur l'autre — un récap court à côté d'un suivi de six lignes garderait
+   sinon une carte à moitié vide. */
+.reunion-duo {
+  display: grid;
+  gap: var(--espace-16);
+  align-items: start;
+}
+
+@media (min-width: 60rem) {
+  .reunion-duo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* LE PLI : un `<details>` qui a l'habit d'un bloc. Son `<summary>` porte le
+   titre du bloc, donc il ne coûte pas une ligne de plus — c'est le titre qu'on
+   presse. Le marqueur natif est retiré : le hub dessine ses signes, il ne
+   mélange pas les glyphes du navigateur et les siens. */
+.reunion-pli > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.reunion-pli > summary::-webkit-details-marker { display: none; }
+
+/* LE CHEVRON DIT LE SENS DU GESTE, et il tourne à l'ouverture. Tracé en CSS
+   plutôt qu'en SVG : c'est un signe de contrôle, pas une icône du hub, et il
+   doit suivre la couleur du titre sans qu'on la lui donne. */
+.reunion-pli-tete {
+  display: flex;
+  gap: var(--espace-8);
+  align-items: center;
+}
+
+.reunion-pli-tete::after {
+  flex: none;
+  width: 0.5em;
+  height: 0.5em;
+  margin-left: auto;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  opacity: 0.55;
+  transform: rotate(45deg) translate(-0.1em, -0.1em);
+  transition: transform 160ms ease;
+  content: '';
+}
+
+.reunion-pli[open] > .reunion-pli-tete::after {
+  transform: rotate(-135deg) translate(-0.15em, -0.15em);
+}
+
+/* Le titre d'un bloc porte déjà sa marge basse ; dans un summary qu'on peut
+   replier, elle laisserait un blanc sous le titre une fois fermé. */
+.reunion-pli > summary > h2 { margin: 0; }
+
+/* LA TUILE GARDE `bloc`, ET CE N'EST PAS DÉCORATIF (trouvé à l'écran) : c'est
+   `.bloc ul` (styles.css) qui remet à zéro les listes du hub — marge, retrait
+   et puces. Sorti de `.bloc`, le suivi des actions retrouvait ses puces de
+   navigateur et quarante pixels de retrait. *Les deux tuiles du bas portent
+   les deux classes pour la même raison.*
+
+   OUVERT, LE CONTENU S'ÉCARTE DU TITRE. Fermé, il n'y a rien à écarter — la
+   marge vit donc sur le contenu et non sous le summary, sinon la tuile repliée
+   garderait un blanc que rien ne remplit. */
+.reunion-pli[open] > .reunion-duo,
+.reunion-pli[open] > div { margin-top: var(--espace-16); }
+
+/* LES LIGNES DU SUIVI SE SERRENT (20 septembre 2026, demande de Noé : « réduis
+   la taille des tuiles des tâches dans ce qui était prévu »).
+
+   *Mesuré avant : 91 px par ligne.* C'est la taille d'une tâche qu'on VIENT
+   FAIRE ; or celles-ci sont un RELEVÉ — on les parcourt en ouvrant la fiche
+   pour savoir ce qui reste, et l'on n'en coche qu'une de temps en temps. Trois
+   engagements prenaient 273 px en haut d'une page de préparation.
+
+   C'EST LE PRÉCÉDENT DES FEUILLES DE PRÉPARATION, au mot près : « une feuille
+   est une checklist qu'on parcourt d'un œil, souvent debout ; neuf lignes
+   doivent tenir sous le pouce » (14 août 2026).
+
+   SEULEMENT ICI, et c'est voulu : le tableau permanent des actions
+   (`#hermitage/actions`) est la page où l'on vient les TRAITER — ses lignes
+   gardent leur air. Une demande de forme vise l'écran qu'on regarde, pas la
+   règle commune.
+
+   `.reunion-suivi .liste-reunions > li` pèse 0-2-1, donc il bat `.bloc li`
+   (0-1-1) sans avoir à se redire. */
+.reunion-suivi .liste-reunions > li {
+  gap: var(--espace-4);
+  padding: var(--espace-8) var(--espace-12);
+}
+
+/* LE NOM DE LA TÂCHE RESTE CE QU'ON VOIT LE PLUS (20 septembre 2026,
+   correction de Noé : « le nom de la tâche doit être quand même ce qu'on voit
+   le plus par rapport aux autres éléments de la tuile »).
+
+   *Ce que j'avais cassé en resserrant : le titre était descendu à 12,2 px
+   pendant que le responsable restait à 13 px EN GRAISSE 600 et le nom de la
+   réunion à 13 px. Le service criait plus fort que le sujet.*
+
+   ON NE REMONTE PAS LE TITRE, ON DESCEND LE SERVICE : remonter le titre
+   défaisait le resserrement qu'on vient de demander. C'est la règle déjà tenue
+   sur la tuile d'un livre — « le titre porte seul le poids, le reste passe en
+   encre discrète ». */
+.reunion-suivi .liste-reunions > li .action-corps {
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+/* LE SERVICE PASSE DERRIÈRE : plus petit, et le responsable perd sa graisse de
+   600 — elle est faite pour une ligne où il est l'information, pas pour une
+   ligne où il accompagne un titre. */
+.reunion-suivi .liste-reunions > li .action-reunion,
+.reunion-suivi .liste-reunions > li .action-responsable,
+.reunion-suivi .liste-reunions > li .quand {
+  font-size: 0.6875rem;
+  font-weight: 400;
+}
+
+/* L'ÉTAT DESCEND D'UN CRAN DE PLUS (20 septembre 2026, demande de Noé :
+   « augmente la taille du nom des tâches et réduit un peu l'état »). C'est le
+   même mouvement que ci-dessus, poussé d'un cran : le titre monte, le service
+   descend.
+
+   9,4 px EST LE PLANCHER, et il est connu : c'est la mesure à laquelle le dock
+   s'est arrêté le 16 septembre — « à un cran de moins, "Calendrier" tombait à
+   8,4 px, où ce n'est plus un mot mais une trace ». On n'ira pas plus bas, et
+   l'étiquette garde ses capitales, qui se lisent mieux en petit. */
+.reunion-suivi .liste-reunions > li .action-statut { font-size: 0.625rem; }
+
+/* LE ROND SUIT LE TEXTE, ET IL FAUT LE DIRE : `.tache-cercle` est en `rem`, pas
+   en `em` — *mesuré, il restait à 18,75 px dans une ligne passée à 13.* Il
+   descend donc à 16 px, la mesure qu'il a sur la ligne d'une habitude, qui est
+   le même genre de relevé dense.
+
+   LA CIBLE NE BOUGE PAS : elle vit dans le rembourrage du bouton, pas dans le
+   glyphe. C'est la séparation posée le 30 août — « le rond est ce qu'on VOIT,
+   le bouton ce qu'on TOUCHE » —, et c'est elle qui permet de le réduire sans
+   rien perdre au doigt. */
+.reunion-suivi .liste-reunions > li .tache-cercle {
+  width: 1rem;
+  height: 1rem;
+  /* LA CIBLE RESTE À 44 px : 16 de glyphe + 14 de rembourrage de chaque côté.
+     *Mesurée sans cette part : 39 px, sous le minimum du hub.* La marge
+     négative vaut le rembourrage, sinon le bouton pousserait la ligne qu'on
+     vient de resserrer. */
+  margin: -14px;
+  margin-right: 0;
+  padding: 14px;
+}
+
+/* CE QU'ON REGARDE, À LA PLACE DES MARCHES (20 septembre 2026). Un cap du hub
+   se lit en jalons franchis ; les objectifs du club n'en ont pas, et ce qu'ils
+   ont de plus proche est leur INDICATEUR — « formation des éducateurs »,
+   « chiffre des revenus sponsors ». Il occupe donc la place de la mesure, entre
+   le titre et le pied.
+
+   UNE RANGÉE DE MARCHES VIDES AURAIT ÉTÉ UN BRUIT PERMANENT : c'est déjà
+   l'argument du pointillé d'un projet qui n'a rien déclaré — on ne dessine pas
+   une jauge pour une mesure qui n'existe pas. */
+.cap-tuile-mesure {
+  display: block;
+  margin-top: var(--espace-8);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+
+/* L'AXE D'UN OBJECTIF EST UN LIEN (20 septembre 2026) : il menait nulle part
+   jusqu'à ce que les axes aient leur page. Le dessin est celui d'une pastille
+   de filtre — même forme, même geste : on va voir ce que cette famille
+   contient. Sa couleur est celle de l'axe, portée en filet plutôt qu'en aplat :
+   dans le bloc « Le cap », il accompagne, il ne crie pas. */
+.projet-club-axe-lien {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  color: var(--texte);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-decoration: none;
+  background: color-mix(in srgb, var(--pole-couleur, var(--club-rouge)) 18%, #142343);
+  border-radius: 999px;
+}
+
+.projet-club-axe-lien:hover {
+  text-decoration: none;
+  background: color-mix(in srgb, var(--pole-couleur, var(--club-rouge)) 34%, #142343);
+}
+
+/* LES VISAGES D'UNE TUILE DE PÔLE (20 septembre 2026, demande de Noé) — les
+   personnes qui y participent, responsable en tête et plus gros.
+
+   ILS SE CHEVAUCHENT LÉGÈREMENT, comme une pile de jetons : six portraits
+   alignés à plat prendraient toute la largeur d'une tuile de 18 rem et ne
+   laisseraient rien au titre. La marge négative les serre sans les confondre —
+   chacun garde un liseré de la couleur de la tuile, qui dit où finit l'un et où
+   commence l'autre.
+
+   LE RESPONSABLE PASSE DEVANT, au sens propre : `z-index` en plus de la
+   taille. Sans lui, le voisin lui recouvrirait l'oreille — la pile se peint
+   dans l'ordre du document, et le premier serait le plus enfoui. */
+.pole-visages {
+  display: flex;
+  align-items: center;
+  /* SA HAUTEUR EST RÉSERVÉE, MÊME VIDE (demande de Noé) : sans elle, les quatre
+     domaines sans équipe remontaient leur nom de cinquante pixels et dix tuiles
+     ne se lisaient plus sur une ligne commune. C'est la règle de l'étagère de
+     la bibliothèque — un bloc réserve sa hauteur — et le vide dit ici quelque
+     chose de vrai : la place attend quelqu'un. */
+  min-height: 54px;
+}
+
+.pole-visage {
+  display: block;
+  flex: none;
+  /* PLUS GRANDS DEPUIS QUE LA TUILE S'EST DÉPOUILLÉE (20 septembre 2026,
+     demande de Noé) : l'étiquette et la mission sont parties, les visages ont
+     la place. Ils sont devenus le premier signe de la tuile, ils en prennent
+     la taille. Le chevauchement suit — 8 px au lieu de 6 —, sinon six
+     portraits de 40 px dépasseraient de la tuile. */
+  width: 40px;
+  height: 40px;
+  margin-right: -8px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 0 0 2.5px color-mix(in srgb, var(--couleur-espace-pleine, #fff) 5%, var(--fond-carte));
+}
+
+/* UN PEU PLUS GROS, ET PAS DEUX FOIS : à 30 px contre 40, l'écart se voit sans
+   que le responsable écrase ses voisins. C'est la mesure du dock — « les
+   voisins maigrissent pendant que l'actif grossit », et l'écart y vaut une fois
+   et demie. */
+.pole-visage-chef {
+  position: relative;
+  z-index: 1;
+  width: 54px;
+  height: 54px;
+}
+
+/* La photo remplit son jeton : `.orga-photo` est réglée à 88 px pour
+   l'organigramme, et sans cette reprise elle déborderait de six fois. */
+.pole-visage .orga-photo { width: 100%; height: 100%; }
+
+/* CE QUI NE TIENT PAS SE COMPTE, jamais ne disparaît en silence : c'est le
+   « +N » d'un jour trop chargé au calendrier. */
+.pole-visages-reste {
+  margin-left: var(--espace-12);
+  color: var(--texte-discret);
+  font-family: var(--police-chiffre);
+  font-size: 0.6875rem;
+}
+
+/* LA TUILE D'UN PÔLE, DÉPOUILLÉE (20 septembre 2026, demande de Noé). Il n'y
+   reste que trois choses : les visages, le nom, et ce qu'il vise.
+
+   LE NOM MONTE D'UN CRAN — 1,25 rem contre 1,125 — parce qu'il est devenu le
+   SEUL texte de la tuile : plus d'étiquette au-dessus, plus de mission en
+   dessous. Ce qui reste porte ce que les autres portaient.
+
+   LA PASTILLE SUIT LE NOM, et le `baseline` la pose sur sa ligne plutôt qu'au
+   milieu de sa boîte : sur un titre de 1,25 rem, un centrage vertical la ferait
+   flotter au-dessus de la lettre. */
+.pole-tuile-nom {
+  display: flex;
+  /* `start` ET NON `baseline`, ET LE NOM EST ENVELOPPÉ : la grille de
+     `.cap-tuile-ouvrir` étire ce titre à la hauteur de sa rangée — 62 px pour
+     19 px de texte sur une tuile sans visages —, et un texte NU dans un flex
+     devient un item anonyme dont la ligne de base se calcule sur cette hauteur
+     étirée. *Mesuré : la pastille tombait 28 px sous le nom, mais seulement sur
+     les tuiles sans équipe.* Deux vrais éléments, alignés en haut, et la
+     pastille se recale à la main. */
+  align-items: flex-start;
+  gap: var(--espace-8);
+  margin-top: var(--espace-4);
+  font-size: 1.25rem;
+}
+
+/* La pastille de `.cap-tuile-espace` est réglée pour une ligne de 11 px ; sur
+   un titre elle doit se redire, sinon elle grossit avec lui. */
+.pole-tuile-nom .pastille {
+  flex: none;
+  /* `align-self: flex-start` SE REDIT, et c'est ce qui manquait : une règle
+     générale pose `align-self: center` sur toutes les pastilles du hub, et un
+     `align-items` posé sur le conteneur NE BAT PAS un `align-self` posé sur
+     l'enfant. *Mesuré : sur un titre étiré à 62 px par la grille, la pastille
+     se centrait sur 62 et tombait 23 px sous le nom — mais seulement sur les
+     tuiles sans équipe, les seules à être étirées.*
+     La marge la repose ensuite sur la ligne du nom : la moitié d'une ligne,
+     moins la moitié de la pastille. */
+  align-self: flex-start;
+  margin-top: calc((1.25rem * 1.25 - 0.5rem) / 2);
+  width: 0.5rem;
+  height: 0.5rem;
+}
+
+/* TROIS RANGS COLLÉS EN HAUT, ET LES ÉCARTS À LA MAIN (20 septembre 2026,
+   demande de Noé : « moins d'espaces entre les photos et le titre, et entre le
+   titre et les objectifs »).
+
+   `align-content: start` N'EST PAS DÉCORATIF, il répare aussi un décalage :
+   `.cap-tuile-ouvrir` est une GRILLE, et les tuiles d'une rangée ont toutes la
+   hauteur de la plus haute. La grille RÉPARTISSAIT donc ses rangs dans la place
+   en trop — et comme la Buvette n'a pas de pied (aucun objectif), elle n'en
+   avait que deux à répartir : *mesuré, son titre tombait 16 px sous celui de sa
+   voisine.* Collé en haut, tout s'aligne quelle que soit la garniture.
+
+   LE `gap` TOMBE À ZÉRO et chaque rang porte sa marge : douze pixels partout,
+   c'est bien pour une tuile qui a du texte, trop pour trois rangs serrés. */
+.pole-tuile .cap-tuile-ouvrir {
+  align-content: start;
+  gap: 0;
+}
+
+.pole-tuile .cap-tuile-pied { margin-top: 2px; }
+
+/* LE TITRE D'UN BLOC D'AXE (20 septembre 2026) — « un petit titre en dehors des
+   tuiles ».
+
+   PETIT ET EN CAPITALES : c'est le dessin des libellés de section du hub — « À
+   FAIRE », « TA LECTURE » —, et c'en est un. Il nomme ce qui suit, il ne se lit
+   pas comme un titre de page : le `<h2>` « Les pôles » est déjà au-dessus, et
+   deux titres de même poids feraient hésiter sur lequel commande.
+
+   SA COULEUR EST CELLE DE L'AXE, portée par le TEXTE et non par un aplat : les
+   tuiles en dessous ont déjà chacune leur pastille, et un bandeau coloré
+   par-dessus ferait deux couleurs qui se disputent le même bloc.
+
+   LE PREMIER NE PREND PAS SA MARGE HAUTE : il suit la phrase de service, qui
+   porte déjà la sienne. */
+.pole-axe-titre {
+  margin: var(--espace-24) 0 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pole-axe-titre:first-of-type { margin-top: var(--espace-12); }
+
+.pole-axe-titre a {
+  color: var(--pole-couleur, var(--texte-discret));
+  text-decoration: none;
+}
+
+.pole-axe-titre a:hover { text-decoration: underline; }
+
+/* La galerie porte sa marge haute pour suivre le titre de la page ; sous un
+   titre de bloc, elle la rend — c'est le titre qui écarte, pas elle. */
+.pole-axe-titre + .cap-galerie { margin-top: var(--espace-8); }
