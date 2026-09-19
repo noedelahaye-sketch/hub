@@ -44,7 +44,7 @@ import {
   semaineDe,
   propositionsDuMatin,
   projetsEnCours,
-  suiteDuJour,
+  messageDuJour,
 } from './orientation.js';
 import { fenetreOuverte, jourDuBilan } from './rendez-vous.js';
 import { lireCache, ecrireCache } from './cache-session.js';
@@ -406,25 +406,48 @@ const SIGNE_ECARTER = `<svg viewBox="0 0 24 24" width="16" height="16" fill="non
 //   — « pas maintenant » vaut pour la journée, et le message revient demain ;
 //   — la croix est définitive : cet événement n'a besoin de rien. Sans elle,
 //     une suite qu'on ne veut pas faire deviendrait un reproche permanent.
+//
+// UN SEUL DESSIN POUR LES DEUX BANDEAUX (19 septembre 2026, le jour où celui de
+// l'AVANT est né) : même tuile, même couleur d'espace, mêmes portes. Deux
+// messages qui disent « va faire ça là-bas » ne peuvent pas se dessiner
+// autrement l'un que l'autre — on ne lit pas un bandeau, on le reconnaît.
+//
+// DEUX CHOSES SEULEMENT CHANGENT, et le message les porte lui-même :
+//   — LE VERBE (`quand`). « c'était hier » d'un côté, « c'est demain » de
+//     l'autre. Il était écrit EN DUR dans le gabarit, ce qui n'était pas un
+//     défaut tant qu'un seul bandeau existait.
+//   — LA CROIX (`croix`), que l'avant n'offre pas : elle écrit `sans_suite`,
+//     qui est définitif et vaut pour l'événement ENTIER — refuser une
+//     préparation tuerait le bilan deux jours plus tard, sans que rien ne
+//     l'ait dit. Et elle n'aurait pas d'objet : la question disparaît d'elle-
+//     même le soir de l'événement.
 export function construireSuite(suite, maintenant = new Date()) {
   if (!suite) return '';
 
-  const { evenement, phrase, libelle, adresse } = suite;
-  const quand = echeanceLisible(new Date(evenement.date_debut), maintenant);
+  const { evenement, phrase, libelle, adresse, quand = 'passe', croix = true } = suite;
+  const echeance = echeanceLisible(new Date(evenement.date_debut), maintenant);
 
   return `
     <div class="bandeau" data-espace="${echapper(evenement.espace)}">
       <span class="bandeau-mot">
-        <b>${echapper(evenement.titre)}</b>, c'était ${echapper(quand)}.
+        <b>${echapper(evenement.titre)}</b>, ${quand === 'vient' ? "c'est" : "c'était"} ${echapper(
+          echeance,
+        )}.
         <span class="discret">${echapper(phrase)}</span>
       </span>
       <span class="bandeau-portes">
         <a class="bandeau-aller" href="${adresse}">${echapper(libelle)}</a>
         <button type="button" class="lien-discret" data-suite-plus-tard="${echapper(evenement.id)}"
           >Pas maintenant</button>
-        <button type="button" class="bandeau-croix" data-suite-jamais="${echapper(evenement.id)}"
+        ${
+          croix
+            ? `<button type="button" class="bandeau-croix" data-suite-jamais="${echapper(
+                evenement.id,
+              )}"
           title="Cet événement n'a besoin de rien"
-          aria-label="Cet événement n'a besoin de rien">${SIGNE_ECARTER}</button>
+          aria-label="Cet événement n'a besoin de rien">${SIGNE_ECARTER}</button>`
+            : ''
+        }
       </span>
     </div>`;
 }
@@ -687,15 +710,20 @@ const SOURCES = {
   // donc aussi dans la semaine, ce qui n'était pas le cas avant.
   taches: async () => ({ tachesDatees: await api.tachesDatees() }),
   semaine: async () => {
-    const [evenements, publications, commandes, contacts] = await Promise.all([
+    const [evenements, publications, commandes, contacts, fiches] = await Promise.all([
       // Les événements sans borne : une grille de semaine peut afficher un
       // événement commencé avant elle.
       api.evenementsTous(),
       api.publicationsDatees(),
       api.commandesToutes(),
       api.contactsTous(),
+      // CE DONT LES DEUX BANDEAUX ONT BESOIN et que l'événement ne dit pas :
+      // a-t-il déjà sa fiche (l'avant y mène), son bilan est-il écrit (l'après
+      // se tait) ? Des identifiants, DE FRONT avec les quatre autres — donc
+      // aucun aller-retour de plus pour l'accueil.
+      api.fichesDesEvenements(),
     ]);
-    return { evenements, publications, commandes, contacts };
+    return { evenements, publications, commandes, contacts, fiches };
   },
 };
 
@@ -706,7 +734,7 @@ const DONNEES = {
   ...(VICTOIRES_VISIBLES ? { victoires: ['victoires'] } : {}),
   objectifs: ['objectifs'],
   taches: ['tachesDatees'],
-  semaine: ['evenements', 'publications', 'commandes', 'contacts'],
+  semaine: ['evenements', 'publications', 'commandes', 'contacts', 'fiches'],
 };
 
 // --- Montage ----------------------------------------------------------------
@@ -867,6 +895,10 @@ export default {
       publications: [],
       commandes: [],
       contacts: [],
+      // Les fiches et feuilles des événements : le bandeau de l'AVANT y mène,
+      // celui de l'APRÈS s'en sert pour se taire quand sa question a sa
+      // réponse. Voir `fichesDesEvenements`, js/api.js.
+      fiches: [],
       annulation: null,
       creation: null,
       // La barre de la semaine touchée, sa fenêtre de détail (demande de Noé,
@@ -1170,7 +1202,9 @@ export default {
         bloc.innerHTML = '';
         return;
       }
-      bloc.innerHTML = construireSuite(suiteDuJour({ evenements: etat.evenements }));
+      bloc.innerHTML = construireSuite(
+        messageDuJour({ evenements: etat.evenements, fiches: etat.fiches }),
+      );
     }
 
     function rendreSemaine() {

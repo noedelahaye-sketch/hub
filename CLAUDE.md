@@ -2552,17 +2552,119 @@ gestes ne doivent jamais porter le même signe.
    - **Elle porte la couleur du perso** (`data-espace="perso"`, jamais un code
      écrit dans la feuille) : le dimanche soir les deux portes coexistent, et
      deux boutons identiques ne se distingueraient que par leur libellé.
-4. **Le bandeau de l'après** — conditionnel, **un seul à la fois, le plus
-   récent** : un bilan s'écrit à chaud (`js/hermitage.js` le dit depuis le
-   21 août). Deux natures seulement — une sortie Yuno hors carnet, une réunion
-   FCH sans bilan. Trois portes : y aller, « pas maintenant » (revient demain),
-   la croix (jamais). **Jamais de ligne perso** : un rendez-vous avec soi ne
-   doit ni bilan ni tri. Il remonte à **quinze jours** au plus — au-delà, un
+4. **Les deux bandeaux, et UN SEUL À LA FOIS** — celui de l'**avant** (la
+   préparation) et celui de l'**après** (le bilan). Deux bandeaux empilés sont
+   deux interruptions ; la cascade est `messageDuJour` (js/orientation.js),
+   exportée pour être vérifiable seule.
+
+   **CE QUI ARRIVE PASSE DEVANT CE QUI EST PASSÉ.** Une préparation a une date
+   butoir qui approche et disparaît le soir de l'événement ; un bilan remonte à
+   quinze jours et peut attendre demain sans rien perdre. C'est l'ordre de la
+   cascade de l'accueil du club — « LE MOMENT D'ABORD ». Et **la porte du
+   dimanche passe devant les deux** : elle le fait vraiment depuis le 30 août,
+   la règle était écrite depuis le 29 et le code ne la tenait pas.
+
+   **DEUX NATURES, LES MÊMES DES DEUX CÔTÉS** — une sortie de Yuno, une réunion
+   du FCH (`seDeclarePreparable`, js/orientation.js) : **ce qui se prépare est
+   ce qui se débriefe**, et c'est aussi ce qui fait naître la tâche
+   « Préparer… ». *Une seule règle pour ces trois choses depuis le
+   19 septembre 2026 ; js/api.js la redisait mot pour mot, avec un commentaire
+   qui avouait le doublon.* Un entraînement du club sans photos ne laisse rien à
+   faire. **Jamais de ligne perso** : un rendez-vous avec soi ne se prépare pas
+   et ne se débriefe pas.
+
+   **UN SEUL DESSIN**, et deux choses seulement changent : le **verbe**
+   (« c'est demain » / « c'était hier ») et la présence de la **croix**. On ne
+   lit pas un bandeau, on le reconnaît.
+
+   ### LE BANDEAU DE L'AVANT (19 septembre 2026, demande de Noé : *« pour la
+   préparation des évènements — réunion FCH, match Yuno — j'aimerais aussi un
+   message sur le hub qui m'emmène vers la fiche de préparation »*)
+
+   **CE QU'IL AJOUTE À LA TÂCHE « PRÉPARER… », QUI EXISTAIT DÉJÀ** — et les deux
+   ne disent pas la même chose : **un cercle se coche, une porte emmène.** La
+   tâche est le TRAVAIL (elle se coche, se reporte, porte une durée, et « Mon
+   temps » la compte) ; le message est le CHEMIN — il ouvre la fiche, qui vit
+   dans un site, à trois gestes de l'accueil. La règle du 29 août tient : ce que
+   Noé a déclaré reste une tâche, et le message ne prétend pas être du travail.
+   - **MÊME SEUIL QUE LA TÂCHE** — J−2 (`PREPARATION_MONTE_A`, qui vit désormais
+     dans js/orientation.js et que js/api.js importe). Deux nombres pour la même
+     question finiraient par se contredire, et l'on verrait un message sans sa
+     tâche ou l'inverse. Il vient lui-même d'`AVANT_MONTE_A` chez Yuno.
+   - **IL RESTE JUSQU'AU SOIR DU JOUR J**, et ce n'est pas du rab : **la fiche
+     sert PENDANT** — c'est l'ordre du jour d'une réunion, la feuille à cases
+     d'une sortie. C'est déjà l'argument du temps fort sur l'accueil du club.
+     L'après prend le relais à J+1 : *vérifié de J−3 à J+3, aucun trou, aucun
+     recouvrement.*
+   - **LA FICHE NE LE FAIT PAS TAIRE, ELLE CHANGE SON MOT** : « Préparer la
+     réunion » devient « Ouvrir la fiche », exactement comme `boutonFiche` et
+     `boutonPreparer` sur les deux sites. C'est ce que Noé demande — une porte
+     VERS la fiche, pas un rappel de la créer. **Et le hub ne juge pas son
+     contenu** : il ne comptera jamais les cases non cochées ni les champs
+     vides d'une préparation.
+   - **SANS FICHE, IL MÈNE LÀ OÙ ELLE SE CRÉE** — `#hermitage/reunions` pour le
+     club (chaque ligne y porte « Préparer »), `#yuno/evenement/<id>` pour une
+     sortie. **Le hub ne crée pas la fiche à la place de Noé** : choisir son
+     modèle est un geste du site.
+   - **LA NATURE DE LA FICHE DÉCIDE DE L'ADRESSE, jamais l'espace seul.** Une
+     réunion du club qui traînerait une vieille feuille des modèles fch semés le
+     21 août serait sinon envoyée dans le site Yuno — **un défaut muet**, du
+     genre qui ne se voit qu'une fois qu'on a cliqué.
+   - **PAS DE CROIX ICI, et c'est une vraie raison, pas une économie** : elle
+     écrit `sans_suite`, qui est DÉFINITIF et vaut pour l'événement entier —
+     refuser la préparation tuerait le bilan deux jours plus tard, sans que rien
+     ne l'ait dit. Et elle n'aurait pas d'objet : la question disparaît d'elle-
+     même le soir de l'événement. **« Pas maintenant » suffit**, et il dit
+     exactement ce qu'il faut (`refusee_le` vaut pour la journée).
+   - **LE PLUS PROCHE D'ABORD**, à l'inverse de l'après : c'est celui pour
+     lequel il reste le moins de temps.
+
+   ### LE BANDEAU DE L'APRÈS (29 août 2026)
+
+   **Le plus RÉCENT d'abord** : un bilan s'écrit à chaud (`js/hermitage.js` le
+   dit depuis le 21 août). Il remonte à **quinze jours** au plus — au-delà, un
    bilan qu'on n'a pas écrit ne s'écrira pas, et le redemander devient un
-   reproche. **La porte du dimanche passe devant, et elle le fait vraiment
-   depuis le 30 août** : la règle était écrite depuis le 29 et le code ne la
-   tenait pas — les deux bandeaux pouvaient s'empiler, ce qui fait deux
-   interruptions. Le bilan qu'on ne réclame pas ce soir revient demain.
+   reproche. Trois portes : y aller, « pas maintenant » (revient demain), la
+   croix (jamais).
+
+   **LA QUESTION SE TAIT QUAND ELLE A SA RÉPONSE** (19 septembre 2026, défaut
+   rapporté par Noé : *« j'ai rempli le compte-rendu de réunion depuis le
+   message qui m'était proposé dans le hub, mais le message n'est pas parti une
+   fois le compte-rendu enregistré »*).
+
+   **La règle n'a pas changé d'un mot** — le bandeau a toujours dit « une
+   réunion FCH **sans bilan** » —, c'est le CODE qui ne savait pas la tenir :
+   `suiteDuJour` ne lisait que la table `evenements`, et le compte-rendu d'une
+   réunion vit dans `fiches_reunion.cr_date`. **Il n'y avait aucun chemin entre
+   les deux**, donc le message revenait tous les matins jusqu'à ce qu'on le
+   chasse à la croix — et c'est exactement ce que Noé a fini par faire. *Le
+   pendant Yuno marchait déjà : le carnet écrit pose `vecu` sur l'événement
+   lui-même, que le bandeau lisait.*
+   - **DEUX ÉTATS POUR DEUX NATURES, ET CHACUN RESTE LÀ OÙ IL VIT** : `vecu` sur
+     l'événement, le compte-rendu sur sa fiche. Recopier le second sur
+     l'événement aurait fait deux endroits à tenir d'accord, et **c'est toujours
+     celui qu'on regarde le moins qui finit par mentir.**
+   - **ET SURTOUT PAS `sans_suite`** : écrire la croix à la place de Noé
+     confondrait « c'est fait » et « je n'en veux pas ». Les deux refus disent
+     déjà chacun quelque chose de précis ; un troisième sens dans la même
+     colonne les rendrait tous illisibles.
+   - **`cr_date` ET NON `bilan_retenu`** : c'est la colonne que
+     `conclure-reunion` pose à la PREMIÈRE écriture et qui ne bouge plus. « Ce
+     que tu retiens » est facultatif — un compte-rendu rempli sans lui reste un
+     compte-rendu rempli.
+   - **LA FEUILLE D'UNE SORTIE NE LA FAIT PAS TAIRE** : la suite d'une sortie
+     est son CARNET, pas le bilan de sa feuille.
+
+   ### CE QUE LES DEUX LISENT
+
+   **UNE SEULE LECTURE POUR LES DEUX QUESTIONS** (`fichesDesEvenements`,
+   js/api.js) : cet événement a-t-il sa fiche, et laquelle — son bilan est-il
+   écrit ? Elle part **de front avec les quatre tables de la semaine**, donc
+   l'accueil ne paie aucun aller-retour de plus, et **elle ne ramène que des
+   identifiants**. Revenir sur l'accueil relit tout (`rafraichir`) : le bandeau
+   se met à jour au retour du site, sans rechargement.
+
+   *Trente et un cas éprouvés hors écran : `node tools/essai-message-du-jour.mjs`.*
 5. **Les habitudes ont QUITTÉ l'accueil** (30 août 2026, décision de Noé le
    soir même où elles y étaient arrivées). Elles vivent dans perso, seul écran
    qui les montre — voir « Les habitudes » plus haut. L'accueil porte ce qui est

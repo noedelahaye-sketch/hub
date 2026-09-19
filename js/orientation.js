@@ -1392,18 +1392,48 @@ export const SUITE_REMONTE_A = 15;
 // trois semaines pendant qu'un match d'hier attend, c'est perdre le seul qui
 // vaille encore quelque chose. Et au-delà de quinze jours on se tait : un bilan
 // qu'on n'a pas écrit ne s'écrira pas, et le redemander devient un reproche.
-export function suiteDuJour({ evenements = [] } = {}, jour = new Date()) {
+//
+// LA QUESTION SE TAIT QUAND ELLE A SA RÉPONSE (19 septembre 2026, défaut
+// rapporté par Noé : « j'ai rempli le compte-rendu depuis le message qui
+// m'était proposé, et le message n'est pas parti »).
+//
+// **La règle n'a pas changé d'un mot** — le bandeau a toujours dit « une
+// réunion du FCH SANS bilan » —, c'est le CODE qui ne savait pas la tenir : il
+// ne lisait que la table `evenements`, et le compte-rendu vit dans
+// `fiches_reunion.cr_date`. Aucun chemin entre les deux, donc le message
+// revenait tous les matins jusqu'à ce qu'on le chasse à la croix — et c'est
+// exactement ce que Noé a fini par faire.
+//
+// **DEUX ÉTATS POUR DEUX NATURES, ET CHACUN EST LÀ OÙ IL VIT** : une sortie de
+// Yuno porte son `vecu` sur l'événement lui-même — le carnet l'écrit, donc le
+// bandeau le voyait déjà —, une réunion porte son compte-rendu sur sa fiche.
+// Recopier le second sur l'événement aurait fait deux endroits à tenir
+// d'accord, et c'est toujours celui qu'on regarde le moins qui finit par
+// mentir. **On lit donc la vérité là où elle s'écrit.**
+//
+// **`fiches` ET NON `sans_suite`** : écrire la croix à la place de Noé
+// confondrait « c'est fait » et « je n'en veux pas ». Les deux refus disent
+// déjà quelque chose de précis, et un troisième sens dans la même colonne les
+// rendrait tous illisibles.
+//
+// CE QUI SE PRÉPARE EST CE QUI SE DÉBRIEFE : les deux natures sont les mêmes
+// que celles du bandeau de l'AVANT et que celles de la tâche « Préparer… »
+// (`seDeclarePreparable`, js/api.js). Une seule liste à tenir pour les trois.
+export function suiteDuJour({ evenements = [], fiches = [] } = {}, jour = new Date()) {
   const aujourdhui = versDateISO(jour);
   const plancher = versDateISO(new Date(jour.getTime() - SUITE_REMONTE_A * 86400000));
+  const repondues = new Set(
+    fiches.filter((fiche) => fiche.conclue).map((fiche) => fiche.evenement_id),
+  );
 
   const candidats = evenements
     .filter((evenement) => {
       const quand = jourDeLEvenement(evenement);
       if (quand >= aujourdhui || quand < plancher) return false;
       if (evenement.vecu || evenement.sans_suite) return false;
+      if (repondues.has(evenement.id)) return false;
       if (evenement.refusee_le === aujourdhui) return false;
-      if (evenement.espace === 'photo') return true;
-      return evenement.espace === 'fch' && Boolean(evenement.reunion_objet);
+      return seDeclarePreparable(evenement);
     })
     .sort((a, b) => (jourDeLEvenement(a) < jourDeLEvenement(b) ? 1 : -1));
 
@@ -1414,17 +1444,153 @@ export function suiteDuJour({ evenements = [] } = {}, jour = new Date()) {
     ? {
         evenement,
         quoi: 'carnet',
+        quand: 'passe',
         phrase: 'Tu l\'inscris au Carnet de terrain ?',
         libelle: 'Ouvrir le carnet',
         adresse: `#yuno/carnet/${evenement.id}`,
+        // LA CROIX N'EXISTE QUE POUR L'APRÈS : un bilan qu'on ne veut pas
+        // écrire deviendrait un reproche permanent sans elle.
+        croix: true,
       }
     : {
         evenement,
         quoi: 'bilan',
+        quand: 'passe',
         phrase: 'Son bilan peut en tirer des tâches.',
         libelle: 'Écrire le bilan',
         adresse: `#hermitage/reunions/${evenement.id}`,
+        croix: true,
       };
+}
+
+// --- LE BANDEAU DE L'AVANT : la porte de la préparation ----------------------
+//
+// DEMANDE DE NOÉ, 19 septembre 2026 : « pour la préparation des évènements
+// (réunion FCH, match Yuno), j'aimerais aussi un message sur le hub qui
+// m'emmène vers la fiche de préparation ».
+//
+// **CE QU'IL AJOUTE À LA TÂCHE « PRÉPARER… », QUI EXISTE DÉJÀ À J−2** — et les
+// deux ne disent pas la même chose : **un cercle se coche, une porte emmène.**
+// La tâche est le TRAVAIL — elle se coche, se reporte, porte une durée, et
+// « Mon temps » la compte ; le message est le CHEMIN — il ouvre la fiche, qui
+// vit dans un site, à trois gestes de l'accueil. La règle du 29 août n'est donc
+// pas enfreinte : ce que Noé a déclaré reste une tâche, et le message ne
+// prétend pas être du travail.
+//
+// **MÊME SEUIL QUE LA TÂCHE** (`PREPARATION_MONTE_A`, js/api.js — il vient
+// lui-même d'`AVANT_MONTE_A` chez Yuno) : deux nombres pour la même question
+// finiraient par se contredire, et l'on verrait un message sans sa tâche ou
+// l'inverse.
+//
+// **IL RESTE JUSQU'AU SOIR DU JOUR J**, et ce n'est pas du rab : **la fiche sert
+// PENDANT** — c'est l'ordre du jour d'une réunion, la feuille à cases d'une
+// sortie. C'est déjà l'argument du temps fort sur l'accueil du club (« la com
+// d'un temps fort se fait aussi pendant »). Le bandeau de l'après prend le
+// relais à J+1 : **aucun trou, aucun recouvrement.**
+//
+// **LA FICHE NE LE FAIT PAS TAIRE, ELLE CHANGE SON MOT** — « Préparer » devient
+// « Ouvrir la fiche », exactement comme `boutonFiche` et `boutonPreparer` sur
+// les deux sites. C'est ce que Noé demande : une porte VERS la fiche, pas un
+// rappel de la créer. **Et le hub ne juge pas son contenu** : il ne comptera
+// jamais les cases non cochées ni les champs vides d'une préparation.
+//
+// **PAS DE CROIX ICI, ET C'EST UNE VRAIE RAISON, pas une économie.** La croix
+// écrit `sans_suite`, qui est DÉFINITIF et vaut pour l'événement entier :
+// refuser la préparation tuerait du même coup le bilan, deux jours plus tard,
+// sans que rien ne l'ait dit. Et elle n'a pas d'objet — la question disparaît
+// d'elle-même le soir de l'événement. « Pas maintenant » suffit, et il dit
+// exactement ce qu'il faut : `refusee_le` vaut pour la journée.
+// LE SEUIL VIT ICI, ET `js/api.js` L'IMPORTE (19 septembre 2026). Il y était
+// né le 29 août, avec la tâche « Préparer… » ; le bandeau de l'avant s'en sert
+// maintenant aussi, et **deux nombres pour la même question finiraient par se
+// contredire** — on verrait alors un message sans sa tâche, ou l'inverse. Un
+// seuil est une RÈGLE, et les règles du hub vivent dans ce module, qui ne
+// touche ni au réseau ni au DOM : l'API peut l'importer, l'inverse ferait un
+// cycle et emporterait le client Supabase dans les bancs d'essai.
+//
+// Il vient lui-même d'`AVANT_MONTE_A` (js/yuno.js, 26 août 2026), le seuil qui
+// révèle la phase « Avant » d'une sortie. Un seul nombre pour toute la maison.
+export const PREPARATION_MONTE_A = 2;
+
+// CE QUI SE PRÉPARE EST CE QUI SE DÉBRIEFE, et c'est une seule règle pour
+// TROIS choses : la tâche « Préparer… » que le hub pose à J−2, le bandeau de
+// l'avant, le bandeau de l'après. `js/api.js` l'importe depuis le 19 septembre
+// 2026 — il la redisait mot pour mot, avec un commentaire qui avouait le
+// doublon (« Ce sont les MÊMES que celles du bandeau de l'après »), et c'est
+// exactement la divergence qu'on passe ensuite à rattraper.
+//
+// Un entraînement du club n'a rien à préparer ni à conclure : il n'appelle
+// donc rien. **L'ESPACE PERSO JAMAIS, ni la formation** — un rendez-vous avec
+// soi ne se prépare pas et ne se débriefe pas, l'espace perso ne mesure rien.
+export function seDeclarePreparable(evenement) {
+  if (evenement.espace === 'photo') return true;
+  return evenement.espace === 'fch' && Boolean(evenement.reunion_objet);
+}
+
+export function preparationDuJour({ evenements = [], fiches = [] } = {}, jour = new Date()) {
+  const aujourdhui = versDateISO(jour);
+  const horizon = versDateISO(new Date(jour.getTime() + PREPARATION_MONTE_A * 86400000));
+
+  // LE PLUS PROCHE D'ABORD, à l'inverse du bandeau de l'après : ce qui arrive
+  // en premier est ce qu'il reste le moins de temps pour préparer.
+  const evenement = evenements
+    .filter((candidat) => {
+      const quand = jourDeLEvenement(candidat);
+      if (quand < aujourdhui || quand > horizon) return false;
+      if (candidat.vecu || candidat.sans_suite) return false;
+      if (candidat.refusee_le === aujourdhui) return false;
+      return seDeclarePreparable(candidat);
+    })
+    .sort((a, b) => (jourDeLEvenement(a) < jourDeLEvenement(b) ? -1 : 1))[0];
+
+  if (!evenement) return null;
+
+  // LA NATURE DE LA FICHE DÉCIDE DE L'ADRESSE, jamais l'espace seul : une
+  // réunion du club envoyée dans le site Yuno serait un défaut muet.
+  const attendue = evenement.espace === 'photo' ? 'sortie' : 'reunion';
+  const fiche = fiches.find(
+    (candidate) => candidate.evenement_id === evenement.id && candidate.nature === attendue,
+  );
+
+  const commun = { evenement, quoi: 'preparation', quand: 'vient', croix: false };
+
+  if (evenement.espace === 'photo') {
+    return fiche
+      ? { ...commun, phrase: 'Sa préparation t\'attend.',
+          libelle: 'Ouvrir la préparation', adresse: `#yuno/preparations/${fiche.fiche_id}` }
+      // SANS FEUILLE, ON MÈNE À LA FICHE DE LA SORTIE et non à la liste des
+      // préparations : c'est là que vit le bouton « Préparer », avec le choix
+      // du modèle. Le hub ne crée pas la feuille à la place de Noé — choisir
+      // son modèle est un geste du site.
+      : { ...commun, phrase: 'Sa préparation n\'est pas ouverte.',
+          libelle: 'Préparer la sortie', adresse: `#yuno/evenement/${evenement.id}` };
+  }
+
+  return fiche
+    ? { ...commun, phrase: 'Sa fiche t\'attend.',
+        libelle: 'Ouvrir la fiche', adresse: `#hermitage/reunions/${fiche.fiche_id}` }
+    // SANS FICHE, LA LISTE DES RÉUNIONS : chacune de ses lignes porte le bouton
+    // « Préparer », qui fait naître la fiche et l'ouvre.
+    : { ...commun, phrase: 'Sa fiche n\'est pas ouverte.',
+        libelle: 'Préparer la réunion', adresse: '#hermitage/reunions' };
+}
+
+// --- LA CASCADE : un seul message, et lequel ---------------------------------
+//
+// UN SEUL À LA FOIS, c'est la règle du bandeau depuis le 29 août — deux
+// bandeaux empilés sont deux interruptions. Ils sont deux maintenant, il faut
+// donc dire lequel gagne.
+//
+// **CE QUI ARRIVE PASSE DEVANT CE QUI EST PASSÉ.** Une préparation a une date
+// butoir qui approche et disparaît le soir de l'événement ; un bilan remonte à
+// quinze jours et peut attendre demain sans rien perdre. C'est aussi l'ordre de
+// la cascade de l'accueil du club — « LE MOMENT D'ABORD » (16 septembre 2026).
+//
+// EXPORTÉE pour être vérifiable seule : deux règles qui se disputent une place,
+// c'est exactement le genre de chose qu'on ne croit pas sur parole — et qu'on ne
+// peut pas voir à l'écran d'un jour particulier, puisqu'une seule y parle.
+export function messageDuJour(donnees = {}, jour = new Date()) {
+  return preparationDuJour(donnees, jour) ?? suiteDuJour(donnees, jour);
 }
 
 // --- LA RELECTURE : ce que le hub te remontre --------------------------------

@@ -10,6 +10,13 @@
 // `js/vendor/VERSION` ; on en change en relançant l'outil.
 import { createClient } from './vendor/supabase-js.js';
 import { versDateISO, depuisDateISO, ajouterJours, occurrencesEntre } from './format.js';
+// LE SEUIL DE LA PRÉPARATION ET LA RÈGLE DES NATURES VIVENT DANS L'ORIENTATION
+// (19 septembre 2026) : ce sont des RÈGLES, et les deux bandeaux de l'accueil
+// s'en servent aussi. Elles étaient écrites ici ET là-bas, avec un commentaire
+// qui avouait le doublon — c'est la divergence qu'on passe ensuite à rattraper.
+// `js/orientation.js` ne touche ni au réseau ni au DOM : l'importer n'amène
+// rien, et l'inverse ferait un cycle.
+import { PREPARATION_MONTE_A, seDeclarePreparable } from './orientation.js';
 
 // URL de l'espace et clé publique (anon) : ces deux valeurs sont publiques par
 // conception. Sans session, elles ne donnent accès à rien — les politiques RLS
@@ -2450,6 +2457,69 @@ export async function creerFicheReunion({ evenement_id = null, titre, date = nul
   return { ...fiche, points: [] };
 }
 
+// LES FICHES DES ÉVÉNEMENTS — ce que les DEUX bandeaux de l'accueil ont besoin
+// de savoir et que l'événement ne dit pas (19 septembre 2026).
+//
+// CE QU'ELLE RÉPOND, en une lecture pour deux questions :
+//   — **l'avant** : cet événement a-t-il déjà sa fiche, et laquelle ? Le
+//     bandeau de la préparation y mène — « Ouvrir la fiche » si elle existe,
+//     « Préparer » sinon.
+//   — **l'après** : son bilan est-il écrit ? Le bandeau de la suite se tait
+//     alors (défaut rapporté par Noé : « j'ai rempli le compte-rendu depuis le
+//     message du hub, et le message n'est pas parti »). La règle n'avait jamais
+//     bougé — « une réunion SANS bilan » —, c'est le code qui ne savait pas lire
+//     le bilan : il ne connaissait que la table `evenements`, et le compte-rendu
+//     vit sur la fiche. **Le pendant Yuno marchait déjà** : le carnet pose
+//     `vecu` sur l'événement lui-même.
+//
+// DEUX RÉSERVES, PARCE QUE CE SONT DEUX NATURES : une réunion du club a une
+// FICHE (le contrat avant, le compte-rendu après), une sortie de Yuno a une
+// FEUILLE à cases. Elles ne se ressemblent pas et n'ont jamais été la même
+// table — voir la migration du 21 août 2026. La `nature` voyage donc avec la
+// ligne : c'est elle qui décide de l'adresse, et **la déduire de l'espace de
+// l'événement ouvrirait un défaut silencieux** le jour où une réunion du club
+// traînerait une vieille feuille des modèles fch semés le 21 août au matin —
+// le hub l'enverrait alors dans le site Yuno.
+//
+// `cr_date` ET NON `bilan_retenu` : c'est la colonne que `conclure-reunion`
+// (js/hermitage.js) pose à la PREMIÈRE écriture du compte-rendu et qui ne bouge
+// plus. « Ce que tu retiens » est facultatif — un compte-rendu rempli sans lui
+// reste un compte-rendu rempli, et le hub n'a pas à en redemander.
+//
+// ON NE RAMÈNE QUE DES IDENTIFIANTS : l'accueil pose déjà quatre requêtes de
+// front pour sa semaine, celles-ci partent avec elles et ne coûtent aucun
+// aller-retour de plus. Des fiches entières en coûteraient dix fois le poids
+// pour des questions qui se répondent par oui ou non.
+export async function fichesDesEvenements() {
+  const [reunions, feuilles] = await Promise.all([
+    client
+      .from('fiches_reunion')
+      .select('id, evenement_id, cr_date')
+      .not('evenement_id', 'is', null),
+    client
+      .from('preparations')
+      .select('id, evenement_id')
+      .not('evenement_id', 'is', null),
+  ]);
+
+  return [
+    ...verifier(reunions).map((ligne) => ({
+      evenement_id: ligne.evenement_id,
+      fiche_id: ligne.id,
+      nature: 'reunion',
+      conclue: Boolean(ligne.cr_date),
+    })),
+    ...verifier(feuilles).map((ligne) => ({
+      evenement_id: ligne.evenement_id,
+      fiche_id: ligne.id,
+      nature: 'sortie',
+      // La suite d'une sortie est son CARNET, pas le bilan de sa feuille :
+      // c'est `evenements.vecu` qui le dit, et le bandeau le lisait déjà.
+      conclue: false,
+    })),
+  ];
+}
+
 export async function modifierFicheReunion(id, champs) {
   return verifier(
     await client.from('fiches_reunion').update(champs).eq('id', id).select().single(),
@@ -2742,7 +2812,6 @@ export async function atteindreJalon(jalon, espace) {
 // qu'elle existe, et une fois retirée c'est une décision de Noé qu'on ne
 // défait pas... sauf à rouvrir le même événement, ce qui est cohérent : il
 // redemande la préparation en la redemandant.
-export const PREPARATION_MONTE_A = 2;
 export const TRI_TOMBE_A = 1;
 
 // Le tri ne remonte pas plus loin que le bandeau de l'après (quinze jours,
@@ -2756,16 +2825,6 @@ export const TRI_REMONTE_A = 15;
 export const POST_TOMBE_A = 1;
 
 const SANS_TACHE_AUTO = ['perso', 'formation'];
-
-// Une réunion du club, une sortie de Yuno : les deux natures qui ont une
-// feuille. Ce sont les MÊMES que celles du bandeau de l'après (`suiteDuJour`,
-// js/orientation.js), et c'est voulu — ce qui se prépare est ce qui se
-// débriefe.
-function seDeclarePreparable(evenement) {
-  if (SANS_TACHE_AUTO.includes(evenement.espace)) return false;
-  if (evenement.espace === 'photo') return true;
-  return evenement.espace === 'fch' && Boolean(evenement.reunion_objet);
-}
 
 // UN MATCH DE YUNO, ET LUI SEUL (29 août 2026, demande de Noé : « après chaque
 // évènement match yuno, il faut programmer un post sur le match à J+1 »).

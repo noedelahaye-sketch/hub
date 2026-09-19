@@ -666,6 +666,47 @@ bilan : c'est une **question**, et une question se pose, elle ne se coche pas.
 **Un cercle se coche, une porte emmène.** Deux gestes différents ne portent
 jamais le même signe.
 
+### DEUX MESSAGES, ET UN SEUL À LA FOIS (19 septembre 2026)
+
+`messageDuJour` est la cascade : **la préparation d'abord, le bilan ensuite.**
+
+**CE QUI ARRIVE PASSE DEVANT CE QUI EST PASSÉ.** Une préparation a une date
+butoir qui approche et disparaît le soir de l'événement ; un bilan remonte à
+quinze jours et peut attendre demain sans rien perdre. C'est aussi l'ordre de la
+cascade de l'accueil du club — « LE MOMENT D'ABORD ».
+
+Elle est **exportée**, comme `carteDuMoment` : deux règles qui se disputent une
+place, c'est exactement ce qu'on ne peut pas vérifier en regardant l'écran d'un
+jour particulier, puisqu'une seule y parle.
+
+### `preparationDuJour` — la porte de la fiche
+
+**Demande de Noé** : *« pour la préparation des évènements (réunion FCH, match
+Yuno), j'aimerais aussi un message sur le hub qui m'emmène vers la fiche de
+préparation. »*
+
+**CE QU'IL AJOUTE À LA TÂCHE « PRÉPARER… », QUI NAÎT DÉJÀ À J−2** — et les deux
+ne disent pas la même chose : **un cercle se coche, une porte emmène.** La tâche
+est le TRAVAIL, le message est le CHEMIN vers une fiche qui vit dans un site, à
+trois gestes de l'accueil. La règle du 29 août tient : ce que Noé a déclaré reste
+une tâche.
+
+- **Même seuil que la tâche** (`PREPARATION_MONTE_A`) : deux nombres pour la
+  même question finiraient par se contredire.
+- **Il tient jusqu'au soir du jour J** — la fiche sert PENDANT. L'après prend le
+  relais à J+1 : ni trou, ni recouvrement.
+- **La fiche ne le fait pas taire, elle change son mot** : « Préparer » devient
+  « Ouvrir la fiche ». Le hub ne juge jamais le CONTENU d'une préparation — ni
+  cases non cochées, ni champs vides comptés.
+- **Sans fiche, il mène là où elle se crée.** Le hub n'en crée aucune : choisir
+  son modèle est un geste du site.
+- **La nature de la fiche décide de l'adresse**, jamais l'espace seul — sinon
+  une réunion du club portant une vieille feuille Yuno partirait dans le mauvais
+  site, et ça ne se verrait qu'après le clic.
+- **Pas de croix** : elle écrit `sans_suite`, qui est définitif et vaut pour
+  l'événement entier — refuser la préparation tuerait le bilan deux jours plus
+  tard. Et la question disparaît d'elle-même le soir de l'événement.
+
 ### `suiteDuJour` — le message
 
 Deux natures seulement, et c'est volontaire :
@@ -673,6 +714,12 @@ Deux natures seulement, et c'est volontaire :
 - une **sortie de Yuno** qui n'est pas au Carnet de terrain ;
 - une **réunion du FCH** sans bilan, parce qu'un bilan de réunion produit du
   travail concret qu'on oublie sinon.
+
+**Ce sont les MÊMES que celles du bandeau de l'avant et de la tâche
+« Préparer… »** — *ce qui se prépare est ce qui se débriefe*. Une seule règle
+(`seDeclarePreparable`) depuis le 19 septembre 2026 : `js/api.js` la redisait mot
+pour mot, avec un commentaire qui avouait le doublon, et c'est exactement la
+divergence qu'on passe ensuite à rattraper.
 
 Un entraînement du club sans photos ne laisse rien à faire : il n'appelle donc
 rien. **L'espace perso jamais** — un rendez-vous avec soi ne doit ni bilan ni
@@ -690,6 +737,32 @@ n'a pas écrit ne s'écrira pas, et le redemander devient un reproche.
 maintenant », vaut pour la journée) et `evenements.sans_suite` (la croix,
 définitif). Sans le second, une suite qu'on ne veut pas faire deviendrait un
 reproche permanent, exactement ce que ce hub s'interdit.
+
+**LA QUESTION SE TAIT QUAND ELLE A SA RÉPONSE** (19 septembre 2026, défaut
+rapporté par Noé : *« j'ai rempli le compte-rendu depuis le message qui m'était
+proposé, et le message n'est pas parti »*).
+
+**La règle ci-dessus n'a jamais bougé — « une réunion du FCH SANS bilan » —,
+c'est le CODE qui ne savait pas la tenir.** `suiteDuJour` ne lisait que la table
+`evenements` ; le compte-rendu d'une réunion vit dans `fiches_reunion.cr_date`.
+Aucun chemin entre les deux, donc le message revenait chaque matin jusqu'à ce
+qu'on le chasse à la croix. *Le pendant Yuno marchait : le carnet pose `vecu`
+sur l'événement, et le bandeau le lisait déjà.*
+
+- **Deux états pour deux natures, et chacun reste là où il vit** : `vecu` sur
+  l'événement, le compte-rendu sur sa fiche. Les recopier l'un sur l'autre
+  ferait deux endroits à tenir d'accord, et c'est toujours celui qu'on regarde
+  le moins qui finit par mentir.
+- **Jamais en écrivant `sans_suite`** : la croix dit « je n'en veux pas », pas
+  « c'est fait ». Un troisième sens dans cette colonne rendrait les deux refus
+  illisibles.
+- L'accueil reçoit la liste des réunions conclues **de front** avec les quatre
+  tables de sa semaine : aucun aller-retour de plus.
+
+*Trente et un cas éprouvés hors écran : `node tools/essai-message-du-jour.mjs`
+— les deux bandeaux, les deux natures, les deux états, les deux refus, les deux
+bornes, la cascade, et le balayage de J−3 à J+3 qui prouve qu'aucune fenêtre
+n'en recouvre une autre.*
 
 ### `projetsEnCours` — le rail de l'accueil
 
