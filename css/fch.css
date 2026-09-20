@@ -1719,7 +1719,18 @@ body[data-espace="hermitage"] #vue .orga-recap-commission:first-child { margin-t
    leur colonne et leurs phrases se coupaient en plein mot.* Le préfixe `.bloc`
    égale la spécificité, et fch.css est chargée après : l'ordre tranche.
    C'est le piège des conventions, payé une fois de plus. */
-.bloc .orga-recap-theme ul { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+/* ET `align-items` SE REDIT (20 septembre 2026, défaut vu par Noé : « ces tuiles
+   doivent toutes avoir la même largeur »). La même règle générale pose `start`,
+   et **ce qu'on ne redit pas reste** : dans une colonne de flex, `start` fait
+   que chaque carte prend la largeur de SON TEXTE — « Veiller à l'entretien des
+   terrains » finissait deux fois plus étroite que sa voisine, et la colonne
+   ressemblait à un escalier. `stretch` leur rend la largeur de leur colonne.
+   Douzième fois que la spécificité de cette règle se paie, et deuxième fois sur
+   cette liste-ci : elle se paie déclaration par déclaration. */
+.bloc .orga-recap-theme ul {
+  display: flex; flex-direction: column; align-items: stretch;
+  gap: 6px; margin: 0; padding: 0; list-style: none;
+}
 .orga-recap-theme li {
   min-width: 0;
   display: flex; flex-direction: column; gap: 4px;

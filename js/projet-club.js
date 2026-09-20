@@ -866,6 +866,34 @@ function ficheValeur(v) {
 
 // ── L'ASSEMBLAGE ──────────────────────────────────────────────────────────────
 
+// LES SEPT OBJECTIFS DE LA SAISON, EN TÊTE DE LA PAGE « CLUB » (20 septembre
+// 2026, demande de Noé : « dans la page "club" on doit avoir en haut les
+// objectifs de la saison à venir à pouvoir slider »).
+//
+// LE HALL DIT OÙ ALLER, CE RAIL DIT POURQUOI. La page ne portait que des portes
+// — l'organigramme, le projet, les entraînements, les chiffres, les réunions,
+// les évènements —, c'est-à-dire six chemins et pas une seule des choses que le
+// club s'est données à faire cette saison. **Elles étaient à trois gestes** :
+// la porte du projet, puis sa galerie d'objectifs, puis leurs trois horizons
+// mêlés.
+//
+// SEPT SUR DIX-HUIT, ET C'EST TOUT L'INTÉRÊT : les onze autres visent trois ou
+// cinq ans. C'est la règle déjà posée sur la page d'un pôle le même jour — cette
+// page-ci répond à « qu'est-ce qu'on fait cette saison », et les horizons se
+// comparent ailleurs, sur la page des objectifs et sur celle d'un axe.
+//
+// LE MÊME RAIL QUE PARTOUT AILLEURS (`.projet-rail pole-rail`), et l'horizon ne
+// s'écrit pas sur ses tuiles : elles sont toutes de la même saison, et le titre
+// du bloc le dit.
+export function railDesObjectifsDeLaSaison() {
+  const retenus = OBJECTIFS_FCH.filter((o) => o.echeances.includes(ECHEANCE_SAISON));
+  if (!retenus.length) return '';
+  return `<section class="bloc fch-sans-tuile"><h2>Les objectifs de la saison qui vient</h2>
+    <div class="projet-rail pole-rail">${
+      retenus.map((o) => tuileObjectif(o, o.titre, { avecHorizon: false })).join('')}</div>
+  </section>`;
+}
+
 export function construireProjetClub(selection) {
   const objectif = objectifDe(selection);
   if (objectif) return ficheObjectif(objectif);

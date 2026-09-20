@@ -756,14 +756,26 @@ function squelette() {
          programmer sa semaine est une décision, pas un réflexe.
          Masquée le reste du temps, et dès que la semaine est validée : le hub
          ne relance pas. -->
-    <div id="bloc-rdv" hidden></div>
+    <!-- LES DEUX PORTES TIENNENT SUR UNE LIGNE (20 septembre 2026, demande de
+         Noé). Elles ne se rencontrent que le dimanche soir et le lundi, et
+         empilées elles prenaient deux rangs au-dessus de la journée pour deux
+         gestes d'un mot. Ce sont DEUX BOUTONS DE MÊME FORME, de même hauteur et
+         de même nature — chacun dit où il mène et y mène — : c'est exactement ce
+         qui se range côte à côte. La rangée passe à la ligne d'elle-même sur un
+         téléphone, où les deux libellés ne tiennent pas dans 343 px.
+         Le blanc sous la rangée reste porté par les boutons eux-mêmes : une
+         marge posée ici ouvrirait un vide de 24 px tous les jours où aucune des
+         deux portes ne s'affiche. -->
+    <div class="portes-du-jour">
+      <div id="bloc-rdv" hidden></div>
 
-    <!-- LA PORTE DU SOIR (1er septembre 2026, demande de Noé). Tous les jours à
-         partir de 20 h, et JUSQU'AU LENDEMAIN MIDI (16 septembre 2026) : on se
-         couche parfois sans avoir écrit, et ça se rattrape au café du matin.
-         Avant midi elle ouvre donc la journée d'HIER. Masquée dès que le bilan
-         est écrit — le hub ne relance pas. -->
-    <div id="bloc-bilan-jour" hidden></div>
+      <!-- LA PORTE DU SOIR (1er septembre 2026, demande de Noé). Tous les jours
+           à partir de 20 h, et JUSQU'AU LENDEMAIN MIDI (16 septembre 2026) : on
+           se couche parfois sans avoir écrit, et ça se rattrape au café du
+           matin. Avant midi elle ouvre donc la journée d'HIER. Masquée dès que
+           le bilan est écrit — le hub ne relance pas. -->
+      <div id="bloc-bilan-jour" hidden></div>
+    </div>
 
     <!-- LE BANDEAU DE L'APRÈS. Conditionnel, un seul à la fois — voir
          construireSuite. Il vient juste sous la ligne de tête : c'est une

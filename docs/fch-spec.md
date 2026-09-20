@@ -1363,6 +1363,17 @@ s'y compte, aucune donnée n'y est saisie. Il sert l'objectif du 15 décembre �
 « laisser une com qui tourne sans moi » : celui qui reprend doit savoir à qui
 s'adresser et sur quoi s'aligner.
 
+**LE CAP DE LA SAISON OUVRE LA PAGE** (20 septembre 2026, demande de Noé :
+*« dans la page "club" on doit avoir en haut les objectifs de la saison à venir à
+pouvoir slider »*), dans le rail qui sert déjà les projets et les pôles. **Le
+hall dit où aller, ce rail dit vers quoi** : la page ne portait que six portes,
+et pas une seule des choses que le club s'est données à faire cette saison —
+elles étaient à trois gestes, derrière la porte du projet puis sa galerie.
+**Sept objectifs sur dix-huit**, ceux de N+1 ; les onze autres visent trois ou
+cinq ans et se comparent sur la page des objectifs et sur celle d'un axe.
+L'horizon ne s'écrit pas sur ces tuiles — elles sont toutes de la même saison, et
+le titre du bloc le dit.
+
 **LA PAGE EST UN HALL** (16 septembre 2026, demande de Noé : *« modifie la forme
 des tuiles de la page club pour que ça ressemble davantage à ce style — comme ma
 bibliothèque dans perso, ou le vivier dans Yuno »*). Elle portait cinq

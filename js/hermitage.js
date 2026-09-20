@@ -50,7 +50,8 @@ import { finDeLaSortie, phaseDeLaSortie } from './preparations-commun.js';
 import { REPERES, CRENEAUX } from './club-fch.js';
 import { GROUPES, PERSONNES } from './organigramme-fch-data.js';
 import { MISSION_FCH, VALEURS_FCH, OBJECTIFS_FCH } from './projet-fch.js';
-import { construireProjetClub, titreDuProjet, projetDeclare } from './projet-club.js';
+import { construireProjetClub, titreDuProjet, projetDeclare,
+  railDesObjectifsDeLaSaison } from './projet-club.js';
 import * as pageProjetDuClub from './projet-club-page.js';
 import {
   construireEvenementsClub, estRubriqueEvenement, EVENEMENTS_CLUB, prochainEvenementClub,
@@ -3041,8 +3042,11 @@ function vueClub(etat) {
   // FC Hermitage » nommait les portes qu'on a juste en dessous, et une porte qui
   // MONTRE ce qu'il y a derrière n'a plus besoin qu'on l'annonce. C'est la forme
   // des deux autres halls du hub — `#perso` et celui des partenaires.
+  // LE CAP DE LA SAISON OUVRE LA PAGE, LE HALL SUIT (20 septembre 2026, demande
+  // de Noé) : six portes disaient où aller sans dire vers quoi. Voir
+  // `railDesObjectifsDeLaSaison`, js/projet-club.js.
   return `${enTete(vue, personne)}${vue === 'club'
-    ? hallDuClub(etat)
+    ? `${railDesObjectifsDeLaSaison()}${hallDuClub(etat)}`
     : `${contenus[vue]()}<a class="lien-discret" href="#hermitage/club">← Le club</a>`}${vue === 'evenements' ? fenetreIdee(etat) : ''}${pied()}`;
 }
 

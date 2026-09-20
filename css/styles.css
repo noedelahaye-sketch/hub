@@ -10891,6 +10891,33 @@ a.cap-ajout-discret { text-decoration: none; }
 #bloc-rdv:empty,
 #bloc-bilan-jour:empty { display: none; }
 
+/* LES DEUX PORTES SUR UNE LIGNE (20 septembre 2026, demande de Noé) — la raison
+   est écrite dans js/dashboard.js, au-dessus de la rangée.
+
+   C'EST LA RANGÉE QUI PORTE LES DEUX ÉCARTS (20 septembre 2026, demande de Noé :
+   « sur l'affichage téléphone, moins d'espace entre les 2 boutons »). Quand elle
+   passe à la ligne, ce qui séparait les boutons était la marge basse de 24 px
+   qu'ils portent chacun — une mesure faite pour DÉTACHER la porte de la journée
+   qui suit, pas pour séparer deux boutons jumeaux. Huit pixels suffisent entre
+   eux ; les vingt-quatre restent sous la rangée entière.
+
+   ET LE BLANC DU BAS NE S'OUVRE QUE S'IL Y A UNE PORTE : la marge est posée par
+   un `:has`, sinon la rangée creuserait 24 px de vide tous les jours où aucune
+   des deux ne s'affiche — c'est-à-dire presque tous. `:empty` compte autant que
+   `[hidden]` : les deux blocs se vident aussi par leur contenu. */
+.portes-du-jour {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-8) var(--espace-12);
+}
+
+.portes-du-jour .porte-semaine { margin-bottom: 0; }
+
+.portes-du-jour:has(> div:not([hidden]):not(:empty)) {
+  margin-bottom: var(--espace-24);
+}
+
 /* Les chiffres de la semaine passée. C'est la forme des chiffres nus de Yuno,
    et pour la même raison : ce sont des faits, rien ne s'y touche. Ils ouvrent
    la page parce que le hub est d'abord un miroir de ce qui a été accompli. */
