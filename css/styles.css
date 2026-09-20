@@ -125,7 +125,16 @@
   --marge-cote: var(--espace-16);
 
   /* Trois rôles, trois familles. Aucune n'est là pour faire joli. */
-  --police-titre: "Clash Display", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  /* CLASH DISPLAY SE NOMME DEUX FOIS, ET LES DEUX NOMS NE DISENT PAS LA MÊME
+     CHOSE. `--police-titre` est un RÔLE — la police des titres de l'écran où
+     l'on se trouve —, et les deux sites le reprennent pour poser la leur :
+     Gilroy pour le club, Inter pour Yuno. `--police-affichage` est la FAMILLE,
+     celle du hub, et elle ne bouge nulle part : c'est elle que demande ce qui
+     appartient au hub même quand il se dessine dans un site — les gros chiffres
+     d'un tableau de bord, par exemple. Sans elle, ils s'habillaient de la
+     charte du site sans que personne l'ait décidé. */
+  --police-affichage: "Clash Display", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --police-titre: var(--police-affichage);
   --police-texte: "Instrument Sans", ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", Roboto, sans-serif;
   --police-chiffre: "Geist Mono", ui-monospace, Menlo, monospace;
@@ -336,9 +345,35 @@ body[data-espace="hermitage"] {
      anglaise de logo, illisible en interface. */
   --police-titre: "Gilroy", "Instrument Sans", system-ui, sans-serif;
   --police-texte: "Gilroy", "Instrument Sans", system-ui, sans-serif;
-  /* Geist Mono garde les compteurs : la charte ne donne pas de chasse fixe, et
-     Gilroy n'aligne pas ses chiffres en colonne. */
+
+  /* ET LES COMPTEURS AUSSI (20 septembre 2026, demande de Noé : « change ce qui
+     est en Inter et Geist Mono en Gilroy »). Le site ne parle donc plus qu'une
+     seule police, comme sa charte le demande.
+
+     *Ce que ça renverse, et l'objection était bonne :* « Geist Mono garde les
+     compteurs — la charte ne donne pas de chasse fixe, et Gilroy n'aligne pas
+     ses chiffres en colonne. » Le fait était juste — *mesuré à 40 px, le « 1 »
+     de Gilroy fait 14,2 px contre 25,2 pour le « 0 », soit 44 % d'écart* —,
+     mais la conclusion non : **Gilroy A des chiffres tabulaires**, ils ne sont
+     simplement pas allumés par défaut. C'est la ligne juste en dessous qui les
+     allume, et les colonnes retombent d'aplomb (22,92 px chacun). */
+  --police-chiffre: "Gilroy", "Instrument Sans", system-ui, sans-serif;
 }
+
+/* LES CHIFFRES DU CLUB S'ALIGNENT EN COLONNE, et il faut le demander : c'est ce
+   qui rend la bascule ci-dessus possible sans rien perdre. La grille du
+   calendrier, les comptes d'engagements alignés à droite, les chiffres du club
+   dans leur colonne de 4 rem — tous se liraient de travers avec les chasses
+   naturelles de Gilroy.
+
+   UNE SEULE LIGNE, HÉRITÉE, PLUTÔT QU'UNE LISTE DE CLASSES : une liste
+   vieillirait au premier compteur ajouté, et c'est toujours celui qu'on oublie
+   qui se met de travers. Le prix est nul ailleurs — ce site est fait de dates,
+   de scores, de montants et de comptes.
+
+   ELLE NE TOUCHE PAS LES GROS CHIFFRES DU TABLEAU DE BORD : *mesuré, Clash
+   Display n'a pas de jeu tabulaire, la propriété y est simplement ignorée.* */
+body[data-espace="hermitage"] { font-variant-numeric: tabular-nums; }
 
 /* Points de rupture de Bac-3 : 720 px et 1080 px. */
 @media (min-width: 45rem) { :root { --marge-cote: var(--espace-24); } }

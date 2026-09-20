@@ -2986,3 +2986,112 @@ export async function poserCeQuUnEvenementFaitNaitre(jour = new Date()) {
 
   return aPoser.length + postsAPoser.length;
 }
+
+// --- Les projets DU CLUB ------------------------------------------------------
+//
+// (20 septembre 2026, demande de Noé : « les pages des projets des commissions
+// doivent ressembler aux pages de mes projets, donc avec des jalons, un
+// calendrier sur lequel on peut poser des choses ».)
+//
+// DEUX TABLES À PART, et c'est sa décision : *« ça ne s'affichera pas dans mon
+// calendrier, seulement dans le calendrier de la page du projet »*. Rangés dans
+// `projets`, les vingt-huit projets du club auraient rejoint ses sept projets
+// d'alternance — donc « Mes projets », le rail de son accueil, « Mon temps » et
+// sa charge. Ce sont les projets du CLUB. Un marqueur dans la même table aurait
+// marché, au prix d'un filtre à ne jamais oublier ; deux tables ne s'oublient
+// pas.
+//
+// LES GESTES SONT CEUX DES ÉTAPES D'UN PROJET, au nom de table près : le
+// découpage est le même motif, et deux mécaniques pour deux choses identiques
+// finiraient par diverger.
+
+// OUVRIR UN PROJET DU CLUB, et c'est le seul moment où une ligne naît (décision
+// de Noé : « un par un, à la demande »). Le geste est REJOUABLE — `cle` est
+// unique, donc ouvrir deux fois le même projet rend la ligne qui existe déjà
+// plutôt que d'en créer une seconde. C'est la mécanique du rattrapage des
+// séries, et elle évite d'avoir à se demander si on l'a déjà fait.
+export async function ouvrirProjetDuClub({ cle, titre, objectif = null, echeance = null }) {
+  const connu = verifier(
+    await client.from('projets_club').select('*').eq('cle', cle).maybeSingle(),
+  );
+  if (connu) return connu;
+  return verifier(
+    await client
+      .from('projets_club')
+      .insert({ cle, titre, objectif, echeance })
+      .select()
+      .single(),
+  );
+}
+
+// PAR CLÉ ET NON PAR IDENTIFIANT : la page arrive avec le projet DÉCLARÉ sous la
+// main — c'est lui que l'adresse nomme —, et elle ne sait pas encore s'il a été
+// ouvert. `maybeSingle` répond « pas encore » sans lever d'erreur.
+export async function projetDuClub(cle) {
+  return verifier(await client.from('projets_club').select('*').eq('cle', cle).maybeSingle());
+}
+
+export async function modifierProjetDuClub(id, champs) {
+  return verifier(
+    await client.from('projets_club').update(champs).eq('id', id).select().single(),
+  );
+}
+
+export async function etapesDuProjetDuClub(projetId) {
+  return verifier(
+    await client
+      .from('projets_club_etapes')
+      .select('*')
+      .eq('projet_id', projetId)
+      .order('ordre', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: true }),
+  ) ?? [];
+}
+
+export async function creerEtapeDuClub({ projet_id, titre, ordre = null, echeance = null }) {
+  return verifier(
+    await client
+      .from('projets_club_etapes')
+      .insert({ projet_id, titre, ordre, echeance })
+      .select()
+      .single(),
+  );
+}
+
+export async function modifierEtapeDuClub(id, champs) {
+  return verifier(
+    await client.from('projets_club_etapes').update(champs).eq('id', id).select().single(),
+  );
+}
+
+export async function supprimerEtapeDuClub(id) {
+  const { error } = await client.from('projets_club_etapes').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// RENUMÉROTER LA LISTE ENTIÈRE plutôt qu'échanger deux valeurs : `ordre` naît de
+// la longueur de la liste au moment où l'étape est posée, donc une suppression
+// laisse un trou et deux étapes peuvent porter le même numéro — un échange de
+// deux valeurs jumelles ne changerait alors rien. Seules les lignes qui bougent
+// vraiment sont écrites. C'est `reordonnerEtapes`, au nom de table près.
+export async function reordonnerEtapesDuClub(etapes) {
+  const modifs = etapes
+    .map((etape, rang) => ({ etape, ordre: rang + 1 }))
+    .filter(({ etape, ordre }) => etape.ordre !== ordre);
+
+  await Promise.all(
+    modifs.map(async ({ etape, ordre }) =>
+      verifier(
+        await client
+          .from('projets_club_etapes')
+          .update({ ordre })
+          .eq('id', etape.id)
+          .select()
+          .single(),
+      ),
+    ),
+  );
+
+  for (const { etape, ordre } of modifs) etape.ordre = ordre;
+  return modifs.length;
+}

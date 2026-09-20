@@ -14,6 +14,7 @@ import {
 } from './projet-fch.js';
 import { echapper } from './format.js';
 import { porte } from './partenaires-suivi.js';
+import { prochainEvenementClub } from './evenements-club.js';
 // LE PROJET ET L'ORGANIGRAMME SE REJOIGNENT ICI (20 septembre 2026, décision de
 // Noé : « il faut fusionner les 2, les pôles et les commissions c'est la même
 // chose, certaines n'ont pas de responsable ni de membre mais ce n'est pas
@@ -25,7 +26,7 @@ import { porte } from './partenaires-suivi.js';
 // pôle et sa commission sont le même domaine du club, vu depuis le projet d'un
 // côté et depuis les gens de l'autre. Les trous se rempliront.*
 import { GROUPES, PERSONNES } from './organigramme-fch-data.js';
-import { portrait } from './organigramme-fch.js';
+import { portrait, missionsDuPole } from './organigramme-fch.js';
 
 const ADRESSE = '#hermitage/projet-club';
 const axeDe = (id) => AXES_FCH.find((a) => a.id === id);
@@ -120,6 +121,27 @@ function ficheObjectif(o) {
       ${projets.length ? `<div class="fch-hall">${projets.map(tuileProjet).join('')}</div>` : '<p class="discret">Aucun projet associé pour le moment.</p>'}</section>
     ${retourAuProjet()}</article>`;
 }
+// LA PAGE D'UN PROJET DU CLUB RESSEMBLE À CELLE D'UN PROJET DU HUB (20 septembre
+// 2026, demande de Noé : « les pages des projets des commissions doivent
+// ressembler aux pages de mes projets, donc avec des jalons, un calendrier sur
+// lequel on peut poser des choses »).
+//
+// CE QU'ELLE DISAIT AVANT, en pied et sans détour : *« Responsable, étapes et
+// dates de réalisation restent à préciser »*. C'était vrai — rien ne pouvait s'y
+// écrire, le projet du club n'étant qu'une ligne de document.
+//
+// CE FICHIER GARDE CE QUI NE DEMANDE RIEN AU RÉSEAU — le retour, le bandeau,
+// l'horizon, les pôles, l'objectif servi — et POSE UN HÔTE pour le reste.
+// js/projet-club-page.js y charge la ligne du projet, ses étapes et son
+// calendrier. C'est la mécanique des écrans du cap : le site pose le cadre, le
+// module écrit dedans et y met ses écouteurs.
+export function projetDeclare(selection) {
+  const p = projetDe(selection);
+  if (!p) return null;
+  const o = OBJECTIFS_FCH.find((objectif) => objectif.id === p.objectif);
+  return { cle: p.id, titre: p.titre, objectif: o ? o.titre : null };
+}
+
 function ficheProjet(p) {
   const o = OBJECTIFS_FCH.find((o) => o.id === p.objectif);
   return `<article class="projet-club">
@@ -131,7 +153,7 @@ function ficheProjet(p) {
     ${p.note ? `<section class="bloc"><h2>Repères</h2><p>${echapper(p.note)}</p></section>` : ''}
     <section class="bloc fch-sans-tuile"><h2>L’objectif auquel il contribue</h2>
       ${o ? tuileObjectif(o) : '<p class="discret">Ce projet n’est pas encore rattaché à un objectif.</p>'}</section>
-    <section class="bloc"><h2>Organisation</h2><p class="discret">Responsable, étapes et dates de réalisation restent à préciser.</p></section>
+    <div data-hote-projet-club></div>
     ${retourAuProjet()}</article>`;
 }
 
@@ -373,7 +395,7 @@ function ficheAxe(a) {
     <section class="bloc fch-sans-tuile"><h2>Ses projets</h2>
       ${projets.length
         ? `<div class="fch-hall">${projets.map(tuileProjet).join('')}</div>`
-        : '<p class="discret">Aucun projet rattaché pour le moment.</p>'}</section>
+        : '<p class="discret">Aucun projet ne porte cet axe pour le moment.</p>'}</section>
 
     ${retourAuProjet()}</article>`;
 }
@@ -596,6 +618,23 @@ function equipeDuDomaine(groupe) {
   }).join('')}</div>`;
 }
 
+// CE QU'ON IGNORE AVANT DE L'OUVRIR : lequel, quand, où. Une porte qui ne
+// dirait que « Les évènements » ne vaudrait pas la ligne qu'elle prend — c'est
+// la règle des portes du site depuis le hall de `#perso`.
+function prochainEvenement() {
+  const prochain = prochainEvenementClub();
+  if (!prochain) {
+    return `<section class="bloc fch-sans-tuile"><h2>Le prochain évènement</h2>
+      <p class="discret">Aucun évènement à venir au calendrier de la saison.</p></section>`;
+  }
+  const { evenement } = prochain;
+  return `<section class="bloc fch-sans-tuile"><h2>Le prochain évènement</h2>
+    ${porte(`#hermitage/evenements/${evenement.id}`, evenement.titre, '',
+      `<span class="fch-hall-quoi">${echapper(evenement.date)}${
+        evenement.lieu ? ` · ${echapper(evenement.lieu)}` : ''}${
+        evenement.incertain ? ' · date à confirmer' : ''}</span>`)}</section>`;
+}
+
 function ficheDomaine(d) {
   const objectifs = objectifsDuDomaine(d.id);
   const projets = projetsDuDomaine(d.id);
@@ -618,18 +657,88 @@ function ficheDomaine(d) {
         : ''
     }
 
-    <section class="bloc fch-sans-tuile"><h2>Qui le porte</h2>
-      ${equipeDuDomaine(d.groupe)}</section>
+    ${/* DEUX BLOCS CÔTE À CÔTE (20 septembre 2026, demande de Noé : « utilise des
+          blocs côte à côte plutôt que tout mettre ligne par ligne — par exemple
+          qui le porte peut avoir un autre bloc à sa droite »).
 
+          LES GENS À GAUCHE, CE QU'ILS FONT À DROITE. Le premier bloc est court
+          par nature — une à huit personnes — et laissait la moitié droite de
+          l'écran vide sur toute sa hauteur. À côté, les PROJETS (20 septembre
+          2026, correction de Noé : « mets plutôt les projets que les objectifs à
+          côté de qui le porte ») : ce sont les chantiers en cours, donc ce qui
+          se rapproche le plus des gens qui les tiennent. Les objectifs ferment
+          la page — c'est le cap, on le lit après.
+
+          ILS GLISSENT plutôt que de s'empiler (même demande, « comme dans la
+          page d'accueil du hub ») : c'est `.projet-rail`, le rail du tableau de
+          bord, repris tel quel — une tuile se lit à la fois, les voisines
+          dépassent d'un liseré. **Un second rail écrit à côté aurait fini par ne
+          plus glisser pareil.** Sans projet, pas de rail : la phrase le dit, et
+          une piste vide se lirait comme une panne. */''}
+    <div class="pole-duo">
+      <section class="bloc fch-sans-tuile"><h2>Qui le porte</h2>
+        ${equipeDuDomaine(d.groupe)}</section>
+
+      <div class="pole-colonne">
+        ${d.id === 'manifestations' ? prochainEvenement() : ''}
+        <section class="bloc fch-sans-tuile"><h2>Ses projets</h2>
+          ${projets.length
+            ? `<div class="projet-rail pole-rail">${projets.map(tuileProjet).join('')}</div>`
+            : '<p class="discret">Aucun projet rattaché pour le moment.</p>'}</section>
+      </div>
+    </div>
+
+    ${/* LE RÉCAPITULATIF DES RESPONSABILITÉS ET MISSIONS (20 septembre 2026,
+         demande de Noé : « un récap des responsabilités et missions comme dans
+         le document, joint aux missions de chacun — si l'un change ça change
+         sur l'autre page », puis « c'est dans ces pages là que je veux que ça
+         apparaisse »).
+
+         IL EST DÉPLIÉ ICI, et replié dans l'onglet du bureau : cette page ne
+         parle QUE de ce domaine, donc ce qu'elle a à dire n'a pas à se demander.
+         Le repli sert là où neuf commissions se suivent.
+
+         IL SUIT LE DUO ET PRÉCÈDE LES OBJECTIFS, et l'ordre se lit : qui tient
+         le pôle, ce qu'il fait, ce qu'il tient au quotidien, puis où il va. Les
+         missions sont le PRÉSENT du pôle, les objectifs son cap.
+
+         C'EST LA MÊME SOURCE QUE LA FICHE D'UNE PERSONNE : une mission corrigée
+         dans js/missions-fch.js bouge des deux côtés à la fois. */''}
+    ${/* `d.id` ET NON `d.groupe.id` : « Organisation du club » est un pôle SANS
+          groupe d'organigramme — il rassemble la présidence, le secrétariat et
+          la trésorerie —, et le lire par son groupe l'aurait laissé muet.
+          La couleur du pôle descend aux cartes (voir `--recap-couleur`). */''}
+    ${missionsDuPole(d.id)
+      ? `<section class="bloc fch-sans-tuile" style="--pole-couleur:${d.couleur}">
+          <h2>Ses responsabilités et missions</h2>
+          ${missionsDuPole(d.id)}</section>`
+      : ''}
+
+    ${/* LE PROCHAIN ÉVÈNEMENT, SUR LA PAGE DES MANIFESTATIONS (20 septembre 2026,
+          demande de Noé : « pour la page de la commission manifestations, au
+          dessus du bloc ses projets, il doit y avoir le prochain évènement, avec
+          un lien qui permet d'aller sur la page de l'évènement »).
+
+          SUR CETTE PAGE ET SUR ELLE SEULE : c'est la commission qui organise les
+          évènements du club, et la question « c'est quand le prochain ? » ne se
+          pose nulle part ailleurs. Une porte identique sur les huit autres
+          pôles serait un meuble.
+
+          AU-DESSUS DES PROJETS, comme demandé, donc **dans le duo** : la page
+          n'empile plus ses blocs depuis ce matin. Il partage la colonne de
+          droite avec eux — ce qui arrive d'abord, ce qu'on mène ensuite.
+
+          LA DATE VIENT DU DOCUMENT, pas d'une colonne : `EVENEMENTS_CLUB` écrit
+          ses dates en toutes lettres, et `prochainEvenementClub` les lit. Deux
+          écritures d'une même date finiraient par se contredire. */''}
+    ${/* LES OBJECTIFS FERMENT LA PAGE (20 septembre 2026, correction de Noé :
+          « mets plutôt les projets que les objectifs à côté de qui le porte »).
+          C'est le CAP du pôle, et on le lit après ce qu'il fait — les projets
+          sont en haut, à côté des gens qui les tiennent. */''}
     <section class="bloc fch-sans-tuile"><h2>Ses objectifs</h2>
       ${objectifs.length
         ? `<div class="cap-galerie">${objectifs.map((o) => tuileObjectif(o)).join('')}</div>`
         : '<p class="discret">Aucun objectif ne lui est rattaché pour le moment.</p>'}</section>
-
-    <section class="bloc fch-sans-tuile"><h2>Ses projets</h2>
-      ${projets.length
-        ? `<div class="fch-hall">${projets.map(tuileProjet).join('')}</div>`
-        : '<p class="discret">Aucun projet rattaché pour le moment.</p>'}</section>
 
     ${retourAuProjet()}</article>`;
 }

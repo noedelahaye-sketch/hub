@@ -50,7 +50,8 @@ import { finDeLaSortie, phaseDeLaSortie } from './preparations-commun.js';
 import { REPERES, CRENEAUX } from './club-fch.js';
 import { GROUPES, PERSONNES } from './organigramme-fch-data.js';
 import { MISSION_FCH, VALEURS_FCH, OBJECTIFS_FCH } from './projet-fch.js';
-import { construireProjetClub, titreDuProjet } from './projet-club.js';
+import { construireProjetClub, titreDuProjet, projetDeclare } from './projet-club.js';
+import * as pageProjetDuClub from './projet-club-page.js';
 import {
   construireEvenementsClub, estRubriqueEvenement, EVENEMENTS_CLUB, prochainEvenementClub,
   dateDeLEvenement, rubriqueEvenement, ficheDeLEvenement,
@@ -89,6 +90,7 @@ import {
   construireFiltres,
   construireBarrePeriode,
   construireGrille,
+  colonnesDeLaSemaine,
   fenetreDetail,
   fenetreJour,
   elementsDuJour,
@@ -221,11 +223,22 @@ export const RUBRIQUES_FCH = [
   // LES DEUX ÉTAGES SONT DEUX ENTRÉES, comme chez Yuno : deux liens qui
   // mèneraient tous deux à `#hermitage/cap` seraient deux liens identiques, et
   // trois liens identiques ne sont pas un menu.
+  // « MES » ET NON « SES » (20 septembre 2026, règle de Noé : « c'est mes
+  // objectifs, projets… à l'intérieur des objectifs du club »).
+  //
+  // CE QUI CHANGE N'EST PAS LA RÈGLE, C'EST QUI PARLE. Dans le menu du HUB, la
+  // première personne « s'arrête aux espaces » — sous « FC Hermitage », « Ses
+  // objectifs » désigne l'ESPACE et non Noé, parce que le hub regarde ses
+  // quatre espaces de l'extérieur. **Ici on est DEDANS**, et le possessif n'a
+  // plus le même antécédent : le club a ses objectifs à lui — la mission, les
+  // axes, le projet du club, qui vivent sous « Le club » —, et ceux-ci sont
+  // ceux que NOÉ se donne pour son alternance. Écrire « Ses » les donnait au
+  // club, c'est-à-dire à l'autre liste.
   { nom: 'Accueil', adresse: '#hermitage', pages: [
     { nom: 'Le cap', adresse: '#hermitage/cap' },
-    { nom: 'Ses objectifs', adresse: '#hermitage/cap/caps' },
-    { nom: 'Ses projets', adresse: '#hermitage/cap/projets' },
-    { nom: 'Ses tâches', adresse: '#hermitage/taches' },
+    { nom: 'Mes objectifs', adresse: '#hermitage/cap/caps' },
+    { nom: 'Mes projets', adresse: '#hermitage/cap/projets' },
+    { nom: 'Mes tâches', adresse: '#hermitage/taches' },
     { nom: 'Le calendrier', adresse: '#hermitage/calendrier' },
   ] },
   { nom: 'Communication', adresse: '#hermitage/creer', pages: [
@@ -234,6 +247,18 @@ export const RUBRIQUES_FCH = [
     { nom: 'La banque d’idées', adresse: '#hermitage/banque' },
     { nom: 'Les publications parues', adresse: '#hermitage/publications' },
   ] },
+  // LE CLUB S'ARRÊTE AUX SIX PORTES DE SON HALL (20 septembre 2026, demande de
+  // Noé : « pas 15 pages en dessous de club, et rien en dessous de
+  // partenaires »). Les deux sous-pages des réunions — le suivi des actions,
+  // les réunions passées — en sortent, et **elles ne perdent pas leur chemin,
+  // elles retrouvent leur rang** : la règle écrite au-dessus de
+  // `PAGES_REUNIONS` le disait déjà mot pour mot, *« le hall est à deux gestes,
+  // les réunions à trois, leurs archives à quatre »*. Le menu, lui, les gardait
+  // au même rang que les réunions.
+  //
+  // CE QUI RESTE EST EXACTEMENT LE HALL, porte pour porte : deux listes qui
+  // disent ce qu'il y a derrière « Le club » ne peuvent pas en dire deux choses
+  // différentes.
   { nom: 'Le club', adresse: '#hermitage/club', pages: [
     { nom: 'Les organigrammes', adresse: '#hermitage/commissions' },
     { nom: 'Le projet du club', adresse: '#hermitage/projet-club' },
@@ -241,7 +266,6 @@ export const RUBRIQUES_FCH = [
     { nom: 'Les entraînements', adresse: '#hermitage/entrainements' },
     { nom: 'Le club en chiffres', adresse: '#hermitage/chiffres' },
     { nom: 'Les réunions', adresse: '#hermitage/reunions' },
-    ...PAGES_REUNIONS,
   ] },
   // LES PARTENAIRES SONT UNE DESTINATION (16 septembre 2026, décision de Noé :
   // « ajoute un onglet pour les partenaires, qui remplace donc réunions »). Ils
@@ -249,11 +273,40 @@ export const RUBRIQUES_FCH = [
   // de libérer dans le dock. La bascule se tient : le Club est ce que le club
   // EST — ses gens, son projet, ses créneaux, ses décisions ; les partenaires
   // sont un CHANTIER de Noé, avec ses engagements à tenir et son argent.
-  { nom: 'Partenaires', adresse: '#hermitage/partenaires' },
+  //
+  // ET LEURS TROIS PAGES ENTRENT DANS LE MENU (20 septembre 2026, même
+  // demande). Elles existaient depuis le premier jour et n'étaient atteignables
+  // QUE par le hall : une rubrique sans flèche, dans un menu où toutes les
+  // autres en ont une, se lit comme une destination sans contenu — alors
+  // qu'elle en a trois. Leurs noms sont ceux que `titreDuSuivi` écrit en tête de
+  // page, au mot près : un nom dans le menu et un autre en tête de page, ce
+  // serait deux noms pour une page.
+  { nom: 'Partenaires', adresse: '#hermitage/partenaires', pages: [
+    { nom: 'Tous les partenaires', adresse: '#hermitage/partenaires/liste' },
+    { nom: 'Nos engagements', adresse: '#hermitage/partenaires/engagements' },
+    { nom: 'Nos offres', adresse: '#hermitage/partenaires/offres' },
+  ] },
 ];
 
-const ONGLET_FCH = Object.fromEntries(RUBRIQUES_FCH.flatMap((rubrique) =>
-  (rubrique.pages ?? []).map((page) => [page.adresse.split('/')[1], rubrique.adresse.split('/')[1] ?? 'accueil'])));
+// CE QUE LE MENU OFFRE N'EST PAS TOUT CE QUI EXISTE, et trois mécaniques
+// lisaient pourtant `RUBRIQUES_FCH` comme si ça l'était : le grand titre du
+// site, la pastille allumée du dock, et la rubrique que le menu déplie tout
+// seul. En sortant les deux sous-pages des réunions du menu, elles auraient
+// perdu les trois d'un coup — *`#hermitage/actions` se serait intitulée « FC
+// Hermitage » et n'aurait allumé aucun onglet.*
+//
+// D'OÙ CETTE TABLE, qui est le RECENSEMENT des pages du site : celles que le
+// menu nomme, plus celles qu'on n'atteint que par leur page mère. Le menu dit
+// ce qu'on OFFRE ; celle-ci dit ce qui EXISTE, et les deux ne se confondent
+// plus.
+const PAGES_DU_SITE = [
+  ...RUBRIQUES_FCH.flatMap((rubrique) =>
+    (rubrique.pages ?? []).map((page) => ({ ...page, rubrique: rubrique.adresse }))),
+  ...PAGES_REUNIONS.map((page) => ({ ...page, rubrique: '#hermitage/club' })),
+];
+
+const ONGLET_FCH = Object.fromEntries(PAGES_DU_SITE.map((page) =>
+  [page.adresse.split('/')[1], page.rubrique.split('/')[1] ?? 'accueil']));
 
 function portes(pages, nom = 'Pages') {
   return `<section class="bloc fch-portes" aria-label="${nom}">${pages.map((page) => `
@@ -265,8 +318,8 @@ function portes(pages, nom = 'Pages') {
 
 function cheminDuMenu() {
   const adresse = location.hash.split('/').slice(0, 2).join('/');
-  const rubrique = RUBRIQUES_FCH.find((item) => item.adresse === adresse ||
-    item.pages?.some((page) => page.adresse === adresse));
+  const mere = PAGES_DU_SITE.find((page) => page.adresse === adresse)?.rubrique;
+  const rubrique = RUBRIQUES_FCH.find((item) => item.adresse === (mere ?? adresse));
   return rubrique ? [rubrique.nom] : [];
 }
 
@@ -277,7 +330,12 @@ function cheminDuMenu() {
 // défaut des « trois noms pour une page » corrigé le 28 août. Les mots sont ceux
 // du menu, à la lettre : un nom dans le menu et un autre en tête de page, ce
 // serait deux noms pour une page.
-const ETAGES_DU_CAP = { caps: 'Ses objectifs', projets: 'Ses projets', periodes: 'Ses périodes' };
+// LES MÊMES MOTS QUE LE MENU, et ce n'est pas une coquetterie : un nom dans le
+// menu et un autre en tête de page, ce sont deux noms pour une page — le défaut
+// corrigé sur « Général » le 28 août. « Mes périodes » suit ses deux voisines
+// bien qu'elle n'ait pas d'entrée de menu : un « Ses » resté seul entre deux
+// « Mes » se lirait comme une faute de frappe.
+const ETAGES_DU_CAP = { caps: 'Mes objectifs', projets: 'Mes projets', periodes: 'Mes périodes' };
 
 // LES DEUX PAGES QUI N'ONT PAS D'ENTRÉE DE MENU. Leur adresse porte un
 // identifiant, donc le menu ne peut pas les nommer — et la barre doit tout de
@@ -311,8 +369,7 @@ function enTete(vueActive, selection = null) {
     ?? (vueActive === 'partenaires' ? titreDuSuivi(selection?.liste ?? [], selection?.vue) : null)
     ?? (vueActive === 'cap' ? ETAGES_DU_CAP[selection] : null)
     ?? TITRES_DU_CAP[vueActive]
-    ?? RUBRIQUES_FCH.flatMap((item) => item.pages ?? [])
-      .find((page) => page.adresse === `#hermitage/${vueActive}`)?.nom
+    ?? PAGES_DU_SITE.find((page) => page.adresse === `#hermitage/${vueActive}`)?.nom
     ?? liens.find(([vue]) => vue === vueActive)?.[3]
     ?? liens.find(([vue]) => vue === vueActive)?.[1] ?? 'FC Hermitage';
   const onglet = liens.some(([vue]) => vue === vueActive) ? vueActive : ONGLET_FCH[vueActive];
@@ -1401,7 +1458,20 @@ function vueReunions(etat) {
   const ouvertes = etat.actionsClub.filter((action) => action.statut !== 'fait');
 
   const vue = etat.vue;
-  const contenu = vue === 'actions' ? `    <section class="bloc">
+  // LES TROIS VUES REFUSENT LA SURFACE (20 septembre 2026, défaut rapporté par
+  // Noé : « il ne faut pas que ce soit une double tuile ça »).
+  //
+  // C'est le cas que `fch-sans-tuile` a été écrit pour, le 16 septembre, sur la
+  // galerie des partenaires : ces sections ne portent QU'UNE LISTE DE TUILES,
+  // et `habillerLesSections` posait dessous une seconde surface — une réunion
+  // se lisait comme une tuile dans une tuile. Le titre, lui, s'habille quand
+  // même : il reste le nom de la section.
+  //
+  // ET LA LIGNE Y GAGNE 32 px DE LARGE, ce qui n'est pas un effet de bord : une
+  // tuile dans une tuile est rentrée de son rembourrage, et c'est cette largeur
+  // perdue qui faisait sortir la date de son cadre. *Mesuré : 277 px de contenu
+  // pour 295 demandés avant, 309 pour 309 après.*
+  const contenu = vue === 'actions' ? `    <section class="bloc fch-sans-tuile">
       <h2>Le tableau des actions</h2>
       <p class="discret">Ce qui a été décidé, qui s'en charge, pour quand — le suivi
         rend les engagements visibles, il n'est pas là pour culpabiliser.</p>
@@ -1413,10 +1483,10 @@ function vueReunions(etat) {
           : `<p class="vide">Les actions décidées en réunion s'inscriront ici.</p>`
       }
     </section>`
-    : vue === 'archives' ? `<section class="bloc"><h2>Les réunions passées</h2>
+    : vue === 'archives' ? `<section class="bloc fch-sans-tuile"><h2>Les réunions passées</h2>
       ${passees.length ? `<ul class="liste-reunions">${passees.map((e) => ligneReunion(e, etat.fiches)).join('')}</ul>`
         : '<p class="vide">Les réunions terminées se retrouveront ici.</p>'}</section>`
-    : `    <section class="bloc">
+    : `    <section class="bloc fch-sans-tuile">
       <h2>À préparer</h2>
       ${
         aVenir.length
@@ -2640,6 +2710,13 @@ function vueCalendrier(etat) {
           ? construireCalendrier(aVenir, etat.natures)
           : construireGrille(elements, etat.natures, etat.vueCal, etat.ancreCal, {
               selection: etat.creationCal,
+              // L'EN-TÊTE D'UN JOUR OUVRE SA JOURNÉE (20 septembre 2026, demande
+              // de Noé : « comme c'est fait dans la page d'accueil du hub avec la
+              // vue semaine »). Les deux options sont celles de l'accueil, au mot
+              // près : le gabarit sait déjà faire, il attendait qu'on le lui
+              // demande. La vue mois et l'agenda n'en lisent aucune.
+              titresOuvrants: true,
+              jourSeul: etat.jourSemaineCal,
             })
       }
     </div>
@@ -3066,6 +3143,10 @@ export default {
       detailCal: null,
       editionCal: false,
       jourOuvertCal: null,
+      // LE JOUR OUVERT EN GRAND dans la vue semaine (20 septembre 2026). Il est
+      // NUL le reste du temps, et c'est ce qui distingue « la semaine entière »
+      // de « ce jour-là seul ».
+      jourSemaineCal: null,
       // Le mot dit après une écriture qui a échoué. L'écran est déjà revenu en
       // arrière tout seul ; un geste défait en silence ressemble à une panne.
       souci: null,
@@ -3126,12 +3207,47 @@ export default {
       return pageDuCap.monter(hote, { id: ESPACE_DU_HUB, vue: etat.capOuvert });
     };
 
+    // OUVRIR UN JOUR NE REDESSINE RIEN, et c'est toute la finesse du geste : la
+    // grille est déjà la bonne, on ne fait qu'y changer la largeur des sept
+    // colonnes — de `1fr` à `0fr` pour les six autres —, et c'est le navigateur
+    // qui fait glisser les traits d'une largeur à l'autre. Un `rendre()` ici
+    // couperait l'animation net, faute d'un état de départ à interpoler. C'est
+    // la mécanique de l'accueil du hub, reprise au trait près.
+    const viserLeJourCal = (cle) => {
+      etat.jourSemaineCal = cle;
+      const grille = section.querySelector('[data-bloc="calendrier"] .cal-semaine');
+      if (!grille) return;
+      grille.classList.toggle('cal-un-jour', Boolean(cle));
+      grille.style.setProperty('--cal-colonnes', colonnesDeLaSemaine(etat.ancreCal, cle));
+
+      // LES FLÈCHES RESTENT DANS LA SEMAINE AFFICHÉE : au-delà du dimanche il
+      // faudrait changer de semaine, et la semaine qu'on regarde ne serait plus
+      // celle qu'on a ouverte. Aux deux bouts, la flèche s'ÉTEINT plutôt que de
+      // ne rien faire — un bouton qui ne répond pas ressemble à une panne.
+      const jours = [...grille.querySelectorAll('[data-ouvrir-jour]')].map(
+        (bouton) => bouton.dataset.ouvrirJour,
+      );
+      const rang = cle ? jours.indexOf(cle) : -1;
+      const fleche = (pas) => grille.querySelector(`[data-jour-pas="${pas}"]`);
+      if (fleche(-1)) fleche(-1).disabled = rang <= 0;
+      if (fleche(1)) fleche(1).disabled = rang < 0 || rang >= jours.length - 1;
+    };
+
     const rendre = () => {
       if (['creer', 'saison', 'editorial', 'banque', 'publications'].includes(etat.vue)) section.innerHTML = vueCreer(etat);
       else if (['reunions', 'actions', 'archives'].includes(etat.vue)) section.innerHTML = vueReunions(etat);
       else if (etat.vue === 'calendrier') section.innerHTML = vueCalendrier(etat);
       else if (etat.vue === 'partenaires') section.innerHTML = vuePartenaires(etat);
-      else if (['club', 'commissions', 'projet-club', 'entrainements', 'chiffres', 'evenements'].includes(etat.vue)) section.innerHTML = vueClub(etat);
+      else if (['club', 'commissions', 'projet-club', 'entrainements', 'chiffres', 'evenements'].includes(etat.vue)) {
+        section.innerHTML = vueClub(etat);
+        // LA PAGE D'UN PROJET DU CLUB se monte dans son hôte (20 septembre
+        // 2026) : elle lit deux tables à elle et pose ses propres écouteurs.
+        // C'est la mécanique des écrans du cap — `rendre` recrée l'hôte à chaque
+        // passage, donc les écouteurs ne se doublent pas.
+        const hoteProjet = section.querySelector('[data-hote-projet-club]');
+        const declare = hoteProjet ? projetDeclare(etat.personneClub) : null;
+        if (hoteProjet && declare) pageProjetDuClub.monter(hoteProjet, declare);
+      }
       // LES ÉCRANS DU CAP : le site ne pose que le cadre, le module du hub écrit
       // dans l'hôte et y pose SES écouteurs, son propre chargement et son propre
       // « + ». Le site n'ajoute donc rien par-dessus — d'où le `return` sec.
@@ -3172,6 +3288,9 @@ export default {
       }
 
       centrerActif(section.querySelector('.filtres'));
+      // Le HTML redessiné porte déjà ses colonnes et sa classe ; restent les
+      // flèches, qui savent seules aux deux bouts qu'elles sont éteintes.
+      if (etat.jourSemaineCal) viserLeJourCal(etat.jourSemaineCal);
       // La grille vient d'être réécrite : elle a perdu son point d'entrée
       // clavier, et la tuile ouverte ses libellés de pastilles.
       poserLEntreeClavier?.();
@@ -4072,6 +4191,30 @@ export default {
         return;
       }
 
+      // LA JOURNÉE OUVERTE EN PLACE : le titre du jour l'ouvre en grand et le
+      // referme si c'est déjà lui — **on sort par où on est entré**, sans avoir
+      // à chercher une autre commande. Les flèches passent au jour voisin.
+      //
+      // ELLES VIENNENT AVANT LE RESTE, et ce n'est pas indifférent : le geste
+      // du jour touché (`brancherSelection`) pose une tuile de capture, et
+      // l'en-tête est assez proche de la case pour qu'un doigt les rapproche.
+      // L'ordre dit lequel gagne.
+      const pasDeJourCal = evenement.target.closest('[data-jour-pas]');
+      if (pasDeJourCal && etat.jourSemaineCal) {
+        const vise = versDateISO(
+          ajouterJours(depuisDateISO(etat.jourSemaineCal), Number(pasDeJourCal.dataset.jourPas)),
+        );
+        if (section.querySelector(`[data-ouvrir-jour="${vise}"]`)) viserLeJourCal(vise);
+        return;
+      }
+
+      const enteteDuJour = evenement.target.closest('[data-ouvrir-jour]');
+      if (enteteDuJour) {
+        const cle = enteteDuJour.dataset.ouvrirJour;
+        viserLeJourCal(cle === etat.jourSemaineCal ? null : cle);
+        return;
+      }
+
       // LA BARRE DE PÉRIODE SERT DEUX GRILLES, et c'est l'ÉCRAN qui dit
       // laquelle : la page Calendrier a la sienne, la fiche d'un évènement la
       // sienne. Un seul couple vue/ancre pour les deux ferait qu'ouvrir la
@@ -4083,6 +4226,11 @@ export default {
       if (vueCal) {
         if (surUnEvenement) etat.vueEvenement = vueCal.dataset.vueCal;
         else etat.vueCal = vueCal.dataset.vueCal;
+        // UN JOUR OUVERT NE SURVIT NI AU CHANGEMENT DE VUE NI AU CHANGEMENT DE
+        // SEMAINE : il désigne une DATE, et la semaine d'à côté ne la contient
+        // pas. Elle rouvrirait donc sur rien — six colonnes à zéro et une
+        // septième vide —, ce qui a tout l'air d'un écran cassé.
+        etat.jourSemaineCal = null;
         rendre();
         return;
       }
@@ -4095,6 +4243,7 @@ export default {
         const neuve = sens === 0 ? new Date() : deplacerAncre(ancre, litLaVue(), sens);
         if (surUnEvenement) etat.ancreEvenement = neuve;
         else etat.ancreCal = neuve;
+        etat.jourSemaineCal = null;
         rendre();
         return;
       }

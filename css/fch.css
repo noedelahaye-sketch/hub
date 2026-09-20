@@ -100,7 +100,20 @@ body[data-espace="hermitage"] .ouvrir-capture {
 }
 /* Cinq destinations principales ; les pages détaillées vivent dans le menu. */
 nav.fch-dock { width: min(400px, calc(100% - 24px)); }
+/* LE DOCK PARLE GILROY (20 septembre 2026, demande de Noé). Le rail est un
+   COMPOSANT PARTAGÉ — Yuno, le club et le hub montent le même —, et il écrit
+   `"Inter"` en dur (css/yuno.css) : c'était donc la SEULE surface du site à
+   échapper à sa charte, et elle est visible en permanence, tout en bas de
+   chaque écran.
+
+   ET IL FAUT MONTER À (0,2,2) POUR L'EMPORTER, ce qui ne se devine pas :
+   `:is()` prend la spécificité de son argument LE PLUS FORT, et le troisième
+   est `.navigation.hub-dock` — la règle partagée pèse donc (0,2,1) et non
+   (0,1,1). *Mesuré : écrite `nav.fch-dock a` (0,1,2), elle perdait et le dock
+   restait en Inter.* Une spécificité qu'on n'égale pas est une règle qu'on
+   n'écrit pas ; c'est la treizième fois que ce piège se paie ici. */
 nav.fch-dock a { padding-inline: 2px; }
+body[data-espace="hermitage"] nav.fch-dock a { font-family: var(--police-texte); }
 nav.fch-dock a.actif { color: #fff; }
 .fch-dock .fch-logo-onglet { width: 22px; height: 20px; }
 .fch-dock a.actif .fch-logo-onglet { width: 28px; height: 25px; }
@@ -1255,6 +1268,42 @@ body[data-espace="hermitage"] #vue .valeur-tete h2 {
   color: var(--texte);
 }
 
+/* --- L'EN-TÊTE D'UNE TUILE PASSE À LA LIGNE ------------------------------------
+   (20 septembre 2026, défaut rapporté par Noé sur la carte de l'accueil :
+   « il faut régler l'affichage pour que ça ne dépasse pas sur téléphone ».)
+
+   `.tuile-entete` (styles.css) est une rangée QUI NE SE REPLIE PAS : les
+   étiquettes à gauche, la date poussée à droite par `margin-left: auto`. Trois
+   étiquettes et une date en toutes lettres ne tiennent pas dans les 311 px
+   d'une carte de téléphone.
+
+   UNE RANGÉE QUI NE SE REPLIE PAS N'A QUE DEUX ISSUES quand elle est trop
+   longue — écraser ses éléments ou sortir du cadre —, et elle faisait LES DEUX
+   à la fois : *mesuré sur « Réunion Lina 2 » à 375 px, « À PRÉPARER » se
+   coupait en deux lignes pendant que la date finissait 46 px hors de la carte,
+   et la page entière gagnait 29 px de défilement horizontal.* Le même en-tête
+   débordait sa tuile de 18 px sur la liste des réunions et sur les réunions
+   passées — le même défaut, sur les écrans qu'on regarde le moins.
+
+   CE N'EST DONC PAS LA DATE QU'ON RÉTRÉCIT, c'est la rangée qu'on laisse se
+   replier. La date garde son `margin-left: auto` : elle reste à droite, un rang
+   plus bas. Et les étiquettes cessent de se serrer, puisqu'une rangée qui se
+   replie déplace au lieu d'écraser.
+
+   `row-gap` À 4 px ET NON LES 8 DU `gap` : huit pixels séparent deux choses
+   côte à côte ; entre deux rangs d'un même en-tête, ils feraient lire deux
+   blocs là où il n'y en a qu'un.
+
+   POUR LE SITE DU CLUB SEULEMENT : c'est lui qui pose trois étiquettes devant
+   une date, et la règle commune sert aussi le hub et Yuno, qui n'ont rien
+   demandé. Les quatre en-têtes du site s'en accommodent — aucun ne compte sur
+   le débordement, et ceux qui tiennent sur une ligne ne bougent pas d'un
+   pixel. */
+body[data-espace="hermitage"] .tuile-entete {
+  flex-wrap: wrap;
+  row-gap: var(--espace-4);
+}
+
 .tf-service {
   display: flex;
   align-items: baseline;
@@ -1481,6 +1530,13 @@ body[data-espace="hermitage"] #vue .orga-groupe > h2 {
   color: #fff; font-size: 1rem; line-height: 1.15; font-weight: 900;
   letter-spacing: -0.035em; text-transform: none; text-align: center;
 }
+/* LE TITRE D'UNE COMMISSION EST UN LIEN vers sa page (20 septembre 2026). Il
+   garde exactement l'allure de la pastille : c'est la MÊME chose qu'avant, elle
+   mène quelque part en plus. Le survol l'éclaircit, ce qui suffit à le dire. */
+body[data-espace="hermitage"] #vue .orga-groupe > h2 a { color: inherit; text-decoration: none; }
+body[data-espace="hermitage"] #vue .orga-groupe > h2:has(a):hover { background: #1d3160; }
+body[data-espace="hermitage"] #vue .orga-groupe > h2 a:focus-visible { outline: 2px solid #fff; outline-offset: 3px; border-radius: 4px; }
+
 .orga-service { margin: -6px 0 14px; text-align: center; font-size: 0.75rem; color: var(--texte-discret); }
 .orga-personnes { display: flex; justify-content: center; flex-wrap: wrap; gap: 18px 10px; }
 .orga-personne {
@@ -1543,6 +1599,159 @@ body[data-espace="hermitage"] #vue .orga-identite h2 {
 .orga-missions ul { padding-left: 18px; margin: 0; }
 .orga-missions .fch-tuile li { background: transparent; padding: 0; margin: 0 0 12px; line-height: 1.5; font-size: 0.9375rem; }
 .orga-missions a { color: #fff; }
+/* --- LE RÉCAPITULATIF D'UNE COMMISSION (20 septembre 2026) --------------------
+   Une colonne par thème, une carte par mission, la personne au bout. C'est la
+   forme du document du club, et elle se lit d'un regard : *qui fait quoi.*
+
+   IL SE REPLIE ET S'OUVRE FERMÉ : neuf récapitulatifs dépliés feraient de
+   l'onglet un document à faire défiler, alors qu'on y vient d'abord pour savoir
+   qui est dans quelle commission.
+
+   LES COLONNES SE REMPLISSENT D'ELLES-MÊMES : une commission en compte quatre,
+   cinq ou six selon ce que le club a écrit, et un nombre déclaré vieillirait à
+   la première révision du document. */
+/* --- LA PAGE D'UN PÔLE : DES BLOCS CÔTE À CÔTE -------------------------------
+   (20 septembre 2026, demande de Noé : « utilise des blocs côte à côte plutôt
+   que tout mettre ligne par ligne ».)
+
+   « QUI LE PORTE » NE REMPLIT JAMAIS SA LIGNE — une à huit personnes — et
+   laissait la moitié droite de l'écran vide sur toute sa hauteur. Les objectifs
+   s'y installent.
+
+   DEUX COLONNES ÉGALES, ET DÉCLARÉES : il y a exactement deux blocs, on connaît
+   donc leur nombre. `auto-fit` sert les galeries dont on ne sait pas combien
+   elles comptent ; ici il n'apporterait qu'un comportement à deviner.
+
+   `align-items: start` : les deux blocs n'ont aucune raison d'avoir la même
+   hauteur — l'un porte des visages, l'autre un rail. Étirés, le plus court
+   aurait un vide sous lui plutôt qu'une fin. */
+/* `minmax(0, 1fr)` ET NON RIEN DU TOUT : sans piste déclarée, la colonne
+   implicite vaut `auto`, c'est-à-dire la largeur du CONTENU — et le rail des
+   objectifs est plus large que l'écran par construction. *Mesuré à 375 px : une
+   colonne de 534 px et 187 px de défilement horizontal sur toute la page.*
+   C'est le piège des éléments de grille, écrit dans les conventions. */
+.pole-duo { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--espace-16); align-items: start; }
+/* 45 REM ET NON 60 (20 septembre 2026, question de Noé : « pourquoi lorsque
+   l'affichage est comme ça ce n'est pas côte à côte ? »). Soixante rem font
+   **900 px** sur ce site — la racine y est à 15 px —, et une fenêtre de 880
+   retombait donc sur une colonne alors qu'elle avait toute la place. *Mesuré :
+   832 px de colonne unique à 880, pour deux blocs qui n'en demandent que 640.*
+
+   LE CHIFFRE VIENT DE CE QUE LES BLOCS DEMANDENT, pas d'un palier choisi au
+   jugé : la porte d'un projet fait 285 px, « Qui le porte » guère plus, et deux
+   colonnes plus leurs marges tiennent dans 640. 45 rem en font 675, ce qui
+   laisse 310 px par colonne — et c'est déjà le palier des portes du site, donc
+   pas un seuil de plus à retenir. */
+@media (min-width: 45rem) {
+  .pole-duo { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--espace-24); }
+}
+
+/* LA COLONNE DE DROITE PEUT PORTER DEUX BLOCS (20 septembre 2026) : sur la page
+   des manifestations, le prochain évènement s'ajoute au-dessus des projets. Le
+   duo reste un duo — c'est la COLONNE qui empile, pas la grille qui gagne une
+   piste, sinon « Qui le porte » se retrouverait à côté de l'un et au-dessus de
+   l'autre. */
+.pole-colonne { display: flex; flex-direction: column; gap: var(--espace-16); }
+.pole-colonne > .bloc { margin: 0; }
+
+/* LE RAIL EST CELUI DU HUB (`.projet-rail`), et il ne s'écrit pas deux fois. Ne
+   change que la largeur de ce qu'il porte : une porte de projet (`.fch-hall-porte`)
+   est plus étroite qu'une tuile de projet du tableau de bord — deux se lisent de
+   front dès que la colonne le permet, et la suivante dépasse pour dire qu'il y
+   en a d'autres.
+
+   LA RÈGLE VISE LES DEUX FORMES, et ce n'est pas du zèle : le rail a porté les
+   objectifs pendant une heure, et il les reportera peut-être. Une règle qui ne
+   connaîtrait qu'une des deux laisserait l'autre s'étirer sans fin — un élément
+   de flex prend sinon la largeur de son contenu. */
+.pole-rail > :is(.fch-hall-porte, .cap-tuile) {
+  flex: 0 0 min(19rem, calc(100% - 32px));
+  scroll-snap-align: center;
+}
+
+/* --- LE RÉCAPITULATIF DES MISSIONS D'UN PÔLE ----------------------------------
+   Une colonne par thème, une carte par mission, la personne au bout : c'est la
+   forme du document du club, et elle se lit d'un regard — *qui fait quoi.*
+
+   IL VIT SUR LA PAGE D'UN PÔLE (20 septembre 2026, correction de Noé), qui EST
+   celle de sa commission depuis la fusion du même jour. Il a passé une heure
+   replié dans l'onglet de l'organigramme ; cet onglet répond à « qui est où »,
+   et neuf récapitulatifs, même repliés, en faisaient un sommaire de document.
+   Ce qui reste là-bas est le CHEMIN : le titre d'une commission mène ici. */
+.orga-recap-themes {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  gap: var(--espace-12); align-items: start;
+}
+/* `.bloc ul` met toutes les listes du hub en flex-colonne et pèse une balise de
+   plus : sans le préfixe, la grille serait purement ignorée. Le piège des
+   conventions, payé assez de fois pour qu'on l'écrive d'avance. */
+/* LA COULEUR A UN REPLI, et ce n'est pas une précaution de style : `color-mix`
+   avec une variable VIDE ne rend rien du tout — la déclaration entière est
+   invalide, donc **la carte perd son fond et son texte se répand sur la colonne
+   voisine**. C'est ce qui s'est passé à la première ouverture d'une page de
+   pôle : `--orga-couleur` est posée par l'organigramme, pas par le projet du
+   club.
+
+   LA CHAÎNE SE LIT DE GAUCHE À DROITE : la couleur du GROUPE si l'organigramme
+   l'a posée, sinon celle du PÔLE, sinon un bleu. Et elle passe par un jeton à
+   elle plutôt que de REDÉCLARER `--orga-couleur` : redéclarée, elle écraserait
+   la valeur héritée du groupe et peindrait tout l'organigramme en bleu. */
+.orga-recap-themes { --recap-couleur: var(--orga-couleur, var(--pole-couleur, #5888db)); }
+/* LE NOM D'UNE COMMISSION quand un pôle en rassemble plusieurs — « Organisation
+   du club » et ses trois. Un pôle qui n'en a qu'une ne l'écrit pas : la page le
+   dit déjà en grand. */
+body[data-espace="hermitage"] #vue .orga-recap-commission {
+  margin: var(--espace-16) 0 var(--espace-8); font-size: 0.9375rem; font-weight: 800;
+  letter-spacing: -0.01em; text-transform: none; color: #fff;
+}
+body[data-espace="hermitage"] #vue .orga-recap-commission:first-child { margin-top: 0; }
+.orga-recap-theme h4 {
+  margin: 0 0 var(--espace-8); font-size: 0.75rem; font-weight: 800;
+  letter-spacing: 0.02em; line-height: 1.3;
+  color: color-mix(in srgb, var(--recap-couleur) 45%, #fff);
+}
+/* `.bloc ul:not(.liste-jalons)` (styles.css) passe TOUTE liste d'un bloc en
+   grille de 21 rem au-delà de 60 rem, et pèse (0,2,1) : écrite
+   `.orga-recap-theme ul` (0,1,1), ma règle perdait. La liste redevenait une
+   grille dont chaque piste fait 21 rem — plus large que la colonne qui la
+   contient —, et un élément de grille garde `min-width: auto`, donc refuse de
+   descendre sous la largeur de son contenu. *Mesuré : les cartes débordaient de
+   leur colonne et leurs phrases se coupaient en plein mot.* Le préfixe `.bloc`
+   égale la spécificité, et fch.css est chargée après : l'ordre tranche.
+   C'est le piège des conventions, payé une fois de plus. */
+.bloc .orga-recap-theme ul { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.orga-recap-theme li {
+  min-width: 0;
+  display: flex; flex-direction: column; gap: 4px;
+  padding: var(--espace-8); border-radius: 10px; border: 0;
+  background: color-mix(in srgb, var(--recap-couleur) 16%, var(--fond-carte));
+}
+.orga-recap-texte { font-size: 0.8125rem; line-height: 1.35; color: #fff; }
+/* LA PERSONNE EST UN LIEN, et sa pastille reste LISIBLE sur la carte : le fond
+   est déjà teinté de la couleur de la commission, donc la pastille ne la reprend
+   pas — elle s'éclaircit. */
+.orga-recap-qui { display: flex; flex-wrap: wrap; gap: 4px; }
+.orga-recap-qui a {
+  padding: 1px var(--espace-8); border-radius: var(--rayon-pastille);
+  font-size: 0.6875rem; font-weight: 700; text-decoration: none;
+  color: #fff; background: rgb(255 255 255 / 14%);
+}
+.orga-recap-qui a:hover { background: rgb(255 255 255 / 26%); }
+
+/* LE CADRE DU DOCUMENT, en tête de l'onglet : ce que la répartition EST, et ce
+   qu'elle n'est pas. Replié — on le lit une fois. */
+.orga-cadre { margin: var(--espace-16) 0; font-size: 0.8125rem; color: var(--texte-discret); }
+.orga-cadre summary { cursor: pointer; font-weight: 700; }
+.orga-cadre p { margin: var(--espace-8) 0 0; max-width: 62ch; line-height: 1.5; }
+
+/* LE THÈME DANS LA FICHE D'UNE PERSONNE : le même titre de colonne, en petit,
+   au-dessus des missions qu'il range. */
+.orga-missions .orga-theme {
+  margin: var(--espace-12) 0 6px; font-size: 0.6875rem; font-weight: 800;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--texte-discret);
+}
+.orga-missions .fch-tuile > .orga-theme:first-of-type { margin-top: 0; }
+
 .orga-sources { font-size: 0.8125rem; color: var(--texte-discret); margin: 24px 0; }
 .orga-sources summary { cursor: pointer; }
 #orga-resultats { padding: 20px; border-radius: var(--rayon-carte); background: var(--fond-carte); margin-top: 20px; }
@@ -1579,9 +1788,31 @@ li.suivi-bilan-tuile {
   display: block; padding: var(--espace-12); border-radius: 14px;
   background: var(--fond-carte); border: 0;
 }
+/* LE GROS CHIFFRE D'UN TABLEAU DE BORD EST EN CLASH DISPLAY (20 septembre 2026,
+   demande de Noé) — ici comme sur le hub, où la règle date du 2 septembre :
+   *un chiffre qu'on vient VOIR se donne du poids ; un chiffre qu'on vient
+   COMPARER garde sa chasse fixe.* Ces quatre-là ne s'alignent en colonne avec
+   rien, on les lit d'un regard.
+
+   ET IL DEMANDE LA FAMILLE, PAS LE RÔLE. Il écrivait `--police-titre`, ce qui
+   avait l'air juste et ne l'était pas : le club repose ce jeton sur Gilroy, sa
+   charte, et le chiffre s'habillait donc de la police du CLUB sans que personne
+   l'ait choisi. `--police-affichage` est la famille du hub et ne bouge nulle
+   part — c'est ce que demande une mesure du hub qui se dessine dans un site.
+
+   700 ET PAS DAVANTAGE : le dépôt n'a que 600 et 700 de Clash Display, et
+   demander plus ferait clamper sans que l'écart se voie.
+
+   ET L'APPROCHE NÉGATIVE TOMBE, ce qui n'est pas un détail : les −0,03 em
+   étaient réglés sur Gilroy, qui espace large. Clash Display serre déjà
+   d'elle-même, et un cran de plus MANGEAIT LE SÉPARATEUR DE MILLIERS — une
+   espace fine insécable ne pèse qu'un dixième de chiffre, et elle disparaît la
+   première. *Comparé à l'écran : « 17 330 € » se lisait « 17330€ » à −0,03 comme
+   à −0,02 ; à l'approche normale, les groupes se séparent.* Un chiffre qu'on
+   vient VOIR doit d'abord se lire. */
 .suivi-chiffre {
-  display: block; font-family: var(--police-titre); font-weight: 700;
-  font-size: 1.5rem; line-height: 1.05; letter-spacing: -0.03em; color: #fff;
+  display: block; font-family: var(--police-affichage); font-weight: 700;
+  font-size: 1.5rem; line-height: 1.05; color: #fff;
 }
 .suivi-quoi { display: block; margin-top: 2px; font-size: 0.8125rem; }
 .suivi-precision { display: block; margin-top: 2px; font-size: 0.6875rem; color: var(--texte-discret); }
@@ -2541,3 +2772,82 @@ li.suivi-bilan-tuile,
 /* La galerie porte sa marge haute pour suivre le titre de la page ; sous un
    titre de bloc, elle la rend — c'est le titre qui écarte, pas elle. */
 .pole-axe-titre + .cap-galerie { margin-top: var(--espace-8); }
+
+/* --- LE CALENDRIER DU CLUB SE LIT EN BLEUS ------------------------------------
+   (20 septembre 2026, demande de Noé en deux temps : « pour le calendrier change
+   l'utilisation du jaune en différentes teintes de bleu, garde le jaune pour les
+   évènements », puis « change aussi pour les évènements finalement ».)
+
+   CE QUI CLOCHAIT, ET IL FAUT LE NOMMER. Au calendrier du hub, *la couleur dit
+   l'ESPACE et la police dit la NATURE* (31 août 2026). Ici, il n'y a qu'un
+   espace : le club. Le canal de la couleur ne disait donc RIEN — et comme aucune
+   barre ne porte de `data-espace` sur ce site (`montrerEspace` y est faux), les
+   soixante-trois barres retombaient toutes sur `--accent`, c'est-à-dire sur le
+   jaune. *Mesuré : 48 tâches, 10 parutions, 4 évènements et 1 jalon de la même
+   couleur, plus la pastille du jour, la case cochée et l'onglet actif.* Un écran
+   où tout est d'accent est un écran où rien n'est mis en avant.
+
+   LA RÈGLE DU HUB NE TOMBE PAS, ELLE NE S'APPLIQUE PLUS : un canal muet se
+   réemploie. Sur ce site, et sur lui seul, **la couleur dit la nature** — ce
+   qu'elle ne peut pas faire au hub, où elle est déjà prise. La police continue
+   de la dire aussi, des deux côtés : les deux signes se renforcent au lieu de
+   se contredire.
+
+   L'ÉVÈNEMENT Y EST PASSÉ AUSSI (même jour, seconde demande de Noé : « change
+   aussi pour les évènements finalement »). Le calendrier ne porte donc plus une
+   seule tache jaune, et il ne perd rien : **ce qui distingue l'évènement n'a
+   jamais été sa couleur, c'est son APLAT PLEIN** — la tâche n'a qu'un trait, la
+   parution un voile. La grammaire du hub (« trois degrés de présence ») tient
+   toute seule ; la couleur ne faisait que la redire une quatrième fois.
+
+   POURQUOI CES TEINTES-LÀ, et pas trois bleus choisis à l'œil :
+   — les trois sont la MÊME teinte à trois clartés, et **la clarté monte avec la
+     présence** : la tâche, cas ordinaire et la plus nombreuse, prend la plus
+     sobre ; la parution, qui part, un cran au-dessus ; l'évènement, seul à être
+     plein, la plus claire. Le pâle et le plein tirent dans le même sens au lieu
+     de se contrarier ;
+   — le jalon, l'objectif et l'étape suivent la TÂCHE, et ce n'est pas une
+     économie : la règle du hub le dit déjà pour la police — *« ce sont des
+     échéances, leur inventer une quatrième forme ferait un alphabet à
+     retenir »*. Un quatrième cran de la même teinte serait une distinction que
+     personne ne voit ;
+   — ils sont tous PLUS CLAIRS que le fond du club, et c'est la contrainte qui a
+     écarté `--club-bleu-1` (#4d75db), qui semblait pourtant le choix évident :
+     *mesuré, 2,48:1 sur le fond de page — un trait de 3 px y disparaît, et un
+     aplat y devient trouble.* Les trois retenus tiennent entre 4,19 et 5,96, et
+     l'encre sombre de l'évènement lit à 5,96 sur son aplat.
+
+   ON PASSE PAR `--couleur-espace-pleine`, JAMAIS PAR UNE COULEUR ÉCRITE SUR LA
+   BARRE : c'est le jeton dont la barre tire déjà son trait, son aplat et son
+   voile, chacun avec son propre dosage. Le redéclarer par nature suffit — trois
+   lignes pour quatre natures et leurs trois façons de se peindre. */
+body[data-espace="hermitage"] {
+  --cal-tache: var(--club-fch-bleu);                                  /* #7ba5dc */
+  --cal-parution: color-mix(in srgb, var(--club-bleu-1) 55%, #fff);   /* #9db3eb */
+  --cal-arrive: color-mix(in srgb, var(--club-fch-bleu) 65%, #fff);   /* #a9c4e8 */
+}
+
+body[data-espace="hermitage"] :is(
+  .cal-type-tache, .cal-type-jalon, .cal-type-objectif, .cal-type-etape
+) { --couleur-espace-pleine: var(--cal-tache); }
+body[data-espace="hermitage"] .cal-type-publication { --couleur-espace-pleine: var(--cal-parution); }
+body[data-espace="hermitage"] .cal-type-evenement { --couleur-espace-pleine: var(--cal-arrive); }
+
+/* LES TROIS CONTRÔLES DU CALENDRIER SUIVENT — la pastille de la vue active, la
+   case cochée d'un filtre, la pastille du jour. Ils portaient `--accent`, donc
+   le jaune, et c'est ce qui faisait le plus de taches sur l'écran : trois
+   jaunes de commande au-dessus de quatre jaunes d'évènement.
+
+   ILS PRENNENT LE BLEU DE LA TÂCHE, et gardent leur dessin — un aplat plein,
+   une encre sombre dessus. **C'est le bleu nuit du club et non `--fond-carte`
+   qui fait cette encre** : *mesuré, 3,22:1 contre 6,27:1.* Un chiffre de
+   pastille se lit, il ne se devine pas.
+
+   LE « + » FLOTTANT ET LE DOCK NE SONT PAS CONCERNÉS : ils sont là sur TOUS les
+   écrans du site, la demande porte sur le calendrier. */
+body[data-espace="hermitage"] #vue .affichages button.actif,
+body[data-espace="hermitage"] #vue .cal-numero-aujourdhui {
+  color: var(--club-bleu-5);
+  background: var(--cal-tache);
+}
+body[data-espace="hermitage"] #vue .cal-coche input { accent-color: var(--cal-tache); }
