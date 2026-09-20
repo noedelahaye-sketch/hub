@@ -1,9 +1,190 @@
-# État des lieux — 20 septembre 2026
+# État des lieux — 20 septembre 2026, soir
 
-> **REPRISE IMMÉDIATE : « § 0 — Les réunions et le projet du club » ci-dessous.**
-> Ce relais prime sur tous les suivants.
+> **REPRISE IMMÉDIATE : « § 0 — Les visages, les missions, les pôles et les
+> projets » ci-dessous.** Ce relais prime sur tous les suivants.
 
-## § 0 — Relais des 19–20 septembre (les réunions du club, et son projet)
+## § 0 — Relais du 20 septembre (le site du club : visages, missions, pôles, projets)
+
+**TOUT EST COMMITÉ ET POUSSÉ sur `main`** — un seul commit, `4f41788`, « Le site
+du club : ses visages, ses missions, ses pôles et ses projets ».
+
+*Pourquoi un seul pour huit demandes : elles se touchent toutes dans
+`css/fch.css` et `js/hermitage.js`, et un découpage par thème aurait demandé un
+tri ligne à ligne. C'est un compromis assumé, pas une habitude à prendre.*
+
+**UNE MIGRATION** : `20260920160000_projets_du_club.sql`, **appliquée en base ET
+versionnée**. Elle crée `projets_club` et `projets_club_etapes`, **toutes deux
+vides** — rien n'est créé d'avance, c'est la décision de Noé.
+
+**UN OUTIL NEUF** : `tools/importer-portraits-fch.py`. **Un module neuf** :
+`js/missions-fch.js` (les 135 missions) et `js/projet-club-page.js` (la page d'un
+projet du club). Le contrôle `tools/verifier-organigramme-fch.js` s'est étoffé et
+dit maintenant « 44 fiches, 23 groupes et 135 missions vérifiés ».
+
+**LE DÉTAIL VIT DANS `docs/fch-spec.md`**, qui fait autorité sur le site du club
+et porte une section neuve datée du 20 septembre. Ce relais ne la recopie pas :
+il dit ce qui a été DÉCIDÉ, ce qui a été VÉRIFIÉ, et ce qui reste ouvert.
+
+### § 0.1 — Les huit demandes, dans l'ordre où elles sont venues
+
+| | Ce que Noé a demandé | Ce que ça a donné |
+|---|---|---|
+| 1 | « que ça ne dépasse pas sur téléphone » | l'en-tête d'une tuile se replie ; la double tuile des réunions tombe |
+| 2 | « pour les gros chiffres des dashboards, Clash Display » | `--police-affichage`, la famille du hub, distincte du rôle `--police-titre` |
+| 3 | « bilan des polices du site FCH » | relevé à l'écran sur sept pages, puis : « change ce qui est en Inter et Geist Mono en Gilroy » |
+| 4 | « le jaune en différentes teintes de bleu » puis « change aussi pour les évènements » | la couleur dit la NATURE sur ce site ; plus de jaune au calendrier |
+| 5 | « agrandir un jour depuis la vue semaine » | `titresOuvrants` + `jourSeul`, comme l'accueil du hub |
+| 6 | « mets à jour le menu… pas 15 pages sous club et rien sous partenaires » | 5/4/6/3, et `PAGES_DU_SITE` pour ce qui n'est pas au menu |
+| 7 | « les photos des commissions… le rouge pour le bureau » puis « pareil pour les équipes sportives » | un portrait par organigramme, 48 cadres mesurés |
+| 8 | « un récap des responsabilités et missions… si l'un change ça change sur l'autre page » | une liste plate, deux lectures, un contrôle qui les tient |
+| 9 | « les pages des projets des commissions comme celles de mes projets » | deux tables à part, la page qui s'ouvre à la demande |
+
+### § 0.2 — LES DÉCISIONS DE NOÉ, ET CELLES QUI ONT FAIT UN ALLER-RETOUR
+
+**À lire avant de « corriger » quoi que ce soit sur ce site.** Chacune de ces
+règles a l'air discutable prise seule ; elles ont toutes une raison écrite.
+
+1. **LE CALENDRIER DU CLUB N'A PLUS DE JAUNE DU TOUT.** Noé a d'abord dit
+   « garde le jaune pour les évènements », puis, une heure après, « change aussi
+   pour les évènements finalement ». **Le second l'emporte, et il a raison** : ce
+   qui distingue l'évènement n'est pas sa couleur mais son APLAT PLEIN — la
+   tâche n'a qu'un trait, la parution un voile. *Ne pas remettre du jaune en
+   croyant restaurer la première demande.*
+2. **LE RÉCAPITULATIF DES MISSIONS N'EST PAS DANS L'ONGLET DE L'ORGANIGRAMME.**
+   Je l'y avais mis ; Noé a redirigé : *« c'est dans ces pages là que je veux que
+   ça apparaisse »* — les pages de pôle. L'onglet répond à « qui est où », et le
+   titre d'une commission y est désormais le CHEMIN vers sa page. *Ne pas l'y
+   remettre.*
+3. **LES PROJETS DU CLUB ONT DEUX TABLES À EUX**, et surtout pas `projets` :
+   *« ça ne s'affichera pas dans mon calendrier, seulement dans le calendrier de
+   la page du projet »*. Ses 28 projets auraient noyé son cap personnel. **La
+   conséquence est voulue** : une tâche du hub ne peut pas s'y rattacher, et il
+   l'a confirmé le soir même — « pas les tâches pour le moment ».
+4. **RIEN N'EST CRÉÉ D'AVANCE** : « un par un, à la demande ». Les deux tables
+   sont vides ; une ligne naît quand Noé ouvre vraiment ce projet-là. *Ne pas
+   « peupler » les 28 pour rendre service.*
+5. **LES PROJETS, PAS LES OBJECTIFS, À CÔTÉ DE « QUI LE PORTE ».** Premier essai
+   avec les objectifs, corrigé : *« mets plutôt les projets »*. Les gens à
+   gauche, ce qu'ils FONT à droite ; le cap ferme la page.
+6. **LES DEUX IDENTITÉS TRANCHÉES.** « Christophe à mettre dans les U13 » — les
+   deux portraits sont bien lui, un par organigramme. Et le vrai **Lorenzo** est
+   l'homme blond du dossier des commissions : *son portrait par défaut montre
+   encore le visage de Loïc* (voir § 0.5).
+7. **« MES » ET NON « SES »** dans le menu du site : ici on est DEDANS, le club a
+   ses objectifs à lui. La règle du hub — la première personne s'arrête aux
+   espaces — vaut pour le menu du hub, qui les regarde de l'extérieur.
+
+### § 0.3 — Ce qui a été VÉRIFIÉ, et comment
+
+- **Les 48 cadres de portrait, un par un** : marge gauche et droite du disque à
+  un pixel près (7/7 aux commissions, 9/8 au sportif), sommet du crâne dans le
+  champ, cadre carré et jamais sous la bande du nom. Aucun à revoir.
+- **Les 135 missions** : chacune présente sur le récapitulatif de sa commission
+  ET sur la fiche de chacun de ceux qui la portent — 93 aux six pôles de
+  commission, 42 à « Organisation du club ». Le contrôle refuse aussi une
+  mission donnée à un non-membre.
+- **Le calendrier** : plus aucun jaune hors des « + » et du dock, sur les trois
+  vues, mesuré par balayage des couleurs calculées.
+- **L'ouverture d'un jour** : ouverture, fermeture par le même en-tête, les deux
+  flèches, les deux extrémités, le changement de semaine, l'aller-retour
+  mois/semaine, et un filtre décoché pendant qu'un jour est ouvert.
+- **La page d'un projet du club, de bout en bout** : ouvrir, poser une étape par
+  le formulaire, la glisser au 12 septembre — la frise dit « le 12 septembre »,
+  la barre apparaît, la base porte la date. **Les données d'essai ont été
+  supprimées** : `select count(*)` rend 0 sur les deux tables.
+- **Téléphone** : aucun débordement horizontal sur l'accueil, les trois vues des
+  réunions, la fiche, les partenaires, le calendrier et la page d'un pôle.
+- **Les bancs du dépôt passent tous** : organigramme, gabarits, message du jour
+  (31 cas), accueil FCH, adresses du cap, fiche d'évènement. Le contrôle de
+  coquille ne signale que son faux positif préexistant sur un SVG data URI —
+  *vérifié en remisant les changements : il était déjà là.*
+
+### § 0.4 — Trois défauts trouvés à l'écran, dont deux muets
+
+Ils méritent d'être lus : les deux derniers ne levaient aucune erreur.
+
+1. **Un `prompt()` du navigateur** pour saisir une étape. Il n'existe nulle part
+   ailleurs dans le dépôt, ne sait pas demander une date, et a l'allure du
+   système. Remplacé par `FORMULAIRES.etape`, celui du hub.
+2. **Une collision d'attributs avec le site.** `data-choisir`, `data-vue-cal` et
+   `data-periode` sont déjà écoutés par `hermitage.js`. Choisir une étape faisait
+   remonter le clic, le site redessinait, le module se remontait — et l'étape
+   était reposée avant qu'on ait touché un jour.
+3. **Le même problème un étage plus bas, sur les évènements de pointeur.** Le
+   site appelle `brancherSelection` sur SA section ; les cases de mon calendrier
+   sont dedans. **L'écriture partait — la base recevait l'échéance — mais l'objet
+   modifié n'était plus celui de la liste : rien ne bougeait à l'écran, et un
+   rechargement montrait le bon résultat.** *C'est la pire façon de s'apercevoir
+   d'un défaut ; la garde est posée en dernier dans `brancher`, donc exécutée en
+   dernier.*
+
+*Et deux pièges de méthode déjà connus, payés à nouveau : `.bloc ul` qui passe
+toute liste en grille de 21 rem (les phrases se coupaient en plein mot), et une
+piste de grille implicite qui vaut `auto` (187 px de défilement horizontal sur
+téléphone). Les conventions les décrivent tous les deux.*
+
+### § 0.5 — PAR OÙ REPRENDRE (du plus périssable au moins pressé)
+
+1. **LE PORTRAIT DE LORENZO MONTRE LE VISAGE DE LOÏC** dans l'onglet « Bureau et
+   référents » et sur sa fiche. Ce n'est pas une régression de la session :
+   `Bureau/Loïc.png` et `Bureau/Lorenzo.png` sont **deux recadrages du même
+   cliché**, et ça date de l'import du 16 septembre. Aux commissions il est
+   désormais juste. **Corriger demande une décision de Noé** — sa photo des
+   commissions devient-elle son portrait principal, ou le club refait-il son
+   export ?
+2. **LES 28 PROJETS DU CLUB N'ONT PAS D'ÉTAPES**, par construction : les tables
+   sont vides et se remplissent à la demande. Si une session future les trouve
+   vides, **c'est l'état voulu**, pas un chargement raté.
+3. **LA COQUILLE A PRIS 1,6 Mo** (portraits : 1,6 → 3,2 Mo). Noé en a été
+   informé, il n'a pas tranché. *Si le téléchargement gêne sur son téléphone,
+   c'est là qu'il faut regarder — les deux nouveaux jeux peuvent sortir du cache
+   sans rien casser d'autre que l'organigramme hors ligne.*
+4. **UNE TÂCHE NE PEUT PAS SE RATTACHER À UN PROJET DU CLUB.** Voulu, confirmé.
+   Si l'usage le redemande, il faudra une troisième table — pas un changement de
+   `taches.projet_id`, qui ramènerait les projets du club dans le cap de Noé.
+5. **LES TROIS ÉCRANS QUI GLISSENT TOURNENT ENCORE SUR LEUR COPIE** (voir
+   § 2.15, point 4) : « Ma semaine », la page d'un projet et celle d'un objectif.
+   `brancherPriseEnMain` existe depuis le 16 septembre et la page d'un projet du
+   club s'en sert ; les trois anciennes non.
+6. **Onze règles de `css/fch.css` demandent une graisse 800 qui n'existe pas** et
+   rendent du 900. *Mesuré : « Nos engagements » fait 331,96 px en 800 comme en
+   900.* Rien n'est cassé, mais un réglage qui n'a jamais eu d'effet finit par
+   être « corrigé » par quelqu'un.
+7. **Google Sans tient toujours les barres du calendrier**, sur les quatre
+   calendriers du hub. Noé a demandé Gilroy pour Inter et Geist Mono, pas pour
+   elle. La changer ici seulement ferait parler au club une autre langue que le
+   reste.
+8. **Les points ouverts du FCH n'ont pas bougé** : voir `docs/fch-spec.md` § 7 —
+   les 13 logos manquants sur 20, la modification et la suppression d'un
+   partenaire.
+9. **Les écarts de données du § 2 n'ont pas bougé** : le goûter de Noël (18 ou
+   19 décembre), et « Tournoi » contre « Concours » de pétanque.
+10. **DEUX RENVOIS INTERNES POINTENT DANS LE VIDE** — « § 4.6 » et « § 4.7 »,
+    cités dans les § 2 et § 5. *Ils étaient DÉJÀ cassés avant cette session
+    (« § 3.6 » et « § 3.7 » hier) : chaque relais décale les sections d'un rang,
+    et un renvoi écrit en toutes lettres vieillit à chaque fois.* Je ne les ai
+    pas « corrigés » au jugé — pointer vers la mauvaise section serait pire que
+    de ne pointer nulle part. **Le jour où quelqu'un les relit, c'est leur TEXTE
+    qui dira ce qu'ils visaient.**
+
+### § 0.6 — Ce qui est TRANCHÉ et sort des questions ouvertes
+
+- ~~**Deux portraits différents portent le nom « Christophe Lucchetta »**~~ —
+  ouvert depuis le 16 septembre, **tranché par Noé** : ce sont deux photos de
+  lui, une par organigramme, et la question n'avait de sens que tant qu'une
+  personne n'avait qu'un portrait. Le point 6 des questions ouvertes de
+  `docs/fch-spec.md` est à jour.
+- ~~**Le statut d'un point d'ordre du jour ne se change plus**~~ — la régression
+  signalée au relais précédent (§ 1.10, point 1) **n'a pas été reprise cette
+  session** et reste ouverte. *Elle sort de « par où reprendre » parce qu'elle y
+  était déjà ; elle n'en est pas réglée pour autant.*
+- ~~**Les pages des commissions n'existent pas**~~ — elles existent : ce sont les
+  pages de pôle, et elles portent le récapitulatif des missions, l'équipe, les
+  projets et les objectifs.
+
+---
+
+## § 1 — Relais des 19–20 septembre (les réunions du club, et son projet)
 
 **TOUT EST COMMITÉ ET POUSSÉ sur `main`** — trois commits, dans cet ordre :
 
@@ -31,17 +212,17 @@ pas : il dit ce qui a été DÉCIDÉ, ce qui a été VÉRIFIÉ, et ce qui reste 
 
 | | Ce qui a été fait | Où |
 |---|---|---|
-| 1 | le bandeau de l'APRÈS se tait quand le compte-rendu est écrit | § 0.1 |
-| 2 | le bandeau de l'AVANT naît — la porte de la préparation | § 0.2 |
-| 3 | le « + » sur les deux étagères de la bibliothèque | § 0.3 |
-| 4 | le « + » passe devant le contenu, partout | § 0.4 |
-| 5 | la carte du site du club se tait aussi | § 0.5 |
-| 6 | la chaîne des réunions : `cr_suivi` pose la suivante | § 0.6 |
-| 7 | le suivi des actions : d'où elle vient, si elle est faite | § 0.7 |
-| 8–12 | la fiche de réunion, refondue en cinq passes | § 0.8 |
-| 13–16 | le projet du club : ses axes, ses pôles, leurs visages | § 0.9 |
+| 1 | le bandeau de l'APRÈS se tait quand le compte-rendu est écrit | § 1.1 |
+| 2 | le bandeau de l'AVANT naît — la porte de la préparation | § 1.2 |
+| 3 | le « + » sur les deux étagères de la bibliothèque | § 1.3 |
+| 4 | le « + » passe devant le contenu, partout | § 1.4 |
+| 5 | la carte du site du club se tait aussi | § 1.5 |
+| 6 | la chaîne des réunions : `cr_suivi` pose la suivante | § 1.6 |
+| 7 | le suivi des actions : d'où elle vient, si elle est faite | § 1.7 |
+| 8–12 | la fiche de réunion, refondue en cinq passes | § 1.8 |
+| 13–16 | le projet du club : ses axes, ses pôles, leurs visages | § 1.9 |
 
-### § 0.1 — Le message qui ne partait pas (le défaut fondateur)
+### § 1.1 — Le message qui ne partait pas (le défaut fondateur)
 
 Noé : *« j'ai rempli le compte-rendu de réunion depuis le message qui m'était
 proposé dans le hub, mais le message n'est pas parti une fois le compte-rendu
@@ -67,7 +248,7 @@ que Noé avait fini par faire : sa « Réunion Lina » portait `cr_date` ET
   pour faire taire un message qui ne partait pas, le message se tait maintenant
   tout seul.
 
-### § 0.2 — Le bandeau de l'AVANT
+### § 1.2 — Le bandeau de l'AVANT
 
 Noé : *« pour la préparation des évènements (réunion FCH, match Yuno),
 j'aimerais aussi un message sur le hub qui m'emmène vers la fiche de
@@ -92,7 +273,7 @@ le TRAVAIL, le message est le CHEMIN vers une fiche qui vit dans un site.
 - **UN SEUL BANDEAU À LA FOIS** (`messageDuJour`) : **ce qui arrive passe devant
   ce qui est passé.**
 
-### § 0.3 — Le « + » sur les deux étagères
+### § 1.3 — Le « + » sur les deux étagères
 
 Noé : *« rajoute le même plus […] pour rajouter un livre ou un film/série (en
 fonction de la page dans laquelle je suis) uniquement. »*
@@ -103,9 +284,9 @@ rayon, que `appliquerLaVue` masque pour les autres vues.
 
 > **LE BOUTON DE PIED « Ajouter un livre » EST RESTÉ**, et fait donc doublon.
 > *Décision prise sans la lui demander : il a dit « rajoute », pas
-> « remplace ».* Voir § 0.10.
+> « remplace ».* Voir § 1.10.
 
-### § 0.4 — Le « + » ne recevait plus le clic (défaut trouvé en mesurant)
+### § 1.4 — Le « + » ne recevait plus le clic (défaut trouvé en mesurant)
 
 Noé : *« sur toutes les pages il doit passer au-dessus de tout. »*
 
@@ -124,14 +305,14 @@ plafonne à 10), derrière la navigation (dock 18, barre 20) et les voiles (40).
 *Mesuré à 375 comme à 788 px : le rond finit 16 à 18 px AU-DESSUS du dock, les
 deux ne se rencontrent jamais.*
 
-### § 0.5 — La carte du site du club se tait, elle aussi
+### § 1.5 — La carte du site du club se tait, elle aussi
 
-Même règle que le § 0.1, et **désormais la même colonne** : `cr_date`. *Deux
+Même règle que le § 1.1, et **désormais la même colonne** : `cr_date`. *Deux
 écrans qui poseraient la même question et cesseraient de la poser à des moments
 différents, ce sont deux écrans dont un ment.* La réunion sort de « en cours » ;
 la cascade retombe sur la suivante — **l'accueil du club n'est jamais muet**.
 
-### § 0.6 — La chaîne des réunions (migration `suite_de_id`)
+### § 1.6 — La chaîne des réunions (migration `suite_de_id`)
 
 Noé : *« lorsque je mets une date de prochaine réunion, il faut que ça crée
 l'évènement à cette date avec le même nom que la dernière réunion + le numéro
@@ -153,7 +334,7 @@ nom, la LONGUEUR porte le rang.
   compte-rendu. *Elle reste en base. Les fiches vides que mes tests ont créées,
   elles, ont été supprimées.*
 
-### § 0.7 — Le suivi des actions
+### § 1.7 — Le suivi des actions
 
 Noé : *« je dois savoir de quelle réunion elles proviennent et pouvoir noter si
 elle a été faite. »*
@@ -164,12 +345,12 @@ l'étiquette de statut — mais **une étiquette ne se présente pas comme un ge
 et Noé ne l'avait pas trouvée. Le rond d'une tâche l'a remplacée ; l'étiquette
 garde son cycle à trois crans, seul chemin vers « en cours ».
 
-### § 0.8 — La fiche de réunion, refondue en cinq passes
+### § 1.8 — La fiche de réunion, refondue en cinq passes
 
 Tout le détail est dans `fch-spec.md`. Ce qui compte pour la suite :
 
 1. **« Ce qui vient d'avant » est UNE grande tuile, avec UN SEUL pli** — voir
-   § 0.10, c'est un aller-retour.
+   § 1.10, c'est un aller-retour.
 2. **Le contrat et l'ordre du jour côte à côte, en tuiles** : ils étaient **les
    deux seuls blocs de la fiche à ne pas l'être**.
 3. **Les lignes du suivi resserrées**, et le nom de la tâche redevenu dominant.
@@ -177,7 +358,7 @@ Tout le détail est dans `fch-spec.md`. Ce qui compte pour la suite :
 5. **La tuile d'un point refaite**, et on la modifie en la touchant : **la tuile
    VOLANTE de la création se rouvre, remplie**.
 
-### § 0.9 — Le projet du club : ses axes, ses pôles, leurs visages
+### § 1.9 — Le projet du club : ses axes, ses pôles, leurs visages
 
 **LES PÔLES ET LES COMMISSIONS SONT LA MÊME CHOSE** — décision de Noé, prise sur
 question posée : *« il faut fusionner les 2, certaines n'ont pas de responsable
@@ -199,7 +380,7 @@ domaines — les neuf pôles plus la **Buvette**, commission sans pôle.
 - **Les tuiles montrent les visages de l'équipe**, responsable en tête et plus
   gros, et la page se range en **quatre blocs, un par axe**.
 
-### § 0.10 — ⚠️ LES ALLERS-RETOURS DE NOÉ (à ne pas « corriger »)
+### § 1.10 — ⚠️ LES ALLERS-RETOURS DE NOÉ (à ne pas « corriger »)
 
 **Six décisions ont été prises, puis reprises par lui.** Chacune ressemble à une
 erreur quand on arrive après.
@@ -226,7 +407,7 @@ erreur quand on arrive après.
 3. **Le bouton de pied de la bibliothèque est resté** malgré le doublon avec le
    « + ».
 
-### § 0.11 — Ce qui est TRANCHÉ et sort des questions ouvertes
+### § 1.11 — Ce qui est TRANCHÉ et sort des questions ouvertes
 
 - **Les pôles et les commissions ne sont plus deux choses.** La note de
   `projet-fch.js` qui affirmait le contraire est corrigée à la source.
@@ -238,14 +419,14 @@ erreur quand on arrive après.
   « + » flottant. *Pour une icône dont le sujet EST la copie, en faire une
   seconde aurait été presque drôle.*
 
-### § 0.12 — PAR OÙ REPRENDRE (du plus périssable au moins pressé)
+### § 1.12 — PAR OÙ REPRENDRE (du plus périssable au moins pressé)
 
 1. **UNE DONNÉE DE NOÉ A DISPARU PENDANT LA SESSION, ET CE N'EST PAS MOI.** Son
    point d'ordre du jour d'essai (« vkejfnv », sortie « eongg », 14 min) était en
    base à 22 h 38, il n'y est plus. *Mes tests n'ont touché que ses minutes
    (14 → 20 → 14).* **À lui confirmer** — s'il ne l'a pas retiré, il faut
    chercher.
-2. **LE STATUT D'UN POINT NE SE CHANGE PLUS** (§ 0.10, point 1). C'est la seule
+2. **LE STATUT D'UN POINT NE SE CHANGE PLUS** (§ 1.10, point 1). C'est la seule
    régression fonctionnelle assumée de la session, et elle est silencieuse :
    la carte de l'accueil du club se figera sur les trois premiers points.
 3. **LA CROIX D'UN POINT N'APPARAÎT QU'AU SURVOL** — comportement général du hub
@@ -256,17 +437,17 @@ erreur quand on arrive après.
 4. **L'ORDRE DES PÔLES DE L'AXE « IMAGE »** s'affiche Communication · Partenaires
    · Identité, là où l'arborescence de Noé dit Communication · Identité ·
    Partenaires. Il vient de l'ordre de `POLES_FCH`. *Signalé, non changé.*
-5. **Les écarts de données du § 1 n'ont pas bougé** : le goûter de Noël (18 ou
+5. **Les écarts de données du § 2 n'ont pas bougé** : le goûter de Noël (18 ou
    19 décembre), et « Tournoi » contre « Concours » de pétanque.
-6. **LES TROIS ÉCRANS QUI GLISSENT TOURNENT ENCORE SUR LEUR COPIE** (§ 1.15,
+6. **LES TROIS ÉCRANS QUI GLISSENT TOURNENT ENCORE SUR LEUR COPIE** (§ 2.15,
    point 4) : « Ma semaine », la page d'un projet et celle d'un objectif.
-7. **Les points ouverts du FCH n'ont pas bougé** : voir § 4.6 — les 13 logos
+7. **Les points ouverts du FCH n'ont pas bougé** : voir § 5.6 — les 13 logos
    manquants sur 20, la modification et la suppression d'un partenaire, les
    portraits homonymes.
 
 ---
 
-## § 1 — Relais du 17 septembre (le site du FC Hermitage, de bout en bout)
+## § 2 — Relais du 17 septembre (le site du FC Hermitage, de bout en bout)
 
 **COMMITÉ ET POUSSÉ sur `main`** (`9eb8f39`, « Le site du club : l'accueil se
 classe, le cap et les évènements arrivent »), donc **en ligne** : GitHub Pages
@@ -281,20 +462,20 @@ de Noé :
 
 | | Ce qui a été fait | Où |
 |---|---|---|
-| 1 | l'accueil devient un CLASSEMENT — 2 018 px → 927 | § 1.1 à 0.6 |
-| 2 | la forme, et les quatre pages empruntées au hub | § 1.7 |
-| 3 | le calendrier d'un évènement | § 1.8 |
-| 4 | la page Communication devient un hall | § 1.9 |
-| 5 | « Préparer sa com » mène à la fiche | § 1.10 |
-| 6 | les tuiles du site flottent | § 1.11 |
-| 7 | la phrase de la Présidence | § 1.12 |
+| 1 | l'accueil devient un CLASSEMENT — 2 018 px → 927 | § 2.1 à 0.6 |
+| 2 | la forme, et les quatre pages empruntées au hub | § 2.7 |
+| 3 | le calendrier d'un évènement | § 2.8 |
+| 4 | la page Communication devient un hall | § 2.9 |
+| 5 | « Préparer sa com » mène à la fiche | § 2.10 |
+| 6 | les tuiles du site flottent | § 2.11 |
+| 7 | la phrase de la Présidence | § 2.12 |
 
 **Le détail vit dans `docs/fch-spec.md`**, qui fait autorité sur ce site et a été
 tenu à jour à CHAQUE étape — l'accueil, les écrans du cap, la fiche d'un
 évènement, le hall de la Communication, les tuiles. Ce relais ne le recopie pas :
 il dit ce qui a été DÉCIDÉ, ce qui a été VÉRIFIÉ, et ce qui reste ouvert.
 
-### § 1.1 — La demande, et le défaut mesuré
+### § 2.1 — La demande, et le défaut mesuré
 
 Noé : *« pour l'accueil du FCH, il faut réorganiser les infos qui doivent y être
 et la forme. Pour cela il faut s'appuyer sur ce qu'on a fait sur le hub et
@@ -311,10 +492,10 @@ virement, et **54 parutions toutes en « à préparer », zéro en « à program
 classement. *Mesuré après : **927 px** sur ordinateur, 1 566 sur téléphone, et
 **aucune requête de plus** — tout était déjà chargé.*
 
-### § 1.2 — Les trois décisions du PREMIER TOUR (elles ne se re-devinent pas)
+### § 2.2 — Les trois décisions du PREMIER TOUR (elles ne se re-devinent pas)
 
 > *Les décisions des six tours suivants vivent dans leur section ; **celles qui
-> ont fait un ALLER-RETOUR sont récapitulées au § 1.13**, parce que ce sont
+> ont fait un ALLER-RETOUR sont récapitulées au § 2.13**, parce que ce sont
 > exactement celles qu'une session future « corrigerait » en croyant bien faire.*
 
 1. **L'ORDRE DE LA CASCADE : le moment d'abord** — réunion, temps fort, parution
@@ -325,7 +506,7 @@ classement. *Mesuré après : **927 px** sur ordinateur, 1 566 sur téléphone, 
 3. **Les quatre portes de la réserve** : engagements · com' (frise) · réunions ·
    évènements.
 
-### § 1.3 — Ce qui a été décidé SANS lui demander (à lui dire)
+### § 2.3 — Ce qui a été décidé SANS lui demander (à lui dire)
 
 - **LES VICTOIRES ONT QUITTÉ L'ACCUEIL.** Elles étaient du bilan sur l'atelier, et
   `#fch` comme « Le chemin » les portent déjà. C'est la division que la spec pose
@@ -338,7 +519,7 @@ classement. *Mesuré après : **927 px** sur ordinateur, 1 566 sur téléphone, 
   chantier partenaires qui arrive » voulait dire autre chose pour lui, c'est ce
   rang-là qu'il faut rouvrir.*
 
-### § 1.4 — Ce qui a été mis en commun plutôt que recopié
+### § 2.4 — Ce qui a été mis en commun plutôt que recopié
 
 - **`friseDeLaSemaine` a déménagé dans `js/gabarits.js`** ; `js/yuno.js`
   l'importe de là. Elle se peint à `--accent` sans rien savoir de son site — doré
@@ -354,7 +535,7 @@ classement. *Mesuré après : **927 px** sur ordinateur, 1 566 sur téléphone, 
   vérifiées hors écran.*
 - **Les portes réutilisent `porte()` des halls du site.** Aucun dessin nouveau.
 
-### § 1.5 — Ce qui a été vérifié, et comment (toute la session)
+### § 2.5 — Ce qui a été vérifié, et comment (toute la session)
 
 **HORS ÉCRAN — trois bancs d'essai, rejoués à chaque passe :**
 
@@ -375,7 +556,7 @@ classement. *Mesuré après : **927 px** sur ordinateur, 1 566 sur téléphone, 
 - **21 pages du site**, de 375 à 1 240 px : aucun écran vide, aucun débordement,
   aucune erreur console.
 - **98 tuiles** portent leur translucidité, et **aucun conteneur de photos n'a de
-  fond** (§ 1.11).
+  fond** (§ 2.11).
 - **Les gestes, de bout en bout** : cocher une tâche ouvre la fenêtre de durée
   *sans* naviguer ; la tuile mène aux tâches ; une idée se choisit et se pose sur
   un jour ; « Préparer sa com » ouvre la fiche sur son mois.
@@ -400,7 +581,7 @@ Noé, et on ne saisit pas ses identifiants.*
 > transition et `color(srgb …)` au repos. **On peint la couleur dans un canevas et
 > on lit son alpha.** *Six « fautives » fantômes trouvées ainsi.*
 
-### § 1.6 — Les pièges payés (ils ne se devinent pas)
+### § 2.6 — Les pièges payés (ils ne se devinent pas)
 
 - **`node --check` NE VÉRIFIE PAS UN MODULE ES.** Une virgule en trop dans une
   liste d'import (`{ CHEVRON,, friseDeLaSemaine }`) **est passée sans un mot** —
@@ -424,7 +605,7 @@ Noé, et on ne saisit pas ses identifiants.*
   spécificité. Vider le cache avant d'avoir mesuré la règle gagnante fait perdre
   du temps et accuser le mauvais coupable.*
 
-### § 1.7 — SECOND TOUR : la forme, et les quatre pages empruntées
+### § 2.7 — SECOND TOUR : la forme, et les quatre pages empruntées
 
 **Quatre demandes de Noé après avoir vu l'accueil**, dont une qui en corrige une
 autre en cours de route :
@@ -478,7 +659,7 @@ intacts** — accent doré et frises d'un côté, « tous espaces » et ses filt
 l'autre. La tuile des tâches mène aux tâches ; le rond d'une tâche ouvre la
 fenêtre de durée **sans** naviguer.
 
-### § 1.8 — TROISIÈME TOUR : le calendrier d'un évènement
+### § 2.8 — TROISIÈME TOUR : le calendrier d'un évènement
 
 **Demande de Noé** : *« pour les évènements, dans leur page, je dois avoir un
 calendrier sur lequel je peux prévoir la communication. »*
@@ -524,7 +705,7 @@ rubrique. **Les deux ont été supprimées** (76 publications avant, 76 après).
 Aucun débordement à 375, 791 et 1240 px ; « La saison », le calendrier du site et
 la fiche d'un moment de Yuno sont intacts.
 
-### § 1.9 — QUATRIÈME TOUR : la page Communication devient un hall
+### § 2.9 — QUATRIÈME TOUR : la page Communication devient un hall
 
 **Demande de Noé** : *« fais une refonte de la page communication du FCH, en
 ajoutant un lien ou une page pour gérer la communication des évènements. »*
@@ -567,7 +748,7 @@ com, « 1/9 »), la saison, la banque, les parues.
 375 à 1240 px, aucune erreur console. Les cinq portes mènent où elles disent, et
 le retour « ← Communication » tient sur les quatre sous-pages.
 
-### § 1.10 — CINQUIÈME TOUR : « Préparer sa com » mène à la fiche
+### § 2.10 — CINQUIÈME TOUR : « Préparer sa com » mène à la fiche
 
 **Demande de Noé** : *« le lien de préparer sa com doit mener à la page de
 l'évènement. »*
@@ -603,7 +784,7 @@ foi :
    le lien, mais l'accueil et la fiche affichent donc deux noms pour la même
    soirée.
 
-### § 1.11 — SIXIÈME TOUR : les tuiles de l'accueil flottent
+### § 2.11 — SIXIÈME TOUR : les tuiles de l'accueil flottent
 
 **Demande de Noé** : *« diminue un peu l'opacité des fonds de tuiles dans la page
 d'accueil, et rajoute une légère ombre portée vers le bas à droite. »*
@@ -647,7 +828,7 @@ flottent ».
   On peint la couleur dans un canevas et on lit son alpha. Six « fautives »
   fantômes trouvées ainsi.*
 
-### § 1.12 — La phrase de la Présidence
+### § 2.12 — La phrase de la Présidence
 
 **Demande de Noé** : *« enlève cette petite phrase »* — « Projet du club,
 décisions et coordination », sous le titre du groupe Présidence.
@@ -667,7 +848,7 @@ rangée** — *mesuré, les deux tuiles du haut font maintenant la même hauteur
 champs — « Lionel » sort avec ses trois rôles), et
 `node tools/verifier-organigramme-fch.js` passe : 44 fiches, 23 groupes.*
 
-### § 1.13 — ⚠️ LES ALLERS-RETOURS DE NOÉ (à ne pas « corriger »)
+### § 2.13 — ⚠️ LES ALLERS-RETOURS DE NOÉ (à ne pas « corriger »)
 
 **Cinq décisions ont été prises, puis REPRISES par lui en cours de session.** Ce
 sont les plus fragiles du lot : chacune ressemble à une erreur quand on arrive
@@ -687,19 +868,19 @@ sur la porte et un autre en tête de page, ce sont deux noms pour une page*, le
 défaut corrigé dans le hub le 28 août. C'est le CONTEXTE (le hall de la
 Communication) qui dit de quoi on parle.
 
-### § 1.14 — Ce qui est TRANCHÉ et sort des questions ouvertes
+### § 2.14 — Ce qui est TRANCHÉ et sort des questions ouvertes
 
 - **L'accueil du site du club n'est plus à repenser.** Sa forme est écrite dans
   `fch-spec.md` et son classement est éprouvé hors écran. *Ce qui reste ouvert est
   le CONTENU des rangs, pas leur mécanique.*
 - **Le site du club a ses écrans du cap**, et la règle qui les fait tenir
   (`cap-adresses.js`, `dansUnSite`) vaut pour les DEUX sites et le prochain :
-  le § 7 disait « le FCH n'a rien reçu », c'est faux depuis cette session — *mais
-  seulement pour le cap ; les formats reproductibles du § 2.6, point 3, restent
+  le § 8 disait « le FCH n'a rien reçu », c'est faux depuis cette session — *mais
+  seulement pour le cap ; les formats reproductibles du § 3.6, point 3, restent
   chez Yuno seul.*
 - **La question « où gérer la com des évènements » est réglée** : leur fiche porte
   son calendrier, et la page Communication y mène. *Le rangement au menu, lui,
-  reste sous « Le club » — voir § 1.9 pour la conséquence assumée sur le dock.*
+  reste sous « Le club » — voir § 2.9 pour la conséquence assumée sur le dock.*
 - **La forme des tuiles du site est fixée** : translucides à 82 % avec une ombre
   de 15 % vers le bas à droite, pour toutes celles qui sont posées SUR la page.
   Le critère qui décide est celui du 30 août, et il est écrit.
@@ -707,13 +888,13 @@ Communication) qui dit de quoi on parle.
   spécificité, payé aux 10e et 11e fois**, sont consignés dans `CLAUDE.md`. *Ils
   n'ont plus à se redécouvrir.*
 
-### § 1.15 — PAR OÙ REPRENDRE (du plus périssable au moins pressé)
+### § 2.15 — PAR OÙ REPRENDRE (du plus périssable au moins pressé)
 
-**Rien n'attend sur `main`**, et le déploiement est vérifié en ligne (§ 1.5). Ce
+**Rien n'attend sur `main`**, et le déploiement est vérifié en ligne (§ 2.5). Ce
 qui suit est classé par ce qui se périme le plus vite.
 
 1. **DEUX ÉCARTS DE DONNÉES À FAIRE TRANCHER PAR NOÉ**, révélés par le
-   rapprochement du § 1.10 et **non corrigés** — ce sont ses données, et le
+   rapprochement du § 2.10 et **non corrigés** — ce sont ses données, et le
    planning officiel du club fait foi :
    - **le goûter de Noël est au 18 décembre en base et au 19 au planning**
      (`EVENEMENTS_CLUB`, transcrit du planning). Le rapprochement le rattrape par
@@ -722,9 +903,9 @@ qui suit est classé par ce qui se périme le plus vite.
      alors que le planning dit « **Concours** de pétanque ». Sans conséquence
      pour le lien, mais l'accueil annonce un nom et la fiche un autre.
 2. **DEUX DÉCISIONS PRISES SANS LUI DEMANDER, dites mais non confirmées**
-   (§ 1.3) : les victoires ont quitté l'accueil du site, et le rang 4 de la
+   (§ 2.3) : les victoires ont quitté l'accueil du site, et le rang 4 de la
    cascade ne parle que des virements — pas des 65 engagements.
-3. **LE SURVOL D'UNE PORTE NE SE « CORRIGE » PAS** (§ 1.11) : c'est un voile qui
+3. **LE SURVOL D'UNE PORTE NE SE « CORRIGE » PAS** (§ 2.11) : c'est un voile qui
    EFFACE le fond de la tuile, pas un voile qui s'ajoute. *Le réécrire en
    `color-mix` fait tomber l'encre discrète à 4,20:1, sous le seuil AA.* C'est
    écrit dans `fch.css` à côté de la règle, et dans `fch-spec.md`.
@@ -734,13 +915,13 @@ qui suit est classé par ce qui se périme le plus vite.
    projet et celle d'un objectif gardent chacune la leur, mot pour mot. **Les
    faire basculer est un chantier à part** — et c'est la dette qui se paie quand
    l'une des quatre cesse d'avaler le clic qui suit un glissement.
-5. **Les points ouverts du FCH n'ont pas bougé** : voir § 4.6 — les 13 logos
+5. **Les points ouverts du FCH n'ont pas bougé** : voir § 5.6 — les 13 logos
    manquants sur 20, la modification et la suppression d'un partenaire, la porte
    partenaires du hall du club, les portraits homonymes.
 
 ---
 
-> **LES RELAIS CI-DESSOUS SONT ANTÉRIEURS.** Le § 2 était la reprise immédiate
+> **LES RELAIS CI-DESSOUS SONT ANTÉRIEURS.** Le § 3 était la reprise immédiate
 > jusqu'à celui-ci.
 >
 > **COMMENT LIRE LEUR NUMÉROTATION.** Chaque session prend le rang 0 et pousse
@@ -749,18 +930,18 @@ qui suit est classé par ce qui se périme le plus vite.
 > les « corriger » :
 > - **les titres `### 0.x` sans `§`** — ce sont les sous-sections LOCALES d'un
 >   relais d'archive, numérotées chez elles et jamais renumérotées. Un renvoi
->   « § 1.8 » écrit dans l'un d'eux désigne SA section 0.8, pas celle du relais du
+>   « § 2.8 » écrit dans l'un d'eux désigne SA section 0.8, pas celle du relais du
 >   jour ;
-> - **les noms `§ 0 ante`, `§ 0 ante bis`, `§ 0 ante ter`…** — ce sont des
+> - **les noms `§ 1 ante`, `§ 1 ante bis`, `§ 1 ante ter`…** — ce sont des
 >   étiquettes, pas des numéros.
 >
 > *Les deux ont été décalés par erreur le 17 septembre, puis remis. Un décalage
-> automatique doit s'arrêter à la fin du § 5 : au-delà, la numérotation est
+> automatique doit s'arrêter à la fin du § 6 : au-delà, la numérotation est
 > locale.* **Conséquence héritée, non résolue** : quelques renvois d'archives vers
 > `§ N.x` pointent vers une section qui EXISTE mais qui n'est plus celle qu'ils
 > désignaient. Ils sont profonds dans le document et sans usage courant.
 
-## § 2 — Relais du 16 septembre, NUIT (Yuno : une idée est un FORMAT)
+## § 3 — Relais du 16 septembre, NUIT (Yuno : une idée est un FORMAT)
 
 **Commité ET POUSSÉ sur `main`** (`b8be00a`), donc **en ligne** : GitHub Pages
 sert la nouvelle version — *vérifié, `construireBarreIdees` et la nouvelle rampe
@@ -768,13 +949,13 @@ sert la nouvelle version — *vérifié, `construireBarreIdees` et la nouvelle r
 
 **UNE SESSION PARALLÈLE A TRAVAILLÉ SUR LE FCH pendant celle-ci** (`008ca2b`,
 « Structure le projet du club et les évènements de saison ») : son relais est le
-§ 3 ci-dessous, et elle a réécrit la tête de ce document. Les deux travaux ne se
+§ 4 ci-dessous, et elle a réécrit la tête de ce document. Les deux travaux ne se
 touchent pas — l'un est dans `js/yuno.js` et `js/publications.js`, l'autre dans
 `js/projet-club.js` et `js/evenements-club.js` — mais **`js/hermitage.js` et
 `css/fch.css` ont été modifiés des deux côtés à des heures différentes.** Rien
 n'a été perdu (git l'aurait dit), mais c'est à savoir.
 
-### § 2.1 — LA RÈGLE, ET ELLE COMMANDE TOUT LE RESTE
+### § 3.1 — LA RÈGLE, ET ELLE COMMANDE TOUT LE RESTE
 
 Noé, en une phrase : *« une idée doit être reproductible, ce n'est pas seulement
 un contenu à faire une fois — par exemple le avant/après est reproductible
@@ -799,7 +980,7 @@ publication**.*
 **Le détail vit dans `docs/yuno-spec.md`**, qui fait autorité et a été tenu à
 jour à chaque étape. Ce relais dit ce qui a été DÉCIDÉ et ce qui reste ouvert.
 
-### § 2.2 — LES QUATORZE DEMANDES, DANS L'ORDRE
+### § 3.2 — LES QUATORZE DEMANDES, DANS L'ORDRE
 
 La forme s'est cherchée en une longue série de corrections. **Celles marquées ⚠️
 renversent la précédente** — c'est exactement ce qu'une session future
@@ -819,14 +1000,14 @@ renversent la précédente** — c'est exactement ce qu'une session future
 9. *« mets que l'icône, pas de texte »* ;
 10. les tuiles de la banque font toutes la même taille, l'état s'y règle ;
 11. *« plus de place dans la pastille, et texte en minuscule »*, puis « moins
-    d'espace entre les états » (une régression, voir § 2.4) ;
+    d'espace entre les états » (une régression, voir § 3.4) ;
 12. ⚠️ l'ordre de la tuile, en **trois corrections successives** : détails sous
     le titre → état et programmer en haut → **finalement en bas** ;
 13. ⚠️ *« j'aime pas la forme de ces pastilles, ça ne donne pas vie à l'idée »* —
     **renverse l'homogénéisation du 15 septembre** ;
 14. *« rajoute un mode de tri et de filtre comme on a fait ailleurs »*.
 
-### § 2.3 — LES DÉCISIONS, AVEC LEUR RAISON
+### § 3.3 — LES DÉCISIONS, AVEC LEUR RAISON
 
 - **REPRODUCTIBLE PAR DÉFAUT**, l'exception se déclare. C'est l'ordre des mots de
   Noé : une idée EST un format. **Seule l'exception porte un mot** — écrire
@@ -862,7 +1043,7 @@ renversent la précédente** — c'est exactement ce qu'une session future
   `.livres-*` comprises : *écrire un troisième dessin pour un geste qui en a déjà
   un, c'est fabriquer la divergence.*
 
-### § 2.4 — LES PIÈGES PAYÉS (ils ne se devinent pas)
+### § 3.4 — LES PIÈGES PAYÉS (ils ne se devinent pas)
 
 - **UN CHAMP OUBLIÉ PART À LA POUBELLE SANS ERREUR.** `creerPublication` ne
   recopie que les colonnes qu'elle nomme : la première parution est née avec
@@ -890,7 +1071,7 @@ renversent la précédente** — c'est exactement ce qu'une session future
 - **LA MARGE DE `.choix-champ`, TROISIÈME FOIS** : 12 px de respiration de
   formulaire, qui décalent une pastille de six pixels dans une rangée centrée.
 
-### § 2.5 — CE QUI A ÉTÉ VÉRIFIÉ, ET COMMENT
+### § 3.5 — CE QUI A ÉTÉ VÉRIFIÉ, ET COMMENT
 
 - **Le chemin complet du format, en base** : « How I edited this pic » programmé
   au 25 septembre → la parution naît datée, en « idée », `reproductible = false`,
@@ -907,7 +1088,7 @@ renversent la précédente** — c'est exactement ce qu'une session future
 - **Le déploiement**, en ligne : `construireBarreIdees` et `TEINTES_ETAPE =
   [248, 200, 145]` répondent sur `noedelahaye-sketch.github.io/hub/`.
 
-### § 2.6 — PAR OÙ REPRENDRE (du plus pressé au moins)
+### § 3.6 — PAR OÙ REPRENDRE (du plus pressé au moins)
 
 1. **LES TROIS IDÉES UNIQUES DE NOÉ SONT ENCORE MARQUÉES REPRODUCTIBLES**, et
    c'est à LUI de les basculer : « Mes finances de photographe », « Ce que je
@@ -927,9 +1108,9 @@ renversent la précédente** — c'est exactement ce qu'une session future
 5. **L'ICÔNE SEULE DU RÉGLAGE « REPRODUCTIBLE » S'APPREND** : une pile de
    feuilles ne se devine pas, et il n'y a plus que l'état allumé/éteint pour dire
    si le réglage est posé. *Ne pas y remettre le mot sans rouvrir la question.*
-6. Les points ouverts du FCH restent ceux du § 4.6 et du § 2.
+6. Les points ouverts du FCH restent ceux du § 5.6 et du § 2.
 
-### § 2.7 — À SAVOIR POUR LA SUITE
+### § 3.7 — À SAVOIR POUR LA SUITE
 
 **Le hash de la page a changé plusieurs fois entre deux appels d'outil**, comme à
 la session précédente, et **une idée a été retrouvée deux fois en « contenu
@@ -940,10 +1121,10 @@ mentait.
 
 ---
 
-## § 3 — Relais du 16 septembre (projet du club et évènements)
+## § 4 — Relais du 16 septembre (projet du club et évènements)
 
 Ce relais prime sur les descriptions antérieures de ces pages. *Il a été écrit
-par une session PARALLÈLE à celle du § 2, et son commit (`008ca2b`) est poussé
+par une session PARALLÈLE à celle du § 3, et son commit (`008ca2b`) est poussé
 depuis — le déploiement est vérifié en ligne.*
 
 - Le projet du club présente la mission, les six valeurs et trois priorités de
@@ -972,12 +1153,12 @@ sans les outils d'édition et de suivi complet des objectifs du hub.
 
 Les modifications documentaires déjà présentes ont été conservées dans cette livraison.
 
-> Historique précédent : « § 2 — Relais du 16 septembre, TARD » ci-dessous.
+> Historique précédent : « § 3 — Relais du 16 septembre, TARD » ci-dessous.
 
-## § 4 — Relais du 16 septembre, TARD (le site du club se range en halls)
+## § 5 — Relais du 16 septembre, TARD (le site du club se range en halls)
 
 **Commité ET POUSSÉ sur `main`** (demande de Noé), donc **en ligne** — le dépôt
-est servi par GitHub Pages. Le § 3 ci-dessous disait « rien n'est poussé » :
+est servi par GitHub Pages. Le § 4 ci-dessous disait « rien n'est poussé » :
 c'était vrai à l'heure où il a été écrit, ça ne l'est plus, et ses huit commits
 sont partis avec les deux de cette session.
 
@@ -988,7 +1169,7 @@ sont partis avec les deux de cette session.
 a été mis à jour à chaque étape. Ce relais ne le recopie pas : il dit ce qui a
 été DÉCIDÉ, ce qui a été VÉRIFIÉ, et ce qui reste ouvert.
 
-### § 4.1 — Ce que Noé a demandé, dans l'ordre
+### § 5.1 — Ce que Noé a demandé, dans l'ordre
 
 Sept demandes, dont **trois se sont corrigées en cours de route** — elles sont
 signalées, parce que c'est exactement ce qu'une session future « corrigerait »
@@ -1011,10 +1192,10 @@ en croyant bien faire.
 6. **« intègre réunions à club »**, puis **« change créer en communication, et
    ajoute un onglet pour les partenaires (qui remplace donc réunions) »**, puis
    **« Com' au lieu de communication »**. ⚠️ *Trois demandes qui se suivent et se
-   complètent ; la troisième arbitre un problème de place, voir § 2.3.*
+   complètent ; la troisième arbitre un problème de place, voir § 3.3.*
 7. **« le texte doit être à la droite du logo partenaire »** (la fiche).
 
-### § 4.2 — Ce qui a été construit
+### § 5.2 — Ce qui a été construit
 
 **UNE SECTION QUI NE PORTE QUE DES CARTES N'A RIEN À POSER DESSOUS.**
 `habillerLesSections` (js/hermitage.js) enveloppe chaque `section.bloc` du site
@@ -1058,13 +1239,13 @@ d'une tuile de livre. L'illustration est un **emplacement déclaré**
 de l'aperçu : sans lui, le nom ne pourrait pas se poser ENTRE les deux.
 
 **LE DOCK DEVIENT `Accueil · Com' · Partenaires · Club · Calendrier`.** Voir
-§ 2.3 pour les trois décisions qui l'ont fait.
+§ 3.3 pour les trois décisions qui l'ont fait.
 
 **LA TÊTE D'UNE FICHE MET LE LOGO À GAUCHE ET LE TEXTE À SA DROITE.** Empilés,
 la plaque, le nom, l'offre et l'état occupaient trois cents pixels **avant le
 premier engagement** — or c'est la liste qu'on vient lire.
 
-### § 4.3 — Les décisions de Noé, avec leur raison
+### § 5.3 — Les décisions de Noé, avec leur raison
 
 **À NE PAS « CORRIGER » EN CROYANT BIEN FAIRE** — chacune renverse quelque chose
 qui était écrit ailleurs, ou arbitre entre deux options.
@@ -1130,7 +1311,7 @@ qui était écrit ailleurs, ou arbitre entre deux options.
   Elle a dit « Aucune réunion au calendrier » avec « 2 » juste à côté : vrai, et
   deux lignes qui se contredisent dans la même tuile.
 
-### § 4.4 — Ce qui a été vérifié, et comment
+### § 5.4 — Ce qui a été vérifié, et comment
 
 - **À l'écran, de 375 px à 935** : les trois pages partenaires, la fiche d'un
   partenaire, le hall du club, ses cinq écrans, les quatre pages des réunions, le
@@ -1143,13 +1324,13 @@ qui était écrit ailleurs, ou arbitre entre deux options.
   partenaires 20 ATOL Valence… » — le nom avant l'aperçu.
 - **`prochainEntrainement`, hors écran, sur les sept jours** : dimanche renvoie
   au lundi, les six autres tombent sur « Aujourd'hui ».
-- **LE DÉPLOIEMENT GITHUB PAGES, en ligne** (ce qui clôt le point 7 du § 5.7) :
+- **LE DÉPLOIEMENT GITHUB PAGES, en ligne** (ce qui clôt le point 7 du § 6.7) :
   `https://noedelahaye-sketch.github.io/hub/` répond 200, `fch-hall` apparaît
   17 fois dans `js/hermitage.js` servi, `suivi-fiche-texte` dans
   `js/partenaires-suivi.js`, `flex-wrap: nowrap` deux fois dans `css/fch.css`.
   **Les deux commits de la session sont publiés.**
 
-### § 4.5 — Les pièges payés (ils ne se devinent pas)
+### § 5.5 — Les pièges payés (ils ne se devinent pas)
 
 - **LA SPÉCIFICITÉ, UNE NEUVIÈME FOIS.** Le hall du club, posé d'abord dans une
   `section.bloc` : au-delà de 60 rem, `.bloc ul` passe toute liste en grille de
@@ -1178,17 +1359,17 @@ qui était écrit ailleurs, ou arbitre entre deux options.
   cocher, laissant **deux engagements cochés en base**. Remis à zéro et
   revérifié (`0/70`).
 
-### § 4.6 — PAR OÙ REPRENDRE (du plus périssable au moins pressé)
+### § 5.6 — PAR OÙ REPRENDRE (du plus périssable au moins pressé)
 
-> **PARTIELLEMENT DÉPASSÉ — lire le § 2.6 d'abord.** Tout ce qui est écrit ici a
+> **PARTIELLEMENT DÉPASSÉ — lire le § 3.6 d'abord.** Tout ce qui est écrit ici a
 > été POUSSÉ depuis (`b8be00a`), donc plus rien n'attend sur `main`. Les points
 > ouverts du FCH, eux, tiennent toujours.
 
 **Ce qui était périssable l'est moins : tout est poussé et vérifié en ligne.**
-Les points 1 et 7 du § 5.7 sont clos. Restent, du plus pressé au moins :
+Les points 1 et 7 du § 6.7 sont clos. Restent, du plus pressé au moins :
 
 1. **CONFIRMER AVEC NOÉ : le hall du club n'a plus de porte partenaires.**
-   C'est la seule décision de la session qui ne soit pas la sienne (§ 2.3). La
+   C'est la seule décision de la session qui ne soit pas la sienne (§ 3.3). La
    remettre coûte une ligne — `porteDesPartenaires(etat.partenairesSuivi, …)`
    dans `hallDuClub`.
 2. **QUATRE ENGAGEMENTS SONT COCHÉS EN BASE, datés du 16 septembre** — « Publier
@@ -1206,7 +1387,7 @@ Les points 1 et 7 du § 5.7 sont clos. Restent, du plus pressé au moins :
    pas MAX ELEC, « SOLUVIA » n'est pas SOLUWASTE. `STURM.pdf` est un flyer, pas
    un logo.
 4. **LE SUIVI DES PARTENAIRES N'A TOUJOURS NI MODIFICATION NI SUPPRESSION.** Le
-   point 6 du § 5.7 est **à moitié clos** : l'état se change désormais d'un
+   point 6 du § 6.7 est **à moitié clos** : l'état se change désormais d'un
    geste. **Le montant, l'offre, la commune, le CERFA et les notes ne se
    corrigent toujours pas**, et un partenaire ne se supprime pas depuis l'écran.
    `modifierPartenaire` et `supprimerPartenaire` existent dans `js/api.js` et ne
@@ -1221,24 +1402,24 @@ Les points 1 et 7 du § 5.7 sont clos. Restent, du plus pressé au moins :
 7. **Les trois portraits « Thibault CARTERON » ne se ressemblent pas** non plus.
    Noé a confirmé que Kepo EST Thibault ; le hub garde celui des commissions.
 
-### § 4.7 — Ce qui est TRANCHÉ et sort des questions ouvertes
+### § 5.7 — Ce qui est TRANCHÉ et sort des questions ouvertes
 
-- **Le point 1 du § 5.7 (« pousser ») est clos** : poussé le 16 septembre au
-  soir, et le déploiement est vérifié en ligne (§ 2.4).
-- **Le point 7 du § 5.7 (« vérifier GitHub Pages ») est clos**, pour la même
+- **Le point 1 du § 6.7 (« pousser ») est clos** : poussé le 16 septembre au
+  soir, et le déploiement est vérifié en ligne (§ 3.4).
+- **Le point 7 du § 6.7 (« vérifier GitHub Pages ») est clos**, pour la même
   raison.
-- **Le point 6 du § 5.7 est à moitié clos** : l'état se change, le reste non
-  (voir § 4.6, point 4). *Il reste donc dans les questions ouvertes, reformulé.*
+- **Le point 6 du § 6.7 est à moitié clos** : l'état se change, le reste non
+  (voir § 5.6, point 4). *Il reste donc dans les questions ouvertes, reformulé.*
 - **La forme des halls du site n'est plus à inventer** : `fch-hall-*` est le
   dessin, et il sert les deux. Une troisième porte ailleurs le reprend.
 - **La question du nombre d'onglets du dock FCH est tranchée** : cinq, et
   lesquels. *`docs/fch-spec.md` § « LE DOCK, REFONDU LE 16 SEPTEMBRE 2026 » porte
   les trois décisions et leur raison.*
 
-## § 5 — Relais du 16 septembre au SOIR (organigrammes, projet du club, partenaires)
+## § 6 — Relais du 16 septembre au SOIR (organigrammes, projet du club, partenaires)
 
 **Tout est commité sur `main`.** Huit commits, de `b79e124` à `0994277`.
-*(Ils ont été poussés depuis, avec la session du § 2 — la phrase d'origine,
+*(Ils ont été poussés depuis, avec la session du § 3 — la phrase d'origine,
 « rien n'est poussé », ne vaut plus.)*
 
     b79e124  Un portrait individuel par personne dans « Qui fait quoi »
@@ -1254,7 +1435,7 @@ Le détail de chaque écran vit dans **`docs/fch-spec.md`**, qui fait autorité 
 a été mis à jour à chaque commit. Ce relais ne le recopie pas : il dit ce qui a
 été DÉCIDÉ, ce qui a été VÉRIFIÉ, et ce qui reste ouvert.
 
-### § 5.1 — Les organigrammes (ex-« Qui fait quoi »)
+### § 6.1 — Les organigrammes (ex-« Qui fait quoi »)
 
 - **Un portrait individuel par personne**, pris dans les exports découpés du
   club, à la place des fenêtres SVG taillées dans les photos de groupe.
@@ -1281,7 +1462,7 @@ a été mis à jour à chaque commit. Ce relais ne le recopie pas : il dit ce qu
   du bureau (Coprésident, Trésorier), qui est un TITRE et que rien d'autre ne
   dirait.
 
-### § 5.2 — Le projet du club
+### § 6.2 — Le projet du club
 
 Trois étages, dans l'ordre où le club les a écrits en quatre réunions : la
 mission dit POURQUOI, les valeurs COMMENT on se tient, les objectifs VERS QUOI
@@ -1299,7 +1480,7 @@ on va. Données dans `js/projet-fch.js`, écran dans `js/projet-club.js`.
   quels. Les trois objectifs de l'AG restent à part, leurs mots n'étant pas ceux
   du tableau.
 
-### § 5.3 — Les partenaires : un hall à trois portes
+### § 6.3 — Les partenaires : un hall à trois portes
 
 **La page n'est plus un annuaire, c'est un suivi d'engagements.** Le carnet n'a
 pas disparu : ces contacts vivent toujours dans le réseau de Yuno, qui est la
@@ -1328,7 +1509,7 @@ même table.
   plaque BLANCHE (ceux du club sont dessinés pour du papier). Sans logo, la
   tuile porte le nom sur une plaque pointillée.
 
-### § 5.4 — Les décisions de Noé, avec leur raison
+### § 6.4 — Les décisions de Noé, avec leur raison
 
 **Celles qui ont fait un aller-retour sont marquées ⟲ : une session future ne
 doit pas les « corriger » en croyant bien faire.**
@@ -1358,7 +1539,7 @@ doit pas les « corriger » en croyant bien faire.**
   n'ont pas de commission ; le secrétariat, la trésorerie, la buvette et la
   présidence n'ont pas de pôle.
 
-### § 5.5 — Ce qui a été vérifié, et comment
+### § 6.5 — Ce qui a été vérifié, et comment
 
 - `node tools/verifier-organigramme-fch.js` — **44 fiches, 23 groupes** :
   photos, cadrages carrés, rôles, cache, un portrait par personne, absence de
@@ -1376,7 +1557,7 @@ doit pas les « corriger » en croyant bien faire.**
 - **Aucun logo ni montant privé dans le code public** : contrôlé par `grep`
   avant chaque commit.
 
-### § 5.6 — Les pièges payés (ils ne se devinent pas)
+### § 6.6 — Les pièges payés (ils ne se devinent pas)
 
 1. **`var()` sur un jeton INEXISTANT annule toute la déclaration, en silence.**
    `--espace-20` n'existe pas (l'échelle est 4, 8, 12, 16, 24, 32, 48) :
@@ -1400,9 +1581,9 @@ doit pas les « corriger » en croyant bien faire.**
    désignait à la fois l'offre d'un partenaire et une carte du catalogue. Le
    grep de trois secondes vaut aussi à l'intérieur d'un fichier neuf.
 
-### § 5.7 — PAR OÙ REPRENDRE (du plus périssable au moins pressé)
+### § 6.7 — PAR OÙ REPRENDRE (du plus périssable au moins pressé)
 
-> **DÉPASSÉ — lire le § 4.6.** Les points 1 et 7 sont clos (poussé, déploiement
+> **DÉPASSÉ — lire le § 5.6.** Les points 1 et 7 sont clos (poussé, déploiement
 > vérifié), le point 6 est à moitié clos (l'état d'un partenaire se change
 > désormais). Les autres restent ouverts et sont repris là-haut.
 
@@ -1438,7 +1619,7 @@ doit pas les « corriger » en croyant bien faire.**
    de « virement en attente » à « partenaire du club ».
 7. **Le déploiement GitHub Pages reste à vérifier** après le push.
 
-### § 5.8 — Ce qui est TRANCHÉ et sort des questions ouvertes
+### § 6.8 — Ce qui est TRANCHÉ et sort des questions ouvertes
 
 - **« Qui fait quoi » n'est plus une question ouverte de nommage** : la page
   s'appelle « Les organigrammes », partout.
@@ -1453,7 +1634,7 @@ doit pas les « corriger » en croyant bien faire.**
 - **Les portraits de l'organigramme ne sont plus des découpes** : les cinq
   photos de groupe et `kepo.png` ont été supprimées du dépôt.
 
-## § 6 — Relais du 16 septembre, APRÈS-MIDI (FCH, tuiles et organigrammes)
+## § 7 — Relais du 16 septembre, APRÈS-MIDI (FCH, tuiles et organigrammes)
 
 ### État final — 16 septembre 2026
 
@@ -1537,7 +1718,7 @@ mise en documentation, son commit et son push ; ce relais accompagne ce lot.
 
 ### Historique précédent
 
-## § 7 — Relais du 16 septembre, MATIN (Créer refondue, le morph du « + », le clavier, le dock)
+## § 8 — Relais du 16 septembre, MATIN (Créer refondue, le morph du « + », le clavier, le dock)
 
 **Historique antérieur au relais FCH ci-dessus.** Sept chantiers, dont quatre
 nés d'un défaut que Noé a vu sur son téléphone. **Tout est commité et poussé**,
@@ -1555,7 +1736,7 @@ et GitHub Pages a construit chacun des sept.
 - Aperçu : `http://localhost:50648`. Le port change d'une session à l'autre,
   **vérifier avec `preview_list` plutôt que de supposer**.
 
-### § 1 — `#yuno/creer` : elle ne gère plus rien, elle inspire et elle ouvre
+### § 2 — `#yuno/creer` : elle ne gère plus rien, elle inspire et elle ouvre
 
 Le détail, avec ses raisons, est dans **`docs/yuno-spec.md`, « `#yuno/creer` —
 l'atelier d'inspiration »**. Ce qu'il faut savoir ici :
@@ -1804,7 +1985,7 @@ sa raison finit toujours par en casser une autre.*
 
 ---
 
-## § 8 — Relais du 15 septembre, SOIR (l'accueil de Yuno, les modèles, les préparations)
+## § 9 — Relais du 15 septembre, SOIR (l'accueil de Yuno, les modèles, les préparations)
 
 **Elle a été remplacée en tête par « Relais — 16 septembre ».** Quatre chantiers,
 tous sur le site Yuno, tous menés par des demandes de Noé corrigées au fil de l'écran.
@@ -1825,7 +2006,7 @@ tous sur le site Yuno, tous menés par des demandes de Noé corrigées au fil de
   module). *Ce point est réglé depuis le 16 septembre — le hub se recharge seul ;
   voir « Relais — 16 septembre », § F.*
 
-### § 1 — L'ACCUEIL DU SITE YUNO : deux blocs fixes, et un classement
+### § 2 — L'ACCUEIL DU SITE YUNO : deux blocs fixes, et un classement
 
 Le détail, avec ses raisons, est dans **`docs/yuno-spec.md`, « `#yuno` —
 l'accueil du site »**. Ce qu'il faut savoir ici :
@@ -1997,7 +2178,7 @@ Détail dans **`yuno-spec.md`, « `#yuno/preparations` »**.
 ---
 
 
-## § 9 — Relais du 15 septembre, après-midi (navigation, typographie, événements)
+## § 10 — Relais du 15 septembre, après-midi (navigation, typographie, événements)
 
 Cette section décrit la session la plus récente et prime sur les descriptions
 historiques de navigation et de typographie plus bas dans ce document.
@@ -2052,7 +2233,7 @@ historiques de navigation et de typographie plus bas dans ce document.
 ---
 
 
-> **Reprise immédiate : section « Relais — 15 septembre, après-midi » ci-dessous, puis § 6 bis pour les chantiers antérieurs.**
+> **Reprise immédiate : section « Relais — 15 septembre, après-midi » ci-dessous, puis § 7 bis pour les chantiers antérieurs.**
 >
 > Ce document dit **où en est le hub** — `CLAUDE.md` dit ce qu'il doit être, et
 > les deux cahiers des charges (`yuno-spec.md`, `fch-spec.md`) font autorité sur
@@ -2060,60 +2241,60 @@ historiques de navigation et de typographie plus bas dans ce document.
 > [orientation-spec.md](orientation-spec.md). À relire au début d'une session,
 > à mettre à jour à la fin.
 >
-> **§ 2 raconte la dernière session** (15 septembre), en six chantiers :
+> **§ 3 raconte la dernière session** (15 septembre), en six chantiers :
 >
-> - **§ 1.1 — les MODÈLES DE MESSAGES de Yuno**, remplacés en base par quatre
+> - **§ 2.1 — les MODÈLES DE MESSAGES de Yuno**, remplacés en base par quatre
 >   textes de Noé ; l'ancienne « Relance courtoise » n'a pas de remplaçant ;
-> - **§ 1.2 — la BARRE DU HUB s'affichait sur les deux sites** depuis le 29 août :
+> - **§ 2.2 — la BARRE DU HUB s'affichait sur les deux sites** depuis le 29 août :
 >   un élément déplacé emporte les règles qui le visaient ;
-> - **§ 1.3 — « MESSAGE ENVOYÉ » revient chaque semaine**, quel que soit l'état de
+> - **§ 2.3 — « MESSAGE ENVOYÉ » revient chaque semaine**, quel que soit l'état de
 >   la fiche — un compteur qu'on ne peut nourrir qu'une fois ne compte plus rien ;
-> - **§ 1.4 — `#perso` DEVIENT UN HALL** : plus rien ne s'y coche, quatre portes
+> - **§ 2.4 — `#perso` DEVIENT UN HALL** : plus rien ne s'y coche, quatre portes
 >   montrent l'état des pages qu'elles ouvrent, et la page coûte dix requêtes au
 >   lieu de vingt et une ;
-> - **§ 1.5 — le SITE YUNO prend la logique du hub** : son menu, cinq vitrines de
+> - **§ 2.5 — le SITE YUNO prend la logique du hub** : son menu, cinq vitrines de
 >   portes, et les contours de tuiles retirés ;
-> - **§ 4.6 — les ÉCRANS DU CAP s'ouvrent DANS le site** (`#yuno/cap`,
+> - **§ 5.6 — les ÉCRANS DU CAP s'ouvrent DANS le site** (`#yuno/cap`,
 >   `#yuno/objectif/<id>`, `#yuno/projet/<id>`, `#yuno/taches`) — ce sont les
 >   modules du hub, montés dans le site, pas des copies.
 >
-> **TROIS DÉCISIONS ONT FAIT UN ALLER-RETOUR dans la session** (§ 1.3, § 1.4,
-> § 4.6) : le bouton « Message envoyé », l'aperçu des habitudes, et surtout **la
+> **TROIS DÉCISIONS ONT FAIT UN ALLER-RETOUR dans la session** (§ 2.3, § 2.4,
+> § 5.6) : le bouton « Message envoyé », l'aperçu des habitudes, et surtout **la
 > fenêtre d'objectif de Yuno, essayée puis retirée** — les caps ont une PAGE,
 > comme dans le hub. **À lire avant de « corriger » l'un des trois.**
-> **§ 4.7** dit les sept pièges re-payés, **§ 1.8** les huit écritures de test
+> **§ 5.7** dit les sept pièges re-payés, **§ 2.8** les huit écritures de test
 > faites et défaites en base réelle.
 >
-> **§ 0 ante zero raconte le 7 septembre**, en cinq chantiers : les FILMS ET LES
+> **§ 1 ante zero raconte le 7 septembre**, en cinq chantiers : les FILMS ET LES
 > SÉRIES entrent dans la bibliothèque, qui devient un hall à deux portes ; les
 > AFFICHES rapatriées de Wikipédia ; le MENU gagne un rang ; le BILAN du dimanche
-> compte enfin le terrain ; l'HUMEUR quitte l'accueil. **Son § 1.3 liste cinq
+> compte enfin le terrain ; l'HUMEUR quitte l'accueil. **Son § 2.3 liste cinq
 > corrections de Noé** — à lire avant de toucher au menu.
 >
-> **§ 0 ante raconte les 2–4 septembre** : les PAGES DE DÉTAIL
+> **§ 1 ante raconte les 2–4 septembre** : les PAGES DE DÉTAIL
 > (`#projet/<id>`, `#objectif/<id>`, `#habitude/<id>`, les vues « 3 mois » et
 > « Année »), puis la BIBLIOTHÈQUE. **Les deux dépliages sur place ont disparu de
 > `#objectifs` ce jour-là** — c'est la décision que la fenêtre de Yuno avait
 > oubliée douze jours plus tard.
 >
-> **§ 0 ante bis** le 1er septembre après-midi et soir (l'algorithme des blocs
+> **§ 1 ante bis** le 1er septembre après-midi et soir (l'algorithme des blocs
 > tient ses quotas ; « Ma semaine » garde ce qu'on y arrange ; « Mes journées »
-> devient un journal). **Son § 1.9 liste les décisions qui ont fait un
+> devient un journal). **Son § 2.9 liste les décisions qui ont fait un
 > aller-retour** — il y en a beaucoup : **à lire avant de « corriger » quoi que
 > ce soit dans la tuile d'une journée ou dans les blocs.**
 >
-> **§ 0 ante ter** le 31 août – 1er septembre au matin (le calendrier change de
-> grammaire, les blocs de « Ma semaine » naissent), **§ 0 ante quater** le 30–31
+> **§ 1 ante ter** le 31 août – 1er septembre au matin (le calendrier change de
+> grammaire, les blocs de « Ma semaine » naissent), **§ 1 ante quater** le 30–31
 > août au soir (« Ma semaine » naît, les tuiles d'ajout passent en pastilles),
-> **§ 0 ante quinquies** le 30 dans la journée (le FCH prend sa charte, perso
-> refond ses habitudes), **§ 0 ante sexies** le 29 au soir (perso devient un
-> espace vivant), **§ 0 ante septies** le 29 dans la journée (l'accueil refondu),
-> **§ 0 ante octies** le 28 au soir (la navigation à deux rangs), **§ 0 ante
-> nonies** le 28 dans la journée, **§ 0 ante decies** le 27 après-midi,
-> **§ 0 ante undecies** le 27 au matin, **§ 0 ante duodecies** le 26,
-> **§ 0 ante terdecies** les 24–25, **§ 0 ante quaterdecies** le 24,
-> **§ 0 ante quindecies** le 21, **§ 0 ante sexdecies** le 15,
-> **§ 0 ante septdecies** les 14–15. Les § 3 et suivants décrivent l'état stable
+> **§ 1 ante quinquies** le 30 dans la journée (le FCH prend sa charte, perso
+> refond ses habitudes), **§ 1 ante sexies** le 29 au soir (perso devient un
+> espace vivant), **§ 1 ante septies** le 29 dans la journée (l'accueil refondu),
+> **§ 1 ante octies** le 28 au soir (la navigation à deux rangs), **§ 1 ante
+> nonies** le 28 dans la journée, **§ 1 ante decies** le 27 après-midi,
+> **§ 1 ante undecies** le 27 au matin, **§ 1 ante duodecies** le 26,
+> **§ 1 ante terdecies** les 24–25, **§ 1 ante quaterdecies** le 24,
+> **§ 1 ante quindecies** le 21, **§ 1 ante sexdecies** le 15,
+> **§ 1 ante septdecies** les 14–15. Les § 4 et suivants décrivent l'état stable
 > et les chantiers antérieurs.
 
 ## 0. La session du 15 septembre 2026 — PERSO DEVIENT UN HALL, ET YUNO PREND LA LOGIQUE DU HUB
@@ -2123,11 +2304,11 @@ historiques de navigation et de typographie plus bas dans ce document.
 7 septembre qui dormait non commité.
 
 **AUCUNE MIGRATION.** La base n'a pas changé de forme ; elle a changé de CONTENU
-en un endroit (§ 0.1).
+en un endroit (§ 1.1).
 
 **`sw.js` est passé de v21 à v23**, en deux fois.
 
-**UN FICHIER NEUF** : `js/cap-adresses.js` (43 lignes) — voir § 3.6.
+**UN FICHIER NEUF** : `js/cap-adresses.js` (43 lignes) — voir § 4.6.
 
 ---
 
@@ -2365,7 +2546,7 @@ d'intro de la banque. Trois exceptions du même type existaient déjà pour
 |---|---|
 | `20260907120000_films_series.sql` | `films`, `films_seances`, `films_citations`, le bucket privé `affiches` et ses quatre politiques, RLS et grants |
 
-**UN OUTIL DE PLUS** : `tools/affiches-films.py` — voir § 0.2.
+**UN OUTIL DE PLUS** : `tools/affiches-films.py` — voir § 1.2.
 
 **`sw.js` est passé de v18 à v21**, en trois fois. C'est ce qui fait qu'un
 correctif arrive dès la PREMIÈRE ouverture au lieu de la seconde : la coquille
@@ -2661,7 +2842,7 @@ chargeait plus. `node tools/verifier-gabarits.js` l'a vu et nommé la ligne.
 
 ### 0.9 Ce qui attend une réponse de Noé
 
-Les questions ouvertes vivent au **§ 5 bis**, avec ce que la session a tranché :
+Les questions ouvertes vivent au **§ 6 bis**, avec ce que la session a tranché :
 c'est là qu'on reprend, et une liste à deux endroits finit par ne plus dire la
 même chose.
 
@@ -3976,7 +4157,7 @@ entier, et elles se lisent maintenant comme la tuile de capture.
 
 **Le rythme compte pour comprendre le document** : la seconde moitié s'est faite
 en une quinzaine de corrections successives, souvent d'une phrase, et **plusieurs
-se sont renversées**. Le § 3.7 les liste — à lire avant de « corriger » quoi que
+se sont renversées**. Le § 4.7 les liste — à lire avant de « corriger » quoi que
 ce soit dans les tuiles d'ajout.
 
 ### 0.1 « MA SEMAINE » — le rendez-vous du dimanche devient une page
@@ -4042,7 +4223,7 @@ Squelette, écouteurs, données — dans cet ordre.
 `brancherDeplacement` et sont exportés ; le glissement vers le vivier passe par
 une option `zones` de cette même fonction, pas par une seconde mécanique.
 
-*Ce qui a été vérifié de cette page, et ce qui ne l'a pas été : § 0.8, qui
+*Ce qui a été vérifié de cette page, et ce qui ne l'a pas été : § 1.8, qui
 couvre la session entière.*
 
 ### 0.2 LA GRILLE DE « MA SEMAINE » SAIT AUSSI AJOUTER, ET CE QUI EST POSÉ SE ROUVRE
@@ -4335,7 +4516,7 @@ chemin à l'envers.
 | Un **seul bleu mêlé au gris** pour la cadence d'une habitude | **Sept bleus différents** (202° → 227°, clarté 78 → 64 %). « Là c'est juste la saturation qui est modifiée » : mélanger une couleur à du gris n'en change pas la teinte. |
 | Un **bandeau complet** sur l'accueil (titre, dates, phrase, bouton) | **Un bouton, et rien d'autre** : « Programmer ma semaine ». Trois lignes pour un seul geste. |
 | La page nommée **« Programmer la semaine »** | **« Ma semaine »** — un seul nom dans le `<h1>`, l'onglet et le menu. Le verbe reste sur le bouton : un bouton dit ce qui va se passer, un titre nomme ce qu'on regarde. |
-| La grille de « Ma semaine », **pure surface de placement** | **On y rouvre ce qui est posé** (§ 0.2). |
+| La grille de « Ma semaine », **pure surface de placement** | **On y rouvre ce qui est posé** (§ 1.2). |
 | Le vivier en **deux groupes titrés** (« Sans date », « Restées ouvertes ») | **Une seule liste**, les glissées en tête, **la date de leur ancien jour à droite** — elle dit ce que les titres disaient, sans coûter deux lignes. |
 | **« Sans famille » en accent, « intendance » en gris** | **Inversé.** Le gris va à l'absence de choix, la couleur au choix. |
 
@@ -4352,7 +4533,7 @@ d'avant à chaque fois — il n'y a pas de base de bac à sable.
   formulaire pré-rempli, enregistrement — la fenêtre se referme et la base garde
   les mêmes valeurs. **Et sur le calendrier**, sur un ÉVÉNEMENT, qui passe par
   la branche la plus fournie de `corriger` — c'est le test qui valide le
-  déménagement du § 0.3.
+  déménagement du § 1.3.
 - **L'horaire, en aller-retour complet** : 18:00 posé sur une tâche → écrit
   `18:00:00`, la barre affiche l'heure devant le titre ; rouvert → pré-rempli ;
   vidé → `NULL`.
@@ -4423,16 +4604,16 @@ La session s'est jouée en deux temps sans rapport l'un avec l'autre : d'abord l
 **lecture du dossier FCH de Noé et de son Drive**, qui a fourni la plupart des
 réponses que le site cherchait depuis le 7 août ; ensuite une **refonte des
 habitudes** menée par petites corrections successives, dont plusieurs se sont
-renversées en cours de route (le § 3.7 CI-DESSOUS — celui de cette
-section-ci, pas celui du § 1 — à lire avant d'y toucher).
+renversées en cours de route (le § 4.7 CI-DESSOUS — celui de cette
+section-ci, pas celui du § 2 — à lire avant d'y toucher).
 
-*La soirée du même jour a sa section à elle, § 1 : elle n'a rien à voir avec
+*La soirée du même jour a sa section à elle, § 2 : elle n'a rien à voir avec
 celle-ci.*
 
 ### 0.1 LE DOSSIER FCH RÉPOND AUX QUESTIONS OUVERTES DU CAHIER DES CHARGES
 
 Noé a donné accès à son dossier `~/Documents/FCH` (15 180 fichiers) et à son
-Drive. Trois des quatre questions ouvertes de `fch-spec.md` § 8 y avaient leur
+Drive. Trois des quatre questions ouvertes de `fch-spec.md` § 9 y avaient leur
 réponse. **Le club avait déjà écrit ce que le site essayait de deviner.**
 
 **LES RUBRIQUES ÉDITORIALES.** Le spec proposait « avant-match, portrait de
@@ -4588,7 +4769,7 @@ sur la page de gestion il le **précède**, parce qu'on y vient lire une cadence
 un pourquoi.
 
 **LES HABITUDES ONT QUITTÉ L'ACCUEIL** — décision prise le soir même où elles y
-étaient arrivées (§ 0 ante ter). Même mouvement que les objectifs la veille :
+étaient arrivées (§ 1 ante ter). Même mouvement que les objectifs la veille :
 l'accueil porte ce qui est POSÉ, et **une habitude n'est posée de rien, elle
 revient**.
 
@@ -4966,7 +5147,7 @@ distingue ce tableau de bord d'un second accueil.
   fois le jour ouvert), la hauteur de la grille.
 - **Le balayage** : onze cas, dont les deux sens, les deux bords, le rail au
   début et au bout, le menu ouvert, la tuile de capture. **Mais tous simulés** —
-  voir la leçon du § 0 ante quater, point 4.
+  voir la leçon du § 1 ante quater, point 4.
 - **Toutes les données d'essai ont été retirées** : `habitudes_faits`,
   `livres`, `livres_seances`, `livres_citations`, `journees` sont vides, les
   étapes d'essai supprimées, l'ordre des jalons de « Laisser une com » remis
@@ -5391,7 +5572,7 @@ qu'`origin/main`.
 **La session a été conduite par l'œil de Noé, pas par une liste.** Une seule
 demande a été posée au départ (la pastille famille) ; tout le reste est né d'un
 échange serré — il regardait, il disait « trop gros », « trop de place », « plus
-discret », et la forme se refaisait. D'où beaucoup d'allers-retours, et une § 0 ante quater, point 1
+discret », et la forme se refaisait. D'où beaucoup d'allers-retours, et une § 1 ante quater, point 1
 plus longue que d'habitude : ce sont eux qui portent le sens.
 
 ### 0.1 Les décisions qui ont fait un ALLER-RETOUR
@@ -5824,14 +6005,14 @@ première et la dernière dit tout de la méthode :
 
 | # | Demande | Ce qu'elle a donné |
 |---|---|---|
-| 1 | « la répétition pour les publications » | § 2 |
-| 2 | « et la durée pour les tâches » | § 2 |
-| 3 | « la durée à la main en minutes, propositions de 1 h à 3 h » | § 2 |
-| 4 | « pour les événements : pas de 30 min, 1 h à 4 h, ou toute la journée » | § 2 |
-| 5 | « Aujourd'hui : aussi les événements et les publications » | § 3 |
-| 6 | « la durée doit être disponible partout » | § 4 |
-| 7 | « l'état d'une publication : pareil sur les trois calendriers » | § 5 |
-| 8 | « les titres des barres en Gilroy » | § 6 |
+| 1 | « la répétition pour les publications » | § 3 |
+| 2 | « et la durée pour les tâches » | § 3 |
+| 3 | « la durée à la main en minutes, propositions de 1 h à 3 h » | § 3 |
+| 4 | « pour les événements : pas de 30 min, 1 h à 4 h, ou toute la journée » | § 3 |
+| 5 | « Aujourd'hui : aussi les événements et les publications » | § 4 |
+| 6 | « la durée doit être disponible partout » | § 5 |
+| 7 | « l'état d'une publication : pareil sur les trois calendriers » | § 6 |
+| 8 | « les titres des barres en Gilroy » | § 7 |
 
 ### 1. Les publications se répètent, et les tâches ont une durée
 
@@ -6007,7 +6188,7 @@ Aucun n'a été introduit ici ; tous dormaient depuis un ou deux jours.
 1. **Le rond d'une publication n'avançait pas dans l'espace Calendrier.** Sa
    branche était écrite **après** celle qui ouvre le détail, et le rond est
    *dans* la barre : `[data-element]` l'attrapait le premier. Corrigé d'abord
-   par un déplacement de branche, puis proprement par la phase de capture (§ 5).
+   par un déplacement de branche, puis proprement par la phase de capture (§ 6).
 2. **La tuile ne pré-remplissait pas le champ « Heure ».** Rouvrir une tâche de
    18 h et l'enregistrer sans y toucher lui **retirait son heure**.
 3. **La répétition d'une tâche disparaissait à la réouverture**, dans l'espace
@@ -6870,11 +7051,11 @@ profondeur ; le hub n'a été touché qu'aux endroits qu'il partage.
 
 | Chantier | Où le lire |
 |---|---|
-| **Les Préparations** — feuilles avant/pendant/après, modèles éditables, bilan | § 1 bis |
-| **La fusion moments ↔ événements** : une sortie, deux faces (prévue, vécue) | § 1 ter |
-| **Créer refondue** : le pipeline d'une idée, et sa forme | § 1 quater |
-| **L'identité de Yuno** : trois couleurs, Gilroy Heavy, titres réduits | § 1 quinquies |
-| **Ce qui a été retiré** : rendez-vous stats, « Œuvre finie », doublons | § 1 sexies |
+| **Les Préparations** — feuilles avant/pendant/après, modèles éditables, bilan | § 2 bis |
+| **La fusion moments ↔ événements** : une sortie, deux faces (prévue, vécue) | § 2 ter |
+| **Créer refondue** : le pipeline d'une idée, et sa forme | § 2 quater |
+| **L'identité de Yuno** : trois couleurs, Gilroy Heavy, titres réduits | § 2 quinquies |
+| **Ce qui a été retiré** : rendez-vous stats, « Œuvre finie », doublons | § 2 sexies |
 
 ### Cinq choses à savoir avant de continuer
 
@@ -6892,7 +7073,7 @@ profondeur ; le hub n'a été touché qu'aux endroits qu'il partage.
 4. **L'écran passe devant le réseau** partout où le geste tient en un clic
    (`js/ecriture.js` — ne pas la recopier). Les formulaires font exception.
 5. **Le FCH reste mis de côté** par Noé — ne pas l'entamer par petites touches
-   (§ 4). Yuno, lui, a occupé toute la session du 15 (§ 0 ante duodecies).
+   (§ 5). Yuno, lui, a occupé toute la session du 15 (§ 1 ante duodecies).
 
 ### L'état de la base, au soir du 15 août
 
@@ -7048,7 +7229,7 @@ Toujours sur décision de Noé, et **jamais en détruisant des données** :
 > sont des bilans à deux colonnes, la table `materiel` et la colonne
 > `commandes.frais` sont apparues. **Le 28 août, `#objectifs` est devenu
 > « Le cap »** — deux galeries de tuiles, les périodes en pied de page — et il a
-> pris son onglet dans la barre (§ 0 ante quater, point 4).
+> pris son onglet dans la barre (§ 1 ante quater, point 4).
 >
 > **Le 29 août au soir, six tables sont nées** — `projets_etapes` (le découpage
 > déclaré d'un projet), `habitudes` et `habitudes_faits`, `livres`,
@@ -7119,7 +7300,7 @@ filtres se cochent, et le « +N » déplie la journée.
 **Les événements peuvent se répéter** (chaque semaine, quinzaine, mois).
 *Depuis le 27 août, les occurrences sont de VRAIES LIGNES* reliées par
 `serie_id` — elles ne se déduisent plus à la lecture, et chacune se termine,
-se modifie et se supprime seule (§ 0 ante quinquies.1, point 1).
+se modifie et se supprime seule (§ 1 ante quinquies.1, point 1).
 
 **La grille de 24 h a été retirée de la vue semaine** (13 août, demande de Noé).
 Elle datait du 12 août et coûtait cher : vingt-quatre cases par jour, une
@@ -7353,7 +7534,7 @@ c'est ce qui a fait remonter la plupart des demandes de ces deux jours.
 **Le 28 août** : la famille écrite et corrigée sur ses quatre chemins, un jalon
 coché puis décoché (victoire créée puis retirée), un projet posé sans cap puis
 supprimé, les quatre états changés depuis la tuile — chaque fois relu en SQL, et
-chaque ligne d'essai retirée ensuite. Le détail est en § 0 ante quater, point 5.
+chaque ligne d'essai retirée ensuite. Le détail est en § 1 ante quater, point 5.
 
 **Les chemins d'écriture de Yuno l'ont été, en conditions réelles** (12 août) :
 une session était ouverte dans le navigateur de travail. Ont été exercés puis
@@ -7377,7 +7558,7 @@ La méthode reste la même pour l'affichage, et elle vaut d'être reprise :
   d'écriture de `formation` et `perso`. (Le 13 août a levé le reste : le cochage
   d'une tâche a été exercé pour de vrai — créée, cochée, décochée, supprimée,
   base relue en SQL à chaque étape — et le calendrier du FCH aussi, ce qui a
-  d'ailleurs révélé qu'il ne s'affichait pas du tout, cf. § 3 bis bis.)
+  d'ailleurs révélé qu'il ne s'affichait pas du tout, cf. § 4 bis bis.)
 
 **Les deux murs de photos ont été vérifiés ainsi** (12 août), avec de faux
 moments et des images SVG en 3:4 comme en 3:2, sans rien écrire en base :
@@ -7845,7 +8026,7 @@ pour la tuile de création.
 formulaire demandait « à quelle heure », `poser()` ne la transmettait pas ;
 même chose pour la publication. Yuno, lui, les faisait suivre — la fonction
 était recopiée dans deux espaces, et une seule copie avait été tenue à jour.
-C'est ce qui a décidé de mettre `poserAuCalendrier` en commun (§ 3 quater).
+C'est ce qui a décidé de mettre `poserAuCalendrier` en commun (§ 4 quater).
 
 **La flèche d'envoi se rallumait sur un champ vide**, juste après une création :
 un `disabled = false` sec dans un `finally`, qui défaisait l'extinction voulue.
@@ -8016,7 +8197,7 @@ suivante, avant que les modules ne tournent.
 Deux chantiers du 13 août, après une analyse demandée par Noé sur « la fluidité
 réelle et visuelle », surtout sur téléphone. Ce sont les deux qui changent la
 *nature* de la sensation ; le reste de l'analyse (fondu de navigation, squelette
-du calendrier, insertion locale après création) attend son tour — voir § 5 bis.
+du calendrier, insertion locale après création) attend son tour — voir § 6 bis.
 
 ### 1. Cocher une tâche ne passe plus par le réseau
 
@@ -8077,7 +8258,7 @@ réseau, et les trois applications se lancent hors ligne.
   (tables, auth, photos signées) et vers l'API GitHub est laissé au réseau, par
   un simple test d'origine. Un service worker qui garderait des données
   deviendrait une seconde source de vérité — exactement ce que le cache de
-  session s'interdit déjà (§ 3 ter).
+  session s'interdit déjà (§ 4 ter).
 - **La stratégie s'inverse en local.** En production : le cache d'abord, la
   version fraîche en arrière-plan pour l'ouverture suivante. Sur `localhost` :
   le réseau d'abord, le cache en secours. Sans cette inversion, chaque session
@@ -8247,7 +8428,7 @@ optimiste effacerait le tout pour n'afficher qu'une ligne d'excuse. **Le geste
 d'un clic gagne à devancer le réseau, la saisie d'un formulaire non.**
 
 **Deux compteurs demandaient un soin particulier**, parce qu'ils ne peuvent que
-monter (§ 6) : « Envoyé ✓ » et les victoires d'un jalon. L'envoi et la victoire
+monter (§ 7) : « Envoyé ✓ » et les victoires d'un jalon. L'envoi et la victoire
 s'affichent tout de suite, avec un identifiant provisoire — et **partent si
 l'écriture échoue**. Sans ça, un réseau coupé laisserait un message envoyé qui
 ne l'a pas été, ou un accomplissement qui n'a pas eu lieu.
@@ -8388,7 +8569,7 @@ d'abord que le serveur sert bien le fichier qu'on vient d'écrire.**
 
 ## 2 nonies. Deux points en attente, tranchés
 
-Les deux seuls du § 4 qui demandaient du travail plutôt qu'une réponse.
+Les deux seuls du § 5 qui demandaient du travail plutôt qu'une réponse.
 
 ### Le mot « carnet » ne désigne plus qu'une chose
 
@@ -8643,7 +8824,7 @@ passent après la semaine**. L'ordre affiché devient : en-tête et humeur,
 `dashboard.js`. Il retire le bloc du squelette, la source de la liste des
 requêtes, et fait taire le rendu. Le repasser à `true` rallume tout — c'est la
 même façon de faire que le réglage backlog/actif mis en sommeil le matin même
-(§ 3 quater).
+(§ 4 quater).
 
 **Ce qui continue de vivre sans lui, et qu'il fallait vérifier** : cocher une
 tâche crée toujours sa victoire en base, l'espace perso et le site du FCH les
@@ -8816,43 +8997,43 @@ La méthode qui a tenu toute la journée — exercer, relire en SQL, défaire, r
 **Ce que la session du 7 septembre a CLOS ici** — ne plus le reposer :
 - **Le bilan du dimanche ne comptait pas le terrain** — il pesait les durées
   déclarées et jamais les événements, alors que `chargeDeLaSemaine` les compte
-  depuis le 27 août. Deux comptes pour une même semaine (§ 0.4).
+  depuis le 27 août. Deux comptes pour une même semaine (§ 1.4).
 - **L'humeur était demandée à trois endroits** — l'accueil, la tête de `#perso`,
-  la tuile d'une journée. Elle ne se note plus qu'au bilan du jour (§ 0.5).
+  la tuile d'une journée. Elle ne se note plus qu'au bilan du jour (§ 1.5).
 - **Le menu portait vingt-quatre liens sous six titres** — quatre grands titres,
-  un seul groupe dépliant (§ 0.3).
+  un seul groupe dépliant (§ 1.3).
 - **Une page pouvait porter deux noms** — celui du menu et celui de son `<h1>`.
-  Les treize adresses renommées disent partout la même chose (§ 0.3).
-- **La bibliothèque ne rangeait que des livres** (§ 0.1).
+  Les treize adresses renommées disent partout la même chose (§ 1.3).
+- **La bibliothèque ne rangeait que des livres** (§ 1.1).
 
 **Ce que la session du 30–31 août (soir) a CLOS ici** — ne plus le reposer :
 - **« Le rendez-vous du dimanche dit la semaine et ne permet d'y rien poser »** —
   c'était le trou le plus visible de l'orientation, il est bouché : « Ma
-  semaine » (§ 0.1).
+  semaine » (§ 1.1).
 - **Le rendez-vous validait la MAUVAISE semaine** — il écrivait le lundi passé
   et revenait le lendemain matin. Corrigé par `pivotDeLaSemaine`.
 - **« La porte du dimanche passe devant »** — la règle était écrite depuis le
   29 août et le code ne la tenait pas. Il la tient.
 - **Un projet créé depuis la galerie ne pouvait plus JAMAIS être rattaché à un
-  cap** — la pastille « Objectifs servis » le fait (§ 3.6). Six des dix projets
+  cap** — la pastille « Objectifs servis » le fait (§ 4.6). Six des dix projets
   de Noé n'en servent aucun : c'est maintenant réparable.
 - **L'heure d'une tâche ou d'une publication ne se corrigeait nulle part** —
-  elle se posait à la capture et ne se rattrapait pas (§ 0.3).
+  elle se posait à la capture et ne se rattrapait pas (§ 1.3).
 - **`corriger` et `effacer` vivaient en double** dans l'accueil et le
   calendrier — ils vivent dans `calendrier-commun.js`.
-- **Le plafond de largeur de 1240 px** — retiré sur décision de Noé (§ 0.4). La
+- **Le plafond de largeur de 1240 px** — retiré sur décision de Noé (§ 1.4). La
   règle « la mise en page prend toute la largeur, le texte jamais » reste, et
   c'est elle qui rend la suppression possible.
 - **Ce qu'on pose depuis un calendrier** — c'est une **tâche** par défaut, plus
-  un événement (§ 0.3).
+  un événement (§ 1.3).
 - **L'échéance d'un objectif** — **obligatoire** au formulaire. Le jalon garde
   la sienne facultative.
 
 **Ce que la session du 28 août a CLOS ici** — ne plus le reposer :
 - **La colonne `famille` était vide et rien ne l'écrivait** — c'était le premier
-  trou de l'orientation, il est bouché (§ 0 ante quater, point 2). Le plancher perso peut compter.
+  trou de l'orientation, il est bouché (§ 1 ante quater, point 2). Le plancher perso peut compter.
 - **La question de la période** (« 45 h pour 35, qu'est-ce qui cède ? ») —
-  **retirée des deux écrans**, sur décision de Noé (§ 0 ante quater, point 1, point 1). Ne pas la
+  **retirée des deux écrans**, sur décision de Noé (§ 1 ante quater, point 1, point 1). Ne pas la
   remettre : elle a été posée, essayée avec une troisième porte, puis retirée.
 - **L'espace Objectifs empilé** — remplacé par « Le cap » et ses deux galeries.
 - **Un projet ne se modifiait pas une fois créé**, et **une période non plus** :
@@ -8866,24 +9047,24 @@ règle « une tâche répétée ne se termine pas » ; le compteur « publicatio
 sorties » aveugle aux séries ; les menus déroulants morts de l'espace Objectifs.
 
 **Ce que la session du 30 août a CLOS ici** — ne plus le reposer :
-- **Les rubriques éditoriales du club** (question n° 1 de `fch-spec.md` § 8) —
+- **Les rubriques éditoriales du club** (question n° 1 de `fch-spec.md` § 9) —
   **répondue** par l'arborescence du dossier FCH, puis corrigée par Noé. Ne pas
   réinventer « avant-match, portrait, coulisses ».
 - **La cible de revenus partenaires** — c'est **26 000 €**, donnée par Noé. Le
   document « Objectifs et planification Alternance FCH 2025/2026 » du Drive est
   celui de l'AN DERNIER : **obsolète, ne pas s'en servir.**
 - **La place des partenaires dans le travail de Noé** — tranchée : ce n'est PAS
-  sa mission principale (§ 0.1). Le hub n'est qu'un **affichage** du Google
+  sa mission principale (§ 1.1). Le hub n'est qu'un **affichage** du Google
   Sheet, rien ne s'y modifie, et une porte mène au fichier.
 - **« L'organisation club attend son contenu »** — `#hermitage/club` est rempli
-  (§ 0.5). La ligne correspondante a été retirée de `fch-spec.md` § 6.
+  (§ 1.5). La ligne correspondante a été retirée de `fch-spec.md` § 6.
 - **Le hub ne savait pas reconnaître un temps fort du club** — il ne le devine
   toujours pas, et c'est voulu : `temps_fort` est une déclaration.
 - **« Quand ça vient » comme cadence d'habitude** — supprimé, sur décision de
-  Noé. Ne pas le réintroduire (§ 0 ante quater, 0.7).
+  Noé. Ne pas le réintroduire (§ 1 ante quater, 0.7).
 - **« Je ne peux plus modifier une habitude »** — deux causes, les deux
   corrigées : le menu invisible, et surtout `brancherChoix` absent de `perso.js`
-  (§ 0.9). Ce second défaut **préexistait** et touchait aussi la famille d'une
+  (§ 1.9). Ce second défaut **préexistait** et touchait aussi la famille d'une
   habitude et le statut d'un livre.
 
 **Ce que la session du 29 août au soir a CLOS ici** — ne plus le reposer :
@@ -8893,7 +9074,7 @@ sorties » aveugle aux séries ; les menus déroulants morts de l'espace Objecti
 - **« Deux projets qui ne devraient plus être en cours »** (Deuxième dossier à
   3 sur 3, Présentation des catégories sans tâche) — la question ne se pose plus
   dans ces termes : **c'était la mesure qui mentait**, pas le classement. La
-  cascade l'a corrigée (§ 0 ante quater, point 1).
+  cascade l'a corrigée (§ 1 ante quater, point 1).
 - **« Un projet ne se mesurait que par ses tâches »** — remplacé par la cascade.
 - **L'ordre des jalons et des étapes** ne pouvait pas se changer ; il se change.
 - **Perso n'avait ni habitudes, ni lecture, ni bilan quotidien** — les trois
@@ -8915,7 +9096,7 @@ sorties » aveugle aux séries ; les menus déroulants morts de l'espace Objecti
 
 **Nées du 27 août, et toujours sans réponse** :
 - **D'où vient la durée de 5 minutes** sur « Contacter l'entreprise de Cedric
-  Facebook » ? Elle n'a pas été écrite volontairement (§ 0 ante quinquies.7).
+  Facebook » ? Elle n'a pas été écrite volontairement (§ 1 ante quinquies.7).
 - **Les trois lots écrits dans ses données** sont-ils justes : les cibles des
   projets FCH, les 62 rattachements par nom, les six livrables formation
   chiffrés 25/6/6 h ? Ce sont des propositions.
@@ -8937,7 +9118,7 @@ depuis, et carrousel, réel et story ont suffi. Le CHECK accepte toujours
 **Le cycle éditorial du club est tranché** (25 août) : trois états — à
 préparer, à programmer, publié — sur les valeurs que la base connaissait déjà.
 Ce qui reste à observer n'est pas une question ouverte mais un usage à
-regarder : l'étape du milieu sert-elle ? Voir § 5 bis, « Ensuite, écouter
+regarder : l'étape du milieu sert-elle ? Voir § 6 bis, « Ensuite, écouter
 l'usage ».
 
 
@@ -8952,7 +9133,7 @@ reste du hub :
    qu'il attend.
 
 *(La question des **4 objectifs de fin d'alternance** est close depuis le
-26 août — et la réponse a été **trois**, pas quatre : voir § 0 ante quinquies, point 1, pour
+26 août — et la réponse a été **trois**, pas quatre : voir § 1 ante quinquies, point 1, pour
 la raison. Ne pas en « rajouter » un quatrième.)*
 
 (La quatrième, les statuts de relation des partenaires, s'est réglée d'
@@ -8970,7 +9151,7 @@ une première accréditation) et les **clubs à cibler à froid**. Elles
 attendent des noms réels, pas du code.
 
 **Le mot « carnet » ne désigne plus qu'une chose** (tranché le 13 août) : le
-Carnet de terrain. La base de contacts s'appelle **le réseau** (§ 3 nonies).
+Carnet de terrain. La base de contacts s'appelle **le réseau** (§ 4 nonies).
 
 **Le bouton « + Ajouter un moment » de Yuno reste** (décision de Noé, 13 août
 2026). Il double la porte « Moment » de la tuile sur l'Accueil et le Journal,
@@ -8992,7 +9173,7 @@ l'usage :
     elles que « Ce que je te propose » va chercher, précisément parce que ce
     qui n'est jamais daté n'est jamais fait. La règle ne bouge pas ; ce qu'elle
     laissait dehors n'est plus perdu.
-11. **Plus un seul menu déroulant natif dans le hub** (13 août, § 3 nonies) :
+11. **Plus un seul menu déroulant natif dans le hub** (13 août, § 4 nonies) :
     le formulaire de modification du calendrier d'abord, puis les quatre autres
     à la demande de Noé — le moment, la fiche réseau, la commande et l'idée.
 
@@ -9002,7 +9183,7 @@ l'usage :
 
 Rien d'ouvert dans les deux cahiers des charges des sites. **`orientation-spec.md`
 a ses huit étapes faites** ; ce qui lui manque est de la matière, pas du code —
-voir § 5 bis, « Les quatre manques ». Restent des conforts :
+voir § 6 bis, « Les quatre manques ». Restent des conforts :
 
 - **Le site FCH grandira** : Noé annonce « beaucoup d'usages » et ne sait pas
   encore ce que contiendront marketing et organisation club. Ne rien inventer
@@ -9055,16 +9236,16 @@ qu'elles manquent** :
 couvertures), `affiches` (28 affiches, 2,7 Mo).
 
 **EN BASE** : 20 livres, 31 films, 3 séances de lecture, 0 séance de films,
-**4 modèles de messages** (les quatre nouveaux, § 0.1), 3 feuilles de
+**4 modèles de messages** (les quatre nouveaux, § 1.1), 3 feuilles de
 préparation. **Les huit écritures de test de la session ont toutes été
-défaites** — voir § 0.8, avec le détail de ce qui a été remis en état.
+défaites** — voir § 1.8, avec le détail de ce qui a été remis en état.
 
 **`sw.js` est en `v23`.** Deux versions franchies dans la session. **À BUMPER À
 CHAQUE DÉPLOIEMENT QUI TOUCHE LA COQUILLE** : sans ça, un appareil installé sert
 l'ancien JS une fois.
 
 **`.impeccable/config.json`** porte une exception de plus : `side-tab` sur
-`css/yuno.css` (§ 0.9). Une phrase de Noé suffit à la retirer.
+`css/yuno.css` (§ 1.9). Une phrase de Noé suffit à la retirer.
 
 **SEPT PIÈGES D'OUTILLAGE, tous payés au moins une fois** — les quatre premiers
 sont anciens, les trois derniers datent de cette session :
@@ -9094,7 +9275,7 @@ construit dans la session n'a encore servi un vrai soir.
 
 1. **LE PREMIER SOIR AVEC `#perso` EN HALL.** Quatre questions, et la première
    est la plus importante : **les habitudes ne s'y cochent plus du tout**
-   (§ 0.4) — Noé les coche-t-il vraiment dans le bilan du jour, ou cesse-t-il de
+   (§ 1.4) — Noé les coche-t-il vraiment dans le bilan du jour, ou cesse-t-il de
    les cocher faute de les avoir sous les yeux ? *Si elles cessent d'être
    cochées, c'est la décision d'aujourd'hui qu'il faut rouvrir, pas l'écran.*
    Ensuite : **l'aperçu des séries en barres** donne-t-il envie (il a déjà été
@@ -9118,7 +9299,7 @@ construit dans la session n'a encore servi un vrai soir.
 
 4. **LE PREMIER LUNDI DE PASSERELLE avec le nouveau « Message envoyé ».** Le
    bouton revient chaque semaine pour TOUS les contacts, y compris ceux en
-   contact établi (§ 0.3). Deux questions : **le bouton qui n'avance rien** (sur
+   contact établi (§ 1.3). Deux questions : **le bouton qui n'avance rien** (sur
    un contact établi) se comprend-il, ou faut-il qu'il le dise ; et **quatre
    modèles au lieu de trois** — celui du club à domicile est neuf.
 
@@ -9156,7 +9337,7 @@ construit dans la session n'a encore servi un vrai soir.
 
 10. **LA GRILLE AU DOIGT, toujours pas éprouvée.** Deux points à surveiller :
     **un bloc court n'est plus une cible de 24 px** (sa hauteur vaut sa durée,
-    décision assumée du § 0 ante ter, 0.5), et le chemin tactile de la
+    décision assumée du § 1 ante ter, 0.5), et le chemin tactile de la
     programmation (choisir la tâche, puis toucher le jour) n'a jamais été
     essayé. **Un geste tactile ne se vérifie pas en simulant des événements** —
     la leçon du 29 août tient.
@@ -9167,7 +9348,7 @@ construit dans la session n'a encore servi un vrai soir.
 
 12. **UN VRAI MATIN AVEC LES HABITUDES — sur LEUR page, désormais.** *Le point a
     changé de terrain aujourd'hui : elles ne se cochent plus dans `#perso`
-    (§ 0.4), donc la question « la ligne de 32 px se coche-t-elle au pouce » ne
+    (§ 1.4), donc la question « la ligne de 32 px se coche-t-elle au pouce » ne
     vaut plus que pour `#perso/habitudes`.* Restent : **les deux séries en
     couleur** se lisent-elles sans qu'on ait appris le code (vert, bleu, jaune,
     or), et **la flamme récompense-t-elle** ou fait-elle du bruit à côté du
@@ -9184,7 +9365,7 @@ construit dans la session n'a encore servi un vrai soir.
 15. **LES GRAPHIQUES AVEC DE VRAIES DONNÉES.** La courbe des douze semaines vit
     sur la page des habitudes ; les sparklines ont quitté les cartes le
     2 septembre et ne restent que sur la page d'une habitude. **Et il y en a une
-    de plus depuis aujourd'hui** — les barres de séries du hall (§ 0.4). Même
+    de plus depuis aujourd'hui** — les barres de séries du hall (§ 1.4). Même
     question pour les deux : est-ce que ça **donne envie**, ou est-ce la maquette
     en points gris que Noé a déjà rejetée une fois ?
 
@@ -9197,7 +9378,7 @@ construit dans la session n'a encore servi un vrai soir.
 17. **LE SITE FCH SUR LE TÉLÉPHONE, en Gilroy et à la charte.** Le service worker
     sert la version précédente au premier lancement — **il faudra sans doute
     ouvrir deux fois** pour voir la bascule. *La barre d'onglets du hub n'y
-    apparaît plus depuis aujourd'hui (§ 0.2) : c'est la première chose à
+    apparaît plus depuis aujourd'hui (§ 1.2) : c'est la première chose à
     regarder.*
 
 18. **LE GOÛTER DE NOËL A ÉTÉ POSÉ SANS HEURE ET SANS « PHOTOS ».** L'heure
@@ -9205,7 +9386,7 @@ construit dans la session n'a encore servi un vrai soir.
     Noé — or « présentation des équipes » est manifestement un moment photo.
 
 19. **LES HUIT AUTRES DATES DE LA SAISON FCH ne sont pas en base**
-    (§ 0 ante quater, 0.1). Deux d'entre elles portent un « ou » (loto 13 **ou**
+    (§ 1 ante quater, 0.1). Deux d'entre elles portent un « ou » (loto 13 **ou**
     20 février, matinée saucisses 11 **ou** 18 avril) : ce sont des décisions du
     club, pas des dates à recopier.
 
@@ -9221,14 +9402,14 @@ Pour qu'une session future ne rouvre pas ce qui vient d'être fermé :
   **~~« Mon chemin » sur `#perso`~~** — écartés dans la même phrase. `#perso`
   est un HALL : il montre et il ouvre, il ne gère rien.
 - **~~« Les objectifs de Yuno en fenêtre »~~** — **essayé, écrit, puis RETIRÉ le
-  jour même** (§ 3.6). Noé : *« c'est pas du tout ça le fonctionnement des
+  jour même** (§ 4.6). Noé : *« c'est pas du tout ça le fonctionnement des
   objectifs sur le hub »*. Ils ont une PAGE. **C'est l'aller-retour le plus
   coûteux de la session : ne pas le refaire.**
 - **~~« La barre d'onglets du hub sur les deux sites »~~** — elle n'aurait jamais
   dû y être : la règle date du premier jour des sites, seul le sélecteur avait
-  vieilli (§ 0.2).
+  vieilli (§ 1.2).
 - **~~« Le bouton "Message envoyé" ne s'affiche pas pour tous les contacts »~~**
-  — tranché deux fois, et la seconde renverse la première (§ 0.3) : il revient
+  — tranché deux fois, et la seconde renverse la première (§ 1.3) : il revient
   **chaque semaine, pour tout le monde**, quel que soit l'état du contact.
 - **~~« Les tuiles de Yuno gardent leur contour »~~** — retirés, comme dans le
   hub le 30 août. Une tuile se distingue par sa SURFACE.
@@ -9240,7 +9421,7 @@ Pour qu'une session future ne rouvre pas ce qui vient d'être fermé :
 - **la suite de sa table de films**, si les deux captures ne l'épuisaient pas ;
 - **les trois affiches manquantes** (Fatal, Golo et Ritchie, Nous les Leroy) : à
   poser à la main, ou à laisser en pointillé ;
-- **l'humeur retirée de `#perso`** (§ 0 ante zero, 0.5) : c'est une lecture de sa
+- **l'humeur retirée de `#perso`** (§ 1 ante zero, 0.5) : c'est une lecture de sa
   phrase qui va un cran plus loin que le mot « accueil ». Une phrase suffit à la
   remettre ;
 - **les périodes et les tâches du cap dans le site Yuno** : la galerie `#yuno/cap`
@@ -9257,12 +9438,12 @@ Pour qu'une session future ne rouvre pas ce qui vient d'être fermé :
     PORTES », « LES TUILES N'ONT PLUS DE CONTOUR », et « LES ÉCRANS DU CAP,
     EMPRUNTÉS AU HUB ». **Cette dernière REMPLACE une section fausse**, « LES
     CAPS S'OUVRENT EN FENÊTRE », écrite deux heures plus tôt pour une forme que
-    Noé a refusée (§ 3.6). Une spec qui décrit du code retiré est pire qu'une
+    Noé a refusée (§ 4.6). Une spec qui décrit du code retiré est pire qu'une
     spec muette.
   - **`fch-spec.md` n'a pas été touché, et il reste exact.** Relu ce jour : il
     dit déjà, depuis le premier jour des sites, que sur `#hermitage`
     « l'habillage du hub disparaît : ni "Hub", ni onglets ». **C'était le CODE
-    qui avait vieilli, pas la spec** (§ 0.2) — le sélecteur visait `.haut`, et la
+    qui avait vieilli, pas la spec** (§ 1.2) — le sélecteur visait `.haut`, et la
     barre d'onglets en est sortie le 29 août.
 - **`orientation-spec.md` reste exacte elle aussi.** Elle dit que l'humeur est
   « observée, jamais un levier » (§ 10) : le fait qu'elle ait changé d'ÉCRAN le
@@ -9285,7 +9466,7 @@ Pour qu'une session future ne rouvre pas ce qui vient d'être fermé :
     formulaire déjà rempli ; il manque le titre et le jour de départ, qui sont
     des décisions.
 12. **LES CONTREPARTIES DES PACKS**, quand les partenaires seront branchés.
-    C'est la part de Noé dans les partenariats (§ 0 ante quater, 0.1), et elle se déduit du
+    C'est la part de Noé dans les partenariats (§ 1 ante quater, 0.1), et elle se déduit du
     pack. Chaîne à tenir : les vignettes et encarts partent dans le dossier de
     l'album, qui se boucle **six semaines avant la livraison**.
 
@@ -9293,13 +9474,13 @@ Pour qu'une session future ne rouvre pas ce qui vient d'être fermé :
 
 13. **La piste n° 1 de l'étude de marché** : croiser l'humeur et les habitudes.
     Les trois ingrédients existent (humeur du jour, habitudes cochées, famille de
-    chacune), rien à stocker, et personne ne les croise. § 0 ante quater, 0.10.
+    chacune), rien à stocker, et personne ne les croise. § 1 ante quater, 0.10.
 14. ~~**La régression de la barre d'onglets sur les deux sites.**~~ →
-    **RÉGLÉE le 15 septembre** (§ 0.2), en une ligne : le sélecteur visait
+    **RÉGLÉE le 15 septembre** (§ 1.2), en une ligne : le sélecteur visait
     `.haut`, dont la barre est sortie le 29 août. Ne pas rouvrir — mais **le
     point 17 des périssables reste** : personne ne l'a encore vue disparaître sur
     le téléphone, où le service worker sert une fois l'ancienne version.
-15. **La pastille « Photos » ne s'affiche pas sur les sites** (§ 0 ante quater, 0.5), défaut
+15. **La pastille « Photos » ne s'affiche pas sur les sites** (§ 1 ante quater, 0.5), défaut
     préexistant repéré en posant celle du temps fort. Une ligne, même motif.
 16. **`#hermitage/club` à l'usage.** Il ne sert à rien tant que Noé n'a pas
     besoin d'y chercher quelque chose — mais il sert l'objectif du 15 décembre.
@@ -9313,7 +9494,7 @@ Pour qu'une session future ne rouvre pas ce qui vient d'être fermé :
 
 19. **CE QUE LA SESSION DU 31 A LAISSÉ OUVERT.** Trois points, tous petits :
     - **la nature par défaut sur les DEUX SITES.** « Une tâche par défaut »
-      (§ 0 ante quater, 0.3) vaut maintenant aussi pour le calendrier du FCH et pour Yuno hors
+      (§ 1 ante quater, 0.3) vaut maintenant aussi pour le calendrier du FCH et pour Yuno hors
       vue éditoriale. Chez Yuno, les sorties sont la matière du site : si
       « Événement » y était le bon défaut, c'est une ligne dans le seul appel de
       `js/yuno.js`.
@@ -9330,11 +9511,11 @@ Pour qu'une session future ne rouvre pas ce qui vient d'être fermé :
     - ~~l'arbitrage entre « un bloc par jour » et « les quotas tenus »~~ →
       **RÉGLÉ.** Il n'y avait pas d'arbitrage à faire : c'étaient **trois
       défauts** de l'algorithme, pas une contradiction entre deux règles de Noé
-      (§ 0.1). Mesuré après correction : **club 26 h / 26, formation 15 h / 15**,
+      (§ 1.1). Mesuré après correction : **club 26 h / 26, formation 15 h / 15**,
       six jours entre 6 h 30 et 7 h 30. **Ne pas rouvrir cette question comme un
       arbitrage.**
     - ~~les blocs ne s'enregistrent pas~~ → **RENVERSÉ par Noé** le soir même.
-      L'arrangement se garde dans `semaines_blocs` (§ 0.2). Le motif d'origine
+      L'arrangement se garde dans `semaines_blocs` (§ 1.2). Le motif d'origine
       (« rien à maintenir ») tenait ; c'est son prix que l'usage a révélé.
     - **l'algorithme ne connaît que le club et la formation.** Yuno et perso
       n'ont pas de blocs proposés (décision de Noé) : leurs tâches se rangent
@@ -9355,7 +9536,7 @@ Pour qu'une session future ne rouvre pas ce qui vient d'être fermé :
       repli est un geste rare, il n'a pas besoin d'un état à tenir » — mais si
       Noé le referme tous les soirs, c'est cette décision qu'il faut rouvrir.
     - ~~**LA NOTE DU JOUR EST DEMANDÉE À DEUX ENDROITS.**~~ → **TRANCHÉ par Noé
-      le 7 septembre** (§ 0 ante zero, 0.5) : elle ne se note plus QUE dans le
+      le 7 septembre** (§ 1 ante zero, 0.5) : elle ne se note plus QUE dans le
       bilan du jour — ni sur l'accueil, ni en tête de `#perso`. La salutation,
       qui s'appuyait sur « humeur non notée », a pris un autre signal
       (`localStorage`). **Ne pas la remettre sur l'accueil** ; le point 7 des
@@ -9403,20 +9584,20 @@ rouvre pas en croyant bien faire :
 
 - **« La forme d'une barre de calendrier »**, qui attendait depuis l'étude UX
   des calendriers. Tranchée : trois natures, trois dessins, une seule police
-  (§ 0.2). Ne pas y remettre d'italique pour les publications — Noé l'a demandé
+  (§ 1.2). Ne pas y remettre d'italique pour les publications — Noé l'a demandé
   puis retiré le même soir.
 - **« Quelle police pour les barres »**. Instrument Sans avait été essayée,
   Gilroy régnait : c'est **Google Sans** qui l'emporte, sur les titres, les
-  heures et le décompte (§ 0.3). *La question « Gilroy sur le site du club »
-  était déjà close (§ 0 ante quater, 0.2) et ne bouge pas : Gilroy garde les
+  heures et le décompte (§ 1.3). *La question « Gilroy sur le site du club »
+  était déjà close (§ 1 ante quater, 0.2) et ne bouge pas : Gilroy garde les
   onglets, Google Sans prend les barres.*
 - **« Comment le hub propose-t-il une organisation de la semaine ? »**, posée
   depuis la naissance de « Ma semaine » et jamais traitée. Elle a maintenant une
-  réponse entière : `blocsDeLaSemaine` (§ 0.5). Ce qui reste ouvert n'est plus
+  réponse entière : `blocsDeLaSemaine` (§ 1.5). Ce qui reste ouvert n'est plus
   la question mais son réglage — voir le point 20.
 - **« Les cartes de "Ce que je vois" prennent trop de place »** : refondues en
   cartes de deux lignes, en colonnes, remontées entre le bilan et la grille
-  (§ 0.4).
+  (§ 1.4).
 - **La graisse du titre d'une tâche** (400 contre 500), qui traînait « en
   attente d'une décision de Noé ». La question n'a plus d'objet : le titre d'une
   barre est en Google Sans 400, celui d'une tuile du vivier dans la même police,
@@ -9754,16 +9935,16 @@ restaurée par le routeur. Ne pas « simplifier » ces id.
 | `js/app.js` | Routeur, session, coquille commune des trois entrées, **fond figé sous une tuile** |
 | `js/taches.js` | L'espace Tâches : la liste, la tuile de capture, la ligne de tâche empruntée par le dashboard |
 | `js/dashboard.js` | L'accueil : humeur, les tâches du jour (cochables, ouvrables), la semaine du calendrier (déplaçable), les objectifs. Victoires masquées |
-| `js/cache-session.js` | Le dernier état d'un espace, gardé le temps de l'onglet (§ 3 ter) |
-| `js/mouvements.js` | Ce qui vient d'apparaître dans une liste, et rien d'autre (§ 3 ter ter) |
+| `js/cache-session.js` | Le dernier état d'un espace, gardé le temps de l'onglet (§ 4 ter) |
+| `js/mouvements.js` | Ce qui vient d'apparaître dans une liste, et rien d'autre (§ 4 ter ter) |
 | `js/ecriture.js` | L'écran d'abord, le réseau ensuite — les trois formes de geste, et leur retour en arrière |
-| `sw.js` | La coquille en cache — HTML, CSS, JS, polices. **Jamais les données** : Supabase et GitHub lui échappent par un test d'origine (§ 3 ter ter) |
+| `sw.js` | La coquille en cache — HTML, CSS, JS, polices. **Jamais les données** : Supabase et GitHub lui échappent par un test d'origine (§ 4 ter ter) |
 | `js/vendor/` | supabase-js figé, rapatrié par `tools/telecharger-supabase.py`. Aucun CDN |
 | `tools/verifier-coquille.js` | La liste de `sw.js` contient-elle tout ce qui est référencé ? |
 | `js/api.js` | **Tous** les appels Supabase, une fonction par usage |
 | `js/gabarits.js` | Les gabarits partagés (fut la fabrique des pages d'espace) — dont `construireFormulaire`, la tuile volante des dix-sept formulaires |
 | `js/objectifs.js` | **« Le cap »** : la galerie des objectifs, celle des projets, les périodes en pied. Tout ce qui se règle du cap passe par là |
-| `js/orientation.js` | Le calcul de l'orientation — ni réseau, ni session, ni DOM. **`tensionDeLaPeriode` n'est plus affichée nulle part** (§ 0 ante quater, point 1), elle reste vraie |
+| `js/orientation.js` | Le calcul de l'orientation — ni réseau, ni session, ni DOM. **`tensionDeLaPeriode` n'est plus affichée nulle part** (§ 1 ante quater, point 1), elle reste vraie |
 | `js/publications.js` | Le calendrier éditorial, partagé Yuno/FCH — ce qui diffère passe en paramètre (cycle, checklist, piliers) |
 | `js/calendrier-commun.js` | L'assemblage de tout ce qui porte une date, les trois vues, le glissement et le clavier — **et la tuile « Poser au calendrier » avec `poserAuCalendrier` / `brancherCapture`, partagées par le hub, l'accueil et les deux sites** |
 | `js/yuno.js` | Le site Yuno : le Carnet de terrain, le réseau, la Passerelle, le rendez-vous stats |

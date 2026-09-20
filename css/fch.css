@@ -2612,6 +2612,51 @@ li.suivi-bilan-tuile,
   background: color-mix(in srgb, var(--pole-couleur, var(--club-rouge)) 34%, #142343);
 }
 
+/* L'AXE MONTE DANS LA TÊTE D'UN PÔLE (20 septembre 2026, demande de Noé) — la
+   raison est écrite dans js/projet-club.js, au-dessus de `ficheDomaine`.
+
+   LA LIGNE NE PORTE PLUS QUE LUI depuis que le rang est parti. Elle reste un
+   flex : sans lui, la pastille prendrait la largeur du bandeau et son filet
+   ferait une barre d'un bord à l'autre. */
+.pole-tete-rang {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-8);
+  margin: 0 0 6px;
+}
+
+/* ELLE PERD SON FOND SUR LE BANDEAU (20 septembre 2026, demande de Noé : « met
+   simplement un contour de la couleur de l'axe, pas de fond »).
+
+   Son fond à 18 % est dessiné pour le fond de la PAGE et se retrouve plus sombre
+   que la tête colorée : la pastille s'y lisait comme un trou creusé dedans. Un
+   FILET pose l'étiquette dessus sans rien creuser, et il dit la couleur de l'axe
+   aussi bien qu'un aplat — c'est déjà le dessin d'une pastille de la tuile de
+   capture : le filet porte la couleur, l'intérieur laisse voir ce qu'il y a
+   derrière.
+
+   ET ELLE PERD LES CAPITALES DE LA LIGNE : celles du rang sont le dessin d'un
+   libellé de section, pas celui d'une pastille — un nom d'axe se lit en toutes
+   lettres. */
+.valeur-tete .projet-club-axe-lien {
+  /* UN CRAN PLUS PETITE QU'AILLEURS (20 septembre 2026, demande de Noé) : sous
+     un nom de 2,8 rem, elle ne doit pas peser autant qu'une pastille posée dans
+     une liste — c'est le corps des pastilles de pôle, à trois pixels de là. */
+  padding: 3px 9px;
+  font-size: 0.6875rem;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #fff;
+  background: none;
+  border: 1px solid var(--pole-couleur);
+}
+
+.valeur-tete .projet-club-axe-lien:hover {
+  background: none;
+  border-color: color-mix(in srgb, var(--pole-couleur) 55%, #fff);
+}
+
 /* LES VISAGES D'UNE TUILE DE PÔLE (20 septembre 2026, demande de Noé) — les
    personnes qui y participent, responsable en tête et plus gros.
 

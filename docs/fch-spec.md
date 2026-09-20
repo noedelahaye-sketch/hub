@@ -1606,8 +1606,19 @@ reste.
    club doit confirmer ou infirmer : « MENELEC » est-il MAX ELEC ? « SOLUVIA »
    est-il SOLUWASTE ? *Des noms voisins ne sont pas le même partenaire, et un
    logo posé sur la mauvaise fiche se verrait au stade.*
-6. **Deux portraits différents portent le nom « Christophe Lucchetta »** dans
-   les exports du club. Le hub garde celui du bureau. À faire trancher.
+6. ~~**Deux portraits différents portent le nom « Christophe Lucchetta »**~~ —
+   **TRANCHÉ le 20 septembre 2026 par Noé** : « Christophe à mettre dans les
+   U13 ». Ce sont bien deux photos de lui, et chacune est celle de SON
+   organigramme — le crâne rasé au bureau, la barbe grise au sportif. La question
+   n'avait de sens que tant qu'une personne n'avait qu'un portrait.
+6 bis. **Le portrait par défaut de Lorenzo montre le visage de Loïc.** Découvert
+   le 20 septembre : `Bureau/Loïc.png` et `Bureau/Lorenzo.png` sont **deux
+   recadrages du même cliché**. Noé a confirmé que le vrai Lorenzo est l'homme
+   blond du dossier des commissions, où il est désormais juste. **Aux deux autres
+   endroits — l'onglet « Bureau et référents » et sa fiche — c'est toujours
+   Loïc.** Corriger demande de choisir quelle photo devient son portrait
+   principal, ou un export refait par le club. *Non corrigé : ça revient à
+   décider à sa place.*
 7. **Un partenaire ne se MODIFIE ni ne se SUPPRIME depuis l'écran.** Son ÉTAT se
    change d'un geste depuis le 16 septembre 2026 — c'était la moitié urgente de
    la question, celle d'un virement qui arrive. Le reste ne bouge pas : ni le
@@ -2281,3 +2292,220 @@ recherche et fiches vérifiées dans le navigateur, pas de débordement à 375 p
 Le vérificateur de coquille conserve son faux positif préexistant sur un SVG
 data URI ; les nouveaux modules et portraits sont bien dans la coquille.
 Modifications locales, non commitées et non poussées. Aucune écriture en base.
+
+---
+
+## Les visages, les missions, les pôles et les projets — 20 septembre 2026
+
+Huit demandes de Noé dans la même journée, toutes parties d'un défaut vu à
+l'écran. Le commit est `4f41788`.
+
+### Un portrait par organigramme
+
+**Le club exporte un dossier par organigramme** — bureau, commissions, sportif —
+et la pastille y prend la couleur de l'organigramme : rouge au bureau, bleue aux
+commissions, or au sportif. Le hub n'en gardait qu'un par personne, celui du
+bureau quand il existait. **Les onglets se contredisaient donc** : on passait aux
+commissions et les visages restaient rouges, sauf les quatre personnes qui ne
+sont QUE dans les commissions.
+
+- **Chaque affichage montre le portrait de SON organigramme** (`portrait(p,
+  domaine)`, js/organigramme-fch.js). *Mesuré : 24 sur 24 aux commissions, 38 sur
+  38 au sportif.*
+- **Le défaut est le portrait historique**, et c'est ce qui rend le passage sûr :
+  une personne absente de l'organigramme regardé garde celui qu'elle avait —
+  jamais de trou. C'est aussi ce que lisent la fiche d'une personne et la pile du
+  hall, qui n'ont pas d'organigramme à eux.
+- **Le nom du fichier ne fait pas foi.** La table de correspondance de
+  `tools/importer-portraits-fch.py` est ÉCRITE et vérifiée visage par visage :
+  `Sportif/Sandrine.png` est **Emma Liconnet**, `Céd.png` est Cédric,
+  `Alyssa-1.png` est Tom. *Un rapprochement deviné avait donné huit portraits
+  faux le 16 septembre.*
+- **Le cadrage se calcule**, et le piège est que **la bande du nom porte la même
+  couleur que la pastille** : prise avec elle, la tache colorée descend jusqu'en
+  bas et le disque ressort trop large et trop bas. On coupe sur les lignes
+  entièrement transparentes qui les séparent ; le disque donne la largeur, le
+  sommet de la tête donne le haut. *Les 48 cadres sont mesurés : disque centré à
+  un pixel près, crâne dans le champ.*
+- **La coquille passe de 1,6 à 3,2 Mo de portraits.** Un organigramme qui
+  perdrait ses visages hors ligne ne serait plus un organigramme, mais c'est un
+  vrai téléchargement de plus.
+
+### Les missions : une source, deux lectures
+
+Le document « Responsabilités FCH-2.pdf » (saison 2026–2027) se lit **deux
+fois** — par personne (p. 1–3), par commission (p. 4–6) — et ce sont les MÊMES
+missions rangées autrement. C'est la demande de Noé : *« un récap des
+responsabilités et missions comme dans le document, joint aux missions de chacun
+— si l'un change ça change sur l'autre page ».*
+
+- **`js/missions-fch.js` porte les 135 missions en une liste plate** : une
+  phrase, un thème, une commission, une ou deux personnes. Les deux écrans ne
+  font que la GROUPER — la page d'une commission par thème, la fiche d'une
+  personne par commission puis par thème.
+- **`PERSONNES[].missions` se DÉRIVE** de cette liste au chargement. Écrites dans
+  chaque fiche, elles auraient dû être recopiées dans la page d'une commission —
+  et 135 phrases en deux endroits, c'est 135 occasions de diverger.
+- **Le thème est neuf** : c'est le titre de colonne du document, et c'est lui qui
+  rend le récapitulatif lisible. La version précédente les donnait en phrases
+  longues ; celle-ci les découpe en gestes courts (Rémy passe de 6 à 16,
+  Christophe de 8 à 20).
+- **Le cadre du document ouvre l'onglet des commissions**, replié : *« cette
+  répartition est un cadre d'aide… l'objectif n'est pas de rajouter de la
+  pression »*. Une liste de 135 missions sans lui se lit comme une liste de
+  comptes à rendre — exactement ce que le club a écrit qu'elle n'était pas.
+- **Le contrôle le vérifie** (`tools/verifier-organigramme-fch.js`) : chaque
+  mission doit apparaître sur le récapitulatif de sa commission ET sur la fiche
+  de chacun de ceux qui la portent ; et une mission ne peut pas être donnée à
+  quelqu'un qui n'est pas membre de la commission.
+
+### La page d'un pôle EST celle de sa commission
+
+Le récapitulatif a vécu une heure dans l'onglet de l'organigramme avant que Noé
+ne le redirige : *« c'est dans ces pages là que je veux que ça apparaisse »*.
+L'onglet répond à « qui est où » ; neuf récapitulatifs, même repliés, en
+faisaient un sommaire de document. **Ce qui reste là-bas est le CHEMIN** : le
+titre d'une commission mène à sa page.
+
+- **La règle du lien est celle des DOMAINES**, pas `type === 'commissions'` :
+  « Direction sportive » est un groupe de type *bureau* dans l'organigramme tout
+  en ayant sa page de pôle. Les trois groupes du bureau n'en ont pas — ce sont
+  des fonctions, pas des domaines.
+- **« Organisation du club » rassemble trois commissions** — présidence,
+  secrétariat, trésorerie (demande de Noé). Elles portent 42 des 135 missions et
+  n'avaient aucune page. On y groupe **par commission d'abord, par thème
+  ensuite** : les trois écrivent chacune un thème « Coordonner et déléguer », et
+  les fondre mettrait sous un même titre les délégations du président, du
+  secrétaire et du trésorier.
+- **Deux blocs côte à côte** (demande de Noé) : « Qui le porte » à gauche — une à
+  huit personnes, il laissait la moitié droite vide —, et à droite ce que le pôle
+  a en tête : **ses objectifs de la saison, puis ses projets**, tous deux en rail
+  qui glisse (`.projet-rail`, celui du tableau de bord).
+- **LE CAP SE LIT AVANT CE QU'IL MÈNE** (demande de Noé : *« le ou les objectifs
+  de l'année doivent apparaître plus haut dans la page »*). Les objectifs
+  fermaient la page, sous le récapitulatif des missions — donc à deux écrans de
+  défilement, et c'était le cap qu'on lisait en dernier. **Un projet ne se
+  comprend qu'une fois qu'on sait vers quoi il pousse.**
+- **SEULEMENT L'ÉCHÉANCE N+1 EN HAUT** (même demande) : le club pose ses caps sur
+  trois colonnes, et cette page répond à « qu'est-ce qu'on fait cette saison ».
+  *Mesuré : le pôle sportif en affichait cinq dont un seul de la saison, et les
+  quatre autres repoussaient les projets hors de l'écran.* **L'horizon ne
+  s'écrit plus sur ces tuiles** — elles sont toutes de la même saison, et le
+  titre du bloc le dit.
+- **CE QUI VIENT APRÈS FERME LA PAGE** (demande de Noé : *« les objectifs à plus
+  long terme doivent être retrouvés en bas de page comme avant »*), en galerie et
+  pleine largeur, chaque tuile disant son horizon. **Aucun objectif n'y figure
+  deux fois** : un cap posé à la fois sur N+1 et sur N+5 est sur la table cette
+  saison, donc il reste en haut — et sa tuile, qui n'écrit que le PREMIER
+  horizon, dirait sinon « la saison qui vient » sous un titre annonçant le
+  contraire. Le bloc se tait quand il n'a rien à dire.
+- **L'AXE QUE LE PÔLE SERT EST DANS LA TÊTE**, en pastille au filet de sa
+  couleur, au-dessus du nom (demande de Noé). Il avait une section à lui — « Ce
+  qu'il sert » : un titre de bloc et une respiration de section pour dire un mot,
+  qui est de la même nature que le rang. **Et il a remplacé ce rang** (« Pôle et
+  commission »), qui nommait l'écran où l'on est — le menu y mène sous ce mot,
+  l'onglet le porte — quand l'axe est la seule chose qu'on ignore en arrivant.
+  Son fond à 18 % est dessiné pour le fond de la PAGE : sur le bandeau coloré il
+  se lisait comme un trou creusé dedans, d'où le filet.
+- **Le seuil du duo est 45 rem, soit 675 px** — la racine du site est à 15 px,
+  donc 60 rem en faisaient 900 et une fenêtre de 880 retombait sur une colonne.
+  Le chiffre vient de ce que les blocs demandent : 285 px pour une porte de
+  projet, 640 pour les deux colonnes.
+- **Le prochain évènement, sur la page des manifestations et sur elle seule**
+  (demande de Noé), au-dessus des projets, avec son jour, son lieu et un lien
+  vers sa page. La question « c'est quand le prochain ? » ne se pose pas sur les
+  huit autres pôles.
+
+### Les projets du club s'ouvrent, un par un
+
+Les 28 projets du projet associatif étaient des données déclarées ; leur page
+l'avouait en pied : *« Responsable, étapes et dates de réalisation restent à
+préciser »*. Noé les veut comme les siens : **des jalons, un calendrier sur
+lequel on peut poser des choses.**
+
+- **Deux tables à part** — `projets_club`, `projets_club_etapes` — et c'est sa
+  décision entre trois options : *« ça ne s'affichera pas dans mon calendrier,
+  seulement dans le calendrier de la page du projet »*. Rangés dans `projets`,
+  les 28 auraient rejoint ses 7 projets d'alternance, donc « Mes projets », le
+  rail de son accueil, « Mon temps » et sa charge.
+- **Conséquence assumée, et voulue** : `taches.projet_id` pointe vers `projets`,
+  donc **une tâche du hub ne peut pas se rattacher à un projet du club**. Ce
+  qu'on pose sur ce calendrier, ce sont ses ÉTAPES. *Noé a confirmé le
+  20 septembre : « pas les tâches pour le moment ».*
+- **Rien n'est créé d'avance** (même décision : « un par un, à la demande ») :
+  tant qu'un projet n'est pas ouvert, la page montre ce que le document en dit et
+  un bouton. Le geste est REJOUABLE — `cle` est unique, donc ouvrir deux fois
+  rend la ligne qui existe déjà.
+- **La page reprend les briques de celle d'un projet du hub** sans les recopier :
+  la colonne des étapes (`.cap-jalon`), les quatre vues, la grille, le glissement
+  d'une ligne vers un jour. `js/projet-club-page.js` se monte dans un hôte, comme
+  les écrans du cap.
+- **Ses gestes ne remontent pas au site**, et c'est ce qui la fait marcher :
+  `hermitage.js` écoute `data-choisir`, `data-vue-cal`, `data-periode` ET les
+  jours du calendrier (`brancherSelection` sur sa section). Sans cette garde,
+  choisir une étape faisait redessiner la page du site, qui remontait le module
+  et reposait l'étape. *L'écriture partait pourtant — la base recevait
+  l'échéance —, mais l'objet modifié n'était plus celui de la liste : rien ne
+  bougeait à l'écran, et un rechargement montrait le bon résultat.*
+
+### Le calendrier du club se lit en bleus
+
+La couleur y disait l'ESPACE ; il n'y en a qu'un sur ce site, donc elle ne disait
+rien — et comme aucune barre ne porte de `data-espace`, les 63 retombaient sur
+`--accent`, c'est-à-dire sur le jaune. **Un écran où tout est d'accent est un
+écran où rien n'est mis en avant.**
+
+- **Sur ce site, la couleur dit la NATURE** — ce qu'elle ne peut pas faire au
+  hub, où elle est déjà prise. La police continue de la dire aussi : les deux
+  signes se renforcent.
+- **Trois clartés d'une même teinte, et la clarté monte avec la présence** : la
+  tâche (et le jalon, l'objectif, l'étape) n'a qu'un trait ; la parution, un
+  trait et un voile ; l'évènement, un aplat plein. *Noé a d'abord gardé le jaune
+  pour les évènements, puis l'a retiré aussi : ce qui distingue l'évènement n'a
+  jamais été sa couleur, c'est son aplat.*
+- **`--club-bleu-1` (#4d75db) est écarté** et il faut le dire, parce qu'il semble
+  le choix évident : *mesuré, 2,48:1 sur le fond de page — un trait de 3 px y
+  disparaît, un aplat y devient trouble.* Les trois retenus tiennent entre 4,19
+  et 5,96.
+- **Les trois contrôles suivent** — la vue active, la case cochée, la pastille du
+  jour —, avec l'encre du bleu nuit : *3,22:1 contre 6,27.* Le « + » flottant et
+  le dock gardent le jaune : ils sont sur tous les écrans, la demande portait sur
+  le calendrier.
+
+### Un jour s'ouvre en grand depuis la vue semaine
+
+Demande de Noé, « comme dans la page d'accueil du hub ». Le gabarit savait déjà
+le faire : deux options, `titresOuvrants` et `jourSeul`.
+
+**Ouvrir ne redessine rien** — ce sont les largeurs des sept colonnes qui
+glissent, de `1fr` à `0fr`. Un `rendre()` couperait l'animation faute d'un état
+de départ. On sort par où on est entré ; les flèches passent au jour voisin et
+s'éteignent aux deux bouts ; **un jour ouvert ne survit ni au changement de vue
+ni au changement de semaine** — il désigne une date, et la semaine d'à côté ne la
+contient pas.
+
+### Le menu, la typographie
+
+- **Le menu retrouve son équilibre** : 5 / 4 / 6 / 3 au lieu de 5 / 4 / 8 / 0.
+  Les trois pages des partenaires y entrent ; les deux sous-pages des réunions en
+  sortent et retrouvent leur rang, derrière leur page mère. **`PAGES_DU_SITE`**
+  recense ce qui EXISTE, quand le menu dit ce qu'on OFFRE : le grand titre, la
+  pastille du dock et la rubrique dépliée le lisent, et les trois se seraient
+  perdues sinon.
+- **« Mes objectifs », « Mes projets », « Mes tâches »** (règle de Noé). Ce qui
+  change n'est pas la règle mais QUI PARLE : le hub regarde ses espaces de
+  l'extérieur, ici on est dedans — le club a ses objectifs à lui, ceux-ci sont
+  ceux de Noé.
+- **Le site ne parle plus que Gilroy** : les compteurs quittent Geist Mono et le
+  dock quitte Inter. L'objection écrite (« Gilroy n'aligne pas ses chiffres en
+  colonne ») était fondée sur un fait vrai — *le « 1 » fait 14,2 px contre 25,2
+  pour le « 0 »* — mais **Gilroy A des chiffres tabulaires**, simplement pas
+  allumés : une ligne les allume, et les colonnes retombent d'aplomb.
+- **Les gros chiffres d'un tableau de bord sont en Clash Display**, et ils
+  demandent la FAMILLE (`--police-affichage`) et non le RÔLE (`--police-titre`),
+  que le club repose sur Gilroy. L'approche négative tombe : réglée pour Gilroy,
+  elle **mangeait le séparateur de milliers** — « 17 330 € » se lisait
+  « 17330€ ».
+- **L'en-tête d'une tuile se replie** sur ce site : trois étiquettes et une date
+  ne tiennent pas dans 311 px, et une rangée qui ne se replie pas n'a que deux
+  issues — écraser ou sortir du cadre. Elle faisait les deux.

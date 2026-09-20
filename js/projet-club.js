@@ -461,6 +461,11 @@ const AXE_DU_DOMAINE = {
   organisation: 'organisation',
 };
 
+// L'ÉCHÉANCE DE LA SAISON QUI VIENT — le premier des trois horizons du club.
+// Lue dans la table plutôt qu'écrite en dur : le jour où les colonnes du
+// document glissent d'un cran, elles glissent ici aussi.
+const ECHEANCE_SAISON = ECHEANCES_FCH[0].id;
+
 const domaineDe = (id) => DOMAINES.find((d) => d.id === id) ?? null;
 const objectifsDuDomaine = (id) => OBJECTIFS_FCH.filter((o) => o.poles.includes(id));
 const projetsDuDomaine = (id) => projetsDuClub.filter((p) => (p.poles ?? []).includes(id));
@@ -637,25 +642,41 @@ function prochainEvenement() {
 
 function ficheDomaine(d) {
   const objectifs = objectifsDuDomaine(d.id);
+  const deLaSaison = objectifs.filter((o) => o.echeances.includes(ECHEANCE_SAISON));
+  const plusLoin = objectifs.filter((o) => !o.echeances.includes(ECHEANCE_SAISON));
   const projets = projetsDuDomaine(d.id);
   const axe = axeDuDomaine(d.id);
 
   return `<article class="projet-club">
     <a class="lien-discret projet-club-retour" href="${ADRESSE}/poles">← Tous les pôles</a>
+    ${/* L'AXE MONTE DANS LA TÊTE, AU-DESSUS DU NOM (20 septembre 2026, demande
+          de Noé : « ça doit monter dans la tuile du nom de la commission, après
+          pôle et commission »).
+
+          IL AVAIT UNE SECTION À LUI — « Ce qu'il sert » —, un titre de bloc et
+          une pastille : trois lignes et une respiration de section pour DIRE UN
+          MOT. Or ce mot est de la même nature que le rang qu'il remplace : il
+          dit CE QU'EST ce domaine, pas ce qu'il contient. Sa place est donc dans
+          la tête, et non dans le corps de la page avec les gens et les projets.
+
+          ET IL A PRIS LA LIGNE, PLUS SEULEMENT SA MOITIÉ (même jour, demande de
+          Noé : « enlève pôle et commission »). Les deux étiquettes ont cohabité
+          une heure ; « Pôle et commission » disait ce que la page entière dit
+          déjà — le menu y mène sous ce mot, l'onglet le porte —, tandis que
+          l'axe est la seule chose qu'on IGNORE en arrivant. **Une étiquette qui
+          nomme l'écran où l'on est n'apprend rien.**
+
+          SANS AXE, PAS DE LIGNE : une ligne vide au-dessus du nom ouvrirait un
+          blanc que rien ne justifie. */''}
     <header class="valeur-tete" style="--valeur-couleur:${d.couleur}">
-      <p class="valeur-rang">${d.groupe ? 'Pôle et commission' : 'Pôle du projet'}</p>
+      ${axe
+        ? `<p class="pole-tete-rang"><a class="projet-club-axe-lien"
+            href="${ADRESSE}/axe-${axe.id}"
+            style="--pole-couleur:${axe.couleur}">${echapper(axe.nom)}</a></p>`
+        : ''}
       <h2>${echapper(d.nom)}</h2>
       ${d.groupe?.aide ? `<p class="projet-club-phrase">${echapper(d.groupe.aide)}</p>` : ''}
     </header>
-
-    ${
-      axe
-        ? `<section class="bloc"><h2>Ce qu’il sert</h2>
-            <p class="projet-club-marques"><a class="projet-club-axe-lien"
-              href="${ADRESSE}/axe-${axe.id}" style="--pole-couleur:${axe.couleur}">${echapper(axe.nom)}</a></p>
-          </section>`
-        : ''
-    }
 
     ${/* DEUX BLOCS CÔTE À CÔTE (20 septembre 2026, demande de Noé : « utilise des
           blocs côte à côte plutôt que tout mettre ligne par ligne — par exemple
@@ -663,11 +684,20 @@ function ficheDomaine(d) {
 
           LES GENS À GAUCHE, CE QU'ILS FONT À DROITE. Le premier bloc est court
           par nature — une à huit personnes — et laissait la moitié droite de
-          l'écran vide sur toute sa hauteur. À côté, les PROJETS (20 septembre
-          2026, correction de Noé : « mets plutôt les projets que les objectifs à
-          côté de qui le porte ») : ce sont les chantiers en cours, donc ce qui
-          se rapproche le plus des gens qui les tiennent. Les objectifs ferment
-          la page — c'est le cap, on le lit après.
+          l'écran vide sur toute sa hauteur. La colonne de droite porte donc ce
+          que le pôle a en tête : son cap, puis ses chantiers.
+
+          LES OBJECTIFS SONT REMONTÉS AU-DESSUS DES PROJETS (20 septembre 2026,
+          demande de Noé : « le ou les objectifs de l'année doivent apparaître
+          plus haut dans la page, mets-les au-dessus de "ses projets" »). Ils
+          FERMAIENT la page, sous les missions — donc sous deux écrans de
+          défilement, et **c'est le cap qui se lisait en dernier**. L'ordre de la
+          colonne dit maintenant ce que le pôle vise avant ce qu'il mène : un
+          projet ne se comprend qu'une fois qu'on sait vers quoi il pousse.
+
+          *Ce que ça renverse : « les objectifs ferment la page — c'est le cap,
+          on le lit après », écrit le matin même. L'argument valait pour un ordre
+          de LECTURE ; il ne valait pas la place où il les mettait.*
 
           ILS GLISSENT plutôt que de s'empiler (même demande, « comme dans la
           page d'accueil du hub ») : c'est `.projet-rail`, le rail du tableau de
@@ -681,6 +711,40 @@ function ficheDomaine(d) {
 
       <div class="pole-colonne">
         ${d.id === 'manifestations' ? prochainEvenement() : ''}
+        ${/* SEULEMENT CEUX DE LA SAISON, ET EN RAIL (20 septembre 2026, demande
+              de Noé : « non seulement les objectifs de cette saison, et de la
+              même manière que les projets côte à côte que l'on puisse
+              slider »).
+
+              LE CLUB POSE SES OBJECTIFS SUR TROIS COLONNES — N+1, N+3, N+5 —,
+              et cette page répond à « qu'est-ce qu'on fait CETTE ANNÉE ». Un
+              cap à cinq ans n'y change rien : il se lit sur la page des
+              objectifs et sur celle de son axe, où les trois horizons se
+              comparent. *Mesuré : le pôle sportif en affichait cinq, dont un
+              seul de la saison — les quatre autres repoussaient les projets
+              hors de l'écran.*
+
+              L'HORIZON NE S'ÉCRIT PLUS SUR LES TUILES : elles sont toutes de
+              la même saison, et le titre du bloc le dit. C'est déjà l'argument
+              d'`avecHorizon` sur la page des objectifs — ce qui se montre n'a
+              pas à se nommer, et une mention identique partout ne distingue
+              rien.
+
+              LE MÊME RAIL QUE LES PROJETS, à trois centimètres de là : deux
+              listes voisines qui glissent de deux façons, ce serait deux gestes
+              pour une même colonne. `.pole-rail` connaît les deux formes depuis
+              ce matin.
+
+              SANS OBJECTIF DE SAISON, LA PHRASE DIT LEQUEL DES DEUX CAS : un
+              pôle dont tous les caps sont à trois ans n'est pas un pôle sans
+              cap. */''}
+        <section class="bloc fch-sans-tuile"><h2>Ses objectifs de la saison</h2>
+          ${deLaSaison.length
+            ? `<div class="projet-rail pole-rail">${
+                deLaSaison.map((o) => tuileObjectif(o, o.titre, { avecHorizon: false })).join('')}</div>`
+            : `<p class="discret">${objectifs.length
+                ? 'Aucun objectif cette saison — ses caps sont posés plus loin.'
+                : 'Aucun objectif ne lui est rattaché pour le moment.'}</p>`}</section>
         <section class="bloc fch-sans-tuile"><h2>Ses projets</h2>
           ${projets.length
             ? `<div class="projet-rail pole-rail">${projets.map(tuileProjet).join('')}</div>`
@@ -724,21 +788,40 @@ function ficheDomaine(d) {
           pose nulle part ailleurs. Une porte identique sur les huit autres
           pôles serait un meuble.
 
-          AU-DESSUS DES PROJETS, comme demandé, donc **dans le duo** : la page
-          n'empile plus ses blocs depuis ce matin. Il partage la colonne de
-          droite avec eux — ce qui arrive d'abord, ce qu'on mène ensuite.
+          EN TÊTE DE LA COLONNE DE DROITE, avant les objectifs et les projets
+          (20 septembre 2026, demande de Noé : « pour la commission manif, entre
+          le prochain évènement et ses projets »). C'est la seule chose de cette
+          page qui porte une DATE : elle passe devant ce qui n'en a pas.
 
           LA DATE VIENT DU DOCUMENT, pas d'une colonne : `EVENEMENTS_CLUB` écrit
           ses dates en toutes lettres, et `prochainEvenementClub` les lit. Deux
           écritures d'une même date finiraient par se contredire. */''}
-    ${/* LES OBJECTIFS FERMENT LA PAGE (20 septembre 2026, correction de Noé :
-          « mets plutôt les projets que les objectifs à côté de qui le porte »).
-          C'est le CAP du pôle, et on le lit après ce qu'il fait — les projets
-          sont en haut, à côté des gens qui les tiennent. */''}
-    <section class="bloc fch-sans-tuile"><h2>Ses objectifs</h2>
-      ${objectifs.length
-        ? `<div class="cap-galerie">${objectifs.map((o) => tuileObjectif(o)).join('')}</div>`
-        : '<p class="discret">Aucun objectif ne lui est rattaché pour le moment.</p>'}</section>
+    ${/* ET CE QUI VIENT APRÈS FERME LA PAGE (20 septembre 2026, demande de Noé :
+          « les objectifs à plus long terme doivent être retrouvés en bas de page
+          comme avant »).
+
+          LES DEUX BLOCS NE RÉPONDENT PAS À LA MÊME QUESTION, et c'est ce qui
+          justifie de les séparer plutôt que de choisir : la colonne de droite
+          dit ce qu'on fait CETTE SAISON — on la lit avec les projets qui la
+          servent —, et ce bloc dit où va le pôle ensuite. **Le second se relit,
+          il ne se travaille pas** : sa place est donc en bas, pleine largeur,
+          après les missions.
+
+          AUCUN OBJECTIF NE FIGURE DEUX FOIS : un cap posé à la fois sur N+1 et
+          sur N+5 est sur la table cette saison, donc il reste en haut. Ce bloc
+          ne prend que ce qui n'y est PAS — sans quoi sa tuile, qui n'écrit que
+          le PREMIER horizon, dirait « la saison qui vient » sous un titre qui
+          annonce le contraire.
+
+          ET IL SE TAIT QUAND IL N'A RIEN À DIRE : « aucun objectif à plus long
+          terme » sous un cap qu'on vient de lire n'apprend rien. La galerie, et
+          non le rail : ici la page est entière, les tuiles se comparent côte à
+          côte. */''}
+    ${plusLoin.length
+      ? `<section class="bloc fch-sans-tuile"><h2>Ses objectifs à plus long terme</h2>
+          <div class="cap-galerie">${plusLoin.map((o) => tuileObjectif(o)).join('')}</div>
+        </section>`
+      : ''}
 
     ${retourAuProjet()}</article>`;
 }
