@@ -188,7 +188,7 @@ function accueilDuProjet() {
       ${porte(`${ADRESSE}/mission`, 'La mission', '', '<span class="fch-hall-quoi">Transmettre l’envie de jouer et les quatre piliers qui nous guident.</span>')}
       ${porte(`${ADRESSE}/valeurs`, 'Les valeurs', '6', '<span class="fch-hall-quoi">Leur sens au club et les comportements qui les font vivre.</span>')}
       ${porte(`${ADRESSE}/axes`, 'Les axes', `${AXES_FCH.length}`, '<span class="fch-hall-quoi">Les quatre grandes familles du projet, et ce que chacune porte.</span>')}
-      ${porte(`${ADRESSE}/poles`, 'Les pôles', `${DOMAINES.length}`, '<span class="fch-hall-quoi">Chaque domaine du club : ce qu’il vise, et qui le porte.</span>')}
+      ${porte(`${ADRESSE}/poles`, 'Les commissions', `${DOMAINES.length}`, '<span class="fch-hall-quoi">Chaque domaine du club : ce qu’il vise, et qui le porte.</span>')}
       ${porte(`${ADRESSE}/objectifs`, 'Tous les objectifs', `${OBJECTIFS_FCH.length}`, '<span class="fch-hall-quoi">Les caps du club à un, trois et cinq ans.</span>')}
       ${porte(`${ADRESSE}/projets`, 'Les projets', `${projetsDuClub.length}`, '<span class="fch-hall-quoi">Les actions prévues pour concrétiser le projet du club.</span>')}
     </nav>
@@ -254,7 +254,7 @@ function colonneEcheance(e) {
     ${e.priorite ? `<p class="projet-club-priorite">${echapper(e.priorite)}</p>` : ''}
     ${retenus.length
       ? `<ul class="projet-club-objectifs">${retenus.map(carteObjectif).join('')}</ul>`
-      : '<p class="vide">Rien de visé à cet horizon pour ce pôle.</p>'}
+      : '<p class="vide">Rien de visé à cet horizon pour cette commission.</p>'}
   </section>`;
 }
 
@@ -263,7 +263,7 @@ function colonneEcheance(e) {
 // bibliothèque, appliquée ici.
 function filtres() {
   const vivants = POLES_FCH.filter((p) => OBJECTIFS_FCH.some((o) => o.poles.includes(p.id)));
-  return `<nav class="projet-club-filtres" aria-label="Ouvrir un pôle">
+  return `<nav class="projet-club-filtres" aria-label="Ouvrir une commission">
     ${vivants.map((p) => `<a href="${ADRESSE}/pole-${p.id}"
       style="--pole-couleur:${p.couleur}">${echapper(p.nom)}
       <span class="projet-club-compte">${OBJECTIFS_FCH.filter((o) => o.poles.includes(p.id)).length}</span></a>`).join('')}
@@ -278,7 +278,7 @@ function filtres() {
 function objectifs() {
   return `<section class="bloc">
     <h2>Les objectifs</h2>
-    <p class="projet-club-service">Chaque objectif sert un axe et un pôle, et vise un horizon. Ceux de la saison qui vient portent en plus ce qu’on regarde pour savoir où l’on en est.</p>
+    <p class="projet-club-service">Chaque objectif sert un axe et une commission, et vise un horizon. Ceux de la saison qui vient portent en plus ce qu’on regarde pour savoir où l’on en est.</p>
     ${filtres()}
     <div class="projet-club-horizons">${ECHEANCES_FCH.map((e) => colonneEcheance(e)).join('')}</div>
     <details class="projet-club-repli">
@@ -373,7 +373,7 @@ function ficheAxe(a) {
       // second écran serait deux endroits pour une même liste.
       poles.length
         ? `<section class="bloc"><h2>Ce qu’il recouvre</h2>
-            <nav class="projet-club-filtres" aria-label="Les pôles de cet axe">
+            <nav class="projet-club-filtres" aria-label="Les commissions de cet axe">
               ${poles.map((p) => {
                 // AUCUN ZÉRO EN VITRINE, ici comme sur la tuile d'un domaine :
                 // la buvette appartient à cet axe sans y porter d'objectif.
@@ -587,7 +587,7 @@ function tuileDomaine(d) {
 // ne l'affiche pas, par la même règle qui ferme une porte sur une pièce vide.
 function poles() {
   return `<section class="bloc fch-sans-tuile">
-    <h2>Les pôles</h2>
+    <h2>Les commissions</h2>
     <p class="projet-club-service">Chaque domaine du club : ce qu’il vise, et qui le porte.</p>
     ${AXES_FCH.map((a) => {
       const retenus = polesDeLAxe(a.id);
@@ -648,7 +648,7 @@ function ficheDomaine(d) {
   const axe = axeDuDomaine(d.id);
 
   return `<article class="projet-club">
-    <a class="lien-discret projet-club-retour" href="${ADRESSE}/poles">← Tous les pôles</a>
+    <a class="lien-discret projet-club-retour" href="${ADRESSE}/poles">← Toutes les commissions</a>
     ${/* L'AXE MONTE DANS LA TÊTE, AU-DESSUS DU NOM (20 septembre 2026, demande
           de Noé : « ça doit monter dans la tuile du nom de la commission, après
           pôle et commission »).
@@ -866,31 +866,37 @@ function ficheValeur(v) {
 
 // ── L'ASSEMBLAGE ──────────────────────────────────────────────────────────────
 
-// LES SEPT OBJECTIFS DE LA SAISON, EN TÊTE DE LA PAGE « CLUB » (20 septembre
+// LES OBJECTIFS DE LA SAISON, EN RAIL, EN TÊTE DE LA PAGE « CLUB » (20 septembre
 // 2026, demande de Noé : « dans la page "club" on doit avoir en haut les
 // objectifs de la saison à venir à pouvoir slider »).
 //
-// LE HALL DIT OÙ ALLER, CE RAIL DIT POURQUOI. La page ne portait que des portes
-// — l'organigramme, le projet, les entraînements, les chiffres, les réunions,
-// les évènements —, c'est-à-dire six chemins et pas une seule des choses que le
-// club s'est données à faire cette saison. **Elles étaient à trois gestes** :
-// la porte du projet, puis sa galerie d'objectifs, puis leurs trois horizons
-// mêlés.
+// ILS ONT PASSÉ UNE HEURE EN LISTE COMPACTE dans le tableau de bord (22 septembre
+// 2026), trois lignes et « et 4 autres ». Noé les a fait revenir : *« je préfère
+// quand c'est davantage comme avant, en haut de page et les tuiles côte à côte
+// qu'on peut slider, 3 objectifs visibles minimum en vue ordinateur »*. Le cap
+// n'est pas une information parmi d'autres : c'est ce vers quoi tout le reste de
+// la page travaille, et il se lit en tête.
 //
-// SEPT SUR DIX-HUIT, ET C'EST TOUT L'INTÉRÊT : les onze autres visent trois ou
-// cinq ans. C'est la règle déjà posée sur la page d'un pôle le même jour — cette
-// page-ci répond à « qu'est-ce qu'on fait cette saison », et les horizons se
-// comparent ailleurs, sur la page des objectifs et sur celle d'un axe.
+// SEPT SUR DIX-HUIT : les onze autres visent trois ou cinq ans et se comparent
+// sur la page des objectifs. L'horizon ne s'écrit pas sur les tuiles — elles
+// sont toutes de la même saison, et le titre du bloc le dit.
 //
-// LE MÊME RAIL QUE PARTOUT AILLEURS (`.projet-rail pole-rail`), et l'horizon ne
-// s'écrit pas sur ses tuiles : elles sont toutes de la même saison, et le titre
-// du bloc le dit.
+// LES TROIS PRIORITÉS VOTÉES À L'AG PASSENT DEVANT, et c'est ce qui reste de la
+// liste compacte : sur un rail où l'on n'en voit que trois de front, les trois
+// premières doivent être celles que le club a choisies.
+const PRIORITES_AG = ['encadrement', 'benevoles', 'sponsors'];
+
 export function railDesObjectifsDeLaSaison() {
   const retenus = OBJECTIFS_FCH.filter((o) => o.echeances.includes(ECHEANCE_SAISON));
   if (!retenus.length) return '';
+  const rang = (o) => (PRIORITES_AG.includes(o.id) ? PRIORITES_AG.indexOf(o.id) : PRIORITES_AG.length);
+  const ordonnes = retenus
+    .map((o, i) => ({ o, i }))
+    .sort((a, b) => rang(a.o) - rang(b.o) || a.i - b.i)
+    .map(({ o }) => o);
   return `<section class="bloc fch-sans-tuile"><h2>Les objectifs de la saison qui vient</h2>
-    <div class="projet-rail pole-rail">${
-      retenus.map((o) => tuileObjectif(o, o.titre, { avecHorizon: false })).join('')}</div>
+    <div class="projet-rail pole-rail club-rail">${
+      ordonnes.map((o) => tuileObjectif(o, o.titre, { avecHorizon: false })).join('')}</div>
   </section>`;
 }
 
@@ -933,7 +939,7 @@ export function titreDuProjet(selection) {
     return 'Axe du projet';
   }
   if (selection === 'axes') return 'Les axes';
-  if (selection === 'poles') return 'Les pôles';
+  if (selection === 'poles') return 'Les commissions';
   if (typeof selection === 'string' && selection.startsWith('pole-')
     && domaineDe(selection.slice(5))) {
     return domaineDe(selection.slice(5)).nom;

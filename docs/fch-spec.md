@@ -1363,6 +1363,87 @@ s'y compte, aucune donnée n'y est saisie. Il sert l'objectif du 15 décembre �
 « laisser une com qui tourne sans moi » : celui qui reprend doit savoir à qui
 s'adresser et sur quoi s'aligner.
 
+### LA PAGE EST UN TABLEAU DE BORD (22 septembre 2026, demande de Noé)
+
+> *« Plutôt qu'une page qui regroupe tous les liens possibles, il faudrait
+> davantage que ce soit un dashboard dans lequel on voit les infos principales
+> et importantes, qui lorsque l'on clique dessus nous mène vers une page plus
+> complète. Et les pages non référencées ici le sont dans le menu dépliant. »*
+
+**Ce qui fait autorité ci-dessous jusqu'à « Derrière ces portes » est
+DÉPASSÉ pour le hall** : les six portes sont parties. Elles disaient où aller ;
+la page dit maintenant ce qui se passe.
+
+**LE RAIL DES SEPT OBJECTIFS DE LA SAISON RESTE EN TÊTE** (correction de Noé le
+même jour : *« je préfère quand c'est davantage comme avant, en haut de page et
+les tuiles côte à côte qu'on peut slider, 3 objectifs visibles minimum en vue
+ordinateur »*). Il a passé une heure en liste compacte dans le tableau — trois
+priorités et « et 4 autres ». Ce qui en reste : **les trois priorités votées à
+l'AG passent devant**, puisqu'on n'en voit que trois de front.
+- **Trois tuiles et un quart dès 48 rem** : la largeur se déduit de la colonne
+  (`(100% − 3 écarts) / 3,25`) au lieu d'être fixée à 19 rem, qui n'en montrait
+  que deux et demie à 800 px. Le quart qui dépasse dit qu'il y en a d'autres.
+  Calage au bord gauche, et non au centre, qui coupait une tuile de chaque côté.
+- *Défaut trouvé en rétrécissant les tuiles, et il dormait sur tous les rails :*
+  la grille d'une tuile répartit sur ses rangées la hauteur que le rail lui
+  impose, le titre s'étirait de 8 px et son `line-clamp` laissait voir le haut
+  d'une troisième ligne. Il se cale désormais en haut de sa rangée.
+
+Sous le rail, **trois tuiles** : l'agenda à gauche sur toute sa hauteur, les
+actions et les créneaux empilés à droite.
+
+| Tuile | Ce qu'elle montre | Où mène un clic |
+|---|---|---|
+| **À venir au club** | les 4 prochains rendez-vous — réunions (en base) et évènements (planning officiel) mêlés, par date ; un évènement porte l'état de sa com | la fiche de la réunion (sinon la liste), la fiche de l'évènement |
+| **Ce qui reste à tenir** | les actions ouvertes des réunions, avec leur responsable | le suivi des actions |
+| **Aujourd'hui / Demain / <jour> à l'entraînement** | les créneaux du prochain jour qui en porte | le planning |
+
+- **DEUX RÈGLES** : une tuile montre une INFORMATION et c'est elle qu'on presse
+  (« Réunion Lina 2 · ven. 25 », pas « Les réunions ») ; **ce qui ne bouge pas
+  n'est pas ici** — mission, valeurs, chiffres, organigramme se relisent, ils
+  vivent dans le menu.
+- **CE N'EST PAS L'ACCUEIL DU SITE** : l'accueil montre le travail de Noé, le
+  Club la vie du club — son agenda, les engagements de tout le monde, son cap.
+- **L'ÉVÈNEMENT N'A PAS DE TUILE À LUI** : il est déjà dans « À venir », et
+  l'état de sa com — la seule chose qu'une tuile propre aurait ajoutée — s'écrit
+  sur sa ligne.
+- **LES TEMPS FORTS EN BASE N'Y SONT PAS** : ils doublent les évènements du
+  planning sous un autre titre, et la même date deux fois se lirait comme deux
+  rendez-vous.
+- **Une tuile à plusieurs destinations n'est pas un lien** : ses lignes le sont,
+  et elle perd la vitre du survol, qui dirait « tout ceci s'ouvre ».
+- **Deux colonnes déclarées**, une sur téléphone, où la date passe au-dessus du
+  titre.
+- **LE MENU RECENSE, LA PAGE CHOISIT** (même jour, suite de la même demande).
+  Ça renverse la règle du 20 septembre (« le menu reprend exactement le hall ») :
+  la page ne listant plus rien, c'est le menu qui doit tout nommer. Sept lignes
+  repliées, et **deux groupes à flèche** — les deux seules pages qui en ouvrent
+  d'autres :
+
+  ```
+  Le club
+     Le projet du club ▾  La mission · Les valeurs · Les axes · Les objectifs · Les projets
+     Les organigrammes
+     Les commissions
+     Les réunions ▾       Le suivi des actions · Les réunions passées
+     Les évènements
+     Les entraînements
+     Le club en chiffres
+  ```
+
+  - **« Les commissions » est le mot qui reste** (décision de Noé) : la page
+    `#hermitage/projet-club/poles` s'intitule ainsi, et ses libellés visibles
+    ont suivi. L'adresse ne bouge pas — un favori se casse, pas un nom.
+  - **Le chemin déplie aussi le groupe** : depuis le suivi des actions ou une
+    fiche de réunion, le menu s'ouvre sur « Les réunions » dépliées. Une entrée
+    nommée telle quelle passe avant le préfixe : les commissions vivent sous
+    l'adresse du projet, et ne doivent pas déplier le projet.
+  - `PAGES_DU_SITE` n'ajoute plus rien au menu : elle ne fait qu'aplatir ses
+    groupes pour le titre de page et l'onglet allumé.
+- *Défaut trouvé en passant : la porte des réunions de l'accueil lisait
+  `action.titre`, colonne qui n'existe pas — la ligne s'écrivait vide. C'est
+  `action.texte`.*
+
 **LE CAP DE LA SAISON OUVRE LA PAGE** (20 septembre 2026, demande de Noé :
 *« dans la page "club" on doit avoir en haut les objectifs de la saison à venir à
 pouvoir slider »*), dans le rail qui sert déjà les projets et les pôles. **Le

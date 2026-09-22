@@ -14,7 +14,7 @@
 // toucher aux autres.
 
 import * as api from './api.js';
-import { construireOrganigramme, rechercherOrganigramme, portrait } from './organigramme-fch.js';
+import { construireOrganigramme, rechercherOrganigramme } from './organigramme-fch.js';
 import { monterLeMenu, boutonDuMenu } from './menu.js';
 import {
   modifierAussitot,
@@ -48,8 +48,6 @@ import {
 } from './format.js';
 import { finDeLaSortie, phaseDeLaSortie } from './preparations-commun.js';
 import { REPERES, CRENEAUX } from './club-fch.js';
-import { GROUPES, PERSONNES } from './organigramme-fch-data.js';
-import { MISSION_FCH, VALEURS_FCH, OBJECTIFS_FCH } from './projet-fch.js';
 import { construireProjetClub, titreDuProjet, projetDeclare,
   railDesObjectifsDeLaSaison } from './projet-club.js';
 import * as pageProjetDuClub from './projet-club-page.js';
@@ -205,10 +203,9 @@ const NATURES_FCH = ['evenement', 'tache', 'publication', 'objectif'];
 // du club, pas une cinquième destination. Le dock retombe à quatre onglets, et
 // c'est l'accueil du site qui porte la réunion du moment, comme avant.
 //
-// SES DEUX SOUS-PAGES RESTENT DERRIÈRE ELLE, et ne montent pas dans le hall :
-// le suivi des actions et les réunions passées se prennent depuis la page des
-// réunions. C'est la règle des deux rangs — le hall est à deux gestes, les
-// réunions à trois, leurs archives à quatre.
+// SES DEUX SOUS-PAGES SE PRENNENT DEPUIS LA PAGE DES RÉUNIONS, et depuis le
+// 22 septembre 2026 aussi sous sa flèche dans le menu : c'est la même liste
+// qui sert les deux, pour que le pied de page et le menu ne divergent pas.
 const PAGES_REUNIONS = [
   { nom: 'Le suivi des actions', adresse: '#hermitage/actions' },
   { nom: 'Les réunions passées', adresse: '#hermitage/archives' },
@@ -248,25 +245,44 @@ export const RUBRIQUES_FCH = [
     { nom: 'La banque d’idées', adresse: '#hermitage/banque' },
     { nom: 'Les publications parues', adresse: '#hermitage/publications' },
   ] },
-  // LE CLUB S'ARRÊTE AUX SIX PORTES DE SON HALL (20 septembre 2026, demande de
-  // Noé : « pas 15 pages en dessous de club, et rien en dessous de
-  // partenaires »). Les deux sous-pages des réunions — le suivi des actions,
-  // les réunions passées — en sortent, et **elles ne perdent pas leur chemin,
-  // elles retrouvent leur rang** : la règle écrite au-dessus de
-  // `PAGES_REUNIONS` le disait déjà mot pour mot, *« le hall est à deux gestes,
-  // les réunions à trois, leurs archives à quatre »*. Le menu, lui, les gardait
-  // au même rang que les réunions.
+  // LE MENU RECENSE, LA PAGE CHOISIT (22 septembre 2026, demande de Noé : « les
+  // pages potentiellement non référencées ici sont référencées dans le menu
+  // dépliant »). La page « Club » est devenue un tableau de bord : elle ne
+  // montre plus que ce qui bouge — l'agenda, les actions, les créneaux du jour,
+  // le cap. Tout ce qu'elle ne montre pas doit donc se trouver ICI.
   //
-  // CE QUI RESTE EST EXACTEMENT LE HALL, porte pour porte : deux listes qui
-  // disent ce qu'il y a derrière « Le club » ne peuvent pas en dire deux choses
-  // différentes.
-  { nom: 'Le club', adresse: '#hermitage/club', pages: [
+  // CE QUE ÇA RENVERSE : le 20 septembre, « ce qui reste est exactement le
+  // hall » — le menu recopiait les six portes, et les sous-pages des réunions en
+  // étaient sorties (« pas 15 pages en dessous de club »). La règle tenait tant
+  // que la page listait tout ; elle ne liste plus rien.
+  //
+  // SEPT LIGNES REPLIÉES, ET LE RANG À FLÈCHE LES TIENT : c'est le rang des
+  // groupes du hub (« Mon cap ▾ »). Le mot mène à la page, la flèche déplie
+  // ses pages. Deux groupes seulement — le projet et les réunions — parce que
+  // ce sont les deux seules pages qui en ouvrent d'autres ; un pli de plus se
+  // paie d'un geste de plus.
+  //
+  // LES NOMS SONT CEUX DES PAGES, au mot près (`titreDuProjet`, js/projet-club.js,
+  // et `enTete`) : un nom dans le menu et un autre en tête de page, ce serait
+  // deux noms pour une page.
+  { nom: 'Le club', adresse: '#hermitage/club', entrees: [
+    { nom: 'Le projet du club', adresse: '#hermitage/projet-club', pages: [
+      { nom: 'La mission', adresse: '#hermitage/projet-club/mission' },
+      { nom: 'Les valeurs', adresse: '#hermitage/projet-club/valeurs' },
+      { nom: 'Les axes', adresse: '#hermitage/projet-club/axes' },
+      { nom: 'Les objectifs', adresse: '#hermitage/projet-club/objectifs' },
+      { nom: 'Les projets', adresse: '#hermitage/projet-club/projets' },
+    ] },
     { nom: 'Les organigrammes', adresse: '#hermitage/commissions' },
-    { nom: 'Le projet du club', adresse: '#hermitage/projet-club' },
+    // LES COMMISSIONS SONT LES PÔLES DU PROJET (décision de Noé, 20 septembre),
+    // et c'est le mot « commission » qui reste (22 septembre). Elles ont leur
+    // ligne à elles et non une place sous le projet : on vient y chercher QUI
+    // porte un domaine, autant que ce qu'il vise.
+    { nom: 'Les commissions', adresse: '#hermitage/projet-club/poles' },
+    { nom: 'Les réunions', adresse: '#hermitage/reunions', pages: PAGES_REUNIONS },
     { nom: 'Les évènements', adresse: '#hermitage/evenements' },
     { nom: 'Les entraînements', adresse: '#hermitage/entrainements' },
     { nom: 'Le club en chiffres', adresse: '#hermitage/chiffres' },
-    { nom: 'Les réunions', adresse: '#hermitage/reunions' },
   ] },
   // LES PARTENAIRES SONT UNE DESTINATION (16 septembre 2026, décision de Noé :
   // « ajoute un onglet pour les partenaires, qui remplace donc réunions »). Ils
@@ -300,11 +316,17 @@ export const RUBRIQUES_FCH = [
 // menu nomme, plus celles qu'on n'atteint que par leur page mère. Le menu dit
 // ce qu'on OFFRE ; celle-ci dit ce qui EXISTE, et les deux ne se confondent
 // plus.
-const PAGES_DU_SITE = [
-  ...RUBRIQUES_FCH.flatMap((rubrique) =>
-    (rubrique.pages ?? []).map((page) => ({ ...page, rubrique: rubrique.adresse }))),
-  ...PAGES_REUNIONS.map((page) => ({ ...page, rubrique: '#hermitage/club' })),
+//
+// DEPUIS LE 22 SEPTEMBRE 2026 le menu nomme de nouveau tout ce qui existe — ses
+// groupes (`entrees`) compris —, et la table n'a plus rien à ajouter de son
+// côté. Elle reste parce qu'elle APLATIT : les trois mécaniques ont besoin
+// d'une liste, pas d'un arbre.
+const pagesDeLaRubrique = (rubrique) => [
+  ...(rubrique.pages ?? []),
+  ...(rubrique.entrees ?? []).flatMap((entree) => [entree, ...(entree.pages ?? [])]),
 ];
+const PAGES_DU_SITE = RUBRIQUES_FCH.flatMap((rubrique) =>
+  pagesDeLaRubrique(rubrique).map((page) => ({ ...page, rubrique: rubrique.adresse })));
 
 const ONGLET_FCH = Object.fromEntries(PAGES_DU_SITE.map((page) =>
   [page.adresse.split('/')[1], page.rubrique.split('/')[1] ?? 'accueil']));
@@ -317,11 +339,26 @@ function portes(pages, nom = 'Pages') {
     </a>`).join('')}</section>`;
 }
 
+// LE CHEMIN DÉPLIE AUSSI LE GROUPE (22 septembre 2026) : depuis le suivi des
+// actions ou une fiche de réunion, ouvrir le menu doit montrer « Les réunions »
+// ouvertes, pas seulement « Le club » — sinon la page où l'on est reste cachée
+// sous un pli. Une ENTRÉE nommée telle quelle passe d'abord : les commissions
+// vivent sous l'adresse du projet (`#hermitage/projet-club/poles`), et un simple
+// préfixe déplierait le projet quand on regarde les commissions.
 function cheminDuMenu() {
-  const adresse = location.hash.split('/').slice(0, 2).join('/');
+  const hash = location.hash;
+  const adresse = hash.split('/').slice(0, 2).join('/');
   const mere = PAGES_DU_SITE.find((page) => page.adresse === adresse)?.rubrique;
   const rubrique = RUBRIQUES_FCH.find((item) => item.adresse === (mere ?? adresse));
-  return rubrique ? [rubrique.nom] : [];
+  if (!rubrique) return [];
+  const entrees = rubrique.entrees ?? [];
+  if (entrees.some((entree) => entree.adresse === hash && !(entree.pages ?? []).length)) {
+    return [rubrique.nom];
+  }
+  const dedans = (page) => hash === page.adresse || hash.startsWith(`${page.adresse}/`);
+  const groupe = entrees.find((entree) => (entree.pages ?? []).length
+    && [entree, ...entree.pages].some(dedans));
+  return groupe ? [rubrique.nom, `${rubrique.nom}/${groupe.nom}`] : [rubrique.nom];
 }
 
 // LES ÉTAGES DE LA GALERIE. Le site ne montre qu'une page (`#hermitage/cap`) là
@@ -2883,21 +2920,6 @@ function construireEntrainements() {
   </section>`;
 }
 
-// LE CLUB EST UN HALL (16 septembre 2026, demande de Noé : « modifie la forme
-// des tuiles de la page club pour que ça ressemble davantage à ce style — comme
-// ma bibliothèque dans perso, ou le vivier dans Yuno »).
-//
-// CE QUE ÇA REMPLACE, ET LA RÈGLE QUI LE CONDAMNAIT : cinq rectangles portant un
-// nom et une flèche, c'est-à-dire cinq lignes de menu redessinées — et le menu
-// est déjà à un geste. La règle du hall de `#perso` vaut ici mot pour mot :
-// CHAQUE PORTE DOIT DIRE QUELQUE CHOSE QU'ON IGNORE AVANT DE L'OUVRIR — qui est
-// là, ce qu'on s'est promis, qui s'entraîne ce soir, ce que le club pèse, qui
-// n'a pas encore viré. C'est le test à repasser le jour où une sixième arrive.
-//
-// LA PORTE DES PARTENAIRES VIENT DU HALL DES PARTENAIRES, telle quelle : deux
-// écrans qui dessineraient la même porte chacun de leur côté finiraient par ne
-// plus montrer la même chose, et c'est celui qu'on regarde le moins qui mentirait.
-
 const JOURS_SEMAINE = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 
 // LE PROCHAIN JOUR QUI PORTE DES ENTRAÎNEMENTS, à partir d'aujourd'hui. C'est ce
@@ -2913,73 +2935,126 @@ export function prochainEntrainement(maintenant = new Date()) {
   return null;
 }
 
-// UN REPÈRE SE COUPE À SA PREMIÈRE VIRGULE dans une porte : « licenciés, des U7
-// aux vétérans » ne tient pas sur une ligne de 16 rem et s'arrêterait à une
-// ellipse, ce qui fait lire une phrase inachevée là où il y a un fait entier.
-// Sa page, elle, les donne en entier.
-const courtRepere = (quoi) => quoi.split(/\s*[,:]\s*/)[0];
+// LA DATE D'UNE LIGNE DU TABLEAU, en court : « ven. 25 sept. ». L'heure n'y
+// entre pas — elle vit sur la fiche, et trois lignes qui la porteraient toutes
+// ne laisseraient plus de place au titre.
+const jourCourt = (date) => date.toLocaleDateString('fr-FR',
+  { weekday: 'short', day: 'numeric', month: 'short' });
 
-// LES VISAGES EN PILE plutôt que les noms des groupes (16 septembre 2026,
-// demande de Noé : « pour les organigrammes mets des photos l'une sur l'autre
-// plutôt que les pastilles présidence… »). Et il a raison : « Présidence,
-// Secrétariat, Trésorerie » sont les mots du MENU de cette page, pas ce qu'on
-// ignore avant de l'ouvrir — on y vient chercher des GENS.
+// CE QUI ARRIVE AU CLUB : les réunions et les évènements de la saison, dans
+// l'ordre des dates. Deux sources, et chacune garde sa règle : une réunion vit
+// en base et reste « à venir » jusqu'à sa fin, un évènement vit dans le planning
+// officiel et reste le sien jusqu'au soir de son jour (`prochainEvenementClub`).
 //
-// LE BUREAU D'ABORD, puis le reste : ce sont les visages qu'on cherche en
-// premier, et la pile ne peut en montrer que six.
-function visagesDuClub(combien) {
-  const bureau = GROUPES.filter((g) => g.type === 'bureau').flatMap((g) => g.membres);
-  const ordre = [...new Set([...bureau, ...Object.keys(PERSONNES)])];
-  const avecPhoto = ordre.map((id) => PERSONNES[id]).filter((p) => p?.photo);
-  const montres = avecPhoto.slice(0, combien);
-  const reste = avecPhoto.length - montres.length;
-  return `<span class="fch-hall-visages">${montres.map(portrait).join('')}${
-    reste ? `<span class="fch-hall-visage-plus">+${reste}</span>` : ''}</span>`;
+// LES TEMPS FORTS EN BASE N'Y SONT PAS, et c'est voulu : ils doublent les
+// évènements du planning sous un autre titre (« Tournoi de pétanque » contre
+// « Concours de pétanque ») — la même date deux fois se lirait comme deux
+// rendez-vous.
+function aVenirAuClub(etat, maintenant = new Date()) {
+  const reunions = (etat.evenements ?? [])
+    .filter((e) => estReunion(e) && finDeLaSortie(e) >= maintenant)
+    .map((e) => {
+      const fiche = ficheDeLaReunion(etat.fiches, e.id);
+      return {
+        quand: new Date(e.date_debut),
+        titre: e.titre,
+        detail: REUNION_OBJETS[e.reunion_objet] ?? 'Réunion',
+        adresse: fiche ? `#hermitage/reunions/${fiche.id}` : '#hermitage/reunions',
+      };
+    });
+  const finDuJour = (date) => new Date(date).setHours(23, 59, 59, 999);
+  const evenements = EVENEMENTS_CLUB
+    .map((e) => ({ e, quand: dateDeLEvenement(e) }))
+    .filter(({ quand }) => quand && finDuJour(quand) >= maintenant.getTime())
+    .map(({ e, quand }) => {
+      // SON ÉTAT DE COM SE LIT SUR LA LIGNE, et c'est ce qui dispense l'évènement
+      // d'une tuile à lui : c'est la seule chose qu'on vient y chercher.
+      const liees = (etat.publications ?? []).filter((p) => p.rubrique === rubriqueEvenement(e));
+      return {
+        quand,
+        // Une date incertaine se dit telle qu'elle est écrite : « 13 ou 20
+        // février » ne se réduit pas au 13 sans mentir.
+        date: e.incertain ? e.date.replace(/\s\d{4}$/, '') : null,
+        titre: e.titre,
+        detail: liees.length
+          ? `${liees.length} communication${liees.length > 1 ? 's' : ''}`
+          : 'Communication à préparer',
+        adresse: `#hermitage/evenements/${e.id}`,
+      };
+    });
+  return [...reunions, ...evenements].sort((a, b) => a.quand - b.quand);
 }
 
-function hallDuClub(etat) {
-  const bureau = GROUPES.filter((g) => g.type === 'bureau');
-  const commissions = GROUPES.filter((g) => g.type === 'commissions');
-  const equipes = GROUPES.filter((g) => g.type === 'sportif');
+// LE CLUB EST UN TABLEAU DE BORD (22 septembre 2026, demande de Noé : « plutôt
+// qu'une page qui regroupe tous les liens possibles, il faudrait davantage que
+// ce soit un dashboard dans lequel on voit les infos principales et
+// importantes, qui lorsque l'on clique dessus nous mène vers une page plus
+// complète. Et les pages non référencées ici le sont dans le menu dépliant »).
+//
+// CE QUE ÇA REMPLACE : un rail de sept objectifs et six portes — treize tuiles,
+// dont quatre ouvraient sur des choses qui ne bougent pas de l'année (les
+// organigrammes, le projet, les chiffres, les créneaux). Une porte qui montre ce
+// qu'il y a derrière reste une porte : la page disait où aller, pas ce qui se
+// passe.
+//
+// LE CAP DE LA SAISON LE PRÉCÈDE, en rail : c'est le seul bloc qui ne bouge pas
+// d'une semaine à l'autre, et il reste en tête parce qu'il dit vers quoi le
+// reste travaille.
+//
+// DEUX RÈGLES :
+//   — une tuile montre une INFORMATION, et c'est l'information qu'on presse.
+//     « Réunion Lina 2 · ven. 25 » et non « Les réunions » ;
+//   — ce qui ne bouge pas n'est pas ici. La mission, les valeurs, les chiffres,
+//     l'organigramme se RELISENT, ils ne se surveillent pas : ils vivent dans le
+//     menu, qui recense tout.
+//
+// ET CE N'EST PAS L'ACCUEIL DU SITE : l'accueil montre le travail de Noé — ses
+// tâches, sa com ; le Club montre la vie du club — son agenda, les engagements
+// de TOUT LE MONDE, son cap. D'où les responsables sur les actions.
+function tableauDuClub(etat) {
+  const aVenir = aVenirAuClub(etat);
+  const ouvertes = (etat.actionsClub ?? []).filter((action) => action.statut !== 'fait');
   const prochain = prochainEntrainement();
-  const creneaux = CRENEAUX.reduce((total, [, lot]) => total + lot.length, 0);
-  const principales = VALEURS_FCH.filter((v) => v.principale).map((v) => v.nom);
 
-  // LE HALL EST LA SECTION, et surtout pas le contenu d'une `.bloc` : au-delà de
-  // 60 rem, `.bloc ul` passe toute liste en grille de 21 rem et `.bloc li`
-  // dessine chaque ligne comme une carte — les créneaux et les repères
-  // s'écartaient et s'indentaient dans leur porte. Le hall des partenaires vit
-  // déjà hors des blocs, et c'est pour la même raison.
-  return `<section class="fch-hall" aria-label="Le club">
-    ${porte('#hermitage/commissions', 'Les organigrammes', `${Object.keys(PERSONNES).length} personnes`,
-      `<span class="fch-hall-quoi">${bureau.length} au bureau, ${commissions.length} commissions,
-         ${equipes.length} équipes et leur encadrement</span>`,
-      visagesDuClub(6))}
+  // UNE TUILE À PLUSIEURS DESTINATIONS N'EST PAS UN LIEN : ses lignes le sont.
+  // Un `<a>` qui en contiendrait d'autres n'est ni valide ni cliquable.
+  const agenda = `<div class="fch-hall-porte club-tuile">
+      <span class="fch-hall-tete"><h2 class="fch-hall-nom">À venir au club</h2></span>
+      ${aVenir.length
+        ? `<ul class="club-lignes">${aVenir.slice(0, 4).map((l) => `<li>
+            <a class="club-ligne" href="${l.adresse}">
+              <span class="club-ligne-quand">${echapper(l.date ?? jourCourt(l.quand))}</span>
+              <span class="club-ligne-texte"><span class="club-ligne-titre">${echapper(l.titre)}</span>
+                <span class="fch-hall-quoi">${echapper(l.detail)}</span></span>
+            </a></li>`).join('')}</ul>`
+        : '<span class="fch-hall-quoi">Rien au calendrier du club pour le moment.</span>'}
+    </div>`;
 
-    ${porte('#hermitage/projet-club', 'Le projet du club', `${OBJECTIFS_FCH.length} objectifs`,
-      `<span class="fch-hall-phrase">${echapper(MISSION_FCH.phrase)}</span>
-       <span class="fch-hall-mots">${mots(principales, 3)}</span>`)}
+  // CE QUI RESTE À TENIR mène au tableau des actions, et la tuile entière est le
+  // lien : elle n'a qu'une destination. L'ordre est celui de la base — par
+  // échéance, les sans-date en dernier.
+  const aTenir = porte('#hermitage/actions', 'Ce qui reste à tenir',
+    ouvertes.length ? `${ouvertes.length}` : '',
+    ouvertes.length
+      ? `<ul class="fch-hall-lots club-actions">${ouvertes.slice(0, 4).map((action) => `<li>
+          <span>${echapper(action.texte)}</span>
+          <span class="fch-hall-compte">${echapper(action.responsable ?? '')}</span></li>`).join('')}</ul>
+         ${ouvertes.length > 4 ? `<span class="fch-hall-quoi">et ${ouvertes.length - 4} autre${ouvertes.length > 5 ? 's' : ''}</span>` : ''}`
+      : '<span class="fch-hall-quoi">Tout ce qui a été décidé en réunion est tenu.</span>');
 
-    ${porte('#hermitage/entrainements', 'Les entraînements', `${creneaux} créneaux`,
-      prochain
-        // LE JOUR SE LIT AVANT SES CRÉNEAUX : mis en dessous, on lisait trois
-        // horaires sans savoir de quel jour ils parlaient, puis le jour après
-        // coup — c'est le sujet qui arrivait après son complément.
-        ? `<span class="fch-hall-quoi">${echapper(prochain.quand)}${prochain.creneaux.length > 3
-             ? `, et ${prochain.creneaux.length - 3} autre${prochain.creneaux.length > 4 ? 's' : ''}`
-             : ''}</span>
-           <ul class="fch-hall-lots">${prochain.creneaux.slice(0, 3).map(([categorie, lieu, heure]) => `<li>
-            <span>${echapper(`${categorie} · ${lieu}`)}</span>
-            <span class="fch-hall-compte">${echapper(heure)}</span></li>`).join('')}</ul>`
-        : '<span class="fch-hall-quoi">Aucun créneau déclaré.</span>')}
+  const entrainements = porte('#hermitage/entrainements',
+    prochain ? `${prochain.quand} à l’entraînement` : 'Les entraînements', '',
+    prochain
+      ? `<ul class="fch-hall-lots">${prochain.creneaux.map(([categorie, lieu, heure]) => `<li>
+          <span>${echapper(`${categorie} · ${lieu}`)}</span>
+          <span class="fch-hall-compte">${echapper(heure)}</span></li>`).join('')}</ul>`
+      : '<span class="fch-hall-quoi">Aucun créneau déclaré.</span>');
 
-    ${porte('#hermitage/chiffres', 'Le club en chiffres', `${REPERES.length} repères`,
-      `<ul class="fch-hall-lots">${REPERES.slice(0, 3).map(([chiffre, quoi]) => `<li>
-          <span>${echapper(courtRepere(quoi))}</span>
-          <span class="fch-hall-compte">${echapper(chiffre)}</span></li>`).join('')}</ul>`)}
-
-    ${porteDesReunions(etat)}
-    ${porte('#hermitage/evenements', 'Les évènements', `${EVENEMENTS_CLUB.length}`, '<span class="fch-hall-quoi">La saison 2026/2027, la communication de chaque évènement et son rétroplanning.</span>')}
+  // LE CAP OUVRE LA PAGE, EN RAIL, ET LE TABLEAU SUIT (22 septembre 2026,
+  // correction de Noé — voir `railDesObjectifsDeLaSaison`, js/projet-club.js).
+  return `${railDesObjectifsDeLaSaison()}
+  <section class="fch-hall club-tableau" aria-label="Le club">
+    ${agenda}${aTenir}${entrainements}
   </section>`;
 }
 
@@ -3011,7 +3086,7 @@ function porteDesReunions(etat) {
       : '<span class="fch-hall-quoi">Aucune réunion notée.</span>'}
      ${ouvertes.length
       ? `<ul class="fch-hall-lots">${ouvertes.slice(0, 2).map((action) => `<li>
-          <span>${echapper(action.titre)}</span>
+          <span>${echapper(action.texte)}</span>
           <span class="fch-hall-compte">${echapper(action.responsable ?? '')}</span></li>`).join('')}</ul>`
       : ''}`);
 }
@@ -3042,11 +3117,8 @@ function vueClub(etat) {
   // FC Hermitage » nommait les portes qu'on a juste en dessous, et une porte qui
   // MONTRE ce qu'il y a derrière n'a plus besoin qu'on l'annonce. C'est la forme
   // des deux autres halls du hub — `#perso` et celui des partenaires.
-  // LE CAP DE LA SAISON OUVRE LA PAGE, LE HALL SUIT (20 septembre 2026, demande
-  // de Noé) : six portes disaient où aller sans dire vers quoi. Voir
-  // `railDesObjectifsDeLaSaison`, js/projet-club.js.
   return `${enTete(vue, personne)}${vue === 'club'
-    ? `${railDesObjectifsDeLaSaison()}${hallDuClub(etat)}`
+    ? tableauDuClub(etat)
     : `${contenus[vue]()}<a class="lien-discret" href="#hermitage/club">← Le club</a>`}${vue === 'evenements' ? fenetreIdee(etat) : ''}${pied()}`;
 }
 

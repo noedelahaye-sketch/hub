@@ -2125,6 +2125,94 @@ body[data-espace="hermitage"] #vue .suivi-chantier h4 {
   .suivi-fiche-tete .suivi-logo { width: 96px; height: 62px; }
 }
 .fch-hall-logos { display: flex; flex-wrap: wrap; gap: 5px; }
+
+/* LE TABLEAU DE BORD DU CLUB (22 septembre 2026). Il emprunte la tuile des halls
+   — même surface, même rayon, même ombre — parce qu'il vit au même endroit et
+   que deux dessins pour une tuile du même site feraient deux familles.
+
+   DEUX COLONNES DÉCLARÉES, pas `auto-fit` : il y a quatre tuiles, et une grille
+   qui se remplit d'elle-même en posait quatre de front sur un grand écran —
+   quatre colonnes de 16 rem où les titres d'actions se coupent à l'ellipse.
+   Deux par deux, chacune a la place de dire sa phrase. */
+.club-tableau { grid-template-columns: minmax(0, 1fr); }
+/* TROIS TUILES SUR DEUX COLONNES : l'agenda prend la gauche sur toute sa
+   hauteur, les actions et les créneaux s'empilent à droite. C'est la plus
+   longue des trois, et une grille de deux par deux aurait laissé un trou. */
+@media (min-width: 48rem) {
+  .club-tableau { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .club-tableau > :first-child { grid-row: span 2; }
+}
+
+/* LE RAIL DES OBJECTIFS DE LA SAISON : TROIS DE FRONT SUR ORDINATEUR, et le
+   bord de la quatrième qui dépasse (22 septembre 2026, demande de Noé : « 3
+   objectifs visibles minimum en vue ordinateur »). La largeur se DÉDUIT de la
+   colonne au lieu d'être fixée : à 19 rem — celle du rail d'un pôle —, une
+   fenêtre de 800 px n'en montrait que deux et demie.
+
+   `3.25` et non `3` : c'est le quart de tuile qui dépasse qui dit qu'il y en a
+   d'autres, mieux qu'une flèche. Les trois écarts de 8 px sont ceux du rail.
+
+   LE CALAGE PASSE AU BORD GAUCHE : centré, il laissait une tuile coupée de
+   chaque côté, et on ne lisait plus trois objectifs mais deux et deux moitiés.
+   `scroll-padding` le pose au bord du rembourrage, hors du fondu du masque.
+
+   La règle s'écrit APRÈS celle de `.pole-rail`, à spécificité égale : c'est
+   l'ordre qui tranche. */
+/* LE TITRE SE CALE EN HAUT DE SA RANGÉE, et ce n'est pas cosmétique. Dans un
+   rail, toutes les tuiles prennent la hauteur de la plus haute ; la grille de
+   la tuile (`.cap-tuile-ouvrir`) RÉPARTIT ce surplus entre ses rangées, et la
+   rangée du titre grandissait de 8 px au-delà de ses deux lignes. Le titre
+   s'étirait avec elle, et son `line-clamp` laissait voir le haut d'une
+   troisième ligne coupée à mi-hauteur. *Mesuré : 50 px pour 42 attendus, sur
+   « Augmenter les revenus sponsors de 25 %, atteindre 26 K€ ».* Le défaut
+   dormait sur le rail d'une commission, dont les tuiles plus larges tenaient
+   leurs titres en deux lignes ; il touche tous les rails, d'où `.pole-rail`. */
+.pole-rail .cap-tuile-titre { align-self: start; }
+@media (min-width: 48rem) {
+  .club-rail { scroll-padding-inline: 12px; }
+  .club-rail > .cap-tuile {
+    flex: 0 0 calc((100% - 3 * var(--espace-8)) / 3.25);
+    scroll-snap-align: start;
+  }
+}
+/* UNE TUILE À PLUSIEURS DESTINATIONS N'EST PAS UN LIEN, ET NE DOIT PAS EN AVOIR
+   L'AIR : la vitre du survol dirait « tout ceci s'ouvre », alors que ce sont
+   ses lignes qui s'ouvrent, une par une. On lui garde sa surface. */
+.fch-hall-porte.club-tuile:hover {
+  background: color-mix(in srgb, var(--fond-carte) 82%, transparent);
+}
+.club-tuile h2.fch-hall-nom { margin: 0; font-family: inherit; }
+.club-lignes {
+  display: flex; flex-direction: column; gap: 2px;
+  list-style: none; margin: 0; padding: 0;
+}
+/* LA LIGNE EST LE LIEN, et elle déborde de 8 px de chaque côté de la colonne
+   pour que son survol ait de l'air — sans décaler le texte, que la marge
+   négative rattrape. */
+.club-ligne {
+  display: flex; align-items: baseline; gap: var(--espace-12);
+  margin-inline: -8px; padding: 6px 8px; border-radius: 10px;
+  color: #fff; text-decoration: none;
+}
+.club-ligne:hover { background: rgb(255 255 255 / 7%); text-decoration: none; }
+.club-ligne:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+/* LA DATE EN COLONNE : elles tombent l'une sous l'autre, et c'est ce qui fait
+   lire la liste comme un agenda plutôt que comme des phrases. */
+.club-ligne-quand {
+  flex: none; width: 6.5rem;
+  font-size: 0.75rem; font-weight: 700; color: var(--accent);
+}
+.club-ligne-texte { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.club-ligne-titre {
+  font-size: 0.875rem; font-weight: 700; line-height: 1.3;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* Sur un téléphone, la date passe au-dessus du titre : à 6,5 rem elle mangeait
+   le tiers d'une ligne de 343 px. */
+@media (max-width: 30rem) {
+  .club-ligne { flex-direction: column; gap: 2px; }
+  .club-ligne-quand { width: auto; }
+}
 .fch-hall-logos .suivi-logo { width: 48px; height: 32px; padding: 3px; border-radius: 7px; }
 
 /* La tête d'une fiche : LE LOGO À GAUCHE, TOUT LE TEXTE À SA DROITE (16 septembre
