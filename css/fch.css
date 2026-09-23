@@ -1847,6 +1847,24 @@ body[data-espace="hermitage"] #vue .suivi-chantier h4 {
 }
 .suivi-compte { flex: none; font-size: 0.6875rem; font-weight: 700; color: var(--texte-discret); }
 .suivi-chantier .discret { margin: 0 0 8px; font-size: 0.75rem; }
+/* « + AJOUTER UNE ENTREPRISE » FERME LE CHANTIER (23 septembre 2026). En
+   pointillé, le signe du hub pour « de quoi poser une chose de plus » — et en
+   encre discrète : c'est un geste rare, il ne doit pas peser autant que les
+   lignes qu'on coche tous les jours. La cible garde ses 44 px de haut. */
+.suivi-chantier-ajout { display: block; margin-top: 6px; }
+.suivi-chantier-plus {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px;
+  border: 1px dashed color-mix(in srgb, #fff 28%, transparent); border-radius: 999px;
+  background: none; color: var(--texte-discret);
+  font: inherit; font-size: 0.8125rem; font-weight: 600; cursor: pointer;
+}
+.suivi-chantier-plus:hover,
+.suivi-chantier-plus[aria-expanded="true"] { color: #fff; border-color: color-mix(in srgb, #fff 55%, transparent); }
+/* Le partenaire discret se dit sous son nom, en petit : il reste offert, c'est
+   Noé qui décide. */
+.suivi-choix-note {
+  display: block; font-size: 0.6875rem; font-weight: 500; color: var(--texte-discret);
+}
 
 .bloc ul.suivi-lignes { display: grid; gap: 2px; margin: 8px 0 0; }
 /* `flex-wrap: nowrap` SE REDIT, et ce n'est pas décoratif : une règle plus

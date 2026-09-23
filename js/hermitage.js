@@ -19,6 +19,7 @@ import { monterLeMenu, boutonDuMenu } from './menu.js';
 import {
   modifierAussitot,
   retirerAussitot,
+  ajouterAussitot,
   identifiantProvisoire,
   estProvisoire,
 } from './ecriture.js';
@@ -58,7 +59,9 @@ import {
 import {
   construireSuiviPartenaires, titreDuSuivi, porte, mots, parChantier,
 } from './partenaires-suivi.js';
-import { OFFRES_FCH, ETATS_PARTENAIRE, engagementsDeLOffre, offreDe } from './partenaires-fch.js';
+import {
+  OFFRES_FCH, ETATS_PARTENAIRE, ENGAGEMENTS_FCH, engagementsDeLOffre, offreDe,
+} from './partenaires-fch.js';
 import {
   trierTaches,
   construireLignesTaches,
@@ -4366,6 +4369,9 @@ export default {
       const basculer = evenement.target.closest('[data-basculer-engagement]');
       if (basculer) {
         const id = basculer.dataset.basculerEngagement;
+        // Une ligne qui vient d'être ajoutée n'a pas encore son identifiant :
+        // l'écriture partirait vers une ligne qui n'existe pas en base.
+        if (estProvisoire(id)) return;
         const partenaire = etat.partenairesSuivi.find(
           (p) => (p.engagements ?? []).some((e) => e.id === id),
         );
@@ -4387,6 +4393,7 @@ export default {
       const retirer = evenement.target.closest('[data-retirer-engagement]');
       if (retirer) {
         const id = retirer.dataset.retirerEngagement;
+        if (estProvisoire(id)) return;
         if (etat.engagementAConfirmer !== id) {
           etat.engagementAConfirmer = id;
           rendre();
@@ -4433,6 +4440,37 @@ export default {
         );
         return;
       }
+      // AJOUTER UNE ENTREPRISE À UN CHANTIER (23 septembre 2026) : c'est poser
+      // une ligne dans SES engagements — la fiche la montre d'elle-même. Voir
+      // `ajoutAuChantier`, js/partenaires-suivi.js.
+      //
+      // LE CHANTIER SE RETROUVE PAR SA CLÉ, recalculée ici plutôt que portée par
+      // le bouton : un libellé dans un attribut serait une seconde copie du
+      // catalogue. Une clé du catalogue reste une clé ; un chantier LIBRE
+      // (« libre:<libellé> ») n'en a pas, et c'est son libellé qui le regroupe.
+      const ajoutChantier = evenement.target.closest('[data-ajouter-au-chantier]');
+      if (ajoutChantier) {
+        fermerLesChoix(section);
+        const { ajouterAuChantier: cle, partenaire: id } = ajoutChantier.dataset;
+        const partenaire = etat.partenairesSuivi.find((p) => p.id === id);
+        const lot = parChantier(etat.partenairesSuivi).find((l) => l.cle === cle);
+        if (!partenaire || !lot) return;
+        const champs = {
+          partenaire_id: id,
+          cle: ENGAGEMENTS_FCH[cle] ? cle : null,
+          libelle: lot.libelle,
+          origine: 'ajout',
+        };
+        partenaire.engagements ??= [];
+        await ajouterAussitot(
+          partenaire.engagements,
+          { ...champs, detail: null, fait_le: null },
+          () => api.ajouterEngagement(champs),
+          { rendre, echouer: dire },
+        );
+        return;
+      }
+
       // Un clic ailleurs referme le menu : c'est le geste attendu. La garde
       // porte sur le GROUPE et non sur le déclencheur, pour ne pas refermer
       // dans le même clic celui que `brancherCapture` vient d'ouvrir.

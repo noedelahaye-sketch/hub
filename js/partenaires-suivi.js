@@ -126,6 +126,51 @@ function ligneEngagement(e, avecPartenaire, aConfirmer) {
   </li>`;
 }
 
+// AJOUTER UNE ENTREPRISE À UN CHANTIER (23 septembre 2026, demande de Noé : « pour
+// chaque engagement partenaire, je dois pouvoir ajouter une entreprise à la
+// liste si besoin, et ça se rajoutera automatiquement dans la fiche du
+// partenaire »).
+//
+// IL N'Y A RIEN À SYNCHRONISER, et c'est ce qui rend le geste sûr : un chantier
+// n'existe pas en base, il se DÉDUIT des engagements de chaque partenaire
+// (`parChantier`). Ajouter une entreprise au chantier, c'est donc poser une ligne
+// dans SES engagements — la fiche la montre parce qu'elle lit la même ligne.
+// Deux listes à tenir d'accord finiraient par ne plus l'être.
+//
+// LA LIGNE NAÎT EN `ajout`, comme sur la fiche : elle n'est pas dans l'offre
+// signée, elle a été promise en plus. Le mot « négocié » le dira sur les deux
+// écrans.
+//
+// N'EST OFFERT QUE CE QUI MANQUE : une entreprise déjà dans le chantier n'y
+// figurerait pas deux fois pour un même travail. Quand tous y sont, le bouton
+// se tait — un menu vide se lit comme une panne.
+//
+// C'EST LE MENU DESSINÉ DU SITE (`data-ouvrir-choix`), celui de l'état d'un
+// partenaire : même geste, même dessin, et `brancherCapture` l'ouvre déjà.
+function ajoutAuChantier(lot, partenaires) {
+  const deja = new Set(lot.lignes.map((ligne) => ligne.partenaire.id));
+  const candidats = partenaires
+    .filter((p) => !deja.has(p.id))
+    .sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+  if (!candidats.length) return '';
+  return `<span class="choix-champ suivi-chantier-ajout" data-choix-champ="chantier-${echapper(lot.cle)}">
+    <button type="button" class="suivi-chantier-plus" data-ouvrir-choix
+      aria-expanded="false" aria-haspopup="listbox"
+      aria-label="${echapper(`Ajouter une entreprise : ${lot.libelle}`)}">+ Ajouter une entreprise</button>
+    <div class="choix-panneau" hidden>
+      <ul class="choix-capture">${candidats.map((p) => `
+        <li><button type="button" data-ajouter-au-chantier="${echapper(lot.cle)}"
+          data-partenaire="${echapper(p.id)}">${echapper(p.nom)}${
+          // Le partenaire DISCRET reste offert — c'est Noé qui décide —, mais
+          // il le dit : c'est précisément sur ces chantiers-là qu'il a demandé
+          // à ne pas paraître.
+          p.discret ? '<span class="suivi-choix-note">ne souhaite pas être mentionné</span>' : ''
+        }</button></li>`).join('')}
+      </ul>
+    </div>
+  </span>`;
+}
+
 const quandFait = (jour) => new Date(`${jour}T12:00:00`)
   .toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 
@@ -153,6 +198,7 @@ function pageEngagements(partenaires) {
             .sort((a, b) => Number(!!a.fait_le) - Number(!!b.fait_le)
               || a.partenaire.nom.localeCompare(b.partenaire.nom, 'fr'))
             .map((e) => ligneEngagement(e, true)).join('')}</ul>
+          ${ajoutAuChantier(l, partenaires)}
         </section>`).join('')}</div>`).join('')}
   </section>`;
 }

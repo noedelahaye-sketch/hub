@@ -2013,6 +2013,29 @@ Noé, au centime près. Aucun débordement à 375 px comme à 900.*
 **À VENIR** : les logos, que Noé fournira. Ils se poseront comme les écussons
 des clubs — rapatriés dans le dépôt, jamais appelés à un CDN.
 
+#### UNE ENTREPRISE S'AJOUTE DEPUIS UN CHANTIER (23 septembre 2026)
+
+**La demande de Noé** : *« pour chaque engagement partenaire, je dois pouvoir
+ajouter une entreprise à la liste si besoin, et ça se rajoutera automatiquement
+dans la fiche du partenaire »*.
+
+- **« + Ajouter une entreprise » ferme chaque chantier**, et ouvre le menu
+  dessiné du site : **seules les entreprises qui n'y sont pas encore** sont
+  offertes. Quand toutes y sont, le bouton se tait.
+- **Rien à synchroniser** : un chantier n'existe pas en base, il se déduit des
+  engagements de chaque partenaire (`parChantier`). L'ajouter, c'est poser une
+  ligne dans `partenaires_engagements` — la fiche la montre parce qu'elle lit la
+  même ligne.
+- **La ligne naît en `ajout`**, comme depuis la fiche : elle n'était pas dans
+  l'offre signée, et le mot « négocié » le dit sur les deux écrans. Elle garde la
+  clé du catalogue quand le chantier en a une, sinon son libellé la range.
+- **Un partenaire discret reste offert**, avec la mention « ne souhaite pas être
+  mentionné » sous son nom : c'est Noé qui décide, mais c'est précisément sur ces
+  chantiers-là qu'il a demandé à ne pas paraître.
+- **L'écriture est optimiste**, et la coche comme la croix d'une ligne qui n'a
+  pas encore son identifiant ne partent pas : elles viseraient une ligne qui
+  n'existe pas en base.
+
 ### Le projet du club — mission, valeurs, objectifs (16 septembre 2026)
 
 **La demande de Noé** : *« pour la page le projet du club, je te joins tous les
