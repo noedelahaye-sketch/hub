@@ -2543,12 +2543,13 @@ export async function ajouterPointReunion({
   type_point = null,
   minutes = null,
   sortie = null,
+  details = null,
   ordre = null,
 }) {
   return verifier(
     await client
       .from('fiches_reunion_points')
-      .insert({ fiche_id, titre, type_point, minutes, sortie, ordre })
+      .insert({ fiche_id, titre, type_point, minutes, sortie, details, ordre })
       .select()
       .single(),
   );

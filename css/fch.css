@@ -3013,3 +3013,16 @@ body[data-espace="hermitage"] #vue .cal-numero-aujourdhui {
   background: var(--cal-tache);
 }
 body[data-espace="hermitage"] #vue .cal-coche input { accent-color: var(--cal-tache); }
+
+/* LE DÉTAIL D'UN POINT (20 septembre 2026) : mêmes gestes que la fenêtre d'un
+   événement — crayon et corbeille, la corbeille seule en rouge parce qu'elle
+   efface sans retour. Le détail garde ses retours à la ligne : on y écrit des
+   paragraphes. */
+.fenetre .tuile-entete { display: flex; align-items: center; gap: var(--espace-8); }
+.fenetre .tuile-entete .odj-duree { margin-left: auto; }
+.cal-detail-actions [data-supprimer-point] { color: var(--erreur); }
+.cal-detail-actions [data-supprimer-point]:hover {
+  color: var(--erreur);
+  border-color: var(--erreur);
+  background: color-mix(in srgb, var(--erreur) 12%, transparent);
+}

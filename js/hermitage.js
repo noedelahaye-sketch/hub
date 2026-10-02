@@ -114,6 +114,8 @@ import {
   fermerLesChoix,
   REUNION_OBJETS,
   FORMATS,
+  CRAYON_DETAIL,
+  CORBEILLE,
 } from './calendrier-commun.js';
 
 const ESPACE = 'fch';
@@ -933,6 +935,32 @@ function blocContrat(fiche, animee) {
     </section>`;
 }
 
+// LE DÉTAIL D'UN POINT (20 septembre 2026, demande de Noé) : toucher la tuile
+// d'un point ne rouvre plus le formulaire, ça LIT — type, titre, temps, sortie
+// attendue et détail en entier. Modifier et supprimer sont deux icônes, comme
+// sur la fenêtre d'un événement : on lit d'abord, on corrige si besoin.
+function fenetrePoint(fiche, idPoint) {
+  const point = idPoint ? fiche.points.find((candidat) => candidat.id === idPoint) : null;
+  if (!point) return '';
+
+  return construireFenetre(
+    point.titre,
+    `<span class="tuile-entete">
+       ${point.type_point ? `<span class="etiquette">${TYPES_POINT[point.type_point] ?? ''}</span>` : ''}
+       ${point.minutes ? `<span class="odj-duree"><span class="chiffre">${point.minutes}</span> min</span>` : ''}
+     </span>
+     <h3 class="cal-detail-titre">${echapper(point.titre)}</h3>
+     ${point.sortie ? `<p class="discret cal-detail-ligne">${echapper(point.sortie)}</p>` : ''}
+     ${point.details ? `<p class="cal-detail-ligne">${echapper(point.details)}</p>` : ''}
+     <div class="cal-detail-actions">
+       <button type="button" class="bouton-icone" data-modifier-point-detail="${echapper(point.id)}"
+         title="Modifier" aria-label="Modifier">${CRAYON_DETAIL}</button>
+       <button type="button" class="bouton-icone" data-supprimer-point="${echapper(point.id)}"
+         title="Supprimer" aria-label="Supprimer « ${echapper(point.titre)} »">${CORBEILLE}</button>
+     </div>`,
+  );
+}
+
 // L'ordre du jour orienté action : des résultats à produire, pas des thèmes.
 function blocOrdreDuJour(fiche, pointEnEdition = null) {
   const total = fiche.points.reduce((somme, point) => somme + (point.minutes ?? 0), 0);
@@ -1063,6 +1091,13 @@ function blocOrdreDuJour(fiche, pointEnEdition = null) {
               libelle: 'La sortie attendue — un résultat, pas un thème',
               type: 'text',
               valeur: enEdition?.sortie ?? '',
+            },
+            {
+              nom: 'details',
+              libelle: 'Le détail — contexte, éléments à avoir en tête, ce que tu veux dire',
+              type: 'textarea',
+              rangs: 6,
+              valeur: enEdition?.details ?? '',
             },
           ],
         })
@@ -1471,6 +1506,7 @@ function vueFicheReunion(etat, fiche) {
       // défait alors tout seul.
       duo(blocContrat(fiche, animee), animee ? blocOrdreDuJour(fiche, etat.pointEnEdition) : '')
     }
+    ${animee ? fenetrePoint(fiche, etat.pointOuvert) : ''}
     ${animee ? blocPresentation(fiche) : ''}
     ${animee ? blocKitAnimation() : ''}
     ${blocConclure(fiche, animee, actionsDeLaFiche)}
@@ -3187,6 +3223,7 @@ export default {
       // septembre 2026). De l'état d'INTERFACE, comme les plis : il ne va pas
       // au cache, et rouvrir la fiche repart du formulaire vide.
       pointEnEdition: null,
+      pointOuvert: null,
       modelesPrepa: [],
       // La publication ouverte en fenêtre d'édition, sur Créer.
       ideeOuverte: null,
@@ -3518,6 +3555,7 @@ export default {
       etat.editionCal = false;
       etat.jourOuvertCal = null;
       etat.ideeOuverte = null;
+      etat.pointOuvert = null;
       rendre();
     };
 
@@ -3734,7 +3772,7 @@ export default {
     document.addEventListener('keydown', (evenement) => {
       if (
         evenement.key === 'Escape' &&
-        (etat.creationCal || etat.detailCal || etat.jourOuvertCal || etat.ideeOuverte)
+        (etat.creationCal || etat.detailCal || etat.jourOuvertCal || etat.ideeOuverte || etat.pointOuvert)
       ) {
         fermerFenetres();
       }
@@ -3950,6 +3988,7 @@ export default {
           type_point: champs.type_point || null,
           minutes: Number(champs.minutes) || null,
           sortie: champs.sortie?.trim() || null,
+          details: champs.details?.trim() || null,
         };
 
         if (champs.point_id) {
@@ -4556,7 +4595,19 @@ export default {
         // Une sélection de texte en cours n'est pas un appui : copier le nom
         // d'un point ne doit pas ouvrir son formulaire.
         if (!window.getSelection()?.toString()) {
-          etat.pointEnEdition = modifierPoint.dataset.modifierPoint;
+          etat.pointOuvert = modifierPoint.dataset.modifierPoint;
+          rendre();
+          section.querySelector('.fenetre-fermer')?.focus();
+          return;
+        }
+      }
+
+      // Le crayon du détail : c'est lui qui ouvre le formulaire, rempli.
+      const crayonPoint = evenement.target.closest('[data-modifier-point-detail]');
+      if (crayonPoint) {
+        {
+          etat.pointOuvert = null;
+          etat.pointEnEdition = crayonPoint.dataset.modifierPointDetail;
           rendre();
           // ON OUVRE LA TUILE VOLANTE, et le focus part dans le premier champ.
           // `gabarits.js` ne le fait que sur un clic du sommaire ; ici c'est
@@ -4570,6 +4621,24 @@ export default {
           }
           return;
         }
+      }
+
+      const supprimerPoint = evenement.target.closest('[data-supprimer-point]');
+      if (supprimerPoint) {
+        const id = supprimerPoint.dataset.supprimerPoint;
+        etat.pointOuvert = null;
+        for (const fiche of etat.fiches) {
+          const rang = fiche.points.findIndex((candidat) => candidat.id === id);
+          if (rang === -1) continue;
+          await retirerAussitot(
+            fiche.points,
+            fiche.points[rang],
+            () => api.supprimerPointReunion(id),
+            { rendre, echouer: dire },
+          );
+          return;
+        }
+        return;
       }
 
       const retirerPoint = evenement.target.closest('[data-retirer-point]');

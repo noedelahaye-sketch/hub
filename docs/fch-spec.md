@@ -1635,7 +1635,8 @@ autre, non nul = réunion) et `reunion_animee` ; `modeles_preparation` a gagné
   (`bilan_retenu`, `bilan_animation`). `cr_date` se pose à la première
   écriture et ne bouge plus : elle dit quand le compte-rendu est né.
 - `fiches_reunion_points` — l'ordre du jour : titre, `type_point`, `minutes`,
-  `sortie`, et le `statut` qui clôt le point (à venir · traité · reporté).
+  `sortie`, `details` (texte libre, lu dans la fenêtre qui s'ouvre en touchant
+  la tuile — crayon pour modifier, corbeille pour supprimer), et le `statut` qui clôt le point (à venir · traité · reporté).
   CASCADE : les points appartiennent à leur fiche.
 - `actions_club` — le tableau permanent. `fiche_id` en SET NULL (la mémoire
   survit à la fiche), `tache_id` vers la tâche jumelle quand l'action est pour
