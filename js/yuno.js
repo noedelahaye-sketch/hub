@@ -3405,6 +3405,11 @@ function vueFeuille(etat, feuille) {
              « ${echapper(precedent.bilan_mieux)} »</p>`
         : ''
     }
+    <div class="prepa-objectif">
+      <label for="prepa-objectif-jour">L'objectif du jour</label>
+      <textarea id="prepa-objectif-jour" data-objectif-jour="${echapper(feuille.id)}" rows="2"
+        >${echapper(feuille.objectif_jour ?? '')}</textarea>
+    </div>
     ${blocModeleFeuille(etat, feuille)}
     <div class="prepa-phases">
       ${blocPhase(feuille, 'avant', { auModele })}
@@ -9502,6 +9507,20 @@ export default {
       // redessin — la valeur est déjà sous les yeux, comme les modèles de
       // messages. Un champ vidé reprend son texte : une ligne sans texte
       // n'existe pas, elle se RETIRE (la croix est à côté).
+      const objectifJour = evenement.target.closest('[data-objectif-jour]');
+      if (objectifJour) {
+        const feuille = etat.preparations.find((f) => f.id === objectifJour.dataset.objectifJour);
+        if (!feuille || estProvisoire(feuille.id)) return;
+        const objectif = objectifJour.value.trim() || null;
+        await modifierAussitot(
+          feuille,
+          { objectif_jour: objectif },
+          () => api.modifierPreparation(feuille.id, { objectif_jour: objectif }),
+          { echouer: (message) => { rendre(); dire(message); } },
+        );
+        return;
+      }
+
       const nomModele = evenement.target.closest('[data-nom-modele]');
       if (nomModele) {
         const modele = etat.modelesPrepa.find((m) => m.id === nomModele.dataset.nomModele);

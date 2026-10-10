@@ -12524,3 +12524,27 @@ a.hab-carte-nom:hover { color: var(--accent); }
 .hub-titre-dans-barre { display: none; }
 .tete-jour:has(> .hub-titre-dans-barre:only-child),
 #bloc-jour:has(> .tete-jour > .hub-titre-dans-barre:only-child) { display: none; }
+
+/* L'objectif du jour d'une préparation (21 septembre 2026, demande de Noé) :
+   un champ de texte posé sous le rappel du dernier bilan, sans cadre — c'est
+   une phrase qu'on s'écrit, pas un formulaire. Le focus se dit par un filet à
+   gauche, comme le journal d'une journée. */
+.prepa-objectif { margin: 0 0 var(--espace-16); }
+.prepa-objectif label {
+  display: block;
+  margin-bottom: var(--espace-4);
+  font-weight: 600;
+}
+.prepa-objectif textarea {
+  width: 100%;
+  margin: 0;
+  padding: var(--espace-8) var(--espace-12);
+  border: 0;
+  border-left: 3px solid var(--bordure);
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  resize: vertical;
+}
+.prepa-objectif textarea:focus-visible { outline: none; border-left-color: var(--couleur-espace, var(--accent)); }
