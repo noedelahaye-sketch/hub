@@ -5387,3 +5387,20 @@ body[data-espace="yuno"] #vue .car-nom:focus { border-color: var(--texte-discret
   border-radius: var(--rayon-controle);
 }
 .car-danger:hover:not(:disabled) { filter: brightness(1.1); }
+
+/* --- La vitrine de la porte du carrousel (page Créer, 20 novembre 2026) ------
+   Trois photos en 3:4 côte à côte et les points d'Instagram dessous : la forme
+   de ce qu'on compose derrière la porte. */
+.porte-car { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
+.porte-car-cadres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; width: 100%; }
+.porte-car-cadre {
+  display: block;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background: var(--fond-releve);
+  border-radius: var(--rayon-etiquette);
+}
+.porte-car-cadre img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.porte-car-points { display: flex; gap: 4px; }
+.porte-car-points span { width: 5px; height: 5px; border-radius: 50%; background: rgb(255 255 255 / 30%); }
+.porte-car-points span.actif { background: #3d95f2; }

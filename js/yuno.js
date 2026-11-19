@@ -607,6 +607,22 @@ function vitrineDuReseau(contacts) {
 // LA BANQUE : TROIS IDÉES TIRÉES DU FONDS. Le mot de la page est « fouiller »,
 // et c'est exactement ce que fait un tirage : il remonte ce qu'on avait oublié.
 // Les trois dernières posées auraient montré ce qu'on a déjà en tête.
+// LE CARROUSEL : TROIS PHOTOS EN 3:4, côte à côte, et les points d'Instagram
+// dessous. C'est la forme de ce qu'on compose derrière la porte — on la
+// reconnaît avant de lire le mot. Les photos sont celles des sorties vécues,
+// tirées du jour comme le mur de l'accueil ; sans photo, trois cadres vides
+// disent la même forme.
+function vitrineDuCarrousel(photos) {
+  const tirage = melangeSeme(Object.values(photos ?? {}), graineDuJour()).slice(0, 3);
+  const cadres = [0, 1, 2].map((i) => tirage[i]
+    ? `<span class="porte-car-cadre"><img src="${echapper(tirage[i])}" alt="" loading="lazy" decoding="async"></span>`
+    : '<span class="porte-car-cadre"></span>').join('');
+  return `<span class="porte-car" aria-hidden="true">
+      <span class="porte-car-cadres">${cadres}</span>
+      <span class="porte-car-points"><span class="actif"></span><span></span><span></span></span>
+    </span>`;
+}
+
 function vitrineDeLaBanque(publications) {
   const tirage = melangeSeme(
     publications.filter((publication) => !publication.date_prevue),
@@ -747,6 +763,14 @@ const CALENDRIER = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none"
   stroke-linejoin="round" aria-hidden="true" focusable="false">
   <rect x="3" y="5" width="18" height="16" rx="2"></rect>
   <path d="M3 10h18M8 3v4M16 3v4"></path>
+</svg>`;
+
+// Une carte entre deux bords : un carrousel, qu'on fait glisser.
+const CARROUSEL = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none"
+  stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+  stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <rect x="7" y="4" width="10" height="16" rx="2"></rect>
+  <path d="M3.5 7v10M20.5 7v10"></path>
 </svg>`;
 
 const AMPOULE = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none"
@@ -2880,6 +2904,18 @@ function vueCreer(etat) {
           vitrine: vitrineDeLaBanque(etat.publications),
           service: `<span class="chiffre">${idees}</span> idée${idees > 1 ? 's' : ''} à fouiller`,
         })}
+        ${
+          // LE CARROUSEL D'APRÈS-MATCH ENTRE PAR ICI (20 novembre 2026, demande
+          // de Noé : « pas un onglet dans le dock, un accès depuis la page
+          // Créer »). C'est une pièce de l'atelier, comme la banque.
+          grandePorte({
+            adresse: '#yuno/carrousel',
+            icone: CARROUSEL,
+            titre: 'Carrousel d’après-match',
+            vitrine: vitrineDuCarrousel(etat.photos),
+            service: 'Composer et télécharger un post',
+          })
+        }
       </div>
     </section>
 
