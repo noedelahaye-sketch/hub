@@ -50,3 +50,11 @@ PRODUCT.md
 # du hub, et elles se périmeraient à côté des sources qu'elles décrivent. Rien
 # de tout ça n'a à partir sur GitHub Pages avec le site.
 graphify-out/
+
+# Le Worker des photos (cloudflare/photos) : ses dépendances, son cache et ses
+# données locales. Ses secrets vivent dans `.env` et `.dev.vars`, déjà exclus
+# ou exclus ici.
+cloudflare/**/node_modules/
+cloudflare/**/.wrangler/
+cloudflare/**/.local-data/
+cloudflare/**/.dev.vars

@@ -95,6 +95,42 @@ pas structurants.
 
 ## 3. Identité
 
+### LE KIT YUNO REMPLACE TOUT CE QUI SUIT (19 novembre 2026, demande de Noé)
+
+**La source de vérité est désormais le « Kit Yuno »**, tiré du site de livraison
+des joueurs (livraison.yuno-rph.com) : un seul monde Yuno des deux côtés. Les
+paragraphes plus bas (Canela, Gilroy, Inter, `#181818`, `#e8b000`, le bleu de la
+matière créative, l'échelle bleue des piliers) disent ce qui a été, pas ce qui
+est. Ils restent pour leurs raisons, qui servent encore.
+
+| Rôle | Valeur |
+|---|---|
+| Fond (Nuit) · cartes (Nuit 2) | `#0e0d0b` · `#1a1814` (troisième cran `#24211c`) |
+| Texte (Ivoire) · gris · filets (Ligne) | `#f6f2e9` · `#a39c8d` · `#2e2a23` |
+| Or | `#d9ac00` — le bouton principal, le focus, et ce qu'il disait déjà (chiffres, onglet actif, copier : **gardés en or**, décision de Noé) |
+| Rouge | `#e0533c`, la suppression seulement |
+| Piliers | une rampe de neutres du kit, de l'ivoire au gris foncé — le kit n'a pas de couleur de catégorie |
+
+- **Gloock** pour le grand titre et le nom de la page dans la barre, en ivoire ;
+  **Instrument Sans** pour tout le reste, servie sous le nom « Yuno Sans » pour
+  avoir son vrai 700 sans toucher au hub. Gloock est dans `fonts/` avec sa
+  licence, jamais appelée à Google Fonts. Pas d'italique : Gloock n'en a pas.
+- **Arrondis** : 6 étiquettes, 10 lignes, 12 contrôles, 16 cartes et grands
+  boutons. **Les photos GARDENT leurs coins arrondis** (Noé a écarté l'angle
+  droit du kit).
+- **Le logo du kit remplace le mot « Accueil »** en tête de la page d'accueil, et
+  **jamais en pied de page** (décision de Noé). L'icône de l'application et le
+  favicon viennent du kit.
+- **Trois formes de bouton** : le principal en or dégradé (« Enregistrer » d'une
+  tuile, le « + »), le normal à filet, la **puce** pour l'option discrète —
+  **plus jamais un mot gris ni souligné qu'on presse**.
+- **Les messages vont dans la bulle** claire et floutée posée au-dessus du bouton
+  touché (`js/bulle.js`), plus sous la barre du haut.
+
+**Les photos du hub vivent chez Cloudflare R2**, sur un compte à part de celui de
+la livraison : voir `cloudflare/photos/README.md`. Le classement reste dans
+Supabase.
+
 **Couleurs** — celles du logo (`img/yuno-logo.jpg`, déposé le 7 août 2026 ;
 valeurs mesurées sur le fichier), **plus le violet depuis le 15 août 2026** :
 c'est la troisième couleur du site (décision de Noé), après le gris foncé du
@@ -2069,6 +2105,28 @@ appel à l'action, légende courte. Sans IA : un aide-mémoire, pas un outil qui
 Yuno pose une étape `à développer` entre l'idée et le brouillon, le FC Hermitage
 garde son cycle à quatre. Même chose pour la checklist et les piliers — ils ne
 débordent pas sur le club.
+
+### `#yuno/carrousel` — le carrousel d'après-match (19–20 novembre 2026)
+
+**L'outil « Mon carrousel » du kit Yuno**, adapté à Noé : on importe les photos
+et vidéos d'un match, on compose un post de vingt au plus, on le voit comme sur
+Instagram (3:4, @yuno_rph), on télécharge les fichiers numérotés `01-…`, `02-…`.
+Code : `js/carrousel.js`. Entrée : menu, « Créer › Le carrousel d'après-match ».
+
+- **Gardé d'un appareil à l'autre** (Noé : « faire la sélection sur ordi et
+  télécharger sur téléphone ») : les FICHIERS partent chez Cloudflare R2 dès
+  l'import (`js/photos-cloud.js`, Worker `cloudflare/photos`), le CARROUSEL — nom,
+  médias, ordre du post — vit dans `carrousels` et `carrousels_medias`.
+- **Pas relié à un match par obligation** : `evenement_id` est facultatif, et
+  aucun écran ne le pose encore.
+- **Ni suggestion, ni statut, ni date, ni légende** (décisions de Noé).
+- **Ma sélection** : toucher deux photos les échange, glisser-déposer (appui long
+  au doigt), ✕ pour retirer ; Annuler/Rétablir sur 50 gestes, ⌘Z.
+- **Télécharger** : feuille de partage sur téléphone (préparer, puis enregistrer),
+  ZIP sur ordinateur (`js/zip.js`).
+- **Supprimer un carrousel efface ses fichiers en ligne** : c'est ce qui libère
+  les 10 Go gratuits une fois le post publié.
+- **À venir** : la présélection plein écran (garder / laisser de côté).
 
 ### `#yuno/editorial` — poser le mois
 

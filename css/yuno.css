@@ -1,5 +1,31 @@
-/* Inter pour les titres et les noms de contenus ; Gilroy pour le texte.
-   Deux fichiers variables couvrent toutes les graisses, avec de vrais italiques. */
+/* LE KIT YUNO (19 novembre 2026, docs/yuno-spec.md §3) : Gloock pour le grand
+   titre, Instrument Sans pour tout le reste — l'identité du site de livraison
+   des joueurs, reprise ici. Rapatriées dans fonts/ comme les autres, jamais
+   appelées à Google Fonts : la coquille hors ligne ne garantit pas un fichier
+   distant.
+
+   « YUNO SANS » EST INSTRUMENT SANS, sous un autre nom. Le fichier variable
+   porte de 400 à 700, mais styles.css le déclare de 400 à 600 pour le hub —
+   élargir cette déclaration-là changerait le hub. Une famille à part, sur le
+   même fichier, donne au site le vrai 700 que le kit demande sans toucher au
+   reste.
+
+   GLOOCK N'A PAS D'ITALIQUE : le kit propose un dernier mot en or italique,
+   mais demander une posture dont le fichier n'existe pas la ferait simuler,
+   et mal (règle du 12 août). L'or seul suffit. */
+@font-face {
+  font-family: "Gloock";
+  src: url("../fonts/Gloock-Regular.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Yuno Sans";
+  src: url("../fonts/InstrumentSans-Variable.woff2") format("woff2");
+  font-weight: 400 700; font-style: normal; font-display: swap;
+}
+
+/* Inter ne sert plus qu'au dock partagé des trois sites (le hub et le FCH en
+   dépendent) ; celui de Yuno passe à la police du kit plus bas. */
 @font-face {
   font-family: "Inter";
   src: url("../fonts/InterVariable.woff2") format("woff2");
@@ -111,12 +137,12 @@ body[data-espace="yuno"] #vue button,
 body[data-espace="yuno"] #vue input,
 body[data-espace="yuno"] #vue select,
 body[data-espace="yuno"] #vue textarea {
-  font-family: "Inter", sans-serif;
+  font-family: "Yuno Sans", sans-serif;
 }
 
 body[data-espace="yuno"] #vue h1,
 body[data-espace="yuno"] #vue h2 {
-  font-family: "Inter", sans-serif;
+  font-family: "Yuno Sans", sans-serif;
   font-style: normal;
   font-weight: 700;
   letter-spacing: -0.025em;
@@ -124,10 +150,15 @@ body[data-espace="yuno"] #vue h2 {
 }
 
 /* Plus un titre est important, plus sa graisse et son approche se resserrent. */
+/* LE GRAND TITRE EST EN GLOOCK (kit Yuno) — et lui seul : c'est la police
+   réservée au nom de la page. Une seule graisse existe, 400 ; la serif tient le
+   poids par son dessin, pas par la graisse. */
 body[data-espace="yuno"] #vue h1 {
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  font-size: 1.625rem;
+  font-family: "Gloock", Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+  font-size: clamp(2.25rem, 6vw, 4.5rem);
 }
 
 /* Le titre d'une page vit hors des blocs : il porte le nom du lieu où l'on
@@ -141,18 +172,21 @@ body[data-espace="yuno"] #vue .titre-page {
 /* Les titres de section perdent la casse haute et l'interlettrage : c'était
    l'habillage d'une étiquette en Gilroy, et il rendait un romain incliné de
    11 px illisible. Un titre de section redevient un titre, pas un libellé. */
+/* LES PETITS TITRES DE SECTION DU KIT : 12 px, 600, capitales écartées de
+   0,14 em, en gris. Un titre de section range, il ne parle pas : c'est le
+   grand titre en Gloock qui porte la voix. */
 body[data-espace="yuno"] #vue .bloc h2 {
-  font-size: 0.9375rem;
-  font-weight: 700;
-  text-transform: none;
-  letter-spacing: -0.025em;
-  color: var(--texte);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--texte-discret);
 }
 
 /* Le titre d'une fenêtre suit la même baisse. La règle commune vit dans
    styles.css et sert aussi au hub : elle n'est réduite qu'ici. */
 body[data-espace="yuno"] .fenetre-titre {
-  font-family: "Inter", sans-serif;
+  font-family: "Yuno Sans", sans-serif;
   font-weight: 700;
   letter-spacing: -0.025em;
   font-size: 1.125rem;
@@ -161,7 +195,7 @@ body[data-espace="yuno"] .fenetre-titre {
 /* Les sous-titres sont des libellés fonctionnels : Gilroy, et de la graisse
    plutôt que de la taille pour les détacher. */
 body[data-espace="yuno"] #vue h3 {
-  font-family: "Inter", sans-serif;
+  font-family: "Yuno Sans", sans-serif;
   font-style: normal;
   font-weight: 600;
   letter-spacing: -0.015em;
@@ -169,8 +203,8 @@ body[data-espace="yuno"] #vue h3 {
 
 
 body[data-espace="yuno"] .chiffre {
-  font-family: "Inter", sans-serif;
-  font-weight: 900;
+  font-family: "Yuno Sans", sans-serif;
+  font-weight: 700;
 }
 
 
@@ -178,7 +212,7 @@ body[data-espace="yuno"] .moment-titre,
 body[data-espace="yuno"] .pub-titre,
 body[data-espace="yuno"] .contact-nom,
 body[data-espace="yuno"] .modele-titre {
-  font-family: "Inter", sans-serif;
+  font-family: "Yuno Sans", sans-serif;
   font-style: normal;
   font-weight: 550;
   letter-spacing: -0.01em;
@@ -193,7 +227,7 @@ body[data-espace="yuno"] .contact-nom {
 /* Une porte nomme un lieu du site, exactement comme un onglet : même
    traitement, et le 700 parce qu'une porte n'a pas d'état éteint. */
 body[data-espace="yuno"] .lien-externe-titre {
-  font-family: "Inter", sans-serif;
+  font-family: "Yuno Sans", sans-serif;
   font-style: normal;
   font-weight: 600;
   letter-spacing: -0.015em;
@@ -241,14 +275,21 @@ body[data-espace="yuno"] .lien-externe-titre {
 }
 .yuno-nav > .barre-loupe { margin-left: 0; }
 .yuno-nav > .bouton-menu { flex: none; width: 2rem; }
+/* LE NOM DE LA PAGE, EN GLOOCK ET EN IVOIRE (kit Yuno) : l'or est réservé au
+   seul bouton principal de l'écran. Il vit dans la barre du haut, à côté du
+   menu et de la loupe : le corps d'affiche du kit (44–72 px) y écraserait les
+   deux, il garde donc une taille de barre. */
 body[data-espace="yuno"] #vue .yuno-titre-page {
-  color: var(--accent);
+  font-family: "Gloock", Georgia, serif;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--texte);
   text-align: center;
   flex: 1 1 auto;
   min-width: 0;
   margin: 0;
-  font-size: 1.25rem;
-  line-height: 1.3;
+  font-size: 1.625rem;
+  line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -264,6 +305,19 @@ body[data-espace="yuno"] #vue .yuno-titre-page {
   padding-top: var(--espace-16);
   border-top: 1px solid var(--bordure);
   text-align: center;
+}
+/* LE LOGO DU KIT, EN TÊTE DE L'ACCUEIL ET NULLE PART AILLEURS (19 novembre
+   2026, demande de Noé : « jamais en bas de page »). Il tient dans la hauteur
+   de la barre, entre le menu et la loupe. */
+body[data-espace="yuno"] #vue .yuno-titre-logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.yuno-titre-logo img {
+  display: block;
+  height: 1.75rem;
+  width: auto;
 }
 
 /* --- Le menu du site (15 septembre 2026) ---------------------------------------
@@ -282,7 +336,7 @@ body[data-espace="yuno"] #vue .yuno-titre-page {
    au milieu du site. C'est la première chose qu'on lit en ouvrant : elle doit
    être de la maison. */
 body[data-espace="yuno"] .menu-voile-yuno :is(.menu-grand > a, .menu-titre-seul) {
-  font-family: "Inter", sans-serif;
+  font-family: "Yuno Sans", sans-serif;
   font-weight: 700;
   letter-spacing: -0.025em;
   font-size: 1rem;
@@ -290,7 +344,7 @@ body[data-espace="yuno"] .menu-voile-yuno :is(.menu-grand > a, .menu-titre-seul)
 
 body[data-espace="yuno"] .menu-voile-yuno .menu-moyen > a {
   font-size: 0.875rem;
-  font-family: "Inter", sans-serif;
+  font-family: "Yuno Sans", sans-serif;
   font-weight: 500;
   letter-spacing: -0.005em;
 }
@@ -1079,7 +1133,7 @@ body[data-espace="yuno"] .etiquette {
    réglage que le site pose déjà sur ses autres titres en Inter (`-0.015em`), un
    demi-cran plus serré parce que la graisse est plus lourde. */
 .grande-porte-titre {
-  font-family: "Inter", sans-serif;
+  font-family: "Yuno Sans", sans-serif;
   font-style: normal;
   font-weight: 800;
   font-size: 1rem;
@@ -1997,7 +2051,7 @@ a.metrique:focus-visible .discret {
   align-items: center;
   gap: var(--espace-8);
   margin: 0 0 2px;
-  font-family: "Inter", sans-serif;
+  font-family: "Yuno Sans", sans-serif;
   font-size: 0.9375rem;
   font-weight: 600;
 }
@@ -2005,7 +2059,7 @@ a.metrique:focus-visible .discret {
 /* Le seul titre de la Passerelle : il ouvre ce sur quoi on agit. */
 .titre-semaine {
   margin: 0 0 var(--espace-8);
-  font-family: "Inter", sans-serif;
+  font-family: "Yuno Sans", sans-serif;
   font-size: 0.9375rem;
   font-weight: 600;
 }
@@ -2466,7 +2520,7 @@ body[data-espace="yuno"] ul.fournee-liste {
 
 
 body[data-espace="yuno"] #vue button.porte-dizaine {
-  font-family: "Inter", sans-serif;
+  font-family: "Yuno Sans", sans-serif;
   font-style: normal;
 }
 
@@ -2657,7 +2711,7 @@ body[data-espace="yuno"] #vue button.porte-dizaine {
   align-items: center;
   gap: var(--espace-8);
   margin: var(--espace-24) 0 var(--espace-8);
-  font-family: "Inter", sans-serif;
+  font-family: "Yuno Sans", sans-serif;
   font-size: 0.875rem;
   font-weight: 600;
 }
@@ -2820,7 +2874,7 @@ body[data-espace="yuno"] .weekend-jour .contact-nom {
   align-items: baseline;
   gap: var(--espace-8);
   margin: 0 0 var(--espace-4);
-  font-family: "Inter", sans-serif;
+  font-family: "Yuno Sans", sans-serif;
   font-size: 0.875rem;
   font-weight: 600;
   text-transform: capitalize;
@@ -2954,7 +3008,7 @@ body[data-espace="yuno"] .weekend-jour .contact-nom {
 .modele-ouvrir:hover { background: color-mix(in srgb, var(--fond-carte) 88%, var(--accent)); }
 
 .modele-nom {
-  font-family: "Inter", sans-serif;
+  font-family: "Yuno Sans", sans-serif;
   font-weight: 700;
   font-size: 1rem;
   letter-spacing: -0.02em;
@@ -3096,7 +3150,7 @@ body[data-espace="yuno"] .prepa-modele-nom {
   max-width: 100%;
   margin-bottom: var(--espace-8);
   padding: 0;
-  font-family: "Inter", sans-serif;
+  font-family: "Yuno Sans", sans-serif;
   font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -3716,7 +3770,7 @@ body[data-espace="yuno"] .prepa-bilan-bouton:hover {
    dépôt a déjà payé sept fois — une règle qu'on n'égale pas est une règle qu'on
    n'écrit pas. */
 body[data-espace="yuno"] .idee-jour-corps .pub-titre {
-  font-family: "Inter", sans-serif;
+  font-family: "Yuno Sans", sans-serif;
   font-size: 1.375rem;
   line-height: 1.2;
 }
@@ -4277,8 +4331,8 @@ body[data-espace="yuno"] a:focus-visible {
 
 /* Yuno : Inter guide la navigation ; Clash nomme les créations et les projets. */
 body[data-espace="yuno"] {
-  --police-texte: "Inter", sans-serif;
-  --police-titre: "Inter", sans-serif;
+  --police-texte: "Yuno Sans", sans-serif;
+  --police-titre: "Yuno Sans", sans-serif;
 }
 body[data-espace="yuno"] #vue :is(
   .objectif-titre, .cap-tuile-titre, .projet-nom,
@@ -4291,18 +4345,25 @@ body[data-espace="yuno"] #vue :is(
      de plus haut sur l'écran, il prend la police des noms. */
   .cap-gravure-titre
 ) {
-  font-family: "Clash Display", sans-serif;
+  font-family: "Yuno Sans", sans-serif;
   font-weight: 600;
   font-style: normal;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.01em;
   line-height: 1.25;
 }
 body[data-espace="yuno"] #vue [data-hote-cap] h1 {
-  font-family: "Clash Display", sans-serif;
-  font-weight: 700;
+  font-family: "Gloock", Georgia, serif;
+  font-weight: 400;
   font-style: normal;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.01em;
 }
+
+/* Le dock de Yuno quitte Inter, que la règle commune des trois docks lui
+   donnait : c'est la première chose qu'on lit, elle doit être du kit. */
+body[data-espace="yuno"] .yuno-dock a { font-family: "Yuno Sans", sans-serif; }
+
+/* Le corps du kit : 16 px, interligne 26. */
+body[data-espace="yuno"] #vue { font-size: 1rem; line-height: 1.625; }
 
 /* Le hub partage le verre de Yuno ; son menu dépliant reste en haut. */
 body:not([data-espace="yuno"]):not([data-espace="hermitage"]) .barre-onglets {
@@ -4615,3 +4676,714 @@ body[data-espace="yuno"] #vue .evenement-entete .moment-titre {
   margin-top: var(--espace-4);
   text-align: left;
 }
+
+/* ============================================================================
+   LES BOUTONS ET LES MESSAGES DU KIT YUNO (19 novembre 2026, étape 2)
+   ----------------------------------------------------------------------------
+   Trois formes, et chacune dit ce qu'on fait avec :
+
+   | le bouton PRINCIPAL | or en dégradé, 50 px, arrondi 16 — UN par écran  |
+   | le bouton NORMAL    | transparent, filet Ligne, ivoire 14 px 600       |
+   | la PUCE             | petite, filet fin, texte gris — l'option discrète |
+
+   **Jamais de texte nu ni souligné comme bouton** : un mot gris qu'on presse
+   ne se distingue pas d'un mot gris qu'on lit. La puce a un contour, donc elle
+   se voit comme une chose qu'on touche.
+   ========================================================================== */
+
+/* --- Le bouton principal : l'or, une fois par écran ------------------------
+   C'est ENREGISTRER qui le porte, dans une tuile ou une fenêtre : la seule
+   action qui fait aboutir ce qu'on vient d'écrire. Le « + » flottant aussi,
+   qui est l'action principale de chaque page. Le dégradé est celui du kit —
+   plus clair en haut à gauche, sans biseau ni contour intérieur. */
+body[data-espace="yuno"] form > button[type="submit"].bouton-secondaire,
+body[data-espace="yuno"] .prepa-bilan-bouton {
+  min-height: 50px;
+  padding: 0 var(--espace-24);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--fond);
+  background: var(--or-degrade);
+  background-origin: border-box;
+  background-repeat: no-repeat;
+  border: 1px solid transparent;
+  border-radius: var(--rayon-carte);
+  transition: filter 0.2s;
+}
+body[data-espace="yuno"] form > button[type="submit"].bouton-secondaire:hover,
+body[data-espace="yuno"] .prepa-bilan-bouton:hover { filter: brightness(1.08); }
+body[data-espace="yuno"] form > button[type="submit"].bouton-secondaire:disabled {
+  opacity: 0.6;
+  background: var(--or-degrade);
+}
+
+body[data-espace="yuno"] .ouvrir-capture {
+  color: var(--fond);
+  background: var(--or-degrade);
+  background-origin: border-box;
+  background-repeat: no-repeat;
+}
+
+/* --- Le bouton normal ------------------------------------------------------
+   Il quitte l'aplat doré pâle (`--accent-doux`) : c'était une demi-teinte
+   d'or, et l'or ne dit plus qu'une chose. */
+body[data-espace="yuno"] .bouton-secondaire:not([type="submit"]) {
+  min-height: 44px;
+  padding: 0 var(--espace-16);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--texte);
+  background: transparent;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  transition: border-color 0.2s;
+}
+body[data-espace="yuno"] .bouton-secondaire.bouton-mini:not([type="submit"]) {
+  min-height: 32px;
+  padding: 0 var(--espace-12);
+  font-size: 0.8125rem;
+}
+body[data-espace="yuno"] .bouton-secondaire:not([type="submit"]):hover:not(:disabled) {
+  border-color: var(--texte);
+}
+
+/* --- La puce : l'option discrète ---------------------------------------------
+   Ce qui était un mot gris (« Ouvrir la Passerelle », « Réessayer ») ou un mot
+   souligné de pointillés (le réglage d'une métrique). Le texte reste gris et
+   petit — elle reste discrète —, c'est le contour qui dit qu'on peut la
+   toucher. `.bouton-mini` en est exclu : ce sont les croix et les petites
+   flèches, des icônes et non des mots. */
+body[data-espace="yuno"] #vue .lien-discret:not(.bouton-mini),
+body[data-espace="yuno"] #vue .metrique-reglage {
+  /* En bloc EN LIGNE, pas en flex : une puce porte souvent une phrase avec des
+     chiffres en gras (« 9 sur 97 clubs »), et le flex faisait de chaque
+     morceau un élément à part — mesuré, les espaces entre eux disparaissaient
+     et l'écart s'ajoutait à leur place. Le texte coule, la puce l'entoure. */
+  display: inline-block;
+  padding: 5px var(--espace-12);
+  font-size: 0.8125rem;
+  line-height: 18px;
+  color: var(--texte-discret);
+  text-decoration: none;
+  background: transparent;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  transition: border-color 0.2s, color 0.2s;
+}
+body[data-espace="yuno"] #vue .lien-discret:not(.bouton-mini):hover,
+body[data-espace="yuno"] #vue .metrique-reglage:hover,
+body[data-espace="yuno"] #vue .metrique-reglage:focus-visible {
+  color: var(--texte);
+  border-color: var(--texte-discret);
+}
+
+/* Le focus clavier du kit : un contour or de 2 px, décalé de 3 px. */
+body[data-espace="yuno"] :is(button, a, summary, input, select, textarea):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* --- La bulle (js/bulle.js) -------------------------------------------------
+   Claire et floutée, posée au-dessus du bouton concerné avec sa pointe. Elle
+   vit dans le corps de la page, hors de toute section : elle ne dépend donc
+   pas de l'espace, mais seul le site Yuno l'appelle aujourd'hui. */
+.bulle-kit {
+  position: fixed;
+  z-index: 200;
+  width: min(300px, calc(100% - 24px));
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgb(255 255 255 / 82%);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  backdrop-filter: blur(14px) saturate(1.4);
+  color: #0e0d0b;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 35%);
+  font-family: "Yuno Sans", "Instrument Sans", sans-serif;
+  cursor: pointer;
+  animation: bulle-kit-entree 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-origin: 28px 100%;
+  transition: opacity 0.25s, transform 0.25s;
+}
+.bulle-kit-libre {
+  left: 50%;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  margin-left: min(-150px, calc(-50% + 12px));
+}
+.bulle-kit-sort { opacity: 0; transform: scale(0.94) translateY(6px); }
+.bulle-kit b {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 14px;
+  line-height: 19px;
+  font-weight: 700;
+}
+.bulle-kit span {
+  display: block;
+  font-size: 13px;
+  line-height: 18px;
+  color: rgb(14 13 11 / 78%);
+}
+.bulle-kit-pointe {
+  position: absolute;
+  bottom: -7px;
+  width: 14px;
+  height: 14px;
+  background: inherit;
+  border-radius: 2px;
+  transform: rotate(45deg);
+  /* Seule la moitié qui dépasse se dessine : la bulle est translucide, et la
+     moitié cachée dessous la doublait — un losange plus clair au lieu d'une
+     pointe. */
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+@keyframes bulle-kit-entree {
+  from { opacity: 0; transform: scale(0.9) translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bulle-kit { animation: none; transition: none; }
+}
+
+/* LE DÉCLENCHEUR D'UNE TUILE D'AJOUT EST UNE PUCE, lui aussi (« Écrire un
+   modèle », « Poser une préparation ») : un mot gris et son icône, sans
+   contour, c'était du texte qu'on presse. Il garde son icône à gauche — c'est
+   la puce du kit, mot pour mot. */
+body[data-espace="yuno"] #vue details.ajout > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-8);
+  min-height: 34px;
+  padding: 0 var(--espace-12);
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  transition: border-color 0.2s, color 0.2s;
+}
+body[data-espace="yuno"] #vue details.ajout > summary:hover {
+  color: var(--texte);
+  border-color: var(--texte-discret);
+}
+
+/* ============================================================================
+   LE CARROUSEL D'APRÈS-MATCH — #yuno/carrousel (19 novembre 2026, kit Yuno)
+   ----------------------------------------------------------------------------
+   Les règles `.car-*` et `.ig-*` du site de livraison, reprises et passées aux
+   jetons du site. Mise en page du kit : sur ordinateur l'aperçu Instagram à
+   gauche (320 px, il reste visible en défilant), les actions et « Ma
+   sélection » à droite, puis toute la grille dessous ; sur téléphone, tout
+   s'empile — aperçu, actions, sélection, grille.
+
+   LES PHOTOS GARDENT UN ARRONDI (décision de Noé), plus petit que celui des
+   cartes : une grille serrée de vignettes à 12 px d'angle ferait des pastilles.
+   ========================================================================== */
+
+.car-hote { --car-rayon: var(--rayon-etiquette); }
+
+/* --- L'écran d'import, avant la première photo --- */
+.car-import {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espace-12);
+  margin-top: var(--espace-16);
+  padding: var(--espace-48) var(--espace-24);
+  text-align: center;
+  border: 1px dashed var(--bordure);
+  border-radius: var(--rayon-carte);
+  transition: border-color 0.2s, background 0.2s;
+}
+.car-import-titre {
+  margin: 0;
+  font-family: "Gloock", Georgia, serif;
+  font-size: 1.75rem;
+  line-height: 1.15;
+  color: var(--texte);
+}
+.car-import-texte {
+  max-width: 34ch;
+  margin: 0 0 var(--espace-8);
+  color: var(--texte-doux);
+}
+.car-depot-survol .car-import,
+.car-depot-survol .car-tout { border-color: var(--texte-discret); background: var(--fond-doux); }
+.car-tout { border: 1px dashed transparent; border-radius: var(--rayon-carte); transition: border-color 0.2s; }
+
+/* --- Le bouton principal de l'écran : l'or du kit --- */
+.car-bouton-or {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espace-8);
+  min-height: 50px;
+  padding: 0 var(--espace-24);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--fond);
+  background: var(--or-degrade);
+  background-origin: border-box;
+  background-repeat: no-repeat;
+  border: 1px solid transparent;
+  border-radius: var(--rayon-carte);
+  transition: filter 0.2s, opacity 0.2s;
+}
+.car-bouton-or:hover:not(:disabled) { filter: brightness(1.08); }
+.car-bouton-or:disabled { opacity: 0.45; cursor: default; }
+.car-bouton-or:disabled:active { transform: none; }
+
+/* --- La mise en page --- */
+.car-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--espace-16);
+  align-items: start;
+}
+@media (min-width: 45rem) {
+  .car-layout { grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 40px; }
+  .car-cote { position: sticky; top: var(--espace-16); }
+}
+.car-droite { display: flex; flex-direction: column; gap: var(--espace-16); min-width: 0; }
+
+/* --- L'aperçu façon Instagram : cadre 3:4 qu'on fait glisser --- */
+.igpost {
+  overflow: hidden;
+  background: #000;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-ligne);
+}
+.ig-tete { display: flex; align-items: center; gap: 10px; padding: 10px 12px; font-size: 13px; }
+.ig-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--fond);
+  font-size: 13px;
+  font-weight: 700;
+}
+.ig-cadre { position: relative; aspect-ratio: 3 / 4; background: var(--fond-carte); }
+.ig-piste {
+  display: flex;
+  height: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.ig-piste::-webkit-scrollbar { display: none; }
+.ig-piste > img,
+.ig-piste > video {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  scroll-snap-align: center;
+}
+.ig-compte {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 65%);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+.ig-compte[hidden], .ig-vide[hidden] { display: none; }
+.ig-vide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: var(--espace-24);
+  text-align: center;
+  color: var(--texte-discret);
+  font-size: 14px;
+}
+.ig-points { display: flex; justify-content: center; gap: 4px; min-height: 26px; padding: 10px 0; }
+.ig-points span { width: 6px; height: 6px; border-radius: 50%; background: rgb(255 255 255 / 30%); transition: background 0.2s; }
+/* Le point actif est le bleu d'Instagram : c'est un aperçu d'Instagram. */
+.ig-points span.actif { background: #3d95f2; }
+
+/* --- Les actions : partir de zéro · Télécharger · annuler, rétablir --- */
+.car-actions { display: flex; align-items: center; justify-content: center; gap: 6px; }
+/* Sur ordinateur, les actions se calent à gauche de leur colonne, au-dessus de
+   « Ma sélection » qu'elles commandent. Déclaré APRÈS la règle qui centre : à
+   spécificité égale, c'est l'ordre qui tranche. */
+@media (min-width: 45rem) { .car-actions { justify-content: flex-start; } }
+/* Le compte ne se coupe jamais en deux lignes sous un titre qui se replie. */
+[data-car-n], [data-car-sel-n] { white-space: nowrap; }
+.car-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 50px;
+  height: 50px;
+  padding: 0;
+  color: var(--texte-doux);
+  background: transparent;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+  transition: border-color 0.15s, color 0.15s;
+}
+.car-icone:hover:not(:disabled) { border-color: var(--texte-discret); color: var(--texte); }
+.car-icone:disabled { opacity: 0.35; cursor: default; }
+.car-historique { display: inline-flex; align-items: center; margin-left: 2px; }
+.car-fleche {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 44px;
+  padding: 0;
+  color: var(--texte-discret);
+  background: transparent;
+  border: 0;
+  border-radius: var(--rayon-ligne);
+  transition: color 0.15s, background 0.15s;
+}
+.car-fleche:hover:not(:disabled) { color: var(--texte); background: rgb(255 255 255 / 6%); }
+.car-fleche:disabled { opacity: 0.3; cursor: default; }
+@media (max-width: 44.99rem) {
+  .car-icone { width: 46px; height: 46px; border-radius: 15px; }
+  .car-actions .car-bouton-or { min-height: 46px; padding: 0 var(--espace-16); border-radius: 15px; }
+  .car-fleche { width: 30px; }
+}
+
+/* --- Les petits titres et la consigne --- */
+.car-petit-titre {
+  margin: 0 0 var(--espace-8);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--texte-discret);
+}
+.car-consigne { margin: 0 0 var(--espace-8); font-size: 13px; line-height: 18px; color: var(--texte-discret); }
+.car-consigne.active { color: var(--texte); }
+.car-sel-boite[hidden] { display: none; }
+
+/* --- Ma sélection : une ligne de 5 sur téléphone, 5 colonnes et deux rangs sur ordinateur --- */
+.car-sel {
+  display: flex;
+  gap: 3px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.car-sel::-webkit-scrollbar { display: none; }
+@media (min-width: 45rem) {
+  .car-sel-boite { container-type: inline-size; }
+  .car-sel {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-auto-rows: max-content;
+    align-content: start;
+    max-height: calc((100cqw - 12px) / 5 * 4 / 3 * 2 + 3px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: auto;
+    scroll-snap-type: none;
+    scrollbar-width: thin;
+    padding-right: 4px;
+  }
+}
+
+.car-sel-item,
+.car-tuile {
+  position: relative;
+  display: block;
+  aspect-ratio: 3 / 4;
+  padding: 0;
+  overflow: hidden;
+  background: var(--fond-carte);
+  border: 0;
+  border-radius: var(--car-rayon);
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.car-sel-item { flex: 0 0 calc((100% - 12px) / 5); scroll-snap-align: start; cursor: grab; transition: transform 0.15s, opacity 0.15s; }
+.car-vignette { position: absolute; inset: 0; }
+.car-vignette img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.car-vignette.prete img { opacity: 1; }
+
+.car-n {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid rgb(255 255 255 / 80%);
+  border-radius: 50%;
+  background: rgb(0 0 0 / 25%);
+  color: var(--fond);
+  font-size: 11px;
+  font-weight: 700;
+}
+.car-tuile.choisie .car-n,
+.car-sel-item .car-n { border-color: #fff; background: #fff; }
+.car-tuile:not(.choisie) .car-n:empty { background: rgb(0 0 0 / 25%); }
+/* Les numéros de Ma sélection ne se montrent que pendant qu'une photo est
+   armée ou déplacée : le reste du temps, l'ordre se lit de gauche à droite. */
+.car-sel .car-n { display: none; }
+.car-sel.montre-n .car-n,
+.car-en-tri .car-sel .car-n { display: flex; }
+.car-sel-item .car-n { top: 4px; right: 4px; width: 18px; height: 18px; font-size: 10px; }
+
+.car-play {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding-left: 1px;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 55%);
+  color: #fff;
+}
+.car-sel-item .car-play { left: 4px; bottom: 4px; width: 16px; height: 16px; }
+
+.car-x {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  width: 34px;
+  height: 34px;
+  padding: 4px;
+  color: #fff;
+  cursor: pointer;
+}
+.car-x svg { box-sizing: content-box; padding: 4px; border-radius: 50%; background: rgb(0 0 0 / 60%); }
+.car-x:hover svg { background: rgb(0 0 0 / 85%); }
+
+.car-sel-item.arme { outline: 2px solid rgb(255 255 255 / 60%); outline-offset: -2px; transform: scale(0.94); }
+.car-sel:has(.arme) .car-sel-item:not(.arme) { opacity: 0.75; }
+
+/* --- La grille de toutes les photos --- */
+.car-tout { margin-top: 32px; }
+.car-tout-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-12);
+  margin-bottom: var(--espace-8);
+}
+.car-tout-tete .car-petit-titre { margin: 0; min-width: 0; }
+.car-puce {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  min-height: 32px;
+  padding: 0 var(--espace-12);
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+  background: transparent;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  transition: border-color 0.2s, color 0.2s;
+}
+.car-puce:hover { color: var(--texte); border-color: var(--texte-discret); }
+.car-grille {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+@media (min-width: 45rem) {
+  .car-grille { grid-template-columns: repeat(auto-fill, minmax(min(170px, calc((100% - 16px) / 5)), 1fr)); }
+}
+.car-tuile { cursor: pointer; }
+/* Une photo non choisie est estompée, une choisie porte un filet blanc très fin. */
+.car-tuile:not(.choisie) .car-vignette { opacity: 0.55; transition: opacity 0.2s; }
+.car-grille.arme .car-tuile .car-vignette { opacity: 1; }
+.car-tuile.choisie { outline: 1px solid rgb(255 255 255 / 35%); outline-offset: -1px; }
+
+/* --- Le glisser-déposer --- */
+.car-fantome {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  z-index: 80;
+  margin: 0;
+  pointer-events: none;
+  opacity: 0.95;
+  transition: none !important;
+  box-shadow: 0 14px 34px rgb(0 0 0 / 60%);
+}
+.car-deplace { opacity: 0.25; }
+.car-en-tri, .car-en-tri * { cursor: grabbing !important; -webkit-user-select: none; user-select: none; }
+
+/* --- Le message court du kit (js/bulle.js) --- */
+.message-court {
+  position: fixed;
+  left: 50%;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  z-index: 190;
+  max-width: calc(100% - 32px);
+  padding: 12px 18px;
+  transform: translateX(-50%);
+  font-family: "Yuno Sans", "Instrument Sans", sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--texte, #f6f2e9);
+  background: var(--fond-carte, #1a1814);
+  border: 1px solid var(--texte-discret, #a39c8d);
+  border-radius: var(--rayon-controle, 12px);
+}
+
+/* --- Le carrousel gardé en ligne (20 novembre 2026) --------------------------
+   La liste des carrousels, la tête de l'outil (retour, nom qu'on corrige sur
+   place, état de l'envoi), l'anneau d'envoi sur chaque tuile, la suppression. */
+
+.car-attente { color: var(--texte-discret); margin-top: var(--espace-24); }
+
+.car-liste-tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-16);
+  margin: var(--espace-8) 0 var(--espace-24);
+}
+.car-liste-intro { flex: 1 1 22rem; margin: 0; max-width: 52ch; color: var(--texte-doux); }
+.car-liste {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+  gap: var(--espace-12);
+}
+.car-liste-tuile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--espace-16);
+  color: var(--texte);
+  text-decoration: none;
+  background: var(--fond-carte);
+  border-radius: var(--rayon-carte);
+  transition: background 0.2s;
+}
+.car-liste-tuile:hover { background: var(--fond-releve); }
+.car-liste-nom { font-weight: 600; font-size: 1.0625rem; }
+.car-liste-compte { font-size: 0.8125rem; color: var(--texte-discret); }
+.car-liste-vide { color: var(--texte-discret); }
+
+.car-tete { display: flex; align-items: center; gap: var(--espace-4); margin: 0 0 2px -10px; }
+.car-retour {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  color: var(--texte);
+  border-radius: var(--rayon-controle);
+}
+.car-retour:hover { background: rgb(255 255 255 / 6%); }
+/* Le nom se lit comme un titre et se corrige sur place : un champ sans habit,
+   dont seul le focus dit qu'on écrit dedans. */
+body[data-espace="yuno"] #vue .car-nom {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 4px 6px;
+  font-family: "Gloock", Georgia, serif;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  color: var(--texte);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--rayon-controle);
+}
+body[data-espace="yuno"] #vue .car-nom:hover { border-color: var(--bordure); }
+body[data-espace="yuno"] #vue .car-nom:focus { border-color: var(--texte-discret); outline: none; }
+
+.car-etat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  margin: 0 0 var(--espace-12);
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+}
+.car-etat:empty { display: none; }
+.car-puce.car-puce-mini { min-height: 26px; margin-left: 6px; padding: 0 10px; font-size: 0.75rem; }
+
+/* L'ANNEAU D'ENVOI : un arc qui se remplit pendant que le fichier part, en bas
+   à droite de la tuile, et qui s'efface une fois le fichier en ligne. Un envoi
+   raté laisse un point rouge — le seul rouge de l'écran, et il dit une panne,
+   pas un retard. */
+.car-envoi {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: conic-gradient(#fff calc(var(--avance, 0) * 360deg), rgb(255 255 255 / 25%) 0);
+  -webkit-mask: radial-gradient(circle, transparent 5px, #000 5.5px);
+  mask: radial-gradient(circle, transparent 5px, #000 5.5px);
+  transition: opacity 0.4s;
+}
+.car-envoi[data-envoi="fait"] { opacity: 0; }
+.car-envoi[data-envoi="echec"] {
+  background: var(--erreur);
+  -webkit-mask: none;
+  mask: none;
+  width: 10px;
+  height: 10px;
+  right: 8px;
+  bottom: 8px;
+}
+
+.ig-attente { flex: 0 0 100%; background: var(--fond-carte); }
+
+.car-pied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espace-8);
+  margin-top: var(--espace-48);
+}
+.car-pied-question { flex: 1 1 100%; text-align: center; font-size: 0.875rem; color: var(--texte-doux); }
+/* Le rouge du kit : la suppression seulement, et après confirmation. */
+.car-danger {
+  min-height: 32px;
+  padding: 0 var(--espace-12);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--erreur);
+  border: 1px solid var(--erreur);
+  border-radius: var(--rayon-controle);
+}
+.car-danger:hover:not(:disabled) { filter: brightness(1.1); }

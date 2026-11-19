@@ -1,0 +1,31 @@
+# Photos Yuno — le stockage des photos du hub (voir src/worker.js).
+#
+# UN COMPTE CLOUDFLARE À PART de celui de la livraison des joueurs (décision de
+# Noé, 19 novembre 2026). Wrangler ne garde qu'une connexion à la fois : ce
+# dossier passe donc par un JETON D'API, posé dans `.env` (jamais versionné),
+# et la livraison garde sa connexion habituelle. Voir README.md.
+
+name = "photos-yuno"
+main = "src/worker.js"
+compatibility_date = "2026-01-01"
+
+# L'adresse gratuite de Cloudflare (photos-yuno.<sous-domaine>.workers.dev) :
+# le domaine yuno-rph.com vit dans l'autre compte, et seul le hub appelle cette
+# adresse.
+workers_dev = true
+# Pas d'adresse d'aperçu par version : une seule adresse, celle que le hub appelle.
+preview_urls = false
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "photos-yuno"
+
+[vars]
+# Plafond de stockage : au-delà, plus aucun envoi. 10 Go = l'offre gratuite de R2.
+MAX_TOTAL_GB = "10"
+# Les sites qui ont le droit d'appeler le Worker : le hub en ligne, et l'aperçu local.
+ORIGINES = "https://noedelahaye-sketch.github.io, http://localhost:4173"
+# Le projet Supabase du hub, qui dit qui est connecté. Ces deux valeurs sont
+# publiques (elles sont déjà dans le code du hub).
+SUPABASE_URL = "https://dpkyealzuabwchccdqcv.supabase.co"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRwa3llYWx6dWFid2NoY2NkcWN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5NjUwNzcsImV4cCI6MjEwMTU0MTA3N30.dJxWsuKZlvyc8uoCLhJVm80TfUg_BLX7IEdwe6VxMf4"

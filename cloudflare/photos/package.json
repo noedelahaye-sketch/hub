@@ -1,0 +1,12 @@
+{
+  "name": "photos-yuno",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --port 8797 --persist-to .local-data",
+    "deploy": "rm -rf .wrangler && wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.149.0"
+  }
+}

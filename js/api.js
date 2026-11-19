@@ -3096,3 +3096,61 @@ export async function reordonnerEtapesDuClub(etapes) {
   for (const { etape, ordre } of modifs) etape.ordre = ordre;
   return modifs.length;
 }
+
+// --- Le carrousel d'après-match (20 novembre 2026) ----------------------------
+//
+// LA BASE GARDE CE QUI SE CLASSE, CLOUDFLARE GARDE LES FICHIERS. Un carrousel
+// porte son nom, un match facultatif et l'ORDRE du post (`selection`, une liste
+// d'identifiants). Ses médias disent où vit chaque fichier chez R2 (`cle`).
+// Voir supabase/migrations/20261120090000_carrousels.sql et js/photos-cloud.js.
+
+export async function lireCarrousels() {
+  return verifier(
+    await client
+      .from('carrousels')
+      .select('*, medias:carrousels_medias(count)')
+      .order('modifie_le', { ascending: false }),
+  );
+}
+
+export async function lireCarrousel(id) {
+  return verifier(
+    await client
+      .from('carrousels')
+      .select('*, medias:carrousels_medias(*)')
+      .eq('id', id)
+      .single(),
+  );
+}
+
+export async function creerCarrousel(champs) {
+  return verifier(await client.from('carrousels').insert(champs).select().single());
+}
+
+export async function modifierCarrousel(id, champs) {
+  return verifier(
+    await client
+      .from('carrousels')
+      .update({ ...champs, modifie_le: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single(),
+  );
+}
+
+// Supprimer un carrousel emporte ses lignes de médias (`on delete cascade`).
+// Les FICHIERS chez Cloudflare, eux, s'effacent avant, par l'appelant : la base
+// ne sait pas parler à R2.
+export async function supprimerCarrousel(id) {
+  const { error } = await client.from('carrousels').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function ajouterMediaDeCarrousel(champs) {
+  return verifier(await client.from('carrousels_medias').insert(champs).select().single());
+}
+
+export async function supprimerMediaDeCarrousel(id) {
+  const { error } = await client.from('carrousels_medias').delete().eq('id', id);
+  if (error) throw error;
+}

@@ -200,9 +200,11 @@ def en_png(source):
 
 
 if __name__ == '__main__':
-    print('Yuno — le logotype sur son fond sombre :')
-    source, _ = en_png(IMG / 'yuno-logo.jpg')
-    fabriquer(source, 'icone-yuno', fond=(0x18, 0x18, 0x18), marge=0.12)
+    # Le logo du KIT YUNO depuis le 19 novembre 2026 (ivoire et or, fond
+    # transparent), posé sur la Nuit du kit — la même image que le favicon du
+    # site de livraison des joueurs. Marge large : c'est l'air du favicon fourni.
+    print('Yuno — le logo du kit sur la Nuit :')
+    fabriquer(IMG / 'yuno-logo-kit.png', 'icone-yuno', fond=(0x0e, 0x0d, 0x0b), marge=0.22)
 
     print('FC Hermitage — le logo composé sur le bleu du club :')
     fabriquer(IMG / 'fch-logo.png', 'icone-fch', fond=(0x11, 0x36, 0x93), marge=0.08)

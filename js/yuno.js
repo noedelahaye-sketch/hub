@@ -87,7 +87,9 @@ import pageProjet from './projet.js';
 // « Mes tâches », filtrée sur l'espace du site : c'est la page du hub, et le
 // filtre voyage déjà par la route (`#taches/photo`).
 import pageTaches from './taches.js';
+import outilCarrousel from './carrousel.js';
 import { animerLaCoche } from './mouvements.js';
+import { bulle, suivreLesGestes, dernierGeste } from './bulle.js';
 import {
   modifierAussitot,
   retirerAussitot,
@@ -162,6 +164,10 @@ const VUES = [
   // montés dans un hôte de la section Yuno, habillés par
   // `body[data-espace="yuno"]`. Quatre mille lignes qu'on ne recopie pas.
   'cap', 'objectif', 'projet', 'taches',
+  // LE CARROUSEL D'APRÈS-MATCH (19 novembre 2026, kit Yuno) : un outil qui gère
+  // ses propres gestes et ses propres fichiers, monté dans un hôte comme les
+  // écrans du cap (js/carrousel.js).
+  'carrousel',
 ];
 
 // Les trois vues que le site ne dessine pas lui-même, et l'espace sous lequel
@@ -177,6 +183,7 @@ const ONGLET_DE_LA_VUE = {
   evenement: 'journal',
   banque: 'creer',
   editorial: 'creer',
+  carrousel: 'creer',
   passerelle: 'reseau',
   vivier: 'reseau',
   // Les modèles de messages : « messages » et non « modeles », déjà pris par
@@ -258,6 +265,7 @@ export const RUBRIQUES_YUNO = [
     pages: [
       { nom: 'La banque d’idées', adresse: '#yuno/banque' },
       { nom: 'Le calendrier éditorial', adresse: '#yuno/editorial' },
+      { nom: 'Le carrousel d’après-match', adresse: '#yuno/carrousel' },
     ],
   },
   {
@@ -395,7 +403,7 @@ function enTete(vue, etat = null) {
     vivier: 'Vivier', messages: 'Modèles de messages', carnet: 'Carnet réseau',
     missions: 'Missions', commandes: 'Missions', preparations: 'Préparations',
     modeles: 'Modèle', cap: 'Mon cap', objectif: 'Objectif',
-    projet: 'Projet', taches: 'Mes tâches',
+    projet: 'Projet', taches: 'Mes tâches', carrousel: 'Carrousel',
   };
   // LA BARRE NOMME L'ÉTAGE DU CAP (15 septembre 2026 au soir) : depuis que le
   // menu offre « Mes objectifs » et « Mes projets », une barre qui dirait
@@ -424,7 +432,12 @@ function enTete(vue, etat = null) {
   return `
     <div class="yuno-nav${etat?.rechercheClub != null ? ' recherche-ouverte' : ''}">
       ${boutonDuMenu('menu-yuno')}
-      <h1 class="yuno-titre-page" title="${echapper(titre)}">${echapper(titre)}</h1>
+      ${vue === 'accueil'
+        // LE LOGO DU KIT À LA PLACE DU MOT « ACCUEIL » (19 novembre 2026, demande
+        // de Noé) : sur la page d'entrée, le nom du lieu EST la marque. Il reste
+        // le <h1> de la page, et son nom accessible dit « Yuno ».
+        ? `<h1 class="yuno-titre-page yuno-titre-logo"><img src="img/yuno-logo-kit.png" alt="Yuno" width="633" height="201" decoding="async"></h1>`
+        : `<h1 class="yuno-titre-page" title="${echapper(titre)}">${echapper(titre)}</h1>`}
       ${zoneLoupeClubs(etat ?? undefined)}
     </div>
     ${etat ? listeResultatsClubs(etat) : ''}
@@ -481,6 +494,16 @@ function pied() {
 // déjà, et le redire quarante pixels plus bas, c'est deux titres pour un écran.
 // Les deux autres écrans le gardent : leur `h1` porte le nom d'un CAP ou d'un
 // PROJET, ce que la barre ne dit pas.
+// L'hôte du carrousel : la barre, l'outil, le pied. L'outil écrit dedans et
+// garde son état chez lui (js/carrousel.js) — les photos importées survivent à
+// chaque rendu du site.
+function vueCarrousel(etat) {
+  return `
+    ${enTete(etat.vue, etat)}
+    <div data-hote-carrousel></div>
+    ${pied()}`;
+}
+
 function vueDuCap(etat) {
   return `
     ${enTete(etat.vue, etat)}
@@ -6394,6 +6417,10 @@ function squelette(vue) {
 
 export default {
   async monter(section, route) {
+    // La bulle du kit a besoin de savoir où était le doigt (js/bulle.js). Posé
+    // sur la section, monté une fois comme tout le reste.
+    suivreLesGestes(section);
+
     // LE MENU DU SITE, monté UNE FOIS : son panneau vit dans la coquille, hors
     // de la section, donc il survit aux changements d'écran et ses écouteurs se
     // posent une seule fois. Le bouton, lui, est réécrit à chaque vue par
@@ -6470,7 +6497,6 @@ export default {
       matchsEcartes: matchsEcartes(),
       // Le mot dit après une écriture qui a échoué. Il vit dans l'état comme
       // le reste : `rendre()` le pose sous la barre, quelle que soit la vue.
-      souci: null,
       prefillMoment: null,
       // La fenêtre « Nouvelle commande », et le client qu'elle porte déjà
       // quand elle naît d'une fiche du CRM. Effacés en quittant les Missions.
@@ -6536,15 +6562,13 @@ export default {
 
     // Comment le site dit qu'une écriture a échoué. Le message s'efface seul :
     // il parle du geste qui vient d'avoir lieu, pas de l'état du site.
-    let minuteurSouci = null;
+    //
+    // DANS LA BULLE DU KIT depuis le 19 novembre 2026, au-dessus du bouton qui
+    // vient d'être touché (js/bulle.js). Le message s'affichait sous la barre du
+    // haut, loin du doigt, et la page entière se redessinait pour l'y poser —
+    // puis encore pour l'effacer. La bulle ne touche pas à l'écran.
     const dire = (message) => {
-      etat.souci = message;
-      rendre();
-      clearTimeout(minuteurSouci);
-      minuteurSouci = setTimeout(() => {
-        etat.souci = null;
-        rendre();
-      }, 6000);
+      bulle("Ce n'est pas passé", message, dernierGeste());
     };
 
     // Le cache de session : le dernier état de l'onglet, affiché tout de suite.
@@ -6664,6 +6688,7 @@ export default {
       // donc que si l'hôte est neuf, sinon chaque rendu de Yuno effacerait la
       // page sous les doigts.
       else if (VUES_DU_CAP.includes(etat.vue)) section.innerHTML = vueDuCap(etat);
+      else if (etat.vue === 'carrousel') section.innerHTML = vueCarrousel(etat);
       else section.innerHTML = vueAccueil(etat);
 
       // Le message d'échec se pose sous la barre, quelle que soit la vue : les
@@ -6677,22 +6702,20 @@ export default {
         );
       }
 
-      // Une écriture qui a échoué : l'écran est revenu en arrière tout seul, et
-      // il faut le dire — un geste défait en silence ressemble à une panne. Au
-      // même endroit que l'échec de chargement, et effacé au bout de quelques
-      // secondes : le laisser traîner en ferait un reproche.
-      if (etat.souci) {
-        section.querySelector('.yuno-nav')?.insertAdjacentHTML(
-          'afterend',
-          `<p class="vide">${echapper(etat.souci)}</p>`,
-        );
-      }
-
       // LE MODULE DU CAP S'INSTALLE DANS SON HÔTE, qui vient d'être écrit. Il
       // apporte ses propres écouteurs, son propre chargement et son propre
       // « + » — le site n'ajoute donc rien par-dessus.
       if (VUES_DU_CAP.includes(etat.vue)) {
         monterLeCap();
+        return;
+      }
+
+      // LE CARROUSEL s'installe de même, et il n'a pas de « + » : son action
+      // principale est son propre bouton or, « Télécharger », et le kit n'en
+      // veut qu'un par écran.
+      if (etat.vue === 'carrousel') {
+        const hote = section.querySelector('[data-hote-carrousel]');
+        if (hote) outilCarrousel.monter(hote, { id: etat.feuilleOuverte });
         return;
       }
 
@@ -7174,8 +7197,9 @@ export default {
         }
       } catch (souci) {
         console.error('Action impossible', souci);
-        erreur.textContent = souci.message ?? "L'action a échoué.";
-        erreur.hidden = false;
+        // Dans la bulle du kit, au-dessus du bouton qui enregistre : c'est là
+        // que le doigt vient d'appuyer.
+        bulle("Ce n'est pas enregistré", souci.message ?? "L'action a échoué.", bouton);
       } finally {
         bouton.disabled = false;
       }
