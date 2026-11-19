@@ -3108,7 +3108,7 @@ export async function lireCarrousels() {
   return verifier(
     await client
       .from('carrousels')
-      .select('*, medias:carrousels_medias(count)')
+      .select('*, medias:carrousels_medias(count), evenement:evenements(id, titre, date_debut)')
       .order('modifie_le', { ascending: false }),
   );
 }
@@ -3117,7 +3117,7 @@ export async function lireCarrousel(id) {
   return verifier(
     await client
       .from('carrousels')
-      .select('*, medias:carrousels_medias(*)')
+      .select('*, medias:carrousels_medias(*), evenement:evenements(id, titre, date_debut)')
       .eq('id', id)
       .single(),
   );

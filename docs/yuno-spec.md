@@ -2117,8 +2117,12 @@ Code : `js/carrousel.js`. Entrée : menu, « Créer › Le carrousel d'après-ma
   télécharger sur téléphone ») : les FICHIERS partent chez Cloudflare R2 dès
   l'import (`js/photos-cloud.js`, Worker `cloudflare/photos`), le CARROUSEL — nom,
   médias, ordre du post — vit dans `carrousels` et `carrousels_medias`.
-- **Pas relié à un match par obligation** : `evenement_id` est facultatif, et
-  aucun écran ne le pose encore.
+- **Relié à un match s'il le faut, jamais par obligation** (20 novembre 2026) :
+  une puce « Relier à un match » sous le nom, posée sur le menu du système
+  (une roue sur l'iPhone). Elle propose les sorties de Yuno des quatre derniers
+  mois et du mois qui vient, la plus récente en tête. **Relier nomme le
+  carrousel** s'il porte encore son nom par défaut (« Carrousel du … ») ; un nom
+  écrit à la main n'est jamais touché. La liste affiche le match sous le nom.
 - **Ni suggestion, ni statut, ni date, ni légende** (décisions de Noé).
 - **Ma sélection** : toucher deux photos les échange, glisser-déposer (appui long
   au doigt), ✕ pour retirer ; Annuler/Rétablir sur 50 gestes, ⌘Z.

@@ -61,6 +61,8 @@ const etat = {
   enCours: null,         // le téléchargement en cours
   prets: null,           // les fichiers préparés pour la feuille de partage
   confirmerSuppression: false,
+  // Les sorties de Yuno qu'on peut relier, lues une fois par visite.
+  sorties: null,
 };
 
 let hote = null;
@@ -81,6 +83,7 @@ const ICONE = {
   ajouter: '<path d="M12 5v14M5 12h14"/>',
   importer: '<path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5"/>',
   retour: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+  match: '<circle cx="12" cy="12" r="9"/><path d="M12 7l4 3-1.5 4.5h-5L8 10z"/>',
   nuage: '<path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 9a4 4 0 0 1-.5 7.97"/><path d="M12 12v8M9 15l3-3 3 3"/>',
 };
 const svg = (cle, taille = 18) =>
@@ -109,7 +112,7 @@ async function chargerLeCarrousel(id) {
   try {
     const c = await api.lireCarrousel(id);
     const memeCarrousel = etat.carrousel?.id === c.id;
-    etat.carrousel = { id: c.id, nom: c.nom, evenement_id: c.evenement_id };
+    etat.carrousel = { id: c.id, nom: c.nom, evenement_id: c.evenement_id, evenement: c.evenement };
 
     // Les médias encore EN ROUTE sur cet appareil ne sont pas en base : on les
     // garde, la base ne les connaît pas encore.
@@ -334,6 +337,8 @@ function majLigneDEtat() {
   const ligne = hote?.querySelector('[data-car-etat]');
   if (!ligne) return;
   const total = etat.medias.length;
+  // Rien d'importé : la ligne se tait, « 0 fichier en ligne » ne dirait rien.
+  if (!total) { ligne.innerHTML = ''; return; }
   const faits = etat.medias.filter((m) => m.envoi === 'fait').length;
   const echecs = etat.medias.filter((m) => m.envoi === 'echec').length;
   const enCours = etat.medias.filter((m) => m.envoi === 'envoi' || m.envoi === 'attente');
@@ -543,6 +548,7 @@ function gabaritListe() {
     const n = c.medias?.[0]?.count ?? 0;
     return `<a class="car-liste-tuile" href="#yuno/carrousel/${c.id}">
         <span class="car-liste-nom">${echapper(c.nom)}</span>
+        ${c.evenement ? `<span class="car-liste-match">${svg('match', 13)}${echapper(c.evenement.titre)} · ${jourCourt(c.evenement.date_debut)}</span>` : ''}
         <span class="car-liste-compte">${n} ${n > 1 ? 'fichiers' : 'fichier'} · ${(c.selection ?? []).length} dans le post</span>
       </a>`;
   }).join('');
@@ -564,7 +570,96 @@ function gabaritTete() {
       <input class="car-nom" data-car-nom value="${echapper(c?.nom ?? '')}" aria-label="Nom du carrousel"
         maxlength="80" autocomplete="off" spellcheck="false">
     </div>
+    ${gabaritMatch()}
     <p class="car-etat" data-car-etat></p>`;
+}
+
+// --- Le match relié (20 novembre 2026, demande de Noé) -----------------------------
+//
+// UNE PASTILLE, PAS UN FORMULAIRE : on relie un carrousel à une sortie de Yuno
+// d'un geste, et on peut le défaire. Le menu est celui du SYSTÈME (un `<select>`
+// posé, invisible, sur la pastille) : c'est lui qui s'ouvre au doigt sur
+// l'iPhone, en roue, et il n'y a rien à dessiner de plus.
+//
+// LES SORTIES PROPOSÉES : celles de Yuno des quatre derniers mois et du mois qui
+// vient, la plus récente en tête — un carrousel d'après-match se compose dans
+// les jours qui suivent. Un match plus ancien déjà relié reste dans la liste.
+
+const jourCourt = (iso) =>
+  new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+
+function gabaritMatch() {
+  const c = etat.carrousel;
+  const relie = c?.evenement;
+  const sorties = [...(etat.sorties ?? [])];
+  if (relie && !sorties.some((s) => s.id === relie.id)) sorties.unshift(relie);
+  const options = sorties.map((s) =>
+    `<option value="${s.id}"${s.id === c?.evenement_id ? ' selected' : ''}>${echapper(s.titre)} · ${jourCourt(s.date_debut)}</option>`,
+  ).join('');
+  return `
+    <label class="car-match${relie ? ' relie' : ''}">
+      ${svg('match', 15)}
+      <span class="car-match-texte">${relie
+        ? `${echapper(relie.titre)} · ${jourCourt(relie.date_debut)}`
+        : 'Relier à un match'}</span>
+      <select data-car-match aria-label="Match relié à ce carrousel">
+        <option value=""${relie ? '' : ' selected'}>${relie ? 'Délier du match' : 'Aucun match'}</option>
+        ${options}
+      </select>
+    </label>`;
+}
+
+async function chargerLesSorties() {
+  if (etat.sorties) return;
+  const jour = 24 * 3600 * 1000;
+  const debut = new Date(Date.now() - 120 * jour).toISOString();
+  const fin = new Date(Date.now() + 30 * jour).toISOString();
+  try {
+    const sorties = await api.evenementsEntre(debut, fin, { espace: 'photo' });
+    etat.sorties = sorties
+      .map((s) => ({ id: s.id, titre: s.titre, date_debut: s.date_debut }))
+      .sort((a, b) => b.date_debut.localeCompare(a.date_debut));
+    redessinerLeMatch();
+  } catch (e) {
+    console.error('Lecture des sorties impossible', e);
+    etat.sorties = [];
+  }
+}
+
+function redessinerLeMatch() {
+  const ancien = hote?.querySelector('.car-match');
+  if (ancien) ancien.replaceWith(document.createRange().createContextualFragment(gabaritMatch()));
+}
+
+// RELIER UN MATCH NOMME LE CARROUSEL, s'il porte encore son nom par défaut :
+// « Carrousel du 20 novembre » ne dit rien, le nom du match dit tout. Un nom que
+// Noé a écrit lui-même n'est jamais touché.
+async function relier(id) {
+  const c = etat.carrousel;
+  if (!c) return;
+  const sortie = id ? (etat.sorties ?? []).find((s) => s.id === id) ?? c.evenement : null;
+  const avant = { evenement_id: c.evenement_id, evenement: c.evenement, nom: c.nom };
+  const champs = { evenement_id: id || null };
+  if (sortie && /^Carrousel du /.test(c.nom)) champs.nom = sortie.titre;
+
+  c.evenement_id = champs.evenement_id;
+  c.evenement = sortie ?? null;
+  if (champs.nom) {
+    c.nom = champs.nom;
+    const nom = hote?.querySelector('[data-car-nom]');
+    if (nom) nom.value = c.nom;
+  }
+  redessinerLeMatch();
+  try {
+    await api.modifierCarrousel(c.id, champs);
+  } catch (e) {
+    console.error('Match non relié', e);
+    Object.assign(c, avant);
+    const nom = hote?.querySelector('[data-car-nom]');
+    if (nom) nom.value = c.nom;
+    redessinerLeMatch();
+    bulle("Ce n'est pas enregistré", "Le match n'a pas pu être relié.", hote?.querySelector('.car-match'));
+  }
 }
 
 function gabaritVide() {
@@ -667,6 +762,9 @@ function dessiner(focus = -1) {
       rendreTriable(hote.querySelector('[data-car-grille]'), '.car-tuile.choisie');
     }
   } else {
+    // Le match peut avoir été relié sur un autre appareil : sa pastille suit
+    // la base à chaque relecture.
+    redessinerLeMatch();
     hote.querySelector('.car-pied')?.replaceWith(
       document.createRange().createContextualFragment(gabaritPied()),
     );
@@ -1211,6 +1309,10 @@ function brancher(racine) {
   });
 
   racine.addEventListener('change', (e) => {
+    if (e.target.matches('[data-car-match]')) {
+      relier(e.target.value);
+      return;
+    }
     if (!e.target.matches('[data-car-fichier]')) return;
     importer([...e.target.files]);
     e.target.value = '';
@@ -1254,6 +1356,7 @@ export default {
     }
 
     vueCourante = 'outil';
+    chargerLesSorties();
     const autre = idDemande !== id;
     idDemande = id;
     dessiner();

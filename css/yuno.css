@@ -5404,3 +5404,46 @@ body[data-espace="yuno"] #vue .car-nom:focus { border-color: var(--texte-discret
 .porte-car-points { display: flex; gap: 4px; }
 .porte-car-points span { width: 5px; height: 5px; border-radius: 50%; background: rgb(255 255 255 / 30%); }
 .porte-car-points span.actif { background: #3d95f2; }
+
+/* --- Le match relié (20 novembre 2026) ----------------------------------------
+   Une PUCE du kit : petite, contour fin, texte gris, icône à gauche. Reliée,
+   elle passe à l'encre du texte — elle dit alors quelque chose, plus seulement
+   ce qu'on pourrait faire. Le `<select>` du système est posé dessus, invisible :
+   c'est lui qu'on touche, et il s'ouvre en roue sur l'iPhone. */
+.car-match {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: 32px;
+  margin: 0 0 var(--espace-8);
+  padding: 0 var(--espace-12);
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  transition: border-color 0.2s, color 0.2s;
+}
+.car-match:hover { border-color: var(--texte-discret); color: var(--texte); }
+.car-match.relie { color: var(--texte); }
+.car-match svg { flex: none; }
+.car-match-texte { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body[data-espace="yuno"] #vue .car-match select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 16px; /* sous 16 px, l'iPhone zoome la page au toucher */
+}
+.car-match:has(select:focus-visible) { outline: 2px solid var(--accent); outline-offset: 3px; }
+.car-liste-match {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8125rem;
+  color: var(--texte-doux);
+}
