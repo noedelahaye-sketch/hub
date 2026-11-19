@@ -202,9 +202,13 @@ body[data-espace="yuno"] #vue h3 {
 }
 
 
+/* LES CHIFFRES GARDENT INTER 900 (20 novembre 2026, demande de Noé : « remets
+   les chiffres dans la police qu'ils étaient avant, plus grasse »). Le kit les
+   avait passés en Instrument Sans, dont le fichier s'arrête à 700 : un compteur
+   s'y lisait comme du texte. Un chiffre qu'on vient VOIR se donne du poids. */
 body[data-espace="yuno"] .chiffre {
-  font-family: "Yuno Sans", sans-serif;
-  font-weight: 700;
+  font-family: "Inter", sans-serif;
+  font-weight: 900;
 }
 
 

@@ -115,6 +115,9 @@ est. Ils restent pour leurs raisons, qui servent encore.
   **Instrument Sans** pour tout le reste, servie sous le nom « Yuno Sans » pour
   avoir son vrai 700 sans toucher au hub. Gloock est dans `fonts/` avec sa
   licence, jamais appelée à Google Fonts. Pas d'italique : Gloock n'en a pas.
+  **Les chiffres font exception : Inter 900**, comme avant le kit (décision de
+  Noé) — Instrument Sans s'arrête à 700, et un compteur s'y lisait comme du
+  texte.
 - **Arrondis** : 6 étiquettes, 10 lignes, 12 contrôles, 16 cartes et grands
   boutons. **Les photos GARDENT leurs coins arrondis** (Noé a écarté l'angle
   droit du kit).
