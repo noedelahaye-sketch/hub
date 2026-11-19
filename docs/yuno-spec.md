@@ -2109,6 +2109,29 @@ Yuno pose une étape `à développer` entre l'idée et le brouillon, le FC Hermi
 garde son cycle à quatre. Même chose pour la checklist et les piliers — ils ne
 débordent pas sur le club.
 
+### `#yuno/creer` RECONSTRUITE (20 novembre 2026, demande de Noé)
+
+*« Catastrophique : trop d'infos, des espacements qui paraissent aléatoires, des
+tuiles sans cohérence, trop d'éléments. »* Elle faisait **1 680 px** sur
+téléphone, quatre blocs de quatre formes. **Elle tient maintenant sur un écran.**
+Les sections plus bas sur Créer décrivent ce qui a été ; ce qui suit fait foi.
+
+1. **L'idée du jour, en carte basse** : pilier, format, titre et le geste
+   Programmer. La trace et la preuve restent dans la fiche. *Elle sera
+   sûrement remplacée plus tard (Noé).*
+2. **Les lieux de l'atelier, un seul bloc** — calendrier éditorial (« N
+   parutions cette semaine »), banque d'idées, carrousel d'après-match. **Des
+   rangées sur téléphone** (icône, nom, un chiffre, chevron), **trois tuiles
+   avec leur aperçu sur ordinateur**.
+3. **De la matière, repliée sur une rangée** (choix de Noé : « gardée en
+   petit ») ; dépliée, ses sorties glissent sur une ligne. **Elle deviendra la
+   photothèque avec le tri**, l'outil à venir.
+- **Un seul écart entre les blocs** (`--creer-ecart`) : chaque bloc portait sa
+  propre marge, et l'œil lisait du hasard.
+- **Les quatre piliers ont quitté la page** pour **`#yuno/identite`** (menu :
+  Créer › L'identité de Yuno) : ils disent ce qu'est Yuno, pas ce qu'on fait
+  aujourd'hui. La page pourra accueillir le reste de l'identité.
+
 ### `#yuno/carrousel` — le carrousel d'après-match (19–20 novembre 2026)
 
 **L'outil « Mon carrousel » du kit Yuno**, adapté à Noé : on importe les photos

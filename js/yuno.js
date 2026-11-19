@@ -168,6 +168,8 @@ const VUES = [
   // ses propres gestes et ses propres fichiers, monté dans un hôte comme les
   // écrans du cap (js/carrousel.js).
   'carrousel',
+  // L'IDENTITÉ DE YUNO (20 novembre 2026) : les quatre piliers, sortis de Créer.
+  'identite',
 ];
 
 // Les trois vues que le site ne dessine pas lui-même, et l'espace sous lequel
@@ -184,6 +186,7 @@ const ONGLET_DE_LA_VUE = {
   banque: 'creer',
   editorial: 'creer',
   carrousel: 'creer',
+  identite: 'creer',
   passerelle: 'reseau',
   vivier: 'reseau',
   // Les modèles de messages : « messages » et non « modeles », déjà pris par
@@ -266,6 +269,7 @@ export const RUBRIQUES_YUNO = [
       { nom: 'La banque d’idées', adresse: '#yuno/banque' },
       { nom: 'Le calendrier éditorial', adresse: '#yuno/editorial' },
       { nom: 'Le carrousel d’après-match', adresse: '#yuno/carrousel' },
+      { nom: 'L’identité de Yuno', adresse: '#yuno/identite' },
     ],
   },
   {
@@ -403,7 +407,7 @@ function enTete(vue, etat = null) {
     vivier: 'Vivier', messages: 'Modèles de messages', carnet: 'Carnet réseau',
     missions: 'Missions', commandes: 'Missions', preparations: 'Préparations',
     modeles: 'Modèle', cap: 'Mon cap', objectif: 'Objectif',
-    projet: 'Projet', taches: 'Mes tâches', carrousel: 'Carrousel',
+    projet: 'Projet', taches: 'Mes tâches', carrousel: 'Carrousel', identite: 'Identité',
   };
   // LA BARRE NOMME L'ÉTAGE DU CAP (15 septembre 2026 au soir) : depuis que le
   // menu offre « Mes objectifs » et « Mes projets », une barre qui dirait
@@ -763,6 +767,14 @@ const CALENDRIER = `<svg viewBox="0 0 24 24" width="32" height="32" fill="none"
   stroke-linejoin="round" aria-hidden="true" focusable="false">
   <rect x="3" y="5" width="18" height="16" rx="2"></rect>
   <path d="M3 10h18M8 3v4M16 3v4"></path>
+</svg>`;
+
+const PHOTO = `<svg viewBox="0 0 24 24" width="24" height="24" fill="none"
+  stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+  stroke-linejoin="round" aria-hidden="true" focusable="false">
+  <rect x="3" y="5" width="18" height="15" rx="2"></rect>
+  <circle cx="12" cy="12.5" r="3.5"></circle>
+  <path d="M8 5l1.5-2h5L16 5"></path>
 </svg>`;
 
 // Une carte entre deux bords : un carrousel, qu'on fait glisser.
@@ -2714,7 +2726,7 @@ const MATIERE_MONTREE = 3;
 // la date sert de graine, rien n'est stocké, l'ordre est stable dans la journée
 // et change à minuit. Trois mécaniques de tirage sur une même page finiraient
 // par ne plus se ressembler.
-function blocDeLaMatiere(etat) {
+function blocDeLaMatiere(etat, { replie = false } = {}) {
   const sorties = sortiesVecues(etat.evenements ?? []);
   const libres = matiereLibre(etat.evenements ?? [], etat.publications, etat.photos);
   const tirees = tirageDuJour(libres, versDateISO()).slice(0, MATIERE_MONTREE);
@@ -2754,6 +2766,10 @@ function blocDeLaMatiere(etat) {
           ? 'Tout ce que tu as photographié a déjà donné quelque chose. Retourne en chercher.'
           : "Tes photos arriveront ici, et tes idées avec — joins-en une à ta prochaine sortie."
       }</p>`;
+
+  // Repliée dans la page Créer, la rangée qui la porte dit déjà son nom et son
+  // compte : on ne garde que les sorties.
+  if (replie) return `<div class="bloc creer-matiere-corps" data-bloc="matiere">${corps}</div>`;
 
   return `
     <section class="bloc">
@@ -2866,58 +2882,93 @@ function blocDesPiliers(publications) {
     </section>`;
 }
 
+// LA PAGE CRÉER, RECONSTRUITE (20 novembre 2026, demande de Noé : « trop
+// d'infos, des espacements qui paraissent aléatoires, des tuiles sans cohérence,
+// trop d'éléments »). Elle faisait 1 680 px sur téléphone : quatre blocs de
+// quatre formes différentes, dont deux — la matière et les piliers — prenaient
+// autant de place que les deux lieux où l'on travaille vraiment.
+//
+// CE QU'ELLE PORTE MAINTENANT, et dans cet ordre :
+//   1. l'idée du jour, en carte BASSE — elle inspire, elle n'est pas le sujet ;
+//   2. les lieux de l'atelier, UN SEUL bloc et UNE SEULE forme : des rangées sur
+//      téléphone (icône, nom, un chiffre), des tuiles avec leur aperçu sur
+//      ordinateur, où la place ne manque pas ;
+//   3. la matière, repliée sur une rangée — on la déplie quand on la cherche.
+// LES PILIERS ONT QUITTÉ LA PAGE pour `#yuno/identite` : ils disent ce qu'est
+// Yuno, pas ce qu'on fait aujourd'hui.
+//
+// UN SEUL ÉCART PARTOUT (`--creer-ecart`) : c'est ce qui manquait le plus —
+// chaque bloc portait sa propre marge, et l'œil lisait du hasard.
 function vueCreer(etat) {
   const idees = etat.publications.filter(
     (pub) => !pub.date_prevue && pub.statut !== 'publie',
   ).length;
+  // Ce que le calendrier éditorial porte sur les sept jours qui viennent.
+  const aujourdhui = versDateISO();
+  const dans7 = versDateISO(new Date(Date.now() + 6 * 24 * 3600 * 1000));
+  const semaine = etat.publications.filter(
+    (pub) => pub.date_prevue && pub.date_prevue >= aujourdhui && pub.date_prevue <= dans7,
+  ).length;
+  const sorties = sortiesVecues(etat.evenements ?? []).length;
 
   return `
     ${enTete('creer', etat)}
-    ${
-      etat.cloture
-        ? `<p class="note-cloture">C'est posté. Ferme l'app, la suite se passe dehors.</p>`
-        : ''
-    }
+    <div class="creer">
+      ${
+        etat.cloture
+          ? `<p class="note-cloture">C'est posté. Ferme l'app, la suite se passe dehors.</p>`
+          : ''
+      }
 
-    ${construireIdeeDuJour(etat.publications)}
+      ${construireIdeeDuJour(etat.publications)}
 
-    ${blocDeLaMatiere(etat)}
-
-    ${blocDesPiliers(etat.publications)}
-
-    <!-- Les deux lieux de l'atelier, chacun avec son métier écrit. Le calendrier
-         éditorial est le lien que Noé demande ; sa frise montre la semaine qui
-         vient, trous compris. -->
-    <section class="bloc">
-      <div class="grandes-portes">
+      <nav class="creer-lieux" aria-label="L'atelier">
         ${grandePorte({
           adresse: '#yuno/editorial',
           icone: CALENDRIER,
           titre: 'Calendrier éditorial',
           vitrine: vitrineDeLEditorial(etat.publications),
-          service: 'Poser sur les jours',
+          service: semaine
+            ? `<span class="chiffre">${semaine}</span> parution${semaine > 1 ? 's' : ''} cette semaine`
+            : 'Rien de posé cette semaine',
         })}
         ${grandePorte({
           adresse: '#yuno/banque',
           icone: AMPOULE,
           titre: 'Banque d’idées',
           vitrine: vitrineDeLaBanque(etat.publications),
-          service: `<span class="chiffre">${idees}</span> idée${idees > 1 ? 's' : ''} à fouiller`,
+          service: `<span class="chiffre">${idees}</span> idée${idees > 1 ? 's' : ''} en réserve`,
         })}
-        ${
-          // LE CARROUSEL D'APRÈS-MATCH ENTRE PAR ICI (20 novembre 2026, demande
-          // de Noé : « pas un onglet dans le dock, un accès depuis la page
-          // Créer »). C'est une pièce de l'atelier, comme la banque.
-          grandePorte({
-            adresse: '#yuno/carrousel',
-            icone: CARROUSEL,
-            titre: 'Carrousel d’après-match',
-            vitrine: vitrineDuCarrousel(etat.photos),
-            service: 'Composer et télécharger un post',
-          })
-        }
-      </div>
-    </section>
+        ${grandePorte({
+          // LE CARROUSEL D'APRÈS-MATCH ENTRE PAR ICI (20 novembre 2026, Noé :
+          // « pas un onglet dans le dock, un accès depuis la page Créer »).
+          adresse: '#yuno/carrousel',
+          icone: CARROUSEL,
+          titre: 'Carrousel d’après-match',
+          vitrine: vitrineDuCarrousel(etat.photos),
+          service: 'Composer et télécharger un post',
+        })}
+      </nav>
+
+      <!-- LA MATIÈRE, REPLIÉE (choix de Noé : « gardée en petit »). Elle
+           deviendra la photothèque, avec le tri ; en attendant elle garde son
+           geste — presser une sortie pour en tirer une idée —, derrière une
+           rangée qu'on déplie. -->
+      <details class="creer-matiere">
+        <summary>
+          <span class="creer-matiere-icone" aria-hidden="true">${PHOTO}</span>
+          <span class="creer-matiere-mots">
+            <span class="creer-matiere-titre">De la matière</span>
+            <span class="discret">${
+              sorties
+                ? `<span class="chiffre">${sorties}</span> sortie${sorties > 1 ? 's' : ''} au carnet · une photo, une idée`
+                : 'Ce que tu as déjà dans les mains'
+            }</span>
+          </span>
+        </summary>
+        ${blocDeLaMatiere(etat, { replie: true })}
+      </details>
+    </div>
 
     ${
       // La fiche d'une idée, ouverte depuis la carte du jour. Elle était rendue
@@ -2926,6 +2977,17 @@ function vueCreer(etat) {
       fenetreIdee(etat, optionsDIdee(etat))
     }
 
+    ${pied()}`;
+}
+
+// L'IDENTITÉ DE YUNO — `#yuno/identite` (20 novembre 2026, demande de Noé : les
+// piliers « ont sûrement plus leur place dans une page identité »). Ils disent ce
+// qu'est Yuno — quatre faces d'un même travail —, pas ce qu'on fait aujourd'hui.
+// La page commence avec eux ; le reste de l'identité pourra la rejoindre.
+function vueIdentite(etat) {
+  return `
+    ${enTete('identite', etat)}
+    ${blocDesPiliers(etat.publications)}
     ${pied()}`;
 }
 
@@ -6396,6 +6458,7 @@ const BESOINS = {
   // qui n'en faisait qu'une — et le cache de session vaut pour tout le site :
   // venu de l'accueil, qui les lit déjà, le bloc ne coûte rien.
   creer: ['publications', 'evenements'],
+  identite: ['publications'],
   banque: ['publications'],
   editorial: ['publications'],
   // Le calendrier et le réseau lisent aussi les préparations et leurs
@@ -6725,6 +6788,7 @@ export default {
       // page sous les doigts.
       else if (VUES_DU_CAP.includes(etat.vue)) section.innerHTML = vueDuCap(etat);
       else if (etat.vue === 'carrousel') section.innerHTML = vueCarrousel(etat);
+      else if (etat.vue === 'identite') section.innerHTML = vueIdentite(etat);
       else section.innerHTML = vueAccueil(etat);
 
       // Le message d'échec se pose sous la barre, quelle que soit la vue : les

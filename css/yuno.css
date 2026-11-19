@@ -5451,3 +5451,144 @@ body[data-espace="yuno"] #vue .car-match select {
   font-size: 0.8125rem;
   color: var(--texte-doux);
 }
+
+/* ============================================================================
+   LA PAGE CRÉER, RECONSTRUITE (20 novembre 2026)
+   ----------------------------------------------------------------------------
+   UN SEUL ÉCART ENTRE LES BLOCS — c'était le défaut que Noé voyait : chaque
+   bloc portait sa propre marge, et l'œil lisait du hasard. La colonne les
+   espace, les blocs n'ont plus de marge à eux.
+   ========================================================================== */
+.creer {
+  --creer-ecart: var(--espace-16);
+  display: flex;
+  flex-direction: column;
+  gap: var(--creer-ecart);
+}
+.creer > .bloc,
+.creer > .note-cloture { margin: 0; }
+
+/* --- L'idée du jour, en carte BASSE : elle inspire, elle n'est pas le sujet.
+   Le titre, le format et le pilier ; la trace et la preuve restent dans la
+   fiche, à un toucher. */
+.creer .idee-jour .idee-jour-tete { margin-bottom: var(--espace-8); }
+.creer .idee-jour .idee-jour-date,
+.creer .idee-jour .pub-trace,
+.creer .idee-jour .pub-preuve { display: none; }
+.creer .idee-jour .carte-jour { padding: var(--espace-12) var(--espace-16); }
+.creer .idee-jour .idee-jour-corps { gap: 6px; }
+body[data-espace="yuno"] .creer .idee-jour-corps .pub-titre { font-size: 1.0625rem; line-height: 1.3; }
+.creer .idee-jour .carte-jour-geste { top: 50%; transform: translateY(-50%); }
+
+/* --- Les lieux de l'atelier : UN bloc, UNE forme ----------------------------
+   Sur téléphone, des RANGÉES dans une seule carte : l'icône, le nom, un chiffre
+   dessous, et le chevron. Les aperçus (frise, idées, photos) se taisent — c'est
+   ce qui faisait 530 px pour deux portes. */
+.creer-lieux { display: grid; gap: var(--espace-12); }
+
+/* Sur téléphone, des RANGÉES dans une seule carte : l'icône, le nom, un chiffre
+   dessous, et le chevron. Les aperçus (frise, idées, photos) se taisent — c'est
+   ce qui faisait 530 px pour deux portes. Tout est rangé SOUS la règle d'écran
+   étroit : sur ordinateur, les portes restent ce qu'elles étaient, aperçu
+   compris, sans rien à défaire. */
+@media (max-width: 44.99rem) {
+  .creer-lieux {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow: hidden;
+    background: var(--fond-carte);
+    border-radius: var(--rayon-carte);
+  }
+  .creer-lieux .grande-porte {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) 16px;
+    grid-template-rows: auto auto;
+    column-gap: var(--espace-12);
+    row-gap: 2px;
+    align-items: center;
+    padding: var(--espace-12) var(--espace-16);
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+  }
+  .creer-lieux .grande-porte + .grande-porte { border-top: 1px solid var(--bordure); }
+  .creer-lieux .grande-porte:hover { background: var(--fond-releve); }
+  .creer-lieux .grande-porte > :not(.grande-porte-tete):not(.grande-porte-sous) { display: none; }
+  .creer-lieux .grande-porte-tete { display: contents; }
+  .creer-lieux .grande-porte-icone { grid-column: 1; grid-row: 1 / span 2; }
+  .creer-lieux .grande-porte-icone svg { width: 24px; height: 24px; }
+  .creer-lieux .grande-porte-titre { grid-column: 2; grid-row: 1; }
+  .creer-lieux .grande-porte-sous { grid-column: 2; grid-row: 2; margin: 0; }
+  .creer-lieux .grande-porte::after {
+    content: "";
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    width: 8px;
+    height: 8px;
+    border-top: 1.5px solid var(--texte-discret);
+    border-right: 1.5px solid var(--texte-discret);
+    transform: rotate(45deg);
+  }
+}
+
+/* Sur ordinateur, la place ne manque plus : trois portes côte à côte, avec ce
+   qu'il y a derrière. */
+@media (min-width: 45rem) {
+  .creer-lieux { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* --- La matière, repliée sur une rangée ---------------------------------------
+   La même rangée que les lieux, dans sa propre carte : on la déplie quand on la
+   cherche. */
+.creer-matiere {
+  background: var(--fond-carte);
+  border-radius: var(--rayon-carte);
+}
+.creer-matiere > summary {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 16px;
+  column-gap: var(--espace-12);
+  align-items: center;
+  padding: var(--espace-12) var(--espace-16);
+  cursor: pointer;
+  list-style: none;
+}
+.creer-matiere > summary::-webkit-details-marker { display: none; }
+.creer-matiere > summary::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-right: 1.5px solid var(--texte-discret);
+  border-bottom: 1.5px solid var(--texte-discret);
+  transform: rotate(45deg) translateY(-3px);
+  transition: transform 0.2s;
+}
+.creer-matiere[open] > summary::after { transform: rotate(-135deg) translateY(-3px); }
+.creer-matiere-icone { display: inline-flex; color: var(--gris-chaud); }
+.creer-matiere-mots { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.creer-matiere-mots .discret { font-size: 0.75rem; }
+.creer-matiere-titre {
+  font-family: "Yuno Sans", sans-serif;
+  font-weight: 800;
+  font-size: 1rem;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.creer-matiere-corps { margin: 0; padding: 0 var(--espace-16) var(--espace-16); }
+/* Les sorties de la matière, sur UNE ligne qu'on fait glisser : trois tuiles
+   dans deux colonnes en laissaient une seule au rang du dessous. */
+.creer-matiere .bloc ul.matiere {
+  display: flex;
+  /* Redit : `.bloc ul` met toutes les listes du hub en COLONNE. */
+  flex-direction: row;
+  gap: var(--espace-8);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+.creer-matiere .bloc ul.matiere::-webkit-scrollbar { display: none; }
+.creer-matiere .bloc ul.matiere > li { flex: 0 0 min(42%, 12rem); scroll-snap-align: start; }
+/* Sur téléphone la troisième sortie se taisait, faute de place dans deux
+   colonnes ; sur une ligne qu'on fait glisser, elle a la sienne. */
+.creer-matiere .bloc ul.matiere > li:nth-child(3) { display: block; }
