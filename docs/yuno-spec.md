@@ -2357,6 +2357,38 @@ regarde. La part de la photothèque seule est dans la bulle. Aucune couleur
 d'alerte : passé les trois quarts, la jauge prend l'or. Elle se relit à
 l'ouverture et à la fin de chaque import.
 
+**LE TRI AU TÉLÉPHONE, SECONDE FORME** (21 novembre 2026, demandes de Noé) —
+*sur téléphone uniquement ; sur ordinateur, la colonne reste comme avant, la
+note en tête, au-dessus du style.*
+- **Des menus déroulants côte à côte sur une ligne** : « Ce que ça raconte »
+  (passé devant le style), « Le style », « + Qui ». Chaque menu s'ouvre VERS LE
+  HAUT, par-dessus la photo, sans pousser le panneau ; ses options sont rangées
+  **par usage** (le nombre de photos qui portent l'étiquette, à côté), avec une
+  coche à trois états pour une sélection. Une famille où une étiquette est posée
+  se remplit d'ivoire et dit ce qui est posé (« Émotion +1 »).
+- **La photo et ses menus font un bloc centré dans l'écran** : la photo prend sa
+  vraie hauteur, plafonnée ; sa boîte colle à l'image, et les étoiles tombent sur
+  le bas de la photo, pas dans le vide.
+- **Les trois gestes de la pile sont centrés.**
+- **Le glissement de la carte** : la scène garde tout le geste
+  (`touch-action: none`, doigt capturé) — en `pan-y`, un glissement un peu en
+  biais devenait un défilement et le navigateur lâchait la carte. Elle part à un
+  quart de la largeur (entre 60 et 110 px), ou sur un coup sec dès 30 px.
+- **En tête de la photothèque**, Albums, À trier et Importer restent sur UNE
+  ligne : l'import se resserre et « Albums » ne garde que son icône.
+
+**LES ARRONDIS, UNE SEULE ÉCHELLE** (21 novembre 2026, Noé : « ils doivent
+être équivalents et se valoir de partout »). C'est l'échelle du kit, rôle par
+rôle : 6 px les étiquettes et cases à cocher (et les photos, arrondies par choix
+de Noé), 10 px les lignes de liste, 12 px les boutons normaux, puces, champs et
+menus, 16 px les grands boutons de 50 px, cartes et zones ; rond complet pour
+les pastilles posées sur une photo et les boutons de la visionneuse. **Deux
+contrôles d'une même rangée ont la même hauteur, donc le même arrondi** : les
+trois gestes de la pile à 50 px, la tête à 50 px sur ordinateur et 40 px sur
+téléphone, la barre d'une sélection à 42 px. *Ce qui traînait : des puces
+d'étiquettes en pilule complète (999 px), un « Plus tard » de 32 px à côté d'un
+« Trié » de 50, deux 15 px dans le carrousel, une case à 5 px.*
+
 Tables : `photos.note`, `etiquettes` (famille `style`|`recit`, nom unique par
 famille sans casse), `photos_etiquettes`, `photos_personnes` (vers `contacts`).
 Les quinze étiquettes de départ sont semées par la migration.

@@ -67,6 +67,7 @@ const etat = {
   recherche: '',         // ce qu'on tape dans « Qui est dessus »
   gestion: null,         // la famille dont on renomme ou supprime les étiquettes
   quiOuvert: false,      // le champ « Qui est dessus » est déplié
+  menuOuvert: null,      // sur téléphone, la famille dont le menu est déplié
   supprimerEtiq: null,   // l'étiquette qui attend sa confirmation
   // La recherche (étape 3).
   filtres: nouveauxFiltres(),
@@ -1053,6 +1054,84 @@ function etoilesSurLaPhoto() {
   return `<div class="pht-etoiles-sur" data-tri-etoiles="vue" role="group" aria-label="La note">${etoilesTri('vue')}</div>`;
 }
 
+// SUR TÉLÉPHONE, LES ÉTIQUETTES SONT DES MENUS DÉROULANTS (21 novembre 2026,
+// demande de Noé : « inverse le style et ce que ça raconte, range les étiquettes
+// en fonction de celles qui sont les plus utilisées, et ce doit être des menus
+// déroulants côte à côte sur une même ligne — sur téléphone uniquement »).
+//
+// Une ligne de trois pastilles — ce que ça raconte, le style, qui — et, sous
+// elle, la liste de la famille qu'on a ouverte. Le geste coûte un appui de plus,
+// mais tout le panneau tient en une ligne : la photo garde l'écran.
+const surTelephone = () => window.matchMedia('(max-width: 59.99rem)').matches;
+const ouvertQui = () => Boolean(etat.quiOuvert || etat.recherche);
+const FAMILLES_TELEPHONE = [
+  { cle: 'recit', nom: 'Ce que ça raconte' },
+  { cle: 'style', nom: 'Le style' },
+];
+
+// Le nombre de photos qui portent chaque étiquette : c'est lui qui range.
+function usages() {
+  const n = new Map();
+  for (const p of etat.photos ?? []) for (const id of p.etiquettes ?? []) n.set(id, (n.get(id) ?? 0) + 1);
+  return n;
+}
+
+function panneauTelephone(contexte, cibles, quiOuvert) {
+  const compte = usages();
+  const CHEVRON = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+  const motsDe = (cle) => (etat.etiquettes ?? [])
+    .filter((e) => e.famille === cle)
+    .sort((a, b) => (compte.get(b.id) ?? 0) - (compte.get(a.id) ?? 0) || a.ordre - b.ordre);
+
+  const pastilles = FAMILLES_TELEPHONE.map(({ cle, nom }) => {
+    const pris = motsDe(cle).filter((e) => etatDans(cibles, 'etiquettes', e.id) !== 'rien');
+    const ouvert = etat.menuOuvert === cle;
+    const libelle = pris.length ? `${pris[0].nom}${pris.length > 1 ? ` +${pris.length - 1}` : ''}` : nom;
+    return `<button type="button" class="pht-menu${ouvert ? ' ouvert' : ''}${pris.length ? ' pris' : ''}" data-tri-menu="${cle}"
+        aria-expanded="${ouvert}" aria-label="${echapper(nom)}${pris.length ? ` : ${echapper(pris.map((e) => e.nom).join(', '))}` : ''}">
+        <span class="pht-menu-mot">${echapper(libelle)}</span>${CHEVRON}</button>`;
+  }).join('');
+
+  let liste = '';
+  if (etat.menuOuvert) {
+    const cle = etat.menuOuvert;
+    const options = motsDe(cle).map((e) => {
+      const st = etatDans(cibles, 'etiquettes', e.id);
+      return `<button type="button" class="pht-menu-option" data-tri-etiquette="${e.id}" data-etat="${st}"
+          aria-pressed="${st === 'tout' ? 'true' : st === 'partie' ? 'mixed' : 'false'}">
+          <span class="pht-menu-coche" aria-hidden="true"></span><span class="pht-menu-nom">${echapper(e.nom)}</span>
+          <span class="pht-menu-n">${compte.get(e.id) ?? 0}</span></button>`;
+    }).join('');
+    const ajout = etat.ajout === cle
+      ? `<input class="pht-etiq-champ pht-menu-champ" data-tri-nouvelle="${cle}" maxlength="40" autocomplete="off"
+           placeholder="Nouvelle étiquette" aria-label="Nouvelle étiquette">`
+      : `<button type="button" class="pht-menu-option pht-menu-ajout" data-tri-ajouter="${cle}">
+           ${svg('ajouter', 14)}<span class="pht-menu-nom">Nouvelle étiquette</span></button>`;
+    liste = `<div class="pht-menu-liste" role="group">${options}${ajout}</div>`;
+  }
+
+  const presents = new Set(cibles.flatMap((p) => [...p.personnes]));
+  const personnes = [...presents].map((id) => {
+    const c = (etat.personnes ?? []).find((x) => x.id === id);
+    return c ? puce('tri-personne', id, c.nom, etatDans(cibles, 'personnes', id)) : '';
+  }).join('');
+
+  return `<div class="pht-tri pht-tri-telephone${contexte === 'vue' ? ' pht-tri-vue' : ''}" data-tri-contexte="${contexte}">
+      ${contexte === 'vue' ? '' : `<div class="pht-etoiles">${etoilesTri(contexte)}</div>`}
+      <div class="pht-tri-menus">
+        ${pastilles}
+        ${quiOuvert ? '' : `<button type="button" class="pht-menu pht-menu-qui" data-tri-qui-ouvrir aria-label="Ajouter un joueur ou un club">${svg('ajouter', 13)}<span class="pht-menu-mot">Qui</span></button>`}
+      </div>
+      ${liste}
+      ${personnes ? `<div class="pht-etiqs">${personnes}</div>` : ''}
+      ${quiOuvert ? `<div class="pht-qui">
+          <input class="pht-etiq-champ pht-qui-champ" data-tri-qui value="${echapper(etat.recherche)}"
+            autocomplete="off" spellcheck="false" placeholder="Un joueur, un club…" aria-label="Ajouter un joueur ou un club">
+          <div class="pht-qui-propositions" data-tri-propositions>${propositions(contexte)}</div>
+        </div>` : ''}
+    </div>`;
+}
+
 function panneauTri(contexte) {
   const cibles = ciblesDu(contexte);
   if (!cibles.length) return '';
@@ -1101,6 +1180,8 @@ function panneauTri(contexte) {
       [TYPES_PERSONNE[c.type] ?? null, c.structure].filter(Boolean).join(' · ')) : '';
   }).join('');
 
+  if (surTelephone()) return panneauTelephone(contexte, cibles, ouvertQui());
+
   // « QUI EST DESSUS » SE REPLIE EN UNE PUCE : le champ ne sert que le temps
   // d'une saisie, et il prenait une ligne entière sur chaque photo. Les
   // personnes déjà posées restent visibles, en puces, à côté de lui.
@@ -1114,10 +1195,10 @@ function panneauTri(contexte) {
       </div>`
     : '';
   return `<div class="pht-tri${contexte === 'vue' ? ' pht-tri-vue' : ''}" data-tri-contexte="${contexte}">
-      ${contexte === 'vue' ? '' : `<div class="pht-tri-famille">
+      <div class="pht-tri-famille">
         <p class="pht-tri-titre">La note ${melange}</p>
         <div class="pht-etoiles">${etoiles}</div>
-      </div>`}
+      </div>
       ${familles}
       <div class="pht-tri-famille">
         <p class="pht-tri-titre">Qui est dessus</p>
@@ -1310,7 +1391,16 @@ async function nouvellePersonne(contexte, type, ancre) {
 // visionneuse ou la fenêtre de la sélection.
 function brancherTri(racine) {
   racine.addEventListener('click', (e) => {
+    const menu = e.target.closest('[data-tri-menu]');
+    if (menu) {
+      etat.menuOuvert = etat.menuOuvert === menu.dataset.triMenu ? null : menu.dataset.triMenu;
+      etat.ajout = null;
+      etat.quiOuvert = false;
+      redessinerTri();
+      return;
+    }
     if (e.target.closest('[data-tri-qui-ouvrir]')) {
+      etat.menuOuvert = null;
       etat.quiOuvert = true;
       redessinerTri();
       racine.querySelector('[data-tri-qui]')?.focus();
@@ -2079,36 +2169,62 @@ function gabaritFinDeLaPile() {
 // LA CARTE SUIT LE DOIGT — à la souris aussi : sur ordinateur, glisser la photo
 // fait le même geste, et les flèches du clavier le font sans la toucher.
 function brancherLaCarte(racine) {
+  // CE QUI RENDAIT LE GLISSEMENT CAPRICIEUX (21 novembre 2026, Noé : « le
+  // glissement vers la droite ne fonctionne pas très bien ») :
+  //   — la scène laissait au navigateur le défilement VERTICAL : un geste un
+  //     peu en biais devenait un défilement, le navigateur annulait le doigt, et
+  //     la carte revenait en place à quelques pixels du but ;
+  //   — il fallait parcourir 90 px quoi qu'il arrive : un petit coup de pouce
+  //     franc, le geste naturel d'une pile, ne suffisait pas.
+  // Désormais la scène garde TOUT le geste (`touch-action: none`), le doigt est
+  // capturé, et la carte part soit à un quart de largeur, soit sur un coup sec.
   let prise = null;
   const image = () => racine.querySelector('.pht-vue-image');
   racine.addEventListener('pointerdown', (e) => {
     // Les étoiles posées sur la photo se touchent, elles ne se prennent pas.
     if (!etat.pile || !e.target.closest('.pht-vue-scene') || e.target.closest('.pht-etoiles-sur') || e.button > 0) return;
-    prise = { x: e.clientX, y: e.clientY, id: e.pointerId, dx: 0 };
+    const scene = e.target.closest('.pht-vue-scene');
+    prise = {
+      x: e.clientX, y: e.clientY, id: e.pointerId, dx: 0,
+      largeur: scene.clientWidth, t: performance.now(), vitesse: 0, dernier: { x: e.clientX, t: performance.now() },
+    };
+    try { scene.setPointerCapture(e.pointerId); } catch { /* sans capture, ça marche quand même */ }
     image()?.classList.add('en-main');
   });
   racine.addEventListener('pointermove', (e) => {
     if (!prise || e.pointerId !== prise.id) return;
+    e.preventDefault();
     prise.dx = e.clientX - prise.x;
+    const t = performance.now();
+    const dt = Math.max(1, t - prise.dernier.t);
+    // La vitesse des derniers instants, lissée : c'est elle qui dit le « coup sec ».
+    prise.vitesse = 0.7 * ((e.clientX - prise.dernier.x) / dt) + 0.3 * prise.vitesse;
+    prise.dernier = { x: e.clientX, t };
     const img = image();
     if (!img) return;
     img.style.transform = `translateX(${prise.dx}px) rotate(${prise.dx / 28}deg)`;
+    const seuil = seuilDeLaCarte(prise.largeur);
     racine.querySelector('.pht-vue-scene')?.setAttribute('data-sens',
-      prise.dx > 60 ? 'trie' : prise.dx < -60 ? 'plus-tard' : '');
+      prise.dx > seuil * 0.6 ? 'trie' : prise.dx < -seuil * 0.6 ? 'plus-tard' : '');
   });
   const lacher = (e) => {
     if (!prise || e.pointerId !== prise.id) return;
-    const { dx } = prise;
+    const { dx, vitesse, largeur } = prise;
     prise = null;
     const img = image();
     img?.classList.remove('en-main');
     racine.querySelector('.pht-vue-scene')?.removeAttribute('data-sens');
-    if (Math.abs(dx) > 90) envoler(dx > 0 ? 'trie' : 'plus-tard');
+    const loin = Math.abs(dx) > seuilDeLaCarte(largeur);
+    const sec = Math.abs(dx) > 30 && Math.abs(vitesse) > 0.5 && Math.sign(vitesse) === Math.sign(dx);
+    if (loin || sec) envoler(dx > 0 ? 'trie' : 'plus-tard');
     else if (img) img.style.transform = '';
   };
   racine.addEventListener('pointerup', lacher);
   racine.addEventListener('pointercancel', lacher);
 }
+
+// Un quart de la largeur de la photo, entre 60 et 110 px.
+const seuilDeLaCarte = (largeur) => Math.max(60, Math.min(110, (largeur || 320) * 0.25));
 
 // La carte s'en va du côté choisi, puis la suivante arrive.
 function envoler(sens) {
@@ -2137,7 +2253,7 @@ function gabaritVisionneuse() {
       : p.hauteur > p.largeur ? 'verticale' : 'horizontale')
     : null);
   return `
-    <div class="pht-vue" role="dialog" aria-modal="true" aria-label="${echapper(p.nom)}">
+    <div class="pht-vue${etat.pile ? ' pht-vue-pile' : ''}" role="dialog" aria-modal="true" aria-label="${echapper(p.nom)}">
       <div class="pht-vue-barre">
         ${etat.pile
           ? `<span class="pht-vue-rang">À trier · <span class="chiffre">${suivanteDansLaPile().length}</span></span>`
@@ -2157,7 +2273,8 @@ function gabaritVisionneuse() {
           ${etat.pile ? '<span class="pht-sens pht-sens-plus-tard" aria-hidden="true">Plus tard</span>'
             : `<button type="button" class="pht-vue-fleche" data-pht="precedente" aria-label="Photo précédente"${k > 0 ? '' : ' disabled'}>${svg('gauche', 22)}</button>`}
           <img class="pht-vue-image" src="${echapper(src)}" alt="" draggable="false">
-          ${etoilesSurLaPhoto()}
+          ${/* Sur la photo au téléphone seulement : sur ordinateur, la note reste
+             dans la colonne, au-dessus du style (demande de Noé). */ surTelephone() ? etoilesSurLaPhoto() : ''}
           ${etat.pile ? '<span class="pht-sens pht-sens-trie" aria-hidden="true">Trié</span>'
             : `<button type="button" class="pht-vue-fleche" data-pht="suivante" aria-label="Photo suivante"${k < liste.length - 1 ? '' : ' disabled'}>${svg('droite', 22)}</button>`}
         </div>
@@ -2194,6 +2311,7 @@ function ouvrir(id) {
   etat.gestion = null;
   etat.supprimerEtiq = null;
   etat.quiOuvert = false;
+  etat.menuOuvert = null;
   dessinerVisionneuse();
   prechargerAutour();
 }

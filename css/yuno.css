@@ -5054,14 +5054,14 @@ body[data-espace="yuno"] #vue details.ajout > summary:hover {
   color: var(--texte-discret);
   background: transparent;
   border: 0;
-  border-radius: var(--rayon-ligne);
+  border-radius: var(--rayon-controle);
   transition: color 0.15s, background 0.15s;
 }
 .car-fleche:hover:not(:disabled) { color: var(--texte); background: rgb(255 255 255 / 6%); }
 .car-fleche:disabled { opacity: 0.3; cursor: default; }
 @media (max-width: 44.99rem) {
-  .car-icone { width: 46px; height: 46px; border-radius: 15px; }
-  .car-actions .car-bouton-or { min-height: 46px; padding: 0 var(--espace-16); border-radius: 15px; }
+  .car-icone { width: 46px; height: 46px; border-radius: var(--rayon-carte); }
+  .car-actions .car-bouton-or { min-height: 46px; padding: 0 var(--espace-16); border-radius: var(--rayon-carte); }
   .car-fleche { width: 30px; }
 }
 
@@ -5917,7 +5917,7 @@ body.pht-vue-ouverte { overflow: hidden; }
   color: var(--texte-doux);
   background: transparent;
   border: 1px solid var(--bordure);
-  border-radius: 999px;
+  border-radius: var(--rayon-controle);
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .pht-etiq:hover { border-color: var(--texte-discret); color: var(--texte); }
@@ -5939,7 +5939,7 @@ body.pht-vue-ouverte { overflow: hidden; }
   color: var(--texte);
   background: var(--fond-doux);
   border: 1px solid var(--texte-discret);
-  border-radius: 999px;
+  border-radius: var(--rayon-controle);
 }
 .pht-etiq-champ:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 
@@ -6295,7 +6295,16 @@ body[data-espace="yuno"] #vue .pht-pour-menu select {
 
 /* La photo est une CARTE qu'on prend : elle suit le doigt ou la souris, penche,
    et s'envole du côté choisi. */
-.pht-vue-scene.en-pile { grid-template-columns: minmax(0, 1fr); position: relative; touch-action: pan-y; }
+.pht-vue-scene.en-pile {
+  grid-template-columns: minmax(0, 1fr);
+  position: relative;
+  /* La scène garde TOUT le geste : en `pan-y`, un glissement un peu en biais
+     devenait un défilement et le navigateur lâchait la carte en route. */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
 .pht-vue-scene.en-pile .pht-vue-image {
   grid-column: 1;
   grid-row: 1;
@@ -6384,10 +6393,18 @@ body[data-espace="yuno"] #vue .pht-pour-menu select {
    un peu de hauteur. Renommer une étiquette reste possible sur ordinateur et
    dans la fenêtre d'une sélection, où les titres demeurent. */
 @media (max-width: 59.99rem) {
-  /* 57 % depuis que la date est montée en haut : mesuré sur un écran de 812 px, les étiquettes de Noé tiennent
+  /* (Historique : 52 puis 57 % de hauteur, avant les menus déroulants.) Mesuré sur un écran de 812 px, les étiquettes de Noé tiennent
      dessous avec de la marge. Une famille qui s'allonge fera défiler le
      panneau, pas la photo. */
-  .pht-vue-corps .pht-vue-scene { height: 57vh; height: 57dvh; }
+  /* La photo prend TOUT ce que le panneau laisse : depuis les menus, il ne
+     tient plus qu'une ligne. */
+  /* LA PHOTO ET SES ÉTIQUETTES FONT UN BLOC, CENTRÉ DANS L'ÉCRAN (demande de
+     Noé). La photo prend sa vraie hauteur, plafonnée à ce que laissent la
+     barre, les menus et les gestes : la boîte colle alors à l'image, et les
+     étoiles tombent sur le bas de la PHOTO, pas dans le vide sous elle. */
+  .pht-vue-corps { justify-content: center; gap: var(--espace-8); }
+  .pht-vue-corps .pht-vue-scene { height: auto; flex: none; padding: 0; }
+  .pht-vue-corps .pht-vue-image { height: auto; max-height: calc(100vh - 250px); max-height: calc(100dvh - 250px); }
   .pht-vue-cote { padding: var(--espace-8) 0 var(--espace-8); }
   .pht-tri-vue { gap: var(--espace-8); }
   .pht-tri-vue .pht-tri-titre { display: none; }
@@ -6417,3 +6434,178 @@ body[data-espace="yuno"] #vue .pht-pour-menu select {
 .pht-vue-barre .pht-vue-infos > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pht-vue-barre .pht-vue-rang { flex: none; }
 .pht-vue-pied { justify-content: flex-end; }
+
+/* Dans la pile, les trois gestes du bas sont centrés (demande de Noé) : ils
+   répondent à la photo, qui est au centre. */
+.pht-vue-pile .pht-vue-pied { justify-content: center; }
+.pht-vue-pile .pht-vue-actions { margin: 0 auto; justify-content: center; }
+
+/* ==========================================================================
+   SUR TÉLÉPHONE, LES ÉTIQUETTES EN MENUS DÉROULANTS (21 novembre 2026)
+   ========================================================================== */
+
+.pht-tri-telephone { gap: var(--espace-8); }
+/* Une seule ligne : ce que ça raconte, le style, qui. Les deux menus se
+   partagent la place, « Qui » prend la sienne. */
+.pht-tri-menus { display: flex; gap: 6px; min-width: 0; }
+.pht-menu {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  /* La largeur de leur mot d'abord : « Ce que ça raconte » n'a pas à se
+     couper pour laisser à « Le style » une place dont il n'a pas besoin. */
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 10px 0 12px;
+  font-size: 0.8125rem;
+  color: var(--texte-doux);
+  background: transparent;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+}
+.pht-menu-mot { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pht-menu svg { flex: none; transition: transform 0.15s; }
+.pht-menu.ouvert { color: var(--texte); border-color: var(--texte-discret); }
+.pht-menu.ouvert svg { transform: rotate(180deg); }
+/* Une famille dont une étiquette est posée se remplit d'ivoire, comme une puce
+   choisie : on voit d'un regard ce qui est déjà dit. */
+.pht-menu.pris { color: var(--fond); background: var(--texte); border-color: var(--texte); font-weight: 600; }
+.pht-menu-qui { flex: 0 0 auto; padding: 0 12px 0 10px; justify-content: center; gap: 4px; border-style: dashed; }
+
+/* La liste déroulée : une colonne d'options, les plus utilisées en tête, avec
+   une coche et leur compte. Elle défile si la famille est longue. */
+.pht-tri-telephone { position: relative; }
+/* LE MENU S'OUVRE VERS LE HAUT, PAR-DESSUS LA PHOTO : déroulé dans le flux, il
+   poussait le panneau et le faisait défiler — ce qu'on venait justement de
+   supprimer. Il recouvre le bas de la photo le temps d'un choix. */
+.pht-menu-liste {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  max-height: 46vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  background: var(--fond-releve);
+  border-radius: var(--rayon-carte);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 55%);
+}
+@media (max-width: 59.99rem) {
+  /* Le panneau ne défile plus : rien ne doit rogner le menu qui en sort. */
+  .pht-vue-corps,
+  .pht-vue-cote { overflow: visible; }
+}
+.pht-menu-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 10px;
+  font-size: 0.875rem;
+  text-align: left;
+  color: var(--texte);
+  background: transparent;
+  border: 0;
+  border-radius: var(--rayon-controle);
+}
+.pht-menu-option:active { background: rgb(255 255 255 / 6%); }
+.pht-menu-nom { flex: 1 1 auto; min-width: 0; }
+.pht-menu-n { font-size: 0.75rem; color: var(--texte-discret); }
+.pht-menu-coche {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--texte-discret);
+  border-radius: var(--rayon-etiquette);
+}
+.pht-menu-option[data-etat="tout"] .pht-menu-coche {
+  background: var(--texte) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230e0d0b' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / 12px no-repeat;
+  border-color: var(--texte);
+}
+.pht-menu-option[data-etat="partie"] .pht-menu-coche {
+  background: linear-gradient(var(--texte), var(--texte)) center / 9px 2px no-repeat;
+  border-color: var(--texte);
+}
+.pht-menu-ajout { color: var(--texte-discret); }
+.pht-menu-champ { width: 100%; margin: 4px 0; }
+
+/* ==========================================================================
+   LA TÊTE DE LA PHOTOTHÈQUE : ALBUMS, À TRIER ET IMPORTER SUR UNE LIGNE
+   (21 novembre 2026, règle de Noé : ils ne remontent jamais au-dessus du bouton
+   d'import — l'import se resserre, et « Albums » ne garde que son icône)
+   ========================================================================== */
+@media (max-width: 44.99rem) {
+  .pht-tete-liste .pht-gestes { flex-wrap: nowrap; width: 100%; justify-content: flex-end; }
+  .pht-tete-liste .pht-gestes > * { flex: none; }
+  .pht-chercher span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .pht-chercher { padding: 0 10px; }
+  .pht-a-trier { padding: 0 10px; }
+  .pht-tete-liste .car-bouton-or {
+    flex: 0 1 auto;
+    min-width: 0;
+    min-height: 40px;
+    padding: 0 12px;
+    font-size: 0.875rem;
+    gap: 6px;
+  }
+  .pht-tete-liste .car-bouton-or span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+}
+
+/* ==========================================================================
+   LES ARRONDIS : UNE SEULE ÉCHELLE (21 novembre 2026, demande de Noé : « ils
+   doivent être équivalents et se valoir de partout »). C'est l'échelle du kit,
+   rôle par rôle — et deux contrôles posés côte à côte ont la même hauteur,
+   donc le même arrondi :
+     6 px  — étiquettes, cases à cocher, photos (arrondies, choix de Noé)
+     10 px — lignes de liste (options d'un menu, propositions)
+     12 px — boutons normaux, puces, champs, menus
+     16 px — grands boutons (50 px), cartes, zones
+     rond  — pastilles posées sur une photo, boutons de la visionneuse
+   Une fenêtre épouse le bouton qu'elle contient : 16 + sa marge.
+   ========================================================================== */
+.pht-menu-option,
+.pht-proposition { border-radius: var(--rayon-ligne); }
+.pht-fen { border-radius: calc(var(--rayon-carte) + var(--espace-16)) calc(var(--rayon-carte) + var(--espace-16)) 0 0; }
+@media (min-width: 45rem) {
+  .pht-fen { border-radius: calc(var(--rayon-carte) + var(--espace-16)); }
+}
+/* La croix de la visionneuse est ronde, comme ses flèches. */
+.pht-vue-barre .car-icone { border-radius: 50%; }
+
+/* LES GESTES D'UNE MÊME RANGÉE ONT LA MÊME TAILLE : « Plus tard » faisait 32 px
+   de haut à côté d'un « Trié » de 50 — deux arrondis pour une seule rangée. */
+.pht-vue-actions .car-icone,
+.pht-vue-actions .car-puce,
+.pht-vue-actions .car-danger,
+.pht-vue-actions .car-bouton-or {
+  min-height: 50px;
+  height: 50px;
+  border-radius: var(--rayon-carte);
+}
+.pht-vue-actions .car-icone { width: 50px; }
+.pht-vue-actions .car-puce { padding: 0 var(--espace-16); font-size: 0.875rem; }
+
+/* La barre d'une sélection : tout à 42 px, l'arrondi d'un bouton normal. */
+.pht-barre-sel .car-icone,
+.pht-barre-sel .car-puce,
+.pht-barre-sel .car-danger,
+.pht-barre-sel .car-bouton-or {
+  min-height: 42px;
+  height: 42px;
+  border-radius: var(--rayon-controle);
+}
+.pht-barre-sel .car-icone { width: 42px; }
+
+/* La tête de la photothèque : Albums et À trier prennent la hauteur et
+   l'arrondi du bouton d'import. */
+.pht-tete-liste .pht-gestes .car-puce { min-height: 50px; border-radius: var(--rayon-carte); }
+@media (max-width: 44.99rem) {
+  .pht-tete-liste .pht-gestes .car-puce,
+  .pht-tete-liste .pht-gestes .car-bouton-or { min-height: 40px; height: 40px; border-radius: var(--rayon-controle); }
+}
