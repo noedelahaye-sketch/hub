@@ -2398,6 +2398,37 @@ et la referme). *Elles remplacent « Récentes », « Mieux notées » et
 photos sur téléphone.* **Sur ordinateur, les filtres gardent leur colonne.**
 Sur téléphone, Albums, À trier et Importer prennent toute la largeur.
 
+**LE TRI AU TÉLÉPHONE, TROISIÈME FORME** (21 novembre 2026, demande de Noé).
+- **« Ce que ça raconte » a sa ligne, qui glisse** : toutes ses étiquettes en
+  puces, celles qui ne tiennent pas se découvrent au doigt (fondu à droite). Le
+  menu déroulant n'est plus que pour **le style**, qui partage la seconde ligne
+  avec **« + Qui »**.
+- **Le classement** : d'abord les étiquettes les plus posées sur les **dix
+  dernières photos étiquetées** — un match se trie en série, ce qu'on vient de
+  poser revient sur la suivante —, puis l'usage total. La liste des dix se garde
+  sur l'appareil. **L'ordre se fige le temps d'une photo** : sans ce gel, la
+  ligne se réordonnerait sous le doigt à chaque étiquette posée. Et la ligne
+  garde sa position de défilement d'un toucher à l'autre.
+- **Les gestes du bas passent à 42 px**, l'arrondi d'un bouton normal.
+- *Piège payé : la visionneuse est une grille d'une colonne implicite, qui
+  prenait la largeur de la ligne de puces bout à bout — l'écran entier
+  débordait. `grid-template-columns: minmax(0, 1fr)`.*
+
+**LES ALBUMS ET LA PAGE D'UN MATCH SE TRIENT ET SE FILTRENT** (21 novembre
+2026, demandes de Noé).
+- **Les albums par match** n'importent plus (l'import vit en tête de la
+  photothèque). Ils se trient par date — les plus récents ou les plus anciens
+  d'abord, « sans match » toujours en dernier — et se filtrent par
+  **compétition**, **club** (les deux clubs du match, lus sur la sortie) et
+  **mois**. Le compte dit « 1 sur 2 » quand un filtre est posé.
+- **La page d'un match** a les filtres de la photothèque — publication, note,
+  étiquettes, qui, format —, sans ceux qui ne filtreraient rien dans un match
+  (période, compétition, match), et deux ordres : celui du match, ou les mieux
+  notées. **Ses filtres sont à elle** : filtrer un match ne filtre pas la
+  photothèque, et changer de match les remet à zéro.
+- Sans colonne de filtres sur ces deux pages, leur icône et leur volet servent
+  aussi sur ordinateur.
+
 Tables : `photos.note`, `etiquettes` (famille `style`|`recit`, nom unique par
 famille sans casse), `photos_etiquettes`, `photos_personnes` (vers `contacts`).
 Les quinze étiquettes de départ sont semées par la migration.

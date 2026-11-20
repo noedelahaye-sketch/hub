@@ -72,8 +72,16 @@ const etat = {
   // La recherche (étape 3).
   filtres: nouveauxFiltres(),
   ordre: 'recentes',     // 'recentes' | 'notees'
+  // LA PAGE D'UN MATCH A SES FILTRES À ELLE (21 novembre 2026, demande de Noé :
+  // « les mêmes filtres que dans la photothèque ») : filtrer un match ne doit
+  // pas filtrer la photothèque derrière lui.
+  filtresMatch: nouveauxFiltres(),
+  ordreMatch: 'match',   // 'match' (l'ordre de prise de vue) | 'notees'
   listeVue: [],          // les photos que la visionneuse fait défiler, dans l'ordre
   filtresTel: false,     // sur téléphone, les filtres sont dépliés sous la rangée d'outils
+  // La page des albums : son tri et ses filtres, à elle.
+  albums: { ordre: 'recents', menuOrdre: false, panneau: false,
+    filtres: { competitions: new Set(), clubs: new Set(), mois: new Set() } },
   menuOrdre: false,      // le menu du tri est ouvert
   // Les parutions (étape 4).
   parutions: null,       // les publications de Yuno : [{ id, titre, format, date_prevue, statut }]
@@ -118,8 +126,17 @@ function trier(liste) {
 }
 
 const photosDuMatch = (cle) => trier((etat.photos ?? []).filter((p) => cleDuMatch(p) === cle));
-// Ce que la grille montre : un match, ou ce que la recherche trouve.
-const photosAffichees = () => (vueCourante === 'recherche' ? resultats() : photosDuMatch(cible));
+// Ce que la grille montre : un match (filtré), ou ce que la recherche trouve.
+const enMatch = () => vueCourante === 'match';
+const F = () => (enMatch() ? etat.filtresMatch : etat.filtres);
+const photosAffichees = () => (vueCourante === 'recherche' ? resultats() : photosDuMatchFiltrees());
+function photosDuMatchFiltrees() {
+  const liste = photosDuMatch(cible).filter(correspond);
+  // Les mieux notées d'abord, et l'ordre du match à note égale.
+  if (etat.ordreMatch === 'notees') return liste.sort((a, b) => (b.note ?? 0) - (a.note ?? 0));
+  return liste;
+}
+const sourceDesFiltres = () => (enMatch() ? photosDuMatch(cible) : (etat.photos ?? []));
 
 // --- Les icônes ---------------------------------------------------------------------
 
@@ -620,50 +637,105 @@ function gabaritChoix() {
     </div>`;
 }
 
-function gabaritListe() {
-  if (!etat.photos) return '<p class="car-attente">Un instant…</p>';
+// LA PAGE DES ALBUMS PAR MATCH (21 novembre 2026, demande de Noé) : elle range,
+// elle n'importe pas — l'import vit en tête de la photothèque. Elle se trie par
+// date (les plus récents ou les plus anciens d'abord) et se filtre par
+// compétition, par club et par mois. Comme partout, on n'offre que ce qui
+// existe, avec son compte d'albums.
+const clubsDu = (match) => [match?.recevant?.nom, match?.visiteur?.nom].filter(Boolean);
+
+function albums() {
   const groupes = new Map();
-  for (const p of etat.photos) {
+  for (const p of etat.photos ?? []) {
     const cle = cleDuMatch(p);
     if (!groupes.has(cle)) groupes.set(cle, []);
     groupes.get(cle).push(p);
   }
-  // Le match le plus récent d'abord ; « sans match » ferme la liste.
-  const cles = [...groupes.keys()].sort((a, b) => {
-    if (a === SANS_MATCH) return 1;
-    if (b === SANS_MATCH) return -1;
-    return (matchDe(b)?.date_debut ?? '').localeCompare(matchDe(a)?.date_debut ?? '');
+  return [...groupes.entries()].map(([cle, photos]) => ({ cle, photos: trier(photos), match: matchDe(cle) }));
+}
+
+function albumCorrespond({ match }) {
+  const f = etat.albums.filtres;
+  const filtre = f.competitions.size || f.clubs.size || f.mois.size;
+  // « Sans match » n'a ni compétition, ni club, ni date : un filtre l'écarte.
+  if (!match) return !filtre;
+  if (f.competitions.size && !f.competitions.has(match.competition ?? '')) return false;
+  if (f.clubs.size && !clubsDu(match).some((c) => f.clubs.has(c))) return false;
+  if (f.mois.size && !f.mois.has(moisDe(match.date_debut))) return false;
+  return true;
+}
+
+function puceAlbum(famille, valeur, nom, n) {
+  const pris = etat.albums.filtres[famille].has(valeur);
+  return `<button type="button" class="pht-etiq" data-alb-filtre="${famille}" data-valeur="${echapper(valeur)}"
+      data-etat="${pris ? 'tout' : 'rien'}" aria-pressed="${pris}">${echapper(nom)} <span class="pht-etiq-n">${n}</span></button>`;
+}
+
+function filtresDesAlbums(tous) {
+  const compter = (cles) => { const m = new Map(); cles.forEach((c) => c && m.set(c, (m.get(c) ?? 0) + 1)); return m; };
+  const avecMatch = tous.filter((a) => a.match);
+  const comp = compter(avecMatch.map((a) => a.match.competition));
+  const clubs = compter(avecMatch.flatMap((a) => clubsDu(a.match)));
+  const mois = compter(avecMatch.map((a) => moisDe(a.match.date_debut)));
+  return `
+    ${blocFiltre('Compétition', [...comp].sort((a, b) => a[0].localeCompare(b[0], 'fr'))
+      .map(([c, n]) => puceAlbum('competitions', c, c, n)).join(''))}
+    ${blocFiltre('Club', [...clubs].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'fr'))
+      .map(([c, n]) => puceAlbum('clubs', c, c, n)).join(''))}
+    ${blocFiltre('Mois', [...mois].sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([c, n]) => puceAlbum('mois', c, nomDuMois(c), n)).join(''))}`;
+}
+
+function gabaritListe() {
+  if (!etat.photos) return '<p class="car-attente">Un instant…</p>';
+  const A = etat.albums;
+  const tous = albums();
+  const liste = tous.filter(albumCorrespond).sort((a, b) => {
+    // « Sans match » ferme la liste, quel que soit l'ordre.
+    if (!a.match) return 1;
+    if (!b.match) return -1;
+    const d = (b.match.date_debut ?? '').localeCompare(a.match.date_debut ?? '');
+    return A.ordre === 'anciens' ? -d : d;
   });
-  const tuiles = cles.map((cle) => {
-    const liste = trier(groupes.get(cle));
-    const match = matchDe(cle);
-    const couverture = liste.slice(0, 3);
-    const n = liste.length;
+  const nf = A.filtres.competitions.size + A.filtres.clubs.size + A.filtres.mois.size;
+  const tuiles = liste.map(({ cle, photos, match }) => {
+    const n = photos.length;
     return `<a class="pht-match" href="#yuno/phototheque/${cle}">
-        <span class="pht-match-photos">${couverture.map((p) =>
+        <span class="pht-match-photos">${photos.slice(0, 3).map((p) =>
           `<span class="pht-match-cadre"><img data-vignette="${p.id}" alt="" loading="lazy" decoding="async"${
             p.vignette ? ` src="${echapper(p.vignette)}"` : ''}></span>`).join('')}</span>
         <span class="pht-match-nom">${match ? echapper(match.titre) : 'Sans match'}</span>
-        <span class="pht-match-service">${match ? `${jourCourt(match.date_debut)} · ` : ''}<span class="chiffre">${n}</span> photo${n > 1 ? 's' : ''}</span>
+        <span class="pht-match-service">${match ? `${jourCourt(match.date_debut)}${match.competition ? ` · ${echapper(match.competition)}` : ''} · ` : ''}<span class="chiffre">${n}</span> photo${n > 1 ? 's' : ''}</span>
       </a>`;
   }).join('');
-  const total = etat.photos.length;
+  const ordres = [['recents', 'Les plus récents'], ['anciens', 'Les plus anciens']];
   return `
     <div class="car-tete">
       <a class="car-retour" href="#yuno/phototheque" aria-label="Toutes les photos" title="Toutes les photos">${svg('retour', 20)}</a>
       <div class="pht-titre"><h2 class="pht-nom">Albums par match</h2></div>
     </div>
-    <div class="pht-tete-liste">
-      <p class="pht-intro">${total
-        ? `<span class="chiffre">${total}</span> photo${total > 1 ? 's' : ''} rangée${total > 1 ? 's' : ''} par match`
-        : 'Importe les photos retouchées d’un match : elles te suivront sur tous tes appareils.'}</p>
-      ${etat.choisirMatch ? '' : `<span class="pht-gestes">
-        <button type="button" class="car-bouton-or" data-pht="importer">${svg('importer')}<span>Importer des photos</span></button>
-      </span>`}
+    <div class="pht-res-tete">
+      <p class="pht-res-compte pht-res-total"><span>${nf
+        ? `<span class="chiffre">${liste.length}</span> sur ${tous.length}`
+        : `<span class="chiffre">${tous.length}</span> album${tous.length > 1 ? 's' : ''}`}</span></p>
+      <div class="pht-outils" role="toolbar" aria-label="Trier et filtrer les albums">
+        <button type="button" class="car-icone pht-outil${A.panneau || nf ? ' actif' : ''}" data-alb="filtres"
+          aria-expanded="${A.panneau}" aria-label="Filtres${nf ? ` (${nf})` : ''}" title="Filtres">${svg('filtre')}${nf ? `<span class="pht-outil-n">${nf}</span>` : ''}</button>
+        <span class="pht-outil-ordre">
+          <button type="button" class="car-icone pht-outil${A.menuOrdre ? ' actif' : ''}" data-alb="ordre-menu"
+            aria-expanded="${A.menuOrdre}" aria-label="Trier par date" title="Trier par date">${svg('ordre')}</button>
+          ${A.menuOrdre ? `<span class="pht-ordre-menu" role="menu">${ordres.map(([cle, nom]) =>
+            `<button type="button" class="pht-menu-option" role="menuitemradio" data-alb-ordre="${cle}" data-etat="${A.ordre === cle ? 'tout' : 'rien'}"
+               aria-checked="${A.ordre === cle}"><span class="pht-menu-coche" aria-hidden="true"></span><span class="pht-menu-nom">${nom}</span></button>`).join('')}</span>` : ''}
+        </span>
+      </div>
     </div>
-    ${gabaritChoix()}
-    ${cles.length ? `<div class="pht-matchs">${tuiles}</div>`
-      : etat.choisirMatch ? '' : '<p class="car-liste-vide">Tes matchs et leurs photos s’afficheront ici.</p>'}`;
+    ${A.panneau ? `<div class="pht-filtres-tel pht-filtres-albums">
+        ${nf ? '<button type="button" class="car-puce car-puce-mini pht-effacer" data-alb="effacer">Tout effacer</button>' : ''}
+        <div class="pht-tri pht-filtres-corps">${filtresDesAlbums(tous)}</div>
+      </div>` : ''}
+    ${liste.length ? `<div class="pht-matchs">${tuiles}</div>`
+      : `<p class="car-liste-vide">${tous.length ? 'Aucun album ne coche tout. Retire un filtre.' : 'Tes matchs et leurs photos s’afficheront ici.'}</p>`}`;
 }
 
 function gabaritMatch() {
@@ -698,15 +770,24 @@ function gabaritMatch() {
   }
   return `${tete}
     <div class="car-tout" data-depot>
-      <div class="car-tout-tete">
-        <p class="car-petit-titre">Photos · <span class="chiffre">${liste.length}</span></p>
-        <span class="pht-gestes">${etat.modeSelection
-          ? `<button type="button" class="car-puce" data-pht="tout" data-pht-sel-compte>${toutEstChoisi() ? 'Tout désélectionner' : 'Tout sélectionner'}</button>
-             <button type="button" class="car-puce" data-pht="fin-selection">Terminé</button>`
-          : `<button type="button" class="car-icone pht-outil" data-pht="selectionner" aria-label="Sélectionner" title="Sélectionner">${svg('choisir')}</button>
-             <button type="button" class="car-puce" data-pht="choisir">${svg('ajouter', 14)}<span>Ajouter des photos</span></button>`}</span>
-      </div>
-      <div class="pht-grille${etat.modeSelection ? ' en-selection' : ''}">${liste.map(tuile).join('')}</div>
+      ${(() => {
+        const n = nbFiltres();
+        const montrees = photosAffichees();
+        return `<div class="pht-res-tete">
+            <p class="pht-res-compte pht-res-total"><span>${n
+              ? `<span class="chiffre">${montrees.length}</span> sur ${liste.length}`
+              : `<span class="chiffre">${liste.length}</span> photo${liste.length > 1 ? 's' : ''}`}</span></p>
+            ${rangeeDOutils(montrees.length, n)}
+          </div>
+          ${etat.filtresTel ? `<div class="pht-filtres-tel pht-partout">
+              ${n ? '<button type="button" class="car-puce car-puce-mini pht-effacer" data-pht="effacer-filtres">Tout effacer</button>' : ''}
+              <div class="pht-tri pht-filtres-corps">${gabaritFiltres()}</div>
+            </div>` : ''}
+          ${montrees.length
+            ? `<div class="pht-grille${etat.modeSelection ? ' en-selection' : ''}">${montrees.map(tuile).join('')}</div>`
+            : '<p class="car-liste-vide">Aucune photo du match ne coche tout. Retire un filtre.</p>'}
+          <button type="button" class="car-puce pht-ajouter-match" data-pht="choisir">${svg('ajouter', 14)}<span>Ajouter des photos</span></button>`;
+      })()}
       ${gabaritBarreSelection()}
     </div>${fichier}`;
 }
@@ -744,13 +825,13 @@ const formatDe = (p) => p.format ?? (p.largeur && p.hauteur
   : null);
 
 const nbFiltres = () => {
-  const f = etat.filtres;
+  const f = F();
   return f.mois.size + f.competitions.size + f.matchs.size + f.formats.size
     + f.etiquettes.size + f.personnes.size + (f.note ? 1 : 0) + (f.jamais ? 1 : 0);
 };
 
 function correspond(p) {
-  const f = etat.filtres;
+  const f = F();
   if (f.mois.size && !f.mois.has(moisDe(p.prise_le))) return false;
   if (f.competitions.size && !f.competitions.has(p.evenement?.competition ?? '')) return false;
   if (f.matchs.size && !f.matchs.has(cleDuMatch(p))) return false;
@@ -776,7 +857,7 @@ function resultats() {
 function valeurs(famille) {
   const compte = new Map();
   const ajouter = (cle) => { if (cle != null && cle !== '') compte.set(cle, (compte.get(cle) ?? 0) + 1); };
-  for (const p of etat.photos ?? []) {
+  for (const p of sourceDesFiltres()) {
     if (famille === 'mois') ajouter(moisDe(p.prise_le));
     else if (famille === 'competitions') ajouter(p.evenement?.competition);
     else if (famille === 'matchs') ajouter(cleDuMatch(p));
@@ -788,7 +869,7 @@ function valeurs(famille) {
 }
 
 function puceFiltre(famille, valeur, nom, n) {
-  const pris = etat.filtres[famille].has(valeur);
+  const pris = F()[famille].has(valeur);
   return `<button type="button" class="pht-etiq" data-filtre="${famille}" data-valeur="${echapper(valeur)}"
       data-etat="${pris ? 'tout' : 'rien'}" aria-pressed="${pris}">${echapper(nom)}
       <span class="pht-etiq-n">${n}</span></button>`;
@@ -800,7 +881,7 @@ function blocFiltre(titre, puces) {
 }
 
 function gabaritFiltres() {
-  const f = etat.filtres;
+  const f = F();
   const mois = valeurs('mois').sort((a, b) => b[0].localeCompare(a[0]))
     .map(([cle, n]) => puceFiltre('mois', cle, nomDuMois(cle), n)).join('');
   const competitions = valeurs('competitions').sort((a, b) => a[0].localeCompare(b[0], 'fr'))
@@ -827,13 +908,16 @@ function gabaritFiltres() {
      </button>`).join('');
   // « JAMAIS PUBLIÉE » : la question de Noé — retrouver les bonnes photos encore
   // jamais sorties. Elle s'offre dès qu'une photo l'est, comme tout filtre.
-  const jamais = (etat.photos ?? []).filter((p) => !foisPubliee(p)).length;
+  const jamais = sourceDesFiltres().filter((p) => !foisPubliee(p)).length;
   const publication = `<button type="button" class="pht-etiq" data-filtre-jamais data-etat="${f.jamais ? 'tout' : 'rien'}"
       aria-pressed="${f.jamais}">Jamais publiée <span class="pht-etiq-n">${jamais}</span></button>`;
+  // Dans un match, la période, la compétition et le match sont ceux du match :
+  // les offrir ne filtrerait rien.
+  const m = enMatch();
   return `
     ${blocFiltre('Publication', publication)}
-    ${blocFiltre('Période', mois)}
-    ${blocFiltre('Compétition', competitions)}
+    ${m ? '' : blocFiltre('Période', mois)}
+    ${m ? '' : blocFiltre('Compétition', competitions)}
     <div class="pht-tri-famille">
       <p class="pht-tri-titre">Note ${f.note ? `<span class="pht-tri-note-mixte">${f.note} et plus</span>` : ''}</p>
       <div class="pht-etoiles">${etoiles}</div>
@@ -841,7 +925,7 @@ function gabaritFiltres() {
     ${familles}
     ${blocFiltre('Qui est dessus', personnes)}
     ${blocFiltre('Format', formats)}
-    ${blocFiltre('Match', matchs)}`;
+    ${m ? '' : blocFiltre('Match', matchs)}`;
 }
 
 // LES FILTRES SONT OUVERTS SUR ORDINATEUR, REPLIÉS SUR TÉLÉPHONE : à côté des
@@ -874,18 +958,22 @@ function enteteDeLaPhototheque() {
 //   — le TRI, qui ouvre son menu : les plus récentes, les mieux notées ;
 //   — la SÉLECTION, qui s'allume quand elle est en cours.
 function rangeeDOutils(nombre, nbFiltresPoses) {
-  const ordres = [['recentes', 'Les plus récentes'], ['notees', 'Les mieux notées']];
+  const m = enMatch();
+  const ordres = m
+    ? [['match', 'L’ordre du match'], ['notees', 'Les mieux notées']]
+    : [['recentes', 'Les plus récentes'], ['notees', 'Les mieux notées']];
+  const ordre = m ? etat.ordreMatch : etat.ordre;
   return `<div class="pht-outils" role="toolbar" aria-label="Outils de la recherche">
-      <button type="button" class="car-icone pht-outil pht-outil-filtres${etat.filtresTel || nbFiltresPoses ? ' actif' : ''}"
+      <button type="button" class="car-icone pht-outil pht-outil-filtres${m ? ' pht-partout' : ''}${etat.filtresTel || nbFiltresPoses ? ' actif' : ''}"
         data-pht="filtres-tel" aria-expanded="${etat.filtresTel}" aria-label="Filtres${nbFiltresPoses ? ` (${nbFiltresPoses})` : ''}" title="Filtres">
         ${svg('filtre')}${nbFiltresPoses ? `<span class="pht-outil-n">${nbFiltresPoses}</span>` : ''}</button>
       <span class="pht-outil-ordre">
         <button type="button" class="car-icone pht-outil${etat.menuOrdre ? ' actif' : ''}" data-pht="ordre-menu"
-          aria-expanded="${etat.menuOrdre}" aria-label="Trier : ${etat.ordre === 'notees' ? 'les mieux notées' : 'les plus récentes'}"
+          aria-expanded="${etat.menuOrdre}" aria-label="Trier : ${ordres.find(([c]) => c === ordre)?.[1] ?? ''}"
           title="Trier">${svg('ordre')}</button>
         ${etat.menuOrdre ? `<span class="pht-ordre-menu" role="menu">${ordres.map(([cle, nom]) =>
-          `<button type="button" class="pht-menu-option" role="menuitemradio" data-ordre="${cle}" data-etat="${etat.ordre === cle ? 'tout' : 'rien'}"
-             aria-checked="${etat.ordre === cle}"><span class="pht-menu-coche" aria-hidden="true"></span><span class="pht-menu-nom">${nom}</span></button>`).join('')}</span>` : ''}
+          `<button type="button" class="pht-menu-option" role="menuitemradio" data-ordre="${cle}" data-etat="${ordre === cle ? 'tout' : 'rien'}"
+             aria-checked="${ordre === cle}"><span class="pht-menu-coche" aria-hidden="true"></span><span class="pht-menu-nom">${nom}</span></button>`).join('')}</span>` : ''}
       </span>
       ${etat.pour ? '' : `<button type="button" class="car-icone pht-outil${etat.modeSelection ? ' actif' : ''}" data-pht="selectionner"
           aria-pressed="${etat.modeSelection}" aria-label="${etat.modeSelection ? 'Terminer la sélection' : 'Sélectionner'}"
@@ -942,7 +1030,7 @@ function gabaritRecherche() {
 // visible — une photo qu'on ne voit plus ne peut pas rester choisie.
 function changerFiltres(maj) {
   maj();
-  const visibles = new Set(resultats().map((p) => p.id));
+  const visibles = new Set(photosAffichees().map((p) => p.id));
   for (const id of [...etat.selection]) if (!visibles.has(id)) etat.selection.delete(id);
   const ouvert = hote?.querySelector('[data-pht-filtres]')?.open;
   etat.filtresOuverts = ouvert ?? true;
@@ -1024,6 +1112,7 @@ async function supprimerUneEtiquette(id, bouton) {
   etat.etiquettes = etat.etiquettes.filter((x) => x.id !== id);
   portees.forEach((p) => p.etiquettes.delete(id));
   etat.filtres.etiquettes.delete(id);
+  etat.filtresMatch.etiquettes.delete(id);
   etat.supprimerEtiq = null;
   redessinerTri();
   try {
@@ -1101,8 +1190,8 @@ function etoilesSurLaPhoto() {
 // mais tout le panneau tient en une ligne : la photo garde l'écran.
 const surTelephone = () => window.matchMedia('(max-width: 59.99rem)').matches;
 const ouvertQui = () => Boolean(etat.quiOuvert || etat.recherche);
+// Seul le style garde son menu : « ce que ça raconte » est sur sa ligne.
 const FAMILLES_TELEPHONE = [
-  { cle: 'recit', nom: 'Ce que ça raconte' },
   { cle: 'style', nom: 'Le style' },
 ];
 
@@ -1113,12 +1202,65 @@ function usages() {
   return n;
 }
 
+// LES DIX DERNIÈRES PHOTOS ÉTIQUETÉES (21 novembre 2026, demande de Noé : les
+// plus utilisées « sur les 10 dernières photos » passent devant). Un match se
+// trie en série : ce qu'on vient de poser sur les dix précédentes est ce qu'on
+// va reposer sur la suivante. La liste se garde sur l'appareil, d'une visite à
+// l'autre — une commodité de saisie, rien qui dise la vie de Noé.
+const CLE_RECENTES = 'pht-recentes';
+let recentes = (() => {
+  try { return JSON.parse(localStorage.getItem(CLE_RECENTES) ?? '[]'); } catch { return []; }
+})();
+function noterRecentes(ids) {
+  recentes = [...ids, ...recentes.filter((x) => !ids.includes(x))].slice(0, 10);
+  try { localStorage.setItem(CLE_RECENTES, JSON.stringify(recentes)); } catch { /* sans mémoire, tant pis */ }
+}
+// Le rang d'une étiquette : son usage sur les dix dernières, puis son usage total.
+function rangeurDesEtiquettes() {
+  const total = usages();
+  const recent = new Map();
+  for (const id of recentes) {
+    for (const e of photo(id)?.etiquettes ?? []) recent.set(e, (recent.get(e) ?? 0) + 1);
+  }
+  return (a, b) => (recent.get(b.id) ?? 0) - (recent.get(a.id) ?? 0)
+    || (total.get(b.id) ?? 0) - (total.get(a.id) ?? 0)
+    || a.ordre - b.ordre;
+}
+
+// L'ORDRE SE FIGE LE TEMPS D'UNE PHOTO : poser une étiquette nourrit les « dix
+// dernières », et sans ce gel la ligne se réordonnerait sous le doigt à chaque
+// toucher. Il se recalcule en passant à la photo suivante.
+let ordreFige = { cle: null, ids: [] };
+
 function panneauTelephone(contexte, cibles, quiOuvert) {
   const compte = usages();
+  const cleCibles = cibles.map((p) => p.id).join(',');
+  if (ordreFige.cle !== cleCibles) {
+    const r = rangeurDesEtiquettes();
+    ordreFige = { cle: cleCibles, ids: [...(etat.etiquettes ?? [])].sort(r).map((e) => e.id) };
+  }
+  const ranger = (a, b) => {
+    const ia = ordreFige.ids.indexOf(a.id);
+    const ib = ordreFige.ids.indexOf(b.id);
+    // Une étiquette créée à l'instant n'est pas dans l'ordre figé : elle se
+    // range en tête, là où l'œil vient de la poser.
+    return (ia < 0 ? -1 : ia) - (ib < 0 ? -1 : ib);
+  };
   const CHEVRON = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
   const motsDe = (cle) => (etat.etiquettes ?? [])
     .filter((e) => e.famille === cle)
-    .sort((a, b) => (compte.get(b.id) ?? 0) - (compte.get(a.id) ?? 0) || a.ordre - b.ordre);
+    .sort(ranger);
+
+  // « CE QUE ÇA RACONTE », SUR UNE LIGNE QUI GLISSE (demande de Noé) : toutes
+  // ses étiquettes en puces, les plus utilisées d'abord ; celles qui ne tiennent
+  // pas se découvrent en faisant glisser la ligne.
+  const recit = motsDe('recit').map((e) =>
+    puce('tri-etiquette', e.id, e.nom, etatDans(cibles, 'etiquettes', e.id))).join('');
+  const ajoutRecit = etat.ajout === 'recit'
+    ? `<input class="pht-etiq-champ pht-ligne-champ" data-tri-nouvelle="recit" maxlength="40" autocomplete="off"
+         placeholder="Nouvelle étiquette" aria-label="Nouvelle étiquette : ce que ça raconte">`
+    : `<button type="button" class="pht-etiq pht-etiq-plus" data-tri-ajouter="recit"
+         aria-label="Ajouter une étiquette : ce que ça raconte">${svg('ajouter', 14)}</button>`;
 
   const pastilles = FAMILLES_TELEPHONE.map(({ cle, nom }) => {
     const pris = motsDe(cle).filter((e) => etatDans(cibles, 'etiquettes', e.id) !== 'rien');
@@ -1155,12 +1297,14 @@ function panneauTelephone(contexte, cibles, quiOuvert) {
 
   return `<div class="pht-tri pht-tri-telephone${contexte === 'vue' ? ' pht-tri-vue' : ''}" data-tri-contexte="${contexte}">
       ${contexte === 'vue' ? '' : `<div class="pht-etoiles">${etoilesTri(contexte)}</div>`}
+      <div class="pht-ligne-recit" role="group" aria-label="Ce que ça raconte">${recit}${ajoutRecit}</div>
       <div class="pht-tri-menus">
         ${pastilles}
         ${quiOuvert ? '' : `<button type="button" class="pht-menu pht-menu-qui" data-tri-qui-ouvrir aria-label="Ajouter un joueur ou un club">${svg('ajouter', 13)}<span class="pht-menu-mot">Qui</span></button>`}
+        ${/* LES PERSONNES POSÉES PROLONGENT LA SECONDE LIGNE (demande de Noé) :
+           pas de troisième ligne ; elle glisse si elle dépasse. */ personnes}
       </div>
       ${liste}
-      ${personnes ? `<div class="pht-etiqs">${personnes}</div>` : ''}
       ${quiOuvert ? `<div class="pht-qui">
           <input class="pht-etiq-champ pht-qui-champ" data-tri-qui value="${echapper(etat.recherche)}"
             autocomplete="off" spellcheck="false" placeholder="Un joueur, un club…" aria-label="Ajouter un joueur ou un club">
@@ -1278,10 +1422,18 @@ function propositions(contexte) {
 function redessinerTri() {
   document.querySelectorAll('[data-tri-contexte]').forEach((el) => {
     const contexte = el.dataset.triContexte;
+    // La ligne qui glisse garde sa place : sans ça, toucher la huitième puce
+    // ramènerait la ligne au début.
+    const defile = el.querySelector('.pht-ligne-recit')?.scrollLeft ?? 0;
+    const defile2 = el.querySelector('.pht-tri-menus')?.scrollLeft ?? 0;
     const champ = document.activeElement?.matches?.('[data-tri-nouvelle], [data-tri-qui]')
       && el.contains(document.activeElement) ? document.activeElement : null;
     const quel = champ ? (champ.matches('[data-tri-qui]') ? '[data-tri-qui]' : `[data-tri-nouvelle="${champ.dataset.triNouvelle}"]`) : null;
     el.outerHTML = panneauTri(contexte);
+    const ligne = document.querySelector(`[data-tri-contexte="${contexte}"] .pht-ligne-recit`);
+    if (ligne) ligne.scrollLeft = defile;
+    const ligne2 = document.querySelector(`[data-tri-contexte="${contexte}"] .pht-tri-menus`);
+    if (ligne2) ligne2.scrollLeft = defile2;
     if (quel) {
       const nouveau = document.querySelector(`[data-tri-contexte="${contexte}"] ${quel}`);
       nouveau?.focus();
@@ -1360,6 +1512,7 @@ function basculer(contexte, cleDuSet, id, ancre) {
   const retirer = cibles.every((p) => p[cleDuSet].has(id));
   const avant = cibles.map((p) => p[cleDuSet].has(id));
   const poser = cleDuSet === 'etiquettes' ? api.etiqueterPhotos : api.relierPersonne;
+  if (cleDuSet === 'etiquettes' && !retirer) noterRecentes(cibles.map((p) => p.id));
   const oter = cleDuSet === 'etiquettes' ? api.desetiqueterPhotos : api.delierPersonne;
   return ecrire({
     cibles,
@@ -2597,32 +2750,54 @@ function brancher(racine) {
       else if (quoi === 'annuler-pour') { e.preventDefault(); etat.pourCharge = null; revenir(); }
       else if (quoi === 'effacer-filtres') {
         e.preventDefault();
-        changerFiltres(() => { etat.filtres = nouveauxFiltres(); });
+        changerFiltres(() => {
+          if (enMatch()) etat.filtresMatch = nouveauxFiltres();
+          else etat.filtres = nouveauxFiltres();
+        });
       }
+      return;
+    }
+    const alb = e.target.closest('[data-alb], [data-alb-filtre], [data-alb-ordre]');
+    if (alb) {
+      const A = etat.albums;
+      if (alb.dataset.alb === 'filtres') { A.panneau = !A.panneau; A.menuOrdre = false; }
+      else if (alb.dataset.alb === 'ordre-menu') A.menuOrdre = !A.menuOrdre;
+      else if (alb.dataset.alb === 'effacer') A.filtres = { competitions: new Set(), clubs: new Set(), mois: new Set() };
+      else if (alb.dataset.albOrdre) { A.ordre = alb.dataset.albOrdre; A.menuOrdre = false; }
+      else if (alb.dataset.albFiltre) {
+        const ens = A.filtres[alb.dataset.albFiltre];
+        if (ens.has(alb.dataset.valeur)) ens.delete(alb.dataset.valeur); else ens.add(alb.dataset.valeur);
+      }
+      const defile = window.scrollY;
+      dessiner();
+      window.scrollTo(0, defile);
       return;
     }
     const filtre = e.target.closest('[data-filtre]');
     if (filtre) {
       const { filtre: famille, valeur } = filtre.dataset;
       changerFiltres(() => {
-        const ens = etat.filtres[famille];
+        const ens = F()[famille];
         if (ens.has(valeur)) ens.delete(valeur); else ens.add(valeur);
       });
       return;
     }
     if (e.target.closest('[data-filtre-jamais]')) {
-      changerFiltres(() => { etat.filtres.jamais = !etat.filtres.jamais; });
+      changerFiltres(() => { F().jamais = !F().jamais; });
       return;
     }
     const note = e.target.closest('[data-filtre-note]');
     if (note) {
       const k = Number(note.dataset.filtreNote);
-      changerFiltres(() => { etat.filtres.note = etat.filtres.note === k ? 0 : k; });
+      changerFiltres(() => { F().note = F().note === k ? 0 : k; });
       return;
     }
     const ordre = e.target.closest('[data-ordre]');
     if (ordre) {
-      changerFiltres(() => { etat.ordre = ordre.dataset.ordre; etat.menuOrdre = false; });
+      changerFiltres(() => {
+        if (enMatch()) etat.ordreMatch = ordre.dataset.ordre; else etat.ordre = ordre.dataset.ordre;
+        etat.menuOrdre = false;
+      });
       return;
     }
     const t = e.target.closest('[data-ouvrir]');
@@ -2706,6 +2881,10 @@ export default {
       etat.selection = new Set();
       etat.fenetreTri = false;
       etat.pourCharge = null;
+      etat.filtresMatch = nouveauxFiltres();
+      etat.ordreMatch = 'match';
+      etat.filtresTel = false;
+      etat.menuOrdre = false;
       dessinerFenetreTri();
     }
     // CHOISIR POUR UNE PARUTION : la recherche, en sélection, avec ce qui est

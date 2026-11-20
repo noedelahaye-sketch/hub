@@ -3167,7 +3167,7 @@ export async function lirePhotos() {
     await client
       .from('photos')
       .select(
-        '*, evenement:evenements(id, titre, date_debut, competition), etiquettes:photos_etiquettes(etiquette_id), personnes:photos_personnes(contact_id), parutions:publications_photos(publication_id)',
+        '*, evenement:evenements(id, titre, date_debut, competition, recevant:pistes!evenements_club_recevant_fkey(nom), visiteur:pistes!evenements_club_visiteur_fkey(nom)), etiquettes:photos_etiquettes(etiquette_id), personnes:photos_personnes(contact_id), parutions:publications_photos(publication_id)',
       )
       .order('prise_le', { ascending: true, nullsFirst: false })
       .order('nom'),

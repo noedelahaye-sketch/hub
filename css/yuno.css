@@ -6371,17 +6371,17 @@ body[data-espace="yuno"] #vue .pht-pour-menu select {
   position: absolute;
   inset: -14px -28px;
   z-index: -1;
+  /* Une ombre, sans flou (demande de Noé) : un voile sombre qui s'évanouit
+     vers ses bords, la photo reste nette derrière. */
   background: rgb(14 13 11 / 22%);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
   -webkit-mask-image: radial-gradient(closest-side, #000 45%, transparent);
   mask-image: radial-gradient(closest-side, #000 45%, transparent);
   pointer-events: none;
 }
 /* Serrées : 26 px de large par étoile, mais 36 de haut — le doigt garde une
    cible correcte, l'œil voit une rangée compacte. */
-.pht-etoiles-sur .pht-etoile { width: 26px; height: 36px; color: rgb(246 242 233 / 80%); }
-.pht-etoiles-sur .pht-etoile svg { width: 20px; height: 20px; stroke-width: 1.15; filter: drop-shadow(0 1px 2px rgb(0 0 0 / 35%)); }
+.pht-etoiles-sur .pht-etoile { width: 23px; height: 34px; color: rgb(246 242 233 / 80%); }
+.pht-etoiles-sur .pht-etoile svg { width: 17px; height: 17px; stroke-width: 1.15; filter: drop-shadow(0 1px 2px rgb(0 0 0 / 22%)); }
 .pht-etoiles-sur .pht-etoile.pleine { color: var(--accent); }
 .pht-etoiles-sur .pht-etoile:hover { background: transparent; }
 
@@ -6404,7 +6404,7 @@ body[data-espace="yuno"] #vue .pht-pour-menu select {
      étoiles tombent sur le bas de la PHOTO, pas dans le vide sous elle. */
   .pht-vue-corps { justify-content: center; gap: var(--espace-8); }
   .pht-vue-corps .pht-vue-scene { height: auto; flex: none; padding: 0; }
-  .pht-vue-corps .pht-vue-image { height: auto; max-height: calc(100vh - 250px); max-height: calc(100dvh - 250px); }
+  .pht-vue-corps .pht-vue-image { height: auto; max-height: calc(100vh - 290px); max-height: calc(100dvh - 290px); }
   .pht-vue-cote { padding: var(--espace-8) 0 var(--espace-8); }
   .pht-tri-vue { gap: var(--espace-8); }
   .pht-tri-vue .pht-tri-titre { display: none; }
@@ -6751,3 +6751,73 @@ body[data-espace="yuno"] #vue .pht-pour-menu select {
    de l'outil du carrousel, qui la décalait de huit pixels. */
 .pht-choix .car-match,
 .pht-choix .car-puce { min-height: 40px; height: 40px; margin: 0; border-radius: var(--rayon-controle); }
+
+/* ==========================================================================
+   « CE QUE ÇA RACONTE » SUR UNE LIGNE QUI GLISSE (21 novembre 2026)
+   ========================================================================== */
+.pht-ligne-recit {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  /* Elle s'aligne sur les lignes d'en dessous ; c'est le fondu à droite qui
+     dit qu'elle continue. (Une marge négative a été essayée : l'aimantation
+     des puces ramenait la première contre le bord de l'écran.) */
+  /* Un fondu à droite seulement : il dit « ça continue » sans rogner la
+     première puce. */
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+}
+.pht-ligne-recit::-webkit-scrollbar { display: none; }
+.pht-ligne-recit .pht-etiq { flex: none; min-height: 38px; scroll-snap-align: start; white-space: nowrap; }
+.pht-ligne-champ { flex: none; width: 10rem; min-height: 38px; }
+/* La seconde ligne : le style (menu) et qui, l'un à côté de l'autre. */
+.pht-tri-telephone .pht-tri-menus .pht-menu { flex: 0 1 auto; }
+
+/* LES GESTES DU BAS, PLUS PETITS (demande de Noé) : 42 px, l'arrondi d'un
+   bouton normal — ils laissent la place à la photo. */
+.pht-vue-actions .car-icone,
+.pht-vue-actions .car-puce,
+.pht-vue-actions .car-danger,
+.pht-vue-actions .car-bouton-or {
+  min-height: 42px;
+  height: 42px;
+  border-radius: var(--rayon-controle);
+  font-size: 0.875rem;
+}
+.pht-vue-actions .car-icone { width: 42px; }
+.pht-vue-actions .car-bouton-or { padding: 0 var(--espace-16); }
+/* LA VISIONNEUSE A UNE SEULE COLONNE, ET ELLE NE GRANDIT PAS AVEC SON CONTENU :
+   sans `minmax(0, 1fr)`, la colonne implicite prenait la largeur de la ligne
+   qui glisse — toutes ses puces bout à bout — et l'écran entier débordait. */
+.pht-vue { grid-template-columns: minmax(0, 1fr); }
+.pht-vue-cote,
+.pht-tri-telephone { min-width: 0; }
+
+/* La seconde ligne — le style, « Qui », puis les personnes posées — glisse
+   comme la première quand elle dépasse. */
+.pht-tri-telephone .pht-tri-menus {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+}
+.pht-tri-telephone .pht-tri-menus::-webkit-scrollbar { display: none; }
+.pht-tri-telephone .pht-tri-menus > * { flex: none; }
+.pht-tri-telephone .pht-tri-menus .pht-etiq { min-height: 38px; white-space: nowrap; }
+/* La seconde ligne, un cran plus basse que la première (demande de Noé) : le
+   style, « Qui » et les personnes sont des réglages d'appoint. */
+.pht-tri-telephone .pht-tri-menus .pht-menu,
+.pht-tri-telephone .pht-tri-menus .pht-etiq { min-height: 32px; height: 32px; font-size: 0.78rem; }
+
+/* Les albums et la page d'un match n'ont pas de colonne de filtres : leur icône
+   et leur volet servent aussi sur ordinateur. */
+@media (min-width: 60rem) {
+  .pht-outil-filtres.pht-partout { display: inline-flex; }
+  .pht-filtres-tel.pht-partout,
+  .pht-filtres-albums { display: block; }
+}
+.pht-ajouter-match { margin-top: var(--espace-12); }
