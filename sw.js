@@ -97,6 +97,7 @@ const COQUILLE = [
   'js/yuno.js',
   'js/bulle.js',
   'js/carrousel.js',
+  'js/phototheque.js',
   'js/zip.js',
   'js/photos-cloud.js',
   'js/vendor/supabase-js.js',

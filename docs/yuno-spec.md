@@ -2158,6 +2158,55 @@ Code : `js/carrousel.js`. Entrée : menu, « Créer › Le carrousel d'après-ma
   les 10 Go gratuits une fois le post publié.
 - **À venir** : la présélection plein écran (garder / laisser de côté).
 
+### `#yuno/phototheque` — la photothèque (20 novembre 2026, en construction)
+
+**Le besoin, défini avec Noé avant d'écrire une ligne** : une réserve où vivent
+les exports RETOUCHÉS de chaque match, triés par match, par style, par ce que la
+photo raconte, par qui est dessus, par format et par étoiles (1 à 5) — et dont
+**le but final est de choisir les photos d'une parution** du calendrier
+éditorial. C'est le réservoir principal : le carrousel, les parutions et la photo
+gardée au Carnet de terrain y piocheront. Le carrousel garde son propre import,
+qui pourra verser dans la réserve si Noé le dit.
+
+| Étape | Ce qu'elle apporte | État |
+|---|---|---|
+| 1 | la réserve, l'import par lot rattaché à un match, la grille, la visionneuse | **faite** |
+| 2 | le tri : étoiles, étiquettes en familles (style, ce que ça raconte, qui — relié au réseau), sélection multiple, plein écran au clavier et au doigt | à faire |
+| 3 | la recherche : match, période, compétition (posée sur le match), étiquettes, note minimale, « jamais publiée » | à faire |
+| 4 | le lien aux parutions : choisir les photos d'une parution, compteur « publiée N fois » (les parutions déclarées publiées, pas les téléchargements), le carrousel et le Carnet qui piochent | à faire |
+
+**UNE VERSION ALLÉGÉE, PAS L'ORIGINAL** (choix de Noé) : chaque photo est
+ramenée à 2 160 px au plus grand côté, en JPEG 92 %, sur l'appareil qui importe.
+Instagram ramène tout à 1 080 de large : deux fois plus de pixels qu'il n'en
+garde, environ 1 Mo au lieu de 10, et les 10 Go gratuits de Cloudflare tiennent
+une centaine de matchs. **L'original reste sur le disque.** Un JPEG déjà à la
+bonne taille part tel quel — le réencoder le dégraderait pour rien.
+
+**LA DATE EST CELLE DE LA PRISE DE VUE**, lue dans le fichier (EXIF
+`DateTimeOriginal`) par une lecture à la main, sans bibliothèque ; à défaut, la
+date du fichier. C'est elle qui permettra « mon mois d'octobre ». **Le format se
+déduit en base** (colonne calculée sur largeur et hauteur, 3 % de tolérance pour
+le carré) : il ne peut pas mentir sur la photo.
+
+**L'IMPORT SE FAIT DEPUIS UN MATCH** : « Importer des photos » demande d'abord
+de quel match elles viennent (sorties Yuno de l'année écoulée, ou « Sans
+match »), puis mène à la page du match où l'on choisit les fichiers — ou glisse
+le dossier de l'export. Deux préparations à la fois (décoder 24 Mpx coûte cent
+Mo de mémoire), deux envois à la fois ; un même nom de fichier n'entre qu'une
+fois par match.
+
+**LA GRILLE EST CARRÉE**, comme celle de l'application Photos ; le format réel
+se lit dans la **visionneuse** — plein écran, flèches et clavier sur ordinateur,
+balayage au doigt, la date de prise de vue en toutes lettres, « Télécharger »
+(feuille de partage sur téléphone, la photo étant préchargée pour que le geste
+reste frais) et « Retirer », confirmé sur place, qui efface aussi le fichier en
+ligne.
+
+**Données** : table `photos` (id choisi par le navigateur, `cle` R2,
+`evenement_id` en `set null`, `prise_le`, `largeur`, `hauteur`, `format`
+calculé, `taille`). Code : `js/phototheque.js`. **Créer gagne une quatrième
+porte**, la première : c'est la réserve où les trois autres viendront piocher.
+
 ### `#yuno/editorial` — poser le mois
 
 La page où l'on programme (décision de Noé, 12 août 2026). Elle garde l'onglet

@@ -88,6 +88,7 @@ import pageProjet from './projet.js';
 // filtre voyage déjà par la route (`#taches/photo`).
 import pageTaches from './taches.js';
 import outilCarrousel from './carrousel.js';
+import outilPhototheque from './phototheque.js';
 import { animerLaCoche } from './mouvements.js';
 import { bulle, suivreLesGestes, dernierGeste } from './bulle.js';
 import {
@@ -168,6 +169,9 @@ const VUES = [
   // ses propres gestes et ses propres fichiers, monté dans un hôte comme les
   // écrans du cap (js/carrousel.js).
   'carrousel',
+  // LA PHOTOTHÈQUE (20 novembre 2026) : la réserve de photos des matchs, montée
+  // dans un hôte comme le carrousel (js/phototheque.js).
+  'phototheque',
   // L'IDENTITÉ DE YUNO (20 novembre 2026) : les quatre piliers, sortis de Créer.
   'identite',
 ];
@@ -186,6 +190,7 @@ const ONGLET_DE_LA_VUE = {
   banque: 'creer',
   editorial: 'creer',
   carrousel: 'creer',
+  phototheque: 'creer',
   identite: 'creer',
   passerelle: 'reseau',
   vivier: 'reseau',
@@ -266,6 +271,7 @@ export const RUBRIQUES_YUNO = [
     nom: 'Créer',
     adresse: '#yuno/creer',
     pages: [
+      { nom: 'La photothèque', adresse: '#yuno/phototheque' },
       { nom: 'La banque d’idées', adresse: '#yuno/banque' },
       { nom: 'Le calendrier éditorial', adresse: '#yuno/editorial' },
       { nom: 'Le carrousel d’après-match', adresse: '#yuno/carrousel' },
@@ -407,7 +413,7 @@ function enTete(vue, etat = null) {
     vivier: 'Vivier', messages: 'Modèles de messages', carnet: 'Carnet réseau',
     missions: 'Missions', commandes: 'Missions', preparations: 'Préparations',
     modeles: 'Modèle', cap: 'Mon cap', objectif: 'Objectif',
-    projet: 'Projet', taches: 'Mes tâches', carrousel: 'Carrousel', identite: 'Identité',
+    projet: 'Projet', taches: 'Mes tâches', carrousel: 'Carrousel', phototheque: 'Photothèque', identite: 'Identité',
   };
   // LA BARRE NOMME L'ÉTAGE DU CAP (15 septembre 2026 au soir) : depuis que le
   // menu offre « Mes objectifs » et « Mes projets », une barre qui dirait
@@ -505,6 +511,14 @@ function vueCarrousel(etat) {
   return `
     ${enTete(etat.vue, etat)}
     <div data-hote-carrousel></div>
+    ${pied()}`;
+}
+
+// L'hôte de la photothèque, sur le même patron que le carrousel.
+function vuePhototheque(etat) {
+  return `
+    ${enTete(etat.vue, etat)}
+    <div data-hote-phototheque></div>
     ${pied()}`;
 }
 
@@ -625,6 +639,16 @@ function vitrineDuCarrousel(photos) {
       <span class="porte-car-cadres">${cadres}</span>
       <span class="porte-car-points"><span class="actif"></span><span></span><span></span></span>
     </span>`;
+}
+
+// La porte de la photothèque montre une planche de quatre photos : la forme
+// d'une réserve, qu'on reconnaît avant de lire le mot.
+function vitrineDeLaPhototheque(photos) {
+  const tirage = melangeSeme(Object.values(photos ?? {}), graineDuJour() + 7).slice(0, 4);
+  const cadres = [0, 1, 2, 3].map((i) => tirage[i]
+    ? `<span class="porte-pht-cadre"><img src="${echapper(tirage[i])}" alt="" loading="lazy" decoding="async"></span>`
+    : '<span class="porte-pht-cadre"></span>').join('');
+  return `<span class="porte-pht" aria-hidden="true">${cadres}</span>`;
 }
 
 function vitrineDeLaBanque(publications) {
@@ -2923,6 +2947,15 @@ function vueCreer(etat) {
       ${construireIdeeDuJour(etat.publications)}
 
       <nav class="creer-lieux" aria-label="L'atelier">
+        ${grandePorte({
+          // LA PHOTOTHÈQUE OUVRE L'ATELIER (20 novembre 2026) : c'est la
+          // réserve où les trois autres viendront piocher.
+          adresse: '#yuno/phototheque',
+          icone: PHOTO,
+          titre: 'Photothèque',
+          vitrine: vitrineDeLaPhototheque(etat.photos),
+          service: 'Tes photos, rangées par match',
+        })}
         ${grandePorte({
           adresse: '#yuno/editorial',
           icone: CALENDRIER,
@@ -6480,6 +6513,11 @@ const BESOINS = {
   // Les écrans du cap ne demandent RIEN à Yuno : le module du hub qu'ils
   // montent fait ses propres lectures, et une liste ici en ferait deux.
   cap: [],
+  // La photothèque lit ses propres tables (js/phototheque.js) : rien à Yuno.
+  phototheque: [],
+  // Le carrousel non plus — l'entrée manquait, et chaque visite levait une
+  // erreur en console (`charger(undefined)`), sans rien casser à l'écran.
+  carrousel: [],
   objectif: [],
   projet: [],
   taches: [],
@@ -6788,6 +6826,7 @@ export default {
       // page sous les doigts.
       else if (VUES_DU_CAP.includes(etat.vue)) section.innerHTML = vueDuCap(etat);
       else if (etat.vue === 'carrousel') section.innerHTML = vueCarrousel(etat);
+      else if (etat.vue === 'phototheque') section.innerHTML = vuePhototheque(etat);
       else if (etat.vue === 'identite') section.innerHTML = vueIdentite(etat);
       else section.innerHTML = vueAccueil(etat);
 
@@ -6816,6 +6855,14 @@ export default {
       if (etat.vue === 'carrousel') {
         const hote = section.querySelector('[data-hote-carrousel]');
         if (hote) outilCarrousel.monter(hote, { id: etat.feuilleOuverte });
+        return;
+      }
+
+      // LA PHOTOTHÈQUE de même : son action principale est son propre bouton
+      // or, « Importer des photos ».
+      if (etat.vue === 'phototheque') {
+        const hote = section.querySelector('[data-hote-phototheque]');
+        if (hote) outilPhototheque.monter(hote, { id: etat.feuilleOuverte });
         return;
       }
 

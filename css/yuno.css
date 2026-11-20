@@ -5609,3 +5609,219 @@ body[data-espace="yuno"] .creer .idee-jour-corps .pub-titre { font-size: 1.0625r
 /* Sur téléphone la troisième sortie se taisait, faute de place dans deux
    colonnes ; sur une ligne qu'on fait glisser, elle a la sienne. */
 .creer-matiere .bloc ul.matiere > li:nth-child(3) { display: block; }
+
+/* ==========================================================================
+   LA PHOTOTHÈQUE (20 novembre 2026, étape 1 : la réserve et l'import)
+   --------------------------------------------------------------------------
+   Elle reprend la grammaire du carrousel — ses boutons, son import en
+   pointillé, son anneau d'envoi — et n'ajoute que ce qui lui est propre : la
+   liste des matchs, la grille carrée et la visionneuse. Le préfixe `pht-` est
+   libre dans les trois feuilles.
+   ========================================================================== */
+
+.pht-tete-liste {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-12);
+  margin: var(--espace-8) 0 var(--espace-16);
+}
+.pht-intro { margin: 0; max-width: 46ch; color: var(--texte-doux); }
+
+/* Le choix du match : une rangée, la question puis la pastille. */
+.pht-choix {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-12);
+  margin-bottom: var(--espace-16);
+  padding: var(--espace-16);
+  background: var(--fond-carte);
+  border-radius: var(--rayon-carte);
+}
+.pht-choix-titre { flex-basis: 100%; margin: 0; font-weight: 600; }
+
+/* --- La liste des matchs --- */
+.pht-matchs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: var(--espace-12);
+}
+.pht-match {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: var(--espace-12);
+  color: var(--texte);
+  text-decoration: none;
+  background: var(--fond-carte);
+  border-radius: var(--rayon-carte);
+  transition: background 0.2s;
+}
+.pht-match:hover { background: var(--fond-releve); }
+.pht-match-photos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  margin-bottom: var(--espace-8);
+}
+/* Le même cadre que la porte du carrousel, et pour la même raison : l'image
+   posée en absolu ne peut pas allonger son cadre sous Safari. */
+.pht-match-cadre {
+  position: relative;
+  aspect-ratio: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--fond-releve);
+  border-radius: var(--rayon-etiquette);
+}
+.pht-match-cadre img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.pht-match-nom { overflow: hidden; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.pht-match-service { font-size: 0.8125rem; color: var(--texte-discret); }
+
+/* --- Un match --- */
+.pht-titre { display: flex; flex-direction: column; min-width: 0; }
+.pht-nom {
+  margin: 0;
+  overflow: hidden;
+  font-family: "Gloock", Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 400;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--texte);
+}
+/* `body[data-espace="yuno"] #vue h2` pose la police de texte à tous les
+   titres du site (spécificité 1-1-2) : ce titre-ci nomme le match, il redit
+   la sienne au même poids. */
+body[data-espace="yuno"] #vue .pht-nom {
+  font-family: "Gloock", Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--texte);
+}
+
+/* LA GRILLE EST CARRÉE, comme celle de l'application Photos : une planche se
+   balaie du regard, et des formats mêlés y feraient des marches. Le format
+   réel se lit en grand, dans la visionneuse. */
+.pht-grille {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+}
+@media (min-width: 45rem) {
+  .pht-grille { grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: 4px; }
+}
+.pht-tuile {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--fond-releve);
+  border: 0;
+  border-radius: var(--rayon-etiquette);
+  cursor: zoom-in;
+}
+.pht-tuile img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.pht-tuile.prete img { opacity: 1; }
+
+/* --- La visionneuse --- */
+body.pht-vue-ouverte { overflow: hidden; }
+.pht-vue {
+  position: fixed;
+  inset: 0;
+  /* Au-dessus de tout, dock et barre compris : une photo se regarde seule. */
+  z-index: 1000;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  padding: max(var(--espace-12), env(safe-area-inset-top)) var(--espace-12)
+    max(var(--espace-12), env(safe-area-inset-bottom));
+  background: var(--fond);
+}
+.pht-vue-barre { display: flex; align-items: center; justify-content: space-between; gap: var(--espace-12); }
+.pht-vue-rang { font-size: 0.875rem; color: var(--texte-discret); }
+.pht-vue-scene {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--espace-8);
+  min-height: 0;
+  padding: var(--espace-12) 0;
+}
+.pht-vue-image {
+  justify-self: center;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: var(--rayon-etiquette);
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.pht-vue-fleche {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  color: var(--texte);
+  background: rgb(255 255 255 / 6%);
+  border: 0;
+  border-radius: 50%;
+}
+.pht-vue-fleche:hover:not(:disabled) { background: rgb(255 255 255 / 12%); }
+.pht-vue-fleche:disabled { opacity: 0.2; cursor: default; }
+/* Au doigt, on balaie : les flèches se taisent et rendent leur place à la photo. */
+@media (pointer: coarse) {
+  .pht-vue-scene { grid-template-columns: minmax(0, 1fr); }
+  .pht-vue-fleche { display: none; }
+}
+.pht-vue-pied {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-12);
+}
+.pht-vue-infos { display: flex; flex-direction: column; gap: 2px; min-width: 0; margin: 0; font-size: 0.875rem; }
+.pht-vue-infos span:first-child::first-letter { text-transform: uppercase; }
+.pht-vue-infos .discret { overflow: hidden; font-size: 0.75rem; text-overflow: ellipsis; white-space: nowrap; }
+.pht-vue-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--espace-8); margin-left: auto; }
+.pht-vue-question { font-size: 0.875rem; color: var(--texte-doux); }
+
+/* --- La porte de la photothèque, page Créer : une planche de quatre --- */
+.porte-pht { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; width: 72%; margin: 0 auto; }
+.porte-pht-cadre {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--fond-releve);
+  border-radius: var(--rayon-etiquette);
+}
+.porte-pht-cadre img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
+
+/* QUATRE PORTES DEPUIS LA PHOTOTHÈQUE : deux par rangée sur un écran moyen,
+   les quatre de front quand il y a la place. */
+@media (min-width: 45rem) {
+  .creer-lieux { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 75rem) {
+  .creer-lieux { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}

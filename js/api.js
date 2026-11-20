@@ -3154,3 +3154,29 @@ export async function supprimerMediaDeCarrousel(id) {
   const { error } = await client.from('carrousels_medias').delete().eq('id', id);
   if (error) throw error;
 }
+
+// --- La photothèque de Yuno (20 novembre 2026) ------------------------------------
+//
+// Les fichiers vivent chez Cloudflare R2 (js/photos-cloud.js) ; la base range ce
+// qui se CLASSE : de quel match vient une photo, quand elle a été prise, son
+// format. Une seule lecture pour tout : la réserve tient en mémoire, et les
+// filtres des étapes suivantes n'auront rien à redemander au réseau.
+
+export async function lirePhotos() {
+  return verifier(
+    await client
+      .from('photos')
+      .select('*, evenement:evenements(id, titre, date_debut)')
+      .order('prise_le', { ascending: true, nullsFirst: false })
+      .order('nom'),
+  );
+}
+
+export async function ajouterPhoto(champs) {
+  return verifier(await client.from('photos').insert(champs).select().single());
+}
+
+export async function supprimerPhoto(id) {
+  const { error } = await client.from('photos').delete().eq('id', id);
+  if (error) throw error;
+}
