@@ -6060,3 +6060,81 @@ body.pht-vue-ouverte { overflow: hidden; }
   border-radius: var(--rayon-etiquette);
 }
 .pht-fen-vignette img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ==========================================================================
+   LA PHOTOTHÈQUE, ÉTAPE 3 : LA RECHERCHE (20 novembre 2026)
+   ========================================================================== */
+
+.pht-chercher { text-decoration: none; }
+
+/* Sur ordinateur, les filtres à gauche et les photos à droite : on coche et on
+   voit le résultat sans défiler. Sur téléphone, les filtres se replient
+   au-dessus des photos. */
+.pht-recherche { display: flex; flex-direction: column; gap: var(--espace-16); margin-top: var(--espace-8); }
+@media (min-width: 60rem) {
+  .pht-recherche { display: grid; grid-template-columns: 19rem minmax(0, 1fr); align-items: start; }
+  .pht-filtres {
+    position: sticky;
+    top: var(--espace-16);
+    max-height: calc(100vh - 2 * var(--espace-16));
+    overflow-y: auto;
+  }
+}
+.pht-filtres { background: var(--fond-carte); border-radius: var(--rayon-carte); }
+.pht-filtres > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-8);
+  min-height: 48px;
+  padding: 0 var(--espace-16);
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+}
+.pht-filtres > summary::-webkit-details-marker { display: none; }
+.pht-filtres-corps { padding: 0 var(--espace-16) var(--espace-16); }
+.pht-etiq-n { margin-left: 6px; font-size: 0.6875rem; opacity: 0.6; }
+.pht-resultats { min-width: 0; }
+.pht-ordre { display: inline-flex; gap: 4px; }
+.car-puce.actif { color: var(--fond); background: var(--texte); border-color: var(--texte); }
+
+/* La compétition : la pastille du match relié, avec un champ dedans. */
+.pht-competition { margin-top: var(--espace-8); }
+body[data-espace="yuno"] #vue .pht-competition input {
+  width: 14rem;
+  max-width: 60vw;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--texte);
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+.pht-competition:focus-within { border-color: var(--accent); }
+.pht-competition input::placeholder { color: var(--texte-discret); }
+
+/* --- Renommer, supprimer une étiquette --- */
+.pht-tri-gerer {
+  margin-left: 8px;
+  padding: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--texte-doux);
+  background: none;
+  border: 0;
+  text-decoration: none;
+}
+.pht-tri-gerer:hover { color: var(--texte); }
+.pht-gere-liste { display: flex; flex-direction: column; gap: 6px; }
+.pht-gere { display: flex; align-items: center; gap: var(--espace-8); }
+.pht-gere .pht-etiq-champ { flex: 1 1 auto; width: auto; }
+.pht-gere-n { flex: none; font-size: 0.75rem; }
+/* Sur téléphone, le compte garde sa ligne et les gestes passent dessous plutôt
+   que de l'écraser en deux mots empilés. */
+.pht-resultats .car-tout-tete { flex-wrap: wrap; }
+.pht-resultats .car-petit-titre { white-space: nowrap; }

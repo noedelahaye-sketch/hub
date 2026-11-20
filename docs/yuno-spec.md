@@ -2172,7 +2172,7 @@ qui pourra verser dans la réserve si Noé le dit.
 |---|---|---|
 | 1 | la réserve, l'import par lot rattaché à un match, la grille, la visionneuse | **faite** |
 | 2 | le tri : étoiles, étiquettes en familles (style, ce que ça raconte, qui — relié au réseau), sélection multiple, plein écran au clavier et au doigt | **faite** |
-| 3 | la recherche : match, période, compétition (posée sur le match), étiquettes, note minimale, « jamais publiée » | à faire |
+| 3 | la recherche : match, période, compétition (posée sur le match), étiquettes, qui, format, note minimale ; renommer et supprimer une étiquette | **faite** — « jamais publiée » attend le compteur de l'étape 4 |
 | 4 | le lien aux parutions : choisir les photos d'une parution, compteur « publiée N fois » (les parutions déclarées publiées, pas les téléchargements), le carrousel et le Carnet qui piochent | à faire |
 
 **UNE VERSION ALLÉGÉE, PAS L'ORIGINAL** (choix de Noé) : chaque photo est
@@ -2225,6 +2225,33 @@ de l'eau, photo par photo — et dans la fenêtre de la sélection — par lot. 
 - **Au clavier, dans la visionneuse** : 1 à 5 notent, 0 efface, les flèches
   changent de photo — le geste de Lightroom. Sur téléphone, le panneau est sous
   la photo et défile ; le balayage ne vit que sur la photo.
+
+**LA RECHERCHE (étape 3) — `#yuno/phototheque/recherche`**, ouverte par
+« Rechercher » en tête de la photothèque. Les filtres se combinent, et deux
+règles disent comment :
+- **les valeurs qui s'excluent ÉLARGISSENT** — un mois, une compétition, un
+  match, un format : octobre OU novembre ;
+- **les étiquettes et les personnes RESSERRENT** — une photo peut en porter
+  plusieurs : noir et blanc ET émotion ;
+- entre familles, tout se cumule ; la note est un MINIMUM (« 4 et plus »).
+
+**On n'offre que ce qui existe**, avec son compte. La période est faite des
+MOIS où il y a des photos (« faire un post sur mon mois d'octobre »). Deux
+ordres : les plus récentes, ou les mieux notées. Les résultats se
+sélectionnent, se trient et s'ouvrent comme un match — **la visionneuse fait
+défiler les résultats, figés à l'ouverture**, pour qu'une photo dont on retire
+l'étiquette cherchée ne disparaisse pas sous les doigts. Les filtres sont
+ouverts à côté des photos sur ordinateur, repliés au-dessus sur téléphone.
+
+**LA COMPÉTITION SE POSE SUR LE MATCH** (`evenements.competition`, texte
+libre), depuis la page du match dans la photothèque : toutes ses photos en
+héritent. Les compétitions déjà écrites sont proposées à la saisie, et une
+valeur qui ne diffère que par la casse ou les accents prend la forme connue —
+deux orthographes feraient deux filtres.
+
+**UNE ÉTIQUETTE SE RENOMME ET SE SUPPRIME** depuis le panneau de tri
+(« Modifier » à côté de sa famille), avec le nombre de photos qui la portent.
+La suppression demande un second appui : elle emporte ses liens.
 
 Tables : `photos.note`, `etiquettes` (famille `style`|`recit`, nom unique par
 famille sans casse), `photos_etiquettes`, `photos_personnes` (vers `contacts`).

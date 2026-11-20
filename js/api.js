@@ -3167,7 +3167,7 @@ export async function lirePhotos() {
     await client
       .from('photos')
       .select(
-        '*, evenement:evenements(id, titre, date_debut), etiquettes:photos_etiquettes(etiquette_id), personnes:photos_personnes(contact_id)',
+        '*, evenement:evenements(id, titre, date_debut, competition), etiquettes:photos_etiquettes(etiquette_id), personnes:photos_personnes(contact_id)',
       )
       .order('prise_le', { ascending: true, nullsFirst: false })
       .order('nom'),
@@ -3233,5 +3233,22 @@ export async function delierPersonne(ids, contactId) {
 
 export async function supprimerPhotos(ids) {
   const { error } = await client.from('photos').delete().in('id', ids);
+  if (error) throw error;
+}
+
+// La compétition d'un match (photothèque, étape 3). Une écriture à part, sans
+// passer par `modifierEvenement` : celle-ci sait réécrire une série, et une
+// compétition ne touche qu'un match.
+export async function poserCompetition(evenementId, competition) {
+  const { error } = await client.from('evenements').update({ competition }).eq('id', evenementId);
+  if (error) throw error;
+}
+
+export async function renommerEtiquette(id, nom) {
+  return verifier(await client.from('etiquettes').update({ nom }).eq('id', id).select().single());
+}
+
+export async function supprimerEtiquette(id) {
+  const { error } = await client.from('etiquettes').delete().eq('id', id);
   if (error) throw error;
 }
