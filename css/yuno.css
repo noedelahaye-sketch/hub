@@ -6821,3 +6821,272 @@ body[data-espace="yuno"] #vue .pht-pour-menu select {
   .pht-filtres-albums { display: block; }
 }
 .pht-ajouter-match { margin-top: var(--espace-12); }
+
+/* ==========================================================================
+   L'ATELIER (creer.html) — LA DA DU SITE DE LIVRAISON (21 novembre 2026)
+   --------------------------------------------------------------------------
+   Tout est sous `body[data-atelier="creer"]` : le site Yuno n'en voit rien.
+   Repris de livraison-yuno/src/pages/app.css : le fond Nuit, la barre du haut
+   opaque au logo centré et à filet, le grand titre Gloock et son surtitre en
+   petites capitales, les photos à ANGLES NETS en 3:4, les filets plutôt que les
+   cartes, la barre du bas plate posée sur le bord de l'écran.
+   ========================================================================== */
+
+body[data-atelier="creer"] { --atelier-gouttiere: clamp(16px, 4vw, 48px); }
+
+/* --- La barre du haut : logo centré, filet dessous, toujours là --- */
+body[data-atelier="creer"] .atelier-barre {
+  position: sticky;
+  top: 0;
+  z-index: 35;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  min-height: 64px;
+  padding-top: env(safe-area-inset-top);
+  background: var(--fond);
+  border-bottom: 1px solid var(--bordure);
+  box-shadow: 0 0 0 100vmax var(--fond);
+  clip-path: inset(0 -100vmax);
+}
+body[data-atelier="creer"] .atelier-logo { justify-self: center; display: inline-flex; }
+body[data-atelier="creer"] .atelier-logo img { display: block; width: auto; height: 24px; }
+@media (min-width: 45rem) {
+  body[data-atelier="creer"] .atelier-barre { min-height: 72px; }
+  body[data-atelier="creer"] .atelier-logo img { height: 28px; }
+}
+
+/* --- Le grand titre, en Gloock, et son surtitre --- */
+body[data-atelier="creer"] .atelier-tete { padding: clamp(24px, 5vw, 56px) 0 clamp(16px, 3vw, 32px); }
+body[data-atelier="creer"] .atelier-surtitre {
+  margin: 0 0 8px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--texte-discret);
+}
+body[data-atelier="creer"] #vue .atelier-h1 {
+  margin: 0;
+  font-family: "Gloock", Georgia, serif;
+  font-size: clamp(40px, 6vw, 72px);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--texte);
+}
+body[data-atelier="creer"] .atelier-lead { max-width: 46ch; margin: 0 0 var(--espace-24); color: var(--texte-doux); }
+
+/* --- Les deux outils en vedette : des tuiles de match du site de livraison --- */
+body[data-atelier="creer"] .atelier-vedettes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (min-width: 60rem) {
+  body[data-atelier="creer"] .atelier-vedettes { gap: 24px; max-width: 60rem; }
+}
+body[data-atelier="creer"] .atelier-vedette { display: block; min-width: 0; color: var(--texte); text-decoration: none; }
+body[data-atelier="creer"] .atelier-vedette-image {
+  position: relative;
+  display: block;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background: var(--fond-carte);
+}
+body[data-atelier="creer"] .atelier-vedette-image img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+@media (hover: hover) {
+  body[data-atelier="creer"] .atelier-vedette:hover .atelier-vedette-image img { transform: scale(1.04); }
+}
+body[data-atelier="creer"] .atelier-vedette-points {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12px;
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+body[data-atelier="creer"] .atelier-vedette-points span { width: 6px; height: 6px; border-radius: 50%; background: rgb(255 255 255 / 45%); }
+body[data-atelier="creer"] .atelier-vedette-points span.on { background: #fff; }
+body[data-atelier="creer"] .atelier-vedette-nom {
+  display: block;
+  padding-top: 12px;
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+body[data-atelier="creer"] .atelier-vedette-sous { display: block; font-size: 14px; line-height: 22px; color: var(--texte-discret); }
+@media (max-width: 44.99rem) {
+  body[data-atelier="creer"] .atelier-vedette-nom { font-size: 18px; line-height: 24px; }
+  body[data-atelier="creer"] .atelier-vedette-sous { font-size: 13px; line-height: 18px; }
+}
+
+/* --- Publier : des lignes séparées d'un filet, pas des cartes --- */
+body[data-atelier="creer"] .atelier-rubrique { margin-top: clamp(32px, 5vw, 56px); }
+body[data-atelier="creer"] .atelier-lignes { display: flex; flex-direction: column; border-bottom: 1px solid var(--bordure); margin-bottom: var(--espace-24); }
+body[data-atelier="creer"] .atelier-ligne {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 16px;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 10px 0;
+  color: var(--texte);
+  text-decoration: none;
+  border-top: 1px solid var(--bordure);
+}
+body[data-atelier="creer"] .atelier-ligne-nom { font-weight: 600; }
+body[data-atelier="creer"] .atelier-ligne-sous { font-size: 13px; color: var(--texte-discret); text-align: right; }
+body[data-atelier="creer"] .atelier-ligne svg { color: var(--texte-discret); }
+@media (hover: hover) { body[data-atelier="creer"] .atelier-ligne:hover .atelier-ligne-nom { color: var(--accent); } }
+
+/* --- LA BARRE DU BAS : PLATE, POSÉE SUR LE BORD, UN FILET AU-DESSUS ---------
+   La « stickybar » du site de livraison, devenue un dock. Au centre, la
+   photothèque et le carrousel, plus larges et nommés en clair ; autour, les
+   trois autres en icône. L'onglet actif porte un trait d'or au-dessus. */
+body[data-atelier="creer"] .atelier-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding: 0 max(8px, env(safe-area-inset-left)) env(safe-area-inset-bottom) max(8px, env(safe-area-inset-right));
+  background: rgb(14 13 11 / 94%);
+  border-top: 1px solid var(--bordure);
+}
+body[data-atelier="creer"] .atelier-dock a {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  max-width: 120px;
+  min-height: 58px;
+  padding: 8px 4px 6px;
+  font-size: 10.5px;
+  line-height: 13px;
+  font-weight: 600;
+  color: var(--texte-discret);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+body[data-atelier="creer"] .atelier-dock svg { width: 20px; height: 20px; }
+/* Les deux vedettes : plus larges, plus claires, leur nom en entier. */
+body[data-atelier="creer"] .atelier-dock a.vedette { flex: 1.45 1 0; max-width: 170px; color: var(--texte-doux); font-size: 12px; }
+body[data-atelier="creer"] .atelier-dock a.vedette svg { width: 23px; height: 23px; }
+body[data-atelier="creer"] .atelier-dock a.actif { color: var(--texte); }
+body[data-atelier="creer"] .atelier-dock a.actif::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 24%;
+  right: 24%;
+  height: 2px;
+  background: var(--accent);
+}
+body[data-atelier="creer"] .atelier-dock a:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
+/* La page laisse la place à la barre. */
+body[data-atelier="creer"] #vue { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
+body[data-atelier="creer"] .ouvrir-capture { bottom: calc(76px + env(safe-area-inset-bottom)); }
+
+/* --- LES ANGLES NETS DU SITE DE LIVRAISON : photos et cartes ------------------
+   Les contrôles (boutons, pastilles, champs) gardent l'échelle du kit ; ce qui
+   montre une photo ou porte un contenu s'arrête net. */
+body[data-atelier="creer"] :is(.pht-tuile, .pht-match-cadre, .pht-vue-image, .porte-pht-cadre, .porte-car-cadre,
+  .pht-apercu-cadre, .pht-fen-vignette, .car-vignette, .car-tuile, .car-sel-item, .pht-match, .pht-filtres,
+  .pht-filtres-tel, .pht-choix, .pht-barre-sel, .pht-menu-liste, .pht-ordre-menu, .car-liste-tuile, .car-import,
+  .car-tout, .creer-matiere, .bloc, .grande-porte) { border-radius: 0; }
+body[data-atelier="creer"] .pht-tuile.choisie::after { border-radius: 0; }
+/* Sur ordinateur, les deux outils passent en paysage : en 3:4 ils prenaient
+   toute la hauteur de l'écran, et « Publier » tombait sous la ligne de flottaison. */
+@media (min-width: 60rem) {
+  body[data-atelier="creer"] .atelier-vedette-image { aspect-ratio: 16 / 10; }
+}
+/* Sans titre, la page Créer de l'atelier commence sous la barre, avec un peu d'air. */
+body[data-atelier="creer"] .atelier-creer { padding-top: var(--espace-24); }
+
+/* ==========================================================================
+   LE MENU DE L'ATELIER, À LA MANIÈRE DU SITE DE LIVRAISON (21 novembre 2026,
+   demande de Noé : « retravaille-le pour que ça corresponde mieux au site »)
+   --------------------------------------------------------------------------
+   Plus de bouton doré ni de carte arrondie qui flotte : un panneau PLAT qui
+   descend sous la barre, sur toute la largeur, sur le fond Nuit, les pages en
+   lignes séparées d'un filet — ce sont les lignes de « Publier », et celles des
+   « autres fichiers » du site de livraison. Le titre « Créer » devient un
+   surtitre en petites capitales : il n'y a qu'une rubrique, rien à déplier.
+   ========================================================================== */
+body[data-atelier="creer"] .bouton-menu { border-radius: 0; }
+body[data-atelier="creer"] .bouton-menu:hover { background: none; }
+body[data-atelier="creer"] .bouton-menu.ouvert { background: none; }
+body[data-atelier="creer"] .bouton-menu span { background: var(--texte); transition: transform 0.2s, opacity 0.2s; }
+/* Ouvert, les trois traits deviennent une croix : on sait comment le refermer. */
+body[data-atelier="creer"] .bouton-menu.ouvert span { background: var(--texte); }
+body[data-atelier="creer"] .bouton-menu.ouvert span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+body[data-atelier="creer"] .bouton-menu.ouvert span:nth-child(2) { opacity: 0; }
+body[data-atelier="creer"] .bouton-menu.ouvert span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+body[data-atelier="creer"] .menu-voile-yuno {
+  padding-inline: 0;
+  background: rgb(8 7 6 / 78%);
+}
+body[data-atelier="creer"] .menu-voile-yuno .menu {
+  max-width: none;
+  padding: var(--espace-16) var(--atelier-gouttiere) var(--espace-24);
+  background: var(--fond);
+  border: 0;
+  border-bottom: 1px solid var(--bordure);
+  border-radius: 0;
+  box-shadow: none;
+}
+/* « Créer » : le surtitre de la liste. */
+body[data-atelier="creer"] .menu-voile-yuno .menu-grand { padding: 0; }
+body[data-atelier="creer"] .menu-voile-yuno .menu-grand > a {
+  min-height: 0;
+  padding: 0 0 var(--espace-8);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--texte-discret);
+  background: none;
+}
+body[data-atelier="creer"] .menu-voile-yuno .menu-fleche { display: none; }
+/* Les pages : toujours visibles, en lignes à filet, sans le trait de rattachement. */
+body[data-atelier="creer"] .menu-voile-yuno .menu-sous { display: flex; padding: 0; border-bottom: 1px solid var(--bordure); }
+body[data-atelier="creer"] .menu-voile-yuno .menu-sous > a::before { display: none; }
+body[data-atelier="creer"] .menu-voile-yuno .menu-sous > a {
+  min-height: 52px;
+  padding: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--texte);
+  border-top: 1px solid var(--bordure);
+  border-radius: 0;
+}
+body[data-atelier="creer"] .menu-voile-yuno .menu-sous > a:hover { color: var(--accent); background: none; }
+/* Le titre se rapproche de la barre (demande de Noé : l'écart était trop grand). */
+body[data-atelier="creer"] .atelier-tete { padding-top: var(--espace-16); padding-bottom: var(--espace-16); }
+@media (min-width: 60rem) {
+  body[data-atelier="creer"] .atelier-tete { padding-top: var(--espace-24); }
+}
+/* La barre de Yuno pose une marge de 24 px sous elle : dans l'atelier, c'est le
+   titre qui règle l'écart. */
+body[data-atelier="creer"] .atelier-barre { margin-bottom: 0; }

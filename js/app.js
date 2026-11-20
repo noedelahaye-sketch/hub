@@ -991,7 +991,11 @@ function afficherEspace() {
   routeCourante = route;
 
   // Sur les sites Yuno et FCH, le titre ne mentionne pas le hub : on en est sorti.
-  const TITRES_SITES = { yuno: 'Yuno · yuno_rph', hermitage: 'FC Hermitage' };
+  // L'atelier (`creer.html`) garde son nom : c'est une application à part.
+  const TITRES_SITES = {
+    yuno: document.body.dataset.atelier === 'creer' ? 'Créer · Yuno' : 'Yuno · yuno_rph',
+    hermitage: 'FC Hermitage',
+  };
   const titre = TITRES_VUES[nom]?.[route.vue] ?? TITRES[nom];
   document.title = TITRES_SITES[nom] ?? `${titre} — ${TITRE_BASE}`;
 

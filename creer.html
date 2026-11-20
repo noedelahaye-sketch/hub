@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>Créer · Yuno</title>
+
+  <!-- L'ATELIER DE YUNO (21 novembre 2026, demande de Noé : « un lien avec
+       uniquement les outils de la page Créer, en gardant la DA de Yuno, une page
+       accessible directement, sur laquelle je vais pour gérer ma partie créative
+       et tout le processus de publication »).
+       C'est le site Yuno (`data-entree="yuno"`), réduit à ses outils créatifs
+       (`data-atelier="creer"`) : la photothèque, le calendrier éditorial, la
+       banque d'idées, le carrousel. Ajoutée à l'écran d'accueil, elle est une
+       application à part, qui s'ouvre sur Créer. -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Créer">
+  <link rel="apple-touch-icon" href="img/yuno-favicon-kit.png">
+  <link rel="icon" href="img/yuno-favicon-kit.png" type="image/png">
+  <link rel="manifest" href="manifest-creer.json">
+  <meta name="theme-color" content="#0e0d0b">
+
+
+  <!-- Les deux polices du PREMIER écran, demandées avant que la feuille de
+       style ne les réclame : sans ça, le navigateur ne les découvre qu'après
+       avoir lu le CSS, et le texte s'affiche un instant dans la police du
+       système avant de sauter. `crossorigin` est obligatoire même pour nos
+       propres fichiers — une police est toujours demandée en mode anonyme, et
+       sans lui le préchargement est jeté puis refait. -->
+  <!-- Le corps de texte et le grand titre du kit Yuno -->
+  <link rel="preload" href="fonts/InstrumentSans-Variable.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/Gloock-Regular.woff2" as="font" type="font/woff2" crossorigin>
+
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/yuno.css">
+  <link rel="stylesheet" href="css/fch.css">
+</head>
+<body data-entree="yuno" data-atelier="creer">
+  <script>
+    // Sans adresse, l'atelier s'ouvre sur Créer — avant même que le site ne se
+    // dessine, pour qu'on ne voie jamais passer l'accueil de Yuno.
+    if (!location.hash) location.replace('#yuno/creer');
+  </script>
+
+  <div id="ecran-chargement" class="ecran-plein">
+    <p class="discret">Un instant…</p>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

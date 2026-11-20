@@ -1,0 +1,13 @@
+{
+  "name": "Yuno · Créer",
+  "short_name": "Créer",
+  "start_url": "creer.html",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#0e0d0b",
+  "theme_color": "#0e0d0b",
+  "icons": [
+    { "src": "img/icone-yuno-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "img/icone-yuno-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

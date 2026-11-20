@@ -180,6 +180,15 @@ const VUES = [
 // ses caps vivent en base — « photo », la clé de la contrainte CHECK, là où
 // l'interface dit « Yuno ».
 const VUES_DU_CAP = ['cap', 'objectif', 'projet', 'taches'];
+
+// L'ATELIER (21 novembre 2026, demande de Noé) : la page `creer.html` ouvre le
+// site Yuno réduit à sa partie créative — Créer et ses outils. Le site est le
+// même, ses écrans aussi ; seuls changent le dock, le menu, et les pages qu'on
+// peut atteindre. Une adresse hors de l'atelier ramène à Créer.
+const ATELIER = document.body.dataset.atelier === 'creer';
+const VUES_ATELIER = ['creer', 'phototheque', 'editorial', 'banque', 'carrousel', 'identite',
+  // La fiche d'une sortie reste ouverte : une parution ou une photo y mène.
+  'evenement'];
 const ESPACE_DU_HUB = 'photo';
 
 // La banque est une pièce de l'atelier : elle n'a pas son onglet, elle garde
@@ -405,7 +414,8 @@ export function animerLesCompteurs(section, { remise = false } = {}) {
 // ligne, avec ses résultats dessous ; les destinations restent accessibles
 // dans le dock, même pendant une recherche.
 function enTete(vue, etat = null) {
-  const vueActive = ONGLET_DE_LA_VUE[vue] ?? vue;
+  // Dans l'atelier, chaque outil a son onglet : il s'allume lui-même.
+  const vueActive = ATELIER ? (vue === 'identite' ? 'creer' : vue) : ONGLET_DE_LA_VUE[vue] ?? vue;
   const titres = {
     evenement: 'Événement', accueil: 'Accueil', journal: 'Journal', creer: 'Créer',
     banque: 'Banque d’idées', editorial: 'Calendrier éditorial',
@@ -430,14 +440,27 @@ function enTete(vue, etat = null) {
     creer: '<path d="m15 4 5 5M4 20l5-1L21 7a2 2 0 0 0-5-5L4 14z"/>',
     reseau: '<circle cx="9" cy="7" r="3"/><path d="M2 21v-2a7 7 0 0 1 14 0v2zM16 4a3 3 0 0 1 0 6M18 14a5 5 0 0 1 4 5v2h-3"/>',
     calendrier: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4M17 3v4M3 11h18M8 15h3v3H8z"/>',
+    phototheque: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 8"/>',
+    editorial: '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4M17 3v4M3 11h18M8 15h3v3H8z"/>',
+    banque: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/>',
+    carrousel: '<rect x="7" y="4" width="10" height="16" rx="2"/><path d="M4 7v10M20 7v10"/>',
   };
-  const liens = [
+  // LE DOCK DE L'ATELIER : Créer et ses quatre outils, rien d'autre.
+  const liens = ATELIER ? [
+    ['creer', 'Créer', '#yuno/creer'],
+    ['phototheque', 'Photos', '#yuno/phototheque'],
+    ['editorial', 'Éditorial', '#yuno/editorial'],
+    ['banque', 'Idées', '#yuno/banque'],
+    ['carrousel', 'Carrousel', '#yuno/carrousel'],
+  ] : [
     ['accueil', 'Accueil', '#yuno'],
     ['journal', 'Journal', '#yuno/journal'],
     ['creer', 'Créer', '#yuno/creer'],
     ['reseau', 'Réseau', '#yuno/reseau'],
     ['calendrier', 'Calendrier', '#yuno/calendrier'],
   ];
+
+  if (ATELIER) return enTeteDeLAtelier(vue, titre, icones);
 
   return `
     <div class="yuno-nav${etat?.rechercheClub != null ? ' recherche-ouverte' : ''}">
@@ -458,6 +481,53 @@ function enTete(vue, etat = null) {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icones[cle]}</svg>
           <span>${libelle}</span>
+        </a>`).join('')}
+    </nav>`;
+}
+
+// --- L'ATELIER, HABILLÉ COMME LE SITE DE LIVRAISON (21 novembre 2026) --------
+//
+// Noé : « une page qui reprend davantage la DA de mon site de livraison », avec
+// une barre en haut, un dock en bas — mais pas celui du site Yuno — et
+// « les deux outils photothèque et carrousel le plus mis en avant ».
+//
+// CE QUI VIENT DU SITE DE LIVRAISON (livraison-yuno/src/pages/app.css) :
+//   — la barre du haut, opaque, le logo centré et un filet dessous ;
+//   — le grand titre en Gloock, avec un surtitre en petites capitales ;
+//   — la barre du bas PLATE, posée sur le bord de l'écran avec un filet au-dessus
+//     (sa « stickybar »), et non une pilule de verre qui flotte.
+// LE DOCK MET EN AVANT LA PHOTOTHÈQUE ET LE CARROUSEL : au centre, plus larges,
+// avec leur nom ; les trois autres en icône, leur nom en tout petit.
+function enTeteDeLAtelier(vue, titre, icones) {
+  const actif = vue === 'identite' ? 'creer' : vue;
+  const onglets = [
+    ['creer', 'Créer', false],
+    ['editorial', 'Éditorial', false],
+    ['phototheque', 'Photothèque', true],
+    ['carrousel', 'Carrousel', true],
+    ['banque', 'Idées', false],
+  ];
+  return `
+    <div class="yuno-nav atelier-barre">
+      ${boutonDuMenu('menu-yuno')}
+      <a class="atelier-logo" href="#yuno/creer" aria-label="Créer — l'atelier de Yuno">
+        <img src="img/yuno-logo-kit.png" alt="Yuno" width="633" height="201" decoding="async"></a>
+      <span class="atelier-barre-fin" aria-hidden="true"></span>
+    </div>
+    ${/* SUR CRÉER, PAS DE TITRE (demande de Noé : « pas besoin ») : c'est la page
+       d'arrivée, le logo et les deux outils suffisent. Il reste pour le lecteur
+       d'écran. */ vue === 'creer'
+      ? `<h1 class="hors-ecran">Créer</h1>`
+      : `<header class="atelier-tete">
+          <h1 class="atelier-h1">${echapper(titre)}</h1>
+        </header>`}
+    <nav class="atelier-dock" aria-label="L'atelier">
+      ${onglets.map(([cle, nom, vedette]) => `
+        <a href="#yuno/${cle}" class="${vedette ? 'vedette' : ''}${cle === actif ? ' actif' : ''}"
+          ${cle === actif ? 'aria-current="page"' : ''}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icones[cle]}</svg>
+          <span>${nom}</span>
         </a>`).join('')}
     </nav>`;
 }
@@ -2950,7 +3020,57 @@ function blocDesPiliers(publications) {
 //
 // UN SEUL ÉCART PARTOUT (`--creer-ecart`) : c'est ce qui manquait le plus —
 // chaque bloc portait sa propre marge, et l'œil lisait du hasard.
+// LA PAGE CRÉER DE L'ATELIER : les deux outils en grand, à la manière des
+// tuiles de matchs du site de livraison — une photo en 3:4, son nom en gras,
+// une ligne grise dessous. Publier vient ensuite, en lignes séparées d'un filet.
+function vueCreerDeLAtelier(etat) {
+  const idees = etat.publications.filter((pub) => !pub.date_prevue && pub.statut !== 'publie').length;
+  const aujourdhui = versDateISO();
+  const dans7 = versDateISO(new Date(Date.now() + 6 * 24 * 3600 * 1000));
+  const semaine = etat.publications.filter(
+    (pub) => pub.date_prevue && pub.date_prevue >= aujourdhui && pub.date_prevue <= dans7,
+  ).length;
+  const tirage = melangeSeme(Object.values(etat.photos ?? {}), graineDuJour() + 11);
+  const couverture = (i) => (tirage[i]
+    ? `<img src="${echapper(tirage[i])}" alt="" loading="lazy" decoding="async">` : '');
+  const ligne = (adresse, nom, service) => `
+    <a class="atelier-ligne" href="${adresse}">
+      <span class="atelier-ligne-nom">${nom}</span>
+      <span class="atelier-ligne-sous">${service}</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+    </a>`;
+  return `
+    ${enTete('creer', etat)}
+    <div class="atelier-creer">
+
+      <nav class="atelier-vedettes" aria-label="Les deux outils">
+        <a class="atelier-vedette" href="#yuno/phototheque">
+          <span class="atelier-vedette-image">${couverture(0)}</span>
+          <span class="atelier-vedette-nom">Photothèque</span>
+          <span class="atelier-vedette-sous">Trier, chercher, choisir</span>
+        </a>
+        <a class="atelier-vedette" href="#yuno/carrousel">
+          <span class="atelier-vedette-image">${couverture(1)}<span class="atelier-vedette-points" aria-hidden="true"><span class="on"></span><span></span><span></span></span></span>
+          <span class="atelier-vedette-nom">Carrousel</span>
+          <span class="atelier-vedette-sous">Composer et télécharger un post</span>
+        </a>
+      </nav>
+
+      <p class="atelier-surtitre atelier-rubrique">Publier</p>
+      <nav class="atelier-lignes" aria-label="Publier">
+        ${ligne('#yuno/editorial', 'Calendrier éditorial', semaine ? `<span class="chiffre">${semaine}</span> parution${semaine > 1 ? 's' : ''} cette semaine` : 'Rien de posé cette semaine')}
+        ${ligne('#yuno/banque', 'Banque d’idées', `<span class="chiffre">${idees}</span> idée${idees > 1 ? 's' : ''} en réserve`)}
+        ${ligne('#yuno/identite', 'L’identité de Yuno', 'Les quatre piliers')}
+      </nav>
+
+      ${construireIdeeDuJour(etat.publications)}
+    </div>
+    ${fenetreIdee(etat, optionsDIdee(etat))}
+    ${pied()}`;
+}
+
 function vueCreer(etat) {
+  if (ATELIER) return vueCreerDeLAtelier(etat);
   const idees = etat.publications.filter(
     (pub) => !pub.date_prevue && pub.statut !== 'publie',
   ).length;
@@ -6597,7 +6717,8 @@ export default {
     // panneau se poserait alors en haut de l'écran au lieu de tomber sous la
     // barre.
     monterLeMenu(() => section.querySelector('.yuno-nav'), {
-      rubriques: RUBRIQUES_YUNO,
+      // Dans l'atelier, le menu ne porte que la rubrique Créer.
+      rubriques: ATELIER ? RUBRIQUES_YUNO.filter((r) => r.adresse === '#yuno/creer') : RUBRIQUES_YUNO,
       id: 'menu-yuno',
       classe: 'menu-voile-yuno',
       chemin: cheminDuMenu,
@@ -7214,6 +7335,10 @@ export default {
     // ne coûte rien : il sort du cache, ou c'est le squelette.
     this.naviguer = async (nouvelleRoute) => {
       etat.vue = VUES.includes(nouvelleRoute?.vue) ? nouvelleRoute.vue : 'accueil';
+      if (ATELIER && !VUES_ATELIER.includes(etat.vue)) {
+        location.replace('#yuno/creer');
+        return;
+      }
       etat.feuilleOuverte = nouvelleRoute?.id ?? null;
       etat.editionMoment = false;
       // Au Carnet, l'id de l'adresse ouvre la SORTIE et non une feuille : c'est

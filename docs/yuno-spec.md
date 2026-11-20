@@ -2158,6 +2158,40 @@ Code : `js/carrousel.js`. Entrée : menu, « Créer › Le carrousel d'après-ma
   les 10 Go gratuits une fois le post publié.
 - **À venir** : la présélection plein écran (garder / laisser de côté).
 
+### L'atelier — `creer.html` (21 novembre 2026, demande de Noé)
+
+**Une application à part pour la partie créative** : « un lien avec uniquement
+les outils de la page Créer, en gardant la DA de Yuno, accessible directement
+sans passer par le hub ». C'est le site Yuno (`data-entree="yuno"`), réduit à
+ses outils créatifs (`data-atelier="creer"`) — **les mêmes écrans, les mêmes
+données, les mêmes liens** : une photo importée dans l'atelier est dans la
+photothèque de Yuno, une parution programmée dans son calendrier éditorial, et
+la photo d'une sortie se choisit toujours dans la photothèque. **L'entrée
+« Créer » du site Yuno ne change pas** : l'atelier est une porte de plus.
+
+- **On n'y atteint que** Créer, la photothèque, le calendrier éditorial, la
+  banque d'idées, le carrousel, l'identité — et la fiche d'une sortie, où l'on
+  choisit sa photo. Toute autre adresse ramène à Créer. Le menu ne porte que la
+  rubrique Créer. Sans adresse, la page s'ouvre sur Créer avant même de se
+  dessiner.
+- **La DA du site de livraison** (`livraison-yuno/src/pages/app.css`) : la barre
+  du haut opaque, le logo centré et un filet dessous ; le grand titre en Gloock,
+  sans surtitre, à 16 px de la barre — et aucun titre sur Créer, la page
+  d'arrivée ; les photos et les cartes à **angles nets** ;
+  des lignes séparées d'un filet plutôt que des cartes. Les contrôles gardent
+  l'échelle d'arrondis du kit.
+- **Le dock de l'atelier n'est pas celui de Yuno** (Noé : « j'aime pas trop
+  celui actuel ») : c'est la barre plate du site de livraison, posée sur le bord
+  de l'écran, un filet au-dessus. **La photothèque et le carrousel sont au
+  centre, plus larges, nommés en clair** ; Créer, Éditorial et Idées autour, en
+  icône. L'onglet actif porte un trait d'or au-dessus.
+- **La page Créer de l'atelier** met les deux outils en grand, comme les tuiles
+  de matchs du site de livraison (une photo en 3:4 — en paysage sur ordinateur —,
+  le nom en gras, une ligne grise) ; « Publier » suit en lignes (éditorial,
+  banque, identité), puis l'idée du jour.
+- Son manifeste (`manifest-creer.json`) la nomme « Créer » sur l'écran d'accueil.
+  *Elle reprend pour l'instant l'icône de Yuno.*
+
 ### `#yuno/phototheque` — la photothèque (20 novembre 2026, en construction)
 
 **Le besoin, défini avec Noé avant d'écrire une ligne** : une réserve où vivent
