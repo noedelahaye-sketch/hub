@@ -5759,15 +5759,25 @@ body.pht-vue-ouverte { overflow: hidden; }
 .pht-vue-scene {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
+  /* UNE RANGÉE QUI NE GRANDIT PAS AVEC SON CONTENU : sans elle, la photo
+     prenait sa hauteur naturelle (2 160 px), poussait la rangée, et ne
+     montrait plus que son haut, collée en bas de l'écran (vu par Noé sur
+     ordinateur, 20 novembre 2026). */
+  grid-template-rows: minmax(0, 1fr);
   align-items: center;
   gap: var(--espace-8);
   min-height: 0;
   padding: var(--espace-12) 0;
 }
 .pht-vue-image {
-  justify-self: center;
-  max-width: 100%;
-  max-height: 100%;
+  /* La photo REMPLIT sa case et s'y loge entière (`contain`) : c'est la case
+     qui a une taille, jamais l'image. */
+  justify-self: stretch;
+  align-self: stretch;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   object-fit: contain;
   border-radius: var(--rayon-etiquette);
   user-select: none;
@@ -5847,10 +5857,11 @@ body.pht-vue-ouverte { overflow: hidden; }
   .pht-vue-corps {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 21rem;
+    grid-template-rows: minmax(0, 1fr);
     gap: var(--espace-16);
     overflow: hidden;
   }
-  .pht-vue-corps .pht-vue-scene { height: auto; }
+  .pht-vue-corps .pht-vue-scene { height: 100%; }
   .pht-vue-cote {
     min-height: 0;
     overflow-y: auto;
@@ -6273,3 +6284,136 @@ body[data-espace="yuno"] #vue .pht-pour-menu select {
 .pht-carnet-porte { margin-top: var(--espace-8); }
 .pht-carnet-porte svg { width: 14px; height: 14px; }
 .pht-carnet-choisie { display: block; margin-top: 4px; font-size: 0.75rem; }
+
+/* ==========================================================================
+   LA PILE « À TRIER » (21 novembre 2026)
+   ========================================================================== */
+
+/* La porte de la pile : un point d'or dit qu'il y a de quoi faire. */
+.pht-a-trier { color: var(--texte); }
+.pht-a-trier-point { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+
+/* La photo est une CARTE qu'on prend : elle suit le doigt ou la souris, penche,
+   et s'envole du côté choisi. */
+.pht-vue-scene.en-pile { grid-template-columns: minmax(0, 1fr); position: relative; touch-action: pan-y; }
+.pht-vue-scene.en-pile .pht-vue-image {
+  grid-column: 1;
+  grid-row: 1;
+  cursor: grab;
+  transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.25, 1);
+  will-change: transform;
+}
+.pht-vue-scene.en-pile .pht-vue-image.en-main { cursor: grabbing; transition: none; }
+.pht-vue-scene.en-pile .pht-vue-image.s-envole { transition: transform 0.22s ease-in; }
+
+/* Les deux mots du geste, posés sur les bords : ils s'allument quand la carte
+   penche de leur côté. */
+.pht-sens {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  padding: 6px 14px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  border-radius: 999px;
+  opacity: 0;
+  transform: translateY(-50%);
+  transition: opacity 0.15s;
+  pointer-events: none;
+}
+.pht-sens-trie { right: var(--espace-12); color: var(--fond); background: var(--accent); }
+.pht-sens-plus-tard { left: var(--espace-12); color: var(--texte); background: var(--fond-releve); }
+.pht-vue-scene[data-sens="trie"] .pht-sens-trie,
+.pht-vue-scene[data-sens="plus-tard"] .pht-sens-plus-tard { opacity: 1; }
+
+/* La pile vide : une victoire, dite simplement. */
+.pht-fin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espace-12);
+  text-align: center;
+}
+.pht-fin-titre { margin: 0; font-family: "Gloock", Georgia, serif; font-size: 2rem; color: var(--texte); }
+
+/* ==========================================================================
+   LE TRI TIENT SANS DÉFILER (21 novembre 2026, demande de Noé : « il faut
+   pouvoir affecter l'ensemble des étiquettes sans scroller vers le bas »)
+   ========================================================================== */
+
+/* Les étoiles, SUR la photo, en bas et centrées, dans une pastille sombre. */
+.pht-vue-scene { position: relative; }
+.pht-etoiles-sur {
+  position: absolute;
+  left: 50%;
+  bottom: var(--espace-12);
+  z-index: 3;
+  display: flex;
+  gap: 0;
+  transform: translateX(-50%);
+}
+/* PAS DE PASTILLE, UN HALO (correction de Noé : « un flou externe derrière
+   elles, pas de rectangle arrondi noir net »). Un voile flouté et assombri qui
+   s'évanouit vers ses bords — le masque radial efface tout contour : on ne
+   voit pas où il s'arrête, on voit seulement que les étoiles ressortent. */
+.pht-etoiles-sur::before {
+  content: "";
+  position: absolute;
+  inset: -14px -28px;
+  z-index: -1;
+  background: rgb(14 13 11 / 22%);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  -webkit-mask-image: radial-gradient(closest-side, #000 45%, transparent);
+  mask-image: radial-gradient(closest-side, #000 45%, transparent);
+  pointer-events: none;
+}
+/* Serrées : 26 px de large par étoile, mais 36 de haut — le doigt garde une
+   cible correcte, l'œil voit une rangée compacte. */
+.pht-etoiles-sur .pht-etoile { width: 26px; height: 36px; color: rgb(246 242 233 / 80%); }
+.pht-etoiles-sur .pht-etoile svg { width: 20px; height: 20px; stroke-width: 1.15; filter: drop-shadow(0 1px 2px rgb(0 0 0 / 35%)); }
+.pht-etoiles-sur .pht-etoile.pleine { color: var(--accent); }
+.pht-etoiles-sur .pht-etoile:hover { background: transparent; }
+
+/* « Qui » replié : une puce comme les autres, avec son « + ». */
+.pht-etiq-qui { gap: 4px; padding: 0 12px 0 10px; }
+
+/* Sur téléphone, le panneau de la visionneuse se serre : plus de titres de
+   famille — un filet les sépare —, des puces plus petites, et la photo laisse
+   un peu de hauteur. Renommer une étiquette reste possible sur ordinateur et
+   dans la fenêtre d'une sélection, où les titres demeurent. */
+@media (max-width: 59.99rem) {
+  /* 57 % depuis que la date est montée en haut : mesuré sur un écran de 812 px, les étiquettes de Noé tiennent
+     dessous avec de la marge. Une famille qui s'allonge fera défiler le
+     panneau, pas la photo. */
+  .pht-vue-corps .pht-vue-scene { height: 57vh; height: 57dvh; }
+  .pht-vue-cote { padding: var(--espace-8) 0 var(--espace-8); }
+  .pht-tri-vue { gap: var(--espace-8); }
+  .pht-tri-vue .pht-tri-titre { display: none; }
+  .pht-tri-vue .pht-tri-famille { gap: 0; }
+  .pht-tri-vue .pht-tri-famille + .pht-tri-famille { padding-top: var(--espace-8); border-top: 1px solid var(--bordure); }
+  .pht-tri-vue .pht-etiqs { gap: 5px; }
+  .pht-tri-vue .pht-etiq { min-height: 30px; padding: 0 10px; font-size: 0.78rem; }
+  .pht-tri-vue .pht-etiq-plus { padding: 0 8px; }
+  .pht-tri-vue .pht-etiq-champ { min-height: 30px; }
+  /* Le pied ne garde que la date, en petit, et les gestes. */
+  .pht-vue-pied { gap: var(--espace-8); }
+  .pht-vue-infos { font-size: 0.75rem; }
+  .pht-vue-infos .discret,
+  .pht-vue-infos .pht-vie { display: none; }
+}
+
+/* La place prise chez Cloudflare : une jauge fine et son chiffre, à côté du
+   compte des photos. */
+.pht-place { display: inline-flex; align-items: center; gap: 8px; margin-left: 10px; font-size: 0.8125rem; color: var(--texte-discret); vertical-align: middle; }
+.pht-place-jauge { width: 64px; height: 4px; overflow: hidden; background: var(--fond-releve); border-radius: 999px; }
+.pht-place-jauge > span { display: block; height: 100%; background: var(--texte-discret); border-radius: inherit; }
+.pht-place.pleine .pht-place-jauge > span { background: var(--accent); }
+
+/* Les infos de la photo vivent dans la barre du haut, entre le compte et la
+   croix ; le pied ne porte plus que les gestes, alignés à droite. */
+.pht-vue-barre .pht-vue-infos { flex: 1 1 auto; min-width: 0; text-align: center; }
+.pht-vue-barre .pht-vue-infos > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pht-vue-barre .pht-vue-rang { flex: none; }
+.pht-vue-pied { justify-content: flex-end; }

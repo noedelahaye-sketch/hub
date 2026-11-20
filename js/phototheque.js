@@ -23,7 +23,7 @@ import * as api from './api.js';
 import { echapper } from './format.js';
 import { bulle, messageCourt } from './bulle.js';
 import { enregistrer } from './zip.js';
-import { envoyerFichier, envoyerVignette, adressesDe, supprimerFichier } from './photos-cloud.js';
+import { envoyerFichier, envoyerVignette, adressesDe, supprimerFichier, placeOccupee } from './photos-cloud.js';
 import { lireDatePrise } from './exif.js';
 import { relireAuProchainMontage } from './carrousel.js';
 
@@ -37,6 +37,10 @@ const RELIRE_APRES_MS = 15 * 1000;
 const SANS_MATCH = 'sans-match';
 // L'adresse de la recherche, sur le même étage que les matchs.
 const RECHERCHE = 'recherche';
+// Les albums par match, depuis le 21 novembre 2026 (Noé : « le premier
+// affichage de la photothèque doit être l'espace Rechercher, avec toutes les
+// photos, et on doit pouvoir aller dans la page des albums par match »).
+const ALBUMS = 'albums';
 
 // --- L'état, qui survit aux redessins ---------------------------------------------
 
@@ -62,6 +66,7 @@ const etat = {
   ajout: null,           // la famille dont on écrit une nouvelle étiquette
   recherche: '',         // ce qu'on tape dans « Qui est dessus »
   gestion: null,         // la famille dont on renomme ou supprime les étiquettes
+  quiOuvert: false,      // le champ « Qui est dessus » est déplié
   supprimerEtiq: null,   // l'étiquette qui attend sa confirmation
   // La recherche (étape 3).
   filtres: nouveauxFiltres(),
@@ -72,6 +77,10 @@ const etat = {
   pour: null,            // ce dont on choisit les photos — une parution ou un carrousel —, ou null
   pourGenre: null,       // 'parution' | 'carrousel'
   pourCarrousel: null,   // le carrousel du choix : { id, nom, medias }
+  // La pile « à trier » (21 novembre 2026).
+  pile: false,           // la visionneuse déroule la pile
+  couleursLues: false,   // le rattrapage du noir et blanc a tourné cette visite
+  place: null,           // { occupe, plafond } en octets, chez Cloudflare
   pourCharge: null,      // la parution dont le choix a été lu
 };
 
@@ -122,6 +131,7 @@ const ICONE = {
   gauche: '<path d="M15 6l-6 6 6 6"/>',
   droite: '<path d="M9 6l6 6-6 6"/>',
   chercher: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
+  albums: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
   coupe: '<path d="M8 4h8v5a4 4 0 0 1-8 0zM6 5H4v2a3 3 0 0 0 3 3M18 5h2v2a3 3 0 0 1-3 3M12 13v4M9 20h6M10 17h4"/>',
   corbeille: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12M9 7V4h6v3"/>',
 };
@@ -172,6 +182,9 @@ async function charger() {
     etat.photos = [...distantes, ...locales];
     etat.chargeLe = Date.now();
     etat.adressesLe = 0;
+    // En arrière-plan, sans retarder l'écran.
+    setTimeout(rattraperLesCouleurs, 1500);
+    lireLaPlace();
   } catch (e) {
     console.error('Lecture de la photothèque impossible', e);
     etat.photos = etat.photos ?? [];
@@ -380,6 +393,9 @@ async function preparer(p) {
   p.taille = p.blob.size;
 
   const petite = toile(source, COTE_VIGNETTE, largeur, hauteur);
+  // RECONNU À L'IMPORT : la photo en noir et blanc arrive étiquetée.
+  const nb = etiquetteNoirEtBlanc();
+  if (nb && estNoirEtBlanc(petite)) p.etiquettes.add(nb.id);
   p.blobVignette = await enJpeg(petite, 0.82);
   p.vignette = URL.createObjectURL(p.blobVignette);
   source.close?.();
@@ -425,8 +441,11 @@ async function envoyer(p) {
       hauteur: p.hauteur,
       taille: p.taille,
       note: p.note ?? null,
+      couleurs_lues: true,
+      triee: p.triee ?? false,
     });
     p.enBase = true;
+    p.couleurs_lues = true;
     // Ce qui a été trié PENDANT le voyage n'avait pas encore de ligne où
     // s'écrire : on le pose maintenant.
     await Promise.all([
@@ -436,11 +455,47 @@ async function envoyer(p) {
     p.envoi = 'fait';
     p.progression = 1;
     p.blobVignette = null;
+    // Le dernier envoi d'un lot fait relire la place prise.
+    if (!(etat.photos ?? []).some(enRoute)) lireLaPlace();
   } catch (e) {
     console.error('Envoi impossible', p.nom, e);
     p.envoi = 'echec';
   }
   majEnvoi(p);
+}
+
+// LA PLACE OCCUPÉE (21 novembre 2026, demande de Noé : « être au courant de la
+// place utilisée par l'ensemble des photos »). C'est le Worker qui la compte, en
+// parcourant le bucket : tout ce qui y est, vignettes et carrousels compris —
+// c'est ce chiffre-là que le plafond de 10 Go regarde.
+async function lireLaPlace() {
+  try {
+    etat.place = await placeOccupee();
+    const el = hote?.querySelector('[data-pht-place]');
+    if (el) el.outerHTML = gabaritPlace();
+  } catch (e) {
+    console.error('Place occupée inconnue', e);
+  }
+}
+
+function enOctetsLisibles(n) {
+  if (n >= 1024 ** 3) return `${(n / 1024 ** 3).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} Go`;
+  return `${Math.max(1, Math.round(n / 1024 ** 2)).toLocaleString('fr-FR')} Mo`;
+}
+
+// Une jauge discrète et une phrase : ce qui est pris, sur quoi. Aucune couleur
+// d'alerte — le hub n'en a pas ; passé les trois quarts, la jauge prend l'or,
+// c'est tout.
+function gabaritPlace() {
+  const pl = etat.place;
+  if (!pl) return '<span class="pht-place" data-pht-place></span>';
+  const part = Math.min(1, pl.occupe / Math.max(1, pl.plafond));
+  const phototheque = (etat.photos ?? []).filter((p) => p.envoi === 'fait').reduce((s, p) => s + (p.taille ?? 0), 0);
+  return `<span class="pht-place${part > 0.75 ? ' pleine' : ''}" data-pht-place
+      title="Dont ${enOctetsLisibles(phototheque)} pour les photos de la photothèque — le reste : vignettes et carrousels">
+      <span class="pht-place-jauge" aria-hidden="true"><span style="width:${(part * 100).toFixed(1)}%"></span></span>
+      <span class="pht-place-texte"><span class="chiffre">${enOctetsLisibles(pl.occupe)}</span> sur ${enOctetsLisibles(pl.plafond)}</span>
+    </span>`;
 }
 
 function relancerLesEchecs() {
@@ -585,12 +640,15 @@ function gabaritListe() {
   }).join('');
   const total = etat.photos.length;
   return `
+    <div class="car-tete">
+      <a class="car-retour" href="#yuno/phototheque" aria-label="Toutes les photos" title="Toutes les photos">${svg('retour', 20)}</a>
+      <div class="pht-titre"><h2 class="pht-nom">Albums par match</h2></div>
+    </div>
     <div class="pht-tete-liste">
       <p class="pht-intro">${total
         ? `<span class="chiffre">${total}</span> photo${total > 1 ? 's' : ''} rangée${total > 1 ? 's' : ''} par match`
         : 'Importe les photos retouchées d’un match : elles te suivront sur tous tes appareils.'}</p>
       ${etat.choisirMatch ? '' : `<span class="pht-gestes">
-        ${total ? `<a class="car-puce pht-chercher" href="#yuno/phototheque/${RECHERCHE}">${svg('chercher', 14)}<span>Rechercher</span></a>` : ''}
         <button type="button" class="car-bouton-or" data-pht="importer">${svg('importer')}<span>Importer des photos</span></button>
       </span>`}
     </div>
@@ -605,7 +663,7 @@ function gabaritMatch() {
   const titre = cible === SANS_MATCH ? 'Sans match' : match?.titre ?? 'Match';
   const tete = `
     <div class="car-tete">
-      <a class="car-retour" href="#yuno/phototheque" aria-label="La photothèque" title="La photothèque">${svg('retour', 20)}</a>
+      <a class="car-retour" href="#yuno/phototheque/${ALBUMS}" aria-label="Les albums" title="Les albums">${svg('retour', 20)}</a>
       <div class="pht-titre">
         <h2 class="pht-nom">${echapper(titre)}</h2>
         ${match ? `<span class="discret">${jourCourt(match.date_debut)}</span>` : ''}
@@ -782,15 +840,36 @@ function gabaritFiltres() {
 // ils restent comme Noé les a laissés.
 const filtresOuverts = () => etat.filtresOuverts ?? window.matchMedia('(min-width: 60rem)').matches;
 
+// LA TÊTE DE LA PHOTOTHÈQUE : ce qu'elle contient, et ses trois portes — les
+// albums, la pile à trier, l'import.
+function enteteDeLaPhototheque() {
+  const total = etat.photos.length;
+  const aTrier = pileATrier().length;
+  return `<div class="pht-tete-liste">
+      <p class="pht-intro">${total
+        ? `<span class="chiffre">${total}</span> photo${total > 1 ? 's' : ''} ${gabaritPlace()}`
+        : 'Importe les photos retouchées d’un match : elles te suivront sur tous tes appareils.'}</p>
+      ${etat.choisirMatch ? '' : `<span class="pht-gestes">
+        ${total ? `<a class="car-puce pht-chercher" href="#yuno/phototheque/${ALBUMS}">${svg('albums', 14)}<span>Albums</span></a>` : ''}
+        ${aTrier ? `<button type="button" class="car-puce pht-a-trier" data-pht="pile">
+            <span class="pht-a-trier-point" aria-hidden="true"></span><span>À trier · <span class="chiffre">${aTrier}</span></span></button>` : ''}
+        <button type="button" class="car-bouton-or" data-pht="importer">${svg('importer')}<span>Importer des photos</span></button>
+      </span>`}
+    </div>`;
+}
+
 function gabaritRecherche() {
   if (!etat.photos) return '<p class="car-attente">Un instant…</p>';
   const liste = resultats();
   const n = nbFiltres();
   return `
-    <div class="car-tete">
-      <a class="car-retour" href="#yuno/phototheque" aria-label="La photothèque" title="La photothèque">${svg('retour', 20)}</a>
-      <div class="pht-titre">${etat.pour ? enteteDuChoix() : '<h2 class="pht-nom">Rechercher</h2>'}</div>
-    </div>
+    ${etat.pour
+      ? `<div class="car-tete">
+          <a class="car-retour" href="#yuno/phototheque" data-pht="annuler-pour" aria-label="Revenir" title="Revenir">${svg('retour', 20)}</a>
+          <div class="pht-titre">${enteteDuChoix()}</div>
+        </div>`
+      : enteteDeLaPhototheque()}
+    ${etat.pour ? '' : gabaritChoix()}
     <div class="pht-recherche">
       <details class="pht-filtres" data-pht-filtres${filtresOuverts() ? ' open' : ''}>
         <summary>
@@ -955,16 +1034,30 @@ function puce(attribut, id, nom, etatPuce, titre = '') {
       titre ? ` title="${echapper(titre)}"` : ''}>${echapper(nom)}</button>`;
 }
 
-function panneauTri(contexte) {
+function etoilesTri(contexte) {
   const cibles = ciblesDu(contexte);
-  if (!cibles.length) return '';
   const notes = new Set(cibles.map((p) => p.note ?? null));
   const note = notes.size === 1 ? [...notes][0] : null;
-  const etoiles = [1, 2, 3, 4, 5].map((k) =>
+  return [1, 2, 3, 4, 5].map((k) =>
     `<button type="button" class="pht-etoile${note && k <= note ? ' pleine' : ''}" data-tri-note="${k}"
        aria-label="${k} étoile${k > 1 ? 's' : ''}" aria-pressed="${note === k}">
        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2l2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6L3.4 9.5l6-.8z"/></svg>
      </button>`).join('');
+}
+
+// LES ÉTOILES SUR LA PHOTO, en bas et centrées (21 novembre 2026, demande de
+// Noé) : dans la visionneuse, la note quitte le panneau — c'est le geste le plus
+// fréquent, il se fait sur ce qu'on regarde, et il rend sa place aux étiquettes.
+// Une pastille sombre les porte : elles se lisent sur un ciel comme sur une nuit.
+function etoilesSurLaPhoto() {
+  return `<div class="pht-etoiles-sur" data-tri-etoiles="vue" role="group" aria-label="La note">${etoilesTri('vue')}</div>`;
+}
+
+function panneauTri(contexte) {
+  const cibles = ciblesDu(contexte);
+  if (!cibles.length) return '';
+  const notes = new Set(cibles.map((p) => p.note ?? null));
+  const etoiles = etoilesTri(contexte);
   const melange = notes.size > 1 ? '<span class="pht-tri-note-mixte">notes différentes</span>' : '';
 
   const familles = FAMILLES.map(({ cle, nom }) => {
@@ -1008,21 +1101,29 @@ function panneauTri(contexte) {
       [TYPES_PERSONNE[c.type] ?? null, c.structure].filter(Boolean).join(' · ')) : '';
   }).join('');
 
-  return `<div class="pht-tri" data-tri-contexte="${contexte}">
-      <div class="pht-tri-famille">
+  // « QUI EST DESSUS » SE REPLIE EN UNE PUCE : le champ ne sert que le temps
+  // d'une saisie, et il prenait une ligne entière sur chaque photo. Les
+  // personnes déjà posées restent visibles, en puces, à côté de lui.
+  const ouvert = etat.quiOuvert || etat.recherche;
+  const qui = ouvert
+    ? `<div class="pht-qui">
+        <input class="pht-etiq-champ pht-qui-champ" data-tri-qui value="${echapper(etat.recherche)}"
+          autocomplete="off" spellcheck="false" placeholder="Un joueur, un club…"
+          aria-label="Ajouter un joueur ou un club">
+        <div class="pht-qui-propositions" data-tri-propositions>${propositions(contexte)}</div>
+      </div>`
+    : '';
+  return `<div class="pht-tri${contexte === 'vue' ? ' pht-tri-vue' : ''}" data-tri-contexte="${contexte}">
+      ${contexte === 'vue' ? '' : `<div class="pht-tri-famille">
         <p class="pht-tri-titre">La note ${melange}</p>
         <div class="pht-etoiles">${etoiles}</div>
-      </div>
+      </div>`}
       ${familles}
       <div class="pht-tri-famille">
         <p class="pht-tri-titre">Qui est dessus</p>
-        ${puces ? `<div class="pht-etiqs">${puces}</div>` : ''}
-        <div class="pht-qui">
-          <input class="pht-etiq-champ pht-qui-champ" data-tri-qui value="${echapper(etat.recherche)}"
-            autocomplete="off" spellcheck="false" placeholder="Un joueur, un club…"
-            aria-label="Ajouter un joueur ou un club">
-          <div class="pht-qui-propositions" data-tri-propositions>${propositions(contexte)}</div>
-        </div>
+        <div class="pht-etiqs">${puces}${ouvert ? '' : `<button type="button" class="pht-etiq pht-etiq-plus pht-etiq-qui" data-tri-qui-ouvrir
+            aria-label="Ajouter un joueur ou un club">${svg('ajouter', 14)}<span>Qui</span></button>`}</div>
+        ${qui}
       </div>
     </div>`;
 }
@@ -1069,8 +1170,14 @@ function redessinerTri() {
       nouveau?.setSelectionRange?.(nouveau.value.length, nouveau.value.length);
     }
   });
+  document.querySelectorAll('[data-tri-etoiles]').forEach((el) => {
+    el.innerHTML = etoilesTri(el.dataset.triEtoiles);
+  });
   for (const p of etat.photos ?? []) majTuile(p);
   majBarreSelection();
+  // En pile, noter une photo la compte triée : le compte baisse aussitôt.
+  const rang = etat.pile ? visionneuse?.querySelector('.pht-vue-rang .chiffre') : null;
+  if (rang) rang.textContent = String(suivanteDansLaPile().length);
 }
 
 const rangDansLeChoix = (p) => {
@@ -1203,6 +1310,12 @@ async function nouvellePersonne(contexte, type, ancre) {
 // visionneuse ou la fenêtre de la sélection.
 function brancherTri(racine) {
   racine.addEventListener('click', (e) => {
+    if (e.target.closest('[data-tri-qui-ouvrir]')) {
+      etat.quiOuvert = true;
+      redessinerTri();
+      racine.querySelector('[data-tri-qui]')?.focus();
+      return;
+    }
     const gerer = e.target.closest('[data-tri-gerer]');
     if (gerer) {
       etat.gestion = gerer.dataset.triGerer || null;
@@ -1221,7 +1334,8 @@ function brancherTri(racine) {
     }
     const el = e.target.closest('[data-tri-note], [data-tri-etiquette], [data-tri-personne], [data-tri-ajouter], [data-tri-poser], [data-tri-creer]');
     if (!el) return;
-    const contexte = el.closest('[data-tri-contexte]')?.dataset.triContexte;
+    const porteur = el.closest('[data-tri-contexte], [data-tri-etoiles]');
+    const contexte = porteur?.dataset.triContexte ?? porteur?.dataset.triEtoiles;
     if (!contexte) return;
     if (el.dataset.triNote) noter(contexte, Number(el.dataset.triNote), el);
     else if (el.dataset.triEtiquette) basculer(contexte, 'etiquettes', el.dataset.triEtiquette, el);
@@ -1787,9 +1901,231 @@ async function dessinerChoixCarnet() {
   }
 }
 
+// --- Le noir et blanc, reconnu (21 novembre 2026) --------------------------------------------
+//
+// Noé : « est-ce possible de reconnaître à l'import une photo en noir et blanc
+// pour la catégoriser directement ? » Oui, et sans rien envoyer à personne : on
+// regarde la VIGNETTE, réduite à 48 × 48, et l'on mesure l'écart entre la plus
+// forte et la plus faible des trois couleurs de chaque point. Une photo en noir
+// et blanc a ses trois couleurs presque égales PARTOUT.
+//
+// DEUX SEUILS, ET IL FAUT LES DEUX : la moyenne doit être basse (pas de couleur
+// en général), ET presque aucun point ne doit en avoir franchement — un maillot
+// rouge sur un fond gris ferait sinon passer une photo couleur pour une photo
+// en noir et blanc. Un virage sépia léger passe pour du noir et blanc ; une
+// photo franchement teintée, non.
+
+const COTE_ANALYSE = 48;
+
+function estNoirEtBlanc(source) {
+  const c = document.createElement('canvas');
+  c.width = COTE_ANALYSE;
+  c.height = COTE_ANALYSE;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(source, 0, 0, COTE_ANALYSE, COTE_ANALYSE);
+  const { data } = ctx.getImageData(0, 0, COTE_ANALYSE, COTE_ANALYSE);
+  let somme = 0;
+  let colores = 0;
+  const n = data.length / 4;
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i], g = data[i + 1], b = data[i + 2];
+    const ecart = Math.max(r, g, b) - Math.min(r, g, b);
+    somme += ecart;
+    if (ecart > 28) colores++;
+  }
+  return somme / n < 8 && colores / n < 0.02;
+}
+
+// L'étiquette « Noir et blanc » de la famille du style, si Noé ne l'a ni
+// renommée ni supprimée. Sans elle, le hub ne pose rien.
+const etiquetteNoirEtBlanc = () => (etat.etiquettes ?? [])
+  .find((e) => e.famille === 'style' && sansAccent(e.nom) === 'noir et blanc') ?? null;
+
+// LE RATTRAPAGE : les photos importées avant le 21 novembre n'ont jamais été
+// regardées. Une fois, en arrière-plan, on lit leurs vignettes — puis
+// `couleurs_lues` les sort du lot pour toujours.
+async function rattraperLesCouleurs() {
+  if (etat.couleursLues) return;
+  etat.couleursLues = true;
+  const nb = etiquetteNoirEtBlanc();
+  const aLire = (etat.photos ?? []).filter((p) => p.envoi === 'fait' && !p.couleurs_lues && p.cle);
+  if (!aLire.length) return;
+  const lues = [];
+  const reconnues = [];
+  try {
+    const adresses = {};
+    for (let i = 0; i < aLire.length; i += 400) {
+      Object.assign(adresses, await adressesDe(aLire.slice(i, i + 400).map((p) => p.cle)));
+    }
+    const file = [...aLire];
+    const ouvrier = async () => {
+      for (let p = file.shift(); p; p = file.shift()) {
+        const adresse = adresses[p.cle]?.vignette;
+        if (!adresse) continue;
+        try {
+          const r = await fetch(adresse);
+          if (!r.ok) continue;
+          const image = await createImageBitmap(await r.blob());
+          if (estNoirEtBlanc(image)) reconnues.push(p);
+          image.close?.();
+          lues.push(p);
+        } catch {
+          // Une vignette illisible se relira à la prochaine visite.
+        }
+      }
+    };
+    await Promise.all([ouvrier(), ouvrier(), ouvrier(), ouvrier()]);
+    const aPoser = nb ? reconnues.filter((p) => !p.etiquettes.has(nb.id)) : [];
+    if (aPoser.length) {
+      await api.etiqueterPhotos(aPoser.map((p) => p.id), nb.id);
+      aPoser.forEach((p) => p.etiquettes.add(nb.id));
+    }
+    if (lues.length) {
+      await api.marquerCouleursLues(lues.map((p) => p.id));
+      lues.forEach((p) => { p.couleurs_lues = true; });
+    }
+    if (aPoser.length) {
+      messageCourt(`${aPoser.length} photo${aPoser.length > 1 ? 's' : ''} reconnue${aPoser.length > 1 ? 's' : ''} en noir et blanc.`);
+      redessinerTri();
+      if (vueCourante === 'recherche' && !etat.ouverte) dessiner();
+    }
+  } catch (e) {
+    console.error('Rattrapage du noir et blanc interrompu', e);
+    etat.couleursLues = false;
+  }
+}
+
+// --- La pile « à trier » (21 novembre 2026) ----------------------------------------------------
+//
+// Noé : « un outil qui nous montre une photo, à laquelle on affecte les tris,
+// et on peut passer à une suivante qui n'a pas encore été triée en swipant à
+// droite — une pile de photos à trier, pour être à jour dans le tri. »
+//
+// C'EST LA VISIONNEUSE, EN MODE PILE : la même photo en grand, le même panneau
+// de tri. Ce qui change, c'est ce que veut dire le geste :
+//   — vers la DROITE (ou → , ou « Trié ») : la photo est triée, elle sort de la
+//     pile, la suivante arrive ;
+//   — vers la GAUCHE (ou ←, ou « Plus tard ») : elle repasse sous la pile.
+// La carte suit le doigt, penche, et s'envole du côté choisi : on voit la pile
+// baisser.
+//
+// UNE PHOTO TRIÉE L'EST PAR UN GESTE, pas par ce qu'on lui a posé : une photo
+// sans rien à en dire est triée aussi. C'est `photos.triee`.
+
+// TRIÉE = NOTÉE, OU PASSÉE PAR LA PILE (règle de Noé, 21 novembre 2026 : « une
+// photo doit compter comme triée à partir du moment où elle a une note »).
+// Noter une photo, où que ce soit, la sort donc de la pile.
+const estTriee = (p) => Boolean(p.triee) || p.note != null;
+
+const pileATrier = () => trier((etat.photos ?? []).filter((p) => !estTriee(p) && !p.illisible))
+  // Les plus récentes d'abord : le match qu'on vient d'importer est celui
+  // qu'on veut trier.
+  .sort((a, b) => (b.evenement?.date_debut ?? b.prise_le ?? '').slice(0, 10)
+    .localeCompare((a.evenement?.date_debut ?? a.prise_le ?? '').slice(0, 10)));
+
+function ouvrirLaPile() {
+  const pile = pileATrier();
+  if (!pile.length) return;
+  etat.pile = true;
+  etat.listeVue = pile.map((p) => p.id);
+  ouvrir(pile[0].id);
+}
+
+function suivanteDansLaPile() {
+  const restantes = listeDeLaVue().filter((p) => !estTriee(p));
+  return restantes;
+}
+
+async function marquerTriee(sens) {
+  const p = photo(etat.ouverte);
+  if (!p) return;
+  if (sens === 'trie') {
+    p.triee = true;
+    if (p.enBase || p.envoi === 'fait') {
+      api.marquerTriees([p.id], true).catch((e) => {
+        console.error('Tri non gardé', e);
+        p.triee = false;
+        bulle("Ce n'est pas enregistré", 'Cette photo n’a pas pu être marquée triée. Elle reviendra dans la pile.');
+      });
+    }
+  } else {
+    // PLUS TARD : elle repasse sous la pile, sans rien perdre.
+    etat.listeVue = [...etat.listeVue.filter((id) => id !== p.id), p.id];
+  }
+  const restantes = suivanteDansLaPile();
+  const k = restantes.findIndex((q) => q.id === p.id);
+  const suivante = sens === 'trie'
+    ? restantes[0]
+    : restantes.find((q, i) => i !== k) ?? null;
+  if (suivante && suivante.id !== p.id) ouvrir(suivante.id);
+  else { etat.ouverte = estTriee(p) ? null : p.id; dessinerVisionneuse(); }
+}
+
+// L'écran de fin : la pile est vide, et c'est une victoire.
+function gabaritFinDeLaPile() {
+  return `
+    <div class="pht-vue pht-vue-fin" role="dialog" aria-modal="true" aria-label="Tout est trié">
+      <div class="pht-vue-barre"><span></span>
+        <button type="button" class="car-icone" data-pht="fermer" aria-label="Fermer">${svg('fermer')}</button>
+      </div>
+      <div class="pht-fin">
+        <p class="pht-fin-titre">Tout est trié.</p>
+        <p class="discret">Tu es à jour — les prochaines photos importées arriveront ici.</p>
+        <button type="button" class="car-bouton-or" data-pht="fermer">Revenir aux photos</button>
+      </div>
+    </div>`;
+}
+
+// LA CARTE SUIT LE DOIGT — à la souris aussi : sur ordinateur, glisser la photo
+// fait le même geste, et les flèches du clavier le font sans la toucher.
+function brancherLaCarte(racine) {
+  let prise = null;
+  const image = () => racine.querySelector('.pht-vue-image');
+  racine.addEventListener('pointerdown', (e) => {
+    // Les étoiles posées sur la photo se touchent, elles ne se prennent pas.
+    if (!etat.pile || !e.target.closest('.pht-vue-scene') || e.target.closest('.pht-etoiles-sur') || e.button > 0) return;
+    prise = { x: e.clientX, y: e.clientY, id: e.pointerId, dx: 0 };
+    image()?.classList.add('en-main');
+  });
+  racine.addEventListener('pointermove', (e) => {
+    if (!prise || e.pointerId !== prise.id) return;
+    prise.dx = e.clientX - prise.x;
+    const img = image();
+    if (!img) return;
+    img.style.transform = `translateX(${prise.dx}px) rotate(${prise.dx / 28}deg)`;
+    racine.querySelector('.pht-vue-scene')?.setAttribute('data-sens',
+      prise.dx > 60 ? 'trie' : prise.dx < -60 ? 'plus-tard' : '');
+  });
+  const lacher = (e) => {
+    if (!prise || e.pointerId !== prise.id) return;
+    const { dx } = prise;
+    prise = null;
+    const img = image();
+    img?.classList.remove('en-main');
+    racine.querySelector('.pht-vue-scene')?.removeAttribute('data-sens');
+    if (Math.abs(dx) > 90) envoler(dx > 0 ? 'trie' : 'plus-tard');
+    else if (img) img.style.transform = '';
+  };
+  racine.addEventListener('pointerup', lacher);
+  racine.addEventListener('pointercancel', lacher);
+}
+
+// La carte s'en va du côté choisi, puis la suivante arrive.
+function envoler(sens) {
+  const img = visionneuse?.querySelector('.pht-vue-image');
+  if (!img || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    marquerTriee(sens);
+    return;
+  }
+  img.classList.add('s-envole');
+  img.style.transform = `translateX(${sens === 'trie' ? 120 : -120}vw) rotate(${sens === 'trie' ? 18 : -18}deg)`;
+  setTimeout(() => marquerTriee(sens), 220);
+}
+
 // --- La visionneuse ---------------------------------------------------------------------------
 
 function gabaritVisionneuse() {
+  if (etat.pile && !etat.ouverte) return gabaritFinDeLaPile();
   const p = photo(etat.ouverte);
   if (!p) return '';
   const liste = listeDeLaVue();
@@ -1803,29 +2139,41 @@ function gabaritVisionneuse() {
   return `
     <div class="pht-vue" role="dialog" aria-modal="true" aria-label="${echapper(p.nom)}">
       <div class="pht-vue-barre">
-        <span class="pht-vue-rang"><span class="chiffre">${k + 1}</span> / ${liste.length}</span>
-        <button type="button" class="car-icone" data-pht="fermer" aria-label="Fermer" title="Fermer (Échap)">${svg('fermer')}</button>
-      </div>
-      <div class="pht-vue-corps">
-        <div class="pht-vue-scene">
-          <button type="button" class="pht-vue-fleche" data-pht="precedente" aria-label="Photo précédente"${k > 0 ? '' : ' disabled'}>${svg('gauche', 22)}</button>
-          <img class="pht-vue-image" src="${echapper(src)}" alt="">
-          <button type="button" class="pht-vue-fleche" data-pht="suivante" aria-label="Photo suivante"${k < liste.length - 1 ? '' : ' disabled'}>${svg('droite', 22)}</button>
-        </div>
-        <aside class="pht-vue-cote" aria-label="Trier cette photo">${panneauTri('vue')}</aside>
-      </div>
-      <div class="pht-vue-pied">
+        ${etat.pile
+          ? `<span class="pht-vue-rang">À trier · <span class="chiffre">${suivanteDansLaPile().length}</span></span>`
+          : `<span class="pht-vue-rang"><span class="chiffre">${k + 1}</span> / ${liste.length}</span>`}
+        ${/* LES INFOS DE LA PHOTO, EN HAUT (21 novembre 2026, demande de Noé) :
+          elles disent ce qu'on regarde avant qu'on la trie, et le bas de
+          l'écran ne garde que les gestes. */ ''}
         <p class="pht-vue-infos">
           <span>${p.prise_le ? echapper(momentLong(p.prise_le)) : 'Date inconnue'}</span>
           <span class="discret">${[format ? formats[format] : null, p.largeur ? `${p.largeur} × ${p.hauteur}` : null, echapper(p.nom)].filter(Boolean).join(' · ')}</span>
           ${vieDeLaPhoto(p)}
         </p>
+        <button type="button" class="car-icone" data-pht="fermer" aria-label="Fermer" title="Fermer (Échap)">${svg('fermer')}</button>
+      </div>
+      <div class="pht-vue-corps">
+        <div class="pht-vue-scene${etat.pile ? ' en-pile' : ''}">
+          ${etat.pile ? '<span class="pht-sens pht-sens-plus-tard" aria-hidden="true">Plus tard</span>'
+            : `<button type="button" class="pht-vue-fleche" data-pht="precedente" aria-label="Photo précédente"${k > 0 ? '' : ' disabled'}>${svg('gauche', 22)}</button>`}
+          <img class="pht-vue-image" src="${echapper(src)}" alt="" draggable="false">
+          ${etoilesSurLaPhoto()}
+          ${etat.pile ? '<span class="pht-sens pht-sens-trie" aria-hidden="true">Trié</span>'
+            : `<button type="button" class="pht-vue-fleche" data-pht="suivante" aria-label="Photo suivante"${k < liste.length - 1 ? '' : ' disabled'}>${svg('droite', 22)}</button>`}
+        </div>
+        <aside class="pht-vue-cote" aria-label="Trier cette photo">${panneauTri('vue')}</aside>
+      </div>
+      <div class="pht-vue-pied">
         <div class="pht-vue-actions">
           ${etat.confirmerRetrait
             ? `<span class="pht-vue-question">Retirer cette photo de la photothèque ?</span>
                <button type="button" class="car-puce" data-pht="garder">Garder</button>
                <button type="button" class="car-danger" data-pht="retirer-oui">Retirer</button>`
-            : `<button type="button" class="car-icone" data-pht="retirer" aria-label="Retirer cette photo" title="Retirer">${svg('corbeille')}</button>
+            : etat.pile
+              ? `<button type="button" class="car-icone" data-pht="retirer" aria-label="Retirer cette photo" title="Retirer">${svg('corbeille')}</button>
+                 <button type="button" class="car-puce" data-pht="plus-tard" title="Plus tard (←)">${svg('gauche', 14)}<span>Plus tard</span></button>
+                 <button type="button" class="car-bouton-or" data-pht="trie" title="Triée (→)"><span>Trié</span>${svg('droite')}</button>`
+              : `<button type="button" class="car-icone" data-pht="retirer" aria-label="Retirer cette photo" title="Retirer">${svg('corbeille')}</button>
                <button type="button" class="car-bouton-or" data-pht="telecharger"${enRoute(p) && !p.blob ? ' disabled' : ''}>${svg('telecharger')}<span>Télécharger</span></button>`}
         </div>
       </div>
@@ -1845,13 +2193,18 @@ function ouvrir(id) {
   etat.recherche = '';
   etat.gestion = null;
   etat.supprimerEtiq = null;
+  etat.quiOuvert = false;
   dessinerVisionneuse();
   prechargerAutour();
 }
 
 function fermer() {
+  const etaitPile = etat.pile;
+  etat.pile = false;
   etat.ouverte = null;
   etat.listeVue = [];
+  // La pile a baissé : le compte « À trier » de la tête aussi.
+  if (etaitPile) dessiner();
   // Ce qu'on a retouché dans la visionneuse peut changer les résultats.
   if (vueCourante === 'recherche') dessiner();
   etat.confirmerRetrait = false;
@@ -1936,7 +2289,10 @@ async function retirer(bouton) {
   const p = photo(etat.ouverte);
   if (!p) return;
   const liste = listeDeLaVue();
-  const suivante = liste[liste.indexOf(p) + 1] ?? liste[liste.indexOf(p) - 1] ?? null;
+  // En pile, la suivante est la prochaine photo PAS ENCORE triée.
+  const suivante = etat.pile
+    ? liste.find((q) => q.id !== p.id && !estTriee(q)) ?? null
+    : liste[liste.indexOf(p) + 1] ?? liste[liste.indexOf(p) - 1] ?? null;
   const avant = [...etat.photos];
   // L'écran d'abord : la photo s'en va, la suivante s'ouvre.
   etat.photos = etat.photos.filter((q) => q.id !== p.id);
@@ -1959,15 +2315,18 @@ async function retirer(bouton) {
 
 function brancherVisionneuse(racine) {
   brancherTri(racine);
+  brancherLaCarte(racine);
   racine.addEventListener('click', (e) => {
     const action = e.target.closest('[data-pht]');
     if (!action) {
       // Un clic sur le fond referme, comme toutes les fenêtres du hub.
-      if (e.target.classList.contains('pht-vue-scene')) fermer();
+      if (e.target.classList.contains('pht-vue-scene') && !etat.pile) fermer();
       return;
     }
     const quoi = action.dataset.pht;
     if (quoi === 'fermer') fermer();
+    else if (quoi === 'trie') envoler('trie');
+    else if (quoi === 'plus-tard') envoler('plus-tard');
     else if (quoi === 'precedente') voisine(-1);
     else if (quoi === 'suivante') voisine(1);
     else if (quoi === 'telecharger') telecharger(action);
@@ -1982,7 +2341,7 @@ function brancherVisionneuse(racine) {
   racine.addEventListener('pointerdown', (e) => {
     // Le balayage vit sur la PHOTO : dans le panneau de tri, un doigt qui
     // glisse fait défiler les étiquettes, il ne change pas de photo.
-    if (e.pointerType !== 'touch' || !e.target.closest('.pht-vue-scene')) return;
+    if (etat.pile || e.pointerType !== 'touch' || !e.target.closest('.pht-vue-scene') || e.target.closest('.pht-etoiles-sur')) return;
     depart = { x: e.clientX, y: e.clientY };
   });
   racine.addEventListener('pointerup', (e) => {
@@ -2015,6 +2374,8 @@ function brancherLaFenetre() {
       return;
     }
     if (e.key === 'Escape') { e.preventDefault(); fermer(); }
+    else if (etat.pile && e.key === 'ArrowRight') { e.preventDefault(); envoler('trie'); }
+    else if (etat.pile && e.key === 'ArrowLeft') { e.preventDefault(); envoler('plus-tard'); }
     else if (e.key === 'ArrowLeft') { e.preventDefault(); voisine(-1); }
     else if (e.key === 'ArrowRight') { e.preventDefault(); voisine(1); }
   });
@@ -2061,6 +2422,7 @@ function brancher(racine) {
       else if (quoi === 'choisir') racine.querySelector('[data-pht-fichier]')?.click();
       else if (quoi === 'relancer') relancerLesEchecs();
       else if (quoi === 'selectionner') { etat.modeSelection = true; dessiner(); }
+      else if (quoi === 'pile') ouvrirLaPile();
       else if (quoi === 'fin-selection') quitterLaSelection();
       else if (quoi === 'tout') {
         etat.selection = toutEstChoisi() ? new Set() : new Set(photosAffichees().map((p) => p.id));
@@ -2071,7 +2433,7 @@ function brancher(racine) {
       else if (quoi === 'garder-sel') { etat.confirmerRetraitSel = false; majBarreSelection(); }
       else if (quoi === 'retirer-sel-oui') retirerLaSelection(action);
       else if (quoi === 'garder-pour') garderLeChoix(action);
-      else if (quoi === 'annuler-pour') { etat.pourCharge = null; revenir(); }
+      else if (quoi === 'annuler-pour') { e.preventDefault(); etat.pourCharge = null; revenir(); }
       else if (quoi === 'effacer-filtres') {
         e.preventDefault();
         changerFiltres(() => { etat.filtres = nouveauxFiltres(); });
@@ -2173,7 +2535,11 @@ export default {
     const genre = id?.startsWith(PREFIXE_POUR) ? 'parution'
       : id?.startsWith(PREFIXE_CARROUSEL) ? 'carrousel' : null;
     const pour = genre ? id.slice((genre === 'parution' ? PREFIXE_POUR : PREFIXE_CARROUSEL).length) : null;
-    vueCourante = id === RECHERCHE || pour ? 'recherche' : id ? 'match' : 'liste';
+    // LA PHOTOTHÈQUE S'OUVRE SUR TOUTES SES PHOTOS : c'est la recherche,
+    // sans filtre. Les albums par match sont une page à côté.
+    const versRecherche = !id || id === RECHERCHE || pour;
+    vueCourante = versRecherche ? 'recherche' : id === ALBUMS ? 'liste' : 'match';
+    if (versRecherche && !pour) id = RECHERCHE;
     if (cible !== id) {
       etat.modeSelection = false;
       etat.selection = new Set();
@@ -2188,7 +2554,9 @@ export default {
     if (!pour) etat.pourCarrousel = null;
     if (pour) { etat.modeSelection = true; chargerLeChoix(); }
     cible = id;
-    if (id) { etat.choisirMatch = false; chargerLesSorties(); }
+    // Le choix du match d'un import se referme en entrant dans un match — pas
+    // à chaque redessin de la photothèque, où il est en train de servir.
+    if (vueCourante === 'match') { etat.choisirMatch = false; chargerLesSorties(); }
     if (id === RECHERCHE || pour) cible = id;
     dessiner();
     const enCours = (etat.photos ?? []).some(enRoute);

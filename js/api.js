@@ -3314,3 +3314,15 @@ export async function ajouterMediasDeCarrousel(lignes) {
   const { error } = await client.from('carrousels_medias').insert(lignes);
   if (error) throw error;
 }
+
+// La pile « à trier » et le noir et blanc reconnu (photothèque, 21 novembre
+// 2026). Par paquets : `in` met les identifiants dans l'adresse, et deux cents
+// identifiants y tiennent largement.
+async function marquerPhotos(ids, champs) {
+  for (let i = 0; i < ids.length; i += 200) {
+    const { error } = await client.from('photos').update(champs).in('id', ids.slice(i, i + 200));
+    if (error) throw error;
+  }
+}
+export const marquerTriees = (ids, triee = true) => marquerPhotos(ids, { triee });
+export const marquerCouleursLues = (ids) => marquerPhotos(ids, { couleurs_lues: true });

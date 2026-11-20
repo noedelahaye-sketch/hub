@@ -99,3 +99,12 @@ export async function supprimerFichier(cle) {
     headers: await entetes(false),
   });
 }
+
+/**
+ * La place prise chez Cloudflare, tout compris — photos de la photothèque,
+ * vignettes, fichiers des carrousels — et le plafond qu'on s'est donné.
+ * @returns {Promise<{ occupe: number, plafond: number }>} en octets
+ */
+export async function placeOccupee() {
+  return appeler('/place', { headers: await entetes(false) });
+}

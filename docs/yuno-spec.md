@@ -2304,6 +2304,59 @@ l'ordre composé. Une seule lecture à la fois.*
 La date de prise de vue se lit désormais dans `js/exif.js`, partagé par la
 photothèque et le carrousel.
 
+**LE 21 NOVEMBRE 2026, TROIS DEMANDES DE NOÉ APRÈS USAGE.**
+- **La photothèque s'ouvre sur TOUTES ses photos** : `#yuno/phototheque` est
+  la recherche, sans filtre. Les albums par match sont à côté
+  (`#yuno/phototheque/albums`, porte « Albums » en tête), et un match y ramène.
+- **Le noir et blanc est reconnu**, sans rien envoyer à personne : la vignette,
+  réduite à 48 × 48, est en noir et blanc quand l'écart moyen entre ses trois
+  couleurs est sous 8 ET que moins de 2 % de ses points dépassent 28. Les deux
+  seuils comptent — un maillot rouge sur fond gris ferait sinon passer une
+  photo couleur. *Mesuré sur les 180 photos de Noé : les deux vraies photos en
+  noir et blanc à 3,7 et 4,8, la plus proche des photos couleur à 14,7 (15,7 %
+  de points colorés).* À l'import, la photo arrive étiquetée ; celles d'avant
+  ont été rattrapées une fois, en arrière-plan (`photos.couleurs_lues`).
+- **La pile « À trier »** : la porte en tête dit combien de photos attendent.
+  C'est la visionneuse en mode pile — la même photo en grand, le même panneau
+  de tri —, où la photo est une CARTE : glissée à droite (ou →, ou « Trié »)
+  elle sort de la pile, glissée à gauche (← ou « Plus tard ») elle repasse
+  dessous. La carte suit le doigt et la souris, penche, et s'envole. **Une photo
+  est triée dès qu'elle a une NOTE** (règle de Noé, le même jour), où qu'on la
+  lui donne — ou quand on l'a glissée « Trié », pour celles qui n'ont rien à
+  dire (`photos.triee`). Les étiquettes seules ne la sortent pas de la pile :
+  *la première version les comptait, c'était une supposition, et les 68 photos
+  étiquetées sans note y sont retournées.* Pile vide : « Tout est trié. »
+- *Le défaut d'affichage sur ordinateur* : la case de la photo prenait la
+  hauteur réelle de l'image (2 160 px) et ne montrait que son haut, collé en
+  bas. La case a maintenant une rangée qui ne grandit pas, et la photo s'y loge
+  entière (`object-fit: contain`).
+
+**LE TRI TIENT SANS DÉFILER SUR TÉLÉPHONE** (21 novembre 2026, demande de
+Noé : « pouvoir affecter l'ensemble des étiquettes sans scroller »).
+- **Les étoiles sont SUR la photo**, en bas et centrées, dans une pastille
+  sombre floutée — le geste le plus fréquent se fait sur ce qu'on regarde. Elles
+  quittent le panneau de la visionneuse (la fenêtre d'une sélection les garde).
+- **Les étiquettes en puces serrées, sans titres de famille** : un filet sépare
+  le style de ce que ça raconte. Choisi parmi trois formes (puces serrées, une
+  rangée qui défile par famille, les plus utilisées d'abord) parce que c'est la
+  seule qui montre TOUT d'un coup : une rangée qui défile cache ses bouts, un
+  « Autres… » demande un geste de plus.
+- **« Qui est dessus » se replie en une puce « + Qui »**, qui ouvre le champ ;
+  les personnes posées restent en puces à côté.
+- **Le pied ne garde que la date**, en petit, et les gestes.
+- *Mesuré à 375 × 812 : la photo prend 52 % de la hauteur et les étiquettes de
+  Noé tiennent dessous sans défiler.* Renommer une étiquette (« Modifier ») ne
+  s'offre plus dans la visionneuse sur téléphone — les titres qui le portaient
+  sont partis ; il reste sur ordinateur et dans la fenêtre d'une sélection.
+
+**LA PLACE PRISE SE LIT EN TÊTE** (21 novembre 2026, demande de Noé), à côté
+du compte des photos : une jauge fine et « 479 Mo sur 10 Go ». C'est le Worker
+qui compte (`GET /place`, il parcourt le bucket) : TOUT ce qui y est —
+photothèque, vignettes, carrousels —, parce que c'est ce total que le plafond
+regarde. La part de la photothèque seule est dans la bulle. Aucune couleur
+d'alerte : passé les trois quarts, la jauge prend l'or. Elle se relit à
+l'ouverture et à la fin de chaque import.
+
 Tables : `photos.note`, `etiquettes` (famille `style`|`recit`, nom unique par
 famille sans casse), `photos_etiquettes`, `photos_personnes` (vers `contacts`).
 Les quinze étiquettes de départ sont semées par la migration.
