@@ -73,6 +73,8 @@ const etat = {
   filtres: nouveauxFiltres(),
   ordre: 'recentes',     // 'recentes' | 'notees'
   listeVue: [],          // les photos que la visionneuse fait défiler, dans l'ordre
+  filtresTel: false,     // sur téléphone, les filtres sont dépliés sous la rangée d'outils
+  menuOrdre: false,      // le menu du tri est ouvert
   // Les parutions (étape 4).
   parutions: null,       // les publications de Yuno : [{ id, titre, format, date_prevue, statut }]
   pour: null,            // ce dont on choisit les photos — une parution ou un carrousel —, ou null
@@ -132,6 +134,9 @@ const ICONE = {
   gauche: '<path d="M15 6l-6 6 6 6"/>',
   droite: '<path d="M9 6l6 6-6 6"/>',
   chercher: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
+  filtre: '<path d="M4 5h16l-6 7.5V19l-4 2v-8.5z"/>',
+  ordre: '<path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/>',
+  choisir: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12.2l2.4 2.4 4.6-4.8"/>',
   albums: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
   coupe: '<path d="M8 4h8v5a4 4 0 0 1-8 0zM6 5H4v2a3 3 0 0 0 3 3M18 5h2v2a3 3 0 0 1-3 3M12 13v4M9 20h6M10 17h4"/>',
   corbeille: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12M9 7V4h6v3"/>',
@@ -609,6 +614,9 @@ function gabaritChoix() {
         </select>
       </label>
       <button type="button" class="car-puce" data-pht="annuler-choix">Annuler</button>
+      ${/* LA PLACE, DÈS QU'ON APPUIE SUR « IMPORTER » (demande de Noé) : c'est
+         au moment de décider d'ajouter un match qu'on veut savoir ce qui reste. */ ''}
+      <div class="pht-place-import">${gabaritPlace()}</div>
     </div>`;
 }
 
@@ -695,7 +703,7 @@ function gabaritMatch() {
         <span class="pht-gestes">${etat.modeSelection
           ? `<button type="button" class="car-puce" data-pht="tout" data-pht-sel-compte>${toutEstChoisi() ? 'Tout désélectionner' : 'Tout sélectionner'}</button>
              <button type="button" class="car-puce" data-pht="fin-selection">Terminé</button>`
-          : `<button type="button" class="car-puce" data-pht="selectionner">Sélectionner</button>
+          : `<button type="button" class="car-icone pht-outil" data-pht="selectionner" aria-label="Sélectionner" title="Sélectionner">${svg('choisir')}</button>
              <button type="button" class="car-puce" data-pht="choisir">${svg('ajouter', 14)}<span>Ajouter des photos</span></button>`}</span>
       </div>
       <div class="pht-grille${etat.modeSelection ? ' en-selection' : ''}">${liste.map(tuile).join('')}</div>
@@ -847,15 +855,42 @@ function enteteDeLaPhototheque() {
   const total = etat.photos.length;
   const aTrier = pileATrier().length;
   return `<div class="pht-tete-liste">
-      <p class="pht-intro">${total
-        ? `<span class="chiffre">${total}</span> photo${total > 1 ? 's' : ''} ${gabaritPlace()}`
-        : 'Importe les photos retouchées d’un match : elles te suivront sur tous tes appareils.'}</p>
+      ${/* Le compte et la place sont descendus sur la ligne des outils
+         (demande de Noé) ; la tête ne garde que ses trois portes. */ total ? ''
+        : '<p class="pht-intro">Importe les photos retouchées d’un match : elles te suivront sur tous tes appareils.</p>'}
       ${etat.choisirMatch ? '' : `<span class="pht-gestes">
         ${total ? `<a class="car-puce pht-chercher" href="#yuno/phototheque/${ALBUMS}">${svg('albums', 14)}<span>Albums</span></a>` : ''}
         ${aTrier ? `<button type="button" class="car-puce pht-a-trier" data-pht="pile">
             <span class="pht-a-trier-point" aria-hidden="true"></span><span>À trier · <span class="chiffre">${aTrier}</span></span></button>` : ''}
         <button type="button" class="car-bouton-or" data-pht="importer">${svg('importer')}<span>Importer des photos</span></button>
       </span>`}
+    </div>`;
+}
+
+// LA RANGÉE D'OUTILS, SOUS LE COMPTE DES PHOTOS (21 novembre 2026, demande de
+// Noé, Notion en référence) : trois icônes au lieu de trois rangées de mots.
+//   — les FILTRES (sur téléphone seulement : sur ordinateur, ils restent dans
+//     leur colonne, à gauche des photos) ; le chiffre dit combien sont posés ;
+//   — le TRI, qui ouvre son menu : les plus récentes, les mieux notées ;
+//   — la SÉLECTION, qui s'allume quand elle est en cours.
+function rangeeDOutils(nombre, nbFiltresPoses) {
+  const ordres = [['recentes', 'Les plus récentes'], ['notees', 'Les mieux notées']];
+  return `<div class="pht-outils" role="toolbar" aria-label="Outils de la recherche">
+      <button type="button" class="car-icone pht-outil pht-outil-filtres${etat.filtresTel || nbFiltresPoses ? ' actif' : ''}"
+        data-pht="filtres-tel" aria-expanded="${etat.filtresTel}" aria-label="Filtres${nbFiltresPoses ? ` (${nbFiltresPoses})` : ''}" title="Filtres">
+        ${svg('filtre')}${nbFiltresPoses ? `<span class="pht-outil-n">${nbFiltresPoses}</span>` : ''}</button>
+      <span class="pht-outil-ordre">
+        <button type="button" class="car-icone pht-outil${etat.menuOrdre ? ' actif' : ''}" data-pht="ordre-menu"
+          aria-expanded="${etat.menuOrdre}" aria-label="Trier : ${etat.ordre === 'notees' ? 'les mieux notées' : 'les plus récentes'}"
+          title="Trier">${svg('ordre')}</button>
+        ${etat.menuOrdre ? `<span class="pht-ordre-menu" role="menu">${ordres.map(([cle, nom]) =>
+          `<button type="button" class="pht-menu-option" role="menuitemradio" data-ordre="${cle}" data-etat="${etat.ordre === cle ? 'tout' : 'rien'}"
+             aria-checked="${etat.ordre === cle}"><span class="pht-menu-coche" aria-hidden="true"></span><span class="pht-menu-nom">${nom}</span></button>`).join('')}</span>` : ''}
+      </span>
+      ${etat.pour ? '' : `<button type="button" class="car-icone pht-outil${etat.modeSelection ? ' actif' : ''}" data-pht="selectionner"
+          aria-pressed="${etat.modeSelection}" aria-label="${etat.modeSelection ? 'Terminer la sélection' : 'Sélectionner'}"
+          title="${etat.modeSelection ? 'Terminer la sélection' : 'Sélectionner'}"${nombre ? '' : ' disabled'}>${svg('choisir')}</button>
+        ${etat.modeSelection ? `<button type="button" class="car-puce" data-pht="tout" data-pht-sel-compte>${toutEstChoisi() ? 'Tout désélectionner' : 'Tout sélectionner'}</button>` : ''}`}
     </div>`;
 }
 
@@ -880,23 +915,25 @@ function gabaritRecherche() {
         <div class="pht-tri pht-filtres-corps">${gabaritFiltres()}</div>
       </details>
       <div class="pht-resultats">
-        <div class="car-tout-tete">
-          <p class="car-petit-titre"><span class="chiffre">${liste.length}</span> photo${liste.length > 1 ? 's' : ''}</p>
-          <span class="pht-gestes">
-            <span class="pht-ordre" role="group" aria-label="Ordre">
-              <button type="button" class="car-puce${etat.ordre === 'recentes' ? ' actif' : ''}" data-ordre="recentes" aria-pressed="${etat.ordre === 'recentes'}">Récentes</button>
-              <button type="button" class="car-puce${etat.ordre === 'notees' ? ' actif' : ''}" data-ordre="notees" aria-pressed="${etat.ordre === 'notees'}">Mieux notées</button>
-            </span>
-            ${etat.pour ? '' : etat.modeSelection
-              ? `<button type="button" class="car-puce" data-pht="tout" data-pht-sel-compte>${toutEstChoisi() ? 'Tout désélectionner' : 'Tout sélectionner'}</button>
-                 <button type="button" class="car-puce" data-pht="fin-selection">Terminé</button>`
-              : `<button type="button" class="car-puce" data-pht="selectionner"${liste.length ? '' : ' disabled'}>Sélectionner</button>`}
-          </span>
+        <div class="pht-res-tete">
+          ${/* LE COMPTE ET LA PLACE, À GAUCHE DES OUTILS (demande de Noé). Filtré,
+             le compte dit ce qui reste sur le total. */ etat.pour
+            ? `<p class="car-petit-titre pht-res-compte"><span class="chiffre">${liste.length}</span> photo${liste.length > 1 ? 's' : ''}</p>`
+            : `<p class="pht-res-compte pht-res-total">${n
+                ? `<span><span class="chiffre">${liste.length}</span> sur ${etat.photos.length}</span>`
+                : `<span><span class="chiffre">${etat.photos.length}</span> photo${etat.photos.length > 1 ? 's' : ''}</span>`}</p>`}
+          ${rangeeDOutils(liste.length, n)}
         </div>
+        ${etat.filtresTel ? `<div class="pht-filtres-tel">
+            ${n ? '<button type="button" class="car-puce car-puce-mini pht-effacer" data-pht="effacer-filtres">Tout effacer</button>' : ''}
+            <div class="pht-tri pht-filtres-corps">${gabaritFiltres()}</div>
+          </div>` : ''}
         ${liste.length
           ? `<div class="pht-grille${etat.modeSelection ? ' en-selection' : ''}">${liste.map(tuile).join('')}</div>`
           : `<p class="car-liste-vide">${etat.photos.length ? 'Aucune photo ne coche tout. Retire un filtre.' : 'Importe un match : ses photos se chercheront ici.'}</p>`}
         ${gabaritBarreSelection()}
+        ${/* LA PLACE PRISE, TOUT EN BAS, APRÈS LES PHOTOS (demande de Noé) : on la
+           consulte, on ne la regarde pas à chaque ouverture. */ etat.pour ? '' : `<div class="pht-pied-place">${gabaritPlace()}</div>`}
       </div>
     </div>`;
 }
@@ -2534,12 +2571,18 @@ function brancher(racine) {
       if (quoi === 'importer') {
         etat.choisirMatch = true;
         chargerLesSorties();
+        lireLaPlace();
         dessiner();
         racine.querySelector('[data-pht-match]')?.focus();
       } else if (quoi === 'annuler-choix') { etat.choisirMatch = false; dessiner(); }
       else if (quoi === 'choisir') racine.querySelector('[data-pht-fichier]')?.click();
       else if (quoi === 'relancer') relancerLesEchecs();
-      else if (quoi === 'selectionner') { etat.modeSelection = true; dessiner(); }
+      else if (quoi === 'selectionner') {
+        // L'icône bascule : elle ouvre la sélection, et la referme.
+        if (etat.modeSelection) quitterLaSelection();
+        else { etat.modeSelection = true; dessiner(); }
+      } else if (quoi === 'filtres-tel') { etat.filtresTel = !etat.filtresTel; etat.menuOrdre = false; dessiner(); }
+      else if (quoi === 'ordre-menu') { etat.menuOrdre = !etat.menuOrdre; dessiner(); }
       else if (quoi === 'pile') ouvrirLaPile();
       else if (quoi === 'fin-selection') quitterLaSelection();
       else if (quoi === 'tout') {
@@ -2579,7 +2622,7 @@ function brancher(racine) {
     }
     const ordre = e.target.closest('[data-ordre]');
     if (ordre) {
-      changerFiltres(() => { etat.ordre = ordre.dataset.ordre; });
+      changerFiltres(() => { etat.ordre = ordre.dataset.ordre; etat.menuOrdre = false; });
       return;
     }
     const t = e.target.closest('[data-ouvrir]');

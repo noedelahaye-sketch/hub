@@ -2389,6 +2389,15 @@ téléphone, la barre d'une sélection à 42 px. *Ce qui traînait : des puces
 d'étiquettes en pilule complète (999 px), un « Plus tard » de 32 px à côté d'un
 « Trié » de 50, deux 15 px dans le carrousel, une case à 5 px.*
 
+**DES ICÔNES DISCRÈTES, À DROITE DU COMPTE DES PHOTOS** (sur sa ligne : ni contour ni fond, une icône grise qui s'éclaire) (21 novembre 2026, demande
+de Noé, Notion en référence) : les filtres (sur téléphone seulement — leur
+chiffre dit combien sont posés, et ils se déplient sous la rangée), le tri (un
+menu : les plus récentes, les mieux notées) et la sélection (l'icône s'allume,
+et la referme). *Elles remplacent « Récentes », « Mieux notées » et
+« Sélectionner » écrits en toutes lettres, et le volet « Filtres » au-dessus des
+photos sur téléphone.* **Sur ordinateur, les filtres gardent leur colonne.**
+Sur téléphone, Albums, À trier et Importer prennent toute la largeur.
+
 Tables : `photos.note`, `etiquettes` (famille `style`|`recit`, nom unique par
 famille sans casse), `photos_etiquettes`, `photos_personnes` (vers `contacts`).
 Les quinze étiquettes de départ sont semées par la migration.

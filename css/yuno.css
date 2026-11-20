@@ -6609,3 +6609,145 @@ body[data-espace="yuno"] #vue .pht-pour-menu select {
   .pht-tete-liste .pht-gestes .car-puce,
   .pht-tete-liste .pht-gestes .car-bouton-or { min-height: 40px; height: 40px; border-radius: var(--rayon-controle); }
 }
+
+/* ==========================================================================
+   LA RANGÉE D'OUTILS DE LA RECHERCHE (21 novembre 2026)
+   ========================================================================== */
+.pht-res-compte { margin: 0 0 var(--espace-8); }
+.pht-outils {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: var(--espace-12);
+}
+/* Des boutons icône du kit, à la taille d'un bouton normal : 40 px, 12. */
+.pht-outil {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--rayon-controle);
+}
+.pht-outil.actif { color: var(--fond); background: var(--texte); border-color: var(--texte); }
+.pht-outils .car-puce { min-height: 40px; }
+.pht-outil-n {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 18px;
+  color: var(--fond);
+  background: var(--accent);
+  border-radius: 999px;
+}
+/* Le menu du tri, sous son icône. */
+.pht-outil-ordre { position: relative; }
+.pht-ordre-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  min-width: 13rem;
+  padding: 4px;
+  background: var(--fond-releve);
+  border-radius: var(--rayon-carte);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 55%);
+}
+.pht-ordre-menu .pht-menu-coche { border-radius: 50%; }
+.pht-ordre-menu .pht-menu-option[data-etat="tout"] .pht-menu-coche {
+  background: radial-gradient(circle, var(--fond) 0 3px, var(--texte) 3.5px);
+}
+/* Les filtres dépliés sous la rangée, sur téléphone. */
+.pht-filtres-tel {
+  position: relative;
+  margin-bottom: var(--espace-12);
+  padding: var(--espace-12) var(--espace-16) var(--espace-16);
+  background: var(--fond-carte);
+  border-radius: var(--rayon-carte);
+}
+.pht-filtres-tel .pht-filtres-corps { padding: 0; }
+.pht-filtres-tel .pht-effacer { position: absolute; top: var(--espace-12); right: var(--espace-12); }
+
+/* SUR ORDINATEUR, LES FILTRES GARDENT LEUR COLONNE (demande de Noé) : l'icône
+   et le volet ne servent qu'au téléphone. */
+@media (min-width: 60rem) {
+  .pht-outil-filtres,
+  .pht-filtres-tel { display: none; }
+}
+@media (max-width: 59.99rem) {
+  .pht-recherche > .pht-filtres { display: none; }
+}
+
+/* LA TÊTE DE LA PHOTOTHÈQUE, SUR TÉLÉPHONE : LES TROIS BOUTONS PRENNENT TOUTE
+   LA LARGEUR, toujours (demande de Noé). */
+@media (max-width: 44.99rem) {
+  .pht-tete-liste .pht-gestes { width: 100%; }
+  /* LES TROIS GRANDISSENT AVEC L'ÉCRAN (correction de Noé : Albums aussi). Ils
+     partent de la largeur de leur contenu et se partagent ce qui reste à parts
+     égales — Albums, qui n'a que son icône, garde donc la plus petite part. */
+  .pht-tete-liste .pht-gestes > .pht-chercher,
+  .pht-tete-liste .pht-gestes > .pht-a-trier,
+  .pht-tete-liste .pht-gestes > .car-bouton-or { flex: 1 1 auto; justify-content: center; }
+}
+
+/* LES OUTILS SE FONT DISCRETS, À DROITE DU COMPTE (demande de Noé, le même
+   jour) : ni contour ni fond — une icône grise qui s'éclaire au survol, et
+   qui garde un léger fond quand elle est active. La cible reste à 36 px. */
+.pht-res-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-8);
+  margin-bottom: var(--espace-12);
+}
+.pht-res-tete .pht-res-compte { margin: 0; }
+.pht-res-tete .pht-outils { justify-content: flex-end; margin: 0; gap: 2px; }
+.pht-outil {
+  width: 36px;
+  height: 36px;
+  color: var(--texte-discret);
+  background: transparent;
+  border-color: transparent;
+}
+.pht-outil svg { width: 17px; height: 17px; }
+.pht-outil:hover:not(:disabled) { color: var(--texte); background: rgb(255 255 255 / 5%); border-color: transparent; }
+.pht-outil.actif { color: var(--texte); background: var(--fond-releve); border-color: transparent; }
+.pht-res-tete .car-puce { min-height: 32px; }
+.pht-outil-n { top: -3px; right: -3px; min-width: 16px; height: 16px; line-height: 16px; font-size: 0.625rem; }
+.pht-ordre-menu { left: auto; right: 0; }
+
+/* Le compte et la place prise, à gauche des outils : ils se replient sur deux
+   lignes plutôt que de pousser les icônes. */
+.pht-res-total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 2px;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--texte-doux);
+}
+.pht-res-total .pht-place { margin-left: 0; font-size: 0.75rem; }
+.pht-res-total .pht-place-jauge { width: 44px; }
+.pht-res-tete .pht-outils { flex: none; }
+
+/* La place prise : au pied de la photothèque, et sous la tête d'un match où
+   l'on importe. */
+.pht-pied-place { display: flex; justify-content: center; margin: var(--espace-24) 0 var(--espace-8); }
+.pht-pied-place .pht-place,
+.pht-place-import .pht-place { margin-left: 0; }
+.pht-place-import { flex-basis: 100%; margin: 0; }
+
+/* Le choix du match : la pastille et « Annuler » à la même hauteur, sur la
+   même ligne (demande de Noé) — la pastille portait une marge basse héritée
+   de l'outil du carrousel, qui la décalait de huit pixels. */
+.pht-choix .car-match,
+.pht-choix .car-puce { min-height: 40px; height: 40px; margin: 0; border-radius: var(--rayon-controle); }
