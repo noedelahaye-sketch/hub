@@ -3300,3 +3300,17 @@ export async function ajouterPhotosALaParution(publicationId, photoIds, depuis =
   );
   if (error) throw error;
 }
+
+// Les médias d'un carrousel qui viennent de la photothèque : on les retire par
+// photo, quand le choix fait depuis la photothèque les décoche.
+export async function retirerPhotosDuCarrousel(carrouselId, photoIds) {
+  const { error } = await client
+    .from('carrousels_medias').delete().eq('carrousel_id', carrouselId).in('photo_id', photoIds);
+  if (error) throw error;
+}
+
+export async function ajouterMediasDeCarrousel(lignes) {
+  if (!lignes.length) return;
+  const { error } = await client.from('carrousels_medias').insert(lignes);
+  if (error) throw error;
+}

@@ -32,6 +32,7 @@ import { echapper } from './format.js';
 import { bulle, messageCourt } from './bulle.js';
 import { construireZip, enregistrer } from './zip.js';
 import { envoyerFichier, envoyerVignette, adressesDe, supprimerFichier } from './photos-cloud.js';
+import { lireDatePrise } from './exif.js';
 
 // Instagram ne prend pas plus de vingt photos et vidéos dans un carrousel.
 const MAX = 20;
@@ -63,7 +64,25 @@ const etat = {
   confirmerSuppression: false,
   // Les sorties de Yuno qu'on peut relier, lues une fois par visite.
   sorties: null,
+  // RANGER AUSSI DANS LA PHOTOTHÈQUE (20 novembre 2026, Noé : « le carrousel
+  // doit garder un moyen d'importer des photos, qui peuvent aller dans la
+  // réserve si je le dis lors de l'import »). Un réglage de l'appareil : il se
+  // retrouve d'une visite à l'autre, sans rien dire de la vie de Noé.
+  ranger: lireRanger(),
 };
+
+function lireRanger() {
+  try { return localStorage.getItem('car-ranger') === 'oui'; } catch { return false; }
+}
+function ecrireRanger(oui) {
+  try { localStorage.setItem('car-ranger', oui ? 'oui' : 'non'); } catch { /* sans mémoire, tant pis */ }
+}
+
+// La photothèque vient de changer les médias de ce carrousel : le prochain
+// montage relit la base au lieu d'attendre ses quinze secondes.
+export function relireAuProchainMontage() {
+  etat.chargeLe = 0;
+}
 
 let hote = null;
 let vueCourante = null;
@@ -84,6 +103,9 @@ const ICONE = {
   importer: '<path d="M12 16V4M7 9l5-5 5 5"/><path d="M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5"/>',
   retour: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
   match: '<circle cx="12" cy="12" r="9"/><path d="M12 7l4 3-1.5 4.5h-5L8 10z"/>',
+  photos: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 8"/>',
+  coche: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16 10"/>',
+  cercle: '<circle cx="12" cy="12" r="9"/>',
   nuage: '<path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 9a4 4 0 0 1-.5 7.97"/><path d="M12 12v8M9 15l3-3 3 3"/>',
 };
 const svg = (cle, taille = 18) =>
@@ -127,6 +149,7 @@ async function chargerLeCarrousel(id) {
         type: ligne.type,
         taille: ligne.taille,
         cle: ligne.cle,
+        photo_id: ligne.photo_id ?? null,
         // Un fichier importé SUR CET APPAREIL reste sous la main : le
         // télécharger ne demandera rien au réseau.
         fichier: deja?.fichier ?? null,
@@ -246,6 +269,9 @@ function importer(fichiers) {
       vignette: null,
       envoi: 'attente',
       progression: 0,
+      // Le réglage vaut au moment de l'import : le changer ensuite ne range
+      // pas après coup ce qui est déjà parti.
+      ranger: etat.ranger,
     };
     m.vignettePrete = new Promise((ok) => { m.vignetteFaite = ok; });
     nouveaux.push(m);
@@ -291,7 +317,17 @@ async function envoyer(m) {
     });
     const blob = await m.vignettePrete;
     if (blob) await envoyerVignette(m.cle, blob).catch((e) => console.error('Vignette non envoyée', e));
+    // RANGÉE DANS LA PHOTOTHÈQUE, la photo y devient une ligne qui partage le
+    // MÊME fichier : le média porte alors `photo_id`, et c'est la photothèque
+    // qui possède le fichier — supprimer le carrousel ne l'effacera pas.
+    if (m.ranger && m.genre === 'photo' && !m.photo_id) {
+      m.photo_id = await rangerDansLaPhototheque(m).catch((e) => {
+        console.error('Photo non rangée dans la photothèque', e);
+        return null;
+      });
+    }
     await api.ajouterMediaDeCarrousel({
+      photo_id: m.photo_id ?? null,
       id: m.id,
       carrousel_id: carrouselId,
       cle: m.cle,
@@ -310,6 +346,31 @@ async function envoyer(m) {
     m.envoi = 'echec';
   }
   majEnvoi(m);
+}
+
+async function rangerDansLaPhototheque(m) {
+  let largeur = null;
+  let hauteur = null;
+  try {
+    const image = await createImageBitmap(m.fichier, { imageOrientation: 'from-image' });
+    largeur = image.width;
+    hauteur = image.height;
+    image.close?.();
+  } catch {
+    // Sans dimensions, la photo n'a pas de format : elle reste rangée.
+  }
+  const id = crypto.randomUUID();
+  await api.ajouterPhoto({
+    id,
+    cle: m.cle,
+    nom: m.nom,
+    evenement_id: etat.carrousel?.evenement_id ?? null,
+    prise_le: (await lireDatePrise(m.fichier)) ?? new Date(m.fichier.lastModified || Date.now()).toISOString(),
+    largeur,
+    hauteur,
+    taille: m.taille,
+  });
+  return id;
 }
 
 function relancerLesEchecs() {
@@ -672,9 +733,19 @@ function gabaritVide() {
       <button type="button" class="car-bouton-or" data-car="choisir">
         ${svg('importer')}<span>Choisir des photos</span>
       </button>
+      ${boutonRanger()}
+      <a class="car-puce car-depuis" href="#yuno/phototheque/carrousel-${etat.carrousel?.id ?? ''}">${svg('photos', 14)}<span>Piocher dans la photothèque</span></a>
     </div>
     ${gabaritPied()}
     <input type="file" class="car-fichier" accept="image/*,video/*" multiple hidden data-car-fichier>`;
+}
+
+// LE RÉGLAGE « AUSSI DANS LA PHOTOTHÈQUE », posé à côté de l'import : c'est
+// au moment d'importer qu'on le dit.
+function boutonRanger() {
+  return `<button type="button" class="car-puce car-ranger${etat.ranger ? ' actif' : ''}" data-car="ranger"
+      aria-pressed="${etat.ranger}" title="Les photos importées ici entrent aussi dans la photothèque">
+      ${svg(etat.ranger ? 'coche' : 'cercle', 14)}<span>Aussi dans la photothèque</span></button>`;
 }
 
 function gabaritPied() {
@@ -728,7 +799,11 @@ function gabaritOutil() {
     <div class="car-tout" data-depot>
       <div class="car-tout-tete">
         <p class="car-petit-titre"><span data-car-tout-titre></span> · <span data-car-n></span></p>
-        <button type="button" class="car-puce" data-car="choisir">${svg('ajouter', 14)}<span>Ajouter des photos</span></button>
+        <span class="car-tout-gestes">
+          <a class="car-puce car-depuis" href="#yuno/phototheque/carrousel-${etat.carrousel?.id ?? ''}">${svg('photos', 14)}<span>Photothèque</span></a>
+          <button type="button" class="car-puce" data-car="choisir">${svg('ajouter', 14)}<span>Ajouter des photos</span></button>
+          ${boutonRanger()}
+        </span>
       </div>
       <div class="car-grille" data-car-grille></div>
     </div>
@@ -973,7 +1048,9 @@ async function supprimerLeCarrousel(bouton) {
   if (!c) return;
   bouton.disabled = true;
   try {
-    const enLigne = etat.medias.filter((m) => m.cle);
+    // Les fichiers de la PHOTOTHÈQUE restent : le carrousel ne fait que les
+    // montrer.
+    const enLigne = etat.medias.filter((m) => m.cle && !m.photo_id);
     for (const m of enLigne) await supprimerFichier(m.cle);
     await api.supprimerCarrousel(c.id);
     etat.carrousel = null;
@@ -1271,6 +1348,14 @@ function brancher(racine) {
       else if (quoi === 'retablir') retablir();
       else if (quoi === 'nouveau') nouveauCarrousel(action);
       else if (quoi === 'relancer') relancerLesEchecs();
+      else if (quoi === 'ranger') {
+        etat.ranger = !etat.ranger;
+        ecrireRanger(etat.ranger);
+        hote.querySelectorAll('[data-car="ranger"]').forEach((b) => { b.outerHTML = boutonRanger(); });
+        messageCourt(etat.ranger
+          ? 'Les photos que tu importes ici entreront aussi dans la photothèque.'
+          : 'Les photos importées ici resteront dans ce carrousel.');
+      }
       else if (quoi === 'supprimer') { etat.confirmerSuppression = true; dessiner(); }
       else if (quoi === 'garder') { etat.confirmerSuppression = false; dessiner(); }
       else if (quoi === 'supprimer-oui') supprimerLeCarrousel(action);

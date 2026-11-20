@@ -88,7 +88,7 @@ import pageProjet from './projet.js';
 // filtre voyage déjà par la route (`#taches/photo`).
 import pageTaches from './taches.js';
 import outilCarrousel from './carrousel.js';
-import outilPhototheque, { apercuParution } from './phototheque.js';
+import outilPhototheque, { apercuParution, choisirUnePhoto } from './phototheque.js';
 import { animerLaCoche } from './mouvements.js';
 import { bulle, suivreLesGestes, dernierGeste } from './bulle.js';
 import {
@@ -515,6 +515,30 @@ function vueCarrousel(etat) {
 }
 
 // L'hôte de la photothèque, sur le même patron que le carrousel.
+function brancherLaPhotothequeAuCarnet(champ) {
+  if (champ.dataset.phototheque) return;
+  champ.dataset.phototheque = 'oui';
+  const form = champ.form;
+  const evenementId = form?.querySelector('[name="id"], [name="evenement_id"]')?.value || null;
+  const bouton = document.createElement('button');
+  bouton.type = 'button';
+  bouton.className = 'car-puce pht-carnet-porte';
+  bouton.innerHTML = `${PHOTO}<span>Choisir dans la photothèque</span>`;
+  const choisie = document.createElement('span');
+  choisie.className = 'discret pht-carnet-choisie';
+  champ.insertAdjacentElement('afterend', bouton);
+  bouton.insertAdjacentElement('afterend', choisie);
+  bouton.addEventListener('click', async () => {
+    const fichier = await choisirUnePhoto({ evenementId });
+    if (!fichier || !champ.isConnected) return;
+    // Un champ fichier n'accepte qu'une LISTE de fichiers : on la fabrique.
+    const liste = new DataTransfer();
+    liste.items.add(fichier);
+    champ.files = liste.files;
+    choisie.textContent = `Choisie : ${fichier.name} — elle sera gardée à l'enregistrement.`;
+  });
+}
+
 function vuePhototheque(etat) {
   return `
     ${enTete(etat.vue, etat)}
@@ -6849,6 +6873,12 @@ export default {
       // LA FICHE D'UNE PARUTION porte la place de ses photos : la photothèque
       // la remplit (js/phototheque.js).
       section.querySelectorAll('[data-photos-pub]').forEach((el) => apercuParution(el));
+      // LA PHOTO DU CARNET SE CHOISIT AUSSI DANS LA PHOTOTHÈQUE (étape 4b) : le
+      // champ fichier du carnet gagne une porte. La photo choisie y est posée
+      // comme un fichier, et l'enregistrement du carnet fait le reste.
+      section.querySelectorAll(
+        'form[data-action="modifier-moment"] input[name="photo"], form[data-action="ajouter-moment"] input[name="photo"]',
+      ).forEach(brancherLaPhotothequeAuCarnet);
 
       // LE MODULE DU CAP S'INSTALLE DANS SON HÔTE, qui vient d'être écrit. Il
       // apporte ses propres écouteurs, son propre chargement et son propre

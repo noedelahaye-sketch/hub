@@ -2174,7 +2174,7 @@ qui pourra verser dans la réserve si Noé le dit.
 | 2 | le tri : étoiles, étiquettes en familles (style, ce que ça raconte, qui — relié au réseau), sélection multiple, plein écran au clavier et au doigt | **faite** |
 | 3 | la recherche : match, période, compétition (posée sur le match), étiquettes, qui, format, note minimale ; renommer et supprimer une étiquette | **faite** — « jamais publiée » attend le compteur de l'étape 4 |
 | 4a | le lien aux parutions : choisir les photos d'une parution, compteur « publiée N fois », filtre « jamais publiée » | **faite** |
-| 4b | le carrousel qui pioche dans la photothèque (et son import qui peut y verser), la photo du Carnet choisie dans la photothèque | à faire |
+| 4b | le carrousel qui pioche dans la photothèque (et son import qui peut y verser), la photo du Carnet choisie dans la photothèque | **faite** |
 
 **UNE VERSION ALLÉGÉE, PAS L'ORIGINAL** (choix de Noé) : chaque photo est
 ramenée à 2 160 px au plus grand côté, en JPEG 92 %, sur l'appareil qui importe.
@@ -2277,6 +2277,32 @@ porte AUCUNE mention : ce n'est pas un défaut, c'est une réserve.
 *Piège payé en l'écrivant : le site monte l'écran deux fois à l'ouverture, et
 une seconde lecture du choix, arrivée après les premières touches, effaçait
 l'ordre composé. Une seule lecture à la fois.*
+
+**LE CARROUSEL ET LE CARNET (étape 4b).**
+- **Le carrousel pioche dans la photothèque** : « Piocher dans la
+  photothèque » (ou « Photothèque » au-dessus de la grille) ouvre la recherche
+  en choix, `#yuno/phototheque/carrousel-<id>`. Ce qu'on coche entre, ce qu'on
+  décoche sort ; l'ordre du post se compose ensuite dans le carrousel, comme
+  avant. **Le média reprend le FICHIER de la photo, il n'en fait pas de copie**
+  (`carrousels_medias.photo_id`) : supprimer le carrousel n'efface jamais un
+  fichier qui appartient à la photothèque, et retirer la photo de la
+  photothèque fait partir le média qui la montrait.
+- **L'import du carrousel peut ranger dans la photothèque** — la pastille
+  « Aussi dans la photothèque », à côté de l'import (Noé : « si je le dis lors
+  de l'import »). Elle vaut au moment de l'import et se retrouve d'une visite à
+  l'autre sur l'appareil. La photo rangée garde le fichier du carrousel (sa
+  pleine définition, pas la version allégée), le match du carrousel, sa date
+  de prise de vue et ses dimensions.
+- **La photo du Carnet se choisit dans la photothèque** : la fiche d'une sortie
+  (et son inscription au carnet) gagne « Choisir dans la photothèque », qui
+  ouvre une planche des photos du match, les mieux notées d'abord — ou toute la
+  photothèque. **Le Carnet ne change pas** : la photo choisie est posée dans son
+  champ comme un fichier, et c'est son enregistrement à lui qui la réduit et la
+  garde. Toutes les pages qui montrent la photo d'une sortie la lisent toujours
+  au même endroit.
+
+La date de prise de vue se lit désormais dans `js/exif.js`, partagé par la
+photothèque et le carrousel.
 
 Tables : `photos.note`, `etiquettes` (famille `style`|`recit`, nom unique par
 famille sans casse), `photos_etiquettes`, `photos_personnes` (vers `contacts`).

@@ -24,6 +24,8 @@ import { echapper } from './format.js';
 import { bulle, messageCourt } from './bulle.js';
 import { enregistrer } from './zip.js';
 import { envoyerFichier, envoyerVignette, adressesDe, supprimerFichier } from './photos-cloud.js';
+import { lireDatePrise } from './exif.js';
+import { relireAuProchainMontage } from './carrousel.js';
 
 const COTE_MAX = 2160;
 const QUALITE = 0.92;
@@ -67,7 +69,9 @@ const etat = {
   listeVue: [],          // les photos que la visionneuse fait défiler, dans l'ordre
   // Les parutions (étape 4).
   parutions: null,       // les publications de Yuno : [{ id, titre, format, date_prevue, statut }]
-  pour: null,            // la parution dont on choisit les photos, ou null
+  pour: null,            // ce dont on choisit les photos — une parution ou un carrousel —, ou null
+  pourGenre: null,       // 'parution' | 'carrousel'
+  pourCarrousel: null,   // le carrousel du choix : { id, nom, medias }
   pourCharge: null,      // la parution dont le choix a été lu
 };
 
@@ -227,67 +231,6 @@ function matchDe(cle) {
   return (etat.photos ?? []).find((p) => p.evenement_id === cle)?.evenement
     ?? (etat.sorties ?? []).find((s) => s.id === cle)
     ?? null;
-}
-
-// --- La lecture de la date de prise de vue (EXIF) ---------------------------------------
-//
-// Une lecture à la main, sans bibliothèque : seuls trois champs nous servent, et
-// ils sont toujours au même endroit — le bloc APP1 d'un JPEG, son répertoire
-// principal, puis le sous-répertoire EXIF. On lit les 256 premiers ko, où il vit
-// toujours.
-
-async function lireDatePrise(fichier) {
-  try {
-    const v = new DataView(await fichier.slice(0, 256 * 1024).arrayBuffer());
-    if (v.byteLength < 4 || v.getUint16(0) !== 0xffd8) return null;
-    let o = 2;
-    while (o + 10 < v.byteLength) {
-      const marqueur = v.getUint16(o);
-      if ((marqueur & 0xff00) !== 0xff00) break;
-      const longueur = v.getUint16(o + 2);
-      if (marqueur === 0xffe1 && v.getUint32(o + 4) === 0x45786966) return lireTiff(v, o + 10);
-      if (marqueur === 0xffda) break;
-      o += 2 + longueur;
-    }
-  } catch {
-    // Un fichier qu'on ne sait pas lire n'a simplement pas de date.
-  }
-  return null;
-}
-
-function lireTiff(v, t) {
-  const petit = v.getUint16(t) === 0x4949;
-  const u16 = (p) => v.getUint16(p, petit);
-  const u32 = (p) => v.getUint32(p, petit);
-  const entree = (ifd, tag) => {
-    if (ifd + 2 > v.byteLength) return null;
-    const n = u16(ifd);
-    for (let i = 0; i < n; i++) {
-      const e = ifd + 2 + i * 12;
-      if (e + 12 > v.byteLength) return null;
-      if (u16(e) === tag) return e;
-    }
-    return null;
-  };
-  const texte = (e) => {
-    if (e == null) return null;
-    const n = u32(e + 4);
-    const debut = n > 4 ? t + u32(e + 8) : e + 8;
-    let s = '';
-    for (let i = 0; i < n - 1 && debut + i < v.byteLength; i++) s += String.fromCharCode(v.getUint8(debut + i));
-    return s;
-  };
-  const ifd0 = t + u32(t + 4);
-  const pointeur = entree(ifd0, 0x8769);
-  const exif = pointeur != null ? t + u32(pointeur + 8) : null;
-  const brut = (exif != null && (texte(entree(exif, 0x9003)) || texte(entree(exif, 0x9004))))
-    || texte(entree(ifd0, 0x0132));
-  const m = /^(\d{4}):(\d{2}):(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/.exec(brut ?? '');
-  if (!m || m[1] === '0000') return null;
-  // L'heure EXIF est celle de l'appareil, sans fuseau : on la lit comme une
-  // heure locale, ce qu'elle était au bord du terrain.
-  const d = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]);
-  return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
 // --- L'import ------------------------------------------------------------------------------
@@ -1131,7 +1074,7 @@ function redessinerTri() {
 }
 
 const rangDansLeChoix = (p) => {
-  if (!etat.pour || !etat.selection.has(p.id)) return '';
+  if (etat.pourGenre !== 'parution' || !etat.selection.has(p.id)) return '';
   return String([...etat.selection].indexOf(p.id) + 1);
 };
 const badgePubliee = (p) => {
@@ -1352,7 +1295,7 @@ function toucherEnSelection(id, intervalle) {
   } else if (etat.selection.has(id)) etat.selection.delete(id);
   else {
     // INSTAGRAM NE PREND PAS PLUS DE VINGT IMAGES DANS UN CARROUSEL.
-    const pub = etat.pour ? parutionDe(etat.pour) : null;
+    const pub = etat.pourGenre === 'parution' ? parutionDe(etat.pour) : null;
     if (pub?.format === 'carrousel' && etat.selection.size >= MAX_CARROUSEL) {
       bulle('C’est complet', `Un carrousel prend ${MAX_CARROUSEL} photos au plus. Retires-en une pour en choisir une autre.`,
         hote?.querySelector(`[data-ouvrir="${id}"]`));
@@ -1387,7 +1330,7 @@ function gabaritBarreSelection() {
   if (!etat.modeSelection) return '';
   const n = etat.selection.size;
   if (etat.pour) {
-    const pub = parutionDe(etat.pour);
+    const pub = etat.pourGenre === 'parution' ? parutionDe(etat.pour) : null;
     const max = pub?.format === 'carrousel' ? MAX_CARROUSEL : null;
     return `<div class="pht-barre-sel" data-pht-barre>
         <span class="pht-barre-texte"><span class="chiffre">${n}</span>${max ? ` / ${max}` : ''} choisie${n > 1 ? 's' : ''}</span>
@@ -1494,6 +1437,7 @@ async function retirerLaSelection(bouton) {
 //     photos choisies à la suite d'une parution existante.
 
 const PREFIXE_POUR = 'pour-';
+const PREFIXE_CARROUSEL = 'carrousel-';
 
 function libelleParution(pub) {
   const quand = pub.date_prevue
@@ -1503,6 +1447,11 @@ function libelleParution(pub) {
 }
 
 function enteteDuChoix() {
+  if (etat.pourGenre === 'carrousel') {
+    return `<p class="pht-pour-sur">Photos pour le carrousel</p>
+      <h2 class="pht-nom">${echapper(etat.pourCarrousel?.nom ?? '…')}</h2>
+      <span class="discret">Ce que tu coches entre dans le carrousel — l'ordre du post se fait là-bas</span>`;
+  }
   const pub = parutionDe(etat.pour);
   return `<p class="pht-pour-sur">Photos pour</p>
     <h2 class="pht-nom">${pub ? echapper(pub.titre) : 'Une parution'}</h2>
@@ -1556,9 +1505,16 @@ async function chargerLeChoix() {
   if (!id || etat.pourCharge === id || choixEnLecture === id) return;
   choixEnLecture = id;
   try {
-    const lignes = await api.photosDeLaParution(id);
+    let ids;
+    if (etat.pourGenre === 'carrousel') {
+      const c = await api.lireCarrousel(id);
+      etat.pourCarrousel = { id: c.id, nom: c.nom, medias: c.medias ?? [] };
+      ids = etat.pourCarrousel.medias.map((m) => m.photo_id).filter(Boolean);
+    } else {
+      ids = (await api.photosDeLaParution(id)).map((l) => l.photo_id);
+    }
     if (etat.pour !== id || etat.pourCharge === id) return;
-    etat.selection = new Set(lignes.map((l) => l.photo_id));
+    etat.selection = new Set(ids);
     etat.pourCharge = id;
     etat.modeSelection = true;
     dessiner();
@@ -1580,6 +1536,7 @@ function revenir() {
 async function garderLeChoix(bouton) {
   const id = etat.pour;
   if (!id) return;
+  if (etat.pourGenre === 'carrousel') return garderPourLeCarrousel(bouton);
   const ids = [...etat.selection];
   bouton.disabled = true;
   try {
@@ -1600,6 +1557,45 @@ async function garderLeChoix(bouton) {
     console.error('Choix non gardé', e);
     bouton.disabled = false;
     bulle("Ce n'est pas enregistré", 'Le choix des photos n’a pas pu être gardé.', bouton);
+  }
+}
+
+// LE CARROUSEL REPREND LE FICHIER, IL N'EN FAIT PAS DE COPIE : un média qui
+// porte `photo_id` montre une photo de la photothèque. Le choix ACCORDE — ce qui
+// est coché entre, ce qui est décoché sort, les fichiers propres au carrousel ne
+// sont jamais touchés.
+async function garderPourLeCarrousel(bouton) {
+  const c = etat.pourCarrousel;
+  if (!c) return;
+  const avant = new Set(c.medias.map((m) => m.photo_id).filter(Boolean));
+  const apres = new Set(etat.selection);
+  const entrees = [...apres].filter((x) => !avant.has(x)).map(photo).filter((p) => p?.cle);
+  const sorties = [...avant].filter((x) => !apres.has(x));
+  bouton.disabled = true;
+  try {
+    await api.ajouterMediasDeCarrousel(entrees.map((p) => ({
+      id: crypto.randomUUID(),
+      carrousel_id: c.id,
+      cle: p.cle,
+      nom: p.nom,
+      genre: 'photo',
+      type: 'image/jpeg',
+      taille: p.taille,
+      photo_id: p.id,
+    })));
+    if (sorties.length) await api.retirerPhotosDuCarrousel(c.id, sorties);
+    relireAuProchainMontage();
+    messageCourt(entrees.length || sorties.length
+      ? [entrees.length ? `${entrees.length} ajoutée${entrees.length > 1 ? 's' : ''}` : null,
+        sorties.length ? `${sorties.length} retirée${sorties.length > 1 ? 's' : ''}` : null]
+        .filter(Boolean).join(', ') + ` dans « ${c.nom} ».`
+      : 'Rien n’a changé.');
+    etat.pourCharge = null;
+    revenir();
+  } catch (e) {
+    console.error('Carrousel non nourri', e);
+    bouton.disabled = false;
+    bulle("Ce n'est pas enregistré", 'Les photos n’ont pas pu entrer dans le carrousel.', bouton);
   }
 }
 
@@ -1662,6 +1658,133 @@ async function chargerEnSilence() {
   if (!hote?.isConnected) hote = null;
   await charger();
   if (!hote) hote = ancien;
+}
+
+// --- La photo du Carnet, choisie dans la photothèque (étape 4b) --------------------------------
+//
+// La fiche d'une sortie au Carnet de terrain garde UNE photo, « celle dont je
+// suis fier ». Elle se choisit maintenant dans la photothèque, parmi celles du
+// match — ou parmi toutes, si le match n'en a pas.
+//
+// LE CARNET NE CHANGE PAS : la photo choisie lui est remise comme un FICHIER,
+// posé dans son champ, et c'est son enregistrement à lui qui la réduit et la
+// garde (bucket `moments`). Toutes les pages qui montrent la photo d'une sortie
+// — le mur de l'accueil, la matière, la vitrine du carrousel — continuent de la
+// lire là où elles la lisaient. Une seconde source pour la même photo aurait été
+// trente endroits à reprendre.
+
+let choixCarnet = null;
+
+/**
+ * Ouvre le choix et rend le fichier de la photo choisie, ou `null`.
+ * @param {{ evenementId?: string|null }} options
+ * @returns {Promise<File|null>}
+ */
+export async function choisirUnePhoto({ evenementId = null } = {}) {
+  if (!etat.photos) await chargerEnSilence();
+  const duMatch = evenementId ? photosDuMatch(evenementId) : [];
+  return new Promise((resoudre) => {
+    choixCarnet = { evenementId, tout: !duMatch.length, resoudre, enCours: null };
+    dessinerChoixCarnet();
+  });
+}
+
+function photosDuChoixCarnet() {
+  const c = choixCarnet;
+  if (!c) return [];
+  if (!c.tout && c.evenementId) {
+    // Les mieux notées d'abord : la photo du carnet est celle dont on est fier.
+    return photosDuMatch(c.evenementId).sort((a, b) => (b.note ?? 0) - (a.note ?? 0));
+  }
+  return [...(etat.photos ?? [])]
+    .sort((a, b) => (b.note ?? 0) - (a.note ?? 0) || (b.prise_le ?? '').localeCompare(a.prise_le ?? ''));
+}
+
+let fenetreCarnet = null;
+
+function fermerChoixCarnet(fichier = null) {
+  const c = choixCarnet;
+  choixCarnet = null;
+  fenetreCarnet?.remove();
+  fenetreCarnet = null;
+  if (!etat.ouverte && !etat.fenetreTri) document.body.classList.remove('pht-vue-ouverte');
+  c?.resoudre(fichier);
+}
+
+async function dessinerChoixCarnet() {
+  const c = choixCarnet;
+  if (!c) return;
+  if (!fenetreCarnet) {
+    fenetreCarnet = document.createElement('div');
+    fenetreCarnet.className = 'pht-fen-hote';
+    document.body.appendChild(fenetreCarnet);
+    fenetreCarnet.addEventListener('click', async (e) => {
+      if (e.target.closest('[data-carnet-fermer]') || e.target.classList.contains('pht-fen-fond')) {
+        fermerChoixCarnet(null);
+        return;
+      }
+      if (e.target.closest('[data-carnet-tout]')) {
+        choixCarnet.tout = !choixCarnet.tout;
+        dessinerChoixCarnet();
+        return;
+      }
+      const t = e.target.closest('[data-carnet-photo]');
+      if (!t || choixCarnet?.enCours) return;
+      const p = photo(t.dataset.carnetPhoto);
+      if (!p) return;
+      choixCarnet.enCours = p.id;
+      t.classList.add('choisie');
+      try {
+        if (!p.blob) {
+          if (!p.url) {
+            const a = (await adressesDe([p.cle]))[p.cle];
+            p.url = a?.original ?? null;
+            if (!p.url) throw new Error('Adresse absente');
+          }
+          const r = await fetch(p.url);
+          if (!r.ok) throw new Error(String(r.status));
+          p.blob = await r.blob();
+        }
+        fermerChoixCarnet(new File([p.blob], p.nom, { type: p.blob.type || 'image/jpeg' }));
+      } catch (err) {
+        console.error('Photo non récupérée', err);
+        if (choixCarnet) choixCarnet.enCours = null;
+        t.classList.remove('choisie');
+        bulle("Ce n'est pas passé", 'Cette photo n’a pas pu être récupérée. Réessaie.', t);
+      }
+    });
+  }
+  const liste = photosDuChoixCarnet();
+  const match = c.evenementId ? matchDe(c.evenementId) : null;
+  const aDuMatch = c.evenementId && photosDuMatch(c.evenementId).length;
+  fenetreCarnet.innerHTML = `
+    <div class="pht-fen-fond">
+      <div class="pht-fen pht-fen-large" role="dialog" aria-modal="true" aria-label="Choisir la photo du carnet">
+        <div class="pht-fen-tete">
+          <p class="pht-fen-titre">La photo du carnet</p>
+          <button type="button" class="car-icone" data-carnet-fermer aria-label="Fermer">${svg('fermer')}</button>
+        </div>
+        <p class="pht-carnet-sous discret">${c.tout
+          ? (aDuMatch ? 'Toute la photothèque, les mieux notées d’abord.' : 'Ce match n’a pas encore de photos : voici toute la photothèque.')
+          : `Les photos de ${echapper(match?.titre ?? 'ce match')}, les mieux notées d’abord.`}
+          ${aDuMatch ? `<button type="button" class="car-puce car-puce-mini" data-carnet-tout>${c.tout ? 'Ce match seulement' : 'Toute la photothèque'}</button>` : ''}</p>
+        ${liste.length
+          ? `<div class="pht-grille">${liste.map((p) => `<button type="button" class="pht-tuile" data-carnet-photo="${p.id}"
+                aria-label="Choisir ${echapper(p.nom)}">
+                <img data-vignette="${p.id}" alt="" loading="lazy" decoding="async"${p.vignette ? ` src="${echapper(p.vignette)}"` : ''}
+                  onload="this.parentNode.classList.add('prete')">${badgeNote(p)}</button>`).join('')}</div>`
+          : '<p class="car-liste-vide">La photothèque est vide. Importe un match d’abord.</p>'}
+      </div>
+    </div>`;
+  document.body.classList.add('pht-vue-ouverte');
+  // Les vignettes se signent après coup, et se posent sans redessiner.
+  const sans = liste.filter((p) => !p.vignette);
+  if (sans.length) {
+    await signer(sans);
+    for (const p of sans) {
+      fenetreCarnet?.querySelectorAll(`img[data-vignette="${p.id}"]`).forEach((img) => { if (p.vignette) img.src = p.vignette; });
+    }
+  }
 }
 
 // --- La visionneuse ---------------------------------------------------------------------------
@@ -1877,6 +2000,7 @@ function brancherLaFenetre() {
   if (fenetreBranchee) return;
   fenetreBranchee = true;
   document.addEventListener('keydown', (e) => {
+    if (choixCarnet && e.key === 'Escape') { e.preventDefault(); fermerChoixCarnet(null); return; }
     if (!etat.ouverte) return;
     // On écrit une étiquette ou un nom : les touches sont à lui.
     if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName ?? '')) return;
@@ -2044,7 +2168,11 @@ export default {
     hote.classList.add('car-hote', 'pht-hote');
     brancherLaFenetre();
     brancher(hote);
-    const pour = id?.startsWith(PREFIXE_POUR) ? id.slice(PREFIXE_POUR.length) : null;
+    // DEUX CHOIX POSSIBLES, une même recherche : pour une parution
+    // (`pour-<id>`) ou pour un carrousel (`carrousel-<id>`).
+    const genre = id?.startsWith(PREFIXE_POUR) ? 'parution'
+      : id?.startsWith(PREFIXE_CARROUSEL) ? 'carrousel' : null;
+    const pour = genre ? id.slice((genre === 'parution' ? PREFIXE_POUR : PREFIXE_CARROUSEL).length) : null;
     vueCourante = id === RECHERCHE || pour ? 'recherche' : id ? 'match' : 'liste';
     if (cible !== id) {
       etat.modeSelection = false;
@@ -2056,6 +2184,8 @@ export default {
     // CHOISIR POUR UNE PARUTION : la recherche, en sélection, avec ce qui est
     // déjà choisi — on part de là.
     etat.pour = pour;
+    etat.pourGenre = genre;
+    if (!pour) etat.pourCarrousel = null;
     if (pour) { etat.modeSelection = true; chargerLeChoix(); }
     cible = id;
     if (id) { etat.choisirMatch = false; chargerLesSorties(); }

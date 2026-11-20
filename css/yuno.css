@@ -6245,3 +6245,31 @@ body[data-espace="yuno"] #vue .pht-pour-menu select {
   border-radius: var(--rayon-etiquette);
 }
 .pht-apercu-lien { text-decoration: none; }
+
+/* ==========================================================================
+   LA PHOTOTHÈQUE, ÉTAPE 4b : LE CARROUSEL ET LE CARNET (20 novembre 2026)
+   ========================================================================== */
+
+/* Le carrousel : piocher dans la photothèque, ou y ranger ce qu'on importe. */
+.car-tout-gestes { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.car-depuis { text-decoration: none; }
+.car-ranger.actif { color: var(--texte); border-color: var(--texte-discret); }
+.car-ranger.actif svg { color: var(--accent); }
+.car-import .car-ranger,
+.car-import .car-depuis { margin-top: 2px; }
+
+/* Le choix de la photo du carnet : une fenêtre plus large, pour une planche. */
+.pht-fen.pht-fen-large { max-width: 52rem; }
+.pht-carnet-sous {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-8);
+  margin: calc(-1 * var(--espace-8)) 0 var(--espace-12);
+  font-size: 0.8125rem;
+}
+.pht-fen .pht-tuile { cursor: pointer; }
+.pht-fen .pht-tuile.choisie { outline: 2px solid var(--accent); outline-offset: -2px; }
+.pht-carnet-porte { margin-top: var(--espace-8); }
+.pht-carnet-porte svg { width: 14px; height: 14px; }
+.pht-carnet-choisie { display: block; margin-top: 4px; font-size: 0.75rem; }
