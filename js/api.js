@@ -3167,7 +3167,7 @@ export async function lirePhotos() {
     await client
       .from('photos')
       .select(
-        '*, evenement:evenements(id, titre, date_debut, competition), etiquettes:photos_etiquettes(etiquette_id), personnes:photos_personnes(contact_id)',
+        '*, evenement:evenements(id, titre, date_debut, competition), etiquettes:photos_etiquettes(etiquette_id), personnes:photos_personnes(contact_id), parutions:publications_photos(publication_id)',
       )
       .order('prise_le', { ascending: true, nullsFirst: false })
       .order('nom'),
@@ -3250,5 +3250,53 @@ export async function renommerEtiquette(id, nom) {
 
 export async function supprimerEtiquette(id) {
   const { error } = await client.from('etiquettes').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// --- Les photos d'une parution (photothèque, étape 4) -------------------------------
+
+// Les parutions de Yuno qu'on peut nourrir de photos : tout ce qui n'est pas
+// encore parti — les idées comme ce qui est programmé —, et ce qui est parti,
+// pour compter les publications de chaque photo.
+export async function lireParutionsYuno() {
+  return verifier(
+    await client
+      .from('publications')
+      .select('id, titre, format, date_prevue, statut, reseau')
+      .eq('espace', 'photo')
+      .order('date_prevue', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: false }),
+  );
+}
+
+export async function photosDeLaParution(publicationId) {
+  return verifier(
+    await client
+      .from('publications_photos')
+      .select('photo_id, ordre')
+      .eq('publication_id', publicationId)
+      .order('ordre'),
+  );
+}
+
+// Le choix est RÉÉCRIT en entier : il est petit (vingt photos au plus pour un
+// carrousel), et l'ordre compte — l'accorder ligne à ligne coûterait plus de
+// requêtes qu'il n'en économiserait.
+export async function garderLesPhotosDeLaParution(publicationId, photoIds) {
+  const { error: e1 } = await client.from('publications_photos').delete().eq('publication_id', publicationId);
+  if (e1) throw e1;
+  if (!photoIds.length) return;
+  const { error: e2 } = await client.from('publications_photos').insert(
+    photoIds.map((photo_id, ordre) => ({ publication_id: publicationId, photo_id, ordre })),
+  );
+  if (e2) throw e2;
+}
+
+// Ajouter à la suite, sans toucher à ce qui est déjà choisi.
+export async function ajouterPhotosALaParution(publicationId, photoIds, depuis = 0) {
+  const { error } = await client.from('publications_photos').upsert(
+    photoIds.map((photo_id, k) => ({ publication_id: publicationId, photo_id, ordre: depuis + k })),
+    { ignoreDuplicates: true },
+  );
   if (error) throw error;
 }

@@ -6138,3 +6138,110 @@ body[data-espace="yuno"] #vue .pht-competition input {
    que de l'écraser en deux mots empilés. */
 .pht-resultats .car-tout-tete { flex-wrap: wrap; }
 .pht-resultats .car-petit-titre { white-space: nowrap; }
+
+/* ==========================================================================
+   LA PHOTOTHÈQUE, ÉTAPE 4 : LES PHOTOS D'UNE PARUTION (20 novembre 2026)
+   ========================================================================== */
+
+.pht-pour-sur {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--texte-discret);
+}
+
+/* Pour une parution, la coche porte le RANG dans le post. */
+.pht-coche {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--fond);
+}
+.pht-tuile.choisie .pht-coche:not(:empty) { background-image: none; }
+
+/* « Publiée » : une marque discrète au coin, en ivoire — une photo déjà sortie
+   se repère, sans que celles qui ne le sont pas aient l'air en défaut. */
+.pht-publiee {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  padding: 1px 6px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--texte);
+  background: rgb(14 13 11 / 72%);
+  border-radius: 999px;
+  pointer-events: none;
+}
+.pht-tuile .car-envoi:not([data-envoi="fait"]) ~ .pht-publiee { display: none; }
+.pht-vie { font-size: 0.75rem; color: var(--accent); }
+
+/* Le menu des parutions : le menu du système, posé invisible sur la pastille. */
+.pht-pour-menu { position: relative; }
+body[data-espace="yuno"] #vue .pht-pour-menu select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 16px; /* sous 16 px, l'iPhone zoome la page au toucher */
+}
+@media (max-width: 44.99rem) {
+  .pht-barre-sel { flex-wrap: wrap; }
+  .pht-barre-sel .pht-barre-texte { flex-basis: 100%; }
+}
+
+/* --- L'aperçu dans la fiche d'une parution --- */
+.pub-photos { display: flex; flex-direction: column; align-items: flex-start; gap: var(--espace-8); margin: var(--espace-8) 0; }
+.pht-apercu-titre {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--texte-discret);
+}
+.pht-apercu { display: flex; flex-wrap: wrap; gap: 4px; }
+.pht-apercu-cadre {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  overflow: hidden;
+  background: var(--fond-releve);
+  border-radius: var(--rayon-etiquette);
+}
+.pht-apercu-cadre img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.pht-apercu-n {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  min-width: 15px;
+  padding: 0 3px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+  color: var(--fond);
+  background: var(--accent);
+  border-radius: 999px;
+}
+.pht-apercu-plus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  font-size: 0.8125rem;
+  color: var(--texte-discret);
+  background: var(--fond-releve);
+  border-radius: var(--rayon-etiquette);
+}
+.pht-apercu-lien { text-decoration: none; }

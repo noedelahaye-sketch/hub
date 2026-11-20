@@ -271,6 +271,7 @@ export function corpsPublication(pub, options = {}) {
     pastille = false,
     formats = false,
     trace = null,
+    photos = false,
   } = options;
   const suivant = cycle[cycle.indexOf(pub.statut) + 1];
   const datee = Boolean(pub.date_prevue);
@@ -295,6 +296,12 @@ export function corpsPublication(pub, options = {}) {
           : ''
       }
       ${pub.notes ? `<span class="discret pub-notes">${echapper(pub.notes)}</span>` : ''}
+      ${
+        // LES PHOTOS DE LA PARUTION (20 novembre 2026, photothèque de Yuno) :
+        // la fiche pose la place, js/phototheque.js la remplit — la fiche n'a
+        // pas à connaître la photothèque, et le FCH n'en a pas.
+        photos && fenetre ? `<div class="pub-photos" data-photos-pub="${echapper(pub.id)}"></div>` : ''
+      }
       ${
         // `post` reste reconnu à côté de `carrousel` : les deux formats ont
         // fusionné le 15 août 2026, et d'anciennes lignes peuvent encore

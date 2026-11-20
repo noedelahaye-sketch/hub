@@ -88,7 +88,7 @@ import pageProjet from './projet.js';
 // filtre voyage déjà par la route (`#taches/photo`).
 import pageTaches from './taches.js';
 import outilCarrousel from './carrousel.js';
-import outilPhototheque from './phototheque.js';
+import outilPhototheque, { apercuParution } from './phototheque.js';
 import { animerLaCoche } from './mouvements.js';
 import { bulle, suivreLesGestes, dernierGeste } from './bulle.js';
 import {
@@ -2569,6 +2569,9 @@ function optionsDIdee(etat) {
     piliers: PILIERS,
     formats: true,
     trace: (pub) => traceDuFormat(etat.publications, pub),
+    // La fiche montre les photos choisies pour la parution, et la porte pour
+    // les choisir dans la photothèque.
+    photos: true,
     // L'état se règle sur la tuile de la banque comme sur la fiche : c'est la
     // même pastille, et c'est le geste qu'on vient faire le plus souvent.
     pastille: true,
@@ -3184,6 +3187,7 @@ function vueEditorial(etat) {
             // L'état d'une publication se règle depuis sa tuile, ici comme sur
             // le hub (27 août 2026).
             statutModifiable: true,
+            photosDeParution: true,
           })
         : ''
     }
@@ -3391,6 +3395,7 @@ function vueCalendrier(etat) {
             actions: actionsPreparation(etat),
             champsEnPlus: champsDesClubs(etat.detailCal, etat.pistes),
             statutModifiable: true,
+            photosDeParution: true,
           })
         : ''
     }
@@ -6840,6 +6845,10 @@ export default {
                data-action="reessayer">Réessayer</button></p>`,
         );
       }
+
+      // LA FICHE D'UNE PARUTION porte la place de ses photos : la photothèque
+      // la remplit (js/phototheque.js).
+      section.querySelectorAll('[data-photos-pub]').forEach((el) => apercuParution(el));
 
       // LE MODULE DU CAP S'INSTALLE DANS SON HÔTE, qui vient d'être écrit. Il
       // apporte ses propres écouteurs, son propre chargement et son propre

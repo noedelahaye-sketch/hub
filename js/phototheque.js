@@ -65,12 +65,23 @@ const etat = {
   filtres: nouveauxFiltres(),
   ordre: 'recentes',     // 'recentes' | 'notees'
   listeVue: [],          // les photos que la visionneuse fait défiler, dans l'ordre
+  // Les parutions (étape 4).
+  parutions: null,       // les publications de Yuno : [{ id, titre, format, date_prevue, statut }]
+  pour: null,            // la parution dont on choisit les photos, ou null
+  pourCharge: null,      // la parution dont le choix a été lu
 };
+
+const MAX_CARROUSEL = 20;
+const parutionDe = (id) => (etat.parutions ?? []).find((x) => x.id === id) ?? null;
+// UNE PHOTO EST « PUBLIÉE N FOIS » quand N parutions qui la portent sont
+// parties. Rien ne se stocke : le compteur suit l'état des parutions.
+const foisPubliee = (p) => (p.parutions ?? []).filter((id) => parutionDe(id)?.statut === 'publie').length;
+const enAttente = (p) => (p.parutions ?? []).map(parutionDe).filter((x) => x && x.statut !== 'publie');
 
 function nouveauxFiltres() {
   return {
     mois: new Set(), competitions: new Set(), matchs: new Set(), formats: new Set(),
-    etiquettes: new Set(), personnes: new Set(), note: 0,
+    etiquettes: new Set(), personnes: new Set(), note: 0, jamais: false,
   };
 }
 
@@ -127,11 +138,13 @@ const momentLong = (iso) =>
 
 async function charger() {
   try {
-    const [lignes, etiquettes, personnes] = await Promise.all([
+    const [lignes, etiquettes, personnes, parutions] = await Promise.all([
       api.lirePhotos(),
       api.lireEtiquettes(),
       api.lirePersonnesPossibles(),
+      api.lireParutionsYuno(),
     ]);
+    etat.parutions = parutions;
     etat.etiquettes = etiquettes;
     etat.personnes = personnes;
     const anciennes = new Map((etat.photos ?? []).map((p) => [p.id, p]));
@@ -141,6 +154,7 @@ async function charger() {
         ...l,
         etiquettes: new Set((l.etiquettes ?? []).map((e) => e.etiquette_id)),
         personnes: new Set((l.personnes ?? []).map((e) => e.contact_id)),
+        parutions: (l.parutions ?? []).map((e) => e.publication_id),
         // Ce que cet appareil a déjà sous la main ne se redemande pas.
         vignette: deja?.vignette ?? null,
         url: deja?.url ?? null,
@@ -309,6 +323,7 @@ function importer(fichiers) {
       url: null,
       blob: null,
       note: null,
+      parutions: [],
       etiquettes: new Set(),
       personnes: new Set(),
       envoi: 'preparation',
@@ -570,8 +585,8 @@ function tuile(p) {
       <span class="car-envoi" data-envoi-de="${p.id}"
         data-envoi="${p.envoi === 'preparation' ? 'attente' : p.envoi}"
         style="--avance:${p.progression ?? 0}" aria-hidden="true"></span>
-      ${etat.modeSelection ? '<span class="pht-coche" aria-hidden="true"></span>' : ''}
-      ${badgeNote(p)}
+      ${etat.modeSelection ? `<span class="pht-coche" aria-hidden="true">${rangDansLeChoix(p)}</span>` : ''}
+      ${badgeNote(p)}${badgePubliee(p)}
     </button>`;
 }
 
@@ -721,7 +736,7 @@ const formatDe = (p) => p.format ?? (p.largeur && p.hauteur
 const nbFiltres = () => {
   const f = etat.filtres;
   return f.mois.size + f.competitions.size + f.matchs.size + f.formats.size
-    + f.etiquettes.size + f.personnes.size + (f.note ? 1 : 0);
+    + f.etiquettes.size + f.personnes.size + (f.note ? 1 : 0) + (f.jamais ? 1 : 0);
 };
 
 function correspond(p) {
@@ -731,6 +746,7 @@ function correspond(p) {
   if (f.matchs.size && !f.matchs.has(cleDuMatch(p))) return false;
   if (f.formats.size && !f.formats.has(formatDe(p))) return false;
   if (f.note && !((p.note ?? 0) >= f.note)) return false;
+  if (f.jamais && foisPubliee(p) > 0) return false;
   for (const id of f.etiquettes) if (!p.etiquettes?.has(id)) return false;
   for (const id of f.personnes) if (!p.personnes?.has(id)) return false;
   return true;
@@ -799,7 +815,13 @@ function gabaritFiltres() {
        aria-label="${k} étoile${k > 1 ? 's' : ''} et plus" aria-pressed="${f.note === k}">
        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2l2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6L3.4 9.5l6-.8z"/></svg>
      </button>`).join('');
+  // « JAMAIS PUBLIÉE » : la question de Noé — retrouver les bonnes photos encore
+  // jamais sorties. Elle s'offre dès qu'une photo l'est, comme tout filtre.
+  const jamais = (etat.photos ?? []).filter((p) => !foisPubliee(p)).length;
+  const publication = `<button type="button" class="pht-etiq" data-filtre-jamais data-etat="${f.jamais ? 'tout' : 'rien'}"
+      aria-pressed="${f.jamais}">Jamais publiée <span class="pht-etiq-n">${jamais}</span></button>`;
   return `
+    ${blocFiltre('Publication', publication)}
     ${blocFiltre('Période', mois)}
     ${blocFiltre('Compétition', competitions)}
     <div class="pht-tri-famille">
@@ -824,7 +846,7 @@ function gabaritRecherche() {
   return `
     <div class="car-tete">
       <a class="car-retour" href="#yuno/phototheque" aria-label="La photothèque" title="La photothèque">${svg('retour', 20)}</a>
-      <div class="pht-titre"><h2 class="pht-nom">Rechercher</h2></div>
+      <div class="pht-titre">${etat.pour ? enteteDuChoix() : '<h2 class="pht-nom">Rechercher</h2>'}</div>
     </div>
     <div class="pht-recherche">
       <details class="pht-filtres" data-pht-filtres${filtresOuverts() ? ' open' : ''}>
@@ -842,7 +864,7 @@ function gabaritRecherche() {
               <button type="button" class="car-puce${etat.ordre === 'recentes' ? ' actif' : ''}" data-ordre="recentes" aria-pressed="${etat.ordre === 'recentes'}">Récentes</button>
               <button type="button" class="car-puce${etat.ordre === 'notees' ? ' actif' : ''}" data-ordre="notees" aria-pressed="${etat.ordre === 'notees'}">Mieux notées</button>
             </span>
-            ${etat.modeSelection
+            ${etat.pour ? '' : etat.modeSelection
               ? `<button type="button" class="car-puce" data-pht="tout" data-pht-sel-compte>${toutEstChoisi() ? 'Tout désélectionner' : 'Tout sélectionner'}</button>
                  <button type="button" class="car-puce" data-pht="fin-selection">Terminé</button>`
               : `<button type="button" class="car-puce" data-pht="selectionner"${liste.length ? '' : ' disabled'}>Sélectionner</button>`}
@@ -1108,10 +1130,21 @@ function redessinerTri() {
   majBarreSelection();
 }
 
+const rangDansLeChoix = (p) => {
+  if (!etat.pour || !etat.selection.has(p.id)) return '';
+  return String([...etat.selection].indexOf(p.id) + 1);
+};
+const badgePubliee = (p) => {
+  const n = foisPubliee(p);
+  return n ? `<span class="pht-publiee" title="Publiée ${n} fois" aria-label="Publiée ${n} fois">↗${n > 1 ? ` ${n}` : ''}</span>` : '';
+};
+
 function majTuile(p) {
   hote?.querySelectorAll(`[data-ouvrir="${p.id}"]`).forEach((t) => {
     t.querySelector('.pht-note')?.remove();
     if (p.note) t.insertAdjacentHTML('beforeend', badgeNote(p));
+    const coche = t.querySelector('.pht-coche');
+    if (coche) coche.textContent = rangDansLeChoix(p);
     t.classList.toggle('choisie', etat.selection.has(p.id));
   });
 }
@@ -1317,11 +1350,21 @@ function toucherEnSelection(id, intervalle) {
     const [a, b] = [liste.indexOf(etat.derniereTouchee), liste.indexOf(id)].sort((x, y) => x - y);
     if (a >= 0 && b >= 0) liste.slice(a, b + 1).forEach((x) => etat.selection.add(x));
   } else if (etat.selection.has(id)) etat.selection.delete(id);
-  else etat.selection.add(id);
+  else {
+    // INSTAGRAM NE PREND PAS PLUS DE VINGT IMAGES DANS UN CARROUSEL.
+    const pub = etat.pour ? parutionDe(etat.pour) : null;
+    if (pub?.format === 'carrousel' && etat.selection.size >= MAX_CARROUSEL) {
+      bulle('C’est complet', `Un carrousel prend ${MAX_CARROUSEL} photos au plus. Retires-en une pour en choisir une autre.`,
+        hote?.querySelector(`[data-ouvrir="${id}"]`));
+      return;
+    }
+    etat.selection.add(id);
+  }
   etat.derniereTouchee = id;
   etat.confirmerRetraitSel = false;
   majTuile(photo(id) ?? { id });
-  if (intervalle) for (const p of photosAffichees()) majTuile(p);
+  // Pour une parution, la coche porte le RANG : retirer la 3e renumérote tout.
+  if (intervalle || etat.pour) for (const p of photosAffichees()) majTuile(p);
   majBarreSelection();
 }
 
@@ -1343,6 +1386,15 @@ function quitterLaSelection() {
 function gabaritBarreSelection() {
   if (!etat.modeSelection) return '';
   const n = etat.selection.size;
+  if (etat.pour) {
+    const pub = parutionDe(etat.pour);
+    const max = pub?.format === 'carrousel' ? MAX_CARROUSEL : null;
+    return `<div class="pht-barre-sel" data-pht-barre>
+        <span class="pht-barre-texte"><span class="chiffre">${n}</span>${max ? ` / ${max}` : ''} choisie${n > 1 ? 's' : ''}</span>
+        <button type="button" class="car-puce" data-pht="annuler-pour">Annuler</button>
+        <button type="button" class="car-bouton-or" data-pht="garder-pour">Garder</button>
+      </div>`;
+  }
   return `<div class="pht-barre-sel" data-pht-barre>
       ${etat.confirmerRetraitSel
         ? `<span class="pht-barre-texte">Retirer ${n} photo${n > 1 ? 's' : ''} ? C'est définitif.</span>
@@ -1351,6 +1403,7 @@ function gabaritBarreSelection() {
         : `<span class="pht-barre-texte"><span class="chiffre">${n}</span> sélectionnée${n > 1 ? 's' : ''}</span>
            <button type="button" class="car-icone" data-pht="retirer-sel" aria-label="Retirer la sélection"
              title="Retirer"${n ? '' : ' disabled'}>${svg('corbeille')}</button>
+           ${menuDesParutions(n)}
            <button type="button" class="car-bouton-or" data-pht="trier-sel"${n ? '' : ' disabled'}>Trier</button>`}
     </div>`;
 }
@@ -1430,6 +1483,187 @@ async function retirerLaSelection(bouton) {
   }
 }
 
+// --- Les photos d'une parution (étape 4) ------------------------------------------------------
+//
+// LE BUT FINAL DE LA PHOTOTHÈQUE : choisir les photos d'un post parmi toutes
+// celles du site. Deux chemins y mènent, et ils écrivent la même table :
+//   — depuis la FICHE d'une idée ou d'une parution, « Choisir les photos »
+//     ouvre la recherche en mode choix (`#yuno/phototheque/pour-<id>`) : on
+//     filtre, on touche dans l'ordre du post, on garde ;
+//   — depuis une SÉLECTION de la photothèque, « Pour une parution » ajoute les
+//     photos choisies à la suite d'une parution existante.
+
+const PREFIXE_POUR = 'pour-';
+
+function libelleParution(pub) {
+  const quand = pub.date_prevue
+    ? new Date(`${pub.date_prevue}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+    : 'idée';
+  return `${pub.titre} · ${quand}`;
+}
+
+function enteteDuChoix() {
+  const pub = parutionDe(etat.pour);
+  return `<p class="pht-pour-sur">Photos pour</p>
+    <h2 class="pht-nom">${pub ? echapper(pub.titre) : 'Une parution'}</h2>
+    ${pub ? `<span class="discret">${echapper([pub.format === 'carrousel' ? 'Carrousel' : pub.format === 'reel' ? 'Reel' : pub.format === 'story' ? 'Story' : null,
+      pub.date_prevue ? jourCourt(`${pub.date_prevue}T12:00:00`) : 'Dans la banque d’idées'].filter(Boolean).join(' · '))}
+      · touche les photos dans l'ordre du post</span>` : ''}`;
+}
+
+// LE MENU DES PARUTIONS, sur la barre d'une sélection : celles qui ne sont pas
+// encore parties, les programmées d'abord (la plus proche en tête), puis les
+// idées. Le menu du système, posé sur une pastille, comme le choix du match.
+function menuDesParutions(n) {
+  const ouvertes = (etat.parutions ?? []).filter((x) => x.statut !== 'publie');
+  if (!ouvertes.length || !n) return '';
+  const datees = ouvertes.filter((x) => x.date_prevue).sort((a, b) => a.date_prevue.localeCompare(b.date_prevue));
+  const idees = ouvertes.filter((x) => !x.date_prevue);
+  const options = (liste) => liste.map((x) => `<option value="${x.id}">${echapper(libelleParution(x))}</option>`).join('');
+  return `<label class="car-puce pht-pour-menu">
+      <span>Pour une parution</span>
+      <select data-pht-parution aria-label="Ajouter la sélection à une parution">
+        <option value="" selected disabled>Pour une parution</option>
+        ${datees.length ? `<optgroup label="Programmées">${options(datees)}</optgroup>` : ''}
+        ${idees.length ? `<optgroup label="Idées">${options(idees)}</optgroup>` : ''}
+      </select>
+    </label>`;
+}
+
+// Ce que la visionneuse dit de la vie d'une photo : où elle est partie, où elle
+// attend de partir. Un fait, jamais un reproche — une photo jamais publiée ne
+// porte aucune mention.
+function vieDeLaPhoto(p) {
+  const n = foisPubliee(p);
+  const attente = enAttente(p);
+  const morceaux = [];
+  if (n) morceaux.push(`Publiée ${n} fois`);
+  if (attente.length === 1) morceaux.push(`choisie pour « ${echapper(attente[0].titre)} »`);
+  else if (attente.length > 1) morceaux.push(`choisie pour ${attente.length} parutions`);
+  if (!morceaux.length) return '';
+  const phrase = morceaux.join(', ');
+  return `<span class="pht-vie">${phrase[0].toUpperCase()}${phrase.slice(1)}</span>`;
+}
+
+// UNE SEULE LECTURE À LA FOIS : le site monte l'écran deux fois de suite à
+// l'ouverture, et une seconde lecture arrivée APRÈS les premières touches
+// effaçait l'ordre qu'on venait de composer (mesuré : le post gardé était
+// l'ancien).
+let choixEnLecture = null;
+
+async function chargerLeChoix() {
+  const id = etat.pour;
+  if (!id || etat.pourCharge === id || choixEnLecture === id) return;
+  choixEnLecture = id;
+  try {
+    const lignes = await api.photosDeLaParution(id);
+    if (etat.pour !== id || etat.pourCharge === id) return;
+    etat.selection = new Set(lignes.map((l) => l.photo_id));
+    etat.pourCharge = id;
+    etat.modeSelection = true;
+    dessiner();
+  } catch (e) {
+    console.error('Choix de la parution non lu', e);
+    bulle("Ce n'est pas passé", 'Les photos de cette parution n’ont pas pu être lues.');
+  } finally {
+    if (choixEnLecture === id) choixEnLecture = null;
+  }
+}
+
+function revenir() {
+  // On est venu de la fiche : on y retourne. Sans histoire (lien ouvert seul),
+  // la photothèque est le repli.
+  if (history.length > 1) history.back();
+  else location.hash = '#yuno/phototheque';
+}
+
+async function garderLeChoix(bouton) {
+  const id = etat.pour;
+  if (!id) return;
+  const ids = [...etat.selection];
+  bouton.disabled = true;
+  try {
+    await api.garderLesPhotosDeLaParution(id, ids);
+    const choisies = new Set(ids);
+    for (const p of etat.photos ?? []) {
+      const avait = p.parutions.includes(id);
+      if (choisies.has(p.id) && !avait) p.parutions = [...p.parutions, id];
+      if (!choisies.has(p.id) && avait) p.parutions = p.parutions.filter((x) => x !== id);
+    }
+    const pub = parutionDe(id);
+    messageCourt(ids.length
+      ? `${ids.length} photo${ids.length > 1 ? 's' : ''} pour « ${pub?.titre ?? 'la parution'} ».`
+      : 'La parution n’a plus de photos.');
+    etat.pourCharge = null;
+    revenir();
+  } catch (e) {
+    console.error('Choix non gardé', e);
+    bouton.disabled = false;
+    bulle("Ce n'est pas enregistré", 'Le choix des photos n’a pas pu être gardé.', bouton);
+  }
+}
+
+async function ajouterAUneParution(select) {
+  const id = select.value;
+  const pub = parutionDe(id);
+  const cibles = [...etat.selection].map(photo).filter((p) => p && (p.enBase || p.envoi === 'fait'));
+  select.value = '';
+  if (!pub || !cibles.length) return;
+  const nouvelles = cibles.filter((p) => !p.parutions.includes(id));
+  if (!nouvelles.length) { messageCourt(`Elles sont déjà dans « ${pub.titre} ».`); return; }
+  const deja = (etat.photos ?? []).filter((p) => p.parutions.includes(id)).length;
+  if (pub.format === 'carrousel' && deja + nouvelles.length > MAX_CARROUSEL) {
+    bulle('C’est trop', `« ${pub.titre} » est un carrousel : ${MAX_CARROUSEL} photos au plus, il en a déjà ${deja}.`, select);
+    return;
+  }
+  nouvelles.forEach((p) => { p.parutions = [...p.parutions, id]; });
+  try {
+    await api.ajouterPhotosALaParution(id, nouvelles.map((p) => p.id), deja);
+    messageCourt(`${nouvelles.length} photo${nouvelles.length > 1 ? 's' : ''} ajoutée${nouvelles.length > 1 ? 's' : ''} à « ${pub.titre} ».`);
+  } catch (e) {
+    console.error('Photos non ajoutées', e);
+    nouvelles.forEach((p) => { p.parutions = p.parutions.filter((x) => x !== id); });
+    bulle("Ce n'est pas enregistré", 'Les photos n’ont pas pu être ajoutées.', select);
+  }
+}
+
+// L'APERÇU DANS LA FICHE D'UNE PARUTION (site Yuno) : la rangée de ses photos,
+// dans l'ordre du post, et la porte pour les choisir. La fiche n'en sait rien
+// d'autre : elle pose un `[data-photos-pub]`, ce module le remplit.
+export async function apercuParution(element) {
+  const id = element.dataset.photosPub;
+  if (!id || element.dataset.rempli === id) return;
+  element.dataset.rempli = id;
+  const lien = (texte) => `<a class="car-puce pht-apercu-lien" href="#yuno/phototheque/${PREFIXE_POUR}${id}">${svg('ajouter', 14)}<span>${texte}</span></a>`;
+  element.innerHTML = `<p class="pht-apercu-titre">Les photos</p>${lien('Choisir les photos')}`;
+  try {
+    const [lignes] = await Promise.all([api.photosDeLaParution(id), etat.photos ? null : chargerEnSilence()]);
+    const photos = lignes.map((l) => photo(l.photo_id)).filter(Boolean);
+    if (!photos.length) return;
+    await signer(photos);
+    if (!element.isConnected) return;
+    const montrees = photos.slice(0, 8);
+    element.innerHTML = `
+      <p class="pht-apercu-titre">Les photos · <span class="chiffre">${photos.length}</span></p>
+      <div class="pht-apercu">${montrees.map((p, k) => `<span class="pht-apercu-cadre">
+          ${p.vignette ? `<img src="${echapper(p.vignette)}" alt="" loading="lazy" decoding="async">` : ''}
+          <span class="pht-apercu-n">${k + 1}</span></span>`).join('')}
+        ${photos.length > montrees.length ? `<span class="pht-apercu-plus">+${photos.length - montrees.length}</span>` : ''}
+      </div>
+      ${lien('Changer le choix')}`;
+  } catch (e) {
+    console.error('Aperçu des photos impossible', e);
+  }
+}
+
+// Le chargement, sans écran derrière : la fiche lit la photothèque sans l'ouvrir.
+async function chargerEnSilence() {
+  const ancien = hote;
+  if (!hote?.isConnected) hote = null;
+  await charger();
+  if (!hote) hote = ancien;
+}
+
 // --- La visionneuse ---------------------------------------------------------------------------
 
 function gabaritVisionneuse() {
@@ -1461,6 +1695,7 @@ function gabaritVisionneuse() {
         <p class="pht-vue-infos">
           <span>${p.prise_le ? echapper(momentLong(p.prise_le)) : 'Date inconnue'}</span>
           <span class="discret">${[format ? formats[format] : null, p.largeur ? `${p.largeur} × ${p.hauteur}` : null, echapper(p.nom)].filter(Boolean).join(' · ')}</span>
+          ${vieDeLaPhoto(p)}
         </p>
         <div class="pht-vue-actions">
           ${etat.confirmerRetrait
@@ -1711,6 +1946,8 @@ function brancher(racine) {
       else if (quoi === 'retirer-sel') { etat.confirmerRetraitSel = true; majBarreSelection(); }
       else if (quoi === 'garder-sel') { etat.confirmerRetraitSel = false; majBarreSelection(); }
       else if (quoi === 'retirer-sel-oui') retirerLaSelection(action);
+      else if (quoi === 'garder-pour') garderLeChoix(action);
+      else if (quoi === 'annuler-pour') { etat.pourCharge = null; revenir(); }
       else if (quoi === 'effacer-filtres') {
         e.preventDefault();
         changerFiltres(() => { etat.filtres = nouveauxFiltres(); });
@@ -1724,6 +1961,10 @@ function brancher(racine) {
         const ens = etat.filtres[famille];
         if (ens.has(valeur)) ens.delete(valeur); else ens.add(valeur);
       });
+      return;
+    }
+    if (e.target.closest('[data-filtre-jamais]')) {
+      changerFiltres(() => { etat.filtres.jamais = !etat.filtres.jamais; });
       return;
     }
     const note = e.target.closest('[data-filtre-note]');
@@ -1754,6 +1995,10 @@ function brancher(racine) {
   racine.addEventListener('change', (e) => {
     if (e.target.matches('[data-pht-competition]')) {
       poserCompetition(e.target);
+      return;
+    }
+    if (e.target.matches('[data-pht-parution]')) {
+      ajouterAUneParution(e.target);
       return;
     }
     if (e.target.matches('[data-pht-match]')) {
@@ -1799,16 +2044,22 @@ export default {
     hote.classList.add('car-hote', 'pht-hote');
     brancherLaFenetre();
     brancher(hote);
-    vueCourante = id === RECHERCHE ? 'recherche' : id ? 'match' : 'liste';
+    const pour = id?.startsWith(PREFIXE_POUR) ? id.slice(PREFIXE_POUR.length) : null;
+    vueCourante = id === RECHERCHE || pour ? 'recherche' : id ? 'match' : 'liste';
     if (cible !== id) {
       etat.modeSelection = false;
       etat.selection = new Set();
       etat.fenetreTri = false;
+      etat.pourCharge = null;
       dessinerFenetreTri();
     }
+    // CHOISIR POUR UNE PARUTION : la recherche, en sélection, avec ce qui est
+    // déjà choisi — on part de là.
+    etat.pour = pour;
+    if (pour) { etat.modeSelection = true; chargerLeChoix(); }
     cible = id;
     if (id) { etat.choisirMatch = false; chargerLesSorties(); }
-    if (id === RECHERCHE) cible = RECHERCHE;
+    if (id === RECHERCHE || pour) cible = id;
     dessiner();
     const enCours = (etat.photos ?? []).some(enRoute);
     if (!etat.photos || (!enCours && Date.now() - etat.chargeLe > RELIRE_APRES_MS)) charger();

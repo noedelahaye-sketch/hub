@@ -2173,7 +2173,8 @@ qui pourra verser dans la réserve si Noé le dit.
 | 1 | la réserve, l'import par lot rattaché à un match, la grille, la visionneuse | **faite** |
 | 2 | le tri : étoiles, étiquettes en familles (style, ce que ça raconte, qui — relié au réseau), sélection multiple, plein écran au clavier et au doigt | **faite** |
 | 3 | la recherche : match, période, compétition (posée sur le match), étiquettes, qui, format, note minimale ; renommer et supprimer une étiquette | **faite** — « jamais publiée » attend le compteur de l'étape 4 |
-| 4 | le lien aux parutions : choisir les photos d'une parution, compteur « publiée N fois » (les parutions déclarées publiées, pas les téléchargements), le carrousel et le Carnet qui piochent | à faire |
+| 4a | le lien aux parutions : choisir les photos d'une parution, compteur « publiée N fois », filtre « jamais publiée » | **faite** |
+| 4b | le carrousel qui pioche dans la photothèque (et son import qui peut y verser), la photo du Carnet choisie dans la photothèque | à faire |
 
 **UNE VERSION ALLÉGÉE, PAS L'ORIGINAL** (choix de Noé) : chaque photo est
 ramenée à 2 160 px au plus grand côté, en JPEG 92 %, sur l'appareil qui importe.
@@ -2252,6 +2253,30 @@ deux orthographes feraient deux filtres.
 **UNE ÉTIQUETTE SE RENOMME ET SE SUPPRIME** depuis le panneau de tri
 (« Modifier » à côté de sa famille), avec le nombre de photos qui la portent.
 La suppression demande un second appui : elle emporte ses liens.
+
+**LES PHOTOS D'UNE PARUTION (étape 4a) — le but final.** Table
+`publications_photos` (parution, photo, `ordre`). Deux chemins, une table :
+- **depuis la fiche** d'une idée (banque) ou d'une parution (calendrier,
+  éditorial), la rangée « Les photos » montre le choix dans l'ordre du post et
+  mène à `#yuno/phototheque/pour-<id>` : la recherche, en sélection, avec ce
+  qui est déjà choisi. **On touche dans l'ordre du post** — la coche porte le
+  rang, retirer la 3e renumérote — et « Garder » réécrit le choix puis ramène à
+  la fiche. Un carrousel plafonne à 20 ;
+- **depuis une sélection** de la photothèque, « Pour une parution » ajoute les
+  photos à la suite d'une parution pas encore partie (les programmées d'abord,
+  puis les idées).
+
+**« PUBLIÉE N FOIS » NE SE STOCKE PAS** : c'est le nombre de parutions à l'état
+`publie` qui portent la photo — la règle choisie par Noé (« les posts déclarés
+publiés », pas les téléchargements). Le compteur suit donc l'état des
+parutions, il ne peut pas mentir. Une marque ↗ au coin de la tuile, une phrase
+dans la visionneuse (« Publiée 1 fois, choisie pour … »), et le filtre
+**« Jamais publiée »** en tête de la recherche. Une photo jamais sortie ne
+porte AUCUNE mention : ce n'est pas un défaut, c'est une réserve.
+
+*Piège payé en l'écrivant : le site monte l'écran deux fois à l'ouverture, et
+une seconde lecture du choix, arrivée après les premières touches, effaçait
+l'ordre composé. Une seule lecture à la fois.*
 
 Tables : `photos.note`, `etiquettes` (famille `style`|`recit`, nom unique par
 famille sans casse), `photos_etiquettes`, `photos_personnes` (vers `contacts`).

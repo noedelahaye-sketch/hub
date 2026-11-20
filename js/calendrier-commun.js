@@ -3863,6 +3863,9 @@ export function fenetreDetail(
     // éditorial sur leur propre page ; un bouton sans effet vaut moins que pas
     // de bouton du tout.
     statutModifiable = false,
+    // Les photos d'une parution (site Yuno, 20 novembre 2026) : la fenêtre pose
+    // la place, js/phototheque.js la remplit. Les autres espaces n'en ont pas.
+    photosDeParution = false,
   } = {},
 ) {
   const enTete = `
@@ -3925,6 +3928,8 @@ export function fenetreDetail(
     )}${echapper(finit)}</p>
     ${element.detail ? `<p class="cal-detail-ligne">${echapper(element.detail)}</p>` : ''}
     ${element.notes ? `<p class="discret cal-detail-ligne">${echapper(element.notes)}</p>` : ''}
+    ${photosDeParution && element.type === 'publication'
+      ? `<div class="pub-photos" data-photos-pub="${echapper(element.id)}"></div>` : ''}
     <div class="cal-detail-actions">
       ${actions}
       <button type="button" class="bouton-icone" data-modifier-element
