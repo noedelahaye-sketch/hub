@@ -5825,3 +5825,238 @@ body.pht-vue-ouverte { overflow: hidden; }
 @media (min-width: 75rem) {
   .creer-lieux { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
+
+/* ==========================================================================
+   LA PHOTOTHÈQUE, ÉTAPE 2 : LE TRI (20 novembre 2026)
+   ========================================================================== */
+
+/* --- La visionneuse gagne son panneau ------------------------------------------
+   Sur ordinateur, la photo à gauche et le tri à droite : on note au clavier
+   sans quitter la photo des yeux. Sur téléphone, la photo en haut et le tri
+   dessous, qui défile — on étiquette au pouce. */
+.pht-vue-corps {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.pht-vue-corps .pht-vue-scene { flex: none; height: 52vh; height: 52dvh; }
+.pht-vue-cote { flex: none; padding: var(--espace-8) 0 var(--espace-16); }
+@media (min-width: 60rem) {
+  .pht-vue-corps {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 21rem;
+    gap: var(--espace-16);
+    overflow: hidden;
+  }
+  .pht-vue-corps .pht-vue-scene { height: auto; }
+  .pht-vue-cote {
+    min-height: 0;
+    overflow-y: auto;
+    padding: var(--espace-12) var(--espace-16);
+    background: var(--fond-carte);
+    border-radius: var(--rayon-carte);
+  }
+}
+
+/* --- Le panneau de tri --- */
+.pht-tri { display: flex; flex-direction: column; gap: var(--espace-16); }
+.pht-tri-famille { display: flex; flex-direction: column; gap: var(--espace-8); }
+.pht-tri-titre {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--texte-discret);
+}
+.pht-tri-note-mixte { margin-left: 6px; font-weight: 400; letter-spacing: normal; text-transform: none; }
+
+/* LES ÉTOILES SONT DE L'OR, et c'est la seule place de l'or dans ce panneau :
+   le kit le réserve à ce qui compte — une note en est. */
+.pht-etoiles { display: flex; gap: 2px; }
+.pht-etoile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  color: var(--texte-discret);
+  background: transparent;
+  border: 0;
+  border-radius: var(--rayon-controle);
+}
+.pht-etoile svg { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
+.pht-etoile.pleine { color: var(--accent); }
+.pht-etoile.pleine svg { fill: currentColor; }
+.pht-etoile:hover { background: rgb(255 255 255 / 5%); }
+
+/* LES ÉTIQUETTES SONT DES PUCES DU KIT : contour fin au repos, ivoire pleine
+   quand elles sont posées, à moitié quand une partie seulement de la
+   sélection les porte. */
+.pht-etiqs { display: flex; flex-wrap: wrap; gap: 6px; }
+.pht-etiq {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 var(--espace-12);
+  font-size: 0.8125rem;
+  color: var(--texte-doux);
+  background: transparent;
+  border: 1px solid var(--bordure);
+  border-radius: 999px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.pht-etiq:hover { border-color: var(--texte-discret); color: var(--texte); }
+.pht-etiq[data-etat="tout"] { color: var(--fond); background: var(--texte); border-color: var(--texte); font-weight: 600; }
+.pht-etiq[data-etat="partie"] {
+  color: var(--texte);
+  background: linear-gradient(90deg, rgb(246 242 233 / 22%) 50%, transparent 50%);
+  border-color: var(--texte-discret);
+}
+.pht-etiq-plus { padding: 0 10px; color: var(--texte-discret); border-style: dashed; }
+.pht-etiq-champ {
+  min-height: 34px;
+  width: 11rem;
+  max-width: 100%;
+  margin: 0;
+  padding: 0 var(--espace-12);
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--texte);
+  background: var(--fond-doux);
+  border: 1px solid var(--texte-discret);
+  border-radius: 999px;
+}
+.pht-etiq-champ:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* --- Qui est dessus --- */
+.pht-qui { display: flex; flex-direction: column; gap: 4px; }
+.pht-qui-champ { width: 100%; }
+.pht-qui-propositions { display: flex; flex-direction: column; }
+.pht-proposition {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espace-8);
+  min-height: 40px;
+  padding: 0 var(--espace-12);
+  font-size: 0.875rem;
+  text-align: left;
+  color: var(--texte);
+  background: transparent;
+  border: 0;
+  border-radius: var(--rayon-controle);
+}
+.pht-proposition:hover { background: rgb(255 255 255 / 5%); }
+.pht-proposition[data-deja] { opacity: 0.45; }
+.pht-proposition .discret { font-size: 0.75rem; }
+.pht-proposition-nouvelle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 6px var(--espace-12);
+  font-size: 0.8125rem;
+}
+
+/* --- La grille en sélection --- */
+.pht-gestes { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.pht-grille.en-selection .pht-tuile { cursor: pointer; }
+.pht-coche {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid rgb(255 255 255 / 85%);
+  border-radius: 50%;
+  background: rgb(0 0 0 / 25%);
+}
+.pht-tuile.choisie .pht-coche {
+  background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230e0d0b' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center / 14px no-repeat;
+  border-color: var(--accent);
+}
+.pht-tuile.choisie img { opacity: 0.7; }
+.pht-tuile.choisie::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--accent);
+  border-radius: inherit;
+  pointer-events: none;
+}
+/* La note se lit sur la tuile, en petit : on repère ses meilleures d'un regard. */
+.pht-note {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  padding: 1px 6px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgb(14 13 11 / 72%);
+  border-radius: 999px;
+  pointer-events: none;
+}
+/* L'anneau d'envoi vit au même coin : il passe au-dessus tant qu'il tourne. */
+.pht-tuile .car-envoi:not([data-envoi="fait"]) ~ .pht-note { display: none; }
+
+/* LA BARRE DE LA SÉLECTION colle au bas de l'écran, au-dessus du dock : elle
+   doit rester sous le pouce pendant qu'on fait défiler cent photos. */
+.pht-barre-sel {
+  position: sticky;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: var(--espace-8);
+  margin-top: var(--espace-12);
+  padding: var(--espace-8) var(--espace-8) var(--espace-8) var(--espace-16);
+  background: var(--fond-releve);
+  border-radius: var(--rayon-carte);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
+}
+.pht-barre-texte { flex: 1 1 auto; min-width: 0; font-size: 0.875rem; }
+.pht-barre-sel .car-bouton-or { min-height: 42px; }
+
+/* --- La fenêtre qui trie la sélection --- */
+.pht-fen-fond {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(0 0 0 / 60%);
+}
+.pht-fen {
+  width: 100%;
+  max-width: 34rem;
+  max-height: 88vh;
+  max-height: 88dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--espace-16) var(--espace-16) max(var(--espace-24), env(safe-area-inset-bottom));
+  background: var(--fond-carte);
+  border-radius: var(--rayon-carte) var(--rayon-carte) 0 0;
+}
+@media (min-width: 45rem) {
+  .pht-fen-fond { align-items: center; }
+  .pht-fen { border-radius: var(--rayon-carte); }
+}
+.pht-fen-tete { display: flex; align-items: center; gap: var(--espace-12); margin-bottom: var(--espace-16); }
+.pht-fen-titre { flex: 1 1 auto; margin: 0; font-family: "Gloock", Georgia, serif; font-size: 1.375rem; }
+.pht-fen-vignettes { display: flex; }
+.pht-fen-vignette {
+  width: 30px;
+  height: 30px;
+  margin-right: -10px;
+  overflow: hidden;
+  background: var(--fond-releve);
+  border: 2px solid var(--fond-carte);
+  border-radius: var(--rayon-etiquette);
+}
+.pht-fen-vignette img { width: 100%; height: 100%; object-fit: cover; }

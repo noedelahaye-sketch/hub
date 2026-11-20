@@ -2171,7 +2171,7 @@ qui pourra verser dans la réserve si Noé le dit.
 | Étape | Ce qu'elle apporte | État |
 |---|---|---|
 | 1 | la réserve, l'import par lot rattaché à un match, la grille, la visionneuse | **faite** |
-| 2 | le tri : étoiles, étiquettes en familles (style, ce que ça raconte, qui — relié au réseau), sélection multiple, plein écran au clavier et au doigt | à faire |
+| 2 | le tri : étoiles, étiquettes en familles (style, ce que ça raconte, qui — relié au réseau), sélection multiple, plein écran au clavier et au doigt | **faite** |
 | 3 | la recherche : match, période, compétition (posée sur le match), étiquettes, note minimale, « jamais publiée » | à faire |
 | 4 | le lien aux parutions : choisir les photos d'une parution, compteur « publiée N fois » (les parutions déclarées publiées, pas les téléchargements), le carrousel et le Carnet qui piochent | à faire |
 
@@ -2201,6 +2201,34 @@ balayage au doigt, la date de prise de vue en toutes lettres, « Télécharger �
 (feuille de partage sur téléphone, la photo étant préchargée pour que le geste
 reste frais) et « Retirer », confirmé sur place, qui efface aussi le fichier en
 ligne.
+
+**LE TRI (étape 2) : UN SEUL PANNEAU, DEUX ENDROITS.** Les étoiles (1 à 5, en
+or — la seule place de l'or), les étiquettes en deux familles (**le style**,
+**ce que ça raconte**) et **qui est dessus**. Il vit dans la visionneuse — au fil
+de l'eau, photo par photo — et dans la fenêtre de la sélection — par lot. Deux
+écrans, un seul code (`panneauTri`, js/phototheque.js).
+
+- **Sur une sélection, une étiquette a trois états** : toutes l'ont (pleine),
+  certaines (à moitié), aucune. Presser la pose sur toutes, sauf si toutes l'ont
+  déjà : elle part de toutes. C'est le geste d'une case « tout cocher ».
+- **La même étoile retouchée efface la note**, comme sur la fiche d'un livre.
+- **On ajoute une étiquette depuis le site** (le « + » de sa famille) ; un mot
+  qui existe déjà, quelle que soit sa casse, se pose au lieu de se doubler.
+- **Qui est dessus vient du réseau** : on tape, les joueurs puis les clubs
+  remontent, Entrée prend le premier. Un nom inconnu crée sa fiche — joueur ou
+  club, au choix. La fiche d'un joueur pourra ainsi montrer toutes ses photos.
+- **Le lot importé arrive sélectionné** : c'est « l'étiquetage à l'import, par
+  lot ». Ce qu'on trie pendant que les photos partent s'écrit à leur arrivée.
+- **La sélection** : « Sélectionner », puis toucher ; Maj + clic prend un
+  intervalle, Cmd/Ctrl + clic l'ouvre d'emblée. Une barre collée au bas de
+  l'écran dit le compte, ouvre le tri ou retire les photos (confirmé sur place).
+- **Au clavier, dans la visionneuse** : 1 à 5 notent, 0 efface, les flèches
+  changent de photo — le geste de Lightroom. Sur téléphone, le panneau est sous
+  la photo et défile ; le balayage ne vit que sur la photo.
+
+Tables : `photos.note`, `etiquettes` (famille `style`|`recit`, nom unique par
+famille sans casse), `photos_etiquettes`, `photos_personnes` (vers `contacts`).
+Les quinze étiquettes de départ sont semées par la migration.
 
 **Données** : table `photos` (id choisi par le navigateur, `cle` R2,
 `evenement_id` en `set null`, `prise_le`, `largeur`, `hauteur`, `format`

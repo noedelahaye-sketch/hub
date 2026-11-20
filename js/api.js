@@ -3166,7 +3166,9 @@ export async function lirePhotos() {
   return verifier(
     await client
       .from('photos')
-      .select('*, evenement:evenements(id, titre, date_debut)')
+      .select(
+        '*, evenement:evenements(id, titre, date_debut), etiquettes:photos_etiquettes(etiquette_id), personnes:photos_personnes(contact_id)',
+      )
       .order('prise_le', { ascending: true, nullsFirst: false })
       .order('nom'),
   );
@@ -3178,5 +3180,58 @@ export async function ajouterPhoto(champs) {
 
 export async function supprimerPhoto(id) {
   const { error } = await client.from('photos').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// --- Le tri de la photothèque (étape 2) ---------------------------------------------
+//
+// Chaque geste vaut pour UNE photo ou pour TOUTE une sélection : les fonctions
+// prennent toujours une liste d'identifiants.
+
+export async function noterPhotos(ids, note) {
+  const { error } = await client.from('photos').update({ note }).in('id', ids);
+  if (error) throw error;
+}
+
+export async function lireEtiquettes() {
+  return verifier(await client.from('etiquettes').select('*').order('ordre').order('nom'));
+}
+
+export async function creerEtiquette(champs) {
+  return verifier(await client.from('etiquettes').insert(champs).select().single());
+}
+
+export async function etiqueterPhotos(ids, etiquetteId) {
+  const { error } = await client
+    .from('photos_etiquettes')
+    .upsert(ids.map((photo_id) => ({ photo_id, etiquette_id: etiquetteId })), { ignoreDuplicates: true });
+  if (error) throw error;
+}
+
+export async function desetiqueterPhotos(ids, etiquetteId) {
+  const { error } = await client
+    .from('photos_etiquettes').delete().in('photo_id', ids).eq('etiquette_id', etiquetteId);
+  if (error) throw error;
+}
+
+export async function lirePersonnesPossibles() {
+  return verifier(await client.from('contacts').select('id, nom, type, structure').order('nom'));
+}
+
+export async function relierPersonne(ids, contactId) {
+  const { error } = await client
+    .from('photos_personnes')
+    .upsert(ids.map((photo_id) => ({ photo_id, contact_id: contactId })), { ignoreDuplicates: true });
+  if (error) throw error;
+}
+
+export async function delierPersonne(ids, contactId) {
+  const { error } = await client
+    .from('photos_personnes').delete().in('photo_id', ids).eq('contact_id', contactId);
+  if (error) throw error;
+}
+
+export async function supprimerPhotos(ids) {
+  const { error } = await client.from('photos').delete().in('id', ids);
   if (error) throw error;
 }

@@ -47,6 +47,16 @@ const etat = {
   choisirMatch: false,   // la liste montre le choix du match
   ouverte: null,         // l'identifiant de la photo dans la visionneuse
   confirmerRetrait: false,
+  // Le tri (étape 2).
+  etiquettes: null,      // [{ id, famille, nom, ordre }]
+  personnes: null,       // les fiches du réseau : [{ id, nom, type, structure }]
+  modeSelection: false,
+  selection: new Set(),
+  derniereTouchee: null, // pour Maj + clic, qui sélectionne un intervalle
+  fenetreTri: false,     // la fenêtre qui trie la sélection
+  confirmerRetraitSel: false,
+  ajout: null,           // la famille dont on écrit une nouvelle étiquette
+  recherche: '',         // ce qu'on tape dans « Qui est dessus »
 };
 
 let hote = null;
@@ -98,12 +108,20 @@ const momentLong = (iso) =>
 
 async function charger() {
   try {
-    const lignes = await api.lirePhotos();
+    const [lignes, etiquettes, personnes] = await Promise.all([
+      api.lirePhotos(),
+      api.lireEtiquettes(),
+      api.lirePersonnesPossibles(),
+    ]);
+    etat.etiquettes = etiquettes;
+    etat.personnes = personnes;
     const anciennes = new Map((etat.photos ?? []).map((p) => [p.id, p]));
     const distantes = lignes.map((l) => {
       const deja = anciennes.get(l.id);
       return {
         ...l,
+        etiquettes: new Set((l.etiquettes ?? []).map((e) => e.etiquette_id)),
+        personnes: new Set((l.personnes ?? []).map((e) => e.contact_id)),
         // Ce que cet appareil a déjà sous la main ne se redemande pas.
         vignette: deja?.vignette ?? null,
         url: deja?.url ?? null,
@@ -271,6 +289,9 @@ function importer(fichiers) {
       vignetteLocale: true,
       url: null,
       blob: null,
+      note: null,
+      etiquettes: new Set(),
+      personnes: new Set(),
       envoi: 'preparation',
       progression: 0,
     });
@@ -281,7 +302,14 @@ function importer(fichiers) {
     return;
   }
   etat.photos = [...(etat.photos ?? []), ...nouvelles];
+  // LE LOT IMPORTÉ ARRIVE SÉLECTIONNÉ (choix de Noé : étiqueter « à l'import,
+  // par lot ») : ce qu'un match a en commun se pose d'un geste, avant même que
+  // les photos aient fini de partir.
+  etat.modeSelection = true;
+  etat.selection = new Set(nouvelles.map((p) => p.id));
+  etat.confirmerRetraitSel = false;
   dessiner();
+  messageCourt(`${nouvelles.length} photo${nouvelles.length > 1 ? 's' : ''} sélectionnée${nouvelles.length > 1 ? 's' : ''} : trie-les d'un coup.`);
   if (ignorees) messageCourt(`${ignorees} fichier${ignorees > 1 ? 's' : ''} déjà là ou illisible${ignorees > 1 ? 's' : ''}, laissé${ignorees > 1 ? 's' : ''} de côté.`);
   filePreparation.push(...nouvelles);
   pomperLesPreparations();
@@ -410,7 +438,7 @@ async function envoyer(p) {
         await envoyerVignette(p.cle, p.blobVignette).catch((e) => console.error('Vignette non envoyée', e));
       }
     }
-    await api.ajouterPhoto({
+    if (!p.enBase) await api.ajouterPhoto({
       id: p.id,
       cle: p.cle,
       nom: p.nom,
@@ -419,7 +447,15 @@ async function envoyer(p) {
       largeur: p.largeur,
       hauteur: p.hauteur,
       taille: p.taille,
+      note: p.note ?? null,
     });
+    p.enBase = true;
+    // Ce qui a été trié PENDANT le voyage n'avait pas encore de ligne où
+    // s'écrire : on le pose maintenant.
+    await Promise.all([
+      ...[...p.etiquettes].map((id) => api.etiqueterPhotos([p.id], id)),
+      ...[...p.personnes].map((id) => api.relierPersonne([p.id], id)),
+    ]);
     p.envoi = 'fait';
     p.progression = 1;
     p.blobVignette = null;
@@ -506,13 +542,17 @@ async function fichiersDuDepot(transfert) {
 
 function tuile(p) {
   const src = p.vignette ?? '';
-  return `<button type="button" class="pht-tuile" data-ouvrir="${p.id}"
-      aria-label="Ouvrir ${echapper(p.nom)}">
+  const choisie = etat.selection.has(p.id);
+  return `<button type="button" class="pht-tuile${choisie ? ' choisie' : ''}" data-ouvrir="${p.id}"
+      aria-label="${etat.modeSelection ? 'Sélectionner' : 'Ouvrir'} ${echapper(p.nom)}"${
+      etat.modeSelection ? ` aria-pressed="${choisie}"` : ''}>
       <img data-vignette="${p.id}" alt="" loading="lazy" decoding="async"${src ? ` src="${echapper(src)}"` : ''}
         onload="this.parentNode.classList.add('prete')">
       <span class="car-envoi" data-envoi-de="${p.id}"
         data-envoi="${p.envoi === 'preparation' ? 'attente' : p.envoi}"
         style="--avance:${p.progression ?? 0}" aria-hidden="true"></span>
+      ${etat.modeSelection ? '<span class="pht-coche" aria-hidden="true"></span>' : ''}
+      ${badgeNote(p)}
     </button>`;
 }
 
@@ -606,10 +646,444 @@ function gabaritMatch() {
     <div class="car-tout" data-depot>
       <div class="car-tout-tete">
         <p class="car-petit-titre">Photos · <span class="chiffre">${liste.length}</span></p>
-        <button type="button" class="car-puce" data-pht="choisir">${svg('ajouter', 14)}<span>Ajouter des photos</span></button>
+        <span class="pht-gestes">${etat.modeSelection
+          ? `<button type="button" class="car-puce" data-pht="tout" data-pht-sel-compte>${toutEstChoisi() ? 'Tout désélectionner' : 'Tout sélectionner'}</button>
+             <button type="button" class="car-puce" data-pht="fin-selection">Terminé</button>`
+          : `<button type="button" class="car-puce" data-pht="selectionner">Sélectionner</button>
+             <button type="button" class="car-puce" data-pht="choisir">${svg('ajouter', 14)}<span>Ajouter des photos</span></button>`}</span>
       </div>
-      <div class="pht-grille">${liste.map(tuile).join('')}</div>
+      <div class="pht-grille${etat.modeSelection ? ' en-selection' : ''}">${liste.map(tuile).join('')}</div>
+      ${gabaritBarreSelection()}
     </div>${fichier}`;
+}
+
+// --- Le tri (étape 2) ---------------------------------------------------------------------
+//
+// UN SEUL PANNEAU POUR TOUT TRIER, une photo ou toute une sélection : les
+// étoiles, les deux familles d'étiquettes, et qui est dessus. Il vit dans la
+// visionneuse (au fil de l'eau, photo par photo) et dans la fenêtre de la
+// sélection (par lot). Deux écrans, un seul geste — et un seul code.
+//
+// SUR UNE SÉLECTION, UNE ÉTIQUETTE A TROIS ÉTATS : toutes l'ont (pleine),
+// certaines l'ont (à moitié), aucune (vide). Presser la pose sur toutes, sauf
+// si toutes l'ont déjà : elle s'en va alors de toutes. C'est le geste d'une
+// case « tout cocher ».
+
+const FAMILLES = [
+  { cle: 'style', nom: 'Le style' },
+  { cle: 'recit', nom: 'Ce que ça raconte' },
+];
+const TYPES_PERSONNE = { joueur: 'Joueur', club: 'Club' };
+
+function ciblesDu(contexte) {
+  if (contexte === 'vue') return [photo(etat.ouverte)].filter(Boolean);
+  return [...etat.selection].map(photo).filter(Boolean);
+}
+
+// 'tout' | 'partie' | 'rien'
+function etatDans(cibles, cleDuSet, id) {
+  const n = cibles.filter((p) => p[cleDuSet].has(id)).length;
+  return n === 0 ? 'rien' : n === cibles.length ? 'tout' : 'partie';
+}
+
+function puce(attribut, id, nom, etatPuce, titre = '') {
+  return `<button type="button" class="pht-etiq" data-${attribut}="${id}" data-etat="${etatPuce}"
+      aria-pressed="${etatPuce === 'tout' ? 'true' : etatPuce === 'partie' ? 'mixed' : 'false'}"${
+      titre ? ` title="${echapper(titre)}"` : ''}>${echapper(nom)}</button>`;
+}
+
+function panneauTri(contexte) {
+  const cibles = ciblesDu(contexte);
+  if (!cibles.length) return '';
+  const notes = new Set(cibles.map((p) => p.note ?? null));
+  const note = notes.size === 1 ? [...notes][0] : null;
+  const etoiles = [1, 2, 3, 4, 5].map((k) =>
+    `<button type="button" class="pht-etoile${note && k <= note ? ' pleine' : ''}" data-tri-note="${k}"
+       aria-label="${k} étoile${k > 1 ? 's' : ''}" aria-pressed="${note === k}">
+       <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2l2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6L3.4 9.5l6-.8z"/></svg>
+     </button>`).join('');
+  const melange = notes.size > 1 ? '<span class="pht-tri-note-mixte">notes différentes</span>' : '';
+
+  const familles = FAMILLES.map(({ cle, nom }) => {
+    const mots = (etat.etiquettes ?? []).filter((e) => e.famille === cle);
+    const puces = mots.map((e) => puce('tri-etiquette', e.id, e.nom, etatDans(cibles, 'etiquettes', e.id))).join('');
+    const ajout = etat.ajout === cle
+      ? `<input class="pht-etiq-champ" data-tri-nouvelle="${cle}" maxlength="40" autocomplete="off"
+           placeholder="Nouvelle étiquette" aria-label="Nouvelle étiquette : ${echapper(nom)}">`
+      : `<button type="button" class="pht-etiq pht-etiq-plus" data-tri-ajouter="${cle}"
+           aria-label="Ajouter une étiquette : ${echapper(nom)}">${svg('ajouter', 14)}</button>`;
+    return `<div class="pht-tri-famille">
+        <p class="pht-tri-titre">${nom}</p>
+        <div class="pht-etiqs">${puces}${ajout}</div>
+      </div>`;
+  }).join('');
+
+  // Qui est dessus : celles et ceux déjà posés sur au moins une photo.
+  const presents = new Set(cibles.flatMap((p) => [...p.personnes]));
+  const puces = [...presents].map((id) => {
+    const c = (etat.personnes ?? []).find((x) => x.id === id);
+    return c ? puce('tri-personne', id, c.nom, etatDans(cibles, 'personnes', id),
+      [TYPES_PERSONNE[c.type] ?? null, c.structure].filter(Boolean).join(' · ')) : '';
+  }).join('');
+
+  return `<div class="pht-tri" data-tri-contexte="${contexte}">
+      <div class="pht-tri-famille">
+        <p class="pht-tri-titre">La note ${melange}</p>
+        <div class="pht-etoiles">${etoiles}</div>
+      </div>
+      ${familles}
+      <div class="pht-tri-famille">
+        <p class="pht-tri-titre">Qui est dessus</p>
+        ${puces ? `<div class="pht-etiqs">${puces}</div>` : ''}
+        <div class="pht-qui">
+          <input class="pht-etiq-champ pht-qui-champ" data-tri-qui value="${echapper(etat.recherche)}"
+            autocomplete="off" spellcheck="false" placeholder="Un joueur, un club…"
+            aria-label="Ajouter un joueur ou un club">
+          <div class="pht-qui-propositions" data-tri-propositions>${propositions(contexte)}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+const sansAccent = (t) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+// LES PROPOSITIONS DU RÉSEAU : joueurs et clubs d'abord, puis le reste. Un nom
+// qu'on ne trouve pas devient une fiche — joueur ou club, au choix.
+function propositions(contexte) {
+  const q = etat.recherche.trim();
+  if (!q) return '';
+  const cibles = ciblesDu(contexte);
+  const deja = new Set(cibles.flatMap((p) => [...p.personnes]));
+  const rang = (c) => (c.type === 'joueur' ? 0 : c.type === 'club' ? 1 : 2);
+  const trouves = (etat.personnes ?? [])
+    .filter((c) => sansAccent(`${c.nom} ${c.structure ?? ''}`).includes(sansAccent(q)))
+    .sort((a, b) => rang(a) - rang(b) || a.nom.localeCompare(b.nom, 'fr'))
+    .slice(0, 6);
+  const exact = trouves.some((c) => sansAccent(c.nom) === sansAccent(q));
+  return `${trouves.map((c) => `<button type="button" class="pht-proposition" data-tri-poser="${c.id}"${
+      deja.has(c.id) ? ' data-deja' : ''}>
+      <span>${echapper(c.nom)}</span>
+      <span class="discret">${echapper([TYPES_PERSONNE[c.type] ?? 'Réseau', c.structure].filter(Boolean).join(' · '))}</span>
+    </button>`).join('')}${exact ? '' : `
+    <div class="pht-proposition-nouvelle">
+      <span class="discret">Créer « ${echapper(q)} » :</span>
+      <button type="button" class="car-puce car-puce-mini" data-tri-creer="joueur">Joueur</button>
+      <button type="button" class="car-puce car-puce-mini" data-tri-creer="club">Club</button>
+    </div>`}`;
+}
+
+// Tout ce qui montre le tri se redessine ensemble : le panneau ouvert, la
+// pastille des tuiles. Jamais la photo de la visionneuse — elle clignoterait.
+function redessinerTri() {
+  document.querySelectorAll('[data-tri-contexte]').forEach((el) => {
+    const contexte = el.dataset.triContexte;
+    const champ = document.activeElement?.matches?.('[data-tri-nouvelle], [data-tri-qui]')
+      && el.contains(document.activeElement) ? document.activeElement : null;
+    const quel = champ ? (champ.matches('[data-tri-qui]') ? '[data-tri-qui]' : `[data-tri-nouvelle="${champ.dataset.triNouvelle}"]`) : null;
+    el.outerHTML = panneauTri(contexte);
+    if (quel) {
+      const nouveau = document.querySelector(`[data-tri-contexte="${contexte}"] ${quel}`);
+      nouveau?.focus();
+      nouveau?.setSelectionRange?.(nouveau.value.length, nouveau.value.length);
+    }
+  });
+  for (const p of etat.photos ?? []) majTuile(p);
+  majBarreSelection();
+}
+
+function majTuile(p) {
+  hote?.querySelectorAll(`[data-ouvrir="${p.id}"]`).forEach((t) => {
+    t.querySelector('.pht-note')?.remove();
+    if (p.note) t.insertAdjacentHTML('beforeend', badgeNote(p));
+    t.classList.toggle('choisie', etat.selection.has(p.id));
+  });
+}
+
+const badgeNote = (p) => (p.note
+  ? `<span class="pht-note" aria-label="${p.note} étoile${p.note > 1 ? 's' : ''}">★ ${p.note}</span>` : '');
+
+// L'ÉCRAN D'ABORD, LE RÉSEAU ENSUITE, et l'état d'avant revient si l'écriture
+// échoue. On n'écrit en base que les photos qui y sont déjà : les autres
+// reprendront leur tri en arrivant (voir `envoyer`).
+async function ecrire({ cibles, appliquer, defaire, appel, ancre, message }) {
+  appliquer();
+  redessinerTri();
+  const ids = cibles.filter((p) => p.enBase || p.envoi === 'fait').map((p) => p.id);
+  if (!ids.length) return;
+  try {
+    await appel(ids);
+  } catch (e) {
+    console.error(message, e);
+    defaire();
+    redessinerTri();
+    bulle("Ce n'est pas enregistré", message, ancre);
+  }
+}
+
+function noter(contexte, k, ancre) {
+  const cibles = ciblesDu(contexte);
+  if (!cibles.length) return;
+  const avant = cibles.map((p) => p.note);
+  // La même étoile retouchée efface la note — comme sur la fiche d'un livre.
+  const nouvelle = cibles.every((p) => p.note === k) ? null : k;
+  return ecrire({
+    cibles,
+    appliquer: () => cibles.forEach((p) => { p.note = nouvelle; }),
+    defaire: () => cibles.forEach((p, i) => { p.note = avant[i]; }),
+    appel: (ids) => api.noterPhotos(ids, nouvelle),
+    ancre,
+    message: 'La note n’a pas pu être gardée.',
+  });
+}
+
+function basculer(contexte, cleDuSet, id, ancre) {
+  const cibles = ciblesDu(contexte);
+  if (!cibles.length) return;
+  const retirer = cibles.every((p) => p[cleDuSet].has(id));
+  const avant = cibles.map((p) => p[cleDuSet].has(id));
+  const poser = cleDuSet === 'etiquettes' ? api.etiqueterPhotos : api.relierPersonne;
+  const oter = cleDuSet === 'etiquettes' ? api.desetiqueterPhotos : api.delierPersonne;
+  return ecrire({
+    cibles,
+    appliquer: () => cibles.forEach((p) => (retirer ? p[cleDuSet].delete(id) : p[cleDuSet].add(id))),
+    defaire: () => cibles.forEach((p, i) => (avant[i] ? p[cleDuSet].add(id) : p[cleDuSet].delete(id))),
+    appel: (ids) => (retirer ? oter(ids, id) : poser(ids, id)),
+    ancre,
+    message: cleDuSet === 'etiquettes' ? 'L’étiquette n’a pas pu être gardée.' : 'Le lien au réseau n’a pas pu être gardé.',
+  });
+}
+
+// Poser (jamais retirer) : c'est le geste d'une proposition qu'on choisit.
+function poserPersonne(contexte, id, ancre) {
+  const cibles = ciblesDu(contexte);
+  if (cibles.every((p) => p.personnes.has(id))) return;
+  const avant = cibles.map((p) => p.personnes.has(id));
+  return ecrire({
+    cibles,
+    appliquer: () => cibles.forEach((p) => p.personnes.add(id)),
+    defaire: () => cibles.forEach((p, i) => { if (!avant[i]) p.personnes.delete(id); }),
+    appel: (ids) => api.relierPersonne(ids, id),
+    ancre,
+    message: 'Le lien au réseau n’a pas pu être gardé.',
+  });
+}
+
+async function nouvelleEtiquette(contexte, famille, nom, ancre) {
+  nom = nom.trim().replace(/\s+/g, ' ');
+  etat.ajout = null;
+  if (!nom) { redessinerTri(); return; }
+  // Un mot qui existe déjà dans la famille se pose, il ne se double pas.
+  const existante = (etat.etiquettes ?? []).find((e) => e.famille === famille && sansAccent(e.nom) === sansAccent(nom));
+  if (existante) {
+    if (!ciblesDu(contexte).every((p) => p.etiquettes.has(existante.id))) basculer(contexte, 'etiquettes', existante.id, ancre);
+    else redessinerTri();
+    return;
+  }
+  try {
+    const ordre = Math.max(0, ...(etat.etiquettes ?? []).filter((e) => e.famille === famille).map((e) => e.ordre)) + 1;
+    const e = await api.creerEtiquette({ famille, nom: nom[0].toUpperCase() + nom.slice(1), ordre });
+    etat.etiquettes = [...(etat.etiquettes ?? []), e];
+    basculer(contexte, 'etiquettes', e.id, ancre);
+  } catch (err) {
+    console.error('Étiquette non créée', err);
+    redessinerTri();
+    bulle("Ce n'est pas enregistré", 'L’étiquette n’a pas pu être créée.', ancre);
+  }
+}
+
+async function nouvellePersonne(contexte, type, ancre) {
+  const nom = etat.recherche.trim();
+  if (!nom) return;
+  try {
+    const c = await api.creerContact({ nom, type });
+    etat.personnes = [...(etat.personnes ?? []), c];
+    etat.recherche = '';
+    poserPersonne(contexte, c.id, ancre);
+    messageCourt(`${nom} a sa fiche dans le réseau.`);
+  } catch (err) {
+    console.error('Fiche non créée', err);
+    bulle("Ce n'est pas enregistré", 'La fiche n’a pas pu être créée.', ancre);
+  }
+}
+
+// Les écouteurs du panneau, posés sur une racine qui le contient — la
+// visionneuse ou la fenêtre de la sélection.
+function brancherTri(racine) {
+  racine.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-tri-note], [data-tri-etiquette], [data-tri-personne], [data-tri-ajouter], [data-tri-poser], [data-tri-creer]');
+    if (!el) return;
+    const contexte = el.closest('[data-tri-contexte]')?.dataset.triContexte;
+    if (!contexte) return;
+    if (el.dataset.triNote) noter(contexte, Number(el.dataset.triNote), el);
+    else if (el.dataset.triEtiquette) basculer(contexte, 'etiquettes', el.dataset.triEtiquette, el);
+    else if (el.dataset.triPersonne) basculer(contexte, 'personnes', el.dataset.triPersonne, el);
+    else if (el.dataset.triAjouter) {
+      etat.ajout = el.dataset.triAjouter;
+      redessinerTri();
+      racine.querySelector(`[data-tri-nouvelle="${etat.ajout}"]`)?.focus();
+    } else if (el.dataset.triPoser) {
+      etat.recherche = '';
+      poserPersonne(contexte, el.dataset.triPoser, el);
+    } else if (el.dataset.triCreer) nouvellePersonne(contexte, el.dataset.triCreer, el);
+  });
+  racine.addEventListener('keydown', (e) => {
+    const champ = e.target.closest?.('[data-tri-nouvelle]');
+    if (champ && e.key === 'Enter') {
+      e.preventDefault();
+      const contexte = champ.closest('[data-tri-contexte]').dataset.triContexte;
+      nouvelleEtiquette(contexte, champ.dataset.triNouvelle, champ.value, champ);
+    } else if (champ && e.key === 'Escape') {
+      e.stopPropagation();
+      etat.ajout = null;
+      redessinerTri();
+    }
+    const qui = e.target.closest?.('[data-tri-qui]');
+    if (qui && e.key === 'Enter') {
+      // Entrée prend la première proposition : c'est le chemin du clavier.
+      e.preventDefault();
+      qui.closest('.pht-qui').querySelector('[data-tri-poser]:not([data-deja])')?.click();
+    } else if (qui && e.key === 'Escape' && etat.recherche) {
+      e.stopPropagation();
+      etat.recherche = '';
+      redessinerTri();
+    }
+  });
+  racine.addEventListener('input', (e) => {
+    const qui = e.target.closest?.('[data-tri-qui]');
+    if (!qui) return;
+    etat.recherche = qui.value;
+    // Seules les propositions se redessinent : le champ garde son curseur.
+    const contexte = qui.closest('[data-tri-contexte]').dataset.triContexte;
+    const boite = qui.closest('.pht-qui').querySelector('[data-tri-propositions]');
+    if (boite) boite.innerHTML = propositions(contexte);
+  });
+  // Quitter le champ d'une nouvelle étiquette l'enregistre, comme le nom d'un
+  // carrousel ; vide, il se referme simplement.
+  racine.addEventListener('focusout', (e) => {
+    const champ = e.target.closest?.('[data-tri-nouvelle]');
+    if (!champ || !champ.isConnected || etat.ajout !== champ.dataset.triNouvelle) return;
+    const contexte = champ.closest('[data-tri-contexte]').dataset.triContexte;
+    nouvelleEtiquette(contexte, champ.dataset.triNouvelle, champ.value, champ);
+  });
+}
+
+// --- La sélection multiple ----------------------------------------------------------------
+
+function toucherEnSelection(id, intervalle) {
+  if (intervalle && etat.derniereTouchee) {
+    // Maj + clic : tout ce qui est entre les deux, dans l'ordre de la grille.
+    const liste = photosDuMatch(cible).map((p) => p.id);
+    const [a, b] = [liste.indexOf(etat.derniereTouchee), liste.indexOf(id)].sort((x, y) => x - y);
+    if (a >= 0 && b >= 0) liste.slice(a, b + 1).forEach((x) => etat.selection.add(x));
+  } else if (etat.selection.has(id)) etat.selection.delete(id);
+  else etat.selection.add(id);
+  etat.derniereTouchee = id;
+  etat.confirmerRetraitSel = false;
+  majTuile(photo(id) ?? { id });
+  if (intervalle) for (const p of photosDuMatch(cible)) majTuile(p);
+  majBarreSelection();
+}
+
+const toutEstChoisi = () => {
+  const liste = photosDuMatch(cible);
+  return liste.length > 0 && liste.every((p) => etat.selection.has(p.id));
+};
+
+function quitterLaSelection() {
+  etat.modeSelection = false;
+  etat.selection = new Set();
+  etat.derniereTouchee = null;
+  etat.fenetreTri = false;
+  etat.confirmerRetraitSel = false;
+  dessinerFenetreTri();
+  dessiner();
+}
+
+function gabaritBarreSelection() {
+  if (!etat.modeSelection) return '';
+  const n = etat.selection.size;
+  return `<div class="pht-barre-sel" data-pht-barre>
+      ${etat.confirmerRetraitSel
+        ? `<span class="pht-barre-texte">Retirer ${n} photo${n > 1 ? 's' : ''} ? C'est définitif.</span>
+           <button type="button" class="car-puce" data-pht="garder-sel">Garder</button>
+           <button type="button" class="car-danger" data-pht="retirer-sel-oui">Retirer</button>`
+        : `<span class="pht-barre-texte"><span class="chiffre">${n}</span> sélectionnée${n > 1 ? 's' : ''}</span>
+           <button type="button" class="car-icone" data-pht="retirer-sel" aria-label="Retirer la sélection"
+             title="Retirer"${n ? '' : ' disabled'}>${svg('corbeille')}</button>
+           <button type="button" class="car-bouton-or" data-pht="trier-sel"${n ? '' : ' disabled'}>Trier</button>`}
+    </div>`;
+}
+
+function majBarreSelection() {
+  const barre = hote?.querySelector('[data-pht-barre]');
+  if (barre) barre.outerHTML = gabaritBarreSelection();
+  const compte = hote?.querySelector('[data-pht-sel-compte]');
+  if (compte) compte.textContent = toutEstChoisi() ? 'Tout désélectionner' : 'Tout sélectionner';
+}
+
+// La fenêtre qui trie la sélection : le même panneau que la visionneuse.
+let fenetre = null;
+
+function dessinerFenetreTri() {
+  if (!etat.fenetreTri || !etat.selection.size) {
+    fenetre?.remove();
+    fenetre = null;
+    if (!etat.ouverte) document.body.classList.remove('pht-vue-ouverte');
+    return;
+  }
+  if (!fenetre) {
+    fenetre = document.createElement('div');
+    fenetre.className = 'pht-fen-hote';
+    document.body.appendChild(fenetre);
+    brancherTri(fenetre);
+    fenetre.addEventListener('click', (e) => {
+      if (e.target.closest('[data-pht="fermer-tri"]') || e.target.classList.contains('pht-fen-fond')) {
+        etat.fenetreTri = false;
+        etat.ajout = null;
+        etat.recherche = '';
+        dessinerFenetreTri();
+      }
+    });
+  }
+  const n = etat.selection.size;
+  const vignettes = [...etat.selection].slice(0, 6).map(photo).filter(Boolean)
+    .map((p) => `<span class="pht-fen-vignette">${p.vignette ? `<img src="${echapper(p.vignette)}" alt="">` : ''}</span>`).join('');
+  fenetre.innerHTML = `
+    <div class="pht-fen-fond">
+      <div class="pht-fen" role="dialog" aria-modal="true" aria-label="Trier ${n} photos">
+        <div class="pht-fen-tete">
+          <span class="pht-fen-vignettes">${vignettes}</span>
+          <p class="pht-fen-titre">Trier <span class="chiffre">${n}</span> photo${n > 1 ? 's' : ''}</p>
+          <button type="button" class="car-icone" data-pht="fermer-tri" aria-label="Fermer">${svg('fermer')}</button>
+        </div>
+        ${panneauTri('selection')}
+      </div>
+    </div>`;
+  document.body.classList.add('pht-vue-ouverte');
+}
+
+async function retirerLaSelection(bouton) {
+  const cibles = [...etat.selection].map(photo).filter(Boolean);
+  if (!cibles.length) return;
+  const avant = [...etat.photos];
+  const ids = new Set(cibles.map((p) => p.id));
+  etat.photos = etat.photos.filter((p) => !ids.has(p.id));
+  etat.selection = new Set();
+  etat.confirmerRetraitSel = false;
+  dessiner();
+  try {
+    const enBase = cibles.filter((p) => p.enBase || p.envoi === 'fait').map((p) => p.id);
+    if (enBase.length) await api.supprimerPhotos(enBase);
+    for (const p of cibles) {
+      if (p.cle) supprimerFichier(p.cle).catch((e) => console.error('Fichier non supprimé', e));
+    }
+    messageCourt(`${cibles.length} photo${cibles.length > 1 ? 's' : ''} retirée${cibles.length > 1 ? 's' : ''}.`);
+  } catch (e) {
+    console.error('Photos non retirées', e);
+    etat.photos = avant;
+    dessiner();
+    bulle("Ce n'est pas passé", 'Les photos n’ont pas pu être retirées.', bouton);
+  }
 }
 
 // --- La visionneuse ---------------------------------------------------------------------------
@@ -631,10 +1105,13 @@ function gabaritVisionneuse() {
         <span class="pht-vue-rang"><span class="chiffre">${k + 1}</span> / ${liste.length}</span>
         <button type="button" class="car-icone" data-pht="fermer" aria-label="Fermer" title="Fermer (Échap)">${svg('fermer')}</button>
       </div>
-      <div class="pht-vue-scene">
-        <button type="button" class="pht-vue-fleche" data-pht="precedente" aria-label="Photo précédente"${k > 0 ? '' : ' disabled'}>${svg('gauche', 22)}</button>
-        <img class="pht-vue-image" src="${echapper(src)}" alt="">
-        <button type="button" class="pht-vue-fleche" data-pht="suivante" aria-label="Photo suivante"${k < liste.length - 1 ? '' : ' disabled'}>${svg('droite', 22)}</button>
+      <div class="pht-vue-corps">
+        <div class="pht-vue-scene">
+          <button type="button" class="pht-vue-fleche" data-pht="precedente" aria-label="Photo précédente"${k > 0 ? '' : ' disabled'}>${svg('gauche', 22)}</button>
+          <img class="pht-vue-image" src="${echapper(src)}" alt="">
+          <button type="button" class="pht-vue-fleche" data-pht="suivante" aria-label="Photo suivante"${k < liste.length - 1 ? '' : ' disabled'}>${svg('droite', 22)}</button>
+        </div>
+        <aside class="pht-vue-cote" aria-label="Trier cette photo">${panneauTri('vue')}</aside>
       </div>
       <div class="pht-vue-pied">
         <p class="pht-vue-infos">
@@ -656,6 +1133,8 @@ function gabaritVisionneuse() {
 function ouvrir(id) {
   etat.ouverte = id;
   etat.confirmerRetrait = false;
+  etat.ajout = null;
+  etat.recherche = '';
   dessinerVisionneuse();
   prechargerAutour();
 }
@@ -766,6 +1245,7 @@ async function retirer(bouton) {
 }
 
 function brancherVisionneuse(racine) {
+  brancherTri(racine);
   racine.addEventListener('click', (e) => {
     const action = e.target.closest('[data-pht]');
     if (!action) {
@@ -787,7 +1267,9 @@ function brancherVisionneuse(racine) {
   // précédente — le geste de l'application Photos.
   let depart = null;
   racine.addEventListener('pointerdown', (e) => {
-    if (e.pointerType !== 'touch') return;
+    // Le balayage vit sur la PHOTO : dans le panneau de tri, un doigt qui
+    // glisse fait défiler les étiquettes, il ne change pas de photo.
+    if (e.pointerType !== 'touch' || !e.target.closest('.pht-vue-scene')) return;
     depart = { x: e.clientX, y: e.clientY };
   });
   racine.addEventListener('pointerup', (e) => {
@@ -806,6 +1288,18 @@ function brancherLaFenetre() {
   fenetreBranchee = true;
   document.addEventListener('keydown', (e) => {
     if (!etat.ouverte) return;
+    // On écrit une étiquette ou un nom : les touches sont à lui.
+    if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName ?? '')) return;
+    // LES CHIFFRES NOTENT (1 à 5, 0 efface) : on trie un match au clavier sans
+    // lâcher les flèches — c'est le geste de Lightroom.
+    if (/^[0-5]$/.test(e.key) && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      e.preventDefault();
+      const k = Number(e.key);
+      const p = photo(etat.ouverte);
+      if (k === 0) { if (p?.note) noter('vue', p.note); }
+      else noter('vue', k);
+      return;
+    }
     if (e.key === 'Escape') { e.preventDefault(); fermer(); }
     else if (e.key === 'ArrowLeft') { e.preventDefault(); voisine(-1); }
     else if (e.key === 'ArrowRight') { e.preventDefault(); voisine(1); }
@@ -851,10 +1345,30 @@ function brancher(racine) {
       } else if (quoi === 'annuler-choix') { etat.choisirMatch = false; dessiner(); }
       else if (quoi === 'choisir') racine.querySelector('[data-pht-fichier]')?.click();
       else if (quoi === 'relancer') relancerLesEchecs();
+      else if (quoi === 'selectionner') { etat.modeSelection = true; dessiner(); }
+      else if (quoi === 'fin-selection') quitterLaSelection();
+      else if (quoi === 'tout') {
+        etat.selection = toutEstChoisi() ? new Set() : new Set(photosDuMatch(cible).map((p) => p.id));
+        etat.confirmerRetraitSel = false;
+        redessinerTri();
+      } else if (quoi === 'trier-sel') { etat.fenetreTri = true; etat.ajout = null; etat.recherche = ''; dessinerFenetreTri(); }
+      else if (quoi === 'retirer-sel') { etat.confirmerRetraitSel = true; majBarreSelection(); }
+      else if (quoi === 'garder-sel') { etat.confirmerRetraitSel = false; majBarreSelection(); }
+      else if (quoi === 'retirer-sel-oui') retirerLaSelection(action);
       return;
     }
     const t = e.target.closest('[data-ouvrir]');
-    if (t) ouvrir(t.dataset.ouvrir);
+    if (!t) return;
+    // Cmd, Ctrl ou Maj + clic sélectionnent d'emblée : le geste du Finder.
+    if (!etat.modeSelection && (e.metaKey || e.ctrlKey || e.shiftKey)) {
+      etat.modeSelection = true;
+      etat.selection.add(t.dataset.ouvrir);
+      etat.derniereTouchee = t.dataset.ouvrir;
+      dessiner();
+      return;
+    }
+    if (etat.modeSelection) toucherEnSelection(t.dataset.ouvrir, e.shiftKey);
+    else ouvrir(t.dataset.ouvrir);
   });
 
   racine.addEventListener('change', (e) => {
@@ -895,6 +1409,12 @@ export default {
     brancherLaFenetre();
     brancher(hote);
     vueCourante = id ? 'match' : 'liste';
+    if (cible !== id) {
+      etat.modeSelection = false;
+      etat.selection = new Set();
+      etat.fenetreTri = false;
+      dessinerFenetreTri();
+    }
     cible = id;
     if (id) { etat.choisirMatch = false; chargerLesSorties(); }
     dessiner();
