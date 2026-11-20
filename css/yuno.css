@@ -5398,13 +5398,30 @@ body[data-espace="yuno"] #vue .car-nom:focus { border-color: var(--texte-discret
 .porte-car { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
 .porte-car-cadres { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; width: 100%; }
 .porte-car-cadre {
+  position: relative;
   display: block;
   aspect-ratio: 3 / 4;
+  /* Ni minimum ni contenu ne peuvent agrandir le cadre : c'est le 3:4 qui
+     décide, seul. */
+  min-height: 0;
   overflow: hidden;
   background: var(--fond-releve);
   border-radius: var(--rayon-etiquette);
 }
-.porte-car-cadre img { display: block; width: 100%; height: 100%; object-fit: cover; }
+/* LA PHOTO EST POSÉE EN ABSOLU dans son cadre (20 novembre 2026, défaut vu par
+   Noé sur son ordinateur) : en `height: 100%` dans une boîte dont la hauteur
+   vient de son `aspect-ratio`, Safari peut prendre la hauteur RÉELLE de
+   l'image — 1 600 px — pour taille du cadre. Les trois portes de Créer
+   s'allongeaient alors hors de l'écran, titres compris, et passaient sous
+   « De la matière ». Retirée du flux, l'image n'a plus rien à imposer. */
+.porte-car-cadre img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 .porte-car-points { display: flex; gap: 4px; }
 .porte-car-points span { width: 5px; height: 5px; border-radius: 50%; background: rgb(255 255 255 / 30%); }
 .porte-car-points span.actif { background: #3d95f2; }
