@@ -71,7 +71,7 @@ const etat = {
   supprimerEtiq: null,   // l'étiquette qui attend sa confirmation
   // La recherche (étape 3).
   filtres: nouveauxFiltres(),
-  ordre: 'recentes',     // 'recentes' | 'notees'
+  ordre: 'recentes',     // 'recentes' | 'anciennes' | 'notees' | 'hasard'
   // LA PAGE D'UN MATCH A SES FILTRES À ELLE (21 novembre 2026, demande de Noé :
   // « les mêmes filtres que dans la photothèque ») : filtrer un match ne doit
   // pas filtrer la photothèque derrière lui.
@@ -595,13 +595,21 @@ async function fichiersDuDepot(transfert) {
 
 // --- Les gabarits ---------------------------------------------------------------------------
 
+// UNE VIGNETTE DÉJÀ VUE NE REFAIT PAS SON FONDU (21 novembre 2026, défaut
+// rapporté par Noé : « pourquoi ça fait ce rechargement des aperçus quand
+// j'appuie sur tri ou sélectionner ? »). La grille se réécrit à chaque geste ;
+// chaque image repartait donc invisible et attendait son `onload` pour
+// reparaître — un clignotement de toute la page pour un menu qu'on ouvre.
+// L'image est déjà dans le cache du navigateur : on la pose visible d'emblée.
+const vignettesVues = new Set();
 function tuile(p) {
   const src = p.vignette ?? '';
   const choisie = etat.selection.has(p.id);
-  return `<button type="button" class="pht-tuile${choisie ? ' choisie' : ''}" data-ouvrir="${p.id}"
+  const vue = src && vignettesVues.has(src);
+  return `<button type="button" class="pht-tuile${choisie ? ' choisie' : ''}${vue ? ' prete' : ''}" data-ouvrir="${p.id}"
       aria-label="${etat.modeSelection ? 'Sélectionner' : 'Ouvrir'} ${echapper(p.nom)}"${
       etat.modeSelection ? ` aria-pressed="${choisie}"` : ''}>
-      <img data-vignette="${p.id}" alt="" loading="lazy" decoding="async"${src ? ` src="${echapper(src)}"` : ''}
+      <img data-vignette="${p.id}" alt="" loading="${vue ? 'eager' : 'lazy'}" decoding="${vue ? 'sync' : 'async'}"${src ? ` src="${echapper(src)}"` : ''}
         onload="this.parentNode.classList.add('prete')">
       <span class="car-envoi" data-envoi-de="${p.id}"
         data-envoi="${p.envoi === 'preparation' ? 'attente' : p.envoi}"
@@ -843,13 +851,27 @@ function correspond(p) {
   return true;
 }
 
+// LE HASARD EST TIRÉ UNE FOIS, AU MOMENT OÙ ON LE CHOISIT (21 novembre 2026,
+// demande de Noé) : la grille se redessine à chaque geste — une note, une
+// étiquette —, et des photos qui se rebattraient à chaque fois ne se
+// trieraient plus. Rechoisir « Au hasard » rebat les cartes.
+let tirage = new Map();
+function rebattre() { tirage = new Map(); }
+function auHasard(p) {
+  if (!tirage.has(p.id)) tirage.set(p.id, Math.random());
+  return tirage.get(p.id);
+}
+
 function resultats() {
   const liste = (etat.photos ?? []).filter(correspond);
+  if (etat.ordre === 'hasard') return liste.sort((a, b) => auHasard(a) - auHasard(b));
   // Les plus récentes d'abord : un post se fait sur ce qui vient de se passer.
   // « Les mieux notées » fait remonter ses favorites, la date départage.
+  // « Les plus anciennes » remonte le temps.
+  const sens = etat.ordre === 'anciennes' ? -1 : 1;
   return liste.sort((a, b) =>
     (etat.ordre === 'notees' ? (b.note ?? 0) - (a.note ?? 0) : 0)
-    || (b.prise_le ?? '').localeCompare(a.prise_le ?? '')
+    || sens * (b.prise_le ?? '').localeCompare(a.prise_le ?? '')
     || ordreNaturel.compare(a.nom, b.nom));
 }
 
@@ -961,7 +983,8 @@ function rangeeDOutils(nombre, nbFiltresPoses) {
   const m = enMatch();
   const ordres = m
     ? [['match', 'L’ordre du match'], ['notees', 'Les mieux notées']]
-    : [['recentes', 'Les plus récentes'], ['notees', 'Les mieux notées']];
+    : [['recentes', 'Les plus récentes'], ['anciennes', 'Les plus anciennes'],
+      ['notees', 'Les mieux notées'], ['hasard', 'Au hasard']];
   const ordre = m ? etat.ordreMatch : etat.ordre;
   return `<div class="pht-outils" role="toolbar" aria-label="Outils de la recherche">
       <button type="button" class="car-icone pht-outil pht-outil-filtres${m ? ' pht-partout' : ''}${etat.filtresTel || nbFiltresPoses ? ' actif' : ''}"
@@ -2717,6 +2740,10 @@ function dessiner() {
 }
 
 function brancher(racine) {
+  // `load` ne remonte pas : on l'écoute en capture, une fois pour l'hôte.
+  racine.addEventListener('load', (e) => {
+    if (e.target.matches?.('img[data-vignette]')) vignettesVues.add(e.target.getAttribute('src'));
+  }, true);
   racine.addEventListener('click', (e) => {
     const action = e.target.closest('[data-pht]');
     if (action) {
@@ -2796,6 +2823,7 @@ function brancher(racine) {
     if (ordre) {
       changerFiltres(() => {
         if (enMatch()) etat.ordreMatch = ordre.dataset.ordre; else etat.ordre = ordre.dataset.ordre;
+        if (ordre.dataset.ordre === 'hasard') rebattre();
         etat.menuOrdre = false;
       });
       return;
