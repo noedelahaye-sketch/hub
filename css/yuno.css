@@ -7090,3 +7090,23 @@ body[data-atelier="creer"] .atelier-tete { padding-top: var(--espace-16); paddin
 /* La barre de Yuno pose une marge de 24 px sous elle : dans l'atelier, c'est le
    titre qui règle l'écart. */
 body[data-atelier="creer"] .atelier-barre { margin-bottom: 0; }
+
+/* Les titres de l'atelier, un cran plus petits (demande de Noé). */
+body[data-atelier="creer"] #vue .atelier-h1 { font-size: clamp(32px, 4.5vw, 52px); line-height: 1.1; }
+
+/* SUR ORDINATEUR, LES PORTES DE LA PHOTOTHÈQUE REMONTENT SUR LA LIGNE DU TITRE,
+   à droite (demande de Noé). Le titre est écrit par le site, les boutons par la
+   photothèque : la rangée remonte de la hauteur du titre et se cale à droite,
+   centrée sur lui. Le titre mesure 52 × 1,1 ≈ 57 px, la rangée 50 : la remontée
+   vaut l'écart sous le titre (16) plus le titre, moins la moitié de ce qui reste. */
+@media (min-width: 60rem) {
+  body[data-atelier="creer"] .pht-hote > .pht-tete-liste:first-child {
+    position: relative;
+    z-index: 1;
+    justify-content: flex-end;
+    margin-top: calc(-16px - 57px + (57px - 50px) / 2);
+    margin-bottom: var(--espace-16);
+    margin-left: auto;
+    width: max-content;
+  }
+}
