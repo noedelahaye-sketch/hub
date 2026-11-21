@@ -41,6 +41,9 @@ const RECHERCHE = 'recherche';
 // affichage de la photothèque doit être l'espace Rechercher, avec toutes les
 // photos, et on doit pouvoir aller dans la page des albums par match »).
 const ALBUMS = 'albums';
+// Une adresse qui ouvre la pile « À trier » en arrivant : c'est la porte de la
+// page Créer au téléphone (21 novembre 2026).
+const A_TRIER = 'a-trier';
 
 // --- L'état, qui survit aux redessins ---------------------------------------------
 
@@ -156,6 +159,8 @@ const ICONE = {
   choisir: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12.2l2.4 2.4 4.6-4.8"/>',
   albums: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
   coupe: '<path d="M8 4h8v5a4 4 0 0 1-8 0zM6 5H4v2a3 3 0 0 0 3 3M18 5h2v2a3 3 0 0 1-3 3M12 13v4M9 20h6M10 17h4"/>',
+  rebattre: '<path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>',
+  carrousel: '<rect x="6" y="5" width="12" height="14" rx="2"/><path d="M3 7v10M21 7v10"/>',
   corbeille: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-12M9 7V4h6v3"/>',
 };
 const svg = (cle, taille = 18) =>
@@ -173,7 +178,15 @@ const momentLong = (iso) =>
 
 // --- Le chargement ------------------------------------------------------------------------
 
-async function charger() {
+// UN SEUL CHARGEMENT À LA FOIS : la page Créer demande la réserve deux fois
+// d'un coup (les cinq photos et le compte « À trier »), et la photothèque une
+// troisième en arrivant. Les trois attendent la même lecture.
+let chargementEnCours = null;
+function charger() {
+  chargementEnCours ??= chargerVraiment().finally(() => { chargementEnCours = null; });
+  return chargementEnCours;
+}
+async function chargerVraiment() {
   try {
     const [lignes, etiquettes, personnes, parutions] = await Promise.all([
       api.lirePhotos(),
@@ -2887,6 +2900,224 @@ function brancher(racine) {
   });
 }
 
+// --- DE QUOI PARTIR : CINQ PHOTOS SUR LA PAGE CRÉER (21 novembre 2026) --------
+//
+// La demande de Noé : « mettre en avant 5 photos aléatoires… retomber sur une
+// photo et y voir un potentiel pour un style de publication ». La page Créer
+// pose un `[data-inspiration]`, ce module le remplit — comme l'aperçu d'une
+// parution.
+//
+// UN HASARD QUI SERT, PAS UN HASARD PUR. Sur mille deux cents photos, un tirage
+// uniforme ressortirait surtout des photos moyennes :
+//   — JAMAIS PUBLIÉES d'abord : c'est la matière qui dort ;
+//   — LES BIEN NOTÉES pèsent plus, une non notée garde sa chance (la pépite
+//     qu'on n'avait pas vue), une photo à 1 ou 2 étoiles presque aucune ;
+//   — CINQ MATCHS DIFFÉRENTS : sinon cinq photos de la même rafale ;
+//   — DES ANCIENNES ET DES RÉCENTES, trois au plus de chaque moitié : c'est le
+//     « retomber sur » de la demande.
+//
+// LE TIRAGE TIENT LA JOURNÉE, comme l'idée du jour, et change à minuit ;
+// « Rebattre » en tire cinq autres. Rien n'est stocké.
+const INSPIRATION_MONTREE = 5;
+let graineInspiration = null;
+let derniereInspiration = '';
+
+function alea(graine) {
+  let a = graine >>> 0 || 1;
+  return () => {
+    a += 0x6d2b79f5;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function poidsDInspiration(p) {
+  if (!p.note) return 1;
+  return p.note >= 3 ? p.note : 0.15;
+}
+
+function tirerLInspiration() {
+  const jour = new Date().toISOString().slice(0, 10);
+  const graine = graineInspiration ?? [...jour].reduce((g, c) => (g * 31 + c.charCodeAt(0)) >>> 0, 11);
+  const hasard = alea(graine);
+  const pretes = (etat.photos ?? []).filter((p) => p.cle && p.envoi === 'fait');
+  const neuves = pretes.filter((p) => !p.parutions?.length);
+  const viviers = neuves.length >= INSPIRATION_MONTREE ? neuves : pretes;
+  // La moitié ancienne et la moitié récente, coupées à la date médiane.
+  const dates = viviers.map((p) => p.prise_le ?? '').sort();
+  const mediane = dates[Math.floor(dates.length / 2)] ?? '';
+  // Tirage pondéré sans remise (Efraimidis–Spirakis) : chaque photo reçoit une
+  // clé hasard^(1/poids), on garde les plus fortes.
+  const classees = viviers
+    .map((p) => ({ p, cle: hasard() ** (1 / poidsDInspiration(p)) }))
+    .sort((a, b) => b.cle - a.cle);
+  const tirees = [];
+  const matchs = new Set();
+  const moities = { ancienne: 0, recente: 0 };
+  for (const passe of [true, false]) {
+    for (const { p } of classees) {
+      if (tirees.length >= INSPIRATION_MONTREE) break;
+      if (tirees.includes(p)) continue;
+      const m = cleDuMatch(p);
+      const moitie = (p.prise_le ?? '') < mediane ? 'ancienne' : 'recente';
+      // Première passe stricte ; la seconde comble si la réserve est petite.
+      if (passe && (matchs.has(m) || moities[moitie] >= 3)) continue;
+      tirees.push(p);
+      matchs.add(m);
+      moities[moitie] += 1;
+    }
+  }
+  return tirees;
+}
+
+function legendeDInspiration(p) {
+  const ev = p.evenement;
+  const quand = ev?.date_debut ?? p.prise_le;
+  const date = quand ? new Date(quand).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+  const match = [ev?.titre, date].filter(Boolean).join(' · ');
+  const mots = (etat.etiquettes ?? [])
+    .filter((e) => p.etiquettes?.has(e.id))
+    .sort((a, b) => (a.famille === b.famille ? a.ordre - b.ordre : a.famille === 'recit' ? -1 : 1))
+    .map((e) => e.nom);
+  return { match, mots };
+}
+
+function gabaritInspiration(tirees) {
+  if (!tirees.length) {
+    return `<p class="vide insp-vide">Tes photos arriveront ici — importe ton prochain match dans la
+      <a href="#yuno/phototheque">photothèque</a>.</p>`;
+  }
+  return `<div class="insp-mosaique">${tirees.map((p) => {
+    const { match, mots } = legendeDInspiration(p);
+    // CINQ DE MÊME TAILLE, côte à côte (correction de Noé) : la légende ne
+    // garde que ce que la photo raconte ; le match se lit en l'ouvrant.
+    return `<button type="button" class="insp-photo" data-insp="${p.id}"
+        aria-label="Ouvrir la photo${match ? ` de ${echapper(match)}` : ''}"${match ? ` title="${echapper(match)}"` : ''}>
+        ${p.vignette ? `<img src="${echapper(p.vignette)}" alt="" decoding="async">` : ''}
+        <span class="insp-legende">${mots.length ? `<span class="insp-mots">${echapper(mots.slice(0, 2).join(' · '))}</span>` : ''}</span>
+      </button>`;
+  }).join('')}</div>
+    <button type="button" class="insp-rebattre" data-insp-rebattre aria-label="Tirer cinq autres photos"
+      title="Tirer cinq autres photos">${svg('rebattre', 16)}</button>`;
+}
+
+// LE COMPTE « À TRIER » DE LA PAGE CRÉER : la tuile pose un [data-a-trier],
+// ce module y écrit le nombre.
+export async function compteATrier(element) {
+  if (!etat.photos) {
+    try { await chargerEnSilence(); } catch { return; }
+  }
+  if (element.isConnected) element.textContent = String(pileATrier().length);
+}
+
+export async function inspiration(element) {
+  if (!element.dataset.branche) {
+    element.dataset.branche = 'oui';
+    element.addEventListener('click', (e) => {
+      if (e.target.closest('[data-insp-rebattre]')) {
+        graineInspiration = Math.floor(Math.random() * 4294967296);
+        inspiration(element);
+        return;
+      }
+      const t = e.target.closest('[data-insp]');
+      if (t) ouvrirLInspiration(photo(t.dataset.insp));
+    });
+  }
+  // Le dernier tirage se repose tout de suite : la page Créer se redessine à
+  // chaque geste, et cinq cases vides qui se remplissent à chaque fois
+  // clignoteraient.
+  if (derniereInspiration) element.innerHTML = derniereInspiration;
+  else element.innerHTML = '<div class="insp-mosaique insp-attente">' + '<span class="insp-photo"></span>'.repeat(5) + '</div>';
+  try {
+    if (!etat.photos) await chargerEnSilence();
+    const tirees = tirerLInspiration();
+    await signer(tirees);
+    const html = gabaritInspiration(tirees);
+    derniereInspiration = html;
+    if (element.isConnected && element.innerHTML !== html) element.innerHTML = html;
+  } catch (e) {
+    console.error('Photos de Créer non tirées', e);
+  }
+}
+
+// LA PHOTO EN GRAND, ET DEUX GESTES : en faire un carrousel, voir son match.
+let fenetreInspiration = null;
+
+function fermerLInspiration() {
+  fenetreInspiration?.remove();
+  fenetreInspiration = null;
+  document.removeEventListener('keydown', echapInspiration);
+}
+function echapInspiration(e) { if (e.key === 'Escape') fermerLInspiration(); }
+
+function ouvrirLInspiration(p) {
+  if (!p) return;
+  fermerLInspiration();
+  const { match, mots } = legendeDInspiration(p);
+  const etoiles = p.note ? '★'.repeat(p.note) : '';
+  fenetreInspiration = document.createElement('div');
+  fenetreInspiration.className = 'insp-fenetre';
+  fenetreInspiration.innerHTML = `
+    <div class="insp-fenetre-cadre" role="dialog" aria-modal="true" aria-label="Photo">
+      <button type="button" class="insp-fermer" data-insp-fermer aria-label="Fermer">${svg('fermer', 18)}</button>
+      <img src="${echapper(p.vignette ?? p.url ?? '')}" alt="">
+      <div class="insp-fenetre-pied">
+        <p class="insp-fenetre-legende">${match ? `<span>${echapper(match)}</span>` : ''}${
+          etoiles ? `<span class="insp-etoiles">${etoiles}</span>` : ''}${
+          mots.length ? `<span class="insp-mots">${echapper(mots.join(' · '))}</span>` : ''}</p>
+        <div class="insp-gestes">
+          <button type="button" class="car-puce" data-insp-carrousel>${svg('carrousel', 15)}<span>En faire un carrousel</span></button>
+          ${p.evenement_id ? `<a class="car-puce" href="#yuno/phototheque/${echapper(p.evenement_id)}" data-insp-fermer>${svg('match', 15)}<span>Voir son match</span></a>` : ''}
+        </div>
+      </div>
+    </div>`;
+  fenetreInspiration.addEventListener('click', (e) => {
+    if (e.target === fenetreInspiration || e.target.closest('[data-insp-fermer]')) { fermerLInspiration(); return; }
+    const b = e.target.closest('[data-insp-carrousel]');
+    if (b) carrouselDepuis(p, b);
+  });
+  document.addEventListener('keydown', echapInspiration);
+  document.body.append(fenetreInspiration);
+  fenetreInspiration.querySelector('[data-insp-carrousel]')?.focus();
+  // La vignette s'affiche tout de suite, l'original la remplace une fois là.
+  if (p.url && p.url !== p.vignette) {
+    const original = new Image();
+    original.onload = () => {
+      const img = fenetreInspiration?.querySelector('.insp-fenetre-cadre img');
+      if (img) img.src = p.url;
+    };
+    original.src = p.url;
+  }
+}
+
+// Un carrousel neuf, cette photo dedans, et l'on y va.
+async function carrouselDepuis(p, bouton) {
+  bouton.disabled = true;
+  try {
+    const jour = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+    const c = await api.creerCarrousel({ nom: `Carrousel du ${jour}` });
+    await api.ajouterMediasDeCarrousel([{
+      id: crypto.randomUUID(),
+      carrousel_id: c.id,
+      cle: p.cle,
+      nom: p.nom,
+      genre: 'photo',
+      type: 'image/jpeg',
+      taille: p.taille,
+      photo_id: p.id,
+    }]);
+    relireAuProchainMontage();
+    fermerLInspiration();
+    location.hash = `#yuno/carrousel/${c.id}`;
+  } catch (e) {
+    console.error('Carrousel non créé', e);
+    bouton.disabled = false;
+    bulle("Ce n'est pas passé", "Le carrousel n'a pas pu être créé.", bouton);
+  }
+}
+
 export default {
   /** @param {HTMLElement} element @param {{ id?: string|null }} route */
   monter(element, { id = null } = {}) {
@@ -2901,6 +3132,13 @@ export default {
     const pour = genre ? id.slice((genre === 'parution' ? PREFIXE_POUR : PREFIXE_CARROUSEL).length) : null;
     // LA PHOTOTHÈQUE S'OUVRE SUR TOUTES SES PHOTOS : c'est la recherche,
     // sans filtre. Les albums par match sont une page à côté.
+    const pileDemandee = id === A_TRIER;
+    if (pileDemandee) {
+      id = RECHERCHE;
+      // L'adresse redevient celle de la photothèque : refermer la pile ne doit
+      // pas la rouvrir.
+      history.replaceState(null, '', '#yuno/phototheque');
+    }
     const versRecherche = !id || id === RECHERCHE || pour;
     vueCourante = versRecherche ? 'recherche' : id === ALBUMS ? 'liste' : 'match';
     if (versRecherche && !pour) id = RECHERCHE;
@@ -2929,5 +3167,6 @@ export default {
     dessiner();
     const enCours = (etat.photos ?? []).some(enRoute);
     if (!etat.photos || (!enCours && Date.now() - etat.chargeLe > RELIRE_APRES_MS)) charger();
+    if (pileDemandee) (chargementEnCours ?? Promise.resolve()).then(() => ouvrirLaPile());
   },
 };

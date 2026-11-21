@@ -5484,6 +5484,23 @@ body[data-espace="yuno"] #vue .car-match select {
 }
 .creer > .bloc,
 .creer > .note-cloture { margin: 0; }
+/* Le raccourci vers la page Créer indépendante : discret, en haut à droite. */
+.creer-a-part {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--bordure);
+  color: var(--texte-discret);
+  font-size: 0.8125rem;
+  text-decoration: none;
+  margin-bottom: calc(-1 * var(--creer-ecart) + 4px);
+}
+.creer-a-part:hover,
+.creer-a-part:focus-visible { color: var(--texte); border-color: var(--texte-discret); }
 
 /* --- L'idée du jour, en carte BASSE : elle inspire, elle n'est pas le sujet.
    Le titre, le format et le pilier ; la trace et la preuve restent dans la
@@ -7011,7 +7028,68 @@ body[data-atelier="creer"] .ouvrir-capture { bottom: calc(76px + env(safe-area-i
 body[data-atelier="creer"] :is(.pht-tuile, .pht-match-cadre, .pht-vue-image, .porte-pht-cadre, .porte-car-cadre,
   .pht-apercu-cadre, .pht-fen-vignette, .car-vignette, .car-tuile, .car-sel-item, .pht-match, .pht-filtres,
   .pht-filtres-tel, .pht-choix, .pht-barre-sel, .pht-menu-liste, .pht-ordre-menu, .car-liste-tuile, .car-import,
-  .car-tout, .creer-matiere, .bloc, .grande-porte) { border-radius: 0; }
+  .car-tout, .bloc, .grande-porte, .insp-photo, .insp-idees, .insp-fenetre-cadre img) { border-radius: 0; }
+/* Le bloc des cinq photos ouvre la page : un vrai blanc avant les deux outils. */
+body[data-atelier="creer"] .atelier-creer > .creer-inspiration { margin-bottom: 32px; }
+/* La photothèque à gauche, la liste « Publier » à sa droite ; empilées au téléphone. */
+body[data-atelier="creer"] .atelier-duo { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
+@media (min-width: 48rem) {
+  body[data-atelier="creer"] .atelier-duo { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 32px; }
+  body[data-atelier="creer"] .atelier-duo .atelier-rubrique { margin-top: 0; }
+}
+body[data-atelier="creer"] .atelier-duo .atelier-vedette-image { aspect-ratio: 16 / 10; }
+/* « Publier » : quatre tuiles, deux rangées de deux — une icône, un nom. Sur
+   ordinateur elles prennent la hauteur de la photothèque d'à côté. */
+body[data-atelier="creer"] .atelier-tuiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(6rem, 1fr);
+  gap: 8px;
+}
+/* SUR ORDINATEUR, LE GROUPE A LA HAUTEUR DE L'IMAGE DE LA PHOTOTHÈQUE, pas
+   plus (demande de Noé) : les deux colonnes ont la même largeur, donc le même
+   rapport 16/10 donne la même hauteur — sans rien mesurer. */
+/* DES TUILES CARRÉES (demande de Noé), et le groupe garde la hauteur de
+   l'image : la colonne des tuiles vaut 10/16 de celle de la photothèque, donc
+   un groupe carré a exactement la hauteur d'une image en 16/10. */
+@media (min-width: 48rem) {
+  body[data-atelier="creer"] .atelier-duo { grid-template-columns: minmax(0, 16fr) minmax(0, 10fr); }
+  body[data-atelier="creer"] .atelier-tuiles { gap: 12px; aspect-ratio: 1; grid-auto-rows: minmax(0, 1fr); }
+}
+@media (max-width: 47.99rem) {
+  body[data-atelier="creer"] .atelier-tuiles { grid-auto-rows: auto; }
+  body[data-atelier="creer"] .atelier-tuile { aspect-ratio: 1; }
+}
+body[data-atelier="creer"] .atelier-tuile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  min-width: 0;
+  padding: 16px;
+  color: var(--texte);
+  text-decoration: none;
+  background: var(--fond-carte);
+  border-radius: 12px;
+  transition: background 0.2s;
+}
+body[data-atelier="creer"] .atelier-tuile svg { width: 72px; height: 72px; color: #fff; }
+body[data-atelier="creer"] .atelier-tuile-chiffre {
+  font-family: "Gloock", Georgia, serif;
+  font-size: 72px;
+  line-height: 72px;
+  color: #fff;
+}
+@media (max-width: 47.99rem) {
+  body[data-atelier="creer"] .atelier-tuile { gap: 8px; padding: 12px; }
+  body[data-atelier="creer"] .atelier-tuile svg { width: 56px; height: 56px; }
+  body[data-atelier="creer"] .atelier-tuile-chiffre { font-size: 56px; line-height: 56px; }
+}
+body[data-atelier="creer"] .atelier-tuile:hover { background: color-mix(in srgb, var(--fond-carte) 85%, var(--texte)); }
+body[data-atelier="creer"] .atelier-tuile:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+body[data-atelier="creer"] .atelier-tuile-nom { font-size: 12px; font-weight: 400; line-height: 16px; color: var(--texte-discret); }
 body[data-atelier="creer"] .pht-tuile.choisie::after { border-radius: 0; }
 /* Sur ordinateur, les deux outils passent en paysage : en 3:4 ils prenaient
    toute la hauteur de l'écran, et « Publier » tombait sous la ligne de flottaison. */
@@ -7115,3 +7193,344 @@ body[data-atelier="creer"] #vue .atelier-h1 { font-size: clamp(32px, 4.5vw, 52px
    barre prend l'air qu'aurait laissé le titre. Le dock est fixé, c'est donc ce
    qui le suit dans la page. */
 body[data-atelier="creer"] .atelier-sans-titre ~ .atelier-dock + * { margin-top: var(--espace-24); }
+
+/* --- Créer : de quoi partir — cinq photos et trois idées (21 novembre 2026) ---
+   Cinq photos en 4/5 côte à côte sur trois quarts, les idées sur le quart
+   qui reste, à la même hauteur (correction de Noé). Sur téléphone, la rangée
+   de photos garde toute la largeur et les idées passent dessous. */
+.creer-inspiration {
+  display: grid;
+  /* AU TÉLÉPHONE : TROIS PHOTOS ET LES IDÉES À LEUR DROITE (demande de Noé),
+     sur deux tiers et un tiers — un quart y laissait 85 px aux idées. */
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  align-items: stretch;
+  gap: 6px;
+}
+@media (min-width: 48rem) {
+  .creer-inspiration { grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); gap: var(--espace-12); }
+}
+/* LES PHOTOS DONNENT LA HAUTEUR, la tuile des idées la prend : sans
+   `contain: size`, une idée longue grandissait la rangée au-dessus des photos
+   (mesuré à 778 px : 159 contre 129). Ce qui ne tient pas se coupe. */
+.creer-inspiration .insp-idees { contain: size; overflow: hidden; }
+.creer-inspiration .insp-idee { overflow: hidden; }
+@media (max-width: 47.99rem) {
+  /* Préfixée : la règle de base de la mosaïque vient plus bas dans la feuille. */
+  .creer-inspiration .insp-mosaique { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .creer-inspiration .insp-mosaique > :nth-child(n + 4) { display: none; }
+}
+.insp-photos { position: relative; min-width: 0; }
+.insp-mosaique {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+.insp-photo {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 5;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 10px;
+  background: var(--fond-carte);
+  cursor: zoom-in;
+}
+.insp-photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s;
+}
+.insp-photo:hover img { transform: scale(1.03); }
+@media (prefers-reduced-motion: reduce) { .insp-photo img { transition: none; } }
+
+/* Ce que la photo raconte : c'est ce qui souffle le style de post. */
+.insp-legende {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 24px 8px 6px;
+  text-align: left;
+  color: #fff;
+  background: linear-gradient(to top, rgb(0 0 0 / 70%), transparent);
+  pointer-events: none;
+}
+.insp-legende:empty { display: none; }
+.insp-mots {
+  display: block;
+  font-size: 0.6875rem;
+  opacity: 0.9;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 47.99rem) { .insp-legende { display: none; } }
+
+.insp-rebattre {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: #fff;
+  background: rgb(0 0 0 / 45%);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.insp-rebattre::before { content: ''; position: absolute; inset: -8px; }
+.insp-rebattre:hover { background: rgb(0 0 0 / 65%); }
+
+/* Les idées : une tuile à la hauteur des photos, qui défile VERS LE BAS — une
+   idée par hauteur, aimantée, à la molette comme au doigt. Les points à droite
+   disent où l'on en est. */
+.insp-idees {
+  position: relative;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  background: var(--fond-carte);
+  border-radius: 10px;
+}
+.insp-idees-defile {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+}
+.insp-idees-defile::-webkit-scrollbar { display: none; }
+.insp-idees-defile:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.insp-idee {
+  position: relative;
+  display: flex;
+  height: 100%;
+  padding: 12px 22px;
+  overflow: hidden;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+.insp-idee-corps {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-height: 0;
+  /* Un blanc égal en haut et en bas. Le centrage se fait par des
+     marges automatiques et non par justify-content : quand le texte ne tient
+     pas, elles tombent à zéro et c'est le BAS qui se coupe, jamais le haut. */
+  padding: 20px 0;
+  text-align: center;
+  color: var(--texte);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.insp-idee-titre {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  font-size: 1.3125rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.insp-idee-corps:hover .insp-idee-titre { color: var(--accent); }
+.insp-idee-corps > :first-child { margin-top: auto; }
+.insp-idee-corps > :last-child { margin-bottom: auto; }
+.insp-idee-entete { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+.insp-idee-entete .etiquette { max-width: 100%; }
+.insp-idees-vide { margin: 0; padding: 12px; font-size: 0.8125rem; color: var(--texte-discret); }
+.insp-points {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.insp-points > span { width: 5px; height: 5px; border-radius: 50%; background: var(--bordure); }
+.insp-points > span.actif { background: var(--accent); }
+@media (max-width: 47.99rem) {
+  /* Une colonne de 110 px : le titre seul, plus petit ; le pilier et le format
+     se lisent en ouvrant l'idée. */
+  /* Le même retrait des deux côtés : les points de droite ne décentrent pas
+     le texte (demande de Noé). */
+  .insp-idee { padding: 8px 14px; }
+  .insp-idee-corps { padding: 0; gap: 0; }
+  .insp-idee-titre { -webkit-line-clamp: 4; font-size: 0.8125rem; line-height: 1.25; }
+  .insp-idee-entete { display: none; }
+  /* Les étiquettes masquées ne retiennent plus le bas : le titre porte les deux
+     marges automatiques, sinon il tombe au pied de la tuile. */
+  .insp-idee-titre { margin-block: auto; }
+  .insp-points { right: 5px; }
+}
+
+/* La photo en grand, et ses deux gestes. */
+.insp-fenetre {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(0 0 0 / 82%);
+}
+.insp-fenetre-cadre {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(100%, 60rem);
+  max-height: 100%;
+}
+.insp-fenetre-cadre img {
+  width: 100%;
+  max-height: 72vh;
+  object-fit: contain;
+  border-radius: 10px;
+}
+.insp-fermer {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  color: #fff;
+  background: rgb(0 0 0 / 55%);
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.insp-fenetre-pied { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+.insp-fenetre-legende { display: flex; flex-direction: column; align-items: center; gap: 2px; margin: 0; color: #fff; font-size: 0.875rem; }
+.insp-fenetre-legende .insp-mots { white-space: normal; }
+.insp-etoiles { color: var(--accent); letter-spacing: 1px; }
+.insp-gestes { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+
+/* --- L'atelier : la porte « À trier » au téléphone, les onglets en haut sur
+   ordinateur (21 novembre 2026, demande de Noé) --- */
+body[data-atelier="creer"] .atelier-tuile-tel { display: none; }
+@media (max-width: 47.99rem) {
+  body[data-atelier="creer"] .atelier-tuile-ordi { display: none; }
+  body[data-atelier="creer"] .atelier-tuile-tel { display: flex; }
+}
+body[data-atelier="creer"] .atelier-haut { display: none; }
+@media (min-width: 60rem) {
+  body[data-atelier="creer"] .atelier-dock { display: none; }
+  body[data-atelier="creer"] #vue { padding-bottom: var(--espace-48); }
+  body[data-atelier="creer"] .ouvrir-capture { bottom: max(24px, env(safe-area-inset-bottom)); }
+  /* Le menu à gauche, le logo au centre, les onglets à droite : deux colonnes
+     égales autour du logo le gardent au vrai centre. */
+  body[data-atelier="creer"] .atelier-barre { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+  body[data-atelier="creer"] .atelier-barre-fin { display: none; }
+  body[data-atelier="creer"] .atelier-haut {
+    display: flex;
+    justify-self: end;
+    align-items: stretch;
+    gap: 4px;
+    height: 100%;
+  }
+  body[data-atelier="creer"] .atelier-haut a {
+    position: relative;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--texte-discret);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+  body[data-atelier="creer"] .atelier-haut a:hover { color: var(--texte); }
+  body[data-atelier="creer"] .atelier-haut a.actif { color: var(--texte); }
+  body[data-atelier="creer"] .atelier-haut a.actif::after {
+    content: "";
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: -1px;
+    height: 2px;
+    background: var(--accent);
+  }
+  body[data-atelier="creer"] .atelier-haut a:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
+}
+
+/* AU TÉLÉPHONE, PAS DE GRAND TITRE SUR LES PAGES DES ONGLETS (21 novembre 2026,
+   demande de Noé) : l'onglet allumé dans le dock dit déjà où l'on est, et le
+   titre prenait le premier écran. Il reste pour le lecteur d'écran ; la tête ne
+   garde que l'air sous la barre. */
+@media (max-width: 47.99rem) {
+  body[data-atelier="creer"] .atelier-tete { padding: var(--espace-16) 0 0; }
+  body[data-atelier="creer"] #vue .atelier-h1 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* AU TÉLÉPHONE, LA PHOTOTHÈQUE ET SES QUATRE TUILES CÔTE À CÔTE (21 novembre
+   2026, demande de Noé) : la photothèque en portrait sur deux tiers, les tuiles
+   en colonne sur le tiers restant, « À trier » en tête. Le groupe prend la
+   hauteur de l'image : une image en 3/4 sur deux tiers, c'est une colonne
+   d'un tiers en 3/8. */
+@media (max-width: 47.99rem) {
+  body[data-atelier="creer"] .atelier-duo { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 8px; align-items: start; }
+  body[data-atelier="creer"] .atelier-duo .atelier-vedette-image { aspect-ratio: 3 / 4; }
+  body[data-atelier="creer"] .atelier-tuiles {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: minmax(0, 1fr);
+    aspect-ratio: 3 / 8;
+    gap: 6px;
+  }
+  body[data-atelier="creer"] .atelier-tuile { aspect-ratio: auto; gap: 4px; padding: 6px; border-radius: 10px; }
+  body[data-atelier="creer"] .atelier-tuile-tel { order: -1; }
+  body[data-atelier="creer"] .atelier-tuile svg { width: 26px; height: 26px; }
+  body[data-atelier="creer"] .atelier-tuile-chiffre { font-size: 26px; line-height: 26px; }
+  body[data-atelier="creer"] .atelier-tuile-nom { font-size: 10.5px; line-height: 13px; }
+}
+/* Sans leur nom au téléphone (demande de Noé) : l'icône et le chiffre suffisent
+   à cette taille ; le nom reste au survol et pour le lecteur d'écran. */
+@media (max-width: 47.99rem) {
+  body[data-atelier="creer"] .atelier-tuile-nom { display: none; }
+}
+/* LE COMPTE « À TRIER » parle la langue des chiffres de l'accueil du hub — Clash
+   Display 700 — et en jaune : c'est le seul chiffre de la page qui appelle un
+   geste. */
+body[data-atelier="creer"] .atelier-tuile-tel .atelier-tuile-chiffre {
+  font-family: var(--police-affichage);
+  font-weight: 700;
+  color: var(--accent);
+}
+/* TUILES CARRÉES ET IMAGE À LEUR HAUTEUR, au téléphone (demande de Noé). La
+   colonne des tuiles est calculée pour que quatre carrés et leurs trois
+   écarts fassent exactement la hauteur d'une image en 3/4 : avec un écart de
+   colonnes de 8 px et de 6 px entre tuiles, la largeur d'une tuile vaut
+   (largeur − 8) / 4 − 3,375 px. */
+@media (max-width: 47.99rem) {
+  body[data-atelier="creer"] .atelier-duo { grid-template-columns: minmax(0, 1fr) calc((100% - 8px) / 4 - 3.375px); }
+  body[data-atelier="creer"] .atelier-tuiles { aspect-ratio: auto; grid-auto-rows: auto; }
+  body[data-atelier="creer"] .atelier-tuile { aspect-ratio: 1; }
+  /* Les suggestions : quatre photos, deux lignes de deux. */
+  .creer-inspiration .insp-mosaique { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .creer-inspiration .insp-mosaique > :nth-child(n + 4) { display: block; }
+  .creer-inspiration .insp-mosaique > :nth-child(n + 5) { display: none; }
+}
+@media (max-width: 47.99rem) {
+  /* Les suggestions en carré au téléphone, comme les tuiles (demande de Noé). */
+  .creer-inspiration .insp-photo { aspect-ratio: 1; }
+}

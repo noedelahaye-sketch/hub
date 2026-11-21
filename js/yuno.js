@@ -88,7 +88,7 @@ import pageProjet from './projet.js';
 // filtre voyage déjà par la route (`#taches/photo`).
 import pageTaches from './taches.js';
 import outilCarrousel from './carrousel.js';
-import outilPhototheque, { apercuParution, choisirUnePhoto } from './phototheque.js';
+import outilPhototheque, { apercuParution, choisirUnePhoto, inspiration, compteATrier } from './phototheque.js';
 import { animerLaCoche } from './mouvements.js';
 import { bulle, suivreLesGestes, dernierGeste } from './bulle.js';
 import {
@@ -507,7 +507,7 @@ function enTeteDeLAtelier(vue, titre, icones, etat = null) {
   const actif = vue === 'identite' ? 'creer' : vue;
   const onglets = [
     ['creer', 'Créer', false],
-    ['editorial', 'Éditorial', false],
+    ['editorial', 'Calendrier', false],
     ['phototheque', 'Photothèque', true],
     ['carrousel', 'Carrousel', true],
     ['banque', 'Idées', false],
@@ -518,6 +518,13 @@ function enTeteDeLAtelier(vue, titre, icones, etat = null) {
       <a class="atelier-logo" href="#yuno/creer" aria-label="Créer — l'atelier de Yuno">
         <img src="img/yuno-logo-kit.png" alt="Yuno" width="633" height="201" decoding="async"></a>
       <span class="atelier-barre-fin" aria-hidden="true"></span>
+      ${/* SUR ORDINATEUR, LES ONGLETS MONTENT DANS LA BARRE (demande de Noé) :
+         le dock du bas est un geste de pouce, pas de souris. */''}
+      <nav class="atelier-haut" aria-label="L'atelier">
+        ${/* Sans « Créer » (demande de Noé) : le logo au centre y mène déjà. */''}
+        ${onglets.filter(([cle]) => cle !== 'creer').map(([cle, nom]) => `
+          <a href="#yuno/${cle}" class="${cle === actif ? 'actif' : ''}"${cle === actif ? ' aria-current="page"' : ''}>${nom}</a>`).join('')}
+      </nav>
     </div>
     ${sansTitre
       ? `<h1 class="hors-ecran atelier-sans-titre">${echapper(titre)}</h1>`
@@ -2708,81 +2715,12 @@ export function ideeDuJour(publications, jour = versDateISO()) {
   return tirageDuJour(banque, jour)[0] ?? null;
 }
 
-// Programmer : un calendrier avec un « + ». Un dessin, pas un caractère — le
-// site n'écrit qu'en × + ↗ ‹ ›, et un émoji arriverait avec sa police à lui.
-const PROGRAMMER = `<svg viewBox="0 0 24 24" width="18" height="18" fill="none"
-  stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
-  aria-hidden="true" focusable="false">
-  <path d="M21 11.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h6.5"></path>
-  <path d="M3 10h18M8 2v4M16 2v4"></path>
-  <path d="M18 15v6M15 18h6"></path></svg>`;
 
 // Le re-tirage à la main a disparu le 15 août 2026 (demande de Noé) : le coin
 // de la carte porte désormais le geste de programmer, qui vaut mieux qu'un
 // second tirage. L'idée du jour reste tirée une fois par jour, et change à
 // minuit — c'est ce qui en fait une carte qu'on tire, pas une roue qu'on
 // tourne.
-export function construireIdeeDuJour(publications, { jour = versDateISO() } = {}) {
-  const idee = ideeDuJour(publications, jour);
-  const trace = idee ? traceDuFormat(publications, idee) : null;
-
-  if (!idee) {
-    return `
-      <section class="bloc idee-jour">
-        <h2>L'idée du jour</h2>
-        <p class="vide">Ta banque est vide — note une idée, même bancale, et elle reviendra
-          t'inspirer un matin.</p>
-      </section>`;
-  }
-
-  // La CARTE DU JOUR (forme validée par Noé, 15 août 2026) : la seule carte
-  // chaude de la page — un souffle d'or dans le fond, la date du jour en tête,
-  // le re-tirage dans son coin, et le geste de programmer DANS la carte. C'est
-  // l'objet qu'on vient tirer chaque matin, il ne ressemble à rien d'autre.
-  return `
-    <section class="bloc idee-jour">
-      <div class="idee-jour-tete">
-        <h2>L'idée du jour</h2>
-        <span class="discret idee-jour-date">le ${echapper(
-          depuisDateISO(jour).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }),
-        )}</span>
-      </div>
-      <div class="carte-jour">
-        <!-- Programmer tient dans le coin (demande de Noé, 15 août 2026), à la
-             place du re-tirage : une icône, et la ligne « La programmer » qui
-             traînait sous la carte disparaît.
-             Le champ date est TRANSPARENT PAR-DESSUS l'icône, et non déclenché
-             en JS : le clic tombe directement sur lui, donc le sélecteur natif
-             s'ouvre partout, sans dépendre de la méthode showPicker que
-             Safari n'a eu que tard (et qui s'écrit ici sans accents graves :
-             dans un commentaire de gabarit, ils ferment la chaîne). HORS du bouton du corps — deux contrôles ne s'imbriquent
-             pas. -->
-        <span class="carte-jour-geste">
-          <span class="carte-jour-icone" aria-hidden="true">${PROGRAMMER}</span>
-          <input type="date" class="carte-jour-date" data-programmer="${echapper(idee.id)}"
-            title="Programmer cette idée"
-            aria-label="Programmer « ${echapper(idee.titre)} »">
-        </span>
-        <button type="button" class="idee-jour-corps" data-ouvrir-pub="${echapper(idee.id)}"
-          aria-label="Ouvrir « ${echapper(idee.titre)} »">
-          <span class="tuile-entete">
-            ${idee.pilier ? etiquettePilier(idee.pilier) : ''}
-            <span class="etiquette">${echapper(FORMATS[idee.format] ?? idee.format)}</span>
-          </span>
-          <span class="pub-titre">${echapper(idee.titre)}</span>
-          ${
-            // CE QUE LE FORMAT A DÉJÀ DONNÉ. C'est la seule chose de cette carte
-            // qu'on ne puisse pas deviner en lisant le titre, et elle change ce
-            // qu'on en fait : un format sorti trois fois se refait de confiance,
-            // un format jamais sorti demande qu'on l'essaie.
-            trace ? `<span class="discret pub-trace">${echapper(trace)}</span>` : ''
-          }
-          ${idee.preuve ? `<span class="discret pub-preuve">${echapper(idee.preuve)}</span>` : ''}
-        </button>
-      </div>
-    </section>`;
-}
-
 // --- CRÉER : UNE PAGE QUI INSPIRE, ET QUI OUVRE (15 septembre 2026) ----------
 //
 // LA DEMANDE DE NOÉ : « je déteste la page Créer de Yuno, repense-la plus
@@ -2826,88 +2764,82 @@ export function construireIdeeDuJour(publications, { jour = versDateISO() } = {}
 // choses à regarder. Partent avec elle : `partagerLAVenir`, `enChantier`,
 // `lignePublication`, `construirePiliers` et leurs styles.
 
-// --- DE LA MATIÈRE ------------------------------------------------------------
+// --- DE QUOI PARTIR : CINQ PHOTOS ET TROIS IDÉES (21 novembre 2026) -----------
 //
-// LA MATIÈRE QU'ON N'A PAS ENCORE PRISE. Le lien existe DÉJÀ en base :
-// `publications.evenement_id` porte le match qui a fait naître une parution
-// (29 août 2026, le post à J+1). On sait donc de quelles sorties quelque chose
-// est sorti — sans colonne nouvelle, et sans le deviner.
+// LA DEMANDE DE NOÉ : revoir « De la matière » en prenant les photos de la
+// photothèque — « l'objectif est de donner de l'inspiration pour créer un post,
+// retomber sur une photo et y voir un potentiel pour un style de publication »
+// —, et le coupler à l'idée du jour, plus petite, à sa droite, en TROIS idées
+// visibles une par une. Pas de nom pour le bloc : il ouvre la page.
 //
-// EXPORTÉE, comme tout ce qui classe dans ce fichier : un tirage se vérifie avec
-// des données factices, pas en regardant l'écran d'un jour particulier.
-export function matiereLibre(evenements, publications, photos = {}) {
-  const prises = new Set(publications.map((pub) => pub.evenement_id).filter(Boolean));
-  return momentsIllustres(evenements, photos).filter((sortie) => !prises.has(sortie.id));
+// Les cinq photos sont tirées et dessinées par js/phototheque.js, qui a la
+// réserve sous la main (`inspiration`). Ici, on ne pose que leur place.
+//
+// CE QUI EST PARTI : la matière tirée du CARNET (une photo par sortie, celle de
+// la fiche). La photothèque porte toutes les photos de chaque match — c'était
+// la même intention avec cinquante fois moins de matière.
+
+// TROIS IDÉES, TIRÉES POUR LA JOURNÉE, comme l'était l'idée du jour : même
+// graine, même stabilité, même changement à minuit. Laquelle on regarde vit
+// au niveau du module — la page se redessine à chaque geste, et revenir à la
+// première idée sous les yeux serait un défaut.
+const IDEES_MONTREES = 3;
+let ideeRegardee = 0;
+
+function carteDesIdees(publications, jour = versDateISO()) {
+  const banque = publications.filter((pub) => !pub.date_prevue && pub.statut !== 'publie');
+  const idees = tirageDuJour(banque, jour).slice(0, IDEES_MONTREES);
+  if (!idees.length) {
+    return `<section class="insp-idees" aria-label="Idées du jour">
+        <p class="insp-idees-vide">Ta banque est vide — note une idée, même bancale.</p>
+      </section>`;
+  }
+  if (ideeRegardee >= idees.length) ideeRegardee = 0;
+  // LES IDÉES DÉFILENT VERS LE BAS (21 novembre 2026, demande de Noé) : une
+  // par hauteur de tuile, aimantées, à la molette comme au doigt. Pas de titre
+  // ni de flèches ; les points, à droite, disent où l'on en est. Pas de geste
+  // de programmation non plus : il vit dans la fiche que l'idée ouvre.
+  return `
+    <section class="insp-idees" data-idees aria-label="Idées du jour">
+      <div class="insp-idees-defile" data-idees-defile tabindex="0">
+      ${idees.map((idee, k) => `
+        <div class="insp-idee" data-idee-rang="${k}">
+          <button type="button" class="insp-idee-corps" data-ouvrir-pub="${echapper(idee.id)}"
+            aria-label="Ouvrir « ${echapper(idee.titre)} »">
+            <span class="insp-idee-titre">${echapper(idee.titre)}</span>
+            <span class="insp-idee-entete">
+              ${idee.pilier ? etiquettePilier(idee.pilier) : ''}
+              <span class="etiquette">${echapper(FORMATS[idee.format] ?? idee.format)}</span>
+            </span>
+          </button>
+        </div>`).join('')}
+      </div>
+      ${idees.length > 1 ? `<span class="insp-points" aria-hidden="true">${idees.map((_, k) =>
+        `<span${k === ideeRegardee ? ' class="actif"' : ''}></span>`).join('')}</span>` : ''}
+    </section>`;
 }
 
-// TROIS, et c'est la largeur d'une rangée qui le dit : trois vignettes tiennent
-// côte à côte sur un ordinateur sans qu'aucune descende sous la taille où l'on
-// reconnaît une image. Au-delà, le bloc redeviendrait le MUR du Journal, qui est
-// à un geste et qui, lui, ne cache rien.
-const MATIERE_MONTREE = 3;
+// Le défilement dit quelle idée on regarde, et la page s'en souvient : elle se
+// redessine à chaque geste, et revenir à la première serait un défaut.
+function suivreLesIdees(defile) {
+  const rang = Math.round(defile.scrollTop / Math.max(1, defile.clientHeight));
+  if (rang === ideeRegardee) return;
+  ideeRegardee = rang;
+  defile.closest('[data-idees]')?.querySelectorAll('.insp-points > span')
+    .forEach((p, k) => p.classList.toggle('actif', k === rang));
+}
+function replacerLesIdees(racine) {
+  racine.querySelectorAll('[data-idees-defile]').forEach((d) => {
+    d.scrollTop = ideeRegardee * d.clientHeight;
+  });
+}
 
-// LE TIRAGE EST CELUI DU MUR DE PHOTOS ET DE L'IDÉE DU JOUR (`tirageDuJour`) :
-// la date sert de graine, rien n'est stocké, l'ordre est stable dans la journée
-// et change à minuit. Trois mécaniques de tirage sur une même page finiraient
-// par ne plus se ressembler.
-function blocDeLaMatiere(etat, { replie = false } = {}) {
-  const sorties = sortiesVecues(etat.evenements ?? []);
-  const libres = matiereLibre(etat.evenements ?? [], etat.publications, etat.photos);
-  const tirees = tirageDuJour(libres, versDateISO()).slice(0, MATIERE_MONTREE);
-  const reference = new Date();
-
-  // TROIS VIDES, ET AUCUN NE S'EXCUSE. Rien au carnet : la porte est dehors, pas
-  // dans l'application. Tout exploité : c'est une victoire, et elle se dit comme
-  // telle — c'est la règle des écrans vides du hub, « un espace vide ouvre une
-  // porte ».
-  const corps = tirees.length
-    ? `<ul class="matiere">${tirees
-        .map((sortie) => {
-          const photo = etat.photos[sortie.photo_chemin];
-          const quand = quandDeLaLigne(depuisDateISO(jourDeLaSortie(sortie)), reference);
-          const nom = (sortie.titre ?? sortie.lieu ?? '').trim() || TYPES_MOMENT.autre;
-          return `
-          <li>
-            <button type="button" class="matiere-tuile" data-tirer-idee="${echapper(sortie.id)}"
-              aria-label="Noter une idée à partir de ${echapper(nom)}">
-              <img src="${echapper(photo)}" alt="" loading="lazy" decoding="async">
-              <span class="matiere-legende">
-                <span class="matiere-titre">${echapper(nom)}</span>
-                <span class="discret matiere-quand${
-                  quand.enChiffres ? ' chiffre' : ''
-                }">${echapper(quand.texte)}${
-                  sortie.type_moment && TYPES_MOMENT[sortie.type_moment]
-                    ? ` · ${echapper(TYPES_MOMENT[sortie.type_moment])}`
-                    : ''
-                }</span>
-              </span>
-            </button>
-          </li>`;
-        })
-        .join('')}</ul>`
-    : `<p class="vide">${
-        sorties.length
-          ? 'Tout ce que tu as photographié a déjà donné quelque chose. Retourne en chercher.'
-          : "Tes photos arriveront ici, et tes idées avec — joins-en une à ta prochaine sortie."
-      }</p>`;
-
-  // Repliée dans la page Créer, la rangée qui la porte dit déjà son nom et son
-  // compte : on ne garde que les sorties.
-  if (replie) return `<div class="bloc creer-matiere-corps" data-bloc="matiere">${corps}</div>`;
-
-  return `
-    <section class="bloc">
-      <h2>De la matière</h2>
-      <p class="discret sous-titre sous-bloc">
-        ${
-          sorties.length
-            ? `<span class="chiffre">${sorties.length}</span> sortie${
-                sorties.length > 1 ? 's' : ''
-              } au carnet. Presse-en une, l'idée part avec son nom.`
-            : 'Ce que tu as déjà dans les mains.'
-        }</p>
-      <div data-bloc="matiere">${corps}</div>
-    </section>`;
+// Le même bloc sur les deux pages Créer — celle du site et l'atelier.
+function blocDInspiration(etat) {
+  return `<div class="creer-inspiration">
+      <div class="insp-photos" data-inspiration></div>
+      ${carteDesIdees(etat.publications)}
+    </div>`;
 }
 
 // --- SES QUATRE PILIERS, EN BARRES --------------------------------------------
@@ -3026,47 +2958,55 @@ function blocDesPiliers(publications) {
 // LA PAGE CRÉER DE L'ATELIER : les deux outils en grand, à la manière des
 // tuiles de matchs du site de livraison — une photo en 3:4, son nom en gras,
 // une ligne grise dessous. Publier vient ensuite, en lignes séparées d'un filet.
+const GRAINE_DU_CHARGEMENT = Math.floor(Math.random() * 4294967296);
+
 function vueCreerDeLAtelier(etat) {
   const idees = etat.publications.filter((pub) => !pub.date_prevue && pub.statut !== 'publie').length;
-  const aujourdhui = versDateISO();
-  const dans7 = versDateISO(new Date(Date.now() + 6 * 24 * 3600 * 1000));
-  const semaine = etat.publications.filter(
-    (pub) => pub.date_prevue && pub.date_prevue >= aujourdhui && pub.date_prevue <= dans7,
-  ).length;
-  const tirage = melangeSeme(Object.values(etat.photos ?? {}), graineDuJour() + 11);
+  // LA COUVERTURE CHANGE À CHAQUE CHARGEMENT (21 novembre 2026, demande de
+  // Noé) — et seulement là : la page se redessine à chaque geste, et une photo
+  // qui changerait sous les doigts serait un défaut.
+  const tirage = melangeSeme(Object.values(etat.photos ?? {}), GRAINE_DU_CHARGEMENT);
   const couverture = (i) => (tirage[i]
     ? `<img src="${echapper(tirage[i])}" alt="" loading="lazy" decoding="async">` : '');
-  const ligne = (adresse, nom, service) => `
-    <a class="atelier-ligne" href="${adresse}">
-      <span class="atelier-ligne-nom">${nom}</span>
-      <span class="atelier-ligne-sous">${service}</span>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+  // Une tuile porte une icône — ou un CHIFFRE quand il en dit plus : la banque
+  // montre combien d'idées attendent (demande de Noé).
+  const tuile = (adresse, nom, icone, chiffre = null, classe = '') => `
+    <a class="atelier-tuile${classe}" href="${adresse}" title="${nom}"
+      aria-label="${chiffre ? `${chiffre} ${nom.toLowerCase()}` : nom}">
+      ${chiffre !== null
+        ? `<span class="atelier-tuile-chiffre"${chiffre === '' ? ' data-a-trier' : ''} aria-hidden="true">${chiffre}</span>`
+        : `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icone}</svg>`}
+      <span class="atelier-tuile-nom">${nom}</span>
     </a>`;
   return `
     ${enTete('creer', etat)}
     <div class="atelier-creer">
 
-      <nav class="atelier-vedettes" aria-label="Les deux outils">
+      ${blocDInspiration(etat)}
+
+      <!-- LA PHOTOTHÈQUE SEULE EN VEDETTE, « Publier » à sa droite (21 novembre
+           2026, demande de Noé) : le carrousel n'a pas besoin d'une photo
+           d'illustration, il rejoint les autres outils. -->
+      <div class="atelier-duo">
         <a class="atelier-vedette" href="#yuno/phototheque">
           <span class="atelier-vedette-image">${couverture(0)}</span>
           <span class="atelier-vedette-nom">Photothèque</span>
           <span class="atelier-vedette-sous">Trier, chercher, choisir</span>
         </a>
-        <a class="atelier-vedette" href="#yuno/carrousel">
-          <span class="atelier-vedette-image">${couverture(1)}<span class="atelier-vedette-points" aria-hidden="true"><span class="on"></span><span></span><span></span></span></span>
-          <span class="atelier-vedette-nom">Carrousel</span>
-          <span class="atelier-vedette-sous">Composer et télécharger un post</span>
-        </a>
-      </nav>
+        <!-- QUATRE TUILES ET NON UNE LISTE (21 novembre 2026, demande de Noé) :
+             une icône et un nom, deux rangées de deux, sans titre au-dessus. -->
+        <nav class="atelier-tuiles" aria-label="Publier">
+          ${tuile('#yuno/editorial', 'Calendrier éditorial', '<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4M17 3v4M3 11h18M8 15h3v3H8z"/>')}
+          ${tuile('#yuno/carrousel', 'Carrousel', '<rect x="7" y="4" width="10" height="16" rx="2"/><path d="M4 7v10M20 7v10"/>')}
+          ${tuile('#yuno/banque', idees > 1 ? 'Idées en banque' : 'Idée en banque', '', idees)}
+          ${tuile('#yuno/identite', 'L’identité de Yuno', '<path d="M3 9l9-5 9 5zM4 20h16M6 10v10M10 10v10M14 10v10M18 10v10"/>', null, ' atelier-tuile-ordi')}
+          ${/* AU TÉLÉPHONE, LA PILE « À TRIER » PREND LA PLACE DE L'IDENTITÉ
+             (demande de Noé) : c'est là qu'on trie, dans le métro. Le nombre
+             est écrit par la photothèque, qui seule a la réserve. */''}
+          ${tuile('#yuno/phototheque/a-trier', 'Photos à trier', '', '', ' atelier-tuile-tel')}
+        </nav>
+      </div>
 
-      <p class="atelier-surtitre atelier-rubrique">Publier</p>
-      <nav class="atelier-lignes" aria-label="Publier">
-        ${ligne('#yuno/editorial', 'Calendrier éditorial', semaine ? `<span class="chiffre">${semaine}</span> parution${semaine > 1 ? 's' : ''} cette semaine` : 'Rien de posé cette semaine')}
-        ${ligne('#yuno/banque', 'Banque d’idées', `<span class="chiffre">${idees}</span> idée${idees > 1 ? 's' : ''} en réserve`)}
-        ${ligne('#yuno/identite', 'L’identité de Yuno', 'Les quatre piliers')}
-      </nav>
-
-      ${construireIdeeDuJour(etat.publications)}
     </div>
     ${fenetreIdee(etat, optionsDIdee(etat))}
     ${pied()}`;
@@ -3083,18 +3023,25 @@ function vueCreer(etat) {
   const semaine = etat.publications.filter(
     (pub) => pub.date_prevue && pub.date_prevue >= aujourdhui && pub.date_prevue <= dans7,
   ).length;
-  const sorties = sortiesVecues(etat.evenements ?? []).length;
-
   return `
     ${enTete('creer', etat)}
     <div class="creer">
+      ${/* LA PORTE VERS LA PAGE INDÉPENDANTE (21 novembre 2026, demande de Noé) :
+         creer.html, les mêmes outils dans leur propre application. Petite et
+         à droite : c'est un raccourci, pas un outil de plus. */''}
+      <a class="creer-a-part" href="creer.html#yuno/creer" title="Ouvrir la page Créer à part">
+        Créer à part
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
+      </a>
       ${
         etat.cloture
           ? `<p class="note-cloture">C'est posté. Ferme l'app, la suite se passe dehors.</p>`
           : ''
       }
 
-      ${construireIdeeDuJour(etat.publications)}
+      ${blocDInspiration(etat)}
 
       <nav class="creer-lieux" aria-label="L'atelier">
         ${grandePorte({
@@ -3133,24 +3080,6 @@ function vueCreer(etat) {
         })}
       </nav>
 
-      <!-- LA MATIÈRE, REPLIÉE (choix de Noé : « gardée en petit »). Elle
-           deviendra la photothèque, avec le tri ; en attendant elle garde son
-           geste — presser une sortie pour en tirer une idée —, derrière une
-           rangée qu'on déplie. -->
-      <details class="creer-matiere">
-        <summary>
-          <span class="creer-matiere-icone" aria-hidden="true">${PHOTO}</span>
-          <span class="creer-matiere-mots">
-            <span class="creer-matiere-titre">De la matière</span>
-            <span class="discret">${
-              sorties
-                ? `<span class="chiffre">${sorties}</span> sortie${sorties > 1 ? 's' : ''} au carnet · une photo, une idée`
-                : 'Ce que tu as déjà dans les mains'
-            }</span>
-          </span>
-        </summary>
-        ${blocDeLaMatiere(etat, { replie: true })}
-      </details>
     </div>
 
     ${
@@ -3190,9 +3119,7 @@ function vueBanque(etat) {
     ${enTete('banque', etat)}
 
     <section class="bloc">
-      <h2>Banque d'idées</h2>
-      <p class="discret banque-intro">Le backlog créatif. Il ne se vide jamais,
-        et il ne réclame rien.</p>
+      <h2 class="hors-ecran">Banque d'idées</h2>
 
       <!-- LA BARRE DE LA BIBLIOTHÈQUE, au trait près (16 septembre 2026,
            demande de Noé) : une recherche, deux icônes, et la rangée de
@@ -6997,6 +6924,10 @@ export default {
       // LA FICHE D'UNE PARUTION porte la place de ses photos : la photothèque
       // la remplit (js/phototheque.js).
       section.querySelectorAll('[data-photos-pub]').forEach((el) => apercuParution(el));
+      // LES CINQ PHOTOS DE CRÉER : la photothèque les tire et les dessine.
+      section.querySelectorAll('[data-inspiration]').forEach((el) => inspiration(el));
+      section.querySelectorAll('[data-a-trier]').forEach((el) => compteATrier(el));
+      replacerLesIdees(section);
       // LA PHOTO DU CARNET SE CHOISIT AUSSI DANS LA PHOTOTHÈQUE (étape 4b) : le
       // champ fichier du carnet gagne une porte. La photo choisie y est posée
       // comme un fichier, et l'enregistrement du carnet fait le reste.
@@ -8269,33 +8200,6 @@ export default {
         return;
       }
 
-      // TIRER UNE IDÉE D'UNE PHOTO (15 septembre 2026). La tuile ouvre la MÊME
-      // capture que le « + » de la page — publication, sans date, la nature en
-      // dernier —, le nom de la sortie déjà écrit dedans. Ce n'est pas le titre
-      // de l'idée, c'est son point de départ : on le complète, ou on l'efface.
-      //
-      // `valeurs` est la voie normale de la tuile pour arriver remplie : c'est
-      // par elle qu'une ligne rouverte retrouve son titre. Rien à inventer.
-      const tirerIdee = evenement.target.closest('[data-tirer-idee]');
-      if (tirerIdee) {
-        const sortie = etat.evenements.find(
-          (element) => element.id === tirerIdee.dataset.tirerIdee,
-        );
-        if (!sortie) return;
-        etat.creationCal = {
-          debut: '',
-          fin: '',
-          nature: 'publication',
-          valeurs: { titre: (sortie.titre ?? sortie.lieu ?? '').trim() },
-        };
-        rendre();
-        // Le curseur AU BOUT du nom, et non devant : on vient écrire la suite.
-        const champ = section.querySelector('#cal-titre');
-        champ?.focus();
-        champ?.setSelectionRange(champ.value.length, champ.value.length);
-        return;
-      }
-
       // UN PILIER OUVRE LA BANQUE FILTRÉE DESSUS. L'état se pose AVANT que le
       // lien navigue — un écouteur délégué passe avant le comportement par
       // défaut —, et `naviguer` ne touche pas à `etat.pilier` : la banque
@@ -8320,7 +8224,10 @@ export default {
       // silencieusement le prochain contrôle posé ici. C'est la garde de la
       // tuile « Aujourd'hui » du hub, au mot près.
       const apercuIdee = evenement.target.closest('[data-ouvrir-pub]');
-      if (apercuIdee && !evenement.target.closest('button, a, input, select, textarea')) {
+      // L'aperçu peut ÊTRE lui-même un bouton (l'idée du jour de Créer) : il ne
+      // se garde pas contre lui-même, seulement contre les contrôles qu'il porte.
+      const controle = evenement.target.closest('button, a, input, select, textarea');
+      if (apercuIdee && (!controle || controle === apercuIdee)) {
         etat.ideeOuverte = apercuIdee.dataset.ouvrirPub;
         rendre();
         section.querySelector('.fenetre-fermer')?.focus();
@@ -9823,6 +9730,11 @@ export default {
       etat.rechercheContact = recherche.value;
       rendreContacts();
     });
+
+    // Le défilement ne remonte pas : on l'écoute en capture.
+    section.addEventListener('scroll', (evenement) => {
+      if (evenement.target.matches?.('[data-idees-defile]')) suivreLesIdees(evenement.target);
+    }, true);
 
     section.addEventListener('change', async (evenement) => {
       // Programmer une idée : choisir une date suffit, pas de bouton de plus.

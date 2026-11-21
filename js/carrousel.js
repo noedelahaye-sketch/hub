@@ -615,8 +615,6 @@ function gabaritListe() {
   }).join('');
   return `
     <div class="car-liste-tete">
-      <p class="car-liste-intro">Compose sur l'ordinateur, télécharge sur le téléphone : chaque carrousel
-        et ses photos te suivent d'un appareil à l'autre.</p>
       <button type="button" class="car-bouton-or" data-car="nouveau">${svg('ajouter')}<span>Nouveau carrousel</span></button>
     </div>
     ${liste.length ? `<div class="car-liste">${tuiles}</div>`
