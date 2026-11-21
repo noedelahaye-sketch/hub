@@ -3162,16 +3162,31 @@ export async function supprimerMediaDeCarrousel(id) {
 // format. Une seule lecture pour tout : la réserve tient en mémoire, et les
 // filtres des étapes suivantes n'auront rien à redemander au réseau.
 
+// PAR PAGES DE MILLE (21 novembre 2026, défaut vu par Noé : « ça affiche
+// toujours 1000 photos ») : Supabase ne rend jamais plus de mille lignes par
+// requête, sans le dire. La photothèque en comptait 1 215 ; les 215 dernières
+// n'existaient pas pour l'écran. On lit donc page après page jusqu'à une page
+// incomplète. L'ordre inclut l'identifiant pour que deux pages ne se
+// chevauchent jamais sur des photos de même date et de même nom.
+const PAGE_PHOTOS = 1000;
+
 export async function lirePhotos() {
-  return verifier(
-    await client
-      .from('photos')
-      .select(
-        '*, evenement:evenements(id, titre, date_debut, competition, recevant:pistes!evenements_club_recevant_fkey(nom), visiteur:pistes!evenements_club_visiteur_fkey(nom)), etiquettes:photos_etiquettes(etiquette_id), personnes:photos_personnes(contact_id), parutions:publications_photos(publication_id)',
-      )
-      .order('prise_le', { ascending: true, nullsFirst: false })
-      .order('nom'),
-  );
+  const toutes = [];
+  for (let debut = 0; ; debut += PAGE_PHOTOS) {
+    const page = verifier(
+      await client
+        .from('photos')
+        .select(
+          '*, evenement:evenements(id, titre, date_debut, competition, recevant:pistes!evenements_club_recevant_fkey(nom), visiteur:pistes!evenements_club_visiteur_fkey(nom)), etiquettes:photos_etiquettes(etiquette_id), personnes:photos_personnes(contact_id), parutions:publications_photos(publication_id)',
+        )
+        .order('prise_le', { ascending: true, nullsFirst: false })
+        .order('nom')
+        .order('id')
+        .range(debut, debut + PAGE_PHOTOS - 1),
+    );
+    toutes.push(...page);
+    if (page.length < PAGE_PHOTOS) return toutes;
+  }
 }
 
 export async function ajouterPhoto(champs) {

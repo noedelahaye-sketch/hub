@@ -7019,7 +7019,7 @@ body[data-atelier="creer"] .pht-tuile.choisie::after { border-radius: 0; }
   body[data-atelier="creer"] .atelier-vedette-image { aspect-ratio: 16 / 10; }
 }
 /* Sans titre, la page Créer de l'atelier commence sous la barre, avec un peu d'air. */
-body[data-atelier="creer"] .atelier-creer { padding-top: var(--espace-24); }
+
 
 /* ==========================================================================
    LE MENU DE L'ATELIER, À LA MANIÈRE DU SITE DE LIVRAISON (21 novembre 2026,
@@ -7110,3 +7110,8 @@ body[data-atelier="creer"] #vue .atelier-h1 { font-size: clamp(32px, 4.5vw, 52px
     width: max-content;
   }
 }
+
+/* SANS TITRE, LE CONTENU NE COLLE PAS AU FILET (demande de Noé) : ce qui suit la
+   barre prend l'air qu'aurait laissé le titre. Le dock est fixé, c'est donc ce
+   qui le suit dans la page. */
+body[data-atelier="creer"] .atelier-sans-titre ~ .atelier-dock + * { margin-top: var(--espace-24); }

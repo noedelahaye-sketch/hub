@@ -460,7 +460,7 @@ function enTete(vue, etat = null) {
     ['calendrier', 'Calendrier', '#yuno/calendrier'],
   ];
 
-  if (ATELIER) return enTeteDeLAtelier(vue, titre, icones);
+  if (ATELIER) return enTeteDeLAtelier(vue, titre, icones, etat);
 
   return `
     <div class="yuno-nav${etat?.rechercheClub != null ? ' recherche-ouverte' : ''}">
@@ -498,7 +498,12 @@ function enTete(vue, etat = null) {
 //     (sa « stickybar »), et non une pilule de verre qui flotte.
 // LE DOCK MET EN AVANT LA PHOTOTHÈQUE ET LE CARROUSEL : au centre, plus larges,
 // avec leur nom ; les trois autres en icône, leur nom en tout petit.
-function enTeteDeLAtelier(vue, titre, icones) {
+function enTeteDeLAtelier(vue, titre, icones, etat = null) {
+  // PAS DE GRAND TITRE là où la page parle d'elle-même (demandes de Noé) : Créer,
+  // la page d'arrivée ; le calendrier éditorial, dont la grille dit assez ce
+  // qu'elle est ; un carrousel ouvert, qui porte déjà son nom en tête. Il reste
+  // pour le lecteur d'écran.
+  const sansTitre = vue === 'creer' || vue === 'editorial' || (vue === 'carrousel' && etat?.feuilleOuverte);
   const actif = vue === 'identite' ? 'creer' : vue;
   const onglets = [
     ['creer', 'Créer', false],
@@ -514,10 +519,8 @@ function enTeteDeLAtelier(vue, titre, icones) {
         <img src="img/yuno-logo-kit.png" alt="Yuno" width="633" height="201" decoding="async"></a>
       <span class="atelier-barre-fin" aria-hidden="true"></span>
     </div>
-    ${/* SUR CRÉER, PAS DE TITRE (demande de Noé : « pas besoin ») : c'est la page
-       d'arrivée, le logo et les deux outils suffisent. Il reste pour le lecteur
-       d'écran. */ vue === 'creer'
-      ? `<h1 class="hors-ecran">Créer</h1>`
+    ${sansTitre
+      ? `<h1 class="hors-ecran atelier-sans-titre">${echapper(titre)}</h1>`
       : `<header class="atelier-tete">
           <h1 class="atelier-h1">${echapper(titre)}</h1>
         </header>`}
