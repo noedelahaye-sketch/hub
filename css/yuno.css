@@ -7028,7 +7028,7 @@ body[data-atelier="creer"] .ouvrir-capture { bottom: calc(76px + env(safe-area-i
 body[data-atelier="creer"] :is(.pht-tuile, .pht-match-cadre, .pht-vue-image, .porte-pht-cadre, .porte-car-cadre,
   .pht-apercu-cadre, .pht-fen-vignette, .car-vignette, .car-tuile, .car-sel-item, .pht-match, .pht-filtres,
   .pht-filtres-tel, .pht-choix, .pht-barre-sel, .pht-menu-liste, .pht-ordre-menu, .car-liste-tuile, .car-import,
-  .car-tout, .bloc, .grande-porte, .insp-photo, .insp-idees, .insp-fenetre-cadre img) { border-radius: 0; }
+  .car-tout, .bloc, .grande-porte) { border-radius: 0; }
 /* Le bloc des cinq photos ouvre la page : un vrai blanc avant les deux outils. */
 body[data-atelier="creer"] .atelier-creer > .creer-inspiration { margin-bottom: 32px; }
 /* La photothèque à gauche, la liste « Publier » à sa droite ; empilées au téléphone. */
@@ -7534,3 +7534,70 @@ body[data-atelier="creer"] .atelier-tuile-tel .atelier-tuile-chiffre {
   /* Les suggestions en carré au téléphone, comme les tuiles (demande de Noé). */
   .creer-inspiration .insp-photo { aspect-ratio: 1; }
 }
+
+/* --- Page d'accueil de l'atelier, 21 novembre 2026 (demandes de Noé) --- */
+/* Toutes les tuiles de l'accueil s'arrondissent : la photothèque, les
+   suggestions, les idées — après la règle des angles nets, qu'elles battent. */
+body[data-atelier="creer"] :is(.atelier-vedette-image, .insp-photo, .insp-idees) { border-radius: 12px; }
+
+/* Le titre « Photothèque » est posé dans le bas de sa photo, sur un fondu qui
+   le garde lisible quelle que soit l'image ; le sous-titre est parti. */
+body[data-atelier="creer"] .atelier-vedette-incruste {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 1;
+  padding: 40px 16px 14px;
+  color: #fff;
+  background: linear-gradient(to top, rgb(0 0 0 / 72%), transparent);
+}
+@media (max-width: 47.99rem) {
+  body[data-atelier="creer"] .atelier-vedette-incruste { padding: 32px 10px 10px; font-size: 16px; line-height: 20px; }
+}
+
+/* Les icônes des tuiles, plus grandes. */
+body[data-atelier="creer"] .atelier-tuile svg { width: 88px; height: 88px; }
+body[data-atelier="creer"] .atelier-tuile-chiffre { font-size: 80px; line-height: 80px; }
+@media (max-width: 47.99rem) {
+  body[data-atelier="creer"] .atelier-tuile svg { width: 38px; height: 38px; }
+  body[data-atelier="creer"] .atelier-tuile-chiffre { font-size: 30px; line-height: 32px; }
+}
+
+/* LE DOCK : des onglets tous de la même taille, un peu plus petits. Les deux
+   vedettes n'ont plus de largeur à elles. */
+body[data-atelier="creer"] .atelier-dock a,
+body[data-atelier="creer"] .atelier-dock a.vedette {
+  flex: 1 1 0;
+  max-width: 96px;
+  min-height: 52px;
+  padding: 7px 2px 5px;
+  font-size: 10px;
+  line-height: 12px;
+  color: var(--texte-discret);
+}
+body[data-atelier="creer"] .atelier-dock svg,
+body[data-atelier="creer"] .atelier-dock a.vedette svg { width: 19px; height: 19px; }
+body[data-atelier="creer"] .atelier-dock a.actif { color: var(--texte); }
+body[data-atelier="creer"] #vue { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
+body[data-atelier="creer"] .ouvrir-capture { bottom: calc(68px + env(safe-area-inset-bottom)); }
+@media (min-width: 60rem) {
+  body[data-atelier="creer"] #vue { padding-bottom: var(--espace-48); }
+  body[data-atelier="creer"] .ouvrir-capture { bottom: max(24px, env(safe-area-inset-bottom)); }
+}
+
+/* LES SUGGESTIONS AU TÉLÉPHONE : une ligne de trois photos carrées, et dessous
+   une ligne pour les idées, plus basse. Vaut pour les deux pages Créer. */
+@media (max-width: 47.99rem) {
+  .creer-inspiration { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .creer-inspiration .insp-mosaique { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .creer-inspiration .insp-mosaique > :nth-child(n + 4) { display: none; }
+  .creer-inspiration .insp-photo { aspect-ratio: 1; }
+  .creer-inspiration .insp-idees { height: 4.5rem; }
+  .creer-inspiration .insp-idee { padding: 8px 20px; }
+  .creer-inspiration .insp-idee-titre { -webkit-line-clamp: 2; font-size: 0.9375rem; }
+}
+
+/* LA BARRE COLLE AU HAUT (demande de Noé, capture d'iPhone à l'appui) : la page
+   de Yuno réserve l'encoche ET 16 px au-dessus de tout, et la barre de l'atelier
+   réservait l'encoche une seconde fois — deux encoches et un blanc avant le
+   logo. Ici c'est la barre seule qui porte l'encoche. */
+body[data-atelier="creer"] #vue { padding-top: 0; }

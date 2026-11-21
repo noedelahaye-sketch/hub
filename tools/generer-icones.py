@@ -206,6 +206,11 @@ if __name__ == '__main__':
     print('Yuno — le logo du kit sur la Nuit :')
     fabriquer(IMG / 'yuno-logo-kit.png', 'icone-yuno', fond=(0x0e, 0x0d, 0x0b), marge=0.22)
 
+    # LA PAGE CRÉER A SON ICÔNE (21 novembre 2026, fournie par Noé) : « yuno
+    # création », même Nuit et même air que celle de Yuno.
+    print('Yuno création — la page Créer indépendante :')
+    fabriquer(IMG / 'yuno-creation-logo.png', 'icone-creer', fond=(0x0e, 0x0d, 0x0b), marge=0.22)
+
     print('FC Hermitage — le logo composé sur le bleu du club :')
     fabriquer(IMG / 'fch-logo.png', 'icone-fch', fond=(0x11, 0x36, 0x93), marge=0.08)
 

@@ -130,6 +130,8 @@ const COQUILLE = [
   'img/icone-512.png',
   'img/icone-yuno-180.png',
   'img/icone-yuno-512.png',
+  'img/icone-creer-180.png',
+  'img/icone-creer-512.png',
   'img/icone-fch-180.png',
   'img/icone-fch-512.png',
   'img/yuno-signature.png',

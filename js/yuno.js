@@ -2989,9 +2989,7 @@ function vueCreerDeLAtelier(etat) {
            d'illustration, il rejoint les autres outils. -->
       <div class="atelier-duo">
         <a class="atelier-vedette" href="#yuno/phototheque">
-          <span class="atelier-vedette-image">${couverture(0)}</span>
-          <span class="atelier-vedette-nom">Photothèque</span>
-          <span class="atelier-vedette-sous">Trier, chercher, choisir</span>
+          <span class="atelier-vedette-image">${couverture(0)}<span class="atelier-vedette-nom atelier-vedette-incruste">Photothèque</span></span>
         </a>
         <!-- QUATRE TUILES ET NON UNE LISTE (21 novembre 2026, demande de Noé) :
              une icône et un nom, deux rangées de deux, sans titre au-dessus. -->
