@@ -3699,3 +3699,16 @@ Elle vient du document « pourquoi » et ne se lit nulle part dans le code :
 Le reste a été tranché. Les six familles du site sont construites : Accueil,
 Journal, Créer, Missions (nom provisoire), Réseau, Calendrier. Prochaine
 étape : l'usage réel.
+
+
+### La photothèque sur ordinateur, et les propositions de la pile (25 novembre 2026)
+
+- **Ordinateur (≥ 60 rem)** : rail d'outils, panneau (bibliothèque par compétition
+  ou par date, filtres, import), photos, barre de vue — grille réglable, deux par
+  deux sans recadrage, une photo avec pellicule et tri. Clavier : G, D, E,
+  ← →, 0–5, Échap. Les réglages vivent dans le navigateur (`pht-ordi`). Le
+  téléphone et le choix des photos d'une parution gardent leurs écrans.
+- **Propositions** (`js/tri-photos.js`, éprouvé par `tools/essai-tri-photos.mjs`) :
+  rafale (2 s, même match) et flou de mouvement sont cochés d'avance et partent
+  avec « Trié » ; les personnes du match sont des pistes, posées si on les
+  touche. Rien n'est étiqueté sans geste. `photos.flou_lu` / `flou_mouvement`.

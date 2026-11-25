@@ -3797,7 +3797,7 @@ export function pastilleStatutPublication(pub, espace = pub.espace) {
       <button type="button" class="etiquette cal-statut-pastille" data-ouvrir-choix
         style="--teinte: ${teinte(rang)};"
         aria-expanded="false" aria-haspopup="listbox"
-        aria-label="État : ${nom(pub.statut)} — changer"
+        aria-label="État de « ${echapper(pub.titre ?? '')} » : ${nom(pub.statut)} — changer"
         >${nom(pub.statut)}</button>
       <div class="choix-panneau" hidden>
         <ul class="choix-capture">

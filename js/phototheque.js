@@ -26,6 +26,7 @@ import { enregistrer } from './zip.js';
 import { envoyerFichier, envoyerVignette, adressesDe, supprimerFichier, placeOccupee } from './photos-cloud.js';
 import { lireDatePrise } from './exif.js';
 import { relireAuProchainMontage } from './carrousel.js';
+import { mesurerLeFlou, estUnFile, propositionsPour, personnesDuMatch } from './tri-photos.js';
 
 const COTE_MAX = 2160;
 const QUALITE = 0.92;
@@ -158,6 +159,7 @@ const ICONE = {
   ordre: '<path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/>',
   choisir: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12.2l2.4 2.4 4.6-4.8"/>',
   albums: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  cocheSimple: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   coupe: '<path d="M8 4h8v5a4 4 0 0 1-8 0zM6 5H4v2a3 3 0 0 0 3 3M18 5h2v2a3 3 0 0 1-3 3M12 13v4M9 20h6M10 17h4"/>',
   rebattre: '<path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/>',
   carrousel: '<rect x="6" y="5" width="12" height="14" rx="2"/><path d="M3 7v10M21 7v10"/>',
@@ -219,7 +221,7 @@ async function chargerVraiment() {
     etat.chargeLe = Date.now();
     etat.adressesLe = 0;
     // En arrière-plan, sans retarder l'écran.
-    setTimeout(rattraperLesCouleurs, 1500);
+    setTimeout(() => rattraperLesCouleurs().then(rattraperLeFlou), 1500);
     lireLaPlace();
   } catch (e) {
     console.error('Lecture de la photothèque impossible', e);
@@ -271,7 +273,7 @@ async function chargerLesSorties() {
     console.error('Lecture des sorties impossible', e);
     etat.sorties = [];
   }
-  if (etat.choisirMatch) dessiner();
+  if (etat.choisirMatch || (lr.panneau === 'import' && enAtelier())) dessiner();
 }
 
 // Le match d'une clé : depuis ses photos, sinon depuis les sorties connues.
@@ -432,6 +434,8 @@ async function preparer(p) {
   // RECONNU À L'IMPORT : la photo en noir et blanc arrive étiquetée.
   const nb = etiquetteNoirEtBlanc();
   if (nb && estNoirEtBlanc(petite)) p.etiquettes.add(nb.id);
+  p.flou_mouvement = estUnFile(mesurerLeFlou(petite, petite.width, petite.height));
+  p.flou_lu = true;
   p.blobVignette = await enJpeg(petite, 0.82);
   p.vignette = URL.createObjectURL(p.blobVignette);
   source.close?.();
@@ -478,6 +482,8 @@ async function envoyer(p) {
       taille: p.taille,
       note: p.note ?? null,
       couleurs_lues: true,
+      flou_lu: true,
+      flou_mouvement: p.flou_mouvement ?? false,
       triee: p.triee ?? false,
     });
     p.enBase = true;
@@ -759,6 +765,16 @@ function gabaritListe() {
       : `<p class="car-liste-vide">${tous.length ? 'Aucun album ne coche tout. Retire un filtre.' : 'Tes matchs et leurs photos s’afficheront ici.'}</p>`}`;
 }
 
+function champCompetition(match) {
+  return `<label class="car-match pht-competition${match.competition ? ' relie' : ''}">
+        ${svg('coupe', 15)}
+        <input data-pht-competition list="pht-competitions" value="${echapper(match.competition ?? '')}"
+          placeholder="Compétition" autocomplete="off" spellcheck="false" maxlength="60"
+          aria-label="Compétition de ce match">
+        <datalist id="pht-competitions">${competitionsConnues().map((c) => `<option value="${echapper(c)}"></option>`).join('')}</datalist>
+      </label>`;
+}
+
 function gabaritMatch() {
   const liste = photosDuMatch(cible);
   const match = matchDe(cible);
@@ -771,13 +787,7 @@ function gabaritMatch() {
         ${match ? `<span class="discret">${jourCourt(match.date_debut)}</span>` : ''}
       </div>
     </div>
-    ${match ? `<label class="car-match pht-competition${match.competition ? ' relie' : ''}">
-        ${svg('coupe', 15)}
-        <input data-pht-competition list="pht-competitions" value="${echapper(match.competition ?? '')}"
-          placeholder="Compétition" autocomplete="off" spellcheck="false" maxlength="60"
-          aria-label="Compétition de ce match">
-        <datalist id="pht-competitions">${competitionsConnues().map((c) => `<option value="${echapper(c)}"></option>`).join('')}</datalist>
-      </label>` : ''}
+    ${match ? champCompetition(match) : ''}
     <p class="car-etat" data-pht-etat></p>`;
   const fichier = '<input type="file" class="car-fichier" accept="image/*" multiple hidden data-pht-fichier>';
   if (!liste.length) {
@@ -1182,6 +1192,7 @@ const TYPES_PERSONNE = { joueur: 'Joueur', club: 'Club' };
 
 function ciblesDu(contexte) {
   if (contexte === 'vue') return [photo(etat.ouverte)].filter(Boolean);
+  if (contexte === 'loupe') return [photo(lr.loupe)].filter(Boolean);
   return [...etat.selection].map(photo).filter(Boolean);
 }
 
@@ -1333,6 +1344,7 @@ function panneauTelephone(contexte, cibles, quiOuvert) {
 
   return `<div class="pht-tri pht-tri-telephone${contexte === 'vue' ? ' pht-tri-vue' : ''}" data-tri-contexte="${contexte}">
       ${contexte === 'vue' ? '' : `<div class="pht-etoiles">${etoilesTri(contexte)}</div>`}
+      ${rangeeDesPropositions(contexte, cibles)}
       <div class="pht-ligne-recit" role="group" aria-label="Ce que ça raconte">${recit}${ajoutRecit}</div>
       <div class="pht-tri-menus">
         ${pastilles}
@@ -1347,6 +1359,88 @@ function panneauTelephone(contexte, cibles, quiOuvert) {
           <div class="pht-qui-propositions" data-tri-propositions>${propositions(contexte)}</div>
         </div>` : ''}
     </div>`;
+}
+
+// --- Les propositions, dans la pile (25 novembre 2026, demande de Noé) ------------------------
+//
+// Une rangée en tête du tri, en POINTILLÉ — le signe du hub pour « pas encore
+// posé ». Dans la pile, une proposition SÛRE est cochée d'avance et part avec
+// « Trié » ; la toucher l'écarte. Une PISTE attend qu'on la touche. Hors de la
+// pile il n'y a pas de geste pour valider : toucher pose tout de suite.
+const choixDesPropositions = new Map(); // photo → Map(clé → voulue ou non)
+const cleProp = (s) => `${s.quoi}:${s.id}`;
+
+function propositionsDe(p) {
+  if (!p || !etat.photos) return [];
+  return propositionsPour(p, { photos: etat.photos, etiquettes: etat.etiquettes ?? [], personnes: etat.personnes ?? [] });
+}
+const estVoulue = (p, s) => choixDesPropositions.get(p.id)?.get(cleProp(s)) ?? s.arme;
+const propositionsVoulues = (p) => propositionsDe(p).filter((s) => estVoulue(p, s));
+
+const POURQUOI = { rafale: 'Même rafale', image: 'Lu dans l’image', match: 'Vu dans ce match' };
+
+function rangeeDesPropositions(contexte, cibles) {
+  let liste = [];
+  let enPile = false;
+  if (contexte === 'vue' || contexte === 'loupe') {
+    enPile = contexte === 'vue' && Boolean(etat.pile);
+    liste = propositionsDe(cibles[0]);
+  } else {
+    // UN LOT : les personnes du match, si tout le lot en vient. C'est le joueur
+    // proposé à l'import, dont les photos arrivent sélectionnées.
+    const matchs = new Set(cibles.map((p) => p.evenement_id ?? null));
+    const id = [...matchs][0];
+    if (matchs.size === 1 && id) {
+      liste = personnesDuMatch(id, matchDe(id)?.titre, etat.photos ?? [], etat.personnes ?? [])
+        .filter((x) => !cibles.every((p) => p.personnes.has(x)))
+        .map((x) => ({ quoi: 'personnes', id: x, nom: (etat.personnes ?? []).find((c) => c.id === x)?.nom ?? '', arme: false, pourquoi: 'match' }));
+    }
+  }
+  if (!liste.length) return '';
+  return `<div class="pht-props" role="group" aria-label="Propositions">
+      <span class="pht-props-mot">Proposé</span>
+      ${liste.map((s) => {
+        const voulue = enPile && estVoulue(cibles[0], s);
+        return `<button type="button" class="pht-prop${voulue ? ' voulue' : ''}" data-tri-prop="${cleProp(s)}"
+          ${enPile ? `aria-pressed="${voulue}"` : ''} title="${POURQUOI[s.pourquoi]}"
+          aria-label="${echapper(s.nom)}, ${POURQUOI[s.pourquoi].toLowerCase()}">${voulue ? svg('cocheSimple', 13) : svg('ajouter', 13)}<span>${echapper(s.nom)}</span></button>`;
+      }).join('')}
+    </div>`;
+}
+
+function toucherUneProposition(contexte, cle, ancre) {
+  const [quoi, id] = [cle.slice(0, cle.indexOf(':')), cle.slice(cle.indexOf(':') + 1)];
+  if (contexte === 'vue' && etat.pile) {
+    const p = photo(etat.ouverte);
+    const s = propositionsDe(p).find((x) => cleProp(x) === cle);
+    if (!s) return;
+    const choix = choixDesPropositions.get(p.id) ?? new Map();
+    choix.set(cle, !estVoulue(p, s));
+    choixDesPropositions.set(p.id, choix);
+    redessinerTri();
+    return;
+  }
+  if (quoi === 'personnes') poserPersonne(contexte, id, ancre);
+  else basculer(contexte, 'etiquettes', id, ancre);
+}
+
+// « Trié » pose ce qui est coché. L'écran d'abord ; ce qui n'a pas pu s'écrire
+// est retiré, et on le dit.
+function accepterLesPropositions(p) {
+  const voulues = propositionsVoulues(p);
+  choixDesPropositions.delete(p.id);
+  if (!voulues.length) return;
+  if (voulues.some((s) => s.quoi === 'etiquettes')) noterRecentes([p.id]);
+  for (const s of voulues) {
+    p[s.quoi].add(s.id);
+    if (!p.enBase && p.envoi !== 'fait') continue; // partira avec la photo
+    const poser = s.quoi === 'etiquettes' ? api.etiqueterPhotos : api.relierPersonne;
+    poser([p.id], s.id).catch((e) => {
+      console.error('Proposition non gardée', e);
+      p[s.quoi].delete(s.id);
+      messageCourt(`« ${s.nom} » n’a pas pu être gardé sur ${p.nom}.`);
+    });
+  }
 }
 
 function panneauTri(contexte) {
@@ -1412,6 +1506,7 @@ function panneauTri(contexte) {
       </div>`
     : '';
   return `<div class="pht-tri${contexte === 'vue' ? ' pht-tri-vue' : ''}" data-tri-contexte="${contexte}">
+      ${rangeeDesPropositions(contexte, cibles)}
       <div class="pht-tri-famille">
         <p class="pht-tri-titre">La note ${melange}</p>
         <div class="pht-etoiles">${etoiles}</div>
@@ -1460,12 +1555,15 @@ function redessinerTri() {
     const contexte = el.dataset.triContexte;
     // La ligne qui glisse garde sa place : sans ça, toucher la huitième puce
     // ramènerait la ligne au début.
+    const defileP = el.querySelector('.pht-props')?.scrollLeft ?? 0;
     const defile = el.querySelector('.pht-ligne-recit')?.scrollLeft ?? 0;
     const defile2 = el.querySelector('.pht-tri-menus')?.scrollLeft ?? 0;
     const champ = document.activeElement?.matches?.('[data-tri-nouvelle], [data-tri-qui]')
       && el.contains(document.activeElement) ? document.activeElement : null;
     const quel = champ ? (champ.matches('[data-tri-qui]') ? '[data-tri-qui]' : `[data-tri-nouvelle="${champ.dataset.triNouvelle}"]`) : null;
     el.outerHTML = panneauTri(contexte);
+    const props = document.querySelector(`[data-tri-contexte="${contexte}"] .pht-props`);
+    if (props) props.scrollLeft = defileP;
     const ligne = document.querySelector(`[data-tri-contexte="${contexte}"] .pht-ligne-recit`);
     if (ligne) ligne.scrollLeft = defile;
     const ligne2 = document.querySelector(`[data-tri-contexte="${contexte}"] .pht-tri-menus`);
@@ -1646,6 +1744,11 @@ function brancherTri(racine) {
       // Le second appui confirme : une étiquette emporte ses liens avec elle.
       if (etat.supprimerEtiq === id) supprimerUneEtiquette(id, suppr);
       else { etat.supprimerEtiq = id; redessinerTri(); }
+      return;
+    }
+    const prop = e.target.closest('[data-tri-prop]');
+    if (prop) {
+      toucherUneProposition(prop.closest('[data-tri-contexte]').dataset.triContexte, prop.dataset.triProp, prop);
       return;
     }
     const el = e.target.closest('[data-tri-note], [data-tri-etiquette], [data-tri-personne], [data-tri-ajouter], [data-tri-poser], [data-tri-creer]');
@@ -2311,6 +2414,48 @@ async function rattraperLesCouleurs() {
   }
 }
 
+// LE FLOU DE MOUVEMENT, MÊME RATTRAPAGE (25 novembre 2026) : une fois, en
+// arrière-plan, les vignettes jamais regardées. Rien n'est étiqueté : on note ce
+// que l'image a l'air d'être, et la pile le PROPOSE (js/tri-photos.js).
+async function rattraperLeFlou() {
+  if (etat.flouLu) return;
+  etat.flouLu = true;
+  const file = (etat.photos ?? []).filter((p) => p.envoi === 'fait' && !p.flou_lu && p.cle);
+  if (!file.length) return;
+  try {
+    const adresses = {};
+    for (let i = 0; i < file.length; i += 400) {
+      Object.assign(adresses, await adressesDe(file.slice(i, i + 400).map((p) => p.cle)));
+    }
+    const lues = { true: [], false: [] };
+    const ouvrier = async () => {
+      for (let p = file.shift(); p; p = file.shift()) {
+        const adresse = adresses[p.cle]?.vignette;
+        if (!adresse) continue;
+        try {
+          const r = await fetch(adresse);
+          if (!r.ok) continue;
+          const image = await createImageBitmap(await r.blob());
+          lues[estUnFile(mesurerLeFlou(image, image.width, image.height))].push(p);
+          image.close?.();
+        } catch {
+          // Une vignette illisible se relira à la prochaine visite.
+        }
+      }
+    };
+    await Promise.all([ouvrier(), ouvrier(), ouvrier(), ouvrier()]);
+    for (const flou of [true, false]) {
+      if (!lues[flou].length) continue;
+      await api.marquerFlouLu(lues[flou].map((p) => p.id), flou);
+      lues[flou].forEach((p) => { p.flou_lu = true; p.flou_mouvement = flou; });
+    }
+    if (lues.true.length && etat.ouverte) redessinerTri();
+  } catch (e) {
+    console.error('Lecture du flou interrompue', e);
+    etat.flouLu = false;
+  }
+}
+
 // --- La pile « à trier » (21 novembre 2026) ----------------------------------------------------
 //
 // Noé : « un outil qui nous montre une photo, à laquelle on affecte les tris,
@@ -2356,6 +2501,7 @@ async function marquerTriee(sens) {
   const p = photo(etat.ouverte);
   if (!p) return;
   if (sens === 'trie') {
+    accepterLesPropositions(p);
     p.triee = true;
     if (p.enBase || p.envoi === 'fait') {
       api.marquerTriees([p.id], true).catch((e) => {
@@ -2539,6 +2685,23 @@ function ouvrir(id) {
   etat.quiOuvert = false;
   etat.menuOuvert = null;
   dessinerVisionneuse();
+  prechargerAutour();
+  adresserAutour(id);
+}
+
+// OUVERTE AVANT D'AVOIR SON ADRESSE (25 novembre 2026) : la porte « À trier » de
+// la page Créer ouvre la pile sans passer par la grille, qui signait les photos.
+// La première restait vide. On signe celle qu'on ouvre et les cinq suivantes.
+async function adresserAutour(id) {
+  const liste = listeDeLaVue();
+  const k = liste.findIndex((p) => p.id === id);
+  const sans = liste.slice(Math.max(0, k), k + 6).filter((p) => p.cle && !p.url && !p.blob);
+  if (!sans.length) return;
+  await signer(sans);
+  const p = photo(id);
+  const img = visionneuse?.querySelector('.pht-vue-image');
+  if (etat.ouverte !== id || !img || !p?.url) return;
+  if (!img.getAttribute('src')) img.src = p.url;
   prechargerAutour();
 }
 
@@ -2739,17 +2902,342 @@ function brancherLaFenetre() {
 
 // --- Le dessin ---------------------------------------------------------------------------------
 
+// --- LA PHOTOTHÈQUE SUR ORDINATEUR (25 novembre 2026, demande de Noé) ----------------------------
+//
+// « On va essayer de se rapprocher un peu plus de ce que propose Lightroom » :
+//   — un RAIL d'outils à gauche, et le panneau de l'outil choisi à côté ;
+//   — la BIBLIOTHÈQUE : les matchs en arbre, par compétition ou par date ;
+//   — les FILTRES et l'IMPORT, dans le même panneau ;
+//   — en pied, la BARRE qui dit comment on regarde : en grille (dont on règle la
+//     taille), deux par deux et sans recadrage, ou une photo en grand avec sa
+//     pellicule et son tri.
+//
+// LE TÉLÉPHONE N'EN VOIT RIEN : ses écrans sont faits pour le pouce, et l'import
+// comme le classement se font à l'ordinateur (choix de Noé). Le choix des photos
+// d'une parution garde son écran à lui.
+const ORDI = window.matchMedia('(min-width: 60rem)');
+const CLE_LR = 'pht-ordi';
+const lr = {
+  panneau: 'biblio',          // 'biblio' | 'filtres' | 'import' | null
+  rangement: 'competition',   // 'competition' | 'date'
+  plies: [],                  // les groupes refermés
+  forme: 'grille',            // 'grille' | 'deux' | 'une'
+  avant: 'grille',            // la forme d'où l'on est entré dans une photo
+  taille: 170,
+  loupe: null,
+  ...(() => { try { return JSON.parse(localStorage.getItem(CLE_LR) ?? '{}'); } catch { return {}; } })(),
+};
+lr.loupe = null;
+if (lr.forme === 'une') lr.forme = lr.avant === 'deux' ? 'deux' : 'grille';
+const garderLr = () => {
+  const { panneau, rangement, plies, forme, avant, taille } = lr;
+  try { localStorage.setItem(CLE_LR, JSON.stringify({ panneau, rangement, plies, forme, avant, taille })); } catch { /* une commodité */ }
+};
+const enAtelier = () => ORDI.matches && !etat.pour && Boolean(etat.photos);
+ORDI.addEventListener('change', () => { if (hote?.isConnected && !etat.ouverte) dessiner(); });
+
+const ICONE_LR = {
+  biblio: '<path d="M4 6a1 1 0 0 1 1-1h4l2 2h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/>',
+  grille: '<rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><rect x="13.5" y="13.5" width="7" height="7" rx="1"/>',
+  deux: '<rect x="3" y="5" width="8" height="14" rx="1"/><rect x="13" y="5" width="8" height="14" rx="1"/>',
+  une: '<rect x="4" y="4" width="16" height="16" rx="1.5"/>',
+  pile: '<rect x="6" y="7" width="14" height="13" rx="1.5"/><path d="M4 16V5a1 1 0 0 1 1-1h11"/><path d="M10 13.5l2.2 2.2 4-4.2"/>',
+  plein: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
+};
+const svgLr = (cle, taille = 20) => `<svg width="${taille}" height="${taille}" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+  stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONE_LR[cle] ?? ICONE[cle]}</svg>`;
+
+function boutonDuRail(cle, nom, icone, n = 0) {
+  const actif = lr.panneau === cle;
+  return `<button type="button" class="lr-outil${actif ? ' actif' : ''}" data-lr="panneau" data-valeur="${cle}"
+      aria-pressed="${actif}" aria-label="${nom}${n ? ` (${n})` : ''}" title="${nom}">${svgLr(icone)}${
+      n ? `<span class="lr-outil-n">${n}</span>` : ''}</button>`;
+}
+
+function railDOutils() {
+  const aTrier = pileATrier().length;
+  return `<nav class="lr-rail" aria-label="Outils de la photothèque">
+      ${boutonDuRail('biblio', 'Bibliothèque', 'biblio')}
+      ${vueCourante === 'liste' ? '' : boutonDuRail('filtres', 'Filtres', 'filtre', nbFiltres())}
+      ${boutonDuRail('import', 'Importer des photos', 'importer')}
+      <span class="lr-filet" aria-hidden="true"></span>
+      ${aTrier ? `<button type="button" class="lr-outil" data-pht="pile" aria-label="Trier les ${aTrier} photos de la pile"
+        title="À trier · ${aTrier}">${svgLr('pile')}<span class="lr-outil-point" aria-hidden="true"></span></button>` : ''}
+      <a class="lr-outil${vueCourante === 'liste' ? ' actif' : ''}" href="#yuno/phototheque/${ALBUMS}"
+        aria-label="Les albums en images" title="Les albums en images">${svgLr('albums')}</a>
+    </nav>`;
+}
+
+function arbreDesAlbums() {
+  const groupes = new Map();
+  const poser = (cle, nom, ordre, album) => {
+    if (!groupes.has(cle)) groupes.set(cle, { cle, nom, ordre, albums: [] });
+    groupes.get(cle).albums.push(album);
+  };
+  for (const a of albums()) {
+    if (!a.match) poser('sans', 'Sans match', '', a);
+    else if (lr.rangement === 'date') {
+      const m = moisDe(a.match.date_debut);
+      poser(`m-${m}`, nomDuMois(m), m, a);
+    } else poser(`c-${a.match.competition ?? ''}`, a.match.competition || 'Sans compétition', '', a);
+  }
+  const dernier = (g) => (g.cle === 'sans' ? 2 : g.cle === 'c-' ? 1 : 0);
+  const liste = [...groupes.values()].sort((a, b) => dernier(a) - dernier(b)
+    || (lr.rangement === 'date' ? b.ordre.localeCompare(a.ordre) : a.nom.localeCompare(b.nom, 'fr')));
+  return liste.map((g) => {
+    g.albums.sort((a, b) => (b.match?.date_debut ?? '').localeCompare(a.match?.date_debut ?? ''));
+    const n = g.albums.reduce((s, a) => s + a.photos.length, 0);
+    const lien = (a) => `<a class="lr-album" href="#yuno/phototheque/${a.cle}"${cible === a.cle && enMatch() ? ' aria-current="page"' : ''}
+        title="${echapper(a.match ? `${a.match.titre} · ${jourCourt(a.match.date_debut)}` : 'Sans match')}">
+        <span class="lr-album-nom">${echapper(a.match?.titre ?? 'Sans match')}</span><span class="lr-n">${a.photos.length}</span></a>`;
+    if (g.cle === 'sans') return lien(g.albums[0]);
+    return `<details class="lr-groupe" data-lr-groupe="${echapper(g.cle)}"${lr.plies.includes(g.cle) ? '' : ' open'}>
+        <summary>${svgLr('droite', 13)}${svgLr('biblio', 16)}<span class="lr-album-nom">${echapper(g.nom)}</span><span class="lr-n">${n}</span></summary>
+        ${g.albums.map(lien).join('')}
+      </details>`;
+  }).join('');
+}
+
+function panneauOutil() {
+  if (lr.panneau === 'biblio') {
+    const bascule = [['competition', 'Compétition'], ['date', 'Date']].map(([cle, nom]) =>
+      `<button type="button" data-lr="rangement" data-valeur="${cle}" aria-pressed="${lr.rangement === cle}"
+         class="${lr.rangement === cle ? 'actif' : ''}">${nom}</button>`).join('');
+    return `<div class="lr-panneau-tete"><h2>Bibliothèque</h2></div>
+      <div class="lr-bascule" role="group" aria-label="Ranger les albums par">${bascule}</div>
+      <a class="lr-album lr-toutes" href="#yuno/phototheque"${vueCourante === 'recherche' ? ' aria-current="page"' : ''}>
+        <span class="lr-album-nom">Toutes les photos</span><span class="lr-n">${etat.photos.length}</span></a>
+      ${arbreDesAlbums()}
+      <div class="lr-place">${gabaritPlace()}</div>`;
+  }
+  if (lr.panneau === 'filtres' && vueCourante !== 'liste') {
+    const n = nbFiltres();
+    return `<div class="lr-panneau-tete"><h2>Filtres</h2>
+        ${n ? '<button type="button" class="car-puce car-puce-mini" data-pht="effacer-filtres">Tout effacer</button>' : ''}</div>
+      <div class="pht-tri pht-filtres-corps">${gabaritFiltres()}</div>`;
+  }
+  if (lr.panneau === 'import') {
+    const ici = enMatch() && cible;
+    const sorties = etat.sorties;
+    return `<div class="lr-panneau-tete"><h2>Importer</h2></div>
+      ${ici ? `<p class="lr-aide">Vers « ${echapper(matchDe(cible)?.titre ?? 'Sans match')} ».</p>
+        <button type="button" class="car-bouton-or" data-pht="choisir">${svg('importer')}<span>Choisir des photos</span></button>
+        <p class="lr-aide">Ou glisse un dossier d'exports sur les photos.</p>
+        <p class="lr-aide">Pour un autre match :</p>` : '<p class="lr-aide">De quel match viennent ces photos ?</p>'}
+      <label class="car-match">
+        ${svg('match', 15)}<span class="car-match-texte">${sorties ? 'Choisir le match' : 'Un instant…'}</span>
+        <select data-pht-match aria-label="Match des photos à importer"${sorties ? '' : ' disabled'}>
+          <option value="" selected disabled>Choisir le match</option>
+          ${(sorties ?? []).map((s) => `<option value="${s.id}">${echapper(s.titre)} · ${jourCourt(s.date_debut)}</option>`).join('')}
+          <option value="${SANS_MATCH}">Sans match</option>
+        </select>
+      </label>
+      <div class="lr-place">${gabaritPlace()}</div>`;
+  }
+  return '';
+}
+
+// DEUX PAR DEUX : la photo entière, pas sa vignette carrée. C'est là qu'on juge
+// un cadrage et une netteté.
+function tuileEntiere(p) {
+  const choisie = etat.selection.has(p.id);
+  const src = p.blob ? (p.urlLocale ??= URL.createObjectURL(p.blob)) : p.url ?? p.vignette ?? '';
+  return `<button type="button" class="pht-tuile lr-entiere prete${choisie ? ' choisie' : ''}" data-ouvrir="${p.id}"
+      aria-label="${etat.modeSelection ? 'Sélectionner' : 'Ouvrir'} ${echapper(p.nom)}"${etat.modeSelection ? ` aria-pressed="${choisie}"` : ''}>
+      <img data-entiere="${p.id}" alt="" loading="lazy" decoding="async"${src ? ` src="${echapper(src)}"` : ''}>
+      ${etat.modeSelection ? `<span class="pht-coche" aria-hidden="true">${rangDansLeChoix(p)}</span>` : ''}
+      ${badgeNote(p)}${badgePubliee(p)}
+    </button>`;
+}
+
+function gabaritLoupe(liste) {
+  if (!liste.some((p) => p.id === lr.loupe)) lr.loupe = liste[0]?.id ?? null;
+  const p = photo(lr.loupe);
+  if (!p) return '';
+  const k = liste.indexOf(p);
+  const src = p.blob ? (p.urlLocale ??= URL.createObjectURL(p.blob)) : p.url ?? p.vignette ?? '';
+  const debut = Math.max(0, Math.min(k - 8, liste.length - 17));
+  return `<div class="lr-loupe">
+      <div class="lr-scene">
+        <button type="button" class="pht-vue-fleche" data-lr="voisine" data-valeur="-1" aria-label="Photo précédente"${k > 0 ? '' : ' disabled'}>${svg('gauche', 22)}</button>
+        <img class="lr-photo" data-entiere="${p.id}" src="${echapper(src)}" alt="" draggable="false">
+        <button type="button" class="pht-vue-fleche" data-lr="voisine" data-valeur="1" aria-label="Photo suivante"${k < liste.length - 1 ? '' : ' disabled'}>${svg('droite', 22)}</button>
+      </div>
+      <aside class="lr-cote" aria-label="Trier cette photo">
+        <p class="lr-infos"><span>${p.prise_le ? echapper(momentLong(p.prise_le)) : 'Date inconnue'}</span>
+          <span class="discret">${[p.largeur ? `${p.largeur} × ${p.hauteur}` : null, echapper(p.nom)].filter(Boolean).join(' · ')}</span></p>
+        ${panneauTri('loupe')}
+        <button type="button" class="car-puce" data-lr="plein">${svgLr('plein', 15)}<span>Plein écran, télécharger, retirer</span></button>
+      </aside>
+      <div class="lr-pellicule" role="group" aria-label="Les photos autour">${liste.slice(debut, debut + 17).map((q) =>
+        `<button type="button" class="lr-vue${q === p ? ' active' : ''}" data-lr="voir" data-valeur="${q.id}"
+          aria-label="${echapper(q.nom)}"${q === p ? ' aria-current="true"' : ''}><img data-vignette="${q.id}" alt="" decoding="async"${
+          q.vignette ? ` src="${echapper(q.vignette)}"` : ''}></button>`).join('')}</div>
+    </div>`;
+}
+
+function barreDeVue(nombre) {
+  const formes = [['grille', 'Grille (G)'], ['deux', 'Deux par deux (D)'], ['une', 'Une photo (E)']].map(([cle, nom]) =>
+    `<button type="button" class="lr-forme${lr.forme === cle ? ' actif' : ''}" data-lr="forme" data-valeur="${cle}"
+       aria-pressed="${lr.forme === cle}" aria-label="${nom}" title="${nom}"${nombre ? '' : ' disabled'}>${svgLr(cle, 18)}</button>`).join('');
+  return `<div class="lr-barre">
+      <div class="lr-formes" role="group" aria-label="Mise en forme">${formes}</div>
+      ${lr.forme === 'grille' ? `<label class="lr-taille"><span class="hors-ecran">Taille des vignettes</span>
+        <input type="range" min="90" max="420" step="10" value="${lr.taille}" data-lr-taille></label>` : ''}
+      ${rangeeDOutils(nombre, 0)}
+    </div>`;
+}
+
+function centreOrdi() {
+  if (vueCourante === 'liste') return gabaritListe();
+  const m = enMatch();
+  const total = m ? photosDuMatch(cible).length : etat.photos.length;
+  const liste = photosAffichees();
+  const match = m ? matchDe(cible) : null;
+  const n = nbFiltres();
+  const titre = !m ? 'Toutes les photos' : cible === SANS_MATCH ? 'Sans match' : match?.titre ?? 'Match';
+  const corps = !total
+    ? (m ? `<div class="car-import" data-depot>
+          <p class="car-import-titre">Les photos de ce match</p>
+          <p class="car-import-texte">Choisis tes exports retouchés — ou glisse ici le dossier entier.</p>
+          <button type="button" class="car-bouton-or" data-pht="choisir">${svg('importer')}<span>Choisir des photos</span></button>
+        </div>` : '<p class="car-liste-vide">Importe un match : ses photos se chercheront ici.</p>')
+    : !liste.length ? '<p class="car-liste-vide">Aucune photo ne coche tout. Retire un filtre.</p>'
+      : lr.forme === 'une' ? gabaritLoupe(liste)
+        : `<div class="pht-grille lr-${lr.forme}${etat.modeSelection ? ' en-selection' : ''}" style="--lr-taille:${lr.taille}px"
+            data-depot>${liste.map(lr.forme === 'deux' ? tuileEntiere : tuile).join('')}</div>`;
+  return `<header class="lr-tete">
+      <h2 class="lr-titre">${echapper(titre)}</h2>
+      <span class="lr-compte">${n ? `<span class="chiffre">${liste.length}</span> sur ${total}` : `<span class="chiffre">${total}</span> photo${total > 1 ? 's' : ''}`}</span>
+      ${match ? `<span class="lr-compte">${jourCourt(match.date_debut)}</span>${champCompetition(match)}` : ''}
+      ${m ? '<p class="car-etat" data-pht-etat></p>' : ''}
+    </header>
+    ${corps}
+    ${gabaritBarreSelection()}
+    ${total ? barreDeVue(liste.length) : ''}
+    ${m ? '<input type="file" class="car-fichier" accept="image/*" multiple hidden data-pht-fichier>' : ''}`;
+}
+
+function gabaritOrdi() {
+  const panneau = panneauOutil();
+  return `<div class="lr${panneau ? '' : ' sans-panneau'}">
+      ${railDOutils()}
+      ${panneau ? `<aside class="lr-panneau" data-lr-defile aria-label="Panneau">${panneau}</aside>` : ''}
+      <section class="lr-centre">${centreOrdi()}</section>
+    </div>`;
+}
+
+function changerDeForme(forme, id = null) {
+  if (forme === 'une') {
+    if (lr.forme !== 'une') lr.avant = lr.forme;
+    lr.loupe = id ?? lr.loupe ?? [...etat.selection][0] ?? null;
+    if (etat.modeSelection) { etat.modeSelection = false; etat.selection = new Set(); }
+  }
+  lr.forme = forme;
+  etat.menuOrdre = false;
+  etat.ajout = null;
+  etat.recherche = '';
+  etat.quiOuvert = false;
+  garderLr();
+  dessiner();
+  if (forme === 'une') window.scrollTo(0, 0);
+  else if (lr.loupe) hote.querySelector(`[data-ouvrir="${lr.loupe}"]`)?.scrollIntoView({ block: 'center' });
+}
+
+function voisineDeLaLoupe(pas) {
+  const liste = photosAffichees();
+  const k = liste.findIndex((p) => p.id === lr.loupe);
+  const suivante = liste[k + pas];
+  if (!suivante) return;
+  lr.loupe = suivante.id;
+  etat.ajout = null;
+  etat.recherche = '';
+  etat.quiOuvert = false;
+  dessiner();
+}
+
+function brancherOrdi(racine) {
+  brancherTri(racine);
+  racine.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-lr]');
+    if (!b) return;
+    const { lr: quoi, valeur } = b.dataset;
+    if (quoi === 'panneau') {
+      lr.panneau = lr.panneau === valeur ? null : valeur;
+      if (lr.panneau === 'import') { chargerLesSorties(); lireLaPlace(); }
+      garderLr();
+      dessiner();
+    } else if (quoi === 'rangement') { lr.rangement = valeur; garderLr(); dessiner(); }
+    else if (quoi === 'forme') changerDeForme(valeur);
+    else if (quoi === 'voisine') voisineDeLaLoupe(Number(valeur));
+    else if (quoi === 'voir') { lr.loupe = valeur; dessiner(); }
+    else if (quoi === 'plein' && lr.loupe) { etat.listeVue = photosAffichees().map((p) => p.id); ouvrir(lr.loupe); }
+  });
+  racine.addEventListener('toggle', (e) => {
+    const cle = e.target.dataset?.lrGroupe;
+    if (!cle) return;
+    lr.plies = e.target.open ? lr.plies.filter((x) => x !== cle) : [...new Set([...lr.plies, cle])];
+    garderLr();
+  }, true);
+  racine.addEventListener('input', (e) => {
+    if (!e.target.matches?.('[data-lr-taille]')) return;
+    lr.taille = Number(e.target.value);
+    racine.querySelector('.lr-grille')?.style.setProperty('--lr-taille', `${lr.taille}px`);
+    garderLr();
+  });
+}
+
+let clavierOrdiBranche = false;
+function brancherClavierOrdi() {
+  if (clavierOrdiBranche) return;
+  clavierOrdiBranche = true;
+  document.addEventListener('keydown', (e) => {
+    if (!hote?.isConnected || !enAtelier() || vueCourante === 'liste' || etat.ouverte || etat.pile || etat.fenetreTri) return;
+    if (e.metaKey || e.ctrlKey || e.altKey || e.defaultPrevented) return;
+    if (e.target.closest?.('input, textarea, select, dialog, [role="dialog"]')) return;
+    const forme = { g: 'grille', d: 'deux', e: 'une' }[e.key.toLowerCase()];
+    if (forme) { e.preventDefault(); if (photosAffichees().length) changerDeForme(forme); return; }
+    if (lr.forme !== 'une') return;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); voisineDeLaLoupe(e.key === 'ArrowLeft' ? -1 : 1); }
+    else if (e.key === 'Escape') changerDeForme(lr.avant);
+    else if (/^[0-5]$/.test(e.key)) {
+      const p = photo(lr.loupe);
+      if (!p) return;
+      if (e.key !== '0') { if (p.note !== Number(e.key)) noter('loupe', Number(e.key), null); }
+      else if (p.note) noter('loupe', p.note, null);
+    }
+  });
+}
+
 function dessiner() {
   if (!hote?.isConnected) return;
   hote.dataset.phtEcran = vueCourante;
-  hote.innerHTML = vueCourante === 'match' ? gabaritMatch()
+  const ordi = enAtelier();
+  const defile = ordi ? hote.querySelector('[data-lr-defile]')?.scrollTop ?? 0 : 0;
+  // Un bouton du rail ou de la barre garde le focus d'un rendu à l'autre.
+  const actif = document.activeElement?.closest?.('[data-lr]');
+  const repere = actif && hote.contains(actif) ? `[data-lr="${actif.dataset.lr}"][data-valeur="${actif.dataset.valeur ?? ''}"]` : null;
+  hote.innerHTML = ordi ? gabaritOrdi() : vueCourante === 'match' ? gabaritMatch()
     : vueCourante === 'recherche' ? gabaritRecherche() : gabaritListe();
+  if (ordi) {
+    const haut = document.querySelector('.yuno-nav');
+    hote.style.setProperty('--pht-haut', `${haut && getComputedStyle(haut).position === 'sticky' ? haut.offsetHeight : 0}px`);
+    const panneau = hote.querySelector('[data-lr-defile]');
+    if (panneau) panneau.scrollTop = defile;
+    if (repere) hote.querySelector(repere)?.focus({ preventScroll: true });
+  }
   majLigneDEtat();
   if (!etat.photos) return;
   const montrees = vueCourante !== 'liste'
     ? photosAffichees()
     : [...new Set((etat.photos ?? []).map(cleDuMatch))].flatMap((cle) => photosDuMatch(cle).slice(0, 3));
-  signer(montrees);
+  signer(montrees).then(() => {
+    // Les photos entières attendaient leur adresse.
+    hote?.querySelectorAll('img[data-entiere]:not([src]), img[data-entiere][src=""]').forEach((img) => {
+      const p = photo(img.dataset.entiere);
+      if (p?.url) img.src = p.url;
+    });
+  });
 }
 
 function brancher(racine) {
@@ -2852,6 +3340,7 @@ function brancher(racine) {
       return;
     }
     if (etat.modeSelection) toucherEnSelection(t.dataset.ouvrir, e.shiftKey);
+    else if (enAtelier()) changerDeForme('une', t.dataset.ouvrir);
     else ouvrir(t.dataset.ouvrir);
   });
 
@@ -3009,7 +3498,10 @@ export async function compteATrier(element) {
   if (!etat.photos) {
     try { await chargerEnSilence(); } catch { return; }
   }
-  if (element.isConnected) element.textContent = String(pileATrier().length);
+  if (!element.isConnected) return;
+  const n = pileATrier().length;
+  element.textContent = String(n);
+  element.closest('a')?.setAttribute('aria-label', `${n} photo${n > 1 ? 's' : ''} à trier`);
 }
 
 export async function inspiration(element) {
@@ -3045,22 +3537,30 @@ export async function inspiration(element) {
 // LA PHOTO EN GRAND, ET DEUX GESTES : en faire un carrousel, voir son match.
 let fenetreInspiration = null;
 
+// UN VRAI `dialog` (25 novembre 2026, audit Apple) : le navigateur garde le
+// focus dedans, rend la page derrière inerte et ferme à Échap. On rend le focus
+// à la photo d'où l'on vient — par son identifiant, la mosaïque ayant pu être
+// redessinée entre-temps.
 function fermerLInspiration() {
-  fenetreInspiration?.remove();
+  const fenetre = fenetreInspiration;
+  if (!fenetre) return;
   fenetreInspiration = null;
-  document.removeEventListener('keydown', echapInspiration);
+  fenetre.close();
+  fenetre.remove();
+  document.querySelector(`[data-insp="${fenetre.dataset.de}"]`)?.focus({ preventScroll: true });
 }
-function echapInspiration(e) { if (e.key === 'Escape') fermerLInspiration(); }
 
 function ouvrirLInspiration(p) {
   if (!p) return;
   fermerLInspiration();
   const { match, mots } = legendeDInspiration(p);
   const etoiles = p.note ? '★'.repeat(p.note) : '';
-  fenetreInspiration = document.createElement('div');
+  fenetreInspiration = document.createElement('dialog');
   fenetreInspiration.className = 'insp-fenetre';
+  fenetreInspiration.dataset.de = p.id;
+  fenetreInspiration.setAttribute('aria-label', match ? `Photo, ${match}` : 'Photo');
   fenetreInspiration.innerHTML = `
-    <div class="insp-fenetre-cadre" role="dialog" aria-modal="true" aria-label="Photo">
+    <div class="insp-fenetre-cadre">
       <button type="button" class="insp-fermer" data-insp-fermer aria-label="Fermer">${svg('fermer', 18)}</button>
       <img src="${echapper(p.vignette ?? p.url ?? '')}" alt="">
       <div class="insp-fenetre-pied">
@@ -3078,8 +3578,9 @@ function ouvrirLInspiration(p) {
     const b = e.target.closest('[data-insp-carrousel]');
     if (b) carrouselDepuis(p, b);
   });
-  document.addEventListener('keydown', echapInspiration);
+  fenetreInspiration.addEventListener('cancel', (e) => { e.preventDefault(); fermerLInspiration(); });
   document.body.append(fenetreInspiration);
+  fenetreInspiration.showModal();
   fenetreInspiration.querySelector('[data-insp-carrousel]')?.focus();
   // La vignette s'affiche tout de suite, l'original la remplace une fois là.
   if (p.url && p.url !== p.vignette) {
@@ -3113,8 +3614,9 @@ async function carrouselDepuis(p, bouton) {
     location.hash = `#yuno/carrousel/${c.id}`;
   } catch (e) {
     console.error('Carrousel non créé', e);
-    bouton.disabled = false;
-    bulle("Ce n'est pas passé", "Le carrousel n'a pas pu être créé.", bouton);
+    // La bulle vit dans la page, sous la fenêtre : on ferme pour qu'elle se lise.
+    fermerLInspiration();
+    messageCourt("Le carrousel n'a pas pu être créé.");
   }
 }
 
@@ -3125,6 +3627,8 @@ export default {
     hote.classList.add('car-hote', 'pht-hote');
     brancherLaFenetre();
     brancher(hote);
+    brancherOrdi(hote);
+    brancherClavierOrdi();
     // DEUX CHOIX POSSIBLES, une même recherche : pour une parution
     // (`pour-<id>`) ou pour un carrousel (`carrousel-<id>`).
     const genre = id?.startsWith(PREFIXE_POUR) ? 'parution'
@@ -3164,6 +3668,7 @@ export default {
     // à chaque redessin de la photothèque, où il est en train de servir.
     if (vueCourante === 'match') { etat.choisirMatch = false; chargerLesSorties(); }
     if (id === RECHERCHE || pour) cible = id;
+    if (lr.panneau === 'import' && ORDI.matches) chargerLesSorties();
     dessiner();
     const enCours = (etat.photos ?? []).some(enRoute);
     if (!etat.photos || (!enCours && Date.now() - etat.chargeLe > RELIRE_APRES_MS)) charger();

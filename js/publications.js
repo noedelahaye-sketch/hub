@@ -192,17 +192,24 @@ export function construireApercuPublication(pub, options = {}) {
   const { piliers = null, formats = false, trace = null, pastille = false } = options;
 
   return `
-    <li class="tuile-apercu" role="button" tabindex="0"
+    ${/* UNE TUILE QUI PORTE DES RÉGLAGES N'EST PAS UN BOUTON (25 novembre 2026,
+       audit Apple) : VoiceOver lisait la tuile d'un bloc, et l'état comme la date
+       devenaient inatteignables. C'est le TITRE qui est le bouton ; la tuile
+       entière reste cliquable à la souris et au doigt. */''}
+    <li class="tuile-apercu"${pastille ? '' : ` role="button" tabindex="0"
+      aria-label="Ouvrir « ${echapper(pub.titre)} »"`}
       ${pub.pilier ? `data-pilier="${echapper(String(pub.pilier))}"` : ''}
-      data-ouvrir-pub="${echapper(pub.id)}"
-      aria-label="Ouvrir « ${echapper(pub.titre)} »">
+      data-ouvrir-pub="${echapper(pub.id)}">
       ${
         // Sans la pastille — le FCH ne l'a pas demandée —, l'ancien en-tête
         // revient : c'est le même gabarit pour deux sites, et l'un ne dicte pas
         // la forme de l'autre.
         pastille ? '' : entetePublication(pub, piliers)
       }
-      <span class="pub-titre">${echapper(pub.titre)}</span>
+      ${pastille
+        ? `<button type="button" class="pub-titre pub-ouvrir" data-ouvrir-pub="${echapper(pub.id)}"
+            aria-haspopup="dialog">${echapper(pub.titre)}</button>`
+        : `<span class="pub-titre">${echapper(pub.titre)}</span>`}
       ${
         // LE CLASSEMENT COLLE AU TITRE (correction de Noé, 16 septembre 2026) :
         // il dit ce que cette idée EST — sur quel réseau, sous quelle forme,

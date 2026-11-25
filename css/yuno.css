@@ -7026,9 +7026,9 @@ body[data-atelier="creer"] .ouvrir-capture { bottom: calc(76px + env(safe-area-i
    Les contrôles (boutons, pastilles, champs) gardent l'échelle du kit ; ce qui
    montre une photo ou porte un contenu s'arrête net. */
 body[data-atelier="creer"] :is(.pht-tuile, .pht-match-cadre, .pht-vue-image, .porte-pht-cadre, .porte-car-cadre,
-  .pht-apercu-cadre, .pht-fen-vignette, .car-vignette, .car-tuile, .car-sel-item, .pht-match, .pht-filtres,
-  .pht-filtres-tel, .pht-choix, .pht-barre-sel, .pht-menu-liste, .pht-ordre-menu, .car-liste-tuile, .car-import,
-  .car-tout, .bloc, .grande-porte) { border-radius: 0; }
+  .pht-apercu-cadre, .pht-fen-vignette, .pht-match, .pht-filtres,
+  .pht-filtres-tel, .pht-choix, .pht-barre-sel, .pht-menu-liste, .pht-ordre-menu,
+  .bloc, .grande-porte) { border-radius: 0; }
 /* Le bloc des cinq photos ouvre la page : un vrai blanc avant les deux outils. */
 body[data-atelier="creer"] .atelier-creer > .creer-inspiration { margin-bottom: 32px; }
 /* La photothèque à gauche, la liste « Publier » à sa droite ; empilées au téléphone. */
@@ -7358,7 +7358,8 @@ body[data-atelier="creer"] .atelier-sans-titre ~ .atelier-dock + * { margin-top:
   transform: translateY(-50%);
   pointer-events: none;
 }
-.insp-points > span { width: 5px; height: 5px; border-radius: 50%; background: var(--bordure); }
+/* #8a8478 : 4,7:1 sur la tuile — le gris d'avant tombait à 1,24. */
+.insp-points > span { width: 5px; height: 5px; border-radius: 50%; background: #8a8478; }
 .insp-points > span.actif { background: var(--accent); }
 @media (max-width: 47.99rem) {
   /* Une colonne de 110 px : le titre seul, plus petit ; le pilier et le format
@@ -7379,12 +7380,20 @@ body[data-atelier="creer"] .atelier-sans-titre ~ .atelier-dock + * { margin-top:
 .insp-fenetre {
   position: fixed;
   inset: 0;
-  z-index: 60;
-  display: grid;
-  place-items: center;
-  padding: 16px;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: rgb(0 0 0 / 82%);
+  border: 0;
 }
+.insp-fenetre[open] { display: grid; place-items: center; }
+.insp-fenetre::backdrop { background: none; }
+.insp-fenetre .car-puce { min-height: 44px; padding-inline: 16px; font-size: 0.9375rem; }
 .insp-fenetre-cadre {
   position: relative;
   display: flex;
@@ -7405,8 +7414,8 @@ body[data-atelier="creer"] .atelier-sans-titre ~ .atelier-dock + * { margin-top:
   right: 8px;
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   color: #fff;
   background: rgb(0 0 0 / 55%);
   border: 0;
@@ -7551,7 +7560,7 @@ body[data-atelier="creer"] .atelier-vedette-incruste {
   background: linear-gradient(to top, rgb(0 0 0 / 72%), transparent);
 }
 @media (max-width: 47.99rem) {
-  body[data-atelier="creer"] .atelier-vedette-incruste { padding: 32px 10px 10px; font-size: 16px; line-height: 20px; }
+  body[data-atelier="creer"] .atelier-vedette-incruste { padding: 32px 10px 10px; font-size: 1.0667rem; line-height: 1.25; }
 }
 
 /* Les icônes des tuiles, plus grandes. */
@@ -7601,3 +7610,270 @@ body[data-atelier="creer"] .ouvrir-capture { bottom: calc(68px + env(safe-area-i
    réservait l'encoche une seconde fois — deux encoches et un blanc avant le
    logo. Ici c'est la barre seule qui porte l'encoche. */
 body[data-atelier="creer"] #vue { padding-top: 0; }
+
+/* --- AUDIT APPLE DE L'ATELIER (25 novembre 2026, accord de Noé) --- */
+/* RIEN SOUS 11 PX au téléphone, le minimum d'Apple. `max` garde le `rem`, donc
+   le réglage de texte du système. Le dock reste à 11 px : à 12, « Photothèque »
+   élargissait son onglet, et les cinq doivent rester égaux. */
+@media (max-width: 47.99rem) {
+  body[data-atelier="creer"] .atelier-dock a,
+  body[data-atelier="creer"] .atelier-dock a.vedette { font-size: 11px; line-height: 1.2; }
+  body[data-atelier="creer"] #vue :is(.etiquette, .pilier-rang, .choix-declencheur, .cal-entetes, .cal-entetes *,
+    .cal-numero, .cal-signe, .cal-barre-titre, .pht-note) { font-size: max(11px, 0.7334rem); }
+
+  /* DEUX TUILES CARRÉES À DROITE DE LA PHOTOTHÈQUE : même grille de trois que
+     les photos du dessus, l'image sur deux colonnes et deux rangs. */
+  body[data-atelier="creer"] .atelier-duo { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  body[data-atelier="creer"] .atelier-vedette { grid-column: span 2; }
+  body[data-atelier="creer"] .atelier-duo .atelier-vedette-image { aspect-ratio: 1; }
+  body[data-atelier="creer"] .atelier-tuile { gap: 8px; border: 0; border-radius: 12px; font: inherit; }
+  body[data-atelier="creer"] .atelier-tuile-nom { display: block; font-size: max(11px, 0.8rem); line-height: 1.2; }
+
+  /* Au bout des idées, le doigt rend la main à la page au lieu de rester pris. */
+  .insp-idees-defile { overscroll-behavior: auto; }
+}
+
+/* --- LA BANQUE D'IDÉES, AUDIT APPLE (25 novembre 2026) --- */
+/* Le titre d'une idée est un vrai bouton : il perd tout ce qu'un navigateur lui
+   ajoute, et garde le corps de `.pub-titre`. Son anneau reste. */
+body[data-espace="yuno"] .pub-ouvrir {
+  padding: 0;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+body[data-espace="yuno"] .pub-ouvrir:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+@media (max-width: 47.99rem) {
+  /* UNE COLONNE N'A RIEN À ÉGALISER : la hauteur commune laissait un blanc sous
+     chaque titre d'une ligne. Et un titre se lit en entier. */
+  body[data-atelier="creer"] #vue :is([data-bloc="banque"], [data-bloc="publiees"]) ul { grid-auto-rows: auto; }
+  body[data-atelier="creer"] #vue :is([data-bloc="banque"], [data-bloc="publiees"]) .pub-titre { -webkit-line-clamp: none; }
+
+  /* 44 PX AU DOIGT. Les pastilles se VOIENT à 32 — à 44 elles pèseraient plus
+     que les titres — et se TOUCHENT à 44, par un débord invisible. */
+  body[data-atelier="creer"] #vue :is(.livres-recherche, .livres-reglages-bouton) { min-height: 44px; min-width: 44px; justify-content: center; }
+  body[data-atelier="creer"] #vue .livres-critere-bouton { min-height: 44px; padding-inline: 14px; font-size: 0.8667rem; }
+  body[data-atelier="creer"] #vue [data-bloc="publiees"] summary { min-height: 44px; }
+  /* Sous 16 px, iOS zoome la page dès que le champ prend le focus. */
+  body[data-atelier="creer"] #vue .livres-recherche { font-size: max(16px, 1.0667rem); }
+
+  body[data-atelier="creer"] #vue :is(.pub-reglages, .pub-actions) :is(.cal-statut-pastille, .choix-declencheur, .pub-format-pastille) {
+    position: relative;
+    min-height: 32px;
+    font-size: max(11px, 0.8rem);
+  }
+  body[data-atelier="creer"] #vue :is(.pub-reglages, .pub-actions) :is(.cal-statut-pastille, .pub-format-pastille)::after {
+    content: "";
+    position: absolute;
+    inset: -7px -3px;
+  }
+  body[data-atelier="creer"] #vue :is(.pub-reglages, .pub-actions) .pub-format-pastille { min-width: 38px; justify-content: center; }
+  body[data-atelier="creer"] #vue :is(.pub-reglages, .pub-actions) .pastille-date input { top: -6px; height: 44px; min-height: 44px; }
+  body[data-atelier="creer"] #vue .pub-classement :is(.pub-service, .pub-pilier-nom) { font-size: 0.8667rem; }
+  body[data-atelier="creer"] #vue .pub-pilier .pilier-rang { width: 1.2rem; height: 1.2rem; }
+
+  /* LA FICHE : une croix de 44 px, et la tête qui lui laisse sa place — le nom du
+     pilier passait dessous. */
+  body[data-atelier="creer"] #vue .fenetre-fermer { min-width: 44px; min-height: 44px; top: 2px; right: 2px; }
+  body[data-atelier="creer"] #vue .idee-complete .tuile-entete { padding-right: 32px; }
+  body[data-atelier="creer"] #vue .idee-complete :is(.pht-apercu-lien, .checklist-carrousel summary) { min-height: 44px; }
+  body[data-atelier="creer"] #vue .idee-complete summary { min-height: 44px; display: flex; align-items: center; }
+  body[data-atelier="creer"] #vue .pht-apercu-n { font-size: 11px; }
+}
+
+/* --- La page Carrousel, arrondie, avec une photo (25 novembre 2026, demandes de
+   Noé). Deux aperçus de front au téléphone : une image se balaie, une liste de
+   noms se lit. --- */
+.car-liste { grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr)); }
+@media (max-width: 47.99rem) { .car-liste { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } }
+.car-liste-tuile { min-width: 0; padding: 0 0 12px; overflow: hidden; border-radius: 12px; }
+.car-liste-tuile > span:not(.car-liste-image) { margin-inline: 12px; min-width: 0; }
+.car-liste-image {
+  display: grid;
+  place-items: center;
+  position: relative;
+  flex: none;
+  aspect-ratio: 4 / 5;
+  margin-bottom: 6px;
+  color: var(--texte-discret);
+  background: var(--fond-releve);
+}
+.car-liste-image img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.car-liste-tuile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.car-liste-match { overflow: hidden; }
+@media (max-width: 47.99rem) { .car-liste-nom { font-size: 0.9375rem; line-height: 1.25; } }
+body[data-atelier="creer"] :is(.car-tuile, .car-sel-item, .car-vignette, .car-tout) { border-radius: 10px; }
+body[data-atelier="creer"] .car-import { border-radius: 12px; }
+
+/* --- Les propositions de la pile : le pointillé dit « pas encore posé ». Cochée,
+   une proposition partira avec « Trié ». --- */
+.pht-props {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.pht-props::-webkit-scrollbar { display: none; }
+.pht-props-mot { flex: none; font-size: 0.75rem; color: var(--texte-discret); }
+.pht-prop {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  min-height: 34px;
+  padding: 0 11px;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  color: var(--texte-discret);
+  background: none;
+  border: 1px dashed var(--texte-discret);
+  border-radius: var(--rayon-controle);
+  cursor: pointer;
+}
+.pht-prop.voulue { color: var(--accent); border-color: var(--accent); }
+.pht-prop:hover { color: var(--texte); }
+@media (min-width: 60rem) { .pht-props { flex-wrap: wrap; margin-bottom: var(--espace-12); } .pht-props-mot { width: 100%; } }
+
+/* ==========================================================================
+   LA PHOTOTHÈQUE SUR ORDINATEUR (25 novembre 2026, demande de Noé, Lightroom en
+   référence) : un rail, un panneau, les photos, une barre de vue.
+   ========================================================================== */
+body:has(.lr) .atelier-tete { display: none; }
+body:has(.lr) #vue { padding-bottom: 0; }
+body:has(.lr) .ouvrir-capture { bottom: 76px; }
+body:has(.lr) .yuno-pied { display: none; }
+.lr {
+  display: grid;
+  grid-template-columns: 52px 17rem minmax(0, 1fr);
+  align-items: start;
+  margin-left: calc(-1 * var(--espace-16));
+}
+.lr.sans-panneau { grid-template-columns: 52px minmax(0, 1fr); }
+.lr-rail,
+.lr-panneau {
+  position: sticky;
+  top: var(--pht-haut, 0px);
+  height: calc(100vh - var(--pht-haut, 0px));
+  border-right: 1px solid var(--bordure);
+}
+.lr-rail { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 0; }
+.lr-filet { width: 28px; height: 1px; margin: 6px 0; background: var(--bordure); }
+.lr-outil {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  color: var(--texte-doux);
+  background: none;
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.lr-outil:hover { color: var(--texte); background: var(--fond-carte); }
+.lr-outil.actif { color: var(--fond); background: var(--texte); }
+.lr :is(.lr-outil, .lr-forme, .lr-album, .lr-vue, .lr-groupe > summary):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.lr-outil-n {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  min-width: 16px;
+  padding: 0 4px;
+  font-size: 10px;
+  line-height: 16px;
+  font-weight: 700;
+  color: var(--fond);
+  background: var(--accent);
+  border-radius: 8px;
+}
+.lr-outil-point { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; background: var(--accent); border-radius: 50%; }
+
+.lr-panneau { overflow-y: auto; overscroll-behavior: contain; padding: 16px 12px 24px; scrollbar-width: thin; scrollbar-color: var(--bordure) transparent; }
+.lr-panneau-tete { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 28px; margin-bottom: 10px; }
+body[data-espace="yuno"] #vue .lr-panneau-tete h2 { margin: 0; font-family: inherit; font-size: 0.9375rem; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--texte); }
+.lr-panneau .pht-filtres-corps { padding: 0; }
+.lr-aide { margin: 12px 0 8px; font-size: 0.8125rem; color: var(--texte-discret); }
+.lr-place { margin-top: 20px; }
+.lr-place .pht-place { margin-left: 0; }
+.lr-bascule { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; padding: 2px; margin-bottom: 10px; background: var(--fond-carte); border-radius: 10px; }
+.lr-bascule button { min-height: 30px; padding: 0; font: inherit; font-size: 0.8125rem; color: var(--texte-discret); background: none; border: 0; border-radius: 8px; cursor: pointer; }
+.lr-bascule button.actif { font-weight: 600; color: var(--texte); background: var(--fond-releve); }
+.lr-groupe > summary { display: flex; align-items: center; gap: 7px; min-height: 34px; padding: 0 8px 0 4px; font-size: 0.875rem; color: var(--texte-doux); list-style: none; border-radius: 8px; cursor: pointer; }
+.lr-groupe > summary::-webkit-details-marker { display: none; }
+.lr-groupe > summary::after { content: none; }
+.lr-groupe > summary > svg { flex: none; }
+.lr-groupe > summary > svg:first-child { transition: transform 0.15s; }
+.lr-groupe[open] > summary > svg:first-child { transform: rotate(90deg); }
+@media (prefers-reduced-motion: reduce) { .lr-groupe > summary > svg:first-child { transition: none; } }
+.lr-groupe > summary:hover,
+.lr-album:hover { color: var(--texte); background: var(--fond-carte); }
+.lr-album { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 8px 0 27px; font-size: 0.8125rem; color: var(--texte-doux); text-decoration: none; border-radius: 8px; }
+.lr-panneau > .lr-album { padding-left: 8px; font-size: 0.875rem; }
+.lr-album[aria-current] { font-weight: 600; color: var(--texte); background: var(--fond-releve); }
+.lr-album-nom { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lr-n { flex: none; font-size: 0.75rem; font-variant-numeric: tabular-nums; color: var(--texte-discret); }
+
+.lr-centre { display: flex; flex-direction: column; min-width: 0; min-height: calc(100vh - var(--pht-haut, 0px)); padding: 12px 0 0 16px; }
+.lr-tete { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; min-height: 40px; margin-bottom: 10px; }
+body[data-espace="yuno"] #vue .lr-titre { margin: 0; font-family: inherit; font-size: 1.125rem; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--texte); }
+.lr-compte { font-size: 0.8125rem; color: var(--texte-discret); }
+.lr-tete .car-etat { margin: 0; }
+.lr-centre .pht-grille.lr-grille { grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--lr-taille, 170px)), 1fr)); gap: 4px; }
+.lr-centre .pht-grille.lr-deux { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.lr-entiere { aspect-ratio: 4 / 3; }
+.lr-entiere img { object-fit: contain; }
+.pht-tuile.lr-entiere { background: var(--fond-carte); }
+
+.lr-loupe {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 18rem;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 10px 16px;
+  height: calc(100vh - var(--pht-haut, 0px) - 128px);
+  min-height: 24rem;
+}
+.lr-scene { position: relative; display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 0; }
+.lr-photo { flex: 1; min-width: 0; width: 100%; height: 100%; object-fit: contain; }
+.lr-cote { grid-row: 1 / span 2; grid-column: 2; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; scrollbar-width: thin; scrollbar-color: var(--bordure) transparent; }
+.lr-infos { display: flex; flex-direction: column; gap: 2px; margin: 0 0 14px; font-size: 0.8125rem; overflow-wrap: anywhere; }
+.lr-cote > .car-puce { margin-top: 16px; }
+.lr-pellicule { display: flex; justify-content: center; gap: 4px; min-width: 0; overflow: hidden; }
+.lr-vue { flex: 0 1 60px; min-width: 0; aspect-ratio: 1; padding: 0; overflow: hidden; background: var(--fond-carte); border: 0; border-radius: 6px; opacity: 0.55; cursor: pointer; }
+.lr-vue:hover { opacity: 0.85; }
+.lr-vue.active { opacity: 1; outline: 2px solid var(--accent); outline-offset: -2px; }
+.lr-vue img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.lr-barre {
+  position: sticky;
+  bottom: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 56px;
+  margin: auto 0 0 -16px;
+  padding: 0 16px;
+  background: var(--fond);
+  border-top: 1px solid var(--bordure);
+}
+.lr-formes { display: flex; gap: 2px; }
+.lr-forme { display: grid; place-items: center; width: 38px; height: 36px; padding: 0; color: var(--texte-doux); background: none; border: 0; border-radius: 8px; cursor: pointer; }
+.lr-forme:hover { color: var(--texte); background: var(--fond-carte); }
+.lr-forme.actif { color: var(--fond); background: var(--texte); }
+.lr-taille { display: flex; align-items: center; width: 130px; margin: 0; }
+.lr-taille input { width: 100%; margin: 0; padding: 0; accent-color: var(--texte); background: none; border: 0; }
+.lr-barre .pht-outils { margin-left: auto; }
+.lr-barre .pht-outil-filtres { display: none; }
+.lr-barre .pht-ordre-menu { top: auto; bottom: calc(100% + 10px); left: auto; right: 0; }
+.lr-centre .pht-barre-sel { bottom: 66px; z-index: 7; }
+/* Le menu du tri s'ouvre PAR-DESSUS la barre de sélection. Sur le site Yuno, le
+   dock flotte au pied : la sélection passe au-dessus de lui. */
+.lr-barre:has(.pht-ordre-menu) { z-index: 8; }
+body:not([data-atelier="creer"]) .lr-centre .pht-barre-sel { bottom: 106px; }

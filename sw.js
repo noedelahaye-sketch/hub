@@ -101,6 +101,7 @@ const COQUILLE = [
   'js/carrousel.js',
   'js/phototheque.js',
   'js/exif.js',
+  'js/tri-photos.js',
   'js/zip.js',
   'js/photos-cloud.js',
   'js/vendor/supabase-js.js',

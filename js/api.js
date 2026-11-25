@@ -3108,7 +3108,7 @@ export async function lireCarrousels() {
   return verifier(
     await client
       .from('carrousels')
-      .select('*, medias:carrousels_medias(count), evenement:evenements(id, titre, date_debut)')
+      .select('*, medias:carrousels_medias(count), apercus:carrousels_medias(id, cle, genre), evenement:evenements(id, titre, date_debut)')
       .order('modifie_le', { ascending: false }),
   );
 }
@@ -3340,4 +3340,5 @@ async function marquerPhotos(ids, champs) {
   }
 }
 export const marquerTriees = (ids, triee = true) => marquerPhotos(ids, { triee });
+export const marquerFlouLu = (ids, flou_mouvement) => marquerPhotos(ids, { flou_lu: true, flou_mouvement });
 export const marquerCouleursLues = (ids) => marquerPhotos(ids, { couleurs_lues: true });

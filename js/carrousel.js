@@ -121,6 +121,16 @@ const CROIX = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" strok
 async function chargerLaListe() {
   try {
     const carrousels = await api.lireCarrousels();
+    // LA COUVERTURE (25 novembre 2026, demande de Noé) : la première photo du
+    // post, sinon la première importée. Sans photo, la tuile garde son cadre.
+    for (const c of carrousels) {
+      const photos = (c.apercus ?? []).filter((m) => m.genre === 'photo' && m.cle);
+      c.couverture = photos.find((m) => m.id === (c.selection ?? [])[0])
+        ?? photos.find((m) => (c.selection ?? []).includes(m.id)) ?? photos[0] ?? null;
+    }
+    const cles = carrousels.map((c) => c.couverture?.cle).filter(Boolean);
+    const adresses = cles.length ? await adressesDe(cles).catch(() => ({})) : {};
+    for (const c of carrousels) c.image = adresses[c.couverture?.cle]?.vignette ?? null;
     etat.liste = carrousels;
   } catch (e) {
     console.error('Lecture des carrousels impossible', e);
@@ -608,6 +618,8 @@ function gabaritListe() {
   const tuiles = liste.map((c) => {
     const n = c.medias?.[0]?.count ?? 0;
     return `<a class="car-liste-tuile" href="#yuno/carrousel/${c.id}">
+        <span class="car-liste-image">${c.image
+          ? `<img src="${echapper(c.image)}" alt="" loading="lazy" decoding="async">` : svg('photos', 28)}</span>
         <span class="car-liste-nom">${echapper(c.nom)}</span>
         ${c.evenement ? `<span class="car-liste-match">${svg('match', 13)}${echapper(c.evenement.titre)} · ${jourCourt(c.evenement.date_debut)}</span>` : ''}
         <span class="car-liste-compte">${n} ${n > 1 ? 'fichiers' : 'fichier'} · ${(c.selection ?? []).length} dans le post</span>
@@ -1008,7 +1020,7 @@ function partirDeZero(bouton) {
   dessiner();
 }
 
-async function nouveauCarrousel(bouton) {
+export async function nouveauCarrousel(bouton) {
   const jour = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
   bouton.disabled = true;
   try {

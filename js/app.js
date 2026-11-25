@@ -1266,3 +1266,23 @@ if ('serviceWorker' in navigator) {
   // passe pas toujours par `visibilitychange`.
   window.addEventListener('pageshow', reprendreLaVersionFraiche);
 }
+
+// L'ATELIER SUIT LA TAILLE DE TEXTE DE L'IPHONE (25 novembre 2026, audit Apple).
+// La racine est figée à 15 px : tout le texte en `rem` y restait, quel que soit
+// le réglage. On mesure le texte courant du système (17 px par défaut) et l'on
+// garde le même RAPPORT — 15 px au réglage d'origine, le double au plus. Au
+// retour dans l'application aussi : c'est là qu'on revient de Réglages. Le doigt
+// seulement — sur Mac le texte courant du système vaut 13 px et ne se règle pas.
+if (document.body.dataset.atelier === 'creer' && CSS.supports('font', '-apple-system-body')
+  && matchMedia('(pointer: coarse)').matches) {
+  const suivreLeTexte = () => {
+    const temoin = document.createElement('span');
+    temoin.style.cssText = 'font:-apple-system-body;position:absolute;visibility:hidden';
+    document.body.append(temoin);
+    const rapport = parseFloat(getComputedStyle(temoin).fontSize) / 17;
+    temoin.remove();
+    if (rapport > 0) document.documentElement.style.fontSize = `${15 * Math.min(2, Math.max(0.9, rapport))}px`;
+  };
+  suivreLeTexte();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) suivreLeTexte(); });
+}

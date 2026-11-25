@@ -87,7 +87,7 @@ import pageProjet from './projet.js';
 // « Mes tâches », filtrée sur l'espace du site : c'est la page du hub, et le
 // filtre voyage déjà par la route (`#taches/photo`).
 import pageTaches from './taches.js';
-import outilCarrousel from './carrousel.js';
+import outilCarrousel, { nouveauCarrousel } from './carrousel.js';
 import outilPhototheque, { apercuParution, choisirUnePhoto, inspiration, compteATrier } from './phototheque.js';
 import { animerLaCoche } from './mouvements.js';
 import { bulle, suivreLesGestes, dernierGeste } from './bulle.js';
@@ -2970,7 +2970,7 @@ function vueCreerDeLAtelier(etat) {
     ? `<img src="${echapper(tirage[i])}" alt="" loading="lazy" decoding="async">` : '');
   // Une tuile porte une icône — ou un CHIFFRE quand il en dit plus : la banque
   // montre combien d'idées attendent (demande de Noé).
-  const tuile = (adresse, nom, icone, chiffre = null, classe = '') => `
+  const tuile = (adresse, nom, icone, chiffre = null, classe = ' atelier-tuile-ordi') => `
     <a class="atelier-tuile${classe}" href="${adresse}" title="${nom}"
       aria-label="${chiffre ? `${chiffre} ${nom.toLowerCase()}` : nom}">
       ${chiffre !== null
@@ -2998,10 +2998,15 @@ function vueCreerDeLAtelier(etat) {
           ${tuile('#yuno/carrousel', 'Carrousel', '<rect x="7" y="4" width="10" height="16" rx="2"/><path d="M4 7v10M20 7v10"/>')}
           ${tuile('#yuno/banque', idees > 1 ? 'Idées en banque' : 'Idée en banque', '', idees)}
           ${tuile('#yuno/identite', 'L’identité de Yuno', '<path d="M3 9l9-5 9 5zM4 20h16M6 10v10M10 10v10M14 10v10M18 10v10"/>', null, ' atelier-tuile-ordi')}
-          ${/* AU TÉLÉPHONE, LA PILE « À TRIER » PREND LA PLACE DE L'IDENTITÉ
-             (demande de Noé) : c'est là qu'on trie, dans le métro. Le nombre
-             est écrit par la photothèque, qui seule a la réserve. */''}
-          ${tuile('#yuno/phototheque/a-trier', 'Photos à trier', '', '', ' atelier-tuile-tel')}
+          ${/* AU TÉLÉPHONE, DEUX TUILES ET NON QUATRE (25 novembre 2026, audit
+             Apple) : Calendrier, Carrousel et Idées y répétaient le dock, sur le
+             même écran. Restent la pile « À trier », et une ACTION que le dock ne
+             porte pas. Le nombre est écrit par la photothèque. */''}
+          ${tuile('#yuno/phototheque/a-trier', 'À trier', '', '', ' atelier-tuile-tel')}
+          <button type="button" class="atelier-tuile atelier-tuile-tel" data-nouveau-carrousel>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="4" width="10" height="16" rx="2"/><path d="M4 7v10M20 7v10M12 9v6M9 12h6"/></svg>
+            <span class="atelier-tuile-nom">Nouveau carrousel</span>
+          </button>
         </nav>
       </div>
 
@@ -3150,6 +3155,13 @@ function vueBanque(etat) {
 // gestes. On la retrouve par son identifiant à chaque rendu plutôt que de la
 // garder en copie : après « Passer en à développer », la fenêtre doit montrer
 // le nouveau statut, pas celui d'avant le clic.
+// Fermer la fiche ramène là d'où l'on vient : au titre de l'idée. Après le
+// rendu — celui-ci remplace la liste entière.
+function rendreLeFocusALIdee(section, id) {
+  if (!id) return;
+  setTimeout(() => section.querySelector(`button[data-ouvrir-pub="${id}"]`)?.focus({ preventScroll: true }), 0);
+}
+
 function fenetreIdee(etat, options) {
   if (!etat.ideeOuverte) return '';
 
@@ -8183,6 +8195,7 @@ export default {
         etat.commandeNouvelle = false;
         etat.prefillCommande = null;
         etat.prefillMoment = null;
+        rendreLeFocusALIdee(section, etat.ideeOuverte);
         etat.ideeOuverte = null;
         etat.momentOuvert = null;
         etat.editionMoment = false;
@@ -8197,6 +8210,9 @@ export default {
         rendre();
         return;
       }
+
+      const neuf = evenement.target.closest('[data-nouveau-carrousel]');
+      if (neuf) { nouveauCarrousel(neuf); return; }
 
       // UN PILIER OUVRE LA BANQUE FILTRÉE DESSUS. L'état se pose AVANT que le
       // lien navigue — un écouteur délégué passe avant le comportement par
@@ -9627,6 +9643,7 @@ export default {
       etat.commandeNouvelle = false;
       etat.prefillCommande = null;
       etat.prefillMoment = null;
+      rendreLeFocusALIdee(section, etat.ideeOuverte);
       etat.ideeOuverte = null;
       etat.momentOuvert = null;
       etat.editionMoment = false;
@@ -9642,9 +9659,26 @@ export default {
     // Une tuile d'aperçu est un bouton : elle doit s'ouvrir à l'Entrée et à
     // l'Espace, comme un vrai. L'Espace fait défiler la page par défaut.
     section.addEventListener('keydown', (touche) => {
+      // LA FICHE GARDE LE FOCUS tant qu'elle est ouverte : Tab y tourne en rond.
+      if (touche.key === 'Tab' && etat.ideeOuverte) {
+        const fiche = section.querySelector('.fenetre');
+        const arrets = [...(fiche?.querySelectorAll('a[href], button, input, select, textarea, summary') ?? [])]
+          .filter((e) => !e.disabled && e.getClientRects().length);
+        const [premier, dernier] = [arrets[0], arrets.at(-1)];
+        const hors = !fiche?.contains(document.activeElement);
+        if (premier && (hors || document.activeElement === (touche.shiftKey ? premier : dernier))) {
+          touche.preventDefault();
+          (touche.shiftKey ? dernier : premier).focus();
+        }
+        return;
+      }
       if (touche.key !== 'Enter' && touche.key !== ' ') return;
       const apercu = touche.target.closest('[data-ouvrir-pub]');
       if (!apercu) return;
+      // Un réglage de la tuile garde ses touches : Entrée sur l'état ouvrait la
+      // fiche au lieu du menu.
+      const controleTouche = touche.target.closest('button, a, input, select, textarea');
+      if (controleTouche && controleTouche !== apercu) return;
       touche.preventDefault();
       etat.ideeOuverte = apercu.dataset.ouvrirPub;
       rendre();
