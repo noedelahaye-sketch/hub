@@ -158,3 +158,103 @@ export function propositionsPour(p, { photos, etiquettes, personnes }) {
   }
   return sorties;
 }
+
+// --- Les piles de rafales (25 novembre 2026) ---------------------------------------------------
+//
+// Une rafale repliée en une photo. Elle se chaîne : chaque photo à deux secondes
+// au plus de la précédente, dans le même match. Deux photos suffisent.
+export function rafalesDe(photos) {
+  const parMatch = new Map();
+  for (const p of photos) {
+    if (Number.isNaN(Date.parse(p.prise_le ?? ''))) continue;
+    const cle = p.evenement_id ?? '';
+    if (!parMatch.has(cle)) parMatch.set(cle, []);
+    parMatch.get(cle).push(p);
+  }
+  const rafales = new Map();
+  const fermer = (suite) => { if (suite.length > 1) for (const p of suite) rafales.set(p.id, suite); };
+  for (const liste of parMatch.values()) {
+    liste.sort((a, b) => Date.parse(a.prise_le) - Date.parse(b.prise_le));
+    let suite = [];
+    for (const p of liste) {
+      if (suite.length && Date.parse(p.prise_le) - Date.parse(suite.at(-1).prise_le) > ECART_RAFALE_MS) {
+        fermer(suite);
+        suite = [];
+      }
+      suite.push(p);
+    }
+    fermer(suite);
+  }
+  return rafales;
+}
+
+// LA COUVERTURE D'UNE PILE : la mieux notée ; à égalité, la première prise.
+export const couvertureDe = (rafale) => rafale.reduce((m, p) => ((p.note ?? 0) > (m.note ?? 0) ? p : m));
+
+/** La liste à montrer : une pile repliée n'y laisse que sa couverture, à la place de la première qu'on rencontre. */
+export function empiler(liste, ouvertes) {
+  const rafales = rafalesDe(liste);
+  const vues = new Set();
+  const sortie = [];
+  for (const p of liste) {
+    const rafale = rafales.get(p.id);
+    if (!rafale) { sortie.push({ p, rafale: null }); continue; }
+    const cle = rafale[0].id;
+    if (ouvertes.has(cle)) { sortie.push({ p, rafale, cle, ouverte: true }); continue; }
+    if (vues.has(cle)) continue;
+    vues.add(cle);
+    sortie.push({ p: couvertureDe(rafale), rafale, cle, ouverte: false });
+  }
+  return sortie;
+}
+
+// --- Les infos de prise de vue, en clair ---------------------------------------------------------
+export function priseEnClair(x) {
+  if (!x) return [];
+  const net = (n, d = 1) => String(Math.round(n * 10 ** d) / 10 ** d).replace('.', ',');
+  const reglages = [
+    x.vitesse ? (x.vitesse >= 0.3 ? `${net(x.vitesse)} s` : `1/${Math.round(1 / x.vitesse)} s`) : null,
+    x.ouverture ? `f/${net(x.ouverture)}` : null,
+    x.iso ? `ISO ${x.iso}` : null,
+    x.focale ? `${Math.round(x.focale)} mm` : null,
+  ].filter(Boolean).join(' · ');
+  return [reglages, [x.appareil, x.objectif].filter(Boolean).join(' · ')].filter(Boolean);
+}
+
+// --- Les collections intelligentes (25 novembre 2026) --------------------------------------------
+//
+// Une collection est un FILTRE QUI A UN NOM : elle ne contient aucune photo, sa
+// règle les retrouve. Les filtres vivent en `Set` à l'écran et en listes en base.
+const FAMILLES_FILTRE = ['mois', 'competitions', 'matchs', 'formats', 'etiquettes', 'personnes'];
+
+export function regleDe(f) {
+  const r = {};
+  for (const cle of FAMILLES_FILTRE) if (f[cle]?.size) r[cle] = [...f[cle]].sort();
+  if (f.note) r.note = f.note;
+  if (f.jamais) r.jamais = true;
+  if (f.atrier) r.atrier = true;
+  if (f.depuis) r.depuis = f.depuis;
+  return r;
+}
+
+// `existe(famille, id)` écarte une étiquette ou une personne supprimée depuis :
+// sans ça, la collection ne trouverait plus jamais rien, sans dire pourquoi.
+export function filtresDe(regle, existe = () => true) {
+  const f = {};
+  for (const cle of FAMILLES_FILTRE) f[cle] = new Set((regle?.[cle] ?? []).filter((x) => existe(cle, x)));
+  return { ...f, note: regle?.note ?? 0, jamais: Boolean(regle?.jamais), atrier: Boolean(regle?.atrier), depuis: regle?.depuis ?? null };
+}
+
+export const memeRegle = (a, b) => JSON.stringify(regleDe(filtresDe(a))) === JSON.stringify(regleDe(filtresDe(b)));
+
+// DES DATES QUI AVANCENT TOUTES SEULES : « ce mois-ci » ne veut pas dire novembre.
+export const PERIODES = { mois: 'Ce mois-ci', j30: '30 derniers jours', j90: '3 derniers mois', an: 'Cette année' };
+export function dansLaPeriode(iso, depuis, maintenant = new Date()) {
+  if (!depuis) return true;
+  const t = Date.parse(iso ?? '');
+  if (Number.isNaN(t)) return false;
+  const debut = depuis === 'mois' ? new Date(maintenant.getFullYear(), maintenant.getMonth(), 1)
+    : depuis === 'an' ? new Date(maintenant.getFullYear(), 0, 1)
+      : new Date(maintenant.getTime() - (depuis === 'j30' ? 30 : 90) * 864e5);
+  return t >= debut.getTime();
+}

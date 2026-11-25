@@ -1,6 +1,6 @@
 // node tools/essai-tri-photos.mjs — les propositions de la pile, hors écran.
 import assert from 'node:assert/strict';
-import { propositionsPour, personnesDuMatch, rafaleDe, estUnFile, mesurerLesGris } from '../js/tri-photos.js';
+import { propositionsPour, personnesDuMatch, rafaleDe, estUnFile, mesurerLesGris, rafalesDe, empiler, priseEnClair, regleDe, filtresDe, memeRegle, dansLaPeriode } from '../js/tri-photos.js';
 const ph = (id, s, o = {}) => ({ id, evenement_id: 'm', prise_le: new Date(1e12 + s * 1000).toISOString(),
   etiquettes: new Set(), personnes: new Set(), evenement: { titre: 'Samuel Kotto contre Pau' }, ...o });
 const etiquettes = [{ id: 'duel', famille: 'recit', nom: 'Duel' }, { id: 'frappe', famille: 'recit', nom: 'Frappe' },
@@ -26,4 +26,21 @@ let g = 7; const alea = () => ((g = (g * 1664525 + 1013904223) >>> 0) / 42949672
 for (let i = 0; i < W * H; i++) { raies[i] = 128 + 80 * Math.sin(((i / W) | 0) / 6); bruit[i] = alea() * 255; }
 assert.ok(estUnFile(mesurerLesGris(raies, W, H)));
 assert.ok(!estUnFile(mesurerLesGris(bruit, W, H)));
-console.log('12 cas : les propositions tiennent.');
+// Les piles : 0, 2, 4 s se chaînent ; 9 s est seule ; un autre match ne s'y mêle pas.
+const suite = [ph('p0', 0), ph('p2', 2, { note: 4 }), ph('p4', 4), ph('p9', 9), ph('q4', 4, { evenement_id: 'z' })];
+assert.equal(rafalesDe(suite).get('p4').length, 3);
+assert.ok(!rafalesDe(suite).has('p9') && !rafalesDe(suite).has('q4'));
+assert.deepEqual(empiler(suite, new Set()).map((x) => x.p.id), ['p2', 'p9', 'q4']);       // repliée : la mieux notée
+assert.equal(empiler(suite, new Set(['p0'])).length, 5);                                   // ouverte : tout revient
+assert.deepEqual(empiler([...suite].reverse(), new Set()).map((x) => x.p.id), ['q4', 'p9', 'p2']);
+assert.deepEqual(priseEnClair({ vitesse: 0.001, ouverture: 2.8, iso: 5000, focale: 28, appareil: 'ILCE-7M3' }), ['1/1000 s · f/2,8 · ISO 5000 · 28 mm', 'ILCE-7M3']);
+assert.deepEqual(priseEnClair(null), []);
+const r0 = { etiquettes: ['b', 'a'], note: 4, jamais: true };
+assert.deepEqual(regleDe(filtresDe(r0)), { etiquettes: ['a', 'b'], note: 4, jamais: true });
+assert.ok(memeRegle(r0, { jamais: true, note: 4, etiquettes: ['a', 'b'] }) && !memeRegle(r0, { note: 4 }));
+assert.deepEqual(regleDe(filtresDe(r0, (f, id) => id !== 'a')), { etiquettes: ['b'], note: 4, jamais: true });
+const le25 = new Date(2026, 10, 25);
+assert.ok(dansLaPeriode(new Date(2026, 10, 1, 9).toISOString(), 'mois', le25));
+assert.ok(!dansLaPeriode(new Date(2026, 9, 31).toISOString(), 'mois', le25) && dansLaPeriode(new Date(2026, 9, 31).toISOString(), 'j30', le25));
+assert.ok(!dansLaPeriode(null, 'an', le25) && dansLaPeriode(null, null, le25));
+console.log('25 cas : les propositions tiennent.');

@@ -24,9 +24,10 @@ import { echapper } from './format.js';
 import { bulle, messageCourt } from './bulle.js';
 import { enregistrer } from './zip.js';
 import { envoyerFichier, envoyerVignette, adressesDe, supprimerFichier, placeOccupee } from './photos-cloud.js';
-import { lireDatePrise } from './exif.js';
+import { lirePrise } from './exif.js';
 import { relireAuProchainMontage } from './carrousel.js';
-import { mesurerLeFlou, estUnFile, propositionsPour, personnesDuMatch } from './tri-photos.js';
+import { mesurerLeFlou, estUnFile, propositionsPour, personnesDuMatch, rafalesDe, empiler, priseEnClair,
+  regleDe, filtresDe, memeRegle, dansLaPeriode, PERIODES } from './tri-photos.js';
 
 const COTE_MAX = 2160;
 const QUALITE = 0.92;
@@ -88,6 +89,10 @@ const etat = {
     filtres: { competitions: new Set(), clubs: new Set(), mois: new Set() } },
   menuOrdre: false,      // le menu du tri est ouvert
   // Les parutions (étape 4).
+  collections: [],       // les filtres gardés sous un nom
+  collection: null,      // la dernière ouverte, qu'on peut mettre à jour
+  nommer: false,         // on écrit le nom d'une nouvelle collection
+  supprimerCol: null,    // la collection qui attend sa confirmation
   parutions: null,       // les publications de Yuno : [{ id, titre, format, date_prevue, statut }]
   pour: null,            // ce dont on choisit les photos — une parution ou un carrousel —, ou null
   pourGenre: null,       // 'parution' | 'carrousel'
@@ -110,6 +115,7 @@ function nouveauxFiltres() {
   return {
     mois: new Set(), competitions: new Set(), matchs: new Set(), formats: new Set(),
     etiquettes: new Set(), personnes: new Set(), note: 0, jamais: false,
+    atrier: false, depuis: null,
   };
 }
 
@@ -190,12 +196,15 @@ function charger() {
 }
 async function chargerVraiment() {
   try {
-    const [lignes, etiquettes, personnes, parutions] = await Promise.all([
+    const [lignes, etiquettes, personnes, parutions, collections] = await Promise.all([
       api.lirePhotos(),
       api.lireEtiquettes(),
       api.lirePersonnesPossibles(),
       api.lireParutionsYuno(),
+      // Sans ses collections, la photothèque marche : leur lecture ne bloque rien.
+      api.lireCollections().catch((e) => { console.error('Collections non lues', e); return []; }),
     ]);
+    etat.collections = collections;
     etat.parutions = parutions;
     etat.etiquettes = etiquettes;
     etat.personnes = personnes;
@@ -294,10 +303,12 @@ function importer(fichiers) {
   const evenementId = cible === SANS_MATCH ? null : cible;
   const deja = new Set(photosDuMatch(cible).map((p) => p.nomSource ?? p.nom));
   const nouvelles = [];
+  const aCompleter = [];
   for (const fichier of fichiers) {
     if (!estUnePhoto(fichier)) continue;
-    // Un même fichier déposé deux fois dans un match n'y entre qu'une fois.
-    if (deja.has(fichier.name)) continue;
+    // Un même fichier déposé deux fois dans un match n'y entre qu'une fois — mais
+    // il peut y apporter ce qui manque : ses infos de prise de vue.
+    if (deja.has(fichier.name)) { aCompleter.push(fichier); continue; }
     deja.add(fichier.name);
     nouvelles.push({
       id: crypto.randomUUID(),
@@ -325,6 +336,8 @@ function importer(fichiers) {
     });
   }
   const ignorees = fichiers.length - nouvelles.length;
+  if (aCompleter.length) completerLesPrises(aCompleter, photosDuMatch(cible), !nouvelles.length);
+  if (!nouvelles.length && aCompleter.length) return;
   if (!nouvelles.length) {
     bulle('Rien à ajouter', 'Ces fichiers ne sont pas des photos, ou ils sont déjà dans ce match.');
     return;
@@ -341,6 +354,31 @@ function importer(fichiers) {
   if (ignorees) messageCourt(`${ignorees} fichier${ignorees > 1 ? 's' : ''} déjà là ou illisible${ignorees > 1 ? 's' : ''}, laissé${ignorees > 1 ? 's' : ''} de côté.`);
   filePreparation.push(...nouvelles);
   pomperLesPreparations();
+}
+
+// COMPLÉTER DES PHOTOS DÉJÀ LÀ (25 novembre 2026) : l'allègement avait retiré les
+// infos de prise de vue. Redéposer le dossier d'origine dans son match les lit et
+// les range — rien n'est renvoyé, rien n'est remplacé.
+async function completerLesPrises(fichiers, photos, dire) {
+  const sansExtension = (n) => String(n ?? '').replace(/\.[^.]+$/, '');
+  let n = 0;
+  for (const fichier of fichiers) {
+    const p = photos.find((x) => !x.prise && x.enBase !== false && x.envoi === 'fait'
+      && sansExtension(x.nomSource ?? x.nom) === sansExtension(fichier.name));
+    if (!p) continue;
+    const { date, infos } = await lirePrise(fichier);
+    // Le même nom ne suffit pas : deux boîtiers numérotent pareil. La date tranche.
+    if (!infos || (date && p.prise_le && Math.abs(Date.parse(date) - Date.parse(p.prise_le)) > 1000)) continue;
+    try {
+      await api.garderPrise(p.id, infos);
+      p.prise = infos;
+      n++;
+    } catch (e) {
+      console.error('Infos non gardées', p.nom, e);
+    }
+  }
+  if (n) { messageCourt(`Infos de prise de vue ajoutées à ${n} photo${n > 1 ? 's' : ''}.`); if (!etat.ouverte) dessiner(); }
+  else if (dire) messageCourt('Ces photos sont déjà là, rien à ajouter.');
 }
 
 // DEUX PRÉPARATIONS À LA FOIS : décoder une photo de 24 Mpx occupe une centaine
@@ -413,7 +451,8 @@ const enJpeg = (c, qualite) => new Promise((ok, ko) =>
 
 async function preparer(p) {
   const fichier = p.source;
-  const [date, source] = await Promise.all([lireDatePrise(fichier), decoder(fichier)]);
+  const [{ date, infos }, source] = await Promise.all([lirePrise(fichier), decoder(fichier)]);
+  p.prise = infos;
   // Sans date dans le fichier, celle du fichier lui-même : c'est mieux que rien
   // pour « mon mois d'octobre », et un export la porte au jour près.
   p.prise_le = date ?? new Date(fichier.lastModified || Date.now()).toISOString();
@@ -482,6 +521,7 @@ async function envoyer(p) {
       taille: p.taille,
       note: p.note ?? null,
       couleurs_lues: true,
+      prise: p.prise ?? null,
       flou_lu: true,
       flou_mouvement: p.flou_mouvement ?? false,
       triee: p.triee ?? false,
@@ -628,8 +668,8 @@ function tuile(p) {
   return `<button type="button" class="pht-tuile${choisie ? ' choisie' : ''}${vue ? ' prete' : ''}" data-ouvrir="${p.id}"
       aria-label="${etat.modeSelection ? 'Sélectionner' : 'Ouvrir'} ${echapper(p.nom)}"${
       etat.modeSelection ? ` aria-pressed="${choisie}"` : ''}>
-      <img data-vignette="${p.id}" alt="" loading="${vue ? 'eager' : 'lazy'}" decoding="${vue ? 'sync' : 'async'}"${src ? ` src="${echapper(src)}"` : ''}
-        onload="this.parentNode.classList.add('prete')">
+      <img data-vignette="${p.id}" alt="" loading="lazy" decoding="async"${src ? ` src="${echapper(src)}"` : ''}
+        onload="this.parentNode?.classList.add('prete')">
       <span class="car-envoi" data-envoi-de="${p.id}"
         data-envoi="${p.envoi === 'preparation' ? 'attente' : p.envoi}"
         style="--avance:${p.progression ?? 0}" aria-hidden="true"></span>
@@ -640,6 +680,53 @@ function tuile(p) {
 
 // LE CHOIX DU MATCH, AVANT L'IMPORT : un menu du système posé sur une pastille,
 // comme celui du carrousel. Choisir mène au match, où l'on dépose les photos.
+// LA GRILLE SE POSE PAR PAQUETS (25 novembre 2026, défaut rapporté par Noé : « sur
+// Safari ça me met un écran noir »). Elle posait 1 843 photos d'un coup — une page
+// de 75 000 px — et forçait les déjà vues à se décoder ensemble : Safari cessait
+// de peindre, les boutons restant cliquables. On pose ce qui se voit, et la suite
+// en approchant du bas. Le nombre posé survit aux redessins : on ne perd pas sa
+// place.
+const suite = { cle: '', n: 0, pas: 120, items: [], dessin: null };
+
+function grilleEnPaquets(items, dessin, classes, attributs = '') {
+  const pas = classes.includes('lr-deux') ? 24 : 120;
+  const cle = [vueCourante, cible, etat.ordre, etat.ordreMatch, classes.includes('lr-deux')].join('|');
+  if (suite.cle !== cle) Object.assign(suite, { cle, n: pas });
+  Object.assign(suite, { pas, items, dessin, n: Math.max(pas, suite.n) });
+  return `<div class="pht-grille ${classes}"${attributs}>${items.slice(0, suite.n).map(dessin).join('')}</div>
+    ${items.length > suite.n ? '<div data-pht-suite aria-hidden="true"></div>' : ''}`;
+}
+
+function poserLaSuite() {
+  const grille = hote?.querySelector('.pht-grille');
+  if (!grille || suite.n >= suite.items.length) return;
+  grille.insertAdjacentHTML('beforeend', suite.items.slice(suite.n, suite.n + suite.pas).map(suite.dessin).join(''));
+  suite.n += suite.pas;
+  // Une photo posée après la signature de la grille prend son adresse ici.
+  grille.querySelectorAll('img[data-vignette]:not([src]), img[data-entiere]:not([src])').forEach((img) => {
+    const p = photo(img.dataset.vignette ?? img.dataset.entiere);
+    const src = img.dataset.entiere ? p?.url : p?.vignette;
+    if (src) img.src = src;
+  });
+  if (suite.n >= suite.items.length) hote.querySelector('[data-pht-suite]')?.remove();
+}
+
+let guetteur = null;
+function guetterLaSuite() {
+  guetteur?.disconnect();
+  const borne = hote?.querySelector('[data-pht-suite]');
+  if (!borne) return;
+  guetteur = new IntersectionObserver((entrees) => {
+    if (!entrees.some((x) => x.isIntersecting)) return;
+    poserLaSuite();
+    // Un paquet peut ne pas remplir l'écran : on redemande.
+    const encore = hote?.querySelector('[data-pht-suite]');
+    guetteur.disconnect();
+    if (encore) requestAnimationFrame(() => guetteur.observe(encore));
+  }, { rootMargin: '1500px 0px' });
+  guetteur.observe(borne);
+}
+
 function gabaritChoix() {
   if (!etat.choisirMatch) return '';
   const sorties = etat.sorties;
@@ -815,7 +902,7 @@ function gabaritMatch() {
               <div class="pht-tri pht-filtres-corps">${gabaritFiltres()}</div>
             </div>` : ''}
           ${montrees.length
-            ? `<div class="pht-grille${etat.modeSelection ? ' en-selection' : ''}">${montrees.map(tuile).join('')}</div>`
+            ? grilleEnPaquets(montrees, tuile, etat.modeSelection ? 'en-selection' : '')
             : '<p class="car-liste-vide">Aucune photo du match ne coche tout. Retire un filtre.</p>'}
           <button type="button" class="car-puce pht-ajouter-match" data-pht="choisir">${svg('ajouter', 14)}<span>Ajouter des photos</span></button>`;
       })()}
@@ -858,11 +945,14 @@ const formatDe = (p) => p.format ?? (p.largeur && p.hauteur
 const nbFiltres = () => {
   const f = F();
   return f.mois.size + f.competitions.size + f.matchs.size + f.formats.size
-    + f.etiquettes.size + f.personnes.size + (f.note ? 1 : 0) + (f.jamais ? 1 : 0);
+    + f.etiquettes.size + f.personnes.size + (f.note ? 1 : 0) + (f.jamais ? 1 : 0)
+    + (f.atrier ? 1 : 0) + (f.depuis ? 1 : 0);
 };
 
-function correspond(p) {
-  const f = F();
+const correspond = (p) => correspondA(p, F());
+function correspondA(p, f) {
+  if (f.atrier && estTriee(p)) return false;
+  if (f.depuis && !dansLaPeriode(p.prise_le, f.depuis)) return false;
   if (f.mois.size && !f.mois.has(moisDe(p.prise_le))) return false;
   if (f.competitions.size && !f.competitions.has(p.evenement?.competition ?? '')) return false;
   if (f.matchs.size && !f.matchs.has(cleDuMatch(p))) return false;
@@ -925,6 +1015,161 @@ function blocFiltre(titre, puces) {
   return `<div class="pht-tri-famille"><p class="pht-tri-titre">${titre}</p><div class="pht-etiqs">${puces}</div></div>`;
 }
 
+// --- Les collections intelligentes (25 novembre 2026, demande de Noé) ---------------------------
+//
+// En tête des filtres : on ouvre une collection d'un toucher, et tout filtre posé
+// peut se garder sous un nom. C'est le même panneau au téléphone et quand on
+// choisit les photos d'une parution — une collection sert surtout là.
+const existeEncore = (famille, id) => (famille === 'etiquettes' ? (etat.etiquettes ?? []).some((e) => e.id === id)
+  : famille === 'personnes' ? (etat.personnes ?? []).some((c) => c.id === id) : true);
+const filtresDeLaCollection = (c) => filtresDe(c.regle, existeEncore);
+const collectionOuverte = () => (enMatch() ? null
+  : etat.collections.find((c) => memeRegle(regleDe(filtresDeLaCollection(c)), regleDe(etat.filtres))) ?? null);
+const compteDe = (c) => { const f = filtresDeLaCollection(c); return (etat.photos ?? []).filter((p) => correspondA(p, f)).length; };
+
+// TROIS RÈGLES OFFERTES tant qu'il n'y en a aucune : une page vide ouvre une porte.
+function collectionsOffertes() {
+  const mot = (nom) => (etat.etiquettes ?? []).find((e) => sansAccent(e.nom) === nom)?.id;
+  const nb = mot('noir et blanc'), flou = mot('flou de mouvement');
+  return [
+    { nom: 'À publier', regle: { note: 4, jamais: true } },
+    nb ? { nom: 'Noir et blanc fort', regle: { etiquettes: [nb], note: 4 } } : null,
+    flou ? { nom: 'Filés', regle: { etiquettes: [flou] } } : null,
+    { nom: 'Ce mois-ci, pas triées', regle: { depuis: 'mois', atrier: true } },
+  ].filter(Boolean);
+}
+
+function blocDesCollections() {
+  const ouverte = collectionOuverte();
+  const derniere = etat.collections.find((c) => c.id === etat.collection) ?? null;
+  const n = nbFiltres();
+  const puces = etat.collections.map((c) => `<button type="button" class="pht-etiq" data-col="ouvrir" data-id="${c.id}"
+      data-etat="${c === ouverte ? 'tout' : 'rien'}" aria-pressed="${c === ouverte}">${echapper(c.nom)} <span class="pht-etiq-n">${compteDe(c)}</span></button>`).join('');
+  const offertes = etat.collections.length ? '' : collectionsOffertes().map((c, k) =>
+    `<button type="button" class="pht-prop" data-col="offerte" data-id="${k}">${svg('ajouter', 13)}<span>${echapper(c.nom)}</span></button>`).join('');
+  const gestes = etat.nommer
+    ? `<input class="pht-etiq-champ pht-col-champ" data-col-nom maxlength="60" autocomplete="off" placeholder="Nom de la collection" aria-label="Nom de la collection">`
+    : ouverte
+      ? `<div class="pht-gere">
+          <input class="pht-etiq-champ" data-col-renommer="${ouverte.id}" value="${echapper(ouverte.nom)}" maxlength="60" autocomplete="off" aria-label="Renommer la collection">
+          <button type="button" class="${etat.supprimerCol === ouverte.id ? 'car-danger' : 'car-puce'} car-puce-mini" data-col="supprimer" data-id="${ouverte.id}"
+            aria-label="Supprimer la collection ${echapper(ouverte.nom)}">${etat.supprimerCol === ouverte.id ? 'Supprimer ?' : svg('corbeille', 13)}</button></div>`
+      : n ? `<div class="pht-col-gestes"><button type="button" class="car-puce car-puce-mini" data-col="garder">${svg('ajouter', 13)}<span>Garder ce filtre</span></button>
+          ${derniere ? `<button type="button" class="car-puce car-puce-mini" data-col="remplacer" data-id="${derniere.id}">Mettre à jour « ${echapper(derniere.nom)} »</button>` : ''}</div>` : '';
+  if (!puces && !offertes && !gestes) return '';
+  return `<div class="pht-tri-famille pht-cols"><p class="pht-tri-titre">Collections</p>
+      <div class="pht-etiqs">${puces}${offertes}</div>${gestes}</div>`;
+}
+
+async function creerUneCollection(nom, regle, ancre) {
+  nom = nom.trim().replace(/\s+/g, ' ');
+  etat.nommer = false;
+  if (!nom) { dessiner(); return; }
+  try {
+    const c = await api.creerCollection({ nom, regle });
+    etat.collections = [...etat.collections, c];
+    etat.collection = c.id;
+    messageCourt(`Collection « ${nom} » gardée.`);
+  } catch (e) {
+    console.error('Collection non gardée', e);
+    bulle("Ce n'est pas enregistré", 'La collection n’a pas pu être gardée.', ancre);
+  }
+  changerFiltres(() => {});
+}
+
+// L'écran d'abord ; si l'écriture échoue, la collection reprend ce qu'elle était.
+async function ecrireUneCollection(id, champs) {
+  const c = etat.collections.find((x) => x.id === id);
+  if (!c) return;
+  const avant = { ...c };
+  Object.assign(c, champs);
+  changerFiltres(() => {});
+  try {
+    await api.modifierCollection(id, champs);
+  } catch (e) {
+    console.error('Collection non modifiée', e);
+    Object.assign(c, avant);
+    changerFiltres(() => {});
+    bulle("Ce n'est pas enregistré", 'La collection n’a pas pu être modifiée.');
+  }
+}
+
+async function supprimerUneCollection(id) {
+  const avant = etat.collections;
+  etat.collections = avant.filter((c) => c.id !== id);
+  etat.supprimerCol = null;
+  etat.collection = null;
+  changerFiltres(() => { etat.filtres = nouveauxFiltres(); });
+  try {
+    await api.supprimerCollection(id);
+  } catch (e) {
+    console.error('Collection non supprimée', e);
+    etat.collections = avant;
+    changerFiltres(() => {});
+    bulle("Ce n'est pas enregistré", 'La collection n’a pas pu être supprimée.');
+  }
+}
+
+function ouvrirUneCollection(id) {
+  const c = etat.collections.find((x) => x.id === id);
+  if (!c) return;
+  const deja = collectionOuverte() === c && vueCourante === 'recherche';
+  etat.supprimerCol = null;
+  etat.nommer = false;
+  etat.collection = deja ? null : id;
+  etat.filtres = deja ? nouveauxFiltres() : filtresDeLaCollection(c);
+  // Depuis un match ou les albums, on revient à toutes les photos, filtrées.
+  if (vueCourante !== 'recherche') { location.hash = '#yuno/phototheque'; return; }
+  changerFiltres(() => {});
+}
+
+// Entrée et quitter le champ valent la même chose, une seule fois.
+function validerUnNom(champ) {
+  if (!champ.isConnected) return;
+  if (champ.matches('[data-col-nom]')) {
+    if (etat.nommer) creerUneCollection(champ.value, regleDe(etat.filtres), champ);
+    return;
+  }
+  const nom = champ.value.trim().replace(/\s+/g, ' ');
+  if (!nom) champ.value = champ.defaultValue;
+  else if (nom !== champ.defaultValue) { champ.defaultValue = nom; ecrireUneCollection(champ.dataset.colRenommer, { nom }); }
+}
+
+function brancherCollections(racine) {
+  racine.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-col]');
+    if (!b) return;
+    const { col: quoi, id } = b.dataset;
+    if (quoi === 'ouvrir') ouvrirUneCollection(id);
+    else if (quoi === 'offerte') {
+      const c = collectionsOffertes()[Number(id)];
+      etat.filtres = filtresDe(c.regle);
+      creerUneCollection(c.nom, c.regle, b);
+    } else if (quoi === 'garder') {
+      etat.nommer = true;
+      changerFiltres(() => {});
+      racine.querySelector('[data-col-nom]')?.focus();
+    } else if (quoi === 'remplacer') ecrireUneCollection(id, { regle: regleDe(etat.filtres) });
+    else if (quoi === 'supprimer') {
+      if (etat.supprimerCol === id) supprimerUneCollection(id);
+      else { etat.supprimerCol = id; changerFiltres(() => {}); }
+    }
+  });
+  racine.addEventListener('keydown', (e) => {
+    const champ = e.target.closest?.('[data-col-nom], [data-col-renommer]');
+    if (!champ) return;
+    if (e.key === 'Enter') { e.preventDefault(); validerUnNom(champ); }
+    else if (e.key === 'Escape') {
+      e.stopPropagation();
+      if (champ.matches('[data-col-nom]')) { etat.nommer = false; changerFiltres(() => {}); }
+      else { champ.value = champ.defaultValue; champ.blur(); }
+    }
+  });
+  racine.addEventListener('focusout', (e) => {
+    if (e.target.matches?.('[data-col-nom], [data-col-renommer]')) validerUnNom(e.target);
+  });
+}
+
 function gabaritFiltres() {
   const f = F();
   const mois = valeurs('mois').sort((a, b) => b[0].localeCompare(a[0]))
@@ -959,8 +1204,15 @@ function gabaritFiltres() {
   // Dans un match, la période, la compétition et le match sont ceux du match :
   // les offrir ne filtrerait rien.
   const m = enMatch();
+  const trier = sourceDesFiltres().filter((p) => !estTriee(p)).length;
+  const atrier = trier || f.atrier ? `<button type="button" class="pht-etiq" data-filtre-atrier data-etat="${f.atrier ? 'tout' : 'rien'}"
+      aria-pressed="${f.atrier}">Pas triée <span class="pht-etiq-n">${trier}</span></button>` : '';
+  const periodes = Object.entries(PERIODES).map(([cle, nom]) => `<button type="button" class="pht-etiq" data-filtre-depuis="${cle}"
+      data-etat="${f.depuis === cle ? 'tout' : 'rien'}" aria-pressed="${f.depuis === cle}">${nom}</button>`).join('');
   return `
-    ${blocFiltre('Publication', publication)}
+    ${m ? '' : blocDesCollections()}
+    ${blocFiltre('Publication et tri', publication + atrier)}
+    ${m ? '' : blocFiltre('Récemment', periodes)}
     ${m ? '' : blocFiltre('Période', mois)}
     ${m ? '' : blocFiltre('Compétition', competitions)}
     <div class="pht-tri-famille">
@@ -1063,7 +1315,7 @@ function gabaritRecherche() {
             <div class="pht-tri pht-filtres-corps">${gabaritFiltres()}</div>
           </div>` : ''}
         ${liste.length
-          ? `<div class="pht-grille${etat.modeSelection ? ' en-selection' : ''}">${liste.map(tuile).join('')}</div>`
+          ? grilleEnPaquets(liste, tuile, etat.modeSelection ? 'en-selection' : '')
           : `<p class="car-liste-vide">${etat.photos.length ? 'Aucune photo ne coche tout. Retire un filtre.' : 'Importe un match : ses photos se chercheront ici.'}</p>`}
         ${gabaritBarreSelection()}
         ${/* LA PLACE PRISE, TOUT EN BAS, APRÈS LES PHOTOS (demande de Noé) : on la
@@ -1193,6 +1445,7 @@ const TYPES_PERSONNE = { joueur: 'Joueur', club: 'Club' };
 function ciblesDu(contexte) {
   if (contexte === 'vue') return [photo(etat.ouverte)].filter(Boolean);
   if (contexte === 'loupe') return [photo(lr.loupe)].filter(Boolean);
+  if (contexte === 'cmp0' || contexte === 'cmp1') return [photo(lr.paire[Number(contexte[3])])].filter(Boolean);
   return [...etat.selection].map(photo).filter(Boolean);
 }
 
@@ -1879,6 +2132,8 @@ function gabaritBarreSelection() {
         : `<span class="pht-barre-texte"><span class="chiffre">${n}</span> sélectionnée${n > 1 ? 's' : ''}</span>
            <button type="button" class="car-icone" data-pht="retirer-sel" aria-label="Retirer la sélection"
              title="Retirer"${n ? '' : ' disabled'}>${svg('corbeille')}</button>
+           ${n === 1 ? `<button type="button" class="car-icone" data-pht="copier" aria-label="Copier les étiquettes" title="Copier les étiquettes">${svgLr('copier', 17)}</button>` : ''}
+           ${n && lr.presse ? `<button type="button" class="car-icone" data-pht="coller" aria-label="Coller les étiquettes : ${echapper(motDeLaPresse())}" title="Coller : ${echapper(motDeLaPresse())}">${svgLr('coller', 17)}</button>` : ''}
            ${menuDesParutions(n)}
            <button type="button" class="car-bouton-or" data-pht="trier-sel"${n ? '' : ' disabled'}>Trier</button>`}
     </div>`;
@@ -2305,7 +2560,7 @@ async function dessinerChoixCarnet() {
           ? `<div class="pht-grille">${liste.map((p) => `<button type="button" class="pht-tuile" data-carnet-photo="${p.id}"
                 aria-label="Choisir ${echapper(p.nom)}">
                 <img data-vignette="${p.id}" alt="" loading="lazy" decoding="async"${p.vignette ? ` src="${echapper(p.vignette)}"` : ''}
-                  onload="this.parentNode.classList.add('prete')">${badgeNote(p)}</button>`).join('')}</div>`
+                  onload="this.parentNode?.classList.add('prete')">${badgeNote(p)}</button>`).join('')}</div>`
           : '<p class="car-liste-vide">La photothèque est vide. Importe un match d’abord.</p>'}
       </div>
     </div>`;
@@ -2924,14 +3179,20 @@ const lr = {
   forme: 'grille',            // 'grille' | 'deux' | 'une'
   avant: 'grille',            // la forme d'où l'on est entré dans une photo
   taille: 170,
+  piles: true,                // les rafales repliées
   loupe: null,
   ...(() => { try { return JSON.parse(localStorage.getItem(CLE_LR) ?? '{}'); } catch { return {}; } })(),
 };
 lr.loupe = null;
+lr.paire = [null, null];      // les deux photos comparées
+lr.ouvertes = new Set();      // les piles dépliées
+lr.zoom = null;               // { x, y } : le point regardé à 100 %, ou rien
+lr.presse = null;             // les étiquettes copiées
+if (lr.forme === 'comparer') lr.forme = 'grille';
 if (lr.forme === 'une') lr.forme = lr.avant === 'deux' ? 'deux' : 'grille';
 const garderLr = () => {
-  const { panneau, rangement, plies, forme, avant, taille } = lr;
-  try { localStorage.setItem(CLE_LR, JSON.stringify({ panneau, rangement, plies, forme, avant, taille })); } catch { /* une commodité */ }
+  const { panneau, rangement, plies, forme, avant, taille, piles } = lr;
+  try { localStorage.setItem(CLE_LR, JSON.stringify({ panneau, rangement, plies, forme, avant, taille, piles })); } catch { /* une commodité */ }
 };
 const enAtelier = () => ORDI.matches && !etat.pour && Boolean(etat.photos);
 ORDI.addEventListener('change', () => { if (hote?.isConnected && !etat.ouverte) dessiner(); });
@@ -2942,6 +3203,12 @@ const ICONE_LR = {
   deux: '<rect x="3" y="5" width="8" height="14" rx="1"/><rect x="13" y="5" width="8" height="14" rx="1"/>',
   une: '<rect x="4" y="4" width="16" height="16" rx="1.5"/>',
   pile: '<rect x="6" y="7" width="14" height="13" rx="1.5"/><path d="M4 16V5a1 1 0 0 1 1-1h11"/><path d="M10 13.5l2.2 2.2 4-4.2"/>',
+  comparer: '<rect x="2.5" y="6" width="8" height="12" rx="1"/><rect x="13.5" y="6" width="8" height="12" rx="1"/><path d="M12 3v18"/>',
+  piles: '<rect x="4" y="9" width="16" height="11" rx="1.5"/><path d="M6.5 6h11M9 3h6"/>',
+  echanger: '<path d="M4 8h15l-4-4M20 16H5l4 4"/>',
+  collection: '<path d="M12 4l2.2 4.6 5 .7-3.6 3.5.9 5-4.5-2.4-4.5 2.4.9-5L4.8 9.3l5-.7z"/>',
+  copier: '<rect x="9" y="9" width="11" height="11" rx="1.5"/><path d="M15 9V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h4"/>',
+  coller: '<rect x="5" y="5" width="14" height="16" rx="1.5"/><path d="M9 5V3h6v2M9 13l2 2 4-4"/>',
   plein: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
 };
 const svgLr = (cle, taille = 20) => `<svg width="${taille}" height="${taille}" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -3005,8 +3272,13 @@ function panneauOutil() {
          class="${lr.rangement === cle ? 'actif' : ''}">${nom}</button>`).join('');
     return `<div class="lr-panneau-tete"><h2>Bibliothèque</h2></div>
       <div class="lr-bascule" role="group" aria-label="Ranger les albums par">${bascule}</div>
-      <a class="lr-album lr-toutes" href="#yuno/phototheque"${vueCourante === 'recherche' ? ' aria-current="page"' : ''}>
+      <a class="lr-album lr-toutes" href="#yuno/phototheque"${vueCourante === 'recherche' && !collectionOuverte() ? ' aria-current="page"' : ''} data-lr="toutes" data-valeur="">
         <span class="lr-album-nom">Toutes les photos</span><span class="lr-n">${etat.photos.length}</span></a>
+      ${etat.collections.length ? `<p class="lr-rubrique">Collections</p>${etat.collections.map((c) => {
+        const active = vueCourante === 'recherche' && collectionOuverte() === c;
+        return `<button type="button" class="lr-album lr-collection" data-col="ouvrir" data-id="${c.id}" aria-pressed="${active}"${active ? ' aria-current="true"' : ''}>
+          ${svgLr('collection', 15)}<span class="lr-album-nom">${echapper(c.nom)}</span><span class="lr-n">${compteDe(c)}</span></button>`;
+      }).join('')}<p class="lr-rubrique">Albums</p>` : ''}
       ${arbreDesAlbums()}
       <div class="lr-place">${gabaritPlace()}</div>`;
   }
@@ -3055,18 +3327,22 @@ function gabaritLoupe(liste) {
   const p = photo(lr.loupe);
   if (!p) return '';
   const k = liste.indexOf(p);
-  const src = p.blob ? (p.urlLocale ??= URL.createObjectURL(p.blob)) : p.url ?? p.vignette ?? '';
   const debut = Math.max(0, Math.min(k - 8, liste.length - 17));
   return `<div class="lr-loupe">
       <div class="lr-scene">
         <button type="button" class="pht-vue-fleche" data-lr="voisine" data-valeur="-1" aria-label="Photo précédente"${k > 0 ? '' : ' disabled'}>${svg('gauche', 22)}</button>
-        <img class="lr-photo" data-entiere="${p.id}" src="${echapper(src)}" alt="" draggable="false">
+        ${cadre(p)}
         <button type="button" class="pht-vue-fleche" data-lr="voisine" data-valeur="1" aria-label="Photo suivante"${k < liste.length - 1 ? '' : ' disabled'}>${svg('droite', 22)}</button>
       </div>
       <aside class="lr-cote" aria-label="Trier cette photo">
         <p class="lr-infos"><span>${p.prise_le ? echapper(momentLong(p.prise_le)) : 'Date inconnue'}</span>
-          <span class="discret">${[p.largeur ? `${p.largeur} × ${p.hauteur}` : null, echapper(p.nom)].filter(Boolean).join(' · ')}</span></p>
+          <span class="discret">${[p.largeur ? `${p.largeur} × ${p.hauteur}` : null, echapper(p.nom)].filter(Boolean).join(' · ')}</span>
+          ${priseEnClair(p.prise).map((l) => `<span class="lr-prise">${echapper(l)}</span>`).join('')}</p>
         ${panneauTri('loupe')}
+        <div class="lr-presse">
+          <button type="button" class="car-puce" data-pht="copier" title="Copier les étiquettes et les personnes (Maj + C)">${svgLr('copier', 15)}<span>Copier</span></button>
+          <button type="button" class="car-puce" data-pht="coller" title="${echapper(motDeLaPresse())}"${lr.presse ? '' : ' disabled'}>${svgLr('coller', 15)}<span>Coller</span></button>
+        </div>
         <button type="button" class="car-puce" data-lr="plein">${svgLr('plein', 15)}<span>Plein écran, télécharger, retirer</span></button>
       </aside>
       <div class="lr-pellicule" role="group" aria-label="Les photos autour">${liste.slice(debut, debut + 17).map((q) =>
@@ -3076,14 +3352,187 @@ function gabaritLoupe(liste) {
     </div>`;
 }
 
+// LE CADRE D'UNE PHOTO QU'ON PEUT GROSSIR : un clic va à 100 % sur le point
+// touché, un second revient ; à 100 %, on la tire. Les deux cadres d'une
+// comparaison regardent le MÊME point : c'est ce qui permet de juger la netteté.
+function cadre(p) {
+  const src = p.blob ? (p.urlLocale ??= URL.createObjectURL(p.blob)) : p.url ?? p.vignette ?? '';
+  return `<div class="lr-cadre${lr.zoom ? ' grossi' : ''}" data-lr-cadre data-l="${p.largeur ?? 0}" data-h="${p.hauteur ?? 0}"
+      role="img" aria-label="${echapper(p.nom)}${lr.zoom ? ', à 100 %' : ''}" title="${lr.zoom ? 'Cliquer pour voir en entier (Z)' : 'Cliquer pour voir à 100 % (Z)'}">
+      <img class="lr-photo" data-entiere="${p.id}" src="${echapper(src)}" alt="" draggable="false">
+    </div>`;
+}
+
+function mesuresDuCadre(el) {
+  const img = el.querySelector('img');
+  const l = Number(el.dataset.l) || img.naturalWidth;
+  const h = Number(el.dataset.h) || img.naturalHeight;
+  const L = el.clientWidth, H = el.clientHeight;
+  if (!l || !h || !L || !H) return null;
+  const ajuste = Math.min(L / l, H / h);
+  // 100 % : un pixel de la photo pour un pixel de l'ÉCRAN. Si elle y tient déjà
+  // presque, on double — un clic qui ne change rien n'est pas un zoom.
+  let k = 1 / (window.devicePixelRatio || 1);
+  if (k < ajuste * 1.25) k = Math.max(1, ajuste * 2);
+  return { img, l, h, L, H, ajuste, k };
+}
+const borner = (v, vue, total) => (total <= vue ? 0.5 : Math.min(1 - vue / 2 / total, Math.max(vue / 2 / total, v)));
+
+function poserLeZoom() {
+  hote?.querySelectorAll('[data-lr-cadre]').forEach((el) => {
+    const img = el.querySelector('img');
+    el.classList.toggle('grossi', Boolean(lr.zoom));
+    const m = lr.zoom && mesuresDuCadre(el);
+    if (!m) { img.style.transform = ''; return; }
+    const x = borner(lr.zoom.x, m.L, m.l * m.k);
+    const y = borner(lr.zoom.y, m.H, m.h * m.k);
+    const s = m.k / m.ajuste;
+    const px = m.L / 2 + (x - 0.5) * m.l * m.ajuste;
+    const py = m.H / 2 + (y - 0.5) * m.h * m.ajuste;
+    img.style.transform = `translate(${m.L / 2 - s * px}px, ${m.H / 2 - s * py}px) scale(${s})`;
+  });
+}
+
+function brancherLeZoom(racine) {
+  let prise = null;
+  racine.addEventListener('pointerdown', (e) => {
+    const el = e.target.closest('[data-lr-cadre]');
+    if (!el || e.button) return;
+    e.preventDefault();
+    const m = mesuresDuCadre(el);
+    if (!m) return;
+    prise = { el, m, x: e.clientX, y: e.clientY, bouge: false,
+      depart: lr.zoom && { x: borner(lr.zoom.x, m.L, m.l * m.k), y: borner(lr.zoom.y, m.H, m.h * m.k) } };
+    el.setPointerCapture?.(e.pointerId);
+  });
+  racine.addEventListener('pointermove', (e) => {
+    if (!prise) return;
+    const dx = e.clientX - prise.x, dy = e.clientY - prise.y;
+    if (Math.hypot(dx, dy) > 4) prise.bouge = true;
+    if (!prise.bouge || !prise.depart) return;
+    const { m } = prise;
+    lr.zoom = { x: borner(prise.depart.x - dx / (m.l * m.k), m.L, m.l * m.k), y: borner(prise.depart.y - dy / (m.h * m.k), m.H, m.h * m.k) };
+    poserLeZoom();
+  });
+  racine.addEventListener('pointerup', (e) => {
+    if (!prise) return;
+    const { el, m, bouge } = prise;
+    prise = null;
+    if (bouge) return;
+    if (lr.zoom) lr.zoom = null;
+    else {
+      const r = el.getBoundingClientRect();
+      const serre = (v) => Math.min(1, Math.max(0, v));
+      lr.zoom = { x: serre(0.5 + (e.clientX - r.left - m.L / 2) / (m.l * m.ajuste)), y: serre(0.5 + (e.clientY - r.top - m.H / 2) / (m.h * m.ajuste)) };
+    }
+    poserLeZoom();
+  });
+  racine.addEventListener('pointercancel', () => { prise = null; });
+}
+
+// COMPARER DEUX PHOTOS : celle de gauche tient, celle de droite avance. On note
+// sous chacune, et « Garder celle-ci » fait passer la droite à gauche.
+function gabaritComparer(liste) {
+  const ids = new Set(liste.map((p) => p.id));
+  if (!ids.has(lr.paire[0])) lr.paire[0] = liste[0]?.id ?? null;
+  if (!ids.has(lr.paire[1]) || lr.paire[1] === lr.paire[0]) {
+    const k = liste.findIndex((p) => p.id === lr.paire[0]);
+    lr.paire[1] = (liste[k + 1] ?? liste[k - 1])?.id ?? null;
+  }
+  const deux = lr.paire.map(photo);
+  if (!deux[1]) return '<p class="car-liste-vide">Il faut deux photos pour comparer.</p>';
+  const k = liste.indexOf(deux[1]);
+  const volet = (p, i) => `<figure class="lr-volet">
+      ${cadre(p)}
+      <figcaption>
+        <div class="pht-etoiles" data-tri-etoiles="cmp${i}">${etoilesTri(`cmp${i}`)}</div>
+        <span class="lr-volet-infos discret">${[p.prise_le ? echapper(momentLong(p.prise_le)) : null, priseEnClair(p.prise)[0] ?? null].filter(Boolean).join(' · ')}</span>
+        ${i ? `<button type="button" class="car-icone" data-lr="cmp-voisine" data-valeur="-1" aria-label="Photo précédente à droite" title="Précédente (←)"${k > 0 ? '' : ' disabled'}>${svg('gauche')}</button>
+          <button type="button" class="car-icone" data-lr="cmp-voisine" data-valeur="1" aria-label="Photo suivante à droite" title="Suivante (→)"${k < liste.length - 1 ? '' : ' disabled'}>${svg('droite')}</button>
+          <button type="button" class="car-puce" data-lr="cmp-garder" title="Elle passe à gauche">Garder celle-ci</button>`
+        : `<button type="button" class="car-icone" data-lr="cmp-echanger" aria-label="Échanger les deux photos" title="Échanger">${svgLr('echanger', 17)}</button>`}
+      </figcaption></figure>`;
+  return `<div class="lr-comparer">${deux.map(volet).join('')}</div>`;
+}
+
+function avancerLaComparaison(pas) {
+  const liste = photosAffichees();
+  let k = liste.findIndex((p) => p.id === lr.paire[1]) + pas;
+  if (liste[k]?.id === lr.paire[0]) k += pas;
+  if (!liste[k]) return;
+  lr.paire[1] = liste[k].id;
+  dessiner();
+}
+
+// --- Copier les étiquettes -----------------------------------------------------------------------
+//
+// Les mots et les personnes, jamais la note : elle juge UNE photo. Ni le noir et
+// blanc ni le flou, qui se lisent dans l'image. Coller AJOUTE, sans rien retirer.
+function copierLesEtiquettes(p) {
+  if (!p) return;
+  const lues = (etat.etiquettes ?? []).filter((e) => ['noir et blanc', 'flou de mouvement'].includes(sansAccent(e.nom))).map((e) => e.id);
+  lr.presse = { etiquettes: [...p.etiquettes].filter((id) => !lues.includes(id)), personnes: [...p.personnes] };
+  if (!lr.presse.etiquettes.length && !lr.presse.personnes.length) {
+    lr.presse = null;
+    messageCourt('Cette photo n’a rien à copier.');
+    return;
+  }
+  messageCourt(`Copié : ${motDeLaPresse()}.`);
+  majBarreSelection();
+  hote?.querySelectorAll('.lr-presse [data-pht="coller"]').forEach((b) => { b.disabled = false; b.title = motDeLaPresse(); });
+}
+
+function motDeLaPresse() {
+  if (!lr.presse) return 'Rien de copié';
+  return [...lr.presse.etiquettes.map((id) => (etat.etiquettes ?? []).find((e) => e.id === id)?.nom),
+    ...lr.presse.personnes.map((id) => (etat.personnes ?? []).find((c) => c.id === id)?.nom)].filter(Boolean).join(', ');
+}
+
+function collerLesEtiquettes(cibles, ancre) {
+  if (!lr.presse || !cibles.length) return;
+  const ajouts = [];
+  for (const quoi of ['etiquettes', 'personnes']) {
+    for (const id of lr.presse[quoi]) {
+      const sans = cibles.filter((p) => !p[quoi].has(id));
+      if (sans.length) ajouts.push({ quoi, id, sans });
+    }
+  }
+  if (!ajouts.length) { messageCourt('Tout y est déjà.'); return; }
+  if (lr.presse.etiquettes.length) noterRecentes(cibles.map((p) => p.id).slice(0, 10));
+  messageCourt(`Collé sur ${cibles.length} photo${cibles.length > 1 ? 's' : ''} : ${motDeLaPresse()}.`);
+  ecrire({
+    cibles,
+    appliquer: () => ajouts.forEach(({ quoi, id, sans }) => sans.forEach((p) => p[quoi].add(id))),
+    defaire: () => ajouts.forEach(({ quoi, id, sans }) => sans.forEach((p) => p[quoi].delete(id))),
+    appel: (ids) => Promise.all(ajouts.map(({ quoi, id, sans }) => {
+      const eux = sans.map((p) => p.id).filter((x) => ids.includes(x));
+      return eux.length ? (quoi === 'etiquettes' ? api.etiqueterPhotos : api.relierPersonne)(eux, id) : null;
+    })),
+    ancre,
+    message: 'Les étiquettes n’ont pas pu être collées.',
+  });
+}
+
+// --- Les piles -----------------------------------------------------------------------------------
+
+function tuileEmpilee({ p, rafale, cle, ouverte }, dessin) {
+  if (!rafale) return dessin(p);
+  return `<div class="lr-pile${ouverte ? ' ouverte' : ''}">${dessin(p)}
+      ${!ouverte || rafale[0] === p ? `<button type="button" class="lr-pile-n" data-lr="pile" data-valeur="${cle}" aria-expanded="${ouverte}"
+        aria-label="${ouverte ? 'Replier' : 'Déplier'} la rafale de ${rafale.length} photos" title="${ouverte ? 'Replier' : 'Déplier'} la rafale">${svgLr('piles', 13)}${rafale.length}</button>` : ''}
+    </div>`;
+}
+
 function barreDeVue(nombre) {
-  const formes = [['grille', 'Grille (G)'], ['deux', 'Deux par deux (D)'], ['une', 'Une photo (E)']].map(([cle, nom]) =>
+  const formes = [['grille', 'Grille (G)'], ['deux', 'Deux par deux (D)'], ['une', 'Une photo (E)'], ['comparer', 'Comparer deux photos (C)']].map(([cle, nom]) =>
     `<button type="button" class="lr-forme${lr.forme === cle ? ' actif' : ''}" data-lr="forme" data-valeur="${cle}"
        aria-pressed="${lr.forme === cle}" aria-label="${nom}" title="${nom}"${nombre ? '' : ' disabled'}>${svgLr(cle, 18)}</button>`).join('');
   return `<div class="lr-barre">
       <div class="lr-formes" role="group" aria-label="Mise en forme">${formes}</div>
       ${lr.forme === 'grille' ? `<label class="lr-taille"><span class="hors-ecran">Taille des vignettes</span>
         <input type="range" min="90" max="420" step="10" value="${lr.taille}" data-lr-taille></label>` : ''}
+      ${['grille', 'deux'].includes(lr.forme) ? `<button type="button" class="lr-forme lr-piles${lr.piles ? ' actif' : ''}" data-lr="piles" data-valeur=""
+        aria-pressed="${lr.piles}" aria-label="Empiler les rafales" title="Empiler les rafales (S)">${svgLr('piles', 18)}</button>` : ''}
       ${rangeeDOutils(nombre, 0)}
     </div>`;
 }
@@ -3095,7 +3544,7 @@ function centreOrdi() {
   const liste = photosAffichees();
   const match = m ? matchDe(cible) : null;
   const n = nbFiltres();
-  const titre = !m ? 'Toutes les photos' : cible === SANS_MATCH ? 'Sans match' : match?.titre ?? 'Match';
+  const titre = !m ? collectionOuverte()?.nom ?? 'Toutes les photos' : cible === SANS_MATCH ? 'Sans match' : match?.titre ?? 'Match';
   const corps = !total
     ? (m ? `<div class="car-import" data-depot>
           <p class="car-import-titre">Les photos de ce match</p>
@@ -3104,8 +3553,13 @@ function centreOrdi() {
         </div>` : '<p class="car-liste-vide">Importe un match : ses photos se chercheront ici.</p>')
     : !liste.length ? '<p class="car-liste-vide">Aucune photo ne coche tout. Retire un filtre.</p>'
       : lr.forme === 'une' ? gabaritLoupe(liste)
-        : `<div class="pht-grille lr-${lr.forme}${etat.modeSelection ? ' en-selection' : ''}" style="--lr-taille:${lr.taille}px"
-            data-depot>${liste.map(lr.forme === 'deux' ? tuileEntiere : tuile).join('')}</div>`;
+      : lr.forme === 'comparer' ? gabaritComparer(liste)
+        : (() => {
+          const dessin = lr.forme === 'deux' ? tuileEntiere : tuile;
+          return grilleEnPaquets(lr.piles ? empiler(liste, lr.ouvertes) : liste,
+            lr.piles ? (x) => tuileEmpilee(x, dessin) : dessin,
+            `lr-${lr.forme}${etat.modeSelection ? ' en-selection' : ''}`, ` style="--lr-taille:${lr.taille}px" data-depot`);
+        })();
   return `<header class="lr-tete">
       <h2 class="lr-titre">${echapper(titre)}</h2>
       <span class="lr-compte">${n ? `<span class="chiffre">${liste.length}</span> sur ${total}` : `<span class="chiffre">${total}</span> photo${total > 1 ? 's' : ''}`}</span>
@@ -3128,8 +3582,18 @@ function gabaritOrdi() {
 }
 
 function changerDeForme(forme, id = null) {
+  if (forme === 'comparer') {
+    const [a, b] = [...etat.selection];
+    const un = a ?? lr.loupe;
+    if (un) lr.paire = [un, b ?? null];
+    if (['grille', 'deux'].includes(lr.forme)) lr.avant = lr.forme;
+    etat.modeSelection = false;
+    etat.selection = new Set();
+  }
+  if (forme === 'grille' || forme === 'deux') lr.zoom = null;
   if (forme === 'une') {
-    if (lr.forme !== 'une') lr.avant = lr.forme;
+    if (lr.forme === 'comparer') id ??= lr.paire[1];
+    if (['grille', 'deux'].includes(lr.forme)) lr.avant = lr.forme;
     lr.loupe = id ?? lr.loupe ?? [...etat.selection][0] ?? null;
     if (etat.modeSelection) { etat.modeSelection = false; etat.selection = new Set(); }
   }
@@ -3140,8 +3604,12 @@ function changerDeForme(forme, id = null) {
   etat.quiOuvert = false;
   garderLr();
   dessiner();
-  if (forme === 'une') window.scrollTo(0, 0);
-  else if (lr.loupe) hote.querySelector(`[data-ouvrir="${lr.loupe}"]`)?.scrollIntoView({ block: 'center' });
+  if (forme === 'une' || forme === 'comparer') window.scrollTo(0, 0);
+  else if (lr.loupe) {
+    const k = suite.items.findIndex((x) => (x.p ?? x).id === lr.loupe);
+    while (k >= suite.n) poserLaSuite();
+    hote.querySelector(`[data-ouvrir="${lr.loupe}"]`)?.scrollIntoView({ block: 'center' });
+  }
 }
 
 function voisineDeLaLoupe(pas) {
@@ -3158,6 +3626,8 @@ function voisineDeLaLoupe(pas) {
 
 function brancherOrdi(racine) {
   brancherTri(racine);
+  brancherLeZoom(racine);
+  racine.addEventListener('load', (e) => { if (e.target.matches?.('.lr-photo')) poserLeZoom(); }, true);
   racine.addEventListener('click', (e) => {
     const b = e.target.closest('[data-lr]');
     if (!b) return;
@@ -3168,8 +3638,18 @@ function brancherOrdi(racine) {
       garderLr();
       dessiner();
     } else if (quoi === 'rangement') { lr.rangement = valeur; garderLr(); dessiner(); }
-    else if (quoi === 'forme') changerDeForme(valeur);
+    else if (quoi === 'toutes') {
+      // « Toutes » veut dire toutes : une collection ouverte se referme.
+      if (collectionOuverte()) { etat.filtres = nouveauxFiltres(); etat.collection = null; if (vueCourante === 'recherche') dessiner(); }
+    } else if (quoi === 'forme') changerDeForme(valeur);
     else if (quoi === 'voisine') voisineDeLaLoupe(Number(valeur));
+    else if (quoi === 'pile') {
+      if (lr.ouvertes.has(valeur)) lr.ouvertes.delete(valeur); else lr.ouvertes.add(valeur);
+      redessinerSurPlace();
+    } else if (quoi === 'piles') { lr.piles = !lr.piles; garderLr(); dessiner(); }
+    else if (quoi === 'cmp-voisine') avancerLaComparaison(Number(valeur));
+    else if (quoi === 'cmp-echanger') { lr.paire.reverse(); dessiner(); }
+    else if (quoi === 'cmp-garder') { lr.paire.reverse(); avancerApresChoix(); }
     else if (quoi === 'voir') { lr.loupe = valeur; dessiner(); }
     else if (quoi === 'plein' && lr.loupe) { etat.listeVue = photosAffichees().map((p) => p.id); ouvrir(lr.loupe); }
   });
@@ -3187,6 +3667,33 @@ function brancherOrdi(racine) {
   });
 }
 
+// UNE PILE REPLIÉE SE SÉLECTIONNE EN ENTIER : la barre dit le compte, et c'est ce
+// qui permet d'étiqueter une rafale d'un geste.
+function toucherUnePile(pile, id) {
+  const tout = pile.every((p) => etat.selection.has(p.id));
+  for (const p of pile) { if (tout) etat.selection.delete(p.id); else etat.selection.add(p.id); }
+  etat.derniereTouchee = id;
+  etat.confirmerRetraitSel = false;
+  pile.forEach(majTuile);
+  majBarreSelection();
+}
+
+function redessinerSurPlace() {
+  const y = window.scrollY;
+  dessiner();
+  window.scrollTo(0, y);
+}
+
+// La gagnante tient la gauche ; la droite reprend après elle.
+function avancerApresChoix() {
+  const liste = photosAffichees();
+  const k = liste.findIndex((p) => p.id === lr.paire[0]);
+  const suite = liste.slice(k + 1).find((p) => p.id !== lr.paire[1]);
+  if (suite) lr.paire[1] = suite.id;
+  dessiner();
+}
+window.addEventListener('resize', () => { if (lr.zoom) poserLeZoom(); });
+
 let clavierOrdiBranche = false;
 function brancherClavierOrdi() {
   if (clavierOrdiBranche) return;
@@ -3195,7 +3702,20 @@ function brancherClavierOrdi() {
     if (!hote?.isConnected || !enAtelier() || vueCourante === 'liste' || etat.ouverte || etat.pile || etat.fenetreTri) return;
     if (e.metaKey || e.ctrlKey || e.altKey || e.defaultPrevented) return;
     if (e.target.closest?.('input, textarea, select, dialog, [role="dialog"]')) return;
-    const forme = { g: 'grille', d: 'deux', e: 'une' }[e.key.toLowerCase()];
+    if (e.shiftKey && /^[cv]$/i.test(e.key)) {
+      const cibles = etat.modeSelection ? ciblesDu('selection') : lr.forme === 'une' ? ciblesDu('loupe') : [];
+      if (!cibles.length) return;
+      e.preventDefault();
+      if (e.key.toLowerCase() === 'c') copierLesEtiquettes(cibles[0]); else collerLesEtiquettes(cibles, null);
+      return;
+    }
+    if (e.key.toLowerCase() === 's' && ['grille', 'deux'].includes(lr.forme)) { lr.piles = !lr.piles; garderLr(); dessiner(); return; }
+    if (e.key.toLowerCase() === 'z' && ['une', 'comparer'].includes(lr.forme)) { lr.zoom = lr.zoom ? null : { x: 0.5, y: 0.5 }; poserLeZoom(); return; }
+    if (lr.forme === 'comparer') {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); avancerLaComparaison(e.key === 'ArrowLeft' ? -1 : 1); return; }
+      if (e.key === 'Escape') { changerDeForme(lr.avant); return; }
+    }
+    const forme = { g: 'grille', d: 'deux', e: 'une', c: 'comparer' }[e.key.toLowerCase()];
     if (forme) { e.preventDefault(); if (photosAffichees().length) changerDeForme(forme); return; }
     if (lr.forme !== 'une') return;
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); voisineDeLaLoupe(e.key === 'ArrowLeft' ? -1 : 1); }
@@ -3217,14 +3737,27 @@ function dessiner() {
   // Un bouton du rail ou de la barre garde le focus d'un rendu à l'autre.
   const actif = document.activeElement?.closest?.('[data-lr]');
   const repere = actif && hote.contains(actif) ? `[data-lr="${actif.dataset.lr}"][data-valeur="${actif.dataset.valeur ?? ''}"]` : null;
+  // LES IMAGES DÉJÀ CHARGÉES PASSENT D'UN RENDU À L'AUTRE : c'est le même élément,
+  // déjà décodé, donc ni clignotement ni décodage à refaire.
+  const anciennes = new Map([...hote.querySelectorAll('.pht-tuile img[data-vignette], .pht-tuile img[data-entiere]')]
+    .filter((img) => img.complete && img.naturalWidth)
+    .map((img) => [`${img.dataset.vignette ?? `e${img.dataset.entiere}`}`, img]));
   hote.innerHTML = ordi ? gabaritOrdi() : vueCourante === 'match' ? gabaritMatch()
     : vueCourante === 'recherche' ? gabaritRecherche() : gabaritListe();
+  hote.querySelectorAll('.pht-tuile img[data-vignette], .pht-tuile img[data-entiere]').forEach((img) => {
+    const ancienne = anciennes.get(`${img.dataset.vignette ?? `e${img.dataset.entiere}`}`);
+    if (!ancienne || ancienne.getAttribute('src') !== img.getAttribute('src')) return;
+    img.replaceWith(ancienne);
+    ancienne.parentNode?.classList.add('prete');
+  });
+  guetterLaSuite();
   if (ordi) {
     const haut = document.querySelector('.yuno-nav');
     hote.style.setProperty('--pht-haut', `${haut && getComputedStyle(haut).position === 'sticky' ? haut.offsetHeight : 0}px`);
     const panneau = hote.querySelector('[data-lr-defile]');
     if (panneau) panneau.scrollTop = defile;
     if (repere) hote.querySelector(repere)?.focus({ preventScroll: true });
+    poserLeZoom();
   }
   majLigneDEtat();
   if (!etat.photos) return;
@@ -3273,6 +3806,8 @@ function brancher(racine) {
       } else if (quoi === 'trier-sel') { etat.fenetreTri = true; etat.ajout = null; etat.recherche = ''; dessinerFenetreTri(); }
       else if (quoi === 'retirer-sel') { etat.confirmerRetraitSel = true; majBarreSelection(); }
       else if (quoi === 'garder-sel') { etat.confirmerRetraitSel = false; majBarreSelection(); }
+      else if (quoi === 'copier') copierLesEtiquettes(etat.modeSelection ? photo([...etat.selection][0]) : photo(lr.loupe));
+      else if (quoi === 'coller') collerLesEtiquettes(etat.modeSelection ? ciblesDu('selection') : ciblesDu('loupe'), action);
       else if (quoi === 'retirer-sel-oui') retirerLaSelection(action);
       else if (quoi === 'garder-pour') garderLeChoix(action);
       else if (quoi === 'annuler-pour') { e.preventDefault(); etat.pourCharge = null; revenir(); }
@@ -3310,6 +3845,15 @@ function brancher(racine) {
       });
       return;
     }
+    if (e.target.closest('[data-filtre-atrier]')) {
+      changerFiltres(() => { F().atrier = !F().atrier; });
+      return;
+    }
+    const depuis = e.target.closest('[data-filtre-depuis]')?.dataset.filtreDepuis;
+    if (depuis) {
+      changerFiltres(() => { F().depuis = F().depuis === depuis ? null : depuis; });
+      return;
+    }
     if (e.target.closest('[data-filtre-jamais]')) {
       changerFiltres(() => { F().jamais = !F().jamais; });
       return;
@@ -3339,8 +3883,11 @@ function brancher(racine) {
       dessiner();
       return;
     }
-    if (etat.modeSelection) toucherEnSelection(t.dataset.ouvrir, e.shiftKey);
-    else if (enAtelier()) changerDeForme('une', t.dataset.ouvrir);
+    if (etat.modeSelection) {
+      const pile = t.closest('.lr-pile:not(.ouverte)') && rafalesDe(photosAffichees()).get(t.dataset.ouvrir);
+      if (pile && !e.shiftKey) toucherUnePile(pile, t.dataset.ouvrir);
+      else toucherEnSelection(t.dataset.ouvrir, e.shiftKey);
+    } else if (enAtelier()) changerDeForme('une', t.dataset.ouvrir);
     else ouvrir(t.dataset.ouvrir);
   });
 
@@ -3628,6 +4175,7 @@ export default {
     brancherLaFenetre();
     brancher(hote);
     brancherOrdi(hote);
+    brancherCollections(hote);
     brancherClavierOrdi();
     // DEUX CHOIX POSSIBLES, une même recherche : pour une parution
     // (`pour-<id>`) ou pour un carrousel (`carrousel-<id>`).

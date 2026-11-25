@@ -3712,3 +3712,14 @@ Journal, Créer, Missions (nom provisoire), Réseau, Calendrier. Prochaine
   rafale (2 s, même match) et flou de mouvement sont cochés d'avance et partent
   avec « Trié » ; les personnes du match sont des pistes, posées si on les
   touche. Rien n'est étiqueté sans geste. `photos.flou_lu` / `flou_mouvement`.
+- **Piles de rafales** (ordinateur, S) : la couverture est la mieux notée, sinon la
+  première ; une pile repliée se sélectionne en entier. **Comparer** (C) : la
+  gauche tient, la droite avance, zoom commun. **Zoom 100 %** (clic ou Z) : un
+  pixel de photo par pixel d'écran. **Copier / coller les étiquettes** (Maj + C,
+  Maj + V) : mots et personnes, jamais la note ; coller ajoute sans retirer.
+- **Infos de prise de vue** : `photos.prise`, lues à l'import. Les anciennes se
+  complètent en redéposant leur dossier d'origine dans le match.
+- **Collections intelligentes** (`collections_photos`) : un filtre gardé sous un
+  nom. En tête des filtres (téléphone et choix d'une parution compris) et de la
+  bibliothèque. Une étiquette ou une personne supprimée sort de la règle. Deux
+  filtres sont nés avec : « Pas triée », et des périodes qui avancent seules.

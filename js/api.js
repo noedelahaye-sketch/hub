@@ -3208,6 +3208,21 @@ export async function noterPhotos(ids, note) {
   if (error) throw error;
 }
 
+export async function lireCollections() {
+  return verifier(await client.from('collections_photos').select('*').order('created_at'));
+}
+export async function creerCollection(champs) {
+  return verifier(await client.from('collections_photos').insert(champs).select().single());
+}
+export async function modifierCollection(id, champs) {
+  const { error } = await client.from('collections_photos').update(champs).eq('id', id);
+  if (error) throw error;
+}
+export async function supprimerCollection(id) {
+  const { error } = await client.from('collections_photos').delete().eq('id', id);
+  if (error) throw error;
+}
+
 export async function lireEtiquettes() {
   return verifier(await client.from('etiquettes').select('*').order('ordre').order('nom'));
 }
@@ -3340,5 +3355,9 @@ async function marquerPhotos(ids, champs) {
   }
 }
 export const marquerTriees = (ids, triee = true) => marquerPhotos(ids, { triee });
+export async function garderPrise(id, prise) {
+  const { error } = await client.from('photos').update({ prise }).eq('id', id);
+  if (error) throw error;
+}
 export const marquerFlouLu = (ids, flou_mouvement) => marquerPhotos(ids, { flou_lu: true, flou_mouvement });
 export const marquerCouleursLues = (ids) => marquerPhotos(ids, { couleurs_lues: true });

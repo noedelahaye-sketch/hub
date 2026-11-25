@@ -7,9 +7,16 @@
 // qu'il importe dans la photothèque).
 
 export async function lireDatePrise(fichier) {
+  return (await lirePrise(fichier)).date;
+}
+
+// LES INFOS DE PRISE DE VUE (25 novembre 2026, demande de Noé) : la vitesse,
+// l'ouverture, la sensibilité, la focale, l'appareil et l'objectif. Ce qui
+// manque au fichier manque ici : on n'invente rien.
+export async function lirePrise(fichier) {
   try {
     const v = new DataView(await fichier.slice(0, 256 * 1024).arrayBuffer());
-    if (v.byteLength < 4 || v.getUint16(0) !== 0xffd8) return null;
+    if (v.byteLength < 4 || v.getUint16(0) !== 0xffd8) return RIEN;
     let o = 2;
     while (o + 10 < v.byteLength) {
       const marqueur = v.getUint16(o);
@@ -20,10 +27,12 @@ export async function lireDatePrise(fichier) {
       o += 2 + longueur;
     }
   } catch {
-    // Un fichier qu'on ne sait pas lire n'a simplement pas de date.
+    // Un fichier qu'on ne sait pas lire n'a simplement pas d'infos.
   }
-  return null;
+  return RIEN;
 }
+
+const RIEN = { date: null, infos: null };
 
 function lireTiff(v, t) {
   const petit = v.getUint16(t) === 0x4949;
@@ -52,6 +61,30 @@ function lireTiff(v, t) {
   const exif = pointeur != null ? t + u32(pointeur + 8) : null;
   const brut = (exif != null && (texte(entree(exif, 0x9003)) || texte(entree(exif, 0x9004))))
     || texte(entree(ifd0, 0x0132));
+  // Un rapport, un entier court : les deux formes des réglages.
+  const rapport = (e) => {
+    if (e == null) return null;
+    const q = t + u32(e + 8);
+    if (q + 8 > v.byteLength) return null;
+    const d = u32(q + 4);
+    return d ? u32(q) / d : null;
+  };
+  const entier = (e) => (e == null ? null : u16(e + 2) === 4 ? u32(e + 8) : u16(e + 8));
+  const net = (x) => (x ?? '').replace(/\0/g, '').trim() || null;
+  const dans = (tag) => (exif == null ? null : entree(exif, tag));
+  const infos = {
+    vitesse: rapport(dans(0x829a)),
+    ouverture: rapport(dans(0x829d)),
+    iso: entier(dans(0x8827)),
+    focale: rapport(dans(0x920a)),
+    appareil: net(texte(entree(ifd0, 0x0110))),
+    objectif: net(texte(dans(0xa434))),
+  };
+  for (const cle of Object.keys(infos)) if (!infos[cle]) delete infos[cle];
+  return { date: dateDe(brut), infos: Object.keys(infos).length ? infos : null };
+}
+
+function dateDe(brut) {
   const m = /^(\d{4}):(\d{2}):(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/.exec(brut ?? '');
   if (!m || m[1] === '0000') return null;
   // L'heure EXIF est celle de l'appareil, sans fuseau : on la lit comme une

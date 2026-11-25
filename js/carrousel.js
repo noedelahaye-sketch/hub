@@ -601,7 +601,7 @@ function vignette(m, { charge = 'lazy' } = {}) {
   const src = m.vignette ?? (m.genre === 'photo' && !m.fichier ? m.url : null);
   return `<span class="car-vignette">
       <img data-vignette="${m.id}" alt="" loading="${charge}" decoding="async"${src ? ` src="${src}"` : ''}
-        onload="this.parentNode.classList.add('prete')">
+        onload="this.parentNode?.classList.add('prete')">
     </span>${m.genre === 'video' ? LECTURE : ''}`;
 }
 
