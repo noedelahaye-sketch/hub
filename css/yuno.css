@@ -6122,7 +6122,7 @@ body.pht-vue-ouverte { overflow: hidden; }
 }
 .pht-filtres > summary::-webkit-details-marker { display: none; }
 .pht-filtres-corps { padding: 0 var(--espace-16) var(--espace-16); }
-.pht-etiq-n { margin-left: 6px; font-size: 0.6875rem; opacity: 0.6; }
+.pht-etiq-n { margin-left: 6px; font-size: max(11px, 0.6875rem); opacity: 0.6; }
 .pht-resultats { min-width: 0; }
 .pht-ordre { display: inline-flex; gap: 4px; }
 .car-puce.actif { color: var(--fond); background: var(--texte); border-color: var(--texte); }
@@ -6395,9 +6395,8 @@ body[data-espace="yuno"] #vue .pht-pour-menu select {
   mask-image: radial-gradient(closest-side, #000 45%, transparent);
   pointer-events: none;
 }
-/* Serrées : 26 px de large par étoile, mais 36 de haut — le doigt garde une
-   cible correcte, l'œil voit une rangée compacte. */
-.pht-etoiles-sur .pht-etoile { width: 23px; height: 34px; color: rgb(246 242 233 / 80%); }
+/* Le dessin reste à 17 px ; la cible, elle, fait 44 (audit du 25 novembre). */
+.pht-etoiles-sur .pht-etoile { width: 44px; height: 44px; color: rgb(246 242 233 / 80%); }
 .pht-etoiles-sur .pht-etoile svg { width: 17px; height: 17px; stroke-width: 1.15; filter: drop-shadow(0 1px 2px rgb(0 0 0 / 22%)); }
 .pht-etoiles-sur .pht-etoile.pleine { color: var(--accent); }
 .pht-etoiles-sur .pht-etoile:hover { background: transparent; }
@@ -6736,7 +6735,7 @@ body[data-espace="yuno"] #vue .pht-pour-menu select {
 .pht-outil:hover:not(:disabled) { color: var(--texte); background: rgb(255 255 255 / 5%); border-color: transparent; }
 .pht-outil.actif { color: var(--texte); background: var(--fond-releve); border-color: transparent; }
 .pht-res-tete .car-puce { min-height: 32px; }
-.pht-outil-n { top: -3px; right: -3px; min-width: 16px; height: 16px; line-height: 16px; font-size: 0.625rem; }
+.pht-outil-n { top: -3px; right: -3px; min-width: 16px; height: 16px; line-height: 16px; font-size: 11px; }
 .pht-ordre-menu { left: auto; right: 0; }
 
 /* Le compte et la place prise, à gauche des outils : ils se replient sur deux
@@ -7866,8 +7865,8 @@ body[data-espace="yuno"] #vue .lr-titre { margin: 0; font-family: inherit; font-
 .lr-forme:hover { color: var(--texte); background: var(--fond-carte); }
 .lr-forme.actif { color: var(--fond); background: var(--texte); }
 .lr-taille { display: flex; align-items: center; width: 130px; margin: 0; }
-.lr-taille input { width: 100%; margin: 0; padding: 0; accent-color: var(--texte); background: none; border: 0; }
-.lr-barre .pht-outils { margin-left: auto; }
+.lr-taille input { width: 100%; height: 28px; margin: 0; padding: 0; accent-color: var(--texte); background: none; border: 0; }
+.lr-barre .pht-outils { margin: 0 0 0 auto; }
 .lr-barre .pht-outil-filtres { display: none; }
 .lr-barre .pht-ordre-menu { top: auto; bottom: calc(100% + 10px); left: auto; right: 0; }
 .lr-centre .pht-barre-sel { bottom: 66px; z-index: 7; }
@@ -7895,7 +7894,7 @@ body:not([data-atelier="creer"]) .lr-centre .pht-barre-sel { bottom: 106px; }
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  min-height: 26px;
+  min-height: 28px;
   padding: 0 8px;
   font: inherit;
   font-size: 0.75rem;
@@ -7936,3 +7935,88 @@ body[data-atelier="creer"] .atelier-barre::before { content: ""; position: absol
 .lr-rubrique { margin: 14px 0 4px 8px; font-size: 0.75rem; color: var(--texte-discret); }
 .lr-collection { width: 100%; padding: 0 8px; font: inherit; font-size: 0.8125rem; text-align: left; background: none; border: 0; cursor: pointer; }
 .lr-collection > svg { flex: none; }
+
+/* --- L'audit d'accessibilité (25 novembre 2026) --- */
+.message-annulable { display: flex; align-items: center; gap: 12px; padding-right: 6px; white-space: nowrap; z-index: 2100; margin-bottom: 56px; }
+.message-annulable button { min-width: 44px; min-height: 44px; padding: 0 12px; font: inherit; font-weight: 700; color: inherit; text-decoration: underline; background: none; border: 0; cursor: pointer; }
+[role="dialog"][tabindex="-1"]:focus { outline: none; }
+/* Une zone de 28 px, sans pousser le titre à côté. */
+.pht-tri-gerer { display: inline-flex; align-items: center; min-height: 28px; margin-block: -8px; padding-inline: 4px; }
+/* Les familles de filtres repliées. */
+.pht-pli { display: block; }
+.pht-pli > summary { display: flex; align-items: center; gap: 6px; min-height: 32px; list-style: none; cursor: pointer; }
+.pht-pli > summary::-webkit-details-marker { display: none; }
+.pht-pli > summary > svg { flex: none; transition: transform 0.15s; }
+.pht-pli[open] > summary > svg { transform: rotate(90deg); }
+.pht-pli[open] > summary { margin-bottom: 6px; }
+.pht-pli > summary:hover { color: var(--texte); }
+.pht-pli-n { min-width: 18px; padding: 0 5px; font-size: 11px; line-height: 18px; letter-spacing: normal; text-align: center; color: var(--fond); background: var(--texte); border-radius: 999px; }
+.pht-filtres-corps:has(.pht-pli) { gap: var(--espace-8); }
+.pht-pose { gap: 6px; }
+/* Les raccourcis. */
+.pht-aide { width: min(44rem, calc(100vw - 32px)); max-height: calc(100dvh - 32px); margin: auto; padding: var(--espace-24); overflow: auto; color: var(--texte); background: var(--fond-carte); border: 0; border-radius: var(--rayon-carte); }
+.pht-aide::backdrop { background: rgb(0 0 0 / 60%); }
+.pht-aide-corps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: var(--espace-24); }
+.pht-aide h3 { margin: 0 0 8px; font-size: 0.8125rem; color: var(--texte-discret); }
+.pht-aide dl { margin: 0; }
+.pht-aide dl > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 30px; }
+.pht-aide dt { flex: none; order: 1; padding: 2px 8px; font-size: 0.8125rem; background: var(--fond-releve); border-radius: 6px; }
+.pht-aide dd { margin: 0; font-size: 0.875rem; }
+@media (prefers-reduced-motion: reduce) { .pht-pli > summary > svg { transition: none; } }
+/* AU TÉLÉPHONE, 44 PX SOUS LE DOIGT : le dessin garde sa taille, c'est une zone
+   invisible qui l'entoure. Dans une ligne qui glisse — elle rogne ce qui
+   dépasse —, la ligne s'épaissit d'autant, sans rien pousser. */
+@media (max-width: 59.99rem) {
+  .bouton-menu, .atelier-logo, .pht-etiq, .pht-prop, .pht-menu { position: relative; }
+  body[data-atelier="creer"] :is(.bouton-menu, .atelier-logo)::after,
+  :is(.pht-etiq, .pht-prop, .pht-menu)::after { content: ""; position: absolute; }
+  body[data-atelier="creer"] .bouton-menu::after { inset: -2px -7px; }
+  body[data-atelier="creer"] .atelier-logo::after { inset: -10px 0; }
+  :is(.pht-etiq, .pht-prop, .pht-menu)::after { inset: -6px -2px; }
+  .pht-filtres-corps .pht-etiqs, .pht-fen .pht-etiqs { gap: 10px 6px; }
+  :is(.pht-props, .pht-ligne-recit, .pht-tri-telephone .pht-tri-menus) { padding-block: 5px; margin-block: -5px; }
+  .pht-tri-telephone { gap: 10px; }
+  .pht-tri-telephone .pht-tri-menus :is(.pht-menu, .pht-etiq) { min-height: 34px; height: 34px; }
+  .pht-vue-corps .pht-vue-image { max-height: calc(100dvh - 300px); }
+  .pht-res-tete .pht-outils { gap: 4px; }
+  .pht-outil { width: 40px; height: 40px; }
+  .pht-outil::after { content: ""; position: absolute; inset: -2px; }
+  .pht-etoiles .pht-etoile { width: 44px; height: 44px; }
+  .pht-vue-actions :is(.car-icone, .car-puce, .car-danger, .car-bouton-or) { min-height: 44px; height: 44px; }
+  .pht-vue-actions .car-icone { width: 44px; }
+  .pht-barre-sel :is(button, select) { min-height: 44px; min-width: 44px; }
+  .pht-ajouter-match { min-height: 44px; }
+  body[data-espace="yuno"] #vue .pht-competition input { min-height: 44px; }
+  .pht-pli > summary { min-height: 44px; }
+  body[data-espace="yuno"] #vue .pht-tete-liste .pht-gestes > :is(a, button) { min-height: 44px; }
+  body[data-espace="yuno"] #vue .pht-tete-liste .pht-gestes:has(.pht-importer) > :is(.pht-importer, .pht-chercher) { flex: 0 0 48px; justify-content: center; padding: 0; }
+}
+.message-annulable { padding-block: 4px; }
+/* Dans la visionneuse (z 1000), les messages passaient DERRIÈRE la photo. */
+body.pht-vue-ouverte :is(.message-court, .bulle-kit) { z-index: 2100; }
+body.pht-vue-ouverte .message-annulable { top: calc(84px + env(safe-area-inset-top)); bottom: auto; margin: 0; }
+
+/* --- La barre de filtres de l'ordinateur (25 novembre 2026) : UNE ligne, des menus. --- */
+.lr-filtres { position: sticky; top: var(--pht-haut, 0px); z-index: 8; margin: 0 0 10px -16px; background: var(--fond); border-block: 1px solid var(--bordure); }
+.lr-filtres-ligne { display: flex; align-items: center; gap: 4px; min-height: 46px; padding: 0 16px; overflow-x: auto; scrollbar-width: none; }
+.lr-filtres-ligne::-webkit-scrollbar { display: none; }
+.lr-filtres-ligne > * { flex: none; }
+.lr-filtres-ligne .pht-etoiles { gap: 0; }
+.lr-filtres-ligne .pht-etoile { width: 28px; height: 32px; }
+.lr-filtres-ligne .pht-etoile svg { width: 18px; height: 18px; }
+.lr-trait { width: 1px; height: 20px; margin: 0 8px; background: var(--bordure); }
+.lr-menu-bouton { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 9px; font: inherit; font-size: 0.8125rem; color: var(--texte-doux); background: none; border: 0; border-radius: 8px; cursor: pointer; }
+.lr-menu-bouton > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lr-menu-bouton > svg { flex: none; transform: rotate(90deg); }
+.lr-menu-bouton:hover, .lr-menu-bouton[aria-expanded="true"] { color: var(--texte); background: var(--fond-carte); }
+.lr-menu-bouton.pris { font-weight: 600; color: var(--texte); }
+.lr-menu-bouton:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.lr-effacer { position: sticky; right: -16px; display: grid; place-items: center; width: 36px; height: 36px; margin: 0 -8px 0 auto; padding: 0; color: var(--texte-doux); background: var(--fond); border: 0; border-radius: 8px; cursor: pointer; }
+.lr-effacer:hover { color: var(--texte); background: var(--fond-carte); }
+.lr-menu { position: absolute; top: calc(100% + 4px); display: flex; flex-direction: column; min-width: 14rem; max-width: 24rem; max-height: min(26rem, 60vh); padding: 4px; overflow-y: auto; overscroll-behavior: contain; background: var(--fond-releve); border-radius: 12px; box-shadow: 0 10px 30px rgb(0 0 0 / 55%); scrollbar-width: thin; }
+.lr-menu .pht-menu-option { flex: none; min-height: 34px; font-size: 0.8125rem; cursor: pointer; }
+.lr-menu .pht-menu-option:hover { background: rgb(255 255 255 / 6%); }
+.lr-menu .pht-menu-option:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.lr-menu .pht-menu-coche.ronde { border-radius: 50%; }
+.lr-panneau > .pht-cols { margin-top: 12px; }
+.lr-panneau > .pht-cols > :is(.pht-gere, .pht-col-gestes, .pht-col-champ):first-child { margin-top: 0; }

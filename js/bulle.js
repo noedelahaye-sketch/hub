@@ -83,11 +83,30 @@ export function dernierGeste() {
 // confirmations très brèves seulement — « Place n°3 mise à jour ». Tout ce qui
 // demande d'être lu va dans la bulle.
 export function messageCourt(texte, duree = 2600) {
-  document.querySelector('.message-court')?.remove();
+  document.querySelector('.message-court:not(.message-annulable)')?.remove();
   const el = document.createElement('div');
   el.className = 'message-court';
   el.setAttribute('role', 'status');
   el.textContent = texte;
   document.body.appendChild(el);
   setTimeout(() => el.remove(), duree);
+}
+
+// LE MESSAGE QUI PERMET DE REVENIR : il tient le temps où l'on peut encore
+// annuler, et ne s'efface pas devant un message ordinaire.
+export function messageAnnulable(texte, duree, annuler) {
+  document.querySelector('.message-annulable')?.remove();
+  const el = document.createElement('div');
+  el.className = 'message-court message-annulable';
+  el.setAttribute('role', 'status');
+  const mot = document.createElement('span');
+  mot.textContent = texte;
+  const bouton = document.createElement('button');
+  bouton.type = 'button';
+  bouton.textContent = 'Annuler';
+  bouton.addEventListener('click', annuler);
+  el.append(mot, bouton);
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), duree);
+  return el;
 }

@@ -3723,3 +3723,15 @@ Journal, Créer, Missions (nom provisoire), Réseau, Calendrier. Prochaine
   nom. En tête des filtres (téléphone et choix d'une parution compris) et de la
   bibliothèque. Une étiquette ou une personne supprimée sort de la règle. Deux
   filtres sont nés avec : « Pas triée », et des périodes qui avancent seules.
+
+### La photothèque, après l'audit d'accessibilité (25 novembre 2026)
+
+- **Une photo se nomme par ce qu'elle montre** (match, moment, personnes, étiquettes), jamais par son fichier ; sa sélection s'annonce (`aria-pressed`, tenu par `majTuile`).
+- **Les fenêtres tiennent le focus** (`remplirLaFenetre`, `quitterLaFenetre`) : le reste de la page est `inert`. Pas de `<dialog>` natif : il cacherait les messages, qui vivent sur le corps de la page.
+- **La grille est un seul arrêt de tabulation**, puis les flèches ; R déplie une rafale.
+- **⌘Z annule les vingt derniers gestes** : on retient ce que les photos étaient avant et après (`cliche`, `poserLEcart`), pas le geste. Vaut pour la visite.
+- **Retirer laisse huit secondes** : la base et le fichier n'apprennent le retrait qu'après. Fermer la page avant garde la photo.
+- **Sur ordinateur, les filtres sont une seule ligne au-dessus des photos** (demande de Noé, comme Lightroom) : les étoiles, puis un menu déroulant par famille, compétition, match et tri à la fin, sans « Période ». F ou l’icône du rail l’ouvre. Les collections intelligentes ont leur propre outil dans le rail.
+- **Au téléphone, les filtres se replient par famille**, et ce qui est posé se lit en tête, retirable d'un toucher.
+- **L'or va à « À trier »** au téléphone tant qu'il reste des photos ; l'import n'est alors qu'une icône.
+- **« ? » montre les raccourcis.**
