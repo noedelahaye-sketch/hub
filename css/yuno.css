@@ -7841,8 +7841,9 @@ body[data-espace="yuno"] #vue .lr-titre { margin: 0; font-family: inherit; font-
 .lr-cote { grid-row: 1 / span 2; grid-column: 2; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; scrollbar-width: thin; scrollbar-color: var(--bordure) transparent; }
 .lr-infos { display: flex; flex-direction: column; gap: 2px; margin: 0 0 14px; font-size: 0.8125rem; overflow-wrap: anywhere; }
 .lr-cote > .car-puce { margin-top: 16px; }
-.lr-pellicule { display: flex; justify-content: center; gap: 4px; min-width: 0; overflow: hidden; }
-.lr-vue { flex: 0 1 60px; min-width: 0; aspect-ratio: 1; padding: 0; overflow: hidden; background: var(--fond-carte); border: 0; border-radius: 6px; opacity: 0.55; cursor: pointer; }
+.lr-pellicule { display: flex; gap: 4px; min-width: 0; padding: 2px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
+.lr-pellicule::-webkit-scrollbar { display: none; }
+.lr-vue { flex: 0 0 60px; min-width: 0; aspect-ratio: 1; padding: 0; overflow: hidden; background: var(--fond-carte); border: 0; border-radius: 6px; opacity: 0.55; cursor: pointer; }
 .lr-vue:hover { opacity: 0.85; }
 .lr-vue.active { opacity: 1; outline: 2px solid var(--accent); outline-offset: -2px; }
 .lr-vue img { display: block; width: 100%; height: 100%; object-fit: cover; }

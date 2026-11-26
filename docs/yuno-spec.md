@@ -3736,3 +3736,4 @@ Journal, Créer, Missions (nom provisoire), Réseau, Calendrier. Prochaine
 - **L'or va à « À trier »** au téléphone tant qu'il reste des photos ; l'import n'est alors qu'une icône.
 - **« ? » montre les raccourcis.**
 - **« Depuis tribunes » se pose d'office** (26 novembre 2026, règle de Noé) : la pelouse fait plus de la moitié de l'image, et au moins une des deux photos d'avant ou d'après, dans le même match, aussi. La part de vert est lue une fois sur la vignette (`photos.vert`) ; la règle passe une fois par photo (`tribunes_lues`), quand tout le match est mesuré — une étiquette retirée ne revient pas. Noé corrige au tri ou dans la vue filtrée.
+- **La pellicule de la vue « une photo » porte toute la liste et défile** (26 novembre 2026, demande de Noé) : trackpad, ou molette qui glisse de côté ; elle garde sa place d'un redessin à l'autre. **Revenir à la grille la ramène sur la photo regardée**, ou sur la couverture de sa rafale repliée.

@@ -1372,6 +1372,18 @@ function barreDeFiltres() {
 }
 
 // Le menu tombe sous son bouton, sans sortir de la barre.
+// La pellicule garde où on l'a fait défiler ; la photo vue y reste visible.
+function poserLaPellicule(avant) {
+  const bande = hote?.querySelector('[data-lr-pellicule]');
+  const active = bande?.querySelector('.lr-vue.active');
+  if (!bande || !active) return;
+  if (avant !== null) bande.scrollLeft = avant;
+  const g = active.offsetLeft - bande.scrollLeft;
+  if (avant === null || g < 0 || g + active.offsetWidth > bande.clientWidth) {
+    bande.scrollLeft = active.offsetLeft - (bande.clientWidth - active.offsetWidth) / 2;
+  }
+}
+
 function placerLeMenu() {
   const menu = hote?.querySelector('.lr-menu');
   const bouton = hote?.querySelector('.lr-menu-bouton[aria-expanded="true"]');
@@ -3767,7 +3779,6 @@ function gabaritLoupe(liste) {
   const p = photo(lr.loupe);
   if (!p) return '';
   const k = liste.indexOf(p);
-  const debut = Math.max(0, Math.min(k - 8, liste.length - 17));
   return `<div class="lr-loupe">
       <div class="lr-scene">
         <button type="button" class="pht-vue-fleche" data-lr="voisine" data-valeur="-1" aria-label="Photo précédente"${k > 0 ? '' : ' disabled'}>${svg('gauche', 22)}</button>
@@ -3785,9 +3796,12 @@ function gabaritLoupe(liste) {
         </div>
         <button type="button" class="car-puce" data-lr="plein">${svgLr('plein', 15)}<span>Plein écran, télécharger, retirer</span></button>
       </aside>
-      <div class="lr-pellicule" role="group" aria-label="Les photos autour">${liste.slice(debut, debut + 17).map((q) =>
+      ${/* TOUTE LA LISTE, QUI DÉFILE (26 novembre 2026, demande de Noé : « slider
+         à droite et à gauche pour accéder aux photos d'avant et d'après ») : on
+         la parcourt au trackpad ou à la molette, sans changer de photo. */ ''}
+      <div class="lr-pellicule" role="group" aria-label="Les photos autour" data-lr-pellicule>${liste.map((q) =>
         `<button type="button" class="lr-vue${q === p ? ' active' : ''}" data-lr="voir" data-valeur="${q.id}"
-          aria-label="${echapper(nomDeLaPhoto(q))}"${q === p ? ' aria-current="true"' : ''}><img data-vignette="${q.id}" alt="" decoding="async"${
+          aria-label="${echapper(nomDeLaPhoto(q))}"${q === p ? ' aria-current="true"' : ''}><img data-vignette="${q.id}" alt="" loading="lazy" decoding="async"${
           q.vignette ? ` src="${echapper(q.vignette)}"` : ''}></button>`).join('')}</div>
     </div>`;
 }
@@ -4048,9 +4062,22 @@ function changerDeForme(forme, id = null) {
   dessiner();
   if (forme === 'une' || forme === 'comparer') window.scrollTo(0, 0);
   else if (lr.loupe) {
-    const k = suite.items.findIndex((x) => (x.p ?? x).id === lr.loupe);
-    while (k >= suite.n) poserLaSuite();
-    hote.querySelector(`[data-ouvrir="${lr.loupe}"]`)?.scrollIntoView({ block: 'center' });
+    // LA GRILLE REVIENT SUR LA PHOTO QU'ON REGARDAIT (26 novembre 2026, défaut
+    // rapporté par Noé). Elle peut dormir dans une rafale repliée : on vise alors
+    // la photo qui la représente. Et on vise deux fois : les tuiles hors de
+    // l'écran ne sont pas encore peintes, leur hauteur n'est qu'estimée.
+    const loupe = lr.loupe;
+    const exacte = suite.items.findIndex((x) => (x.p ?? x).id === loupe);
+    const k = exacte >= 0 ? exacte : suite.items.findIndex((x) => x.rafale?.some((q) => q.id === loupe));
+    if (k >= 0) {
+      while (k >= suite.n && suite.n < suite.items.length) poserLaSuite();
+      const id = (suite.items[k].p ?? suite.items[k]).id;
+      const viser = () => hote?.querySelector(`[data-ouvrir="${id}"]`)?.scrollIntoView({ block: 'center' });
+      viser();
+      requestAnimationFrame(() => { viser(); setTimeout(viser, 120); });
+      arret = id;
+      poserLArret();
+    }
   }
 }
 
@@ -4142,6 +4169,13 @@ let clavierOrdiBranche = false;
 function brancherClavierOrdi() {
   if (clavierOrdiBranche) return;
   clavierOrdiBranche = true;
+  // La molette d'une souris fait défiler la pellicule de côté.
+  document.addEventListener('wheel', (e) => {
+    const bande = e.target.closest?.('[data-lr-pellicule]');
+    if (!bande || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    e.preventDefault();
+    bande.scrollLeft += e.deltaY;
+  }, { passive: false });
   document.addEventListener('pointerdown', (e) => {
     if (lr.menu && hote?.isConnected && !e.target.closest?.('.lr-menu, .lr-menu-bouton')) {
       lr.menu = null;
@@ -4189,6 +4223,7 @@ function dessiner() {
   const defile = ordi ? hote.querySelector('[data-lr-defile]')?.scrollTop ?? 0 : 0;
   // Les colonnes de filtres restent où on les a fait défiler.
   const ligne = hote.querySelector('[data-lr-ligne]')?.scrollLeft ?? 0;
+  const pellicule = hote.querySelector('[data-lr-pellicule]')?.scrollLeft ?? null;
   const colonnes = [...hote.querySelectorAll('[data-lr-colonne]')].map((c) => [c.dataset.lrColonne, c.scrollTop]);
   // Un bouton du rail ou de la barre garde le focus d'un rendu à l'autre.
   const repere = hote.contains(document.activeElement) ? repereDe(document.activeElement) : null;
@@ -4214,6 +4249,7 @@ function dessiner() {
     const barre = hote.querySelector('[data-lr-ligne]');
     if (barre) barre.scrollLeft = ligne;
     placerLeMenu();
+    poserLaPellicule(pellicule);
     for (const [cle, y] of colonnes) {
       const c = hote.querySelector(`[data-lr-colonne="${CSS.escape(cle)}"]`);
       if (c) c.scrollTop = y;
