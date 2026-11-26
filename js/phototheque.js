@@ -26,7 +26,7 @@ import { enregistrer } from './zip.js';
 import { envoyerFichier, envoyerVignette, adressesDe, supprimerFichier, placeOccupee } from './photos-cloud.js';
 import { lirePrise } from './exif.js';
 import { relireAuProchainMontage } from './carrousel.js';
-import { mesurerLeFlou, estUnFile, partDeVert, propositionsPour, personnesDuMatch, rafalesDe, empiler, priseEnClair,
+import { mesurerLeFlou, estUnFile, partDeVert, depuisLesTribunes, propositionsPour, personnesDuMatch, rafalesDe, empiler, priseEnClair,
   regleDe, filtresDe, memeRegle, dansLaPeriode, PERIODES } from './tri-photos.js';
 
 const COTE_MAX = 2160;
@@ -231,7 +231,7 @@ async function chargerVraiment() {
     etat.chargeLe = Date.now();
     etat.adressesLe = 0;
     // En arrière-plan, sans retarder l'écran.
-    setTimeout(() => rattraperLesCouleurs().then(rattraperLeFlou).then(rattraperLeVert), 1500);
+    setTimeout(() => rattraperLesCouleurs().then(rattraperLeFlou).then(rattraperLeVert).then(poserLesTribunes), 1500);
     lireLaPlace();
   } catch (e) {
     console.error('Lecture de la photothèque impossible', e);
@@ -543,6 +543,7 @@ async function envoyer(p) {
       flou_lu: true,
       flou_mouvement: p.flou_mouvement ?? false,
       vert: p.vert ?? null,
+      tribunes_lues: false,
       triee: p.triee ?? false,
     });
     p.enBase = true;
@@ -557,7 +558,7 @@ async function envoyer(p) {
     p.progression = 1;
     p.blobVignette = null;
     // Le dernier envoi d'un lot fait relire la place prise.
-    if (!(etat.photos ?? []).some(enRoute)) lireLaPlace();
+    if (!(etat.photos ?? []).some(enRoute)) { lireLaPlace(); poserLesTribunes(); }
   } catch (e) {
     console.error('Envoi impossible', p.nom, e);
     p.envoi = 'echec';
@@ -3077,6 +3078,42 @@ async function rattraperLeVert() {
   } catch (e) {
     console.error('Lecture de la pelouse interrompue', e);
     etat.vertLu = false;
+  }
+}
+
+// « DEPUIS TRIBUNES » POSÉ D'OFFICE (26 novembre 2026, demande de Noé : « que ça
+// mette l'étiquette directement, je modifierai si nécessaire »). Une photo n'est
+// jugée qu'une fois, et seulement quand tout son match a sa pelouse mesurée :
+// une voisine encore inconnue fausserait la règle.
+let tribunesEnCours = false;
+async function poserLesTribunes() {
+  const etiquette = (etat.etiquettes ?? []).find((e) => sansAccent(e.nom) === 'depuis tribunes');
+  if (!etiquette || tribunesEnCours) return;
+  const photos = etat.photos ?? [];
+  const matchPret = new Map();
+  const pret = (p) => {
+    const cle = p.evenement_id ?? '';
+    if (!matchPret.has(cle)) matchPret.set(cle, photos.every((q) => (q.evenement_id ?? '') !== cle || (q.envoi === 'fait' && q.vert != null)));
+    return matchPret.get(cle);
+  };
+  const aJuger = photos.filter((p) => p.envoi === 'fait' && !p.tribunes_lues && p.vert != null && pret(p));
+  if (!aJuger.length) return;
+  tribunesEnCours = true;
+  const oui = aJuger.filter((p) => !p.etiquettes.has(etiquette.id) && depuisLesTribunes(p, photos));
+  try {
+    if (oui.length) await api.etiqueterPhotos(oui.map((p) => p.id), etiquette.id);
+    oui.forEach((p) => p.etiquettes.add(etiquette.id));
+    await api.marquerTribunesLues(aJuger.map((p) => p.id));
+    aJuger.forEach((p) => { p.tribunes_lues = true; });
+    if (oui.length) {
+      messageCourt(`${oui.length} photo${oui.length > 1 ? 's' : ''} reconnue${oui.length > 1 ? 's' : ''} depuis les tribunes.`);
+      redessinerTri();
+      if (vueCourante !== 'liste' && !etat.ouverte) redessinerSurPlace();
+    }
+  } catch (e) {
+    console.error('Tribunes non posées', e);
+  } finally {
+    tribunesEnCours = false;
   }
 }
 

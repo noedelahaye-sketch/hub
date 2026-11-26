@@ -108,7 +108,8 @@ const verte = (q) => (q?.vert ?? 0) > VERT_PREDOMINANT;
 // DEPUIS LES TRIBUNES (règle de Noé) : la pelouse domine l'image, ET au moins une
 // des deux photos d'avant ou des deux d'après, dans le même match, la montre
 // aussi. Une seule photo verte, c'est souvent un gros plan de pied ; quand on
-// est en tribune, on y reste. Mesuré le 26 novembre 2026 : les 24 photos déjà
+// est en tribune, on y reste. L'étiquette se POSE d'office, une fois par photo
+// (`tribunes_lues`) : retirée, elle ne revient pas. Mesuré le 26 novembre 2026 : les 24 photos déjà
 // étiquetées sont retrouvées, 176 au total.
 export function depuisLesTribunes(p, photos) {
   if (!verte(p)) return false;
@@ -187,8 +188,6 @@ export function propositionsPour(p, { photos, etiquettes, personnes }) {
     for (const id of source?.personnes ?? []) ajouter('personnes', id, nomDe(id), true, 'rafale');
   }
   if (p.flou_mouvement && flou) ajouter('etiquettes', flou.id, flou.nom, true, 'image');
-  const tribunes = etiquettes.find((e) => normal(e.nom) === 'depuis tribunes');
-  if (tribunes && !p.etiquettes.has(tribunes.id) && depuisLesTribunes(p, photos)) ajouter('etiquettes', tribunes.id, tribunes.nom, true, 'image');
   if (!p.personnes.size && !sorties.some((s) => s.quoi === 'personnes')) {
     for (const id of personnesDuMatch(p.evenement_id, p.evenement?.titre, photos, personnes)) {
       ajouter('personnes', id, nomDe(id), false, 'match');

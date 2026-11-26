@@ -3360,5 +3360,6 @@ export async function garderPrise(id, prise) {
   if (error) throw error;
 }
 export const marquerFlouLu = (ids, flou_mouvement) => marquerPhotos(ids, { flou_lu: true, flou_mouvement });
+export const marquerTribunesLues = (ids) => marquerPhotos(ids, { tribunes_lues: true });
 export const marquerVert = (ids, vert) => marquerPhotos(ids, { vert });
 export const marquerCouleursLues = (ids) => marquerPhotos(ids, { couleurs_lues: true });

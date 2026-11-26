@@ -54,6 +54,6 @@ assert.ok(depuisLesTribunes(serie[3], [...serie, v('t3b', 200, 0.6)]));      // 
 assert.ok(!depuisLesTribunes(serie[3], [...serie, v('x', 200, 0.9, { evenement_id: 'autre' })])); // pas du même match
 const tri = [...etiquettes, { id: 'trib', famille: 'style', nom: 'Depuis tribunes' }];
 const u = v('u', 0, 0.9), w2 = v('w', 30, 0.8);
-assert.ok(propositionsPour(u, { photos: [u, w2], etiquettes: tri, personnes }).some((s) => s.id === 'trib' && s.arme));
+assert.ok(!propositionsPour(u, { photos: [u, w2], etiquettes: tri, personnes }).some((s) => s.id === 'trib')); // posée d'office, plus proposée
 assert.equal(partDeVertDesPixels(new Uint8ClampedArray([20, 120, 30, 255, 120, 120, 120, 255])), 0.5);
 console.log('Tribunes : la règle tient.');
