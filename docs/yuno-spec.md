@@ -3735,3 +3735,4 @@ Journal, Créer, Missions (nom provisoire), Réseau, Calendrier. Prochaine
 - **Au téléphone, les filtres se replient par famille**, et ce qui est posé se lit en tête, retirable d'un toucher.
 - **L'or va à « À trier »** au téléphone tant qu'il reste des photos ; l'import n'est alors qu'une icône.
 - **« ? » montre les raccourcis.**
+- **« Depuis tribunes » se propose tout seul** (26 novembre 2026, règle de Noé) : la pelouse fait plus de la moitié de l'image, et au moins une des deux photos d'avant ou d'après, dans le même match, aussi. La part de vert est lue une fois sur la vignette et gardée en base (`photos.vert`). Proposition sûre : acceptée en glissant « Trié », sauf si on la touche.

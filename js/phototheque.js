@@ -26,7 +26,7 @@ import { enregistrer } from './zip.js';
 import { envoyerFichier, envoyerVignette, adressesDe, supprimerFichier, placeOccupee } from './photos-cloud.js';
 import { lirePrise } from './exif.js';
 import { relireAuProchainMontage } from './carrousel.js';
-import { mesurerLeFlou, estUnFile, propositionsPour, personnesDuMatch, rafalesDe, empiler, priseEnClair,
+import { mesurerLeFlou, estUnFile, partDeVert, propositionsPour, personnesDuMatch, rafalesDe, empiler, priseEnClair,
   regleDe, filtresDe, memeRegle, dansLaPeriode, PERIODES } from './tri-photos.js';
 
 const COTE_MAX = 2160;
@@ -231,7 +231,7 @@ async function chargerVraiment() {
     etat.chargeLe = Date.now();
     etat.adressesLe = 0;
     // En arrière-plan, sans retarder l'écran.
-    setTimeout(() => rattraperLesCouleurs().then(rattraperLeFlou), 1500);
+    setTimeout(() => rattraperLesCouleurs().then(rattraperLeFlou).then(rattraperLeVert), 1500);
     lireLaPlace();
   } catch (e) {
     console.error('Lecture de la photothèque impossible', e);
@@ -492,6 +492,7 @@ async function preparer(p) {
   if (nb && estNoirEtBlanc(petite)) p.etiquettes.add(nb.id);
   p.flou_mouvement = estUnFile(mesurerLeFlou(petite, petite.width, petite.height));
   p.flou_lu = true;
+  p.vert = partDeVert(petite, petite.width, petite.height);
   p.blobVignette = await enJpeg(petite, 0.82);
   p.vignette = URL.createObjectURL(p.blobVignette);
   source.close?.();
@@ -541,6 +542,7 @@ async function envoyer(p) {
       prise: p.prise ?? null,
       flou_lu: true,
       flou_mouvement: p.flou_mouvement ?? false,
+      vert: p.vert ?? null,
       triee: p.triee ?? false,
     });
     p.enBase = true;
@@ -3033,6 +3035,48 @@ async function rattraperLeFlou() {
   } catch (e) {
     console.error('Lecture du flou interrompue', e);
     etat.flouLu = false;
+  }
+}
+
+// LA PELOUSE DES PHOTOS DÉJÀ LÀ (26 novembre 2026) : lue une fois, gardée en base.
+async function rattraperLeVert() {
+  if (etat.vertLu) return;
+  etat.vertLu = true;
+  const file = (etat.photos ?? []).filter((p) => p.envoi === 'fait' && p.vert == null && p.cle);
+  if (!file.length) return;
+  try {
+    const adresses = {};
+    for (let i = 0; i < file.length; i += 400) {
+      Object.assign(adresses, await adressesDe(file.slice(i, i + 400).map((p) => p.cle)));
+    }
+    const parValeur = new Map();
+    const ouvrier = async () => {
+      for (let p = file.shift(); p; p = file.shift()) {
+        const adresse = adresses[p.cle]?.vignette;
+        if (!adresse) continue;
+        try {
+          const r = await fetch(adresse);
+          if (!r.ok) continue;
+          const image = await createImageBitmap(await r.blob());
+          const v = partDeVert(image, image.width, image.height);
+          image.close?.();
+          if (!parValeur.has(v)) parValeur.set(v, []);
+          parValeur.get(v).push(p);
+        } catch {
+          // Une vignette illisible se relira à la prochaine visite.
+        }
+      }
+    };
+    await Promise.all([ouvrier(), ouvrier(), ouvrier(), ouvrier()]);
+    // Une écriture par valeur : la part est arrondie au centième, il y en a cent au plus.
+    for (const [v, photos] of parValeur) {
+      await api.marquerVert(photos.map((p) => p.id), v);
+      photos.forEach((p) => { p.vert = v; });
+    }
+    if (parValeur.size && etat.ouverte) redessinerTri();
+  } catch (e) {
+    console.error('Lecture de la pelouse interrompue', e);
+    etat.vertLu = false;
   }
 }
 

@@ -1,6 +1,6 @@
 // node tools/essai-tri-photos.mjs — les propositions de la pile, hors écran.
 import assert from 'node:assert/strict';
-import { propositionsPour, personnesDuMatch, rafaleDe, estUnFile, mesurerLesGris, rafalesDe, empiler, priseEnClair, regleDe, filtresDe, memeRegle, dansLaPeriode } from '../js/tri-photos.js';
+import { depuisLesTribunes, partDeVertDesPixels, propositionsPour, personnesDuMatch, rafaleDe, estUnFile, mesurerLesGris, rafalesDe, empiler, priseEnClair, regleDe, filtresDe, memeRegle, dansLaPeriode } from '../js/tri-photos.js';
 const ph = (id, s, o = {}) => ({ id, evenement_id: 'm', prise_le: new Date(1e12 + s * 1000).toISOString(),
   etiquettes: new Set(), personnes: new Set(), evenement: { titre: 'Samuel Kotto contre Pau' }, ...o });
 const etiquettes = [{ id: 'duel', famille: 'recit', nom: 'Duel' }, { id: 'frappe', famille: 'recit', nom: 'Frappe' },
@@ -44,3 +44,16 @@ assert.ok(dansLaPeriode(new Date(2026, 10, 1, 9).toISOString(), 'mois', le25));
 assert.ok(!dansLaPeriode(new Date(2026, 9, 31).toISOString(), 'mois', le25) && dansLaPeriode(new Date(2026, 9, 31).toISOString(), 'j30', le25));
 assert.ok(!dansLaPeriode(null, 'an', le25) && dansLaPeriode(null, null, le25));
 console.log('25 cas : les propositions tiennent.');
+
+// Depuis les tribunes : verte, et une voisine verte parmi les deux d'avant et d'après.
+const v = (id, s, vert, o = {}) => ph(id, s, { vert, ...o });
+const serie = [v('t0', 0, 0.9), v('t1', 60, 0.1), v('t2', 120, 0.2), v('t3', 180, 0.8), v('t4', 240, 0.1), v('t5', 300, 0.1), v('t6', 360, 0.1), v('t7', 420, 0.7)];
+assert.ok(depuisLesTribunes(serie[0], serie) === false);                    // t1, t2 pas vertes : seule
+assert.ok(!depuisLesTribunes(serie[7], serie));                             // t5, t6 pas vertes
+assert.ok(depuisLesTribunes(serie[3], [...serie, v('t3b', 200, 0.6)]));      // une voisine verte suffit
+assert.ok(!depuisLesTribunes(serie[3], [...serie, v('x', 200, 0.9, { evenement_id: 'autre' })])); // pas du même match
+const tri = [...etiquettes, { id: 'trib', famille: 'style', nom: 'Depuis tribunes' }];
+const u = v('u', 0, 0.9), w2 = v('w', 30, 0.8);
+assert.ok(propositionsPour(u, { photos: [u, w2], etiquettes: tri, personnes }).some((s) => s.id === 'trib' && s.arme));
+assert.equal(partDeVertDesPixels(new Uint8ClampedArray([20, 120, 30, 255, 120, 120, 120, 255])), 0.5);
+console.log('Tribunes : la règle tient.');

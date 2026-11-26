@@ -83,6 +83,42 @@ export function mesurerLesGris(g, w, h) {
 export const estUnFile = ({ coherence, accord, nettete }) =>
   coherence >= 0.5 && accord >= 0.39 && nettete <= 0.55;
 
+// --- La pelouse (26 novembre 2026) ------------------------------------------------------
+//
+// LA PART DE VERT DE GAZON, sur une vignette réduite à 48 × 64 : un point est
+// « pelouse » quand son vert passe nettement le rouge et le bleu. Le seuil de
+// « prédominant » est la moitié de l'image.
+export function partDeVert(source, largeur, hauteur) {
+  const [w, h] = largeur > hauteur ? [64, 48] : [48, 64];
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(source, 0, 0, w, h);
+  return partDeVertDesPixels(ctx.getImageData(0, 0, w, h).data);
+}
+export function partDeVertDesPixels(d) {
+  let vert = 0;
+  for (let i = 0; i < d.length; i += 4) if (d[i + 1] > d[i] * 1.08 && d[i + 1] > d[i + 2] * 1.12 && d[i + 1] > 30) vert++;
+  return Math.round((vert / (d.length / 4)) * 100) / 100;
+}
+export const VERT_PREDOMINANT = 0.5;
+const verte = (q) => (q?.vert ?? 0) > VERT_PREDOMINANT;
+
+// DEPUIS LES TRIBUNES (règle de Noé) : la pelouse domine l'image, ET au moins une
+// des deux photos d'avant ou des deux d'après, dans le même match, la montre
+// aussi. Une seule photo verte, c'est souvent un gros plan de pied ; quand on
+// est en tribune, on y reste. Mesuré le 26 novembre 2026 : les 24 photos déjà
+// étiquetées sont retrouvées, 176 au total.
+export function depuisLesTribunes(p, photos) {
+  if (!verte(p)) return false;
+  const t = (q) => q.prise_le ?? '';
+  const match = photos.filter((q) => (q.evenement_id ?? null) === (p.evenement_id ?? null))
+    .sort((a, b) => t(a).localeCompare(t(b)) || String(a.nom ?? '').localeCompare(String(b.nom ?? ''), undefined, { numeric: true }));
+  const k = match.indexOf(p);
+  return [match[k - 2], match[k - 1], match[k + 1], match[k + 2]].some(verte);
+}
+
 // --- Les propositions ------------------------------------------------------------------------
 //
 // LA RAFALE : deux secondes d'écart au plus, dans le même match. Mesuré sur les
@@ -151,6 +187,8 @@ export function propositionsPour(p, { photos, etiquettes, personnes }) {
     for (const id of source?.personnes ?? []) ajouter('personnes', id, nomDe(id), true, 'rafale');
   }
   if (p.flou_mouvement && flou) ajouter('etiquettes', flou.id, flou.nom, true, 'image');
+  const tribunes = etiquettes.find((e) => normal(e.nom) === 'depuis tribunes');
+  if (tribunes && !p.etiquettes.has(tribunes.id) && depuisLesTribunes(p, photos)) ajouter('etiquettes', tribunes.id, tribunes.nom, true, 'image');
   if (!p.personnes.size && !sorties.some((s) => s.quoi === 'personnes')) {
     for (const id of personnesDuMatch(p.evenement_id, p.evenement?.titre, photos, personnes)) {
       ajouter('personnes', id, nomDe(id), false, 'match');

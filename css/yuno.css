@@ -8020,3 +8020,10 @@ body.pht-vue-ouverte .message-annulable { top: calc(84px + env(safe-area-inset-t
 .lr-menu .pht-menu-coche.ronde { border-radius: 50%; }
 .lr-panneau > .pht-cols { margin-top: 12px; }
 .lr-panneau > .pht-cols > :is(.pht-gere, .pht-col-gestes, .pht-col-champ):first-child { margin-top: 0; }
+
+/* iOS ZOOME SUR UN CHAMP DE MOINS DE 16 px et ne dézoome pas (26 novembre 2026,
+   défaut rapporté par Noé : « ça zoome pour que j'écrive »). Au doigt, tout champ
+   de saisie fait donc 16 px au moins. */
+@media (pointer: coarse) {
+  body[data-espace="yuno"] :is(.pht-etiq-champ, .pht-ligne-champ, .pht-menu-champ, .pht-col-champ, .pht-competition input, .pht-vue input, .pht-fen input, select) { font-size: max(16px, 1rem) !important; }
+}
