@@ -32,6 +32,32 @@ import { mesurerLeFlou, estUnFile, partDeVert, depuisLesTribunes, propositionsPo
 const COTE_MAX = 2160;
 const QUALITE = 0.92;
 const COTE_VIGNETTE = 480;
+// L'ORIGINAL GARDÉ 14 JOURS (26 novembre 2026, demande de Noé) : à l'import on
+// choisit « compressée » (comme avant) ou « originale 14 jours ». Passé ce délai,
+// le hub remplace l'original par la version compressée. Le choix se garde sur
+// l'appareil : il vaut pour le prochain import.
+const GARDE_ORIGINALE_JOURS = 14;
+const CLE_QUALITE = 'pht-qualite';
+// Ce qu'on laisse libre sous le plafond de 10 Go : les vignettes, les
+// carrousels et l'envoi en cours ont besoin d'air.
+const MARGE_ORIGINAUX = 300 * 1024 ** 2;
+function qualiteImport() {
+  try { return localStorage.getItem(CLE_QUALITE) === 'originale' ? 'originale' : 'compressee'; } catch { return 'compressee'; }
+}
+function choisirQualite(q) {
+  try { localStorage.setItem(CLE_QUALITE, q); } catch { /* le choix vaudra pour cette visite */ }
+  etat.qualite = q;
+}
+// Le petit sélecteur, partout où l'on importe.
+function choixDeQualite() {
+  const q = etat.qualite ?? qualiteImport();
+  const bouton = (cle, nom, aide) => `<button type="button" data-pht-qualite="${cle}" aria-pressed="${q === cle}"
+      class="${q === cle ? 'actif' : ''}" title="${aide}">${nom}</button>`;
+  return `<div class="pht-qualite" role="group" aria-label="Qualité des photos importées">
+      ${bouton('compressee', 'Compressée', 'Allégée tout de suite (2160 px)')}
+      ${bouton('originale', `Originale ${GARDE_ORIGINALE_JOURS} j`, `Pleine qualité pendant ${GARDE_ORIGINALE_JOURS} jours, puis compressée`)}
+    </div>`;
+}
 const ADRESSES_VALABLES_MS = 5 * 3600 * 1000;
 const RELIRE_APRES_MS = 15 * 1000;
 // L'adresse d'un lot sans match. Un mot, pas un identifiant : il se lit dans
@@ -231,7 +257,8 @@ async function chargerVraiment() {
     etat.chargeLe = Date.now();
     etat.adressesLe = 0;
     // En arrière-plan, sans retarder l'écran.
-    setTimeout(() => rattraperLesCouleurs().then(rattraperLeFlou).then(rattraperLeVert).then(poserLesTribunes), 1500);
+    setTimeout(() => rattraperLesCouleurs().then(rattraperLeFlou).then(rattraperLeVert).then(poserLesTribunes)
+      .then(compresserLesOriginauxEchus), 1500);
     lireLaPlace();
   } catch (e) {
     console.error('Lecture de la photothèque impossible', e);
@@ -306,6 +333,10 @@ function importer(fichiers) {
   const deja = new Set(photosDuMatch(cible).map((p) => (p.nomSource ?? p.nom).normalize('NFC').toLowerCase()));
   const nouvelles = [];
   const aCompleter = [];
+  const garderOriginale = qualiteImport() === 'originale';
+  // Chaque import refait ses comptes de place : un original effacé entre-temps
+  // en a rendu.
+  if (garderOriginale) { resteOriginaux = null; etat.fauteDePlace = 0; }
   for (const fichier of fichiers) {
     if (!estUnePhoto(fichier)) continue;
     // Un même fichier déposé deux fois dans un match n'y entre qu'une fois — mais
@@ -336,6 +367,7 @@ function importer(fichiers) {
       personnes: new Set(),
       envoi: 'preparation',
       progression: 0,
+      garderOriginale,
     });
   }
   const ignorees = fichiers.length - nouvelles.length;
@@ -466,6 +498,37 @@ function toile(source, cote, largeur, hauteur) {
 const enJpeg = (c, qualite) => new Promise((ok, ko) =>
   c.toBlob((b) => (b ? ok(b) : ko(new Error('Encodage impossible'))), 'image/jpeg', qualite));
 
+// La place qu'il reste pour des originaux, lue une fois par import puis décomptée
+// photo par photo. Deux préparations tournent ensemble : elles attendent la même
+// lecture.
+let resteOriginaux = null;
+let lecturePlace = null;
+async function placePourUnOriginal(taille) {
+  if (resteOriginaux === null) {
+    lecturePlace ??= placeOccupee().then((pl) => {
+      resteOriginaux = pl.plafond - pl.occupe - MARGE_ORIGINAUX
+        // Ce qui est déjà en route n'est pas encore compté par le stockage.
+        - (etat.photos ?? []).filter((x) => x.envoi !== 'fait' && x.blob).reduce((t, x) => t + x.blob.size, 0);
+    }).catch(() => { resteOriginaux = 0; }).finally(() => { lecturePlace = null; });
+    await lecturePlace;
+  }
+  if (taille > resteOriginaux) { etat.fauteDePlace = (etat.fauteDePlace ?? 0) + 1; return false; }
+  resteOriginaux -= taille;
+  return true;
+}
+
+// LA VERSION COMPRESSÉE D'UNE IMAGE DÉJÀ DÉCODÉE : la grande (2160 px) et la
+// vignette. Sert à l'import et au passage des 14 jours.
+async function compresser(source) {
+  const { largeur, hauteur } = dimensions(source);
+  const grande = toile(source, COTE_MAX, largeur, hauteur);
+  const petite = toile(source, COTE_VIGNETTE, largeur, hauteur);
+  const [blob, vignette] = await Promise.all([enJpeg(grande, QUALITE), enJpeg(petite, 0.82)]);
+  const rendu = { blob, vignette, largeur: grande.width, hauteur: grande.height };
+  grande.width = 0; grande.height = 0; petite.width = 0; petite.height = 0;
+  return rendu;
+}
+
 async function preparer(p) {
   const fichier = p.source;
   const [{ date, infos }, source] = await Promise.all([lirePrise(fichier), decoder(fichier)]);
@@ -475,10 +538,16 @@ async function preparer(p) {
   p.prise_le = date ?? new Date(fichier.lastModified || Date.now()).toISOString();
   const { largeur, hauteur } = dimensions(source);
   const echelle = Math.min(1, COTE_MAX / Math.max(largeur, hauteur));
+  const jpeg = /jpe?g$/i.test(fichier.type || fichier.name);
 
+  // L'ORIGINAL GARDÉ : seulement un JPEG — un HEIC ne s'affiche pas hors de
+  // Safari —, et seulement s'il reste de la place sous le plafond. Sinon la
+  // photo part compressée, et on le dit à la fin du lot.
+  const original = p.garderOriginale && jpeg && echelle < 1 && await placePourUnOriginal(fichier.size);
   // UN JPEG DÉJÀ À LA BONNE TAILLE PART TEL QUEL : le réencoder lui ferait
   // perdre un peu de qualité pour rien.
-  const tel = echelle === 1 && /jpe?g$/i.test(fichier.type || fichier.name);
+  const tel = original || (echelle === 1 && jpeg);
+  if (original) p.originale_jusqu_au = new Date(Date.now() + GARDE_ORIGINALE_JOURS * 86400000).toISOString();
   const grande = tel ? null : toile(source, COTE_MAX, largeur, hauteur);
   p.largeur = grande ? grande.width : largeur;
   p.hauteur = grande ? grande.height : hauteur;
@@ -544,6 +613,7 @@ async function envoyer(p) {
       flou_mouvement: p.flou_mouvement ?? false,
       vert: p.vert ?? null,
       tribunes_lues: false,
+      originale_jusqu_au: p.originale_jusqu_au ?? null,
       triee: p.triee ?? false,
     });
     p.enBase = true;
@@ -558,8 +628,29 @@ async function envoyer(p) {
     p.progression = 1;
     p.blobVignette = null;
     // Le dernier envoi d'un lot fait relire la place prise.
-    if (!(etat.photos ?? []).some(enRoute)) { lireLaPlace(); poserLesTribunes(); }
+    if (!(etat.photos ?? []).some(enRoute)) {
+      lireLaPlace();
+      poserLesTribunes();
+      if (etat.fauteDePlace) {
+        const n = etat.fauteDePlace;
+        etat.fauteDePlace = 0;
+        messageCourt(`${n} photo${n > 1 ? 's' : ''} compressée${n > 1 ? 's' : ''} tout de suite : plus assez de place pour ${n > 1 ? 'leurs' : 'son'} original${n > 1 ? 'aux' : ''}.`, 6000);
+      }
+    }
   } catch (e) {
+    // UN ORIGINAL QUI NE TIENT PLUS (le stockage s'est rempli pendant le lot) :
+    // il repart compressé plutôt que d'échouer.
+    if (!p.cle && p.originale_jusqu_au && /plein/i.test(e?.message ?? '')) {
+      try {
+        const source = await decoder(p.blob);
+        const c = await compresser(source);
+        source.close?.();
+        Object.assign(p, { blob: c.blob, blobVignette: c.vignette, largeur: c.largeur, hauteur: c.hauteur,
+          taille: c.blob.size, nom: p.nom.replace(/\.[^.]+$/, '') + '.jpg', originale_jusqu_au: null });
+        etat.fauteDePlace = (etat.fauteDePlace ?? 0) + 1;
+        return envoyer(p);
+      } catch (e2) { console.error('Compression de secours impossible', p.nom, e2); }
+    }
     console.error('Envoi impossible', p.nom, e);
     p.envoi = 'echec';
   }
@@ -573,8 +664,7 @@ async function envoyer(p) {
 async function lireLaPlace() {
   try {
     etat.place = await placeOccupee();
-    const el = hote?.querySelector('[data-pht-place]');
-    if (el) el.outerHTML = gabaritPlace();
+    hote?.querySelectorAll('[data-pht-place]').forEach((el) => { el.outerHTML = gabaritPlace(); });
   } catch (e) {
     console.error('Place occupée inconnue', e);
   }
@@ -585,19 +675,108 @@ function enOctetsLisibles(n) {
   return `${Math.max(1, Math.round(n / 1024 ** 2)).toLocaleString('fr-FR')} Mo`;
 }
 
-// Une jauge discrète et une phrase : ce qui est pris, sur quoi. Aucune couleur
-// d'alerte — le hub n'en a pas ; passé les trois quarts, la jauge prend l'or,
-// c'est tout.
-function gabaritPlace() {
+// LA PLACE, ET CE QUI VA LA LIBÉRER (26 novembre 2026, demande de Noé : « la
+// place utilisée par des photos non compressées, dans combien de temps elles
+// vont être compressées, la place qu'elles prendront… »). Une jauge en deux
+// teintes — les photos compressées, les originaux —, puis quelques lignes :
+// ce qui est pris, ce qui reste, les originaux et leurs échéances. Aucune
+// couleur d'alerte — le hub n'en a pas ; passé les trois quarts, la jauge prend
+// l'or, c'est tout.
+const JOUR_MS = 86400000;
+const nombre = (n) => n.toLocaleString('fr-FR');
+const pluriel = (n, mot, motP = mot + 's') => `${nombre(n)} ${n > 1 ? motP : mot}`;
+
+function bilanDeLaPlace() {
   const pl = etat.place;
-  if (!pl) return '<span class="pht-place" data-pht-place></span>';
-  const part = Math.min(1, pl.occupe / Math.max(1, pl.plafond));
-  const phototheque = (etat.photos ?? []).filter((p) => p.envoi === 'fait').reduce((s, p) => s + (p.taille ?? 0), 0);
-  return `<span class="pht-place${part > 0.75 ? ' pleine' : ''}" data-pht-place
-      title="Dont ${enOctetsLisibles(phototheque)} pour les photos de la photothèque — le reste : vignettes et carrousels">
-      <span class="pht-place-jauge" aria-hidden="true"><span style="width:${(part * 100).toFixed(1)}%"></span></span>
-      <span class="pht-place-texte"><span class="chiffre">${enOctetsLisibles(pl.occupe)}</span> sur ${enOctetsLisibles(pl.plafond)}</span>
-    </span>`;
+  const faites = (etat.photos ?? []).filter((p) => p.envoi === 'fait');
+  const originaux = faites.filter((p) => p.originale_jusqu_au);
+  const compressees = faites.filter((p) => !p.originale_jusqu_au);
+  const somme = (l) => l.reduce((t, p) => t + (p.taille ?? 0), 0);
+  const poidsCompressees = somme(compressees);
+  const poidsOriginaux = somme(originaux);
+  // Ce que pèse une photo compressée, d'après celles qui le sont déjà.
+  const moyenneCompressee = compressees.length ? poidsCompressees / compressees.length : 1.5 * 1024 ** 2;
+  const moyenneOriginale = originaux.length ? poidsOriginaux / originaux.length : null;
+  // Une fois compressé, un original pèse comme une photo compressée — jamais plus que lui.
+  const apres = originaux.reduce((t, p) => t + Math.min(p.taille ?? 0, moyenneCompressee), 0);
+  const maintenant = Date.now();
+  const echues = originaux.filter((p) => Date.parse(p.originale_jusqu_au) <= maintenant);
+  // Les échéances à venir, par jour : « dans 3 j · 40 photos ».
+  const parJour = new Map();
+  for (const p of originaux) {
+    const t = Date.parse(p.originale_jusqu_au);
+    if (t <= maintenant) continue;
+    const j = Math.max(1, Math.ceil((t - maintenant) / JOUR_MS));
+    const e = parJour.get(j) ?? { j, n: 0, poids: 0 };
+    e.n++; e.poids += p.taille ?? 0;
+    parJour.set(j, e);
+  }
+  const echeances = [...parJour.values()].sort((a, b) => a.j - b.j);
+  const libre = pl ? Math.max(0, pl.plafond - pl.occupe) : null;
+  const reste = pl ? Math.max(0, pl.occupe - poidsCompressees - poidsOriginaux) : null;
+  return { pl, faites, originaux, compressees, poidsCompressees, poidsOriginaux, moyenneCompressee,
+    moyenneOriginale, apres, echues, echeances, libre, reste };
+}
+
+// LE DÉTAIL SE DÉPLIE AU CLIC (demande de Noé) : au repos, la barre « sur
+// 10 Go » seule ; on presse, les lignes et les échéances apparaissent. L'état
+// survit aux redessins de la page.
+let placeOuverte = false;
+document.addEventListener('toggle', (e) => {
+  if (e.target.matches?.('details.pht-place')) placeOuverte = e.target.open;
+}, true);
+
+function gabaritPlace() {
+  const b = bilanDeLaPlace();
+  const { pl } = b;
+  if (!pl) return '<div class="pht-place" data-pht-place></div>';
+  const plafond = Math.max(1, pl.plafond);
+  const part = Math.min(1, pl.occupe / plafond);
+  const pc = (n) => `${Math.min(100, (n / plafond) * 100).toFixed(2)}%`;
+  const ligne = (mot, valeur, aide = '') => `<li${aide ? ` title="${echapper(aide)}"` : ''}><span>${mot}</span><span class="chiffre">${valeur}</span></li>`;
+  const marque = (classe) => `<i class="pht-place-marque ${classe}" aria-hidden="true"></i>`;
+  const lignes = [
+    ligne(`${marque('compressees')}Photos compressées`, `${nombre(b.compressees.length)} · ${enOctetsLisibles(b.poidsCompressees)}`),
+    b.originaux.length ? ligne(`${marque('originaux')}Photos originales`, `${nombre(b.originaux.length)} · ${enOctetsLisibles(b.poidsOriginaux)}`,
+      b.moyenneOriginale ? `Environ ${enOctetsLisibles(b.moyenneOriginale)} par photo` : '') : '',
+    ligne(`${marque('reste')}Vignettes et carrousels`, enOctetsLisibles(b.reste)),
+    ligne('Libre', enOctetsLisibles(b.libre),
+      `De quoi ranger environ ${nombre(Math.floor(b.libre / b.moyenneCompressee))} photos compressées`
+      + (b.moyenneOriginale ? ` ou ${nombre(Math.floor(Math.max(0, b.libre - MARGE_ORIGINAUX) / b.moyenneOriginale))} originales` : '')),
+  ].join('');
+
+  // Les originaux : quand ils passent, et ce qu'ils rendront.
+  let originaux = '';
+  if (b.originaux.length) {
+    const prochaines = b.echeances.slice(0, 4).map((e) =>
+      `<li><span>dans ${pluriel(e.j, 'jour')}</span><span class="chiffre">${pluriel(e.n, 'photo')} · ${enOctetsLisibles(e.poids)}</span></li>`).join('');
+    const plusLoin = b.echeances.slice(4).reduce((t, e) => t + e.n, 0);
+    const rendu = Math.max(0, b.poidsOriginaux - b.apres);
+    originaux = `<div class="pht-place-originaux">
+        <p class="pht-place-titre">Compression des originaux</p>
+        <ul class="pht-place-lignes">
+          ${b.echues.length ? `<li class="attente" title="Le hub les compresse en arrière-plan quand la photothèque est ouverte sur ordinateur"><span>à compresser maintenant</span><span class="chiffre">${pluriel(b.echues.length, 'photo')}</span></li>` : ''}
+          ${prochaines}
+          ${plusLoin ? `<li><span>plus tard</span><span class="chiffre">${pluriel(plusLoin, 'photo')}</span></li>` : ''}
+        </ul>
+        <p class="pht-place-aide">Compressées, elles prendront environ <span class="chiffre">${enOctetsLisibles(b.apres)}</span>,
+          soit <span class="chiffre">${enOctetsLisibles(rendu)}</span> rendus.
+          ${b.echues.length ? 'La compression se fait quand la photothèque est ouverte sur ordinateur.' : ''}</p>
+      </div>`;
+  }
+
+  return `<details class="pht-place${part > 0.75 ? ' pleine' : ''}" data-pht-place${placeOuverte ? ' open' : ''}>
+      <summary class="pht-place-tete" title="Le détail du stockage">
+        <span class="pht-place-jauge" aria-hidden="true">
+          <span class="compressees" style="width:${pc(b.poidsCompressees)}"></span><span class="originaux" style="width:${pc(b.poidsOriginaux)}"></span><span class="reste" style="width:${pc(b.reste)}"></span>
+        </span>
+        <span class="pht-place-texte"><span class="chiffre">${enOctetsLisibles(pl.occupe)}</span> sur ${enOctetsLisibles(pl.plafond)}</span>
+      </summary>
+      <div class="pht-place-detail">
+        <ul class="pht-place-lignes">${lignes}</ul>
+        ${originaux}
+      </div>
+    </details>`;
 }
 
 function relancerLesEchecs() {
@@ -775,6 +954,7 @@ function gabaritChoix() {
           <option value="${SANS_MATCH}">Sans match</option>
         </select>
       </label>
+      ${choixDeQualite()}
       <button type="button" class="car-puce" data-pht="annuler-choix">Annuler</button>
       ${/* LA PLACE, DÈS QU'ON APPUIE SUR « IMPORTER » (demande de Noé) : c'est
          au moment de décider d'ajouter un match qu'on veut savoir ce qui reste. */ ''}
@@ -912,8 +1092,8 @@ function gabaritMatch() {
     return `${tete}
       <div class="car-import" data-depot>
         <p class="car-import-titre">Les photos de ce match</p>
-        <p class="car-import-texte">Choisis tes exports retouchés — ou glisse ici le dossier entier.
-          Ils sont allégés pour Instagram avant de partir en ligne.</p>
+        <p class="car-import-texte">Choisis tes exports retouchés — ou glisse ici le dossier entier.</p>
+        ${choixDeQualite()}
         <button type="button" class="car-bouton-or" data-pht="choisir">${svg('importer')}<span>Choisir des photos</span></button>
       </div>${fichier}`;
   }
@@ -1305,7 +1485,6 @@ function gabaritFiltres() {
     ${m ? '' : blocDesCollections()}
     ${blocFiltre('Publication et tri', publication)}
     ${m ? '' : blocFiltre('Récemment', periodes)}
-    ${bloc('Période')}
     ${bloc('Compétition')}
     <div class="pht-tri-famille">
       <p class="pht-tri-titre">Note ${f.note ? `<span class="pht-tri-note-mixte">${f.note} et plus</span>` : ''}</p>
@@ -3051,6 +3230,59 @@ async function rattraperLeFlou() {
   }
 }
 
+// LE PASSAGE DES 14 JOURS (26 novembre 2026) : un original arrivé à échéance est
+// remplacé par sa version compressée. Le stockage ne sait pas réduire une image,
+// c'est donc le hub qui le fait, en arrière-plan, une photo à la fois :
+// télécharger l'original, le réduire, envoyer la version compressée sous une
+// nouvelle clé, faire pointer la photo ET ses carrousels dessus, puis effacer
+// l'original. Sur ORDINATEUR seulement : un original pèse 10 à 20 Mo, et le
+// téléphone est souvent sur sa connexion mobile. Ce qui n'est pas fait
+// aujourd'hui se fera à la prochaine ouverture ; jusque-là l'original reste.
+let compressionEnCours = false;
+async function compresserLesOriginauxEchus() {
+  if (compressionEnCours || !window.matchMedia('(min-width: 60rem)').matches) return;
+  const maintenant = Date.now();
+  const file = (etat.photos ?? []).filter((p) => p.envoi === 'fait' && p.cle && p.originale_jusqu_au
+    && Date.parse(p.originale_jusqu_au) <= maintenant);
+  if (!file.length) return;
+  compressionEnCours = true;
+  let faites = 0;
+  try {
+    for (const p of file) {
+      try {
+        const adresse = (await adressesDe([p.cle]))[p.cle]?.original;
+        if (!adresse) continue;
+        const r = await fetch(adresse);
+        if (!r.ok) continue;
+        const source = await decoder(await r.blob());
+        const c = await compresser(source);
+        source.close?.();
+        const nom = String(p.nom ?? 'photo').replace(/\.[^.]+$/, '') + '.jpg';
+        const ancienne = p.cle;
+        const cle = await envoyerFichier(new File([c.blob], nom, { type: 'image/jpeg' }));
+        await envoyerVignette(cle, c.vignette);
+        await api.remplacerLeFichierDeLaPhoto(p.id, { cle, nom, taille: c.blob.size, largeur: c.largeur, hauteur: c.hauteur });
+        Object.assign(p, { cle, nom, taille: c.blob.size, largeur: c.largeur, hauteur: c.hauteur,
+          originale_jusqu_au: null, url: null, vignette: null });
+        supprimerFichier(ancienne).catch((e) => console.error('Original non effacé', ancienne, e));
+        faites++;
+      } catch (e) {
+        // Elle restera en original jusqu'à la prochaine visite.
+        console.error('Compression différée', p.nom, e);
+      }
+    }
+  } finally {
+    compressionEnCours = false;
+  }
+  if (faites) {
+    // Les carrousels reprennent la nouvelle clé : ils se relisent.
+    relireAuProchainMontage();
+    lireLaPlace();
+    etat.adressesLe = 0;
+    if (!etat.ouverte) dessiner();
+  }
+}
+
 // LA PELOUSE DES PHOTOS DÉJÀ LÀ (26 novembre 2026) : lue une fois, gardée en base.
 async function rattraperLeVert() {
   if (etat.vertLu) return;
@@ -3493,6 +3725,17 @@ function brancherVisionneuse(racine) {
   brancherTri(racine);
   brancherLaCarte(racine);
   racine.addEventListener('click', (e) => {
+    const qualite = e.target.closest('[data-pht-qualite]');
+    if (qualite) {
+      choisirQualite(qualite.dataset.phtQualite);
+      // Sans tout redessiner : le sélecteur seul change d'état.
+      racine.querySelectorAll('[data-pht-qualite]').forEach((b) => {
+        const oui = b.dataset.phtQualite === etat.qualite;
+        b.classList.toggle('actif', oui);
+        b.setAttribute('aria-pressed', String(oui));
+      });
+      return;
+    }
     const action = e.target.closest('[data-pht]');
     if (!action) {
       // Un clic sur le fond referme, comme toutes les fenêtres du hub.
@@ -3744,6 +3987,7 @@ function panneauOutil() {
     const ici = enMatch() && cible;
     const sorties = etat.sorties;
     return `<div class="lr-panneau-tete"><h2>Importer</h2></div>
+      ${choixDeQualite()}
       ${ici ? `<p class="lr-aide">Vers « ${echapper(matchDe(cible)?.titre ?? 'Sans match')} ».</p>
         <button type="button" class="car-bouton-or" data-pht="choisir">${svg('importer')}<span>Choisir des photos</span></button>
         <p class="lr-aide">Ou glisse un dossier d'exports sur les photos.</p>
@@ -4004,6 +4248,7 @@ function centreOrdi() {
     ? (m ? `<div class="car-import" data-depot>
           <p class="car-import-titre">Les photos de ce match</p>
           <p class="car-import-texte">Choisis tes exports retouchés — ou glisse ici le dossier entier.</p>
+          ${choixDeQualite()}
           <button type="button" class="car-bouton-or" data-pht="choisir">${svg('importer')}<span>Choisir des photos</span></button>
         </div>` : '<p class="car-liste-vide">Importe un match : ses photos se chercheront ici.</p>')
     : !liste.length ? '<p class="car-liste-vide">Aucune photo ne coche tout. Retire un filtre.</p>'
@@ -4363,6 +4608,17 @@ function brancher(racine) {
     if (e.target.matches?.('img[data-vignette]')) vignettesVues.add(e.target.getAttribute('src'));
   }, true);
   racine.addEventListener('click', (e) => {
+    const qualite = e.target.closest('[data-pht-qualite]');
+    if (qualite) {
+      choisirQualite(qualite.dataset.phtQualite);
+      // Sans tout redessiner : le sélecteur seul change d'état.
+      racine.querySelectorAll('[data-pht-qualite]').forEach((b) => {
+        const oui = b.dataset.phtQualite === etat.qualite;
+        b.classList.toggle('actif', oui);
+        b.setAttribute('aria-pressed', String(oui));
+      });
+      return;
+    }
     const action = e.target.closest('[data-pht]');
     if (action) {
       const quoi = action.dataset.pht;

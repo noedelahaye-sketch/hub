@@ -3360,6 +3360,18 @@ export async function garderPrise(id, prise) {
   if (error) throw error;
 }
 export const marquerFlouLu = (ids, flou_mouvement) => marquerPhotos(ids, { flou_lu: true, flou_mouvement });
+
+// L'ORIGINAL QUI A FAIT SES 14 JOURS (26 novembre 2026) : la photo pointe sur
+// son nouveau fichier compressé, et les carrousels qui la montraient aussi —
+// ils reprennent sa clé, ils n'en ont pas de copie.
+export async function remplacerLeFichierDeLaPhoto(id, champs) {
+  const { error } = await client.from('photos')
+    .update({ ...champs, originale_jusqu_au: null }).eq('id', id);
+  if (error) throw error;
+  const { error: e2 } = await client.from('carrousels_medias')
+    .update({ cle: champs.cle, taille: champs.taille, nom: champs.nom }).eq('photo_id', id);
+  if (e2) throw e2;
+}
 export const marquerTribunesLues = (ids) => marquerPhotos(ids, { tribunes_lues: true });
 export const marquerVert = (ids, vert) => marquerPhotos(ids, { vert });
 export const marquerCouleursLues = (ids) => marquerPhotos(ids, { couleurs_lues: true });

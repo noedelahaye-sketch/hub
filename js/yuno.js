@@ -311,6 +311,17 @@ export const RUBRIQUES_YUNO = [
   },
 ];
 
+// LES SITES PUBLICS DE YUNO, dans le menu de l'atelier Créer (26 novembre 2026,
+// demande de Noé) : le site vitrine et l'administration de la livraison. Un
+// titre seul, comme « Réseau » : il ne mène nulle part, ses deux pages si.
+const SITES_DE_YUNO = {
+  nom: 'Mes sites',
+  pages: [
+    { nom: 'Le site Yuno', adresse: 'https://yuno-rph.com', externe: true },
+    { nom: 'La livraison', adresse: 'https://livraison.yuno-rph.com/admin', externe: true },
+  ],
+};
+
 // LA RUBRIQUE DE L'ÉCRAN OÙ L'ON EST SE DÉPLIE D'ELLE-MÊME — ouvrir le menu
 // depuis le vivier doit montrer les pages du Réseau, pas les faire chercher.
 // Elle se DÉDUIT des rubriques plutôt que d'une seconde table : `ONGLET_DE_LA_VUE`
@@ -524,6 +535,13 @@ function enTeteDeLAtelier(vue, titre, icones, etat = null) {
         ${/* Sans « Créer » (demande de Noé) : le logo au centre y mène déjà. */''}
         ${onglets.filter(([cle]) => cle !== 'creer').map(([cle, nom]) => `
           <a href="#yuno/${cle}" class="${cle === actif ? 'actif' : ''}"${cle === actif ? ' aria-current="page"' : ''}>${nom}</a>`).join('')}
+        ${/* LA LIVRAISON EN UN CLIC (26 novembre 2026, demande de Noé) : c'est
+           là que part une photothèque une fois triée. Un site à part, donc un
+           nouvel onglet et une flèche qui le dit. */''}
+        <a class="atelier-dehors" href="https://livraison.yuno-rph.com/admin" target="_blank" rel="noopener"
+          aria-label="La livraison (nouvel onglet)">Livraison<svg viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+          aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
       </nav>
     </div>
     ${sansTitre
@@ -6658,7 +6676,9 @@ export default {
     // barre.
     monterLeMenu(() => section.querySelector('.yuno-nav'), {
       // Dans l'atelier, le menu ne porte que la rubrique Créer.
-      rubriques: ATELIER ? RUBRIQUES_YUNO.filter((r) => r.adresse === '#yuno/creer') : RUBRIQUES_YUNO,
+      rubriques: ATELIER
+        ? [...RUBRIQUES_YUNO.filter((r) => r.adresse === '#yuno/creer'), SITES_DE_YUNO]
+        : RUBRIQUES_YUNO,
       id: 'menu-yuno',
       classe: 'menu-voile-yuno',
       chemin: cheminDuMenu,

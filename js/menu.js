@@ -223,7 +223,10 @@ function feuille(page) {
   const pastille = page.espace
     ? '<span class="menu-pastille" aria-hidden="true"></span>'
     : '';
-  return `<a href="${page.adresse}"${page.nav ? ` data-nav="${page.nav}"` : ''}${teinte}
+  // UN SITE EXTÉRIEUR S'OUVRE À CÔTÉ (26 novembre 2026) : quitter l'atelier
+  // pour aller voir le site public ne doit pas le fermer.
+  const dehors = page.externe ? ' target="_blank" rel="noopener"' : '';
+  return `<a href="${page.adresse}"${page.nav ? ` data-nav="${page.nav}"` : ''}${teinte}${dehors}
      data-menu-lien>${pastille}${page.nom}</a>`;
 }
 
